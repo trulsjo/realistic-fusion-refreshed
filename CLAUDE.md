@@ -32,13 +32,26 @@ choosing between them is not.
 
 ## Upstream material
 
-**Lua source** may be lifted from the three predecessors in `README.md`; their licences (WTFPL, The
-Unlicense) permit it without conditions.
+**Everything is governed per directory — Lua included.** There is no blanket permission to lift code:
+check for a licence file in the directory a file comes from before taking it. The redesign's
+`RealisticFusionCore/electric-boiler/` holds 167 lines of Lua under **CC BY-NC-ND 4.0**, so "the repo
+licence is WTFPL" does not settle what a given file is. See `docs/adr/0001-liftable-predecessor-material.md`.
 
-**Assets are governed per directory, and both predecessors already mark them.** Realistic Fusion Power
-and Durikkan's 2.0 port both keep graphics derived from **Krastorio 2** (**LGPLv3**, raiguard) in their
-own directories with the LGPL text alongside, while everything else stays permissive. This repo uses the
-same scheme — see `legal-note.txt`. Two rules follow:
+- **NonCommercial or NoDerivatives material is never lifted**, whatever its source. That rules out
+  `electric-boiler/` and `angels-numerals/` outright.
+- **Permissive material is free** — a directory with no licence file, subject to the PreLeyZero
+  exception below.
+- **Copyleft (GPL/LGPL) is allowed only in its own directory**, with its licence file alongside and
+  modifications stated.
+- **Lift only from Realistic Fusion Power 1.8.18 or later.** Earlier releases are CC BY-SA 4.0; 1.8.18
+  changed the primary licence to WTFPL.
+
+**Both predecessors already mark their assets this way.** Realistic Fusion Power and Durikkan's 2.0 port
+keep graphics derived from **Krastorio 2** in their own directories with the licence text alongside,
+while everything else stays permissive. Upstream K2 assets
+(<https://codeberg.org/raiguard/Krastorio2Assets>) are **LGPLv3**; the copy inside the four-module
+redesign is marked **GPLv3** — read the file next to the sprites rather than assuming either. This repo
+uses the same scheme — see `legal-note.txt`. Two rules follow:
 
 - **Lift whole directories, with their license file.** Never copy loose files out of a licensed
   directory into one governed by `LICENSE`. A directory with no license file is permissive and free.
