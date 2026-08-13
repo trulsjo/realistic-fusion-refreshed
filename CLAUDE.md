@@ -33,11 +33,19 @@ choosing between them is not.
 **Lua source** may be lifted from the three predecessors in `README.md`; their licences (WTFPL, The
 Unlicense) permit it without conditions.
 
-**Graphics and other assets are a different question — check before copying any.** The archive's own
-README credits graphics to **PreLeyZero** and says graphics were borrowed from **Krastorio 2**, which is
-**LGPLv3**. A repo-level WTFPL only disposes of what its author owned, so an asset that came from
-Krastorio 2 is still LGPLv3 and cannot simply be absorbed into this Unlicense project. Whether the two
-published mods carry the same borrowed assets has not been checked.
+**Assets are governed per directory, and both predecessors already mark them.** Realistic Fusion Power
+and Durikkan's 2.0 port both keep graphics derived from **Krastorio 2** (**LGPLv3**, raiguard) in their
+own directories with the LGPL text alongside, while everything else stays permissive. This repo uses the
+same scheme — see `legal-note.txt`. Two rules follow:
+
+- **Lift whole directories, with their license file.** Never copy loose files out of a licensed
+  directory into one governed by `LICENSE`. A directory with no license file is permissive and free.
+- **Modifying a file from a licensed directory yields a derivative under that license.** A recoloured
+  or re-composited LGPL sprite is still LGPL, and the change must be stated. Modified sprites belong in
+  the licensed directory, not beside your own work.
+
+Graphics in the predecessors are also credited to **PreLeyZero**; what licence that original art carries
+is not established.
 
 - **Attribute Romner_set, Durikkan and PreLeyZero** for anything derived from their work, in the commit
   and in the file. Not a licence obligation — a community norm and simple honesty.

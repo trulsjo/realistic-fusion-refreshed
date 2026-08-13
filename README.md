@@ -30,9 +30,10 @@ Credit for the original design and implementation belongs to Romner_set, for the
 and for graphics work to PreLeyZero. None of these licences requires attribution; it is given because
 it is deserved.
 
-Note that the archive's repo-level licence does not cover everything inside it: its README states that
-some graphics were borrowed from [Krastorio 2](https://mods.factorio.com/mod/Krastorio2), which is
-LGPLv3. Assets need checking individually before reuse — source code does not.
+Note that a repo-level licence does not cover everything inside these mods: all three carry graphics
+derived from [Krastorio 2](https://mods.factorio.com/mod/Krastorio2), which is LGPLv3. Both published
+predecessors handle this by keeping such material in its own directory with its own licence file, and
+this project follows the same convention — see [`legal-note.txt`](legal-note.txt).
 
 ## Open questions
 

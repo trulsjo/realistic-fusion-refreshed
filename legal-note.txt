@@ -1,0 +1,29 @@
+Licensing scope
+===============
+
+Unless a directory contains its own license file, everything in this repository is
+released under The Unlicense (public domain) -- see LICENSE in this directory.
+
+A directory that DOES contain its own license file is an exception: it is governed by
+that license, not by LICENSE. Read it before reusing anything from that directory.
+
+Why this exists
+---------------
+
+Both predecessor mods use the same scheme, and it is what keeps borrowed material
+honest. Realistic Fusion Power (Romner_set) and its 2.0 port (Durikkan) both ship
+graphics derived from Krastorio 2, which is LGPLv3, in their own directories carrying
+the LGPL text -- while the rest of each mod stays permissive.
+
+Two practical consequences, for anyone working here:
+
+  - When lifting material from a predecessor, take the whole directory INCLUDING its
+    license file. Never copy loose asset files out of a licensed directory into a
+    directory governed by LICENSE.
+
+  - Modifying a file from a licensed directory produces a derivative under THAT
+    license, not under LICENSE. A recoloured or re-composited LGPL sprite is still
+    LGPL, and the modification has to be stated.
+
+The scope rule is kept here rather than prepended to LICENSE so that LICENSE stays
+byte-identical to the canonical Unlicense text and remains automatically detectable.
