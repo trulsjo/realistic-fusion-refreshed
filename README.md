@@ -1,7 +1,9 @@
 # Realistic Fusion Refreshed
 
 Work-in-progress [Factorio](https://factorio.com) mod. The goal is to finish **Realistic Fusion 2.0** —
-a fusion-power mod series that was prototyped for Factorio 2.0 and left unfinished.
+a fusion-power mod series left unfinished. The *2.0* there is the mod's own version number, not the
+game's: the redesign carrying it was built for Factorio **1.1** and abandoned around the time Factorio
+2.0 arrived.
 
 **Status: planning. No code yet.** This repository was initialised empty; nothing here is playable, and
 the mod is not published on the mod portal.
@@ -24,7 +26,7 @@ Three pieces of prior work exist, all permissively licensed:
 |---|---|---|---|
 | [Realistic Fusion Power](https://mods.factorio.com/mod/RealisticFusionPower) | The original, by **Romner_set**. Unmaintained since 2024-10. | 0.17–1.1 | WTFPL |
 | [Realistic Fusion Power Port](https://mods.factorio.com/mod/RealisticFusionPowerPort) | A port of the original to 2.0 by **Durikkan**, minimal balance/gameplay change. | 2.0 | The Unlicense |
-| [realistic-fusion-dev](https://github.com/4881e05257b099383da78c50269d2ceb/realistic-fusion-dev) | An unfinished 2.0 **redesign** splitting the mod into four modules (Core, Power, Weaponry, Antimatter). Archived read-only 2026-04. | 2.0 | WTFPL |
+| [realistic-fusion-dev](https://github.com/4881e05257b099383da78c50269d2ceb/realistic-fusion-dev) | An unfinished **redesign** (the mod's own 2.0) splitting the mod into four modules (Core, Power, Weaponry, Antimatter). Archived read-only 2026-04. | 1.1 | WTFPL |
 
 Credit for the original design and implementation belongs to Romner_set, for the 2.0 port to Durikkan,
 and for graphics work to PreLeyZero. None of these licences requires attribution; it is given because

@@ -23,8 +23,10 @@ choosing between them is not.
 - Mods are **Lua**. The API has **three stages**: `settings` and `prototype` run at start-up, `runtime`
   runs during gameplay. Know which stage code belongs to before writing it.
 - API docs are published **per game version** at <https://lua-api.factorio.com/>. Check claims against
-  the version being targeted rather than from memory — this project spans a 1.1-era original and a 2.0
-  rewrite, and the 1.1→2.0 break is the whole reason the work exists.
+  the version being targeted rather than from memory. Two of the three predecessors are **1.1**-era —
+  the original and the four-module redesign, whose "2.0" is its own version number — and only
+  Durikkan's port targets Factorio 2.0. The 1.1→2.0 break therefore runs straight through the material
+  this project builds on, which is the whole reason the work exists.
 - `/stable/` and `/latest/` move, and `latest` is the **experimental** build. Pin an explicit version
   (e.g. `/2.0.77/`) when recording a fact.
 
