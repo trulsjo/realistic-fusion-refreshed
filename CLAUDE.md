@@ -44,8 +44,15 @@ same scheme — see `legal-note.txt`. Two rules follow:
   or re-composited LGPL sprite is still LGPL, and the change must be stated. Modified sprites belong in
   the licensed directory, not beside your own work.
 
-Graphics in the predecessors are also credited to **PreLeyZero**; what licence that original art carries
-is not established.
+**One exception to "no licence file means free": PreLeyZero's donated art.** The predecessors credit
+them for graphics but mark none of it, so by the convention above it inherits each mod's default. That
+default only disposes of what its declarer had the right to license, and no record exists of the terms
+the art was donated under — while PreLeyZero's *own* mods generally carry GPL, which is a reason not to
+assume a permissive donation. Which files are theirs is not established either.
+
+So: **do not take unmarked graphics from the predecessors on the assumption they are free.** Ask before
+using them, or use art with known provenance. Do not relabel them GPL either — that would be guessing in
+the other direction.
 
 - **Attribute Romner_set, Durikkan and PreLeyZero** for anything derived from their work, in the commit
   and in the file. Not a licence obligation — a community norm and simple honesty.
