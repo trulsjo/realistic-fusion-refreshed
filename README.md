@@ -26,8 +26,13 @@ Three pieces of prior work exist, all permissively licensed:
 | [Realistic Fusion Power Port](https://mods.factorio.com/mod/RealisticFusionPowerPort) | A port of the original to 2.0 by **Durikkan**, minimal balance/gameplay change. | 2.0 | The Unlicense |
 | [realistic-fusion-dev](https://github.com/4881e05257b099383da78c50269d2ceb/realistic-fusion-dev) | An unfinished 2.0 **redesign** splitting the mod into four modules (Core, Power, Weaponry, Antimatter). Archived read-only 2026-04. | 2.0 | WTFPL |
 
-Credit for the original design and implementation belongs to Romner_set, and for the 2.0 port to
-Durikkan. Neither licence requires attribution; it is given because it is deserved.
+Credit for the original design and implementation belongs to Romner_set, for the 2.0 port to Durikkan,
+and for graphics work to PreLeyZero. None of these licences requires attribution; it is given because
+it is deserved.
+
+Note that the archive's repo-level licence does not cover everything inside it: its README states that
+some graphics were borrowed from [Krastorio 2](https://mods.factorio.com/mod/Krastorio2), which is
+LGPLv3. Assets need checking individually before reuse — source code does not.
 
 ## Open questions
 

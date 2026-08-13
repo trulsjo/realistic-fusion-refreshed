@@ -30,11 +30,19 @@ choosing between them is not.
 
 ## Upstream material
 
-Code may be lifted from the three predecessors in `README.md`; their licences (WTFPL, The Unlicense)
-permit it without conditions. Two things to hold to anyway:
+**Lua source** may be lifted from the three predecessors in `README.md`; their licences (WTFPL, The
+Unlicense) permit it without conditions.
 
-- **Attribute Romner_set and Durikkan** for anything derived from their work, in the commit and in the
-  file. Not a licence obligation — a community norm and simple honesty.
+**Graphics and other assets are a different question — check before copying any.** The archive's own
+README credits graphics to **PreLeyZero** and says graphics were borrowed from **Krastorio 2**, which is
+**LGPLv3**. A repo-level WTFPL only disposes of what its author owned, so an asset that came from
+Krastorio 2 is still LGPLv3 and cannot simply be absorbed into this Unlicense project. Whether the two
+published mods carry the same borrowed assets has not been checked.
+
+- **Attribute Romner_set, Durikkan and PreLeyZero** for anything derived from their work, in the commit
+  and in the file. Not a licence obligation — a community norm and simple honesty.
+- **Do not try to contact Romner_set.** He deprecated the mod, archived the successor read-only and
+  anonymised his GitHub account. That is someone stepping away deliberately; respect it.
 - **This repo is a fresh history on purpose.** Bring code across as ordinary commits; do not add the
   archive as a remote, fork it, or graft its history in.
 
