@@ -83,6 +83,17 @@ if ($unknown) {
     throw ("-With names no bundled mod: {0}. Available: {1}." -f ($unknown -join ', '), (($bundledInfo.Keys | Sort-Object) -join ', '))
 }
 
+# Canonicalise casing before anything downstream compares names. PowerShell's -notin and its
+# hashtables are case-insensitive, but HashSet[string] below is ordinal, so "-With Space-Age"
+# would pass validation and then be written enabled=false while the header printed it as enabled
+# -- a base-only run reported as an expansion pass, exactly what the validation above exists to
+# prevent.
+# Where-Object drops the single $null that piping an empty collection would otherwise yield, and
+# @() keeps the result an array rather than a scalar or $null.
+$With = @($With |
+    Where-Object { $_ } |
+    ForEach-Object { $name = $_; $bundledInfo.Keys | Where-Object { $_ -eq $name } | Select-Object -First 1 })
+
 # Enabling space-age without elevated-rails and quality is a missing-dependency error that looks
 # like our mods failing, so resolve the closure over bundled mods before writing the list.
 $enable = [System.Collections.Generic.HashSet[string]]::new()
@@ -92,8 +103,12 @@ while ($queue.Count -gt 0) {
     $m = $queue.Dequeue()
     if (-not $enable.Add($m)) { continue }
     foreach ($dep in @($bundledInfo[$m].dependencies)) {
-        # "? name >= 1.0" / "! name" / "name >= 1.0" -- only hard requirements are pulled in.
-        if ($dep -match '^\s*[?!~(]') { continue }
+        # Skip optional ("?"), hidden-optional ("(?)") and incompatible ("!") only. "~" is a
+        # REQUIRED dependency that merely does not affect load order, so it must be followed --
+        # skipping it would drop a real dependency and produce a missing-dependency failure that
+        # reads as this repo's mods being broken.
+        if ($dep -match '^\s*[?!(]') { continue }
+        $dep = $dep -replace '^\s*~\s*', ''
         $depName = ($dep -replace '^\s*', '') -split '\s+' | Select-Object -First 1
         if ($bundledInfo.ContainsKey($depName)) { $queue.Enqueue($depName) }
     }
@@ -160,9 +175,12 @@ try {
         # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
         Write-Host 'self-test 1/2: the repo as it stands must load.'
         $clean = Invoke-Factorio -Label 'load-check' -Enabled $ourMods -Tag 'clean'
-        if ($clean.Code -ne 0) {
+        # Same pass criterion as a real run: exit 0 without a save is a failure there, so it must
+        # be a failure here too, or -SelfTest could certify a check a plain run would reject.
+        if ($clean.Code -ne 0 -or -not $clean.SaveExists) {
             Write-Host ''
-            Write-Host "FAILED - self-test: the repo does not load (exit $($clean.Code)), so the canary result would be meaningless."
+            Write-Host "FAILED - self-test: the repo does not load cleanly (exit $($clean.Code), save produced: $($clean.SaveExists)),"
+            Write-Host '         so the canary result would be meaningless.'
             Write-Tail $clean
             exit 1
         }

@@ -1,0 +1,6 @@
+require("prototypes.categories")
+require("prototypes.fluids")
+require("prototypes.items")
+require("prototypes.entities")
+require("prototypes.recipes.deuterium")
+require("prototypes.technology.deuterium")
