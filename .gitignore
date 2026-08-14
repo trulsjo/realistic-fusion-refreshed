@@ -1,2 +1,5 @@
 # Personal, machine-local agent notes — see CLAUDE.md
 CLAUDE.local.md
+
+# Generated knowledge-graph output; rebuildable from the repo contents
+graphify-out/
