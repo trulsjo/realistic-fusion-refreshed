@@ -121,7 +121,16 @@ function New-ModJunctions {
         $src = Join-Path $RepoRoot $m
         if (-not (Test-Path $src)) { throw "Mod directory not found in repo: $src" }
         $link = Join-Path $ModDirectory $m
-        if (Test-Path $link) { [IO.Directory]::Delete($link) }
+        if (Test-Path $link) {
+            # Only ever delete a junction here. A real directory of the same name -- an unzipped
+            # release, a leftover copy -- would otherwise hit a non-recursive Directory.Delete and
+            # either throw an opaque "directory is not empty" or, if empty, vanish silently.
+            $existing = Get-Item -LiteralPath $link -Force
+            if ($existing.LinkType -ne 'Junction') {
+                throw "Refusing to replace '$link': it is a real directory, not a junction. Move or delete it yourself."
+            }
+            [IO.Directory]::Delete($link)
+        }
         New-Item -ItemType Junction -Path $link -Target $src | Out-Null
     }
 }
