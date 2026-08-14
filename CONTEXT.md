@@ -1,0 +1,89 @@
+# Context
+
+The vocabulary this project uses. When a document, issue, prototype name or commit message names one of
+these concepts, it uses the term as defined here rather than a synonym.
+
+Created alongside [ADR 0010](docs/adr/0010-v1-module-layout-and-prototype-set.md), which specified v1.
+Decisions live in `docs/adr/`; this file only fixes the language.
+
+## The two mods
+
+**Core** — `RealisticFusionCore`, title "Realistic Fusion Core". Owns every fluid and item prototype,
+and the extraction chain that produces feedstock. Never references Power.
+
+**Power** — `RealisticFusion`, title "Realistic Fusion". Owns reactors, heat and generation, and depends
+on Core. Referred to as "the main mod" when distinguishing it from the library.
+
+Dependencies run **one way only**: Power → Core. Where a reactor produces a Core-owned fluid, the
+prototype is defined in Core and the recipe lives in Power.
+
+## The fuel chain
+
+**Girdler sulfide process** — the deuterium enrichment method, using hydrogen sulfide as a recirculating
+catalyst. Not "deuterium separation" or "enrichment" generically.
+
+**Heavy water** — deuterium oxide, the intermediate between water and deuterium.
+
+**Depleted water** — the spent stream leaving enrichment. Not "waste water".
+
+**Brine** — lithium-bearing solution concentrated from water. The lithium route deliberately involves
+**no map resource**; brine is produced, never mined.
+
+**Breeding** — producing tritium or helium-3 rather than extracting it. Two routes exist and are named
+distinctly:
+
+- **D-D by-products** — tritium and helium-3 arising from the D-D reaction itself. The early route; the
+  reactors are the breeder.
+- **Blanket breeding** — tritium bred from lithium in a blanket on a reactor. The later upgrade tier,
+  and the route real D-T reactors use.
+
+## Reactions
+
+Written with hyphens and matching case throughout: **D-D**, **D-T**, **D-He3**, **He3-He3**. Not "DD",
+"D+T" or "deuterium-tritium".
+
+**Aneutronic** — the D-He3 and He3-He3 tier, whose reactions release far fewer neutrons and permit
+direct energy conversion. The end of v1's progression.
+
+**Plasma** — the heated, confined state a reaction runs in, carried as a fluid. Each reaction has its
+own plasma. Plasma must not travel through vanilla pipes.
+
+## The simulation
+
+**Cross-section data** — tabulated reactivity ⟨σv⟩ as a function of plasma temperature, held in
+`cross-section-data/`. The reaction rate is interpolated from it rather than tuned by a constant. This
+is what "realistic" means concretely in this project.
+
+**Reaction rate** — the simulation's output, derived from cross-section data. Not "yield" or "output"
+when the interpolated quantity is meant.
+
+**Q-factor** — the ratio of fusion power produced to heating power supplied. Exposed to the player as a
+circuit signal.
+
+**Tick cadence** — how often the simulation steps. Deliberately separate from the rate computation, so
+throttling is a configuration change. See ADR 0005.
+
+## Predecessors
+
+Named precisely, because three exist and conflating them has already caused one factual error in this
+repository's own README:
+
+**The original** — Realistic Fusion Power by Romner_set, Factorio 0.17–1.1, WTFPL from release 1.8.18.
+
+**The port** — Realistic Fusion Power Port by Durikkan, Factorio 2.0, The Unlicense.
+
+**The redesign** — `realistic-fusion-dev`, the archived four-module split. Its "2.0" is the *mod's*
+version number; it targets **Factorio 1.1**. Never call it a 2.0 mod.
+
+None of the three is an upstream base — v1 is written fresh with all three as reference
+([ADR 0004](docs/adr/0004-fresh-code-predecessors-as-reference.md)).
+
+## Compatibility words
+
+**Coexistence** — loads and runs alongside another mod without crashing or colliding. What v1 commits
+to.
+
+**Integration** — resource-chain hooks, recipe substitution, replacing another mod's implementation.
+What v1 does *not* do, for any mod. See [ADR 0007](docs/adr/0007-coexistence-without-integration.md).
+
+The distinction is load-bearing: "compatible with X" is ambiguous between them and should be avoided.
