@@ -3,3 +3,6 @@ CLAUDE.local.md
 
 # Generated knowledge-graph output; rebuildable from the repo contents
 graphify-out/
+
+# Agent orchestration state — session-scoped, machine-local
+.omc/
