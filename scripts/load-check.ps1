@@ -12,19 +12,20 @@
     It does NOT check locale coverage. Factorio's data stage loads a prototype with no locale
     entry without complaint; the omission only shows in game as "Unknown key". ADR 0010 singles
     that failure out, so it needs its own check and does not come free with a pass here.
+    (--dump-prototype-locale resolves names through the locale system and is the tool for it.)
 
     The player's own mod directory is never touched: the repo's mods are junctioned into a
     temporary directory and a mod-list.json is written there.
 
-    Mods bundled with the game (space-age, elevated-rails, quality) live in its data/ directory,
-    so they load unless explicitly disabled. This script disables them by default to get a
-    genuine base-2.0 check (ADR 0003, ADR 0008); -With re-enables them.
+    Bundled mods (space-age, elevated-rails, quality) live in the game's data/ directory, so they
+    load unless explicitly disabled. Disabled by default to get a genuine base-2.0 check
+    (ADR 0003, ADR 0008); -With re-enables them.
 
     PowerShell 7 is required: 5.1's Remove-Item -Recurse follows junctions instead of skipping
     them, which would delete the repo's own source through the links this script creates.
 
 .PARAMETER FactorioExe
-    Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then to the Steam install on this machine.
+    Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
 .PARAMETER With
     Bundled mods to enable, e.g. -With space-age. Dependencies are pulled in automatically --
@@ -55,69 +56,17 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. "$PSScriptRoot/factorio-lib.ps1"
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $ourMods  = @('RealisticFusionCore', 'RealisticFusion')
 
-if (-not $FactorioExe) { $FactorioExe = $env:FACTORIO_EXE }
-if (-not $FactorioExe) { $FactorioExe = 'D:\SteamLibrary\steamapps\common\Factorio\bin\x64\Factorio.exe' }
-if (-not (Test-Path $FactorioExe)) {
-    throw "Factorio.exe not found at '$FactorioExe'. Pass -FactorioExe or set `$env:FACTORIO_EXE."
+$FactorioExe = Resolve-FactorioExe -Path $FactorioExe
+$bundled     = Get-BundledMods -FactorioExe $FactorioExe
+try {
+    $enabledBundled = Resolve-BundledSelection -Requested $With -Bundled $bundled
 }
-
-# <install>\bin\x64\Factorio.exe -> <install>\data
-$dataDir = Join-Path (Split-Path (Split-Path (Split-Path $FactorioExe -Parent) -Parent) -Parent) 'data'
-if (-not (Test-Path $dataDir)) { throw "Factorio data directory not found at '$dataDir'." }
-
-# Discover the toggleable bundled mods rather than hardcoding a list that can go stale.
-# base and core are not optional and are never listed.
-$bundledInfo = @{}
-Get-ChildItem -Path $dataDir -Directory |
-    Where-Object { $_.Name -notin @('base', 'core') -and (Test-Path (Join-Path $_.FullName 'info.json')) } |
-    ForEach-Object {
-        $bundledInfo[$_.Name] = (Get-Content (Join-Path $_.FullName 'info.json') -Raw | ConvertFrom-Json)
-    }
-
-$unknown = $With | Where-Object { $_ -notin $bundledInfo.Keys }
-if ($unknown) {
-    throw ("-With names no bundled mod: {0}. Available: {1}." -f ($unknown -join ', '), (($bundledInfo.Keys | Sort-Object) -join ', '))
-}
-
-# Canonicalise casing before anything downstream compares names. PowerShell's -notin and its
-# hashtables are case-insensitive, but HashSet[string] below is ordinal, so "-With Space-Age"
-# would pass validation and then be written enabled=false while the header printed it as enabled
-# -- a base-only run reported as an expansion pass, exactly what the validation above exists to
-# prevent.
-# Where-Object drops the single $null that piping an empty collection would otherwise yield, and
-# @() keeps the result an array rather than a scalar or $null.
-$With = @($With |
-    Where-Object { $_ } |
-    ForEach-Object { $name = $_; $bundledInfo.Keys | Where-Object { $_ -eq $name } | Select-Object -First 1 })
-
-# Enabling space-age without elevated-rails and quality is a missing-dependency error that looks
-# like our mods failing, so resolve the closure over bundled mods before writing the list.
-$enable = [System.Collections.Generic.HashSet[string]]::new()
-$queue  = [System.Collections.Queue]::new()
-$With | ForEach-Object { $queue.Enqueue($_) }
-while ($queue.Count -gt 0) {
-    $m = $queue.Dequeue()
-    if (-not $enable.Add($m)) { continue }
-    foreach ($dep in @($bundledInfo[$m].dependencies)) {
-        # Skip optional ("?"), hidden-optional ("(?)") and incompatible ("!") only. "~" is a
-        # REQUIRED dependency that merely does not affect load order, so it must be followed --
-        # skipping it would drop a real dependency and produce a missing-dependency failure that
-        # reads as this repo's mods being broken.
-        if ($dep -match '^\s*[?!(]') { continue }
-        $dep = $dep -replace '^\s*~\s*', ''
-        $depName = ($dep -replace '^\s*', '') -split '\s+' | Select-Object -First 1
-        # Canonicalise here too, not just for -With: a dependency string may spell the mod with
-        # different casing from its directory. ContainsKey is case-insensitive but $enable is an
-        # ordinal HashSet, so the unconverted name would be added and then never matched when the
-        # mod-list is written -- disabled in the file, reported as enabled in the banner.
-        $canonical = $bundledInfo.Keys | Where-Object { $_ -eq $depName } | Select-Object -First 1
-        if ($canonical) { $queue.Enqueue($canonical) }
-    }
-}
+catch { throw "-With $($_.Exception.Message)" }
 
 $temp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-loadcheck-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 $modDir = Join-Path $temp 'mods'
@@ -126,14 +75,9 @@ New-Item -ItemType Directory -Path $modDir -Force | Out-Null
 function Invoke-Factorio {
     param([string] $Label, [string[]] $Enabled, [string] $Tag)
 
-    $entries = @(@{ name = 'base'; enabled = $true })
-    foreach ($m in $bundledInfo.Keys) { $entries += @{ name = $m; enabled = [bool]$enable.Contains($m) } }
-    foreach ($m in $Enabled)          { $entries += @{ name = $m; enabled = $true } }
-    @{ mods = $entries } | ConvertTo-Json -Depth 4 |
-        Set-Content -Path (Join-Path $modDir 'mod-list.json') -Encoding utf8
+    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled -Mods $Enabled
 
-    # Report what is actually enabled, not what was asked for.
-    $bundledOn = if ($enable.Count) { (($enable | Sort-Object) -join ', ') } else { 'none (base 2.0 only)' }
+    $bundledOn = if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.0 only)' }
     Write-Host "$Label`: $($Enabled -join ', ')  |  bundled enabled: $bundledOn"
 
     $save    = Join-Path $temp "$Tag.zip"
@@ -169,12 +113,7 @@ function Write-Tail {
 }
 
 try {
-    foreach ($m in $ourMods) {
-        $src = Join-Path $repoRoot $m
-        if (-not (Test-Path $src)) { throw "Mod directory not found in repo: $src" }
-        # Junction rather than copy: no admin needed, no duplication, edits are picked up live.
-        New-Item -ItemType Junction -Path (Join-Path $modDir $m) -Target $src | Out-Null
-    }
+    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
 
     if ($SelfTest) {
         # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
@@ -235,9 +174,7 @@ try {
 finally {
     # Junctions always go, even with -KeepTemp: leaving links to the repo in %TEMP% hands a
     # delete-through-the-link hazard to whatever cleans it up later.
-    Get-ChildItem -Path $modDir -Directory -ErrorAction SilentlyContinue |
-        Where-Object { $_.LinkType -eq 'Junction' } |
-        ForEach-Object { [IO.Directory]::Delete($_.FullName) }
+    Remove-ModJunctions -ModDirectory $modDir
 
     if ($KeepTemp) {
         Write-Host "temp kept at: $temp"
