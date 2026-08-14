@@ -63,6 +63,18 @@ circuit signal.
 **Tick cadence** — how often the simulation steps. Deliberately separate from the rate computation, so
 throttling is a configuration change. See ADR 0005.
 
+**Per reactor** — the unit of simulation. One reactor entity is one simulated object, with its own state
+in `storage` and its own circuit signals. Not "per network": v1 has no network concept and no
+connectivity tracking. See [ADR 0011](docs/adr/0011-per-reactor-simulation-fluid-coupled.md).
+
+**Fluid-coupled** — how connected reactors interact: through the engine's own fluid system, sharing one
+plasma pool at one mixed temperature, rather than through anything this mod computes. Reserve the word
+for that mechanism; do not call it a network.
+
+**Network** — the *redesign's* model, in which reactors and heaters joined by confinement pipe were one
+simulated object sharing a mixed plasma. Named here only so the term is recognised when it appears in
+predecessor code or research notes. **v1 has no networks.**
+
 ## Predecessors
 
 Named precisely, because three exist and conflating them has already caused one factual error in this
