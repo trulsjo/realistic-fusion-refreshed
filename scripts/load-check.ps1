@@ -110,7 +110,12 @@ while ($queue.Count -gt 0) {
         if ($dep -match '^\s*[?!(]') { continue }
         $dep = $dep -replace '^\s*~\s*', ''
         $depName = ($dep -replace '^\s*', '') -split '\s+' | Select-Object -First 1
-        if ($bundledInfo.ContainsKey($depName)) { $queue.Enqueue($depName) }
+        # Canonicalise here too, not just for -With: a dependency string may spell the mod with
+        # different casing from its directory. ContainsKey is case-insensitive but $enable is an
+        # ordinal HashSet, so the unconverted name would be added and then never matched when the
+        # mod-list is written -- disabled in the file, reported as enabled in the banner.
+        $canonical = $bundledInfo.Keys | Where-Object { $_ -eq $depName } | Select-Object -First 1
+        if ($canonical) { $queue.Enqueue($canonical) }
     }
 }
 

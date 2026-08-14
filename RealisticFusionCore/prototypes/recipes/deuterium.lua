@@ -19,10 +19,10 @@ data:extend({
     name = "rf-deuterium-extractor",
     enabled = false,
     energy_required = 8,
-    -- No concrete: it is unlocked by the "concrete" technology, whose prerequisites
-    -- (advanced-material-processing, automation-2) are outside the closure of this recipe's own
-    -- unlocking technology. A player rushing chemical science could unlock a machine they cannot
-    -- build.
+    -- No concrete: it is unlocked by the "concrete" technology, which requires
+    -- advanced-material-processing -- outside the closure of this recipe's own unlocking
+    -- technology. (automation-2 is inside it, via fluid-handling.) A player rushing chemical
+    -- science could otherwise unlock a machine they cannot build.
     ingredients = {
       { type = "item", name = "steel-plate",        amount = 20 },
       { type = "item", name = "advanced-circuit",   amount = 10 },
@@ -70,21 +70,28 @@ data:extend({
     energy_required = 4,
     ingredients = {
       { type = "fluid", name = "water",               amount = 100 },
-      { type = "fluid", name = "rf-hydrogen-sulfide", amount = 50 },
+      -- ignored_by_stats on both sides: the catalyst is not net-produced or net-consumed, so
+      -- counting it would inflate both columns of the production graph by the whole recirculating
+      -- volume and hide a genuine leak. Vanilla marks kovarex exactly this way.
+      { type = "fluid", name = "rf-hydrogen-sulfide", amount = 50, ignored_by_stats = 50 },
     },
     results = {
       { type = "fluid", name = "rf-heavy-water",       amount = 10 },
       { type = "fluid", name = "rf-depleted-water",    amount = 90 },
-      { type = "fluid", name = "rf-hydrogen-sulfide",  amount = 50 },
+      -- ignored_by_productivity as well: allow_productivity is false today, but if balancing
+      -- ever flips it, productivity modules would otherwise create catalyst out of nothing.
+      { type = "fluid", name = "rf-hydrogen-sulfide",  amount = 50,
+        ignored_by_stats = 50, ignored_by_productivity = 50 },
     },
     main_product = "rf-heavy-water",
   },
 
-  -- The depleted stream has to go somewhere. Base 2.0 has no fluid void and no vanilla recipe
-  -- can consume a modded fluid, so without this the enrichment machine fills its output box after
-  -- a single craft and stalls forever -- taking the hydrogen sulfide charge with it, since the
-  -- catalyst is consumed at craft start and only returned on completion. The chain would deadlock
-  -- before producing any deuterium at all.
+  -- The depleted stream has to go somewhere. Base 2.0 has no fluid void and no vanilla recipe can
+  -- consume a modded fluid, so without this the enrichment machine fills its output box after a
+  -- single craft and stalls. The stall lifts if the box is drained, but there is nowhere to drain
+  -- it to except more tanks, so in practice the chain backs up before producing meaningful
+  -- deuterium -- and each stall strands the hydrogen sulfide charge, which is taken at craft start
+  -- and only returned on completion.
   --
   -- Depleted water is still water, just stripped of deuterium, so returning it costs time and
   -- energy rather than material. This is not an infinite water source: the enrichment step takes

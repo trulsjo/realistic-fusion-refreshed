@@ -31,4 +31,10 @@ data:extend({
   fluid("rf-depleted-water", { r = 0.46, g = 0.46, b = 0.42 }, "rf-d[depleted-water]"),
   -- What the entire power side of the mod consumes.
   fluid("rf-deuterium", { r = 0.40, g = 0.92, b = 1.00 }, "rf-e[deuterium]"),
+
+  -- The lithium branch. Brine is *produced* from water, never mined (CONTEXT.md): the route
+  -- deliberately involves no map resource, so the mod behaves identically on an existing save and
+  -- a fresh one. A new ore or fluid deposit would only generate in unexplored chunks.
+  fluid("rf-brine", { r = 0.62, g = 0.66, b = 0.45 }, "rf-f[brine]"),
+  fluid("rf-lithium-solution", { r = 0.85, g = 0.74, b = 0.86 }, "rf-g[lithium-solution]"),
 })
