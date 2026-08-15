@@ -11,8 +11,8 @@
 
     It does NOT check locale coverage. Factorio's data stage loads a prototype with no locale
     entry without complaint; the omission only shows in game as "Unknown key". ADR 0010 singles
-    that failure out, so it needs its own check and does not come free with a pass here.
-    (--dump-prototype-locale resolves names through the locale system and is the tool for it.)
+    that failure out, so it has its own check: scripts/locale-check.ps1. A pass here says nothing
+    about it.
 
     The player's own mod directory is never touched: the repo's mods are junctioned into a
     temporary directory and a mod-list.json is written there.
