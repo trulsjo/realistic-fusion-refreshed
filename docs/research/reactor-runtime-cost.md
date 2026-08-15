@@ -168,12 +168,16 @@ spike rather than spread out. Staggering reactors across buckets would fix that 
 done: reactors sharing a fluid segment have to step together, or one reads a pool its neighbour
 has already moved this tick.
 
-**There is a ceiling on the interval that the test cannot see**, because it is a fact about the
-prototype rather than about the physics. A step draws the whole interval's heating out of the
-reactor's electric buffer in one go, so 50 MW against a 10 MJ buffer runs out past twelve ticks
+**There is a ceiling on the interval that the physics test cannot see**, because it is a fact
+about the prototype rather than about the plasma. A step draws the whole interval's heating out of
+the reactor's electric buffer in one go, so 50 MW against a 10 MJ buffer runs out past twelve ticks
 and the reactor is starved every step — silently, because being underpowered is a state it is
-meant to have. Raising the interval past 12 means raising `buffer_capacity` with it, which is
-noted at both ends.
+meant to have.
+
+`control.lua`'s `check_cadence()` enforces it at `on_init`, which is the one place both numbers are
+visible. Raising the interval past 12 without raising `buffer_capacity` now fails the load-check
+rather than shipping a quietly crippled reactor. Verified in both directions: the check passes at
+six ticks and fails at twenty, naming both numbers and the two files that can resolve it.
 
 ## A finding about fluid boxes, discovered by getting it wrong
 
