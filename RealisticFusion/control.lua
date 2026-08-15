@@ -151,12 +151,37 @@ local function check_cadence()
   end
 end
 
-script.on_init(function()
+--- Refuse to run a simulation that can compute a temperature the fluid cannot hold.
+--
+-- The same shape of trap as check_cadence, one file further out. apply() writes the simulated
+-- temperature straight into the fluidbox, and Factorio rejects a temperature outside the fluid's
+-- declared range -- so reactor-logic's clamps and rf-d-d-plasma's prototype have to agree, and
+-- nothing but this ties them together. Edit max_temperature alone to make room for a later tier
+-- and the mod loads perfectly, then throws on a live save the first time a reactor gets hot.
+local function check_plasma_bounds()
+  local fluid = prototypes.fluid["rf-d-d-plasma"]
+  if logic.reactor.min_temperature_c < fluid.default_temperature
+    or logic.reactor.max_temperature_c > fluid.max_temperature then
+    error(string.format(
+      "rf-reactor: the simulation clamps temperature to [%.6g, %.6g] C but rf-d-d-plasma accepts " ..
+      "[%.6g, %.6g], so a reactor would write a temperature the fluid cannot hold. Reconcile " ..
+      "scripts/reactor-logic.lua with prototypes/fluids.lua.",
+      logic.reactor.min_temperature_c, logic.reactor.max_temperature_c,
+      fluid.default_temperature, fluid.max_temperature))
+  end
+end
+
+local function check_prototypes()
   check_cadence()
+  check_plasma_bounds()
+end
+
+script.on_init(function()
+  check_prototypes()
   rescan()
 end)
 script.on_configuration_changed(function()
-  check_cadence()
+  check_prototypes()
   rescan()
 end)
 
@@ -174,5 +199,16 @@ for _, event in pairs({
 }) do
   script.on_event(event, function(e) register(e.entity) end, built_filter)
 end
+
+-- Cloning cannot ride that loop, for two reasons. It names its entity "destination" rather than
+-- "entity", so the handler above would register nil; and it is the one way a reactor can appear
+-- that raises neither a build event nor script_raised_built -- the map editor's clone tool, and
+-- Space Age's platform cloning, which ADR 0003 says must work if present. Without this a cloned
+-- reactor sits inert, accepting plasma and producing nothing, until some unrelated mod's version
+-- bump triggers on_configuration_changed and the rescan picks it up.
+--
+-- Unfiltered on purpose: filter semantics on a two-entity event are not worth assuming when
+-- register() already checks the name, and cloning is rare enough that the cost of looking is nil.
+script.on_event(defines.events.on_entity_cloned, function(e) register(e.destination) end)
 
 script.on_nth_tick(UPDATE_INTERVAL, update)
