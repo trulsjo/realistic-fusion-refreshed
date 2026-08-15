@@ -95,6 +95,8 @@ function Invoke-Factorio {
         what a failure means, because the callers disagree -- load-check treats a non-zero exit as
         the answer it went looking for, bench-reactors treats it as the run being over.
 
+        Runs in its own write-data directory, so it works while the game is open -- see below.
+
         Factorio.exe is a GUI-subsystem binary: the call operator does not wait for it and leaves
         $LASTEXITCODE unset, so the exit code has to come from the process object. That rules out
         native invocation, and so requires the quoting that ConvertTo-NativeArgument does.  #>
@@ -109,7 +111,28 @@ function Invoke-Factorio {
     $outFile = Join-Path $OutputDirectory "$Tag-stdout.txt"
     $errFile = Join-Path $OutputDirectory "$Tag-stderr.txt"
 
-    $line = (@('--mod-directory', $ModDirectory) + $Arguments |
+    # Factorio takes an exclusive lock on its write-data directory, so any headless run fails
+    # outright while the game is open. That matters more than it sounds: the failure text is
+    # "Is another instance already running?" buried in the captured stdout, and to a caller
+    # checking only the exit code it is indistinguishable from a rejected prototype. It cost two
+    # wrong conclusions in a row before anyone noticed the game was simply running.
+    #
+    # So every run gets a write-data directory of its own, inside the caller's temp directory and
+    # thrown away with it. --mod-directory still wins for mods; this only moves the lock, the
+    # player-data and the log.
+    $configPath = Join-Path $OutputDirectory 'factorio-config.ini'
+    if (-not (Test-Path $configPath)) {
+        $writeData = Join-Path $OutputDirectory 'write-data'
+        New-Item -ItemType Directory -Path $writeData -Force | Out-Null
+        # read-data is the stock default; only write-data moves.
+        @"
+[path]
+read-data=__PATH__executable__/../../data
+write-data=$writeData
+"@ | Set-Content -Path $configPath -Encoding utf8
+    }
+
+    $line = (@('--config', $configPath, '--mod-directory', $ModDirectory) + $Arguments |
         ForEach-Object { ConvertTo-NativeArgument $_ }) -join ' '
 
     $proc = Start-Process -FilePath $FactorioExe -ArgumentList $line `
