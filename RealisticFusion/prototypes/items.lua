@@ -20,7 +20,8 @@ data:extend({
     "energy", "rf-a[heater]", 20),
   item("rf-reactor", "__base__/graphics/icons/nuclear-reactor.png", PLASMA_TINT,
     "energy", "rf-b[reactor]", 10),
-  item("rf-heat-exchanger", "__base__/graphics/icons/heat-exchanger.png", ENERGY_TINT,
+  -- heat-boiler, not heat-exchanger: the entity was renamed in vanilla and the icon file was not.
+  item("rf-heat-exchanger", "__base__/graphics/icons/heat-boiler.png", ENERGY_TINT,
     "energy", "rf-c[heat-exchanger]", 20),
   item("rf-pipe", "__base__/graphics/icons/pipe.png", PLASMA_TINT,
     "energy-pipe-distribution", "rf-a[pipe]", 100),

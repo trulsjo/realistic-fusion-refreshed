@@ -23,6 +23,51 @@ function Resolve-FactorioExe {
     return (Resolve-Path $Path).Path
 }
 
+function Get-FactorioDataDirectory {
+    <#  <install>\bin\x64\Factorio.exe -> <install>\data, where base and core live.  #>
+    param([Parameter(Mandatory)] [string] $FactorioExe)
+
+    $dataDir = Join-Path (Split-Path (Split-Path (Split-Path $FactorioExe -Parent) -Parent) -Parent) 'data'
+    if (-not (Test-Path $dataDir)) { throw "Factorio data directory not found at '$dataDir'." }
+    return $dataDir
+}
+
+function Find-MissingVanillaAssets {
+    <#  Every __base__ / __core__ file a mod's Lua names, that is not there.
+
+        This exists because Factorio will not tell you. A headless run loads no sprites, so
+        --create validates the prototype that names an icon without ever opening the file, and
+        exits 0. The player's game opens it, fails, and refuses to start -- "Failed to load mods:
+        File __base__/graphics/icons/heat-exchanger.png not found", which is how this was found,
+        by hand, after every automated check had passed.
+
+        Literal paths only. A path built by concatenation at data-stage time is invisible here,
+        and this repo has none; if one ever appears, this check quietly stops covering it.  #>
+    param(
+        [Parameter(Mandatory)] [string]   $DataDir,
+        [Parameter(Mandatory)] [string[]] $SourceDirectories
+    )
+
+    # __base__/graphics/icons/pipe.png -> base/graphics/icons/pipe.png under the data directory.
+    $pattern = '__(?<mod>base|core)__/(?<rel>[A-Za-z0-9/_.-]+\.(?:png|ogg))'
+    $missing = @()
+
+    foreach ($dir in $SourceDirectories) {
+        if (-not (Test-Path $dir)) { continue }
+        foreach ($file in Get-ChildItem -Path $dir -Recurse -Filter *.lua) {
+            $text = Get-Content -LiteralPath $file.FullName -Raw
+            foreach ($match in [regex]::Matches($text, $pattern)) {
+                $onDisk = Join-Path $DataDir (Join-Path $match.Groups['mod'].Value $match.Groups['rel'].Value)
+                if (-not (Test-Path -LiteralPath $onDisk)) {
+                    $missing += [pscustomobject]@{ Reference = $match.Value; Source = $file.FullName }
+                }
+            }
+        }
+    }
+
+    return @($missing | Sort-Object Reference, Source -Unique)
+}
+
 function ConvertTo-NativeArgument {
     <#  Quote one argument for a native Windows command line.
 
@@ -122,9 +167,7 @@ function Get-BundledMods {
         Returns a hashtable of mod name -> parsed info.json.  #>
     param([Parameter(Mandatory)] [string] $FactorioExe)
 
-    # <install>\bin\x64\Factorio.exe -> <install>\data
-    $dataDir = Join-Path (Split-Path (Split-Path (Split-Path $FactorioExe -Parent) -Parent) -Parent) 'data'
-    if (-not (Test-Path $dataDir)) { throw "Factorio data directory not found at '$dataDir'." }
+    $dataDir = Get-FactorioDataDirectory -FactorioExe $FactorioExe
 
     $bundled = @{}
     Get-ChildItem -Path $dataDir -Directory |

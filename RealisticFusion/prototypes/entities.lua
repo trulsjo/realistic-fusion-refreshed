@@ -20,7 +20,8 @@ end
 
 local NUCLEAR_REACTOR = "__base__/graphics/icons/nuclear-reactor.png"
 local CHEMICAL_PLANT = "__base__/graphics/icons/chemical-plant.png"
-local HEAT_EXCHANGER = "__base__/graphics/icons/heat-exchanger.png"
+-- heat-boiler, not heat-exchanger: the entity was renamed and the icon file was not.
+local HEAT_EXCHANGER = "__base__/graphics/icons/heat-boiler.png"
 local PIPE           = "__base__/graphics/icons/pipe.png"
 local PIPE_TO_GROUND = "__base__/graphics/icons/pipe-to-ground.png"
 

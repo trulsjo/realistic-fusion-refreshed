@@ -97,6 +97,21 @@ function Invoke-LoadCheck {
 }
 
 try {
+    # Before Factorio runs at all, because Factorio will not catch this. A headless run loads no
+    # sprites, so a prototype naming an icon that does not exist validates and exits 0 -- and the
+    # player's game then refuses to start on it. That happened: a heat-exchanger icon whose file
+    # had been renamed in vanilla passed every check here and broke the game on first launch.
+    $missingAssets = Find-MissingVanillaAssets -DataDir (Get-FactorioDataDirectory -FactorioExe $FactorioExe) `
+        -SourceDirectories ($ourMods | ForEach-Object { Join-Path $repoRoot $_ })
+    if ($missingAssets) {
+        Write-Host "FAILED - $($missingAssets.Count) vanilla asset(s) referenced but not present:"
+        foreach ($m in $missingAssets) {
+            Write-Host "    $($m.Reference)"
+            Write-Host "      named in $([IO.Path]::GetRelativePath($repoRoot, $m.Source))"
+        }
+        exit 1
+    }
+
     New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
 
     if ($SelfTest) {
