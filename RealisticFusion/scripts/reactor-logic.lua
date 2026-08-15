@@ -53,8 +53,13 @@ M.fuels = {
 -- against the same numbers the game does, and passed into step() rather than read from it so a
 -- later tier can be a different reactor without a second copy of the physics.
 --
--- These settle at roughly 6e8 K, Q about 1.4, and around 90 MW of thermal output against 50 MW of
--- heating. Provisional, like every other balance number in this repository.
+-- Left running with the plasma kept full, these reach about 8.8e8 C, Q 2.1, and 133 MW of thermal
+-- output against 50 MW of heating. That is the equilibrium, and it takes minutes to get there
+-- rather than seconds: fusion self-heating is positive feedback, so the plasma is still climbing
+-- long after the thirty-second confinement time would suggest it had settled. Two minutes in it
+-- is at 6.2e8 C and Q 1.4, which is what a player who just built one sees.
+--
+-- Provisional, like every other balance number in this repository.
 M.reactor = {
   -- Plasma volume. ITER is about 800 m^3.
   volume_m3 = 1000,

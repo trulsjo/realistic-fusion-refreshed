@@ -1,0 +1,223 @@
+# What a simulated reactor costs — the first measurement
+
+The first UPS reading on v1's reactor simulation, taken as soon as one existed
+([#24](https://github.com/trulsjo/realistic-fusion-refreshed/issues/24)).
+
+**This is a smoke test, not the discharge of [ADR 0005](../adr/0005-real-time-fusion-simulation.md)'s
+obligation.** That one is the measurement against the full reaction set on a real factory
+(#34). The point of taking a reading now is that a disaster found here is found eleven tickets
+before it would otherwise surface. Nothing here says the mod is fast on a megabase; it says the
+simulation is not the thing that would make it slow.
+
+It also settles, for this project, the only prior number that existed: the redesign author's
+**~45 ms per reactor**, examined in [`redesign-runtime-cost.md`](redesign-runtime-cost.md). v1
+measures **about 9 µs** per reactor before throttling — five thousand times less — and 1.4 µs
+after. That note predicted something like this on the grounds that v1 has no GUI in the per-tick
+path; the prediction held.
+
+## Method
+
+`scripts/bench-reactors.ps1`, which exists so that #34 can repeat this rather than invent its own.
+Run it with no arguments for the throttled table; the unthrottled one needs `UPDATE_INTERVAL` set
+back to 1 first, and the pooled figures need `-Pooled`.
+
+It builds a rig of *n* reactors in a headless save and benchmarks it, for several *n*. Three things
+make the numbers mean something:
+
+1. **`--benchmark-verbose` reports per-tick timings by category, in nanoseconds.** `scriptUpdate`
+   is the control stage — every mod's Lua and nothing else — so our cost is isolated from the
+   engine's without needing a baseline at all. `luaGarbageIncremental` is reported beside it
+   because collecting the tables the step allocates is charged to its own stage, and would
+   otherwise hide. `fluidFlowUpdate` because the reactor is a boiler on a fluid segment, so part
+   of what this mod costs is charged to the engine rather than to us.
+2. **Every run builds the same map.** The substation grid, the power source, the flattened ground
+   and the generated chunks are sized for the largest *n* and built identically at every *n*,
+   including *n* = 0. Only the reactors differ, so a difference between runs is reactors.
+3. **Mean and median are both reported.** The mean is the cost — over thousands of ticks it is
+   what UPS spends. The median is what a tick feels like, and is the honest description of
+   per-tick work, because a run carries spikes an order of magnitude above the typical tick. They
+   separate the moment the mod stops updating every tick, which is why per-reactor cost is taken
+   from the mean.
+
+The reactors are held at 6×10⁸ °C and full by an infinity pipe, which is what a reactor whose
+heater keeps up looks like. This matters more than it sounds: an **empty** reactor returns early
+from the simulation step, and a rig that let its reactors run dry would measure the early return.
+They also sit on a real electric network — not for that reason, since an unpowered reactor runs
+the whole step with its heating clamped to zero and costs exactly the same, but because a reactor
+that cannot hold its temperature is not the thing worth measuring. The save is written the moment the rig is built, so the start of each run is spent filling:
+about 11 ticks for an isolated reactor, and around 220 of the 1000 for a pooled row, whose segment
+is twenty times larger and fed from one end. Cost is barely affected — the step runs on any plasma
+at all, not only on full plasma — but a fifth of each pooled run is below full density, which is
+worth knowing before reading anything into pooled-versus-isolated at the margin.
+
+The script refuses to report a number unless the rig's own log says every reactor was present and
+hot when it last checked. That guard exists because none of the ways this rig can go wrong — a
+reactor that never got power, one that ran dry, one the mod never registered — crashes anything.
+They just quietly produce a smaller number.
+
+**Machine and versions.** Factorio 2.0.77 (win64, steam), base only — no Space Age, no Quality.
+Intel Core i7-9850H (6 cores, 12 threads, 2.6 GHz base), Windows 11. A laptop part from 2019, so
+these are not fast-machine numbers.
+
+## Results
+
+1000 ticks × 3 runs per count — 3000 tick samples each — in microseconds of `scriptUpdate` per
+tick, **mean, with the baseline (n = 0) subtracted**. Mean throughout: mixing it with the median
+manufactures precision, and the two differ by about 10% here.
+
+**Before throttling** — one simulation step per tick:
+
+| reactors | scriptUpdate | per reactor |
+|---:|---:|---:|
+| 1 | 17.9 | 17.9 |
+| 10 | 95.2 | 9.5 |
+| 50 | 456.2 | 9.1 |
+| 200 | 1796.8 | **9.0** |
+
+Two earlier sweeps of the same rig gave 9.3 and 11.0 µs at n = 200. **Run-to-run variation is
+around 20%**, so the working figure is **about 9 to 11 µs per reactor per tick**, and no digit
+after that is real.
+
+Scaling is linear from 10 reactors up. The much higher figure at n = 1 is the fixed cost of the
+handler itself — one `on_nth_tick` call, one `pairs` loop — divided by one reactor, not something
+a reactor costs.
+
+At 200 reactors that is **1.8 ms per tick, about 11% of the 16.67 ms budget**, and 86% of the
+entire game update (1.80 ms of 2.09 ms) — a rig has nothing else in it to compete. 200 reactors is
+around 18 GW, which is megabase scale; a large but ordinary fusion build of 20 to 50 reactors pays
+0.2 to 0.5 ms.
+
+**Where the time goes.** 9 µs is one to two orders of magnitude more than the arithmetic in
+`reactor-logic.lua` costs. The step crosses the Lua↔C++ boundary about eight times per reactor —
+`fluidbox[1]` (which allocates a table), `energy` read and write, `fluidbox[2]`, `get_capacity`,
+the two box writes — and that is what is being measured. **The physics is not the cost; the API is.**
+Not investigated further here, and it is where a later optimisation would go.
+
+**After throttling** to one step every six ticks:
+
+| reactors | scriptUpdate | per reactor | share of a tick |
+|---:|---:|---:|---:|
+| 1 | 3.5 | 3.5 | — |
+| 10 | 19.3 | 1.9 | 0.12% |
+| 50 | 76.7 | 1.5 | 0.46% |
+| 200 | 278.1 | **1.4** | **1.7%** |
+
+9.0 µs against 1.4 is a factor of 6.5, where the arithmetic says it should be exactly 6 — the step
+does the same work, six times less often. The excess is inside the 20% run-to-run noise.
+
+**Sharing a fluid segment is free.** Reactors plumbed together on one run of `rf-pipe` — the way
+[ADR 0011](../adr/0011-per-reactor-simulation-fluid-coupled.md) intends them to be built — cost
+**8.94 µs each at n = 200 against 8.98 isolated**, measured back to back. That is a 0.4%
+difference against a 20% noise floor: the same number.
+
+The engine-side half is small in absolute terms and does not care either. `fluidFlowUpdate` at
+n = 200 was 19.1 µs pooled and 18.6 µs isolated — around a tenth of a percent of a tick — and the
+pooled rig carries **930 `rf-pipe` entities across 14 shared segments** where the isolated rig has
+none. (The two rigs are not the same population: the isolated one needs an infinity pipe per
+reactor to stay full, the pooled one needs 14, one per segment. So this is two absolute figures
+that are both negligible, not a controlled comparison. The controlled comparison is the
+`scriptUpdate` figure above, which infinity pipes cost nothing towards.)
+
+**ADR 0011's central bet, that delegating sharing to the engine's fluid system costs nothing,
+holds at 200 reactors on 14 shared segments.** It does not go superlinear.
+
+**Garbage collection is not a problem.** The two-pass update allocates three tables per reactor
+per tick, which was the obvious suspect. `luaGarbageIncremental` comes to 0.09 µs per reactor by
+median and 0.18 by mean — one or two percent of the step.
+
+**The instrument perturbed the measurement, and the first set of numbers was wrong because of it.**
+The rig logs what the reactors are doing so the run can be trusted, and that log walked every
+reactor. It costs about what the simulation step costs, it is charged to `scriptUpdate` like any
+other Lua, it scales with *n*, and the *n* = 0 baseline has no reactors to subtract it against. At
+one report every 100 ticks it inflated the throttled figure by 17% — 1.67 µs where the true figure
+is 1.39. Reporting is now rare enough to sit under a percent, and the same trap is waiting for
+anyone who adds instrumentation to #34's measurement.
+
+## What changed as a result
+
+`control.lua`'s `UPDATE_INTERVAL` went from 1 to **6**, ten steps a second.
+
+**Not because 11% of a tick was unaffordable.** Because five of every six steps bought nothing:
+the plasma's energy confinement time is 30 seconds, and stepping a 30-second process every 16 ms
+resolves nothing that a tenth of a second misses. **Equilibrium temperature moves 0.10% between
+the two cadences**, and 0.60% at one step per thirty ticks.
+
+That figure has to be taken at equilibrium, and equilibrium is much further out than the
+confinement time suggests: fusion self-heating is positive feedback, so the model is still
+climbing after six confinement times. Measured at a 180-second horizon the divergence looks like
+0.07%, which is the coarse steps being flattered by having had less time to accumulate error. The
+test now runs to 1200 seconds, where the answer stops moving.
+
+The in-game runs agree — 6.216×10⁸ °C throttled against 6.219×10⁸ unthrottled — but that is
+**weak** evidence and is not what the decision rests on. A benchmark run is 16.7 seconds and both
+runs are anchored at the temperature the rig's infinity pipe injects at, so they had neither the
+time nor the freedom to diverge. The claim rests on the Lua test.
+
+This is the mitigation ADR 0005 pre-authorised, and it is a cadence change only — one constant in
+`control.lua`. `reactor-logic.lua` and `reactivity.lua` are untouched, which is what ADR 0005 kept
+them isolated for.
+
+`tests/test-reactor-logic.lua` now asserts the property the change rests on: that the settled
+temperature and the energy produced per tick are the same at 1, 2, 6, 15 and 30 ticks per step, to
+within 1%. It is written against the whole range rather than against the interval currently
+chosen, so moving that constant again stays covered. Explicit Euler is only stable while the step
+stays well inside the system's time constant, and that is now checked rather than assumed.
+
+**The cost of coarsening** is that every reactor steps on the same tick, so the work arrives as a
+spike rather than spread out. Staggering reactors across buckets would fix that and must not be
+done: reactors sharing a fluid segment have to step together, or one reads a pool its neighbour
+has already moved this tick.
+
+**There is a ceiling on the interval that the test cannot see**, because it is a fact about the
+prototype rather than about the physics. A step draws the whole interval's heating out of the
+reactor's electric buffer in one go, so 50 MW against a 10 MJ buffer runs out past twelve ticks
+and the reactor is starved every step — silently, because being underpowered is a state it is
+meant to have. Raising the interval past 12 means raising `buffer_capacity` with it, which is
+noted at both ends.
+
+## A finding about fluid boxes, discovered by getting it wrong
+
+The rig originally seeded each reactor with 1000 units of plasma — exactly its fluid box volume —
+and every reactor settled at 526 within a second. It looked like the mod was losing half its fuel.
+
+It was not. An `input-output` fluid box shares its contents with the fluid segment it belongs to,
+in proportion to capacity, and a Lua write is clamped to the box before that sharing happens. So
+writing the box's full 1000 into a box-plus-segment that holds 1900 leaves everything at 52.6%,
+box included. Overfilling does not help; the clamp comes first. A second reactor that no Lua ever
+touched split identically, which is what settled it: this is the engine's model, not the mod's.
+
+Two things follow, and both outlive the rig:
+
+- **`LuaFluidBox[i].amount` is the box's share, not the segment's contents.** `get_capacity(i)`
+  likewise reports the segment. Anything that reasons about how full a reactor is — the tooltips
+  and circuit signals of #25, the containment rules of #26 — has to know which of the two it is
+  asking for.
+- **A reactor is only at full density when its whole segment is full**, so under-supply shows up
+  as reduced density rather than as an empty reactor, and reaction rate goes as the square of
+  density. That is arguably the right behaviour, and it is worth stating out loud because nobody
+  chose it.
+
+## What this does not close
+
+1. **ADR 0005's obligation stands.** This is a rig: no belts, no trains, no biters, one surface,
+   one reaction. #34 measures the full reaction set on a real factory.
+2. **Only one reaction exists.** D-D is the only fuel with an entry; a reactor interpolates one
+   dataset. #28 and #31 add more, and ADR 0010's per-reaction plasma fluids are the reason to
+   expect the per-reactor cost not to grow with them — expect, not know.
+3. **Nothing was measured with a player watching.** Rendering, GUI and the interface #25 will add
+   are all absent. The redesign's 45 ms is best explained by exactly that kind of cost, so v1's
+   interface work should be measured when it lands rather than assumed free.
+4. **The 20% run-to-run variation was not chased down.** Thermal throttling on a laptop part is
+   the obvious candidate. It is wide enough that a future comparison should re-run the baseline on
+   the same machine in the same session rather than compare against the numbers on this page.
+5. **The API cost per crossing was not isolated.** The claim that boundary crossings dominate the
+   step follows from the arithmetic being far too cheap to explain 9 µs; it was not measured
+   crossing by crossing.
+
+### Sources
+
+- `scripts/bench-reactors.ps1` — the measurement, including the rig it builds.
+- `tests/test-reactor-logic.lua` — the cadence-insensitivity check the throttling rests on.
+- Decisions this bears on: [ADR 0005](../adr/0005-real-time-fusion-simulation.md),
+  [ADR 0011](../adr/0011-per-reactor-simulation-fluid-coupled.md).
+- The prior claim it replaces: [`redesign-runtime-cost.md`](redesign-runtime-cost.md).

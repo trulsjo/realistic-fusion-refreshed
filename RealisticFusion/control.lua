@@ -7,9 +7,28 @@ local logic = require("scripts.reactor-logic")
 -- so be a change in one place. This is that place: nothing else in the mod knows how often the
 -- simulation steps, and the step itself is written in terms of elapsed seconds.
 --
--- It starts at every tick deliberately. ADR 0005 chose to begin at full fidelity and measure
--- (#24) rather than pre-emptively coarsen something nobody has ever measured.
-local UPDATE_INTERVAL = 1
+-- Ten steps a second, not sixty, on the strength of #24's measurement. Not because the per-tick
+-- cost was unaffordable -- nine to eleven microseconds per reactor, linear out to 200 of them, a
+-- ninth of a tick's budget at that size -- but because five of every six of those steps bought
+-- nothing. The plasma's confinement time is thirty seconds, and stepping a thirty-second process
+-- every sixteen milliseconds resolves nothing that a tenth of a second misses: equilibrium
+-- temperature moves 0.10% between the two cadences. tests/test-reactor-logic.lua asserts that
+-- insensitivity across the whole range from one tick to thirty, so changing this line stays safe.
+--
+-- The price of coarsening is that every reactor now steps on the same tick, so the work arrives
+-- as a spike rather than spread out. That is not an oversight to be fixed by staggering reactors
+-- across buckets: reactors sharing a fluid segment have to step together, for the reason
+-- update() gives below.
+--
+-- There is a ceiling on this number that the test cannot see, because it is a fact about the
+-- prototype rather than about the physics: a step draws heating_power_w * interval / 60 joules
+-- out of the reactor's buffer in one go, so at 50 MW against a 10 MJ buffer anything past twelve
+-- ticks asks for more than the buffer can hold and the reactor is starved every step -- silently,
+-- since being underpowered is a state it is meant to have. Raising this line past 12 means
+-- raising buffer_capacity in prototypes/entities.lua with it.
+--
+-- See docs/research/reactor-runtime-cost.md; scripts/bench-reactors.ps1 takes the measurement.
+local UPDATE_INTERVAL = 6
 
 --- Apply one reactor's step to the world.
 local function apply(entity, plasma, result)

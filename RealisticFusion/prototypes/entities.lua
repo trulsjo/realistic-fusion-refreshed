@@ -80,6 +80,9 @@ reactor.energy_source = {
   -- as a fixed consumption, which is what makes the reactor's draw follow the simulation. A few
   -- seconds of reserve so one slow tick does not read as a brownout; the network refills it at up
   -- to input_flow_limit.
+  --
+  -- It also sets a ceiling on control.lua's UPDATE_INTERVAL: one step spends the whole interval's
+  -- heating at once, so this buffer has to cover 50 MW for that long. 10 MJ buys twelve ticks.
   buffer_capacity = "10MJ",
   input_flow_limit = "60MW",
   drain = "0W",

@@ -35,13 +35,27 @@ local SPEC = L.reactor
 
 local TICK = 1 / 60
 local FULL = 1000        -- the reactor's input fluidbox volume
-local HOT = 6.0e8        -- roughly where the shipped spec settles, in celsius
+local HOT = 6.0e8        -- a fusing temperature, in celsius: two minutes into a cold start
 
---- Run to steady state with the reactor kept full, which is what a heater that keeps up does.
-local function settle(spec, seconds, available_j)
+-- How long to run before calling the answer settled. Twenty minutes of game time, which is far
+-- longer than it looks like it needs to be: the plasma's confinement time is thirty seconds, but
+-- fusion self-heating is positive feedback, so the effective time constant is minutes rather than
+-- seconds and the model is still climbing at six confinement times. Verified converged -- the same
+-- to five figures at forty minutes.
+local SETTLE_S = 1200
+
+--- Run with the reactor kept full, which is what a heater that keeps up does.
+--
+-- Whether the answer is steady depends on running for SETTLE_S; a shorter horizon returns a point
+-- on the way up, which reads like an equilibrium and is not one.
+--
+-- The step size is a parameter because the cadence check at the bottom varies it. Everything else
+-- leaves it at one tick.
+local function settle(spec, seconds, available_j, dt)
+  dt = dt or TICK
   local t_c, last = spec.min_temperature_c, nil
-  for _ = 1, math.floor(seconds * 60) do
-    last = L.step(spec, "rf-d-d-plasma", FULL, t_c, available_j, TICK)
+  for _ = 1, math.floor(seconds / dt) do
+    last = L.step(spec, "rf-d-d-plasma", FULL, t_c, available_j, dt)
     if not last then break end
     t_c = last.temperature_c
   end
@@ -133,19 +147,49 @@ near(hot_burn.q_factor, hot_burn.fusion_power_w * TICK / hot_burn.heating_used_j
 local COLD_SPEC = {}
 for k, v in pairs(SPEC) do COLD_SPEC[k] = v end
 COLD_SPEC.confinement_time_s = 4     -- too leaky to reach a fusing temperature
-local cold_t, cold_state = settle(COLD_SPEC, 120, math.huge)
+local cold_t, cold_state = settle(COLD_SPEC, SETTLE_S, math.huge)
 local cold_out_w = cold_state.energy_units * COLD_SPEC.energy_fluid_j_per_unit * 60
 check(cold_state.fusion_power_w < 0.05 * COLD_SPEC.heating_power_w, "the leaky reactor barely fuses",
   string.format("%.3g W at %.3g C", cold_state.fusion_power_w, cold_t))
 check(cold_out_w < COLD_SPEC.heating_power_w, "a reactor that does not fuse is a net loss",
   string.format("out %.3g W vs heating %.3g W", cold_out_w, COLD_SPEC.heating_power_w))
 
+-- ---------------------------------------------------------------- cadence is a free parameter
+--
+-- ADR 0005 calls the update cadence a tuning parameter and pre-authorises coarsening it. That is
+-- a claim about this file, and it only holds while the answer does not depend on how large the
+-- steps are: this is explicit Euler integration, and explicit Euler is only stable while the step
+-- stays well inside the system's time constant. #24 measured the cost, found sixty steps a second
+-- of a plasma with a thirty-second confinement time to be almost entirely waste, and throttled
+-- control.lua on the strength of this property -- so it is checked rather than assumed.
+--
+-- Deliberately not tied to whatever cadence control.lua currently uses. The property worth
+-- keeping is that the whole range is available, so a later change of interval is covered by a
+-- test that already exists rather than needing a new one.
+--
+-- Compared at equilibrium rather than partway up. A shorter horizon flatters the coarse steps --
+-- they have had less time to accumulate error -- and reports a smaller divergence than the one
+-- the game will actually run at.
+local fine_t, fine_state = settle(SPEC, SETTLE_S, math.huge)
+for _, ticks in ipairs({ 2, 6, 15, 30 }) do
+  local coarse_t, coarse_state = settle(SPEC, SETTLE_S, math.huge, ticks * TICK)
+  near(coarse_t, fine_t, 0.01,
+    string.format("one step per %d ticks settles where one step per tick does", ticks))
+  -- Per tick rather than per step, or the comparison would just be measuring the step size.
+  near(coarse_state.energy_units / ticks, fine_state.energy_units, 0.01,
+    string.format("one step per %d ticks produces the same energy per tick", ticks))
+end
+
 -- ---------------------------------------------------------------- the shipped balance
 --
 -- Not a physics check -- a check that the numbers the mod ships with produce a reactor worth
 -- building. These bounds are wide on purpose: they catch a constant edited by accident, not a
 -- deliberate rebalance, which should move them.
-local hot_t, hot_state = settle(SPEC, 120, math.huge)
+-- Reusing the equilibrium the cadence block already ran, which is also the point at which these
+-- numbers mean what they say: the shipped reactor ends up around 8.8e8 C, Q 2.1, 133 MW. It passes
+-- these bounds two minutes into a cold start as well, at 6.2e8 C and Q 1.4 -- which is why the
+-- horizon is stated rather than left implicit.
+local hot_t, hot_state = fine_t, fine_state
 local out_w = hot_state.energy_units * SPEC.energy_fluid_j_per_unit * 60
 check(hot_t > 1e8 and hot_t < 2e9, "the shipped reactor settles at a fusion temperature",
   string.format("%.3g C", hot_t))
