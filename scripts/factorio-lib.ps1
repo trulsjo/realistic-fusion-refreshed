@@ -23,6 +23,26 @@ function Resolve-FactorioExe {
     return (Resolve-Path $Path).Path
 }
 
+function ConvertTo-NativeArgument {
+    <#  Quote one argument for a native Windows command line.
+
+        Start-Process -ArgumentList joins an array with spaces and quotes nothing, so a path
+        containing a space arrives as several arguments. "C:\Users\Jo Smith\mods" reaches the exe
+        as "C:\Users\Jo" plus a stray "Smith\mods" -- which on this repo's scripts means Factorio
+        running against a mod directory that has none of the junctions in it. It does not go
+        silently wrong (load-check finds no save, bench-reactors finds no rig and throws), but
+        both scripts are unusable for anyone whose profile or install path contains a space, which
+        on Windows is most people.
+
+        Windows parses backslashes literally except where they precede a quote, so a run of them
+        at the end of the value has to be doubled before the closing quote or it escapes it.  #>
+    param([Parameter(Mandatory)] [AllowEmptyString()] [string] $Value)
+
+    $escaped = $Value -replace '(\\+)$', '$1$1'
+    $escaped = $escaped -replace '"', '\"'
+    return '"' + $escaped + '"'
+}
+
 function Invoke-Factorio {
     <#  Run Factorio headless against a mod directory, capturing both streams to files.
 
@@ -31,7 +51,8 @@ function Invoke-Factorio {
         the answer it went looking for, bench-reactors treats it as the run being over.
 
         Factorio.exe is a GUI-subsystem binary: the call operator does not wait for it and leaves
-        $LASTEXITCODE unset, so the exit code has to come from the process object.  #>
+        $LASTEXITCODE unset, so the exit code has to come from the process object. That rules out
+        native invocation, and so requires the quoting that ConvertTo-NativeArgument does.  #>
     param(
         [Parameter(Mandatory)] [string]   $FactorioExe,
         [Parameter(Mandatory)] [string]   $ModDirectory,
@@ -43,8 +64,10 @@ function Invoke-Factorio {
     $outFile = Join-Path $OutputDirectory "$Tag-stdout.txt"
     $errFile = Join-Path $OutputDirectory "$Tag-stderr.txt"
 
-    $proc = Start-Process -FilePath $FactorioExe `
-        -ArgumentList (@('--mod-directory', $ModDirectory) + $Arguments) `
+    $line = (@('--mod-directory', $ModDirectory) + $Arguments |
+        ForEach-Object { ConvertTo-NativeArgument $_ }) -join ' '
+
+    $proc = Start-Process -FilePath $FactorioExe -ArgumentList $line `
         -Wait -PassThru -NoNewWindow `
         -RedirectStandardOutput $outFile -RedirectStandardError $errFile
 
