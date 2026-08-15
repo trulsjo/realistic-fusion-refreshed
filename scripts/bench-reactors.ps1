@@ -219,6 +219,7 @@ script.on_init(function()
         local feed = surface.create_entity({
           name = "infinity-pipe", position = { col * SPACING - 1.5, row * SPACING + 1.5 }, force = force,
         })
+        if not feed then error(string.format("infinity-pipe refused at cell %d,%d", col, row)) end
         feed.set_infinity_pipe_filter({ name = "rf-d-d-plasma", percentage = 1, temperature = 6e8, mode = "at-least" })
       end
       storage.reactors[#storage.reactors + 1] = r
@@ -354,6 +355,21 @@ try {
         $state = Get-Content $benchOut | Select-String -Pattern 'BENCH-RIG tick=' | Select-Object -Last 1
         if ("$state" -notmatch "reactors=$count\b" -or "$state" -notmatch "hot=$count\b") {
             throw "rig at n=$count was not $count hot reactors when it last reported: '$state'"
+        }
+
+        # And the only one of the three that proves the simulation ran. The two above cannot:
+        # reactors= counts the rig's own table, which it fills itself whether or not
+        # RealisticFusion ever registered the entity, and hot= reads a temperature the infinity
+        # pipe pins at 6e8 regardless. So if registration silently stopped working -- an event
+        # dropped from the list, a filter the game stops accepting -- every reactor would still be
+        # present and hot, and this script would report a near-zero cost as a measurement instead
+        # of as a bug. rf-reactor-energy exists only because control.lua's apply() put it there.
+        if ($count -gt 0) {
+            $produced = if ("$state" -match 'output=([0-9.eE+-]+)') { [double]$Matches[1] } else { 0 }
+            if ($produced -le 0) {
+                throw ("rig at n=$count produced no reactor energy, so the simulation did not run " +
+                       "even though the reactors are present and hot: '$state'")
+            }
         }
 
         $cols = Get-Timings -Path $benchOut
