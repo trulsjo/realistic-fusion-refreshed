@@ -45,6 +45,9 @@
     factory: no belts, no trains, no biters, one surface. That is #34's job. This one exists to
     catch a disaster eleven tickets before #34 would.
 
+.PARAMETER FactorioExe
+    Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
+
 .PARAMETER Counts
     Reactor counts to measure, ascending. 0 is the baseline and should be kept.
 
@@ -266,22 +269,18 @@ end)
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $lua -Encoding utf8
 }
 
-function Invoke-Factorio {
+function Invoke-Step {
+    <#  One Factorio run that the benchmark cannot continue without, so a non-zero exit is fatal
+        rather than a result. Running it lives in factorio-lib.ps1; only the policy is here.  #>
     param([string[]] $Arguments, [string] $Tag)
 
-    $outFile = Join-Path $temp "$Tag-stdout.txt"
-    $errFile = Join-Path $temp "$Tag-stderr.txt"
-    # Factorio.exe is a GUI-subsystem binary: the call operator does not wait for it and leaves
-    # $LASTEXITCODE unset, so the exit code has to come from the process object.
-    $proc = Start-Process -FilePath $FactorioExe `
-        -ArgumentList (@('--mod-directory', $modDir) + $Arguments) `
-        -Wait -PassThru -NoNewWindow -RedirectStandardOutput $outFile -RedirectStandardError $errFile
-    if ($proc.ExitCode -ne 0) {
-        Get-Content $errFile -ErrorAction SilentlyContinue | Select-Object -Last 20 | ForEach-Object { Write-Host "    $_" }
-        Get-Content $outFile -ErrorAction SilentlyContinue | Select-Object -Last 20 | ForEach-Object { Write-Host "    $_" }
-        throw "Factorio exited $($proc.ExitCode) during '$Tag'."
+    $result = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
+        -Arguments $Arguments -OutputDirectory $temp -Tag $Tag
+    if ($result.Code -ne 0) {
+        Write-FactorioTail $result
+        throw "Factorio exited $($result.Code) during '$Tag'."
     }
-    return $outFile
+    return $result.OutFile
 }
 
 function Get-Timings {
@@ -339,11 +338,11 @@ try {
         Write-Rig -Count $count
         $save = Join-Path $temp "n$count.zip"
 
-        $createOut = Invoke-Factorio -Arguments @('--create', $save) -Tag "create-n$count"
+        $createOut = Invoke-Step -Arguments @('--create', $save) -Tag "create-n$count"
         $rig = Get-Content $createOut | Select-String -Pattern 'BENCH-RIG' | Select-Object -Last 1
         if ($rig -notmatch "placed=$count\b") { throw "rig built the wrong number of reactors: $rig" }
 
-        $benchOut = Invoke-Factorio -Tag "bench-n$count" -Arguments @(
+        $benchOut = Invoke-Step -Tag "bench-n$count" -Arguments @(
             '--benchmark', $save, '--benchmark-ticks', "$Ticks", '--benchmark-runs', "$Runs",
             '--benchmark-verbose', 'all', '--disable-audio')
 
@@ -443,12 +442,5 @@ finally {
     # delete-through-the-link hazard to whatever cleans it up later.
     Remove-ModJunctions -ModDirectory $modDir
 
-    if (-not $KeepTemp -and (Test-Path $temp)) {
-        foreach ($attempt in 1..5) {
-            Remove-Item -Path $temp -Recurse -Force -ErrorAction SilentlyContinue
-            if (-not (Test-Path $temp)) { break }
-            Start-Sleep -Milliseconds 200
-        }
-        if (Test-Path $temp) { Write-Warning "bench-reactors: could not remove temp directory $temp" }
-    }
+    if (-not $KeepTemp) { Remove-TempDirectory -Path $temp -Label 'bench-reactors' }
 }

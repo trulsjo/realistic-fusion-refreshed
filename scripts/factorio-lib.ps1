@@ -23,6 +23,73 @@ function Resolve-FactorioExe {
     return (Resolve-Path $Path).Path
 }
 
+function Invoke-Factorio {
+    <#  Run Factorio headless against a mod directory, capturing both streams to files.
+
+        Returns the exit code and the two capture paths; it deliberately decides nothing about
+        what a failure means, because the callers disagree -- load-check treats a non-zero exit as
+        the answer it went looking for, bench-reactors treats it as the run being over.
+
+        Factorio.exe is a GUI-subsystem binary: the call operator does not wait for it and leaves
+        $LASTEXITCODE unset, so the exit code has to come from the process object.  #>
+    param(
+        [Parameter(Mandatory)] [string]   $FactorioExe,
+        [Parameter(Mandatory)] [string]   $ModDirectory,
+        [Parameter(Mandatory)] [string[]] $Arguments,
+        [Parameter(Mandatory)] [string]   $OutputDirectory,
+        [Parameter(Mandatory)] [string]   $Tag
+    )
+
+    $outFile = Join-Path $OutputDirectory "$Tag-stdout.txt"
+    $errFile = Join-Path $OutputDirectory "$Tag-stderr.txt"
+
+    $proc = Start-Process -FilePath $FactorioExe `
+        -ArgumentList (@('--mod-directory', $ModDirectory) + $Arguments) `
+        -Wait -PassThru -NoNewWindow `
+        -RedirectStandardOutput $outFile -RedirectStandardError $errFile
+
+    [pscustomobject]@{ Code = $proc.ExitCode; OutFile = $outFile; ErrFile = $errFile }
+}
+
+function Write-FactorioTail {
+    <#  Print the end of each captured stream from an Invoke-Factorio result.
+
+        Tailed separately rather than interleaved: Factorio's stdout runs to hundreds of lines and
+        would otherwise push every stderr line out of a shared window.  #>
+    param(
+        [Parameter(Mandatory)] [object] $Result,
+        [int] $Lines = 20
+    )
+
+    foreach ($f in @($Result.ErrFile, $Result.OutFile)) {
+        if (-not (Test-Path $f)) { continue }
+        $captured = Get-Content $f -ErrorAction SilentlyContinue | Where-Object { $_ -match '\S' }
+        if (-not $captured) { continue }
+        Write-Host "  --- $(Split-Path $f -Leaf) (last $Lines of $($captured.Count)) ---"
+        $captured | Select-Object -Last $Lines | ForEach-Object { Write-Host "    $_" }
+    }
+}
+
+function Remove-TempDirectory {
+    <#  Delete a temporary directory, retrying briefly.
+
+        Factorio can hold a save open for a moment after exiting, so a single Remove-Item loses
+        the race often enough to leak the directory silently. Always call Remove-ModJunctions
+        first: this follows junctions rather than skipping them.  #>
+    param(
+        [Parameter(Mandatory)] [string] $Path,
+        [string] $Label = 'cleanup'
+    )
+
+    if (-not (Test-Path $Path)) { return }
+    foreach ($attempt in 1..5) {
+        Remove-Item -Path $Path -Recurse -Force -ErrorAction SilentlyContinue
+        if (-not (Test-Path $Path)) { return }
+        Start-Sleep -Milliseconds 200
+    }
+    Write-Warning "${Label}: could not remove temp directory $Path"
+}
+
 function Get-BundledMods {
     <#  Mods shipped inside the game's data/ directory -- space-age, elevated-rails, quality and
         anything a future version adds. They are present whatever --mod-directory points at, so

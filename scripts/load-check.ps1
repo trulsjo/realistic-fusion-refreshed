@@ -72,7 +72,11 @@ $temp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-loadcheck-' + [guid]::NewGui
 $modDir = Join-Path $temp 'mods'
 New-Item -ItemType Directory -Path $modDir -Force | Out-Null
 
-function Invoke-Factorio {
+function Invoke-LoadCheck {
+    <#  One check: write the mod list, create a map, and report whether a save came out.
+
+        The running of Factorio itself lives in factorio-lib.ps1; what is here is the part that is
+        this script's own -- which mods to enable, and that "exit 0 but no save" is a failure.  #>
     param([string] $Label, [string[]] $Enabled, [string] $Tag)
 
     Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled -Mods $Enabled
@@ -80,35 +84,15 @@ function Invoke-Factorio {
     $bundledOn = if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.0 only)' }
     Write-Host "$Label`: $($Enabled -join ', ')  |  bundled enabled: $bundledOn"
 
-    $save    = Join-Path $temp "$Tag.zip"
-    $outFile = Join-Path $temp "$Tag-stdout.txt"
-    $errFile = Join-Path $temp "$Tag-stderr.txt"
-
-    # Factorio.exe is a GUI-subsystem binary: the call operator does not wait for it and leaves
-    # $LASTEXITCODE unset, so the exit code has to come from the process object.
-    $proc = Start-Process -FilePath $FactorioExe `
-        -ArgumentList @('--mod-directory', $modDir, '--create', $save) `
-        -Wait -PassThru -NoNewWindow `
-        -RedirectStandardOutput $outFile -RedirectStandardError $errFile
+    $save   = Join-Path $temp "$Tag.zip"
+    $result = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
+        -Arguments @('--create', $save) -OutputDirectory $temp -Tag $Tag
 
     [pscustomobject]@{
-        Code       = $proc.ExitCode
+        Code       = $result.Code
         SaveExists = Test-Path $save
-        OutFile    = $outFile
-        ErrFile    = $errFile
-    }
-}
-
-function Write-Tail {
-    param([object] $Result)
-    # Tail each stream separately; Factorio's stdout runs to hundreds of lines and would
-    # otherwise push every stderr line out of a shared window.
-    foreach ($f in @($Result.ErrFile, $Result.OutFile)) {
-        if (-not (Test-Path $f)) { continue }
-        $lines = Get-Content $f -ErrorAction SilentlyContinue | Where-Object { $_ -match '\S' }
-        if (-not $lines) { continue }
-        Write-Host "  --- $(Split-Path $f -Leaf) (last 20 of $($lines.Count)) ---"
-        $lines | Select-Object -Last 20 | ForEach-Object { Write-Host "    $_" }
+        OutFile    = $result.OutFile
+        ErrFile    = $result.ErrFile
     }
 }
 
@@ -118,14 +102,14 @@ try {
     if ($SelfTest) {
         # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
         Write-Host 'self-test 1/2: the repo as it stands must load.'
-        $clean = Invoke-Factorio -Label 'load-check' -Enabled $ourMods -Tag 'clean'
+        $clean = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'clean'
         # Same pass criterion as a real run: exit 0 without a save is a failure there, so it must
         # be a failure here too, or -SelfTest could certify a check a plain run would reject.
         if ($clean.Code -ne 0 -or -not $clean.SaveExists) {
             Write-Host ''
             Write-Host "FAILED - self-test: the repo does not load cleanly (exit $($clean.Code), save produced: $($clean.SaveExists)),"
             Write-Host '         so the canary result would be meaningless.'
-            Write-Tail $clean
+            Write-FactorioTail $clean
             exit 1
         }
 
@@ -142,7 +126,7 @@ try {
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
         Write-Host 'self-test 2/2: an invalid prototype must be rejected.'
-        $broken = Invoke-Factorio -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'canary'
+        $broken = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'canary'
         if ($broken.Code -eq 0) {
             Write-Host ''
             Write-Host 'FAILED - self-test: an invalid prototype did NOT fail the check.'
@@ -155,12 +139,12 @@ try {
         exit 0
     }
 
-    $result = Invoke-Factorio -Label 'load-check' -Enabled $ourMods -Tag 'run'
+    $result = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'run'
 
     if ($result.Code -ne 0) {
         Write-Host ''
         Write-Host "FAILED - Factorio exited with code $($result.Code)"
-        Write-Tail $result
+        Write-FactorioTail $result
         exit $result.Code
     }
     if (-not $result.SaveExists) {
@@ -179,14 +163,7 @@ finally {
     if ($KeepTemp) {
         Write-Host "temp kept at: $temp"
     }
-    elseif (Test-Path $temp) {
-        # Factorio can still hold the save open for a moment after exiting, so retry briefly
-        # rather than leaking the directory silently.
-        foreach ($attempt in 1..5) {
-            Remove-Item -Path $temp -Recurse -Force -ErrorAction SilentlyContinue
-            if (-not (Test-Path $temp)) { break }
-            Start-Sleep -Milliseconds 200
-        }
-        if (Test-Path $temp) { Write-Warning "load-check: could not remove temp directory $temp" }
+    else {
+        Remove-TempDirectory -Path $temp -Label 'load-check'
     }
 }
