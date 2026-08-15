@@ -152,11 +152,27 @@ function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
     if new_temperature_c < spec.min_temperature_c then new_temperature_c = spec.min_temperature_c end
   end
 
+  -- What the plasma actually ends the step holding, after the clamps above -- which is not
+  -- new_thermal_j whenever a clamp bit. Selling loss_j instead was a slow leak of energy from
+  -- nothing: at the bottom of the range the temperature is put back up to the minimum, so the
+  -- plasma keeps the energy, and charging the same joules to the output as well paid a full cold
+  -- reactor about 34 W for ever. Small, and exactly the free loop capture_efficiency exists to
+  -- prevent, so it is closed by asking what left rather than by asking what was lost.
+  --
+  -- It works at the top of the range too, in the other direction: energy above max_temperature
+  -- used to be discarded silently, and is now sold, because it did leave the plasma.
+  local retained_j = 0
+  if remaining > 0 then
+    retained_j = 3 * remaining * K_B * (new_temperature_c + CELSIUS_TO_KELVIN)
+  end
+  local left_j = kept_j + heating_j + charged_j - retained_j
+  if left_j < 0 then left_j = 0 end
+
   -- capture_efficiency is what stops a reactor that never fuses from being a free 100% electric
   -- to thermal to electric loop: Factorio's steam turbines lose nothing, so without a loss here a
   -- cold reactor would exactly pay for its own heating forever. It also stands in for everything
   -- v1 does not model -- divertor, cryoplant, magnet power.
-  local captured_j = ((fusion_j - charged_j) + loss_j) * spec.capture_efficiency
+  local captured_j = ((fusion_j - charged_j) + left_j) * spec.capture_efficiency
 
   return {
     temperature_c   = new_temperature_c,

@@ -154,6 +154,20 @@ check(cold_state.fusion_power_w < 0.05 * COLD_SPEC.heating_power_w, "the leaky r
 check(cold_out_w < COLD_SPEC.heating_power_w, "a reactor that does not fuse is a net loss",
   string.format("out %.3g W vs heating %.3g W", cold_out_w, COLD_SPEC.heating_power_w))
 
+-- A reactor parked at the bottom of the range must sell nothing at all. This is the case the
+-- capture_efficiency check above does not reach: there the plasma is above ambient and genuinely
+-- losing heat, here the temperature clamp puts the energy straight back and the reactor is not
+-- losing anything to sell. Charging the loss term to the output regardless paid a full, cold,
+-- unpowered reactor about 34 W for ever -- small, but energy from nothing, which is the one thing
+-- this model must not do.
+-- Not asserted as exactly zero: the energy that left is the difference between what the plasma
+-- had and what a temperature it was just clamped to says it has, so the round trip through
+-- celsius loses a few bits. The residue is 5e-15 units a step, which is 3e-7 W -- a hundred
+-- million times below the leak this closed, and eleven orders below the reactor's output.
+local parked = L.step(SPEC, "rf-d-d-plasma", FULL, SPEC.min_temperature_c, 0, TICK)
+near(parked.temperature_c, SPEC.min_temperature_c, 1e-12, "an unpowered reactor parks at the minimum")
+near(parked.energy_units, 0, 1e-12, "a reactor parked at the minimum sells nothing")
+
 -- ---------------------------------------------------------------- cadence is a free parameter
 --
 -- ADR 0005 calls the update cadence a tuning parameter and pre-authorises coarsening it. That is
