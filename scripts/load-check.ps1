@@ -9,6 +9,11 @@
     resolves, and nothing references a prototype that does not exist -- broader coverage than a
     test suite, for the cost of this script.
 
+    It then checks that every file the loaded prototypes name is actually on disk, which
+    Factorio does not: a headless run loads no sprites, so a prototype naming a missing icon
+    validates and exits 0, and the player's game refuses to start on it. That is not
+    hypothetical -- it happened, and it is why this half exists.
+
     It does NOT check locale coverage. Factorio's data stage loads a prototype with no locale
     entry without complaint; the omission only shows in game as "Unknown key". ADR 0010 singles
     that failure out, so it has its own check: scripts/locale-check.ps1. A pass here says nothing
@@ -34,10 +39,11 @@
     run reported as an expansion pass. Used to discharge ADR 0003's obligation.
 
 .PARAMETER SelfTest
-    Verify the check can fail. Runs twice: once as normal, which must pass, and once with a mod
-    carrying an invalid prototype, which must fail. Both halves are required -- a non-zero exit
-    on its own proves nothing, since Factorio also exits non-zero when the repo is genuinely
-    broken. Run this whenever the script changes.
+    Verify the check can fail. Three halves: the repo as it stands must pass; a mod carrying an
+    invalid prototype must fail; and a mod naming an icon file that does not exist must be
+    caught. The first is required or the others prove nothing, since Factorio also exits non-zero
+    when the repo is genuinely broken. The third is the one Factorio itself exits 0 on. Run this
+    whenever the script changes.
 
 .PARAMETER KeepTemp
     Keep the temporary save and captured output for debugging. Junctions are always removed.
@@ -96,27 +102,48 @@ function Invoke-LoadCheck {
     }
 }
 
-try {
-    # Before Factorio runs at all, because Factorio will not catch this. A headless run loads no
-    # sprites, so a prototype naming an icon that does not exist validates and exits 0 -- and the
-    # player's game then refuses to start on it. That happened: a heat-exchanger icon whose file
-    # had been renamed in vanilla passed every check here and broke the game on first launch.
-    $missingAssets = Find-MissingVanillaAssets -DataDir (Get-FactorioDataDirectory -FactorioExe $FactorioExe) `
-        -SourceDirectories ($ourMods | ForEach-Object { Join-Path $repoRoot $_ })
-    if ($missingAssets) {
-        Write-Host "FAILED - $($missingAssets.Count) vanilla asset(s) referenced but not present:"
-        foreach ($m in $missingAssets) {
-            Write-Host "    $($m.Reference)"
-            Write-Host "      named in $([IO.Path]::GetRelativePath($repoRoot, $m.Source))"
-        }
-        exit 1
+function Test-Assets {
+    <#  Every asset path the loaded prototypes name must exist on disk.
+
+        Factorio will not catch this. A headless run loads no sprites, so a prototype naming an
+        icon that does not exist validates and exits 0 -- and the player's game then refuses to
+        start on it. That happened: a heat-exchanger icon whose file had been renamed in vanilla
+        passed every check here and broke the game on first launch.
+
+        Runs off --dump-data, so it sees the paths the game resolved rather than the strings in
+        the source. The mods build most of their icon paths by concatenation; a scan of the Lua
+        would report a clean pass over every graphic this repo ships.  #>
+    param([string] $Tag)
+
+    $result = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
+        -Arguments @('--dump-data') -OutputDirectory $temp -Tag "$Tag-dump"
+    if ($result.Code -ne 0) {
+        Write-Host "FAILED - Factorio exited $($result.Code) on --dump-data."
+        Write-FactorioTail $result
+        exit $result.Code
     }
 
+    $ourDirectories = @{}
+    foreach ($mod in $ourMods) { $ourDirectories[$mod] = Join-Path $repoRoot $mod }
+
+    $missing = Find-MissingAssets `
+        -DumpPath (Join-Path $temp 'write-data/script-output/data-raw-dump.json') `
+        -DataDir (Get-FactorioDataDirectory -FactorioExe $FactorioExe) `
+        -ModDirectories $ourDirectories
+    if ($missing) {
+        Write-Host "FAILED - $($missing.Count) asset(s) referenced but not present:"
+        foreach ($m in $missing) { Write-Host "    $($m.Reference)" }
+        exit 1
+    }
+    Write-Host 'assets: every referenced file is present.'
+}
+
+try {
     New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
 
     if ($SelfTest) {
         # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
-        Write-Host 'self-test 1/2: the repo as it stands must load.'
+        Write-Host 'self-test 1/3: the repo as it stands must load.'
         $clean = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'clean'
         # Same pass criterion as a real run: exit 0 without a save is a failure there, so it must
         # be a failure here too, or -SelfTest could certify a check a plain run would reject.
@@ -140,7 +167,7 @@ try {
         'data:extend({{ type = "item", name = "rf-loadcheck-canary-item" }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 2/2: an invalid prototype must be rejected.'
+        Write-Host 'self-test 2/3: an invalid prototype must be rejected.'
         $broken = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'canary'
         if ($broken.Code -eq 0) {
             Write-Host ''
@@ -149,12 +176,55 @@ try {
             exit 1
         }
 
+        # Half three: a prototype naming a file that is not there must be caught. This is the one
+        # Factorio itself exits 0 on, so it is the half that matters most -- and it is checked by
+        # calling Find-MissingAssets directly rather than by running Test-Assets, which exits.
+        # The canary names its icon by concatenation, because that is the shape the source-text
+        # scan this replaced could not see.
+        'local D = "__rf-loadcheck-canary__/graphics/"
+data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
+  icon = D .. "no-such-icon" .. ".png", icon_size = 64 }})' |
+            Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
+
+        Write-Host 'self-test 3/3: a prototype naming a file that is not there must be caught.'
+        $withCanary = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'assets'
+        if ($withCanary.Code -ne 0) {
+            Write-Host ''
+            Write-Host 'FAILED - self-test: the missing-asset canary did not even load, so the'
+            Write-Host "         asset check was never reached (exit $($withCanary.Code))."
+            Write-FactorioTail $withCanary
+            exit 1
+        }
+
+        $dump = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
+            -Arguments @('--dump-data') -OutputDirectory $temp -Tag 'assets-dump'
+        if ($dump.Code -ne 0) { Write-FactorioTail $dump; exit $dump.Code }
+
+        $directories = @{ 'rf-loadcheck-canary' = $canary }
+        foreach ($mod in $ourMods) { $directories[$mod] = Join-Path $repoRoot $mod }
+        $found = Find-MissingAssets `
+            -DumpPath (Join-Path $temp 'write-data/script-output/data-raw-dump.json') `
+            -DataDir (Get-FactorioDataDirectory -FactorioExe $FactorioExe) `
+            -ModDirectories $directories
+        if (-not ($found | Where-Object { $_.Reference -like '*no-such-icon.png' })) {
+            Write-Host ''
+            Write-Host 'FAILED - self-test: a prototype naming a file that does not exist was NOT caught.'
+            Write-Host '         Factorio exits 0 on this and the player''s game does not; fix it before'
+            Write-Host '         trusting a pass.'
+            exit 1
+        }
+
         Write-Host ''
-        Write-Host "OK - self-test passed: clean repo loads, invalid prototype rejected (exit $($broken.Code))."
+        Write-Host 'OK - self-test passed: clean repo loads, invalid prototype rejected'
+        Write-Host "     (exit $($broken.Code)), missing asset caught."
         exit 0
     }
 
     $result = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'run'
+
+    # After the load, not before: Test-Assets reads a --dump-data written under the mod list
+    # Invoke-LoadCheck just put in place, and a repo that does not load has nothing to dump.
+    if ($result.Code -eq 0 -and (Test-Path $result.OutFile)) { Test-Assets -Tag 'run' }
 
     if ($result.Code -ne 0) {
         Write-Host ''

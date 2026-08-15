@@ -32,8 +32,8 @@ function Get-FactorioDataDirectory {
     return $dataDir
 }
 
-function Find-MissingVanillaAssets {
-    <#  Every __base__ / __core__ file a mod's Lua names, that is not there.
+function Find-MissingAssets {
+    <#  Every __mod__/... file the loaded prototypes name, that is not on disk.
 
         This exists because Factorio will not tell you. A headless run loads no sprites, so
         --create validates the prototype that names an icon without ever opening the file, and
@@ -41,31 +41,71 @@ function Find-MissingVanillaAssets {
         File __base__/graphics/icons/heat-exchanger.png not found", which is how this was found,
         by hand, after every automated check had passed.
 
-        Literal paths only. A path built by concatenation at data-stage time is invisible here,
-        and this repo has none; if one ever appears, this check quietly stops covering it.  #>
+        Reads the --dump-data JSON rather than the Lua source. The first version of this scanned
+        source text for literal "__base__/..." strings, which worked only while every path was a
+        literal. It is not: the prototypes build icon paths by concatenation
+        (ENTITY .. name .. ".png"), and a regex over source sees none of those -- so it would
+        have reported a clean pass over the graphics this repo actually ships. The dump holds the
+        paths as the game resolved them, so concatenation, loops and helper functions are all
+        covered, and vanilla's paths come along for free because they are in the same dump.
+
+        Every mod loaded is in the dump, so this walks far more than this repo -- but it only
+        reports what it can resolve, which is base, core, and whatever the caller maps.
+
+        $ModDirectories maps a mod name to where its files live on disk. Anything not in it and
+        not base/core -- another mod's assets, reachable only when that mod is installed -- is
+        skipped rather than reported.  #>
     param(
-        [Parameter(Mandatory)] [string]   $DataDir,
-        [Parameter(Mandatory)] [string[]] $SourceDirectories
+        [Parameter(Mandatory)] [string]    $DumpPath,
+        [Parameter(Mandatory)] [string]    $DataDir,
+        [Parameter(Mandatory)] [hashtable] $ModDirectories
     )
 
-    # __base__/graphics/icons/pipe.png -> base/graphics/icons/pipe.png under the data directory.
-    $pattern = '__(?<mod>base|core)__/(?<rel>[A-Za-z0-9/_.-]+\.(?:png|ogg))'
+    if (-not (Test-Path -LiteralPath $DumpPath)) { throw "no data dump at '$DumpPath'." }
+
+    $pattern = [regex] '^__(?<mod>[A-Za-z0-9_ .-]+)__/(?<rel>.+\.(?:png|ogg))$'
+    $seen    = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     $missing = @()
 
-    foreach ($dir in $SourceDirectories) {
-        if (-not (Test-Path $dir)) { continue }
-        foreach ($file in Get-ChildItem -Path $dir -Recurse -Filter *.lua) {
-            $text = Get-Content -LiteralPath $file.FullName -Raw
-            foreach ($match in [regex]::Matches($text, $pattern)) {
-                $onDisk = Join-Path $DataDir (Join-Path $match.Groups['mod'].Value $match.Groups['rel'].Value)
-                if (-not (Test-Path -LiteralPath $onDisk)) {
-                    $missing += [pscustomobject]@{ Reference = $match.Value; Source = $file.FullName }
-                }
+    # Walked as an object graph rather than scanned as text, for one reason: a sprite that
+    # declares `stripes` keeps a `filename` beside them that the engine never opens. Vanilla has
+    # such a sprite -- big-artillery-explosion names hr-bigass-explosion-36f.png, which does not
+    # exist, while its two stripes name the files that do -- so a text scan reports the game's own
+    # data as broken. Nothing else in the dump needed structure; this one thing did.
+    $stack = [System.Collections.Generic.Stack[object]]::new()
+    $stack.Push((Get-Content -LiteralPath $DumpPath -Raw | ConvertFrom-Json))
+
+    while ($stack.Count -gt 0) {
+        $node = $stack.Pop()
+
+        if ($node -is [System.Management.Automation.PSCustomObject]) {
+            $properties = $node.PSObject.Properties
+            $striped = $null -ne $properties['stripes']
+            foreach ($property in $properties) {
+                if ($striped -and $property.Name -eq 'filename') { continue }
+                if ($null -ne $property.Value) { $stack.Push($property.Value) }
+            }
+        }
+        elseif ($node -is [System.Object[]]) {
+            foreach ($item in $node) { if ($null -ne $item) { $stack.Push($item) } }
+        }
+        elseif ($node -is [string]) {
+            $match = $pattern.Match($node)
+            if (-not $match.Success -or -not $seen.Add($node)) { continue }
+
+            $mod = $match.Groups['mod'].Value
+            $root = if ($mod -in @('base', 'core')) { Join-Path $DataDir $mod }
+                    elseif ($ModDirectories.ContainsKey($mod)) { $ModDirectories[$mod] }
+                    else { $null }   # another mod's assets: not ours to resolve
+
+            if ($null -eq $root) { continue }
+            if (-not (Test-Path -LiteralPath (Join-Path $root $match.Groups['rel'].Value))) {
+                $missing += [pscustomobject]@{ Reference = $node; Mod = $mod }
             }
         }
     }
 
-    return @($missing | Sort-Object Reference, Source -Unique)
+    return @($missing | Sort-Object Reference)
 }
 
 function ConvertTo-NativeArgument {
