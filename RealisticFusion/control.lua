@@ -20,12 +20,12 @@ local logic = require("scripts.reactor-logic")
 -- across buckets: reactors sharing a fluid segment have to step together, for the reason
 -- update() gives below.
 --
--- There is a ceiling on this number that the test cannot see, because it is a fact about the
--- prototype rather than about the physics: a step draws heating_power_w * interval / 60 joules
--- out of the reactor's buffer in one go, so at 50 MW against a 10 MJ buffer anything past twelve
--- ticks asks for more than the buffer can hold and the reactor is starved every step -- silently,
--- since being underpowered is a state it is meant to have. Raising this line past 12 means
--- raising buffer_capacity in prototypes/entities.lua with it.
+-- There is a ceiling on this number that the physics test cannot see, because it is a fact about
+-- the prototype and not about the plasma: a step draws heating_power_w * interval / 60 joules out
+-- of the reactor's buffer in one go, so at 50 MW against a 10 MJ buffer anything past twelve ticks
+-- is starved every step. check_cadence() below enforces it, so the test's range and this line
+-- cannot drift apart in silence -- raising this past 12 means raising buffer_capacity in
+-- prototypes/entities.lua with it, and the mod refuses to load until one of the two moves.
 --
 -- See docs/research/reactor-runtime-cost.md; scripts/bench-reactors.ps1 takes the measurement.
 local UPDATE_INTERVAL = 6
@@ -127,8 +127,38 @@ local function rescan()
   end
 end
 
-script.on_init(rescan)
-script.on_configuration_changed(rescan)
+--- Refuse to run a cadence the reactor cannot be powered through.
+--
+-- A step spends the whole interval's heating in one go, so the buffer has to hold it. Past twelve
+-- ticks at the shipped 50 MW and 10 MJ it cannot, and the reactor is starved every step for ever
+-- -- silently, because underpowered is a legitimate state it is meant to have. That trap is not
+-- something the Lua tests can see: they know the physics but not the prototype, and the physics is
+-- happily insensitive to cadence well past the point the buffer gives out.
+--
+-- Here is the one place both numbers are visible, so here is where it is checked rather than
+-- described. It can only fire on a developer edit -- to this file's interval or to entities.lua's
+-- buffer -- and it fires during scripts/load-check.ps1, which creates a map and therefore runs
+-- this.
+local function check_cadence()
+  local source = prototypes.entity["rf-reactor"].electric_energy_source_prototype
+  local needed = logic.reactor.heating_power_w * UPDATE_INTERVAL / 60
+  if needed > source.buffer_capacity then
+    error(string.format(
+      "rf-reactor: UPDATE_INTERVAL of %d ticks needs %.3g J of buffer per step but the prototype " ..
+      "has %.3g J, so the reactor would be starved every step. Lower the interval in control.lua " ..
+      "or raise buffer_capacity in prototypes/entities.lua.",
+      UPDATE_INTERVAL, needed, source.buffer_capacity))
+  end
+end
+
+script.on_init(function()
+  check_cadence()
+  rescan()
+end)
+script.on_configuration_changed(function()
+  check_cadence()
+  rescan()
+end)
 
 local built_filter = { { filter = "name", name = "rf-reactor" } }
 for _, event in pairs({
