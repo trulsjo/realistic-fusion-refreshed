@@ -1,7 +1,9 @@
--- Runtime: entity lifecycle, the tick loop, and reading and writing fluid boxes. The physics is
--- in scripts/reactor-logic.lua and does not know this file exists.
+-- Runtime: the tick loop, reading and writing fluid boxes, and the invariants that tie the
+-- simulation to the prototypes. Which reactors exist is scripts/entity-management.lua's business;
+-- the physics is scripts/reactor-logic.lua's and does not know this file exists.
 
-local logic = require("scripts.reactor-logic")
+local logic    = require("scripts.reactor-logic")
+local entities = require("scripts.entity-management")
 
 -- ADR 0005 pre-authorises throttling the simulation to a coarser cadence and requires that doing
 -- so be a change in one place. This is that place: nothing else in the mod knows how often the
@@ -78,15 +80,14 @@ end
 --
 -- Split in two on purpose. Reactors on one run of rf-pipe share a fluid segment, so if the steps
 -- were interleaved a reactor would compute against a pool its neighbour had already written to
--- this tick, and the result would depend on the order storage.reactors happens to iterate in.
+-- this tick, and the result would depend on the order entities.registry() happens to iterate in.
 -- Reading first makes every reactor see the same start-of-tick pool, which is both what
 -- simultaneous confinement means physically and one less thing to argue about in multiplayer.
 local function update()
   local dt = UPDATE_INTERVAL / 60
-  local reactors = storage.reactors or {}
   local pending = {}
 
-  for unit_number, entity in pairs(reactors) do
+  for unit_number, entity in pairs(entities.registry()) do
     if entity.valid then
       local plasma = entity.fluidbox[1]
       local result = logic.step(logic.reactor, plasma and plasma.name, plasma and plasma.amount,
@@ -95,35 +96,17 @@ local function update()
         pending[#pending + 1] = { entity = entity, plasma = plasma, result = result }
       end
     else
-      -- Dropped here rather than on a mined or died event. One validity check covers every way an
-      -- entity can leave -- mined, destroyed, scripted away, surface deleted -- where a set of
-      -- destruction handlers covers the ways someone remembered.
-      reactors[unit_number] = nil
+      -- Dropped here rather than on a mined or died event, which is why entity-management wires
+      -- no destruction handlers. One validity check covers every way an entity can leave --
+      -- mined, destroyed, scripted away, surface deleted -- where a set of destruction handlers
+      -- covers only the ways someone remembered. Removing the current key during pairs is
+      -- defined behaviour in Lua; adding one would not be.
+      entities.forget(unit_number)
     end
   end
 
   for _, step in ipairs(pending) do
     apply(step.entity, step.plasma, step.result)
-  end
-end
-
-local function register(entity)
-  if entity and entity.valid and entity.name == "rf-reactor" then
-    storage.reactors = storage.reactors or {}
-    storage.reactors[entity.unit_number] = entity
-  end
-end
-
---- Rebuild the register from what is actually on the map.
---
--- Runs when the mod is added to a save and whenever the configuration changes, so a reactor is
--- never left unsimulated because an event was missed or an entity predates this code.
-local function rescan()
-  storage.reactors = {}
-  for _, surface in pairs(game.surfaces) do
-    for _, entity in pairs(surface.find_entities_filtered({ name = "rf-reactor" })) do
-      register(entity)
-    end
   end
 end
 
@@ -176,39 +159,17 @@ local function check_prototypes()
   check_plasma_bounds()
 end
 
+-- The register is rebuilt in the same breath as the prototype checks because both are answers to
+-- "the world may not be what this code last saw": one re-reads the map, the other re-reads the
+-- prototypes. The build-event handlers that keep the register current in between are wired by
+-- entity-management itself.
 script.on_init(function()
   check_prototypes()
-  rescan()
+  entities.rescan()
 end)
 script.on_configuration_changed(function()
   check_prototypes()
-  rescan()
+  entities.rescan()
 end)
-
-local built_filter = { { filter = "name", name = "rf-reactor" } }
-for _, event in pairs({
-  defines.events.on_built_entity,
-  defines.events.on_robot_built_entity,
-  -- Defined only on a game that knows about platforms. Nothing guards it because nothing needs
-  -- to: a nil here is simply a value the table constructor does not store, and pairs iterates
-  -- what is there. ADR 0003 tolerates Space Age without targeting it, so it must not be assumed
-  -- present -- and must be handled if it is.
-  defines.events.on_space_platform_built_entity,
-  defines.events.script_raised_built,
-  defines.events.script_raised_revive,
-}) do
-  script.on_event(event, function(e) register(e.entity) end, built_filter)
-end
-
--- Cloning cannot ride that loop, for two reasons. It names its entity "destination" rather than
--- "entity", so the handler above would register nil; and it is the one way a reactor can appear
--- that raises neither a build event nor script_raised_built -- the map editor's clone tool, and
--- Space Age's platform cloning, which ADR 0003 says must work if present. Without this a cloned
--- reactor sits inert, accepting plasma and producing nothing, until some unrelated mod's version
--- bump triggers on_configuration_changed and the rescan picks it up.
---
--- Unfiltered on purpose: filter semantics on a two-entity event are not worth assuming when
--- register() already checks the name, and cloning is rare enough that the cost of looking is nil.
-script.on_event(defines.events.on_entity_cloned, function(e) register(e.destination) end)
 
 script.on_nth_tick(UPDATE_INTERVAL, update)
