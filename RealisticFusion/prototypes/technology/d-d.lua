@@ -21,7 +21,7 @@ data:extend({
   {
     type = "technology",
     name = "rf-d-d-fusion",
-    icon = "__base__/graphics/technology/nuclear-power.png",
+    icon = "__RealisticFusion__/graphics/krastorio-2/technologies/d-d.png",
     icon_size = 256,
     prerequisites = { "rf-deuterium-extraction", "advanced-circuit", "concrete" },
     effects = {

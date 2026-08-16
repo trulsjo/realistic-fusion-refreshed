@@ -1,16 +1,21 @@
 require("util") -- table.deepcopy
 
--- Power's machines, built from vanilla ones for the same reason Core's are: no graphics ship, so
--- ADR 0010's open art question stays open and the entities work rather than being invisible. The
--- base entity is chosen for its shape and fluid box count.
+-- Power's machines, built from vanilla ones: the base entity is chosen for its shape and fluid
+-- box count, which is the part that decides behaviour.
+--
+-- Icons are derived from Krastorio 2 (LGPLv3) and live in graphics/krastorio-2/ with the licence
+-- and a NOTICE naming every source file. Do not move one out of that directory -- the licence
+-- travels with the directory, not with this file (legal-note.txt).
 --
 -- Every stat that affects balance is pinned rather than inherited, because a deep copy taken here
 -- picks up whatever a mod sorting earlier has already done to the source prototype.
 
+local ENTITY = "__RealisticFusion__/graphics/krastorio-2/entities/"
+
 local function pin(e, name, opts)
   e.name = name
   e.minable = { mining_time = opts.mining_time or 1, result = name }
-  e.icons = { { icon = opts.icon, icon_size = 64, tint = opts.tint } }
+  e.icons = { { icon = ENTITY .. name:gsub("^rf%-", "") .. ".png", icon_size = 64 } }
   e.icon = nil
   -- Vanilla's group would let a player fast-replace ours with the machine it was copied from.
   e.fast_replaceable_group = nil
@@ -18,22 +23,13 @@ local function pin(e, name, opts)
   return e
 end
 
-local NUCLEAR_REACTOR = "__base__/graphics/icons/nuclear-reactor.png"
-local CHEMICAL_PLANT = "__base__/graphics/icons/chemical-plant.png"
--- heat-boiler, not heat-exchanger: the entity was renamed and the icon file was not.
-local HEAT_EXCHANGER = "__base__/graphics/icons/heat-boiler.png"
-local PIPE           = "__base__/graphics/icons/pipe.png"
-local PIPE_TO_GROUND = "__base__/graphics/icons/pipe-to-ground.png"
-
-local PLASMA_TINT = { r = 1.00, g = 0.55, b = 0.30 }
-
 -- ---------------------------------------------------------------- heater
 
 -- Deuterium in, plasma out, on an ordinary recipe. The heater is the only ordinary machine on the
 -- power side: it ionises and injects, and the confinement heating that takes the plasma from
 -- there to fusion temperature is the reactor's job and the simulation's.
 local heater = pin(table.deepcopy(data.raw["assembling-machine"]["chemical-plant"]), "rf-heater", {
-  icon = CHEMICAL_PLANT, tint = PLASMA_TINT, mining_time = 0.5,
+  mining_time = 0.5,
 })
 heater.crafting_categories = { "rf-plasma-heating" }
 heater.crafting_speed = 1
@@ -65,11 +61,14 @@ heater.allowed_effects = { "consumption", "speed", "pollution", "quality" }
 -- the target, and one seeded at 1e6 C, above it, both lose plasma only at the rate the simulation
 -- burns it, and neither produces reactor energy the engine was not asked for.
 --
--- ponytail: the reactor and the heat exchanger below are therefore the same sprite in different
--- tints, which is worse than Core's placeholders and is the price of the fluid behaviour. Only
--- the icons distinguish them. It goes away with the art pass ADR 0010 left open.
+-- ponytail: the reactor and the heat exchanger below are therefore still the same IN-WORLD sprite,
+-- which is the price of the fluid behaviour. Their icons are now different art rather than one
+-- icon in two tints, so they are told apart in hand, in map view and in alerts -- but not yet on
+-- the ground. Unlike the pipes below, that is not a repoint: K2's fusion reactor is a different
+-- size and shape from the vanilla heat exchanger this is copied from, so it needs real sprite
+-- definitions. Tracked on #45.
 local reactor = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-reactor", {
-  icon = NUCLEAR_REACTOR, tint = PLASMA_TINT, mining_time = 3,
+  mining_time = 3,
 })
 reactor.mode = "output-to-separate-pipe"
 reactor.target_temperature = 165
@@ -121,7 +120,7 @@ reactor.output_fluid_box = {
 -- energy_consumption sets the burn rate, and everything downstream is ordinary vanilla steam at
 -- 500 C, which vanilla steam turbines already accept.
 local exchanger = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-heat-exchanger", {
-  icon = HEAT_EXCHANGER, tint = { r = 1.00, g = 0.90, b = 0.45 }, mining_time = 0.5,
+  mining_time = 0.5,
 })
 exchanger.energy_consumption = "40MW"
 exchanger.energy_source = {
@@ -150,14 +149,64 @@ exchanger.energy_source = {
 -- Plasma must not travel through vanilla pipes (CONTEXT.md, ADR 0010). Enforcing that is #26;
 -- these exist so there is something to enforce it in favour of.
 --
--- ponytail: the in-world sprites are still the vanilla pipe's, so an rf-pipe and a pipe look
--- alike in a build. Only the icon is tinted. That is the same placeholder limitation Core's
--- machines carry, and it matters more here -- it goes away when real art arrives.
-local pipe = pin(table.deepcopy(data.raw["pipe"]["pipe"]), "rf-pipe", {
-  icon = PIPE, tint = PLASMA_TINT, mining_time = 0.1,
-})
-local pipe_to_ground = pin(table.deepcopy(data.raw["pipe-to-ground"]["pipe-to-ground"]), "rf-pipe-to-ground", {
-  icon = PIPE_TO_GROUND, tint = PLASMA_TINT, mining_time = 0.1,
-})
+-- These carry real art rather than a tint, so a plasma line is visibly not a water line -- which
+-- is the point, since #26 is about stopping plasma reaching a vanilla pipe and a player has to be
+-- able to see which is which before that rule can feel fair.
+--
+-- The sprites are Krastorio 2's steel pipe (LGPLv3, graphics/krastorio-2/). It is dimensionally
+-- identical to the vanilla set file for file, so this repoints filenames and leaves every width,
+-- height, shift, scale and frame count exactly as vanilla declares them. Nothing here guesses at
+-- geometry.
+local PIPE_SPRITES = {
+  "pipe-corner-down-left", "pipe-corner-down-right", "pipe-corner-up-left", "pipe-corner-up-right",
+  "pipe-cross", "pipe-ending-down", "pipe-ending-left", "pipe-ending-right", "pipe-ending-up",
+  "pipe-horizontal-window-background", "pipe-straight-horizontal", "pipe-straight-horizontal-single",
+  "pipe-straight-horizontal-window", "pipe-straight-vertical", "pipe-straight-vertical-single",
+  "pipe-straight-vertical-window", "pipe-t-down", "pipe-t-left", "pipe-t-right", "pipe-t-up",
+  "pipe-vertical-window-background",
+}
+local PIPE_TO_GROUND_SPRITES = {
+  "pipe-to-ground-down", "pipe-to-ground-left", "pipe-to-ground-right", "pipe-to-ground-up",
+}
+
+-- Repoint by basename, walking the whole prototype rather than naming the fields. The pipe
+-- prototype nests its sprites several layers down and the layout has changed between versions;
+-- a walk keeps working when it changes again.
+--
+-- Only listed basenames are touched. The vanilla pipe directory also holds the fluid-flow
+-- animations, the window background and both visualisation sprites, which K2 has no counterpart
+-- for -- those stay pointing at __base__ deliberately, and the load-check's missing-asset
+-- pre-flight is what would catch it if one were ever renamed there.
+local function repoint(value, directory, names)
+  local wanted = {}
+  for _, n in ipairs(names) do wanted[n] = true end
+
+  local function walk(node)
+    if type(node) ~= "table" then return end
+    for key, child in pairs(node) do
+      if key == "filename" and type(child) == "string" then
+        local base = child:match("([^/]+)%.png$")
+        if base and wanted[base] then
+          node[key] = directory .. base .. ".png"
+        end
+      else
+        walk(child)
+      end
+    end
+  end
+
+  walk(value)
+  return value
+end
+
+local GRAPHICS = "__RealisticFusion__/graphics/krastorio-2/"
+
+local pipe = repoint(
+  pin(table.deepcopy(data.raw["pipe"]["pipe"]), "rf-pipe", { mining_time = 0.1 }),
+  GRAPHICS .. "pipe/", PIPE_SPRITES)
+
+local pipe_to_ground = repoint(
+  pin(table.deepcopy(data.raw["pipe-to-ground"]["pipe-to-ground"]), "rf-pipe-to-ground", { mining_time = 0.1 }),
+  GRAPHICS .. "pipe-to-ground/", PIPE_TO_GROUND_SPRITES)
 
 data:extend({ heater, reactor, exchanger, pipe, pipe_to_ground })

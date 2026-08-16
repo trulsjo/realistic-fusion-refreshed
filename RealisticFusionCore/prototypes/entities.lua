@@ -1,9 +1,15 @@
 require("util") -- table.deepcopy
 
+local ENTITY = "__RealisticFusionCore__/graphics/krastorio-2/entities/"
+
 -- Core's machines are built from vanilla ones rather than modelled from scratch.
 --
--- ponytail: this ships no graphics, no sounds and no remnants of our own, so the art decision
--- ADR 0010 left open stays open, and the entities are fully working rather than invisible.
+-- ponytail: the icons are now Krastorio 2's (LGPLv3, graphics/krastorio-2/ with its licence and
+-- NOTICE), but the in-world sprites are still the vanilla machine's. So a player sees the right
+-- thing in hand, in map view and in alerts, and a chemical plant on the ground. Finishing that
+-- is not a repoint like the icons were -- K2's buildings are different sizes and shapes from the
+-- vanilla ones these are copied from, so it needs real sprite definitions. Tracked on #45.
+--
 -- The base entity is chosen for its fluid box count, which is the part that actually matters:
 --   chemical-plant  2 in / 2 out  -> electrolysis, concentration, lithium extraction
 --   oil-refinery    2 in / 3 out  -> Girdler sulfide (2 in, 3 out)
@@ -12,8 +18,8 @@ require("util") -- table.deepcopy
 -- Every stat that affects balance is set explicitly rather than inherited. A deep copy taken in
 -- data.lua picks up whatever another mod has already done to the source prototype, and mods
 -- sorting before this one alphabetically -- Krastorio 2 among them, which ADR 0007 names as a
--- coexistence target -- would silently rewrite all four machines. Graphics stay inherited on
--- purpose; those are the placeholder.
+-- coexistence target -- would silently rewrite all four machines. The in-world sprites stay
+-- inherited on purpose; those are what is left of the placeholder.
 local function from_vanilla(source_name, name, categories, opts)
   local e = table.deepcopy(data.raw["assembling-machine"][source_name])
   e.name = name
@@ -23,10 +29,7 @@ local function from_vanilla(source_name, name, categories, opts)
   e.energy_usage = opts.energy_usage
   e.module_slots = 3
   e.allowed_effects = { "consumption", "speed", "productivity", "pollution", "quality" }
-  -- Tinted so the machines are distinguishable in map view, alt-mode and alerts. The in-world
-  -- sprites are still identical copies of the vanilla machine; that is a placeholder limitation,
-  -- not an oversight, and it goes away when real art arrives.
-  e.icons = { { icon = opts.icon, icon_size = 64, tint = opts.tint } }
+  e.icons = { { icon = ENTITY .. opts.icon .. ".png", icon_size = 64 } }
   e.icon = nil
   -- Vanilla's group would let a player fast-replace ours with the machine it was copied from.
   e.fast_replaceable_group = nil
@@ -34,24 +37,17 @@ local function from_vanilla(source_name, name, categories, opts)
   return e
 end
 
-local CHEMICAL_PLANT = "__base__/graphics/icons/chemical-plant.png"
-local OIL_REFINERY   = "__base__/graphics/icons/oil-refinery.png"
-
 data:extend({
   from_vanilla("chemical-plant", "rf-electrolyser", { "rf-electrolysis" }, {
-    crafting_speed = 1, energy_usage = "200kW",
-    icon = CHEMICAL_PLANT, tint = { r = 0.70, g = 0.85, b = 1.00 },
+    crafting_speed = 1, energy_usage = "200kW", icon = "electrolyser",
   }),
   from_vanilla("oil-refinery", "rf-deuterium-extractor", { "rf-enrichment" }, {
-    crafting_speed = 1, energy_usage = "400kW",
-    icon = OIL_REFINERY, tint = { r = 0.55, g = 0.75, b = 1.00 },
+    crafting_speed = 1, energy_usage = "400kW", icon = "deuterium-extractor",
   }),
   from_vanilla("chemical-plant", "rf-brine-concentrator", { "rf-concentration" }, {
-    crafting_speed = 1, energy_usage = "200kW",
-    icon = CHEMICAL_PLANT, tint = { r = 0.75, g = 0.85, b = 0.65 },
+    crafting_speed = 1, energy_usage = "200kW", icon = "brine-concentrator",
   }),
   from_vanilla("chemical-plant", "rf-lithium-extractor", { "rf-lithium-processing" }, {
-    crafting_speed = 1, energy_usage = "300kW",
-    icon = CHEMICAL_PLANT, tint = { r = 0.90, g = 0.80, b = 0.92 },
+    crafting_speed = 1, energy_usage = "300kW", icon = "lithium-extractor",
   }),
 })

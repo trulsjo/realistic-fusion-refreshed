@@ -1,10 +1,11 @@
 -- Power's own fluids. Core owns everything the extraction chain produces; the plasmas and the
 -- energy the reactors emit belong here (ADR 0010), and Power never defines a Core fluid.
 --
--- Placeholder icons, same as Core's and for the same reason: no assets ship, so ADR 0010's open
--- art question stays open.
-local function placeholder(tint)
-  return { { icon = "__base__/graphics/icons/fluid/water.png", icon_size = 64, tint = tint } }
+-- Icons are derived from Krastorio 2 (LGPLv3) and live in graphics/krastorio-2/ with the licence
+-- and a NOTICE naming every source file and every modification. Do not move one of these out of
+-- that directory: the licence travels with the directory, not with this file (legal-note.txt).
+local function icon(name)
+  return { { icon = "__RealisticFusion__/graphics/krastorio-2/fluids/" .. name .. ".png", icon_size = 64 } }
 end
 
 data:extend({
@@ -19,7 +20,7 @@ data:extend({
   {
     type = "fluid",
     name = "rf-d-d-plasma",
-    icons = placeholder({ r = 1.00, g = 0.55, b = 0.30 }),
+    icons = icon("d-d-plasma"),
     subgroup = "fluid",
     order = "rf-p-a[d-d-plasma]",
     default_temperature = 15,
@@ -39,7 +40,7 @@ data:extend({
   {
     type = "fluid",
     name = "rf-reactor-energy",
-    icons = placeholder({ r = 1.00, g = 0.90, b = 0.45 }),
+    icons = icon("reactor-energy"),
     subgroup = "fluid",
     order = "rf-p-z[reactor-energy]",
     default_temperature = 15,

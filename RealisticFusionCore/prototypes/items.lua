@@ -1,53 +1,33 @@
--- Placement items for Core's machines. Icons are the vanilla machines these are built from,
--- for the same reason as the fluid icons: no assets ship, so the art decision stays open.
+-- Placement items for Core's machines. Icons are derived from Krastorio 2 (LGPLv3) and live in
+-- graphics/krastorio-2/ with the licence and a NOTICE naming every source file -- see the same
+-- note at the top of prototypes/fluids.lua.
+local ENTITY = "__RealisticFusionCore__/graphics/krastorio-2/entities/"
+
+local function item(name, icon, subgroup, order, stack_size)
+  return {
+    type = "item",
+    name = name,
+    -- The item icon is the entity's, so the icon in hand is the icon on the map.
+    icons = { { icon = icon, icon_size = 64 } },
+    subgroup = subgroup,
+    order = order,
+    place_result = name,
+    stack_size = stack_size,
+  }
+end
+
 data:extend({
-  {
-    type = "item",
-    name = "rf-electrolyser",
-    -- Tints match the entity's, so the icon in hand is the icon on the map.
-    icons = { { icon = "__base__/graphics/icons/chemical-plant.png", icon_size = 64,
-                tint = { r = 0.70, g = 0.85, b = 1.00 } } },
-    subgroup = "production-machine",
-    order = "rf-a[electrolyser]",
-    place_result = "rf-electrolyser",
-    stack_size = 20,
-  },
-  {
-    type = "item",
-    name = "rf-deuterium-extractor",
-    icons = { { icon = "__base__/graphics/icons/oil-refinery.png", icon_size = 64,
-                tint = { r = 0.55, g = 0.75, b = 1.00 } } },
-    subgroup = "production-machine",
-    order = "rf-b[deuterium-extractor]",
-    place_result = "rf-deuterium-extractor",
-    stack_size = 10,
-  },
-  {
-    type = "item",
-    name = "rf-brine-concentrator",
-    icons = { { icon = "__base__/graphics/icons/chemical-plant.png", icon_size = 64,
-                tint = { r = 0.75, g = 0.85, b = 0.65 } } },
-    subgroup = "production-machine",
-    order = "rf-c[brine-concentrator]",
-    place_result = "rf-brine-concentrator",
-    stack_size = 20,
-  },
-  {
-    type = "item",
-    name = "rf-lithium-extractor",
-    icons = { { icon = "__base__/graphics/icons/chemical-plant.png", icon_size = 64,
-                tint = { r = 0.90, g = 0.80, b = 0.92 } } },
-    subgroup = "production-machine",
-    order = "rf-d[lithium-extractor]",
-    place_result = "rf-lithium-extractor",
-    stack_size = 20,
-  },
+  item("rf-electrolyser",       ENTITY .. "electrolyser.png",       "production-machine", "rf-a[electrolyser]",       20),
+  item("rf-deuterium-extractor", ENTITY .. "deuterium-extractor.png", "production-machine", "rf-b[deuterium-extractor]", 10),
+  item("rf-brine-concentrator", ENTITY .. "brine-concentrator.png", "production-machine", "rf-c[brine-concentrator]", 20),
+  item("rf-lithium-extractor",  ENTITY .. "lithium-extractor.png",  "production-machine", "rf-d[lithium-extractor]",  20),
+
   -- The only solid Core produces. Blanket breeding (a later ticket) is what consumes it.
+  -- No place_result, so it does not go through item() above.
   {
     type = "item",
     name = "rf-lithium",
-    icons = { { icon = "__base__/graphics/icons/steel-plate.png", icon_size = 64,
-                tint = { r = 0.88, g = 0.90, b = 0.95 } } },
+    icons = { { icon = "__RealisticFusionCore__/graphics/krastorio-2/items/lithium.png", icon_size = 64 } },
     subgroup = "intermediate-product",
     order = "rf-a[lithium]",
     stack_size = 100,

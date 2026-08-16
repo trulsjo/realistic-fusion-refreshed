@@ -1,0 +1,59 @@
+Krastorio 2 derived graphics
+============================
+
+Everything in this directory is derived from Krastorio 2's asset mod and is licensed under the
+GNU Lesser General Public License version 3 -- see LICENSE beside this file. It is NOT covered
+by the repository's LICENSE (The Unlicense). This is the per-directory exception described in
+legal-note.txt at the repository root.
+
+Upstream: https://codeberg.org/raiguard/Krastorio2Assets
+Authors:  raiguard and the Krastorio 2 contributors.
+
+Taken from upstream directly rather than from either predecessor mod's copy. Realistic Fusion
+Power and its 2.0 port both ship Krastorio-derived graphics, but their copies are marked GPLv3
+in one case and unmarked in the other, and their changelog attributes the unmarked set to
+several third parties whose terms were never recorded. Going upstream avoids inheriting that
+(ADR 0001, and issue #45).
+
+
+What was taken, and what was changed
+------------------------------------
+
+Unmodified copies, renamed to the prototype they serve:
+
+  fluids/hydrogen.png           <- icons/fluids/hydrogen.png
+  fluids/hydrogen-sulfide.png   <- icons/fluids/hydrogen-chloride.png
+  fluids/heavy-water.png        <- icons/fluids/heavy-water.png
+  fluids/depleted-water.png     <- icons/fluids/dirty-water.png
+  fluids/brine.png              <- icons/fluids/mineral-water.png
+  items/lithium.png             <- icons/items/lithium.png
+  entities/electrolyser.png         <- icons/entities/electrolysis-plant.png
+  entities/deuterium-extractor.png  <- icons/entities/atmospheric-condenser.png
+  entities/brine-concentrator.png   <- icons/entities/filtration-plant.png
+  entities/lithium-extractor.png    <- icons/entities/crusher.png
+  technologies/heavy-water.png          <- technologies/matter-water.png
+  technologies/deuterium-extraction.png <- technologies/fluids-chemistry.png
+  technologies/lithium-extraction.png   <- technologies/lithium-processing.png
+
+MODIFIED -- these are derivative works and remain LGPLv3:
+
+  fluids/deuterium.png          <- icons/fluids/hydrogen.png, recoloured.
+
+    Each pixel keeps its alpha and its Rec. 601 luminance (0.299 R + 0.587 G + 0.114 B) and is
+    remultiplied by RGB 0.40, 0.92, 1.00 -- the cyan rf-deuterium already declares as its
+    base_color. Deuterium is heavy hydrogen, so sharing hydrogen's icon is correct rather than
+    lazy; the recolour is what stops the two being mistaken for each other in a pipe.
+
+  fluids/lithium-solution.png   <- icons/fluids/mineral-water.png, recoloured.
+
+    Same operation, remultiplied by RGB 0.85, 0.74, 0.86. K2's lithium-chloride icon was tried
+    first and rejected: it is an *item* icon of white crystals, and a solid reads badly as the
+    contents of a pipe. The droplet keeps it legible as a liquid and the colour separates it
+    from rf-brine, which it is made from.
+
+
+Where these are referenced
+--------------------------
+
+prototypes/fluids.lua, prototypes/items.lua, prototypes/entities.lua and
+prototypes/technology/*.lua, all by __RealisticFusionCore__/graphics/krastorio-2/... paths.
