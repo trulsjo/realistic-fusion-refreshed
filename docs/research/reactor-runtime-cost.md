@@ -37,9 +37,9 @@ make the numbers mean something:
    because collecting the tables the step allocates is charged to its own stage, and would
    otherwise hide. `fluidFlowUpdate` because the reactor is a boiler on a fluid segment, so part
    of what this mod costs is charged to the engine rather than to us.
-2. **Every run builds the same map.** The substation grid, the power source, the flattened ground
-   and the generated chunks are sized for the largest *n* and built identically at every *n*,
-   including *n* = 0. Only the reactors differ, so a difference between runs is reactors.
+2. **Every run builds the same map.** The power, the flattened ground and the generated chunks are
+   sized for the largest *n* and built identically at every *n*, including *n* = 0. Only the
+   reactors differ, so a difference between runs is reactors.
 3. **Mean and median are both reported.** The mean is the cost — over thousands of ticks it is
    what UPS spends. The median is what a tick feels like, and is the honest description of
    per-tick work, because a run carries spikes an order of magnitude above the typical tick. They
@@ -57,10 +57,27 @@ is twenty times larger and fed from one end. Cost is barely affected — the ste
 at all, not only on full plasma — but a fifth of each pooled run is below full density, which is
 worth knowing before reading anything into pooled-versus-isolated at the margin.
 
-The script refuses to report a number unless the rig's own log says every reactor was present and
-hot when it last checked. That guard exists because none of the ways this rig can go wrong — a
-reactor that never got power, one that ran dry, one the mod never registered — crashes anything.
-They just quietly produce a smaller number.
+The script refuses to report a number unless the rig's own log says every reactor was present, hot
+**and on an electric network** when it last checked. That guard exists because none of the ways this
+rig can go wrong — a reactor that never got power, one that ran dry, one the mod never registered —
+crashes anything. They just quietly produce a smaller number.
+
+> **The guard earned its keep, and the rig had to be rebuilt around it
+> ([#49](https://github.com/trulsjo/realistic-fusion-refreshed/issues/49)).** Every distance in the
+> rig — cell pitch, where the feed pipe goes, where the power sits — was written for the 3×2 reactor
+> that existed when it was written, and went silently wrong the day the reactor became 15×15
+> ([ADR 0013](../adr/0013-the-reactor-is-fifteen-tiles-square.md)). Cells overlapped and the feed
+> pipe sat six tiles clear of the connection it was meant to touch. Nothing errored; the reactors
+> placed and stayed cold, and the "every reactor hot" gate refused to report — which is the gate
+> doing exactly its job, and it is the only reason this was caught at all.
+>
+> The rig now reads the reactor's footprint from its own prototype at run time and derives every
+> position from it, so the next resize moves the rig with it. The power changed shape as a
+> consequence: a substation reaches 18 tiles and a cell is now wider than that, so one connected
+> grid is no longer available at any spacing that fits the reactor. Each cell gets its own
+> substation and interface instead — built for every cell at every *n*, so it still cancels out of
+> the deltas. It is a heavier rig than the one below 2026-08-15's figures were taken on:
+> `electricNetworkUpdate` roughly doubled, 49.8 µs against 101 µs by median at *n* = 200.
 
 **Machine and versions.** Factorio 2.0.77 (win64, steam), base only — no Space Age, no Quality.
 Intel Core i7-9850H (6 cores, 12 threads, 2.6 GHz base), Windows 11. A laptop part from 2019, so
@@ -112,6 +129,39 @@ Not investigated further here, and it is where a later optimisation would go.
 9.0 µs against 1.4 is a factor of 6.5, where the arithmetic says it should be exactly 6 — the step
 does the same work, six times less often. The excess is inside the 20% run-to-run noise.
 
+### Re-taken 2026-08-17, on a 15×15 reactor
+
+Every figure above was taken on 2026-08-15, when the reactor was 3×2 and before #25 added the status
+line and the circuit signals. The reactor is now 15×15 and the rig was rebuilt around it (#49), so
+the whole throttled sweep was re-taken. **The pre-throttle table was not**, and stays a 2026-08-15
+measurement: the cadence decision it supported is long since made and rests on the Lua test, not on
+it.
+
+| reactors | scriptUpdate | per reactor | share of a tick |
+|---:|---:|---:|---:|
+| 1 | 12.3 | 12.3 | — |
+| 10 | 34.0 | 3.4 | 0.20% |
+| 50 | 112.1 | 2.2 | 0.67% |
+| 200 | 492.3 | **2.5** | **2.9%** |
+
+**The footprint costs nothing.** The simulation step reads a fluid box, an energy buffer and a
+capacity; not one of those depends on how many tiles the entity covers, and the measurement agrees.
+Four separate runs of the shipped code at *n* = 200 gave **1.73, 2.38, 2.45 and 2.46 µs** per
+reactor. The 1.80 µs this note records for the post-#25 reactor sits inside that spread. **A reactor
+that got 37 times bigger in area costs the same to simulate.**
+
+**What did move is the confidence interval, and it is worth being honest about.** Those four runs
+span 1.73 to 2.46 — a 42% spread on the same binary, same map, same machine, back to back. The 20%
+figure quoted above is optimistic for runs taken in quick succession on this laptop; treat the
+throttled cost as **about 2 µs per reactor, and treat any comparison finer than a factor of 1.5 as
+unmeasured**. A run taken to settle a smaller difference than that needs interleaved repeats, not
+one sweep.
+
+One sample was taken with the reactor animation removed to see whether #25's successor had cost
+anything, and returned **3.5 µs — higher with the feature gone**, which is not a possible causal
+effect. It is quoted here only as the clearest available illustration of the noise floor, and
+nothing is claimed from it.
+
 **Sharing a fluid segment is free.** Reactors plumbed together on one run of `rf-pipe` — the way
 [ADR 0011](../adr/0011-per-reactor-simulation-fluid-coupled.md) intends them to be built — cost
 **8.94 µs each at n = 200 against 8.98 isolated**, measured back to back. That is a 0.4%
@@ -127,6 +177,12 @@ that are both negligible, not a controlled comparison. The controlled comparison
 
 **ADR 0011's central bet, that delegating sharing to the engine's fluid system costs nothing,
 holds at 200 reactors on 14 shared segments.** It does not go superlinear.
+
+Re-checked 2026-08-17 on the 15×15 rig: pooled came to **2.11 µs** per reactor at *n* = 200, against
+an isolated spread of 1.73 to 2.46 on the same day. Still the same number, and now with 930 pipes
+laid across a map fifteen times the area. The claim survives the resize; note only that the noise
+floor above is far wider than the 0.4% the 2026-08-15 back-to-back pair resolved, so this is a
+weaker confirmation than that one, not a stronger one.
 
 **Garbage collection is not a problem.** The two-pass update allocates three tables per reactor
 per tick, which was the obvious suspect. `luaGarbageIncremental` comes to 0.09 µs per reactor by
