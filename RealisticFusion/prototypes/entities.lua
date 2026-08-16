@@ -84,7 +84,12 @@ reactor.collision_box = { { -7.25, -7.25 }, { 7.25, 7.25 } }
 reactor.selection_box = { { -7.5, -7.5 }, { 7.5, 7.5 } }
 -- Derived from K2's own prototype and LGPLv3, which is why it lives in the graphics directory and
 -- not here. See the note at the top of that file for what a boiler forced to change.
-reactor.pictures = require("graphics.krastorio-2.buildings.reactor-pictures")
+local reactor_graphics = require("graphics.krastorio-2.buildings.reactor-pictures")
+reactor.pictures = reactor_graphics.pictures
+-- The moving core, drawn over the still one by scripts/reactor-animation.lua while the reactor is
+-- fusing. It is a script rendering and not part of the entity because a boiler cannot animate at
+-- all -- neither structure nor fire will play, both measured; see the file above.
+data:extend({ reactor_graphics.core_animation("rf-reactor-core") })
 reactor.target_temperature = 165
 reactor.energy_consumption = "1W"
 reactor.energy_source = {

@@ -23,6 +23,12 @@
 -- all. A companion entity is the only route, and rf-reactor-signals is that companion: a constant
 -- combinator sitting at the reactor's own position, created on demand and destroyed with it.
 
+-- reactor-animation.lua is required rather than called from control.lua because publish() already
+-- works out which of the three states a reactor is in, and the moving core answers the same
+-- question. Requiring it here is safe for tests/test-circuit-output.lua, which loads this file
+-- outside Factorio: that module touches nothing at load either.
+local animation = require("scripts.reactor-animation")
+
 local M = {}
 
 -- Every runtime string this file shows a player. Public so the tests can assert the keys exist
@@ -165,6 +171,9 @@ function M.publish(entity, result, plasma_amount, spec)
     diode = defines.entity_status_diode[status.diode],
     label = { M.LOCALE_PREFIX .. status.key },
   }
+  -- The building says the same thing the status line does, rather than the boiler's own idea of
+  -- whether it is busy -- which is 1 W of neutered fluid conversion and means nothing.
+  animation.set(entity, status.key == "running")
 
   local section = section_for(entity)
   if not section then return end
@@ -185,6 +194,7 @@ end
 -- way a reactor can leave -- mined, destroyed, scripted away, surface deleted. A combinator left
 -- behind would be invisible, unminable and still on the wire, which is the worst of all outcomes.
 function M.forget(unit_number)
+  animation.forget(unit_number)
   local registry = storage.reactor_signals
   if not registry then return end
   local combinator = registry[unit_number]
@@ -277,6 +287,11 @@ end
 -- back, and storage may be exactly what has gone stale. That is sound because publish() puts each
 -- one at its reactor's own position and nothing ever moves either.
 function M.rescan(registry)
+  -- The moving cores go with it, and unlike the combinators they are simply thrown away: a
+  -- rendering holds nothing and nothing can be attached to one, so the next report redraws exactly
+  -- the ones still wanted.
+  animation.reset()
+
   local by_unit = {}
   local reactors = {}
   for unit_number, reactor in pairs(registry) do
