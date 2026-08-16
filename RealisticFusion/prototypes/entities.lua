@@ -38,6 +38,10 @@ heater.module_slots = 3
 -- No productivity: a productivity bonus on this recipe would conjure plasma, and plasma is
 -- energy. Speed and efficiency are fine.
 heater.allowed_effects = { "consumption", "speed", "pollution", "quality" }
+-- Krastorio 2's fuel refinery, which is the icon this machine already carries and is modelled on
+-- the same vanilla chemical plant -- same boxes, same four pipe positions. So unlike the reactor
+-- this is a sprite swap and nothing else. LGPLv3; see the file for why it lives over there.
+heater.graphics_set = require("graphics.krastorio-2.buildings.heater-pictures")
 
 -- ---------------------------------------------------------------- reactor
 

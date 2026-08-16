@@ -41,6 +41,16 @@ Unmodified copies, renamed to the prototype they serve:
     fusion-reactor-steam.png and fusion-reactor-reflection.png are NOT taken; see
     buildings/reactor-pictures.lua for why a boiler has nowhere to put them.
 
+  buildings/heater/heater.png         <- buildings/fuel-refinery/fuel-refinery.png
+  buildings/heater/heater-shadow.png  <- buildings/fuel-refinery/fuel-refinery-shadow.png
+
+    The plasma heater's in-world building, and the same art its icon already came from. Nothing
+    moved to fit it: Krastorio 2's fuel refinery is modelled on vanilla's chemical plant, which is
+    what rf-heater is a copy of, so the boxes and all four pipe positions already agreed. Each
+    sheet holds four directions side by side.
+
+    The boiling-patch working_visualisations are NOT taken; see buildings/heater-pictures.lua.
+
   entities/reactor.png          <- icons/entities/fusion-reactor.png
   entities/heat-exchanger.png   <- icons/entities/gas-power-station.png
   entities/heater.png           <- icons/entities/fuel-refinery.png
@@ -64,13 +74,19 @@ MODIFIED -- these are derivative works and remain LGPLv3:
 DERIVED CODE -- also LGPLv3, and this is the reason it is in here at all:
 
   buildings/reactor-pictures.lua
+  buildings/heater-pictures.lua
 
     Krastorio 2's mod is LGPLv3 as well as its assets. Every width, height, frame count, line
-    length, shift and scale in that file is read off its prototypes/buildings/fusion-reactor.lua,
-    so the file is a derivative of it and has to sit where the LICENSE beside it applies -- not in
-    prototypes/, which the repository's own LICENSE governs. It is restructured rather than
-    copied: Krastorio 2's reactor is an assembling-machine with a graphics_set, and rf-reactor is a
-    boiler, which has no such field. The file says what that forced.
+    length, shift and scale in these files is read off its prototypes/buildings/fusion-reactor.lua
+    and prototypes/buildings/fuel-refinery.lua respectively, so each is a derivative of one of them
+    and has to sit where the LICENSE beside it applies -- not in prototypes/, which the
+    repository's own LICENSE governs.
+
+    Both are restructured rather than copied, and each file says what forced it: Krastorio 2's
+    reactor is an assembling-machine with a graphics_set and rf-reactor is a boiler, which has no
+    such field; and the refinery's four directions are sliced out by hand rather than through
+    __base__'s make_4way_animation_from_spritesheet, which is an internal Wube never promised to
+    keep.
 
 
 Where these are referenced
