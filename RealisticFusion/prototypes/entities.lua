@@ -61,16 +61,26 @@ heater.allowed_effects = { "consumption", "speed", "pollution", "quality" }
 -- the target, and one seeded at 1e6 C, above it, both lose plasma only at the rate the simulation
 -- burns it, and neither produces reactor energy the engine was not asked for.
 --
--- ponytail: the reactor and the heat exchanger below are therefore still the same IN-WORLD sprite,
--- which is the price of the fluid behaviour. Their icons are now different art rather than one
--- icon in two tints, so they are told apart in hand, in map view and in alerts -- but not yet on
--- the ground. Unlike the pipes below, that is not a repoint: K2's fusion reactor is a different
--- size and shape from the vanilla heat exchanger this is copied from, so it needs real sprite
--- definitions. Tracked on #45.
 local reactor = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-reactor", {
   mining_time = 3,
 })
 reactor.mode = "output-to-separate-pipe"
+
+-- It looks like Krastorio 2's fusion reactor, and it is therefore the size of one: fifteen tiles
+-- square, against the three-by-two heat exchanger it is otherwise a copy of.
+--
+-- The footprint follows the art rather than the art being made to fit the footprint, and that is
+-- the decision, not a side effect. K2's reactor is drawn for a 15x15 building; there is no K2
+-- building shaped 3x2 to repoint to, and cropping a nine-tile reactor down to three reads as
+-- exactly that. Both boxes are K2's own, so the sprite lands where it was drawn to land.
+--
+-- The heat exchanger below keeps the vanilla 3x2 shape it always had. That is the point: the two
+-- were the same sprite in two tints and could not be told apart on the ground.
+reactor.collision_box = { { -7.25, -7.25 }, { 7.25, 7.25 } }
+reactor.selection_box = { { -7.5, -7.5 }, { 7.5, 7.5 } }
+-- Derived from K2's own prototype and LGPLv3, which is why it lives in the graphics directory and
+-- not here. See the note at the top of that file for what a boiler forced to change.
+reactor.pictures = require("graphics.krastorio-2.buildings.reactor-pictures")
 reactor.target_temperature = 165
 reactor.energy_consumption = "1W"
 reactor.energy_source = {
@@ -90,13 +100,17 @@ reactor.energy_source = {
 
 local covers = table.deepcopy(reactor.fluid_box.pipe_covers)
 
+-- Both boxes connect at the edge of the new footprint rather than the old one. Whole numbers
+-- because fifteen is odd: the tile centres of a 15x15 entity sit on integers, where the 3x2 it
+-- replaced had them on halves. West and east still both take plasma, which is what lets a run of
+-- rf-pipe feed a row of reactors from one pool (ADR 0011), and the energy still leaves north.
 reactor.fluid_box = {
   production_type = "input-output",
   volume = 1000,
   pipe_covers = covers,
   pipe_connections = {
-    { flow_direction = "input-output", direction = defines.direction.west, position = { -1, 0.5 } },
-    { flow_direction = "input-output", direction = defines.direction.east, position = { 1, 0.5 } },
+    { flow_direction = "input-output", direction = defines.direction.west, position = { -7, 0 } },
+    { flow_direction = "input-output", direction = defines.direction.east, position = { 7, 0 } },
   },
   -- Filtered so a stray water pipe cannot fill the reactor with something it will silently refuse
   -- to burn. It also pins this prototype to the D-D tier: the D-T tier (#28) needs either
@@ -108,7 +122,7 @@ reactor.output_fluid_box = {
   volume = 1000,
   pipe_covers = covers,
   pipe_connections = {
-    { flow_direction = "output", direction = defines.direction.north, position = { 0, -0.5 } },
+    { flow_direction = "output", direction = defines.direction.north, position = { 0, -7 } },
   },
   filter = "rf-reactor-energy",
 }

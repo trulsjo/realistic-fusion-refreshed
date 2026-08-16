@@ -26,6 +26,21 @@ Unmodified copies, renamed to the prototype they serve:
     vanilla pipe prototype with its filenames repointed here and every width, height, shift and
     scale left exactly as vanilla declares them. Nothing was resized or recomposited.
 
+  buildings/reactor/reactor.png                  <- buildings/fusion-reactor/fusion-reactor.png
+  buildings/reactor/reactor-shadow.png           <- buildings/fusion-reactor/fusion-reactor-shadow.png
+  buildings/reactor/reactor-animation.png        <- buildings/fusion-reactor/fusion-reactor-animation.png
+  buildings/reactor/reactor-animation-glow.png   <- buildings/fusion-reactor/fusion-reactor-animation-glow.png
+  buildings/reactor/reactor-animation-light.png  <- buildings/fusion-reactor/fusion-reactor-animation-light.png
+  buildings/reactor/reactor-light.png            <- buildings/fusion-reactor/fusion-reactor-light.png
+
+    The reactor's in-world building. Only the "fusion-" prefix is dropped; not one pixel is
+    changed. rf-reactor takes Krastorio 2's collision and selection boxes with them -- 15x15
+    rather than the vanilla heat exchanger's 3x2 -- so the art lands where it was drawn to land
+    rather than being cropped or rescaled to a footprint it was never meant for.
+
+    fusion-reactor-steam.png and fusion-reactor-reflection.png are NOT taken; see
+    buildings/reactor-pictures.lua for why a boiler has nowhere to put them.
+
   entities/reactor.png          <- icons/entities/fusion-reactor.png
   entities/heat-exchanger.png   <- icons/entities/gas-power-station.png
   entities/heater.png           <- icons/entities/fuel-refinery.png
@@ -44,6 +59,18 @@ MODIFIED -- these are derivative works and remain LGPLv3:
     what a reactor sells is the energy leaving that plasma; cyan against yellow is not a pairing
     anyone will confuse. Steam's icon was tried first and read as the heat exchanger's output
     rather than its input.
+
+
+DERIVED CODE -- also LGPLv3, and this is the reason it is in here at all:
+
+  buildings/reactor-pictures.lua
+
+    Krastorio 2's mod is LGPLv3 as well as its assets. Every width, height, frame count, line
+    length, shift and scale in that file is read off its prototypes/buildings/fusion-reactor.lua,
+    so the file is a derivative of it and has to sit where the LICENSE beside it applies -- not in
+    prototypes/, which the repository's own LICENSE governs. It is restructured rather than
+    copied: Krastorio 2's reactor is an assembling-machine with a graphics_set, and rf-reactor is a
+    boiler, which has no such field. The file says what that forced.
 
 
 Where these are referenced

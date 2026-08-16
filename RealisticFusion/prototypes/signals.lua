@@ -85,6 +85,15 @@ combinator.selectable_in_game = true
 combinator.selection_priority = 1
 combinator.selection_box = table.deepcopy(data.raw["boiler"]["rf-reactor"].selection_box)
 
+-- Reach measured from the wire's connection point, which is this entity's position -- the middle of
+-- a fifteen-tile reactor. The vanilla combinator's 9 is short of the corner of one at 10.6 tiles, so
+-- a player could wire a pole to the near edge and find the far edge out of range for no visible
+-- reason. Read off rf-reactor's own box rather than written down, so a later change to the footprint
+-- carries this with it.
+local half_diagonal = math.sqrt(
+  combinator.selection_box[2][1] ^ 2 + combinator.selection_box[2][2] ^ 2)
+combinator.circuit_wire_max_distance = math.ceil(half_diagonal) + 9
+
 -- Out of Factoriopedia, since nothing can build it and reading about it would only raise a
 -- question the player cannot act on.
 combinator.hidden = true
