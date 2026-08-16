@@ -182,6 +182,32 @@ write-data=$writeData
     [pscustomobject]@{ Code = $proc.ExitCode; OutFile = $outFile; ErrFile = $errFile }
 }
 
+function Invoke-FactorioStep {
+    <#  One Factorio run the caller cannot continue without: a non-zero exit is fatal rather than a
+        result, and the end of both captured streams is printed before it throws.
+
+        Invoke-Factorio deliberately decides nothing about what a failure means, because
+        load-check treats a non-zero exit as the answer it went looking for. Every other caller
+        wants exactly this, and wrote it out separately until there were two copies.
+
+        Returns the path to the captured stdout.  #>
+    param(
+        [Parameter(Mandatory)] [string]   $FactorioExe,
+        [Parameter(Mandatory)] [string]   $ModDirectory,
+        [Parameter(Mandatory)] [string[]] $Arguments,
+        [Parameter(Mandatory)] [string]   $OutputDirectory,
+        [Parameter(Mandatory)] [string]   $Tag
+    )
+
+    $result = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $ModDirectory `
+        -Arguments $Arguments -OutputDirectory $OutputDirectory -Tag $Tag
+    if ($result.Code -ne 0) {
+        Write-FactorioTail $result
+        throw "Factorio exited $($result.Code) during '$Tag'."
+    }
+    return $result.OutFile
+}
+
 function Write-FactorioTail {
     <#  Print the end of each captured stream from an Invoke-Factorio result.
 

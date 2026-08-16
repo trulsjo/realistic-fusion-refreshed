@@ -270,19 +270,9 @@ end)
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $lua -Encoding utf8
 }
 
-function Invoke-Step {
-    <#  One Factorio run that the benchmark cannot continue without, so a non-zero exit is fatal
-        rather than a result. Running it lives in factorio-lib.ps1; only the policy is here.  #>
-    param([string[]] $Arguments, [string] $Tag)
-
-    $result = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
-        -Arguments $Arguments -OutputDirectory $temp -Tag $Tag
-    if ($result.Code -ne 0) {
-        Write-FactorioTail $result
-        throw "Factorio exited $($result.Code) during '$Tag'."
-    }
-    return $result.OutFile
-}
+# The three things every run of this script shares, so that each call below names only what makes
+# it that run. Running-or-throwing itself lives in factorio-lib.ps1.
+$step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }
 
 function Get-Timings {
     <#  Parse --benchmark-verbose output into per-category sample lists, in nanoseconds.
@@ -339,11 +329,11 @@ try {
         Write-Rig -Count $count
         $save = Join-Path $temp "n$count.zip"
 
-        $createOut = Invoke-Step -Arguments @('--create', $save) -Tag "create-n$count"
+        $createOut = Invoke-FactorioStep @step -Arguments @('--create', $save) -Tag "create-n$count"
         $rig = Get-Content $createOut | Select-String -Pattern 'BENCH-RIG' | Select-Object -Last 1
         if ($rig -notmatch "placed=$count\b") { throw "rig built the wrong number of reactors: $rig" }
 
-        $benchOut = Invoke-Step -Tag "bench-n$count" -Arguments @(
+        $benchOut = Invoke-FactorioStep @step -Tag "bench-n$count" -Arguments @(
             '--benchmark', $save, '--benchmark-ticks', "$Ticks", '--benchmark-runs', "$Runs",
             '--benchmark-verbose', 'all', '--disable-audio')
 
