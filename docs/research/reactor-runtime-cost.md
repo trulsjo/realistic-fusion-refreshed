@@ -15,6 +15,13 @@ measures **about 9 µs** per reactor before throttling — five thousand times l
 after. That note predicted something like this on the grounds that v1 has no GUI in the per-tick
 path; the prediction held.
 
+> **Superseded in part by #25.** Every figure below is the simulation alone, measured before
+> reactors reported themselves. Adding the status line and the two circuit signals took the
+> throttled figure from **1.39 µs to 1.80 µs** per reactor — 2.16% of a tick at 200 reactors,
+> against 1.7% here. The method and every conclusion still stand; only the headline number moved,
+> and it moved for a feature rather than for a regression. See *Observability* at the foot of this
+> note.
+
 ## Method
 
 `scripts/bench-reactors.ps1`, which exists so that #34 can repeat this rather than invent its own.
@@ -225,3 +232,30 @@ Two things follow, and both outlive the rig:
 - Decisions this bears on: [ADR 0005](../adr/0005-real-time-fusion-simulation.md),
   [ADR 0011](../adr/0011-per-reactor-simulation-fluid-coupled.md).
 - The prior claim it replaces: [`redesign-runtime-cost.md`](redesign-runtime-cost.md).
+
+## Observability (#25)
+
+Reactors now publish a status line and two circuit signals. That is per-reactor work in the tick
+path, so it moves the number this note exists to record.
+
+| | per reactor | share of a tick at n = 200 |
+|---|---:|---:|
+| simulation alone | 1.39 µs | 1.7% |
+| reporting on every simulation step | 3.51 µs | 4.2% |
+| **reporting every fifth step (shipped)** | **1.80 µs** | **2.16%** |
+
+**Publishing costs about five times what simulating does.** Writing a combinator section and a
+status table is expensive next to the arithmetic it reports — 2.1 µs against 0.4 — which is the
+same lesson as the rest of this note: the cost is in crossing into the engine, not in the physics.
+
+**Caching unchanged values was tried and abandoned.** The obvious fix is to skip a write when
+neither integer has moved. It returned 15%, and the reason it returned so little is worth writing
+down: the plasma temperature is a float that moves in its last digits every single step, and at
+6e8 degrees even a millionth of a percent is hundreds of degrees, so the emitted integer almost
+never repeats. The cache almost never hit. It was reverted rather than kept for 15% and a storage
+table per reactor.
+
+**Reporting five times less often returned 80% of the loss**, and costs a player nothing: half a
+second of staleness on a gauge no one can read at 10 Hz, and no factory control loop reacts faster
+than that. `REPORT_EVERY` in `control.lua` is the one number to change if a later tier wants a
+faster gauge, and this table is what it costs.

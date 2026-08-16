@@ -1,9 +1,11 @@
 -- Runtime: the tick loop, reading and writing fluid boxes, and the invariants that tie the
 -- simulation to the prototypes. Which reactors exist is scripts/entity-management.lua's business;
--- the physics is scripts/reactor-logic.lua's and does not know this file exists.
+-- the physics is scripts/reactor-logic.lua's and does not know this file exists; what a reactor
+-- reports to the player is scripts/circuit-output.lua's.
 
 local logic    = require("scripts.reactor-logic")
 local entities = require("scripts.entity-management")
+local circuit  = require("scripts.circuit-output")
 
 -- ADR 0005 pre-authorises throttling the simulation to a coarser cadence and requires that doing
 -- so be a change in one place. This is that place: nothing else in the mod knows how often the
@@ -31,6 +33,26 @@ local entities = require("scripts.entity-management")
 --
 -- See docs/research/reactor-runtime-cost.md; scripts/bench-reactors.ps1 takes the measurement.
 local UPDATE_INTERVAL = 6
+
+-- How many simulation steps pass between reports. The reactor is simulated ten times a second and
+-- reports itself twice, because those two numbers answer different questions.
+--
+-- The simulation's cadence is set by the physics: how finely a thirty-second confinement time has
+-- to be resolved. Reporting's is set by a person reading a number, and a value that changes ten
+-- times a second is not readable -- nor is any factory control loop built on it going to react
+-- faster than a second. Nothing is lost by saying it five times less often, and something real is
+-- gained: publishing on every step took the per-reactor cost from 1.39 us to 3.51 us, measured
+-- with scripts/bench-reactors.ps1, because writing a combinator section is expensive next to the
+-- arithmetic it reports.
+--
+-- Caching the last-written values and skipping unchanged ones was tried first and abandoned. It
+-- returned 15%, because the temperature is a float that moves in its last digits every single step
+-- -- at 6e8 degrees even a millionth of a percent is hundreds of degrees, so the emitted integer
+-- almost never repeats and the cache almost never hits. The measurement is what settled it.
+--
+-- The worst staleness a player sees is half a second. That is a deliberate trade and the only one
+-- here; if a later tier wants a faster gauge, this is the one number to change.
+local REPORT_EVERY = 5
 
 --- Apply one reactor's step to the world.
 local function apply(entity, plasma, result)
@@ -87,11 +109,25 @@ local function update()
   local dt = UPDATE_INTERVAL / 60
   local pending = {}
 
+  -- Counted rather than derived from game.tick, so the reporting cadence stays a multiple of the
+  -- simulation's however UPDATE_INTERVAL is set.
+  storage.steps_since_report = (storage.steps_since_report or REPORT_EVERY) + 1
+  local reporting = storage.steps_since_report >= REPORT_EVERY
+  if reporting then storage.steps_since_report = 0 end
+
   for unit_number, entity in pairs(entities.registry()) do
     if entity.valid then
       local plasma = entity.fluidbox[1]
       local result = logic.step(logic.reactor, plasma and plasma.name, plasma and plasma.amount,
         plasma and plasma.temperature, entity.energy, dt)
+
+      -- Reported from the read pass, on the state the step was computed against, so a reactor
+      -- describes the tick it just simulated rather than one it is part way through. It happens
+      -- here and not in the write pass because a reactor with nothing to simulate has no entry
+      -- there at all, and "starved of plasma" is exactly the state that reactor is in and the one
+      -- worth showing.
+      if reporting then circuit.publish(entity, result, plasma and plasma.amount) end
+
       if result then
         pending[#pending + 1] = { entity = entity, plasma = plasma, result = result }
       end
@@ -102,6 +138,9 @@ local function update()
       -- covers only the ways someone remembered. Removing the current key during pairs is
       -- defined behaviour in Lua; adding one would not be.
       entities.forget(unit_number)
+      -- The reactor's signals combinator is invisible, unminable and still on the wire if it
+      -- outlives the reactor, so it goes at the same moment and by the same test.
+      circuit.forget(unit_number)
     end
   end
 
@@ -163,13 +202,21 @@ end
 -- "the world may not be what this code last saw": one re-reads the map, the other re-reads the
 -- prototypes. The build-event handlers that keep the register current in between are wired by
 -- entity-management itself.
+--
+-- circuit.rescan() is the third answer to the same question, and it is not redundant with the
+-- pruning update() does. A reactor removed while this mod was disabled never comes back through
+-- update() at all -- its unit_number is simply absent from the rebuilt register -- so nothing
+-- would ever destroy the combinator it left behind. It runs after entities.rescan() because it is
+-- handed the register that call rebuilds.
 script.on_init(function()
   check_prototypes()
   entities.rescan()
+  circuit.rescan(entities.registry())
 end)
 script.on_configuration_changed(function()
   check_prototypes()
   entities.rescan()
+  circuit.rescan(entities.registry())
 end)
 
 script.on_nth_tick(UPDATE_INTERVAL, update)
