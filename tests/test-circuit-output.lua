@@ -77,10 +77,13 @@ check(SPEC.max_temperature_c <= INT32_MAX,
 -- Three states, which is what a player needs to tell apart: it is working, it is sitting there, or
 -- it has nothing to work with. The diode is a name here rather than a defines value so that this
 -- file runs outside Factorio; publish() maps it.
+--
+-- The threshold is half a percent of the reactor's RATED heating, so the spec goes in too.
 local function status_of(result, plasma_amount)
-  return C.status(result, plasma_amount)
+  return C.status(result, plasma_amount, SPEC)
 end
 
+local RATED = SPEC.heating_power_w
 local running = { temperature_c = 6e8, q_factor = 1.4, fusion_power_w = 7e7 }
 local cold    = { temperature_c = 15,  q_factor = 0,   fusion_power_w = 0 }
 
@@ -94,33 +97,34 @@ equal(status_of(nil, 0).key, "starved", "a reactor with no plasma reports starve
 equal(status_of(nil, 0).diode, "red", "starved shows a red diode")
 equal(status_of(nil, nil).key, "starved", "no plasma at all is starved, not an error")
 
--- The boundary between idle and running is fusion actually happening, not temperature. A reactor
--- can be hot and not fusing on the way down, and calling that "running" would be a lie the player
--- would act on.
+-- The boundary is fusion actually happening, not temperature. A reactor can be hot and not fusing
+-- on the way down, and calling that "running" would be a lie the player would act on.
 equal(status_of({ temperature_c = 6e8, q_factor = 0, fusion_power_w = 0 }, 1000).key, "idle",
   "hot but not fusing is idle, not running")
 
--- Where the boundary actually sits, and why it is not "any fusion at all". These three cases are
--- the ones this suite originally got wrong: it fed status() a clean q_factor of 0, which never
--- happens. In a running game the reactivity at 15 C is about 1e-70 and there are 1e23 particles,
--- so fusion power is a tiny positive number and a "> 0" test called a stone-cold reactor "Fusing".
--- Caught by tests/../probe in a live game, fixed here.
+-- Why the threshold is not "any fusion at all". Fusion power is never exactly zero: the reactivity
+-- at 15 C is about 1e-70 and there are 1e23 particles, so a "> 0" test called a stone-cold reactor
+-- "Fusing". This suite originally missed it by feeding status() a clean 0, which never happens.
 equal(status_of({ temperature_c = 15, q_factor = 1e-60, fusion_power_w = 1e-55 }, 1000).key, "idle",
   "a stone-cold reactor with denormal fusion is idle, not running")
-equal(status_of({ temperature_c = 6.3e6, q_factor = 0.004, fusion_power_w = 2e5 }, 1000).key, "idle",
-  "fusion below half a percent of heating is still idle")
-equal(status_of({ temperature_c = 3e7, q_factor = 0.005, fusion_power_w = 2.5e5 }, 1000).key, "running",
-  "half a percent is where running starts")
+equal(status_of({ temperature_c = 6.3e6, q_factor = 0.004, fusion_power_w = RATED * 0.004 }, 1000).key,
+  "idle", "fusion below half a percent of rated heating is still idle")
+equal(status_of({ temperature_c = 3e7, q_factor = 0.005, fusion_power_w = RATED * 0.005 }, 1000).key,
+  "running", "half a percent of rated heating is where running starts")
 
--- The property the threshold exists to give: status and signal never contradict each other.
-for _, q in ipairs({ 0, 1e-60, 0.004, 0.005, 0.5, 1, 2.1, 40 }) do
-  local result = { temperature_c = 1e8, q_factor = q, fusion_power_w = q * 5e7 }
-  local says_running = status_of(result, 1000).key == "running"
-  local shows_q = C.signals(result).q > 0
-  check(says_running == shows_q,
-    "status and Q signal agree",
-    string.format("q_factor %.3g: running=%s, signal=%d", q, tostring(says_running), C.signals(result).q))
-end
+-- And why the threshold is not the Q signal either, which was the second wrong answer. q_factor is
+-- 0 whenever heating power is 0 -- deliberately, since a reactor that is off is not infinitely
+-- efficient -- so a hot reactor that has LOST POWER is still fusing and still filling its output
+-- pipe while its Q reads zero. Reporting that as "not fusing" is wrong at exactly the moment a
+-- player is trying to diagnose it.
+local browned_out = { temperature_c = 8e8, q_factor = 0, fusion_power_w = 1.3e8 }
+equal(status_of(browned_out, 1000).key, "running",
+  "a fusing reactor that has lost power still reports running")
+equal(C.signals(browned_out).q, 0, "its Q signal is nonetheless zero, because Q has no denominator")
+
+-- Without a spec there is no scale to judge against, so nothing is claimed to be running. That is
+-- the safe direction: silence rather than a false positive.
+equal(C.status(running, 1000, nil).key, "idle", "with no spec, running is never claimed")
 
 -- A reactor that is fusing while its plasma runs out is still running: it is doing the thing.
 -- Starved is about having nothing, not about having little.
@@ -129,15 +133,47 @@ equal(status_of(running, 0.5).key, "running", "a nearly-empty but fusing reactor
 -- ---------------------------------------------------------------- locale keys
 --
 -- Every status has to name a key that exists, or the player sees "Unknown key" in the one place
--- this ticket exists to make readable. The keys are asserted against the module rather than
--- retyped, and scripts/locale-check.ps1 does not cover these -- it checks prototype names, and
--- these are runtime strings.
+-- this ticket exists to make readable. scripts/locale-check.ps1 does not cover these -- it checks
+-- prototype names against a dump, and these are runtime strings assembled in Lua -- so the file is
+-- read here and the keys are looked up in it.
+
+local locale = {}
+do
+  local handle = io.open("RealisticFusion/locale/en/observability.cfg", "r")
+  check(handle ~= nil, "the observability locale file exists")
+  if handle then
+    local section
+    for line in handle:lines() do
+      local heading = line:match("^%[(.-)%]%s*$")
+      if heading then
+        section = heading
+      else
+        local key = line:match("^([%w_-]+)=")
+        if key and section then locale[section .. "." .. key] = true end
+      end
+    end
+    handle:close()
+  end
+end
+
+local seen_states = {}
 for _, case in ipairs({ { running, 1000 }, { cold, 1000 }, { nil, 0 } }) do
   local status = status_of(case[1], case[2])
-  check(type(status.key) == "string" and status.key ~= "", "every status has a key")
-  check(C.LOCALE_PREFIX and C.LOCALE_PREFIX:match("^[%w-]+%.$") ~= nil,
-    "the locale prefix is a section followed by a dot",
-    tostring(C.LOCALE_PREFIX))
+  seen_states[status.key] = true
+  check(locale[C.LOCALE_PREFIX .. status.key] == true,
+    "the status key resolves to a locale entry",
+    C.LOCALE_PREFIX .. status.key)
+end
+
+-- All three, not just the ones these three cases happen to hit.
+for _, key in ipairs({ "running", "idle", "starved" }) do
+  check(locale[C.LOCALE_PREFIX .. key] == true, "every status key is in the locale file", key)
+  check(seen_states[key] == true, "every status key is actually reachable", key)
+end
+
+-- Both signal names are localised too, and they are the names circuit-output writes.
+for _, name in ipairs({ "rf-signal-plasma-temperature", "rf-signal-q-factor" }) do
+  check(locale["virtual-signal-name." .. name] == true, "the signal is localised", name)
 end
 
 -- ---------------------------------------------------------------- against a real step

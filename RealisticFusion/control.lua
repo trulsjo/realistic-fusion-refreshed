@@ -126,7 +126,7 @@ local function update()
       -- here and not in the write pass because a reactor with nothing to simulate has no entry
       -- there at all, and "starved of plasma" is exactly the state that reactor is in and the one
       -- worth showing.
-      if reporting then circuit.publish(entity, result, plasma and plasma.amount) end
+      if reporting then circuit.publish(entity, result, plasma and plasma.amount, logic.reactor) end
 
       if result then
         pending[#pending + 1] = { entity = entity, plasma = plasma, result = result }

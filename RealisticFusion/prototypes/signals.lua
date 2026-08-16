@@ -56,24 +56,35 @@ combinator.flags = {
   "not-deconstructable",
   "not-upgradable",
   "no-copy-paste",
-  "hide-alt-info",
   "not-in-kill-statistics",
 }
+-- Deliberately NOT "hide-alt-info". Alt mode over a constant combinator draws the signals it is
+-- emitting, which here means the plasma temperature and Q float over every reactor on the map for
+-- free -- the readout a player is most likely to find without being told. Hiding it was the first
+-- version, on the reasoning that an internal entity should stay out of the way, and it suppressed
+-- the most useful half of this ticket.
 
--- Selectable, with the reactor's own footprint and the lowest possible priority.
+-- Selectable, with the reactor's own footprint and the lowest priority that actually is one.
 --
--- This is the one piece of this ticket decided by reasoning rather than measurement, so it is
--- worth stating plainly. A wire drag only offers entities that have a circuit connector, and the
--- reactor has none -- so during a drag this is the only candidate under the cursor and the wire
--- lands on it. An ordinary click is a different contest, one both entities are in, and
--- selection_priority is what settles it: 0 against the reactor's default 50 means the reactor
--- always wins and the player never opens a bare combinator by accident.
+-- A wire drag only offers entities that have a circuit connector, and the reactor has none -- so
+-- during a drag this is the only candidate under the cursor and the wire lands on it. An ordinary
+-- click is a different contest, one both entities are in, and selection_priority settles it.
 --
--- Borrowing the reactor's selection box rather than declaring one is what makes the whole
--- reactor the wire target, instead of a one-tile spot at its centre that the player has to find.
+-- 1, not 0. The 2.0.77 documentation is explicit that "the value 0 will be treated the same as
+-- nil", which would have left this at the default 50, tied with the reactor, and a click could
+-- have opened a bare combinator. Caught in review against the docs; the first version of this
+-- comment asserted the opposite.
+--
+-- Borrowing the reactor's selection box rather than declaring one is what makes the whole reactor
+-- the wire target, instead of a one-tile spot at its centre that the player has to find.
 combinator.selectable_in_game = true
-combinator.selection_priority = 0
+combinator.selection_priority = 1
 combinator.selection_box = table.deepcopy(data.raw["boiler"]["rf-reactor"].selection_box)
+
+-- Out of Factoriopedia, since nothing can build it and reading about it would only raise a
+-- question the player cannot act on.
+combinator.hidden = true
+combinator.hidden_in_factoriopedia = true
 
 -- No item places it and no recipe makes it; control.lua creates it with the reactor.
 data:extend({ combinator })

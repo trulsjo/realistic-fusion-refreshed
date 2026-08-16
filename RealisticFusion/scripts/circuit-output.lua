@@ -80,22 +80,33 @@ end
 --   idle     holding plasma and not fusing usefully -- a cold start, or a reactor on the way down.
 --   running  fusing.
 --
--- The line between idle and running is drawn at the Q signal reading at least 1, and that is a
--- deliberate choice over "any fusion at all". Fusion power is never exactly zero: the reactivity
--- at 15 C is around 1e-70, and multiplied by 1e23 particles it is a tiny positive number rather
--- than a zero. Testing it against zero therefore called a stone-cold reactor "Fusing" -- caught in
--- a running game, not in the tests, because the tests fed it a clean 0.
+-- The line between idle and running is fusion power against what the reactor is RATED to draw,
+-- not against what it actually drew, and not the Q signal. Both of the wrong answers were tried:
 --
--- Tying the threshold to the emitted signal rather than to an absolute wattage means status and
--- signal can never contradict each other: a player who sees "Fusing" always sees a Q above zero
--- on the wire, and one who sees Q = 0 is never told the reactor is working. It also puts the
--- boundary somewhere defensible -- Q of 0.5%, the point at which fusion stops being a rounding
--- error against the heating being paid for.
-function M.status(result, plasma_amount)
+--   "any fusion at all" -- fusion power is never exactly zero. The reactivity at 15 C is around
+--   1e-70, and against 1e23 particles that is a tiny positive number rather than a zero, so a
+--   stone-cold reactor reported "Fusing". The unit tests missed it because they fed status() a
+--   clean 0, which never happens; a running game found it immediately.
+--
+--   "the Q signal is at least 1" -- which fixed that, and broke something worse.
+--   reactivity.q_factor returns 0 when heating power is 0, deliberately, because a reactor that is
+--   off is not infinitely efficient. So a hot reactor that loses electricity -- still fusing, still
+--   filling its output pipe -- reported "Holding plasma, not fusing". That is exactly the moment a
+--   player is trying to work out what went wrong, and it is the moment #37 is about.
+--
+-- Rated heating is the stable denominator: it does not move when the grid browns out, so the
+-- threshold means the same thing in every state the reactor can be in. Half a percent of it is
+-- where fusion stops being a rounding error.
+--
+-- The cost is that status and the Q signal can disagree in one case -- fusing with no power reads
+-- "Fusing" beside a Q of 0 -- and that is the right way round. The status describes the plasma;
+-- the Q describes a ratio that is genuinely undefined when the denominator is zero.
+function M.status(result, plasma_amount, spec)
   if not result or not plasma_amount or plasma_amount <= 0 then
     return { key = "starved", diode = "red" }
   end
-  if M.signals(result).q >= 1 then
+  local rated_w = spec and spec.heating_power_w or 0
+  if rated_w > 0 and (result.fusion_power_w or 0) >= rated_w * 0.005 then
     return { key = "running", diode = "green" }
   end
   return { key = "idle", diode = "yellow" }
@@ -112,12 +123,6 @@ local Q_SIGNAL           = { type = "virtual", name = "rf-signal-q-factor", qual
 -- quality is not decoration. Without it set_slot rejects the filter with "Can't specify non zero
 -- request with non trivial item filter condition", because a SignalFilter that leaves quality open
 -- is a condition rather than a single signal. Probed; the docs do not say so.
-
-local DIODE = {
-  green  = "green",
-  yellow = "yellow",
-  red    = "red",
-}
 
 --- The section this reactor's signals live in, creating the combinator if it is not there yet.
 --
@@ -154,10 +159,10 @@ end
 --
 -- Called on the reporting cadence, not the simulation one. control.lua owns both; see the note on
 -- REPORT_EVERY there for why they are different numbers.
-function M.publish(entity, result, plasma_amount)
-  local status = M.status(result, plasma_amount)
+function M.publish(entity, result, plasma_amount, spec)
+  local status = M.status(result, plasma_amount, spec)
   entity.custom_status = {
-    diode = defines.entity_status_diode[DIODE[status.diode]],
+    diode = defines.entity_status_diode[status.diode],
     label = { M.LOCALE_PREFIX .. status.key },
   }
 
