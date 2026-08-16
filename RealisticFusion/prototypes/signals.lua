@@ -10,9 +10,13 @@ local GRAPHICS = "__RealisticFusion__/graphics/krastorio-2/"
 -- Two signals rather than a GUI. ADR 0010 chose that deliberately: GUI was 929 of the redesign's
 -- ~1,736 runtime lines, and these carry the same two numbers through the engine's own idiom.
 --
--- Icons are the fluids the numbers describe -- the plasma whose temperature this is, and the
--- energy the Q factor is a ratio of -- so nothing new is taken from Krastorio 2 for these. They
--- are still LGPLv3 and still live in graphics/krastorio-2/; see the NOTICE there.
+-- The temperature signal wears the plasma's own icon, because that is what it is the temperature of.
+--
+-- The Q factor deliberately does NOT wear the reactor energy fluid's. It did, on the reasoning that
+-- Q is a ratio of that energy, and Truls read the resulting signal as "reactor energy: 172" in game
+-- -- which is exactly what the icon said, and it is neither reactor energy nor 172 of anything. A
+-- ratio is not a fluid and must not look like one, so it takes a Krastorio 2 virtual-signal icon
+-- instead: nothing in the game shows that bolt as a fluid in a pipe.
 data:extend({
   {
     type = "virtual-signal",
@@ -25,7 +29,7 @@ data:extend({
   {
     type = "virtual-signal",
     name = "rf-signal-q-factor",
-    icon = GRAPHICS .. "fluids/reactor-energy.png",
+    icon = GRAPHICS .. "virtual-signals/q-factor.png",
     icon_size = 64,
     subgroup = "virtual-signal",
     order = "rf-b[q-factor]",

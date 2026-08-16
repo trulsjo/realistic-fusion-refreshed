@@ -51,6 +51,11 @@ Unmodified copies, renamed to the prototype they serve:
 
     The boiling-patch working_visualisations are NOT taken; see buildings/heater-pictures.lua.
 
+  virtual-signals/q-factor.png  <- icons/virtual-signals/energy-2.png
+
+    The Q factor circuit signal. It used to wear the reactor energy fluid's icon, and was read in
+    game as a quantity of that fluid; a ratio must not look like something that flows in a pipe.
+
   entities/reactor.png          <- icons/entities/fusion-reactor.png
   entities/heat-exchanger.png   <- icons/entities/gas-power-station.png
   entities/heater.png           <- icons/entities/fuel-refinery.png

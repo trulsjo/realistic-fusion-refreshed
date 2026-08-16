@@ -74,6 +74,18 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 $ourMods  = @('RealisticFusionCore', 'RealisticFusion')
 $PREFIX   = 'rf-'   # ADR 0009: everything this project defines carries it
 
+# Prototype types with no player-visible name at all, where an absent locale entry is correct rather
+# than a gap.
+#
+# This exists because the check below refuses to guess: it decides whether a type needs names by
+# looking at how many of the GAME'S OWN prototypes of that type have them, and a type the game
+# defines none of leaves it nothing to look at. Rather than let it assume either way, it throws and
+# asks to be taught. This is where the teaching goes, and every line is a judgement someone made
+# once, deliberately, in writing.
+$NAMELESS_TYPES = @{
+    'animation' = 'a named sprite sheet for rendering.draw_animation; nothing ever shows its name'
+}
+
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
 $bundled     = Get-BundledMods -FactorioExe $FactorioExe
 try {
@@ -144,11 +156,18 @@ function Test-Locale {
         $ours    = @($names | Where-Object { $_.StartsWith($PREFIX, [StringComparison]::Ordinal) })
         if ($ours.Count -eq 0) { continue }
 
+        if ($NAMELESS_TYPES.ContainsKey($type.Name)) {
+            $skipped += "{0} ({1}, declared nameless: {2})" -f $type.Name, $ours.Count, $NAMELESS_TYPES[$type.Name]
+            continue
+        }
+
         $vanilla = @($names | Where-Object { -not $_.StartsWith($PREFIX, [StringComparison]::Ordinal) })
         if ($vanilla.Count -eq 0) {
-            throw ("prototype type '{0}' has {1} of ours and none of the game's, so there is no way to tell " +
-                   "whether it needs a locale entry. Teach this script about it rather than letting it guess." -f
-                   $type.Name, $ours.Count)
+            # Parenthesised as one string before -f, which binds tighter than +: without them the
+            # format applies to the second half only and the message prints its own placeholders.
+            throw (("prototype type '{0}' has {1} of ours and none of the game's, so there is no way to tell " +
+                    "whether it needs a locale entry. Add it to `$NAMELESS_TYPES at the top of this script if " +
+                    "it has no visible name, rather than letting the check guess.") -f $type.Name, $ours.Count)
         }
 
         # Where do the game's own prototypes of this type get their names from? Judged by the share

@@ -37,6 +37,33 @@ Unmodified copies, renamed to the prototype they serve:
     machine is a copy of vanilla's oil refinery and is already five tiles square, which is what
     Krastorio 2's condenser is. atmospheric-condenser-reflection.png is not taken.
 
+  buildings/electrolyser/electrolyser.png             <- buildings/electrolysis-plant/electrolysis-plant.png
+  buildings/electrolyser/electrolyser-shadow.png      <- buildings/electrolysis-plant/electrolysis-plant-sh.png
+  buildings/electrolyser/electrolyser-work.png        <- buildings/electrolysis-plant/electrolysis-plant-work.png
+  buildings/electrolyser/electrolyser-work-light.png  <- buildings/electrolysis-plant/electrolysis-plant-work-light.png
+
+    The electrolyser's in-world building, matching the icon above. The machine grew from 3x3 to
+    5x5 to carry it, taking Krastorio 2's own boxes and its own pipe positions (ADR 0013).
+    electrolysis-plant-reflection.png is not taken.
+
+  buildings/brine-concentrator/brine-concentrator.png          <- buildings/filtration-plant/filtration-plant.png
+  buildings/brine-concentrator/brine-concentrator-shadow.png   <- buildings/filtration-plant/filtration-plant-sh.png
+  buildings/brine-concentrator/brine-concentrator-working.png  <- buildings/filtration-plant/filtration-plant-working.png
+
+    Concentrating brine out of water is filtration by another name. The machine grew from 3x3 to
+    7x7 and takes Krastorio 2's boxes; its four pipes straddle the faces the filtration plant puts
+    one on each of, because this machine needs two per face where that one needs one.
+
+    The dirty-water and clear-water masks are NOT taken; see buildings/brine-concentrator-pictures.lua.
+
+  buildings/lithium-extractor/lithium-extractor.png         <- buildings/crusher/crusher.png
+  buildings/lithium-extractor/lithium-extractor-shadow.png  <- buildings/crusher/crusher-shadow.png
+
+    The lithium extractor's in-world building, matching the icon above. 3x3 to 7x7, Krastorio 2's
+    boxes. Its pipe positions are NOT Krastorio 2's: the crusher has no fluid boxes at all, so they
+    are this repository's own, matched to the brine concentrator. crusher-reflection.png is not
+    taken.
+
   entities/brine-concentrator.png   <- icons/entities/filtration-plant.png
   entities/lithium-extractor.png    <- icons/entities/crusher.png
   technologies/heavy-water.png          <- technologies/matter-water.png
@@ -62,13 +89,19 @@ MODIFIED -- these are derivative works and remain LGPLv3:
 
 DERIVED CODE -- also LGPLv3, and this is the reason it is in here at all:
 
-  buildings/deuterium-extractor-pictures.lua
+  buildings/deuterium-extractor-pictures.lua   <- prototypes/buildings/atmospheric-condenser.lua
+  buildings/electrolyser-pictures.lua          <- prototypes/buildings/electrolysis-plant.lua
+  buildings/brine-concentrator-pictures.lua    <- prototypes/buildings/filtration-plant.lua
+  buildings/lithium-extractor-pictures.lua     <- prototypes/buildings/crusher.lua
 
     Krastorio 2's mod is LGPLv3 as well as its assets. Every width, height, frame count, line
-    length, shift and scale in that file is read off its
-    prototypes/buildings/atmospheric-condenser.lua, so the file is a derivative of it and has to
-    sit where the LICENSE beside it applies -- not in prototypes/, which the repository's own
-    LICENSE governs.
+    length, shift and scale in these files is read off the prototype named beside it, so each is a
+    derivative of Krastorio 2's code and not only of its art, and each lives here beside the
+    LICENSE that governs it.
+
+    The collision and selection boxes in prototypes/entities.lua come from the same files. They
+    are numbers about this repository's own machines rather than a copy of Krastorio 2's
+    prototypes, so they are stated there and attributed here.
 
 
 Where these are referenced
