@@ -49,11 +49,18 @@ Deliberately unanswered so far, and worth knowing before reading anything into t
 
 ## Licence
 
-**[The Unlicense](LICENSE)** — released into the public domain.
+**[LGPLv3](LICENSE)**, with [the GPLv3 text](LICENSE.GPL) it incorporates by reference.
 
-Chosen to stay in the spirit of the original authors: Romner_set released Realistic Fusion Power under
-the WTFPL and Durikkan released the 2.0 port under The Unlicense. Both are public-domain-equivalent, so
-this carries the same intent forward — do whatever you want with it, no conditions.
+The mod's graphics are Krastorio 2's, and so are the sprite definitions that place them — Krastorio 2
+is LGPLv3, mod and assets alike. What this project takes from Realistic Fusion Power is ideas, not
+code. So the licence the borrowed material already carries is the licence for the whole repository,
+rather than a permissive repository with an LGPL boundary inside it that anyone reusing this would
+have to find first.
+
+It was The Unlicense until 2026-08-16, chosen then to stay in the spirit of Romner_set (WTFPL) and
+Durikkan (The Unlicense). `legal-note.txt` records what changed and what still has to be checked per
+directory — chiefly that NonCommercial and NoDerivatives material is never lifted, which LGPLv3 does
+nothing to relax.
 
 ## Reference
 

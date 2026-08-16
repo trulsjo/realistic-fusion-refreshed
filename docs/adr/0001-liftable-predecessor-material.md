@@ -42,6 +42,15 @@ Relicensing this project was considered and does not help: NonCommercial and NoD
 incompatible with every open-source licence, and the per-directory convention already permits copyleft
 material inside an Unlicense repo. The project licence remains The Unlicense, unreopened.
 
+> **Superseded in part, 2026-08-16.** The project licence is now **LGPLv3**. It was reopened and
+> changed by Truls once the mod actually shipped Krastorio 2 graphics and the sprite definitions that
+> place them — the borrowed material is the bulk of what a player sees, and Krastorio 2 is LGPLv3 in
+> both its assets and its mod code. The paragraph above is still right about what relicensing does
+> *not* buy: it does not make NonCommercial or NoDerivatives material takeable, and everything this
+> ADR decides below is unchanged. What it changes is that copyleft material no longer sits inside a
+> permissive repository, so the boundary is a record of provenance rather than a rule anyone has to
+> find. See `legal-note.txt`.
+
 ## Decision
 
 **Material carrying NonCommercial or NoDerivatives terms is never lifted, whatever its source.** In

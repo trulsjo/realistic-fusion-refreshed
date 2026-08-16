@@ -12,7 +12,9 @@ not exist yet. Do not infer structure from empty directories.
 
 **Most of the big decisions are open, and they are Truls's to make.** That includes which upstream base
 to build on, whether the four-module split survives, scope, the Factorio/Space Age target, mod
-compatibility targets, and the published name. (The licence is settled: The Unlicense, see `LICENSE`.)
+compatibility targets, and the published name. (The licence is settled: **LGPLv3**, see `LICENSE` —
+changed from The Unlicense on 2026-08-16, on the grounds that the mod is largely Krastorio 2's
+resources and code and takes only ideas from the original.)
 
 Do not settle any of them as a side effect of doing something else — no "I picked X to get started".
 If a task cannot proceed without one, say so and ask. Recording options with trade-offs is welcome;
