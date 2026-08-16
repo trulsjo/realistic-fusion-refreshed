@@ -51,6 +51,15 @@ one-tile spot at its centre, and takes `selection_priority = 1` so an ordinary c
 reactor. One, not zero: the documentation states that "the value `0` will be treated the same as
 `nil`", which would leave it at the default 50 and tied with the reactor.
 
+**A wire drag is redirected at runtime, because the engine does not do it.** Dragging a wire is not a
+special case to Factorio's selection: it offers whatever is selected, which is the reactor, and the
+reactor has no connector — so no wire would attach to a reactor at all. `circuit-output.install()`
+watches `on_selected_entity_changed` and `on_player_cursor_stack_changed` and moves `player.selected`
+onto the combinator for exactly as long as a vanilla wire is in hand. The alternative, giving the
+combinator the higher priority outright, costs more than it buys: the reactor would stop being what a
+click, a mine or a deconstruction planner lands on, and its status line would be replaced by a bare
+combinator's.
+
 **It does not set `hide-alt-info`.** Alt mode over a constant combinator draws the signals it emits,
 so the temperature and Q float over every reactor for free — the readout a player is most likely to
 find without being told.
@@ -88,9 +97,19 @@ independent existence, and describes exactly one reactor.
   and [#44](https://github.com/trulsjo/realistic-fusion-refreshed/issues/44) put in question — this
   ADR should be re-read before the companion is carried across. A `reactor`-type prototype has its
   own circuit behaviour and might not need one.
-- **One claim here is reasoned, not measured**: that a wire drag targets the companion because the
-  reactor has no connector to compete with. Headless Factorio cannot test mouse input. Everything
-  else in #25 is verified by `tests/test-circuit-output.lua` and a live-game probe.
+- **The one claim here that was reasoned rather than measured turned out to be false, and this
+  records it rather than quietly editing it away.** The first version of this ADR argued that a wire
+  drag only offers entities with a circuit connector, so the companion would win the cursor by
+  default and `selection_priority = 1` would settle everything else. Playing it settled it instead:
+  no wire would attach to a reactor at all. The measurement exists now — `LuaPlayer.update_selected_entity`
+  runs the engine's own selection resolution at a position, so the question the mouse asks can be
+  asked from a script after all, in the client, where there is a `LuaPlayer` to ask it of. With a
+  wire in hand and no redirect the answer is `rf-reactor`; with the redirect it is
+  `rf-reactor-signals`. Headless still cannot do it: the client is what has a player.
+- **One handler remains unmeasured**, and only one: picking a wire up while the reactor is already
+  under the cursor. A scripted `set_stack` raises no `on_player_cursor_stack_changed`, and Factorio
+  refuses to let a script raise that event at all. Everything downstream of the event is the code the
+  measured case exercises.
 
 ## Alternatives considered
 

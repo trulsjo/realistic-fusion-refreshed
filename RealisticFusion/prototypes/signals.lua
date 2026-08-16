@@ -45,6 +45,10 @@ combinator.name = "rf-reactor-signals"
 -- Invisible, weightless and immovable. It is not a thing the player owns; it is part of the
 -- reactor that happens to need its own prototype.
 combinator.minable = nil
+-- Inherited from the vanilla combinator and meaningless here -- nothing can be fast-replaced with
+-- an entity that has no item -- but a stray group is the kind of thing that starts mattering the
+-- day this grows a collision box.
+combinator.fast_replaceable_group = nil
 combinator.sprites = nil
 combinator.activity_led_sprites = nil
 combinator.collision_mask = { layers = {} }

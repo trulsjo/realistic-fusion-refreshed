@@ -192,6 +192,73 @@ function M.forget(unit_number)
   registry[unit_number] = nil
 end
 
+-- ---------------------------------------------------------------- putting it under the cursor
+--
+-- The combinator is only useful if a wire can reach it, and on its own it cannot be reached at all.
+--
+-- Two entities share the reactor's footprint and only one can be selected. The 2.0.77 docs are
+-- explicit about who wins: "the entity with the higher number is selectable before the entity with
+-- the lower number", and the combinator is deliberately down at 1 so an ordinary click, a mine and
+-- a deconstruct all land on the reactor. Dragging a wire is not a special case to the engine -- it
+-- offers whatever is selected, the reactor has no connector, and the drag has nothing to attach to.
+--
+-- ADR 0012 recorded the opposite as the one claim in #25 that was reasoned rather than measured:
+-- that a drag only offers connectable entities, so the combinator would win by default. Playing it
+-- settled it -- no wire would attach to a reactor at all.
+--
+-- So the contest is left alone and the selection is moved instead, for exactly as long as the
+-- player is holding a wire. Everything else about the reactor stays pointed at the reactor.
+local WIRE_ITEMS = { ["red-wire"] = true, ["green-wire"] = true }
+
+-- The reactor's prototype name, handed in by install() rather than required from
+-- entity-management.lua, which owns it. Requiring that file here would register its build handlers
+-- the moment this one is loaded, and this one is loaded by a test suite that runs outside Factorio.
+-- One argument is cheaper than either a second literal or a second way to break the tests.
+local REACTOR
+
+--- Point a wire-holding player at the reactor's combinator instead of the reactor.
+local function redirect_selection(player)
+  if not (player and player.valid) then return end
+
+  local selected = player.selected
+  if not (selected and selected.valid and selected.name == REACTOR) then return end
+
+  -- Both vanilla wires are flagged only-in-cursor, so this is the whole of "is the player about to
+  -- connect something": there is no other way to be holding one.
+  local stack = player.cursor_stack
+  if not (stack and stack.valid_for_read and WIRE_ITEMS[stack.name]) then return end
+
+  local registry = storage.reactor_signals
+  local combinator = registry and registry[selected.unit_number]
+  -- Nil for the first few ticks of a reactor's life, before its first report created one. Nothing
+  -- to do about that and nothing worth doing: the next mouse movement redirects.
+  if combinator and combinator.valid then player.selected = combinator end
+end
+
+--- Wire up the redirect. Called from control.lua; see below for why it is not done at load.
+--
+-- Both halves of "a wire and a reactor met": the cursor moved onto a reactor with a wire already in
+-- hand, and a wire was picked up while a reactor was already under the cursor. Only the first is
+-- obvious, and only having the second is what makes the shortcut-bar wire buttons work.
+--
+-- The write re-raises on_selected_entity_changed. That terminates rather than looping: the second
+-- pass sees rf-reactor-signals selected, not rf-reactor, and returns on the first test.
+--
+-- entity-management.lua registers its own handlers at load and this file deliberately does not,
+-- which is the one place the two differ. script.on_event at load would run on require, and
+-- tests/test-circuit-output.lua requires this file outside Factorio -- where there is no script,
+-- no defines and no game. Keeping the registration behind a call is what keeps the pure half
+-- testable, which is the whole reason for the split this file is built around.
+function M.install(reactor_name)
+  REACTOR = reactor_name
+  script.on_event(defines.events.on_selected_entity_changed, function(event)
+    redirect_selection(game.get_player(event.player_index))
+  end)
+  script.on_event(defines.events.on_player_cursor_stack_changed, function(event)
+    redirect_selection(game.get_player(event.player_index))
+  end)
+end
+
 --- Re-pair every combinator on the map with the reactor it belongs to, and destroy the rest.
 --
 -- forget() covers reactors that leave while this mod is watching. It cannot cover a reactor that

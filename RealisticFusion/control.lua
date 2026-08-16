@@ -220,3 +220,9 @@ script.on_configuration_changed(function()
 end)
 
 script.on_nth_tick(UPDATE_INTERVAL, update)
+
+-- The reactor's signals sit on a companion entity a player cannot see, and the engine will not
+-- offer it to a wire drag on its own -- the reactor outranks it for selection, and dragging a wire
+-- is not a special case (ADR 0012). circuit-output moves the selection for as long as a wire is in
+-- hand; installing it needs the reactor's name, which entity-management owns.
+circuit.install(entities.REACTOR)

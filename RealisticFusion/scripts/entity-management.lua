@@ -9,6 +9,13 @@ local M = {}
 
 local REACTOR = "rf-reactor"
 
+--- The reactor's prototype name, for the one other place that has to recognise one.
+--
+-- circuit-output.lua's selection redirect needs it and deliberately does not require this file --
+-- doing so would install these build handlers from a test suite. control.lua hands it across, so
+-- the name still has exactly one definition.
+M.REACTOR = REACTOR
+
 --- The register: unit_number -> LuaEntity, in storage so it survives a save.
 --
 -- Handed out rather than walked here. The caller prunes as it goes, which is why forget() exists
