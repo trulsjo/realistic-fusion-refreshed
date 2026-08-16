@@ -76,42 +76,62 @@ optimisation than 1.1 made it.
 
 ## What that means for this mod's own links
 
-**Arithmetic from declared prototype values, not a measurement.** The measurement is
-[#48](https://github.com/trulsjo/realistic-fusion-refreshed/issues/48), which puts a running factory
-against these ceilings; this section exists because the arithmetic turned out not to be close enough
-to need one before the question could be answered. If #48 lands a figure that disagrees with what
-follows, #48 is right and this section is wrong.
+Measured, by `scripts/bench-mod-links.ps1`, which builds a heater bank, a reactor and four heat
+exchangers and reads the fluid out of the running game
+([#48](https://github.com/trulsjo/realistic-fusion-refreshed/issues/48)). Not derived: the
+derivation is available from `fuel_value` and the reactor's output, and it rests on the same
+equilibrium assumptions #37 is open about. An earlier revision of this section did exactly that and
+came out a factor of two optimistic on the energy link.
 
-`rf-reactor-energy` declares `fuel_value = "1MJ"`, so one unit of it *is* a megajoule and the fluid
-rates on the power side are tiny. `rf-heater` crafts 5 units of `rf-d-d-plasma` per 2 seconds at
-speed 1.
+Taken at 360 000 ticks — 100 minutes of game time, five times the twenty #37 measures the climb at —
+with the reactor holding a full 1 000 units of plasma at 6.88×10⁸ °C. The run is gated on rate,
+temperature *and* plasma inventory having each stopped moving across the last two windows.
 
-| link | what crosses it | demand | ceiling on one connection | headroom |
+| link | arrangement | carries, while flowing | its ceiling | headroom |
 |---|---|---|---|---|
-| `rf-heater` → `rf-reactor` | plasma, 2.5 units/s | 0.042 units/tick | 100 flush, 51 at 20 pipes | **~1200–2400×** |
-| `rf-reactor` → one `rf-heat-exchanger` | reactor energy, 40 units/s at 40 MW | 0.67 units/tick | 100 flush, 51 at 20 pipes | **~75–150×** |
-| `rf-reactor` → four exchangers | 160 units/s | 2.67 units/tick | 100 flush, 51 at 20 pipes | **~19–37×** |
+| heater → reactor (plasma) | output into **input-output** | 0.089 units/tick | ~50 units/tick | **~560×** |
+| reactor → exchangers (energy) | output into input | 1.63 units/tick | 50–100 units/tick | **~31–62×** |
 
-One flush connection carries **6 000 units/s, which at 1 MJ a unit is 6 GW of reactor energy**. The
-four-exchanger build a player actually runs asks for 160 MW of it. Nothing on the power side is
-within two orders of magnitude of a ceiling, and adding connections or removing pipes cannot buy
-anything that is not already free.
+Sustained over every tick rather than only the ticks fluid was seen moving, those are 0.041 and
+1.354 units/tick; the higher "while flowing" figure is quoted above because it yields the *smaller*
+headroom. At 1 MJ a unit the energy link is carrying **81 MW**, and one connection would pass
+between 3 and 6 GW.
 
-The plasma side is stronger still, and for a second reason: reactors share plasma through
-`input-output` boxes, so by the section below they are one segment and have no transfer limit
-between them *at all*. Only the heater's link into that pool is a real boundary, and it runs at
-0.04% of it.
+**Neither link is within an order of magnitude of anything.** The reactor and the exchangers were
+built as a real chain and again with the exchangers replaced by an infinity pipe that removes
+reactor energy as fast as it arrives — the most this mod could ever ask of that link, whatever is
+plumbed downstream. **Both cells returned the same number to four digits**, so the exchangers are
+not throttling it and 81 MW is simply what the reactor makes.
 
 **So the 1.1 geometry answers a question this mod does not have.** Whatever case there is for a
 15-wide heat exchanger butted flush against the reactor — and there is one, about how the machines
 look and how legible the reactor-to-exchanger relationship is — it is not a throughput case, and
 #44/#45 should not be argued as though it were.
 
-Two caveats on the numbers above. They are the *current* recipe and consumption figures, which
-#44/#45 may move; a hundredfold rebalance would be needed to matter, but the arithmetic is a
-division and worth redoing rather than remembering. And the ceiling is the full-source, empty-sink
-one, so a real link at a realistic fill level sits lower — in proportion, and from this far away
-that changes nothing.
+### The plasma link is a third arrangement, and it needed measuring separately
+
+The heater's box is output-only and the reactor's is `input-output`, which is neither row the matrix
+above sweeps. It is not the merged case either — only one end is in the segment, so a boundary
+survives. Measured as its own control:
+
+| arrangement | 1 connection | 3 connections |
+|---|---|---|
+| output → input | 100 units/tick | 299 units/tick |
+| output → **input-output** | **49.9 units/tick** | **75.1 units/tick** |
+
+So it carries about half as much per connection, and — unlike output-into-input — **it does not
+scale with connection count**. Both figures reproduce across flush and one pipe to four digits.
+Neither is explained here; they are recorded because quoting the plasma link against the 100 would
+have been quoting it against a ceiling twice too high.
+
+### One thing that is not about throughput
+
+The reactor settles at **81 MW of reactor energy** on a real heater bank. #37 records 133 MW of
+*fusion* power with plasma kept full by an infinity pipe, and the two are not the same quantity —
+`capture_efficiency` is 0.85 and the fluid output is what leaves the plasma, not what fuses in it.
+But part of the gap is real and worth knowing: a heater injects plasma at 10⁶ °C, so **refuelling a
+running reactor cools it**, and a reactor fuelled by machines settles cooler than the same reactor
+fuelled by an infinity pipe. That belongs to #37 rather than here.
 
 ## The finding that is not in the table
 
@@ -212,7 +232,8 @@ Three invocations, each named beside the table it produced. The engine behaviour
 The predecessor geometry quoted at the top is read from Realistic Fusion Power's own prototypes; see
 [`port-and-original-inspection.md`](port-and-original-inspection.md).
 
-This mod's own rates are read from its prototypes as they stand on 2026-08-17:
+This mod's own rates are measured by `scripts/bench-mod-links.ps1`, run 2026-08-17 against the same
+build, at 360 000 ticks. The prototype values it can be checked against, as they stand that day:
 `rf-reactor-energy`'s `fuel_value` from `RealisticFusion/prototypes/fluids.lua`, the exchanger's
 `energy_consumption` and the reactor's and exchanger's fluid boxes from
 `RealisticFusion/prototypes/entities.lua`, and the heater's output from the `rf-plasma-heating`
