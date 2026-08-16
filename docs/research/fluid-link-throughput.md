@@ -72,9 +72,46 @@ the flush contact is worth nothing at all against a single pipe and at most a fa
 a long run.**
 
 None of that says the 1.1 arrangement is wrong. It says the arrangement is a much smaller
-optimisation than 1.1 made it. Whether either ceiling is anywhere near this mod's own links, and
-what if anything the geometry should therefore be, is
-[#48](https://github.com/trulsjo/realistic-fusion-refreshed/issues/48) and #44/#45 — not this note.
+optimisation than 1.1 made it.
+
+## What that means for this mod's own links
+
+**Arithmetic from declared prototype values, not a measurement.** The measurement is
+[#48](https://github.com/trulsjo/realistic-fusion-refreshed/issues/48), which puts a running factory
+against these ceilings; this section exists because the arithmetic turned out not to be close enough
+to need one before the question could be answered. If #48 lands a figure that disagrees with what
+follows, #48 is right and this section is wrong.
+
+`rf-reactor-energy` declares `fuel_value = "1MJ"`, so one unit of it *is* a megajoule and the fluid
+rates on the power side are tiny. `rf-heater` crafts 5 units of `rf-d-d-plasma` per 2 seconds at
+speed 1.
+
+| link | what crosses it | demand | ceiling on one connection | headroom |
+|---|---|---|---|---|
+| `rf-heater` → `rf-reactor` | plasma, 2.5 units/s | 0.042 units/tick | 100 flush, 51 at 20 pipes | **~1200–2400×** |
+| `rf-reactor` → one `rf-heat-exchanger` | reactor energy, 40 units/s at 40 MW | 0.67 units/tick | 100 flush, 51 at 20 pipes | **~75–150×** |
+| `rf-reactor` → four exchangers | 160 units/s | 2.67 units/tick | 100 flush, 51 at 20 pipes | **~19–37×** |
+
+One flush connection carries **6 000 units/s, which at 1 MJ a unit is 6 GW of reactor energy**. The
+four-exchanger build a player actually runs asks for 160 MW of it. Nothing on the power side is
+within two orders of magnitude of a ceiling, and adding connections or removing pipes cannot buy
+anything that is not already free.
+
+The plasma side is stronger still, and for a second reason: reactors share plasma through
+`input-output` boxes, so by the section below they are one segment and have no transfer limit
+between them *at all*. Only the heater's link into that pool is a real boundary, and it runs at
+0.04% of it.
+
+**So the 1.1 geometry answers a question this mod does not have.** Whatever case there is for a
+15-wide heat exchanger butted flush against the reactor — and there is one, about how the machines
+look and how legible the reactor-to-exchanger relationship is — it is not a throughput case, and
+#44/#45 should not be argued as though it were.
+
+Two caveats on the numbers above. They are the *current* recipe and consumption figures, which
+#44/#45 may move; a hundredfold rebalance would be needed to matter, but the arithmetic is a
+division and worth redoing rather than remembering. And the ceiling is the full-source, empty-sink
+one, so a real link at a realistic fill level sits lower — in proportion, and from this far away
+that changes nothing.
 
 ## The finding that is not in the table
 
@@ -89,7 +126,8 @@ This is the mechanism [ADR 0011](../adr/0011-per-reactor-simulation-fluid-couple
 it has reactors share a plasma pool with no connectivity code of ours, and it is now measured rather
 than assumed. It also says which links can be slow *in general*: a boundary between a segment and a
 box outside it can be, and two input-output boxes cannot, because there is no boundary between them.
-Which of this mod's links are which, and whether any of them is near a ceiling, is #48's.
+Which of this mod's links are which is what the section above uses; whether the arithmetic there
+survives a running factory is #48's.
 
 ## Method
 
@@ -155,9 +193,9 @@ a run where those two ends did not end up in one segment has lost the claim it e
 
 One fluid, `water`, at one temperature, and both ends pinned at the extremes. Nothing here says what
 a link carries at a realistic fill level, only what it carries at the maximum — and the fill-ratio
-arithmetic above says the realistic figure is strictly lower, in proportion. It also says nothing
-about *this mod's* links; the ceilings are engine numbers and #48 is where they are put beside the
-rates this mod actually asks for.
+arithmetic above says the realistic figure is strictly lower, in proportion. Nor does it measure any
+link of this mod's: the ceilings are engine numbers, and where they are set beside this mod's own
+rates above, that is division rather than measurement. #48 is the measurement.
 
 Every rate here is per *fluid box*, measured on boilers. Whether a differently-typed entity's box
 carries a different number is untested. So is whether the 100 is a constant: the flush case has no
@@ -173,3 +211,10 @@ Three invocations, each named beside the table it produced. The engine behaviour
 
 The predecessor geometry quoted at the top is read from Realistic Fusion Power's own prototypes; see
 [`port-and-original-inspection.md`](port-and-original-inspection.md).
+
+This mod's own rates are read from its prototypes as they stand on 2026-08-17:
+`rf-reactor-energy`'s `fuel_value` from `RealisticFusion/prototypes/fluids.lua`, the exchanger's
+`energy_consumption` and the reactor's and exchanger's fluid boxes from
+`RealisticFusion/prototypes/entities.lua`, and the heater's output from the `rf-plasma-heating`
+recipe in `RealisticFusion/prototypes/recipes/`. The four-exchangers-per-reactor case is the build
+Truls played on 2026-08-16, not a designed ratio.
