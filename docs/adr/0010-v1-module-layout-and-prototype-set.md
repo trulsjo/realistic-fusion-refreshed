@@ -56,6 +56,24 @@ rather than discovered:
   reactor produces a Core-owned fluid — D-D yielding tritium and helium-3 — the *prototype* is defined
   in Core and the *recipe* lives in Power. Definition and production are separable; that is what breaks
   the loop.
+
+> **Corrected 2026-08-17 (#27).** There is no recipe, and there cannot be one. The reactor is
+> simulated rather than recipe-driven (ADR 0005, ADR 0011), so it has no recipe for by-products to
+> be results of — this line was written before the simulation existed in code and describes the 1.1
+> original, whose reactors were crafting machines. What is separable is definition from
+> **production**, not definition from *recipe*: `control.lua` computes tritium and helium-3 from the
+> same reaction count the energy output comes from, and deposits them into `rf-isotope-collector`.
+> The seam itself is unchanged and now exercised rather than asserted — a Core machine consuming,
+> through an ordinary pipe, a fluid a Power reactor made (`scripts/check-breeding.ps1`).
+>
+> A second entity is needed because a boiler has exactly two fluid boxes and `rf-reactor` spends
+> both: plasma on the input-output box this ADR's fluid coupling rests on, reactor energy on the
+> other. `rf-isotope-collector` is therefore a Power entity this list does not name. Truls chose it
+> over an extraction recipe on the plasma line — the 1.1 original's answer — because a recipe breeds
+> at a fixed ratio while the reaction rate moves by orders of magnitude with temperature, which is
+> the "physics implied through recipe ratios" this project exists to not be. Measured: a reactor at
+> 7.7×10⁸ °C breeds 83.7 units of each per 7 200 ticks, and the same reactor at 1.8×10⁴ °C breeds
+> none.
 - **Technologies follow the same direction.** Core technologies unlock extraction and never depend on
   Power technologies.
 
@@ -109,8 +127,8 @@ loadable modules would have shown raw names like `rf-m-reactor` in game.
 
 **Power — entities**: `rf-heater`, `rf-reactor`, `rf-aneutronic-reactor`, `rf-lithium-blanket`,
 `rf-heat-exchanger`, `rf-hc-exchanger`, `rf-hc-turbine`, `rf-direct-energy-converter`,
-`rf-aneutronic-composite-tank`, and plasma-safe fluid handling: `rf-pipe`, `rf-pipe-to-ground`,
-`rf-pump`.
+`rf-aneutronic-composite-tank`, `rf-isotope-collector`, and plasma-safe fluid handling: `rf-pipe`,
+`rf-pipe-to-ground`, `rf-pump`.
 
 > **Corrected 2026-08-17 (#26).** This list also named `rf-discharge-pump` as plasma-safe fluid
 > handling, and it is not. The original's plasma set is its magnetic pipe, pipe-to-ground and pump;

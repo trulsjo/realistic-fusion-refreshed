@@ -315,3 +315,26 @@ table per reactor.
 second of staleness on a gauge no one can read at 10 Hz, and no factory control loop reacts faster
 than that. `REPORT_EVERY` in `control.lua` is the one number to change if a later tier wants a
 faster gauge, and this table is what it costs.
+
+## D-D by-products (#27)
+
+Measured 2026-08-17, on shipped code with the breeding added: **2.85 µs per reactor**, 3.42% of a
+tick at n = 200.
+
+**This is not a claim that breeding is free, and not a claim that it costs anything either.** The
+four runs of the preceding shipped code returned 1.73, 2.38, 2.45 and 2.46 µs, and this note has
+already recorded a run-to-run spread of 42% — so 2.85 against a previous high of 2.46 is 1.16×, and
+the section above says plainly that differences finer than about 1.5× are unmeasurable here without
+interleaved repeats. It sits inside the noise. Anyone who needs the real number should take it as
+an A/B on one machine in one sitting rather than reading it off this table.
+
+What was added to the tick path is one table of two entries per reactor per step, built in
+`reactor-logic.step()` and handed back with the rest of the result. It is worth knowing that the
+benchmark's reactors have **no collector bolted to them**, so `deposit()` never runs and the
+allocation is the whole of what is being measured — a rig with collectors would pay two fluidbox
+writes per reactor on top, and by the lesson above those would cost more than the arithmetic does.
+
+The allocation is avoidable: `step()` could fill a caller-owned table instead of returning a fresh
+one. It was left alone, because doing it would put an out-parameter into the one module in this mod
+that is pure and testable outside Factorio (ADR 0005), in exchange for a saving that this
+measurement is not sharp enough to see.

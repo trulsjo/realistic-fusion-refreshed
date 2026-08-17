@@ -3,7 +3,10 @@ Krastorio 2 derived graphics
 
 Everything in this directory is derived from Krastorio 2's asset mod and is licensed under the
 GNU Lesser General Public License version 3 -- see LICENSE beside this file. It is NOT covered
-by the repository's LICENSE (The Unlicense). This is the per-directory exception described in
+by the repository's own LICENSE. The repository is LGPLv3 too since 2026-08-16, so the two now
+agree -- but this stays marked because the licence travels with the directory rather than with
+the repository, and anyone lifting this directory takes these terms with it. This is the
+per-directory exception described in
 legal-note.txt at the repository root.
 
 Upstream: https://codeberg.org/raiguard/Krastorio2Assets
@@ -66,9 +69,22 @@ Unmodified copies, renamed to the prototype they serve:
 
   entities/brine-concentrator.png   <- icons/entities/filtration-plant.png
   entities/lithium-extractor.png    <- icons/entities/crusher.png
+  entities/gas-mixer.png            <- icons/entities/advanced-chemical-plant.png
+
+  buildings/gas-mixer/gas-mixer.png         <- buildings/advanced-chemical-plant/advanced-chemical-plant.png
+  buildings/gas-mixer/gas-mixer-anim.png    <- buildings/advanced-chemical-plant/advanced-chemical-plant-anim.png
+  buildings/gas-mixer/gas-mixer-shadow.png  <- buildings/advanced-chemical-plant/advanced-chemical-plant-sh.png
+
+    The gas mixer's in-world building, matching the icon above. Blending two gases is chemistry,
+    which is why this is the building the icon came from. The machine grew from 3x3 to 7x7 and
+    takes Krastorio 2's boxes; its four pipes take the outer two of the three positions Krastorio 2
+    puts on each of the north and south faces, because this machine needs two per face where that
+    one carries three. advanced-chemical-plant-reflection.png is not taken.
+
   technologies/heavy-water.png          <- technologies/matter-water.png
   technologies/deuterium-extraction.png <- technologies/fluids-chemistry.png
   technologies/lithium-extraction.png   <- technologies/lithium-processing.png
+  technologies/gas-mixing.png           <- technologies/advanced-chemistry.png
 
 MODIFIED -- these are derivative works and remain LGPLv3:
 
@@ -86,6 +102,32 @@ MODIFIED -- these are derivative works and remain LGPLv3:
     contents of a pipe. The droplet keeps it legible as a liquid and the colour separates it
     from rf-brine, which it is made from.
 
+  fluids/tritium.png            <- icons/fluids/hydrogen.png, recoloured.
+
+    Remultiplied by RGB 0.50, 1.00, 0.60. Tritium is hydrogen-3, so it shares hydrogen's molecule
+    for the same reason deuterium does; the green is what stops the three isotopes being mistaken
+    for one another in a pipe.
+
+  fluids/helium-3.png           <- icons/fluids/nitrogen.png, recoloured.
+
+    Remultiplied by RGB 0.80, 0.45, 1.00. Deliberately NOT the hydrogen molecule the other three
+    wear: helium is a different element, and the separated pair of spheres says so at a glance.
+
+  fluids/d-t-mix.png            <- icons/fluids/hydrogen.png, recoloured in two tones.
+  fluids/d-he3-mix.png          <- icons/fluids/hydrogen.png, recoloured in two tones.
+
+    A mixture drawn as a mixture: one lobe of the molecule in deuterium's cyan and the other in
+    tritium's green, or in helium-3's violet. The two lobes are separated by k-means on pixel
+    position and recoloured independently -- see tools/recolour-icon.py, which is where the
+    operation is defined rather than described.
+
+    Hydrogen's fused molecule is the source for both, and for D-T it is exactly right: deuterium
+    and tritium are both hydrogen isotopes, so a hydrogen molecule with one lobe of each is a D-T
+    pair. K2's nitrogen was tried for these first and rejected on brightness -- it is a dark blue
+    icon whose Rec. 601 luminance sits at a median of 83 against hydrogen's 190, so recolouring it
+    gave two muddy spheres. The alternative was a brightening step the other recoloured icons here
+    do not use, which would have made this NOTICE describe two different operations.
+
 
 DERIVED CODE -- also LGPLv3, and this is the reason it is in here at all:
 
@@ -93,11 +135,17 @@ DERIVED CODE -- also LGPLv3, and this is the reason it is in here at all:
   buildings/electrolyser-pictures.lua          <- prototypes/buildings/electrolysis-plant.lua
   buildings/brine-concentrator-pictures.lua    <- prototypes/buildings/filtration-plant.lua
   buildings/lithium-extractor-pictures.lua     <- prototypes/buildings/crusher.lua
+  buildings/gas-mixer-pictures.lua             <- prototypes/buildings/advanced-chemical-plant.lua
 
     Krastorio 2's mod is LGPLv3 as well as its assets. Every width, height, frame count, line
     length, shift and scale in these files is read off the prototype named beside it, so each is a
     derivative of Krastorio 2's code and not only of its art, and each lives here beside the
     LICENSE that governs it.
+
+    The prototypes are a separate repository from the assets: https://codeberg.org/raiguard/Krastorio2,
+    also LGPLv3. Worth naming, because the shifts these files carry are the one thing that cannot be
+    recovered from the sprite sheets -- a building whose shift is guessed sits a fraction of a tile
+    out from its own collision box, and no amount of looking at the PNG will say so.
 
     The collision and selection boxes in prototypes/entities.lua come from the same files. They
     are numbers about this repository's own machines rather than a copy of Krastorio 2's

@@ -168,6 +168,51 @@ local parked = L.step(SPEC, "rf-d-d-plasma", FULL, SPEC.min_temperature_c, 0, TI
 near(parked.temperature_c, SPEC.min_temperature_c, 1e-12, "an unpowered reactor parks at the minimum")
 near(parked.energy_units, 0, 1e-12, "a reactor parked at the minimum sells nothing")
 
+-- ---------------------------------------------------------------- D-D by-products (#27)
+
+-- The reactors are the breeder (CONTEXT.md, ADR 0010): running D-D leaves tritium and helium-3
+-- behind. The two branches are already in M.fuels' comment and drive energy_per_reaction_j, so
+-- what is asserted here is that the same reaction count also produces matter, and that the two
+-- accounts agree with each other rather than being two independent numbers that happen to look
+-- right.
+check(L.fuels["rf-d-d-plasma"].products ~= nil, "D-D declares what it breeds")
+
+check(hot_burn.products["rf-tritium"] > 0, "a fusing reactor breeds tritium",
+  tostring(hot_burn.products["rf-tritium"]))
+check(hot_burn.products["rf-helium-3"] > 0, "a fusing reactor breeds helium-3",
+  tostring(hot_burn.products["rf-helium-3"]))
+
+-- The 50/50 branch. Equal amounts is the whole physical claim, so it is asserted as equality
+-- rather than as "both are positive".
+near(hot_burn.products["rf-tritium"], hot_burn.products["rf-helium-3"], 1e-12,
+  "the two D-D branches breed in equal measure")
+
+-- Stoichiometry, which is what ties breeding to the energy account. Two deuterons go into every
+-- reaction and half of them leave a triton, so a quarter of the deuterium burnt comes back as
+-- tritium and another quarter as helium-3 -- at the same nuclei-per-unit the plasma is counted at.
+-- Without this the breeding rate could drift to any constant and every other check here would
+-- still pass.
+near(hot_burn.products["rf-tritium"], hot_burn.plasma_consumed / 4, 1e-12,
+  "tritium bred is a quarter of the deuterium burnt")
+near(hot_burn.products["rf-helium-3"], hot_burn.plasma_consumed / 4, 1e-12,
+  "helium-3 bred is a quarter of the deuterium burnt")
+
+-- Breeding follows the simulation rather than a fixed rate, which is the reason this is computed
+-- here at all instead of being a recipe on a machine (#27). A cold reactor breeds less for the
+-- same reason it produces less power.
+check(cold_burn.products["rf-tritium"] < hot_burn.products["rf-tritium"],
+  "a cold reactor breeds less than a hot one",
+  string.format("%.3g vs %.3g", cold_burn.products["rf-tritium"], hot_burn.products["rf-tritium"]))
+
+-- A reactor that is not fusing breeds nothing at all. `parked` is at the bottom of the range with
+-- no power, which is the state a reactor sits in before its heater catches up.
+near(parked.products["rf-tritium"], 0, 1e-12, "a reactor parked at the minimum breeds nothing")
+
+-- The burn cap applies to breeding too: a step long enough to consume the whole reactor cannot
+-- breed as though it had burnt more than was there.
+near(gulp.products["rf-tritium"], FULL / 4, 1e-12,
+  "a step that burns the reactor dry breeds against the fuel that was actually present")
+
 -- ---------------------------------------------------------------- cadence is a free parameter
 --
 -- ADR 0005 calls the update cadence a tuning parameter and pre-authorises coarsening it. That is

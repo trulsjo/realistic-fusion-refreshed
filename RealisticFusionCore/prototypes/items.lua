@@ -21,6 +21,7 @@ data:extend({
   item("rf-deuterium-extractor", ENTITY .. "deuterium-extractor.png", "production-machine", "rf-b[deuterium-extractor]", 10),
   item("rf-brine-concentrator", ENTITY .. "brine-concentrator.png", "production-machine", "rf-c[brine-concentrator]", 20),
   item("rf-lithium-extractor",  ENTITY .. "lithium-extractor.png",  "production-machine", "rf-d[lithium-extractor]",  20),
+  item("rf-gas-mixer",          ENTITY .. "gas-mixer.png",          "production-machine", "rf-e[gas-mixer]",          20),
 
   -- The only solid Core produces. Blanket breeding (a later ticket) is what consumes it.
   -- No place_result, so it does not go through item() above.

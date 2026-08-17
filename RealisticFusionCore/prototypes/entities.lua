@@ -29,7 +29,11 @@ local function from_vanilla(source_name, name, categories, opts)
   e.allowed_effects = { "consumption", "speed", "productivity", "pollution", "quality" }
   e.icons = { { icon = ENTITY .. opts.icon .. ".png", icon_size = 64 } }
   e.icon = nil
-  -- LGPLv3, one file per machine, kept in the graphics directory the licence governs.
+  -- LGPLv3, one file per machine, kept in the graphics directory the licence governs. Every
+  -- machine here has one: those files are derivatives of Krastorio 2's own building prototypes,
+  -- read off the mod repository rather than measured off the sprite sheets, because the shifts
+  -- they carry are not recoverable from a PNG and a building placed by eye sits a fraction of a
+  -- tile out from its own collision box.
   e.graphics_set = require("graphics.krastorio-2.buildings." .. opts.pictures)
 
   -- A machine that grows has to say where its pipes went. Taken from the Krastorio 2 building where
@@ -92,6 +96,23 @@ data:extend({
       { flow = "input",  side = "north", at = { 1, -3 } },
       { flow = "output", side = "south", at = { -1, 3 } },
       { flow = "output", side = "south", at = { 1, 3 } },
+    },
+  }),
+
+  -- Two fuels in, one mix out, which is what a chemical plant's boxes already are.
+  --
+  -- 3x3 -> 7x7. Krastorio 2's advanced chemical plant carries three connections on each of two
+  -- faces where this machine needs two, so the pairs take the outer two of its three positions: in
+  -- on the north face, out on the south.
+  from_vanilla("chemical-plant", "rf-gas-mixer", { "rf-gas-mixing" }, {
+    crafting_speed = 1, energy_usage = "150kW", icon = "gas-mixer",
+    pictures = "gas-mixer-pictures",
+    collision = 3.25, selection = 3.5,
+    connections = {
+      { flow = "input",  side = "north", at = { -2, -3 } },
+      { flow = "input",  side = "north", at = { 2, -3 } },
+      { flow = "output", side = "south", at = { -2, 3 } },
+      { flow = "output", side = "south", at = { 2, 3 } },
     },
   }),
 

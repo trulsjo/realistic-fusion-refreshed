@@ -3,7 +3,10 @@ Krastorio 2 derived graphics
 
 Everything in this directory is derived from Krastorio 2's asset mod and is licensed under the
 GNU Lesser General Public License version 3 -- see LICENSE beside this file. It is NOT covered
-by the repository's LICENSE (The Unlicense). This is the per-directory exception described in
+by the repository's own LICENSE. The repository is LGPLv3 too since 2026-08-16, so the two now
+agree -- but this stays marked because the licence travels with the directory rather than with
+the repository, and anyone lifting this directory takes these terms with it. This is the
+per-directory exception described in
 legal-note.txt at the repository root.
 
 Upstream: https://codeberg.org/raiguard/Krastorio2Assets
@@ -17,6 +20,16 @@ What was taken, and what was changed
 ------------------------------------
 
 Unmodified copies, renamed to the prototype they serve:
+
+  entities/isotope-collector.png      <- icons/entities/flare-stack.png
+
+    The by-product collector's icon (#27). Gas-handling kit, which is what the entity is.
+
+    Its in-world sprite is vanilla's boiler, so icon and building do not match yet. Krastorio 2's
+    flare stack building does exist and could be taken, but not cheaply: it is a 2x2 furnace with a
+    four-way directional sprite set, where the collector is a 3x2 boiler and a boiler wants a
+    BoilerPictureSet rather than an animation. That is a resize and a different picture structure
+    rather than a copy, so it is #45's work and not #27's.
 
   pipe/pipe-*.png (21 files)          <- buildings/steel-pipe/steel-pipe-*.png
   pipe-to-ground/pipe-to-ground-*.png <- buildings/steel-pipe-to-ground/steel-pipe-to-ground-*.png

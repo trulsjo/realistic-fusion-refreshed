@@ -54,6 +54,60 @@ local UPDATE_INTERVAL = 6
 -- here; if a later tier wants a faster gauge, this is the one number to change.
 local REPORT_EVERY = 5
 
+-- Which of the collector's boxes carries what (#27). Stated once here and asserted against the
+-- prototype at load by check_collector_boxes() below, rather than looked up through
+-- fluidbox.get_filter ten times a second for every reactor that has one.
+--
+-- An ordered list, not a map keyed by fluid: deposit() walks it by index so the two writes happen
+-- in the same order on every machine in a multiplayer game. pairs() over a name-keyed table would
+-- not promise that.
+local COLLECTOR_BOXES = { "rf-tritium", "rf-helium-3" }
+
+-- The smallest amount worth writing into a fluid box, and this is a crash guard rather than a
+-- tidiness one. "> 0" is not the same test as "the engine will accept this": a reactor that is
+-- barely fusing produces a positive double so small that it is not representable as a fluid
+-- amount, and Factorio answers a write of one with "Fluid amount has to be positive" and takes the
+-- whole mod down with it. Found by scripts/check-breeding.ps1's cool cell -- a reactor holding
+-- plasma at injection temperature with no power to raise it, which is what every reactor is for
+-- its first few seconds and what one with a dead heater is for ever.
+--
+-- What the threshold discards is nothing in both senses. A step is a tenth of a second, so this
+-- bounds the loss at 1e-5 units a second against a working reactor's 0.7 of by-product and 82 of
+-- reactor energy -- five orders down at the very least, and only reachable at all by a reactor
+-- that is not meaningfully fusing.
+local MIN_FLUID = 1e-6
+
+--- Put what a reactor bred into the collector bolted to it.
+--
+-- Overflow is discarded rather than banked, which is the same policy the reactor's energy output
+-- follows and for the same reason: a collector nobody is draining is a full collector, and it
+-- should show up as by-products backing up rather than as a reactor quietly storing them for ever.
+local function deposit(collector, products)
+  local box = collector.fluidbox
+  for index = 1, #COLLECTOR_BOXES do
+    local name = COLLECTOR_BOXES[index]
+    local bred = products[name]
+    if bred and bred > 0 then
+      local held = box[index]
+      local amount = bred + (held and held.amount or 0)
+      local capacity = box.get_capacity(index)
+      if amount > capacity then amount = capacity end
+      -- The threshold is tested against the box's new total, not against what was just bred, and
+      -- that is the useful way round: a reactor breeding a millionth of a unit a step still has
+      -- it accumulate into a box that already holds something, and is only discarded while the box
+      -- is empty and there is nothing for it to be added to. The cost is that a barely-fusing
+      -- reactor with a non-empty box rewrites it every step with almost the same number, which is
+      -- two fluidbox writes a reactor at the cadence -- the same thing the energy box above does.
+      if amount >= MIN_FLUID then
+        -- Temperature stated rather than omitted, for the reason apply() gives about the energy
+        -- box: leaving it out resets the fluid to its default every time. These two are ambient
+        -- gases and the prototype gives them no range to sit anywhere else in.
+        box[index] = { name = name, amount = amount, temperature = 15 }
+      end
+    end
+  end
+end
+
 --- Apply one reactor's step to the world.
 local function apply(entity, plasma, result)
   -- Spending straight out of the buffer is what makes the reactor's draw follow the simulation
@@ -81,7 +135,10 @@ local function apply(entity, plasma, result)
     box[1] = nil
   end
 
-  if result.energy_units > 0 then
+  -- MIN_FLUID, not zero, and for the same reason deposit() uses it: a reactor that is barely
+  -- fusing computes a positive output too small for the engine to accept as a fluid amount, and
+  -- writing one is a crash rather than a rounding error.
+  if result.energy_units >= MIN_FLUID then
     -- Assigned to box 2 by index rather than inserted: fluidbox.insert would find box 1 whenever
     -- the reactor had just burnt its last plasma, and quietly fill the plasma box with reactor
     -- energy. The temperature is stated rather than left out, because omitting it resets the
@@ -95,6 +152,14 @@ local function apply(entity, plasma, result)
     local capacity = box.get_capacity(2)
     if amount > capacity then amount = capacity end
     box[2] = { name = "rf-reactor-energy", amount = amount, temperature = 15 }
+  end
+
+  -- What the reaction bred, if there is anywhere to put it. A reactor with no collector simply
+  -- vents it: the by-products are computed either way, so bolting one on later starts collecting
+  -- immediately and never has a backlog to catch up on.
+  if result.products then
+    local collector = entities.collector(entity)
+    if collector then deposit(collector, result.products) end
   end
 end
 
@@ -193,9 +258,37 @@ local function check_plasma_bounds()
   end
 end
 
+--- Refuse to run if the collector's boxes are not what deposit() thinks they are.
+--
+-- The third trap of the same shape, and the one most likely to fire: deposit() writes tritium to
+-- box 1 and helium-3 to box 2 by index, because asking the fluidbox its filter every step for
+-- every reactor is a cost paid ten times a second to learn something that cannot change while the
+-- game is running. Swap the two declarations in prototypes/entities.lua and nothing complains --
+-- the mod loads, the collector fills, and a player's tritium pipe quietly carries helium-3.
+--
+-- It deliberately does NOT check that the two fluids exist. They are the filters on the very boxes
+-- being inspected, so a Core fluid that went missing or got renamed takes the data stage down with
+-- Factorio's own error long before this runs. A check here would be unreachable code claiming to
+-- guard the module seam.
+local function check_collector_boxes()
+  local boxes = prototypes.entity["rf-isotope-collector"].fluidbox_prototypes
+  for index, expected in ipairs(COLLECTOR_BOXES) do
+    local box = boxes[index]
+    local filter = box and box.filter and box.filter.name
+    if filter ~= expected then
+      error(string.format(
+        "rf-isotope-collector: control.lua deposits %s into box %d but the prototype filters that " ..
+        "box to %s, so a by-product would leave through the wrong pipe. Reconcile " ..
+        "COLLECTOR_BOXES in control.lua with prototypes/entities.lua.",
+        expected, index, tostring(filter)))
+    end
+  end
+end
+
 local function check_prototypes()
   check_cadence()
   check_plasma_bounds()
+  check_collector_boxes()
 end
 
 -- The register is rebuilt in the same breath as the prototype checks because both are answers to

@@ -58,6 +58,21 @@ data:extend({
     },
     results = { { type = "item", name = "rf-pipe-to-ground", amount = 2 } },
   },
+  -- What collects the by-products a running reactor breeds (#27). Cheap on purpose: it is a
+  -- fitting on a reactor rather than a machine in its own right, and pricing it like one would
+  -- put a toll on the only route to tritium.
+  {
+    type = "recipe",
+    name = "rf-isotope-collector",
+    enabled = false,
+    energy_required = 6,
+    ingredients = {
+      { type = "item", name = "steel-plate",      amount = 20 },
+      { type = "item", name = "advanced-circuit", amount = 5 },
+      { type = "item", name = "pipe",             amount = 10 },
+    },
+    results = { { type = "item", name = "rf-isotope-collector", amount = 1 } },
+  },
   {
     -- Vanilla's pump recipe with its pipe swapped for ours, which is what the entity is. Balance is
     -- provisional, like everything else on this tier.

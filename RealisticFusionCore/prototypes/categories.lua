@@ -8,4 +8,7 @@ data:extend({
   { type = "recipe-category", name = "rf-concentration" },
   -- Winning solid lithium out of the solution.
   { type = "recipe-category", name = "rf-lithium-processing" },
+  -- Blending two fuels into the mix a reactor tier burns. Its own category so a vanilla chemical
+  -- plant cannot make reactor fuel.
+  { type = "recipe-category", name = "rf-gas-mixing" },
 })

@@ -201,6 +201,58 @@ exchanger.energy_source = {
   },
 }
 
+-- ---------------------------------------------------------------- isotope collector
+
+-- Where the D-D by-products come out (#27). The reactors are the breeder (CONTEXT.md, ADR 0010),
+-- and this is the fitting a player bolts to one to collect what it breeds.
+--
+-- It exists because the reactor has nowhere to put them. A boiler has exactly two fluid boxes and
+-- rf-reactor spends both -- plasma in and out on the input-output box that ADR 0011's whole fluid
+-- coupling rests on, reactor energy on the other. Tritium and helium-3 need a third and a fourth,
+-- so they need another entity. Truls chose this over an extraction recipe on the plasma line,
+-- because a recipe would breed at a fixed ratio while the reactor's actual reaction rate moves by
+-- orders of magnitude with temperature -- which is the "physics implied through recipe ratios"
+-- this mod exists to not be. control.lua fills these boxes from the same reaction count the energy
+-- output is computed from, so a cold reactor breeds nothing and a hot one breeds in proportion.
+--
+-- A boiler again, for the same reason the reactor is one: it is the prototype that will hold and
+-- move fluid without a recipe. Both boxes are declared "output" rather than the boiler's usual one
+-- in and one out, and that is what kills the boiler machinery rather than merely starving it. With
+-- no input box there is nothing for it to convert, so unlike rf-reactor -- which neuters the same
+-- conversion down to a measured trickle with a 1 W energy_consumption -- there is no residual
+-- conversion here at all, and no way for tritium to turn into helium-3 on its own.
+--
+-- Ordinary fluids, so ordinary pipes: nothing here is contained (#26). The by-products are cold
+-- gases, not plasma.
+local collector = pin(table.deepcopy(data.raw["boiler"]["boiler"]), "rf-isotope-collector", {
+  mining_time = 0.5,
+})
+collector.mode = "output-to-separate-pipe"
+-- Needs no power and asks for none. The collector does no work of its own -- control.lua writes
+-- into it -- so an electric source would only give it a "no power" status while it went on working
+-- perfectly, which is a lie told to the player every time they look at it.
+collector.energy_source = { type = "void" }
+collector.energy_consumption = "1W"
+collector.target_temperature = 15
+
+-- Vanilla's boiler is three by two with water in on the west and east faces and steam out of the
+-- north one. Those positions are kept exactly as they are; only what the boxes carry changes. The
+-- volumes are a buffer rather than storage: a reactor breeds about 0.6 units a second, so 500 is
+-- roughly fifteen minutes of production if nothing drains it, which is long enough that a stalled
+-- pipe is a nuisance rather than an instant loss.
+local function emit(box, fluid)
+  box.production_type = "output"
+  box.volume = 500
+  box.filter = fluid
+  for _, connection in ipairs(box.pipe_connections or {}) do
+    connection.flow_direction = "output"
+  end
+  return box
+end
+
+collector.fluid_box = emit(collector.fluid_box, "rf-tritium")
+collector.output_fluid_box = emit(collector.output_fluid_box, "rf-helium-3")
+
 -- ---------------------------------------------------------------- plasma-safe fluid handling
 
 -- Plasma must not travel through vanilla pipes (CONTEXT.md, ADR 0010). Enforcing that is #26;
@@ -291,4 +343,4 @@ pump.icons = { { icon = "__base__/graphics/icons/pump.png", icon_size = 64 } }
 -- prototype of our own. Barrelling is shut off separately, on the fluids themselves (fluids.lua).
 contain(pump.fluid_box)
 
-data:extend({ heater, reactor, exchanger, pipe, pipe_to_ground, pump })
+data:extend({ heater, reactor, exchanger, collector, pipe, pipe_to_ground, pump })

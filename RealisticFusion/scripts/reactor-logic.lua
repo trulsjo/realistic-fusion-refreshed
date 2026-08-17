@@ -39,6 +39,11 @@ local CELSIUS_TO_KELVIN = 273.15
 --     D + D -> T (1.01 MeV) + p (3.02 MeV)   -- 4.03 MeV, entirely charged
 --     D + D -> He3 (0.82 MeV) + n (2.45 MeV) -- 3.27 MeV, of which 0.82 is charged
 -- so the mean release is 3.65 MeV and the charged share is 4.85/7.30.
+--
+-- The two branches are also where tritium and helium-3 come from, which is what makes the reactors
+-- the breeder (CONTEXT.md, ADR 0010) rather than a separate machine: half the reactions leave a
+-- triton behind and half leave a helium-3, so breeding is the same reaction count the energy is
+-- computed from and cannot drift away from it.
 M.fuels = {
   ["rf-d-d-plasma"] = {
     reaction = "D-D",
@@ -46,6 +51,11 @@ M.fuels = {
     charged_fraction = 4.85 / 7.30,
     -- Nuclei consumed per reaction. Two, because both sides of D-D are deuterium.
     fuel_per_reaction = 2,
+    -- Nuclei of each product per reaction, counted at the same particles_per_unit as the plasma so
+    -- the whole model needs one density constant rather than one per fluid. The proton and the
+    -- neutron the branches also release are not modelled: a neutron is what the mod already sells
+    -- as reactor energy, and there is no hydrogen sink for the proton in ADR 0010's fluid set.
+    products = { ["rf-tritium"] = 0.5, ["rf-helium-3"] = 0.5 },
   },
 }
 
@@ -174,9 +184,22 @@ function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
   -- v1 does not model -- divertor, cryoplant, magnet power.
   local captured_j = ((fusion_j - charged_j) + left_j) * spec.capture_efficiency
 
+  -- What the reaction leaves behind, in fluid units. Computed from the same (capped) reaction
+  -- count as the energy above, so a reactor that burns dry mid-step breeds against the fuel that
+  -- was actually there. Always a table when the fuel declares products, so callers never have to
+  -- distinguish "bred nothing" from "breeds nothing".
+  local products
+  if fuel.products then
+    products = {}
+    for name, per_reaction in pairs(fuel.products) do
+      products[name] = reactions * per_reaction / spec.particles_per_unit
+    end
+  end
+
   return {
     temperature_c   = new_temperature_c,
     plasma_consumed = burnt / spec.particles_per_unit,
+    products        = products,
     energy_units    = captured_j / spec.energy_fluid_j_per_unit,
     heating_used_j  = heating_j,
     fusion_power_w  = fusion_j / dt,
