@@ -110,12 +110,31 @@ loadable modules would have shown raw names like `rf-m-reactor` in game.
 **Power — entities**: `rf-heater`, `rf-reactor`, `rf-aneutronic-reactor`, `rf-lithium-blanket`,
 `rf-heat-exchanger`, `rf-hc-exchanger`, `rf-hc-turbine`, `rf-direct-energy-converter`,
 `rf-aneutronic-composite-tank`, and plasma-safe fluid handling: `rf-pipe`, `rf-pipe-to-ground`,
-`rf-pump`, `rf-discharge-pump`.
+`rf-pump`.
+
+> **Corrected 2026-08-17 (#26).** This list also named `rf-discharge-pump` as plasma-safe fluid
+> handling, and it is not. The original's plasma set is its magnetic pipe, pipe-to-ground and pump;
+> its `rf-discharge-pump` sits with the electrolyser and the thermal evaporation plant, and its
+> recipes are *deuterium-depleted-water discharge and recycling*
+> ([`predecessor-survey.md`](../research/predecessor-survey.md)). It is a **Core** water-chain
+> machine, not a Power one, and it is nothing to do with plasma. Left unbuilt and moved to its own
+> ticket rather than invented here.
 
 **Power — technologies**: `rf-d-d-fusion`, `rf-tritium-breeding`, `rf-d-t-fusion`,
 `rf-helium-3-breeding`, `rf-aneutronic-fusion`, `rf-blanket-breeding`, `rf-direct-energy-conversion`.
 
-Vanilla pipes must not carry plasma; the original enforced this in `control.lua` and v1 does the same.
+Vanilla pipes must not carry plasma.
+
+> **Corrected 2026-08-17 (#26).** This said the original enforced that in `control.lua` and that v1
+> does the same. **v1 does not, and should not.** 2.0 gives every pipe connection a
+> `connection_category`, and two connections join only when theirs match — so the plasma set names a
+> category of its own and a vanilla pipe beside a plasma line simply does not connect, the way it
+> already refuses to join a heat pipe. The plasma never enters, rather than being noticed and
+> cleaned up after it has. The original's 160 lines of `control.lua` were the best answer available
+> in 1.1; against 2.0 they would be a per-tick cost, a race with whatever put the plasma there, and
+> a pipe destroyed under whoever built it. There is no runtime enforcement in this mod at all.
+> Measured by `scripts/check-containment.ps1`, including the negative case: with containment
+> removed, an ordinary pipe laid against a plasma line fills with 100 units of plasma.
 
 ### The chain, end to end
 

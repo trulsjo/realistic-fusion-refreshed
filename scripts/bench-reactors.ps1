@@ -284,7 +284,7 @@ script.on_init(function()
       -- step does not depend on where in the table the lookup lands.
       if (not POOLED) or col == 0 then
         local feed = surface.create_entity({
-          name = "infinity-pipe", position = { cx - REACH, cy }, force = force,
+          name = "__PLASMAFEED__", position = { cx - REACH, cy }, force = force,
         })
         if not feed then error(string.format("infinity-pipe refused at cell %d,%d", col, row)) end
         feed.set_infinity_pipe_filter({ name = "rf-d-d-plasma", percentage = 1, temperature = 6e8, mode = "at-least" })
@@ -335,8 +335,11 @@ script.on_nth_tick(__REPORT__, function()
     game.tick, n, hot, powered, temp / d, plasma / d, output / d, energy / d))
 end)
 '@
+    # The shipped plasma set carries its own pipe connection category (#26), so a vanilla
+    # infinity-pipe can no longer feed a reactor. The rig declares one that can.
     $lua = $lua.Replace('__COUNT__', "$Count").Replace('__GRID__', "$grid").
                 Replace('__REPORT__', "$ReportEvery").Replace('__GAP__', "$Gap").
+                Replace('__PLASMAFEED__', (Write-PlasmaFeed -RigDirectory $rigDir)).
                 Replace('__POOLED__', $(if ($Pooled) { 'true' } else { 'false' }))
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $lua -Encoding utf8
 }

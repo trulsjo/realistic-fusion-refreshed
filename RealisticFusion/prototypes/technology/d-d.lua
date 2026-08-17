@@ -27,6 +27,7 @@ data:extend({
     effects = {
       { type = "unlock-recipe", recipe = "rf-pipe" },
       { type = "unlock-recipe", recipe = "rf-pipe-to-ground" },
+      { type = "unlock-recipe", recipe = "rf-pump" },
       { type = "unlock-recipe", recipe = "rf-heater" },
       { type = "unlock-recipe", recipe = "rf-reactor" },
       { type = "unlock-recipe", recipe = "rf-heat-exchanger" },

@@ -58,6 +58,20 @@ data:extend({
     },
     results = { { type = "item", name = "rf-pipe-to-ground", amount = 2 } },
   },
+  {
+    -- Vanilla's pump recipe with its pipe swapped for ours, which is what the entity is. Balance is
+    -- provisional, like everything else on this tier.
+    type = "recipe",
+    name = "rf-pump",
+    enabled = false,
+    energy_required = 2,
+    ingredients = {
+      { type = "item", name = "rf-pipe",     amount = 1 },
+      { type = "item", name = "engine-unit", amount = 1 },
+      { type = "item", name = "steel-plate", amount = 1 },
+    },
+    results = { { type = "item", name = "rf-pump", amount = 1 } },
+  },
 
   -- Deuterium into plasma: ionised and injected, not yet fusing. The reactor's confinement
   -- heating does the rest, which is why this step is an ordinary recipe and the reactor is not.

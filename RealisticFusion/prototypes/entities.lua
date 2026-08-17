@@ -12,6 +12,29 @@ require("util") -- table.deepcopy
 
 local ENTITY = "__RealisticFusion__/graphics/krastorio-2/entities/"
 
+-- Plasma must not travel through vanilla pipes (CONTEXT.md, ADR 0010). This is what enforces it.
+--
+-- 2.0 gives a pipe connection a connection_category, and two connections join only when theirs
+-- match. Naming a category of our own therefore makes a vanilla pipe beside a plasma line simply
+-- not connect -- the same way it already refuses to join a heat pipe. The plasma never enters,
+-- which is a stronger statement than noticing that it did.
+--
+-- The 1.1 original could not do this and spent 160 lines of control.lua hunting down plasma-carrying
+-- vanilla pipes and destroying them. That is a tick cost, a surprise for whoever built the pipe, and
+-- a race with whatever put the plasma there. None of it is needed against 2.0, so none of it is
+-- here: this file is the whole of the enforcement and control.lua gains nothing.
+--
+-- Applied per box rather than per entity, because the reactor's other box carries reactor energy
+-- through ordinary pipes on purpose, and the heater is fed deuterium through them.
+local PLASMA_CATEGORY = "rf-plasma"
+
+local function contain(box)
+  for _, connection in ipairs(box.pipe_connections or {}) do
+    connection.connection_category = PLASMA_CATEGORY
+  end
+  return box
+end
+
 local function pin(e, name, opts)
   e.name = name
   e.minable = { mining_time = opts.mining_time or 1, result = name }
@@ -42,6 +65,13 @@ heater.allowed_effects = { "consumption", "speed", "pollution", "quality" }
 -- the same vanilla chemical plant -- same boxes, same four pipe positions. So unlike the reactor
 -- this is a sprite swap and nothing else. LGPLv3; see the file for why it lives over there.
 heater.graphics_set = require("graphics.krastorio-2.buildings.heater-pictures")
+-- Plasma leaves through the output boxes, so those are plasma-safe only; the input boxes stay
+-- ordinary because deuterium arrives through ordinary pipes. Selected by production_type rather
+-- than by index: which box a chemical plant puts a result in is the recipe's business, and the two
+-- output boxes are interchangeable.
+for _, box in ipairs(heater.fluid_boxes) do
+  if box.production_type == "output" then contain(box) end
+end
 
 -- ---------------------------------------------------------------- reactor
 
@@ -126,6 +156,10 @@ reactor.fluid_box = {
   -- LuaFluidBox.set_filter at runtime or a prototype of its own.
   filter = "rf-d-d-plasma",
 }
+-- Plasma in and plasma out of the shared pool, so both faces are plasma-safe only. The energy box
+-- below is deliberately not: reactor energy is an ordinary fluid and a player plumbs it with
+-- ordinary pipes.
+contain(reactor.fluid_box)
 reactor.output_fluid_box = {
   production_type = "output",
   volume = 1000,
@@ -227,9 +261,26 @@ local GRAPHICS = "__RealisticFusion__/graphics/krastorio-2/"
 local pipe = repoint(
   pin(table.deepcopy(data.raw["pipe"]["pipe"]), "rf-pipe", { mining_time = 0.1 }),
   GRAPHICS .. "pipe/", PIPE_SPRITES)
+contain(pipe.fluid_box)
 
 local pipe_to_ground = repoint(
   pin(table.deepcopy(data.raw["pipe-to-ground"]["pipe-to-ground"]), "rf-pipe-to-ground", { mining_time = 0.1 }),
   GRAPHICS .. "pipe-to-ground/", PIPE_TO_GROUND_SPRITES)
+-- Both of its connections, which is the point: the underground one carries the category too, so a
+-- vanilla pipe-to-ground cannot tunnel into a plasma line from out of sight.
+contain(pipe_to_ground.fluid_box)
 
-data:extend({ heater, reactor, exchanger, pipe, pipe_to_ground })
+-- The plasma set needs a pump of its own for the same reason it needs pipes of its own: a vanilla
+-- pump is a vanilla pipe connection, so with containment in place it cannot join a plasma line at
+-- all, and without this there would be no way to lift plasma over a distance or to force its
+-- direction.
+local pump = pin(table.deepcopy(data.raw["pump"]["pump"]), "rf-pump", { mining_time = 0.2 })
+-- pin() derives an icon path from the entity's name, and there is no Krastorio 2 pump in
+-- graphics/krastorio-2/ to derive it from. Vanilla's is referenced rather than copied -- no file
+-- moves, so no licence travels. The art is provisional: this is a plasma pump wearing an ordinary
+-- pump's coat, and it reads as one until someone draws it. Nothing depends on the picture, because
+-- the containment is in the connections rather than in the sprite.
+pump.icons = { { icon = "__base__/graphics/icons/pump.png", icon_size = 64 } }
+contain(pump.fluid_box)
+
+data:extend({ heater, reactor, exchanger, pipe, pipe_to_ground, pump })
