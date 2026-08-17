@@ -12,9 +12,15 @@
 
     IT DOES MORE THAN THE DATA STAGE, and the difference matters to anyone editing the
     simulation. Creating a map runs `on_init`, which is where control.lua's check_prototypes()
-    fires -- so this script enforces five invariants that no amount of prototype validation
+    fires -- so this script enforces six invariants that no amount of prototype validation
     would catch:
 
+      check_fuel_rows()           Every row of reactor-logic's fuel table declares the fields
+                                  step() indexes without asking. M.fuels is the documented place
+                                  to add a tier, so a row gets written from its neighbours rather
+                                  than from the function that reads it -- and a missing field
+                                  throws inside on_nth_tick, on a live save, the moment a reactor
+                                  of that tier first holds plasma.
       check_cadence()             UPDATE_INTERVAL against rf-reactor's electric buffer. A step
                                   spends the whole interval's heating at once, so past twelve
                                   ticks at the shipped 50 MW and 10 MJ the reactor is starved
@@ -298,7 +304,7 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
     # Says what actually passed rather than "data stage valid", which was the same undersell the
     # docstring above used to make: creating the map ran control.lua's check_prototypes() too.
     Write-Host 'OK - prototypes valid, every referenced asset present, map created and the'
-    Write-Host "     simulation's five load-time invariants hold."
+    Write-Host "     simulation's six load-time invariants hold."
     exit 0
 }
 finally {

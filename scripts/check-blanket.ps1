@@ -38,6 +38,11 @@
       orphan     A loaded blanket on a reactor with NO collector. Its lithium must be untouched:
                  a blanket with nowhere to put what it breeds stays idle rather than spending
                  items for nothing.
+      throttled  A blanketed reactor whose collector is drained far more slowly than the blanket
+                 can fill it. Every item spent must be accounted for by a triton still in the
+                 collector or drawn out of it -- a blanket must not buy tritium that is being
+                 discarded. Drained rather than merely unplumbed, because a saturated box has
+                 exactly zero headroom and exercises an early return instead of the cap.
       pulled     A blanketed reactor whose blanket is destroyed halfway through. The reactor has
                  to go on running and go on producing energy.
       d-d        A D-D reactor with a collector and a loaded blanket. It must collect MORE tritium
@@ -216,6 +221,10 @@ local function collector_on(surface, force, reactor, tank_seed)
   end
   if not index then error("the collector has no box filtered to " .. TRITIUM) end
 
+  -- No tank seed means no plumbing at all, which is the `blocked` cell: the tritium box fills to
+  -- its capacity and stays there, and the blanket has to notice.
+  if not tank_seed then return collector, nil, index end
+
   local at = collector.fluidbox.get_pipe_connections(index)[1].target_position
   local step = { at.x - collector.position.x, at.y - collector.position.y }
   local length = math.max(math.abs(step[1]), math.abs(step[2]))
@@ -234,7 +243,7 @@ local function collector_on(surface, force, reactor, tank_seed)
     position = { tank_seed[1] + (target[1] - pat.x), tank_seed[2] + (target[2] - pat.y) },
     force = force,
   }), "storage tank")
-  return collector, tank
+  return collector, tank, index
 end
 
 --- A blanket bolted to a reactor's north face, optionally loaded with lithium.
@@ -346,6 +355,26 @@ script.on_init(function()
   power(surface, force, { -168, 8 })
   local orphan_blanket = blanket_on(surface, force, orphan, LOADED)
 
+  -- ------------------------------------------------------------------ throttled
+  --
+  -- A collector being drained far more slowly than the blanket can fill it, which is the case a
+  -- player actually meets: one pipe to a consumer that cannot keep up. The blanket must pay only
+  -- for tritium that has somewhere to go.
+  --
+  -- Drained rather than simply left unplumbed, and that distinction is the whole cell. An
+  -- unplumbed collector saturates at exactly zero headroom, where blanket_breed returns early --
+  -- so it exercises the early return and NOT the cap, and passes with the cap deleted. Found by
+  -- deleting it. Throttling leaves a small positive headroom on every step, which is the only
+  -- state the cap is responsible for, and the state a real factory sits in.
+  --
+  -- Argued the other way first -- overflow is discarded everywhere in this mod -- until it was
+  -- pointed out that everything else that backs up costs nothing, where this costs an item a
+  -- player mined and belted here, at about nineteen a second.
+  local throttled = reactor_at(surface, force, 180.5, DT, 1e6)
+  power(surface, force, { 192, 8 })
+  local throttled_collector, _, throttled_box = collector_on(surface, force, throttled, nil)
+  local throttled_blanket = blanket_on(surface, force, throttled, LOADED)
+
   -- ------------------------------------------------------------------ pulled
   local pulled = reactor_at(surface, force, -240.5, DT, 1e6)
   power(surface, force, { -228, 8 })
@@ -373,11 +402,23 @@ script.on_init(function()
     bare = bare, bare_collector = bare_collector, bare_tank = bare_tank,
     empty = empty, empty_collector = empty_collector, empty_blanket = empty_blanket,
     orphan = orphan, orphan_blanket = orphan_blanket,
+    throttled = throttled, throttled_collector = throttled_collector,
+    throttled_box = throttled_box, throttled_blanket = throttled_blanket,
     pulled = pulled, pulled_collector = pulled_collector, pulled_blanket = pulled_blanket,
     dd = dd, dd_collector = dd_collector, dd_blanket = dd_blanket,
     dd_bare = dd_bare, dd_bare_collector = dd_bare_collector,
   }
   log("BLANKET-RIG built")
+end)
+
+-- The throttled cell's slow consumer, and the running total of what it took. Well under what the
+-- blanket could produce, so the box stays near full and headroom stays small and positive -- which
+-- is the only state control.lua's headroom cap is responsible for.
+script.on_event(defines.events.on_tick, function()
+  local collector = storage.rig and storage.rig.throttled_collector
+  if not (collector and collector.valid) then return end
+  storage.drained = (storage.drained or 0)
+    + collector.remove_fluid({ name = TRITIUM, amount = 0.05 })
 end)
 
 -- Halfway through, destroy the blanket the `pulled` reactor is using. Nothing raises an event for
@@ -462,6 +503,31 @@ script.on_nth_tick(CHECK_AT, function()
   record(lithium_in(r.orphan_blanket) == LOADED,
     "a blanket with no collector spends no lithium",
     string.format("%d of %d left", lithium_in(r.orphan_blanket), LOADED))
+
+  -- ------------------------------------------------------------ more than the pipe can take
+  --
+  -- The case a player actually meets: a consumer that cannot keep up. Stated as conservation
+  -- rather than as a bound anyone chose -- every lithium item the blanket spent has to be
+  -- accounted for by a triton that is either still in the collector or has been drawn out of it.
+  -- Anything above that was bought and thrown away.
+  --
+  -- Plus one, because the blanket may be part way through an item when the run ends.
+  --
+  -- What the bound is sized against: with control.lua's headroom cap deleted this cell spends
+  -- about 2 100 items for the same few hundred units of tritium. It is not a tolerance.
+  local throttled_held = holds(r.throttled_collector, TRITIUM)
+  local drained = storage.drained or 0
+  local capacity = r.throttled_collector.fluidbox.get_capacity(r.throttled_box)
+
+  record(drained > 0 and throttled_held > 0.5 * capacity,
+    "the throttled collector really is backed up and really is being drained",
+    string.format("%.6g held of %.6g, %.6g drawn off", throttled_held, capacity, drained))
+
+  local throttled_spent = LOADED - lithium_in(r.throttled_blanket)
+  record(throttled_spent <= throttled_held + drained + 1,
+    "a blanket buys no more tritium than its collector can take",
+    string.format("%d items spent against %.6g held plus %.6g drained",
+      throttled_spent, throttled_held, drained))
 
   -- ------------------------------------------------------------ losing the blanket
   record(not r.pulled_blanket.valid, "the pulled reactor's blanket really was destroyed")
@@ -568,8 +634,8 @@ try {
     if ($verdict -notmatch '^PASS') { throw "blanket breeding is broken: $verdict" }
 
     Write-Host ''
-    Write-Host 'OK - a lithium blanket breeds tritium from a running reactor, stops when the lithium'
-    Write-Host '     or the collector is missing, and taking it off leaves the reactor working.'
+    Write-Host 'OK - a lithium blanket breeds tritium from a running reactor, buys none its collector'
+    Write-Host '     cannot take, and taking it off leaves the reactor working.'
 }
 finally {
     if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }

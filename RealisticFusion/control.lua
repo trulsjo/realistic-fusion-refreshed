@@ -63,6 +63,16 @@ local REPORT_EVERY = 5
 -- not promise that.
 local COLLECTOR_BOXES = { "rf-tritium", "rf-helium-3" }
 
+-- Which of those boxes the blanket breeds into (#30). Resolved from the list above rather than
+-- written down a second time, so the two cannot disagree, and required to exist by
+-- check_blanket_feed() below -- apply() reads the box's headroom before letting a blanket spend
+-- lithium, and a nil index there would be a crash ten times a second.
+local TRITIUM = "rf-tritium"
+local TRITIUM_BOX
+for index, name in ipairs(COLLECTOR_BOXES) do
+  if name == TRITIUM then TRITIUM_BOX = index end
+end
+
 -- The smallest amount worth writing into a fluid box, and this is a crash guard rather than a
 -- tidiness one. "> 0" is not the same test as "the engine will accept this": a reactor that is
 -- barely fusing produces a positive double so small that it is not representable as a fluid
@@ -160,8 +170,13 @@ end
 -- The charge is keyed by REACTOR rather than by blanket, and that is deliberate: two reactors may
 -- share one blanket (entity-management), and a per-blanket charge would let the second reactor
 -- breed against lithium the first one had already paid for.
-local function blanket_breed(entity, neutrons)
+-- @param headroom  how much tritium the collector can still take, in fluid units. Breeding is
+--                  capped to it, which is what stops a blanket paying for tritium that deposit()
+--                  would throw away -- see apply() for why that is not treated the way every
+--                  other overflow in this mod is.
+local function blanket_breed(entity, neutrons, headroom)
   if not neutrons or neutrons <= 0 then return nil end
+  if not headroom or headroom <= 0 then return nil end
   local blanket = entities.blanket(entity)
   if not blanket then return nil end
 
@@ -186,12 +201,21 @@ local function blanket_breed(entity, neutrons)
   -- while removing the reactor discards it. At most one item either way.
   local per_item = logic.blanket.lithium_nuclei_per_item
   local wanted = logic.lithium_for(logic.blanket, neutrons)
+  -- Capped to what the collector can actually take, BEFORE any lithium is drawn. Doing it after
+  -- would be the bug this closes: the items would already be gone.
+  local room = headroom * logic.reactor.particles_per_unit
+  if wanted > room then wanted = room end
+  if wanted <= 0 then return nil end
+
   if charge < wanted then
     charge = charge + take_lithium(blanket, math.ceil((wanted - charge) / per_item)) * per_item
   end
   if charge <= 0 then return nil end
 
-  local bred = logic.breed(logic.reactor, logic.blanket, neutrons, charge)
+  -- The cap reaches breed() as the charge, because breed() spends exactly what it breeds -- one
+  -- nucleus per triton -- so bounding one bounds the other. Anything the headroom held back stays
+  -- as charge and is bred on a later step rather than lost.
+  local bred = logic.breed(logic.reactor, logic.blanket, neutrons, math.min(charge, wanted))
   if not bred then return nil end
 
   storage.blanket_charge[entity.unit_number] = charge - bred.nuclei_used
@@ -254,19 +278,30 @@ local function apply(entity, plasma, result)
   -- real lithium for nothing, which is a trap with no gameplay on the other side of it. So a
   -- blanket on a reactor with no collector is idle rather than wasteful, and keeps its lithium.
   --
-  -- Overflow is not treated the same way and is left as it is: a collector already full has its
-  -- tritium discarded by deposit(), lithium included, exactly as a reactor whose energy is not
-  -- being carried away loses that. Every throughput limit in this mod shows up as output backing
-  -- up, and a blanket is not worth making the exception.
+  -- A FULL collector is the same trap as a missing one, and is handled the same way. It was
+  -- argued the other way first -- that overflow is discarded everywhere in this mod, so a backed-up
+  -- collector losing blanket tritium is just another throughput limit showing up as output backing
+  -- up -- and that analogy does not hold. What backs up elsewhere is energy and D-D by-products,
+  -- which cost nothing to compute and nothing to throw away. This costs an item a player mined,
+  -- concentrated and belted here, at about 19 a second on an ignited D-T reactor -- so a stopped
+  -- consumer or a full tank would quietly eat a full blanket in nine minutes and show nothing for
+  -- it. So the blanket breeds only into the room the collector actually has.
+  --
+  -- The by-products get first claim on that room because they are free, and what is left is what
+  -- the blanket may pay for. Nothing is lost by being held back: unbred lithium stays as lithium.
   local collector = entities.collector(entity)
   if collector then
     local products = result.products
-    local bred = blanket_breed(entity, result.neutrons)
+    local held = collector.fluidbox[TRITIUM_BOX]
+    local headroom = collector.fluidbox.get_capacity(TRITIUM_BOX)
+      - (held and held.amount or 0)
+      - ((products and products[TRITIUM]) or 0)
+    local bred = blanket_breed(entity, result.neutrons, headroom)
     if bred and bred > 0 then
       -- A fresh table every step, so adding to it is safe; and a copy when the fuel breeds nothing
       -- of its own, which is the D-T case the blanket exists for.
       products = products or {}
-      products["rf-tritium"] = (products["rf-tritium"] or 0) + bred
+      products[TRITIUM] = (products[TRITIUM] or 0) + bred
     end
     if products then deposit(collector, products) end
   end
@@ -479,11 +514,7 @@ local function check_blanket_feed()
     error("rf-lithium-blanket: the prototype has no chest inventory, so no inserter can feed it " ..
       "lithium. Check inventory_size in prototypes/entities.lua.")
   end
-  local outlet = false
-  for _, expected in ipairs(COLLECTOR_BOXES) do
-    if expected == "rf-tritium" then outlet = true end
-  end
-  if not outlet then
+  if not TRITIUM_BOX then
     error("rf-lithium-blanket: what the blanket breeds leaves through rf-isotope-collector, but " ..
       "COLLECTOR_BOXES in control.lua no longer lists rf-tritium -- so a blanket would consume " ..
       "lithium and deposit nothing. Give the blanket a fluid box of its own, or put the tritium " ..
@@ -491,7 +522,43 @@ local function check_blanket_feed()
   end
 end
 
+-- The fields step() indexes without asking, checked before a reactor ever runs.
+--
+-- M.fuels is documented as the place a tier is added -- "a row here plus prototypes; the code
+-- below does not change" -- so a row is written by someone reading the neighbouring rows rather
+-- than the function that consumes them. Miss a field and the arithmetic throws inside on_nth_tick:
+-- a crash on a live save, at whatever moment the first reactor of that tier gets plasma, rather
+-- than a refusal to load.
+--
+-- tests/test-reactor-logic.lua asserts the same thing and is the better place to find it, because
+-- it needs no game at all. This is here because the bench only catches it if the bench is run, and
+-- the one thing that is always run before a save exists is loading.
+--
+-- Deliberately fields rather than values: whether 0.5 is the right neutron count is physics and
+-- belongs in the tests, where it can be checked against the branch it comes from.
+local FUEL_FIELDS = { "reaction", "energy_per_reaction_j", "charged_fraction", "fuel_per_reaction",
+                      "neutrons_per_reaction" }
+
+local function check_fuel_rows()
+  for name, fuel in pairs(logic.fuels) do
+    for _, field in ipairs(FUEL_FIELDS) do
+      if fuel[field] == nil then
+        error(string.format(
+          "scripts/reactor-logic.lua: the fuel row for %s has no %s, which step() reads on every " ..
+          "reactor holding it -- so the mod would load and then throw the moment one did. Add the " ..
+          "field to M.fuels.", name, field))
+      end
+    end
+    if type(fuel.fractions) ~= "table" or #fuel.fractions ~= 2 then
+      error(string.format(
+        "scripts/reactor-logic.lua: the fuel row for %s needs a reactant fraction for each side " ..
+        "of its reaction, as a two-element table.", name))
+    end
+  end
+end
+
 local function check_prototypes()
+  check_fuel_rows()
   check_cadence()
   check_plasma_bounds()
   check_every_plasma_burns()
