@@ -82,6 +82,24 @@ Unmodified copies, renamed to the prototype they serve:
     icon read as the same technology drawn twice. Krastorio 2's matter chain is not otherwise used
     by this repository, so nothing else claims it.
 
+  entities/lithium-blanket.png  <- icons/entities/energy-storage.png
+
+    The lithium blanket (#30). A bank of identical modules in a frame, which is what a blanket is:
+    a real one is segmented so it can be swapped a section at a time under remote handling, not a
+    single vessel. Krastorio 2's energy storage is not otherwise used by this repository, so
+    nothing else claims it, and this mod has no batteries for it to be confused with.
+
+    Its in-world sprite is vanilla's steel chest, so icon and building do not match -- the same gap
+    rf-isotope-collector has, recorded above, and left open for the same reason: there is no K2
+    building of this shape to take and drawing one is not this ticket's work.
+
+  technologies/blanket-breeding.png <- technologies/fusion-reactor-equipment.png
+
+    Blanket breeding (#30). A reactor wrapped in a shell, which is exactly what the technology
+    adds -- and deliberately not technologies/lithium-processing.png, which Core's
+    rf-lithium-extraction already wears. The two sit on the same chain and would have read as the
+    same research twice.
+
   entities/reactor.png          <- icons/entities/fusion-reactor.png
   entities/heat-exchanger.png   <- icons/entities/gas-power-station.png
   entities/heater.png           <- icons/entities/fuel-refinery.png
@@ -133,4 +151,5 @@ Where these are referenced
 --------------------------
 
 prototypes/fluids.lua, prototypes/items.lua, prototypes/entities.lua and
-prototypes/technology/d-d.lua, all by __RealisticFusion__/graphics/krastorio-2/... paths.
+prototypes/technology/{d-d,d-t,blanket}.lua, all by
+__RealisticFusion__/graphics/krastorio-2/... paths.

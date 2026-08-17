@@ -22,6 +22,7 @@ data:extend({
   item("rf-reactor",         "energy", "rf-b[reactor]",        10),
   item("rf-heat-exchanger",  "energy", "rf-c[heat-exchanger]", 20),
   item("rf-isotope-collector", "energy", "rf-d[isotope-collector]", 20),
+  item("rf-lithium-blanket",   "energy", "rf-e[lithium-blanket]",   20),
   item("rf-pipe",            "energy-pipe-distribution", "rf-a[pipe]",           100),
   item("rf-pipe-to-ground",  "energy-pipe-distribution", "rf-b[pipe-to-ground]",  50),
   item("rf-pump",            "energy-pipe-distribution", "rf-c[pump]",            50,

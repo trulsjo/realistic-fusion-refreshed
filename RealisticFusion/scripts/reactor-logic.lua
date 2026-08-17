@@ -72,10 +72,21 @@ M.fuels = {
     -- Nuclei consumed per reaction. Two, because both sides of D-D are deuterium.
     fuel_per_reaction = 2,
     -- Nuclei of each product per reaction, counted at the same particles_per_unit as the plasma so
-    -- the whole model needs one density constant rather than one per fluid. The proton and the
-    -- neutron the branches also release are not modelled: a neutron is what the mod already sells
-    -- as reactor energy, and there is no hydrogen sink for the proton in ADR 0010's fluid set.
+    -- the whole model needs one density constant rather than one per fluid. The proton the first
+    -- branch also releases is not modelled: there is no hydrogen sink for it in ADR 0010's fluid
+    -- set. The neutron the second one releases IS modelled, one field down.
     products = { ["rf-tritium"] = 0.5, ["rf-helium-3"] = 0.5 },
+    -- Neutrons escaping per reaction, which is what a lithium blanket has to work with (#30).
+    --
+    -- Half, and it is the SAME half as the helium-3 above rather than a second estimate of it: only
+    -- the He3 + n branch makes a neutron, so every helium-3 this plasma breeds left a neutron with
+    -- it. tests/test-reactor-logic.lua asserts the two are equal for exactly that reason -- if a
+    -- later edit moves the branch split it has to move both, and this is what refuses to let one
+    -- drift away from the other.
+    --
+    -- They are 2.45 MeV neutrons where D-T's are 14.06, which the blanket model does not
+    -- distinguish; see M.blanket for what that costs.
+    neutrons_per_reaction = 0.5,
   },
 
   -- D + T -> He4 (3.52 MeV) + n (14.06 MeV), a single branch releasing 17.59 MeV.
@@ -98,7 +109,15 @@ M.fuels = {
     fuel_per_reaction = 2,
     -- No products. The alpha is helium-4, which ADR 0010's fluid set does not contain, and the
     -- neutron is what this mod already sells as reactor energy. A D-T reactor therefore needs no
-    -- collector: nothing comes out of it but power.
+    -- collector -- nothing comes out of it but power, unless a blanket is fitted.
+    --
+    -- One neutron per reaction, and this is the tier the blanket exists for (#30). Where D-D
+    -- vents a neutron on half its reactions, every D-T reaction makes one, and at four fifths of
+    -- the release rather than three quarters -- so the same reactor offers a blanket twice the
+    -- neutrons per reaction while burning the tritium the blanket breeds. That is what closes the
+    -- loop: a D-T reactor consumes one triton per reaction and a blanket over it breeds
+    -- tritium_per_neutron of one back, which is the whole reason real designs are built this way.
+    neutrons_per_reaction = 1,
     --
     -- IT IGNITES, and that is the tier's defining behaviour rather than a balance number.
     --
@@ -176,6 +195,49 @@ M.reactor = {
   -- rf-d-d-plasma's default_temperature and max_temperature.
   min_temperature_c = 15,
   max_temperature_c = 2e9,
+}
+
+-- What the shipped rf-lithium-blanket is made of (#30).
+--
+-- A blanket is a shell of lithium around the reactor that catches escaping neutrons and turns them
+-- into tritium. It is the route real D-T machines are designed around, and the upgrade that
+-- decouples D-T throughput from what the D-D tier happens to leave behind (CONTEXT.md names the
+-- two routes; ADR 0010 makes this one the later of them).
+--
+-- Its own table rather than fields on M.reactor, for the reason M.reactor is passed in rather than
+-- read: the blanket is a separate entity a player may or may not have built, and a later tier may
+-- ship a different one. breed() takes both.
+M.blanket = {
+  -- Tritons bred per escaping neutron -- the tritium breeding ratio, the number every blanket
+  -- design is judged by. Above one because a blanket multiplies neutrons before it captures them:
+  --
+  --     n + Li-6  -> T + He4        + 4.78 MeV   exothermic, and the reaction that does the work
+  --     n + Li-7  -> T + He4 + n'   - 2.47 MeV   endothermic, and hands the neutron back on
+  --
+  -- so one neutron entering can leave more than one triton behind. Real designs add beryllium or
+  -- lead as a further multiplier and aim at 1.05 to 1.15, because a D-T plant has to breed back
+  -- every triton it burns plus its losses and its start-up inventory. 1.1 is the middle of that
+  -- band and is provisional like every other balance number in this repository.
+  --
+  -- What this deliberately does NOT model is that the ratio depends on the neutron's energy: D-T's
+  -- 14.06 MeV neutrons are above the Li-7 threshold and multiply, where D-D's 2.45 MeV ones are
+  -- not and do not. A D-D blanket should therefore breed nearer 0.9 than 1.1. Modelling it means a
+  -- per-fuel ratio rather than a per-blanket one -- which is a row in M.fuels, not a rewrite -- and
+  -- it is left out here because the tier the blanket exists for is D-T, and because inventing two
+  -- numbers where the field's own figures are quoted for one is a worse lie than quoting the one.
+  tritium_per_neutron = 1.1,
+  -- Lithium nuclei in one rf-lithium item, which is what makes an item count and a fluid unit
+  -- commensurable. The same 1e20 as M.reactor.particles_per_unit, and equal to it on purpose:
+  -- one lithium nucleus is spent per triton bred, so one item in is one unit of tritium out and
+  -- the accounting a player can do in their head is the accounting the model does.
+  --
+  -- What it costs, stated rather than glossed: 1e20 atoms of lithium-6 is 1.0 mg, three orders
+  -- below the gram vanilla's uranium item works out at (docs/research/fission.md). So an
+  -- rf-lithium item is not a gram-scale thing, and the reason it is this size is the identity
+  -- above rather than a mass anyone measured. Raising it to 1e23 would put the item at a gram and
+  -- take blanket consumption to one item every thirteen minutes per reactor, which is a balance
+  -- decision about how visible the lithium line should be and not a physics one.
+  lithium_nuclei_per_item = 1e20,
 }
 
 --- One simulation step for one reactor.
@@ -293,10 +355,64 @@ function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
     temperature_c   = new_temperature_c,
     plasma_consumed = burnt / spec.particles_per_unit,
     products        = products,
+    -- Escaping neutrons, as a count, from the same capped reaction count everything else here is
+    -- computed from. Reported whether or not a blanket exists to catch them, for the reason
+    -- products are: what the plasma does cannot depend on what a player bolted to the outside of
+    -- it, so fitting a blanket later starts breeding at once rather than having a backlog to
+    -- account for. breed() below is what turns this into tritium.
+    neutrons        = reactions * fuel.neutrons_per_reaction,
     energy_units    = captured_j / spec.energy_fluid_j_per_unit,
     heating_used_j  = heating_j,
     fusion_power_w  = fusion_j / dt,
     q_factor        = reactivity.q_factor(fusion_j, heating_j),
+  }
+end
+
+--- The lithium one step's neutrons can consume, in nuclei.
+--
+-- Exists so the caller can size a withdrawal before breeding rather than after, and so that the
+-- breeding ratio has exactly one definition. control.lua tops a blanket's charge up to this before
+-- calling breed(); getting the two out of step means a blanket that can only ever breed as fast as
+-- it takes items out of its inventory, which was a silent throughput ceiling before it was a
+-- measurement (see the note in control.lua's blanket_breed).
+function M.lithium_for(blanket, neutrons)
+  return neutrons * blanket.tritium_per_neutron
+end
+
+--- What a lithium blanket makes of one step's neutrons (#30).
+--
+-- Separate from step() rather than folded into it, and the seam is deliberate: step() is the
+-- plasma, and the plasma does not know whether anything is bolted to the reactor. This is the
+-- shell around it, and it is a pure function of a neutron count and the lithium on hand for the
+-- same reason step() is -- so tests/test-reactor-logic.lua can drive it outside Factorio.
+--
+-- @param spec     reactor constants, for particles_per_unit -- the blanket breeds into the same
+--                 fluid units the plasma is counted in
+-- @param blanket  M.blanket, or another one
+-- @param neutrons escaping neutrons this step, as step() returns them
+-- @param charge   lithium nuclei the blanket has left to breed from
+-- @return nil when nothing happens, otherwise what was bred and what it cost
+--
+-- Returning nil for an empty blanket rather than a table of zeroes is what lets control.lua leave
+-- the entity alone entirely, which matters because writing a fluid amount too small for the engine
+-- to represent is a crash rather than a rounding error.
+function M.breed(spec, blanket, neutrons, charge)
+  if not neutrons or neutrons <= 0 then return nil end
+  if not charge or charge <= 0 then return nil end
+
+  -- One lithium nucleus per triton, so the tritons bred and the nuclei spent are the same number.
+  -- They are separated in the return only because they are counted in different things at the far
+  -- end -- fluid units against items -- and conflating those is how a blanket would silently eat
+  -- its lithium at the wrong rate.
+  local bred = M.lithium_for(blanket, neutrons)
+  -- The cap that makes an empty blanket stop rather than breed on credit. It is the same shape as
+  -- step()'s burn cap and exists for the same reason: without it the charge goes negative and the
+  -- blanket keeps producing tritium out of lithium it does not have.
+  if bred > charge then bred = charge end
+
+  return {
+    tritium_units = bred / spec.particles_per_unit,
+    nuclei_used   = bred,
   }
 end
 

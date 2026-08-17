@@ -135,6 +135,15 @@ Yes, and by a smaller margin than the raw power figures suggest — which is the
 each, against 133 MW for a D-D reactor on its own — a 61% step for roughly a doubling of the
 plumbing. Not a runaway, and not free.
 
+> **Superseded for the blanketed case, 2026-08-17 (#30).** That ratio is the cost of the D-D
+> by-product route, and it is now the *unblanketed* cost. A lithium blanket breeds 1.1 tritons per
+> escaping neutron and a D-T reaction releases one neutron and burns one triton, so a blanketed D-T
+> reactor breeds back more tritium than it burns and needs no D-D reactor upstream at all.
+> Measured in game by `scripts/check-blanket.ps1`: 2 113 units of tritium over two minutes against
+> a D-D reactor's 83.7 of by-product, and the ratio comes out at 1.1000 against the model's 1.1.
+> The 1.4-reactor figure still describes a player who has not researched `rf-blanket-breeding`, and
+> that is the progression rather than an obsolescence.
+
 Balance is provisional here as everywhere in this repository, and this section is the first thing
 that should move if it is retuned.
 

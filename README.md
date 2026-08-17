@@ -6,9 +6,9 @@ game's: the redesign carrying it was built for Factorio **1.1** and abandoned ar
 2.0 arrived.
 
 **Status: in development.** Two mods load against Factorio 2.0.77 and two fusion tiers are playable —
-the extraction chain, D-D reactors that breed their own tritium, and D-T fusion burning it. Everything
-after that (D-He3, He3-He3, lithium blankets, direct energy conversion) is unbuilt, all balance is
-provisional, and the mod is not published on the mod portal.
+the extraction chain, D-D reactors that breed their own tritium, D-T fusion burning it, and lithium
+blankets breeding more. Everything after that (D-He3, He3-He3, direct energy conversion) is unbuilt,
+all balance is provisional, and the mod is not published on the mod portal.
 
 ## What it is meant to be
 

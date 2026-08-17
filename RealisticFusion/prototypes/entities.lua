@@ -264,6 +264,55 @@ end
 collector.fluid_box = emit(collector.fluid_box, "rf-tritium")
 collector.output_fluid_box = emit(collector.output_fluid_box, "rf-helium-3")
 
+-- ---------------------------------------------------------------- lithium blanket
+
+-- The second breeding route (#30, CONTEXT.md): a shell of lithium bolted to a reactor, catching
+-- the neutrons the plasma cannot confine and turning them into tritium. ADR 0010 makes it the
+-- later of the two routes and the one real D-T machines are designed around.
+--
+-- IT IS A CONTAINER, and that is the whole prototype. Everything it does happens in control.lua,
+-- against scripts/reactor-logic.lua's breed().
+--
+-- A container because the only thing the engine has to do here is hold items: lithium is an item
+-- (ADR 0010's Core set), so a blanket needs an inventory an inserter can fill, and nothing else.
+-- The bred tritium leaves through the isotope collector already bolted to the same reactor rather
+-- than through a pipe of the blanket's own, which is what makes a container enough.
+--
+-- That is a real design choice and not a shortcut, so here is the alternative it beat. Giving the
+-- blanket its own tritium pipe means an entity with BOTH an item inventory and a fluid box, and
+-- 2.0.77 has no prototype that is simply that: a container has no fluid box (ContainerPrototype),
+-- and the types that have both -- crafting machines, burners -- come with machinery that would
+-- have to be neutered. A crafting machine would need a recipe, and a recipe breeds at a fixed
+-- ratio while the neutron flux moves by orders of magnitude with temperature, which is the
+-- "physics implied through recipe ratios" this mod exists to not be (ADR 0005) and the same
+-- argument that put the isotope collector here rather than on the plasma line. A burner would
+-- need rf-lithium to carry a fuel_value, which is a Core item changed to suit Power and a lie in
+-- every tooltip that shows it.
+--
+-- What routing through the collector costs, stated plainly because a player will meet it: a
+-- blanket on a reactor with no collector does nothing at all. It does not merely vent what it
+-- breeds the way the D-D by-products do -- it never runs, and keeps its lithium, because spending
+-- a real item to produce nothing is a trap rather than a mechanic (control.lua's apply()). The
+-- locale says so. control.lua's check_blanket_feed refuses to load if the collector ever stops
+-- being able to take tritium, or if the item this eats stops existing.
+local blanket = pin(table.deepcopy(data.raw["container"]["steel-chest"]), "rf-lithium-blanket", {
+  mining_time = 0.5,
+})
+-- SLOTS, not items, and rf-lithium stacks to a hundred -- so this is ten thousand lithium, and the
+-- arithmetic below has to be done in items or it is out by two orders of magnitude.
+--
+-- One lithium item per unit of tritium bred (reactor-logic's M.blanket), so what that buys depends
+-- entirely on how hard the reactor is being fed, and the range is wide enough that no single
+-- number is right. A D-T reactor on one heater eats about 1.4 items a second; one on a saturated
+-- plasma line eats 17.6, measured by scripts/check-blanket.ps1. Ten thousand items is two hours of
+-- the first and about nine minutes of the second -- deep enough not to be hand-fed, shallow enough
+-- that it is still a supply line rather than a warehouse. Twice a vanilla steel chest, which is
+-- about the right size for a fitting. Provisional like every other balance number here.
+blanket.inventory_size = 100
+-- In-world it is vanilla's steel chest, and the icon is Krastorio 2's energy storage, so the two
+-- do not match -- the same gap rf-isotope-collector has and for the same reason: there is no K2
+-- building of this shape to take, and drawing one is not this ticket. See the NOTICE.
+
 -- ---------------------------------------------------------------- plasma-safe fluid handling
 
 -- Plasma must not travel through vanilla pipes (CONTEXT.md, ADR 0010). Enforcing that is #26;
@@ -354,4 +403,4 @@ pump.icons = { { icon = "__base__/graphics/icons/pump.png", icon_size = 64 } }
 -- prototype of our own. Barrelling is shut off separately, on the fluids themselves (fluids.lua).
 contain(pump.fluid_box)
 
-data:extend({ heater, reactor, exchanger, collector, pipe, pipe_to_ground, pump })
+data:extend({ heater, reactor, exchanger, collector, blanket, pipe, pipe_to_ground, pump })

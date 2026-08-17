@@ -108,6 +108,96 @@ local function deposit(collector, products)
   end
 end
 
+-- The item a lithium blanket eats (#30). One name, stated here because this file is the only
+-- thing that takes items out of a blanket, and checked against Core's prototype at load by
+-- check_blanket_feed() below rather than trusted.
+local LITHIUM = "rf-lithium"
+
+--- Take up to `count` lithium out of a blanket, of whatever quality is in there.
+--
+-- Written the long way round rather than as one remove_item call, and this is not defensive
+-- programming. An ItemStackDefinition with no `quality` means NORMAL quality, so
+-- remove_item{name = LITHIUM, count = n} silently declines to touch uncommon lithium -- and Core's
+-- rf-lithium-extractor allows quality modules, so under Space Age a player who puts one in
+-- produces exactly that. The blanket would then sit on thousands of visible lithium items breeding
+-- nothing at all, for ever, with no message anywhere. ADR 0003 tolerates Space Age rather than
+-- targeting it, which still means not being broken by it.
+--
+-- Quality does not change what the blanket does with the lithium, and should not: a lithium
+-- nucleus is a lithium nucleus, and the model counts nuclei. So every quality is spent alike, in
+-- whatever order the inventory reports them.
+local function take_lithium(blanket, count)
+  local inventory = blanket.get_inventory(defines.inventory.chest)
+  if not inventory then return 0 end
+  local taken = 0
+  for _, stack in pairs(inventory.get_contents()) do
+    if stack.name == LITHIUM then
+      taken = taken + inventory.remove({
+        name = LITHIUM, count = count - taken, quality = stack.quality,
+      })
+      if taken >= count then break end
+    end
+  end
+  return taken
+end
+
+--- Breed tritium from a reactor's neutrons in the blanket fitted to it, if there is one.
+--
+-- Returns what it bred, in fluid units, to be added to the reactor's products -- so blanket
+-- tritium leaves through the same isotope collector the D-D by-products do, and a player plumbs
+-- one pipe rather than two. See prototypes/entities.lua for why the blanket has no pipe of its
+-- own and what that costs.
+--
+-- THE CHARGE, which is the only piece of state this adds.
+--
+-- Lithium is an item and tritium is a fluid, and a step breeds a fraction of an item's worth --
+-- about a seventh of one at the shipped D-T rate. Rounding that up would breed for free and
+-- rounding it down would breed nothing at all, so a blanket instead holds a CHARGE: it takes one
+-- whole item out of the inventory, credits its nuclei, and breeds against that until it is spent.
+-- That is also what a blanket physically is -- lithium loaded into a shell and consumed where it
+-- sits -- so the state matches the object rather than papering over an accounting problem.
+--
+-- The charge is keyed by REACTOR rather than by blanket, and that is deliberate: two reactors may
+-- share one blanket (entity-management), and a per-blanket charge would let the second reactor
+-- breed against lithium the first one had already paid for.
+local function blanket_breed(entity, neutrons)
+  if not neutrons or neutrons <= 0 then return nil end
+  local blanket = entities.blanket(entity)
+  if not blanket then return nil end
+
+  storage.blanket_charge = storage.blanket_charge or {}
+  local charge = storage.blanket_charge[entity.unit_number] or 0
+
+  -- Topped up to what this step can actually consume, not to one item.
+  --
+  -- One item per step was the first version and it was wrong twice over, found by measuring rather
+  -- than by reading: it capped every blanket at one item's worth of tritium per step whatever the
+  -- reactor was doing -- 10 units a second at the shipped cadence, against the 18.7 an ignited D-T
+  -- reactor actually feeds it -- and it threw away the tail of every step that crossed the end of
+  -- a charge, which showed up as a D-D blanket breeding 3.5% under what the physics says. Neither
+  -- is visible from inside Factorio; the game just quietly breeds less.
+  --
+  -- Whole items still, because a player gets whole items back. What is left over stays as charge
+  -- for the next step, so nothing is lost between steps.
+  --
+  -- The one place lithium can be lost is the part-item of charge in flight, and it goes with the
+  -- REACTOR rather than with the blanket, because that is what the charge is keyed by: mining the
+  -- blanket loses nothing at all -- put another one back and the leftover charge is still there --
+  -- while removing the reactor discards it. At most one item either way.
+  local per_item = logic.blanket.lithium_nuclei_per_item
+  local wanted = logic.lithium_for(logic.blanket, neutrons)
+  if charge < wanted then
+    charge = charge + take_lithium(blanket, math.ceil((wanted - charge) / per_item)) * per_item
+  end
+  if charge <= 0 then return nil end
+
+  local bred = logic.breed(logic.reactor, logic.blanket, neutrons, charge)
+  if not bred then return nil end
+
+  storage.blanket_charge[entity.unit_number] = charge - bred.nuclei_used
+  return bred.tritium_units
+end
+
 --- Apply one reactor's step to the world.
 local function apply(entity, plasma, result)
   -- Spending straight out of the buffer is what makes the reactor's draw follow the simulation
@@ -157,9 +247,28 @@ local function apply(entity, plasma, result)
   -- What the reaction bred, if there is anywhere to put it. A reactor with no collector simply
   -- vents it: the by-products are computed either way, so bolting one on later starts collecting
   -- immediately and never has a backlog to catch up on.
-  if result.products then
-    local collector = entities.collector(entity)
-    if collector then deposit(collector, result.products) end
+  --
+  -- The blanket is asked only once a collector has been found, and that is the one place this
+  -- deliberately does NOT follow the compute-either-way rule above. Venting a by-product costs
+  -- nothing, so computing it regardless is free; running a blanket into no collector would spend
+  -- real lithium for nothing, which is a trap with no gameplay on the other side of it. So a
+  -- blanket on a reactor with no collector is idle rather than wasteful, and keeps its lithium.
+  --
+  -- Overflow is not treated the same way and is left as it is: a collector already full has its
+  -- tritium discarded by deposit(), lithium included, exactly as a reactor whose energy is not
+  -- being carried away loses that. Every throughput limit in this mod shows up as output backing
+  -- up, and a blanket is not worth making the exception.
+  local collector = entities.collector(entity)
+  if collector then
+    local products = result.products
+    local bred = blanket_breed(entity, result.neutrons)
+    if bred and bred > 0 then
+      -- A fresh table every step, so adding to it is safe; and a copy when the fuel breeds nothing
+      -- of its own, which is the D-T case the blanket exists for.
+      products = products or {}
+      products["rf-tritium"] = (products["rf-tritium"] or 0) + bred
+    end
+    if products then deposit(collector, products) end
   end
 end
 
@@ -340,11 +449,54 @@ local function check_collector_boxes()
   end
 end
 
+--- Refuse to run if a blanket cannot be fed, or if what it breeds has nowhere to go (#30).
+--
+-- The fourth trap of the same shape, across the module seam this time. Two things have to hold and
+-- neither is visible from the file that depends on them:
+--
+-- The item. blanket_breed takes rf-lithium out of the blanket's inventory by name, and rf-lithium
+-- is a RealisticFusionCore prototype (ADR 0010) -- so a rename on Core's side leaves this file
+-- asking for an item that does not exist. remove_item on a missing prototype does not politely
+-- return zero, and even if it did, a blanket that silently never breeds is exactly the failure
+-- that takes a player an evening to find.
+--
+-- The outlet. Blanket tritium is deposited through the isotope collector rather than through a
+-- pipe of the blanket's own, which is what lets the blanket be a plain container. That makes the
+-- collector's tritium box load-bearing for this tier as well, and check_collector_boxes above
+-- checks it is where deposit() writes -- but not that it exists to be written to at all if the
+-- boxes were ever cut down to one. Both are cheap to state and neither can change at runtime.
+local function check_blanket_feed()
+  if not prototypes.item[LITHIUM] then
+    error(string.format(
+      "rf-lithium-blanket: control.lua feeds it the item '%s', which no loaded mod defines. It is " ..
+      "a RealisticFusionCore prototype (ADR 0010) -- check that Core still declares it, or change " ..
+      "LITHIUM in control.lua to whatever it was renamed to.", LITHIUM))
+  end
+  -- The blanket needs somewhere to put items at all. A container prototype with no inventory would
+  -- load perfectly and never accept a single lithium.
+  local blanket = prototypes.entity["rf-lithium-blanket"]
+  if not blanket or (blanket.get_inventory_size(defines.inventory.chest) or 0) < 1 then
+    error("rf-lithium-blanket: the prototype has no chest inventory, so no inserter can feed it " ..
+      "lithium. Check inventory_size in prototypes/entities.lua.")
+  end
+  local outlet = false
+  for _, expected in ipairs(COLLECTOR_BOXES) do
+    if expected == "rf-tritium" then outlet = true end
+  end
+  if not outlet then
+    error("rf-lithium-blanket: what the blanket breeds leaves through rf-isotope-collector, but " ..
+      "COLLECTOR_BOXES in control.lua no longer lists rf-tritium -- so a blanket would consume " ..
+      "lithium and deposit nothing. Give the blanket a fluid box of its own, or put the tritium " ..
+      "box back.")
+  end
+end
+
 local function check_prototypes()
   check_cadence()
   check_plasma_bounds()
   check_every_plasma_burns()
   check_collector_boxes()
+  check_blanket_feed()
 end
 
 -- The register is rebuilt in the same breath as the prototype checks because both are answers to

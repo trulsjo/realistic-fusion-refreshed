@@ -84,7 +84,7 @@ check(L.fuels["rf-d-d-plasma"] ~= nil, "D-D plasma has a fuel entry")
 -- because this is the earliest place that can see them.
 for name, fuel in pairs(L.fuels) do
   for _, field in ipairs({ "reaction", "energy_per_reaction_j", "charged_fraction",
-                           "fuel_per_reaction" }) do
+                           "fuel_per_reaction", "neutrons_per_reaction" }) do
     check(fuel[field] ~= nil, string.format("%s declares %s", name, field))
   end
   check(type(fuel.fractions) == "table" and #fuel.fractions == 2
@@ -385,6 +385,119 @@ for _, ticks in ipairs({ 2, 6, 15, 30 }) do
   near(coarse_state.energy_units / ticks, fine_state.energy_units, 0.01,
     string.format("one step per %d ticks produces the same energy per tick", ticks))
 end
+
+-- ---------------------------------------------------------------- blanket breeding (#30)
+--
+-- The second breeding route (CONTEXT.md), and the one real D-T machines are designed around: a
+-- shell of lithium around the reactor catches the neutrons the plasma cannot confine and turns
+-- them into tritium. Everything below drives M.breed, which is deliberately not part of step() --
+-- the plasma does not know what is bolted to the outside of the reactor.
+
+local BLANKET = L.blanket
+local CHARGED = math.huge   -- a blanket with lithium to spare
+
+-- Both tiers must report their neutrons, because a blanket fits either reactor. The numbers are
+-- not interchangeable and that is the point of the tier.
+near(L.fuels["rf-d-t-plasma"].neutrons_per_reaction, 1, 1e-12, "every D-T reaction releases a neutron")
+near(L.fuels["rf-d-d-plasma"].neutrons_per_reaction, 0.5, 1e-12, "half of D-D's reactions release one")
+
+-- The invariant that keeps the two accounts from drifting: D-D's neutron and its helium-3 come out
+-- of the SAME branch, so a later edit that moves the branch split has to move both. Asserted
+-- against the products table rather than against 0.5 twice, which would pass on two independent
+-- constants that happened to agree today.
+near(L.fuels["rf-d-d-plasma"].neutrons_per_reaction, L.fuels["rf-d-d-plasma"].products["rf-helium-3"],
+  1e-12, "D-D's neutrons and its helium-3 are the same branch")
+
+check(hot_burn.neutrons > 0, "a fusing D-D reactor releases neutrons", tostring(hot_burn.neutrons))
+check(dt_hot.neutrons > 0, "a fusing D-T reactor releases neutrons", tostring(dt_hot.neutrons))
+-- Not asserted as zero, and the difference is worth stating because it is the same trap the fluid
+-- writes in control.lua guard against. A plasma at ambient has a reactivity that is negligible
+-- rather than absent, so `neutrons` is a raw count of a few thousand where a fusing reactor's is
+-- 1e21. In fluid units that is 1e-17 of a unit -- eleven orders below the threshold the engine will
+-- accept as a fluid amount at all -- so it rounds to nothing everywhere it matters, but it is not
+-- nothing, and a test claiming it were would be testing a rate lookup that had broken to zero.
+check(parked.neutrons * 1e12 < hot_burn.neutrons, "a reactor parked at the minimum releases next to none",
+  string.format("%.3g against a fusing reactor's %.3g", parked.neutrons, hot_burn.neutrons))
+
+-- Neutrons come off the same capped reaction count everything else does. Stated against the fuel
+-- burnt rather than against a reaction count the test would have to recompute: two nuclei go into
+-- every D-D reaction and half of those reactions make a neutron, so one neutron per four nuclei.
+near(hot_burn.neutrons, hot_burn.plasma_consumed * SPEC.particles_per_unit / 4, 1e-12,
+  "D-D releases one neutron per four deuterons burnt")
+near(dt_hot.neutrons, dt_hot.plasma_consumed * SPEC.particles_per_unit / 2, 1e-12,
+  "D-T releases one neutron per two nuclei burnt")
+
+-- ---- what the blanket makes of them
+
+check(L.breed(SPEC, BLANKET, 0, CHARGED) == nil, "no neutrons, nothing bred")
+check(L.breed(SPEC, BLANKET, nil, CHARGED) == nil, "a reactor with no step breeds nothing")
+check(L.breed(SPEC, BLANKET, 1e20, 0) == nil, "an empty blanket breeds nothing")
+check(L.breed(SPEC, BLANKET, 1e20, nil) == nil, "a blanket that was never loaded breeds nothing")
+
+local bred = L.breed(SPEC, BLANKET, dt_hot.neutrons, CHARGED)
+check(bred ~= nil, "a blanket on a fusing D-T reactor breeds")
+near(bred.tritium_units, dt_hot.neutrons * BLANKET.tritium_per_neutron / SPEC.particles_per_unit,
+  1e-12, "tritium bred is the neutron count times the breeding ratio")
+
+-- One lithium nucleus per triton. Asserted as an identity between the two returned numbers rather
+-- than recomputed, because they are the same quantity counted in two different things and the way
+-- this goes wrong is that one of them silently stops tracking the other.
+near(bred.nuclei_used, bred.tritium_units * SPEC.particles_per_unit, 1e-12,
+  "one lithium nucleus is spent per triton bred")
+
+-- The identity the item size exists for, and the one a player can check by watching a belt: with
+-- lithium_nuclei_per_item equal to particles_per_unit, one lithium item in is one unit of tritium
+-- out. If either constant moves without the other this is what says so.
+near(bred.nuclei_used / BLANKET.lithium_nuclei_per_item, bred.tritium_units, 1e-12,
+  "one lithium item breeds one unit of tritium")
+
+-- What a step can consume, which is what control.lua sizes its withdrawal from the blanket's
+-- inventory by. It has to agree with what breed() then spends when the charge is not the limit --
+-- if it under-reports, the blanket is capped at whatever it happens to withdraw and breeds less
+-- than the physics says while looking perfectly healthy. That is not hypothetical: it is what the
+-- first version of control.lua did, and it took an in-game measurement to see.
+near(L.lithium_for(BLANKET, dt_hot.neutrons), bred.nuclei_used, 1e-12,
+  "the lithium a step wants is the lithium an unconstrained step spends")
+
+-- The cap, which is what stops a blanket breeding on credit. Half the lithium it wants must give
+-- exactly half the tritium and consume exactly the lithium there was -- not merely less of each.
+local wanted = L.breed(SPEC, BLANKET, dt_hot.neutrons, CHARGED)
+local short  = L.breed(SPEC, BLANKET, dt_hot.neutrons, wanted.nuclei_used / 2)
+near(short.nuclei_used, wanted.nuclei_used / 2, 1e-12, "a blanket running out spends exactly what it had")
+near(short.tritium_units, wanted.tritium_units / 2, 1e-12, "and breeds exactly what that bought")
+
+-- Breeding follows the simulation, which is the same claim the D-D by-products make and the reason
+-- neither is a recipe: a cool reactor releases fewer neutrons, so its blanket breeds less.
+local dt_cool = L.step(SPEC, "rf-d-t-plasma", FULL, 1.0e7, math.huge, TICK)
+local cool_bred = L.breed(SPEC, BLANKET, dt_cool.neutrons, CHARGED)
+check(cool_bred.tritium_units * 10 < bred.tritium_units,
+  "a blanket on a cool reactor breeds far less",
+  string.format("%.3g vs %.3g", cool_bred.tritium_units, bred.tritium_units))
+
+-- ---- the claim the tier turns on
+--
+-- A D-T reactor burns one triton per reaction and its blanket breeds tritium_per_neutron of one
+-- back. Above one is self-sufficiency -- the tier feeding itself rather than draining the D-D
+-- reactors upstream of it -- and it is the whole reason real machines are built this way.
+--
+-- Half the plasma is tritium (fractions), so tritons burnt is half the nuclei burnt.
+local tritons_burnt = dt_hot.plasma_consumed * SPEC.particles_per_unit
+  * L.fuels["rf-d-t-plasma"].fractions[2]
+check(bred.nuclei_used > tritons_burnt,
+  "a blanketed D-T reactor breeds back more tritium than it burns",
+  string.format("%.4g bred against %.4g burnt, ratio %.3f",
+    bred.nuclei_used, tritons_burnt, bred.nuclei_used / tritons_burnt))
+
+-- And the same blanket on a D-D reactor is worth having but is not the same machine: D-D makes a
+-- neutron on half its reactions where D-T makes one on every reaction, so at equal reaction rates
+-- the blanket breeds half as much. Compared at the same temperature so the difference is the
+-- branch structure rather than the cross-section.
+local dd_bred = L.breed(SPEC, BLANKET, hot_burn.neutrons, CHARGED)
+check(dd_bred.tritium_units > 0, "a blanket on a D-D reactor breeds too",
+  tostring(dd_bred.tritium_units))
+near(dd_bred.tritium_units / hot_burn.plasma_consumed,
+  bred.tritium_units / dt_hot.plasma_consumed / 2, 1e-12,
+  "per unit of plasma burnt, a D-D blanket breeds half what a D-T blanket does")
 
 -- ---------------------------------------------------------------- the shipped balance
 --

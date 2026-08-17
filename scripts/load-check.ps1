@@ -12,7 +12,7 @@
 
     IT DOES MORE THAN THE DATA STAGE, and the difference matters to anyone editing the
     simulation. Creating a map runs `on_init`, which is where control.lua's check_prototypes()
-    fires -- so this script enforces four invariants that no amount of prototype validation
+    fires -- so this script enforces five invariants that no amount of prototype validation
     would catch:
 
       check_cadence()             UPDATE_INTERVAL against rf-reactor's electric buffer. A step
@@ -33,11 +33,17 @@
                                   collector's boxes, against the prototype's filters. Swap the
                                   declarations and nothing complains -- the mod loads, the
                                   collector fills, and a player's tritium pipe carries helium-3.
+      check_blanket_feed()        That the item a lithium blanket eats exists, that the blanket
+                                  has an inventory to be fed into, and that the collector still
+                                  carries the tritium box a blanket breeds through. The first
+                                  crosses the module seam -- rf-lithium is Core's -- and a rename
+                                  there would leave a blanket silently never breeding.
 
     The Lua tests cannot see any of these: they know the physics but not the prototypes, and the
     physics is happily insensitive to cadence well past the point the reactor's buffer gives out.
     So editing UPDATE_INTERVAL, buffer_capacity, a plasma's max_temperature, reactor-logic's fuel
-    table or the collector's box order is guarded by running the game, not by the suite.
+    table, the collector's box order or the blanket's inventory is guarded by running the game,
+    not by the suite.
 
     The check-* rigs create maps too, so they run these as a side effect -- and each takes minutes.
     locale-check.ps1 does NOT: it only dumps, never creates, so a pass there says nothing about any
@@ -292,7 +298,7 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
     # Says what actually passed rather than "data stage valid", which was the same undersell the
     # docstring above used to make: creating the map ran control.lua's check_prototypes() too.
     Write-Host 'OK - prototypes valid, every referenced asset present, map created and the'
-    Write-Host "     simulation's four load-time invariants hold."
+    Write-Host "     simulation's five load-time invariants hold."
     exit 0
 }
 finally {
