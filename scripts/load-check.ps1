@@ -12,7 +12,7 @@
 
     IT DOES MORE THAN THE DATA STAGE, and the difference matters to anyone editing the
     simulation. Creating a map runs `on_init`, which is where control.lua's check_prototypes()
-    fires -- so this script enforces six invariants that no amount of prototype validation
+    fires -- so this script enforces nine invariants that no amount of prototype validation
     would catch:
 
       check_fuel_rows()           Every row of reactor-logic's fuel table declares the fields
@@ -21,11 +21,20 @@
                                   than from the function that reads it -- and a missing field
                                   throws inside on_nth_tick, on a live save, the moment a reactor
                                   of that tier first holds plasma.
-      check_cadence()             UPDATE_INTERVAL against rf-reactor's electric buffer. A step
+      check_reactor_specs()       Every prototype entity-management registers as a reactor has
+                                  constants in control.lua's SPECS and an entity prototype to
+                                  match. The two lists are written separately on purpose -- one
+                                  file decides what a reactor IS, the other what one DOES -- and
+                                  a missing spec is a nil index inside on_nth_tick rather than a
+                                  refusal to load.
+      check_cadence()             UPDATE_INTERVAL against each reactor's electric buffer. A step
                                   spends the whole interval's heating at once, so past twelve
                                   ticks at the shipped 50 MW and 10 MJ the reactor is starved
                                   every step -- silently, since underpowered is a legitimate
-                                  state it is meant to have.
+                                  state it is meant to have. Over both reactors since #31: the
+                                  aneutronic one draws four times as much against four times the
+                                  buffer, and nothing else would notice one moving without the
+                                  other.
       check_plasma_bounds()       The simulation's temperature clamps against every plasma
                                   fluid's declared range. Widen one without the other and the
                                   mod loads perfectly, then throws on a live save the first
@@ -44,6 +53,17 @@
                                   carries the tritium box a blanket breeds through. The first
                                   crosses the module seam -- rf-lithium is Core's -- and a rename
                                   there would leave a blanket silently never breeding.
+      check_energy_outlets()      Each reactor's energy_fluid against the filter on the box
+                                  apply() writes it into, that the fluid carries a fuel_value,
+                                  and that something in the game has a box that will accept it.
+                                  There are two energy fluids since #31 and they are deliberately
+                                  not interchangeable, so writing the wrong one is a rejected
+                                  write rather than a crash: every reactor of that kind silently
+                                  produces nothing at all.
+      check_reactor_companions()  Each reactor has the signals combinator circuit-output derives
+                                  from its name. Derived rather than listed so a third reactor
+                                  needs no change there -- which is exactly what makes a missing
+                                  one a create_entity throw inside the reporting pass.
 
     The Lua tests cannot see any of these: they know the physics but not the prototypes, and the
     physics is happily insensitive to cadence well past the point the reactor's buffer gives out.
@@ -304,7 +324,7 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
     # Says what actually passed rather than "data stage valid", which was the same undersell the
     # docstring above used to make: creating the map ran control.lua's check_prototypes() too.
     Write-Host 'OK - prototypes valid, every referenced asset present, map created and the'
-    Write-Host "     simulation's six load-time invariants hold."
+    Write-Host "     simulation's nine load-time invariants hold."
     exit 0
 }
 finally {

@@ -45,6 +45,18 @@ Written with hyphens and matching case throughout: **D-D**, **D-T**, **D-He3**, 
 **Aneutronic** — the D-He3 and He3-He3 tier, whose reactions release far fewer neutrons and permit
 direct energy conversion. The end of v1's progression.
 
+Two things about it are worth having in the glossary rather than only in the code, because both are
+easy to state wrongly:
+
+- **In this mod both aneutronic reactions release no neutrons at all**, not merely fewer. That is the
+  model rather than the physics: a real D-He3 plasma still contains deuterium and runs D-D on the
+  side, which does make neutrons, and the simulation burns one reaction per plasma so the side branch
+  is not modelled. Say "aneutronic", never "neutron-free", of the real reactions.
+- **Direct energy conversion is a different route, not a better one.** It collects charged fusion
+  products as current instead of boiling water with them, which is only possible because nothing
+  leaves as a neutron. The gain is that the whole steam stage — heat exchanger, water, turbines —
+  disappears, not that the conversion is markedly more efficient.
+
 **Plasma** — the heated, confined state a reaction runs in, carried as a fluid. Each reaction has its
 own plasma. Plasma must not travel through vanilla pipes.
 

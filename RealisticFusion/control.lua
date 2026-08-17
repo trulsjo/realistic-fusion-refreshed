@@ -7,6 +7,20 @@ local logic    = require("scripts.reactor-logic")
 local entities = require("scripts.entity-management")
 local circuit  = require("scripts.circuit-output")
 
+-- Which constants each reactor prototype is simulated with (#31). ADR 0010 names two reactors and
+-- scripts/reactor-logic.lua holds a spec for each; this is the only place the two lists meet.
+--
+-- Keyed by prototype name and looked up per reactor per step, which is a table index against the
+-- alternative of storing the spec beside the entity in the register -- state that would have to be
+-- migrated, kept in step with a rename, and could go stale against a spec edit. The lookup cannot.
+--
+-- check_reactor_specs() below refuses to load if entity-management registers a reactor this table
+-- has no entry for, because the failure is otherwise a nil index inside on_nth_tick on a live save.
+local SPECS = {
+  ["rf-reactor"]            = logic.reactor,
+  ["rf-aneutronic-reactor"] = logic.aneutronic_reactor,
+}
+
 -- ADR 0005 pre-authorises throttling the simulation to a coarser cadence and requires that doing
 -- so be a change in one place. This is that place: nothing else in the mod knows how often the
 -- simulation steps, and the step itself is written in terms of elapsed seconds.
@@ -174,7 +188,12 @@ end
 --                  capped to it, which is what stops a blanket paying for tritium that deposit()
 --                  would throw away -- see apply() for why that is not treated the way every
 --                  other overflow in this mod is.
-local function blanket_breed(entity, neutrons, headroom)
+-- @param spec      the reactor's constants, for particles_per_unit -- the blanket breeds into the
+--                  fluid units that reactor counts its plasma in, and #31 made that a question
+--                  worth asking rather than one constant. Both shipped reactors declare the same
+--                  1e20 on purpose (see M.aneutronic_reactor), so this changes nothing today and
+--                  stops being right the moment a third one disagrees.
+local function blanket_breed(entity, spec, neutrons, headroom)
   if not neutrons or neutrons <= 0 then return nil end
   if not headroom or headroom <= 0 then return nil end
   local blanket = entities.blanket(entity)
@@ -203,7 +222,7 @@ local function blanket_breed(entity, neutrons, headroom)
   local wanted = logic.lithium_for(logic.blanket, neutrons)
   -- Capped to what the collector can actually take, BEFORE any lithium is drawn. Doing it after
   -- would be the bug this closes: the items would already be gone.
-  local room = headroom * logic.reactor.particles_per_unit
+  local room = headroom * spec.particles_per_unit
   if wanted > room then wanted = room end
   if wanted <= 0 then return nil end
 
@@ -215,7 +234,7 @@ local function blanket_breed(entity, neutrons, headroom)
   -- The cap reaches breed() as the charge, because breed() spends exactly what it breeds -- one
   -- nucleus per triton -- so bounding one bounds the other. Anything the headroom held back stays
   -- as charge and is bred on a later step rather than lost.
-  local bred = logic.breed(logic.reactor, logic.blanket, neutrons, math.min(charge, wanted))
+  local bred = logic.breed(spec, logic.blanket, neutrons, math.min(charge, wanted))
   if not bred then return nil end
 
   storage.blanket_charge[entity.unit_number] = charge - bred.nuclei_used
@@ -223,7 +242,7 @@ local function blanket_breed(entity, neutrons, headroom)
 end
 
 --- Apply one reactor's step to the world.
-local function apply(entity, plasma, result)
+local function apply(entity, spec, plasma, result)
   -- Spending straight out of the buffer is what makes the reactor's draw follow the simulation
   -- rather than a fixed prototype figure: the network refills what was spent, so a brownout shows
   -- up as a plasma that cannot hold its temperature. Measured on a reactor given 10 kW instead of
@@ -265,7 +284,13 @@ local function apply(entity, plasma, result)
     -- heat is not being carried away does not get to bank it. It shows up as output backing up.
     local capacity = box.get_capacity(2)
     if amount > capacity then amount = capacity end
-    box[2] = { name = "rf-reactor-energy", amount = amount, temperature = 15 }
+    -- The reactor's OWN energy fluid, not one name the whole mod shares (#31). An aneutronic
+    -- reactor sells rf-aneutronic-reactor-energy into a direct energy converter where a neutronic
+    -- one sells rf-reactor-energy into a heat exchanger, and the two are deliberately not
+    -- interchangeable -- see prototypes/fluids.lua. Writing the wrong one here would be rejected by
+    -- the box's filter and lose the reactor's entire output silently, which is why
+    -- check_energy_outlets() below ties this field to the prototype rather than trusting it.
+    box[2] = { name = spec.energy_fluid, amount = amount, temperature = 15 }
   end
 
   -- What the reaction bred, if there is anywhere to put it. A reactor with no collector simply
@@ -296,7 +321,7 @@ local function apply(entity, plasma, result)
     local headroom = collector.fluidbox.get_capacity(TRITIUM_BOX)
       - (held and held.amount or 0)
       - ((products and products[TRITIUM]) or 0)
-    local bred = blanket_breed(entity, result.neutrons, headroom)
+    local bred = blanket_breed(entity, spec, result.neutrons, headroom)
     if bred and bred > 0 then
       -- A fresh table every step, so adding to it is safe; and a copy when the fuel breeds nothing
       -- of its own, which is the D-T case the blanket exists for.
@@ -326,8 +351,13 @@ local function update()
 
   for unit_number, entity in pairs(entities.registry()) do
     if entity.valid then
+      -- The reactor's own constants (#31). check_reactor_specs() guarantees this is never nil for
+      -- anything the register can hold, so there is no fallback here on purpose: a fallback would
+      -- silently simulate an aneutronic reactor as a neutronic one, which looks like a balance
+      -- problem rather than a missing entry.
+      local spec = SPECS[entity.name]
       local plasma = entity.fluidbox[1]
-      local result = logic.step(logic.reactor, plasma and plasma.name, plasma and plasma.amount,
+      local result = logic.step(spec, plasma and plasma.name, plasma and plasma.amount,
         plasma and plasma.temperature, entity.energy, dt)
 
       -- Reported from the read pass, on the state the step was computed against, so a reactor
@@ -335,10 +365,10 @@ local function update()
       -- here and not in the write pass because a reactor with nothing to simulate has no entry
       -- there at all, and "starved of plasma" is exactly the state that reactor is in and the one
       -- worth showing.
-      if reporting then circuit.publish(entity, result, plasma and plasma.amount, logic.reactor) end
+      if reporting then circuit.publish(entity, result, plasma and plasma.amount, spec) end
 
       if result then
-        pending[#pending + 1] = { entity = entity, plasma = plasma, result = result }
+        pending[#pending + 1] = { entity = entity, spec = spec, plasma = plasma, result = result }
       end
     else
       -- Dropped here rather than on a mined or died event, which is why entity-management wires
@@ -354,7 +384,7 @@ local function update()
   end
 
   for _, step in ipairs(pending) do
-    apply(step.entity, step.plasma, step.result)
+    apply(step.entity, step.spec, step.plasma, step.result)
   end
 end
 
@@ -370,15 +400,134 @@ end
 -- described. It can only fire on a developer edit -- to this file's interval or to entities.lua's
 -- buffer -- and it fires during scripts/load-check.ps1, which creates a map and therefore runs
 -- this.
+-- Over every reactor rather than rf-reactor alone (#31). The aneutronic one draws four times the
+-- heating against four times the buffer, so it passes at the same interval -- but the two numbers
+-- are on different prototypes now and nothing else would notice one moving without the other.
 local function check_cadence()
-  local source = prototypes.entity["rf-reactor"].electric_energy_source_prototype
-  local needed = logic.reactor.heating_power_w * UPDATE_INTERVAL / 60
-  if needed > source.buffer_capacity then
-    error(string.format(
-      "rf-reactor: UPDATE_INTERVAL of %d ticks needs %.3g J of buffer per step but the prototype " ..
-      "has %.3g J, so the reactor would be starved every step. Lower the interval in control.lua " ..
-      "or raise buffer_capacity in prototypes/entities.lua.",
-      UPDATE_INTERVAL, needed, source.buffer_capacity))
+  for name, spec in pairs(SPECS) do
+    local source = prototypes.entity[name].electric_energy_source_prototype
+    local needed = spec.heating_power_w * UPDATE_INTERVAL / 60
+    if needed > source.buffer_capacity then
+      error(string.format(
+        "%s: UPDATE_INTERVAL of %d ticks needs %.3g J of buffer per step but the prototype " ..
+        "has %.3g J, so the reactor would be starved every step. Lower the interval in control.lua " ..
+        "or raise buffer_capacity in prototypes/entities.lua.",
+        name, UPDATE_INTERVAL, needed, source.buffer_capacity))
+    end
+  end
+end
+
+--- Refuse to run if a reactor on the map has no constants to be simulated with (#31).
+--
+-- entity-management decides what a reactor IS and this file decides what one DOES, and those two
+-- lists are written down separately -- deliberately, because requiring one from the other would
+-- install runtime event handlers into the data stage and into the test suite. This is the seam
+-- that makes the separation safe.
+--
+-- Without it, adding a third reactor prototype to entity-management and forgetting the spec here
+-- gives a mod that loads, builds and runs, and throws on a nil index inside on_nth_tick the first
+-- moment a player puts plasma in one. With it, the mod refuses to load and says which name is
+-- missing.
+local function check_reactor_specs()
+  for _, name in ipairs(entities.REACTORS) do
+    if not SPECS[name] then
+      error(string.format(
+        "scripts/entity-management.lua registers '%s' as a reactor but control.lua's SPECS has no " ..
+        "constants for it, so it would be simulated with nil. Add a spec to " ..
+        "scripts/reactor-logic.lua and a row to SPECS.", name))
+    end
+    if not prototypes.entity[name] then
+      error(string.format(
+        "scripts/entity-management.lua registers '%s' as a reactor but no such entity prototype " ..
+        "exists. Add it to prototypes/entities.lua or take the name out of REACTORS.", name))
+    end
+  end
+end
+
+--- Refuse to run if a reactor's output would be written into a box that will not take it (#31).
+--
+-- apply() writes spec.energy_fluid into box 2, and box 2 is filtered on the prototype. Those are
+-- two files apart and there are two of each now, so the mistake is available: give the aneutronic
+-- reactor rf-reactor-energy in its spec, or swap the filters, and the mod loads perfectly while
+-- every reactor of that kind silently produces nothing at all. Not a crash -- a rejected write --
+-- which is the kind of failure a player reports as "my reactors do not work" a week later.
+--
+-- The consumer is checked too, and it is the other half of the same question. A fluid nothing burns
+-- is a reactor that fills its box and stops; #28's rf-d-d-fusion had exactly this problem with
+-- steam turbines and it was found on review rather than by the game.
+local function check_energy_outlets()
+  for name, spec in pairs(SPECS) do
+    local boxes = prototypes.entity[name].fluidbox_prototypes
+    local outlet = boxes[2]
+    local filter = outlet and outlet.filter and outlet.filter.name
+    if filter ~= spec.energy_fluid then
+      error(string.format(
+        "%s: the simulation sells %s but the prototype's output box is filtered to %s, so every " ..
+        "unit the reactor produced would be rejected. Reconcile energy_fluid in " ..
+        "scripts/reactor-logic.lua with prototypes/entities.lua.",
+        name, spec.energy_fluid, tostring(filter)))
+    end
+
+    local fluid = prototypes.fluid[spec.energy_fluid]
+    if not fluid then
+      error(string.format("%s: sells the fluid '%s', which no loaded mod defines.",
+        name, spec.energy_fluid))
+    end
+    -- fuel_value is what makes a unit of this worth a joule to whatever burns it. Zero would load,
+    -- pipe and fill exactly as it does now, and generate no power anywhere.
+    if (fluid.fuel_value or 0) <= 0 then
+      error(string.format(
+        "%s: sells '%s', which has no fuel_value -- so a heat exchanger or converter burning it " ..
+        "would produce nothing. Set one in prototypes/fluids.lua.", name, spec.energy_fluid))
+    end
+
+    -- Somewhere for it to go. Any entity that is not this reactor and has a fluid box filtered to
+    -- the fluid will do -- rf-heat-exchanger for one tier, rf-direct-energy-converter for the
+    -- other -- and asking the question that loosely is deliberate: what matters is that the fluid
+    -- is not a dead end, not which prototype type ends it.
+    local consumed = false
+    for other, prototype in pairs(prototypes.entity) do
+      if other ~= name then
+        for _, box in pairs(prototype.fluidbox_prototypes or {}) do
+          if box.filter and box.filter.name == spec.energy_fluid then
+            consumed = true
+            break
+          end
+        end
+      end
+      if consumed then break end
+    end
+    if not consumed then
+      error(string.format(
+        "%s: sells '%s' and nothing in the game has a fluid box that accepts it, so the reactor " ..
+        "would fill its output box and stop. Give the tier a converter, or point it at one that " ..
+        "exists.", name, spec.energy_fluid))
+    end
+  end
+end
+
+--- Refuse to run if a reactor has no combinator to put its signals on (#31).
+--
+-- The name is derived from the reactor's rather than listed -- circuit-output builds
+-- "<reactor>-signals" -- which is what lets a third reactor need no change in that file. What
+-- derivation costs is that a missing prototype is discovered at the moment of use: create_entity
+-- on an unknown name throws inside the reporting pass, on a live save, the first time a reactor of
+-- that kind is built.
+--
+-- THE MOVING CORE IS NOT CHECKED HERE, and not for want of trying. reactor-animation.lua derives
+-- "<reactor>-core" exactly the same way and has exactly the same failure, but animation prototypes
+-- are a data-stage type the runtime does not expose -- `prototypes.animation` is not a key, which
+-- this check found out by being written and throwing. So that one is covered by the rigs instead:
+-- scripts/check-aneutronic.ps1 runs a reactor of each kind until it is fusing, which is the call
+-- that would throw, and a missing animation fails there rather than never.
+local function check_reactor_companions()
+  for _, name in ipairs(entities.REACTORS) do
+    if not prototypes.entity[name .. "-signals"] then
+      error(string.format(
+        "%s: scripts/circuit-output.lua puts its signals on '%s-signals', which no mod defines -- " ..
+        "so the reactor would throw the first time it reported. Add it to prototypes/signals.lua.",
+        name, name))
+    end
   end
 end
 
@@ -393,22 +542,30 @@ end
 -- Over every fuel rather than over rf-d-d-plasma alone, because the clamps live on the reactor spec
 -- and are therefore one pair of bounds for all of them: a tier whose plasma declares a narrower
 -- range than the reactor can compute is the same crash, discovered later.
+-- Over every reactor as well as every fuel (#31), which is a square rather than a list and is
+-- correct for the reason the loop over fuels was: the input box is unfiltered, so ANY plasma can
+-- reach ANY reactor, and the pair that would crash is whichever spec's clamps are widest against
+-- whichever fluid's range is narrowest. Both shipped reactors declare the same bounds, so this
+-- checks four pairs to prove one thing -- and the day a tier wants a hotter clamp, it is the pair
+-- it forgot that this names.
 local function check_plasma_bounds()
   for name in pairs(logic.fuels) do
     local fluid = prototypes.fluid[name]
     if not fluid then
       error(string.format(
-        "rf-reactor: scripts/reactor-logic.lua burns %s but no such fluid exists. Add it to " ..
+        "scripts/reactor-logic.lua burns %s but no such fluid exists. Add it to " ..
         "prototypes/fluids.lua or drop the row.", name))
     end
-    if logic.reactor.min_temperature_c < fluid.default_temperature
-      or logic.reactor.max_temperature_c > fluid.max_temperature then
-      error(string.format(
-        "rf-reactor: the simulation clamps temperature to [%.6g, %.6g] C but %s accepts " ..
-        "[%.6g, %.6g], so a reactor would write a temperature the fluid cannot hold. Reconcile " ..
-        "scripts/reactor-logic.lua with prototypes/fluids.lua.",
-        logic.reactor.min_temperature_c, logic.reactor.max_temperature_c, name,
-        fluid.default_temperature, fluid.max_temperature))
+    for reactor, spec in pairs(SPECS) do
+      if spec.min_temperature_c < fluid.default_temperature
+        or spec.max_temperature_c > fluid.max_temperature then
+        error(string.format(
+          "%s: the simulation clamps temperature to [%.6g, %.6g] C but %s accepts " ..
+          "[%.6g, %.6g], so a reactor would write a temperature the fluid cannot hold. Reconcile " ..
+          "scripts/reactor-logic.lua with prototypes/fluids.lua.",
+          reactor, spec.min_temperature_c, spec.max_temperature_c, name,
+          fluid.default_temperature, fluid.max_temperature))
+      end
     end
   end
 end
@@ -559,11 +716,14 @@ end
 
 local function check_prototypes()
   check_fuel_rows()
+  check_reactor_specs()
   check_cadence()
   check_plasma_bounds()
   check_every_plasma_burns()
   check_collector_boxes()
   check_blanket_feed()
+  check_energy_outlets()
+  check_reactor_companions()
 end
 
 -- The register is rebuilt in the same breath as the prototype checks because both are answers to
@@ -593,4 +753,4 @@ script.on_nth_tick(UPDATE_INTERVAL, update)
 -- offer it to a wire drag on its own -- the reactor outranks it for selection, and dragging a wire
 -- is not a special case (ADR 0012). circuit-output moves the selection for as long as a wire is in
 -- hand; installing it needs the reactor's name, which entity-management owns.
-circuit.install(entities.REACTOR)
+circuit.install(entities.REACTORS)

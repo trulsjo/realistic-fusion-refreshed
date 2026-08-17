@@ -313,6 +313,175 @@ blanket.inventory_size = 100
 -- do not match -- the same gap rf-isotope-collector has and for the same reason: there is no K2
 -- building of this shape to take, and drawing one is not this ticket. See the NOTICE.
 
+-- ---------------------------------------------------------------- aneutronic reactor
+
+-- The second reactor (#31, ADR 0010). Same simulation, same file, different constants -- see
+-- M.aneutronic_reactor in scripts/reactor-logic.lua for what differs and why each difference is
+-- there. This prototype is the parts of it the engine has to know about.
+--
+-- A boiler again, and for exactly the reasons rf-reactor is one: it is the prototype that will
+-- hold and move fluid with no recipe, and its input box may be "input-output" so a row of them on
+-- one run of rf-pipe works from a single pool at a single mixed temperature (ADR 0011). Nothing
+-- about that argument is different on this tier, so nothing about the choice is.
+local aneutronic = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-aneutronic-reactor", {
+  mining_time = 4,
+})
+aneutronic.mode = "output-to-separate-pipe"
+
+-- Ten tiles square, following the art the way rf-reactor's fifteen does (ADR 0013). Krastorio 2's
+-- antimatter reactor is drawn for a 10x10 building and this takes its boxes with it.
+--
+-- The size difference from rf-reactor is not incidental and is worth keeping: two reactors that a
+-- player cannot tell apart on the ground is the complaint that separated rf-reactor from
+-- rf-heat-exchanger, and a fifteen-tile building beside a ten-tile one is the cheapest possible
+-- answer to it.
+aneutronic.collision_box = { { -4.75, -4.75 }, { 4.75, 4.75 } }
+aneutronic.selection_box = { { -4.95, -4.95 }, { 4.95, 4.95 } }
+local aneutronic_graphics = require("graphics.krastorio-2.buildings.aneutronic-reactor-pictures")
+aneutronic.pictures = aneutronic_graphics.pictures
+-- The moving core, drawn over the still one by scripts/reactor-animation.lua while the reactor is
+-- fusing. Same arrangement as rf-reactor and for the same measured reason: a boiler cannot animate.
+data:extend({ aneutronic_graphics.core_animation("rf-aneutronic-reactor-core") })
+aneutronic.target_temperature = 165
+aneutronic.energy_consumption = "1W"
+aneutronic.energy_source = {
+  type = "electric",
+  usage_priority = "secondary-input",
+  -- Four times rf-reactor's buffer, because the confinement heating is four times as large and
+  -- control.lua spends a whole update interval's worth in one step. control.lua's check_cadence
+  -- checks this against the interval for every reactor rather than for rf-reactor alone -- so this
+  -- number and UPDATE_INTERVAL cannot drift apart in silence.
+  buffer_capacity = "40MJ",
+  input_flow_limit = "240MW",
+  drain = "0W",
+}
+
+local aneutronic_covers = table.deepcopy(aneutronic.fluid_box.pipe_covers)
+
+-- Half-tile positions where rf-reactor has whole ones, and that is arithmetic rather than a choice:
+-- ten is even, so the tile centres of a 10x10 entity sit on halves where a 15x15's sit on integers.
+-- The outermost tile centre either side is 4.5.
+aneutronic.fluid_box = {
+  production_type = "input-output",
+  -- THREE THOUSAND, where rf-reactor holds one thousand, and this is the machine's whole physical
+  -- difference. Density is what buys ignition -- the fusion rate goes as n^2 while the transport
+  -- loss goes as n -- so a reactor that holds three times the plasma in the same confinement volume
+  -- runs at three times the density and nine times the rate. reactor-logic keeps one
+  -- particles_per_unit for the entire mod precisely so that this box is the lever and a fluid unit
+  -- goes on meaning the same thing in every pipe.
+  volume = 3000,
+  pipe_covers = aneutronic_covers,
+  pipe_connections = {
+    { flow_direction = "input-output", direction = defines.direction.west, position = { -4.5, 0.5 } },
+    { flow_direction = "input-output", direction = defines.direction.east, position = { 4.5, 0.5 } },
+  },
+  -- Unfiltered, like rf-reactor's and for the same reason (#28): one reactor burns whichever plasma
+  -- it is plumbed to, and control.lua's check_every_plasma_burns is what guarantees every plasma a
+  -- heater can make has somewhere to be burnt.
+  --
+  -- A consequence worth stating rather than discovering: nothing stops a player feeding D-D plasma
+  -- to this reactor or D-He3 to the cheap one. Both work, both are simulated correctly, and both
+  -- are usually a poor idea -- the constants are matched to the reactions in the tier. That is the
+  -- same freedom the D-D and D-T tiers already share, one machine further along.
+}
+contain(aneutronic.fluid_box)
+aneutronic.output_fluid_box = {
+  production_type = "output",
+  volume = 1000,
+  pipe_covers = aneutronic_covers,
+  pipe_connections = {
+    { flow_direction = "output", direction = defines.direction.north, position = { 0.5, -4.5 } },
+  },
+  -- The tier's own energy fluid, which is what keeps the two conversion routes from being
+  -- interchangeable. See prototypes/fluids.lua for why there are two.
+  filter = "rf-aneutronic-reactor-energy",
+}
+
+-- ---------------------------------------------------------------- direct energy converter
+
+-- Power without a steam loop (#31, ADR 0010's chain step 5), and the reason the aneutronic tier is
+-- mechanically different rather than numerically bigger.
+--
+-- A GENERATOR, not a boiler, and that is the whole prototype choice: a generator burning a fluid
+-- for its fuel_value produces electricity directly, with no intermediate steam and no turbine
+-- behind it. Krastorio 2's gas power station is the same shape of thing and was the worked example
+-- read for the field set.
+--
+-- What the neutronic side needs to turn a reactor into electricity is rf-heat-exchanger, a water
+-- supply and a row of vanilla steam turbines. What this needs is this. That is the payoff of the
+-- tier, and it is a building count rather than an efficiency: the conversion loss is already taken
+-- at the reactor, where capture_efficiency stands for everything not recovered, so effectivity is
+-- 1 here on purpose. A second factor would charge a player twice for one loss.
+local converter = pin(table.deepcopy(data.raw["generator"]["steam-turbine"]), "rf-direct-energy-converter", {
+  mining_time = 1,
+})
+-- Every stat pinned rather than inherited, the way the note at the top of this file requires.
+converter.burns_fluid = true
+-- Take only what the current output needs, so a converter running below capacity does not drain
+-- its box and throw the rest away. The same field rf-heat-exchanger sets, for the same reason.
+converter.scale_fluid_usage = true
+-- Non-fuel fluid is not destroyed. It cannot arrive anyway -- the box below is filtered -- and a
+-- prototype that would quietly eat a misrouted fluid is worse than one that refuses it.
+converter.destroy_non_fuel_fluid = false
+converter.effectivity = 1
+-- A hundred units a second at one megajoule each. Sized against the route it replaces rather than
+-- picked: rf-heat-exchanger burns 40 units a second into steam that feeds about seven vanilla
+-- turbines, so one of these stands in for two and a half exchangers and seventeen turbines.
+-- Provisional, like every other balance number here.
+converter.fluid_usage_per_tick = 100 / 60
+converter.max_power_output = "100MW"
+-- Burned by fuel_value, so temperature is not the input. Stated rather than left at the steam
+-- turbine's 500 because the fluid this drinks is declared up to 165 and a maximum above a fluid's
+-- range is a claim about a temperature that cannot arrive.
+converter.maximum_temperature = 165
+converter.fluid_box = {
+  production_type = "input",
+  volume = 1000,
+  pipe_covers = table.deepcopy(converter.fluid_box.pipe_covers),
+  -- Both ends, where the steam turbine this is a copy of takes steam in and passes it on. At ±2
+  -- rather than ±2.5: the entity is three by five, so its collision box stops at 2.348 and a
+  -- connection has to sit inside it -- the outermost tile centre is 2. Factorio refuses to load
+  -- otherwise, which is how this number was arrived at.
+  pipe_connections = {
+    { flow_direction = "input", direction = defines.direction.south, position = { 0, 2 } },
+    { flow_direction = "input", direction = defines.direction.north, position = { 0, -2 } },
+  },
+  filter = "rf-aneutronic-reactor-energy",
+}
+converter.energy_source = {
+  type = "electric",
+  usage_priority = "secondary-output",
+}
+
+-- ---------------------------------------------------------------- aneutronic composite tank
+
+-- Somewhere to put the tier's fluids (#31). A vanilla storage tank with a bigger vessel.
+--
+-- It earns its place on this tier rather than being storage for its own sake. Both aneutronic
+-- reactions ignite, and an ignited reactor's output follows its fuel line rather than a set rate --
+-- so the tier's flows arrive in bursts as heaters catch up and fall behind, against a converter
+-- that drinks at a fixed hundred units a second. A buffer between them is what turns that into a
+-- steady hundred megawatts instead of a converter that stalls and restarts.
+--
+-- "Composite" is what a vessel for a light gas is actually made of -- a metal liner overwrapped in
+-- fibre, because helium leaks through steel joints and pressure is how you store useful amounts of
+-- something that light. The tier's fluids are helium-3 and its blends.
+--
+-- Deliberately NOT plasma-safe, and this is the containment rule doing its job rather than an
+-- omission (#26): its connections carry no plasma category, so no plasma line can join it, and a
+-- player cannot tank fusion-temperature plasma at all. That is the same statement rf-pipe makes
+-- about a vanilla pipe, made from the other end.
+local tank = pin(table.deepcopy(data.raw["storage-tank"]["storage-tank"]), "rf-aneutronic-composite-tank", {
+  mining_time = 0.5,
+})
+-- Twice vanilla's, which is a buffer rather than a warehouse: at the converter's hundred units a
+-- second it is about eight minutes of supply, long enough to ride out a heater going down and short
+-- enough that it is still a pipe network rather than a stockpile. Provisional.
+tank.fluid_box.volume = 50000
+-- In-world it is vanilla's storage tank and the icon is Krastorio 2's big storage tank, so the two
+-- do not match -- the same gap rf-isotope-collector and rf-lithium-blanket have, left open for the
+-- same reason. See the NOTICE.
+
 -- ---------------------------------------------------------------- plasma-safe fluid handling
 
 -- Plasma must not travel through vanilla pipes (CONTEXT.md, ADR 0010). Enforcing that is #26;
@@ -403,4 +572,6 @@ pump.icons = { { icon = "__base__/graphics/icons/pump.png", icon_size = 64 } }
 -- prototype of our own. Barrelling is shut off separately, on the fluids themselves (fluids.lua).
 contain(pump.fluid_box)
 
-data:extend({ heater, reactor, exchanger, collector, blanket, pipe, pipe_to_ground, pump })
+data:extend({ heater, reactor, exchanger, collector, blanket,
+              aneutronic, converter, tank,
+              pipe, pipe_to_ground, pump })

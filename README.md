@@ -5,10 +5,14 @@ a fusion-power mod series left unfinished. The *2.0* there is the mod's own vers
 game's: the redesign carrying it was built for Factorio **1.1** and abandoned around the time Factorio
 2.0 arrived.
 
-**Status: in development.** Two mods load against Factorio 2.0.77 and two fusion tiers are playable —
-the extraction chain, D-D reactors that breed their own tritium, D-T fusion burning it, and lithium
-blankets breeding more. Everything after that (D-He3, He3-He3, direct energy conversion) is unbuilt,
-all balance is provisional, and the mod is not published on the mod portal.
+**Status: in development.** Two mods load against Factorio 2.0.77 and **all four fusion reactions are
+playable** — the extraction chain, D-D reactors that breed their own tritium, D-T fusion burning it,
+lithium blankets breeding more, and an aneutronic tier where D-He3 and He3-He3 run in a denser reactor
+whose output goes straight to electricity through a direct energy converter, with no steam loop at all.
+All balance is provisional and the mod is not published on the mod portal.
+
+The reactor's high-capacity steam equipment (`rf-hc-exchanger`, `rf-hc-turbine`) is the main thing
+ADR 0010's prototype list still names and this does not have.
 
 ## What it is meant to be
 

@@ -5,10 +5,12 @@ is and where it came from; this file is how to work in the repo.
 
 ## State
 
-**In development.** `RealisticFusionCore` and `RealisticFusion` load against Factorio 2.0.77 and two
-fusion tiers are playable: the water-to-deuterium extraction chain, D-D reactors that breed their own
-tritium and helium-3, and D-T fusion burning it. Everything past that — D-He3, He3-He3, lithium
-blankets, direct energy conversion — is unbuilt, and **every balance number is provisional**.
+**In development.** `RealisticFusionCore` and `RealisticFusion` load against Factorio 2.0.77 and all
+four of ADR 0010's reactions are playable: the water-to-deuterium extraction chain, D-D reactors that
+breed their own tritium and helium-3, D-T fusion burning it, lithium blankets breeding more, and an
+aneutronic tier running D-He3 and He3-He3 in a second reactor through a direct energy converter.
+**Every balance number is provisional.** What ADR 0010's prototype list still names and this does not
+have is the high-capacity steam equipment, `rf-hc-exchanger` and `rf-hc-turbine`.
 
 Verification here is by running the game, not by reading. `tests/*.lua` cover the pure simulation
 outside Factorio; `scripts/check-*.ps1` and `scripts/load-check.ps1` create real maps and assert against

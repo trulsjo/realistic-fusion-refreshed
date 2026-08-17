@@ -122,7 +122,16 @@ end
 --
 -- Below this line the module touches Factorio. Above it, nothing does.
 
-local COMBINATOR = "rf-reactor-signals"
+-- A reactor's combinator is its own prototype name plus this (#31). Derived rather than listed,
+-- because there are two reactors now and prototypes/signals.lua builds one combinator per reactor
+-- so that each borrows its own selection box -- a shared one would give the ten-tile aneutronic
+-- reactor the fifteen-tile reactor's wire target. control.lua's check_reactor_companions refuses to
+-- load if a reactor has no combinator under this name.
+local COMBINATOR_SUFFIX = "-signals"
+
+local function combinator_for(entity)
+  return entity.name .. COMBINATOR_SUFFIX
+end
 
 local TEMPERATURE_SIGNAL = { type = "virtual", name = "rf-signal-plasma-temperature", quality = "normal" }
 local Q_SIGNAL           = { type = "virtual", name = "rf-signal-q-factor", quality = "normal" }
@@ -142,7 +151,7 @@ local function section_for(entity)
 
   if not (combinator and combinator.valid) then
     combinator = entity.surface.create_entity({
-      name = COMBINATOR,
+      name = combinator_for(entity),
       position = entity.position,
       force = entity.force,
     })
@@ -220,18 +229,22 @@ end
 -- player is holding a wire. Everything else about the reactor stays pointed at the reactor.
 local WIRE_ITEMS = { ["red-wire"] = true, ["green-wire"] = true }
 
--- The reactor's prototype name, handed in by install() rather than required from
--- entity-management.lua, which owns it. Requiring that file here would register its build handlers
--- the moment this one is loaded, and this one is loaded by a test suite that runs outside Factorio.
--- One argument is cheaper than either a second literal or a second way to break the tests.
-local REACTOR
+-- The reactor prototype names, handed in by install() rather than required from
+-- entity-management.lua, which owns them. Requiring that file here would register its build
+-- handlers the moment this one is loaded, and this one is loaded by a test suite that runs outside
+-- Factorio. One argument is cheaper than either a second literal or a second way to break the tests.
+--
+-- A set for the redirect below and a list for rescan()'s entity search, built once by install()
+-- from the same argument so the two cannot describe different reactors.
+local IS_REACTOR = {}
+local COMBINATOR_NAMES = {}
 
 --- Point a wire-holding player at the reactor's combinator instead of the reactor.
 local function redirect_selection(player)
   if not (player and player.valid) then return end
 
   local selected = player.selected
-  if not (selected and selected.valid and selected.name == REACTOR) then return end
+  if not (selected and selected.valid and IS_REACTOR[selected.name]) then return end
 
   -- Both vanilla wires are flagged only-in-cursor, so this is the whole of "is the player about to
   -- connect something": there is no other way to be holding one.
@@ -259,8 +272,13 @@ end
 -- tests/test-circuit-output.lua requires this file outside Factorio -- where there is no script,
 -- no defines and no game. Keeping the registration behind a call is what keeps the pure half
 -- testable, which is the whole reason for the split this file is built around.
-function M.install(reactor_name)
-  REACTOR = reactor_name
+function M.install(reactor_names)
+  IS_REACTOR = {}
+  COMBINATOR_NAMES = {}
+  for _, name in ipairs(reactor_names) do
+    IS_REACTOR[name] = true
+    COMBINATOR_NAMES[#COMBINATOR_NAMES + 1] = name .. COMBINATOR_SUFFIX
+  end
   script.on_event(defines.events.on_selected_entity_changed, function(event)
     redirect_selection(game.get_player(event.player_index))
   end)
@@ -299,7 +317,10 @@ function M.rescan(registry)
   end
 
   for _, surface in pairs(game.surfaces) do
-    for _, combinator in pairs(surface.find_entities_filtered({ name = COMBINATOR })) do
+    -- Every reactor's combinator name at once. A list, because a leaked combinator has to be found
+    -- whichever reactor it used to belong to -- and pairing below is by position, so which name it
+    -- carries makes no difference to who owns it.
+    for _, combinator in pairs(surface.find_entities_filtered({ name = COMBINATOR_NAMES })) do
       local owner = nil
       for _, reactor in ipairs(reactors) do
         if reactor.entity.surface == surface

@@ -54,12 +54,17 @@ local SETTLE_S = 1200
 --
 -- The step size is a parameter because the cadence check at the bottom varies it. Everything else
 -- leaves it at one tick.
-local function settle(spec, seconds, available_j, dt, fluid)
+-- `amount` defaults to the neutronic reactor's box. The aneutronic one holds three times as much
+-- in the same volume, which is its whole difference, so it has to be passed -- a settle() that
+-- silently used 1000 units for both would run the second reactor at a third of its density and
+-- report the answer as its equilibrium. It did, before this parameter existed.
+local function settle(spec, seconds, available_j, dt, fluid, amount)
   dt = dt or TICK
   fluid = fluid or "rf-d-d-plasma"
+  amount = amount or FULL
   local t_c, last = spec.min_temperature_c, nil
   for _ = 1, math.floor(seconds / dt) do
-    last = L.step(spec, fluid, FULL, t_c, available_j, dt)
+    last = L.step(spec, fluid, amount, t_c, available_j, dt)
     if not last then break end
     t_c = last.temperature_c
   end
@@ -498,6 +503,108 @@ check(dd_bred.tritium_units > 0, "a blanket on a D-D reactor breeds too",
 near(dd_bred.tritium_units / hot_burn.plasma_consumed,
   bred.tritium_units / dt_hot.plasma_consumed / 2, 1e-12,
   "per unit of plasma burnt, a D-D blanket breeds half what a D-T blanket does")
+
+-- ---------------------------------------------------------------- aneutronic tier (#31)
+--
+-- The third and fourth reactions, and the second reactor. Everything here drives the same step()
+-- the D-D and D-T blocks do, with a different spec passed in -- which is the claim ADR 0005 made
+-- and the reason a reactor is a table of constants rather than a class.
+
+local ANEUTRONIC = L.aneutronic_reactor
+-- The aneutronic reactor holds three times the plasma in the same volume, so a full one is three
+-- times the density. Read off the prototype's fluid box the way FULL is, rather than derived, so a
+-- change to one has to be a change to both.
+local ANEUTRONIC_FULL = 3000
+
+check(L.fuels["rf-d-he3-plasma"] ~= nil, "D-He3 plasma has a fuel entry")
+check(L.fuels["rf-he3-he3-plasma"] ~= nil, "He3-He3 plasma has a fuel entry")
+
+-- WHAT MAKES THE TIER ANEUTRONIC, and the one property the whole thing is named for. Asserted
+-- rather than described because a blanket bolted to one of these breeds from `neutrons`, and a row
+-- that inherited D-T's 1 by being copied would quietly turn an aneutronic reactor into a tritium
+-- factory -- which is the exact opposite of what it is.
+for _, name in ipairs({ "rf-d-he3-plasma", "rf-he3-he3-plasma" }) do
+  check(L.fuels[name].neutrons_per_reaction == 0, name .. " releases no neutrons")
+  check(L.fuels[name].products == nil, name .. " breeds nothing")
+  -- Everything charged is the other half of the same statement: no neutron means no energy leaving
+  -- the plasma uncharged, which is what direct energy conversion collects.
+  near(L.fuels[name].charged_fraction, 1, 0, name .. " keeps its whole release in the plasma")
+end
+
+local aneutronic_hot = L.step(ANEUTRONIC, "rf-d-he3-plasma", ANEUTRONIC_FULL, HOT, math.huge, TICK)
+check(aneutronic_hot.neutrons == 0, "so a D-He3 reactor reports no neutrons at all",
+  tostring(aneutronic_hot.neutrons))
+-- And therefore a blanket on one does nothing. The blanket does not know what fuel is burning; it
+-- is handed a neutron count, and this is what that count being zero means downstream.
+check(L.breed(ANEUTRONIC, BLANKET, aneutronic_hot.neutrons, CHARGED) == nil,
+  "a lithium blanket on an aneutronic reactor breeds nothing")
+
+-- The reactant densities, recomputed from the dataset for the reason the D-T block does it: a mix
+-- against a single fuel is the one thing a new row gets wrong silently. D-He3 is a 50/50 blend, so
+-- each side sits at half the plasma's density; He3-He3 is like species, so every nucleus is both
+-- sides and reactivity.rate halves the pair count.
+local an_n = ANEUTRONIC_FULL * ANEUTRONIC.particles_per_unit / ANEUTRONIC.volume_m3
+near(aneutronic_hot.fusion_power_w,
+  reactivity.rate("D-He3", HOT + 273.15, an_n / 2, an_n / 2)
+    * ANEUTRONIC.volume_m3 * L.fuels["rf-d-he3-plasma"].energy_per_reaction_j,
+  1e-12, "D-He3 burns a mix, so each reactant sits at half the plasma's density")
+
+local he3_hot = L.step(ANEUTRONIC, "rf-he3-he3-plasma", ANEUTRONIC_FULL, HOT, math.huge, TICK)
+near(he3_hot.fusion_power_w,
+  reactivity.rate("He3-He3", HOT + 273.15, an_n, an_n)
+    * ANEUTRONIC.volume_m3 * L.fuels["rf-he3-he3-plasma"].energy_per_reaction_j,
+  1e-12, "He3-He3 is like species, so both sides are the whole plasma")
+
+-- The denser machine is the point of the second spec. Same fuel, same temperature, three times the
+-- density: the rate goes as n^2, so nine times the power. If a later edit made the two reactors
+-- the same box this is what would notice.
+local aneutronic_thin = L.step(ANEUTRONIC, "rf-d-he3-plasma", FULL, HOT, math.huge, TICK)
+near(aneutronic_hot.fusion_power_w / aneutronic_thin.fusion_power_w, 9, 1e-9,
+  "three times the plasma is nine times the power")
+
+-- ---- the shipped balance of the tier
+--
+-- Both aneutronic plasmas ignite in this machine and run to the clamp, the way D-T does in the
+-- neutronic one. That is asserted rather than avoided for the same reason it is there: it is the
+-- behaviour, and the fuel line is the throttle once it happens.
+local an_t, an_state = settle(ANEUTRONIC, 120, math.huge, nil, "rf-d-he3-plasma", ANEUTRONIC_FULL)
+near(an_t, ANEUTRONIC.max_temperature_c, 1e-12, "a D-He3 plasma ignites and runs up to the clamp")
+check(an_state.q_factor > 10, "and runs far past breakeven there",
+  string.format("Q = %.3g", an_state.q_factor))
+
+-- THE FINDING THAT MATTERS ABOUT HE3-HE3, and it is a real constraint rather than a balance
+-- number: its cross-section peaks past 600 keV, and max_temperature_c stops the plasma at 172. So
+-- the last tier in the mod cannot reach its own optimum, and arrives an order of magnitude weaker
+-- than the tier before it in the same machine.
+--
+-- ADR 0014 is what makes that shippable rather than broken -- a tier may arrive marginal. It is
+-- asserted here so that the day someone raises the clamp, this check fails and tells them the
+-- last tier was waiting on exactly that.
+local he3_t, he3_state = settle(ANEUTRONIC, 120, math.huge, nil, "rf-he3-he3-plasma", ANEUTRONIC_FULL)
+check(he3_state.q_factor < an_state.q_factor / 10,
+  "He3-He3 arrives far weaker than D-He3 in the same reactor, because the clamp is below its peak",
+  string.format("Q %.3g against %.3g", he3_state.q_factor, an_state.q_factor))
+check(he3_t > 1e8, "but it does reach a fusion temperature and burn",
+  string.format("%.3g C", he3_t))
+check(he3_state.fusion_power_w > 0, "and produces real fusion power",
+  string.format("%.3g W", he3_state.fusion_power_w))
+
+-- Every spec the mod ships needs the fields step() and control.lua index without asking. The fuel
+-- rows are covered at the top of this file; this is the other half of the same guard, and it exists
+-- because a second reactor is exactly the moment a spec field gets added to one and not the other.
+for label, spec in pairs({ ["rf-reactor"] = SPEC, ["rf-aneutronic-reactor"] = ANEUTRONIC }) do
+  for _, field in ipairs({ "volume_m3", "particles_per_unit", "heating_power_w",
+                           "confinement_time_s", "capture_efficiency", "energy_fluid_j_per_unit",
+                           "energy_fluid", "min_temperature_c", "max_temperature_c" }) do
+    check(spec[field] ~= nil, string.format("%s's spec declares %s", label, field))
+  end
+end
+check(SPEC.energy_fluid ~= ANEUTRONIC.energy_fluid,
+  "the two reactors sell different fluids, so one converter cannot drink the other's output")
+-- One nuclei-per-unit constant across the mod. The blanket's one-item-one-unit identity rests on
+-- it, and a second value would make a fluid unit mean different things in different pipes.
+near(ANEUTRONIC.particles_per_unit, SPEC.particles_per_unit, 0,
+  "both reactors count the same nuclei per fluid unit")
 
 -- ---------------------------------------------------------------- the shipped balance
 --

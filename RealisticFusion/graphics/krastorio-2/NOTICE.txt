@@ -100,6 +100,52 @@ Unmodified copies, renamed to the prototype they serve:
     rf-lithium-extraction already wears. The two sit on the same chain and would have read as the
     same research twice.
 
+  buildings/aneutronic-reactor/aneutronic-reactor.png
+                                      <- buildings/antimatter-reactor/antimatter-reactor.png
+  buildings/aneutronic-reactor/aneutronic-reactor-shadow.png
+                                      <- buildings/antimatter-reactor/antimatter-reactor-sh.png
+  buildings/aneutronic-reactor/aneutronic-reactor-animation.png
+                                      <- buildings/antimatter-reactor/antimatter-reactor-anim.png
+  buildings/aneutronic-reactor/aneutronic-reactor-animation-glow.png
+                                      <- buildings/antimatter-reactor/antimatter-reactor-glow.png
+
+    The aneutronic reactor's in-world building (#31). Renamed only -- "antimatter-" becomes
+    "aneutronic-", "-sh" becomes "-shadow" and "-anim" becomes "-animation" to match the names
+    reactor/ already uses. Not one pixel is changed, and rf-aneutronic-reactor takes Krastorio 2's
+    collision and selection boxes with them: ten tiles square, where rf-reactor is fifteen.
+
+    THE ANTIMATTER REACTOR RATHER THAN A SECOND TINT OF THE FUSION ONE, and that is the whole
+    reason a second building was taken at all. rf-reactor already wears K2's fusion reactor; a
+    recoloured copy of it would put two reactors on the map at the same size that a player cannot
+    tell apart from across the factory, which is the complaint that separated rf-reactor from
+    rf-heat-exchanger in the first place. Nothing about antimatter is claimed by using the art --
+    this mod has no antimatter and the locale never says the word.
+
+    antimatter-reactor's own icon is taken below, so building and icon agree here where the
+    collector and the blanket still do not.
+
+  entities/aneutronic-reactor.png       <- icons/entities/antimatter-reactor.png
+  entities/aneutronic-composite-tank.png <- icons/entities/big-storage-tank.png
+  technologies/aneutronic-fusion.png     <- technologies/antimatter-reactor.png
+  technologies/helium-3-breeding.png     <- technologies/steel-fluid-handling.png
+
+    The aneutronic tier (#31). helium-3-breeding takes steel-fluid-HANDLING rather than
+    steel-fluid-TANKS, which rf-tritium-breeding already wears -- the two technologies are one step
+    apart on the same chain and would have read as the same research twice.
+
+  entities/direct-energy-converter.png  <- icons/items/energy-control-unit.png
+
+    An ITEM icon on an entity, which is deliberate and is the only one in this repository.
+    Krastorio 2 has no building that looks like a direct energy converter, and every entity icon
+    that comes close is already claimed: gas-power-station is rf-heat-exchanger's,
+    advanced-steam-turbine reads as the steam stage this machine exists to remove, and the tesla
+    coil is a turret in the mod it comes from. Power electronics is what a direct converter
+    actually is -- a very large rectifier on a collector plate -- and that is what this draws.
+
+    Its in-world sprite is vanilla's steam turbine, so icon and building do not match: the same gap
+    rf-isotope-collector and rf-lithium-blanket have, recorded below, and left open for the same
+    reason.
+
   entities/reactor.png          <- icons/entities/fusion-reactor.png
   entities/heat-exchanger.png   <- icons/entities/gas-power-station.png
   entities/heater.png           <- icons/entities/fuel-refinery.png
@@ -128,28 +174,49 @@ MODIFIED -- these are derivative works and remain LGPLv3:
     at a glance in a pipe is exactly what the colour is for. Against D-D's orange, a plasma line
     plumbed to the wrong reactor is visible from across the factory.
 
+  fluids/d-he3-plasma.png       <- icons/fluids/matter.png, recoloured.
+  fluids/he3-he3-plasma.png     <- icons/fluids/matter.png, recoloured.
+  fluids/aneutronic-reactor-energy.png <- icons/fluids/matter.png, recoloured.
+
+    The aneutronic tier's three fluids (#31), each remultiplied by the base_color it declares:
+    RGB 0.55, 0.60, 1.00 for D-He3 -- deuterium's cyan carried toward helium-3's violet, which is
+    what the fuel is; 0.90, 0.40, 1.00 for He3-He3, which is that violet pushed to magenta; and
+    0.55, 0.90, 1.00 for the energy fluid.
+
+    The two plasmas are separated on HUE rather than on shade, and that is the one choice here
+    worth stating. They are the pair most likely to be confused -- same tier, same reactor, adjacent
+    in every menu -- and two violets would have read as one fluid in a pipe. Blue against magenta
+    does not.
+
+    Sixth use of this one source icon, which is now every plasma and both energy fluids in the mod.
+    That is the point rather than an economy: they are the same substance in six states of the same
+    chain, and one silhouette in six colours says so.
+
 
 DERIVED CODE -- also LGPLv3, and this is the reason it is in here at all:
 
   buildings/reactor-pictures.lua
   buildings/heater-pictures.lua
+  buildings/aneutronic-reactor-pictures.lua
 
     Krastorio 2's mod is LGPLv3 as well as its assets. Every width, height, frame count, line
-    length, shift and scale in these files is read off its prototypes/buildings/fusion-reactor.lua
-    and prototypes/buildings/fuel-refinery.lua respectively, so each is a derivative of one of them
-    and has to sit where the LICENSE beside it applies -- not in prototypes/, which the
-    repository's own LICENSE governs.
+    length, shift and scale in these files is read off its prototypes/buildings/fusion-reactor.lua,
+    prototypes/buildings/fuel-refinery.lua and prototypes/buildings/antimatter-reactor.lua
+    respectively, so each is a derivative of one of them and has to sit where the LICENSE beside it
+    applies -- not in prototypes/, which the repository's own LICENSE governs.
 
-    Both are restructured rather than copied, and each file says what forced it: Krastorio 2's
+    All three are restructured rather than copied, and each file says what forced it: Krastorio 2's
     reactor is an assembling-machine with a graphics_set and rf-reactor is a boiler, which has no
-    such field; and the refinery's four directions are sliced out by hand rather than through
+    such field; the refinery's four directions are sliced out by hand rather than through
     __base__'s make_4way_animation_from_spritesheet, which is an internal Wube never promised to
-    keep.
+    keep; and the antimatter reactor is a burner-generator whose idle and working animations are
+    split differently again -- there the body IS the first frame of the animation sheet rather than
+    a separate still, so the runtime overlay adds motion instead of filling a hole.
 
 
 Where these are referenced
 --------------------------
 
-prototypes/fluids.lua, prototypes/items.lua, prototypes/entities.lua and
-prototypes/technology/{d-d,d-t,blanket}.lua, all by
+prototypes/fluids.lua, prototypes/items.lua, prototypes/entities.lua, prototypes/signals.lua and
+prototypes/technology/{d-d,d-t,blanket,aneutronic}.lua, all by
 __RealisticFusion__/graphics/krastorio-2/... paths.

@@ -24,7 +24,15 @@
 
 local M = {}
 
-local ANIMATION = "rf-reactor-core"
+-- A reactor's moving core is its own prototype name plus this (#31). Derived rather than listed,
+-- for the same reason circuit-output derives its combinator name: the two reactors are different
+-- buildings drawn from different Krastorio 2 art, so each declares its own animation in
+-- prototypes/entities.lua, and a third reactor needs no change here.
+--
+-- control.lua's check_reactor_animations refuses to load if a reactor has no animation under this
+-- name -- which is the failure this derivation makes possible and which would otherwise be an error
+-- inside a running game the first time that reactor started fusing.
+local ANIMATION_SUFFIX = "-core"
 
 --- Show or hide one reactor's moving core.
 --
@@ -42,7 +50,7 @@ function M.set(entity, running)
   if running then
     if drawn and drawn.valid then return end
     storage.reactor_animations[unit_number] = rendering.draw_animation({
-      animation = ANIMATION,
+      animation = entity.name .. ANIMATION_SUFFIX,
       surface = entity.surface,
       target = entity,
       -- Above the building it covers. The animation carries Krastorio 2's own shift, so it lands on

@@ -7,7 +7,18 @@
 
 local M = {}
 
-local REACTOR = "rf-reactor"
+-- Every prototype this module treats as a reactor (#31). A set rather than one name, because ADR
+-- 0010 names two -- the neutronic one the first two tiers share, and the aneutronic one the last
+-- two run in. They differ in their constants (scripts/reactor-logic.lua) and in nothing this file
+-- cares about: both are simulated, both take fittings, both appear on the map the same ways.
+--
+-- An ordered list, because control.lua turns it into a lookup and circuit-output.lua into a set,
+-- and both want to iterate it in a fixed order. Adding a third reactor is a row here plus a spec.
+local REACTORS = { "rf-reactor", "rf-aneutronic-reactor" }
+
+local IS_REACTOR = {}
+for _, name in ipairs(REACTORS) do IS_REACTOR[name] = true end
+
 local COLLECTOR = "rf-isotope-collector"
 local BLANKET = "rf-lithium-blanket"
 
@@ -22,12 +33,12 @@ local FITTINGS = {
   { name = BLANKET,   key = "blankets" },
 }
 
---- The reactor's prototype name, for the one other place that has to recognise one.
+--- The reactor prototype names, for the other places that have to recognise one.
 --
--- circuit-output.lua's selection redirect needs it and deliberately does not require this file --
--- doing so would install these build handlers from a test suite. control.lua hands it across, so
--- the name still has exactly one definition.
-M.REACTOR = REACTOR
+-- circuit-output.lua's selection redirect needs them and deliberately does not require this file --
+-- doing so would install these build handlers from a test suite. control.lua hands the list across,
+-- so the names still have exactly one definition.
+M.REACTORS = REACTORS
 
 --- The register: unit_number -> LuaEntity, in storage so it survives a save.
 --
@@ -75,6 +86,16 @@ end
 -- rf-isotope-collector to it (#27); and a player who wants it to breed more bolts an
 -- rf-lithium-blanket to it as well (#30). Which fitting belongs to which reactor is answered here,
 -- because it is a question about what is on the map.
+--
+-- BOTH kinds of reactor pair with fittings, and an aneutronic one has no use for either: its two
+-- reactions breed nothing and release no neutrons, so a collector bolted to one collects nothing
+-- and a blanket breeds nothing (scripts/reactor-logic.lua). That is left available rather than
+-- refused, and the reason is that refusing it would mean this file knowing which reactor burns
+-- what -- which it does not and should not, since the input box is unfiltered and a player may put
+-- any plasma in any reactor. A D-D plasma in an aneutronic reactor really does breed, and the
+-- collector on it really should collect. The cost of the general rule is a player who bolts a
+-- collector to an aneutronic reactor running D-He3 and sees nothing come out, which is the same
+-- thing they would see on a D-T reactor without a blanket.
 --
 -- This is NOT the connectivity tracking ADR 0011 rules out. There is no graph, no traversal, no
 -- merge and no split: one reactor has at most one collector, the pairing is a single lookup over
@@ -170,7 +191,7 @@ end
 -- registry / forget / rescan.
 local function register(entity)
   if not (entity and entity.valid) then return end
-  if entity.name == REACTOR then
+  if IS_REACTOR[entity.name] then
     storage.reactors = storage.reactors or {}
     storage.reactors[entity.unit_number] = entity
     attach(entity)
@@ -179,9 +200,10 @@ local function register(entity)
   for _, fitting in ipairs(FITTINGS) do
     if entity.name == fitting.name then
       -- Built the other way round: a fitting arrives after the reactor it serves, which is the
-      -- usual order a player does it in. Every reactor it touches re-pairs.
+      -- usual order a player does it in. Every reactor it touches re-pairs -- of either kind, since
+      -- `name` takes a list and successive entries are OR'd.
       for _, reactor in pairs(entity.surface.find_entities_filtered({
-        area = touching(entity), name = REACTOR,
+        area = touching(entity), name = REACTORS,
       })) do
         attach(reactor)
       end
@@ -204,7 +226,7 @@ function M.rescan()
   -- entries are keyed by reactor unit_number and are pruned by forget() when a reactor leaves.
   storage.blanket_charge = storage.blanket_charge or {}
   for _, surface in pairs(game.surfaces) do
-    for _, entity in pairs(surface.find_entities_filtered({ name = REACTOR })) do
+    for _, entity in pairs(surface.find_entities_filtered({ name = REACTORS })) do
       register(entity)
     end
   end
@@ -233,7 +255,10 @@ end
 -- register: register() sends each one to attach() the reactors it touches. Successive filter
 -- entries are OR'd -- `mode` defaults to "or" -- so this is "any of these names", not "all", which
 -- nothing could ever be.
-local built_filter = { { filter = "name", name = REACTOR } }
+local built_filter = {}
+for _, name in ipairs(REACTORS) do
+  built_filter[#built_filter + 1] = { filter = "name", name = name }
+end
 for _, fitting in ipairs(FITTINGS) do
   built_filter[#built_filter + 1] = { filter = "name", name = fitting.name }
 end

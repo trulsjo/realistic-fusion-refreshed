@@ -159,6 +159,71 @@ M.fuels = {
     -- int32 ceiling are confinement_time_s and the plasma's purity, not a radiation term -- both
     -- re-tune D-D as well, so both are balance decisions. Balance is provisional, as everywhere.
   },
+
+  -- D + He3 -> He4 (3.6 MeV) + p (14.7 MeV), a single branch releasing 18.353 MeV (#31).
+  --
+  -- THE FIRST ANEUTRONIC TIER, and that word is the whole of what it buys. Both products are
+  -- charged, so nothing leaves the plasma as a neutron: no first-wall activation, no blanket, no
+  -- neutron budget to spend. In this mod it is what makes direct energy conversion possible at all
+  -- -- rf-direct-energy-converter collects charged particles and there is nothing to collect from a
+  -- reaction that vents four fifths of its release as neutrons (ADR 0010's chain, step 5).
+  --
+  -- What it costs is temperature. D-He3's cross-section peaks at 230 keV against D-T's 65, and it
+  -- is three and a half times smaller at its peak -- so this reaction wants a hotter, denser
+  -- machine, which is what M.aneutronic_reactor below is.
+  ["rf-d-he3-plasma"] = {
+    reaction = "D-He3",
+    energy_per_reaction_j = 18.353e6 * 1.602176634e-19,
+    -- Every joule. He4 and the proton are both charged, so the whole release stays in the plasma
+    -- and self-heats it, and every joule the reactor sells left through the transport channel
+    -- rather than as radiation past the wall. That is not a modelling convenience: it is the
+    -- physical claim direct energy conversion rests on.
+    charged_fraction = 1,
+    -- An even blend, because rf-d-he3-mixing makes one: one deuteron and one helium-3 per reaction.
+    fractions = { 0.5, 0.5 },
+    fuel_per_reaction = 2,
+    -- No products in ADR 0010's fluid set -- helium-4 and hydrogen are not modelled, the same
+    -- omission D-D's proton already carries.
+    --
+    -- AND NO NEUTRONS, which is the tier. Stated as a number rather than left absent so
+    -- control.lua's check_fuel_rows sees a real answer: a blanket bolted to a reactor burning this
+    -- breeds nothing, and does so by arithmetic rather than by a missing field.
+    --
+    -- The honest caveat, because "aneutronic" is a claim and this one is only nearly true: a real
+    -- D-He3 plasma still contains deuterium, so it runs D-D on the side and those reactions do make
+    -- neutrons -- a few percent of the fusion power in most designs. This model burns one reaction
+    -- per plasma, so the side branch is not simulated, and the mod is therefore slightly kinder to
+    -- this tier than physics is. Modelling it means two reactions from one fluid, which is a
+    -- different step() rather than another field here.
+    neutrons_per_reaction = 0,
+  },
+
+  -- He3 + He3 -> He4 + 2p, releasing 12.859 MeV. The end of ADR 0010's chain (step 6).
+  --
+  -- The only reaction here with no deuterium in it at all, and that is its point rather than its
+  -- power: it burns one fuel, which the D-D reactors have been breeding since the first tier, and
+  -- it is aneutronic on both branches rather than nearly so -- there is no D-D side reaction to
+  -- caveat, because there is no deuterium to run one.
+  --
+  -- IT IS ALSO THE HARDEST REACTION IN THE MOD BY A LONG WAY, and the reactor cannot reach its
+  -- optimum. Its cross-section peaks past 600 keV -- above the top of the ENDF-derived dataset --
+  -- where max_temperature_c stops the plasma at 172 keV, so it burns at about a hundredth of its
+  -- peak reactivity. That is not a balance choice: the clamp is there because a plasma past 2e9
+  -- truncates its own temperature circuit signal (see rf-d-t-plasma above), and this reaction
+  -- wants to run three times hotter than that ceiling. So He3-He3 arrives barely above break-even
+  -- where D-He3 in the same machine is an order of magnitude better, and ADR 0014 is what makes
+  -- that a legitimate place for a tier to be rather than a bug.
+  ["rf-he3-he3-plasma"] = {
+    reaction = "He3-He3",
+    energy_per_reaction_j = 12.859e6 * 1.602176634e-19,
+    charged_fraction = 1,
+    -- Helium-3 against helium-3: every nucleus is both reactants, so both shares are one and the
+    -- double-counting is reactivity.rate's to undo -- He3-He3 is in its LIKE_SPECIES set, the same
+    -- as D-D.
+    fractions = { 1, 1 },
+    fuel_per_reaction = 2,
+    neutrons_per_reaction = 0,
+  },
 }
 
 -- What the shipped rf-reactor is made of. Kept here rather than in control.lua so the tests run
@@ -192,7 +257,60 @@ M.reactor = {
   capture_efficiency = 0.85,
   -- rf-reactor-energy's fuel_value. One unit, one megajoule.
   energy_fluid_j_per_unit = 1e6,
+  -- What this reactor sells its output as. Stated on the spec rather than in control.lua because
+  -- the aneutronic reactor below sells a different fluid into a different converter (#31), and
+  -- apply() should be writing whatever the reactor it is applying says rather than one name the
+  -- whole mod shares.
+  energy_fluid = "rf-reactor-energy",
   -- rf-d-d-plasma's default_temperature and max_temperature.
+  min_temperature_c = 15,
+  max_temperature_c = 2e9,
+}
+
+-- What the shipped rf-aneutronic-reactor is made of (#31).
+--
+-- The second machine, and ADR 0010 names it separately for a reason this table is the whole of:
+-- D-He3 and He3-He3 want conditions the first reactor does not reach. It is the same physics, the
+-- same step() and the same file -- a reactor is its constants, which is exactly what ADR 0005 set
+-- out to make true.
+--
+-- WHAT IS DIFFERENT, and why each one:
+M.aneutronic_reactor = {
+  -- Same plasma volume. The machine is bigger on the ground but the confinement region is not the
+  -- part that grew; what grew is what is inside it.
+  volume_m3 = 1000,
+  -- THE SAME nuclei per unit as the neutronic reactor, deliberately. One nuclei-per-unit constant
+  -- for the whole mod is what keeps a fluid unit meaning the same thing everywhere -- the lithium
+  -- blanket's one-item-one-unit identity rests on it (M.blanket), and a second value here would
+  -- silently make a unit of plasma mean different things in different pipes.
+  --
+  -- The density comes from the fluid box instead: rf-aneutronic-reactor holds 3000 units in the
+  -- same 1000 m^3, so a full one runs at 3e20 m^-3 where a full rf-reactor runs at 1e20. That is
+  -- the lever, and it is the right one -- fusion rate goes as n^2 while the transport loss goes as
+  -- n, so density is what buys ignition, and a denser machine is what the aneutronic tier is.
+  particles_per_unit = 1e20,
+  -- Four times the confinement heating. D-He3 needs about 230 keV against D-T's 65 to reach its
+  -- peak, and a plasma is not taken there by hoping.
+  heating_power_w = 200e6,
+  -- Twice the confinement time. Engineering rather than physics, and ADR 0014 is explicit that
+  -- this mod may put it anywhere the physics permits -- so a later, harder machine holding its
+  -- heat twice as long is exactly the kind of progression that ADR sanctions. It is also what
+  -- makes He3-He3 reach its equilibrium at all.
+  confinement_time_s = 60,
+  -- Higher than the neutronic reactor's 0.85, and this is the tier's actual physical payoff.
+  -- Both aneutronic reactions release everything as charged particles, which arrive on collector
+  -- plates and are converted electrostatically, rather than as heat crossing a first wall into a
+  -- steam loop. Less is lost to the structure because less of it ever becomes heat.
+  --
+  -- It is NOT a large gain and should not be read as one: 0.95 against 0.85 is a tenth. What the
+  -- tier really buys is that there is no steam stage to build -- one converter where the neutronic
+  -- side needs a heat exchanger, water and a row of turbines.
+  capture_efficiency = 0.95,
+  energy_fluid_j_per_unit = 1e6,
+  energy_fluid = "rf-aneutronic-reactor-energy",
+  -- The same bounds, and the same reason: 2e9 is where a temperature stops fitting in the int32 a
+  -- circuit signal is. It costs this tier more than it costs the last one -- He3-He3 wants to run
+  -- past 7e9 -- and that cost is stated on its fuel row rather than hidden here.
   min_temperature_c = 15,
   max_temperature_c = 2e9,
 }

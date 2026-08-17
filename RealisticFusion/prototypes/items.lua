@@ -23,6 +23,11 @@ data:extend({
   item("rf-heat-exchanger",  "energy", "rf-c[heat-exchanger]", 20),
   item("rf-isotope-collector", "energy", "rf-d[isotope-collector]", 20),
   item("rf-lithium-blanket",   "energy", "rf-e[lithium-blanket]",   20),
+  -- The aneutronic tier (#31). Ordered after the neutronic machines rather than interleaved with
+  -- them, so the two routes read as two routes in the crafting menu.
+  item("rf-aneutronic-reactor",        "energy", "rf-f[aneutronic-reactor]",        10),
+  item("rf-direct-energy-converter",   "energy", "rf-g[direct-energy-converter]",   20),
+  item("rf-aneutronic-composite-tank", "energy", "rf-h[aneutronic-composite-tank]", 20),
   item("rf-pipe",            "energy-pipe-distribution", "rf-a[pipe]",           100),
   item("rf-pipe-to-ground",  "energy-pipe-distribution", "rf-b[pipe-to-ground]",  50),
   item("rf-pump",            "energy-pipe-distribution", "rf-c[pump]",            50,
