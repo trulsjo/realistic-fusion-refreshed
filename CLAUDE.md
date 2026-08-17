@@ -5,8 +5,16 @@ is and where it came from; this file is how to work in the repo.
 
 ## State
 
-**Planning stage — the repository has no mod code.** If you are looking for the implementation, it does
-not exist yet. Do not infer structure from empty directories.
+**In development.** `RealisticFusionCore` and `RealisticFusion` load against Factorio 2.0.77 and two
+fusion tiers are playable: the water-to-deuterium extraction chain, D-D reactors that breed their own
+tritium and helium-3, and D-T fusion burning it. Everything past that — D-He3, He3-He3, lithium
+blankets, direct energy conversion — is unbuilt, and **every balance number is provisional**.
+
+Verification here is by running the game, not by reading. `tests/*.lua` cover the pure simulation
+outside Factorio; `scripts/check-*.ps1` and `scripts/load-check.ps1` create real maps and assert against
+them, and `load-check.ps1` is where the invariants tying the simulation to the prototypes are enforced.
+`scripts/locale-check.ps1` only dumps prototypes and creates no map, so a pass there says nothing about
+runtime. Run them rather than reasoning about whether a change is safe.
 
 ## The rule that matters most here
 
@@ -41,8 +49,8 @@ licence is WTFPL" does not settle what a given file is. See `docs/adr/0001-lifta
 
 - **NonCommercial or NoDerivatives material is never lifted**, whatever its source. That rules out
   `electric-boiler/` and `angels-numerals/` outright.
-- **Permissive material is free** — a directory with no licence file, subject to the PreLeyZero
-  exception below.
+- **Permissive material is free** — a directory with neither a `license.txt` nor a `legal-note.txt`,
+  subject to the unmarked-graphics exception below, which is a large one.
 - **Copyleft (GPL/LGPL) is allowed only in its own directory**, with its licence file alongside and
   modifications stated.
 - **Lift only from Realistic Fusion Power 1.8.18 or later.** Earlier releases are CC BY-SA 4.0; 1.8.18
@@ -53,23 +61,66 @@ keep graphics derived from **Krastorio 2** in their own directories with the lic
 while everything else stays permissive. Upstream K2 assets
 (<https://codeberg.org/raiguard/Krastorio2Assets>) are **LGPLv3**; the copy inside the four-module
 redesign is marked **GPLv3** — read the file next to the sprites rather than assuming either. This repo
-uses the same scheme — see `legal-note.txt`. Two rules follow:
+uses the same scheme — see `legal-note.txt`.
 
-- **Lift whole directories, with their license file.** Never copy loose files out of a licensed
-  directory into one governed by `LICENSE`. A directory with no license file is permissive and free.
+**Verified 2026-08-17 (#38)** against the zips in `C:\src\factorio\_reference\`, which the survey could
+not download and had to leave open. Both the 1.1 original (1.8.18) and Durikkan's port (1.9.0, 1.9.2)
+mark exactly two directories, with the same terms:
+
+| Directory | Licence | What its `legal-note.txt` says |
+|---|---|---|
+| `graphics/particle-accelerator/` | **GPLv3** | *"All textures in this directory are modified from Krastorio 2"* |
+| `electric-boiler/` | **CC BY-NC-ND 4.0** | *"All textures and code in this directory are from angels petrochem"* |
+
+Three things to take from that:
+
+- **Marking is by `legal-note.txt` as much as by `license.txt`.** The provenance lives in the legal note;
+  the licence file is only the licence text. Searching for licence files alone finds the directory and
+  misses what it is — which is exactly the mistake that produced a wrong version of this section.
+- **A directory is named for what it depicts, not for where the art came from.** The Krastorio 2 material
+  in both predecessors is in `particle-accelerator/`. Of the three predecessors only the redesign has a
+  directory actually called `krastorio-2/`, so not finding that name means nothing. (This repo has two of
+  its own, which are its own doing and come from upstream — not from the redesign.)
+- **The two root licences differ, and one mod disagrees with itself.** The original's `license.txt` is
+  **WTFPL v2** (`Copyright (C) 2024 Romner`); the port's is **The Unlicense**. But the port also ships the
+  original's root `legal-note.txt` byte-for-byte, which still says WTFPL — so its two root files name
+  different licences. Both are permissive, so nothing downstream turns on it. Both mods state the
+  per-directory rule in that same note: *"Any file in a subdirectory of this mod that doesn't have a
+  license.txt and/or a legal-note.txt in its directory is licensed under the WTFPL."*
+
+Two rules follow:
+
+- **Lift whole directories, with their license file *and* their legal note.** Never copy loose files out
+  of a licensed directory into one governed by `LICENSE`. Free means neither file is present — see the
+  unmarked-graphics exception below before concluding that settles it.
 - **Modifying a file from a licensed directory yields a derivative under that license.** A recoloured
   or re-composited LGPL sprite is still LGPL, and the change must be stated. Modified sprites belong in
   the licensed directory, not beside your own work.
 
-**One exception to "no licence file means free": PreLeyZero's donated art.** The predecessors credit
-them for graphics but mark none of it, so by the convention above it inherits each mod's default. That
-default only disposes of what its declarer had the right to license, and no record exists of the terms
-the art was donated under — while PreLeyZero's *own* mods generally carry GPL, which is a reason not to
-assume a permissive donation. Which files are theirs is not established either.
+**The exception to "no licence file means free": the predecessors' unmarked `graphics/`.** It is not one
+donor's art — the original's changelog credits at least three outside sources for material that is left
+unmarked, and says which files came from where for none of them:
+
+| Release | What the changelog says |
+|---|---|
+| **0.2.0**, 2020-01-01 | *"Credit to YuokiTani for re-rendering some unused textures with changed colors from https://u.nu/factoriogfx"* — Wube's unused art, re-rendered by a third party |
+| **1.2.0**, 2020-09-05 | *"Others are modified from **angel's** discarded/unused thread"* |
+| **1.3.13**, 2020-12-06 | *"New antimatter reactor graphics, courtesy of **PreLeyZero**"* |
+| **1.8.0**, 2021-09-03 | *"**PreLeyZero** made completely new antimatter reactor graphics, and in turn doubled the mod size"* |
+
+That same 1.2.0 entry opens *"Some of the textures are modified from Krastorio 2 and licensed under GNU
+GPL v3"* — and those **are** marked, in `graphics/particle-accelerator/`. So the changelog is not evidence
+of GPL material hiding under a permissive root; it is evidence that Romner marked what he knew the terms
+for and left the rest bare. The bare remainder is the problem.
+
+A root licence only disposes of what its declarer had the right to license, and no record exists of the
+terms any of the three donated under. PreLeyZero's *own* mods generally carry GPL, which is a further
+reason not to read silence as a permissive donation.
 
 So: **do not take unmarked graphics from the predecessors on the assumption they are free.** Ask before
-using them, or use art with known provenance. Do not relabel them GPL either — that would be guessing in
-the other direction.
+using them, or use art with known provenance — which in practice means upstream Krastorio 2, and is why
+every sprite in this repo comes from there. Do not relabel them GPL either; that would be guessing in the
+other direction.
 
 - **Attribute Romner_set, Durikkan and PreLeyZero** for anything derived from their work, in the commit
   and in the file. Not a licence obligation — a community norm and simple honesty.

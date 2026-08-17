@@ -1,7 +1,8 @@
 #Requires -Version 7
 <#
 .SYNOPSIS
-    Runs Factorio's data stage against the Realistic Fusion mods. Exit 0 means they load.
+    Loads the Realistic Fusion mods, creates a map, and enforces the invariants that tie the
+    simulation to the prototypes. Exit 0 means they load AND those invariants hold.
 
 .DESCRIPTION
     Creates a throwaway map in an isolated mod directory containing only the game's bundled
@@ -9,10 +10,47 @@
     resolves, and nothing references a prototype that does not exist -- broader coverage than a
     test suite, for the cost of this script.
 
+    IT DOES MORE THAN THE DATA STAGE, and the difference matters to anyone editing the
+    simulation. Creating a map runs `on_init`, which is where control.lua's check_prototypes()
+    fires -- so this script enforces four invariants that no amount of prototype validation
+    would catch:
+
+      check_cadence()             UPDATE_INTERVAL against rf-reactor's electric buffer. A step
+                                  spends the whole interval's heating at once, so past twelve
+                                  ticks at the shipped 50 MW and 10 MJ the reactor is starved
+                                  every step -- silently, since underpowered is a legitimate
+                                  state it is meant to have.
+      check_plasma_bounds()       The simulation's temperature clamps against every plasma
+                                  fluid's declared range. Widen one without the other and the
+                                  mod loads perfectly, then throws on a live save the first
+                                  time a reactor gets hot.
+      check_every_plasma_burns()  Every fluid an rf-plasma-heating recipe produces has a row in
+                                  reactor-logic's fuel table. Reachable since #28 removed the
+                                  reactor's input filter; without it a plasma no reactor can
+                                  burn sits in the box for ever while the reactor reports
+                                  itself starved.
+      check_collector_boxes()     Which by-product control.lua deposits into which of the
+                                  collector's boxes, against the prototype's filters. Swap the
+                                  declarations and nothing complains -- the mod loads, the
+                                  collector fills, and a player's tritium pipe carries helium-3.
+
+    The Lua tests cannot see any of these: they know the physics but not the prototypes, and the
+    physics is happily insensitive to cadence well past the point the reactor's buffer gives out.
+    So editing UPDATE_INTERVAL, buffer_capacity, a plasma's max_temperature, reactor-logic's fuel
+    table or the collector's box order is guarded by running the game, not by the suite.
+
+    The check-* rigs create maps too, so they run these as a side effect -- and each takes minutes.
+    locale-check.ps1 does NOT: it only dumps, never creates, so a pass there says nothing about any
+    of this. This is the script that exists to run them, and the one to reach for after touching any
+    of the above.
+
     It then checks that every file the loaded prototypes name is actually on disk, which
     Factorio does not: a headless run loads no sprites, so a prototype naming a missing icon
     validates and exits 0, and the player's game refuses to start on it. That is not
-    hypothetical -- it happened, and it is why this half exists.
+    hypothetical -- it happened, and it is why this half exists. It covers vanilla's own paths
+    as well as this repository's, which is the case that actually bit: an icon this repo pointed
+    at had been RENAMED in base Factorio, so nothing here was missing and the game still refused
+    to start (20f325c).
 
     It does NOT check locale coverage. Factorio's data stage loads a prototype with no locale
     entry without complaint; the omission only shows in game as "Unknown key". ADR 0010 singles
@@ -224,7 +262,21 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
 
     # After the load, not before: Test-Assets reads a --dump-data written under the mod list
     # Invoke-LoadCheck just put in place, and a repo that does not load has nothing to dump.
-    if ($result.Code -eq 0 -and (Test-Path $result.OutFile)) { Test-Assets -Tag 'run' }
+    #
+    # A missing capture file is a failure rather than a skip. It used to be one half of an `and`,
+    # so if the redirection had failed or the temp directory had been reaped mid-run the asset
+    # check would simply not happen -- and the success line below would still claim every
+    # referenced asset was present. A check that can quietly not run is worse than one that is
+    # not there, because only one of the two is claimed to have passed.
+    if ($result.Code -eq 0) {
+        if (-not (Test-Path $result.OutFile)) {
+            Write-Host "FAILED - Factorio exited 0 but its output was not captured at $($result.OutFile),"
+            Write-Host '         so the asset check could not run. Treating as a failure rather than'
+            Write-Host '         reporting a pass it did not earn.'
+            exit 1
+        }
+        Test-Assets -Tag 'run'
+    }
 
     if ($result.Code -ne 0) {
         Write-Host ''
@@ -237,7 +289,10 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
         exit 1
     }
 
-    Write-Host 'OK - data stage valid, map created.'
+    # Says what actually passed rather than "data stage valid", which was the same undersell the
+    # docstring above used to make: creating the map ran control.lua's check_prototypes() too.
+    Write-Host 'OK - prototypes valid, every referenced asset present, map created and the'
+    Write-Host "     simulation's four load-time invariants hold."
     exit 0
 }
 finally {

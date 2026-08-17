@@ -258,6 +258,7 @@ has adopted.
 
 Source: <https://mods.factorio.com/mod/RealisticFusionPowerPort>.
 **Not inspected as code — the mod zip could not be downloaded** (see the last section). Everything below is
+<!-- superseded: the zip is readable as of 2026-08-17, #38 -- see the resolution block near the end of this section -->
 from the portal's public API and page text.
 
 | | |
@@ -334,7 +335,24 @@ From the port's description page:
   license, see the relevant files for details."* — so the port does carry per-directory licence files, but
   **which directories, and under which licence, could not be verified**; the zip was not readable.
 
-Lua volume: **unknown.** Not inspectable without the archive. A reasonable expectation is "close to the
+> **Resolved 2026-08-17 (#38).** Both zips are readable now, in `C:\src\factorio\_reference\`. The port
+> marks exactly the two directories the original does, **on identical terms** — section 3 below has the
+> licences and the legal notes, which are the same word for word. The *contents* are not identical; see
+> the last bullet. What is specific to the port:
+>
+> - Root `license.txt` is **The Unlicense**, prefaced *"This applies to all folders, except those that
+>   contain a license file within them."* 1.9.0 and 1.9.2 ship it byte-identical (sha256 `e70df79e…`).
+> - Root `legal-note.txt` is the **original's, byte-for-byte** — and it still says WTFPL. So the port's
+>   two root files name different licences. Both are permissive and nothing downstream turns on it, but
+>   the licence *field* on the portal (`unlicense`) is only half the story.
+> - The two releases are not otherwise the same file set, so "byte-identical" above is about that one
+>   licence file and nothing else: `electric-boiler/electric-boiler.lua` is 169 lines in 1.9.0 against
+>   167 in 1.9.2, and 1.9.0 still ships the `compatibility-patches/` directory that 1.9.2 dropped —
+>   which is the removal Durikkan's own release notes describe, confirmed here rather than taken on
+>   trust.
+
+Lua volume: **unknown as of the survey date.** Not inspectable without the archive. A reasonable
+expectation is "close to the
 1.1 original's", since it is a port, but that is an inference, not a measurement.
 
 ---
@@ -342,7 +360,13 @@ Lua volume: **unknown.** Not inspectable without the archive. A reasonable expec
 ## 3. Realistic Fusion Power — Romner_set's 1.1 original
 
 Source: <https://mods.factorio.com/mod/RealisticFusionPower>.
-**Not inspected as code — the mod zip could not be downloaded.** What follows comes from the portal API,
+**Not inspected as code — the mod zip could not be downloaded.**
+
+> **Superseded 2026-08-17 (#38):** it is readable now, in `C:\src\factorio\_reference\`. The
+> licensing questions this section leaves open are answered in the resolution block at its end; the
+> code-inspection ones are answerable and have not been asked.
+
+What follows comes from the portal API,
 the mod page, and three artefacts that survive *inside* the dev repo and describe the 1.x mod directly:
 `TODO/locale/en/base.cfg` (305 lines, the 1.x English locale, verbatim), `TODO/changelog.txt`, and
 `TODO/migrations/`. Those files are a snapshot of roughly **v1.8.15 (March 2022)** — the dev repo's first
@@ -420,18 +444,61 @@ The changelog confirms integration was a large share of the work: 1.2.0 Angel's,
 tail of SE/K2 bugfixes through 1.8.x. Roughly the same body of work Durikkan removed in port 1.9.2, and the
 same body of work the redesign never rewrote (`compatibility-patches/` is referenced but empty there).
 
-Lua volume: **unknown.** Not inspectable without the archive.
+Lua volume: **unknown as of the survey date.** Not inspectable without the archive then; the archive is
+readable now (#38) and this has not been recounted.
 
 **Licensed directories:** the mod page states the primary licence is WTFPL and the dev repo's convention
 implies per-directory files, and Durikkan's port description confirms *"there are some directories with
 graphical assets under a different license"* — but **which directories, in the 1.1 original, could not be
 verified.**
 
+> **Resolved 2026-08-17 (#38).** 1.8.18 is in `C:\src\factorio\_reference\`. Root `license.txt` is the
+> **WTFPL v2**, `Copyright (C) 2024 Romner`, confirming the changelog and this section. Root
+> `legal-note.txt` states the per-directory rule outright — *"Any file in a subdirectory of this mod that
+> doesn't have a license.txt and/or a legal-note.txt in its directory is licensed under the WTFPL"* — the
+> same sentence the redesign carries (section 1 above), so the convention predates the redesign rather
+> than being introduced by it.
+>
+> **Two directories are marked, and both carry a `legal-note.txt` naming the source as well as a
+> `license.txt` carrying the terms:**
+>
+> | Directory | Licence | Legal note |
+> |---|---|---|
+> | `graphics/particle-accelerator/` | GPLv3 | *"All textures in this directory are modified from Krastorio 2"* |
+> | `electric-boiler/` | CC BY-NC-ND 4.0 | *"All textures and code in this directory are from angels petrochem"* — 165 lines of Lua |
+>
+> These are the same two the redesign lists in ADR 0001's table, under the same terms, so **the redesign
+> inherited them from the original** rather than establishing the scheme. Note the naming: the Krastorio 2
+> material sits in `particle-accelerator/`, named for what it depicts. Only the redesign has a directory
+> actually called `krastorio-2/`.
+>
+> **The unmarked `graphics/` is the finding that matters.** The changelog credits three outside sources
+> for material that is left bare:
+>
+> | Release | Attribution |
+> |---|---|
+> | 0.2.0, 2020-01-01 | *"Credit to YuokiTani for re-rendering some unused textures with changed colors from https://u.nu/factoriogfx"* |
+> | 1.2.0, 2020-09-05 | *"Others are modified from angel's discarded/unused thread"* |
+> | 1.3.13, 2020-12-06 | *"New antimatter reactor graphics, courtesy of PreLeyZero."* |
+| 1.8.0, 2021-09-03 | *"PreLeyZero made completely new antimatter reactor graphics, and in turn doubled the mod size."* |
+>
+> The rest of that 1.2.0 line — *"Some of the textures are modified from Krastorio 2 and licensed under
+> GNU GPL v3"* — refers to the marked `particle-accelerator/` set, so it is **not** evidence of GPL
+> material hiding under a permissive root. It is the opposite: Romner marked what he had terms for. The
+> three rows above are what he did not. `CLAUDE.md`'s unmarked-graphics rule was widened from
+> "PreLeyZero's donated art" to all three on the same date.
+
 ---
 
 ## What could not be verified
 
 Listed so the gaps are as visible as the findings.
+
+> **Partly resolved 2026-08-17 (#38).** Gap 1's licensing half is closed: both zips are now in
+> `C:\src\factorio\_reference\` and the answers are in sections 2 and 3 above. Its other half — Lua line
+> counts, the recipe and technology diffs, whether the port's inherited compatibility code came out
+> cleanly — is answerable now and has not been asked. Gaps 2, 3 and 4 stand: the *dev repo* is still not
+> on disk and none of the three has been run.
 
 1. **Neither mod-portal mod could be downloaded.** `https://mods.factorio.com/download/...` returns
    HTTP 403 and redirects to `https://factorio.com/login?mods=1&next=...`, behind a Cloudflare challenge.

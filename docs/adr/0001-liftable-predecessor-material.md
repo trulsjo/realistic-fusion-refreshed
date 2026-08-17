@@ -88,6 +88,27 @@ proof.
   downloaded during the survey (HTTP 403 behind a login gate), so which directories they mark, and
   under what terms, remains unverified. If either becomes the base, that must be checked first.
 
+> **The deferred check was done on 2026-08-17 (#38).** This ADR's text stands as what was true when it
+> was accepted; the answer is recorded in
+> [`predecessor-survey.md`](../research/predecessor-survey.md) and `CLAUDE.md`.
+>
+> Both mods mark two directories, on the same terms as each other: `graphics/particle-accelerator/`
+> (GPLv3, *"modified from Krastorio 2"*) and `electric-boiler/` (CC BY-NC-ND 4.0, *"from angels
+> petrochem"*). Those are two of the four rows in the table above — so **the redesign inherited them from
+> the original** rather than introducing the per-directory scheme, and the original's root
+> `legal-note.txt` states the rule in the same words the redesign's does. What the redesign added is the
+> other two rows, including the only directory anywhere actually named `krastorio-2/`.
+>
+> Neither decision above is affected. Both marked directories are excluded regardless —
+> `electric-boiler/` as NoDerivatives, `particle-accelerator/` as copyleft that could only ever live in
+> its own directory — and no predecessor material has been lifted into this repository at all.
+>
+> **One clause is widened, though.** "Permissive material may be used anywhere … subject to the existing
+> PreLeyZero exception for unmarked donated art" now reads too narrowly: the original's changelog credits
+> **three** outside sources for material it leaves unmarked — YuokiTani (0.2.0), angel's discarded thread
+> (1.2.0) and PreLeyZero (1.3.13, 1.8.0). Read that clause as covering the unmarked `graphics/` set
+> entire, not one donor's part of it. `CLAUDE.md` carries the full statement.
+
 ## Alternatives considered
 
 **Carry the NC-ND directories isolated per-directory.** Cheapest, and consistent with the existing
