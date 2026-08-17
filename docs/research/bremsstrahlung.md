@@ -7,8 +7,12 @@ Nothing in the mod was changed to produce these numbers.
 
 **That harness is now checked in as `tests/test-bremsstrahlung.lua`** ([#51](https://github.com/trulsjo/realistic-fusion-refreshed/issues/51)),
 and every equilibrium below is asserted there to 1%. Run `lua tests/test-bremsstrahlung.lua` to
-reproduce the tables rather than taking them on trust — and note that it will fail if
-`cross-section-data/reactivities.lua` is ever regenerated, which is the point of keeping it.
+reproduce the tables rather than taking them on trust.
+
+**Nothing runs it for you.** There is no CI in this repository and none of `scripts/*.ps1` invokes
+the Lua tests, so regenerating `cross-section-data/reactivities.lua` invalidates this document
+silently unless whoever regenerates it types that command. The check exists and is not wired; say
+that plainly rather than claiming a guarantee the repository does not have.
 
 It exists because `reactor-logic.lua` and `docs/research/d-t-ignition.md` both justify the 2×10⁹ °C
 temperature clamp with a claim about bremsstrahlung, and [#37](https://github.com/trulsjo/realistic-fusion-refreshed/issues/37)
@@ -295,9 +299,15 @@ Three consequences, and the second is the one that costs work:
   is relativistic throughout — the 60 s, 100 s and 200 s rungs all reproduce — and its choice of the
   Wurzel/Putvinski fit is stated and argued in the section above. What was missing was a checked-in
   harness, not a correction.
-- **ADR 0014's confinement ladder is the non-relativistic one and is 10–20% optimistic.** It has
-  been corrected in place with the superseded numbers struck. Break-even is not at 42 s; it is
-  between 50 s and 55 s, and 50 s gives Q 0.95 rather than Q 2.58.
+- **ADR 0014's confinement ladder is the non-relativistic one, and the error grows with every
+  rung.** It is 11% at the shipped 30 s — 2.69×10⁸ against 2.42×10⁸ K — and 118% at 50 s, where the
+  struck ladder reads 1.03×10⁹ K against 4.73×10⁸, taking Q from 0.95 to 2.58. **The divergence is
+  superlinear in τ_E and must not be read as a percentage**: the missing radiation grows only as
+  √T while D-D's reactivity climbs steeply over this range, so every second of extra confinement
+  buys the uncorrected ladder more than it buys the corrected one. Scaling the struck numbers down
+  by a flat fifth would be the same class of mistake again, one rung further on. The ADR has been
+  corrected in place with the superseded numbers struck; break-even is between 50 s and 55 s rather
+  than at 42 s.
 - **The ignition cliff that ADR recorded does not exist under the correct fit.** Without ξ, D-D runs
   away between 55 s and 60 s — 1.82×10⁹ K to 2.66×10⁹ K, straight through the clamp and climbing.
   With ξ it never runs away at all: radiation outgrows D-D's reactivity past its upper ignition

@@ -141,9 +141,13 @@ project rather than a state to be avoided.
   > 4.95×10⁸ K, Q 1.02; 50 s → 1.03×10⁹ K, Q 2.58; 55 s → 1.82×10⁹ K, Q 4.63~~ — the
   > **non-relativistic** bremsstrahlung formula, without the relativistic correction that
   > [`bremsstrahlung.md`](../research/bremsstrahlung.md) establishes is worth 1.1× to 5× over this
-  > model's temperature range. The struck ladder is 10–20% optimistic and crosses break-even about
-  > ten seconds too early. Both are now asserted in `tests/test-bremsstrahlung.lua`, which is what
-  > this ADR should have been able to cite in the first place.
+  > model's temperature range. **The error is not a fixed percentage and the struck numbers must
+  > not be scaled by one.** It is 11% at 30 s and 118% at 50 s, where the struck ladder reads
+  > 1.03×10⁹ K against 4.73×10⁸ — because the missing radiation grows only as √T while D-D's
+  > reactivity climbs steeply across this range, so each extra second of confinement buys the
+  > uncorrected ladder more than it buys the real one. Both ladders are now asserted in
+  > `tests/test-bremsstrahlung.lua`, which is what this ADR should have been able to cite in the
+  > first place.
 
 - **It is a slope, not a cliff — and that is the correction that changes what a ladder may do.**
   This ADR originally recorded that ~~past about 55 s the D-D plasma ignites and runs to

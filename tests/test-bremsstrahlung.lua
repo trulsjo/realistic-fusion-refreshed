@@ -16,9 +16,13 @@
 --
 -- NOTHING SHIPPED USES THIS. reactor-logic.lua carries no radiation term and this file does not add
 -- one to it; the models below are local, and whether any of them ever goes into the simulation is
--- #37 and #52. What this file guarantees is that the figures the docs quote still follow from the
--- repository's own reactivity dataset -- so regenerating that dataset fails here, in front of
--- whoever regenerated it, rather than silently invalidating two documents.
+-- #37 and #52. What this file checks is that the figures the docs quote still follow from the
+-- repository's own reactivity dataset.
+--
+-- AND NOTHING RUNS IT FOR YOU. There is no CI here and no scripts/*.ps1 invokes the Lua tests, so
+-- regenerating cross-section-data/reactivities.lua invalidates bremsstrahlung.md and ADR 0014
+-- silently unless somebody types the command above. Stated rather than glossed, because "the test
+-- would catch it" is only true of a test something runs.
 --
 -- Like the other tests here it runs outside Factorio (ADR 0005), written to Lua 5.2 semantics and
 -- verified on 5.4.
@@ -111,8 +115,17 @@ local MODELS = {
     -- Yushmanov, Nucl. Fusion 59, 076018 (2019). The headline model in bremsstrahlung.md, on the
     -- grounds that it is the larger of the two and the conservative choice.
     --
-    -- Valid only for t < 1, i.e. below 5.93e9 K, where it turns over and goes negative. The scan
-    -- below runs to 1e10, so the guard is not decorative -- it was hit while writing this file.
+    -- Cut off at t = 1, i.e. 5.93e9 K, which is the fit's PUBLISHED DOMAIN and not the point where
+    -- it misbehaves. Xie (arXiv:2404.11540) records t < 1 as the validity bound; the expression
+    -- itself is still positive and rising there (xi = 6.70 at t = 1) and does not go negative until
+    -- somewhere between t = 2 and t = 3, well above this scan's 1e10 K ceiling. So the guard costs
+    -- the band from 5.93e9 to 1e10 K, where the fit would still return plausible-looking numbers
+    -- with no published claim behind them -- which is the thing worth refusing.
+    --
+    -- bremsstrahlung.md's implementation note says the fit "returns negative numbers" above the
+    -- bound and that this was hit in practice. That is true of the range it was driven over there
+    -- and not of the bound itself, and repeating it here would tell a reader that raising the
+    -- ceiling is safe right up to the negativity. It is not: it is unsupported from t = 1.
     xi = function(t)
       if t >= 1 then return nil end
       return (1 + 1.78 * t ^ 1.34) + 2.12 * t * (1 + 1.1 * t + t * t - 1.25 * t ^ 2.5)
@@ -177,15 +190,42 @@ local function equilibria(model, fuel, spec, density)
       end
       roots[#roots + 1] = math.sqrt(lo * hi)
     end
-    if f then prev_t, prev_f = t, f end
+    -- Reset rather than carry the last valid point across a gap. A band where the model is
+    -- undefined sits at the top of the range today, so this changes nothing now -- but a model with
+    -- an interior validity window would otherwise bracket the first point above the band against a
+    -- point from below it, and the bisection would search a range the balance is not defined over
+    -- and return something that is not a root. A fabricated equilibrium is the worst thing this
+    -- file could produce, since its whole purpose is to be quoted.
+    prev_t, prev_f = t, f
   end
   return roots
 end
 
 --- The equilibrium a reactor started cold actually reaches: the coolest stable one.
+--
+-- A nil answer means ONE thing and it is worth naming, because the obvious reading is the wrong
+-- one: it means the plasma RAN AWAY, never that it quenched. The balance is positive at the scan
+-- floor for every model here -- 50 MW of heating against about 1.6 MW radiated and 0.14 MW of
+-- transport at 1e6 K -- so a cold plasma always warms. No downward crossing below 1e10 K therefore
+-- means it was still climbing at the top of the scan, and the callers below say so.
 local function settles_at(model, fuel, spec, density)
   local roots = equilibria(model, fuel, spec, density)
   return roots[1]
+end
+
+-- The top row of every dataset in cross-section-data/reactivities.lua. Above it
+-- reactivity.interpolate CLAMPS rather than extrapolating -- deliberately, and for good reasons
+-- stated in that file -- so an equilibrium found up there is balanced against a flat reactivity
+-- that is not physics. D-D's cross-section is still climbing at the table's end, so the clamp
+-- understates it and the true root is higher or absent altogether.
+--
+-- Not an error: those rows are real answers to "what does THIS model do", and one of them is the
+-- struck ADR figure this file exists to explain. They are marked instead, so a number that leaves
+-- the dataset behind cannot be quoted as though it had not.
+local DATASET_TOP_K = 6.96271e9
+
+local function beyond_dataset(t_k)
+  return t_k and t_k > DATASET_TOP_K
 end
 
 local SPEC = L.reactor
@@ -211,10 +251,11 @@ for _, f in ipairs(FUELS) do
     if t then
       local p_fus = fusion_w(f.fuel, SPEC, DENSITY, t)
       local p_br = brems_w(model, SPEC, DENSITY, t) or 0
-      print(string.format("  %-5s %-18s %10.3g K %8.3g %7.0f MW %7.0f MW",
-        f.key, model.label, t, p_fus / SPEC.heating_power_w, p_fus / 1e6, p_br / 1e6))
+      print(string.format("  %-5s %-18s %10.3g K %8.3g %7.0f MW %7.0f MW%s",
+        f.key, model.label, t, p_fus / SPEC.heating_power_w, p_fus / 1e6, p_br / 1e6,
+        beyond_dataset(t) and "  (past the dataset)" or ""))
     else
-      print(string.format("  %-5s %-18s %12s", f.key, model.label, "quenches"))
+      print(string.format("  %-5s %-18s %12s", f.key, model.label, "runs away"))
     end
   end
 end
@@ -236,6 +277,7 @@ local BY_KEY = {}
 for _, m in ipairs(MODELS) do BY_KEY[m.key] = m end
 
 local LADDER = {}
+local legend = false
 for _, tau in ipairs({ 30, 40, 42, 50, 52, 55, 60, 70, 100, 200 }) do
   local spec = {}
   for k, v in pairs(SPEC) do spec[k] = v end
@@ -253,9 +295,19 @@ for _, tau in ipairs({ 30, 40, 42, 50, 52, 55, 60, 70, 100, 200 }) do
   -- the top of the scan and out of the reactivity dataset. "runs away" rather than a number.
   local function cell(c)
     if not c.t_k then return string.format("%12s %8s", "runs away", "--") end
-    return string.format("%10.3g K %8.3g", c.t_k, c.q)
+    -- A trailing "*" is not decoration: it marks a root balanced against a clamped reactivity
+    -- rather than against the dataset. See beyond_dataset above.
+    return string.format("%10.3g K%s %7.3g", c.t_k, beyond_dataset(c.t_k) and "*" or " ", c.q)
   end
   print(string.format("  %5ds %s %s", tau, cell(cells.nonrel), cell(cells.wurzel)))
+  legend = legend or beyond_dataset(cells.nonrel.t_k) or beyond_dataset(cells.wurzel.t_k)
+end
+
+if legend then
+  print("")
+  print(string.format("  * balanced against a reactivity CLAMPED at the dataset's top row (%.4g K),",
+    DATASET_TOP_K))
+  print("    not interpolated within it -- see beyond_dataset. Not a physical equilibrium.")
 end
 
 -- ---------------------------------------------------------------------------------------------
@@ -302,11 +354,14 @@ check(found["D-T/nonrel"] and found["D-T/wurzel"] and found["D-T/nonrel"] > foun
 -- that carry the finding.
 local function num(v) return v or 0 end
 
--- The correction is not a rounding error at this operating point, which is the reason dropping it
--- moved the answer by 20% rather than by a percent.
+-- The correction is not a rounding error at this operating point, which is why dropping it moved
+-- the answer at all. num() and the `or 0` are the same guard every check above uses: xi() answers
+-- nil outside its domain, and an unguarded comparison against nil would abort the run before the
+-- ladder assertions below -- which are the ones carrying the finding.
 local t_kev = num(found["D-D/wurzel"]) / KELVIN_PER_KEV
-check(BY_KEY.wurzel.xi(t_kev / M_E_C2_KEV) > 1.05, "the correction is worth more than 5% here",
-  string.format("xi = %.3f at %.1f keV", BY_KEY.wurzel.xi(t_kev / M_E_C2_KEV), t_kev))
+local xi_here = BY_KEY.wurzel.xi(t_kev / M_E_C2_KEV)
+check(num(xi_here) > 1.05, "the correction is worth more than 5% here",
+  string.format("xi = %.3f at %.1f keV", num(xi_here), t_kev))
 
 -- The ladder, which is what #52 and #53 would be built on. Both columns, because ADR 0014 quotes
 -- the left one and a reader has to be able to check that claim as well as the corrected one.
@@ -332,6 +387,17 @@ near(LADDER[60].wurzel.t_k, 6.48e8, "bremsstrahlung.md's 60 s rung is the relati
 near(LADDER[100].wurzel.q, 3.58, "and its 100 s rung likewise")
 
 near(LADDER[200].wurzel.t_k, 2.13e9, "and its 200 s rung, the last one it publishes")
+
+-- THE ERROR IS NOT A PERCENTAGE, and this is the assertion that stops the struck ladder being
+-- "corrected" by scaling. Bremsstrahlung grows as sqrt(T) while D-D's reactivity climbs steeply
+-- over this range, so every second of confinement buys the uncorrected ladder more than it buys
+-- the real one and the two diverge as the ladder goes up: 11% apart at 30 s, 118% at 50 s.
+local function gap(tau)
+  return LADDER[tau].nonrel.t_k / LADDER[tau].wurzel.t_k - 1
+end
+check(gap(30) < 0.2 and gap(50) > 1,
+  "the two ladders diverge superlinearly rather than by a fixed fraction",
+  string.format("%.0f%% apart at 30 s, %.0f%% at 50 s", 100 * gap(30), 100 * gap(50)))
 
 -- The cliff. ADR 0014 records D-D igniting and running to the clamp "past about 55 s", which is a
 -- constraint on how many rungs a ladder can have -- and it is the non-relativistic ladder's cliff.
