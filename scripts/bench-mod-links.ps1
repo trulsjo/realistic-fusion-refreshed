@@ -23,10 +23,13 @@
     it held last tick; a decrease is fluid that crossed the link. An increase is production -- the
     reactor writes energy every UPDATE_INTERVAL ticks, the heater completes a craft every couple of
     seconds -- and those ticks are excluded rather than netted, because production and outflow in
-    the same tick cannot be separated after the fact. The excluded fraction is reported, and it is
-    the check on the method: it should come out at the production cadence and nothing more. If a
-    link were idle, excluded ticks would climb far above that and the mean would be quietly taken
-    over the busy ones only.
+    the same tick cannot be separated after the fact.
+
+    The excluded fraction is the check on the method: it should come out at the production cadence
+    and nothing more. If a link were idle, excluded ticks would climb far above that and the mean
+    would be quietly taken over the busy ones only. Each meter reports its own -- the plasma one as
+    plasma_skipped, the energy one as the complement of energy_ticks -- because the two links run at
+    different cadences and one shared counter would hide a stall on either.
 
     EQUILIBRIUM, DEMONSTRATED RATHER THAN ASSUMED
 
@@ -214,15 +217,21 @@ local function place_facing(surface, force, name, fluid, target, seed)
   return entity
 end
 
+-- The pipe is named by the caller because the two links do not take the same one. #26 gives the
+-- plasma set a connection_category of its own, so rf-pipe joins the reactor's plasma box and
+-- nothing else; the reactor-energy box is deliberately left on the default category -- energy is an
+-- ordinary fluid and a player plumbs it with ordinary pipes -- so the energy line is vanilla pipe.
+-- Getting this wrong does not misreport, it fails to connect, and assert_joined below says so.
+--
 -- Idempotent: the energy line's vertical run and its horizontal header share the tile they meet
 -- at, and create_entity does not collision-check, so without this the corner would quietly end up
 -- holding two pipes.
-local function pipe_run(surface, force, from, step, count)
+local function pipe_run(surface, force, name, from, step, count)
   for i = 0, count - 1 do
     local at = { from[1] + step[1] * i, from[2] + step[2] * i }
-    if not surface.find_entity("rf-pipe", at) then
-      if not surface.create_entity({ name = "rf-pipe", position = at, force = force }) then
-        error(string.format("rf-pipe refused at (%g, %g)", at[1], at[2]))
+    if not surface.find_entity(name, at) then
+      if not surface.create_entity({ name = name, position = at, force = force }) then
+        error(string.format("%s refused at (%g, %g)", name, at[1], at[2]))
       end
     end
   end
@@ -263,7 +272,7 @@ local function build(surface, force, ox, drain)
   -- figure comes out flatteringly large. Heaters are cheap here; supply-limiting the reactor is
   -- not.
   local west = { ox + 0.5 - 8, 0.5 }
-  pipe_run(surface, force, west, { -1, 0 }, PIPES + 3 * (HEATERS - 1))
+  pipe_run(surface, force, "rf-pipe", west, { -1, 0 }, PIPES + 3 * (HEATERS - 1))
   local heater
   for i = 0, HEATERS - 1 do
     local built = place_facing(surface, force, "rf-heater", PLASMA,
@@ -277,7 +286,7 @@ local function build(surface, force, ox, drain)
 
   -- Energy: the reactor's north connection -> PIPES pipes -> a header -> the exchangers.
   local north = { ox + 0.5, 0.5 - 8 }
-  pipe_run(surface, force, north, { 0, -1 }, PIPES)
+  pipe_run(surface, force, "pipe", north, { 0, -1 }, PIPES)
   local header_y = north[2] - (PIPES - 1)
 
   local exchangers = {}
@@ -291,7 +300,7 @@ local function build(surface, force, ox, drain)
     -- Six tiles apart: the exchanger is three wide and wants an infinity pipe on each end, so
     -- four would have neighbouring cells fighting over the same tile.
     local first = north[1] - 3 * (EXCHANGERS - 1)
-    pipe_run(surface, force, { first, header_y }, { 1, 0 }, 6 * (EXCHANGERS - 1) + 1)
+    pipe_run(surface, force, "pipe", { first, header_y }, { 1, 0 }, 6 * (EXCHANGERS - 1) + 1)
     for i = 0, EXCHANGERS - 1 do
       -- A one-pipe stub between the header and each exchanger, and it is load-bearing. Sat
       -- directly on the header, the exchanger's water inlet lands one tile from it -- orthogonally
@@ -299,7 +308,7 @@ local function build(surface, force, ox, drain)
       -- the reactor has nowhere to put reactor energy. It reads as a reactor that produces nothing
       -- rather than as a plumbing mistake. The stub moves the exchanger two tiles clear.
       local stub = { first + 6 * i, header_y - 1 }
-      pipe_run(surface, force, stub, { 0, -1 }, 1)
+      pipe_run(surface, force, "pipe", stub, { 0, -1 }, 1)
       local exchanger = place_facing(surface, force, "rf-heat-exchanger", ENERGY,
         stub, { ox - 40.5 + 8 * i, -30 })
       unbound(surface, force, exchanger, box_of(exchanger, "water"),
@@ -330,7 +339,7 @@ local function build(surface, force, ox, drain)
     heater_box = box_of(heater, PLASMA),
     -- Meter state. last_* is what the source box held at the previous sample.
     last_plasma = 0, last_energy = 0,
-    plasma_out = 0, energy_out = 0, plasma_ticks = 0, energy_ticks = 0, skipped = 0,
+    plasma_out = 0, energy_out = 0, plasma_ticks = 0, energy_ticks = 0, plasma_skipped = 0,
   }
 end
 
@@ -390,11 +399,11 @@ local function report(cell, window)
   -- heater completes a craft every couple of seconds -- those are far apart.
   log(string.format(
     "LINKRIG cell=%s window=%d plasma_total=%.6g plasma_ticks=%d energy_total=%.6g " ..
-    "energy_ticks=%d skipped=%d temp_c=%.6g plasma_amount=%.6g energy_stored=%.6g " ..
+    "energy_ticks=%d plasma_skipped=%d temp_c=%.6g plasma_amount=%.6g energy_stored=%.6g " ..
     "heater_status=%s heater_held=%.6g heater_fed=%.6g",
     cell.name, window,
     cell.plasma_out, cell.plasma_ticks, cell.energy_out, cell.energy_ticks,
-    cell.skipped, plasma and plasma.temperature or 0, plasma and plasma.amount or 0,
+    cell.plasma_skipped, plasma and plasma.temperature or 0, plasma and plasma.amount or 0,
     amount_in(reactor, cell.energy_box),
     status_name(cell.heater.status), amount_in(cell.heater, cell.heater_box),
     amount_in(cell.heater, box_of(cell.heater, "rf-deuterium"))))
@@ -408,7 +417,7 @@ local function report(cell, window)
       amount_in(exchanger, box_of(exchanger, "steam"))))
   end
   cell.plasma_out, cell.energy_out = 0, 0
-  cell.plasma_ticks, cell.energy_ticks, cell.skipped = 0, 0, 0
+  cell.plasma_ticks, cell.energy_ticks, cell.plasma_skipped = 0, 0, 0
 end
 
 script.on_event(defines.events.on_tick, function()
@@ -420,7 +429,7 @@ script.on_event(defines.events.on_tick, function()
       cell.plasma_out   = cell.plasma_out + (cell.last_plasma - plasma)
       cell.plasma_ticks = cell.plasma_ticks + 1
     else
-      cell.skipped = cell.skipped + 1
+      cell.plasma_skipped = cell.plasma_skipped + 1
     end
     cell.last_plasma = plasma
 
@@ -484,7 +493,7 @@ try {
             EnergyFlow  = if ($energyCount -gt 0) { $energyTotal / $energyCount } else { 0.0 }
             PlasmaTicks = $plasmaCount
             EnergyTicks = $energyCount
-            Skipped     = [int]    $f['skipped']
+            PlasmaSkip  = [int]    $f['plasma_skipped']
             TempC       = [double] $f['temp_c']
             PlasmaAmt   = [double] $f['plasma_amount']
             EnergyStore = [double] $f['energy_stored']
