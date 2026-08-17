@@ -281,6 +281,14 @@ local pump = pin(table.deepcopy(data.raw["pump"]["pump"]), "rf-pump", { mining_t
 -- pump's coat, and it reads as one until someone draws it. Nothing depends on the picture, because
 -- the containment is in the connections rather than in the sprite.
 pump.icons = { { icon = "__base__/graphics/icons/pump.png", icon_size = 64 } }
+-- A pump is the one entity that moves fluid without a pipe connection at the far end: it also loads
+-- and unloads fluid wagons, which would be a way around every rule above -- rf-pump into a vanilla
+-- wagon, vanilla pump out of it, plasma anywhere. It is not. FluidWagonPrototype carries a
+-- connection_category of its own, and 2.0.77 says "Pumps are only allowed to connect to this fluid
+-- wagon if the pump's fluid box connection and this fluid wagon share a connection category", so
+-- containing the fluid box below closes the wagon route with it. The consequence is deliberate and
+-- worth stating: there is no wagon that can carry plasma, and shipping one would mean a fluid wagon
+-- prototype of our own. Barrelling is shut off separately, on the fluids themselves (fluids.lua).
 contain(pump.fluid_box)
 
 data:extend({ heater, reactor, exchanger, pipe, pipe_to_ground, pump })
