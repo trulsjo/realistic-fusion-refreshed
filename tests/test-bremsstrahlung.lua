@@ -1,0 +1,360 @@
+-- The bremsstrahlung equilibrium, reproduced and pinned (#51).
+--
+-- Run from the repository root:   lua tests/test-bremsstrahlung.lua
+--
+-- WHY THIS EXISTS. docs/research/bremsstrahlung.md and docs/adr/0014 both quote a D-D equilibrium
+-- with the radiation term counted, and they disagreed: 2.42e8 K at Q 0.32 against 2.69e8 K at
+-- Q 0.386. Neither harness was checked in, so there was no way to ask which was right without
+-- rebuilding one. This is that harness, kept, so the next question about these numbers is a command
+-- rather than an archaeology.
+--
+-- THE ANSWER, which the tables below print rather than assert away: the two numbers are not two
+-- attempts at one calculation. They are the SAME calculation under two different published fits.
+-- 2.69e8 K is the non-relativistic formula; 2.42e8 K is the same formula with the relativistic
+-- correction the note's own section on it says must be used at these temperatures. The later sweep
+-- dropped the correction, so its whole confinement ladder is 10-20% optimistic.
+--
+-- NOTHING SHIPPED USES THIS. reactor-logic.lua carries no radiation term and this file does not add
+-- one to it; the models below are local, and whether any of them ever goes into the simulation is
+-- #37 and #52. What this file guarantees is that the figures the docs quote still follow from the
+-- repository's own reactivity dataset -- so regenerating that dataset fails here, in front of
+-- whoever regenerated it, rather than silently invalidating two documents.
+--
+-- Like the other tests here it runs outside Factorio (ADR 0005), written to Lua 5.2 semantics and
+-- verified on 5.4.
+
+package.path = "RealisticFusion/?.lua;" .. package.path
+local L = require("scripts.reactor-logic")
+local reactivity = require("scripts.reactivity")
+
+local failures, checks = 0, 0
+
+local function check(ok, name, detail)
+  checks = checks + 1
+  if not ok then
+    failures = failures + 1
+    print(string.format("  FAIL  %s%s", name, detail and ("  -- " .. detail) or ""))
+  end
+end
+
+-- Every figure below is quoted to three significant figures in the docs, so 1% is the tolerance
+-- that distinguishes "the dataset moved" from "the last digit rounded differently". It is also far
+-- tighter than the ~20% disagreement this file exists to resolve, which is the point: at 1% the two
+-- implementations cannot both pass.
+local TOL = 0.01
+
+-- Nil is a failure rather than an error, and that is not defensive padding: a balance with no root
+-- returns nil, so breaking the physics badly enough makes several of these nil at once. Crashing
+-- on the first one would hide every check after it, which is exactly what happened the first time
+-- this file was negative-tested by stripping the relativistic correction.
+local function near(actual, expected, name)
+  checks = checks + 1
+  if not actual then
+    failures = failures + 1
+    print(string.format("  FAIL  %s  -- got no equilibrium, expected %.6g", name, expected))
+    return
+  end
+  local ok = math.abs(actual - expected) / math.abs(expected) <= TOL
+  if not ok then
+    failures = failures + 1
+    print(string.format("  FAIL  %s  -- got %.6g, expected %.6g (%.2f%% off)",
+      name, actual, expected, 100 * math.abs(actual - expected) / math.abs(expected)))
+  end
+end
+
+local K_B = 1.380649e-23
+local KELVIN_PER_KEV = 1.1604518e7   -- 1 eV = 11604.518 K, so 1 keV is this many kelvin
+
+-- NRL Plasma Formulary (2019) eq. (30) in SI, as Wurzel and Hsu (Phys. Plasmas 29, 062103 (2022))
+-- eq. (7) states it directly: P_B = C_B * n_i * n_e * Z_eff * sqrt(T_keV), W/m^3.
+--
+-- Converting the formulary's cgs constant gives 5.344e-37; Wurzel and Hsu round to 5.34e-37 and
+-- that is the value docs/research/bremsstrahlung.md computed with, so it is the value here. The
+-- 0.1% between them is an order of magnitude below the tolerance above and two below the
+-- disagreement being resolved.
+local C_B = 5.34e-37
+
+-- The relativistic correction factor xi. Bremsstrahlung is derived non-relativistically, and these
+-- plasmas are not: the electron rest mass is 511 keV and the D-D point sits at 21 keV with the term
+-- counted and 76 keV without it, so the correction runs from a few percent to a factor of five.
+--
+-- Two published fits, because they disagree with each other by up to 30% at the top of this range
+-- and picking one silently is exactly the mistake this file documents.
+local M_E_C2_KEV = 511
+
+local MODELS = {
+  {
+    key = "none",
+    label = "none (shipped)",
+    xi = nil,   -- no term at all, which is what the simulation actually does
+  },
+  {
+    key = "nonrel",
+    label = "non-relativistic",
+    -- The bare formulary equation. Correct below ~10 keV and increasingly optimistic above it.
+    xi = function(_) return 1 end,
+  },
+  {
+    key = "rider",
+    label = "Rider 1997",
+    -- Rider, Phys. Plasmas 4, 1039 (1997), eq. (21), at Z_eff = 1. The trailing (3/2)t is
+    -- electron-electron bremsstrahlung, which has no dipole moment non-relativistically and so
+    -- switches on only as the plasma warms.
+    xi = function(t)
+      return (1 + 0.7936 * t + 1.874 * t * t) + 1.5 * t
+    end,
+  },
+  {
+    key = "wurzel",
+    label = "Wurzel/Putvinski",
+    -- Wurzel and Hsu, appendix D eqs. (D1)-(D2), attributing the fit to Putvinski, Ryutov and
+    -- Yushmanov, Nucl. Fusion 59, 076018 (2019). The headline model in bremsstrahlung.md, on the
+    -- grounds that it is the larger of the two and the conservative choice.
+    --
+    -- Valid only for t < 1, i.e. below 5.93e9 K, where it turns over and goes negative. The scan
+    -- below runs to 1e10, so the guard is not decorative -- it was hit while writing this file.
+    xi = function(t)
+      if t >= 1 then return nil end
+      return (1 + 1.78 * t ^ 1.34) + 2.12 * t * (1 + 1.1 * t + t * t - 1.25 * t ^ 2.5)
+    end,
+  },
+}
+
+--- Bremsstrahlung power for the whole plasma, in watts. Z_eff = 1: every ion in a D-D or D-T
+--- plasma is singly charged, which is also the assumption the shipped model's n_e = n_i makes.
+local function brems_w(model, spec, density, t_k)
+  if not model.xi then return 0 end
+  local t_kev = t_k / KELVIN_PER_KEV
+  local xi = model.xi(t_kev / M_E_C2_KEV)
+  if not xi then return nil end   -- outside the fit's validity, and never silently zero
+  return C_B * density * density * math.sqrt(t_kev) * xi * spec.volume_m3
+end
+
+--- Fusion power for the whole plasma, in watts, off the repository's own reactivity dataset.
+local function fusion_w(fuel, spec, density, t_k)
+  local rate = reactivity.rate(fuel.reaction, t_k,
+    density * fuel.fractions[1], density * fuel.fractions[2])
+  return rate * spec.volume_m3 * fuel.energy_per_reaction_j
+end
+
+--- The power balance the plasma settles on, in watts.
+--
+-- Charged fusion products plus external heating against the transport loss and the radiation. It
+-- is step()'s balance with one term added and the fuel burn-down left out, which is what makes
+-- reproducing the shipped equilibrium below a real check rather than a tautology: if this stated
+-- the balance differently it would not land on 8.769e8.
+local function balance_w(model, fuel, spec, density, t_k)
+  local n = density * spec.volume_m3           -- nuclei present
+  local charged = fusion_w(fuel, spec, density, t_k) * fuel.charged_fraction
+  local loss = 3 * n * K_B * t_k / spec.confinement_time_s
+  local brems = brems_w(model, spec, density, t_k)
+  if not brems then return nil end
+  return charged + spec.heating_power_w - loss - brems
+end
+
+--- Every stable equilibrium temperature, in kelvin, ascending.
+--
+-- Found by scanning rather than by iterating from a seed, because these balances have more than one
+-- root -- D-T's reactivity rolls over past its peak while bremsstrahlung keeps climbing, so the two
+-- curves cross back -- and an iteration would land on whichever one it started nearest and report
+-- it as "the" answer. A stable root is one the balance crosses downwards: warmer plasma loses more
+-- than it makes, so it falls back.
+local function equilibria(model, fuel, spec, density)
+  local LO, HI, STEPS = 1e6, 1e10, 6000
+  local roots = {}
+  local prev_t, prev_f
+  for i = 0, STEPS do
+    local t = LO * (HI / LO) ^ (i / STEPS)
+    local f = balance_w(model, fuel, spec, density, t)
+    if f and prev_f and prev_f > 0 and f <= 0 then
+      -- Bisect. 200 halvings takes a decade-wide bracket well below float precision; the loop is
+      -- cheap and stopping on a relative width is one more thing to get wrong.
+      local lo, hi = prev_t, t
+      for _ = 1, 200 do
+        local mid = math.sqrt(lo * hi)
+        local fm = balance_w(model, fuel, spec, density, mid)
+        if fm and fm > 0 then lo = mid else hi = mid end
+      end
+      roots[#roots + 1] = math.sqrt(lo * hi)
+    end
+    if f then prev_t, prev_f = t, f end
+  end
+  return roots
+end
+
+--- The equilibrium a reactor started cold actually reaches: the coolest stable one.
+local function settles_at(model, fuel, spec, density)
+  local roots = equilibria(model, fuel, spec, density)
+  return roots[1]
+end
+
+local SPEC = L.reactor
+local DENSITY = SPEC.particles_per_unit   -- 1000 units in a 1000 m^3 box is 1e20 m^-3
+local FUELS = {
+  { key = "D-D", fuel = L.fuels["rf-d-d-plasma"] },
+  { key = "D-T", fuel = L.fuels["rf-d-t-plasma"] },
+}
+
+-- ---------------------------------------------------------------------------------------------
+-- The table the documents quote.
+
+print("Equilibrium at the shipped constants -- 1e20 m^-3, tau_E 30 s, 50 MW heating, 1000 m^3")
+print("")
+print(string.format("  %-5s %-18s %12s %8s %10s %10s",
+  "fuel", "bremsstrahlung", "settles at", "Q", "P_fus", "P_brem"))
+
+local found = {}
+for _, f in ipairs(FUELS) do
+  for _, model in ipairs(MODELS) do
+    local t = settles_at(model, f.fuel, SPEC, DENSITY)
+    found[f.key .. "/" .. model.key] = t
+    if t then
+      local p_fus = fusion_w(f.fuel, SPEC, DENSITY, t)
+      local p_br = brems_w(model, SPEC, DENSITY, t) or 0
+      print(string.format("  %-5s %-18s %10.3g K %8.3g %7.0f MW %7.0f MW",
+        f.key, model.label, t, p_fus / SPEC.heating_power_w, p_fus / 1e6, p_br / 1e6))
+    else
+      print(string.format("  %-5s %-18s %12s", f.key, model.label, "quenches"))
+    end
+  end
+end
+
+-- ---------------------------------------------------------------------------------------------
+-- The confinement ladder, which is what ADR 0014 records and #53 would build.
+--
+-- Printed under both fits because the difference between them is the whole finding: the ladder in
+-- that ADR is the non-relativistic column, and the relativistic one needs about eight seconds more
+-- confinement to reach the same place.
+
+print("")
+print("D-D against confinement time -- where a research ladder would run")
+print("")
+print(string.format("  %6s %14s %8s %14s %8s", "tau_E", "non-rel", "Q", "Wurzel/Put.", "Q"))
+
+local D_D = L.fuels["rf-d-d-plasma"]
+local BY_KEY = {}
+for _, m in ipairs(MODELS) do BY_KEY[m.key] = m end
+
+local LADDER = {}
+for _, tau in ipairs({ 30, 40, 42, 50, 52, 55, 60, 70, 100, 200 }) do
+  local spec = {}
+  for k, v in pairs(SPEC) do spec[k] = v end
+  spec.confinement_time_s = tau
+
+  local cells = {}
+  for _, key in ipairs({ "nonrel", "wurzel" }) do
+    local t = settles_at(BY_KEY[key], D_D, spec, DENSITY)
+    cells[key] = { t_k = t, q = t and fusion_w(D_D, spec, DENSITY, t) / spec.heating_power_w }
+  end
+  LADDER[tau] = cells
+
+  -- A cell can be empty, and it means something: past about 100 s the non-relativistic D-D balance
+  -- has no root below 1e10 K at all. It is not radiating enough to ever catch up, so it runs off
+  -- the top of the scan and out of the reactivity dataset. "runs away" rather than a number.
+  local function cell(c)
+    if not c.t_k then return string.format("%12s %8s", "runs away", "--") end
+    return string.format("%10.3g K %8.3g", c.t_k, c.q)
+  end
+  print(string.format("  %5ds %s %s", tau, cell(cells.nonrel), cell(cells.wurzel)))
+end
+
+-- ---------------------------------------------------------------------------------------------
+-- Assertions.
+
+print("")
+
+-- The reproduction check, and the reason anything below it can be believed. If this harness did
+-- not land on the shipped model's own equilibrium it would be a different model, and its
+-- bremsstrahlung numbers would be about a different reactor.
+near(found["D-D/none"], 8.769e8, "radiation-free D-D reproduces the shipped equilibrium")
+near(fusion_w(D_D, SPEC, DENSITY, found["D-D/none"]) / SPEC.heating_power_w, 2.139,
+  "radiation-free D-D reproduces the shipped Q")
+near(found["D-T/none"], 4.63e9, "radiation-free D-T reproduces d-t-ignition.md's equilibrium")
+
+-- THE FINDING. The two disputed figures are two models, not two answers, and each is reproduced
+-- here by the model it came from. Nothing else in this file matters as much as these two lines.
+near(found["D-D/nonrel"], 2.69e8, "ADR 0014's 2.69e8 is the NON-RELATIVISTIC equilibrium")
+near(found["D-D/wurzel"], 2.42e8, "bremsstrahlung.md's 2.42e8 is the RELATIVISTIC one")
+
+local function q_at(key)
+  local t = found[key]
+  if not t then return nil end
+  local fuel = key:match("^D%-D") and D_D or L.fuels["rf-d-t-plasma"]
+  return fusion_w(fuel, SPEC, DENSITY, t) / SPEC.heating_power_w
+end
+
+near(q_at("D-D/nonrel"), 0.386, "and its Q 0.386 likewise")
+near(q_at("D-D/wurzel"), 0.32, "against Q 0.32 with the correction counted")
+
+-- The third fit, so the spread between published fits is on the record rather than implied.
+near(found["D-D/rider"], 2.46e8, "Rider 1997 sits between the two")
+
+-- D-T, which the term does not rescue from the clamp -- the load-bearing claim in
+-- reactor-logic.lua's comment block and in d-t-ignition.md.
+near(found["D-T/wurzel"], 3.26e9, "D-T with the correction stays above the int32 ceiling")
+check(found["D-T/wurzel"] and found["D-T/wurzel"] > 2.147e9, "D-T equilibrium is above int32",
+  string.format("%.3g K", found["D-T/wurzel"] or 0))
+check(found["D-T/nonrel"] and found["D-T/wurzel"] and found["D-T/nonrel"] > found["D-T/wurzel"],
+  "the correction lowers D-T's equilibrium rather than raising it")
+
+-- "No equilibrium" is zero for the comparisons below, for the same reason near() treats it as a
+-- failure: a check that errors takes every check after it down with it, and these are the ones
+-- that carry the finding.
+local function num(v) return v or 0 end
+
+-- The correction is not a rounding error at this operating point, which is the reason dropping it
+-- moved the answer by 20% rather than by a percent.
+local t_kev = num(found["D-D/wurzel"]) / KELVIN_PER_KEV
+check(BY_KEY.wurzel.xi(t_kev / M_E_C2_KEV) > 1.05, "the correction is worth more than 5% here",
+  string.format("xi = %.3f at %.1f keV", BY_KEY.wurzel.xi(t_kev / M_E_C2_KEV), t_kev))
+
+-- The ladder, which is what #52 and #53 would be built on. Both columns, because ADR 0014 quotes
+-- the left one and a reader has to be able to check that claim as well as the corrected one.
+near(LADDER[42].nonrel.q, 1.02, "ADR 0014's break-even at 42 s is the non-relativistic ladder")
+near(LADDER[50].nonrel.q, 2.58, "and its 50 s rung likewise")
+check(LADDER[50].wurzel.q and LADDER[50].wurzel.q < 1,
+  "with the correction, 50 s is still below break-even",
+  string.format("Q %.3g", num(LADDER[50].wurzel.q)))
+
+-- Where the corrected ladder crosses break-even. A bracket rather than a single number, because
+-- the rung a design would actually use is a balance decision and not this file's to make -- and
+-- because a bracket is what fails informatively if the dataset moves under it.
+check(LADDER[50].wurzel.q and LADDER[55].wurzel.q
+  and LADDER[50].wurzel.q < 1 and LADDER[55].wurzel.q > 1,
+  "the corrected ladder crosses break-even between 50 s and 55 s",
+  string.format("Q %.3g at 50 s, %.3g at 55 s",
+    LADDER[50].wurzel.q or 0, LADDER[55].wurzel.q or 0))
+
+-- bremsstrahlung.md's own confinement sweep, at the two rungs it publishes that this ladder also
+-- covers. They land in the relativistic column, which is what makes that document internally
+-- consistent and leaves ADR 0014 as the one carrying the other model's numbers.
+near(LADDER[60].wurzel.t_k, 6.48e8, "bremsstrahlung.md's 60 s rung is the relativistic one")
+near(LADDER[100].wurzel.q, 3.58, "and its 100 s rung likewise")
+
+near(LADDER[200].wurzel.t_k, 2.13e9, "and its 200 s rung, the last one it publishes")
+
+-- The cliff. ADR 0014 records D-D igniting and running to the clamp "past about 55 s", which is a
+-- constraint on how many rungs a ladder can have -- and it is the non-relativistic ladder's cliff.
+-- Both columns are asserted, because the correction does not move the cliff so much as replace it:
+--
+--   * Without the correction D-D genuinely runs away. Between 55 s and 60 s its equilibrium jumps
+--     1.82e9 -> 2.66e9 K, straight through the clamp, and it keeps climbing from there.
+--   * With it, D-D never runs away at all. Radiation grows with temperature faster than D-D's
+--     reactivity does past 168 keV, so the balance always closes; the ladder just walks up slowly
+--     and does not reach the clamp until somewhere past 100 s.
+--
+-- The symptom a player sees at the top is the same either way -- a pinned temperature reading --
+-- but a runaway and a slow climb bound a research ladder very differently, and #53 is the ticket
+-- that has to know which it is guarding against.
+check(num(LADDER[55].nonrel.t_k) < 2e9 and num(LADDER[60].nonrel.t_k) > 2e9,
+  "ADR 0014's cliff at ~55 s is the non-relativistic ladder's",
+  string.format("%.3g K at 55 s, %.3g K at 60 s",
+    num(LADDER[55].nonrel.t_k), num(LADDER[60].nonrel.t_k)))
+check(num(LADDER[100].wurzel.t_k) < 2e9 and num(LADDER[200].wurzel.t_k) > 2e9,
+  "with the correction the clamp is not reached until past 100 s",
+  string.format("%.3g K at 100 s, %.3g K at 200 s",
+    num(LADDER[100].wurzel.t_k), num(LADDER[200].wurzel.t_k)))
+
+print(string.format("%d checks, %d failures", checks, failures))
+if failures > 0 then os.exit(1) end
+print("OK")

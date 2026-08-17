@@ -5,6 +5,11 @@ reactor-logic.lua` and `cross-section-data/reactivities.lua` at `M.reactor`'s co
 a standalone Lua 5.4.6 harness that requires the repo's own modules rather than reimplementing them.
 Nothing in the mod was changed to produce these numbers.
 
+**That harness is now checked in as `tests/test-bremsstrahlung.lua`** ([#51](https://github.com/trulsjo/realistic-fusion-refreshed/issues/51)),
+and every equilibrium below is asserted there to 1%. Run `lua tests/test-bremsstrahlung.lua` to
+reproduce the tables rather than taking them on trust — and note that it will fail if
+`cross-section-data/reactivities.lua` is ever regenerated, which is the point of keeping it.
+
 It exists because `reactor-logic.lua` and `docs/research/d-t-ignition.md` both justify the 2×10⁹ °C
 temperature clamp with a claim about bremsstrahlung, and [#37](https://github.com/trulsjo/realistic-fusion-refreshed/issues/37)
 may act on it.
@@ -268,6 +273,44 @@ it.
 Both of these are the physics being right, not a bug. A D-D plasma at 10²⁰ m⁻³ with 30 s of
 confinement and 50 MW of heating is genuinely nowhere near D-D ignition, and the shipped tier only
 looks like a working reactor because the dominant radiative loss is absent from the model.
+
+### The 20% disagreement, resolved — #51, 2026-08-18
+
+A later sweep, recorded on [#37](https://github.com/trulsjo/realistic-fusion-refreshed/issues/37)
+and carried into [ADR 0014](../adr/0014-realistic-means-theoretically-possible.md), put the D-D
+equilibrium at **2.69×10⁸ K, Q 0.386** where the table above says 2.42×10⁸ K, Q 0.32. Both quoted
+the same formulary equation and the same reactor constants. [#51](https://github.com/trulsjo/realistic-fusion-refreshed/issues/51)
+existed to settle which was right before any balance number was derived from either.
+
+**Neither was arithmetically wrong. They are two different models, and the row that resolves it was
+already in the table above.** 2.69×10⁸ K is the **non-relativistic** line; 2.42×10⁸ K is the same
+calculation with the relativistic correction this note's own section on it says must be applied at
+these temperatures. The later sweep dropped ξ. `tests/test-bremsstrahlung.lua` reproduces both to
+better than 1% — the disputed figure appears there under the label `non-relativistic`, and
+stripping ξ from the relativistic model makes the test print exactly 2.68985×10⁸ K and Q 0.386728.
+
+Three consequences, and the second is the one that costs work:
+
+- **Nothing in this note is superseded.** Its headline is the relativistic figure, its sweep table
+  is relativistic throughout — the 60 s, 100 s and 200 s rungs all reproduce — and its choice of the
+  Wurzel/Putvinski fit is stated and argued in the section above. What was missing was a checked-in
+  harness, not a correction.
+- **ADR 0014's confinement ladder is the non-relativistic one and is 10–20% optimistic.** It has
+  been corrected in place with the superseded numbers struck. Break-even is not at 42 s; it is
+  between 50 s and 55 s, and 50 s gives Q 0.95 rather than Q 2.58.
+- **The ignition cliff that ADR recorded does not exist under the correct fit.** Without ξ, D-D runs
+  away between 55 s and 60 s — 1.82×10⁹ K to 2.66×10⁹ K, straight through the clamp and climbing.
+  With ξ it never runs away at all: radiation outgrows D-D's reactivity past its upper ignition
+  crossing at 168 keV, so the balance always closes and the ladder simply walks up, not reaching the
+  clamp until somewhere past 100 s. A player would still see a pinned temperature reading at the
+  top, so the symptom survives — but a runaway and a slow climb bound a research ladder very
+  differently.
+
+**The lesson worth carrying into an implementation**, which is the reason this section is longer
+than the correction needs to be: the omission was not a typo but a whole term, and it left an
+internally consistent set of numbers that agreed with themselves and looked finished. Nothing about
+2.69×10⁸ K looks wrong next to 2.42×10⁸ K. Whoever writes this term into the simulation should
+expect to be able to make the same mistake, and `xi()` is where it would live.
 
 ### Does any parameter put D-T under the int32 ceiling?
 

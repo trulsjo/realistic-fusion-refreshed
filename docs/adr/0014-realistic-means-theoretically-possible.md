@@ -126,25 +126,44 @@ project rather than a state to be avoided.
 
   | τ_E | Settles at | Q | Fusion power |
   |---|---|---|---|
-  | **30 s** (shipped) | 2.69×10⁸ K | **0.39** | 19 MW |
-  | 42 s | 4.95×10⁸ K | **1.02** | 51 MW |
-  | 50 s | 1.03×10⁹ K | 2.58 | 129 MW |
-  | 55 s | 1.82×10⁹ K | 4.63 | 231 MW |
+  | **30 s** (shipped) | 2.42×10⁸ K | **0.32** | 16 MW |
+  | 42 s | 3.65×10⁸ K | 0.64 | 32 MW |
+  | 50 s | 4.73×10⁸ K | 0.95 | 48 MW |
+  | 52 s | 5.04×10⁸ K | **1.04** | 52 MW |
+  | 55 s | 5.55×10⁸ K | 1.19 | 60 MW |
+  | 70 s | 8.56×10⁸ K | 2.08 | 104 MW |
 
-  A ladder from 30 s to about 50 s crosses break-even at 42 s and is smooth and monotonic. The
-  harness reproduces the shipped radiation-free equilibrium exactly (8.769×10⁸ K, Q 2.139), so it is
-  the same model with one term added.
+  A ladder from 30 s to about 70 s crosses break-even between 50 s and 55 s and is smooth and
+  monotonic. The harness reproduces the shipped radiation-free equilibrium exactly (8.769×10⁸ K,
+  Q 2.139), so it is the same model with one term added.
 
-- **It is a cliff, not a slope, and a ladder has to stop short of it.** Past about 55 s the D-D
-  plasma ignites and runs to `max_temperature_c`, which would hand the D-D tier the pinned
-  temperature reading the D-T tier already has
-  ([`d-t-ignition.md`](../research/d-t-ignition.md)). That bounds how many rungs there can be, and
-  it is a design constraint rather than a tuning detail.
+  > **Corrected 2026-08-18 (#51).** This table originally read ~~30 s → 2.69×10⁸ K, Q 0.39; 42 s →
+  > 4.95×10⁸ K, Q 1.02; 50 s → 1.03×10⁹ K, Q 2.58; 55 s → 1.82×10⁹ K, Q 4.63~~ — the
+  > **non-relativistic** bremsstrahlung formula, without the relativistic correction that
+  > [`bremsstrahlung.md`](../research/bremsstrahlung.md) establishes is worth 1.1× to 5× over this
+  > model's temperature range. The struck ladder is 10–20% optimistic and crosses break-even about
+  > ten seconds too early. Both are now asserted in `tests/test-bremsstrahlung.lua`, which is what
+  > this ADR should have been able to cite in the first place.
 
-- **Two implementations of the same term disagree by about 20% and must be reconciled first.** The
-  sweep above gives Q 0.386 at the shipped 30 s where `bremsstrahlung.md` gives Q 0.32, and
-  2.69×10⁸ K against 2.42×10⁸ K. Both say "well under break-even", so nothing here turns on it — but
-  no balance number may be derived from either until they agree.
+- **It is a slope, not a cliff — and that is the correction that changes what a ladder may do.**
+  This ADR originally recorded that ~~past about 55 s the D-D plasma ignites and runs to
+  `max_temperature_c`~~, bounding how many rungs there could be. That runaway is an artefact of the
+  missing correction: it is real in the struck ladder above, which jumps 1.82×10⁹ → 2.66×10⁹ K
+  between 55 s and 60 s, and absent from the corrected one. With the correction counted, radiation
+  outgrows D-D's reactivity past its upper ignition crossing, so the balance always closes and the
+  plasma does not reach the clamp until somewhere past 100 s.
+
+  What survives is the *consequence* rather than the mechanism: a D-D reactor taken far enough up
+  the ladder still ends against `max_temperature_c` and still inherits the pinned temperature
+  reading the D-T tier has ([`d-t-ignition.md`](../research/d-t-ignition.md)). It arrives there by
+  walking rather than by jumping, which is a far more forgiving thing to design a ladder against.
+
+- ~~**Two implementations of the same term disagree by about 20% and must be reconciled first.**~~
+  **Resolved 2026-08-18 (#51).** They were not two implementations of one term but one
+  implementation of two published formulas — the later sweep dropped the relativistic correction.
+  The relativistic figures are the ones to use, they are the ones `bremsstrahlung.md` carries
+  throughout, and `tests/test-bremsstrahlung.lua` now pins both to 1% so the question cannot be
+  reopened by memory. Balance numbers may be derived from the corrected table above.
 
 - **Nothing about D-T changes.** It passes Lawson by more than an order of magnitude at this
   density and confinement time and stays ignited with the radiation term counted; the term moves its
