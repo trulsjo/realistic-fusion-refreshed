@@ -65,22 +65,44 @@ where the cross-section is falling.
 | 10¹⁰ °C | 4.63×10⁹ | 58.9 | 2 547 MW |
 | 10¹¹ °C | 4.63×10⁹ | 58.9 | 2 547 MW |
 
-**The shipped ceiling stays where it is, and this is why.** Two reasons, in order of weight:
+**The shipped ceiling stays where it is.** One reason holds, and it is the second one below.
 
-1. **The clamp is the less wrong physics, not the more wrong.** A real D-T plasma at this density
+> **Corrected 2026-08-17.** This section originally gave two reasons "in order of weight", and led
+> with the wrong one. Reason 1 as written — that the clamp is the less wrong physics because
+> bremsstrahlung "would bite long before 4.6×10⁹" — was reasoning rather than arithmetic, and it does
+> not survive being checked against the NRL Plasma Formulary. See
+> [`bremsstrahlung.md`](bremsstrahlung.md), which does the arithmetic at this model's own operating
+> point. What actually holds: bremsstrahlung moves the equilibrium to **3.26×10⁹ K**, not down near
+> the clamp; the clamp sheds ~640 MW at 2×10⁹ where bremsstrahlung is 169 MW, so it cannot be
+> standing in for it; and unreabsorbed cyclotron radiation at these temperatures is two to three
+> orders larger, so bremsstrahlung is not even the dominant omission. The struck reason is left
+> visible rather than deleted, because it is why the clamp was chosen and a reader will otherwise
+> wonder.
+
+1. ~~**The clamp is the less wrong physics, not the more wrong.** A real D-T plasma at this density
    radiates hard through bremsstrahlung — a loss going as n²√T that this zero-dimensional model does
-   not carry at all — and it would bite long before 4.6×10⁹ K. Removing the clamp would model the
-   *absence* of bremsstrahlung more faithfully, which is not the same thing as being more right.
-   Energy is not invented at the clamp either: `step()` sells everything the plasma cannot hold, so
-   the clamp behaves as exactly the extra loss channel the model is missing.
+   not carry at all — and it would bite long before 4.6×10⁹ K.~~ **Not supported; see above.** What
+   remains true of it: energy is not invented at the clamp, because `step()` sells everything the
+   plasma cannot hold. The clamp is a ceiling on the state variable, not on the accounting.
 2. **It would cost the temperature circuit signal.** A signal is an int32 and Factorio throws rather
    than wraps; the ceiling stops at 2 147 483 647, so the shipped 2×10⁹ fits with 7% to spare and
-   4.6×10⁹ does not (`scripts/circuit-output.lua`).
+   4.6×10⁹ does not (`scripts/circuit-output.lua`). **This is the whole of the case for the clamp.**
 
 What it costs as it stands is that the temperature reading is **pinned at 2×10⁹ for every D-T
 reactor**, whatever it is doing. That is a real loss of information and it is the one thing about
-this tier worth revisiting. Fixing it properly means a bremsstrahlung term, which would move D-D's
-balance too and is a bigger change than #28.
+this tier worth revisiting.
+
+~~Fixing it properly means a bremsstrahlung term~~ — **it does not.** A bremsstrahlung term lands the
+D-T equilibrium at 3.26×10⁹ K, still 52% above the int32 ceiling, so it would not unpin the reading.
+The levers that reach it are `confinement_time_s` (10 s puts D-T at 2.02×10⁹) or plasma purity
+(`Z_eff ≈ 6`, with `Z_eff = 7` extinguishing the plasma entirely — a knife edge). Both re-tune D-D as
+well, so both are balance decisions rather than fixes.
+
+And the finding this section originally missed: **adding bremsstrahlung would break the tier that
+works.** D-D falls from Q 2.14 to Q 0.32, 107 MW of fusion power to 16 MW, taking the fuel-chain
+arithmetic below with it. That is the physics being right — a D-D plasma at 10²⁰ m⁻³ with 30 s of
+confinement is genuinely nowhere near ignition, and the shipped tier only looks net positive because
+the dominant radiative loss is absent from the model.
 
 ## Ignition is a control change, not a runaway
 

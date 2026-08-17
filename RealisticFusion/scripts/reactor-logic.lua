@@ -110,18 +110,35 @@ M.fuels = {
     -- the clamp at max_temperature_c, and the plasma parks there.
     --
     -- The clamp is therefore load-bearing on this tier where it was decoration on the last one, and
-    -- it is the less wrong of the two answers available. Energy is not lost at it -- step() sells
-    -- everything the plasma cannot hold -- so it behaves as one more loss channel that carries away
-    -- whatever would take the plasma past 2e9. A real D-T plasma at 1e20 m^-3 has exactly such a
-    -- channel in bremsstrahlung, which this zero-dimensional model does not carry and which would
-    -- bite long before 4.6e9. Raising the ceiling to reach that equilibrium would be modelling the
-    -- absence of bremsstrahlung more faithfully, which is not the same as being more right, and it
-    -- would cost the temperature circuit signal: int32 stops at 2.147e9 (scripts/circuit-output.lua).
+    -- it stays for one reason that holds: int32 stops at 2.147e9, so a plasma allowed past 2e9 would
+    -- start truncating its own temperature circuit signal (scripts/circuit-output.lua). Energy is
+    -- not lost at the clamp -- step() sells everything the plasma cannot hold -- so nothing is
+    -- created or destroyed by it; it is a ceiling on the state variable, not on the accounting.
+    --
+    -- It was ALSO justified as standing in for bremsstrahlung, the radiation loss this
+    -- zero-dimensional model does not carry. That was reasoning rather than arithmetic and it does
+    -- not survive being checked (docs/research/bremsstrahlung.md, against the NRL Plasma Formulary):
+    --
+    --   * Bremsstrahlung does not bite "long before" 4.6e9. It moves the equilibrium to 3.26e9 --
+    --     real, but still half again above both this clamp and the int32 ceiling. Adding the term
+    --     would NOT unpin the temperature reading, which is the thing anyone would add it for.
+    --   * The clamp is not standing in for it. The clamp sheds about 640 MW at 2e9 where
+    --     bremsstrahlung is 169 MW -- four times too small to be what the clamp is doing.
+    --   * It is not the dominant omission either. Unreabsorbed cyclotron radiation at these
+    --     temperatures is two to three orders larger; it is absent because it cannot be written in
+    --     one line, not because it is small.
+    --
+    -- And the part that matters most if anyone is tempted: adding bremsstrahlung would break the
+    -- tier that works. D-D falls from Q 2.14 to Q 0.32 and stops being a fusion machine, because a
+    -- D-D plasma at 1e20 m^-3 with 30 s of confinement is genuinely nowhere near ignition. That is
+    -- the physics being right, and it is a balance decision rather than a fix.
     --
     -- What this costs in game is that the temperature reading is pinned for every D-T reactor, so
     -- the fuel line rather than the temperature is the throttle: an ignited reactor burns exactly
     -- what it is fed and its output follows. tests/test-reactor-logic.lua asserts that, and
-    -- docs/research/d-t-ignition.md has the measurements. Balance is provisional, as everywhere.
+    -- docs/research/d-t-ignition.md has the measurements. The levers that would actually reach the
+    -- int32 ceiling are confinement_time_s and the plasma's purity, not a radiation term -- both
+    -- re-tune D-D as well, so both are balance decisions. Balance is provisional, as everywhere.
   },
 }
 
