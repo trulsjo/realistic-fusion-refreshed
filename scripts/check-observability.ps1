@@ -223,9 +223,6 @@ end
 
 local function verify()
   local seen_labels = {}
-  local seen_labels = {}
-  local temperatures = {}
-
   local temperatures = {}
   for _, entry in ipairs(storage.cases) do
     local name = entry.case.name

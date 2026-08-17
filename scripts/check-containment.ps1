@@ -26,6 +26,11 @@
 
       contained   A plasma line, with a vanilla pipe laid against it. The two must not join and the
                   vanilla pipe must stay empty.
+      tunnel      A live plasma pipe-to-ground with a vanilla one facing it five tiles away, which
+                  is well inside the range they would bridge if the categories matched. Laying the
+                  vanilla one merely NEAR a plasma line would prove nothing -- entities two tiles
+                  apart cannot join whatever their categories say, so that assertion would pass
+                  with containment removed.
       chain       Feed -> plasma pipe -> plasma pump -> underground plasma pipe -> reactor. Plasma
                   has to arrive, which is one assertion covering the whole set: anything in that run
                   that failed to connect would leave the reactor starved.
@@ -107,14 +112,27 @@ local function box_of(entity, fluid)
 end
 
 --- Does any connection on this box reach the given entity?
+--
+-- An index past the end is answered "no" rather than raised. Callers below ask about box 2 on
+-- entities that may only have one -- a pump has a single fluid box holding both its connections --
+-- and those reads are guarded by an `or` that short-circuits only while the FIRST term is true. So
+-- an unguarded index would raise precisely when containment had regressed, killing the rig instead
+-- of letting it print the FAIL line it exists to print.
 local function joins(entity, index, other)
+  if index > #entity.fluidbox then return false end
   for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
     if connection.target and connection.target.owner == other then return true end
   end
   return false
 end
 
+-- `at` is the substation's centre and must be a whole number: a 2x2 entity sits on a tile boundary,
+-- where the 1x1 interface beside it sits on a tile centre. create_entity would snap a half-tile
+-- position rather than refuse it, which is how the two would silently end up on different grids.
 local function power(surface, force, at)
+  if at[1] % 1 ~= 0 or at[2] % 1 ~= 0 then
+    error(string.format("power() wants a whole-number position, got (%g, %g)", at[1], at[2]))
+  end
   must(surface.create_entity({ name = "substation", position = at, force = force }), "substation")
   local eei = must(surface.create_entity({
     name = "electric-energy-interface", position = { at[1] + 2.5, at[2] + 0.5 }, force = force,
@@ -174,7 +192,7 @@ script.on_init(function()
   -- The pump needs its own supply. The reactor is fifteen tiles across and the pump sits ten tiles
   -- beyond its far edge, which is outside the reach of the substation covering the reactor -- and an
   -- unpowered pump moves nothing while every joint in the chain still reports as connected.
-  power(surface, force, { west.x - 3, west.y + 5.5 })
+  power(surface, force, { math.floor(west.x) - 3, math.floor(west.y) + 6 })
 
   local feed = must(surface.create_entity({
     name = FEED, position = { west.x - 9, west.y }, force = force,
@@ -201,10 +219,29 @@ script.on_init(function()
   local vanilla_pipe = must(surface.create_entity({
     name = "pipe", position = { 42.5, 0.5 }, force = force,
   }), "vanilla pipe beside the plasma line")
-  local vanilla_underground = must(surface.create_entity({
-    name = "pipe-to-ground", position = { 43.5, 0.5 }, force = force,
+  -- ------------------------------------------------------------------ the tunnel
+  --
+  -- The underground case needs its own row, and the reason is the whole point of it. An underground
+  -- pipe laid *beside* a plasma line is a test of nothing: two entities two tiles apart cannot join
+  -- whatever their categories say, so the assertion would pass with containment removed. The claim
+  -- worth checking is the one entities.lua actually makes -- that a vanilla pipe-to-ground cannot
+  -- tunnel into a plasma line from out of sight -- and that needs the two undergrounds facing each
+  -- other across open ground, at a range they would certainly bridge if the categories matched.
+  --
+  -- direction is the ABOVEGROUND connection's facing, so these point away from each other and their
+  -- tunnel ends point in.
+  local tunnel_feed = must(surface.create_entity({
+    name = FEED, position = { 40.5, 8.5 }, force = force,
+  }), "tunnel feed")
+  tunnel_feed.set_infinity_pipe_filter({ name = PLASMA, percentage = 1, temperature = 6e8, mode = "at-least" })
+  local plasma_underground = must(surface.create_entity({
+    name = "rf-pipe-to-ground", position = { 41.5, 8.5 }, force = force,
     direction = defines.direction.west,
-  }), "vanilla pipe-to-ground beside the plasma line")
+  }), "plasma pipe-to-ground on the tunnel row")
+  local vanilla_underground = must(surface.create_entity({
+    name = "pipe-to-ground", position = { 46.5, 8.5 }, force = force,
+    direction = defines.direction.east,
+  }), "vanilla pipe-to-ground facing the plasma line")
 
   -- ------------------------------------------------------------------ the heater
   --
@@ -234,7 +271,7 @@ script.on_init(function()
     under_near = under_near, under_far = under_far,
     energy_pipe = energy_pipe,
     plasma_pipe = plasma_pipe, vanilla_pipe = vanilla_pipe,
-    vanilla_underground = vanilla_underground,
+    plasma_underground = plasma_underground, vanilla_underground = vanilla_underground,
     heater = heater, deuterium_feed = deuterium_feed,
   }
   log("CONT-RIG built")
@@ -248,13 +285,19 @@ script.on_nth_tick(600, function()
   -- ------------------------------------------------------------ plasma cannot enter a vanilla pipe
   record(not joins(r.plasma_pipe, 1, r.vanilla_pipe),
     "an ordinary pipe laid against a plasma pipe does not join it")
-  record(not joins(r.plasma_pipe, 1, r.vanilla_underground),
-    "an ordinary underground pipe cannot tunnel into a plasma line")
   record(amount_of(r.vanilla_pipe, 1) == 0,
     "the ordinary pipe beside a live plasma line is still empty",
     string.format("%g", amount_of(r.vanilla_pipe, 1)))
+
+  -- The tunnel row. The first of these is what makes the other two mean anything: an empty vanilla
+  -- underground proves containment only if there was plasma on the far side to leak.
+  record(amount_of(r.plasma_underground, 1) > 0,
+    "the plasma underground pipe is live, so there is something for the tunnel to carry",
+    string.format("%g", amount_of(r.plasma_underground, 1)))
+  record(not joins(r.plasma_underground, 1, r.vanilla_underground),
+    "an ordinary underground pipe cannot tunnel into a plasma line, facing it across open ground")
   record(amount_of(r.vanilla_underground, 1) == 0,
-    "the ordinary underground pipe is still empty",
+    "and so the ordinary underground pipe is still empty",
     string.format("%g", amount_of(r.vanilla_underground, 1)))
 
   -- ------------------------------------------------------------ the set carries plasma end to end

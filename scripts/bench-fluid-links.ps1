@@ -405,10 +405,10 @@ local function report()
   for _, cell in ipairs(storage.cells) do
     local s = cell.spec
     log(string.format(
-      "FLUIDRIG cell id=%s n=%d d=%d volume=%d io=%s gap=%d pipes=%d samples=%d " ..
+      "FLUIDRIG cell id=%s n=%d d=%d volume=%d io=%s sink_io=%s gap=%d pipes=%d samples=%d " ..
       "src_cap=%.10g snk_cap=%.10g drained=%.10g lost=%.10g min_held=%.10g max_got=%.10g " ..
       "seg_src=%s seg_snk=%s",
-      s.id, s.n, s.d, s.volume, tostring(s.io), s.gap, cell.pipes, cell.samples,
+      s.id, s.n, s.d, s.volume, tostring(s.io), tostring(s.sink_io), s.gap, cell.pipes, cell.samples,
       cell.src_cap, cell.snk_cap, cell.drained, cell.lost, cell.min_held, cell.max_got,
       tostring(cell.source.fluidbox.get_fluid_segment_id(cell.src_index)),
       tostring(cell.sink.fluidbox.get_fluid_segment_id(1))))
@@ -497,6 +497,7 @@ try {
             Volume    = [int]    $fields['volume']
             SinkCap   = [double] $fields['snk_cap']
             Io        = $fields['io'] -eq 'true'
+            SinkIo    = $fields['sink_io'] -eq 'true'
             Linked    = ([int] $fields['gap']) -eq 0
             PerTick   = $drained / $samples
             PerSecond = 60.0 * $drained / $samples
