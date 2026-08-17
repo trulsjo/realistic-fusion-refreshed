@@ -8,6 +8,9 @@
 
 package.path = "RealisticFusion/?.lua;" .. package.path
 local L = require("scripts.reactor-logic")
+-- Required directly by the D-T block at the bottom, which recomputes one rate from the dataset to
+-- pin down the reactant densities step() feeds it. Nothing else here reaches past reactor-logic.
+local reactivity = require("scripts.reactivity")
 
 local failures, checks = 0, 0
 
@@ -51,11 +54,12 @@ local SETTLE_S = 1200
 --
 -- The step size is a parameter because the cadence check at the bottom varies it. Everything else
 -- leaves it at one tick.
-local function settle(spec, seconds, available_j, dt)
+local function settle(spec, seconds, available_j, dt, fluid)
   dt = dt or TICK
+  fluid = fluid or "rf-d-d-plasma"
   local t_c, last = spec.min_temperature_c, nil
   for _ = 1, math.floor(seconds / dt) do
-    last = L.step(spec, "rf-d-d-plasma", FULL, t_c, available_j, dt)
+    last = L.step(spec, fluid, FULL, t_c, available_j, dt)
     if not last then break end
     t_c = last.temperature_c
   end
@@ -69,8 +73,39 @@ check(L.step(SPEC, "water", FULL, HOT, math.huge, TICK) == nil, "a fluid with no
 check(L.step(SPEC, "rf-d-d-plasma", 0, HOT, math.huge, TICK) == nil, "empty reactor, no step")
 check(L.step(SPEC, "rf-d-d-plasma", FULL, HOT, math.huge, 0) == nil, "zero elapsed time, no step")
 
--- Every plasma the mod defines needs an entry, or its reactor silently does nothing.
+-- Every plasma the mod defines needs an entry, or its reactor silently does nothing. The other
+-- direction -- a plasma prototype with no row here -- is control.lua's check_every_plasma_burns,
+-- which needs the game to see the prototypes.
 check(L.fuels["rf-d-d-plasma"] ~= nil, "D-D plasma has a fuel entry")
+
+-- And every entry needs the whole set of fields, because step() indexes them without asking. A row
+-- missing `fractions` throws inside a running game rather than failing to load, which is the worst
+-- available moment to find out; a row missing anything else is silently wrong instead. Checked here
+-- because this is the earliest place that can see them.
+for name, fuel in pairs(L.fuels) do
+  for _, field in ipairs({ "reaction", "energy_per_reaction_j", "charged_fraction",
+                           "fuel_per_reaction" }) do
+    check(fuel[field] ~= nil, string.format("%s declares %s", name, field))
+  end
+  check(type(fuel.fractions) == "table" and #fuel.fractions == 2
+    and fuel.fractions[1] > 0 and fuel.fractions[2] > 0,
+    string.format("%s declares a reactant fraction for each side", name))
+
+  -- The even-mix invariant, and the reason it is asserted rather than described: step() caps the
+  -- burn at particles / fuel_per_reaction and draws the plasma down as one fluid, so a row whose
+  -- two sides are NOT present in equal share would go on reacting after the scarce one had run out
+  -- -- silently, paying for it out of the abundant one. The cap has to be no larger than the
+  -- scarcest side can supply, which for one nucleus per reaction per side is exactly this.
+  --
+  -- D-D passes with room to spare (1/2 against a share of 1) because both its reactants come out of
+  -- the same pool; D-T passes with equality. An uneven mix fails here, at the bench, rather than in
+  -- a save. Supporting one is a different model -- see the note in M.fuels.
+  local scarcest = math.min(fuel.fractions[1], fuel.fractions[2])
+  check(1 / fuel.fuel_per_reaction <= scarcest + 1e-12,
+    string.format("%s cannot burn past its scarcest reactant", name),
+    string.format("cap is 1/%g of the plasma against a scarcest share of %g",
+      fuel.fuel_per_reaction, scarcest))
+end
 
 -- ---------------------------------------------------------------- heating and cooling
 
@@ -212,6 +247,118 @@ near(parked.products["rf-tritium"], 0, 1e-12, "a reactor parked at the minimum b
 -- breed as though it had burnt more than was there.
 near(gulp.products["rf-tritium"], FULL / 4, 1e-12,
   "a step that burns the reactor dry breeds against the fuel that was actually present")
+
+-- ---------------------------------------------------------------- D-T (#28)
+--
+-- The second tier, and the first test of the claim M.fuels' comment makes: that adding a reaction
+-- is a row in that table and nothing else. Everything below drives the same step() the D-D checks
+-- above do, with one fluid name changed.
+
+check(L.fuels["rf-d-t-plasma"] ~= nil, "D-T plasma has a fuel entry")
+
+-- D-T leaves an alpha and a neutron. Neither is a fluid this mod defines -- the neutron is already
+-- what reactor energy stands for, and there is no helium-4 in ADR 0010's set -- so this tier
+-- breeds nothing, and the reactor it runs in needs no collector.
+check(L.fuels["rf-d-t-plasma"].products == nil, "D-T breeds nothing")
+
+local dt_hot  = L.step(SPEC, "rf-d-t-plasma", FULL, HOT, math.huge, TICK)
+local dt_warm = L.step(SPEC, "rf-d-t-plasma", FULL, 1.0e8, math.huge, TICK)
+
+-- The reactant densities, which are the one thing a second reaction changes about the rate lookup
+-- and the one thing that would fail silently. D-D is deuterium against deuterium, so every nucleus
+-- in the box is both reactants at once and the rate goes as the full density squared -- halved
+-- again by reactivity.rate, because each pair would otherwise be counted twice. A D-T plasma is a
+-- 50/50 mix, so each side is at HALF the density of the fluid, and the rate is a quarter of what
+-- feeding the whole density twice would give.
+--
+-- Recomputed here from the dataset rather than asserted as a ratio: getting this wrong quadruples
+-- the tier's output and every other check in this block still passes.
+local n = FULL * SPEC.particles_per_unit / SPEC.volume_m3
+near(dt_hot.fusion_power_w,
+  reactivity.rate("D-T", HOT + 273.15, n / 2, n / 2)
+    * SPEC.volume_m3 * L.fuels["rf-d-t-plasma"].energy_per_reaction_j,
+  1e-12, "D-T burns a mix, so each reactant sits at half the plasma's density")
+
+-- The acceptance criterion: a materially different rate and output from D-D at the same
+-- temperature. Bounds are loose because they exist to catch a row that was copied and not edited,
+-- which would make the two identical, not to pin the physics -- the dataset does that.
+check(dt_hot.fusion_power_w > 5 * hot_burn.fusion_power_w, "D-T fuses far harder than D-D at the same temperature",
+  string.format("%.3g vs %.3g W, ratio %.1f", dt_hot.fusion_power_w, hot_burn.fusion_power_w,
+    dt_hot.fusion_power_w / hot_burn.fusion_power_w))
+check(dt_hot.energy_units > 5 * hot_burn.energy_units, "and sells far more for it",
+  string.format("%.3g vs %.3g units", dt_hot.energy_units, hot_burn.energy_units))
+
+-- The difference that decides the progression, and it is the interesting one: D-T's advantage is
+-- not a constant multiple, it grows enormously as the plasma cools. That is why D-T is the easier
+-- reaction rather than merely the bigger one -- it is what a reactor can still run on when D-D has
+-- fallen off the bottom of its curve.
+check(dt_warm.fusion_power_w / warm_burn.fusion_power_w > dt_hot.fusion_power_w / hot_burn.fusion_power_w,
+  "D-T's advantage over D-D widens as the plasma cools",
+  string.format("%.0fx at 1e8 C against %.0fx at 6e8 C",
+    dt_warm.fusion_power_w / warm_burn.fusion_power_w, dt_hot.fusion_power_w / hot_burn.fusion_power_w))
+
+-- The burn cap is the fuel table's to get right per reaction, not step()'s: D-T consumes one
+-- nucleus from each side of a 50/50 mix, which is two out of the box, the same as D-D consuming
+-- two deuterons. A row that left fuel_per_reaction at 1 would let the reactor burn twice what it
+-- holds.
+local dt_gulp = L.step(SPEC, "rf-d-t-plasma", FULL, 1.5e9, math.huge, 3600)
+near(dt_gulp.plasma_consumed, FULL, 1e-12, "a very long D-T step burns exactly the plasma present")
+
+-- ---- the shipped balance: D-T ignites, and that is a different regime rather than a bigger number
+--
+-- D-D settles. Heating and self-heating balance the confinement loss partway up the cross-section
+-- curve and the plasma sits there at Q around 2. D-T does not: at this reactor's density and
+-- confinement time the plasma passes Lawson by a wide margin, self-heating outruns the loss term
+-- at every temperature the data covers below the peak, and the temperature climbs until something
+-- stops it. What stops it here is the clamp at the top of the fluid's declared range.
+--
+-- That is asserted rather than avoided, because it is the behaviour and hiding it in a bound that
+-- happened to pass would be worse. See the note in M.fuels and docs/research/d-t-ignition.md for
+-- what the clamp stands in for and what the alternative costs.
+local dt_t, dt_state = settle(SPEC, 60, math.huge, nil, "rf-d-t-plasma")
+near(dt_t, SPEC.max_temperature_c, 1e-12, "a D-T plasma ignites and runs up to the top of its range")
+check(dt_state.q_factor > 10, "an ignited D-T reactor runs far past breakeven",
+  string.format("Q = %.3g", dt_state.q_factor))
+
+-- What a player actually builds against, and the property that makes an ignited reactor playable
+-- rather than a runaway: at the top of the range the reactor burns exactly what it is fed and its
+-- output follows the feed. Ignition removes the temperature as a control input, so the throttle is
+-- the fuel line -- which is a throttle, and is the one worth testing.
+--
+-- Modelled the way the game does it: the heater tops the box up each step with plasma at injection
+-- temperature, and the step burns out of what is there.
+local function supplied(fluid, feed_per_s, seconds)
+  local t, held, last = SPEC.min_temperature_c, 0, nil
+  for _ = 1, math.floor(seconds / TICK) do
+    local added = math.min(feed_per_s * TICK, FULL - held)
+    if added > 0 then
+      t = (t * held + 1e6 * added) / (held + added)   -- injected far below fusion temperature
+      held = held + added
+    end
+    last = L.step(SPEC, fluid, held, t, math.huge, TICK)
+    if last then
+      held = held - last.plasma_consumed
+      t = last.temperature_c
+    end
+  end
+  return last, held
+end
+
+local fed_1x = supplied("rf-d-t-plasma", 2.5, 600)
+local fed_2x = supplied("rf-d-t-plasma", 5.0, 600)
+near(fed_1x.plasma_consumed * 60, 2.5, 1e-3, "an ignited reactor burns exactly what it is fed")
+-- Just under two, and the shortfall is not slack in the tolerance: the confinement heating is
+-- recovered too and does not double with the fuel, so the output is affine in the feed rather than
+-- proportional to it. At 50 MW in against a few hundred out that offset is worth about 7%.
+near(fed_2x.energy_units / fed_1x.energy_units, 2, 0.1,
+  "so doubling the fuel line very nearly doubles the power out")
+
+-- The tier is worth reaching, measured against D-D on the terms a player compares them on: the
+-- same one heater feeding each.
+local dd_fed = supplied("rf-d-d-plasma", 2.5, 600)
+check(fed_1x.energy_units > 3 * dd_fed.energy_units,
+  "D-T pays far better than D-D off the same fuel line",
+  string.format("%.4g vs %.4g MW", fed_1x.energy_units * 60, dd_fed.energy_units * 60))
 
 -- ---------------------------------------------------------------- cadence is a free parameter
 --

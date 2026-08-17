@@ -33,7 +33,23 @@ local K_B = 1.380649e-23  -- J/K
 local CELSIUS_TO_KELVIN = 273.15
 
 -- What each plasma is made of and what it releases, keyed by the fluid the reactor is holding.
--- Adding a tier (#28, #31) is a row here plus prototypes; the code below does not change.
+-- Adding a tier (#31) is a row here plus prototypes; the code below does not change.
+--
+-- Every row carries `fractions`: what share of the plasma's nuclei each side of the reaction is.
+-- It exists because a rate goes as the product of the two reactant densities, and a fluid unit is
+-- a count of nuclei rather than of either species. A single-fuel plasma is entirely its own
+-- reactant, so both shares are 1; a mixed plasma splits, and feeding the whole density twice would
+-- overstate its rate by the reciprocal of the product. It is stated per row rather than derived
+-- from the reaction name because it is a property of the FUEL -- what a heater put in the pipe --
+-- rather than of the reaction.
+--
+-- EVEN MIXES AND LIKE SPECIES ONLY, and this is a limit of the model rather than of the field.
+-- Below, the burn is capped at particles / fuel_per_reaction and the fuel is drawn down as a single
+-- fluid, so both sides are assumed to run out together. An uneven mix would break both: the reactor
+-- would go on reacting after the scarce side was gone, and would drain the abundant side to pay for
+-- it. Supporting one means tracking the two species separately, which is a fluid apiece and a
+-- different model, not another field here. tests/test-reactor-logic.lua asserts the invariant so a
+-- row that assumed otherwise fails at the bench rather than in a save.
 --
 -- D-D runs two branches at roughly equal rates:
 --     D + D -> T (1.01 MeV) + p (3.02 MeV)   -- 4.03 MeV, entirely charged
@@ -49,6 +65,10 @@ M.fuels = {
     reaction = "D-D",
     energy_per_reaction_j = 3.65e6 * 1.602176634e-19,
     charged_fraction = 4.85 / 7.30,
+    -- Deuterium against deuterium: every nucleus present is both reactants at once. The
+    -- double-counting that follows from that is reactivity.rate's to undo, not this table's --
+    -- D-D is in its LIKE_SPECIES set and carries a factor of one half there.
+    fractions = { 1, 1 },
     -- Nuclei consumed per reaction. Two, because both sides of D-D are deuterium.
     fuel_per_reaction = 2,
     -- Nuclei of each product per reaction, counted at the same particles_per_unit as the plasma so
@@ -56,6 +76,52 @@ M.fuels = {
     -- neutron the branches also release are not modelled: a neutron is what the mod already sells
     -- as reactor energy, and there is no hydrogen sink for the proton in ADR 0010's fluid set.
     products = { ["rf-tritium"] = 0.5, ["rf-helium-3"] = 0.5 },
+  },
+
+  -- D + T -> He4 (3.52 MeV) + n (14.06 MeV), a single branch releasing 17.59 MeV.
+  --
+  -- The reaction the whole D-D tier exists to reach (#28). It is the easiest fusion there is: five
+  -- times the energy of a mean D-D reaction, and a cross-section that is orders of magnitude larger
+  -- at every temperature a reactor can actually hold. What it costs is tritium, which does not
+  -- occur in nature in any useful quantity and has to be bred -- so this tier runs on what the last
+  -- one left behind, and that is the progression rather than a bigger number.
+  ["rf-d-t-plasma"] = {
+    reaction = "D-T",
+    energy_per_reaction_j = 17.59e6 * 1.602176634e-19,
+    -- Only the alpha is confined. The neutron carries four fifths of the release straight through
+    -- the wall, which is why D-T self-heats proportionally far less than D-D despite releasing
+    -- nearly five times as much -- and why almost all of it is available to sell.
+    charged_fraction = 3.52 / 17.59,
+    -- An even blend, because rf-d-t-mixing makes one: one deuteron and one triton per reaction.
+    fractions = { 0.5, 0.5 },
+    -- One nucleus from each side, so two out of the box -- the same as D-D, arrived at differently.
+    fuel_per_reaction = 2,
+    -- No products. The alpha is helium-4, which ADR 0010's fluid set does not contain, and the
+    -- neutron is what this mod already sells as reactor energy. A D-T reactor therefore needs no
+    -- collector: nothing comes out of it but power.
+    --
+    -- IT IGNITES, and that is the tier's defining behaviour rather than a balance number.
+    --
+    -- D-D settles: heating plus self-heating balance the confinement loss partway up the curve, and
+    -- the plasma sits at about 8.8e8 C and Q 2. D-T at this reactor's density and confinement time
+    -- passes Lawson by more than an order of magnitude, so the alpha heating alone outruns the loss
+    -- term and the temperature climbs until the cross-section falls off past its peak. Left
+    -- unbounded the model finds a real equilibrium out at 4.6e9 C; what it actually meets first is
+    -- the clamp at max_temperature_c, and the plasma parks there.
+    --
+    -- The clamp is therefore load-bearing on this tier where it was decoration on the last one, and
+    -- it is the less wrong of the two answers available. Energy is not lost at it -- step() sells
+    -- everything the plasma cannot hold -- so it behaves as one more loss channel that carries away
+    -- whatever would take the plasma past 2e9. A real D-T plasma at 1e20 m^-3 has exactly such a
+    -- channel in bremsstrahlung, which this zero-dimensional model does not carry and which would
+    -- bite long before 4.6e9. Raising the ceiling to reach that equilibrium would be modelling the
+    -- absence of bremsstrahlung more faithfully, which is not the same as being more right, and it
+    -- would cost the temperature circuit signal: int32 stops at 2.147e9 (scripts/circuit-output.lua).
+    --
+    -- What this costs in game is that the temperature reading is pinned for every D-T reactor, so
+    -- the fuel line rather than the temperature is the throttle: an ignited reactor burns exactly
+    -- what it is fed and its output follows. tests/test-reactor-logic.lua asserts that, and
+    -- docs/research/d-t-ignition.md has the measurements. Balance is provisional, as everywhere.
   },
 }
 
@@ -105,9 +171,13 @@ M.reactor = {
 -- @param dt             seconds since the last step
 -- @return nil when there is nothing to simulate, otherwise a table of what happened
 -- Returning nil leaves the reactor untouched, which for a fluid with no entry above means the
--- reactor holds it and does nothing with it forever. That is unreachable while the prototype
--- filters its input box to one plasma; it becomes reachable the moment a later tier sets the
--- filter at runtime, and whatever does that owes the player a way to get the wrong fluid out.
+-- reactor holds it and does nothing with it forever, reporting itself starved the whole time.
+--
+-- That used to be unreachable because the prototype filtered its input box to rf-d-d-plasma. It is
+-- reachable now: #28 removed the filter so one reactor could burn either plasma. What covers it
+-- instead is control.lua's check_every_plasma_burns, which refuses to load when a plasma-heating
+-- recipe makes a fluid with no row above -- at load, in front of whoever added it, rather than in
+-- front of a player wondering why their reactor is idle.
 function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
   local fuel = fluid_name and M.fuels[fluid_name]
   if not fuel or not amount or amount <= 0 or not dt or dt <= 0 then return nil end
@@ -123,7 +193,13 @@ function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
   -- Reactions this step, from the interpolated reactivity. Capped at the fuel actually present:
   -- without the cap a long step at a high rate burns more deuterium than the reactor holds and
   -- the particle count goes negative.
-  local reactions = reactivity.rate(fuel.reaction, t_k, density, density) * spec.volume_m3 * dt
+  --
+  -- The cap counts nuclei, not sides, which is what makes one expression right for both shipped
+  -- rows: D-D takes two deuterons from one pool, D-T takes one nucleus from each half of an even
+  -- one, and either way it is two out of the box. It is also where the even-mix assumption above
+  -- lives -- an uneven mix would run past its scarce side here.
+  local reactions = reactivity.rate(fuel.reaction, t_k,
+    density * fuel.fractions[1], density * fuel.fractions[2]) * spec.volume_m3 * dt
   local burnable = particles / fuel.fuel_per_reaction
   if reactions > burnable then reactions = burnable end
 

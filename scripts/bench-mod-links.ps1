@@ -130,15 +130,24 @@ local HEATERS    = __HEATERS__
 local PLASMA = "rf-d-d-plasma"
 local ENERGY = "rf-reactor-energy"
 
--- The recipe the heater can actually craft, asked for rather than named. There is exactly one
--- recipe in the heater's own crafting category, and going through the category means a renamed
--- recipe moves the rig with it instead of stopping it.
+-- The recipe that makes PLASMA, named rather than discovered.
+--
+-- It used to take the first recipe in the heater's crafting category, on the stated grounds that
+-- there was exactly one. #28 put rf-d-t-plasma in the same category and made that false. pairs over
+-- a LuaCustomTable promises no order, so the rig would either benchmark a tier it does not claim to
+-- or -- since every box it looks for afterwards is D-D's -- abort halfway through building itself,
+-- and which of those happened could change when any prototype is added.
+--
+-- This benchmark is about the D-D tier, so it says which recipe it wants. The category test is what
+-- survives of asking: it still catches the recipe being moved out from under the heater, which is
+-- the failure the lookup existed to catch.
 local function plasma_recipe()
+  local recipe = prototypes.recipe[PLASMA]
   local categories = prototypes.entity["rf-heater"].crafting_categories
-  for name, recipe in pairs(prototypes.recipe) do
-    if categories[recipe.category] then return name end
+  if not (recipe and categories[recipe.category]) then
+    error("rf-heater cannot craft " .. PLASMA .. "; this rig is built around the D-D tier")
   end
-  error("rf-heater has no recipe in any of its crafting categories")
+  return PLASMA
 end
 
 -- ------------------------------------------------------------------ fluid box helpers
@@ -258,9 +267,20 @@ local function build(surface, force, ox, drain)
   if not reactor then error("rf-reactor refused") end
   if not reactor.electric_network_id then error("rf-reactor is on no electric network") end
 
-  local plasma_box = box_of(reactor, PLASMA)
+  -- The reactor's plasma box is box 1, by index and not by filter. It is the one place in this rig
+  -- that cannot use box_of: #28 removed rf-reactor's input filter, because one reactor now burns
+  -- either plasma and a filter takes exactly one fluid. get_filter reports the PROTOTYPE's filter,
+  -- so asking for the plasma box by fluid returns nil and this rig aborts before it builds anything.
+  --
+  -- Index is safe here for the reason the helper's own note gives -- the reactor declares its two
+  -- boxes in a known order -- and the contract is asserted rather than assumed: box 1 unfiltered,
+  -- box 2 filtered to reactor energy. A prototype edit that swapped them still stops the run.
+  local plasma_box = 1
   local energy_box = box_of(reactor, ENERGY)
-  if not (plasma_box and energy_box) then error("rf-reactor's boxes are not where they were") end
+  if reactor.fluidbox.get_filter(plasma_box) then
+    error("rf-reactor's input box has regained a filter; see prototypes/entities.lua")
+  end
+  if energy_box ~= 2 then error("rf-reactor's boxes are not where they were") end
 
   -- Plasma: a bank of heaters -> a pipe run west -> the reactor's west connection.
   --

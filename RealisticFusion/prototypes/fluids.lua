@@ -34,6 +34,28 @@ data:extend({
     flow_color = { r = 1.00, g = 0.75, b = 0.45 },
   },
 
+  -- D-T plasma (#28). Everything above applies unchanged -- same temperature range, same reasons --
+  -- because it goes into the same reactor and is written by the same simulation. The range is not
+  -- merely copied: reactor-logic clamps every plasma to one pair of bounds and control.lua's
+  -- check_plasma_bounds refuses to load if any plasma disagrees with them.
+  --
+  -- The colour is deuterium's cyan against tritium's green, which is what the fluid is, and it is
+  -- deliberately nothing like D-D's orange: a pipe carrying the wrong plasma to a reactor is a
+  -- mistake worth seeing from across the factory.
+  {
+    type = "fluid",
+    name = "rf-d-t-plasma",
+    icons = icon("d-t-plasma"),
+    subgroup = "fluid",
+    order = "rf-p-b[d-t-plasma]",
+    default_temperature = 15,
+    max_temperature = 2e9,
+    gas_temperature = 0,
+    auto_barrel = false,
+    base_color = { r = 0.35, g = 1.00, b = 0.70 },
+    flow_color = { r = 0.60, g = 1.00, b = 0.85 },
+  },
+
   -- What a reactor sells: the fusion energy that leaves the plasma, as a fluid the heat exchanger
   -- burns. fuel_value is the conversion rate between the simulation's joules and fluid units, so
   -- one unit is one megajoule and nothing downstream needs to know about the physics.

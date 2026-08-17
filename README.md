@@ -5,8 +5,10 @@ a fusion-power mod series left unfinished. The *2.0* there is the mod's own vers
 game's: the redesign carrying it was built for Factorio **1.1** and abandoned around the time Factorio
 2.0 arrived.
 
-**Status: planning. No code yet.** This repository was initialised empty; nothing here is playable, and
-the mod is not published on the mod portal.
+**Status: in development.** Two mods load against Factorio 2.0.77 and two fusion tiers are playable —
+the extraction chain, D-D reactors that breed their own tritium, and D-T fusion burning it. Everything
+after that (D-He3, He3-He3, lithium blankets, direct energy conversion) is unbuilt, all balance is
+provisional, and the mod is not published on the mod portal.
 
 ## What it is meant to be
 

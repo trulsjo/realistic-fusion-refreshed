@@ -151,10 +151,21 @@ reactor.fluid_box = {
     { flow_direction = "input-output", direction = defines.direction.west, position = { -7, 0 } },
     { flow_direction = "input-output", direction = defines.direction.east, position = { 7, 0 } },
   },
-  -- Filtered so a stray water pipe cannot fill the reactor with something it will silently refuse
-  -- to burn. It also pins this prototype to the D-D tier: the D-T tier (#28) needs either
-  -- LuaFluidBox.set_filter at runtime or a prototype of its own.
-  filter = "rf-d-d-plasma",
+  -- Deliberately unfiltered (#28). It was pinned to rf-d-d-plasma while D-D was the only plasma,
+  -- and a filter takes exactly one fluid -- so keeping it would have meant either setting the
+  -- filter at runtime or a second reactor prototype, and ADR 0010 names one rf-reactor for both
+  -- tiers. One reactor that burns whichever plasma it is plumbed to is what that list describes.
+  --
+  -- What the filter was guarding against is closed by containment (#26) rather than left open: this
+  -- box's connections carry PLASMA_CATEGORY, so the only things that can reach it at all are the
+  -- plasma set and rf-heater's output -- and the heater's only recipes are the plasmas themselves.
+  -- A stray water pipe cannot connect, never mind fill it.
+  --
+  -- What the filter did also do, and what replaces it: a plasma with no entry in reactor-logic's
+  -- fuel table can now reach a reactor, and would sit there doing nothing while the reactor
+  -- reported itself starved. control.lua's check_every_plasma_burns is the guard for that -- it
+  -- refuses to load when a plasma-heating recipe makes a fluid the simulation has no row for.
+  -- (check_plasma_bounds beside it is a different seam: temperature range, not fuel.)
 }
 -- Plasma in and plasma out of the shared pool, so both faces are plasma-safe only. The energy box
 -- below is deliberately not: reactor energy is an ordinary fluid and a player plumbs it with

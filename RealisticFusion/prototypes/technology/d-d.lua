@@ -31,11 +31,10 @@ data:extend({
       { type = "unlock-recipe", recipe = "rf-heater" },
       { type = "unlock-recipe", recipe = "rf-reactor" },
       { type = "unlock-recipe", recipe = "rf-heat-exchanger" },
-      -- The by-product collector rides along with the tier that breeds them rather than waiting
-      -- for a technology of its own: D-D breeds tritium and helium-3 from the first reactor a
-      -- player builds, and without this those simply go nowhere (#27).
-      { type = "unlock-recipe", recipe = "rf-isotope-collector" },
       { type = "unlock-recipe", recipe = "rf-d-d-plasma" },
+      -- rf-isotope-collector is NOT here. #27 put it here for want of anywhere better; #28 built
+      -- rf-tritium-breeding, which is the technology it belongs to, and moved it. See the note
+      -- there for why waiting costs a player nothing.
       -- Vanilla's, not ours: see above. #32's rf-hc-turbine replaces it at the high-capacity tier.
       { type = "unlock-recipe", recipe = "steam-turbine" },
     },

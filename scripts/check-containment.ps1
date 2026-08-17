@@ -250,10 +250,19 @@ script.on_init(function()
   local heater = must(surface.create_entity({
     name = "rf-heater", position = { 60.5, 0.5 }, force = force,
   }), "rf-heater")
+  -- Named rather than discovered, and #28 is why: this took the first recipe in the heater's
+  -- crafting category on the grounds that there was only one, and rf-d-t-plasma joined it there.
+  -- pairs over a LuaCustomTable promises no order, so the rig could set the D-T recipe and then
+  -- throw looking for the deuterium box that recipe does not have -- out of on_init, so the save is
+  -- never made and this check reports nothing rather than a failure. Containment is about the pipe
+  -- connection rather than the fluid, so D-D is as good a subject as either; it just has to be
+  -- decided here instead of by iteration order.
+  local recipe = prototypes.recipe["rf-d-d-plasma"]
   local categories = prototypes.entity["rf-heater"].crafting_categories
-  for name, recipe in pairs(prototypes.recipe) do
-    if categories[recipe.category] then heater.set_recipe(name) break end
+  if not (recipe and categories[recipe.category]) then
+    error("rf-heater cannot craft rf-d-d-plasma; this rig is built around the D-D tier")
   end
+  heater.set_recipe(recipe.name)
   power(surface, force, { 66, 6 })
 
   local deuterium_box = box_of(heater, "rf-deuterium")

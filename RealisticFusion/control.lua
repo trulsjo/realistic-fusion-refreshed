@@ -242,19 +242,74 @@ end
 --
 -- The same shape of trap as check_cadence, one file further out. apply() writes the simulated
 -- temperature straight into the fluidbox, and Factorio rejects a temperature outside the fluid's
--- declared range -- so reactor-logic's clamps and rf-d-d-plasma's prototype have to agree, and
+-- declared range -- so reactor-logic's clamps and every plasma's prototype have to agree, and
 -- nothing but this ties them together. Edit max_temperature alone to make room for a later tier
 -- and the mod loads perfectly, then throws on a live save the first time a reactor gets hot.
+--
+-- Over every fuel rather than over rf-d-d-plasma alone, because the clamps live on the reactor spec
+-- and are therefore one pair of bounds for all of them: a tier whose plasma declares a narrower
+-- range than the reactor can compute is the same crash, discovered later.
 local function check_plasma_bounds()
-  local fluid = prototypes.fluid["rf-d-d-plasma"]
-  if logic.reactor.min_temperature_c < fluid.default_temperature
-    or logic.reactor.max_temperature_c > fluid.max_temperature then
-    error(string.format(
-      "rf-reactor: the simulation clamps temperature to [%.6g, %.6g] C but rf-d-d-plasma accepts " ..
-      "[%.6g, %.6g], so a reactor would write a temperature the fluid cannot hold. Reconcile " ..
-      "scripts/reactor-logic.lua with prototypes/fluids.lua.",
-      logic.reactor.min_temperature_c, logic.reactor.max_temperature_c,
-      fluid.default_temperature, fluid.max_temperature))
+  for name in pairs(logic.fuels) do
+    local fluid = prototypes.fluid[name]
+    if not fluid then
+      error(string.format(
+        "rf-reactor: scripts/reactor-logic.lua burns %s but no such fluid exists. Add it to " ..
+        "prototypes/fluids.lua or drop the row.", name))
+    end
+    if logic.reactor.min_temperature_c < fluid.default_temperature
+      or logic.reactor.max_temperature_c > fluid.max_temperature then
+      error(string.format(
+        "rf-reactor: the simulation clamps temperature to [%.6g, %.6g] C but %s accepts " ..
+        "[%.6g, %.6g], so a reactor would write a temperature the fluid cannot hold. Reconcile " ..
+        "scripts/reactor-logic.lua with prototypes/fluids.lua.",
+        logic.reactor.min_temperature_c, logic.reactor.max_temperature_c, name,
+        fluid.default_temperature, fluid.max_temperature))
+    end
+  end
+end
+
+--- Refuse to run if a plasma exists that no reactor knows how to burn.
+--
+-- The other half of the same seam, and it only became reachable with #28: the reactor's input box
+-- used to be filtered to rf-d-d-plasma, so a plasma with no fuel row could not get into one. Two
+-- tiers share one reactor now (ADR 0010 names a single rf-reactor for both), so the filter is gone
+-- and any plasma a heater can make can be plumbed into any reactor.
+--
+-- What that opens is the failure reactor-logic's step() describes: step() returns nil for a fluid
+-- it has no row for, and returning nil leaves the reactor untouched -- so the plasma sits in the
+-- box for ever while the reactor reports "starved" and the player has no way to tell why. Silent,
+-- and indistinguishable from an empty pipe. Adding the row is a one-line fix; finding out it was
+-- missing is not, so it is found here instead.
+--
+-- Found through the plasma-heating recipe category rather than by scanning fluid names for
+-- "-plasma", which was the first version and looked at every fluid in the game. Two things wrong
+-- with that. It claimed to inspect only this repository's prototypes and did not -- "rf-" is our
+-- naming convention (ADR 0009), not a reserved namespace, so any mod that happened to define a
+-- fluid matching the pattern would have taken this one down at load with a message telling the
+-- player to edit OUR source. And it asked the wrong question: what matters is not what a fluid is
+-- called but whether a heater can make it, because that is the only way a plasma reaches a reactor.
+--
+-- Asking the category answers exactly that, and it is our category. A fluid another mod produces
+-- through it is genuinely a plasma a reactor cannot burn, which is worth refusing to load over
+-- whoever wrote it.
+local HEATING_CATEGORY = "rf-plasma-heating"
+
+local function check_every_plasma_burns()
+  for _, recipe in pairs(prototypes.recipe) do
+    if recipe.category == HEATING_CATEGORY then
+      for _, product in pairs(recipe.products or {}) do
+        if product.type == "fluid" and not logic.fuels[product.name] then
+          error(string.format(
+            -- Both are labelled because a plasma recipe and the fluid it makes share a name, and
+            -- naming them bare reads as a typo rather than as two prototypes.
+            "the %s recipe '%s' produces the fluid '%s', which scripts/reactor-logic.lua has no " ..
+            "fuel entry for -- so a reactor plumbed to it would hold it for ever and report " ..
+            "itself starved. Add a row to M.fuels, or take the recipe out of that category.",
+            HEATING_CATEGORY, recipe.name, product.name))
+        end
+      end
+    end
   end
 end
 
@@ -288,6 +343,7 @@ end
 local function check_prototypes()
   check_cadence()
   check_plasma_bounds()
+  check_every_plasma_burns()
   check_collector_boxes()
 end
 
