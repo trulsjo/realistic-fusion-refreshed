@@ -317,9 +317,11 @@ hc_turbine.vertical_animation = hc_graphics.turbine_vertical
 -- beside a five-by-seven one. Dropped rather than repositioned: guessing at plume offsets is exactly
 -- the kind of invented geometry the graphics notes here refuse to do.
 hc_turbine.smoke = nil
--- A ten-tick buffer at full draw, where vanilla's 200 is about three. Sized to the machine rather
--- than inherited, because a box that empties faster than the pipe refills it is the throughput cap
--- this ticket exists to avoid.
+-- Two hundred ticks at full draw, which is what vanilla's 200 units at one a tick also comes to --
+-- so this is the same three and a bit seconds of buffer, scaled with the machine rather than left
+-- at a tenth of it. Stated as the arithmetic rather than as a volume, because a box that empties
+-- faster than the pipe refills it is exactly the throughput cap this ticket exists to avoid, and
+-- 2000 on its own says nothing about whether that is true.
 hc_turbine.fluid_box = {
   production_type = "input",
   volume = 2000,

@@ -305,6 +305,14 @@ M.aneutronic_reactor = {
   -- It is NOT a large gain and should not be read as one: 0.95 against 0.85 is a tenth. What the
   -- tier really buys is that there is no steam stage to build -- one converter where the neutronic
   -- side needs a heat exchanger, water and a row of turbines.
+  --
+  -- AND IT IS THE NUMBER THAT KEEPS THE LOOP CLOSED, which matters more here than on the last tier
+  -- and is why it must not drift up. capture_efficiency exists because Factorio's turbines lose
+  -- nothing, so at 1 a reactor that never fuses would sell back exactly the heating it was given
+  -- and pay for itself for ever. This tier runs that margin tighter than any other: a cold
+  -- aneutronic reactor returns 190 MW of sellable fluid for the 200 MW spent heating it. Still
+  -- negative, so still not a free loop -- but at 1.0 it would be, and there is no other term
+  -- standing between this constant and perpetual motion.
   capture_efficiency = 0.95,
   energy_fluid_j_per_unit = 1e6,
   energy_fluid = "rf-aneutronic-reactor-energy",

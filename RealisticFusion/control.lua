@@ -448,12 +448,29 @@ local function check_reactor_specs()
   -- through, so a key left behind after a prototype was renamed or dropped is "attempt to index a
   -- nil value" pointing into one of those functions -- not the named diagnostic the comments around
   -- them promise. The loop above cannot see it, because it starts from the other list.
+  local registered = {}
+  for _, name in ipairs(entities.REACTORS) do registered[name] = true end
+
   for name in pairs(SPECS) do
     if not prototypes.entity[name] then
       error(string.format(
         "control.lua's SPECS holds constants for '%s', which is not an entity prototype -- so the " ..
         "checks below would index nil. Drop the row, or reconcile the name with " ..
         "prototypes/entities.lua.", name))
+    end
+    -- And the case that is not a crash at all, which is why it needs saying. A reactor with a
+    -- prototype and a spec but no entry in entity-management's REACTORS passes every other guard
+    -- here: this loop finds it, check_cadence and check_energy_outlets and check_plasma_bounds all
+    -- walk SPECS and are satisfied, and the two loops that walk REACTORS simply never see it. What
+    -- a player gets is a reactor that builds, accepts plasma, and is never registered or stepped --
+    -- the "looks like a balance problem" failure this whole function exists to prevent, arriving
+    -- through the one door the other checks leave open. The comment on SPECS tells the next editor
+    -- that this is where the two lists meet; this is what makes that true in both directions.
+    if not registered[name] then
+      error(string.format(
+        "control.lua's SPECS holds constants for '%s' but scripts/entity-management.lua does not " ..
+        "register it as a reactor, so nothing would ever simulate one. Add it to REACTORS there, " ..
+        "or drop the row here.", name))
     end
   end
 end

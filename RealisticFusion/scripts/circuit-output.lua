@@ -304,6 +304,15 @@ end
 -- Paired by position, because that is the only link there is: the combinator carries no reference
 -- back, and storage may be exactly what has gone stale. That is sound because publish() puts each
 -- one at its reactor's own position and nothing ever moves either.
+--
+-- The combinator's NAME is deliberately not checked against the reactor's, and that rests on an
+-- assumption worth naming since #31 made a second reactor exist: two reactors cannot share a
+-- position. Today they cannot, and it is arithmetic rather than luck -- rf-reactor is fifteen tiles
+-- and sits on a tile centre, rf-aneutronic-reactor is ten and sits on a tile corner, so their
+-- coordinates can never coincide. A third reactor sharing a parity with an existing one would break
+-- that, and the symptom would be a rescan handing one reactor the other's combinator: the wrong
+-- prototype at the right place, still emitting, still wired. If that day comes, compare
+-- combinator.name against reactor.name .. COMBINATOR_SUFFIX here.
 function M.rescan(registry)
   -- The moving cores go with it, and unlike the combinators they are simply thrown away: a
   -- rendering holds nothing and nothing can be attached to one, so the next report redraws exactly

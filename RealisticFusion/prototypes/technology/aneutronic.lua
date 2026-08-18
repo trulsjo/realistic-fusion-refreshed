@@ -63,7 +63,15 @@ data:extend({
     name = "rf-direct-energy-conversion",
     icon = "__RealisticFusion__/graphics/krastorio-2/technologies/direct-energy-conversion.png",
     icon_size = 256,
-    prerequisites = { "rf-helium-3-breeding", "processing-unit" },
+    -- processing-unit is a prerequisite for the converter's ingredients; production-science-pack is
+    -- one for the RESEARCH ITSELF, and it is the same closure rule applied one layer out. This
+    -- technology and the one below are the first in the repository to ask for a fourth pack, and
+    -- nothing else in either one's prerequisites unlocks it -- so without this a player who has
+    -- researched everything these name would queue it and watch the labs never finish, with no
+    -- edge in the tree to explain why. Core's rf-heavy-water already names chemical-science-pack
+    -- for exactly this reason; this is that convention, missed on the first pass and caught on
+    -- review.
+    prerequisites = { "rf-helium-3-breeding", "processing-unit", "production-science-pack" },
     effects = {
       { type = "unlock-recipe", recipe = "rf-direct-energy-converter" },
     },

@@ -319,8 +319,10 @@ print("")
 -- not land on the shipped model's own equilibrium it would be a different model, and its
 -- bremsstrahlung numbers would be about a different reactor.
 near(found["D-D/none"], 8.769e8, "radiation-free D-D reproduces the shipped equilibrium")
-near(fusion_w(D_D, SPEC, DENSITY, found["D-D/none"]) / SPEC.heating_power_w, 2.139,
-  "radiation-free D-D reproduces the shipped Q")
+-- Through num(), like every other arithmetic on a root here: a missing equilibrium would otherwise
+-- reach reactivity.rate as nil and take down the two assertions below that carry the finding.
+near(found["D-D/none"] and fusion_w(D_D, SPEC, DENSITY, found["D-D/none"]) / SPEC.heating_power_w,
+  2.139, "radiation-free D-D reproduces the shipped Q")
 near(found["D-T/none"], 4.63e9, "radiation-free D-T reproduces d-t-ignition.md's equilibrium")
 
 -- THE FINDING. The two disputed figures are two models, not two answers, and each is reproduced

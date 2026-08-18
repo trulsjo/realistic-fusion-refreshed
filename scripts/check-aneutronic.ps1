@@ -297,6 +297,33 @@ script.on_init(function()
   record(checked >= 8, "and the closure check actually looked at the tier's ingredients",
     string.format("%d checked", checked))
 
+  -- THE SAME RULE ONE LAYER OUT: the science packs a technology's own unit asks for.
+  --
+  -- A technology becomes available when its prerequisites are researched, and Factorio does not
+  -- care whether the player can MAKE its packs. So a technology that asks for a pack outside its
+  -- own closure shows up as available, gets queued, and never completes -- with no edge anywhere in
+  -- the tree to explain it. That is a worse failure than an unbuildable machine, because there is
+  -- nothing to look at.
+  --
+  -- These are the first technologies in the repository to ask for a fourth pack, and the first
+  -- version of them did exactly this. Checked here rather than described.
+  local packs_outside = {}
+  for _, name in ipairs({ "rf-helium-3-breeding", "rf-direct-energy-conversion",
+                          "rf-aneutronic-fusion" }) do
+    local tech = force.technologies[name]
+    if tech then
+      for _, ingredient in pairs(tech.research_unit_ingredients) do
+        local recipe = force.recipes[ingredient.name]
+        if recipe and not recipe.enabled then
+          packs_outside[#packs_outside + 1] = name .. " asks for " .. ingredient.name
+        end
+      end
+    end
+  end
+  record(#packs_outside == 0,
+    "and every science pack the tier's own research asks for is craftable inside its closure",
+    #packs_outside == 0 and "all packs reachable" or table.concat(packs_outside, "; "))
+
   force.research_all_technologies()
 
   surface.request_to_generate_chunks({ 0, 0 }, 10)
@@ -518,9 +545,15 @@ script.on_nth_tick(CHECK_AT, function()
   -- Worth knowing while reading it: He3-He3's cross-section peaks past 600 keV and
   -- max_temperature_c stops the plasma at 172, so this reaction runs at about a hundredth of its
   -- peak reactivity and is marginal for that reason rather than through any balance choice.
+  -- Its OWN ceiling, not the one bound for D-He3 above. Both plasmas declare 2e9 today, so the
+  -- printed number would be accidentally right either way -- and this is the one line a reader
+  -- consults to decide whether He3-He3's clamp is where its fuel row says it is, which is exactly
+  -- the number that stops being shared the day a tier wants a hotter range.
+  local he3_ceiling = prototypes.fluid[HE3].max_temperature
   record(he3_plasma ~= nil,
     "He3-He3 settles where the clamp allows, far below its cross-section peak",
-    he3_plasma and string.format("%.4g C, ceiling %.4g", he3_plasma.temperature, ceiling) or "no plasma")
+    he3_plasma and string.format("%.4g C, ceiling %.4g", he3_plasma.temperature, he3_ceiling)
+      or "no plasma")
 
   -- ------------------------------------------------------------ all four reactions in one save
   local burning = {}
