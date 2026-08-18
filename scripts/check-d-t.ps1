@@ -43,16 +43,27 @@
     Ticks to run before checking. The default is far longer than D-T needs -- it ignites within a
     minute of game time -- and is kept in step with check-breeding.ps1 so the two are comparable.
 
+.PARAMETER With
+    Bundled mods to enable, e.g. -With space-age. Dependencies are pulled in automatically. Off by
+    default, so the rig keeps measuring base 2.0 unless asked otherwise (ADR 0003, ADR 0008).
+
+    This is the rig half of ADR 0003's obligation. load-check.ps1 -With space-age proves the mod
+    LOADS under the expansion; that is the data stage, and it says nothing about whether a reactor
+    still burns. Running this rig with the expansion on is what turns "tolerated" from a claim about
+    prototypes into a claim about a running save.
+
 .PARAMETER KeepTemp
     Keep the save, the rig mod and the captured output.
 
 .EXAMPLE
     pwsh -File scripts/check-d-t.ps1
+    pwsh -File scripts/check-d-t.ps1 -With space-age
 #>
 [CmdletBinding()]
 param(
     [string] $FactorioExe,
     [ValidateRange(600, 200000)] [int] $Ticks = 7200,
+    [string[]] $With = @(),
     [switch] $KeepTemp
 )
 
@@ -65,6 +76,10 @@ $rigName  = 'rf-d-t-rig'
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
 $bundled     = Get-BundledMods -FactorioExe $FactorioExe
+try {
+    $enabledBundled = Resolve-BundledSelection -Requested $With -Bundled $bundled
+}
+catch { throw "-With $($_.Exception.Message)" }
 
 $temp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-dt-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 $modDir = Join-Path $temp 'mods'
@@ -337,7 +352,9 @@ $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory =
 
 try {
     New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
-    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled @() -Mods ($ourMods + $rigName)
+    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled -Mods ($ourMods + $rigName)
+    $bundledOn = if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.0 only)' }
+    Write-Host "bundled enabled: $bundledOn"
     Write-Rig
 
     $save = Join-Path $temp 'd-t.zip'
