@@ -53,9 +53,15 @@
     biters, one surface. That is #34's job. This one exists to catch a disaster eleven tickets
     before #34 would.
 
-    Nor does it resolve small differences. Four runs of the same binary on the same map gave a 42%
-    spread (docs/research/reactor-runtime-cost.md); anything finer than a factor of about 1.5 needs
-    interleaved repeats rather than one sweep.
+    Nor does it resolve small differences. Ten invocations of the same binary on the same map, none
+    of them flagged BUSY, spanned 1.34x (docs/research/reactor-runtime-cost.md, #39); treat anything
+    finer than about 1.4x as unmeasured.
+
+    AND IT CANNOT SUBTRACT THE REST OF THE MACHINE. Every figure it reports is a difference between
+    two Factorio processes minutes apart, so work that starts between the baseline and the
+    measurement lands on the difference rather than cancelling with the rig's power. That is what
+    produced the figures #39 was opened to explain. -BusyPercent below is the instrument; a run that
+    prints BUSY is not one to quote from.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
@@ -93,11 +99,43 @@
 
     THE MIX AT A GIVEN n DEPENDS ON THE GRID, AND THE GRID ON THE LARGEST COUNT REQUESTED. Rows are
     GRID wide, so -Mixed -Counts 0,50 splits n = 50 as 16/16/10/8 while -Mixed -Counts 0,50,200
-    splits the same n = 50 as 15/15/15/5. Since D-D costs about 2.3x what the other three do
-    (docs/research/reactor-runtime-cost.md), that moves the per-reactor figure at a fixed n according
-    to an argument that has nothing to do with it. Two runs are comparable at a given n only if the
-    whole -Counts list matches. The rig logs the actual split on every report -- burning=... -- so
-    any figure taken from a run can be attributed rather than assumed; read it before comparing.
+    splits the same n = 50 as 15/15/15/5 -- the same n, a different population, decided by an
+    argument that has nothing to do with it. Two runs are comparable at a given n only if the whole
+    -Counts list matches. The rig logs the actual split on every report -- burning=... -- so any
+    figure taken from a run can be attributed rather than assumed; read it before comparing.
+
+    This used to warn that it mattered a great deal, on the strength of D-D costing about 2.3x what
+    the other three reactions do. #39 withdrew that figure: measured on a machine checked to be
+    quiet, every reaction costs about the same, so a shifted split moves the number by little or
+    nothing. The rule stands anyway, because "little or nothing" is a measurement rather than a
+    guarantee and the next reaction added need not be as cheap.
+
+.PARAMETER Ablate
+    Replace the shipped simulation with a cut-down one, to say where the per-reactor cost actually
+    goes (#39). The rungs are cumulative, and each names what it adds to the one before:
+
+        loop     walk the register and check validity. The loop itself, no API calls per reactor.
+        read     + entity.fluidbox[1] and entity.energy. Two boundary crossings, one of which
+                 allocates a table.
+        physics  + reactor-logic.step(). The arithmetic, and nothing else -- the module is required
+                 straight out of __RealisticFusion__, so this is the shipped physics rather than a
+                 copy of it.
+        write    + the per-reactor pending table, then entity.energy, box[1], get_capacity(2) and
+                 box[2]. The rest of the crossings, and one allocation bundled in with them.
+
+    A rung is measured the same way everything else here is -- as a slope against the n = 0 baseline
+    -- so `write` minus `physics` is what the write crossings cost, and `physics` minus `read` is
+    what the arithmetic costs. The first of those two is an upper bound rather than a figure: the
+    write rung also carries the pending table control.lua's two-pass update builds, and nothing here
+    separates the allocation from the writes. That difference is the whole point: the claim on record was that
+    crossings dominate, and it was inferred from the arithmetic being too cheap to explain the
+    figure rather than measured.
+
+    Ablated runs place their reactors with raise_built = false, so RealisticFusion never registers
+    them and its own update() walks an empty register. The rig owns the whole step, at the shipped
+    cadence, read from control.lua rather than remembered. What the rungs therefore do NOT include
+    is the collector lookup and the circuit publish -- both per reactor, both in the shipped path --
+    so `write` is a floor on the shipped cost, not a reproduction of it.
 
 .PARAMETER Gap
     Clear tiles between one reactor and the next, and so also the length of the pipe run -Pooled
@@ -112,6 +150,26 @@
     subtract it against -- so it inflates the per-reactor figure directly. At the default it runs
     on two or three ticks in a thousand, well under a percent of the throttled cost. Drop it to 1
     only when diagnosing the rig, and do not quote a cost figure from a run that did.
+
+.PARAMETER BusyPercent
+    How much of the whole part may be in use before a count is reported with a BUSY warning.
+
+Compared against a reading taken just BEFORE
+    each count's Factorio is launched, so it is other people's work and not ours -- see
+    Get-ForeignLoad for why measuring during the run does not work, and for the case it cannot see.
+
+    The default is calibrated rather than round. `% Processor Utility` is normalised to the part's
+    BASE clock, so a single saturated thread on this twelve-thread part reads about a twelfth times
+    whatever turbo multiplier is in force -- around 13% at the 155% clock this machine idles at.
+    Measured with nothing else asked of it, the machine sits near 33%; with a benchmark running,
+    near 45%. Sixty therefore leaves an idle machine clear and still catches the thing worth
+    catching, which is a multi-core compile: those take the part past 100% and hold it there.
+
+    It warns rather than refusing, because there is no calibrated threshold here -- and because the
+    figure is still worth having with the caveat attached. What makes other work uniquely dangerous
+    on this rig is that it does NOT cancel: every per-reactor figure is a difference against an
+    n = 0 baseline measured in a different process minutes earlier, so a compile that starts in
+    between lands entirely on the difference. See docs/research/reactor-runtime-cost.md.
 
 .PARAMETER KeepTemp
     Keep the saves, the rig mod and the captured output.
@@ -139,8 +197,10 @@ param(
     [ValidateRange(1, [int]::MaxValue)] [int] $Runs   = 3,
     [switch] $Pooled,
     [switch] $Mixed,
+    [ValidateSet('none', 'loop', 'read', 'physics', 'write')] [string] $Ablate = 'none',
     [ValidateRange(5, 100)]             [int] $Gap = 5,
     [ValidateRange(1, [int]::MaxValue)] [int] $ReportEvery = 500,
+    [ValidateRange(0, 100)]           [double] $BusyPercent = 60,
     [switch] $KeepTemp
 )
 
@@ -177,6 +237,28 @@ New-Item -ItemType Directory -Path $rigDir -Force | Out-Null
 # fixed fraction rather than growing as runs get shorter.
 if ($ReportEvery -ge $Ticks) { $ReportEvery = [Math]::Max(1, [int]($Ticks / 2)) }
 
+
+# The shipped cadence, read rather than remembered -- an ablated rung has to step as often as the
+# mod it replaces or its per-reactor figure is off by whatever the two intervals differ by. This is
+# the one number the rig cannot ask the game for: UPDATE_INTERVAL is a local in control.lua.
+$controlLua = Join-Path $repoRoot 'RealisticFusion/control.lua'
+if ((Get-Content $controlLua -Raw) -match '(?m)^local UPDATE_INTERVAL = (\d+)') {
+    $interval = [int]$Matches[1]
+} else {
+    throw "could not read UPDATE_INTERVAL from $controlLua; the ablation rungs would step at the wrong cadence."
+}
+
+# on_nth_tick handlers are keyed by PERIOD, so registering the rig's report at the same interval the
+# ablation ladder steps at would not add a handler -- it would silently replace one, and the rig
+# would measure nothing while looking like it had measured a rung. The steps= gate catches it, but
+# it says "nothing was measured", which points at the require rather than at the collision.
+#
+# Reachable without touching -ReportEvery at all: the rewrite further up lands it on Ticks / 2, so
+# -Ticks 12 puts it exactly on the shipped six-tick cadence. It sits BELOW the UPDATE_INTERVAL read
+# rather than beside that rewrite, because $interval does not exist yet up there and the comparison
+# would silently never match -- which is how this guard failed the first time it was written.
+if ($Ablate -ne 'none' -and $ReportEvery -eq $interval) { $ReportEvery = $interval + 1 }
+
 # One grid geometry for every run, sized for the largest count, so the map is identical at every N.
 $grid = [Math]::Max(1, [int][Math]::Ceiling([Math]::Sqrt(($Counts | Measure-Object -Maximum).Maximum)))
 
@@ -200,6 +282,11 @@ local GRID   = __GRID__      -- cells per side; the same at every count, so the 
 local POOLED = __POOLED__
 local GAP    = __GAP__       -- clear tiles between one reactor and the next
 local MIXED  = __MIXED__
+-- Which rung of the ablation ladder to run, and the shipped cadence to run it at. "none" is the
+-- shipped mod doing the whole step; anything else is this rig doing a cut-down one instead. See
+-- the .PARAMETER Ablate block.
+local ABLATE   = "__ABLATE__"
+local INTERVAL = __INTERVAL__
 
 -- What each reactor burns. ADR 0010's four reactions run in two different entities, and #34 is the
 -- measurement with all four present -- the early reading (#24) had only the first, because it was
@@ -344,7 +431,13 @@ script.on_init(function()
       force    = force,
       -- Registers the reactor through the same event path a player builds it through, rather
       -- than through a rescan that only runs on init.
-      raise_built = true,
+      --
+      -- And the seam the ablation ladder hangs on. Suppressing it is the only way one mod can stop
+      -- another's per-tick handler from doing anything: RealisticFusion registers a reactor from
+      -- the build event, and its rescan runs on on_init only -- which happens before this rig's,
+      -- since the rig depends on it. So an unraised reactor is one the shipped update() never sees,
+      -- leaving it walking an empty register while the rig does the step itself.
+      raise_built = (ABLATE == "none"),
     })
     if r then
       -- Loud here rather than subtle later. A reactor outside its substation's supply area still
@@ -420,6 +513,79 @@ script.on_init(function()
     GRID, SIZE, SPACING, COUNT, placed, tostring(POOLED), tostring(MIXED), #CASES))
 end)
 
+-- ---------------------------------------------------------------- the ablation ladder (#39)
+--
+-- Only when -Ablate names a rung. The shipped mod is then registering nothing (see raise_built
+-- above), so this is the entire per-reactor cost of the run, and the rungs differ from each other
+-- by exactly one group of operations. The physics is REQUIRED from the shipped mod rather than
+-- reimplemented -- a copy would measure the copy.
+--
+-- steps/touched are logged and gated on, because a rung below `write` writes nothing to the world
+-- and so leaves no trace the output= gate could check. A handler that silently failed to register
+-- would report a per-reactor cost of nothing at all, which is indistinguishable from the finding.
+local ablate_steps, ablate_touched = 0, 0
+if ABLATE ~= "none" then
+  local logic = require("__RealisticFusion__/scripts/reactor-logic")
+  local SPECS = {
+    ["rf-reactor"]            = logic.reactor,
+    ["rf-aneutronic-reactor"] = logic.aneutronic_reactor,
+  }
+  local RUNG = ({ loop = 1, read = 2, physics = 3, write = 4 })[ABLATE]
+  if not RUNG then error("unknown ablation rung: " .. ABLATE) end
+  local DT = INTERVAL / 60
+  -- Mirrors control.lua's MIN_FLUID. Below it the engine rejects the write outright, so the guard
+  -- is part of the write rung rather than a nicety.
+  local MIN_FLUID = 1e-6
+
+  script.on_nth_tick(INTERVAL, function()
+    local pending = (RUNG >= 4) and {} or nil
+    local n = 0
+    for _, entity in pairs(storage.reactors) do
+      if entity.valid then
+        n = n + 1
+        if RUNG >= 2 then
+          local plasma = entity.fluidbox[1]
+          local energy = entity.energy
+          if RUNG >= 3 then
+            local spec = SPECS[entity.name]
+            local result = logic.step(spec, plasma and plasma.name, plasma and plasma.amount,
+              plasma and plasma.temperature, energy, DT)
+            if pending and result then
+              pending[#pending + 1] = { entity = entity, spec = spec, plasma = plasma, result = result }
+            end
+          end
+        end
+      end
+    end
+    ablate_steps   = ablate_steps + 1
+    ablate_touched = ablate_touched + n
+
+    -- The write half of control.lua's apply(), minus the collector lookup and the circuit publish:
+    -- both are per reactor and both are in the shipped path, so this rung is a floor on the shipped
+    -- cost rather than a reproduction of it.
+    if pending then
+      for _, s in ipairs(pending) do
+        local entity, result = s.entity, s.result
+        entity.energy = entity.energy - result.heating_used_j
+        local box = entity.fluidbox
+        local remaining = s.plasma.amount - result.plasma_consumed
+        if remaining > 0 then
+          box[1] = { name = s.plasma.name, amount = remaining, temperature = result.temperature_c }
+        else
+          box[1] = nil
+        end
+        if result.energy_units >= MIN_FLUID then
+          local produced = box[2]
+          local amount = result.energy_units + (produced and produced.amount or 0)
+          local capacity = box.get_capacity(2)
+          if amount > capacity then amount = capacity end
+          box[2] = { name = s.spec.energy_fluid, amount = amount, temperature = 15 }
+        end
+      end
+    end
+  end)
+end
+
 -- Proof that what was benchmarked was a running reactor and not a cold one. One tick in a hundred
 -- carries a log write, and the median throws away far more of the distribution than that.
 script.on_nth_tick(__REPORT__, function()
@@ -453,9 +619,9 @@ script.on_nth_tick(__REPORT__, function()
   local mix = {}
   for _, name in ipairs(names) do mix[#mix + 1] = string.format("%s:%d", name, burning[name]) end
 
-  log(string.format("BENCH-RIG tick=%d reactors=%d hot=%d powered=%d temp_c=%.4g plasma=%.4g output=%.4g buffer_j=%.4g burning=%s",
+  log(string.format("BENCH-RIG tick=%d reactors=%d hot=%d powered=%d temp_c=%.4g plasma=%.4g output=%.4g buffer_j=%.4g burning=%s ablate=%s steps=%d touched=%d",
     game.tick, n, hot, powered, temp / d, plasma / d, output / d, energy / d,
-    (#mix > 0) and table.concat(mix, ",") or "none"))
+    (#mix > 0) and table.concat(mix, ",") or "none", ABLATE, ablate_steps, ablate_touched))
 end)
 '@
     # The shipped plasma set carries its own pipe connection category (#26), so a vanilla
@@ -464,7 +630,8 @@ end)
                 Replace('__REPORT__', "$ReportEvery").Replace('__GAP__', "$Gap").
                 Replace('__PLASMAFEED__', (Write-PlasmaFeed -RigDirectory $rigDir)).
                 Replace('__POOLED__', $(if ($Pooled) { 'true' } else { 'false' })).
-                Replace('__MIXED__', $(if ($Mixed) { 'true' } else { 'false' }))
+                Replace('__MIXED__', $(if ($Mixed) { 'true' } else { 'false' })).
+                Replace('__ABLATE__', $Ablate).Replace('__INTERVAL__', "$interval")
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $lua -Encoding utf8
 }
 
@@ -506,6 +673,76 @@ function Get-Timings {
     return $cols
 }
 
+function Split-Runs {
+    <#  Cut a pooled sample list back into one list per benchmark run.
+
+        --benchmark-runs concatenates its runs into one verbose dump in order, so the split is
+        positional: run r is samples [r*Ticks, (r+1)*Ticks). Returns nothing if the sample count
+        does not match, rather than guessing at a boundary.
+
+        This was built to test the standing explanation for this rig's run-to-run spread -- thermal
+        throttling on a laptop part -- and disposed of it: #39 found the part never drops below its
+        base clock, and that the spread is other work on the machine. What the split is worth
+        keeping for is what it found on the way. A single benchmark run of the identical map spans
+        1.86x, where the invocation that pools five of them spans 1.34x, so an outlier run is the
+        unit of noise here. Printing the runs separately is what makes one visible instead of
+        leaving it buried in the mean it moved.  #>
+    param([System.Collections.Generic.List[double]] $Values, [int] $Ticks, [int] $Runs)
+    if ($Values.Count -ne $Ticks * $Runs) { return @() }
+    $out = @()
+    for ($r = 0; $r -lt $Runs; $r++) {
+        $out += , ([System.Collections.Generic.List[double]] $Values.GetRange($r * $Ticks, $Ticks))
+    }
+    return $out
+}
+
+# The counters the machine is watched through, and the one place their names live.
+#
+# `% Processor Performance` is the effective clock as a percentage of the part's BASE frequency --
+# the same counter Task Manager's "Speed" is derived from. A thermally throttled part sits BELOW 100
+# and stays there; one that is merely busy sits above it on turbo. That distinction is what ruled
+# thermal throttling out under #39.
+#
+# `% Processor Utility` is how much of the machine is in use. Ours is one Factorio and its benchmark
+# is single-threaded, so on a twelve-thread part this run's own contribution is under a tenth.
+# Anything much above that is somebody else's work -- the one confound this rig cannot subtract,
+# because every figure it reports is a difference between two Factorio processes minutes apart, and
+# work that arrives between them lands on the difference rather than cancelling.
+#
+# THE NAMES ARE LOCALISED ON NON-ENGLISH WINDOWS, so Get-Counter throws rather than answering. That
+# is handled as "not known to have been quiet" and never as "quiet" -- see the NaN branch below. A
+# guard that cannot run has not passed.
+$PERF_COUNTER = '\Processor Information(_Total)\% Processor Performance'
+$LOAD_COUNTER = '\Processor Information(_Total)\% Processor Utility'
+
+function Get-ForeignLoad {
+    <#  How much of the machine somebody else is using, as a percentage of the whole part.
+
+        Taken BEFORE Factorio is launched, and that timing is the whole design. Sampled during the
+        run it would be measuring us: Factorio starts up and loads a save multi-threaded, and on an
+        invocation this short that burst is most of what there is to see -- which is how a during-run
+        version of this guard came to warn on every run, including runs on an idle machine. Before
+        the launch there is no Factorio of ours, so whatever the counter reports is somebody else's.
+
+        WHAT IT CANNOT SEE is work that begins after the launch and ends before the process exits.
+        Over a sweep that gap is small and self-closing: each count takes its own reading, so a
+        compile long enough to matter is caught by the next one. A compile that fits entirely inside
+        a five-second invocation is not, and no reading taken from outside the process would separate
+        it from Factorio's own threads anyway. Read the warning as "this count was launched onto a
+        busy machine", which is the claim it can actually support.  #>
+    try {
+        [math]::Round((Get-Counter $LOAD_COUNTER -ErrorAction Stop).CounterSamples[0].CookedValue, 1)
+    } catch { [double]::NaN }
+}
+
+function Get-ClockPercent {
+    <#  One sample of the effective clock, for the record rather than for a decision -- nothing is
+        gated on it, because #39 settled the question it answers. NaN when the counter refuses.  #>
+    try {
+        [math]::Round((Get-Counter $PERF_COUNTER -ErrorAction Stop).CounterSamples[0].CookedValue, 1)
+    } catch { [double]::NaN }
+}
+
 function Get-Median {
     param([System.Collections.Generic.List[double]] $Values)
     if ($Values.Count -eq 0) { return [double]::NaN }
@@ -519,7 +756,7 @@ try {
     New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
     Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled @() -Mods ($ourMods + $rigName)
 
-    Write-Host "grid $grid x $grid cells, $Ticks ticks x $Runs run(s) per count, pooled: $([bool]$Pooled)"
+    Write-Host "grid $grid x $grid cells, $Ticks ticks x $Runs run(s) per count, pooled: $([bool]$Pooled), ablate: $Ablate (interval $interval)"
     Write-Host ''
 
     $results = @()
@@ -531,6 +768,9 @@ try {
         $rig = Get-Content $createOut | Select-String -Pattern 'BENCH-RIG' | Select-Object -Last 1
         if ($rig -notmatch "placed=$count\b") { throw "rig built the wrong number of reactors: $rig" }
 
+        # Read before the launch, while the machine is free of us. See Get-ForeignLoad.
+        $load = Get-ForeignLoad
+        $cpu  = Get-ClockPercent
         $benchOut = Invoke-FactorioStep @step -Tag "bench-n$count" -Arguments @(
             '--benchmark', $save, '--benchmark-ticks', "$Ticks", '--benchmark-runs', "$Runs",
             '--benchmark-verbose', 'all', '--disable-audio')
@@ -559,11 +799,29 @@ try {
         # dropped from the list, a filter the game stops accepting -- every reactor would still be
         # present and hot, and this script would report a near-zero cost as a measurement instead
         # of as a bug. rf-reactor-energy exists only because control.lua's apply() put it there.
-        if ($count -gt 0) {
+        # Skipped below the `write` rung, which is the only ablation that writes anything to the
+        # world at all -- the steps=/touched= gate below is what proves those ran.
+        if ($count -gt 0 -and ($Ablate -eq 'none' -or $Ablate -eq 'write')) {
             $produced = if ("$state" -match 'output=([0-9.eE+-]+)') { [double]$Matches[1] } else { 0 }
             if ($produced -le 0) {
                 throw ("rig at n=$count produced no reactor energy, so the simulation did not run " +
                        "even though the reactors are present and hot: '$state'")
+            }
+        }
+
+        # The ablated rungs' equivalent, and the one gate that cannot be skipped for them. A rung
+        # below `write` leaves no mark on the world, so a handler that never registered -- a
+        # require that resolved to nothing, an interval of zero -- would return a per-reactor cost
+        # of nothing, which reads exactly like the finding this is trying to establish.
+        if ($Ablate -ne 'none') {
+            $steps   = if ("$state" -match 'steps=(\d+)')   { [int]$Matches[1] } else { -1 }
+            $touched = if ("$state" -match 'touched=(\d+)') { [int]$Matches[1] } else { -1 }
+            if ($steps -le 0) {
+                throw "rig at n=$count ran the -Ablate $Ablate step $steps times, so nothing was measured: '$state'"
+            }
+            if ($count -gt 0 -and $touched -ne $steps * $count) {
+                throw ("rig at n=$count touched $touched reactors over $steps steps of -Ablate $Ablate, " +
+                       "expected $($steps * $count): '$state'")
             }
         }
 
@@ -593,7 +851,17 @@ try {
                 $count, $cols['scriptUpdate'].Count, $expected)
         }
 
-        $row = [ordered]@{ Reactors = $count; Samples = $cols['scriptUpdate'].Count; State = "$state" }
+        $row = [ordered]@{
+            Reactors = $count; Samples = $cols['scriptUpdate'].Count; State = "$state"
+            CpuPerf = $cpu; CpuLoad = $load
+            # Per run rather than pooled, because that is the axis drift lives on. The median for
+            # wholeUpdate -- the machine's own indicator, and the one a load spike would otherwise
+            # dominate -- and the mean for scriptUpdate, which is the statistic every figure this
+            # script reports is taken from.
+            WholeByRun  = @(Split-Runs $cols['wholeUpdate']  $Ticks $Runs | ForEach-Object { Get-Median $_ })
+            ScriptByRun = @(Split-Runs $cols['scriptUpdate'] $Ticks $Runs |
+                            ForEach-Object { ($_ | Measure-Object -Average).Average })
+        }
         foreach ($c in $REPORT) {
             $row["$c.median"] = (Get-Median $cols[$c]) / 1000.0   # ns -> us
             $row["$c.mean"]   = (($cols[$c] | Measure-Object -Average).Average) / 1000.0
@@ -603,6 +871,36 @@ try {
         Write-Host ("n={0,-5} scriptUpdate median {1,8:N2} us  mean {2,8:N2} us   whole median {3,8:N2} us   {4}" -f
             $count, $row['scriptUpdate.median'], $row['scriptUpdate.mean'], $row['wholeUpdate.median'],
             ("$state" -replace '^.*BENCH-RIG ', ''))
+        # Each benchmark run on its own, and the effective clock beside them, so a count that came
+        # out slow can be attributed to the machine or cleared of it on the spot. See Split-Runs.
+        if ($row.WholeByRun.Count -gt 1) {
+            Write-Host ("        by run: whole median [{0}] us   script mean [{1}] us" -f
+                (($row.WholeByRun  | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
+                (($row.ScriptByRun | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '))
+        }
+        Write-Host ("        machine: clock {0:N0}% of base, {1:N0}% of the part in other hands at launch" -f $cpu, $load)
+        # An unreadable counter is its own warning and is NOT a quiet machine. `NaN -gt $BusyPercent`
+        # is false in PowerShell, so without this branch a localised Windows -- where these counter
+        # paths are translated and Get-Counter simply throws -- would run a fully contended sweep and
+        # print no BUSY at all, which is the one outcome this guard must never produce.
+        if ([double]::IsNaN($load)) {
+            Write-Warning ((("n={0}: the machine's load counter did not answer, so this run is NOT " +
+                "known to have been quiet. Treat it as unguarded rather than as clean -- the check " +
+                "did not run, which is not the same as passing. The counter names are localised on " +
+                "non-English Windows; 'lodctr /R' repairs a corrupt counter cache.") -f $count))
+        }
+        # Otherwise a warning rather than a throw, because there is no calibrated threshold here and
+        # refusing to report would be worse than reporting with the caveat attached. BUSY is the word
+        # to grep for before quoting a figure from a run.
+        elseif ($load -gt $BusyPercent) {
+            # Parenthesised as one string before -f, for the reason the n = 0 guard below spells out:
+            # -f binds tighter than +, so without them the format applies to the last fragment only
+            # and the message prints a literal {0}.
+            Write-Warning ((("n={0}: BUSY -- {1:N0}% of the part was already in other hands when this " +
+                "count was launched. Every figure from it is a difference against an n = 0 baseline " +
+                "measured at a different moment, so other work does not cancel out of it. Re-run on a " +
+                "quiet machine before quoting it.") -f $count, $load))
+        }
     }
 
     # ------------------------------------------------------------------ report
@@ -625,17 +923,13 @@ try {
     # numbers: -File passes each argument as a string and the [int[]] conversion is culture-aware,
     # so on a machine whose decimal separator is a comma "0,1,10" converts to the single value 110.
     # The baseline vanishes and nothing says so. See .EXAMPLE for the form that binds.
-    if (-not $base) {
-        # Parenthesised as one string before -f: -f binds tighter than +, so without them the
-        # format applies to the last fragment only, which has no placeholder -- and the message
-        # prints a literal {0} where the counts should be. locale-check.ps1 carries the same note.
-        throw (("no n = 0 baseline among the counts measured ({0}), so no per-reactor cost can be " +
-                "computed -- every figure here is a difference against it. If you passed -Counts " +
-                "through 'pwsh -File', check it arrived as separate numbers: use " +
-                "pwsh -Command followed by a quoted '& ./scripts/bench-reactors.ps1 -Counts 0,1,10' " +
-                "instead.") -f
-               (($results | ForEach-Object { $_.Reactors }) -join ', '))
-    }
+    #
+    # RAISED AFTER the tables below rather than before them, and that ordering is the whole point of
+    # this note. Throwing first cost the caller everything: a sweep can run for tens of minutes, and
+    # a bare throw took the per-count tables, the pipeline rows and -- through the finally block --
+    # the captured Factorio logs with it, for a fault that costs one flag to fix. The absolute
+    # figures are worth having even when no per-reactor figure can be computed from them.
+    $missingBaseline = -not $base
 
     foreach ($stat in @('median', 'mean')) {
         Write-Host ''
@@ -684,6 +978,20 @@ try {
     # pipeline as well so a caller can sort, export or diff them; writing a CSV into $temp would
     # have been worse than useless, since the finally block deletes it.
     Write-Output $results
+
+    # And only now the fault, with everything the run did manage to measure already in hand.
+    if ($missingBaseline) {
+        # Parenthesised as one string before -f: -f binds tighter than +, so without them the
+        # format applies to the last fragment only, which has no placeholder -- and the message
+        # prints a literal {0} where the counts should be. locale-check.ps1 carries the same note.
+        throw (("no n = 0 baseline among the counts measured ({0}), so no per-reactor cost could be " +
+                "computed -- every such figure is a difference against it. The absolute tables above " +
+                "are still good. If you passed -Counts through 'pwsh -File', check it arrived as " +
+                "separate numbers: use pwsh -Command followed by a quoted " +
+                "'& ./scripts/bench-reactors.ps1 -Counts 0,1,10' instead.") -f
+               (($results | ForEach-Object { $_.Reactors }) -join ', '))
+    }
+
 }
 finally {
     if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }

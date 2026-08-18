@@ -53,20 +53,22 @@ requires restructuring is not a fallback.
   "it is probably fine" is not available as a position. Factorio players are unforgiving about UPS.
 
   **Discharged 2026-08-18 ([#34](https://github.com/trulsjo/realistic-fusion-refreshed/issues/34)):
-  about 3 to 4 µs per reactor per tick with all four reactions running — 3.4% to 4.9% of the 16.67 ms
-  budget at 200 reactors, and well under 1% at the 20 to 50 a large ordinary build has.** It is a
-  range and not a number because three repeats spanned 2.85 to 4.04 µs, which is this rig's known
-  20–42% run-to-run spread rather than anything about the mod. Measured on Factorio
+  about 2.5 µs per reactor per tick with all four reactions running — around 3.1% of the 16.67 ms
+  budget at 200 reactors, and well under 1% at the 20 to 50 a large ordinary build has.** The figure
+  #34 first recorded was 3 to 4 µs; it was re-measured under
+  [#39](https://github.com/trulsjo/realistic-fusion-refreshed/issues/39) on a machine checked to be
+  quiet, the original runs having been taken beside an unrelated compile. The remaining spread is
+  about 1.35× and is why no digit after the first is real. Measured on Factorio
   2.0.77 with `scripts/bench-reactors.ps1 -Mixed`, the same script and counts as the early reading,
   and reproduced. **The verdict is acceptable and the cadence is unchanged**: `UPDATE_INTERVAL`
   stays at 6, the value #24 chose, and the throttling this ADR pre-authorises was not needed a
   second time. The rate computation was not touched, so that fallback remains a one-line change.
 
-  Two things the measurement found that this ADR did not anticipate. **A D-D-only base is the
-  expensive case, not the full set** — 6.3 to 6.9 µs per reactor against 2.9 to 4.0 — because D-D is the only
-  reaction that breeds, and its by-products are computed every step whether or not a collector
-  exists. And **the D-D figure has roughly doubled since it was last taken**, which is a real change
-  rather than noise and is not attributed. See
+  **The expectation this ADR did carry held: per-reactor cost did not grow as reactions were added.**
+  Every reaction costs about the same, 2.4 to 3.2 µs, so there is no cheap tier and no expensive one.
+  #34 first reported the opposite — that a D-D-only base cost 2.3× the full set, on the strength of
+  D-D being the only reaction that breeds — and #39 withdrew it: the mechanism is real code that
+  costs too little to measure, and the whole of the apparent effect was a busy machine. See
   [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md).
 
   What is **not** discharged: the measurement is a rig, not a factory. #34 asked for a real base at
@@ -75,6 +77,13 @@ requires restructuring is not a fallback.
 - **The premultiplication the redesign left undone is the obvious first optimisation** if measurement
   shows a problem — reactivities multiplied by reaction energies once at load rather than per lookup.
   Recorded here so it is not rediscovered from scratch.
+
+  **#39 measured what it would be aiming at, and the answer is "a real share, but not the largest".**
+  Ablating the simulation step rung by rung puts the arithmetic at about a third of it and the Lua↔C++
+  crossings at the rest, roughly two to one. That corrects the claim the research note has carried
+  since #24 — that crossings outweighed the physics by one to two orders of magnitude — which, had
+  it stood, would have made premultiplication pointless. It is not pointless; it is also not the biggest
+  lever, and at 2.5 µs a reactor neither lever is worth pulling yet.
 - **Simulation state lives in `storage`**, which enlarges the save and migration surface. This bears on
   [Save migration or clean break?](https://github.com/trulsjo/realistic-fusion-refreshed/issues/7):
   recipe-driven reactors would have had almost no runtime state to migrate; simulated ones do.

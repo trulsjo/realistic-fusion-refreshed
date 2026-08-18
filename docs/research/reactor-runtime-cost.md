@@ -111,11 +111,16 @@ entire game update (1.80 ms of 2.09 ms) — a rig has nothing else in it to comp
 around 18 GW, which is megabase scale; a large but ordinary fusion build of 20 to 50 reactors pays
 0.2 to 0.5 ms.
 
-**Where the time goes.** 9 µs is one to two orders of magnitude more than the arithmetic in
-`reactor-logic.lua` costs. The step crosses the Lua↔C++ boundary about eight times per reactor —
-`fluidbox[1]` (which allocates a table), `energy` read and write, `fluidbox[2]`, `get_capacity`,
-the two box writes — and that is what is being measured. **The physics is not the cost; the API is.**
-Not investigated further here, and it is where a later optimisation would go.
+**Where the time goes.** 9 µs is far more than the arithmetic in `reactor-logic.lua` looks like it
+should cost, and the step crosses the Lua↔C++ boundary about eight times per reactor — `fluidbox[1]`
+(which allocates a table), `energy` read and write, `fluidbox[2]`, `get_capacity`, the two box
+writes. On that basis this note used to say *"the physics is not the cost; the API is"*, and put the
+arithmetic one to two orders of magnitude below the figure.
+
+> **Measured 2026-08-18 and only half right ([#39](https://github.com/trulsjo/realistic-fusion-refreshed/issues/39)).**
+> The arithmetic is about **a third** of the step, not a hundredth of it. Crossings do cost more —
+> roughly two to one — but that is a ratio, not the order of magnitude this paragraph asserted, and
+> the difference decides what an optimisation would target. See *Where the cost actually goes* below.
 
 **After throttling** to one step every six ticks:
 
@@ -156,6 +161,12 @@ figure quoted above is optimistic for runs taken in quick succession on this lap
 throttled cost as **about 2 µs per reactor, and treat any comparison finer than a factor of 1.5 as
 unmeasured**. A run taken to settle a smaller difference than that needs interleaved repeats, not
 one sweep.
+
+> **Both figures superseded 2026-08-18 (#39): the floor is about 1.35×, and neither of these runs
+> was taken on a machine known to be quiet.** The instinct here was right and the diagnosis was not —
+> the spread is not a property of "this laptop" that has to be lived with, it is other work running
+> on it, and there is now a `BUSY` warning that says which runs had it. Interleaved repeats are not
+> the remedy; a quiet machine is.
 
 One sample was taken with the reactor animation removed to see whether #25's successor had cost
 anything, and returned **3.5 µs — higher with the feature gone**, which is not a possible causal
@@ -284,6 +295,14 @@ in the *same entity*, so counting reactors, or even counting entity types, canno
 
 ### Results
 
+> **Every figure in this subsection is superseded — see *Where the cost actually goes, and what the
+> spread was (#39)* below.** These runs were taken while an unrelated compile was running on the
+> machine, which this rig cannot subtract: the baseline is a separate process minutes away from the
+> measurement, so contention lands on the difference rather than cancelling. Re-measured quiet, the
+> D-D column falls from 6.3–6.9 to 2.4–3.2 and the mixed column from 2.9–4.0 to 2.4–2.5 — which
+> collapses the section's headline finding into "they are the same number". Left standing because the
+> reason it was wrong is the finding of #39.
+
 `scriptUpdate` mean, baseline subtracted, µs per reactor. 1000 ticks × 3 runs per count.
 
 | reactors | all four reactions | D-D alone |
@@ -294,7 +313,8 @@ in the *same entity*, so counting reactors, or even counting entity types, canno
 | 200 | **2.95** | **6.88** |
 
 Repeated at *n* = 200, same machine, same session. Every mixed run had the identical grid and the
-identical split (`d-d:60, d-t:50, d-he3:45, he3-he3:45`), so these are repeats of one measurement:
+identical split (`d-d:60, d-t:50, d-he3:45, he3-he3:45`), so these are repeats of one measurement —
+of one measurement taken on a busy machine, which is what the repeats were failing to detect:
 
 | run | mixed | D-D alone |
 |---|---:|---:|
@@ -305,14 +325,27 @@ identical split (`d-d:60, d-t:50, d-he3:45, he3-he3:45`), so these are repeats o
 **The third mixed run is 40% above the first two, and that is this page's own 20–42% spread rather
 than anything about the mod.** Its *baseline* moved with it — 9.4 µs of `scriptUpdate` at *n* = 0
 against 6.4 and 5.0 — and its `wholeUpdate` median went from 403 and 291 µs to 480, which is a
-machine doing other work, not a reactor costing more. Recorded rather than dropped, because dropping
+machine doing other work, not a reactor costing more.
+
+> **This paragraph got the diagnosis right and drew the wrong conclusion from it (#39).** "A machine
+> doing other work" was correct, and it was read as reassurance — the baseline moved *with* the
+> measurement, so the contamination looked like it would cancel. It does not cancel. The two are
+> separate processes and the figure is their difference, so a machine that is busy for part of the
+> window lands entirely on that difference. The right response to seeing the baseline move is to
+> discard the run, not to keep it as evidence of a wide but honest spread. Recorded rather than dropped, because dropping
 the inconvenient repeat is how a 42% spread turns into a false precision.
 
-**At 200 reactors the full reaction set costs about 3 µs per reactor — call it 0.6 to 0.8 ms per tick,
-3.4% to 4.9% of the 16.67 ms budget.** A large but ordinary build of 20 to 50 reactors pays well
-under 1%.
+~~At 200 reactors the full reaction set costs about 3 µs per reactor — call it 0.6 to 0.8 ms per tick,
+3.4% to 4.9% of the 16.67 ms budget.~~ **Quiet, it is 2.5 µs per reactor: 0.5 ms per tick, about 3.1%
+of the 16.67 ms budget** (#39). A large but ordinary build of 20 to 50 reactors pays well under 1%,
+which is the one sentence here that did not need correcting.
 
-### The surprise: the full set is CHEAPER per reactor than D-D alone
+### The surprise: the full set is CHEAPER per reactor than D-D alone — withdrawn
+
+> **Withdrawn 2026-08-18 (#39).** Re-measured on a quiet machine the two are 2.6 and 2.5 µs — a ratio
+> of 1.03, which is one number. The mechanism below is real code, and it costs too little to measure.
+> The whole of the effect was contention. The subsection is kept because its cross-check reasoning is
+> sound and its conclusion is the cautionary tale.
 
 D-D on its own costs **roughly twice** what the mixed set does — 6.3 to 6.9 µs against 2.9 to 4.0.
 That is the opposite of the direction everyone expected: item 2 of *What this does not close* above
@@ -340,6 +373,11 @@ So **the worst case is not the full reaction set; it is a player who has only un
 also the earliest game state, on the smallest bases — 6.9 µs per reactor matters far less at the ten
 reactors an early D-D base has than it would at two hundred.
 
+> **Also withdrawn.** There is no worst case: every reaction costs about the same. Note what the
+> *n* = 10 cross-check did and did not buy — it correctly established that the two rigs measure the
+> same thing when they contain the same thing, and it could not establish that the divergence above
+> *n* = 10 was caused by the reactions rather than by the clock, because both changed together.
+
 ### Compared against the early reading
 
 Same script, same counts, same statistic. The D-D figure is the one that is comparable, and it has
@@ -353,6 +391,9 @@ moved:
 | **2026-08-18** | **D-D alone** | **6.3 – 6.9** |
 | **2026-08-18** | **all four reactions** | **2.9 – 4.0** |
 
+> **Withdrawn 2026-08-18 (#39): nothing doubled.** The quiet figure is 2.4 – 3.2 µs, median 2.6,
+> which straddles #27's 2.85. Two runs each way were not enough, because both were contended.
+
 **D-D alone has roughly doubled since #27's 2.85 µs, and this note does not explain it.** Two runs each
 way put it well outside the 1.5× this page says to treat as noise, so it is a real change rather than a
 reading. What landed in between is #30's lithium blanket, #31's aneutronic tier and the work on
@@ -365,13 +406,193 @@ radiation loss; which of them costs what was not isolated here, and attributing 
 
 `UPDATE_INTERVAL` stays at 6 — ten simulation steps a second, the value #24 chose. ADR 0005
 pre-authorises moving to a coarser cadence if measurement showed the cost was too high; it does not.
-3.4% of a tick at megabase scale, and under 1% at the scale anyone will actually build, is not a
-budget worth spending the physics on. Nothing about the rate computation was touched, so the fallback
+3.1% of a tick at megabase scale (#39; 3.4% as first measured), and under 1% at the scale anyone will
+actually build, is not a budget worth spending the physics on. Nothing about the rate computation was touched, so the fallback
 remains available and remains a one-line change.
 
-The number to quote is **about 3 to 4 µs per reactor per tick with all four reactions, and about 7 µs
-for a D-D-only base**, and no digit after that is real. Three mixed runs spanning 2.85 to 4.04 are why
-the first figure is a range rather than a number.
+~~The number to quote is about 3 to 4 µs per reactor per tick with all four reactions, and about 7 µs
+for a D-D-only base.~~ **The number to quote is about 2.5 µs per reactor per tick, whichever reactions
+are running** — 2.4 to 2.5 for the full set, 2.4 to 3.2 for D-D alone, and no digit after that is
+real. See #39 below for why the figures this section originally carried were nearly three times too
+high, and why there is no longer a cheap case and an expensive one.
+
+## Where the cost actually goes, and what the spread was (#39)
+
+Measured **2026-08-18**, after the section above, on the same machine and the same Factorio 2.0.77.
+[#39](https://github.com/trulsjo/realistic-fusion-refreshed/issues/39) asked two questions this note
+had left open — item 5 and item 4 of *What this does not close* — and answering the second one
+invalidated several of the numbers above. Those corrections are at the foot of this section rather
+than quietly applied in place.
+
+### The machine was not quiet, and that is the whole of item 4
+
+**The run-to-run variation is other work on the machine.** Not thermal throttling, which is what this
+note guessed at and never tested. The two are distinguishable and the test is cheap:
+`% Processor Performance` reports the effective clock as a percentage of the part's base frequency,
+and a thermally throttled part sits **below** 100 and stays there. Sampled through a full experiment,
+88 samples, this part never once went below base — it ran between **111% and 158%**, on turbo
+throughout. Thermal throttling is ruled out.
+
+What it was instead is not a deduction: an unrelated compile was running in another project during
+the first set of measurements taken for this ticket, and re-running them once it finished moved every
+figure. That is the confound this rig is least able to absorb, for a structural reason worth writing
+down:
+
+> **Every per-reactor figure here is a difference between two Factorio processes minutes apart.**
+> `n = 0` is measured in its own process, `n = 200` in another. Work that starts on the machine
+> between the two does not cancel out of the subtraction the way the rig's own power does — it lands
+> entirely on the difference. The method's central strength, *every run builds the same map, so a
+> difference between runs is reactors*, holds only for the map. It says nothing about the machine.
+
+`bench-reactors.ps1` now reads the machine's clock and its load immediately **before** launching each
+count's Factorio, prints both, and warns `BUSY` above `-BusyPercent` — 60% of the part by default,
+calibrated rather than round: the machine idles near 33%, and a multi-core compile takes it past 100%
+and holds it there.
+
+**Before the launch, not during it, and the ordering is the whole design.** Measured during the run
+the counter is largely measuring *us*: Factorio starts up and loads a save multi-threaded, and an
+invocation here is only a few seconds, so that burst is most of what there is to sample. A version
+that watched throughout duly warned on every run, including runs on an idle machine — a guard that
+always fires hides a contended run exactly as well as one that never fires. Before the launch there
+is no Factorio of ours and whatever the counter reports is somebody else's.
+
+What that cannot see is work beginning after the launch and ending before the process exits. Over a
+sweep the gap is small and self-closing, since every count takes its own reading and a compile long
+enough to matter is caught by the next one; a compile that fits inside one five-second invocation is
+not. So read the warning as *this count was launched onto a busy machine*, which is the claim it can
+support. It **warns rather than refuses**, because a figure with the caveat attached beats no figure.
+And a counter that does not answer — the paths are localised on non-English Windows — warns too,
+because a guard that could not run has not passed. Grep for `BUSY` before quoting a number.
+
+### What remains once the machine is quiet
+
+**About 1.35×, and it lives at the level of the individual benchmark run.** Ten invocations of the
+shipped D-D step at *n* = 200, none of them carrying a BUSY warning, gave
+
+```
+2.39  2.41  2.42  2.50  2.51  2.65  2.83  2.88  2.89  3.20      median 2.58
+```
+
+— a 1.34× spread, or 12% by standard deviation. Inside those same invocations the **individual
+benchmark runs** span 468 to 873 µs, a **1.86×** spread on the identical map in the identical
+process. So the pooling `--benchmark-runs` already does is carrying most of the load: the figure a
+whole invocation reports is a good deal steadier than any one run inside it.
+
+Six further invocations taken afterwards, with the finished instrumentation and not one of them
+flagged, came in tighter still:
+
+```
+2.56  2.58  2.59  2.62  2.80  2.85      median 2.60,  spread 1.12x
+```
+
+**Take 2.6 µs as the figure and 1.35× as the floor.** The tighter set is not licence to quote three
+digits: it is six invocations inside a few minutes, and the wider one is what a set spread across an
+afternoon looks like. The conservative number is the one to plan against.
+
+**Two further controls were tried and neither is worth having.** Taking the per-reactor cost from the
+median across benchmark runs rather than the pooled mean does not help — 1.31× against 1.28× on the
+same data, because an outlier run is as often low as high. Nor does raising `-Runs` from 3 to 5:
+five invocations each way gave 1.21× at three runs and 1.33× at five, which is to say no effect this
+rig can see, for a sweep 60% longer. **`-Runs` stays at 3 and the pooled mean stays the statistic.**
+What did change is that each run is now printed separately, so an outlier is visible rather than
+buried in the mean it moved.
+
+**So: treat 1.35× as the noise floor, and anything finer than about 1.4× as unmeasured.** That
+supersedes both the "around 20%" above and the 42% recorded for the 15×15 rig — neither of which was
+taken on a machine verified to be quiet, so neither was measuring only the mod.
+
+### Where the cost actually goes
+
+`scripts/bench-reactors.ps1 -Ablate <rung>` runs a cut-down simulation step in place of the shipped
+one and measures it the same way — as a slope against the *n* = 0 baseline. The rungs are cumulative,
+so the difference between two of them is the cost of what the second adds:
+
+| rung | what it adds |
+|---|---|
+| `loop` | walk the register, check `.valid`. No API call per reactor. |
+| `read` | `entity.fluidbox[1]` and `entity.energy`. Two crossings, one allocating a table. |
+| `physics` | `reactor-logic.step()`. The arithmetic. |
+| `write` | the pending table, then `entity.energy`, `box[1]`, `get_capacity(2)`, `box[2]`. |
+
+The rig gets to own the step because `raise_built = false` on the reactors it places: RealisticFusion
+registers a reactor from the build event and rescans only at `on_init`, which runs before the rig's,
+so an unraised reactor is one the shipped `update()` never sees. It then walks an empty register
+while the rig steps the reactors itself, at the cadence read out of `control.lua` rather than
+remembered. **The physics rung requires `reactor-logic` straight out of `__RealisticFusion__`**, so
+it is the shipped arithmetic and not a copy of it. Rungs below `write` leave no mark on the world, so
+the rig counts its own steps and the reactors they touched and the script gates on both — a handler
+that silently failed to register would otherwise report a cost of nothing, which reads exactly like
+the finding.
+
+Six passes, D-D, *n* = 200, 1000 ticks × 5 runs each. Median over the passes that ran quiet:
+
+| what | µs per reactor | share of the ladder |
+|---|---:|---:|
+| walk the register, check `.valid` | 0.060 | 3% |
+| `fluidbox[1]` and `.energy` — two crossings | 0.270 | 14% |
+| **`reactor-logic.step()` — the arithmetic** | **0.876** | **45%** |
+| pending table and four write crossings | 0.725 | 38% |
+| **ladder total** | **1.932** | |
+| shipped step, measured directly | 2.507 | |
+
+**The arithmetic is about a third of the shipped step, not a hundredth of it.** Crossings still cost
+more than it does — 1.0 µs against 0.88 within the ladder — and the 0.58 µs by which the shipped step
+exceeds the ladder is work the ladder omits, which is the collector lookup and the circuit publish,
+and so crossings again. That last part is arithmetic on a difference rather than a measurement: it
+was not ablated separately. So the direction of the old claim was right and its magnitude was wrong
+by well over an order of magnitude. Call it **two to one**, not a hundred to one.
+
+**That changes what an optimisation would target, which is why #39 asked.** The premultiplied
+reactivities [ADR 0005](../adr/0005-real-time-fusion-simulation.md) records as the obvious first
+optimisation are **not** worthless: they aim at a real third of the step. They are also not a
+solution on their own, since premultiplication removes part of the interpolation rather than the
+whole of the arithmetic. Batching or caching the fluidbox work aims at the larger share. Neither is
+worth doing at 2.5 µs a reactor — this is recorded so that whoever needs it later starts from a
+measurement rather than from this note's old guess.
+
+The ladder was re-run once more at the end on the finished script, at three benchmark runs rather
+than five, and lands in the same place: `read` 0.315, `physics` 1.404, `write` 2.059 µs. Different
+numbers to two digits, the same shape.
+
+Two caveats on the table, both crediting the crossings too generously rather than too little. The
+`write` rung bundles the per-reactor `pending` table in with the four write crossings, so its 0.725 µs
+is an upper bound on what the writes themselves cost. And the ladder omits what the shipped step does
+beyond it, which is why 1.932 does not reach 2.507.
+
+**Garbage collection stays negligible and now has a ladder to sit against.** `luaGarbageIncremental`
+per reactor runs 0.00 µs at `loop`, 0.07 at `read` — the table `fluidbox[1]` allocates — 0.04 at
+`physics`, 0.14 at `write`, and 0.19 for the shipped step.
+
+### What this corrects above
+
+Every figure below was re-measured on a quiet machine with the same script and the same counts. The
+old ones are left standing above rather than deleted, because they are what the record said and
+because the reason they were wrong is itself the finding.
+
+| claim above | what it said | measured 2026-08-18, quiet |
+|---|---|---|
+| D-D alone at *n* = 200 | 6.3 – 6.9 µs | **2.4 – 3.2 µs, median 2.6** |
+| all four reactions at *n* = 200 | 2.9 – 4.0 µs | **2.4 – 2.5 µs, median 2.5** |
+| D-D alone costs 2.3× the mix | the headline surprise of #34 | **1.03× — the same number** |
+| `luaGarbageIncremental`, D-D against mixed | 0.51 against 0.17, a 3× difference | **0.19 against 0.17** |
+| D-D has roughly doubled since #27's 2.85 µs | "a real change rather than a reading" | **withdrawn — 2.6 straddles 2.85** |
+| share of a 16.67 ms tick at 200 reactors | 3.4% – 4.9% | **about 3.1%** |
+
+**The surprise did not survive.** *The full set is CHEAPER per reactor than D-D alone* rested on
+6.3–6.9 against 2.9–4.0; on a quiet machine the two are 2.6 and 2.5, which is one number. The
+mechanism it proposed is real code — D-D is the only reaction that breeds, and `result.products` is
+built every step whether or not a collector exists — but the table costs too little to see, which the
+`luaGarbageIncremental` row now says directly instead of contradicting. **There is no cheap case and
+no expensive case: every reaction costs about the same, and a D-D-only base is not the worst one.**
+
+**The old D-D column also fails a check anyone can apply to a future sweep.** Per-reactor cost is flat
+above *n* = 10 — this note says so itself, and every clean sweep shows it settling downwards: 3.40 µs
+at *n* = 10, 2.54 at 50, 2.42 at 200. The figures it recorded **rose**: 4.4, then 6.3, then 6.88. A
+linear cost divided by *n* cannot do that. A machine getting busier as the sweep runs can, and did.
+
+**What does not change is the verdict.** 2.5 µs per reactor is cheaper than the 2.9 to 4.0 the
+decision was discharged on, so *acceptable at the shipped cadence, no further throttling* holds with
+more room than it was given. `UPDATE_INTERVAL` stays at 6.
 
 ## What this does not close
 
@@ -384,22 +605,31 @@ the first figure is a range rather than a number.
    "what the game feels like on a real base with this mod" is not answered here and needs a real
    save, which this project does not have.
 2. ~~**Only one reaction exists.**~~ **All four now do, and they were measured together.** The
-   expectation recorded here — that per-reactor cost would not grow as reactions were added — held,
-   and then some: the average *fell*, because only D-D breeds. What is now open is the opposite
-   question, why D-D alone costs 2.3× the mix and why it has doubled since #27.
+   expectation recorded here — that per-reactor cost would not grow as reactions were added — held.
+   It held plainly, in the end: measured on a quiet machine (#39) every reaction costs about the
+   same, 2.5 µs, and the "the average *fell*, because only D-D breeds" this item used to record was
+   a contended machine rather than a property of the mod.
 3. **Nothing was measured with a player watching.** Rendering, GUI and the interface #25 will add
    are all absent. The redesign's 45 ms is best explained by exactly that kind of cost, so v1's
    interface work should be measured when it lands rather than assumed free.
-4. **The 20% run-to-run variation was not chased down.** Thermal throttling on a laptop part is
-   the obvious candidate. It is wide enough that a future comparison should re-run the baseline on
-   the same machine in the same session rather than compare against the numbers on this page.
-5. **The API cost per crossing was not isolated.** The claim that boundary crossings dominate the
-   step follows from the arithmetic being far too cheap to explain 9 µs; it was not measured
-   crossing by crossing.
+4. ~~**The 20% run-to-run variation was not chased down.**~~ **Chased down 2026-08-18 (#39): it was
+   other work on the machine, not thermal throttling** — the part never dropped below its base clock
+   in 88 samples. On a quiet machine what is left is about **1.35×**, and it lives at the level of
+   the individual benchmark run. The script now records the machine's load and warns `BUSY`. The
+   advice to re-run the baseline in the same session still stands and is now the *weaker* of the two
+   rules: **check the run was quiet first**, because a baseline taken beside a compile is worse than
+   no baseline at all — the difference is where the contamination lands.
+5. ~~**The API cost per crossing was not isolated.**~~ **Ablated 2026-08-18 (#39).** Crossings do cost
+   more than the arithmetic, but by about **two to one**, not the order of magnitude this note
+   claimed. The arithmetic is roughly a third of the step. What is still not isolated is the cost of
+   any *single* crossing: the ladder measures groups of them, and the write rung bundles a table
+   allocation in with four writes. Per-call profiling would be needed for finer than that, and
+   nothing currently needs it.
 
 ### Sources
 
-- `scripts/bench-reactors.ps1` — the measurement, including the rig it builds.
+- `scripts/bench-reactors.ps1` — the measurement, including the rig it builds and the `-Ablate`
+  ladder that breaks the step down.
 - `tests/test-reactor-logic.lua` — the cadence-insensitivity check the throttling rests on.
 - Decisions this bears on: [ADR 0005](../adr/0005-real-time-fusion-simulation.md),
   [ADR 0011](../adr/0011-per-reactor-simulation-fluid-coupled.md).
@@ -439,7 +669,8 @@ tick at n = 200.
 
 **This is not a claim that breeding is free, and not a claim that it costs anything either.** The
 four runs of the preceding shipped code returned 1.73, 2.38, 2.45 and 2.46 µs, and this note has
-already recorded a run-to-run spread of 42% — so 2.85 against a previous high of 2.46 is 1.16×, and
+already recorded a run-to-run spread of 42% (**1.35× on a quiet machine, #39**) — so 2.85 against a
+previous high of 2.46 is 1.16×, and
 the section above says plainly that differences finer than about 1.5× are unmeasurable here without
 interleaved repeats. It sits inside the noise. Anyone who needs the real number should take it as
 an A/B on one machine in one sitting rather than reading it off this table.

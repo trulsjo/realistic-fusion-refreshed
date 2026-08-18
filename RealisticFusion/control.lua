@@ -26,10 +26,16 @@ local SPECS = {
 -- simulation steps, and the step itself is written in terms of elapsed seconds.
 --
 -- Ten steps a second, not sixty, on the strength of #24's measurement. Not because the per-tick
--- cost was unaffordable -- nine to eleven microseconds per reactor, linear out to 200 of them, a
--- ninth of a tick's budget at that size -- but because five of every six of those steps bought
--- nothing. The plasma's confinement time is thirty seconds, and stepping a thirty-second process
--- every sixteen milliseconds resolves nothing that a tenth of a second misses: equilibrium
+-- cost was unaffordable -- #24 put it at nine to eleven microseconds per reactor before throttling,
+-- linear out to 200 of them, a ninth of a tick's budget at that size -- but because five of every
+-- six of those steps bought nothing.
+--
+-- At the shipped cadence the step now costs about 2.5 microseconds per reactor with any of the four
+-- reactions running, around 3% of a tick at 200 of them (#39, on a machine checked to be quiet;
+-- earlier figures on that page were taken beside a compile and read nearly three times high).
+--
+-- The plasma's confinement time is thirty seconds, and stepping a thirty-second process every
+-- sixteen milliseconds resolves nothing that a tenth of a second misses: equilibrium
 -- temperature moves 0.10% between the two cadences. tests/test-reactor-logic.lua asserts that
 -- insensitivity across the whole range from one tick to thirty, so changing this line stays safe.
 --
