@@ -108,6 +108,22 @@
     are rejected rather than silently ignored, because a typo would otherwise produce a base-only
     run reported as an expansion pass. Used to discharge ADR 0003's obligation.
 
+.PARAMETER AlsoModDirectory
+    A directory of third-party mod directories to load alongside this repo's, e.g. an unpacked
+    Krastorio 2 and its dependencies. Every subdirectory holding an info.json is junctioned in and
+    enabled; anything else in there is ignored.
+
+    This is ADR 0007's obligation -- coexistence with other mods, Krastorio 2 most of all -- and it
+    takes a directory rather than a mod name because there is nothing here that downloads: the mods
+    have to be put there first, by git or by hand. Enabling them is the part this script owns.
+
+    Note the version trap. A mod's factorio_version must match the game's major version exactly, so
+    Krastorio 2 2.1.x will NOT load next to this repo on 2.0.77 however the mod list is written --
+    the 2.0 line (2.0.19) is the one that loads. See docs/research/mod-set-coexistence-targets.md.
+
+    The asset check does not cover the extra mods: Find-MissingAssets only resolves paths for mods
+    it is given a directory for, and a third-party mod's graphics are not this repo's to police.
+
 .PARAMETER SelfTest
     Verify the check can fail. Three halves: the repo as it stands must pass; a mod carrying an
     invalid prototype must fail; and a mod naming an icon file that does not exist must be
@@ -121,12 +137,14 @@
 .EXAMPLE
     pwsh -File scripts/load-check.ps1
     pwsh -File scripts/load-check.ps1 -With space-age
+    pwsh -File scripts/load-check.ps1 -AlsoModDirectory C:\somewhere\k2-2.0
     pwsh -File scripts/load-check.ps1 -SelfTest
 #>
 [CmdletBinding()]
 param(
     [string]   $FactorioExe,
     [string[]] $With = @(),
+    [string]   $AlsoModDirectory,
     [switch]   $SelfTest,
     [switch]   $KeepTemp
 )
@@ -136,6 +154,27 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $ourMods  = @('RealisticFusionCore', 'RealisticFusion')
+
+# Refused rather than combined. The self-test's canary halves reason about what a broken mod does to
+# a clean load, and a third-party overhaul in the same run makes a failure ambiguous -- worse, mods
+# present in the directory but absent from mod-list.json are auto-enabled by Factorio, so "not
+# mentioning them" would not keep them out either.
+if ($SelfTest -and $AlsoModDirectory) {
+    throw '-SelfTest and -AlsoModDirectory cannot be combined: the self-test needs a clean mod set to prove anything.'
+}
+
+$alsoMods = @()
+if ($AlsoModDirectory) {
+    if (-not (Test-Path $AlsoModDirectory)) { throw "-AlsoModDirectory not found: $AlsoModDirectory" }
+    $alsoMods = @(Get-ChildItem -Path $AlsoModDirectory -Directory |
+        Where-Object { Test-Path (Join-Path $_.FullName 'info.json') } |
+        ForEach-Object { $_.Name } | Sort-Object)
+    # Empty is an error, not an empty run: it would otherwise report a coexistence pass for a set
+    # that was never loaded.
+    if (-not $alsoMods) {
+        throw "-AlsoModDirectory holds no mod directories (a directory with an info.json in it): $AlsoModDirectory"
+    }
+}
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
 $bundled     = Get-BundledMods -FactorioExe $FactorioExe
@@ -210,6 +249,10 @@ function Test-Assets {
 
 try {
     New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+    if ($alsoMods) {
+        New-ModJunctions -ModDirectory $modDir -RepoRoot $AlsoModDirectory -Mods $alsoMods
+        Write-Host "also loading: $($alsoMods -join ', ')"
+    }
 
     if ($SelfTest) {
         # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
@@ -290,7 +333,7 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
         exit 0
     }
 
-    $result = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'run'
+    $result = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + $alsoMods) -Tag 'run'
 
     # After the load, not before: Test-Assets reads a --dump-data written under the mod list
     # Invoke-LoadCheck just put in place, and a repo that does not load has nothing to dump.
