@@ -264,13 +264,129 @@ Two things follow, and both outlive the rig:
   density. That is arguably the right behaviour, and it is worth stating out loud because nobody
   chose it.
 
+## The full reaction set (#34) — ADR 0005's obligation
+
+Measured **2026-08-18**, on Factorio 2.0.77, with the same script and the same counts as everything
+above. This is the measurement [ADR 0005](../adr/0005-real-time-fusion-simulation.md) has been waiting
+for since the decision to simulate was taken.
+
+`scripts/bench-reactors.ps1 -Mixed` runs all four of ADR 0010's reactions at once — D-D and D-T in
+`rf-reactor`, D-He3 and He3-He3 in `rf-aneutronic-reactor` — one reaction per row of the grid. By row
+rather than round-robin, because a pooled row is a single fluid segment and a segment carries one
+fluid; cycling by index would build something that cannot exist. The consequence is that counts below
+the grid width are **not** mixed: at *n* = 1 and *n* = 10 every reactor is in row 0 and burns D-D. That
+turns out to be useful rather than a nuisance — see the cross-check below.
+
+The rig now reports what each reactor is actually burning, and the script refuses to report a mixed
+figure unless four distinct plasmas were present. That is not ceremony: two of the four reactions run
+in the *same entity*, so counting reactors, or even counting entity types, cannot tell D-D from D-T. At
+*n* = 200 it logged `rf-d-d-plasma:60, rf-d-t-plasma:50, rf-d-he3-plasma:45, rf-he3-he3-plasma:45`.
+
+### Results
+
+`scriptUpdate` mean, baseline subtracted, µs per reactor. 1000 ticks × 3 runs per count.
+
+| reactors | all four reactions | D-D alone |
+|---:|---:|---:|
+| 1 | 10.0 | 23.3 |
+| 10 | 4.1 | 4.4 |
+| 50 | 2.9 | 6.3 |
+| 200 | **2.95** | **6.88** |
+
+Repeated at *n* = 200, same machine, same session. Every mixed run had the identical grid and the
+identical split (`d-d:60, d-t:50, d-he3:45, he3-he3:45`), so these are repeats of one measurement:
+
+| run | mixed | D-D alone |
+|---|---:|---:|
+| full sweep `0,1,10,50,200` | 2.95 | 6.88 |
+| `0,200` | 2.85 | 6.30 |
+| `0,10,200` | 4.04 | — |
+
+**The third mixed run is 40% above the first two, and that is this page's own 20–42% spread rather
+than anything about the mod.** Its *baseline* moved with it — 9.4 µs of `scriptUpdate` at *n* = 0
+against 6.4 and 5.0 — and its `wholeUpdate` median went from 403 and 291 µs to 480, which is a
+machine doing other work, not a reactor costing more. Recorded rather than dropped, because dropping
+the inconvenient repeat is how a 42% spread turns into a false precision.
+
+**At 200 reactors the full reaction set costs about 3 µs per reactor — call it 0.6 to 0.8 ms per tick,
+3.4% to 4.9% of the 16.67 ms budget.** A large but ordinary build of 20 to 50 reactors pays well
+under 1%.
+
+### The surprise: the full set is CHEAPER per reactor than D-D alone
+
+D-D on its own costs **roughly twice** what the mixed set does — 6.3 to 6.9 µs against 2.9 to 4.0.
+That is the opposite of the direction everyone expected: item 2 of *What this does not close* above
+predicted the per-reactor cost simply "not to grow" as reactions were added, and instead adding them
+lowered the average.
+
+**Taken at its weakest the ratio is 6.30 / 4.04 = 1.56**, which clears this page's "treat anything
+finer than 1.5 as noise" bar and not by much. The finding does not rest on that margin, though — it
+rests on the mechanism below and on the *n* = 10 cross-check, both of which are independent of how
+noisy any single pair of runs was.
+
+The mechanism is in `control.lua`: D-D is the only reaction that breeds by-products, and
+`result.products` is computed **every step whether or not a collector exists** — deliberately, so that
+bolting a collector on later starts collecting immediately with no backlog. D-T, D-He3 and He3-He3
+produce no such table. In a mixed rig only a quarter of the reactors pay for it, so the average falls.
+`luaGarbageIncremental` agrees: 0.51 µs per reactor D-D-only against 0.17 µs mixed, a 3× difference in
+exactly the stage that collects per-step tables.
+
+**The cross-check that makes this attributable rather than a story.** At *n* = 10 both rigs are D-D
+only — the mixed rig has not reached row 1 yet — and they agree: **4.1 µs against 4.4**. The two rigs
+are therefore measuring the same thing when they contain the same thing, and the divergence at *n* = 50
+and above arrives exactly when the other three reactions do.
+
+So **the worst case is not the full reaction set; it is a player who has only unlocked D-D.** That is
+also the earliest game state, on the smallest bases — 6.9 µs per reactor matters far less at the ten
+reactors an early D-D base has than it would at two hundred.
+
+### Compared against the early reading
+
+Same script, same counts, same statistic. The D-D figure is the one that is comparable, and it has
+moved:
+
+| when | configuration | µs per reactor at *n* = 200 |
+|---|---|---:|
+| 2026-08-15 | D-D, before throttling | 9.0 |
+| 2026-08-17 | D-D, throttled, post-#25 | 1.80 |
+| 2026-08-17 | D-D with by-products (#27) | 2.85 |
+| **2026-08-18** | **D-D alone** | **6.3 – 6.9** |
+| **2026-08-18** | **all four reactions** | **2.9 – 4.0** |
+
+**D-D alone has roughly doubled since #27's 2.85 µs, and this note does not explain it.** Two runs each
+way put it well outside the 1.5× this page says to treat as noise, so it is a real change rather than a
+reading. What landed in between is #30's lithium blanket, #31's aneutronic tier and the work on
+radiation loss; which of them costs what was not isolated here, and attributing it is the kind of thing
+[#39](https://github.com/trulsjo/realistic-fusion-refreshed/issues/39) exists for.
+
+### Verdict
+
+**Acceptable at the shipped cadence. No further throttling.**
+
+`UPDATE_INTERVAL` stays at 6 — ten simulation steps a second, the value #24 chose. ADR 0005
+pre-authorises moving to a coarser cadence if measurement showed the cost was too high; it does not.
+3.4% of a tick at megabase scale, and under 1% at the scale anyone will actually build, is not a
+budget worth spending the physics on. Nothing about the rate computation was touched, so the fallback
+remains available and remains a one-line change.
+
+The number to quote is **about 3 to 4 µs per reactor per tick with all four reactions, and about 7 µs
+for a D-D-only base**, and no digit after that is real. Three mixed runs spanning 2.85 to 4.04 are why
+the first figure is a range rather than a number.
+
 ## What this does not close
 
-1. **ADR 0005's obligation stands.** This is a rig: no belts, no trains, no biters, one surface,
-   one reaction. #34 measures the full reaction set on a real factory.
-2. **Only one reaction exists.** D-D is the only fuel with an entry; a reactor interpolates one
-   dataset. #28 and #31 add more, and ADR 0010's per-reaction plasma fluids are the reason to
-   expect the per-reactor cost not to grow with them — expect, not know.
+1. ~~**ADR 0005's obligation stands.**~~ **Discharged 2026-08-18** — see *The full reaction set*
+   above. **But it is still a rig, and that half of #34 was not done.** No belts, no trains, no
+   biters, one surface. The ticket asked for "a real factory at scale"; what was measured is 200
+   reactors on flat ground with power and nothing else. A factory's own UPS cost is not this mod's,
+   but it competes for the same 16.67 ms, and a reactor's cost could interact with a loaded engine
+   in ways a bare rig cannot show. The per-reactor figure is the mod's contribution and is sound;
+   "what the game feels like on a real base with this mod" is not answered here and needs a real
+   save, which this project does not have.
+2. ~~**Only one reaction exists.**~~ **All four now do, and they were measured together.** The
+   expectation recorded here — that per-reactor cost would not grow as reactions were added — held,
+   and then some: the average *fell*, because only D-D breeds. What is now open is the opposite
+   question, why D-D alone costs 2.3× the mix and why it has doubled since #27.
 3. **Nothing was measured with a player watching.** Rendering, GUI and the interface #25 will add
    are all absent. The redesign's 45 ms is best explained by exactly that kind of cost, so v1's
    interface work should be measured when it lands rather than assumed free.
