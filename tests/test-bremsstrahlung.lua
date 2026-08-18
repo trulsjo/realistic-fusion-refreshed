@@ -392,8 +392,13 @@ near(LADDER[200].wurzel.t_k, 2.13e9, "and its 200 s rung, the last one it publis
 -- "corrected" by scaling. Bremsstrahlung grows as sqrt(T) while D-D's reactivity climbs steeply
 -- over this range, so every second of confinement buys the uncorrected ladder more than it buys
 -- the real one and the two diverge as the ladder goes up: 11% apart at 30 s, 118% at 50 s.
+-- num() for the same reason every other comparison here uses it: a rung whose plasma ran away has
+-- no temperature, and an unguarded division would abort the run before the two cliff assertions
+-- below -- which are the ones that would explain what moved.
 local function gap(tau)
-  return LADDER[tau].nonrel.t_k / LADDER[tau].wurzel.t_k - 1
+  local top, bottom = num(LADDER[tau].nonrel.t_k), num(LADDER[tau].wurzel.t_k)
+  if bottom == 0 then return 0 end
+  return top / bottom - 1
 end
 check(gap(30) < 0.2 and gap(50) > 1,
   "the two ladders diverge superlinearly rather than by a fixed fraction",

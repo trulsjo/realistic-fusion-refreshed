@@ -442,6 +442,20 @@ local function check_reactor_specs()
         "exists. Add it to prototypes/entities.lua or take the name out of REACTORS.", name))
     end
   end
+
+  -- And the other direction, which is the one that bites on a RENAME rather than on an addition.
+  -- check_cadence and check_energy_outlets both walk SPECS and index the entity prototype straight
+  -- through, so a key left behind after a prototype was renamed or dropped is "attempt to index a
+  -- nil value" pointing into one of those functions -- not the named diagnostic the comments around
+  -- them promise. The loop above cannot see it, because it starts from the other list.
+  for name in pairs(SPECS) do
+    if not prototypes.entity[name] then
+      error(string.format(
+        "control.lua's SPECS holds constants for '%s', which is not an entity prototype -- so the " ..
+        "checks below would index nil. Drop the row, or reconcile the name with " ..
+        "prototypes/entities.lua.", name))
+    end
+  end
 end
 
 --- Refuse to run if a reactor's output would be written into a box that will not take it (#31).

@@ -29,9 +29,16 @@ local M = {}
 -- buildings drawn from different Krastorio 2 art, so each declares its own animation in
 -- prototypes/entities.lua, and a third reactor needs no change here.
 --
--- control.lua's check_reactor_animations refuses to load if a reactor has no animation under this
--- name -- which is the failure this derivation makes possible and which would otherwise be an error
--- inside a running game the first time that reactor started fusing.
+-- THERE IS NO LOAD-TIME GUARD FOR THIS, and that is a gap rather than an oversight. The obvious
+-- one was written and does not work: animation prototypes are a data-stage type the runtime does not
+-- expose, so `prototypes.animation` is not a key and the check threw on its own first line.
+-- control.lua's check_reactor_companions covers the combinator, which IS an entity, and says so.
+--
+-- What that leaves: add a reactor prototype without declaring its "<name>-core" animation beside it
+-- in prototypes/entities.lua, and the mod loads and builds perfectly, then throws inside
+-- rendering.draw_animation the first time one of those reactors starts fusing -- on a live save.
+-- scripts/check-aneutronic.ps1 and scripts/check-d-t.ps1 both run a reactor until it is fusing,
+-- which is the call that would throw, so the rigs catch it; nothing at load does.
 local ANIMATION_SUFFIX = "-core"
 
 --- Show or hide one reactor's moving core.

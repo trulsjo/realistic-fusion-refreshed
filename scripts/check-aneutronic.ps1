@@ -230,18 +230,72 @@ script.on_init(function()
   end
   research_closure("rf-aneutronic-fusion", {})
 
-  local outside = {}
-  for _, machine in ipairs({ ANEUTRONIC, CONVERTER, "rf-aneutronic-composite-tank" }) do
-    for _, ingredient in pairs(prototypes.recipe[machine].ingredients) do
-      local recipe = force.recipes[ingredient.name]
-      if recipe and not recipe.enabled then
-        outside[#outside + 1] = machine .. " needs " .. ingredient.name
+  -- Asked as "is there an ENABLED recipe that makes this", not "is the same-named recipe enabled".
+  -- The narrower question is what scripts/check-blanket.ps1 asks, and it is enough there because
+  -- every ingredient of a blanket is an item named after its own recipe. It is not enough here: the
+  -- tier's fuels are fluids, rf-d-he3-mix is made by rf-d-he3-mixing, and a lookup by name would
+  -- skip it silently -- so dropping the rf-gas-mixing prerequisite would leave a player able to
+  -- research the tier and unable to make what it burns, with this check still printing "holds".
+  --
+  -- Ingredients nothing produces are counted separately rather than passed. rf-helium-3 is one:
+  -- it comes out of the simulation rather than out of a recipe, so there is no recipe to enable and
+  -- no closure question to answer. Counting them is what stops a vacuous pass looking like a real
+  -- one -- the numbers are printed either way.
+  local outside, checked, unproduced = {}, 0, 0
+  -- BARRELS ARE NOT A SOURCE, and leaving them in made this check vacuous in a way the first
+  -- version hid completely. Core's fluids barrel by default, so every one of them has an
+  -- empty-<fluid>-barrel recipe that lists the fluid as a product -- enabled from the start, because
+  -- barrelling is early vanilla. Ask "does an enabled recipe produce this" without excluding them
+  -- and the answer is yes for every fluid in the game, whatever the technology tree says.
+  --
+  -- Found by negative-testing rather than by reading: with rf-gas-mixing removed from the tier's
+  -- prerequisites this check still reported "closure holds", and reported that NOTHING was
+  -- unproduced -- which is what gave it away, since rf-helium-3 has no recipe at all and should
+  -- have been counted as one.
+  --
+  -- Excluded by subgroup rather than by name, because the name pattern is a convention and the
+  -- subgroup is what the engine actually files them under.
+  local BARRELLING = { ["fill-barrel"] = true, ["empty-barrel"] = true }
+
+  local function producers(name)
+    local found = {}
+    for _, recipe in pairs(force.recipes) do
+      local subgroup = recipe.subgroup and recipe.subgroup.name
+      if not (subgroup and BARRELLING[subgroup]) then
+        for _, product in pairs(recipe.products or {}) do
+          if product.name == name then found[#found + 1] = recipe end
+        end
+      end
+    end
+    return found
+  end
+  for _, unlocked in ipairs({ ANEUTRONIC, CONVERTER, "rf-aneutronic-composite-tank",
+                              "rf-d-he3-plasma", "rf-he3-he3-plasma" }) do
+    for _, ingredient in pairs(prototypes.recipe[unlocked].ingredients) do
+      local made_by = producers(ingredient.name)
+      if #made_by == 0 then
+        unproduced = unproduced + 1
+      else
+        checked = checked + 1
+        local reachable = false
+        for _, recipe in ipairs(made_by) do
+          if recipe.enabled then reachable = true break end
+        end
+        if not reachable then
+          outside[#outside + 1] = unlocked .. " needs " .. ingredient.name
+        end
       end
     end
   end
   record(#outside == 0,
-    "every ingredient of the tier's machines is craftable inside its own prerequisites",
-    #outside == 0 and "closure holds" or table.concat(outside, "; "))
+    "every ingredient of the tier is reachable inside its own prerequisites",
+    #outside == 0
+      and string.format("%d ingredients checked, %d have no recipe at all (bred, not crafted)",
+        checked, unproduced)
+      or table.concat(outside, "; "))
+  -- A closure check that checked nothing would pass. This is what says it did not.
+  record(checked >= 8, "and the closure check actually looked at the tier's ingredients",
+    string.format("%d checked", checked))
 
   force.research_all_technologies()
 
