@@ -40,6 +40,11 @@ Three things bear on the choice.
    ADR 0010 carries plasma as a fluid through `rf-pipe`, two reactors on the same plasma line already
    share a pool at a common temperature without a line of connectivity code.
 
+   > **"Averages it weighted by amount" was read off the prototype data and never observed. Measured
+   > under #40, it is not what the engine does: mixing loses about a fifth of the temperature
+   > difference it flattens.** The sharing this paragraph promises is real and was confirmed; the
+   > fidelity it assumes is not. See Consequences.
+
 3. **Removing the GUI removed the network's control surface.** `gui.lua` (672 lines) and
    `gui-events.lua` (370) drove sliders for plasma heating, magnetic field strength, divertor strength
    and per-heater overrides — all *per network*. The network was the object the player controlled. ADR
@@ -80,6 +85,11 @@ as circuit signals. Per-reactor scratch state lives in `storage`, keyed by `unit
 This is what distinguishes the decision from bare per-reactor simulation: the sharing behaviour that
 motivated networks is kept, and the code that implemented it is not written.
 
+> **"One mixed temperature" is the intent and not quite the behaviour** — see Consequences. Measured
+> under #40: a run does share and an idle one does flatten, but the mixing loses heat, and a box the
+> simulation writes every step sits a few percent above the rest of its run for as long as it is
+> driven. The decision stands on the sharing; the phrase overstates the fidelity.
+
 **No connectivity tracking exists.** No graph traversal, no network ids, no merge, no split, no orphan
 cleanup. Entity lifecycle is an insert on build and a delete on mine.
 
@@ -101,6 +111,32 @@ remains pre-authorised.
   redesign's seven — the per-update cost is a fraction of the reference. **This is a prediction, and
   ADR 0005's outstanding obligation to measure UPS is unaffected by it.** No measurement is inherited
   from either model; the redesign's code was never observed running.
+- **The delegation is not free, and what it costs was not known when this was decided.** Measured
+  2026-08-18 under [#40](https://github.com/trulsjo/realistic-fusion-refreshed/issues/40) by
+  `scripts/check-pooling.ps1`: **the engine's fluid mixing destroys heat.** Flattening a temperature
+  difference across a segment loses about a fifth of that difference — measured on reactors built so
+  that no simulation touches them at all, where the plasma amount does not move by a part in a
+  hundred thousand, and confirmed against a one-reactor run where nothing else could be to blame:
+  95% of what a lone reactor spends reaches its own box, 75% once twenty pipes are plumbed to it.
+
+  **Sharing itself works, and that half of the decision holds.** An unpowered reactor five along a
+  run reaches 57 times its seed temperature, and an idle run seeded fifty times apart flattens to
+  within 0.0001%. What does not hold is the assumption that delegating the mixing was *equivalent*
+  to doing it ourselves.
+
+  **A second effect is this mod's rather than the engine's, and it is larger.** Three reactors
+  bridged onto one run keep 58% of what they spend, against the 75% a single reactor keeps on a
+  comparable run — so most of the shortfall on a real bank of reactors is not mixing. `update()`
+  reads every reactor and then writes every reactor, each write replacing a box from the
+  start-of-step pool, and the engine re-splits between those writes; a reactor writing second can
+  overwrite the share of its neighbour's rise it has just been handed. Not isolated and not fixed
+  under #40.
+
+  **Nothing is decided here.** The options run from accepting it as a plumbing cost a player designs
+  around, through fixing the two-pass update, to reopening this delegation — and the last of those is
+  a new ADR, not an edit to this one. See
+  [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md) for the measurement
+  and its controls.
 - **Failure is local and visible.** A stuck reactor is one building a player can see and mine, not an
   invisible object spanning half a base.
 - **Blueprints, undo, cut-and-paste and robot construction need no special handling.** These are exactly

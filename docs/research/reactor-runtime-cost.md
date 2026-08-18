@@ -266,8 +266,9 @@ touched split identically, which is what settled it: this is the engine's model,
 
 Two things follow, and both outlive the rig:
 
-- **`LuaFluidBox[i].amount` is the box's share, not the segment's contents.** `get_capacity(i)`
-  likewise reports the segment. Anything that reasons about how full a reactor is — the tooltips
+- **`LuaFluidBox[i].amount` is the box's share, not the segment's contents.** ~~`get_capacity(i)`
+  likewise reports the segment.~~ **Half wrong, corrected under #40 below: `get_capacity` reports the
+  segment when asked of a pipe and the box's own volume when asked of a machine.** Anything that reasons about how full a reactor is — the tooltips
   and circuit signals of #25, the containment rules of #26 — has to know which of the two it is
   asking for.
 - **A reactor is only at full density when its whole segment is full**, so under-supply shows up
@@ -593,6 +594,152 @@ linear cost divided by *n* cannot do that. A machine getting busier as the sweep
 **What does not change is the verdict.** 2.5 µs per reactor is cheaper than the 2.9 to 4.0 the
 decision was discharged on, so *acceptable at the shipped cadence, no further throttling* holds with
 more room than it was given. `UPDATE_INTERVAL` stays at 6.
+
+## Fluid segments, and what sharing a pool actually costs (#40)
+
+Measured **2026-08-18** on Factorio 2.0.77 by `scripts/check-pooling.ps1`, which exists because
+nothing else could ask this question. `bench-reactors.ps1 -Pooled` pins every segment at 100% with an
+infinity pipe filter, so the write semantics never come under strain — it measures what sharing
+*costs*, not whether it is *right*. The pooling harness uses no infinity pipe anywhere: every run is
+seeded once and left to burn down.
+
+The three semantics below are the ones `control.lua`'s `apply()` is written against, and the 2.0 API
+documents none of them. Two of the three are not what this note previously said.
+
+### 1. `amount` is the box's share — confirmed
+
+Unchanged from *A finding about fluid boxes, discovered by getting it wrong* above, and now checked
+at five different runs rather than inferred from one accident. Every box on a run holds the run's
+contents in proportion to its own volume, and a Lua write is clamped to the box before the engine
+re-splits.
+
+**With one correction: the split is approximate.** The reactors settle about **two to three percent
+fuller** than the pipes on the same run — 44.93% against 43.80% on a three-reactor run at 44.65%
+overall. Near enough to reason with, not exact enough to assert equality against, which is why the
+harness allows five percent.
+
+That inexactness is also why seeding a run is harder than it looks. **A Lua write replaces a box and
+the engine re-splits between writes**, so seeding a row box by box in one pass throws most of it
+away: a three-reactor run written full in a single pass settles at 45% of capacity, not 100%. The
+harness writes every box every tick for a second before it measures anything.
+
+### 2. `get_capacity` reports the SEGMENT for a pipe and the BOX for a machine — this note had it wrong
+
+> Superseded: this page previously stated, and `control.lua` still commented, that
+> *"`get_capacity(i)` likewise reports the segment"*. That is true of a pipe and false of a reactor.
+
+| asked of | on a 4000-unit run | what it returns |
+|---|---:|---|
+| `rf-pipe` | 4000 | the whole segment |
+| `rf-reactor` box 1 (plasma, `input-output`) | 1000 | its own declared volume |
+| `rf-reactor` box 2 (energy, output) | 1000 | its own declared volume |
+
+Checked at runs of 2500, 4000, 6000 and 7000 units; the reactor answers 1000 every time.
+
+**Nothing is broken by this and one comment was wrong.** `apply()` clamps its energy write with
+`box.get_capacity(2)` and `deposit()` computes collector headroom the same way. Both wanted the box
+figure and both get it — the write would be clamped to the box regardless. What was wrong was the
+reasoning written beside them, which claimed a segment-wide number and would have justified writing
+more than a box can hold if anyone had ever relied on it.
+
+### 3. A run really is one pool, and an idle one flattens
+
+The harness builds rows of two, three and five reactors bridged by `rf-pipe` with **only the westmost
+on an electric network**. An unpowered reactor runs its whole step with heating clamped to zero, so
+any heat it holds arrived along the pipe.
+
+| row | unpowered reactors reach | spread among them | the powered one sits |
+|---|---:|---:|---:|
+| pair (2) | 1.36×10⁸ °C, 136× the seed | 0% | 3.6% above |
+| trio (3) | 9.23×10⁷ °C, 92× the seed | 0.03% | 5.6% above |
+| five (5) | 5.65×10⁷ °C, 57× the seed | 0.04% | 9.6% above |
+
+And a run with **nothing driving it at all**, seeded fifty times apart end to end, flattens from a 98%
+spread to **0.015%** within three seconds. That is the engine's mixing on its own, and it is the
+clean answer to "do they converge to a single temperature".
+
+**The powered reactor sits persistently above its own run, and that was not expected.** It is not a
+transient and it does not close when the sample is taken off the simulation's beat: heat enters at
+one box and leaves it no faster than the pipe carries it away, so the gradient is re-created every
+step. It grows with the length of the run — 3.6% at two reactors, 9.6% at five. **"One pool at one
+mixed temperature" is an idealisation with a source-side gradient in it**, and it is what a player
+will see if they read two reactors of six off the same pipe run and expect identical numbers.
+
+### 4. The engine destroys heat when it mixes
+
+**This is the finding, and it was not what the ticket went looking for.**
+
+The harness builds one row of three reactors with `raise_built = false`, so RealisticFusion never
+registers them and **no simulation ever runs on them**. It seeds the run flat, raises one box
+fourfold, and leaves it alone. Nothing consumes plasma, nothing supplies it, no Lua of ours touches
+it again.
+
+- the run's plasma **amount** does not move: 1785.8695 units before, 1785.8695 after
+- the run flattens to **0.0008%** end to end, so the mixing had finished when it was read
+- and **18.2% of the sum of amount × temperature is gone**
+
+Mixing is supposed to be a mass-weighted average, and a mass-weighted average conserves that sum
+exactly. Since every box on the run holds the same fluid at the same heat capacity, the sum is
+proportional to thermal energy. **Flattening a temperature difference across a fluid segment destroys
+a fifth of the excess, in the engine, with no mod code running.**
+
+The control that makes it attributable rather than a story is **the same run, undisturbed**: over
+sixty ticks with nothing done to it, its heat moves by 0.0009%. So these entities do not leak heat on
+their own — which was the first suspect, and `prototypes/entities.lua`'s "the boiler is neutered"
+note would have been the natural place to blame. The loss appears only when a *difference* has to be
+flattened.
+
+### 5. So the pool does not gain what the reactors spent — and only part of that is the engine's
+
+The bookkeeping check predicts one simulation step by requiring `reactor-logic` straight out of
+`__RealisticFusion__` — the shipped arithmetic, not a copy — and compares it against what the run
+actually gained over exactly that step. The four rows are built to separate two explanations that
+predict the same ordering.
+
+| run | writers | capacity | arrived |
+|---|---:|---:|---:|
+| `solo` — one reactor, no pipe at all | 1 | 1000 | **94.9%** |
+| `solopipe` — the same one reactor, +20 pipe | 1 | 3000 | **75.2%** |
+| `bare` — three reactors bridged | 3 | 4000 | **57.6%** |
+| `piped` — the same three, +20 pipe | 3 | 6000 | **66.8%** |
+
+**`solo` against `solopipe` is the measurement that matters**, because the only thing that changes
+between them is whether there is a run to mix across. One writer both times, so no reactor can
+overwrite another. **Mixing alone costs about twenty points**, which is the same finding as §4 arrived
+at from the other direction, on a rig where the simulation is running.
+
+**And three reactors lose more than mixing alone accounts for.** 57.6% on three writers against 75.2%
+on one. That excess is **in this mod, not the engine**, and the mechanism is visible in `update()`:
+it reads every reactor and then writes every reactor, and each write *replaces* its box with an
+amount and a temperature computed against the start-of-step pool. The engine re-splits between those
+writes — §1 shows it doing exactly that during seeding — so a reactor writing second can overwrite
+the share of its neighbour's rise that it had just been given. **This harness establishes that the
+excess exists; it does not isolate that mechanism, and no fix is attempted here.**
+
+**So `apply()`'s comment is right about the arithmetic and wrong about the outcome.** It reads *"the
+two errors cancel exactly … so the energy the pool gains is the energy the reactor spent whatever
+else is on the run"*, and closes with *"measured at 20 pipes against none: same plasma, same heating,
+same stored energy to within a tenth"*. The cancellation argument is sound as arithmetic. The outcome
+is not: between five and forty percent of the energy never arrives, and the figure moves with both
+the plumbing and the number of reactors. 57.6% against 94.9% is not within a tenth of anything.
+
+**What this does and does not mean.** It does *not* mean reactors are producing less energy than the
+mod intends — the reactor sells `rf-reactor-energy` out of its own step, and that is unaffected. It
+means **the plasma runs cooler than the model says it should**, by a margin that grows with how many
+reactors share a run. Since reaction rate goes as the square of density and rises steeply with
+temperature, that is a balance effect rather than a rounding one.
+
+**Nothing is settled here about what to do**, and nothing should be. The engine's share may be
+something to accept and design around; the mod's share looks more like a defect in the two-pass
+update and is worth its own ticket; and reopening
+[ADR 0011](../adr/0011-per-reactor-simulation-fluid-coupled.md)'s delegation of sharing is an
+architectural decision either way. What is settled is the measurement.
+
+### What the harness does not cover
+
+One surface, one plasma, no pumps and no `rf-pipe-to-ground` on any run. Nothing here says anything
+about a segment being split or merged while running: ADR 0011 has no code for that because the engine
+owns it, and observing it is a different ticket.
 
 ## What this does not close
 

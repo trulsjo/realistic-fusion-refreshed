@@ -262,11 +262,28 @@ local function apply(entity, spec, plasma, result)
   -- reactor on that run of rf-pipe works from next tick, mixed by the engine and by no code of
   -- ours (ADR 0011).
   --
-  -- Each reactor reads and writes only its own share, and the arithmetic survives that because
-  -- the two errors cancel exactly: a share of n out of a segment of N is given a rise computed
-  -- against n, and the engine's mixing then dilutes it by n/N, so the energy the pool gains is
-  -- the energy the reactor spent whatever else is on the run. Measured at 20 pipes against none:
-  -- same plasma, same heating, same stored energy to within a tenth.
+  -- Each reactor reads and writes only its own share: a share of n out of a segment of N is given a
+  -- rise computed against n, and the engine's mixing then dilutes it by n/N. As arithmetic that
+  -- cancels, and this comment used to conclude from it that the pool gains the energy the reactor
+  -- spent whatever else is on the run, "measured at 20 pipes against none".
+  --
+  -- IT DOES NOT, and #40 measured how much does arrive. One reactor with nothing plumbed to it keeps
+  -- 95% of what it spent; the same one reactor on a twenty-pipe run keeps 75%; three reactors
+  -- bridged together keep 58%. Two separate things are going on and the harness separates them:
+  --
+  --   * The engine's mixing is LOSSY. Flattening a temperature difference across a segment destroys
+  --     about a fifth of the difference -- measured on reactors the simulation never touched at all,
+  --     and confirmed by the one-reactor pair above, where nothing else can be to blame.
+  --   * AND THE REST IS OURS. Three writers lose more than mixing alone accounts for, and the shape
+  --     of update() is the candidate: it reads every reactor and then writes every reactor, and each
+  --     write REPLACES a box using the start-of-step pool -- so the engine, which re-splits between
+  --     Lua writes, can hand a reactor its neighbour's rise a moment before that reactor overwrites
+  --     it. Not isolated, and not fixed here.
+  --
+  -- Nothing in this file is changed for it. The plasma runs cooler than the model says, by a margin
+  -- that grows with how many reactors share a run, and whether to accept that, fix the two-pass
+  -- update, or reopen ADR 0011's delegation is a decision rather than a fix.
+  -- docs/research/reactor-runtime-cost.md carries the numbers and scripts/check-pooling.ps1 the rig.
   local remaining = plasma.amount - result.plasma_consumed
   if remaining > 0 then
     box[1] = { name = plasma.name, amount = remaining, temperature = result.temperature_c }
@@ -285,7 +302,12 @@ local function apply(entity, spec, plasma, result)
     -- fuel_value.
     local produced = box[2]
     local amount = result.energy_units + (produced and produced.amount or 0)
-    -- Segment capacity, not this box's -- get_capacity reports the segment the box belongs to.
+    -- This box's own capacity. It used to say "the segment's, because get_capacity reports the
+    -- segment" -- measured under #40 and that is true of a pipe and false of a machine: asked of a
+    -- reactor's box, get_capacity answers the box's declared volume however long the run beyond it
+    -- is. Nothing changes here, because the box is what a write is clamped to anyway; the reasoning
+    -- was wrong rather than the code, and it would have justified writing more than a box can hold.
+    --
     -- Overflow is discarded, which is the right behaviour and not an oversight: a reactor whose
     -- heat is not being carried away does not get to bank it. It shows up as output backing up.
     local capacity = box.get_capacity(2)
