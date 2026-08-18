@@ -32,10 +32,16 @@
                 between them. It must consume the fluid and put power on the network, measured as
                 its own contribution rather than the network's total, because the reactor's heating
                 is supplied by an energy interface on the same network.
-      he3he3    The same reactor prototype on rf-he3-he3-plasma. It must fuse and sell -- and it
-                must sell far LESS than D-He3, which is not a balance number but the temperature
-                clamp: He3-He3's cross-section peaks past 600 keV and max_temperature_c stops the
-                plasma at 172. See M.fuels in scripts/reactor-logic.lua.
+                A SECOND converter sits behind the first, because a row is how a player lays these
+                and the prototype could not do it until it was probed in game: its fluid box
+                declared flow_direction = "input" where vanilla's steam turbine declares
+                "input-output", so two of them back to back did not connect at all and every one
+                after the first sat dry with nothing on screen to say why.
+      he3he3    The same reactor prototype on rf-he3-he3-plasma. It must fuse and sell. HOW MUCH
+                weaker it is than D-He3 is deliberately not bounded here: this rig runs two minutes
+                and He3-He3 takes about twenty to reach its equilibrium, so every figure it could
+                compare would be a point on the way up. That comparison belongs in
+                tests/test-reactor-logic.lua, which settles both and finds Q 1.31 against 82.8.
       dd, dt    An rf-reactor on each of the neutronic plasmas, so all four of ADR 0010's reactions
                 are burning in one save. The pair is also the control on the two-reactor split: the
                 neutronic reactor must still sell rf-reactor-energy, which is what a spec lookup
@@ -217,9 +223,23 @@ script.on_init(function()
   end
 
   -- THE PREREQUISITE CLOSURE, which #30 broke and scripts/check-blanket.ps1 started enforcing.
-  -- Every item a technology's recipes consume has to be craftable inside that technology's OWN
-  -- prerequisites, or a player researches the tier and cannot build it. Researched here in
-  -- isolation, before everything else is unlocked.
+  -- Every item a technology's recipes consume, and every science pack its own research asks for,
+  -- has to be reachable inside that technology's OWN prerequisites -- or a player researches it
+  -- and cannot build what it unlocks, or cannot finish the research at all.
+  --
+  -- PER TECHNOLOGY, NOT PER TIER, and the difference is the whole check rather than a refinement.
+  -- The first version researched rf-aneutronic-fusion's closure once -- which marks all three of
+  -- the tier's technologies researched, since they are each other's prerequisites -- and then asked
+  -- its questions against that combined state. So a pack or an ingredient supplied by a SIBLING
+  -- technology passed: move production-science-pack off rf-direct-energy-conversion and onto
+  -- rf-aneutronic-fusion and a player can reach the first with no way to craft its packs, while the
+  -- rig still reports every closure holding. That is the exact bug this check was added for, and it
+  -- could not have caught it.
+  --
+  -- So each technology is asked in isolation: every technology unresearched, then only ITS
+  -- prerequisites researched, then its own recipes and its own unit examined. The technology under
+  -- test is deliberately NOT researched -- what is being asked is what a player has in hand when it
+  -- becomes available, and researching it would let its own unlocks answer for themselves.
   local function research_closure(name, seen)
     if seen[name] then return end
     seen[name] = true
@@ -228,30 +248,24 @@ script.on_init(function()
     for prerequisite in pairs(tech.prerequisites) do research_closure(prerequisite, seen) end
     tech.researched = true
   end
-  research_closure("rf-aneutronic-fusion", {})
 
-  -- Asked as "is there an ENABLED recipe that makes this", not "is the same-named recipe enabled".
-  -- The narrower question is what scripts/check-blanket.ps1 asks, and it is enough there because
-  -- every ingredient of a blanket is an item named after its own recipe. It is not enough here: the
-  -- tier's fuels are fluids, rf-d-he3-mix is made by rf-d-he3-mixing, and a lookup by name would
-  -- skip it silently -- so dropping the rf-gas-mixing prerequisite would leave a player able to
-  -- research the tier and unable to make what it burns, with this check still printing "holds".
+  local function isolate(name)
+    for _, tech in pairs(force.technologies) do tech.researched = false end
+    local tech = force.technologies[name]
+    if not tech then return end
+    local seen = {}
+    for prerequisite in pairs(tech.prerequisites) do research_closure(prerequisite, seen) end
+  end
+
+  -- BARRELS ARE NOT A SOURCE, and leaving them in made an earlier version of this vacuous in a way
+  -- that hid completely. Core's fluids barrel by default, so every one of them has an enabled
+  -- empty-<fluid>-barrel recipe listing it as a product: ask "does an enabled recipe produce this"
+  -- without excluding them and the answer is yes for every fluid in the game, whatever the
+  -- technology tree says.
   --
-  -- Ingredients nothing produces are counted separately rather than passed. rf-helium-3 is one:
-  -- it comes out of the simulation rather than out of a recipe, so there is no recipe to enable and
-  -- no closure question to answer. Counting them is what stops a vacuous pass looking like a real
-  -- one -- the numbers are printed either way.
-  local outside, checked, unproduced = {}, 0, 0
-  -- BARRELS ARE NOT A SOURCE, and leaving them in made this check vacuous in a way the first
-  -- version hid completely. Core's fluids barrel by default, so every one of them has an
-  -- empty-<fluid>-barrel recipe that lists the fluid as a product -- enabled from the start, because
-  -- barrelling is early vanilla. Ask "does an enabled recipe produce this" without excluding them
-  -- and the answer is yes for every fluid in the game, whatever the technology tree says.
-  --
-  -- Found by negative-testing rather than by reading: with rf-gas-mixing removed from the tier's
-  -- prerequisites this check still reported "closure holds", and reported that NOTHING was
-  -- unproduced -- which is what gave it away, since rf-helium-3 has no recipe at all and should
-  -- have been counted as one.
+  -- Found by negative-testing rather than by reading: with rf-gas-mixing removed the check still
+  -- reported "closure holds", and reported that NOTHING was unproduced -- which is what gave it
+  -- away, since rf-helium-3 has no recipe at all and should have been counted.
   --
   -- Excluded by subgroup rather than by name, because the name pattern is a convention and the
   -- subgroup is what the engine actually files them under.
@@ -269,60 +283,80 @@ script.on_init(function()
     end
     return found
   end
-  for _, unlocked in ipairs({ ANEUTRONIC, CONVERTER, "rf-aneutronic-composite-tank",
-                              "rf-d-he3-plasma", "rf-he3-he3-plasma" }) do
-    for _, ingredient in pairs(prototypes.recipe[unlocked].ingredients) do
-      local made_by = producers(ingredient.name)
-      if #made_by == 0 then
-        unproduced = unproduced + 1
-      else
-        checked = checked + 1
-        local reachable = false
-        for _, recipe in ipairs(made_by) do
-          if recipe.enabled then reachable = true break end
-        end
-        if not reachable then
-          outside[#outside + 1] = unlocked .. " needs " .. ingredient.name
-        end
-      end
-    end
-  end
-  record(#outside == 0,
-    "every ingredient of the tier is reachable inside its own prerequisites",
-    #outside == 0
-      and string.format("%d ingredients checked, %d have no recipe at all (bred, not crafted)",
-        checked, unproduced)
-      or table.concat(outside, "; "))
-  -- A closure check that checked nothing would pass. This is what says it did not.
-  record(checked >= 8, "and the closure check actually looked at the tier's ingredients",
-    string.format("%d checked", checked))
 
-  -- THE SAME RULE ONE LAYER OUT: the science packs a technology's own unit asks for.
-  --
-  -- A technology becomes available when its prerequisites are researched, and Factorio does not
-  -- care whether the player can MAKE its packs. So a technology that asks for a pack outside its
-  -- own closure shows up as available, gets queued, and never completes -- with no edge anywhere in
-  -- the tree to explain it. That is a worse failure than an unbuildable machine, because there is
-  -- nothing to look at.
-  --
-  -- These are the first technologies in the repository to ask for a fourth pack, and the first
-  -- version of them did exactly this. Checked here rather than described.
-  local packs_outside = {}
+  -- Which recipes each technology unlocks, read off the technology rather than written down, so a
+  -- recipe moved between technologies is checked against wherever it actually ended up.
+  -- Off the PROTOTYPE, not off the force's LuaTechnology, which has no effects key at all -- the
+  -- force's object is the researched state and the prototype is what the technology does.
+  local function unlocked_by(tech)
+    local recipes = {}
+    for _, effect in pairs(tech.prototype.effects or {}) do
+      if effect.type == "unlock-recipe" then recipes[#recipes + 1] = effect.recipe end
+    end
+    return recipes
+  end
+
+  local outside, checked, unproduced = {}, 0, 0
   for _, name in ipairs({ "rf-helium-3-breeding", "rf-direct-energy-conversion",
                           "rf-aneutronic-fusion" }) do
     local tech = force.technologies[name]
     if tech then
+      isolate(name)
+      for _, recipe_name in ipairs(unlocked_by(tech)) do
+        for _, ingredient in pairs(prototypes.recipe[recipe_name].ingredients) do
+          local made_by = producers(ingredient.name)
+          if #made_by == 0 then
+            -- Nothing produces it at all. rf-helium-3 is the case: it comes out of the simulation
+            -- rather than out of a recipe, so there is no closure question to answer. Counted
+            -- rather than passed, because a check that answered nothing would look like one that
+            -- answered everything.
+            unproduced = unproduced + 1
+          else
+            checked = checked + 1
+            local reachable = false
+            for _, recipe in ipairs(made_by) do
+              if recipe.enabled then reachable = true break end
+            end
+            if not reachable then
+              outside[#outside + 1] = name .. "'s " .. recipe_name .. " needs " .. ingredient.name
+            end
+          end
+        end
+      end
+
+      -- THE SAME RULE ONE LAYER OUT: the science packs the technology's own unit asks for.
+      --
+      -- A technology becomes available when its prerequisites are researched, and Factorio does not
+      -- care whether the player can MAKE its packs. So a technology asking for a pack outside its
+      -- own closure shows up as available, gets queued, and never completes -- with no edge
+      -- anywhere in the tree to explain it. That is worse than an unbuildable machine, because
+      -- there is nothing to look at. The first version of this tier did exactly that with
+      -- production science.
       for _, ingredient in pairs(tech.research_unit_ingredients) do
-        local recipe = force.recipes[ingredient.name]
-        if recipe and not recipe.enabled then
-          packs_outside[#packs_outside + 1] = name .. " asks for " .. ingredient.name
+        local made_by = producers(ingredient.name)
+        if #made_by > 0 then
+          checked = checked + 1
+          local reachable = false
+          for _, recipe in ipairs(made_by) do
+            if recipe.enabled then reachable = true break end
+          end
+          if not reachable then
+            outside[#outside + 1] = name .. " asks for " .. ingredient.name
+          end
         end
       end
     end
   end
-  record(#packs_outside == 0,
-    "and every science pack the tier's own research asks for is craftable inside its closure",
-    #packs_outside == 0 and "all packs reachable" or table.concat(packs_outside, "; "))
+
+  record(#outside == 0,
+    "every technology's ingredients and science packs are reachable inside its own prerequisites",
+    #outside == 0
+      and string.format("%d reachable, %d have no recipe at all (bred, not crafted)",
+        checked, unproduced)
+      or table.concat(outside, "; "))
+  -- A closure check that looked at nothing would pass. This is what says it did not.
+  record(checked >= 20, "and the closure check actually looked at all three technologies",
+    string.format("%d checked", checked))
 
   force.research_all_technologies()
 
@@ -355,6 +389,24 @@ script.on_init(function()
     position = { out_connection.target_position.x, out_connection.target_position.y - 2 },
     force = force, raise_built = true,
   }), CONVERTER)
+
+  -- A SECOND CONVERTER BEHIND THE FIRST, which is how a player lays a row of them because it is how
+  -- steam turbines have always been laid. It exists because the first version of this prototype
+  -- could not do it: the fluid box declared flow_direction = "input" where vanilla's steam turbine
+  -- declares "input-output", so two converters back to back did not connect at all and every one
+  -- after the first sat dry with nothing on screen to say why. Found on review by probing it in
+  -- game, which is the only way it could have been found.
+  --
+  -- Five tiles on, because the converter is five tall and its connections sit two either side of
+  -- centre -- so the second one's south connection lands exactly on the first one's north.
+  local second_converter = must(surface.create_entity({
+    name = CONVERTER,
+    position = { converter.position.x, converter.position.y - 5 },
+    force = force, raise_built = true,
+  }), "second " .. CONVERTER)
+  -- Its own supply area. Without it the machine sits full of fluid reporting
+  -- "not_plugged_in_electric_network", which proves the plumbing and nothing about the machine.
+  power(surface, force, { 6, -12 }, 3e8)
 
   -- ------------------------------------------------------------------ he3-he3
   local he3 = reactor_at(surface, force, ANEUTRONIC, -60, HE3)
@@ -415,7 +467,8 @@ script.on_init(function()
 
   storage.rig = {
     dhe3 = dhe3, he3 = he3, dd = dd, dt = dt,
-    converter = converter, collector = collector, tank = tank, heaters = heaters,
+    converter = converter, second_converter = second_converter,
+    collector = collector, tank = tank, heaters = heaters,
     pole = dhe3_pole,
   }
   storage.sold = { dhe3 = 0, he3 = 0, dd = 0, dt = 0 }
@@ -521,6 +574,36 @@ script.on_nth_tick(CHECK_AT, function()
   record(storage.converter_held > 0, "and it does so on the reactor's output, plumbed straight in",
     string.format("%.6g units of %s reached its box", storage.converter_held, ANEUTRONIC_ENERGY))
 
+  -- CONVERTERS CHAIN, which is the layout every player will reach for and which this prototype
+  -- silently could not do until it was probed in game. Asked of the engine's own connection state
+  -- rather than inferred from the second machine running: a converter that happened to be fed some
+  -- other way would hide exactly the failure being tested for.
+  -- get_connections, which hands back the fluid boxes actually joined to this one. Two other ways
+  -- of asking were tried first and both lied: connection.target.owner answers nil, and
+  -- connection.connected answers false on every connection of a machine that is visibly passing
+  -- fluid to its neighbour. Neither is a statement about whether the pipes meet.
+  --
+  -- This converter has exactly two chances to have a neighbour: the reactor below it and the second
+  -- converter above.
+  local joined = 0
+  for index = 1, #r.converter.fluidbox do
+    joined = joined + #r.converter.fluidbox.get_connections(index)
+  end
+  record(joined >= 2, "two converters laid back to back join, the way a row of turbines does",
+    string.format("%d of the first converter's connections are joined -- reactor below, " ..
+      "converter above", joined))
+
+  local second_status = "unknown"
+  for name, value in pairs(defines.entity_status) do
+    if value == r.second_converter.status then second_status = name end
+  end
+  -- And it is fed, which is the half that matters: its only possible source is the machine in front
+  -- of it, so fluid in this box is fluid that crossed the join.
+  local passed = holds(r.second_converter, ANEUTRONIC_ENERGY)
+  record(passed > 0 and r.second_converter.status == defines.entity_status.working,
+    "and the second one runs on fluid passed through the first",
+    string.format("status %s, holding %.6g", second_status, passed))
+
   -- The negative half, and the reason the tier is mechanically different rather than numerically
   -- bigger: nothing anywhere on this map boils anything.
   local steam_machines = game.surfaces[1].count_entities_filtered({
@@ -550,8 +633,13 @@ script.on_nth_tick(CHECK_AT, function()
   -- consults to decide whether He3-He3's clamp is where its fuel row says it is, which is exactly
   -- the number that stops being shared the day a tier wants a hotter range.
   local he3_ceiling = prototypes.fluid[HE3].max_temperature
+  -- "Climbing", not "settled", and the distinction is measured rather than pedantic: at this rig's
+  -- horizon He3-He3 is still on its way up -- it needs about twenty minutes of game time to reach
+  -- the clamp, where tests/test-reactor-logic.lua runs it and finds Q 1.31. Calling a transient an
+  -- equilibrium is exactly the mistake that block had to have corrected, and it is not going to be
+  -- made twice in the same tier.
   record(he3_plasma ~= nil,
-    "He3-He3 settles where the clamp allows, far below its cross-section peak",
+    "He3-He3 is climbing toward the clamp, which is far below its cross-section peak",
     he3_plasma and string.format("%.4g C, ceiling %.4g", he3_plasma.temperature, he3_ceiling)
       or "no plasma")
 

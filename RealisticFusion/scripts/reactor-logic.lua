@@ -210,8 +210,11 @@ M.fuels = {
   -- where max_temperature_c stops the plasma at 172 keV, so it burns at about a hundredth of its
   -- peak reactivity. That is not a balance choice: the clamp is there because a plasma past 2e9
   -- truncates its own temperature circuit signal (see rf-d-t-plasma above), and this reaction
-  -- wants to run three times hotter than that ceiling. So He3-He3 arrives barely above break-even
-  -- where D-He3 in the same machine is an order of magnitude better, and ADR 0014 is what makes
+  -- wants to run three times hotter than that ceiling. So He3-He3 arrives at Q 1.31 -- barely above
+  -- break-even -- where D-He3 in the same machine reaches Q 82.8, sixty times better. Both settle
+  -- AT the clamp; what separates them is how far each is from its own peak when it gets there.
+  -- Raise the ceiling to 7e9, which is where He3-He3's cross-section actually peaks, and it goes to
+  -- Q 16 -- so the clamp is the cause rather than the balance. ADR 0014 is what makes
   -- that a legitimate place for a tier to be rather than a bug.
   ["rf-he3-he3-plasma"] = {
     reaction = "He3-He3",

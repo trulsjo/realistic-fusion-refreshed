@@ -569,13 +569,21 @@ converter.fluid_box = {
   production_type = "input",
   volume = 1000,
   pipe_covers = table.deepcopy(converter.fluid_box.pipe_covers),
-  -- Both ends, where the steam turbine this is a copy of takes steam in and passes it on. At ±2
-  -- rather than ±2.5: the entity is three by five, so its collision box stops at 2.348 and a
+  -- Both ends, where the steam turbine this is a copy of takes fluid in and passes it on.
+  --
+  -- input-output on an input box, which reads like a contradiction and is exactly what vanilla's
+  -- steam turbine declares: production_type says what the machine DOES with the fluid, and
+  -- flow_direction says whether a connection will join another machine's. Plain "input" was the
+  -- first version and it is what makes a row of turbines impossible -- two converters laid back to
+  -- back simply do not connect, so every one after the first sits dry with nothing to look at. The
+  -- layout works for the whole neutronic tier and silently would not have here.
+  --
+  -- At ±2 rather than ±2.5: the entity is three by five, so its collision box stops at 2.35 and a
   -- connection has to sit inside it -- the outermost tile centre is 2. Factorio refuses to load
   -- otherwise, which is how this number was arrived at.
   pipe_connections = {
-    { flow_direction = "input", direction = defines.direction.south, position = { 0, 2 } },
-    { flow_direction = "input", direction = defines.direction.north, position = { 0, -2 } },
+    { flow_direction = "input-output", direction = defines.direction.south, position = { 0, 2 } },
+    { flow_direction = "input-output", direction = defines.direction.north, position = { 0, -2 } },
   },
   filter = "rf-aneutronic-reactor-energy",
 }

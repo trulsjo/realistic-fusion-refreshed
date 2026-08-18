@@ -564,30 +564,49 @@ near(aneutronic_hot.fusion_power_w / aneutronic_thin.fusion_power_w, 9, 1e-9,
 
 -- ---- the shipped balance of the tier
 --
--- Both aneutronic plasmas ignite in this machine and run to the clamp, the way D-T does in the
--- neutronic one. That is asserted rather than avoided for the same reason it is there: it is the
--- behaviour, and the fuel line is the throttle once it happens.
-local an_t, an_state = settle(ANEUTRONIC, 120, math.huge, nil, "rf-d-he3-plasma", ANEUTRONIC_FULL)
+-- SETTLE_S, not a shorter horizon, and that is the correction this block needed rather than a
+-- detail. Both aneutronic plasmas climb for a long time before they stop: at two minutes He3-He3
+-- is at 8.9e8 C and Q 0.12, which is a point on the way up and reads exactly like an equilibrium
+-- if it is asserted against. Every number below is the settled one.
+local an_t, an_state = settle(ANEUTRONIC, SETTLE_S, math.huge, nil, "rf-d-he3-plasma", ANEUTRONIC_FULL)
 near(an_t, ANEUTRONIC.max_temperature_c, 1e-12, "a D-He3 plasma ignites and runs up to the clamp")
-check(an_state.q_factor > 10, "and runs far past breakeven there",
+check(an_state.q_factor > 50, "and runs far past breakeven there",
   string.format("Q = %.3g", an_state.q_factor))
 
--- THE FINDING THAT MATTERS ABOUT HE3-HE3, and it is a real constraint rather than a balance
--- number: its cross-section peaks past 600 keV, and max_temperature_c stops the plasma at 172. So
--- the last tier in the mod cannot reach its own optimum, and arrives an order of magnitude weaker
--- than the tier before it in the same machine.
+-- THE FINDING THAT MATTERS ABOUT HE3-HE3, and it is a real constraint rather than a balance number.
 --
--- ADR 0014 is what makes that shippable rather than broken -- a tier may arrive marginal. It is
--- asserted here so that the day someone raises the clamp, this check fails and tells them the
--- last tier was waiting on exactly that.
-local he3_t, he3_state = settle(ANEUTRONIC, 120, math.huge, nil, "rf-he3-he3-plasma", ANEUTRONIC_FULL)
-check(he3_state.q_factor < an_state.q_factor / 10,
-  "He3-He3 arrives far weaker than D-He3 in the same reactor, because the clamp is below its peak",
+-- Its cross-section peaks past 600 keV -- above the top of the ENDF-derived dataset -- and
+-- max_temperature_c stops the plasma at 172. So it too climbs to the clamp, but it gets there
+-- burning at about a hundredth of its peak reactivity, where D-He3 at the same ceiling is near
+-- enough to its own peak to be sixty times stronger. The last tier in the mod cannot reach its own
+-- optimum, and arrives barely above break-even because of it.
+--
+-- ADR 0014 is what makes that shippable rather than broken: a tier may arrive marginal.
+local he3_t, he3_state = settle(ANEUTRONIC, SETTLE_S, math.huge, nil, "rf-he3-he3-plasma", ANEUTRONIC_FULL)
+near(he3_t, ANEUTRONIC.max_temperature_c, 1e-12,
+  "He3-He3 reaches the clamp too -- it is where it lands, not whether it gets there")
+check(he3_state.q_factor > 1, "and is just above break-even there",
+  string.format("Q = %.3g", he3_state.q_factor))
+check(he3_state.q_factor < an_state.q_factor / 20,
+  "but far weaker than D-He3 in the same reactor, because the clamp is far below its peak",
   string.format("Q %.3g against %.3g", he3_state.q_factor, an_state.q_factor))
-check(he3_t > 1e8, "but it does reach a fusion temperature and burn",
-  string.format("%.3g C", he3_t))
-check(he3_state.fusion_power_w > 0, "and produces real fusion power",
-  string.format("%.3g W", he3_state.fusion_power_w))
+
+-- AND THIS IS THE ONE THAT NOTICES A RAISED CLAMP, which the previous version of this block
+-- claimed and did not do. Asserting "He3-He3 is weak" is not a statement about the clamp at all:
+-- at a 120-second horizon the plasma had not reached the clamp, so raising max_temperature_c to
+-- 7e9 left every figure here bit-identical and the check passed exactly as before.
+--
+-- Q at the ceiling is the quantity that actually depends on where the ceiling is. Let the plasma
+-- run to 7e9 -- which is where He3-He3's reactivity peaks -- and it stops being marginal, so this
+-- bound breaks and says why.
+local raised = {}
+for key, value in pairs(ANEUTRONIC) do raised[key] = value end
+raised.max_temperature_c = 7e9
+local _, raised_state = settle(raised, SETTLE_S, math.huge, nil, "rf-he3-he3-plasma", ANEUTRONIC_FULL)
+check(raised_state.q_factor > 5 * he3_state.q_factor,
+  "raising the clamp to He3-He3's own peak transforms it, which is what makes the clamp the cause",
+  string.format("Q %.3g at a 7e9 ceiling against %.3g at the shipped 2e9",
+    raised_state.q_factor, he3_state.q_factor))
 
 -- Every spec the mod ships needs the fields step() and control.lua index without asking. The fuel
 -- rows are covered at the top of this file; this is the other half of the same guard, and it exists
