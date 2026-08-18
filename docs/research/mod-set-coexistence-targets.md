@@ -422,6 +422,27 @@ $set = @(
 `ChangeInserterDropLane` is declared `+` (recommended) by K2 and is deliberately omitted; add it if the
 intent is to match what a player would install.
 
+**That is true of 2.1.2 and not of the 2.0 line, so the list above does not transfer.** At **2.0.19**
+— the last `factorio_version` 2.0 release, and the only K2 that loads beside this repo on 2.0.77 —
+`ChangeInserterDropLane >= 1.1.0` carries no prefix at all and is a hard requirement. The 2.0 set is
+therefore **five** mods, and it was loaded rather than only computed (2026-08-18, `load-check.ps1
+-AlsoModDirectory`; recorded against ADR 0007):
+
+```powershell
+$set = @(
+    'ChangeInserterDropLane'      # 1.2.0
+    'flib'                        # 0.16.2
+    'Krastorio2'                  # 2.0.19
+    'Krastorio2Assets'            # 2.0.5
+    'Krastorio2MenuSimulations'   # 2.0.2
+)
+```
+
+All five are on **public git and need no mod-portal account** — four on codeberg under `raiguard/`,
+`flib` at `github.com/factoriolib/flib`, each at a `v`-prefixed tag matching its version. That is a
+cheaper route than the authenticated portal download for these particular mods, and it is worth
+weighing before building the token handling; it does not generalise to every family here.
+
 ### Space Exploration — 16 mods
 
 ```powershell

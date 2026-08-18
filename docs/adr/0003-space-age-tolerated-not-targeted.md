@@ -55,6 +55,32 @@ Durikkan's users did.
 - The minimum supported 2.0.x and the version documentation pins against are no longer blocked by this
   question and graduate to their own ticket.
 
+## Verification
+
+The obligation this ADR created — *"'Loads without crashing under Space Age' is a claim that has to be
+verified before v1 ships, not assumed"* — is discharged for loading and for running, on **2026-08-18**,
+against Factorio **2.0.77** with `space-age`, `elevated-rails` and `quality` all enabled ([#33](https://github.com/trulsjo/realistic-fusion-refreshed/issues/33)).
+
+| Command | Result |
+|---|---|
+| `scripts/load-check.ps1 -With space-age` | pass — prototypes valid, every referenced asset present, map created, the simulation's nine load-time invariants hold |
+| `scripts/check-d-t.ps1 -With space-age` | pass — 13 checks, 0 failures |
+| `scripts/name-check.ps1 -With space-age` | pass — every name this repo defines carries `rf-` |
+
+The rig is the half that matters here, because it is the difference between the two claims this ADR
+makes. Loading is the data stage; **running** is what "tolerated" actually promises. Under the
+expansion the D-T reactor still ignites and parks at the top of its range (2×10⁹ °C against a ceiling
+of 2×10⁹), the D-D reactor beside it is unchanged, both sold energy over the run, and D-T still yields
+37.1× D-D at the same feed temperature — the same numbers the base-2.0 run produces.
+
+**What this does not verify, and none of it is a regression:**
+
+- **Balance against the vanilla fusion reactor.** Explicitly not claimed above, and still not claimed.
+- **The quality interaction.** This ADR names it a known gap to be stated plainly rather than fixed;
+  `quality` being enabled during these runs is not a balance claim about it.
+- **Aquilo, fluoroketone, or any expansion content.** Nothing was played.
+- **Anything past 7,260 ticks**, which is what the rig runs. Two minutes of game time is not a save.
+
 ## Alternatives considered
 
 **Space Age as a first-class target.** Reconcile with vanilla fusion, handle quality, handle Aquilo.
