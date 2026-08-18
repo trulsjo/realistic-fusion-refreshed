@@ -8,28 +8,11 @@
 -- Written to Lua 5.2 semantics (what Factorio 2.0.77 runs) and verified on 5.4: no "//", no
 -- math.type, no assumptions about integer subtypes.
 
-package.path = "RealisticFusion/?.lua;" .. package.path
+package.path = "tests/?.lua;RealisticFusion/?.lua;" .. package.path
+local H = require("harness")
 local R = require("scripts.reactivity")
 
-local failures, checks = 0, 0
-
-local function check(ok, name, detail)
-  checks = checks + 1
-  if not ok then
-    failures = failures + 1
-    print(string.format("  FAIL  %s%s", name, detail and ("  -- " .. detail) or ""))
-  end
-end
-
-local function near(actual, expected, tolerance, name)
-  local ok
-  if expected == 0 then
-    ok = math.abs(actual) <= tolerance
-  else
-    ok = math.abs(actual - expected) / math.abs(expected) <= tolerance
-  end
-  check(ok, name, string.format("got %.6g, expected %.6g", actual, expected))
-end
+local check, near = H.check, H.near
 
 -- ---------------------------------------------------------------- interpolation
 
@@ -154,6 +137,4 @@ near(R.q_factor(0, 0), 0, 0, "nothing happening at all, Q is zero")
 
 -- ----------------------------------------------------------------
 
-print(string.format("%d checks, %d failures", checks, failures))
-if failures > 0 then os.exit(1) end
-print("OK")
+H.finish()

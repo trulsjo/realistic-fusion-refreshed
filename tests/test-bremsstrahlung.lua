@@ -27,19 +27,12 @@
 -- Like the other tests here it runs outside Factorio (ADR 0005), written to Lua 5.2 semantics and
 -- verified on 5.4.
 
-package.path = "RealisticFusion/?.lua;" .. package.path
+package.path = "tests/?.lua;RealisticFusion/?.lua;" .. package.path
+local H = require("harness")
 local L = require("scripts.reactor-logic")
 local reactivity = require("scripts.reactivity")
 
-local failures, checks = 0, 0
-
-local function check(ok, name, detail)
-  checks = checks + 1
-  if not ok then
-    failures = failures + 1
-    print(string.format("  FAIL  %s%s", name, detail and ("  -- " .. detail) or ""))
-  end
-end
+local check = H.check
 
 -- Every figure below is quoted to three significant figures in the docs, so 1% is the tolerance
 -- that distinguishes "the dataset moved" from "the last digit rounded differently". It is also far
@@ -51,19 +44,22 @@ local TOL = 0.01
 -- returns nil, so breaking the physics badly enough makes several of these nil at once. Crashing
 -- on the first one would hide every check after it, which is exactly what happened the first time
 -- this file was negative-tested by stripping the relativistic correction.
-local function near(actual, expected, name)
-  checks = checks + 1
+--
+-- H.near is not what this file wants, which is why it keeps its own: that one takes a tolerance per
+-- call and prints the raw miss, and here the tolerance is one constant and the useful number is how
+-- far off in percent. Built on H.check so the counters are still the harness's (#42).
+--
+-- Named near_pct rather than near, and the difference in name is load-bearing: the two take
+-- different arguments, so a same-named pair one directory apart is a trap. Following the harness's
+-- own documented `local near = H.near` here would rebind every call below to a function whose third
+-- argument is a tolerance, and each would then pass its name string where the tolerance goes.
+local function near_pct(actual, expected, name)
   if not actual then
-    failures = failures + 1
-    print(string.format("  FAIL  %s  -- got no equilibrium, expected %.6g", name, expected))
-    return
+    return check(false, name, string.format("got no equilibrium, expected %.6g", expected))
   end
-  local ok = math.abs(actual - expected) / math.abs(expected) <= TOL
-  if not ok then
-    failures = failures + 1
-    print(string.format("  FAIL  %s  -- got %.6g, expected %.6g (%.2f%% off)",
-      name, actual, expected, 100 * math.abs(actual - expected) / math.abs(expected)))
-  end
+  local off = math.abs(actual - expected) / math.abs(expected)
+  check(off <= TOL, name,
+    string.format("got %.6g, expected %.6g (%.2f%% off)", actual, expected, 100 * off))
 end
 
 local K_B = 1.380649e-23
@@ -318,17 +314,17 @@ print("")
 -- The reproduction check, and the reason anything below it can be believed. If this harness did
 -- not land on the shipped model's own equilibrium it would be a different model, and its
 -- bremsstrahlung numbers would be about a different reactor.
-near(found["D-D/none"], 8.769e8, "radiation-free D-D reproduces the shipped equilibrium")
+near_pct(found["D-D/none"], 8.769e8, "radiation-free D-D reproduces the shipped equilibrium")
 -- Through num(), like every other arithmetic on a root here: a missing equilibrium would otherwise
 -- reach reactivity.rate as nil and take down the two assertions below that carry the finding.
-near(found["D-D/none"] and fusion_w(D_D, SPEC, DENSITY, found["D-D/none"]) / SPEC.heating_power_w,
+near_pct(found["D-D/none"] and fusion_w(D_D, SPEC, DENSITY, found["D-D/none"]) / SPEC.heating_power_w,
   2.139, "radiation-free D-D reproduces the shipped Q")
-near(found["D-T/none"], 4.63e9, "radiation-free D-T reproduces d-t-ignition.md's equilibrium")
+near_pct(found["D-T/none"], 4.63e9, "radiation-free D-T reproduces d-t-ignition.md's equilibrium")
 
 -- THE FINDING. The two disputed figures are two models, not two answers, and each is reproduced
 -- here by the model it came from. Nothing else in this file matters as much as these two lines.
-near(found["D-D/nonrel"], 2.69e8, "ADR 0014's 2.69e8 is the NON-RELATIVISTIC equilibrium")
-near(found["D-D/wurzel"], 2.42e8, "bremsstrahlung.md's 2.42e8 is the RELATIVISTIC one")
+near_pct(found["D-D/nonrel"], 2.69e8, "ADR 0014's 2.69e8 is the NON-RELATIVISTIC equilibrium")
+near_pct(found["D-D/wurzel"], 2.42e8, "bremsstrahlung.md's 2.42e8 is the RELATIVISTIC one")
 
 local function q_at(key)
   local t = found[key]
@@ -337,21 +333,21 @@ local function q_at(key)
   return fusion_w(fuel, SPEC, DENSITY, t) / SPEC.heating_power_w
 end
 
-near(q_at("D-D/nonrel"), 0.386, "and its Q 0.386 likewise")
-near(q_at("D-D/wurzel"), 0.32, "against Q 0.32 with the correction counted")
+near_pct(q_at("D-D/nonrel"), 0.386, "and its Q 0.386 likewise")
+near_pct(q_at("D-D/wurzel"), 0.32, "against Q 0.32 with the correction counted")
 
 -- The third fit, so the spread between published fits is on the record rather than implied.
-near(found["D-D/rider"], 2.46e8, "Rider 1997 sits between the two")
+near_pct(found["D-D/rider"], 2.46e8, "Rider 1997 sits between the two")
 
 -- D-T, which the term does not rescue from the clamp -- the load-bearing claim in
 -- reactor-logic.lua's comment block and in d-t-ignition.md.
-near(found["D-T/wurzel"], 3.26e9, "D-T with the correction stays above the int32 ceiling")
+near_pct(found["D-T/wurzel"], 3.26e9, "D-T with the correction stays above the int32 ceiling")
 check(found["D-T/wurzel"] and found["D-T/wurzel"] > 2.147e9, "D-T equilibrium is above int32",
   string.format("%.3g K", found["D-T/wurzel"] or 0))
 check(found["D-T/nonrel"] and found["D-T/wurzel"] and found["D-T/nonrel"] > found["D-T/wurzel"],
   "the correction lowers D-T's equilibrium rather than raising it")
 
--- "No equilibrium" is zero for the comparisons below, for the same reason near() treats it as a
+-- "No equilibrium" is zero for the comparisons below, for the same reason near_pct() treats it as a
 -- failure: a check that errors takes every check after it down with it, and these are the ones
 -- that carry the finding.
 local function num(v) return v or 0 end
@@ -367,8 +363,8 @@ check(num(xi_here) > 1.05, "the correction is worth more than 5% here",
 
 -- The ladder, which is what #52 and #53 would be built on. Both columns, because ADR 0014 quotes
 -- the left one and a reader has to be able to check that claim as well as the corrected one.
-near(LADDER[42].nonrel.q, 1.02, "ADR 0014's break-even at 42 s is the non-relativistic ladder")
-near(LADDER[50].nonrel.q, 2.58, "and its 50 s rung likewise")
+near_pct(LADDER[42].nonrel.q, 1.02, "ADR 0014's break-even at 42 s is the non-relativistic ladder")
+near_pct(LADDER[50].nonrel.q, 2.58, "and its 50 s rung likewise")
 check(LADDER[50].wurzel.q and LADDER[50].wurzel.q < 1,
   "with the correction, 50 s is still below break-even",
   string.format("Q %.3g", num(LADDER[50].wurzel.q)))
@@ -385,10 +381,10 @@ check(LADDER[50].wurzel.q and LADDER[55].wurzel.q
 -- bremsstrahlung.md's own confinement sweep, at the two rungs it publishes that this ladder also
 -- covers. They land in the relativistic column, which is what makes that document internally
 -- consistent and leaves ADR 0014 as the one carrying the other model's numbers.
-near(LADDER[60].wurzel.t_k, 6.48e8, "bremsstrahlung.md's 60 s rung is the relativistic one")
-near(LADDER[100].wurzel.q, 3.58, "and its 100 s rung likewise")
+near_pct(LADDER[60].wurzel.t_k, 6.48e8, "bremsstrahlung.md's 60 s rung is the relativistic one")
+near_pct(LADDER[100].wurzel.q, 3.58, "and its 100 s rung likewise")
 
-near(LADDER[200].wurzel.t_k, 2.13e9, "and its 200 s rung, the last one it publishes")
+near_pct(LADDER[200].wurzel.t_k, 2.13e9, "and its 200 s rung, the last one it publishes")
 
 -- THE ERROR IS NOT A PERCENTAGE, and this is the assertion that stops the struck ladder being
 -- "corrected" by scaling. Bremsstrahlung grows as sqrt(T) while D-D's reactivity climbs steeply
@@ -428,6 +424,4 @@ check(num(LADDER[100].wurzel.t_k) < 2e9 and num(LADDER[200].wurzel.t_k) > 2e9,
   string.format("%.3g K at 100 s, %.3g K at 200 s",
     num(LADDER[100].wurzel.t_k), num(LADDER[200].wurzel.t_k)))
 
-print(string.format("%d checks, %d failures", checks, failures))
-if failures > 0 then os.exit(1) end
-print("OK")
+H.finish()

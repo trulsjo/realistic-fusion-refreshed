@@ -1,5 +1,9 @@
 require("util") -- table.deepcopy
 
+-- Core owns the shared cleanup, because ADR 0010's dependency runs one way and this is the way it
+-- runs: Power requires Core, never the reverse.
+local claim = require("__RealisticFusionCore__.prototypes.vanilla").claim
+
 -- Power's machines, built from vanilla ones: the base entity is chosen for its shape and fluid
 -- box count, which is the part that decides behaviour.
 --
@@ -35,15 +39,13 @@ local function contain(box)
   return box
 end
 
+-- Naming and mining, then Core's claim() for the rest: our icon on, vanilla's off, and the two
+-- links back to the machine this was copied from cut. The icon path is derived from the name here
+-- rather than in claim(), because Power's art is Power's and lives under Power's licence.
 local function pin(e, name, opts)
   e.name = name
   e.minable = { mining_time = opts.mining_time or 1, result = name }
-  e.icons = { { icon = ENTITY .. name:gsub("^rf%-", "") .. ".png", icon_size = 64 } }
-  e.icon = nil
-  -- Vanilla's group would let a player fast-replace ours with the machine it was copied from.
-  e.fast_replaceable_group = nil
-  e.next_upgrade = nil
-  return e
+  return claim(e, ENTITY .. name:gsub("^rf%-", "") .. ".png")
 end
 
 -- ---------------------------------------------------------------- heater

@@ -10,20 +10,16 @@
 --
 -- Written to Lua 5.2 semantics and verified on 5.4.
 
-package.path = "RealisticFusion/?.lua;" .. package.path
+package.path = "tests/?.lua;RealisticFusion/?.lua;" .. package.path
+local H = require("harness")
 local C = require("scripts.circuit-output")
 local L = require("scripts.reactor-logic")
 
-local failures, checks = 0, 0
+local check = H.check
 
-local function check(ok, name, detail)
-  checks = checks + 1
-  if not ok then
-    failures = failures + 1
-    print(string.format("  FAIL  %s%s", name, detail and ("  -- " .. detail) or ""))
-  end
-end
-
+-- This suite's own, because it is the only suite that wants it: what a combinator emits is an
+-- integer and what it reports is a key, and neither has a tolerance to be near. Built on H.check
+-- so the counters stay shared (#42).
 local function equal(actual, expected, name)
   check(actual == expected, name, string.format("got %s, expected %s", tostring(actual), tostring(expected)))
 end
@@ -199,6 +195,4 @@ equal(status_of(result, 1000).key, "running", "a settled reactor reports running
 
 -- ----------------------------------------------------------------
 
-print(string.format("%d checks, %d failures", checks, failures))
-if failures > 0 then os.exit(1) end
-print("OK")
+H.finish()

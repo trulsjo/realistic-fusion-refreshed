@@ -1,5 +1,7 @@
 require("util") -- table.deepcopy
 
+local claim = require("prototypes.vanilla").claim
+
 local ENTITY = "__RealisticFusionCore__/graphics/krastorio-2/entities/"
 
 -- Core's machines are built from vanilla ones rather than modelled from scratch.
@@ -27,8 +29,6 @@ local function from_vanilla(source_name, name, categories, opts)
   e.energy_usage = opts.energy_usage
   e.module_slots = 3
   e.allowed_effects = { "consumption", "speed", "productivity", "pollution", "quality" }
-  e.icons = { { icon = ENTITY .. opts.icon .. ".png", icon_size = 64 } }
-  e.icon = nil
   -- LGPLv3, one file per machine, kept in the graphics directory the licence governs. Every
   -- machine here has one: those files are derivatives of Krastorio 2's own building prototypes,
   -- read off the mod repository rather than measured off the sprite sheets, because the shifts
@@ -55,10 +55,8 @@ local function from_vanilla(source_name, name, categories, opts)
     end
   end
 
-  -- Vanilla's group would let a player fast-replace ours with the machine it was copied from.
-  e.fast_replaceable_group = nil
-  e.next_upgrade = nil
-  return e
+  -- Our icon on, vanilla's off, and the two links back to the machine this was copied from cut.
+  return claim(e, ENTITY .. opts.icon .. ".png")
 end
 
 -- The chemical plant's four boxes are two inputs then two outputs, and the refinery's five are two

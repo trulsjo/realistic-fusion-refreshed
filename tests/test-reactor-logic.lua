@@ -6,31 +6,14 @@
 -- module under test touches no Factorio API (ADR 0005). Written to Lua 5.2 semantics and verified
 -- on 5.4.
 
-package.path = "RealisticFusion/?.lua;" .. package.path
+package.path = "tests/?.lua;RealisticFusion/?.lua;" .. package.path
+local H = require("harness")
 local L = require("scripts.reactor-logic")
 -- Required directly by the D-T block at the bottom, which recomputes one rate from the dataset to
 -- pin down the reactant densities step() feeds it. Nothing else here reaches past reactor-logic.
 local reactivity = require("scripts.reactivity")
 
-local failures, checks = 0, 0
-
-local function check(ok, name, detail)
-  checks = checks + 1
-  if not ok then
-    failures = failures + 1
-    print(string.format("  FAIL  %s%s", name, detail and ("  -- " .. detail) or ""))
-  end
-end
-
-local function near(actual, expected, tolerance, name)
-  local ok
-  if expected == 0 then
-    ok = math.abs(actual) <= tolerance
-  else
-    ok = math.abs(actual - expected) / math.abs(expected) <= tolerance
-  end
-  check(ok, name, string.format("got %.6g, expected %.6g", actual, expected))
-end
+local check, near = H.check, H.near
 
 -- The values the shipped rf-reactor runs with, taken from the module rather than copied, so the
 -- balance checks at the bottom cannot quietly start testing different numbers from the game's.
@@ -644,6 +627,4 @@ check(out_w > SPEC.heating_power_w, "the shipped reactor is net positive",
 
 -- ----------------------------------------------------------------
 
-print(string.format("%d checks, %d failures", checks, failures))
-if failures > 0 then os.exit(1) end
-print("OK")
+H.finish()
