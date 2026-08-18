@@ -9,8 +9,9 @@ is and where it came from; this file is how to work in the repo.
 four of ADR 0010's reactions are playable: the water-to-deuterium extraction chain, D-D reactors that
 breed their own tritium and helium-3, D-T fusion burning it, lithium blankets breeding more, and an
 aneutronic tier running D-He3 and He3-He3 in a second reactor through a direct energy converter.
-**Every balance number is provisional.** What ADR 0010's prototype list still names and this does not
-have is the high-capacity steam equipment, `rf-hc-exchanger` and `rf-hc-turbine`.
+**Every prototype ADR 0010 names for Power now exists** — thirteen entities and seven technologies,
+high-capacity steam equipment included. **Every balance number is still provisional**, and coverage
+is not the same as being finished: nothing here has been played for longer than a rig runs.
 
 Verification here is by running the game, not by reading. `tests/*.lua` cover the pure simulation
 outside Factorio; `scripts/check-*.ps1` and `scripts/load-check.ps1` create real maps and assert against

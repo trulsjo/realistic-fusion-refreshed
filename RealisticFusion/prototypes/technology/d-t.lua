@@ -58,6 +58,19 @@ data:extend({
     prerequisites = { "rf-tritium-breeding", "rf-gas-mixing" },
     effects = {
       { type = "unlock-recipe", recipe = "rf-d-t-plasma" },
+      -- The high-capacity steam pair (#32), here rather than behind a technology of its own.
+      --
+      -- ADR 0010 names seven Power technologies and none of them is a high-capacity one, so an
+      -- eighth would extend that list -- a decision about the shape of the tree, and Truls's rather
+      -- than a side effect of building the machines. This is also the tier that creates the need:
+      -- a D-D reactor sells about 86 MW, which two ordinary exchangers absorb, while an ignited D-T
+      -- reactor sells around 320 MW and would otherwise want eight exchangers and fifty-five
+      -- turbines. Handing over the answer in the same technology as the problem is the shape a
+      -- player can act on.
+      --
+      -- If they should have their own technology later, moving these two lines is the whole change.
+      { type = "unlock-recipe", recipe = "rf-hc-exchanger" },
+      { type = "unlock-recipe", recipe = "rf-hc-turbine" },
     },
     unit = {
       count = 600,

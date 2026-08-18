@@ -11,8 +11,10 @@ lithium blankets breeding more, and an aneutronic tier where D-He3 and He3-He3 r
 whose output goes straight to electricity through a direct energy converter, with no steam loop at all.
 All balance is provisional and the mod is not published on the mod portal.
 
-The reactor's high-capacity steam equipment (`rf-hc-exchanger`, `rf-hc-turbine`) is the main thing
-ADR 0010's prototype list still names and this does not have.
+**Every prototype ADR 0010 names for the Power module now exists** — all thirteen entities and all
+seven technologies, high-capacity steam equipment included. That is a statement about coverage and
+not about balance: the numbers behind them are still provisional, and nothing here has been played
+for longer than a test rig runs.
 
 ## What it is meant to be
 

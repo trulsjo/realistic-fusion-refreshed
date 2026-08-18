@@ -21,6 +21,10 @@ data:extend({
   item("rf-heater",          "energy", "rf-a[heater]",         20),
   item("rf-reactor",         "energy", "rf-b[reactor]",        10),
   item("rf-heat-exchanger",  "energy", "rf-c[heat-exchanger]", 20),
+  -- Next to the exchanger they scale up rather than at the end of the list, because a player
+  -- comparing the two sizes is the whole point of the tier (#32).
+  item("rf-hc-exchanger",    "energy", "rf-c[heat-exchanger]-b[hc]", 20),
+  item("rf-hc-turbine",      "energy", "rf-c[heat-exchanger]-c[hc-turbine]", 20),
   item("rf-isotope-collector", "energy", "rf-d[isotope-collector]", 20),
   item("rf-lithium-blanket",   "energy", "rf-e[lithium-blanket]",   20),
   -- The aneutronic tier (#31). Ordered after the neutronic machines rather than interleaved with

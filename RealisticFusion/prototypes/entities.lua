@@ -212,6 +212,135 @@ exchanger.energy_source = {
   },
 }
 
+-- ---------------------------------------------------------------- high-capacity steam pair
+
+-- Generation that scales without a thousand buildings (#32).
+--
+-- The steam route's problem is arithmetic rather than design. One rf-heat-exchanger turns 40 MW of
+-- reactor energy into 500 C steam, and a vanilla steam turbine drinks one unit of that a tick --
+-- 5.82 MW -- so an exchanger feeds about seven turbines. An ignited D-T reactor sells on the order
+-- of 320 MW, which is eight exchangers and fifty-five turbines PER REACTOR. That is not a
+-- difficulty curve, it is a blueprint chore, and it is what this pair exists to remove.
+--
+-- Both are ten times their ordinary counterpart, which is the predecessor's factor and is kept
+-- because it is a round number rather than because it was tuned. Balance is provisional.
+--
+-- THE ONE THING THAT MUST NOT GO WRONG HERE, and the acceptance criterion this tier is written
+-- around: a generator's real output is fluid_usage_per_tick x 60 x (maximum_temperature -
+-- default_temperature) x heat_capacity x effectivity, and max_power_output is a SEPARATE field. Set
+-- one and not the other and the machine consumes ten times the steam for the same power, silently,
+-- while every tooltip reads correctly. Vanilla's steam turbine avoids it by declaring no
+-- max_power_output at all and letting the engine derive one. This declares it -- every stat that
+-- affects balance is pinned here rather than inherited -- and scripts/check-hc.ps1 asserts the
+-- engine agrees with the arithmetic, so the number cannot drift away from the fluid it is made of.
+local hc_graphics = require("graphics.krastorio-2.buildings.hc-pictures")
+
+-- Ten times rf-heat-exchanger's 40 MW. A boiler's energy_consumption is what it puts INTO the fluid,
+-- so this is 400 MW of steam and there is no second figure to keep in step with it.
+local hc_exchanger = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-hc-exchanger", {
+  mining_time = 1,
+})
+hc_exchanger.mode = "output-to-separate-pipe"
+hc_exchanger.energy_consumption = "400MW"
+hc_exchanger.target_temperature = 500
+-- Seven tiles square, following Krastorio 2's matter plant the way rf-reactor follows its fusion
+-- reactor (ADR 0013). The size IS the message: a player looking at a steam farm has to see which
+-- vessels are the big ones, and the predecessor's answer -- the ordinary exchanger tinted orange --
+-- is the arrangement this repository already rejected between rf-reactor and rf-heat-exchanger.
+hc_exchanger.collision_box = { { -3.25, -3.25 }, { 3.25, 3.25 } }
+hc_exchanger.selection_box = { { -3.5, -3.5 }, { 3.5, 3.5 } }
+hc_exchanger.pictures = hc_graphics.exchanger_pictures
+
+local hc_covers = table.deepcopy(hc_exchanger.fluid_box.pipe_covers)
+
+-- All three boxes are restated rather than inherited, because the footprint changed and vanilla's
+-- connections are on a three-by-two building. Seven is odd, so the tile centres sit on integers and
+-- the outermost either side is 3.
+hc_exchanger.fluid_box = {
+  production_type = "input-output",
+  volume = 1000,
+  pipe_covers = hc_covers,
+  pipe_connections = {
+    { flow_direction = "input-output", direction = defines.direction.west, position = { -3, 0 } },
+    { flow_direction = "input-output", direction = defines.direction.east, position = { 3, 0 } },
+  },
+  filter = "water",
+}
+hc_exchanger.output_fluid_box = {
+  production_type = "output",
+  volume = 1000,
+  pipe_covers = hc_covers,
+  pipe_connections = {
+    { flow_direction = "output", direction = defines.direction.north, position = { 0, -3 } },
+  },
+  filter = "steam",
+}
+hc_exchanger.energy_source = {
+  type = "fluid",
+  effectivity = 1,
+  -- Burn by fuel_value rather than by temperature, the same as rf-heat-exchanger: reactor energy
+  -- carries its joules in its amount, not in how hot it is.
+  burns_fluid = true,
+  -- Take only what the current output needs, or the exchanger drains its whole box every tick and
+  -- throws away the excess.
+  scale_fluid_usage = true,
+  fluid_box = {
+    production_type = "input",
+    volume = 500,
+    pipe_covers = hc_covers,
+    pipe_connections = {
+      { flow_direction = "input", direction = defines.direction.south, position = { 0, 3 } },
+    },
+    filter = "rf-reactor-energy",
+  },
+}
+
+-- Ten units of steam a tick against vanilla's one.
+local hc_turbine = pin(table.deepcopy(data.raw["generator"]["steam-turbine"]), "rf-hc-turbine", {
+  mining_time = 1,
+})
+hc_turbine.fluid_usage_per_tick = 10
+hc_turbine.maximum_temperature = 500
+hc_turbine.effectivity = 1
+-- 10 units/tick x 60 ticks x (500 - 15) C x 0.2 kJ/C x 1 = 58.2 MW, off base 2.0.77's own steam
+-- prototype rather than remembered. Declared so the number is visible next to the fluid it comes
+-- from; scripts/check-hc.ps1 asserts the engine computes the same figure, which is what stops a
+-- declaration and its arithmetic drifting apart.
+hc_turbine.max_power_output = "58.2MW"
+-- Five by seven, from Krastorio 2's advanced steam turbine -- which is what this machine is, so its
+-- art is not a stand-in for anything.
+hc_turbine.collision_box = { { -2.25, -3.25 }, { 2.25, 3.25 } }
+hc_turbine.selection_box = { { -2.5, -3.5 }, { 2.5, 3.5 } }
+hc_turbine.horizontal_animation = hc_graphics.turbine_horizontal
+hc_turbine.vertical_animation = hc_graphics.turbine_vertical
+-- Vanilla's smoke plumes are positioned for a three-by-five building and would hang in the air
+-- beside a five-by-seven one. Dropped rather than repositioned: guessing at plume offsets is exactly
+-- the kind of invented geometry the graphics notes here refuse to do.
+hc_turbine.smoke = nil
+-- A ten-tick buffer at full draw, where vanilla's 200 is about three. Sized to the machine rather
+-- than inherited, because a box that empties faster than the pipe refills it is the throughput cap
+-- this ticket exists to avoid.
+hc_turbine.fluid_box = {
+  production_type = "input",
+  volume = 2000,
+  pipe_covers = table.deepcopy(hc_turbine.fluid_box.pipe_covers),
+  pipe_connections = {
+    { flow_direction = "input-output", direction = defines.direction.south, position = { 0, 3 } },
+    { flow_direction = "input-output", direction = defines.direction.north, position = { 0, -3 } },
+  },
+  filter = "steam",
+  -- Vanilla's own floor, kept: below 100 C the steam is not worth turning a turbine with.
+  minimum_temperature = 100.0,
+}
+hc_turbine.energy_source = {
+  type = "electric",
+  -- Secondary, deliberately, and this is where the predecessor offered a startup setting instead.
+  -- Primary output would make high-capacity turbines run before ordinary ones and leave a player's
+  -- existing steam farm idling behind the new tier, which is a surprise rather than an upgrade. One
+  -- behaviour, stated here, beats a setting that has to be explained.
+  usage_priority = "secondary-output",
+}
+
 -- ---------------------------------------------------------------- isotope collector
 
 -- Where the D-D by-products come out (#27). The reactors are the breeder (CONTEXT.md, ADR 0010),
@@ -572,6 +701,6 @@ pump.icons = { { icon = "__base__/graphics/icons/pump.png", icon_size = 64 } }
 -- prototype of our own. Barrelling is shut off separately, on the fluids themselves (fluids.lua).
 contain(pump.fluid_box)
 
-data:extend({ heater, reactor, exchanger, collector, blanket,
+data:extend({ heater, reactor, exchanger, hc_exchanger, hc_turbine, collector, blanket,
               aneutronic, converter, tank,
               pipe, pipe_to_ground, pump })

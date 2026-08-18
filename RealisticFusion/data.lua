@@ -7,6 +7,8 @@ require("prototypes.signals")
 require("prototypes.recipes.d-d")
 require("prototypes.technology.d-d")
 require("prototypes.recipes.d-t")
+-- Before technology.d-t, which unlocks these two (#32).
+require("prototypes.recipes.hc")
 require("prototypes.technology.d-t")
 require("prototypes.recipes.blanket")
 require("prototypes.technology.blanket")

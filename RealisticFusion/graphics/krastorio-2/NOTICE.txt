@@ -79,8 +79,13 @@ Unmodified copies, renamed to the prototype they serve:
     D-T fusion (#28). Deliberately not the fusion-energy icon rf-d-d-fusion already wears, and
     deliberately not a recolour of it: the two technologies sit next to each other in the tree, and
     the brilliant white core here reads as the harder, hotter reaction where a green wash of the D-D
-    icon read as the same technology drawn twice. Krastorio 2's matter chain is not otherwise used
-    by this repository, so nothing else claims it.
+    icon read as the same technology drawn twice.
+
+    This note used to add that Krastorio 2's matter chain was not otherwise used by this repository.
+    It is now: #32 takes the matter plant's building and icon for rf-hc-exchanger. They are a
+    technology icon and a building, drawn at different sizes and never seen side by side, so nothing
+    about that reads as the same thing twice -- but the claim of exclusivity is no longer true and
+    should not be left standing.
 
   entities/lithium-blanket.png  <- icons/entities/energy-storage.png
 
@@ -124,14 +129,53 @@ Unmodified copies, renamed to the prototype they serve:
     antimatter-reactor's own icon is taken below, so building and icon agree here where the
     collector and the blanket still do not.
 
+  buildings/hc-turbine/hc-turbine-H.png        <- buildings/advanced-steam-turbine/advanced-steam-turbine-H.png
+  buildings/hc-turbine/hc-turbine-shadow-H.png <- buildings/advanced-steam-turbine/advanced-steam-turbine-sh-H.png
+  buildings/hc-turbine/hc-turbine-V.png        <- buildings/advanced-steam-turbine/advanced-steam-turbine-V.png
+  buildings/hc-turbine/hc-turbine-shadow-V.png <- buildings/advanced-steam-turbine/advanced-steam-turbine-sh-V.png
+  entities/hc-turbine.png                      <- icons/entities/advanced-steam-turbine.png
+
+    The high-capacity steam turbine (#32). Renamed only, "advanced-steam-turbine" to "hc-turbine"
+    and "-sh-" to "-shadow-"; not one pixel is changed, and rf-hc-turbine takes Krastorio 2's
+    collision and selection boxes with them -- five by seven, against the vanilla turbine's three by
+    five.
+
+    This is the one asset here that is not a stand-in for something else: Krastorio 2's advanced
+    steam turbine is exactly what rf-hc-turbine is, down to being a generator that drinks more steam
+    per tick than the vanilla one. Icon and building agree, and both animate, which nothing else
+    taken from Krastorio 2 in this repository does -- a generator's animations are played by the
+    engine where a boiler's structure is a still.
+
+  buildings/hc-exchanger/hc-exchanger.png        <- buildings/matter-plant/matter-plant.png
+  buildings/hc-exchanger/hc-exchanger-shadow.png <- buildings/matter-plant/matter-plant-sh.png
+  entities/hc-exchanger.png                      <- icons/entities/matter-plant.png
+
+    The high-capacity heat exchanger (#32). Renamed only. Seven tiles square against the vanilla
+    heat exchanger's three by two, which is the point: the predecessor's high-capacity pair is its
+    ordinary pair tinted orange, and two machines that differ only in tint is the arrangement this
+    repository already rejected between rf-reactor and rf-heat-exchanger. A player laying out a
+    steam farm has to see which vessels are the big ones.
+
+    matter-plant-working.png and its glow are NOT taken -- see buildings/hc-pictures.lua for why a
+    boiler has nowhere to play a thirty-frame working animation.
+
+    This is the second use of Krastorio 2's matter chain in this repository; technologies/d-t.png
+    below is the first, and the note there is corrected accordingly.
+
   entities/aneutronic-reactor.png       <- icons/entities/antimatter-reactor.png
   entities/aneutronic-composite-tank.png <- icons/entities/big-storage-tank.png
   technologies/aneutronic-fusion.png     <- technologies/antimatter-reactor.png
   technologies/helium-3-breeding.png     <- technologies/steel-fluid-handling.png
+  technologies/direct-energy-conversion.png <- technologies/energy-control-unit.png
 
     The aneutronic tier (#31). helium-3-breeding takes steel-fluid-HANDLING rather than
     steel-fluid-TANKS, which rf-tritium-breeding already wears -- the two technologies are one step
     apart on the same chain and would have read as the same research twice.
+
+    direct-energy-conversion takes the TECHNOLOGY icon of the same name that the converter's own
+    icon takes the ITEM version of, which is the one place in this repository where a technology and
+    the machine it unlocks share a source. They are different files drawn at different sizes, and
+    the pairing is deliberate: the technology is about the machine and nothing else.
 
   entities/direct-energy-converter.png  <- icons/items/energy-control-unit.png
 
@@ -198,6 +242,7 @@ DERIVED CODE -- also LGPLv3, and this is the reason it is in here at all:
   buildings/reactor-pictures.lua
   buildings/heater-pictures.lua
   buildings/aneutronic-reactor-pictures.lua
+  buildings/hc-pictures.lua
 
     Krastorio 2's mod is LGPLv3 as well as its assets. Every width, height, frame count, line
     length, shift and scale in these files is read off its prototypes/buildings/fusion-reactor.lua,
@@ -209,9 +254,12 @@ DERIVED CODE -- also LGPLv3, and this is the reason it is in here at all:
     reactor is an assembling-machine with a graphics_set and rf-reactor is a boiler, which has no
     such field; the refinery's four directions are sliced out by hand rather than through
     __base__'s make_4way_animation_from_spritesheet, which is an internal Wube never promised to
-    keep; and the antimatter reactor is a burner-generator whose idle and working animations are
-    split differently again -- there the body IS the first frame of the animation sheet rather than
-    a separate still, so the runtime overlay adds motion instead of filling a hole.
+    keep; the antimatter reactor is a burner-generator whose idle and working animations are split
+    differently again -- there the body IS the first frame of the animation sheet rather than a
+    separate still, so the runtime overlay adds motion instead of filling a hole; and the
+    high-capacity pair takes its geometry from two Krastorio 2 files rather than one, returning the
+    turbine's sheets as horizontal_animation and vertical_animation because rf-hc-turbine is a copy
+    of VANILLA's steam turbine and those are the fields that copy carries.
 
 
 Where these are referenced
