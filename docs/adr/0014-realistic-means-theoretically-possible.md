@@ -137,6 +137,14 @@ project rather than a state to be avoided.
   monotonic. The harness reproduces the shipped radiation-free equilibrium exactly (8.769×10⁸ K,
   Q 2.139), so it is the same model with one term added.
 
+  > **This is a *full-supply* table, and that qualification was missing (2026-08-19,
+  > [ADR 0016](0016-plasma-density-is-a-player-lever.md)).** Every row assumes the reactor's fluid
+  > segment is held full. It is not the density that makes the most power at the lower rungs, so
+  > **which rung crosses break-even depends on how the player runs the reactor**: at τ 50 s a segment
+  > held near 85% reaches Q 1.085 where a full one reaches 0.950. A player who tunes density crosses
+  > a rung earlier than this table reads. The numbers are not wrong — they are the answer to "at full
+  > supply", which is not the only way the reactor gets run.
+
   > **Corrected 2026-08-18 (#51).** This table originally read ~~30 s → 2.69×10⁸ K, Q 0.39; 42 s →
   > 4.95×10⁸ K, Q 1.02; 50 s → 1.03×10⁹ K, Q 2.58; 55 s → 1.82×10⁹ K, Q 4.63~~ — the
   > **non-relativistic** bremsstrahlung formula, without the relativistic correction that

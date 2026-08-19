@@ -37,6 +37,12 @@ distinctly:
 - **Blanket breeding** — tritium bred from lithium in a blanket on a reactor. The later upgrade tier,
   and the route real D-T reactors use.
 
+**Breeder tier** — a tier whose product is fuel rather than electricity, and which consumes more power
+than it makes. **The D-D tier is one**, by decision and not by shortfall — see
+[ADR 0015](docs/adr/0015-the-d-d-tier-is-a-breeder.md). Say "breeder tier" of the tier and "D-D
+by-products" of what it makes; do not describe a D-D reactor as a power source, and do not call its
+negative balance a deficit, a shortfall or unfinished balance.
+
 ## Reactions
 
 Written with hyphens and matching case throughout: **D-D**, **D-T**, **D-He3**, **He3-He3**. Not "DD",
@@ -68,6 +74,18 @@ is what "realistic" means concretely in this project.
 
 **Reaction rate** — the simulation's output, derived from cross-section data. Not "yield" or "output"
 when the interpolated quantity is meant.
+
+**Operating density** — how full of plasma a reactor's fluid segment is held, as a lever the player
+chooses rather than a supply problem to eliminate. A reaction has a density at which it makes the most
+power, and it is not necessarily a full one; see
+[ADR 0016](docs/adr/0016-plasma-density-is-a-player-lever.md).
+
+Two words that are **not** synonyms and are easy to swap by accident:
+
+- **Under-supplied** — held below full deliberately. May be the *best* state a reactor can be in.
+- **Starved** — held below the density at which the reactor is worth running. A genuine fault.
+
+Reserve "starved" for the fault. A reactor at its operating density is under-supplied and working.
 
 **Q-factor** — the ratio of fusion power produced to heating power supplied. Exposed to the player as a
 circuit signal.
