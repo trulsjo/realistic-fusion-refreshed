@@ -28,7 +28,15 @@ figures — they were one equation under two published fits — and leaving
 #52's acceptance criteria say D-D settles *below* break-even. But the table ADR 0014 was built on has
 the 1.1 original's unsuppressed D-D at **exactly Q 1.00** at base: `rfp-d-d-fusion` unlocks that
 variant, and the sub-break-even Q 0.50 and Q 0.25 variants are gated behind *breeding* research — a
-downgrade the player opts into. Alt-F4's *"cannot even sustain itself"* reconciles with Q 1.00 because
+downgrade the player opts into.
+
+**That balance is Romner_set's**, from Realistic Fusion Power 1.8.18, and the argument this ADR makes
+against it rests on his design rather than replacing it: he chose break-even at the reactor and
+net-negative variants a player opts into for fuel, which is the same mechanic reached here by a
+different route. ADR 0014 quotes him directly and records the reading in full. Attribution stated
+because it is derived work, per `CLAUDE.md` — a community norm rather than a licence obligation.
+
+His Alt-F4 interview's *"cannot even sustain itself"* reconciles with Q 1.00 because
 the **reactor** breaks even while the **plant** does not, on Girdler sulfide and electrolysis and
 pumps. So the original's entry state was break-even at the reactor, and arriving below it is one rung
 stricter than the mod this one descends from.
@@ -114,7 +122,7 @@ claim.
 **Keep the model radiation-free.** Ship the Q 2.14 reactor and record the omission as knowing.
 Rejected: it costs the project's central claim, and #52 and #53 would both close as wontfix.
 
-**Arrive at break-even, τ ≈ 52 s.** Reproduces the original's entry state exactly and makes Alt-F4's
+**Arrive at break-even, τ ≈ 52 s.** Reproduces Romner_set's entry state exactly and makes his Alt-F4
 sentence come out right for the right reason. Rejected on ladder headroom, and because D-D at 52 s
 would be nearly as well confined as D-T at 60 s, leaving D-T's tier advantage resting entirely on
 reactivity.
