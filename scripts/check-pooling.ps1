@@ -58,11 +58,15 @@
     simulation works in -- with the step predicted by requiring reactor-logic out of the shipped mod
     rather than by reimplementing it.
 
-    IT DOES NOT BALANCE, AND THE REASON IS PARTLY IN THIS MOD. A lone reactor with nothing plumbed
-    to it keeps 95% of what it spent; the same reactor on a twenty-pipe run keeps 75%, which is the
-    engine's mixing and nothing else; three reactors bridged together keep 58%, which is more than
-    mixing accounts for. The excess is ours -- see `update()`'s read pass and write pass -- and it is
-    established rather than isolated here.
+    IT DOES NOT BALANCE. A lone reactor with nothing plumbed to it keeps 95% of what it spent; the
+    same reactor on a twenty-pipe run keeps 75%, which is the engine's mixing and nothing else; three
+    reactors bridged together keep 58%, which is more than mixing accounts for.
+
+    THE EXCESS IS NOT update()'S WRITE SHAPE, AND THIS SCRIPT USED TO SAY IT WAS. Measured under #73
+    by the `probe` row and the three shape rows: a Lua write reaches no other box on the run in the
+    same tick, and the shipped two-pass shape, a single-pass shape and a relative write all keep the
+    same 72.18% on identical rows. What the excess IS remains open -- the two cells that would
+    separate the remaining candidates differ in fill and temperature as well as in writer count.
 
     WHAT THIS FOUND THAT WAS NOT EXPECTED
 
@@ -202,12 +206,20 @@ local HOT_C = SEED_C * 50
 
 local GAP = 5      -- clear tiles between one reactor and the next, and so the bridge length
 
--- Seeding runs for a while rather than once, and that is not belt and braces. A Lua write REPLACES
--- a box's contents, and the engine re-splits the run between writes, so seeding a row box by box in
--- one pass throws away most of what the earlier writes put in: measured, a three-reactor run seeded
--- in one pass settles at 45% of capacity rather than 100%. Writing every box every tick until it
--- saturates is what puts both bookkeeping rows at the same known fill, which is the only reason
--- their one-step gains are comparable.
+-- Seeding runs for a while rather than once. This used to be explained by saying that a Lua write
+-- REPLACES a box and the engine re-splits the run between writes, so a single seeding pass throws
+-- away most of what the earlier writes put in -- "measured, a three-reactor run seeded in one pass
+-- settles at 45% of capacity rather than 100%".
+--
+-- THE 45% IS REAL AND THE EXPLANATION WAS WRONG (#73). The `seedonce` row below is seeded exactly
+-- once and sits at 44.6% of declared capacity; `mix` is the same geometry seeded sixty times and
+-- sits at 44.6% too. One pass leaves the run as full as sixty do, so the writes are not throwing
+-- each other away. 44.6% is simply what a three-reactor bridged run holds against the SUM OF ITS
+-- BOXES' DECLARED VOLUMES -- a fact about the segment, not about the write pattern.
+--
+-- Seeding for sixty ticks is kept anyway, and still earns its place: it is what puts every row at
+-- the same known fill and gives the pool time to stop moving, which is the only reason the rows'
+-- one-step gains are comparable.
 local SEED_UNTIL = 60
 
 -- How long the runs are left to settle before the bookkeeping step is measured. Seeding leaves the
@@ -449,6 +461,137 @@ local function top_up(cell, celsius)
   end
 end
 
+-- ---------------------------------------------------------------- the three candidate write shapes
+--
+-- WHY THESE EXIST (#73). The bookkeeping below establishes that three writers on a run lose more
+-- than the engine's mixing accounts for, and #40 could not say WHICH part of update()'s shape did
+-- it -- only that the excess was ours. These three rows answer that by running the candidate shapes
+-- against each other on identical geometry from an identical state.
+--
+-- They are driven BY THIS RIG and built unregistered, so control.lua never touches them. That is
+-- what makes them comparable in a way the cells above are not: an unregistered reactor is not
+-- simulated at all, so three identically seeded rows sit in exactly the same state until this file
+-- steps them, where `bare` and `piped` have been burning down at their own rates for four seconds.
+--
+-- The mechanism under test is stated once, here, because all three shapes are defined against it:
+-- a Lua write REPLACES a box's contents, and the engine RE-SPLITS the run between writes. This rig
+-- already depends on that second fact elsewhere -- it is why SEED_UNTIL seeds for sixty ticks
+-- instead of once, a three-reactor run seeded in a single pass settling at 45% of capacity rather
+-- than 100%. So any write of an absolute value computed from an earlier read discards whatever
+-- arrived in that box since the read, including a neighbour's contribution.
+
+--- The SHIPPED shape: read every reactor, then write every reactor.
+--
+-- Each write replaces a box using an amount and a temperature computed against the start-of-step
+-- pool, so a reactor writing second overwrites the share of its neighbour's rise the engine handed
+-- it between the two writes.
+local function drive_two_pass(cell, dt, energy)
+  local pending = {}
+  for i, r in ipairs(cell.reactors) do
+    local box = r.fluidbox[1]
+    if box then
+      local result = logic.step(SPEC, PLASMA, box.amount, box.temperature, energy(i), dt)
+      if result then
+        pending[#pending + 1] = { r = r, amount = box.amount, result = result }
+      end
+    end
+  end
+  for _, p in ipairs(pending) do
+    local remaining = p.amount - p.result.plasma_consumed
+    if remaining > 0 then
+      p.r.fluidbox[1] = { name = PLASMA, amount = remaining, temperature = p.result.temperature_c }
+    end
+  end
+end
+
+--- Read and write in ONE iteration, so no box is ever written from a stale read.
+--
+-- Nothing is discarded, because a reactor only ever replaces its box with a value computed from
+-- what that box held a moment earlier. The cost is that the pool a reactor computes against now
+-- depends on iteration order: the second reactor works from a pool the first has already heated,
+-- so reactors on a shared run stop being symmetric within a step.
+local function drive_one_pass(cell, dt, energy)
+  for i, r in ipairs(cell.reactors) do
+    local box = r.fluidbox[1]
+    if box then
+      local result = logic.step(SPEC, PLASMA, box.amount, box.temperature, energy(i), dt)
+      if result then
+        local remaining = box.amount - result.plasma_consumed
+        if remaining > 0 then
+          r.fluidbox[1] = { name = PLASMA, amount = remaining, temperature = result.temperature_c }
+        end
+      end
+    end
+  end
+end
+
+--- Two passes, so the PHYSICS stays order-independent -- but a RELATIVE write.
+--
+-- Every reactor computes against the same start-of-step pool, exactly as the shipped shape does.
+-- What changes is the write: the reactor's contribution is taken as a delta in amount x absolute
+-- temperature and applied to whatever the box actually holds at the instant of writing, so a
+-- neighbour's rise that has already arrived is added to rather than replaced.
+--
+-- The delta is in unit-K rather than joules because that is the quantity the engine's mixing
+-- conserves and the quantity every measurement here is written in; particles-per-unit and k_B
+-- cancel out of it. A real implementation in reactor-logic.lua would work in joules.
+local function drive_rebased(cell, dt, energy)
+  local pending = {}
+  for i, r in ipairs(cell.reactors) do
+    local box = r.fluidbox[1]
+    if box then
+      local result = logic.step(SPEC, PLASMA, box.amount, box.temperature, energy(i), dt)
+      if result then
+        pending[#pending + 1] = {
+          r = r,
+          consumed = result.plasma_consumed,
+          delta = (box.amount - result.plasma_consumed) * (result.temperature_c + 273.15)
+                - box.amount * (box.temperature + 273.15),
+        }
+      end
+    end
+  end
+  for _, p in ipairs(pending) do
+    local now = p.r.fluidbox[1]
+    if now then
+      local remaining = now.amount - p.consumed
+      if remaining > 0 then
+        local celsius = (now.amount * (now.temperature + 273.15) + p.delta) / remaining - 273.15
+        -- Guarded rather than trusted: a write past the fluid's declared range is the engine's
+        -- error to raise and would take the whole rig down with it. It cannot fire from the seeded
+        -- state in one step, and if it ever does the check below says so instead of the run dying.
+        if celsius > SPEC.max_temperature_c then
+          celsius = SPEC.max_temperature_c
+          storage.rebase_clamped = true
+        end
+        p.r.fluidbox[1] = { name = PLASMA, amount = remaining, temperature = celsius }
+      end
+    end
+  end
+end
+
+-- ONLY THE FIRST REACTOR ON THE ROW IS GIVEN A BUFFER, and this is what makes the rows able to tell
+-- the shapes apart at all.
+--
+-- With every reactor heating equally the row stays symmetric: identical reads, identical rises,
+-- identical writes, and redistribution between writes has no difference to carry -- so all three
+-- shapes came back at 71.6% to three figures, which says nothing about any of them. Heating one
+-- reactor of three makes the writes differ while leaving the STARTING pool flat, so there is no
+-- pre-existing gradient for the engine's mixing to charge against inside the window.
+--
+-- The other two still run a full step and still write: an unpowered reactor computes its confinement
+-- loss and its (negligible) fusion against whatever its box holds. Those are precisely the writes
+-- that can discard a neighbour's rise, which is the thing under test.
+local function first_only(i)
+  return i == 1 and math.huge or 0
+end
+
+local SHAPES = {
+  { name = "twopass",  drive = drive_two_pass, label = "the shipped read-all-then-write-all" },
+  { name = "onepass",  drive = drive_one_pass, label = "read and write in one iteration" },
+  { name = "rebased",  drive = drive_rebased,  label = "two passes, relative write" },
+}
+
 script.on_init(function()
   local surface = game.surfaces[1]
   local force   = game.forces.player
@@ -456,7 +599,7 @@ script.on_init(function()
 
   local size = reactor_footprint()
   local span_x = 6 * (size + GAP) + TAIL + 40
-  local span_y = 9 * 60 + 40
+  local span_y = 15 * 60 + 40
 
   surface.request_to_generate_chunks({ span_x / 2, span_y / 2 },
     math.ceil((math.max(span_x, span_y) / 2 + 96) / 32))
@@ -499,6 +642,24 @@ script.on_init(function()
   -- RealisticFusion never registers them and no simulation ever runs on them. Every other cell here
   -- has our Lua on it, and a loss seen there could always have been ours.
   storage.idle = build_row(surface, force, 540.5, 3, 0, 0, "idle", true)
+  -- The three write shapes (#73), each on its own identical row: three reactors bridged, no tail,
+  -- unregistered so control.lua never steps them. Kept OUT of storage.cells deliberately -- several
+  -- loops below iterate that table wholesale, and a row driven by this file rather than by the mod
+  -- would quietly join measurements it does not belong in.
+  storage.shapes = {}
+  for i, shape in ipairs(SHAPES) do
+    storage.shapes[shape.name] = build_row(surface, force, 600.5 + (i - 1) * 60, 3, 0, 0, shape.name, true)
+  end
+  -- THE DECISIVE PROBE (#73). Everything above measures the CONSEQUENCE of a write shape. This row
+  -- measures the premise directly: does a Lua write to one box on a run change any OTHER box on that
+  -- run within the SAME tick? If it does not, no write can overwrite a neighbour's contribution and
+  -- the mechanism #40 proposed cannot exist, whatever the arrived fractions say.
+  storage.probe = build_row(surface, force, 780.5, 3, 0, 0, "probe", true)
+  -- The cross-check that has to be run because it is the one piece of evidence AGAINST that: this
+  -- file's own seeding note says a three-reactor run seeded box-by-box in a single pass settles at
+  -- 45% of capacity rather than 100%, which only makes sense if writes interact. Seeded exactly
+  -- once, and read later. If it comes back full, the note is describing something else.
+  storage.onepass_seed = build_row(surface, force, 840.5, 3, 0, 0, "seedonce", true)
   storage.order = { "mix", "pair", "trio", "five", "solo", "solopipe", "bare", "piped" }
   log("POOL-RIG built")
 end)
@@ -511,6 +672,24 @@ script.on_event(defines.events.on_tick, function()
   if tick <= SEED_UNTIL then
     for _, cell in pairs(cells) do top_up(cell, SEED_C) end
     if storage.idle then top_up(storage.idle, SEED_C) end
+    -- Seeded the same way and for the same sixty ticks as everything else, which is what leaves all
+    -- three shape rows in one identical state: nothing simulates them, so they do not diverge
+    -- afterwards the way the powered cells do.
+    -- Seeded FLAT, like everything else, and made asymmetric by HEATING instead -- see the driver
+    -- comments. Seeding them uneven was tried first and is wrong twice over: an uneven row flattens
+    -- during the settle window, which is exactly what `mix` demonstrates, and any gradient that did
+    -- survive would bleed heat to the engine's lossy mixing inside the measurement window and swamp
+    -- the difference being looked for.
+    if storage.shapes then
+      for _, cell in pairs(storage.shapes) do top_up(cell, SEED_C) end
+    end
+    if storage.probe then top_up(storage.probe, SEED_C) end
+    -- Exactly one pass, on the first seeding tick only, and never touched again. This is the
+    -- comparison the seeding note's 45% is a claim about.
+    if storage.onepass_seed and tick == 1 then
+      top_up(storage.onepass_seed, SEED_C)
+      storage.seedonce_written = true
+    end
     if tick == SEED_UNTIL then
       -- The last thing done to `mix`, after which it is left alone: one end of the run fifty times
       -- hotter than the other, nothing powered, nothing driving it.
@@ -548,6 +727,76 @@ script.on_event(defines.events.on_tick, function()
       end
       storage.before[name] = { heat = heat(cell), plasma = pooled(cell), inputs = inputs }
     end
+    -- The shape comparison (#73), in the same window and against the same prediction as above.
+    --
+    -- One step, driven here rather than by control.lua, with each row getting a different write
+    -- shape. The prediction is made from each row's own start-of-step boxes exactly as the cells
+    -- above are -- but because these rows are unsimulated and identically seeded, their predictions
+    -- come out equal, so the measured gains are directly comparable to each other and not only to
+    -- their own predictions.
+    storage.shape_before = {}
+    local dt = INTERVAL / 60
+    for _, shape in ipairs(SHAPES) do
+      local cell = storage.shapes[shape.name]
+      local predicted = 0
+      for i, r in ipairs(cell.reactors) do
+        local box = r.fluidbox[1]
+        if box then
+          local result = logic.step(SPEC, PLASMA, box.amount, box.temperature, first_only(i), dt)
+          if result then
+            predicted = predicted
+              + (box.amount - result.plasma_consumed) * (result.temperature_c + 273.15)
+              - box.amount * (box.temperature + 273.15)
+          end
+        end
+      end
+      storage.shape_before[shape.name] = {
+        heat = heat(cell), plasma = pooled(cell), predicted = predicted,
+      }
+      -- Driven AFTER the prediction is taken, so the prediction describes the state the step was
+      -- computed against rather than the state it produced.
+      shape.drive(cell, dt, first_only)
+      -- Sampled in the SAME tick as the writes, before the engine has had a fluid update to flatten
+      -- anything. Read at report time instead -- which is what this did first -- every row is long
+      -- since flat and the evidence that the writes differed at all is gone.
+      local hot, cold, sp = spread(cell.reactors)
+      storage.shape_before[shape.name].after_write = { hot = hot, cold = cold, spread = sp }
+    end
+
+    -- THE PROBE. One write, and the whole run read either side of it inside one tick.
+    do
+      local probe = storage.probe
+      local function snapshot()
+        local out = {}
+        for i, e in ipairs(probe.all) do
+          local box = e.fluidbox[1]
+          out[i] = { name = e.name, amount = box and box.amount or 0,
+                     celsius = box and box.temperature or 0 }
+        end
+        return out
+      end
+      local pre = snapshot()
+      local target = probe.reactors[1]
+      local box = target.fluidbox[1]
+      target.fluidbox[1] =
+        { name = PLASMA, amount = box.amount, temperature = box.temperature * 4 }
+      local post = snapshot()
+      -- Which boxes moved, counted separately for the one that was written and for every other.
+      local others_moved, target_moved = 0, false
+      for i = 1, #pre do
+        local moved = rel(pre[i].amount, post[i].amount) > 1e-9
+                   or rel(pre[i].celsius, post[i].celsius) > 1e-9
+        if probe.all[i] == target then
+          target_moved = moved
+        elseif moved then
+          others_moved = others_moved + 1
+        end
+      end
+      storage.probe_result = {
+        target_moved = target_moved, others_moved = others_moved, boxes = #pre - 1,
+        pre = pre,
+      }
+    end
   elseif tick == JOLT_AT - 60 then
     -- The control for the jolt below, and the one the note used to cite without the harness ever
     -- taking it: the same untouched run, an undisturbed second earlier. If these entities bled heat
@@ -580,9 +829,32 @@ script.on_event(defines.events.on_tick, function()
     end
     storage.jolt_end = { heat = heat(idle), plasma = pooled(idle), hot = hot, cold = cold }
   elseif tick == STEP_AFTER then
+    -- THE POSITIVE CONTROL for the intra-tick probe. "No other box moved" is only evidence that the
+    -- engine does not re-split between writes if this instrument can see it re-split at all. The
+    -- same run, the same snapshot code, a few ticks later: by now the engine has had fluid updates
+    -- and the jolt must have spread. If this does not move either, the probe measures nothing and
+    -- its null result must be thrown away rather than believed.
+    if storage.probe_result then
+      local probe, pre = storage.probe, storage.probe_result.pre
+      local moved = 0
+      for i, e in ipairs(probe.all) do
+        local box = e.fluidbox[1]
+        local amount = box and box.amount or 0
+        local celsius = box and box.temperature or 0
+        if e ~= probe.reactors[1]
+          and (rel(pre[i].amount, amount) > 1e-9 or rel(pre[i].celsius, celsius) > 1e-9) then
+          moved = moved + 1
+        end
+      end
+      storage.probe_result.later_moved = moved
+    end
     storage.after = {}
     for name, cell in pairs(cells) do
       storage.after[name] = { heat = heat(cell), plasma = pooled(cell) }
+    end
+    storage.shape_after = {}
+    for name, cell in pairs(storage.shapes) do
+      storage.shape_after[name] = { heat = heat(cell), plasma = pooled(cell) }
     end
   elseif tick == MIX_AT then
     local hot, cold, s = spread(cells.mix.reactors)
@@ -813,6 +1085,125 @@ script.on_nth_tick(CHECK_AT, function()
         string.format("%.6g predicted against %.6g measured unit-K -- %.1f%% of it arrived; run capacity %.6g",
           predicted, measured, kept * 100, declared_capacity(cell)))
       results[name] = kept
+    end
+
+    -- ------------------------------------------------------------ which shape loses it (#73)
+    --
+    -- The cells above establish that the excess beyond mixing is ours. These rows say which part of
+    -- update()'s shape it is, by running the candidates against each other from one identical
+    -- state. Every row is three reactors bridged, unregistered, seeded alike and never simulated,
+    -- so the ONLY difference between them is how the rig wrote their boxes back.
+    record(storage.shape_before ~= nil and storage.shape_after ~= nil,
+      "the three write shapes were driven and sampled")
+
+    record(not storage.rebase_clamped,
+      "rebased: no write hit the plasma's declared ceiling, so its delta was applied in full")
+
+    local shape_kept = {}
+    if storage.shape_before and storage.shape_after then
+      -- The predictions must agree, or the rows were not in the same state and nothing below is a
+      -- comparison of shapes. Asserted rather than assumed: it is the premise of the whole cell.
+      local first_predicted
+      for _, shape in ipairs(SHAPES) do
+        local p = storage.shape_before[shape.name].predicted
+        first_predicted = first_predicted or p
+        record(rel(p, first_predicted) < 0.01,
+          string.format("%s: started from the same state as the other shapes", shape.name),
+          string.format("%.6g predicted against %.6g", p, first_predicted))
+      end
+
+      for _, shape in ipairs(SHAPES) do
+        local before, after = storage.shape_before[shape.name], storage.shape_after[shape.name]
+        local kept = (after.heat - before.heat) / before.predicted
+        shape_kept[shape.name] = kept
+        record(kept > 0.4 and kept < 1.02,
+          string.format("%s: %s", shape.name, shape.label),
+          string.format("%.1f%% of what its reactors spent arrived", kept * 100))
+      end
+
+      -- THE ISOLATION, AND IT IS A NULL ONE. The three shapes are indistinguishable: whatever
+      -- costs the excess, it is not which order this mod reads and writes in. That is what the
+      -- `probe` block below establishes the reason for -- a write reaches no other box on the run
+      -- until the engine's own fluid update, so there is no window in which one reactor's write
+      -- can discard another's.
+      --
+      -- An earlier version of this comment said the opposite, in this same position: that both
+      -- relative-to-fresh-state shapes beat the shipped one and that the stale absolute write was
+      -- therefore the defect. That was the hypothesis, written before the row had been run, and it
+      -- is exactly what the measurement disproved. Left here as a marker rather than deleted
+      -- silently, because a harness whose comments state the finding they were built to test is
+      -- how #40's inference became this repo's belief for two days.
+      --
+      -- Reported rather than asserted, and deliberately so even now the answer is known: an
+      -- equality between three floats is the wrong shape for a guard. What guards this finding is
+      -- the probe below, which is binary and cheap to reason about. These two lines are here so a
+      -- reader sees the numbers rather than taking the probe's word for the consequence.
+      record(true, "onepass against the shipped shape",
+        string.format("%.2f%% against %.2f%%, a difference of %.2f points",
+          shape_kept.onepass * 100, shape_kept.twopass * 100,
+          (shape_kept.onepass - shape_kept.twopass) * 100))
+      record(true, "rebased against the shipped shape, passes intact",
+        string.format("%.2f%% against %.2f%%, a difference of %.2f points",
+          shape_kept.rebased * 100, shape_kept.twopass * 100,
+          (shape_kept.rebased - shape_kept.twopass) * 100))
+
+      -- The shipped shape's loss on this row, stated against the single-writer figure so the
+      -- excess is readable as one number rather than derived from four.
+      -- The spread the row actually had when it was stepped, so a reader can see the experiment was
+      -- discriminating rather than take it on trust. A flat row reports ~0 here and means nothing.
+      -- Evidence the experiment was discriminating, read in the tick the writes happened rather
+      -- than at report time: with one reactor of three heating, the row must be uneven immediately
+      -- after the writes, or every write carried the same value and the comparison is empty.
+      local aw = storage.shape_before.twopass.after_write
+      record(aw and aw.spread > 0.001,
+        "the shape rows really were uneven the instant the writes landed, so an overwrite had something to destroy",
+        aw and string.format("%.4g C against %.4g C end to end, spread %.2f%%",
+          aw.hot, aw.cold, aw.spread * 100) or "not sampled")
+    end
+
+    -- ------------------------------------------------------------ does a write reach its neighbours?
+    --
+    -- The premise of the whole excess-loss story, measured directly instead of inferred from arrived
+    -- fractions. One box on an untouched run is raised fourfold and the entire run is read again in
+    -- the SAME tick.
+    local probe = storage.probe_result
+    record(probe ~= nil, "the intra-tick write probe ran")
+    if probe then
+      record(probe.target_moved,
+        "probe: the written box really did change, so the write landed",
+        "raised fourfold and read back inside one tick")
+      -- THE FINDING. If no other box moved, the engine does not re-split a run between Lua writes:
+      -- fluid moves in its own once-per-tick update, after every handler has run. A reactor writing
+      -- second therefore CANNOT overwrite a share of its neighbour's rise, because that share has not
+      -- arrived yet -- and update()'s read-then-write shape cannot be the source of the excess loss.
+      record(probe.others_moved == 0,
+        "probe: and NO other box on the run moved in that tick -- the engine re-splits between TICKS, not between WRITES",
+        string.format("%d of %d other boxes changed", probe.others_moved, probe.boxes))
+      -- Without this the line above is worthless: it would read the same if the snapshot were broken.
+      record((probe.later_moved or 0) > 0,
+        "probe: and the SAME instrument sees the run move once ticks have passed, so the null above is a finding and not a broken probe",
+        string.format("%d of %d other boxes had changed %d ticks later",
+          probe.later_moved or 0, probe.boxes, STEP_AFTER - STEP_BEFORE))
+    end
+
+    -- The cross-check, because this file's seeding note is the one thing that argued otherwise.
+    record(storage.seedonce_written == true, "the one-pass seeded run was written exactly once")
+    if storage.seedonce_written then
+      local cell = storage.onepass_seed
+      local fill = pooled(cell) / declared_capacity(cell)
+      local many = pooled(cells.mix) / declared_capacity(cells.mix)
+      -- THE CROSS-CHECK, and it is a comparison rather than a threshold because the absolute number
+      -- is not the point. This file's seeding note explains SEED_UNTIL by saying a run seeded
+      -- box-by-box in one pass "settles at 45% of capacity rather than 100%", i.e. that the writes
+      -- threw each other away. But `mix` is the same geometry seeded SIXTY times and it sits at the
+      -- same 44.6%. So 44.6% is what a three-reactor bridged run holds against the sum of its boxes'
+      -- declared volumes, whatever the write pattern -- a fact about the segment, not about writes.
+      --
+      -- Seeding for sixty ticks is still harmless, and is still worth keeping for the settling it
+      -- buys. What is wrong is the reason given for it.
+      record(rel(fill, many) < 0.02,
+        "seedonce: one seeding pass leaves the run as full as sixty do, so writes do not throw each other away",
+        string.format("%.1f%% from one pass against %.1f%% from sixty", fill * 100, many * 100))
     end
 
     -- The "whatever else is plumbed into the run" half of the claim, and the answer is a qualified
