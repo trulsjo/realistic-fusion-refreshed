@@ -424,4 +424,120 @@ check(num(LADDER[100].wurzel.t_k) < 2e9 and num(LADDER[200].wurzel.t_k) > 2e9,
   string.format("%.3g K at 100 s, %.3g K at 200 s",
     num(LADDER[100].wurzel.t_k), num(LADDER[200].wurzel.t_k)))
 
+-- ---------------------------------------------------------------- density, and the optimum in it
+
+-- WHY THIS BLOCK EXISTS, since nothing above needed it: the shipped density is not the density that
+-- makes the most power. Fusion and bremsstrahlung both go as n^2 while the transport loss goes as
+-- nT, so thinning the plasma at fixed heating raises its equilibrium temperature -- and over the
+-- range D-D's reactivity is still climbing steeply, that buys more than the lost density costs.
+--
+-- A player therefore gets MORE out of a half-empty reactor than a full one, which is the opposite
+-- of what #37's item 3 recorded from the radiation-free model, where the curve falls monotonically.
+-- ADR 0016 accepts it as a deliberate mechanic rather than tuning it away, so the numbers it quotes
+-- are asserted here for the reason #51 exists: a balance figure with no kept harness behind it is
+-- a figure that drifts.
+--
+-- Densities are given as a fraction of a full fluidbox. `amount` is the box's share of its fluid
+-- segment (#40), so the fraction below is the fill of the whole run and not of one machine, which
+-- is what makes heater throughput the lever rather than anything per-reactor.
+
+local FILLS = { 1.0, 0.85, 0.70, 0.65, 0.60, 0.50, 0.35, 0.25 }
+
+--- Q and fusion power at one fill, for one confinement time. nil when the plasma ran away.
+local function at_fill(tau, fill)
+  local spec = {}
+  for k, v in pairs(SPEC) do spec[k] = v end
+  spec.confinement_time_s = tau
+  local density = DENSITY * fill
+  local t = settles_at(BY_KEY.wurzel, D_D, spec, density)
+  if not t then return nil end
+  local p = fusion_w(D_D, spec, density, t)
+  return { t_k = t, p_w = p, q = p / spec.heating_power_w }
+end
+
+local TAUS = { 30, 50, 70 }
+local FILL_ROWS = {}
+for _, tau in ipairs(TAUS) do
+  FILL_ROWS[tau] = {}
+  for _, fill in ipairs(FILLS) do FILL_ROWS[tau][fill] = at_fill(tau, fill) end
+end
+
+print("")
+print("D-D against plasma fill -- the density optimum, and how research closes it")
+print("")
+print(string.format("  %5s %14s %8s %14s %8s %14s %8s",
+  "fill", "tau 30 s", "Q", "tau 50 s", "Q", "tau 70 s", "Q"))
+for _, fill in ipairs(FILLS) do
+  local cells = ""
+  for _, tau in ipairs(TAUS) do
+    local c = FILL_ROWS[tau][fill]
+    if c then
+      cells = cells .. string.format(" %10.3g K%s %7.3g", c.t_k,
+        beyond_dataset(c.t_k) and "*" or " ", c.q)
+    else
+      cells = cells .. string.format(" %12s %8s", "runs away", "--")
+    end
+  end
+  print(string.format("  %4.0f%%%s", fill * 100, cells))
+end
+
+--- Q at a fill, or 0, so a runaway cannot abort the run before the assertions that explain it.
+local function q(tau, fill)
+  local c = FILL_ROWS[tau][fill]
+  return c and c.q or 0
+end
+
+-- THE FINDING. An under-supplied reactor out-performs a full one at the shipped confinement time,
+-- and by a wide enough margin that a player will find it: 40% more fusion power for 35% less fuel.
+check(q(30, 0.65) > q(30, 1.0) * 1.3,
+  "at tau 30 s a 65% full reactor beats a full one by more than 30%",
+  string.format("Q %.3f at 65%% against Q %.3f full", q(30, 0.65), q(30, 1.0)))
+
+-- An interior maximum, not a monotonic rise as density falls -- which is what makes it an operating
+-- point a player tunes to rather than an instruction to run the reactor as empty as possible. Below
+-- it the n^2 term wins again, and by 25% fill the reactor is worse than full.
+check(q(30, 0.65) > q(30, 0.85) and q(30, 0.65) > q(30, 0.50),
+  "the optimum at tau 30 s is interior, near 65% fill",
+  string.format("Q %.3f / %.3f / %.3f at 85%% / 65%% / 50%%",
+    q(30, 0.85), q(30, 0.65), q(30, 0.50)))
+check(q(30, 0.25) < q(30, 1.0),
+  "and far enough below it a reactor is worse off than full",
+  string.format("Q %.3f at 25%% against Q %.3f full", q(30, 0.25), q(30, 1.0)))
+
+-- RESEARCH CLOSES IT, which is the half of ADR 0016 that makes the mechanic self-limiting rather
+-- than a permanent tax on building properly. Raising confinement time raises the equilibrium
+-- temperature at every density, so the optimum walks up the fill axis until it leaves the range
+-- altogether and full supply is simply best.
+check(q(50, 0.85) > q(50, 1.0) and q(50, 0.85) > q(50, 0.65),
+  "by tau 50 s the optimum has moved up to about 85% fill",
+  string.format("Q %.3f / %.3f / %.3f at full / 85%% / 65%%",
+    q(50, 1.0), q(50, 0.85), q(50, 0.65)))
+check(q(70, 1.0) > q(70, 0.85),
+  "and by tau 70 s full supply is the best supply, so the mechanic has closed",
+  string.format("Q %.3f full against Q %.3f at 85%%", q(70, 1.0), q(70, 0.85)))
+
+-- The rung break-even falls on depends on supply, which ADR 0014's ladder does not say because it
+-- is a full-supply table. A player who tunes density crosses at tau 50 s where a player who does
+-- not is still below it. Asserted so that correction cannot quietly come undone.
+check(q(50, 1.0) < 1 and q(50, 0.85) > 1,
+  "at tau 50 s a tuned reactor is above break-even and a full one is not",
+  string.format("Q %.3f full against Q %.3f at 85%%", q(50, 1.0), q(50, 0.85)))
+
+-- D-T is untouched by any of this and it is worth pinning why, because the obvious worry is that
+-- moving density for D-D's sake would disturb the tier that works. D-T sits far PAST its optimum
+-- rather than below it, so its temperature barely moves as the plasma thins and it de-rates almost
+-- exactly as n^2 -- and its equilibrium is above max_temperature_c at every fill here anyway, so
+-- what a player actually sees is the clamp.
+local D_T = L.fuels["rf-d-t-plasma"]
+local function dt_at(fill)
+  local density = DENSITY * fill
+  local t = settles_at(BY_KEY.wurzel, D_T, SPEC, density)
+  return t and fusion_w(D_T, SPEC, density, t) or 0
+end
+local dt_full, dt_65 = dt_at(1.0), dt_at(0.65)
+check(dt_full > 0 and dt_65 / dt_full > 0.40 and dt_65 / dt_full < 0.50,
+  "D-T de-rates as n^2 rather than up-rating, so the D-D mechanic is D-D's alone",
+  string.format("%.1f%% of full at 65%% fill, where n^2 predicts %.1f%%",
+    100 * dt_65 / dt_full, 100 * 0.65 * 0.65))
+
 H.finish()
