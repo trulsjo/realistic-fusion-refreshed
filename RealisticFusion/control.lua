@@ -590,6 +590,214 @@ local function check_reactor_companions()
   end
 end
 
+--- Refuse to run if a tier makes steam nothing in its own closure can drink (#36).
+--
+-- THE OTHER HALF OF THE PREREQUISITE CLOSURE, and the half no check enforced. check-aneutronic.ps1
+-- and check-blanket.ps1 assert that everything a technology's recipes CONSUME is reachable inside
+-- its own prerequisites -- buildable at the near end. This asserts the far end: that what the tier
+-- produces has somewhere to go. rf-heat-exchanger inherits vanilla heat-exchanger's 500 C steam,
+-- and vanilla unlocks the only thing that drinks it -- steam-turbine -- from nuclear-power, behind
+-- uranium processing and nowhere in rf-d-d-fusion's closure. Without a sink a player researches
+-- fusion, builds the whole chain, and has nowhere to put the steam. That is not a crash and not a
+-- load failure; it is a dead end that only shows up in a game.
+--
+-- #36 settled how that gap is closed: rf-d-d-fusion unlocks vanilla's steam-turbine itself, which
+-- accepts that the turbine becomes available before nuclear power. This check is deliberately
+-- indifferent to WHICH answer holds -- it looks for any reachable sink, so the decision could be
+-- revisited in favour of an rf-turbine or a nuclear-power prerequisite without touching it. What it
+-- refuses is having no answer at all, which is the state #23 shipped and review caught by reading.
+--
+-- OVER THIS MOD'S TECHNOLOGIES ONLY, by name prefix. The rule is general but the standing is not:
+-- base's own heat-exchanger passes trivially because nuclear-power unlocks its turbine in the same
+-- technology, and a third-party tier that fails this is not ours to fail a load over. Recipes
+-- enabled from the start are not considered as SOURCES -- they belong to no technology, so there is
+-- no closure to be outside of -- but they are considered as sinks, for the reason the candidates()
+-- helper below gives.
+--
+-- IT REFUSES ONLY THE DEAD END. No sink at all is a load failure; a sink that exists but is rated
+-- below our steam is logged and allowed, because that rating usually belongs to a prototype another
+-- mod owns. See the comment on the two outcomes below.
+--
+-- WHICH MEANS #36'S OWN GAP IS THE WARNING, NOT THE ERROR -- and the reason is that #36 slightly
+-- overstates it. "Nowhere to put the steam" is not quite true: vanilla steam-engine is a generator
+-- that drinks steam, its recipe is enabled from tick 0, and it is rated to 165 C. So a player with
+-- rf-d-d-fusion and no turbine could always route 500 C steam into steam engines and get power --
+-- while throwing away two thirds of the heat. That is a bad tier, not a broken one. Removing the
+-- steam-turbine unlock therefore produces this check's log line naming steam-engine, not its error.
+--
+-- The two severities map onto #36's acceptance criterion exactly as written: "can still convert the
+-- exchanger's steam to electricity" is the error, and it holds. Converting it *well* is the warning.
+-- A hard gate on the decision would have to assert the turbine specifically, which is the one thing
+-- this check must not do if the answer is to stay revisitable.
+--
+-- Reachability is judged by the tree rather than by researching it: a recipe unlocked by any
+-- technology in the closure counts as available. That trusts the tree to mean what it says, which
+-- is weaker than a rig that researches the closure on a live force and reads force.recipes -- the
+-- shape check-aneutronic.ps1 uses. It is what fits an on_init check, where nothing is researched
+-- yet; if a tier ever needs the stronger claim, that rig is the place for it.
+local function check_steam_sinks()
+  -- EVERY RECIPE A PLAYER COULD HAVE, which is not the same set on the sink side as on the source
+  -- side. A source has to be unlocked by a technology to be the tier's problem; a SINK only has to
+  -- be available, and a recipe enabled from tick 0 belongs to no technology at all. Vanilla
+  -- steam-engine is the case that matters: a generator rated to 165 C whose recipe every player has
+  -- in the first minute. Judging sinks by unlocks alone would refuse to load over a low-temperature
+  -- tier whose steam the starting equipment could already drink.
+  local from_start = {}
+  for name, recipe in pairs(prototypes.recipe) do
+    if recipe.enabled then from_start[name] = true end
+  end
+  local function candidates(unlocked)
+    local all = {}
+    for name in pairs(from_start) do all[name] = true end
+    for name in pairs(unlocked) do all[name] = true end
+    return all
+  end
+
+  -- What a recipe puts on the map, if anything.
+  local function placed_by(recipe_name)
+    local recipe = prototypes.recipe[recipe_name]
+    for _, product in pairs(recipe and recipe.products or {}) do
+      if product.type == "item" then
+        local item = prototypes.item[product.name]
+        if item and item.place_result then return item.place_result end
+      end
+    end
+  end
+
+  -- Every recipe unlocked by a technology or anything it transitively requires, itself included.
+  local function reachable_recipes(tech_name, found, seen)
+    if seen[tech_name] then return found end
+    seen[tech_name] = true
+    local tech = prototypes.technology[tech_name]
+    if not tech then return found end
+    for _, effect in pairs(tech.effects or {}) do
+      if effect.type == "unlock-recipe" then found[effect.recipe] = true end
+    end
+    for prerequisite in pairs(tech.prerequisites) do
+      reachable_recipes(prerequisite, found, seen)
+    end
+    return found
+  end
+
+  for tech_name in pairs(prototypes.technology) do
+    if tech_name:sub(1, 3) == "rf-" then
+      local recipes = reachable_recipes(tech_name, {}, {})
+      for recipe_name in pairs(recipes) do
+        local source = placed_by(recipe_name)
+        -- A boiler with a target_temperature and an output box is a steam source whatever it is
+        -- called. Asked of the prototype rather than of a list, so a tier that adds one is covered
+        -- by having been added.
+        --
+        -- THE TYPE GUARD IS NOT DEFENSIVE, it is required. target_temperature is documented as
+        -- optional, which reads like "nil when absent" and is not what it means: reading it on
+        -- anything that is not a boiler or fusion-reactor THROWS "Entity is not boiler or
+        -- fusion-reactor", and this loop sees every entity every reachable recipe places. Found by
+        -- running load-check.ps1, which is the only way it could have been.
+        --
+        -- Boilers only, not fusion-reactors: Space Age's fusion reactor also carries the field, but
+        -- what it makes is plasma rather than steam and no tier of ours unlocks one.
+        local hot = source and source.type == "boiler" and source.target_temperature
+        -- BY ROLE, NOT BY INDEX. fluidbox_prototypes[2] is the output box on rf-reactor -- which is
+        -- what check_energy_outlets above indexes, correctly for the prototype it looks at -- but
+        -- not on rf-heat-exchanger, where the energy_source's own box shifts the order and [2] is
+        -- the water input. An earlier version of this check indexed [2] and reported the exchanger
+        -- as making "water at 500 C", which is how the ordering came to light.
+        local steam
+        if hot then
+          for _, box in pairs(source.fluidbox_prototypes) do
+            if box.production_type == "output" and box.filter then
+              steam = box.filter.name
+              break
+            end
+          end
+        end
+        -- HEATING IS WHAT MAKES A BOILER A STEAM SOURCE, not being of type boiler. The first
+        -- version of this check asked only the type and failed on rf-isotope-collector, which is a
+        -- boiler prototype because that shape gives it the boxes it needs -- control.lua writes
+        -- by-products into it -- and whose output is helium-3 at 15 C, the fluid's own default. It
+        -- adds no heat, so there is nothing for a turbine to take and nothing to be a dead end.
+        -- A source that raises its output above the fluid's default temperature is doing the thing
+        -- this check is about; one that does not is moving fluid.
+        local fluid = steam and prototypes.fluid[steam]
+        -- THE TWO HOPS ARE SPLIT BY HOW THE FLUID CARRIES ITS JOULES, and getting that wrong is what
+        -- the second version of this check did. rf-reactor is a boiler too (ADR 0012: it is one so
+        -- that mode = "output-to-separate-pipe" gives it plasma in and energy out), and it raises
+        -- rf-reactor-energy to 165 C -- so it looked like a steam source whose sink had to be a
+        -- generator, and rf-heat-exchanger is not one. But reactor energy carries its joules in its
+        -- fuel_value, not in its temperature, and the thing that cashes it is a boiler.
+        --
+        -- So: a fluid with a fuel_value is somebody's fuel and check_energy_outlets above owns that
+        -- hop -- it already asserts the fuel_value exists and that something has a box for it. A
+        -- fluid without one carries its energy as heat, and the only way to cash heat is a generator
+        -- rated for the temperature. This check owns that hop, and only that hop.
+        if fluid and (fluid.fuel_value or 0) == 0 and hot > fluid.default_temperature then
+          -- TWO OUTCOMES, NOT ONE, and the difference is what another mod is allowed to do to us.
+          -- No sink at all is the dead end #36 is about: the steam has nowhere to go and the tier
+          -- does not work. A sink that exists but is rated below our steam is a different and much
+          -- milder thing -- the generator runs, throws the excess heat away, and the player loses
+          -- efficiency rather than the ability to play.
+          --
+          -- Only the first is worth refusing to load over, and the reason is not taste. hot is our
+          -- number but maximum_temperature belongs to whatever drinks it, and that is frequently a
+          -- prototype we do not own: bobpower sets vanilla steam-turbine to 465 C
+          -- (bobpower/prototypes/entity/steam-turbines.lua), so a rating comparison that called
+          -- error() would let a third-party mod make this one unloadable. Worse than unloadable --
+          -- check_prototypes() runs from on_configuration_changed as well as on_init, so it would
+          -- break saves already in progress, and the message would tell the player to go and edit
+          -- our technology tree about a mod interaction they did not cause.
+          local sink, cool_sink, cool_rating
+          for candidate in pairs(candidates(recipes)) do
+            local entity = placed_by(candidate)
+            -- maximum_temperature is a generator's ceiling, so a turbine rated below the steam it
+            -- is offered is not a sink: the engine would run it, throw the excess heat away, and
+            -- the tier would look like it worked while paying for steam it could not use.
+            --
+            -- get_max_energy_production() rather than the max_energy_production attribute, which
+            -- LuaEntityPrototype does not have in 2.0.77 -- the quality system made these getters
+            -- and reading the field throws "doesn't contain key". Found by running this, not by
+            -- reading: the documentation page lists both forms.
+            --
+            -- Type-guarded for the same reason the source is: maximum_temperature is a generator's
+            -- field and reading it on anything else throws. No identity test against the source is
+            -- needed -- a prototype cannot be both a boiler and a generator, so the type guards
+            -- already exclude it.
+            if entity and entity.type == "generator"
+              and (entity.get_max_energy_production() or 0) > 0 then
+              for _, box in pairs(entity.fluidbox_prototypes) do
+                if box.filter and box.filter.name == steam then
+                  local rating = entity.maximum_temperature or 0
+                  if rating >= hot then
+                    sink = entity.name
+                  elseif rating > (cool_rating or -1) then
+                    cool_sink, cool_rating = entity.name, rating
+                  end
+                  break
+                end
+              end
+            end
+            if sink then break end
+          end
+          if not sink and not cool_sink then
+            error(string.format(
+              "%s: unlocks %s, which makes %s at %d C, and nothing a player could have by then " ..
+              "drinks it to make electricity -- so they could research the tier, build the chain " ..
+              "and have nowhere to put the steam. Unlock a turbine here (see #36), or name a " ..
+              "technology that does as a prerequisite.",
+              tech_name, source.name, steam, hot))
+          elseif not sink then
+            log(string.format(
+              "RealisticFusion: %s makes %s at %d C and the best-rated sink reachable from %s is " ..
+              "%s, " ..
+              "rated %d C -- the steam will be drunk but the heat above that thrown away. Not " ..
+              "refused, because the rating usually belongs to a prototype another mod owns.",
+              source.name, steam, hot, tech_name, cool_sink, cool_rating))
+          end
+        end
+      end
+    end
+  end
+end
+
 --- Refuse to run a simulation that can compute a temperature the fluid cannot hold.
 --
 -- The same shape of trap as check_cadence, one file further out. apply() writes the simulated
@@ -783,6 +991,7 @@ local function check_prototypes()
   check_blanket_feed()
   check_energy_outlets()
   check_reactor_companions()
+  check_steam_sinks()
 end
 
 -- The register is rebuilt in the same breath as the prototype checks because both are answers to

@@ -14,9 +14,21 @@
 -- Two consequences, both deliberate. Unlocking a recipe a vanilla technology also unlocks is
 -- harmless -- researching nuclear-power later simply unlocks it again. But it does put the turbine
 -- in a player's hands before nuclear power, where an ordinary boiler can drive it; that is a
--- change to vanilla progression, small and stated rather than smuggled. Making nuclear-power a
--- prerequisite instead would avoid it and gate fusion behind fission, which is a far bigger claim
--- about this mod than a recipe unlock is.
+-- change to vanilla progression, small and stated rather than smuggled.
+--
+-- ANSWERED BY TRULS ON 2026-08-19, asked directly rather than through the issue: #36 was opened to
+-- decide exactly this and offered three answers -- keep the unlock, make nuclear-power a
+-- prerequisite instead, or ship an rf-turbine of our own. **The unlock stays.** The issue itself is
+-- the record of record; this comment is downstream of it, not a substitute for it. Fusion is not gated behind fission -- that would be a far bigger claim about what this
+-- mod is than a recipe unlock is -- and there is no rf-turbine, which would have added an entity
+-- ADR 0010's Power set does not name, plus a locale entry and more placeholder art, to avoid a
+-- progression shift small enough to state in a sentence. #32's rf-hc-turbine inherits the answer:
+-- it is ours, and it is unlocked by rf-d-t-fusion rather than replacing this line.
+--
+-- What holds it in place is check_steam_sinks() in control.lua, added by #36: for every technology
+-- of ours it requires SOME reachable thing that drinks the steam for electricity, not this
+-- particular one. So the decision could be revisited without touching the check -- what cannot
+-- happen again is the tier having no answer at all, which is the state review caught by reading.
 data:extend({
   {
     type = "technology",

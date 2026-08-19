@@ -87,9 +87,23 @@ for that mechanism; do not call it a network.
 simulated object sharing a mixed plasma. Named here only so the term is recognised when it appears in
 predecessor code or research notes. **v1 has no networks.**
 
+## Generation
+
+**Steam route** — reactor energy to electricity by way of heat: `rf-heat-exchanger` (or `rf-hc-exchanger`)
+raises water to 500 °C steam and a turbine drinks it. The counterpart to **direct energy conversion**,
+and the only route the neutronic tiers have.
+
+The turbine at the D-D tier is **vanilla's `steam-turbine`, unlocked by `rf-d-d-fusion` itself**
+(Truls's call, 2026-08-19, answering #36). Vanilla gates that turbine behind `nuclear-power`, so without the unlock the tier
+would make steam nothing in its own prerequisite closure could drink. The consequence is accepted and
+deliberate: the steam turbine becomes available before nuclear power, where an ordinary boiler can also
+drive it. Fusion is **not** gated behind fission, and there is no `rf-turbine`.
+`check_steam_sinks()` in Power's `control.lua` holds the invariant rather than the choice — it requires
+some reachable sink, not that particular one.
+
 ## Predecessors
 
-Named precisely, because three exist and conflating them has already caused one factual error in this
+Named precisely, because four exist and conflating them has already caused one factual error in this
 repository's own README:
 
 **The original** — Realistic Fusion Power by Romner_set, Factorio 0.17–1.1, WTFPL from release 1.8.18.
@@ -99,7 +113,13 @@ repository's own README:
 **The redesign** — `realistic-fusion-dev`, the archived four-module split. Its "2.0" is the *mod's*
 version number; it targets **Factorio 1.1**. Never call it a 2.0 mod.
 
-None of the three is an upstream base — v1 is written fresh with all three as reference
+**UFP** — `ufpFixed`, "UFP: Ultimate Fusion Power Fixed" by VVVVVVEmersonFisioVVVVVV, with its
+`ultimateCore*` asset packs. A live, divergent bootleg of the original, Factorio 2.0–2.1. Found
+2026-08-19 and a reference only: **no asset of its is usable** (see
+[ADR 0001](docs/adr/0001-liftable-predecessor-material.md)). Not one of "the three" when that phrase
+appears in older notes, which predate it.
+
+None of them is an upstream base — v1 is written fresh with all of them as reference
 ([ADR 0004](docs/adr/0004-fresh-code-predecessors-as-reference.md)).
 
 ## Compatibility words

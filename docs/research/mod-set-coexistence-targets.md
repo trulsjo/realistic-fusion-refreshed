@@ -78,7 +78,7 @@ That leaves exactly two routes, and choosing between them is a decision, not a f
 
 | Route | What it costs | What it buys |
 |---|---|---|
-| **Upgrade the checking install to Factorio 2.1.x** | This repo's own mods declare `factorio_version` 2.0 and would need bumping and re-verifying; `load-check.ps1`'s nine invariants and every `check-*.ps1` rig would be re-run against a game version nothing here has been tested on; the bundled trio changes version with the game | Every set below is testable at its current, maintained release |
+| **Upgrade the checking install to Factorio 2.1.x** | This repo's own mods declare `factorio_version` 2.0 and would need bumping and re-verifying; `load-check.ps1`'s ten invariants and every `check-*.ps1` rig would be re-run against a game version nothing here has been tested on; the bundled trio changes version with the game | Every set below is testable at its current, maintained release |
 | **Pin the last `factorio_version` 2.0 release of each family** | Stale mods, some by a year; the released state is not what players run today; two families (SeaBlock NG, MadClown's) have 2.0 lines that are visibly mid-development | The existing 2.0.77 install and every current check keep working unchanged |
 
 The last `factorio_version` 2.0 release of each family, with the `base >=` it declares, for the pinning

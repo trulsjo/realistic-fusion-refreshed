@@ -12,7 +12,7 @@
 
     IT DOES MORE THAN THE DATA STAGE, and the difference matters to anyone editing the
     simulation. Creating a map runs `on_init`, which is where control.lua's check_prototypes()
-    fires -- so this script enforces nine invariants that no amount of prototype validation
+    fires -- so this script enforces ten invariants that no amount of prototype validation
     would catch:
 
       check_fuel_rows()           Every row of reactor-logic's fuel table declares the fields
@@ -64,6 +64,15 @@
                                   from its name. Derived rather than listed so a third reactor
                                   needs no change there -- which is exactly what makes a missing
                                   one a create_entity throw inside the reporting pass.
+      check_steam_sinks()         That every tier of ours which makes steam has something inside
+                                  its own prerequisite closure that drinks it for electricity. The
+                                  other half of the closure rule the rigs enforce: they check a
+                                  technology is BUILDABLE, this checks the chain is USABLE at the
+                                  far end. rf-heat-exchanger emits 500 C steam and vanilla gates
+                                  the only turbine that drinks it behind nuclear-power, so #36's
+                                  answer -- rf-d-d-fusion unlocks the turbine itself -- is what
+                                  this holds in place. Indifferent to which answer: it wants a
+                                  reachable sink, not a particular one.
 
     The Lua tests cannot see any of these: they know the physics but not the prototypes, and the
     physics is happily insensitive to cadence well past the point the reactor's buffer gives out.
@@ -367,7 +376,7 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
     # Says what actually passed rather than "data stage valid", which was the same undersell the
     # docstring above used to make: creating the map ran control.lua's check_prototypes() too.
     Write-Host 'OK - prototypes valid, every referenced asset present, map created and the'
-    Write-Host "     simulation's nine load-time invariants hold."
+    Write-Host "     simulation's ten load-time invariants hold."
     exit 0
 }
 finally {
