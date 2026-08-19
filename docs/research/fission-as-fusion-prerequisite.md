@@ -28,8 +28,10 @@ for the physics. Full list at the bottom, with a section naming what I could not
 and the one predecessor still being released are against it — and they disagree because they are
 answering different questions.** All three archived predecessors root their
 entire tree in a single effectless technology, `rfp-fusion-theory` / `rf-fusion-theory`, whose only
-prerequisite is `nuclear-power` — identical in the 1.1 original, byte-for-byte identical in Durikkan's
-2.0 port, and carried across into the four-module redesign. Meanwhile Factorio 2.0.77's own fusion
+prerequisite is `nuclear-power` — on the same line 143 of the same file in both the 1.1 original and
+Durikkan's 2.0 port, and carried across into the four-module redesign. (Not byte-identical, which an
+earlier draft of this note claimed: the two files differ in length, and the technology block itself
+differs in its icon path and its unit count. What is identical is the prerequisite.) Meanwhile Factorio 2.0.77's own fusion
 reactor, shipped in Space Age, does **not** require `nuclear-power`, and not transitively either: its
 technology's sole prerequisite is `quantum-processor`, its fuel is lithium, holmium and ammonia, and
 uranium appears nowhere in its chain. Vanilla treats fission and fusion as parallel, unrelated
