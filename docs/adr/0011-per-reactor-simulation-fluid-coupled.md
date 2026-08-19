@@ -173,9 +173,9 @@ remains pre-authorised.
   > delegation is not reopened. **What is void:** there is no two-pass defect to isolate or fix.
   > **What is now open:** what the excess actually is. `bare` and `solopipe` differ in fill and
   > temperature as well as in writer count, so it may not be a writer-count effect at all, and
-  > isolating it needs a pair differing only in how many reactors write. Re-scoping
-  > [#73](https://github.com/trulsjo/realistic-fusion-refreshed/issues/73) around that is Truls's
-  > call, not a consequence of this correction.
+  > isolating it needs a pair differing only in how many reactors write.
+  > [#73](https://github.com/trulsjo/realistic-fusion-refreshed/issues/73) was re-scoped around
+  > exactly that on 2026-08-19, by Truls, and carries the falsified premise in its history.
 - **Failure is local and visible.** A stuck reactor is one building a player can see and mine, not an
   invisible object spanning half a base.
 - **Blueprints, undo, cut-and-paste and robot construction need no special handling.** These are exactly
