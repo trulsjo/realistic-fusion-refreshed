@@ -861,3 +861,101 @@ The allocation is avoidable: `step()` could fill a caller-owned table instead of
 one. It was left alone, because doing it would put an out-parameter into the one module in this mod
 that is pure and testable outside Factorio (ADR 0005), in exchange for a saving that this
 measurement is not sharp enough to see.
+
+## The buffer holds 6.7% more than the prototype declares (#71)
+
+Measured 2026-08-20 by `scripts/check-buffer.ps1`, against **Factorio 2.0.77**.
+
+`rf-reactor` declares `buffer_capacity = "10MJ"` and its buffer peaks at **10,666,666.67 J**. That
+figure fell out of #37's trace of the reactor's power draw and nobody could explain it, which put it
+in exactly the position ADR 0011's mixing rule was in before #40 measured it: **a declared prototype
+number this repo believed and had seen violated.** #72 retunes `check_cadence()` against this
+buffer, so it was worth knowing what the buffer really is first.
+
+### The rule
+
+**The engine holds 16/15 of the declared `buffer_capacity` — 6.666667% over, exactly.** Not
+approximately, and not a rounding: the same ratio to the ninth decimal at 1 MJ, 7 MJ, 10 MJ and
+100 MJ declared.
+
+| probe | declared | held | ratio |
+|---|---:|---:|---:|
+| `driven` — the shipped reactor, simulated | 10 MJ | 10,666,666.67 J | 16/15 |
+| `same` — the same prototype, never registered | 10 MJ | 10,666,666.67 J | 16/15 |
+| `flow-6` — `input_flow_limit = "6MW"` | 10 MJ | 10,666,666.67 J | 16/15 |
+| `flow-600` — `input_flow_limit = "600MW"` | 10 MJ | 10,666,666.67 J | 16/15 |
+| `no-limit` — no `input_flow_limit` at all | 10 MJ | 10,666,666.67 J | 16/15 |
+| `tertiary` — `usage_priority = "tertiary"` | 10 MJ | 10,666,666.67 J | 16/15 |
+| `buffer-1` | 1 MJ | 1,066,666.67 J | 16/15 |
+| `buffer-7` | 7 MJ | 7,466,666.67 J | 16/15 |
+| `buffer-100` | 100 MJ | 106,666,666.7 J | 16/15 |
+
+The held figure is taken two independent ways: watching the buffer fill over 900 ticks, and writing
+1e15 J at the entity and reading back what stuck. An over-large write is clamped rather than
+refused, so the second is the engine stating its own ceiling rather than an inference from a fill.
+**Where both readings exist they agree exactly** — which is every row above except `tertiary`, and
+both accumulators below. Those three never charge on the rig, because the interface's surplus does
+not reach them, so they rest on the clamp alone. It matters most for `tertiary`, which is the only
+probe separating usage priority from entity type.
+
+### So `buffer_capacity` is a floor where it is honoured at all, and the API reports the floor
+
+The prototype documentation for 2.0.77 calls it *"How much energy this entity can hold"*
+(<https://lua-api.factorio.com/2.0.77/types/ElectricEnergySource.html>). Read as a ceiling that is
+wrong by 1/15. Read as a floor it is right for every probe above — and it is not a hint, because the
+engine's ceiling is an exact function of it. The qualifier is the assembling machine at the foot of
+this section, which does not honour the field at all; for the reactor, and for everything else
+measured here, floor is the answer.
+
+The trap for mod code is the second half: **`LuaElectricEnergySourcePrototype.buffer_capacity`
+returns the declared figure, not the effective one.** So any check written against the prototype —
+`check_cadence()` in `control.lua` is this repo's — is comparing against a figure the entity has 6.7%
+more than. That is conservative rather than wrong, and at the shipped numbers it changes
+nothing: 10.67 MJ against 50 MW is a ceiling of 12.8 ticks where the declared 10 MJ gives
+12, and `UPDATE_INTERVAL` is a whole number of ticks either way. **#37's guess that "the ceiling may
+be conservative by a little" is confirmed, and the little is 0.8 of a tick.**
+
+### The four candidates #71 listed, each answered
+
+- **"A floor the engine rounds up from, to a whole number of joules per tick or to satisfy
+  `input_flow_limit`."** *Half right.* It is a floor, but the rounding story is wrong: the ratio is
+  identical at 6 MW, 60 MW, 600 MW and unlimited inflow, and identical at four declared capacities
+  including 7 MJ, which is not a round number of anything. It is a multiplier, not a rounding.
+- **"The reading is of something else — a transient between the network update and the entity's own
+  drain."** *Ruled out.* A probe nothing drains fills to 10,666,666.67 J and then neither exceeds
+  it nor falls below it on any of the 600 ticks measured after the fill, and a deliberate over-write
+  is clamped to the same figure.
+- **"`input_flow_limit = "60MW"` interacts with it."** *Ruled out*, by the three flow-limit probes
+  above.
+- **"It is our own write."** *Ruled out.* `same` is the reactor prototype under a name
+  `entity-management` does not register, so no Lua of ours ever touches its energy, and it holds the
+  identical figure. The reactor the simulation drives peaks at exactly the same value.
+
+### What the ratio does **not** apply to, which is why this note claims a rule and not a law
+
+- **Accumulators get exactly what they declare.** Vanilla's `accumulator` clamps at 5,000,000 J
+  against its declared 5 MJ, and the same prototype forced to 10 MJ clamps at 10,000,000 J. Ratio
+  1.0, twice. So the 16/15 is not a property of every electric energy source; it does not apply to
+  `usage_priority = "managed-accumulator"`.
+- **An assembling machine ignores `buffer_capacity` altogether.** `assembling-machine-2` with the
+  field forced to `"10MJ"` holds **2,755.56 J** — five orders down. That is `(2500 + 83.33) * 16/15`:
+  its energy usage plus its drain, per tick, times the same ratio. **Measured at two usages rather
+  than fitted at one** — the same machine at 300 kW instead of 150 kW holds **5,511.11 J**, which is
+  `(5000 + 166.67) * 16/15`, exactly double. So for that entity the declared figure is not a floor,
+  not a ceiling and not a hint; it is discarded, and the buffer is sized from the machine's own
+  consumption instead. The ratio survives; only the thing it multiplies changes.
+
+**Where 16/15 comes from is not established.** It is 64/60, which looks like a per-tick conversion
+made against 64 rather than 60, and that is a guess about engine internals with no evidence behind
+it — recorded here as a guess so the next reader does not mistake it for a finding. What is
+established is the ratio, its exactness, its independence from inflow and declared size, its absence
+on accumulators, and that the declared figure is a floor for everything else measured.
+
+### Sources
+
+- `scripts/check-buffer.ps1` — the rig, and the assertions that fail if any of the above moves.
+  Twelve entities on one map: the shipped reactor, eight clones of it, and three prototypes that are
+  not ours.
+- The trace that raised it: #37 item 4b. What it unblocks: #72.
+- The precedent for measuring rather than reading:
+  [ADR 0011](../adr/0011-per-reactor-simulation-fluid-coupled.md) and *Fluid segments* above (#40).
