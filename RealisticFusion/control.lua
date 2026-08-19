@@ -274,15 +274,29 @@ local function apply(entity, spec, plasma, result)
   --   * The engine's mixing is LOSSY. Flattening a temperature difference across a segment destroys
   --     about a fifth of the difference -- measured on reactors the simulation never touched at all,
   --     and confirmed by the one-reactor pair above, where nothing else can be to blame.
-  --   * AND THE REST IS OURS. Three writers lose more than mixing alone accounts for, and the shape
-  --     of update() is the candidate: it reads every reactor and then writes every reactor, and each
-  --     write REPLACES a box using the start-of-step pool -- so the engine, which re-splits between
-  --     Lua writes, can hand a reactor its neighbour's rise a moment before that reactor overwrites
-  --     it. Not isolated, and not fixed here.
+  --   * AND THE REST IS NOT MIXING. Three writers lose more than mixing alone accounts for. This
+  --     comment used to name the shape of update() as the candidate -- two passes, each write
+  --     replacing a box from the start-of-step pool, with the engine re-splitting between the Lua
+  --     writes so that a reactor writing second overwrites the share of its neighbour's rise it had
+  --     just been handed.
   --
-  -- Nothing in this file is changed for it. The plasma runs cooler than the model says, by a margin
-  -- that grows with how many reactors share a run, and whether to accept that, fix the two-pass
-  -- update, or reopen ADR 0011's delegation is a decision rather than a fix.
+  -- THAT MECHANISM DOES NOT EXIST, measured under #73 by scripts/check-pooling.ps1's `probe` row.
+  -- A Lua write to one box on a run changes NO other box on that run in the same tick -- 0 of 12,
+  -- against 12 of 12 moved six ticks later through the same instrument, which is the control that
+  -- makes the nil a finding rather than a broken probe. The engine re-splits between TICKS, in its
+  -- own fluid update after every handler has run. So the share a second writer would overwrite has
+  -- not arrived yet, and it cannot be overwritten.
+  --
+  -- Confirmed from the other side by driving the candidates against each other: on identical rows
+  -- from one identical state, with the writes 73% apart end to end at the instant they landed, the
+  -- shipped two-pass shape, a single-pass shape and a two-pass shape with a relative write all keep
+  -- 72.18% -- the same number to four figures. There is nothing to choose between them because the
+  -- engine cannot tell them apart.
+  --
+  -- So NOTHING IN THIS FILE IS CHANGED, and now for a reason rather than for a deferral: the
+  -- read-then-write shape is not what costs the excess. What does is not known. It is not the
+  -- engine's mixing alone either, and the two cells that would separate the remaining candidates
+  -- differ in fill and temperature as well as in writer count, so #40's comparison cannot settle it.
   -- docs/research/reactor-runtime-cost.md carries the numbers and scripts/check-pooling.ps1 the rig.
   local remaining = plasma.amount - result.plasma_consumed
   if remaining > 0 then

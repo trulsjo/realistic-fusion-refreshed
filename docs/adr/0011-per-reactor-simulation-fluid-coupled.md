@@ -141,8 +141,10 @@ remains pre-authorised.
   > **Decided 2026-08-19 on [#37](https://github.com/trulsjo/realistic-fusion-refreshed/issues/37),
   > and it splits the two effects rather than choosing between the three options above.** The engine's
   > mixing loss is **accepted** as a plumbing cost a player designs around — it is not ours to fix.
-  > The excess beyond it **is** ours and is treated as the defect it is: `update()`'s read-then-write
-  > shape is to be isolated and fixed, and the segment's equilibrium re-measured afterwards
+  > ~~The excess beyond it **is** ours and is treated as the defect it is: `update()`'s
+  > read-then-write shape is to be isolated and fixed~~ — **struck 2026-08-19: measured, and the
+  > read-then-write shape is not what costs it. See the correction below.** The segment's
+  > equilibrium is still to be re-measured
   > ([#73](https://github.com/trulsjo/realistic-fusion-refreshed/issues/73)). **This delegation is not
   > reopened**, and segment-wide energy accounting is not adopted — building it on top of an
   > unisolated defect would risk compensating for the defect rather than fixing it.
@@ -150,6 +152,30 @@ remains pre-authorised.
   > Note also that #37's own item 2, which claimed a long run settles about 10% *hotter*, is a
   > pre-#40 observation that the measurements above contradict in direction; no post-#40 equilibrium
   > measurement exists yet, and taking one is part of the same work.
+
+  > **The premise of that decision was measured and is false. Corrected 2026-08-19 (#73).** The
+  > excess beyond mixing is real, but `update()`'s read-then-write shape is not what causes it, so
+  > there is no defect of ours here to fix.
+  >
+  > `check-pooling.ps1` now asks the question directly rather than inferring it from arrived
+  > fractions. A Lua write to one box on a run moves **no other box on that run in the same tick** —
+  > 0 of 12 — where the same instrument sees **12 of 12** moved six ticks later. The engine re-splits
+  > between *ticks*, in its own fluid update after every handler has run, so the share a second
+  > writer would overwrite has not arrived to be overwritten. Driven from the other side on identical
+  > rows, with the writes 73% apart at the instant they landed, the shipped two-pass shape, a
+  > single-pass shape and a relative write all keep **72.18%** — one number to four figures.
+  >
+  > The evidence that made the mechanism plausible was a misreading: a run seeded in one pass holds
+  > 44.6% of declared capacity and the same run seeded sixty times holds 44.6% too, so writes do not
+  > throw each other away.
+  >
+  > **What stands from the decision above:** the engine's mixing loss is accepted, and this
+  > delegation is not reopened. **What is void:** there is no two-pass defect to isolate or fix.
+  > **What is now open:** what the excess actually is. `bare` and `solopipe` differ in fill and
+  > temperature as well as in writer count, so it may not be a writer-count effect at all, and
+  > isolating it needs a pair differing only in how many reactors write. Re-scoping
+  > [#73](https://github.com/trulsjo/realistic-fusion-refreshed/issues/73) around that is Truls's
+  > call, not a consequence of this correction.
 - **Failure is local and visible.** A stuck reactor is one building a player can see and mine, not an
   invisible object spanning half a base.
 - **Blueprints, undo, cut-and-paste and robot construction need no special handling.** These are exactly

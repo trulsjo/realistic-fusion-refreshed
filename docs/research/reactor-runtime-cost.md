@@ -709,12 +709,40 @@ overwrite another. **Mixing alone costs about twenty points**, which is the same
 at from the other direction, on a rig where the simulation is running.
 
 **And three reactors lose more than mixing alone accounts for.** 57.6% on three writers against 75.2%
-on one. That excess is **in this mod, not the engine**, and the mechanism is visible in `update()`:
+on one. ~~That excess is **in this mod, not the engine**, and the mechanism is visible in `update()`:
 it reads every reactor and then writes every reactor, and each write *replaces* its box with an
 amount and a temperature computed against the start-of-step pool. The engine re-splits between those
 writes — §1 shows it doing exactly that during seeding — so a reactor writing second can overwrite
-the share of its neighbour's rise that it had just been given. **This harness establishes that the
+the share of its neighbour's rise that it had just been given.~~ **This harness establishes that the
 excess exists; it does not isolate that mechanism, and no fix is attempted here.**
+
+> **The struck mechanism was measured and does not exist. Corrected 2026-08-19 (#73).**
+>
+> Three additions to `check-pooling.ps1` settle it, and the negative result rests on a control rather
+> than on an absence:
+>
+> - **The `probe` row asks the premise directly.** One box on an untouched run is raised fourfold and
+>   the whole run is read again *in the same tick*: **0 of 12 other boxes moved.** Through the same
+>   snapshot code six ticks later, **12 of 12 had moved.** So the instrument can see the run
+>   redistribute, and it does not happen between Lua writes — it happens in the engine's own fluid
+>   update, after every handler has run. **The share a second writer would overwrite has not arrived
+>   yet.**
+> - **The three shape rows ask it from the other side.** Identical unregistered geometry, one
+>   identical state, one reactor of three heating so the writes differ — 73% apart end to end at the
+>   instant they landed. The shipped two-pass shape, a single-pass shape, and a two-pass shape with a
+>   *relative* write all keep **72.18%**, the same number to four figures. The engine cannot tell the
+>   shapes apart, so there is nothing to choose between them.
+> - **§1's seeding evidence was misread, and that is what made the mechanism plausible.** The 45%
+>   is real; its cause is not write interaction. `seedonce` is seeded exactly **once** and holds
+>   **44.6%** of declared capacity; `mix`, the same geometry seeded **sixty** times, holds **44.6%**.
+>   One pass leaves a run as full as sixty do. 44.6% is what a three-reactor bridged run holds against
+>   the sum of its boxes' declared volumes — a fact about the segment, not about writes.
+>
+> **So the excess is real and unexplained.** It is not the write shape, and it is not mixing alone.
+> The obvious next suspect is that `bare` and `solopipe` differ in fill (44.6% against 27.6%) and in
+> temperature as well as in writer count, so #40's comparison does not hold writer count alone
+> constant — which means the "excess" may not be a writer-count effect at all. Isolating it needs a
+> pair that differs *only* in how many reactors write.
 
 **So `apply()`'s comment is right about the arithmetic and wrong about the outcome.** It reads *"the
 two errors cancel exactly … so the energy the pool gains is the energy the reactor spent whatever
@@ -730,8 +758,9 @@ reactors share a run. Since reaction rate goes as the square of density and rise
 temperature, that is a balance effect rather than a rounding one.
 
 **Nothing is settled here about what to do**, and nothing should be. The engine's share may be
-something to accept and design around; the mod's share looks more like a defect in the two-pass
-update and is worth its own ticket; and reopening
+something to accept and design around; ~~the mod's share looks more like a defect in the two-pass
+update and is worth its own ticket~~ — **it is not the two-pass update, see the correction above; what
+the remaining share is has not been identified** — and reopening
 [ADR 0011](../adr/0011-per-reactor-simulation-fluid-coupled.md)'s delegation of sharing is an
 architectural decision either way. What is settled is the measurement.
 
