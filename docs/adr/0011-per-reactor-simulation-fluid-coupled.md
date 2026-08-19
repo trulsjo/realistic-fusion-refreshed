@@ -132,22 +132,24 @@ remains pre-authorised.
   overwrite the share of its neighbour's rise it has just been handed. Not isolated and not fixed
   under #40.
 
-  **Decided 2026-08-19 on [#37](https://github.com/trulsjo/realistic-fusion-refreshed/issues/37), and
-  it splits the two effects rather than choosing between the three options below.** The engine's
-  mixing loss is **accepted** as a plumbing cost a player designs around — it is not ours to fix. The
-  excess beyond it **is** ours and is treated as the defect it is: `update()`'s read-then-write shape
-  is to be isolated and fixed, and the segment's equilibrium re-measured afterwards. **This delegation
-  is not reopened**, and segment-wide energy accounting is not adopted — building it on top of an
-  unisolated defect would risk compensating for the defect rather than fixing it. Note also that #37's
-  own item 2, which claimed a long run settles about 10% *hotter*, is a pre-#40 observation that the
-  measurements below contradict in direction; no post-#40 equilibrium measurement exists yet, and
-  taking one is part of the same work.
-
-  The options as they stood ran from accepting it as a plumbing cost a player designs
+  ~~**Nothing is decided here.**~~ The options run from accepting it as a plumbing cost a player designs
   around, through fixing the two-pass update, to reopening this delegation — and the last of those is
   a new ADR, not an edit to this one. See
   [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md) for the measurement
   and its controls.
+
+  > **Decided 2026-08-19 on [#37](https://github.com/trulsjo/realistic-fusion-refreshed/issues/37),
+  > and it splits the two effects rather than choosing between the three options above.** The engine's
+  > mixing loss is **accepted** as a plumbing cost a player designs around — it is not ours to fix.
+  > The excess beyond it **is** ours and is treated as the defect it is: `update()`'s read-then-write
+  > shape is to be isolated and fixed, and the segment's equilibrium re-measured afterwards
+  > ([#73](https://github.com/trulsjo/realistic-fusion-refreshed/issues/73)). **This delegation is not
+  > reopened**, and segment-wide energy accounting is not adopted — building it on top of an
+  > unisolated defect would risk compensating for the defect rather than fixing it.
+  >
+  > Note also that #37's own item 2, which claimed a long run settles about 10% *hotter*, is a
+  > pre-#40 observation that the measurements above contradict in direction; no post-#40 equilibrium
+  > measurement exists yet, and taking one is part of the same work.
 - **Failure is local and visible.** A stuck reactor is one building a player can see and mine, not an
   invisible object spanning half a base.
 - **Blueprints, undo, cut-and-paste and robot construction need no special handling.** These are exactly
