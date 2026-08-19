@@ -101,6 +101,19 @@ drive it. Fusion is **not** gated behind fission, and there is no `rf-turbine`.
 `check_steam_sinks()` in Power's `control.lua` holds the invariant rather than the choice — it requires
 some reachable sink, not that particular one.
 
+**No fission dependency is to be introduced unless the physics forces one** (Truls, 2026-08-19, on #36).
+Not a prerequisite, not an ingredient. If a physical reason exists it is expected to turn up organically
+rather than be reached for; the survey in
+[`docs/research/fission-as-fusion-prerequisite.md`](docs/research/fission-as-fusion-prerequisite.md)
+looked and found only tritium supply, which is a start-up-inventory problem attaching to `rf-d-t-fusion`
+and not to the D-D tier. Note that the mod's own lineage disagrees — all three older predecessors rooted
+their tree in `nuclear-power` — and that Factorio's own Space Age fusion does not.
+
+Unlocking vanilla's turbine ourselves is **redundant rather than early** under Bob's, which re-homes
+`steam-turbine` to `bob-steam-turbine-1` at the same science tier behind fewer prerequisites. Should
+Bob's ever become an integration target rather than a coexistence one (ADR 0007 defers, does not
+refuse), the thing to drop would be *our* unlock — Bob's already removes fission's.
+
 ## Predecessors
 
 Named precisely, because four exist and conflating them has already caused one factual error in this
