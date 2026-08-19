@@ -109,6 +109,50 @@ proof.
 > (1.2.0) and PreLeyZero (1.3.13, 1.8.0). Read that clause as covering the unmarked `graphics/` set
 > entire, not one donor's part of it. `CLAUDE.md` carries the full statement.
 
+> **A fourth predecessor, checked 2026-08-19 — and it breaks the other half of the rule.** Truls found
+> [UFP: Ultimate Fusion Power Fixed](https://mods.factorio.com/mod/ufpFixed) by
+> `VVVVVVEmersonFisioVVVVVV`, self-described *"bootleg of Romner_set's Realistic Fusion Power"*, Factorio
+> 2.0–2.1, ~7.67K users, still releasing. It ships as five mods: `ufpFixed` (Lua and locale only) plus
+> `ultimateCoreLib` (scripts) and the asset packs `ultimateCore`, `ultimateCore-2` and `ultimateCore-3`.
+> All five declare **LGPLv3** — this repo's own licence — and were checked as zips in
+> `C:\src\factorio\_reference\`, 630 MB in total.
+>
+> **There is no per-directory marking anywhere in any of the five.** All five root `LICENSE` files are
+> byte-identical (7423 bytes, sha256 `c2841e73de1273ef…`, the LGPLv3 text verbatim), and not one
+> `license.txt` or `legal-note.txt` exists in any subdirectory. Two root files in `ultimateCore` qualify
+> what the root claims, and they cover **8 assets out of 758**: `freesound_org_attribution.txt` (four
+> sounds — two CC0, one CC BY 4.0, and **one CC BY-NC 4.0**, shipped as
+> `sound/__timbre__artificial-intelligence-goes-nuclear.ogg`) and `vecteezy_attribution.txt` (four PNGs
+> under a licence forbidding redistribution, since composited into the black-hole, void-drop, void-armour
+> and Void Revenant art under names that no longer identify them).
+>
+> Meanwhile the mod portal listings credit material the zips never mention: *"markmen494 Warhammer 40k
+> Mechanicus graphics"*, art belonging to **Games Workshop**, **Dreamhaven Inc. and Game River**
+> (Mechabellum), **Blizzard** (StarCraft) and **Hello Games** (No Man's Sky), plus PreLeyZero, YuokiTani,
+> fishbus, Malcolm Riley, Silenteum, Kubius, vlss and OpenGameArt. Two of those credits are checkable and
+> both fail: `ultimateCore-3` is **89% Arch666Angel's Mass Transit train art** (128 MB of 145 MB, 162
+> sprites; upstream is **CC BY-NC-ND 4.0**), and
+> `ultimateCore/graphics/ufp_entity/ufp_boiler-{north,south,east,west}-{on,off}.png` are **this ADR's own
+> `electric-boiler/` sprites, upscaled 160×160 → 320×320** — the Angel's Petrochem art that row four of
+> the table above rules out, relabelled LGPLv3 with no note. Its `ufp_electric_boiler.lua` is genuine
+> fresh 2.0 work; only the art is contaminated.
+>
+> **What this changes.** The decisions above stand unaltered, but their shape was "no licence file means
+> permissive, subject to the unmarked-graphics exception" — a rule about **silence**. This is the
+> opposite failure: an **affirmative licence the declarer had no right to grant**, applied uniformly
+> across a mixed tree so that nothing looks like an exception. So the rule reads: **a declared licence is
+> evidence, not proof.** Where a mod's own credits name third parties it does not have terms from, the
+> root file settles nothing, and a permissive or copyleft declaration is worth no more than the bare
+> `graphics/` directory the exception above already covers.
+>
+> **In practice: no assets from `ufpFixed`, `ultimateCore`, `ultimateCore-2`, `ultimateCore-3` or
+> `ultimateCoreLib` — not one sprite, not one sound.** Its Lua would be liftable on its own terms
+> (LGPLv3 into its own directory, modifications stated, author named), but every prototype references
+> `__ultimateCore__/graphics/…`, so lifted Lua arrives needing art that is excluded: read it, do not copy
+> it. Its use here is as a second worked example of Factorio 2.0 prototypes — and at
+> `factorio_version` 2.1 it is the newest reference available, ahead of Durikkan's port. The full survey
+> is in the project brain note, not in this repo.
+
 ## Alternatives considered
 
 **Carry the NC-ND directories isolated per-directory.** Cheapest, and consistent with the existing

@@ -36,7 +36,7 @@ choosing between them is not.
 - Mods are **Lua**. The API has **three stages**: `settings` and `prototype` run at start-up, `runtime`
   runs during gameplay. Know which stage code belongs to before writing it.
 - API docs are published **per game version** at <https://lua-api.factorio.com/>. Check claims against
-  the version being targeted rather than from memory. Two of the three predecessors are **1.1**-era —
+  the version being targeted rather than from memory. Two of the three older predecessors are **1.1**-era —
   the original and the four-module redesign, whose "2.0" is its own version number — and only
   Durikkan's port targets Factorio 2.0. The 1.1→2.0 break therefore runs straight through the material
   this project builds on, which is the whole reason the work exists.
@@ -58,6 +58,13 @@ licence is WTFPL" does not settle what a given file is. See `docs/adr/0001-lifta
   modifications stated.
 - **Lift only from Realistic Fusion Power 1.8.18 or later.** Earlier releases are CC BY-SA 4.0; 1.8.18
   changed the primary licence to WTFPL.
+- **A declared licence is evidence, not proof — read the mod's own credits against it.** A fourth
+  predecessor, **UFP: Ultimate Fusion Power Fixed** (`ufpFixed`, `ultimateCoreLib`, `ultimateCore`,
+  `ultimateCore-2`, `ultimateCore-3`), declares LGPLv3 across all five zips with no per-directory marking
+  at all, while its listings credit Games Workshop, Dreamhaven, Blizzard, Hello Games and Arch666Angel.
+  **Take no asset from any of the five**, including `ufp_boiler-*.png`, which is the CC BY-NC-ND
+  `electric-boiler/` art upscaled. Reading its Lua for 2.0/2.1 prototype patterns is fine. Checked
+  2026-08-19; see ADR 0001.
 
 **Both predecessors already mark their assets this way.** Realistic Fusion Power and Durikkan's 2.0 port
 keep graphics derived from **Krastorio 2** in their own directories with the licence text alongside,
@@ -81,7 +88,7 @@ Three things to take from that:
   the licence file is only the licence text. Searching for licence files alone finds the directory and
   misses what it is — which is exactly the mistake that produced a wrong version of this section.
 - **A directory is named for what it depicts, not for where the art came from.** The Krastorio 2 material
-  in both predecessors is in `particle-accelerator/`. Of the three predecessors only the redesign has a
+  in both predecessors is in `particle-accelerator/`. Of the three older predecessors only the redesign has a
   directory actually called `krastorio-2/`, so not finding that name means nothing. (This repo has two of
   its own, which are its own doing and come from upstream — not from the redesign.)
 - **The two root licences differ, and one mod disagrees with itself.** The original's `license.txt` is
