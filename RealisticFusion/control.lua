@@ -445,6 +445,14 @@ end
 -- Over every reactor rather than rf-reactor alone (#31). The aneutronic one draws four times the
 -- heating against four times the buffer, so it passes at the same interval -- but the two numbers
 -- are on different prototypes now and nothing else would notice one moving without the other.
+--
+-- IT CHECKS AGAINST A BUFFER 6.7% SMALLER THAN THE ONE THE ENTITY HAS, and deliberately so. The
+-- engine holds 16/15 of the declared buffer_capacity -- exactly, measured at four capacities and
+-- four inflow limits by scripts/check-buffer.ps1 (#71) -- while buffer_capacity here reports the
+-- declared figure. So the real ceiling at 50 MW is 12.8 ticks where this allows 12. Left
+-- conservative rather than corrected by a ratio: an interval is a whole number of ticks, so the
+-- 0.8 buys nothing, and a hardcoded 16/15 would be this file believing an engine constant no
+-- prototype states. See docs/research/reactor-runtime-cost.md.
 local function check_cadence()
   for name, spec in pairs(SPECS) do
     local source = prototypes.entity[name].electric_energy_source_prototype
