@@ -130,8 +130,8 @@ proof.
 > Mechanicus graphics"*, art belonging to **Games Workshop**, **Dreamhaven Inc. and Game River**
 > (Mechabellum), **Blizzard** (StarCraft) and **Hello Games** (No Man's Sky), plus PreLeyZero, YuokiTani,
 > fishbus, Malcolm Riley, Silenteum, Kubius, vlss and OpenGameArt. Two of those credits are checkable and
-> both fail: `ultimateCore-3` is **89% Arch666Angel's Mass Transit train art** (128 MB of 145 MB, 162
-> sprites; upstream is **CC BY-NC-ND 4.0**), and
+> both fail: `ultimateCore-3` is **62% Arch666Angel's Mass Transit train art** (127.9 MB of its 207.3 MB
+> uncompressed, 162 sprites; upstream is **CC BY-NC-ND 4.0**), and
 > `ultimateCore/graphics/ufp_entity/ufp_boiler-{north,south,east,west}-{on,off}.png` are **this ADR's own
 > `electric-boiler/` sprites, upscaled 160×160 → 320×320** — the Angel's Petrochem art that row four of
 > the table above rules out, relabelled LGPLv3 with no note. Its `ufp_electric_boiler.lua` is genuine

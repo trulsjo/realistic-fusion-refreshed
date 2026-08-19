@@ -679,10 +679,27 @@ local function check_steam_sinks()
     return found
   end
 
-  for tech_name in pairs(prototypes.technology) do
+  for tech_name, tech in pairs(prototypes.technology) do
     if tech_name:sub(1, 3) == "rf-" then
+      -- The closure is what a SINK may be found in; only this technology's OWN unlocks are checked as
+      -- sources. Both halves matter and they are not symmetric.
+      --
+      -- A closure contains its prerequisites' unlocks, so iterating it for sources asks the same
+      -- question about rf-heat-exchanger once for every technology downstream of rf-d-d-fusion --
+      -- and the answer cannot differ, because a descendant's closure is a superset of the unlocking
+      -- technology's. If the technology that unlocks a source has a sink, every technology that
+      -- requires it has the same sink. So the extra passes could only ever agree, and what they
+      -- actually produced was the same warning logged three times over.
+      --
+      -- Checking the unlocking technology alone is therefore equivalent, not a weakening: a source
+      -- is unlocked exactly once from our side, and that is the tier whose closure has to answer for
+      -- it.
       local recipes = reachable_recipes(tech_name, {}, {})
-      for recipe_name in pairs(recipes) do
+      local unlocks = {}
+      for _, effect in pairs(tech.effects or {}) do
+        if effect.type == "unlock-recipe" then unlocks[effect.recipe] = true end
+      end
+      for recipe_name in pairs(unlocks) do
         local source = placed_by(recipe_name)
         -- A boiler with a target_temperature and an output box is a steam source whatever it is
         -- called. Asked of the prototype rather than of a list, so a tier that adds one is covered
