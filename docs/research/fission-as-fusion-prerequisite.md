@@ -1,4 +1,4 @@
-# All three predecessors gated fusion on `nuclear-power`. Vanilla's own fusion does not.
+# The three archived predecessors gated fusion on `nuclear-power`. The live one and vanilla do not.
 
 Researched 2026-08-19, exploratory. **Nothing here is decided.** Whether `nuclear-power` becomes a
 prerequisite of this mod's fusion technologies is a decision about progression and tech-tree shape, and
@@ -16,7 +16,7 @@ narrows it.
 Checked against: **Factorio 2.0.77's own prototype data** in the installed game at
 `D:\SteamLibrary\steamapps\common\Factorio\data\`, `base/info.json` and `space-age/info.json` both
 version 2.0.77 — the technology trees read directly, and the prerequisite closures computed
-mechanically from them rather than eyeballed; the **three predecessors' technology files**, two from
+mechanically from them rather than eyeballed; the **four predecessors' technology files**, two from
 `C:\src\factorio\_reference\` and the redesign's from the archive via `gh api`; **Krastorio 2 2.1.3**
 source and the **installed Bob's set** (`bobpower` 2.1.0, `bobplates` 2.1.1) for what overhauls do to
 `nuclear-power`; and **UKAEA CCFE-PR(17)67** and the **ITER Organisation's** own tritium-breeding page
@@ -24,8 +24,9 @@ for the physics. Full list at the bottom, with a section naming what I could not
 
 ## What the evidence says, in one paragraph
 
-**The mod's own lineage is unanimously for it, Krastorio 2 is for it, and the game's own fusion is
-against it — and they disagree because they are answering different questions.** All three predecessors root their
+**The mod's three archived ancestors are for it, Krastorio 2 is for it, and both the game's own fusion
+and the one predecessor still being released are against it — and they disagree because they are
+answering different questions.** All three archived predecessors root their
 entire tree in a single effectless technology, `rfp-fusion-theory` / `rf-fusion-theory`, whose only
 prerequisite is `nuclear-power` — identical in the 1.1 original, byte-for-byte identical in Durikkan's
 2.0 port, and carried across into the four-module redesign. Meanwhile Factorio 2.0.77's own fusion
@@ -286,13 +287,25 @@ and locale entry, and it *would* extend ADR 0010's declared set, which `d-t.lua:
 call), but it is materially cheaper than the ticket's framing suggests, and it is the only option that
 answers #36 without either changing vanilla progression or depending on a fission technology.
 
-## 3. What the three predecessors did — unanimous
+## 3. What the predecessors did — unanimous until the live one
 
 | Mod | File | Line | What it says |
 |---|---|---|---|
 | Realistic Fusion Power 1.8.18 (1.1) | `prototypes/technology/technology.lua` | **143** | `prerequisites = {"nuclear-power"}` on `rfp-fusion-theory` |
 | Durikkan's port 1.9.2 (2.0) | `prototypes/technology/technology.lua` | **143** | `prerequisites = {"nuclear-power"}` on `rfp-fusion-theory` |
 | The four-module redesign | `RealisticFusionCore/prototypes/technology/technology.lua` | **116** | `prerequisites = {"nuclear-power"}` on `rf-fusion-theory` |
+| **UFP 1.0.55 (2.0-2.1), the live one** | `prototypes/ufp_tech.lua` | root `ufp_tech` | `prerequisites = {'space-science-pack'}` -- **no fission gate** |
+
+**The fourth breaks the pattern, and it is the only one still being released.** UFP roots its whole
+fusion tree on `space-science-pack`, and its technology file contains no occurrence of `nuclear-power`,
+`uranium`, `kovarex` or `fission` at all -- checked 2026-08-19 against
+`C:\src\factorio\_reference\ufpFixed_1.0.55.zip`. So it lands where Space Age lands, by a different
+route: fusion as a parallel late-game system rather than a continuation of fission. It is a bootleg of
+the 1.1 original (see `CLAUDE.md`), which makes the divergence a choice rather than an accident of a
+different lineage -- its author had the original's `rfp-fusion-theory` in front of him and did not carry
+the gate across. Why is recorded nowhere I could find, so weigh it as one author's revealed preference,
+not as a reasoned position.
+
 
 Paths are relative to `C:\src\factorio\_reference\RealisticFusionPower_1.8.18\RealisticFusionPower_1.8.18\`
 and `...\RealisticFusionPowerPort_1.9.2\RealisticFusionPowerPort_1.9.2\`; the redesign's file was
@@ -347,11 +360,11 @@ effects = {
 ```
 
 **K2 gates its fusion reactor behind `nuclear-power` *and* behind `kovarex-enrichment-process`** — a
-stricter gate than any of the three predecessors, since Kovarex is one step past nuclear power and is
+stricter gate than any of the archived predecessors, since Kovarex is one step past nuclear power and is
 not in `nuclear-power`'s own closure (§1). K2 also puts `nuclear-power` on the path to
 `kr-nuclear-locomotive` (`prototypes/technologies/production-science-pack.lua:79`).
 
-So the tally on precedent is not "three predecessors against vanilla" but **four mods for, and the base
+So the tally on precedent is not "the predecessors against vanilla" but **four mods for, and the base
 game against.** That is worth stating plainly because it cuts the other way from §6's mechanism
 finding: the overhaul most likely to be running alongside this mod is one that already treats fission as
 the prerequisite of fusion, so a player arriving from K2 would find a gate unsurprising and its absence
@@ -678,7 +691,8 @@ moves.
 
 ### B. `nuclear-power` on `rf-d-d-fusion`. The predecessors' answer, in this repo's shape.
 
-- **For:** all three predecessors did it and Krastorio 2 does it more strictly still (§3b); solves #36
+- **For:** the three archived predecessors did it and Krastorio 2 does it more strictly still (§3b);
+  solves #36
   completely in vanilla and Space Age, with the turbine unlock deleted rather than kept; gives the 56 MW
   entry cost a legible answer (two adjacent reactors, 160 MW); one string of code.
 - **Against:** the physics does not support gating *D-D* on fission (§4) — the tier it blocks is the
