@@ -87,6 +87,30 @@ Two words that are **not** synonyms and are easy to swap by accident:
 
 Reserve "starved" for the fault. A reactor at its operating density is under-supplied and working.
 
+**Ignited** — a plasma whose own fusion self-heating carries it without external confinement heating.
+Confinement heating gets an ignited plasma **to** a fusing temperature; it is not what keeps it at one.
+**D-T at this reactor's density and confinement time is ignited and D-D is not**, which is the tiers'
+defining difference and not a balance number — see
+[`d-t-ignition.md`](docs/research/d-t-ignition.md). Say "ignited" of the state and never of the tier's
+output; a reactor can be ignited and still be selling very little, because what it sells follows the
+fuel line rather than the temperature.
+
+**Sub-ignition** — holding plasma, but below the density at which the reaction carries itself. A third
+state, and not either of the two above: it is not **under-supplied**, because nobody chose it, and not
+**starved**, because the plasma is there. It is the only state in which a reactor is a net drain on its
+network, and the only one a player has to climb out of.
+
+Two words for losing power that are **not** interchangeable, because at the D-T tier they have
+opposite consequences and conflating them is how a wrong premise about this mod got written down:
+
+- **Brownout** — a partial shortfall. Every consumer on the network is `secondary-input` and gets the
+  same fraction, so a reactor and its fuel line are throttled together. A lit D-T reactor rides one out
+  at reduced output.
+- **Blackout** — the supply is gone. A different thing rather than a worse one: the reactor goes on
+  generating for many minutes, decaying, and only a very long one takes it towards **sub-ignition**.
+
+Measured, both of them, by `scripts/check-brownout.ps1`.
+
 **Q-factor** — the ratio of fusion power produced to heating power supplied. Exposed to the player as a
 circuit signal.
 
