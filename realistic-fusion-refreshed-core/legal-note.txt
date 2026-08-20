@@ -1,0 +1,62 @@
+Shipped copy
+============
+
+This is the legal note from the Realistic Fusion Refreshed repository, copied into the
+mod so the scope rule travels with the files it governs. It is reproduced below word for
+word, which is why it says "this repository": that means
+
+    https://github.com/trulsjo/realistic-fusion-refreshed
+
+where the ADR it cites, docs/adr/0001-liftable-predecessor-material.md, also lives. The
+LICENSE and LICENSE.GPL it refers to are beside this file, in the mod.
+
+================================================================================
+
+Licensing scope
+===============
+
+Everything in this repository is released under the GNU Lesser General Public License,
+version 3 or later -- see LICENSE in this directory, and LICENSE.GPL, which LGPLv3
+incorporates by reference and which is therefore shipped alongside it.
+
+A directory that contains its own license file is governed by that license. Where the
+two agree -- as they do for the Krastorio 2 directories, which are LGPLv3 as well --
+the inner file is kept anyway, because it records where the material came from and
+travels with it if anyone lifts the directory.
+
+Why LGPLv3 and not something permissive
+---------------------------------------
+
+This repository was released into the public domain under The Unlicense until
+2026-08-16. Truls changed it on the grounds that the mod is largely Krastorio 2's
+resources and code, and takes only ideas from Realistic Fusion Power.
+
+Segregating the LGPL material by directory did work, and was doing its job. LGPLv3 for
+the whole repository is a simpler answer to the same question: it is the license the
+borrowed material already carries, so there is one rule instead of a boundary anyone
+reusing this has to find first.
+
+What still has to be checked per directory
+------------------------------------------
+
+The per-directory rule has not gone away, and it matters most for material that is NOT
+LGPL:
+
+  - When lifting material from a predecessor mod, take the whole directory INCLUDING
+    its license file, and check that license first. Realistic Fusion Power ships
+    graphics/particle-accelerator/ under GPLv3 and electric-boiler/ under
+    CC BY-NC-ND 4.0. NonCommercial and NoDerivatives material is never lifted, whatever
+    the source and whatever this repository's own license is -- LGPLv3 does not make it
+    takeable.
+
+  - Modifying a file from a licensed directory produces a derivative under THAT license.
+    A recoloured or re-composited LGPL sprite is still LGPL, and the modification has to
+    be stated. Each krastorio-2/ directory has a NOTICE.txt that does so.
+
+  - This applies to Lua as well as to assets. Krastorio 2's mod is LGPLv3, not only its
+    assets, so the sprite definitions read off its prototypes -- every width, frame
+    count, shift and scale -- are derivatives of its code and live in the same
+    directories as the art.
+
+See docs/adr/0001-liftable-predecessor-material.md, which is the rule this note
+summarises.
