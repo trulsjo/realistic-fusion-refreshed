@@ -22,6 +22,11 @@ pass there says nothing about runtime. `scripts/ship-check.ps1` runs no game at 
 check about prose, and it holds the two statements ADR 0003 and ADR 0006 oblige the mods to make.
 Run them rather than reasoning about whether a change is safe.
 
+`scripts/probe-*.ps1` are **not** in that list and are not gates. A probe builds a real map like a
+check does, but it asserts nothing and answers a question a decision is waiting on — exit 0 means it
+ran and reported, never that the answer was the hoped-for one. Its findings belong in
+`docs/research/`, and it stays committed so the next engine version can be asked the same question.
+
 ## The rule that matters most here
 
 **Most of the big decisions are open, and they are Truls's to make.** That includes which upstream base
