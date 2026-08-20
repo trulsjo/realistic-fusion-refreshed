@@ -109,6 +109,39 @@ local cooling = L.step(SPEC, "rf-d-d-plasma", FULL, 1.0e7, 0, TICK)
 check(cooling.temperature_c < 1.0e7, "an unpowered reactor cools", tostring(cooling.temperature_c))
 near(cooling.heating_used_j, 0, 0, "an unpowered reactor spends nothing")
 
+-- AND THAT IS TRUE OF D-D AND FALSE OF D-T, which is the whole of #70's answer and is why the two
+-- tiers are checked side by side here rather than one of them being taken as the reactor's behaviour.
+--
+-- At the same temperature and the same density, with no power going in at all, a D-T plasma climbs
+-- and a D-D plasma falls: D-T passes Lawson at this reactor's density and confinement time, so its
+-- own alpha heating outruns the loss and the confinement heating is what gets it TO a fusing
+-- temperature rather than what keeps it at one. So a brownout does not cost a lit D-T reactor its
+-- plasma, and cutting its power raises its net contribution rather than lowering it -- the opposite
+-- of the runaway #70 was opened on.
+--
+-- Measured in a running game by scripts/check-brownout.ps1, which is the evidence; this is the
+-- second-long guard that fails first if a balance change ever takes D-T back below ignition.
+local unpowered_dt = L.step(SPEC, "rf-d-t-plasma", FULL, HOT, 0, TICK)
+local unpowered_dd = L.step(SPEC, "rf-d-d-plasma", FULL, HOT, 0, TICK)
+check(unpowered_dt.temperature_c > HOT, "an unpowered D-T plasma at a fusing temperature climbs anyway",
+  string.format("%.6g C from %.6g", unpowered_dt.temperature_c, HOT))
+check(unpowered_dd.temperature_c < HOT, "where a D-D plasma at the same temperature and density falls",
+  string.format("%.6g C from %.6g", unpowered_dd.temperature_c, HOT))
+near(unpowered_dt.heating_used_j, 0, 0, "and it is climbing on nothing: no heating was spent")
+
+-- Left alone with no power for five minutes the two end up three and a half orders apart, which is
+-- the figure the ADR 0015 correction quotes. Asserted as a separation rather than as two values,
+-- because both move with the balance and the separation is the claim.
+local held_dt, held_dd = HOT, HOT
+for _ = 1, math.floor(300 / TICK) do
+  held_dt = L.step(SPEC, "rf-d-t-plasma", FULL, held_dt, 0, TICK).temperature_c
+  held_dd = L.step(SPEC, "rf-d-d-plasma", FULL, held_dd, 0, TICK).temperature_c
+end
+near(held_dt, SPEC.max_temperature_c, 1e-12,
+  "five unpowered minutes take the D-T plasma all the way to the top of its range")
+check(held_dd < held_dt / 1000, "and take the D-D plasma out of the fusing range entirely",
+  string.format("%.6g C against %.6g C", held_dd, held_dt))
+
 -- A partly powered reactor spends what it has, not what it wants.
 local starved = L.step(SPEC, "rf-d-d-plasma", FULL, 1.0e7, 1000, TICK)
 near(starved.heating_used_j, 1000, 1e-12, "a starved reactor spends only what is available")
