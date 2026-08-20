@@ -65,7 +65,8 @@ easy to state wrongly:
   disappears, not that the conversion is markedly more efficient.
 
 **Plasma** — the heated, confined state a reaction runs in, carried as a fluid. Each reaction has its
-own plasma. Plasma must not travel through vanilla pipes.
+own plasma. Plasma is **contained** and must not travel through vanilla pipes — see
+[Plumbing](#plumbing).
 
 ## The simulation
 
@@ -129,6 +130,36 @@ for that mechanism; do not call it a network.
 **Network** — the *redesign's* model, in which reactors and heaters joined by confinement pipe were one
 simulated object sharing a mixed plasma. Named here only so the term is recognised when it appears in
 predecessor code or research notes. **v1 has no networks.**
+
+## Plumbing
+
+**Contained** — of a fluid: its boxes carry a connection category of their own, so nothing joins them
+but plumbing that shares it. Three fluids are contained — plasma, and the two reactor energies — under
+**separate** categories, so being contained is not one club: a plasma line and an energy line cannot
+join each other either.
+
+Say it of the fluid or of the box, never of the entity. Containment is declared per box, and the
+entities carry a mixture: a reactor's plasma box and its energy box are contained under different
+categories, while `rf-heater`'s deuterium intake is not contained at all and a player plumbs it with
+ordinary pipes.
+
+**Bolted** — of a connection: made by two machines' faces meeting, with no pipe between them. This is
+how reactor energy travels, because **no pipe carries it** — there is no energy pipe, no energy pump,
+and no vessel that can hold it. Reserve the word for a connection that actually carries fluid: two
+buildings can be adjacent, or touching, without their boxes facing each other, and that is neither
+bolted nor connected.
+
+**Reactor energy** — what a reactor sells, as a fluid whose amount is joules: one unit is one
+megajoule throughout the mod, so the tiers' outputs compare without a conversion. Not "output",
+"power" or "heat" when the fluid is meant.
+
+There are **two** of them, one per conversion route, and the pair is the tier's mechanic rather than
+bookkeeping. Because they are contained separately, a heat exchanger cannot be bolted to an aneutronic
+reactor nor a direct energy converter to a neutronic one — the engine refuses the connection rather
+than letting a player build something that would sit dry.
+
+See [ADR 0018](docs/adr/0018-energy-is-contained-and-no-pipe-carries-it.md) for why energy is plumbed
+this way rather than piped, and what was rejected.
 
 ## Generation
 
