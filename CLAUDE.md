@@ -18,7 +18,9 @@ Verification here is by running the game, not by reading. `tests/*.lua` cover th
 outside Factorio; `scripts/check-*.ps1` and `scripts/load-check.ps1` create real maps and assert against
 them, and `load-check.ps1` is where the invariants tying the simulation to the prototypes are enforced.
 `scripts/locale-check.ps1` and `scripts/name-check.ps1` only dump prototypes and create no map, so a
-pass there says nothing about runtime. Run them rather than reasoning about whether a change is safe.
+pass there says nothing about runtime. `scripts/ship-check.ps1` runs no game at all — it is the one
+check about prose, and it holds the two statements ADR 0003 and ADR 0006 oblige the mods to make.
+Run them rather than reasoning about whether a change is safe.
 
 ## The rule that matters most here
 
