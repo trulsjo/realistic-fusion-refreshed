@@ -66,16 +66,25 @@ Checked against the installed 2.0.77 Space Age data
 
 - Every `fusion-plasma` connection on **both** `fusion-reactor` (`:2512-2515`) and
   `fusion-generator` (`:2393-2399`) carries `connection_category = {"fusion-plasma"}`.
-- **Space Age ships no pipe with that category.** Those two machines are the only prototypes that
-  have it, so a reactor and a generator must bolt directly face to face — no pipe, no pump, no tank,
-  no wagon, ever. Reactor-to-reactor chaining uses `neighbour_connectable`, not plumbing.
+- **No pipe a player can build carries that category** — so a reactor and a generator must bolt
+  directly face to face, with no pump, no tank and no wagon available either. Reactor-to-reactor
+  chaining uses `neighbour_connectable`, not plumbing.
+
+  **Three prototypes carry it, not two**, and the third is worth knowing rather than glossing:
+  `space-age/base-data-updates.lua:237-239` patches `infinity-pipe`'s connections to
+  `connection_category = {"default", "fusion-plasma"}`. That is the editor's debug pipe, not
+  something craftable, so it does not weaken the point — but it does mean Wube categorised their
+  infinity pipe for exactly the reason #82's rig categorised one: as an **instrument** for feeding a
+  fluid nothing buildable can carry. An earlier version of this ADR said "Space Age ships no pipe
+  with that category" and "those two machines are the only prototypes that have it", and both were
+  simply false.
 - `fusion-plasma` is `auto_barrel = false`, and carries its energy in **temperature**
   (`heat_capacity = "25J"`, default 1 000 000 °C, max 10 000 000) — the exact inverse of
   `rf-reactor-energy`, which is 1 MJ per unit at 15 °C.
 
 So Wube's answer to "should fusion energy travel through ordinary pipes?" is an emphatic no, reached
-**without** heat: a categorised fluid with nothing to carry it. That is a fourth option #44 never
-listed, and it costs no entity at all.
+**without** heat: a categorised fluid with nothing buildable to carry it. That is a fourth option #44
+never listed, and it costs no entity at all.
 
 ### What leaving it alone would have left open
 
@@ -222,8 +231,10 @@ face.**
   because #44 named it as the main risk. Native heat would have cost the shared plasma pool, since the
   emitter and the pool cannot be one entity. Heat is not adopted; the reactor keeps the box that makes
   a run of `rf-pipe` feed a row of reactors from one pool, and fluid-coupling is exactly as it was.
-- **ADR 0010's prototype set is unchanged.** Its description of how the energy leg is plumbed
-  (`:126-131`) is not, and is amended by this.
+- **ADR 0010's prototype set is unchanged**, including the fluids and the plasma-safe pipe family it
+  lists at `:126-131`. What this amends is its containment rule: `:144` says *"Vanilla pipes must not
+  carry plasma"*, and after this the same sentence is true of the two energy fluids as well — which
+  ADR 0010 could not have said, because at the time they were meant to travel on ordinary pipes.
 
 ## Alternatives considered
 
