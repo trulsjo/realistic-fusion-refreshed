@@ -31,18 +31,19 @@ once**, and both of the "accepted" fields above turn out to be the same trap.
 
 ## What was built
 
-`scripts/probe-native-heat.ps1` builds seven rows on one headless map and measures each. The
+`scripts/probe-native-heat.ps1` builds eight rows on one headless map and measures each. The
 `.DESCRIPTION` in the script is the full account; in brief:
 
 | row | what it is |
 |---|---|
 | `pool` | Two probe reactors joined by a run of `rf-pipe`, the westmost seeded with plasma |
 | `deliver` | A probe reactor pinned to 1000 °C by Lua every tick → 3 heat pipes → a sink |
-| `consumer` | The same, with a real vanilla heat exchanger instead of the sink |
+| `consumer` | The same, with a real vanilla heat exchanger and **no** sink |
 | `cadence` | `deliver`, written every 6 ticks — control.lua's `UPDATE_INTERVAL` |
 | `run` | `deliver` with twenty-four heat pipes between source and sink |
 | `tight` | A probe reactor declaring `max_transfer` 50 MW, with a pipe and a sink on each of two faces |
-| `self` | Two probe reactors declaring `consumption` 133 MW, **no Lua writes at all**, nothing attached |
+| `boiler` | The shipped `rf-reactor`'s own shape plus a `heat_buffer`, pinned and piped like `deliver` |
+| `self` | Two probe reactors declaring `consumption` 133 MW with nothing attached — one never written by Lua at all, one put at 990 °C on the first tick and then left alone |
 
 Delivered power is measured **at the source**, as the joules the Lua pin had to inject to hold the
 temperature: `specific_heat` times the deficit it found. That needs no steam, no water and no tank,
@@ -120,8 +121,8 @@ Lua joules in, steam out, no fluid of ours in between.
 
 ## AC 3 — does `consumption` have to be neutered?
 
-**Yes, and for a second reason beyond the first.** With no Lua writes at all, a probe reactor
-declaring `consumption = "133MW"` on an electric energy source:
+**Yes, and for a second reason beyond the first.** The first of the two probes is never written by
+Lua at all. Declaring `consumption = "133MW"` on an electric energy source, with nothing attached:
 
 ```
 self/cold: 413.78 C -> 613.28 C across the window, which is 133 MW into its own buffer
@@ -176,7 +177,9 @@ whole output several times over at the length a player would actually build, and
 100 MW through two connections at once. A reactor-shaped buffer has twelve of them.
 
 **What `max_transfer` the source needs** is therefore ≥ 133 MW on the connection it emits through,
-and vanilla's 10 GW is three orders of magnitude clear of it. Nothing needs tuning for capacity.
+and vanilla's 10 GW is seventy-five times that. Nothing needs tuning for capacity — but note that
+the source's ceiling is not what binds: the pipe's 1 GW is, and beyond a few tiles of pipe the
+diffusion chain binds before either.
 
 The 24-pipe figure is converged rather than still settling: 606.64 MW at 1800 ticks of warmup against
 606.22 MW at 7200, a 0.07% difference, which is why the script's default warmup is 1800.

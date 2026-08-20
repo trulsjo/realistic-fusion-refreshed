@@ -35,9 +35,13 @@
                 -- specific_heat times the deficit it found. That needs no steam, no water and no
                 tank, so nothing in the measurement can be a fluid throughput limit in disguise.
 
-                It also carries the one real consumer in the rig: a vanilla heat exchanger on the
-                same pipe, fed water and voiding its steam. The interface answers "how much
-                arrives", the exchanger answers "does a machine that burns heat run off this".
+      consumer  The same source and the same pipe run with NO SINK on the end of it, carrying the one
+                real consumer in the rig instead: a vanilla heat exchanger, fed water and voiding its
+                steam. A row of its own rather than an addition to `deliver`, and it has to be --
+                the sink drains the run faster than it fills, so the pipe beside the source sits near
+                a hundred degrees and a vanilla exchanger will not run below five hundred. One row
+                answers "how much can be pushed through", the other "does a machine that burns heat
+                run off it"; one rig cannot answer both.
 
       cadence   The same row written every 6 ticks instead of every tick -- control.lua's
                 UPDATE_INTERVAL. If this mod ever emits heat it will emit it on that cadence, and a
@@ -54,11 +58,11 @@
                 says the connection.
 
       self      Two probe reactors declaring consumption 133 MW -- what the shipped reactor makes at
-                equilibrium (scripts/reactor-logic.lua) -- on a 1 GW network, WITH NO LUA WRITES AT
-                ALL and nothing attached. One starts cold, so its temperature climb measures whether
-                a reactor with an electric energy source turns electricity into heat by itself. The
-                other is put at 990 C on the first tick, so it sits at its ceiling for the whole run
-                and the electric statistics can say whether it keeps drawing there.
+                equilibrium (scripts/reactor-logic.lua) -- on a 1 GW network with nothing attached.
+                One is never written by Lua at all, so its temperature climb measures whether a
+                reactor with an electric energy source turns electricity into heat by itself. The
+                other is written once, put at 990 C on the first tick, so it sits at its ceiling for
+                the whole run and the electric statistics can say whether it keeps drawing there.
 
                 This is the row that decides whether `consumption` has to be neutered the way the
                 boiler's energy_consumption is today.
@@ -99,8 +103,13 @@
 [CmdletBinding()]
 param(
     [string] $FactorioExe,
-    [int]    $Warmup = 1800,
-    [int]    $Window = 900,
+    # Both are floors rather than taste. Benchmark ticks start at 1, so a warmup below it never
+    # reaches the tick that records the self-heating baseline and the report dies on a nil -- after a
+    # full run, having printed nothing. A window of zero divides by it. The help below quotes runs at
+    # 600 and 7200, which is an invitation to type a number here, so the floors are checked rather
+    # than trusted.
+    [ValidateRange(1, [int]::MaxValue)] [int] $Warmup = 1800,
+    [ValidateRange(1, [int]::MaxValue)] [int] $Window = 900,
     [switch] $KeepTemp
 )
 
@@ -337,6 +346,11 @@ end
 --
 -- The substation is handed back because the network's own statistics hang off a POLE and nothing
 -- else: reading electric_network_statistics on the reactor throws "Entity is not electric-pole".
+--
+-- `watts` really is watts here, and the division is why. power_production is joules per TICK and
+-- nothing in the 2.0 API says so -- scripts/check-brownout.ps1 derives it against vanilla's own
+-- steam turbine. Assigning it directly, as the first version of this did, makes every supply figure
+-- in this file and its research note sixty times what it claims to be.
 local function power(surface, force, at, watts)
   if at[1] % 1 ~= 0 or at[2] % 1 ~= 0 then
     error(string.format("power() wants a whole-number position, got (%g, %g)", at[1], at[2]))
@@ -346,7 +360,18 @@ local function power(surface, force, at, watts)
   local eei = must(surface.create_entity({
     name = "electric-energy-interface", position = { at[1] + 2.5, at[2] + 0.5 }, force = force,
   }), "power source")
-  eei.power_production = watts
+  eei.power_production = watts / 60
+  -- And the stock buffer goes, which check-brownout.ps1 calls the single thing most likely to be got
+  -- wrong in a rig like this: vanilla's interface ships an enormous one, because it is the editor's
+  -- infinite sink as well as its infinite source. Nothing here measures a shortfall, so leaving it
+  -- would not corrupt a reading today -- it would mean a row that outgrew its supply later reading
+  -- as satisfied for tens of seconds while a battery nobody declared covered the gap.
+  --
+  -- Cut to a tenth of a second rather than to nothing, and the difference is not caution: an
+  -- interface with a ZERO buffer produces nothing at all. Measured -- both self-heating reactors
+  -- went to no_power and the interface reported 0 MW out, which is how this line came to say a
+  -- number instead of 0.
+  eei.electric_buffer_size = watts / 10
   return pole
 end
 
@@ -598,8 +623,9 @@ script.on_init(function()
     faces = { south }, pipes = SHORT,
   }))
 
-  -- The self-heating pair. No pipes, no sink and no Lua writes: what is being measured is whether a
-  -- reactor with an electric energy source converts electricity into heat on its own.
+  -- The self-heating pair: no pipes and no sink, so whatever heat appears in them came from the
+  -- engine spending their declared consumption. The cold one is never written by Lua at all; the
+  -- warm one is written exactly once, on the first tick, to put it at its ceiling.
   storage.self_cold = must(surface.create_entity({
     name = HUNGRY, position = { 0.5, 200.5 }, force = force }), "self-heating reactor (cold)")
   storage.self_warm = must(surface.create_entity({
@@ -744,13 +770,20 @@ local function report()
   end
 
   say("== self-heating: is `consumption` spent with no Lua at all (AC 3) ==")
-  for _, probe in ipairs({ { "cold", storage.self_cold, storage.cold_start, storage.cold_pole },
-                           { "warm", storage.self_warm, storage.warm_start, storage.warm_pole } }) do
-    local label, entity, started, pole = probe[1], probe[2], probe[3], probe[4]
+  -- The fourth field is what Lua did to each, and it is not decoration. Both rows read "no Lua
+  -- touched it" until a review caught that the saturated one is put at 990 C on the first tick --
+  -- a false sentence about the rig, in the evidence record for a decision that turns on telling
+  -- engine behaviour apart from rig behaviour.
+  for _, probe in ipairs({
+        { "cold", storage.self_cold, storage.cold_start, storage.cold_pole,
+          "and no Lua ever touched it" },
+        { "warm", storage.self_warm, storage.warm_start, storage.warm_pole,
+          "and Lua put it at 990 C on the first tick, then left it alone" } }) do
+    local label, entity, started, pole, handling = probe[1], probe[2], probe[3], probe[4], probe[5]
     local buffer = buffer_of(entity.name)
     local now = entity.temperature
-    say("self/%s: %s declares consumption %s and no Lua touched it",
-      label, entity.name, DECLARED_CONSUMPTION)
+    say("self/%s: %s declares consumption %s %s",
+      label, entity.name, DECLARED_CONSUMPTION, handling)
     say("self/%s: %.5g C -> %.5g C across the window, which is %.5g MW into its own buffer",
       label, started, now, (now - started) * buffer.specific_heat / WINDOW * 60 / 1e6)
     local stats = pole and pole.valid and pole.electric_network_statistics
