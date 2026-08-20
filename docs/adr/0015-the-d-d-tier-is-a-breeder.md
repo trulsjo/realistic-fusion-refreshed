@@ -133,18 +133,24 @@ claim.
   > script chose. `rf-reactor` is `usage_priority = "secondary-input"`, the same bucket as every
   > other machine, so that is what a brownout actually does to it.
   >
-  > **At half supply** the cell stayed at 1.91×10⁹ °C and contributed **+96.1 MW net**. **Through
-  > fifteen minutes with no power at all** it kept **29.2%** of its lit output, ended at 6.74×10⁸ °C
-  > with plasma still in the box, and was **+48.7 MW net** — better than lit, because it is no longer
-  > paying for heating. **Supply restored and nothing else done**, it was back at the clamp inside
-  > five minutes and net positive the whole way up. **Overloaded past what it can make**, a closed
-  > plant — reactor, heater, exchanger, two turbines, load bank — stayed at the clamp. The spiral was
-  > made to happen on purpose and did not.
+  > Measured against a **settled** baseline, which took thirty minutes rather than the five the rig
+  > first used: a cell's plasma segment is the reactor's box plus every pipe back to its heater, and
+  > the engine fills the segment, so the reactor's own box takes about half an hour to reach its share.
+  > The rig asserts the baseline has stopped climbing before it cuts anything.
+  >
+  > **At half supply** the cell stayed at 1.96×10⁹ °C and contributed **+178 MW net** — about half its
+  > lit output for half its supply. **Through fifteen minutes with no power at all** it kept **15.3%**
+  > of its lit output, ended at 9.48×10⁸ °C with 93.5 units still in the box, and was **+123.6 MW
+  > net** — better than lit, because it is no longer paying for heating. **Supply restored and nothing
+  > else done**, it was back at the clamp inside five minutes and net positive the whole way up.
+  > **Overloaded past what it can make**, a closed plant — reactor, heater, exchanger, two turbines,
+  > load bank — stayed at the clamp. The spiral was made to happen on purpose and did not.
   >
   > **What stands:** everything in the Decision above. The plasma cooling on brownout is accepted,
   > the arrest is the player's to build, and letting the plasma hold its heat unpowered stays
   > rejected — all of it decided for the D-D tier, all of it still true of the D-D tier, which the
-  > same rig measures falling to **0.43%** of its lit output through the same blackout.
+  > same rig measures falling to **0.44%** of its lit output through the same blackout where the D-T
+  > reactor keeps 15.3%, a factor of thirty-five.
   >
   > **What is void:** that D-T's loss is self-amplifying, and with it the reason #70 gave for treating
   > the tiers differently. Both tiers are safe under a shortfall. They are safe for opposite reasons,
