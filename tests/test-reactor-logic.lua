@@ -6,7 +6,7 @@
 -- module under test touches no Factorio API (ADR 0005). Written to Lua 5.2 semantics and verified
 -- on 5.4.
 
-package.path = "tests/?.lua;RealisticFusion/?.lua;" .. package.path
+package.path = "tests/?.lua;realistic-fusion-refreshed/?.lua;" .. package.path
 local H = require("harness")
 local L = require("scripts.reactor-logic")
 -- Required directly by the D-T block at the bottom, which recomputes one rate from the dataset to

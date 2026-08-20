@@ -5,8 +5,9 @@ is and where it came from; this file is how to work in the repo.
 
 ## State
 
-**In development.** `RealisticFusionCore` and `RealisticFusion` load against Factorio 2.0.77 and all
-four of ADR 0010's reactions are playable: the water-to-deuterium extraction chain, D-D reactors that
+**In development.** `realistic-fusion-refreshed-core` and `realistic-fusion-refreshed` load against
+Factorio 2.0.77 and all four of ADR 0010's reactions are playable: the water-to-deuterium extraction
+chain, D-D reactors that
 breed their own tritium and helium-3, D-T fusion burning it, lithium blankets breeding more, and an
 aneutronic tier running D-He3 and He3-He3 in a second reactor through a direct energy converter.
 **Every prototype ADR 0010 names for Power now exists** — thirteen entities and seven technologies,

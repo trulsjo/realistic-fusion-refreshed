@@ -1,7 +1,7 @@
 #Requires -Version 7
 <#
 .SYNOPSIS
-    Loads the Realistic Fusion mods, creates a map, and enforces the invariants that tie the
+    Loads the Realistic Fusion Refreshed mods, creates a map, and enforces the invariants that tie the
     simulation to the prototypes. Exit 0 means they load AND those invariants hold.
 
 .DESCRIPTION
@@ -162,7 +162,7 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$ourMods  = @('RealisticFusionCore', 'RealisticFusion')
+$ourMods  = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
 
 # Refused rather than combined. The self-test's canary halves reason about what a broken mod does to
 # a clean load, and a third-party overhaul in the same run makes a failure ambiguous -- worse, mods

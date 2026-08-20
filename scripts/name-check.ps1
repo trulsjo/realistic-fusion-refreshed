@@ -123,7 +123,7 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$ourMods  = @('RealisticFusionCore', 'RealisticFusion')
+$ourMods  = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
 $PREFIX   = 'rf-'   # ADR 0009: everything this project defines carries it
 
 # The one shape of name that is ours without starting with the prefix.

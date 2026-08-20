@@ -759,7 +759,7 @@ built for this repository's own mods and does that job; third-party mods are sim
 was asked to do.
 
 **What the script does today.** `scripts/load-check.ps1:212` calls `New-ModJunctions` for
-`$ourMods = @('RealisticFusionCore', 'RealisticFusion')` only — it junctions those two directories from
+`$ourMods = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')` only — it junctions those two directories from
 the repo into a temporary mod directory. `Write-ModList` (`scripts/factorio-lib.ps1:351`) then writes a
 `mod-list.json` enabling `base`, the requested bundled mods, and every name passed in `-Mods`.
 

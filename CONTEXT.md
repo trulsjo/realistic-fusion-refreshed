@@ -8,11 +8,12 @@ Decisions live in `docs/adr/`; this file only fixes the language.
 
 ## The two mods
 
-**Core** — `RealisticFusionCore`, title "Realistic Fusion Core". Owns every fluid and item prototype,
-and the extraction chain that produces feedstock. Never references Power.
+**Core** — `realistic-fusion-refreshed-core`, title "Realistic Fusion Refreshed Core". Owns every
+fluid and item prototype, and the extraction chain that produces feedstock. Never references Power.
 
-**Power** — `RealisticFusion`, title "Realistic Fusion". Owns reactors, heat and generation, and depends
-on Core. Referred to as "the main mod" when distinguishing it from the library.
+**Power** — `realistic-fusion-refreshed`, title "Realistic Fusion Refreshed". Owns reactors, heat and
+generation, and depends on Core. Referred to as "the main mod" when distinguishing it from the
+library.
 
 Dependencies run **one way only**: Power → Core. Where a reactor produces a Core-owned fluid, the
 prototype is defined in Core and the recipe lives in Power.

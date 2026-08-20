@@ -68,8 +68,8 @@
     the table rather than gated, because a Factorio version in which connection count genuinely
     stopped mattering would fail such a gate for the right reason.
 
-    The rig declares its own prototypes and depends on base alone. Nothing in RealisticFusion or
-    RealisticFusionCore is loaded, let alone changed -- the question is about the engine, and the
+    The rig declares its own prototypes and depends on base alone. Nothing in realistic-fusion-refreshed or
+    realistic-fusion-refreshed-core is loaded, let alone changed -- the question is about the engine, and the
     answer belongs to a Factorio version rather than to this mod. #48 is where it gets applied to
     this mod's own links.
 

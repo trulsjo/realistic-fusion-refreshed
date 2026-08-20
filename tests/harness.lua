@@ -10,7 +10,7 @@
 --
 -- Usage, from a suite:
 --
---     package.path = "tests/?.lua;RealisticFusion/?.lua;" .. package.path
+--     package.path = "tests/?.lua;realistic-fusion-refreshed/?.lua;" .. package.path
 --     local H = require("harness")
 --     local check, near = H.check, H.near
 --     ...

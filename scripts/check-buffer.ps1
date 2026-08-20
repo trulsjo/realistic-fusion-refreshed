@@ -91,7 +91,7 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$ourMods  = @('RealisticFusionCore', 'RealisticFusion')
+$ourMods  = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
 $rigName  = 'rf-buffer-rig'
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
@@ -106,7 +106,7 @@ function Write-Rig {
     @{
         name = $rigName; version = '0.0.1'; title = 'Reactor buffer capacity probe'
         author = 'check-buffer.ps1'; factorio_version = '2.0'
-        dependencies = @('base >= 2.0.77', 'RealisticFusion')
+        dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
 
     # Writes data.lua. The probe prototypes are appended to it below, so this call comes first.

@@ -515,11 +515,11 @@ so the difference between two of them is the cost of what the second adds:
 | `physics` | `reactor-logic.step()`. The arithmetic. |
 | `write` | the pending table, then `entity.energy`, `box[1]`, `get_capacity(2)`, `box[2]`. |
 
-The rig gets to own the step because `raise_built = false` on the reactors it places: RealisticFusion
+The rig gets to own the step because `raise_built = false` on the reactors it places: realistic-fusion-refreshed
 registers a reactor from the build event and rescans only at `on_init`, which runs before the rig's,
 so an unraised reactor is one the shipped `update()` never sees. It then walks an empty register
 while the rig steps the reactors itself, at the cadence read out of `control.lua` rather than
-remembered. **The physics rung requires `reactor-logic` straight out of `__RealisticFusion__`**, so
+remembered. **The physics rung requires `reactor-logic` straight out of `__realistic-fusion-refreshed__`**, so
 it is the shipped arithmetic and not a copy of it. Rungs below `write` leave no mark on the world, so
 the rig counts its own steps and the reactors they touched and the script gates on both — a handler
 that silently failed to register would otherwise report a cost of nothing, which reads exactly like
@@ -669,7 +669,7 @@ will see if they read two reactors of six off the same pipe run and expect ident
 
 **This is the finding, and it was not what the ticket went looking for.**
 
-The harness builds one row of three reactors with `raise_built = false`, so RealisticFusion never
+The harness builds one row of three reactors with `raise_built = false`, so realistic-fusion-refreshed never
 registers them and **no simulation ever runs on them**. It seeds the run flat, raises one box
 fourfold, and leaves it alone. Nothing consumes plasma, nothing supplies it, no Lua of ours touches
 it again.
@@ -692,7 +692,7 @@ flattened.
 ### 5. So the pool does not gain what the reactors spent — and only part of that is the engine's
 
 The bookkeeping check predicts one simulation step by requiring `reactor-logic` straight out of
-`__RealisticFusion__` — the shipped arithmetic, not a copy — and compares it against what the run
+`__realistic-fusion-refreshed__` — the shipped arithmetic, not a copy — and compares it against what the run
 actually gained over exactly that step. The four rows are built to separate two explanations that
 predict the same ordering.
 

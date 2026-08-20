@@ -63,7 +63,7 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$ourMods  = @('RealisticFusionCore', 'RealisticFusion')
+$ourMods  = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
 
 if (-not $ModDirectory) { $ModDirectory = Join-Path (Split-Path $repoRoot -Parent) '_dev-mods' }
 
