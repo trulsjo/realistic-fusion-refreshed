@@ -954,8 +954,8 @@ on accumulators, and that the declared figure is a floor for everything else mea
 ### Sources
 
 - `scripts/check-buffer.ps1` — the rig, and the assertions that fail if any of the above moves.
-  Twelve entities on one map: the shipped reactor, eight clones of it, and three prototypes that are
-  not ours.
+  Thirteen entities on one map: the shipped reactor, eight clones of it, and four prototypes that
+  are not ours.
 - The trace that raised it: #37 item 4b. What it unblocks: #72.
 - The precedent for measuring rather than reading:
   [ADR 0011](../adr/0011-per-reactor-simulation-fluid-coupled.md) and *Fluid segments* above (#40).
