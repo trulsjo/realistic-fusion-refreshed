@@ -59,11 +59,18 @@
                 between a finding and a mistake.
 
       bolt      A categorised rf-reactor whose output_fluid_box carries the category, with a
-                categorised exchanger placed so its own south energy connection lands on the tile
-                that output points at -- NO PIPE BETWEEN THEM. This is the arrangement #44 ships.
-                The reactor's output box is filled by Lua rather than by running the simulation,
-                because what is under test is whether the boxes join and fluid crosses, not what the
-                reactor computes.
+                categorised exchanger placed so its own south energy connection lands face to face
+                with it -- NO PIPE BETWEEN THEM. This is the arrangement #44 ships. The reactor's
+                output box is filled by Lua rather than by running the simulation, because what is
+                under test is whether the boxes join and fluid crosses, not what the reactor
+                computes.
+
+                MEASURED ON THE CHAIN VARIANT, not on the shipped one-connection shape, because
+                bolt and chain are one rig -- two would mean two reactors to fill and two chances
+                for the fill loop to differ. That costs nothing: the connection doing the bolting
+                is south {0, 0.5}, which is the same tile, facing and flow the shipped exchanger
+                already declares. The variant adds two sideways connections; it does not change
+                the one under test here.
 
       chain     The bolt row with a second categorised exchanger three tiles east of the first,
                 joined through energy connections on their west and east faces. Whether the SECOND
@@ -154,8 +161,14 @@ for name, prototype in pairs({ ["rf-heat-exchanger"] = exchanger, ["rf-hc-exchan
   if not prototype then error("the probe needs " .. name .. " and it is missing") end
 end
 
--- Nothing places these but the rig, so they need no item, no recipe and no upgrade path. Leaving
--- next_upgrade in place is the one that bites: it points at a prototype the rig does not copy.
+-- Nothing places these but the rig, so they need no item and no recipe. `minable` is the field that
+-- does the work here: it names an item result that only exists for the prototype being copied.
+--
+-- fast_replaceable_group and next_upgrade are cleared for the vanilla infinity-pipe copy below and
+-- are NO-OPS for the three shipped subjects, because Core's claim() already nils both
+-- (realistic-fusion-refreshed-core/prototypes/vanilla.lua). Stated rather than left implied: the
+-- two commits before this one existed to correct claims the sibling probe made about itself, and
+-- "this line is load-bearing" is the same kind of claim.
 local function bare(e, name)
   e.name = name
   e.minable = nil
@@ -225,7 +238,6 @@ end
 data:extend({
   categorised("rf-probe-exchanger-str", CATEGORY),
   categorised("rf-probe-exchanger-list", { CATEGORY }),
-  categorised("rf-probe-exchanger-bolt", CATEGORY),
   chain,
   bare(table.deepcopy(chain), "rf-probe-exchanger-chain-b"),
   categorised_hc("rf-probe-hc-str", CATEGORY),
@@ -367,19 +379,37 @@ end
 
 --- An infinity pipe on every connection of `index`, so the box under test is neither starved nor
 --- backed up by something the probe is not asking about.
+--- ... and never on a tile something already stands on.
+--
+-- create_entity does NOT collision-check, so without the occupancy test this happily buries a pipe
+-- under a machine. It bit the chain row: the first exchanger's east water connection targets the
+-- tile the SECOND exchanger then occupies, and its own west water target lands inside the first.
+-- The energy reading survived it -- the strays are water-filtered and sit a row away from the energy
+-- connections -- but a rig whose entire value is that its geometry is trustworthy cannot carry two
+-- boilers overlapping two pipes.
+--
+-- Skipping is right rather than merely safe: two exchangers three tiles apart join through their
+-- water boxes, so the row is fed along itself from whichever end is free.
 local function unbound(surface, force, entity, index, filter)
   local attached = 0
   for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
-    local pipe = surface.create_entity({
-      name = ORDINARY, position = connection.target_position, force = force,
-    })
-    if pipe then
-      pipe.set_infinity_pipe_filter(filter)
-      attached = attached + 1
+    local occupied = surface.find_entities_filtered({ position = connection.target_position })
+    if #occupied == 0 then
+      local pipe = surface.create_entity({
+        name = ORDINARY, position = connection.target_position, force = force,
+      })
+      if pipe then
+        pipe.set_infinity_pipe_filter(filter)
+        attached = attached + 1
+      end
     end
   end
+  -- Still an error rather than a note. Every box this is called on has at least one free face in
+  -- this rig, so nothing attached means the layout moved -- and an exchanger with no water is a row
+  -- that reports `no_input_fluid` for a reason that has nothing to do with the category.
   if attached == 0 then
-    error(string.format("could not attach any infinity pipe to %s box %d", entity.name, index))
+    error(string.format("no free connection to attach an infinity pipe to on %s box %d",
+      entity.name, index))
   end
 end
 
@@ -404,8 +434,15 @@ end
 --
 -- power_production is joules per TICK and nothing in the 2.0 API says so -- check-brownout.ps1
 -- derives it against vanilla's own steam turbine. Nothing here measures power, but the reactor
--- carries an electric energy source and a boiler with no network is one more difference between the
--- rig and the mod than this probe needs.
+-- carries an electric energy source and a boiler sitting at no_power is one more difference between
+-- the rig and the mod than this probe needs.
+--
+-- A SUBSTATION REACHES 18 TILES, and the caller has to place this where that reach lands on the
+-- reactor. The first version put it at (-40, 40) and powered nothing at all: every consumer was
+-- outside the area in both axes, so the one electric machine in the rig ran the whole probe at
+-- no_power while this function's own comment claimed otherwise. bench-reactors.ps1 errors out on
+-- exactly that condition and probe-native-heat.ps1 comments on the 18-tile reach when it spaces its
+-- poles; the assertion at the call site is this rig's version of the same guard.
 local function power(surface, force, at)
   if at[1] % 1 ~= 0 or at[2] % 1 ~= 0 then
     error(string.format("power() wants a whole-number position, got (%g, %g)", at[1], at[2]))
@@ -439,7 +476,11 @@ script.on_init(function()
   surface.request_to_generate_chunks({ 0, 0 }, 12)
   surface.force_generate_chunk_requests()
 
-  power(surface, force, { -40, 40 })
+  -- Beside the bolt row rather than off in a corner. The reactor spans x [-7, 8] and y [53, 68], so
+  -- a substation at (14, 60) supplies x [5, 23] and y [51, 69] -- overlapping the reactor's eastern
+  -- columns without colliding with it. The offered rows need nothing: a boiler with a FLUID energy
+  -- source draws no electricity at all.
+  power(surface, force, { 14, 60 })
 
   storage.offers = {}
   local function add(label, exchanger_name, pipe_name, at)
@@ -475,9 +516,15 @@ script.on_init(function()
     "the reactor's output sits on (%g, %g) and points at (%g, %g)",
     target.x, target.y, conn.target_position.x, conn.target_position.y)
 
+  -- The reactor is the one electric machine in the rig, so it is the one worth asserting about.
+  -- Silence here is what the first version shipped: a substation 40 tiles away, a reactor at
+  -- no_power for the whole run, and a comment saying that had been taken care of.
+  if not reactor.electric_network_id then
+    error("rf-probe-reactor is on no electric network; move the substation to reach it")
+  end
+
   local first = place_facing(surface, force, "rf-probe-exchanger-chain", ENERGY, "south",
     target, { 0.5, 40 })
-  plumb_steam(surface, force, first)
 
   -- Three tiles east: the exchanger is three wide, so that is the next one along with no gap. Their
   -- energy connections at east {1,-0.5} and west {-1,-0.5} then point at each other's tile, and
@@ -486,6 +533,12 @@ script.on_init(function()
     name = "rf-probe-exchanger-chain-b",
     position = { first.position.x + 3, first.position.y }, force = force,
   }), "the second chained exchanger")
+
+  -- BOTH exchangers exist before either is plumbed, and that ordering is the fix rather than a
+  -- preference: unbound() skips a connection whose target tile is occupied, and it can only skip
+  -- what has already been built. Plumbing `first` while `second` was still a gap buried an infinity
+  -- pipe under it.
+  plumb_steam(surface, force, first)
   plumb_steam(surface, force, second)
 
   storage.bolt = { reactor = reactor, out = out, first = first, second = second }
@@ -549,11 +602,19 @@ local function report()
     yesno(joins(b.reactor, b.out, b.first)))
   say("bolt: the exchanger holds %.6g units and reports %s",
     held(b.first, ENERGY), status_name(b.first.status))
-  -- Stated separately because a boiler that never pushes from its output box would look exactly
-  -- like a bolt that did not take. If the reactor's own box is at its brim while the exchanger's is
-  -- empty, the finding is about the source and not about the category.
-  say("bolt: the reactor's own output box holds %.6g units of a %.6g capacity",
-    amount_of(b.reactor, b.out), b.reactor.fluidbox.get_capacity(b.out))
+  -- Read BEFORE the tick's refill, and that ordering is the whole value of the line. The first
+  -- version read it after, inside the same handler that tops the box up, so it printed "1000 of a
+  -- 1000" whatever had happened -- including in the failure case it was there to detect -- while
+  -- the comment beside it claimed to tell a source that could not push from a bolt that would not
+  -- take. It told them apart in prose only.
+  --
+  -- What it says now is narrow and true: how much the Lua fill was still holding after a tick of
+  -- the exchanger drawing on it. The DISCRIMINATOR for AC 2 is the pair of lines above -- joins,
+  -- and what the exchanger itself holds. This one only rules the source out as the constraint.
+  say("bolt: the reactor's output box held %.6g units of a %.6g capacity going into this tick",
+    storage.reactor_held or 0, b.reactor.fluidbox.get_capacity(b.out))
+  say("bolt: and it is on an electric network, so it is not sitting at no_power: %s",
+    status_name(b.reactor.status))
 
   say("== AC 3: does input-output chain on a fluid energy source's box ==")
   say("chain: the second exchanger joins the first: %s",
@@ -562,6 +623,11 @@ local function report()
     held(b.second, ENERGY), status_name(b.second.status))
   say("chain: against the first one's %.6g units and %s",
     held(b.first, ENERGY), status_name(b.first.status))
+  -- Measured rather than reasoned. The write-up claimed this "incidentally", and nothing in the rig
+  -- had ever asked it -- the geometry does work out, but an inference dressed as a measurement is
+  -- exactly what a probe exists not to produce.
+  say("chain: and their WATER boxes join as well, so one feed serves the row: %s",
+    yesno(joins(b.second, box_of(b.second, "water"), b.first)))
 
   say("done: %d offered rows and the bolt pair, at tick %d", #storage.offers, SETTLE)
   for _, line in ipairs(storage.notes) do log("ENERGY-PROBE " .. line) end
@@ -572,6 +638,9 @@ script.on_event(defines.events.on_tick, function(event)
   -- would be gone by the report and an empty box would read as a bolt that never took.
   local b = storage.bolt
   if b then
+    -- Recorded BEFORE the refill on every tick, so the report tick has a reading the refill has not
+    -- already overwritten. See the note beside the line that prints it.
+    storage.reactor_held = amount_of(b.reactor, b.out)
     b.reactor.fluidbox[b.out] = {
       name = ENERGY,
       amount = b.reactor.fluidbox.get_capacity(b.out),
