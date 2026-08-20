@@ -1,39 +1,43 @@
 <svg xmlns='http://www.w3.org/2000/svg' width='900' height='320' viewBox='0 0 900 320' font-family='ui-sans-serif, Segoe UI, Helvetica, Arial, sans-serif'>
 <rect width='900' height='320' fill='#fbfbfa'/>
 <text x='96' y='20' font-size='14' font-weight='600' fill='#1a1a1a'>Net contribution to its own network through the shortfall</text>
-<line x1='122.36' y1='34' x2='122.36' y2='274' stroke='#e3e3e0' stroke-width='1'/>
-<text x='122.36' y='292' font-size='11' text-anchor='middle' fill='#5a5a55'>0</text>
-<line x1='310.66' y1='34' x2='310.66' y2='274' stroke='#e3e3e0' stroke-width='1'/>
-<text x='310.66' y='292' font-size='11' text-anchor='middle' fill='#5a5a55'>50</text>
-<line x1='498.96' y1='34' x2='498.96' y2='274' stroke='#e3e3e0' stroke-width='1'/>
-<text x='498.96' y='292' font-size='11' text-anchor='middle' fill='#5a5a55'>100</text>
-<line x1='687.26' y1='34' x2='687.26' y2='274' stroke='#e3e3e0' stroke-width='1'/>
-<text x='687.26' y='292' font-size='11' text-anchor='middle' fill='#5a5a55'>150</text>
-<rect x='122.36' y='39' width='150.68' height='18' fill='#1f77b4' opacity='0.85'/>
+<line x1='113.96' y1='34' x2='113.96' y2='274' stroke='#e3e3e0' stroke-width='1'/>
+<text x='113.96' y='292' font-size='11' text-anchor='middle' fill='#5a5a55'>0</text>
+<line x1='242.22' y1='34' x2='242.22' y2='274' stroke='#e3e3e0' stroke-width='1'/>
+<text x='242.22' y='292' font-size='11' text-anchor='middle' fill='#5a5a55'>50</text>
+<line x1='370.48' y1='34' x2='370.48' y2='274' stroke='#e3e3e0' stroke-width='1'/>
+<text x='370.48' y='292' font-size='11' text-anchor='middle' fill='#5a5a55'>100</text>
+<line x1='498.74' y1='34' x2='498.74' y2='274' stroke='#e3e3e0' stroke-width='1'/>
+<text x='498.74' y='292' font-size='11' text-anchor='middle' fill='#5a5a55'>150</text>
+<line x1='627' y1='34' x2='627' y2='274' stroke='#e3e3e0' stroke-width='1'/>
+<text x='627' y='292' font-size='11' text-anchor='middle' fill='#5a5a55'>200</text>
+<line x1='755.26' y1='34' x2='755.26' y2='274' stroke='#e3e3e0' stroke-width='1'/>
+<text x='755.26' y='292' font-size='11' text-anchor='middle' fill='#5a5a55'>250</text>
+<rect x='113.96' y='39' width='102.63' height='18' fill='#1f77b4' opacity='0.85'/>
 <text x='86' y='52' font-size='11.5' text-anchor='end' fill='#1a1a1a'>plant</text>
-<text x='279.04' y='52' font-size='11' text-anchor='start' fill='#3a3a36'>+40.012</text>
-<rect x='122.36' y='69' width='680.96' height='18' fill='#2ca02c' opacity='0.85'/>
+<text x='222.59' y='52' font-size='11' text-anchor='start' fill='#3a3a36'>+40.011</text>
+<rect x='113.96' y='69' width='689.18' height='18' fill='#2ca02c' opacity='0.85'/>
 <text x='86' y='82' font-size='11.5' text-anchor='end' fill='#1a1a1a'>full</text>
-<text x='809.32' y='82' font-size='11' text-anchor='start' fill='#3a3a36'>+180.82</text>
-<rect x='122.36' y='99' width='361.88' height='18' fill='#ff7f0e' opacity='0.85'/>
+<text x='809.14' y='82' font-size='11' text-anchor='start' fill='#3a3a36'>+268.665</text>
+<rect x='113.96' y='99' width='456.66' height='18' fill='#ff7f0e' opacity='0.85'/>
 <text x='86' y='112' font-size='11.5' text-anchor='end' fill='#1a1a1a'>half</text>
-<text x='490.24' y='112' font-size='11' text-anchor='start' fill='#3a3a36'>+96.092</text>
-<rect x='122.36' y='129' width='183.58' height='18' fill='#d62728' opacity='0.85'/>
+<text x='576.62' y='112' font-size='11' text-anchor='start' fill='#3a3a36'>+178.021</text>
+<rect x='113.96' y='129' width='317.19' height='18' fill='#d62728' opacity='0.85'/>
 <text x='86' y='142' font-size='11.5' text-anchor='end' fill='#1a1a1a'>dark</text>
-<text x='311.94' y='142' font-size='11' text-anchor='start' fill='#3a3a36'>+48.747</text>
-<rect x='122.36' y='159' width='183.58' height='18' fill='#9467bd' opacity='0.85'/>
+<text x='437.15' y='142' font-size='11' text-anchor='start' fill='#3a3a36'>+123.651</text>
+<rect x='113.96' y='159' width='317.19' height='18' fill='#9467bd' opacity='0.85'/>
 <text x='86' y='172' font-size='11.5' text-anchor='end' fill='#1a1a1a'>recover</text>
-<text x='311.94' y='172' font-size='11' text-anchor='start' fill='#3a3a36'>+48.747</text>
-<rect x='96' y='189' width='26.78' height='18' fill='#c0392b' opacity='0.85'/>
+<text x='437.15' y='172' font-size='11' text-anchor='start' fill='#3a3a36'>+123.651</text>
+<rect x='96' y='189' width='18.25' height='18' fill='#c0392b' opacity='0.85'/>
 <text x='86' y='202' font-size='11.5' text-anchor='end' fill='#1a1a1a'>boundary</text>
-<text x='128.36' y='202' font-size='11' text-anchor='start' fill='#3a3a36'>-7.112</text>
-<rect x='122.36' y='219' width='22.75' height='18' fill='#7f7f7f' opacity='0.85'/>
+<text x='119.96' y='202' font-size='11' text-anchor='start' fill='#3a3a36'>-7.112</text>
+<rect x='113.96' y='219' width='37.09' height='18' fill='#7f7f7f' opacity='0.85'/>
 <text x='86' y='232' font-size='11.5' text-anchor='end' fill='#1a1a1a'>dd</text>
-<text x='151.11' y='232' font-size='11' text-anchor='start' fill='#3a3a36'>+6.042</text>
-<rect x='122.36' y='249' width='178.48' height='18' fill='#17becf' opacity='0.85'/>
+<text x='157.05' y='232' font-size='11' text-anchor='start' fill='#3a3a36'>+14.458</text>
+<rect x='113.96' y='249' width='339.1' height='18' fill='#17becf' opacity='0.85'/>
 <text x='86' y='262' font-size='11.5' text-anchor='end' fill='#1a1a1a'>pooled</text>
-<text x='306.84' y='262' font-size='11' text-anchor='start' fill='#3a3a36'>+47.393</text>
-<line x1='122.36' y1='34' x2='122.36' y2='274' stroke='#5a5a55' stroke-width='1.5'/>
+<text x='459.06' y='262' font-size='11' text-anchor='start' fill='#3a3a36'>+132.194</text>
+<line x1='113.96' y1='34' x2='113.96' y2='274' stroke='#5a5a55' stroke-width='1.5'/>
 <text x='450' y='310' font-size='11.5' text-anchor='middle' fill='#3a3a36'>MW</text>
 </svg>
 
