@@ -6,3 +6,8 @@ graphify-out/
 
 # Agent orchestration state — session-scoped, machine-local
 .omc/
+
+# Claude Code's own local state — config and a scheduler lock file, neither of which
+# describes this project. If a project-scoped setting is ever worth sharing, negate it
+# here rather than dropping this rule.
+.claude/
