@@ -25,8 +25,14 @@ answers the same. **#44 is not void, and it needs no new entity to build.**
 #44 chose to give the two energy fluids a `connection_category` of their own and to ship **no pipe**
 that carries either, so a heat exchanger bolts onto a reactor face and chains to its neighbour. That
 is the shape the engine's own Space Age fusion uses: every `fusion-plasma` connection on both
-`fusion-reactor` and `fusion-generator` carries `connection_category = {"fusion-plasma"}`, and Space
-Age ships no pipe with that category.
+`fusion-reactor` and `fusion-generator` carries `connection_category = {"fusion-plasma"}`, and **no
+pipe a player can build carries it.**
+
+The one prototype that does is worth stating, because this rig depends on the same trick:
+`space-age/base-data-updates.lua:237-239` patches `infinity-pipe` to
+`connection_category = {"default", "fusion-plasma"}`. Wube categorised the editor's debug pipe so it
+could feed a fluid nothing buildable can carry — which is precisely what
+`rf-probe-energy-feed` below is for.
 
 The aneutronic half of that design needed no probing. `scripts/check-aneutronic.ps1` already builds a
 converter so that its own south connection lands on the tile the reactor's output points at (`:387`)
@@ -133,10 +139,16 @@ confirmation that both machines in the chain are taking real fuel through this j
 reporting a status.
 
 **Measured on the chain variant, not on the shipped one-connection shape.** Bolt and chain are one
-rig; two would mean two reactors to fill and two chances for the fill loop to differ. That costs
-nothing here: the connection doing the bolting is south `{0, 0.5}`, the same tile, facing and flow
-the shipped exchanger already declares. The variant adds two sideways connections and does not touch
-the one under test.
+rig; two would mean two reactors to fill and two chances for the fill loop to differ. The connection
+doing the bolting is south `{0, 0.5}` — the same **tile** and **facing** the shipped exchanger
+declares.
+
+**Its flow is not the same**, and an earlier version of this note said it was. The shipped exchanger
+declares `flow_direction = "input"` there (`prototypes/entities.lua:211`); this variant declares
+`"input-output"`. So what AC 2 and AC 3 establish is that a bolt and a chain work on **the shape ADR
+0018 ships** — which declares `input-output` on all three connections for exactly this reason — not
+that they work on the one-connection shape as it stands today. That is the useful direction of the
+two, but it is the narrower claim, and it is the one these rows support.
 
 **The reactor's output box is filled by Lua rather than by running the simulation.** What is under
 test is whether the boxes join and fluid crosses, not what the reactor computes — so this row says

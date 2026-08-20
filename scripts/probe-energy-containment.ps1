@@ -67,10 +67,16 @@
 
                 MEASURED ON THE CHAIN VARIANT, not on the shipped one-connection shape, because
                 bolt and chain are one rig -- two would mean two reactors to fill and two chances
-                for the fill loop to differ. That costs nothing: the connection doing the bolting
-                is south {0, 0.5}, which is the same tile, facing and flow the shipped exchanger
-                already declares. The variant adds two sideways connections; it does not change
-                the one under test here.
+                for the fill loop to differ. The connection doing the bolting is south {0, 0.5},
+                the same TILE and FACING the shipped exchanger already declares.
+
+                Its FLOW IS NOT THE SAME, and saying otherwise was wrong: the shipped exchanger
+                declares flow_direction "input" on that connection and this variant declares
+                "input-output". So what these rows establish is that a bolt and a chain work on the
+                shape ADR 0018 SHIPS -- which declares input-output on all three connections for
+                exactly this reason -- and not that they would work on the one-connection shape as
+                it stands today. That is the useful direction of the two, but it is a narrower
+                claim and it is the one this rig actually supports.
 
       chain     The bolt row with a second categorised exchanger three tiles east of the first,
                 joined through energy connections on their west and east faces. Whether the SECOND
