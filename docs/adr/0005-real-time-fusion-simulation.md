@@ -71,9 +71,15 @@ requires restructuring is not a fallback.
   costs too little to measure, and the whole of the apparent effect was a busy machine. See
   [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md).
 
+  **Reproduced 2026-08-20** on the renamed mods, the only change to the tick path since: 2.23 µs per
+  reactor at 200 reactors, a ratio of 1.1 against the figure above and so the same number. See
+  *Reproduced 2026-08-20* in the research note.
+
   What is **not** discharged: the measurement is a rig, not a factory. #34 asked for a real base at
   scale and there is no such save in this project. The per-reactor cost is the mod's own contribution
-  and stands; how it behaves beside a loaded engine is unmeasured.
+  and stands; how it behaves beside a loaded engine is unmeasured. That residue is
+  [#67](https://github.com/trulsjo/realistic-fusion-refreshed/issues/67)'s, behind #64 and #65 —
+  #34 carries the rig measurement and nothing more.
 - **The premultiplication the redesign left undone is the obvious first optimisation** if measurement
   shows a problem — reactivities multiplied by reaction energies once at load rather than per lookup.
   Recorded here so it is not rediscovered from scratch.
