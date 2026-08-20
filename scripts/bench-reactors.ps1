@@ -50,8 +50,8 @@
     of the deltas -- but it does inflate wholeUpdate everywhere, and it is not small: a substation
     reaches 18 tiles and a cell is wider than that, so every cell needs its own substation and
     interface rather than sharing one grid. And a rig is not a factory: no belts, no trains, no
-    biters, one surface. That is #34's job. This one exists to catch a disaster eleven tickets
-    before #34 would.
+    biters, one surface. #34 did not close that half either -- it is #67's job, behind #64 and #65.
+    This one exists to catch a disaster eleven tickets before #34 would.
 
     Nor does it resolve small differences. Ten invocations of the same binary on the same map, none
     of them flagged BUSY, spanned 1.34x (docs/research/reactor-runtime-cost.md, #39); treat anything

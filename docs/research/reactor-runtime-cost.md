@@ -417,6 +417,35 @@ are running** — 2.4 to 2.5 for the full set, 2.4 to 3.2 for D-D alone, and no 
 real. See #39 below for why the figures this section originally carried were nearly three times too
 high, and why there is no longer a cheap case and an expensive one.
 
+### Reproduced 2026-08-20, on the renamed mods
+
+The discharge above was measured on 2026-08-18. The only commit to touch the tick path since is
+`eafb16c`, which renamed both mods — so nothing about the simulation changed, and the thing actually
+at risk was the rig, which hardcodes `__realistic-fusion-refreshed__` for the ablation ladder and names
+the mod in its own dependency. Re-run to confirm both still hold.
+
+`scripts/bench-reactors.ps1 -Mixed`, same counts, same statistic. The rig logged the identical split
+at *n* = 200 — `rf-d-d-plasma:60, rf-d-t-plasma:50, rf-d-he3-plasma:45, rf-he3-he3-plasma:45` — so
+this is the same measurement, not a similar one.
+
+| reactors | µs per reactor | share of a tick |
+|---:|---:|---:|
+| 10 | 2.45 | 0.15% |
+| 50 | 2.05 | 0.61% |
+| 200 | **2.23** | **2.68%** |
+
+**2.2 µs against the 2.4 to 2.5 recorded, a ratio of 1.1** — inside the 1.35× floor, which is to say
+the same number. It also passes the check #39 leaves behind for future sweeps: per-reactor cost
+**settles** above *n* = 10 rather than rising, which a sweep on a machine getting busier cannot do.
+
+**The first attempt at this sweep is discarded rather than quoted.** It flagged `BUSY` at *n* = 0 —
+84% of the part already in other hands when the baseline launched — and returned 3.07 µs. Under #39's
+rule a contended baseline is worse than none, because the contamination lands on the difference. The
+sweep above ran at 21, 9, 8, 8 and 23%, with no warning at any count. Recorded because the discarded
+run is the guard working, and because 3.07 would have sat inside the noise floor and read as fine.
+
+**The verdict is unchanged.** `UPDATE_INTERVAL` stays at 6.
+
 ## Where the cost actually goes, and what the spread was (#39)
 
 Measured **2026-08-18**, after the section above, on the same machine and the same Factorio 2.0.77.
