@@ -16,6 +16,28 @@ seven technologies, high-capacity steam equipment included. That is a statement 
 not about balance: the numbers behind them are still provisional, and nothing here has been played
 for longer than a test rig runs.
 
+## Before you install
+
+Two things this mod deliberately does not do. Both are decisions rather than oversights, and both are
+the kind that otherwise get discovered by a player rather than by a build — which is why they are here
+and in the mod description rather than in a changelog.
+
+**Predecessor saves are not supported.** Nothing carries over from Realistic Fusion Power or from
+Durikkan's 2.0 port, and no migration is provided. The prototype names here share no prefix with
+either (`rf-` against their `rfp-`), so the game cannot match one to the other even in principle — and
+the mod's own name is what a save binds to, which is not transferable at all. The practical effect on
+a port user is that their fusion setup has to be rebuilt. Durikkan's port can stay installed beside
+this mod, which is what the distinct prefix buys; what it does not buy is continuity. The 1.1
+original cannot, and not for any reason of ours — it declares `factorio_version` 1.1, so Factorio
+2.0 will not load it at all. See [ADR 0006](docs/adr/0006-clean-break-from-predecessor-saves.md).
+
+**The buildings are not balanced for quality.** The mod loads and runs under Space Age with `quality`
+enabled — that much is verified, against Factorio 2.0.77 — and that is the whole of the claim. Nothing
+here is tuned against quality, and nothing is reconciled with the vanilla fusion reactor. Durikkan's
+port warned that "certain buildings in this mod get insanely overpowered with quality" and named none
+of them; this one names the gap instead of leaving it to be found. See
+[ADR 0003](docs/adr/0003-space-age-tolerated-not-targeted.md).
+
 ## What it is meant to be
 
 Fusion power modelled on real physics rather than a single black-box reactor: deuterium extracted from
@@ -51,9 +73,11 @@ Deliberately unanswered so far, and worth knowing before reading anything into t
 
 - Whether to build on the unfinished four-module redesign, on the working 2.0 port, or on neither.
 - Whether the four-module split survives at all, and whether Weaponry and Antimatter are in scope.
-- Target: Factorio 2.0 base game, and whether the Space Age expansion is supported.
 - Which other mods (K2, Angel's/Bob's, Space Exploration, IR2) are compatibility targets.
-- The published mod name.
+
+Two that used to be on this list are settled and are stated above rather than here: the target is the
+Factorio 2.0 base game with Space Age tolerated but not integrated ([ADR 0003](docs/adr/0003-space-age-tolerated-not-targeted.md)),
+and the published name is Realistic Fusion Refreshed ([ADR 0017](docs/adr/0017-the-plain-name-is-left-alone.md)).
 
 ## Licence
 

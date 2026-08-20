@@ -5,6 +5,6 @@
   "author": "Truls Johnsen",
   "factorio_version": "2.0",
   "dependencies": ["base >= 2.0.77"],
-  "description": "Shared library for Realistic Fusion Refreshed. Owns every fluid and item prototype, and the extraction chain that turns water into deuterium and lithium. Realistic Fusion Refreshed adds the reactors that consume them.",
+  "description": "Shared library for Realistic Fusion Refreshed. Owns every fluid and item prototype, and the extraction chain that turns water into deuterium and lithium. Realistic Fusion Refreshed adds the reactors that consume them.\n\nBefore you install, two things this mod will not do. Saves from Realistic Fusion Power or Durikkan's 2.0 port are NOT supported: this mod shares no prototype names with either, so nothing carries over and no migration is provided. Durikkan's port can stay installed beside this one if you want to compare them, which is what the distinct prefix buys; the 1.1 original cannot, because it declares Factorio 1.1 and will not load under 2.0 at all. And the buildings here are NOT balanced for quality. The mod loads and runs under Space Age with quality enabled, verified against Factorio 2.0.77, and that is the whole of the claim: nothing in it is tuned against quality.\n\nCredit for the original design goes to Romner_set, for the 2.0 port to Durikkan, and for graphics work to PreLeyZero; none of their licences asks for it. The graphics shipped here are Krastorio 2's, under LGPLv3 -- see legal-note.txt beside this file.",
   "homepage": "https://github.com/trulsjo/realistic-fusion-refreshed"
 }

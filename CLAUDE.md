@@ -23,10 +23,19 @@ pass there says nothing about runtime. Run them rather than reasoning about whet
 ## The rule that matters most here
 
 **Most of the big decisions are open, and they are Truls's to make.** That includes which upstream base
-to build on, whether the four-module split survives, scope, the Factorio/Space Age target, mod
-compatibility targets, and the published name. (The licence is settled: **LGPLv3**, see `LICENSE` —
-changed from The Unlicense on 2026-08-16, on the grounds that the mod is largely Krastorio 2's
-resources and code and takes only ideas from the original.)
+to build on, whether the four-module split survives, scope, mod compatibility targets, and whether
+Space Age ever becomes a first-class target rather than merely a tolerated one.
+
+Three of the decisions this section used to list are settled, and are recorded here so nobody reopens
+them by accident:
+
+- **The licence is LGPLv3** — see `LICENSE`, changed from The Unlicense on 2026-08-16, on the grounds
+  that the mod is largely Krastorio 2's resources and code and takes only ideas from the original.
+- **The published name is Realistic Fusion Refreshed** (ADR 0017, superseding ADR 0009). The `rf-`
+  prototype prefix is unaffected.
+- **The v1 target is the Factorio 2.0 base game, with Space Age tolerated but not integrated**
+  (ADR 0003). What stays open is whether that ever becomes first-class support, which is the item
+  left in the list above — not the v1 target.
 
 Do not settle any of them as a side effect of doing something else — no "I picked X to get started".
 If a task cannot proceed without one, say so and ask. Recording options with trade-offs is welcome;
