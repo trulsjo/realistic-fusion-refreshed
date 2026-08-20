@@ -829,8 +829,9 @@ script.on_event(defines.events.on_tick, function(event)
   end
 
   -- The saturated half of the self-heating pair is put near its ceiling once and never touched
-  -- again: 133 MW into a 10 MJ/C buffer climbs 8 C a second, so a reactor starting cold cannot
-  -- reach its ceiling inside a run this length and what it does AT the ceiling would go unanswered.
+  -- again: 133 MW into a 10 MJ/C buffer climbs 13.3 C a second, so 15 C to the 1000 C ceiling takes
+  -- about 74 seconds where the default run is 45, and what a saturated reactor does would otherwise
+  -- go unanswered.
   if tick == 1 then storage.self_warm.temperature = 990 end
 
   if tick == WARMUP then

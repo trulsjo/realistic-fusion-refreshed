@@ -218,8 +218,8 @@ Stated as constraints rather than as a recommendation — the choice is #44's:
   `scale_energy_usage`), and the buffer's ceiling.
 - **A heat buffer banks far more than today's energy box does.** `(1000 − 15) °C × 10 MJ/°C` is
   9.85 GJ, about 74 seconds of a reactor's full output, where the shipped 1000-unit
-  `rf-reactor-energy` box at 1 MJ a unit holds 1 GJ, about 7.5 seconds. Whether banking three
-  quarters of a minute of output is desirable is a balance question, not a capability one — and
+  `rf-reactor-energy` box at 1 MJ a unit holds 1 GJ, about 7.5 seconds. Whether banking a minute and
+  a quarter of output is desirable is a balance question, not a capability one — and
   today's policy of discarding the overflow (`control.lua`) has a direct analogue in a temperature
   that simply clamps at `max_temperature`.
 - **At the mod's cadence the resolution is fine:** 133 MW for 6 ticks is 13.3 MJ, which is 1.33 °C
