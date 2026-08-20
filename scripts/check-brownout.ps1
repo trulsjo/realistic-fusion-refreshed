@@ -107,9 +107,36 @@
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
 .PARAMETER Settle
-    Seconds to run before anything is cut. Long enough that a heater-fed D-T reactor has built its
-    density and is near its steady output -- it is at roughly half of it by 120 s and within a few
-    percent by 300 s, so the default is not generous by much.
+    Seconds to run before anything is cut, and it has to be long, because every "kept X% of its lit
+    output" figure this rig produces is a ratio against the `full` cell's last minute of it.
+
+    THE FIRST VERSION OF THIS RIG GOT THIS WRONG. It settled for 300 s on the strength of an
+    out-of-Factorio figure -- a reactor fed a continuous 2.5 units a second is within a few percent of
+    its equilibrium by then -- and in the game it is nowhere near. Measured, one sample every ten
+    seconds, `full`'s output over the trailing minute:
+
+      300 s   86 MW      900 s  277 MW     1500 s  319 MW     2100 s  324 MW
+      600 s  204 MW     1200 s  307 MW     1800 s  322 MW     3000 s  324 MW
+
+    So 300 s caught the reactor at about a quarter of its output and still climbing 40% a minute, and
+    every percentage quoted against it was a ratio to a number on the way up.
+
+    THE REASON IT IS SLOW IS THE PIPE, NOT THE PLASMA. The equilibrium the game reaches -- 324 MW at
+    270 units -- is the one the pure-Lua model predicts, to three figures. What the model has no
+    concept of is the feed line: a cell's plasma segment is the reactor's 1000-unit box plus every
+    rf-pipe between it and the heater, and the engine fills the whole segment, not the box. The
+    reactor's own box therefore approaches its share of a much larger volume, which takes about half
+    an hour rather than five minutes.
+
+    The default is 1800 s, where the trailing minute is within 0.6% of the asymptote and drifting
+    0.26% a minute. That is asserted rather than claimed -- see the "its output had stopped climbing"
+    check -- so a settle too short to have converged fails the run instead of quietly rebasing every
+    percentage in the report.
+
+    One cell is deliberately NOT converged at the default and the report says so: `dd`. A D-D plasma
+    never ignites, so it climbs on temperature as well as density and takes far longer. It is a
+    contrast cell rather than a baseline, and an unconverged D-D baseline understates its own fade,
+    so the tier gap the rig reports is if anything narrower than the truth.
 
 .PARAMETER Cut
     Seconds the shortfall lasts. There is no length at which `dark` finishes -- see its entry above --
@@ -149,7 +176,7 @@
 [CmdletBinding()]
 param(
     [string] $FactorioExe,
-    [ValidateRange(60, 1800)]  [int]    $Settle  = 300,
+    [ValidateRange(60, 3600)]  [int]    $Settle  = 1800,
     [ValidateRange(60, 3600)]  [int]    $Cut     = 900,
     [ValidateRange(60, 1800)]  [int]    $Restore = 300,
     [ValidateRange(0.005, 0.5)][double] $Thin    = 0.025,
@@ -570,6 +597,26 @@ local function flows(pole)
   return out
 end
 
+--- Every entity a cell is measured through, checked before it is measured through.
+---
+--- Without this the failure mode is a stack trace inside flows() naming a substation index, which
+--- says nothing about the cause; with it the rig names the cell and says what happened. Cheap enough
+--- to run every tick: a handful of validity reads against eight cells.
+local function assert_intact(cell)
+  if not cell.poles[1].valid then
+    error(cell.label .. ": its substation is gone -- something destroyed part of the rig mid-run")
+  end
+  for i, reactor in ipairs(cell.reactors) do
+    if not reactor.valid then
+      error(string.format("%s: reactor %d is gone -- something destroyed part of the rig mid-run",
+        cell.label, i))
+    end
+  end
+  if cell.heater and not cell.heater.valid then
+    error(cell.label .. ": its heater is gone -- something destroyed part of the rig mid-run")
+  end
+end
+
 local function sample(cell)
   local s = { sold = cell.sold, flows = flows(cell.poles[1]), plasma = {}, buffer = {}, status = {} }
   for i, reactor in ipairs(cell.reactors) do
@@ -601,6 +648,22 @@ script.on_init(function()
   record(turbine_w > 1e6 and turbine_w < 1e8,
     "engine power figures are joules per tick, so watts convert by sixty",
     string.format("vanilla steam-turbine reads %.4g MW that way", turbine_w / 1e6))
+
+  -- LONG RUNS GET ATTACKED, and no other rig here is long enough to have found that out. The siblings
+  -- run two minutes; this one runs half an hour, and a probe run at fifty minutes died with "LuaEntity
+  -- API call when LuaEntity was invalid" inside flows() -- a cell's substation had been eaten. Eight
+  -- heaters and an exchanger produce the pollution that buys that attention.
+  --
+  -- Turned off at the source rather than defended against: a rig measuring a power balance has no
+  -- business also being a defence exercise, and a cell that loses a substation mid-run produces a
+  -- reading that looks like physics.
+  game.map_settings.pollution.enabled        = false
+  game.map_settings.enemy_expansion.enabled  = false
+  surface.peaceful_mode = true
+  local nests = surface.find_entities_filtered({ force = "enemy" })
+  for _, nest in pairs(nests) do nest.destroy() end
+  record(true, "the map is stopped from fighting back, so a long run measures the reactor",
+    string.format("pollution and expansion off, peaceful, %d enemy entities removed", #nests))
 
   force.research_all_technologies()
 
@@ -682,6 +745,7 @@ script.on_event(defines.events.on_tick, function()
   -- -- which is why the plant cell, where a real exchanger is doing it, is exempt.
   for _, label in ipairs(storage.order) do
     local cell = cells[label]
+    assert_intact(cell)
     if cell.drain then
       local moved = 0
       for _, reactor in ipairs(cell.reactors) do
@@ -881,9 +945,15 @@ script.on_nth_tick(REPORT, function()
     if cell.drain then
       local kept, was, now = faded_to(cell)
       if kept then
+        -- The drift is what says whether `was` is a settled figure or a point on the way up. Reported
+        -- per cell rather than only asserted on `full`, because `full` is the only cell the assertion
+        -- covers and a reader comparing two cells should be able to see which of them had stopped
+        -- moving.
+        local before = rate_mw(cell, SETTLE - 7200, SETTLE - 3600)
+        local drift  = (before and was and was > 0) and (100 * (was - before) / was) or nil
         note(string.format("%-9s %-6s", label, "rate"), string.format(
-          "%.4g MW over the last minute lit, %.4g MW over the last minute of the shortfall (%.2f%%)",
-          was, now, 100 * kept))
+          "%.4g MW over the last minute lit%s, %.4g MW over the last minute of the shortfall (%.2f%%)",
+          was, drift and string.format(" (drifting %+.2f%%/min)", drift) or "", now, 100 * kept))
       end
     end
   end
@@ -908,6 +978,23 @@ script.on_nth_tick(REPORT, function()
   -- Asked of the draw and not of entity_status on purpose: a reactor spends a whole interval's
   -- heating out of its buffer in one go, so its status flickers through low_power on a network with
   -- power to spare, and reading it at one instant says nothing about supply.
+  -- THE BASELINE HAS TO HAVE STOPPED MOVING, and this is the check that says so rather than
+  -- .PARAMETER Settle's prose claiming it. Every "kept X%" figure in this rig divides by the full
+  -- cell's last minute of settle, so a settle that ended while the reactor was still climbing makes
+  -- every one of those percentages a ratio to a number on the way up. It did, at the 300 s this rig
+  -- first used: the full cell went on to more than treble that reading. One percent a minute is a
+  -- loose bound on purpose -- it is here to catch a settle that is wrong by minutes, not to pin a
+  -- convergence figure that moves with the balance.
+  local before_mw = rate_mw(cells.full, SETTLE - 7200, SETTLE - 3600)
+  local lit_mw    = rate_mw(cells.full, SETTLE - 3600, SETTLE)
+  record(before_mw ~= nil and lit_mw ~= nil and lit_mw > 0
+      and math.abs(lit_mw - before_mw) < lit_mw * 0.01,
+    "full: and its output had stopped climbing before the shortfall, so the baseline is settled",
+    (before_mw and lit_mw and lit_mw > 0) and string.format(
+      "%.4g MW over the minute before last against %.4g MW over the last, %+.2f%% -- raise -Settle if this fails",
+      before_mw, lit_mw, 100 * (lit_mw - before_mw) / lit_mw)
+      or string.format("the %ds settle is too short to compare two minutes", SETTLE / 60))
+
   local half_sold, half_drawn = span("half", "lit", "deep")
   local dark_sold, dark_drawn = span("dark", "lit", "deep")
   record(drawn > half_drawn * 1.5 and half_drawn > dark_drawn,
@@ -1563,10 +1650,15 @@ hand: no amount of losing power got any other cell into that state.
 $($table -join "`n")
 
 "MW lit" is measured over the last minute of the settle phase and "MW at the end" over the last minute
-of the shortfall, so the ratio is what the cell still had by the end of its cut. It exceeds 100% for
-``full`` and ``plant`` because neither of them lost its supply: they were still building plasma density
-and climbing towards their steady output while the other cells were falling. "net MW" is output minus
-draw, averaged across the whole shortfall.
+of the shortfall, so the ratio is what the cell still had by the end of its cut. ``full`` and ``plant``
+keep their supply throughout, so their ratios sit at about 100% and are the control: whatever the other
+cells lost, they lost it to the shortfall and not to the clock. "net MW" is output minus draw, averaged
+across the whole shortfall.
+
+The rig asserts that ``full``'s output had stopped climbing before the shortfall began, because every
+ratio in this column divides by it. ``dd`` is the one cell deliberately left unconverged -- a D-D plasma
+never ignites, so it climbs on temperature as well as density and would need far longer; that makes its
+own "kept" figure an understatement, so the tier gap below is narrower than the truth rather than wider.
 
 ## What the rig asserted
 
