@@ -536,6 +536,14 @@ stops, so a brownout cools the plasma, which cuts output, which deepens the brow
 fuel-cell interruption now takes down the fusion line too. Whether that is drama or a trap is the same
 open question #37 already asks.
 
+> **Re-anchored 2026-08-20 (#70).** That reading survives for the **D-D** tier, which is the tier this
+> survey is about, and its 56 MW is where the coupling bites. It does **not** carry to D-T, where the
+> plasma is ignited and a brownout does not cool it: a blackout there costs output slowly and costs the
+> network nothing, and the reactor recovers unattended. So the gate's practical case is a claim about
+> the *entry* tier's startup draw and never about a running fusion line. Measured by
+> `scripts/check-brownout.ps1`; see [`d-t-ignition.md`](d-t-ignition.md) and the correction in
+> [ADR 0015](../adr/0015-the-d-d-tier-is-a-breeder.md).
+
 ### What the gate costs a player, quantified
 
 Computed by differencing prerequisite closures: the vanilla technologies a `nuclear-power` prerequisite

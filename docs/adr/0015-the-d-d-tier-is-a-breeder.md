@@ -16,6 +16,11 @@ this one decides that the D-D tier *does*, and what it is for instead. Unblocks
 
 Decided by Truls, 2026-08-19. Recorded here because it is a decision, not a consequence of one.
 
+**Amended 2026-08-20 (#70).** Nothing in the Decision changes. One consequence's premise — that a D-T
+reactor's loss deepens the brownout that caused it — was measured and is false, and is struck and
+corrected in place rather than deleted. The two tiers' answers are stated together there, and the one
+question the correction left — the sub-ignition drain — is accepted in the same place, by Truls.
+
 ## Context
 
 ADR 0014 left two things open in as many words: *whether the term actually goes in, and what the D-D
@@ -60,6 +65,11 @@ about 62 vanilla steam engines. Vanilla nuclear, the comparable tier, needs no s
 confinement heating is what climbs it to a fusing temperature. `heating_j` is clamped to `available_j`
 in `scripts/reactor-logic.lua`, so a brownout cools the plasma and the climb back is minutes. Nothing
 in the mod arrests that.
+
+> **True of this tier, and only of this tier.** Read as a statement about the reactor it is not: at
+> D-T's density and confinement time the plasma is *ignited*, so confinement heating is what gets it
+> to a fusing temperature rather than what keeps it at one, and a brownout does not cool it. Measured
+> 2026-08-20 (#70); see the correction under Consequences.
 
 ## Decision
 
@@ -106,9 +116,59 @@ claim.
 - **#53 is the route out**, and its rung figures are **full-supply** figures — see ADR 0016.
 - **The D-T tier's version of the brownout question is not settled here.** At Q 0.32 a D-D reactor is
   a 40 MW load, so losing it to a brownout makes the brownout *better*: the runaway #37 worried about
-  has no teeth at this tier. At D-T's Q 7 the reactor is a major generator and its loss deepens the
-  brownout that caused it. That is a different question, it is foreseeable now, and it is tracked
-  separately rather than left to be rediscovered in play.
+  has no teeth at this tier. ~~At D-T's Q 7 the reactor is a major generator and its loss deepens the
+  brownout that caused it.~~ — **struck 2026-08-20: measured, and it does not. See the correction
+  below.** That is a different question, it is foreseeable now, and it is tracked separately rather
+  than left to be rediscovered in play.
+
+  > **The premise of that question was measured and is false. Corrected 2026-08-20 (#70).** A D-T
+  > reactor's loss does not deepen the brownout that caused it, because a brownout does not cost it
+  > its plasma. At this reactor's density and confinement time a D-T plasma is **ignited**: its own
+  > alpha heating outruns the confinement loss, so the 50 MW is what gets it to a fusing temperature
+  > and not what keeps it at one.
+  >
+  > `scripts/check-brownout.ps1` builds eight cells, each a reactor with its own `rf-heater` on its
+  > own network, and produces the shortfall by undersupplying that network — so the fuel line and the
+  > confinement heating are throttled together in the engine's own proportions rather than in ones a
+  > script chose. `rf-reactor` is `usage_priority = "secondary-input"`, the same bucket as every
+  > other machine, so that is what a brownout actually does to it.
+  >
+  > **At half supply** the cell stayed at 1.91×10⁹ °C and contributed **+96.1 MW net**. **Through
+  > fifteen minutes with no power at all** it kept **29.2%** of its lit output, ended at 6.74×10⁸ °C
+  > with plasma still in the box, and was **+48.7 MW net** — better than lit, because it is no longer
+  > paying for heating. **Supply restored and nothing else done**, it was back at the clamp inside
+  > five minutes and net positive the whole way up. **Overloaded past what it can make**, a closed
+  > plant — reactor, heater, exchanger, two turbines, load bank — stayed at the clamp. The spiral was
+  > made to happen on purpose and did not.
+  >
+  > **What stands:** everything in the Decision above. The plasma cooling on brownout is accepted,
+  > the arrest is the player's to build, and letting the plasma hold its heat unpowered stays
+  > rejected — all of it decided for the D-D tier, all of it still true of the D-D tier, which the
+  > same rig measures falling to **0.43%** of its lit output through the same blackout.
+  >
+  > **What is void:** that D-T's loss is self-amplifying, and with it the reason #70 gave for treating
+  > the tiers differently. Both tiers are safe under a shortfall. They are safe for opposite reasons,
+  > and that is the thing worth stating together: a D-D reactor is harmless to lose because it is a
+  > **load**, and a D-T reactor is harmless to lose because **ignition is its own arrest**. The mod
+  > did not need the safeguard #70 was going to consider building, because the physics already
+  > carries one.
+  >
+  > **What is now open: nothing.** The one thing the correction left was the sub-ignition drain, and
+  > it is **accepted — Truls, 2026-08-20, closing #70.** A reactor holding plasma too thin to carry
+  > itself runs at **−7.1 MW**: a seventh of its heating rather than the whole of it, because
+  > `capture_efficiency` sells what leaves the plasma whether or not fusion put it there. It is
+  > accepted on two grounds and not on its size alone. **It is self-clearing** — an empty reactor
+  > draws nothing at all, so the state ends by itself rather than needing a player to notice it. And
+  > **nothing a player does reaches it**: no cell in the rig got there by losing power, and fifteen
+  > minutes of total blackout left the reactor far above it; the drain had to be seeded by hand to be
+  > measured at all. So no mechanic is built for it, and the reason is recorded here rather than left
+  > as an absence.
+  >
+  > `tests/test-reactor-logic.lua` carries the second-long version of the claim, and
+  > [`d-t-ignition.md`](../research/d-t-ignition.md) the measurement.
+  > [`brownout-rig.md`](../research/brownout-rig.md) is the rig's own output and is regenerated
+  > rather than written. #70 was re-scoped around the corrected premise and carries the falsified one
+  > in its history.
 - **[#46](https://github.com/trulsjo/realistic-fusion-refreshed/issues/46) is untouched.** Its text
   hoped #37 might resolve its items 1 and 3. It does not: the draw's *shape* changes (#37's item 4b)
   but the declared `energy_consumption = "1W"` does not, so the seven-orders-out tooltip and the
