@@ -234,8 +234,8 @@ The predecessor geometry quoted at the top is read from Realistic Fusion Power's
 
 This mod's own rates are measured by `scripts/bench-mod-links.ps1`, run 2026-08-17 against the same
 build, at 360 000 ticks. The prototype values it can be checked against, as they stand that day:
-`rf-reactor-energy`'s `fuel_value` from `RealisticFusion/prototypes/fluids.lua`, the exchanger's
+`rf-reactor-energy`'s `fuel_value` from `realistic-fusion-refreshed/prototypes/fluids.lua`, the exchanger's
 `energy_consumption` and the reactor's and exchanger's fluid boxes from
-`RealisticFusion/prototypes/entities.lua`, and the heater's output from the `rf-plasma-heating`
-recipe in `RealisticFusion/prototypes/recipes/`. The four-exchangers-per-reactor case is the build
+`realistic-fusion-refreshed/prototypes/entities.lua`, and the heater's output from the `rf-plasma-heating`
+recipe in `realistic-fusion-refreshed/prototypes/recipes/`. The four-exchangers-per-reactor case is the build
 Truls played on 2026-08-16, not a designed ratio.

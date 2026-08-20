@@ -118,7 +118,7 @@
         read     + entity.fluidbox[1] and entity.energy. Two boundary crossings, one of which
                  allocates a table.
         physics  + reactor-logic.step(). The arithmetic, and nothing else -- the module is required
-                 straight out of __RealisticFusion__, so this is the shipped physics rather than a
+                 straight out of __realistic-fusion-refreshed__, so this is the shipped physics rather than a
                  copy of it.
         write    + the per-reactor pending table, then entity.energy, box[1], get_capacity(2) and
                  box[2]. The rest of the crossings, and one allocation bundled in with them.
@@ -131,7 +131,7 @@
     crossings dominate, and it was inferred from the arithmetic being too cheap to explain the
     figure rather than measured.
 
-    Ablated runs place their reactors with raise_built = false, so RealisticFusion never registers
+    Ablated runs place their reactors with raise_built = false, so realistic-fusion-refreshed never registers
     them and its own update() walks an empty register. The rig owns the whole step, at the shipped
     cadence, read from control.lua rather than remembered. What the rungs therefore do NOT include
     is the collector lookup and the circuit publish -- both per reactor, both in the shipped path --
@@ -208,7 +208,7 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$ourMods  = @('RealisticFusionCore', 'RealisticFusion')
+$ourMods  = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
 $rigName  = 'rf-bench-rig'
 
 # Columns worth printing. scriptUpdate is the answer; the rest are context, and are here because a
@@ -241,7 +241,7 @@ if ($ReportEvery -ge $Ticks) { $ReportEvery = [Math]::Max(1, [int]($Ticks / 2)) 
 # The shipped cadence, read rather than remembered -- an ablated rung has to step as often as the
 # mod it replaces or its per-reactor figure is off by whatever the two intervals differ by. This is
 # the one number the rig cannot ask the game for: UPDATE_INTERVAL is a local in control.lua.
-$controlLua = Join-Path $repoRoot 'RealisticFusion/control.lua'
+$controlLua = Join-Path $repoRoot 'realistic-fusion-refreshed/control.lua'
 if ((Get-Content $controlLua -Raw) -match '(?m)^local UPDATE_INTERVAL = (\d+)') {
     $interval = [int]$Matches[1]
 } else {
@@ -271,7 +271,7 @@ function Write-Rig {
     @{
         name = $rigName; version = '0.0.1'; title = 'Reactor benchmark rig'
         author = 'bench-reactors.ps1'; factorio_version = '2.0'
-        dependencies = @('base >= 2.0.77', 'RealisticFusion')
+        dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
 
     $lua = @'
@@ -433,7 +433,7 @@ script.on_init(function()
       -- than through a rescan that only runs on init.
       --
       -- And the seam the ablation ladder hangs on. Suppressing it is the only way one mod can stop
-      -- another's per-tick handler from doing anything: RealisticFusion registers a reactor from
+      -- another's per-tick handler from doing anything: realistic-fusion-refreshed registers a reactor from
       -- the build event, and its rescan runs on on_init only -- which happens before this rig's,
       -- since the rig depends on it. So an unraised reactor is one the shipped update() never sees,
       -- leaving it walking an empty register while the rig does the step itself.
@@ -525,7 +525,7 @@ end)
 -- would report a per-reactor cost of nothing at all, which is indistinguishable from the finding.
 local ablate_steps, ablate_touched = 0, 0
 if ABLATE ~= "none" then
-  local logic = require("__RealisticFusion__/scripts/reactor-logic")
+  local logic = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
   local SPECS = {
     ["rf-reactor"]            = logic.reactor,
     ["rf-aneutronic-reactor"] = logic.aneutronic_reactor,
@@ -794,7 +794,7 @@ try {
 
         # And the only one of the three that proves the simulation ran. The two above cannot:
         # reactors= counts the rig's own table, which it fills itself whether or not
-        # RealisticFusion ever registered the entity, and hot= reads a temperature the infinity
+        # realistic-fusion-refreshed ever registered the entity, and hot= reads a temperature the infinity
         # pipe pins at 6e8 regardless. So if registration silently stopped working -- an event
         # dropped from the list, a filter the game stops accepting -- every reactor would still be
         # present and hot, and this script would report a near-zero cost as a measurement instead

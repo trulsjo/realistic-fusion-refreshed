@@ -520,7 +520,7 @@ change the note proposes, and neither document mentions it.
 Not done here — this note modifies nothing but itself, as instructed — and the wording is Truls's
 call. What is factually wrong and should not survive as written:
 
-1. **`RealisticFusion/scripts/reactor-logic.lua`, lines 115–119.** "would bite long before 4.6e9" is
+1. **`realistic-fusion-refreshed/scripts/reactor-logic.lua`, lines 115–119.** "would bite long before 4.6e9" is
    not true; it moves the equilibrium to 3.26×10⁹. The sentence can be repaired without giving up the
    conclusion — the clamp *should* stay, because the int32 ceiling is a hard constraint and reason 2
    in `d-t-ignition.md` was always the load-bearing one. What has to go is the claim that
@@ -558,7 +558,7 @@ Primary, read directly:
 - **H. Xie**, "Bremsstrahlung radiation power in fusion plasmas revisited: towards accurate
   analytical fitting", *Plasma Physics and Controlled Fusion* (2024). arXiv:2404.11540. Figure 1
   comparing seven published fits and their validity bounds.
-- **The repository's own data**: `RealisticFusion/cross-section-data/reactivities.lua`, derived by
+- **The repository's own data**: `realistic-fusion-refreshed/cross-section-data/reactivities.lua`, derived by
   `tools/derive-reactivities.py` from ENDF/B-VIII.0 (<https://www-nds.iaea.org/exfor/endf.htm>).
   161 points per reaction, 2.32×10⁶ K to 6.96×10⁹ K, so every equilibrium in this note is interpolated
   inside the table rather than clamped at its ends. D-T peaks at 8.94×10⁻²² m³/s at 7.60×10⁸ K

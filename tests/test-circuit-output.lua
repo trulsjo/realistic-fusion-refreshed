@@ -10,7 +10,7 @@
 --
 -- Written to Lua 5.2 semantics and verified on 5.4.
 
-package.path = "tests/?.lua;RealisticFusion/?.lua;" .. package.path
+package.path = "tests/?.lua;realistic-fusion-refreshed/?.lua;" .. package.path
 local H = require("harness")
 local C = require("scripts.circuit-output")
 local L = require("scripts.reactor-logic")
@@ -135,7 +135,7 @@ equal(status_of(running, 0.5).key, "running", "a nearly-empty but fusing reactor
 
 local locale = {}
 do
-  local handle = io.open("RealisticFusion/locale/en/observability.cfg", "r")
+  local handle = io.open("realistic-fusion-refreshed/locale/en/observability.cfg", "r")
   check(handle ~= nil, "the observability locale file exists")
   if handle then
     local section

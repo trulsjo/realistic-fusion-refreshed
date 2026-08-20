@@ -42,7 +42,7 @@ its documentation, not from observation.
 ```lua
 -- <mod>/scenarios/<test-scenario>/control.lua
 local runner = require("__funit__.test_runner")
-runner.register("RealisticFusion")   -- validates the mod is active; does not modify it
+runner.register("realistic-fusion-refreshed")   -- validates the mod is active; does not modify it
 runner.report("123")                 -- optional: funit-report-123.json in script-output
 runner.test("name", function() ... end)
 ```

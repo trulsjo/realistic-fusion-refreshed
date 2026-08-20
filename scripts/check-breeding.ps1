@@ -11,8 +11,8 @@
 
     THE MODULE SEAM, EXERCISED RATHER THAN ASSERTED
 
-    #27 exists to prove the seam ADR 0010 defines: rf-tritium and rf-helium-3 are RealisticFusionCore
-    prototypes, and the thing that produces them is in RealisticFusion. The last case below is what
+    #27 exists to prove the seam ADR 0010 defines: rf-tritium and rf-helium-3 are realistic-fusion-refreshed-core
+    prototypes, and the thing that produces them is in realistic-fusion-refreshed. The last case below is what
     actually tests that -- a Core machine consuming, through an ordinary pipe, a fluid a Power
     reactor made. If the seam were wrong in either direction that recipe would not run.
 
@@ -65,7 +65,7 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$ourMods  = @('RealisticFusionCore', 'RealisticFusion')
+$ourMods  = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
 $rigName  = 'rf-breeding-rig'
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
@@ -80,7 +80,7 @@ function Write-Rig {
     @{
         name = $rigName; version = '0.0.1'; title = 'D-D breeding check'
         author = 'check-breeding.ps1'; factorio_version = '2.0'
-        dependencies = @('base >= 2.0.77', 'RealisticFusion', 'RealisticFusionCore')
+        dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
 
     $feed = Write-PlasmaFeed -RigDirectory $rigDir

@@ -156,7 +156,7 @@ dressed as a centrifuge recipe, and it is the same idea this note reaches on phy
 
 K2's heavy water is one recipe, `kr-heavy-water`: 500 water → 20 heavy water in 120 s in an
 electrolyser (`prototypes/recipes/electrolysis.lua:4`). No exchange process, no catalyst, no depleted
-stream. This repository's Girdler sulfide chain (`RealisticFusionCore/prototypes/recipes/deuterium.lua`)
+stream. This repository's Girdler sulfide chain (`realistic-fusion-refreshed-core/prototypes/recipes/deuterium.lua`)
 is already the more physical of the two.
 
 K2 also ships `kr-fusion-reactor` and `kr-advanced-steam-turbine` (`effectivity = 2.1`,
@@ -537,7 +537,7 @@ circulating H₂S between two towers pumps deuterium up without consuming the H�
 industrial route is **monothermal ammonia–hydrogen catalytic exchange**. Both are enormous plants; GS is
 energy-hungry and circulates lethal quantities of hydrogen sulfide.
 
-**This repository already models GS, and models it well.** `RealisticFusionCore/prototypes/recipes/deuterium.lua`
+**This repository already models GS, and models it well.** `realistic-fusion-refreshed-core/prototypes/recipes/deuterium.lua`
 has `rf-heavy-water` taking 100 water + 50 `rf-hydrogen-sulfide` and returning 10 heavy water, 90
 depleted water and **the same 50 hydrogen sulfide**, marked `ignored_by_stats` on both sides with the
 comment *"the catalyst is not net-produced or net-consumed"*. That is the physics of a
@@ -589,7 +589,7 @@ change.
 
 ### The fluid-sharing question, answered from the prototype data
 
-Core's fluid set (ADR 0010, `RealisticFusionCore/prototypes/fluids.lua`) already contains
+Core's fluid set (ADR 0010, `realistic-fusion-refreshed-core/prototypes/fluids.lua`) already contains
 `rf-heavy-water`, `rf-deuterium`, `rf-tritium`, `rf-hydrogen`, `rf-depleted-water`,
 `rf-hydrogen-sulfide`, `rf-brine`, `rf-lithium-solution` and the item `rf-lithium`. A fission module
 wanting heavy water, tritium and lithium would want **exactly those prototypes** — not similar ones.
@@ -868,9 +868,9 @@ Mod source, read directly:
 
 In this repository:
 
-- `RealisticFusion/scripts/reactor-logic.lua`, `RealisticFusion/scripts/reactivity.lua`,
+- `realistic-fusion-refreshed/scripts/reactor-logic.lua`, `realistic-fusion-refreshed/scripts/reactivity.lua`,
   `tools/derive-reactivities.py`, `tools/endf/README.md`.
-- `RealisticFusionCore/prototypes/fluids.lua`, `RealisticFusionCore/prototypes/recipes/deuterium.lua`.
+- `realistic-fusion-refreshed-core/prototypes/fluids.lua`, `realistic-fusion-refreshed-core/prototypes/recipes/deuterium.lua`.
 - `CONTEXT.md`; ADRs [0002](../adr/0002-v1-scope-and-module-split.md),
   [0003](../adr/0003-space-age-tolerated-not-targeted.md),
   [0005](../adr/0005-real-time-fusion-simulation.md),

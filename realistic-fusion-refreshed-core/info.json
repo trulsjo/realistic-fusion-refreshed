@@ -1,0 +1,10 @@
+{
+  "name": "realistic-fusion-refreshed-core",
+  "version": "0.1.0",
+  "title": "Realistic Fusion Refreshed Core",
+  "author": "Truls Johnsen",
+  "factorio_version": "2.0",
+  "dependencies": ["base >= 2.0.77"],
+  "description": "Shared library for Realistic Fusion Refreshed. Owns every fluid and item prototype, and the extraction chain that turns water into deuterium and lithium. Realistic Fusion Refreshed adds the reactors that consume them.",
+  "homepage": "https://github.com/trulsjo/realistic-fusion-refreshed"
+}

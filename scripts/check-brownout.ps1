@@ -189,7 +189,7 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$ourMods  = @('RealisticFusionCore', 'RealisticFusion')
+$ourMods  = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
 $rigName  = 'rf-brownout-rig'
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
@@ -213,7 +213,7 @@ function Write-Rig {
     @{
         name = $rigName; version = '0.0.1'; title = 'Brownout and blackout check'
         author = 'check-brownout.ps1'; factorio_version = '2.0'
-        dependencies = @('base >= 2.0.77', 'RealisticFusion', 'RealisticFusionCore')
+        dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
 
     $feed = Write-PlasmaFeed -RigDirectory $rigDir
@@ -456,7 +456,7 @@ local function build_cell(surface, force, o)
   for i = 0, (o.count or 1) - 1 do
     local cx = centre(o.ox + 20 + i * (size + 5), origin)
     local reactor = must(surface.create_entity({
-      -- raise_built so RealisticFusion registers it: the mod picks reactors up from the build event
+      -- raise_built so realistic-fusion-refreshed registers it: the mod picks reactors up from the build event
       -- and rescans only at its own on_init, which has already run by now.
       name = "rf-reactor", position = { cx, cy }, force = force, raise_built = true,
     }), label .. ": rf-reactor " .. i)

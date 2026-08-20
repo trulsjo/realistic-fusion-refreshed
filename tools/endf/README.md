@@ -1,7 +1,7 @@
 # ENDF cross-sections
 
 Input to `tools/derive-reactivities.py`. Not shipped with the mod — only the derived
-`RealisticFusion/cross-section-data/reactivities.lua` is.
+`realistic-fusion-refreshed/cross-section-data/reactivities.lua` is.
 
 These are committed rather than referenced so the derivation can actually be re-run. A generator
 whose only input lives in a temporary directory on one machine is not reproducible, whatever its

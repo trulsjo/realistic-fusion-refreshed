@@ -27,7 +27,7 @@
 -- Like the other tests here it runs outside Factorio (ADR 0005), written to Lua 5.2 semantics and
 -- verified on 5.4.
 
-package.path = "tests/?.lua;RealisticFusion/?.lua;" .. package.path
+package.path = "tests/?.lua;realistic-fusion-refreshed/?.lua;" .. package.path
 local H = require("harness")
 local L = require("scripts.reactor-logic")
 local reactivity = require("scripts.reactivity")

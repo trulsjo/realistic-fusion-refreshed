@@ -139,13 +139,13 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$ourMods  = @('RealisticFusionCore', 'RealisticFusion')
+$ourMods  = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
 $rigName  = 'rf-pooling-rig'
 
 # The shipped cadence, read rather than remembered. The rig samples on and around the simulation's
 # own beat to catch a single step, and UPDATE_INTERVAL is a local in control.lua that nothing
 # exports.
-$controlLua = Join-Path $repoRoot 'RealisticFusion/control.lua'
+$controlLua = Join-Path $repoRoot 'realistic-fusion-refreshed/control.lua'
 if ((Get-Content $controlLua -Raw) -match '(?m)^local UPDATE_INTERVAL = (\d+)') {
     $interval = [int]$Matches[1]
 } else {
@@ -175,7 +175,7 @@ function Write-Rig {
     @{
         name = $rigName; version = '0.0.1'; title = 'Fluid-segment sharing check'
         author = 'check-pooling.ps1'; factorio_version = '2.0'
-        dependencies = @('base >= 2.0.77', 'RealisticFusion', 'RealisticFusionCore')
+        dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
 
     $lua = @'
@@ -191,7 +191,7 @@ local PLASMA = "rf-d-d-plasma"
 -- ablation ladder in bench-reactors.ps1 does it. The bookkeeping check below asks this module what
 -- a reactor's step should do and then asks the pool whether it got it; a copy would only ever
 -- confirm the copy.
-local logic = require("__RealisticFusion__/scripts/reactor-logic")
+local logic = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
 local SPEC  = logic.reactor
 
 -- Seeded well below anything that fuses hard, so an unpowered reactor that ends up hot can only
@@ -231,7 +231,7 @@ local SETTLE_UNTIL = SEED_UNTIL + 240
 -- The window the bookkeeping is measured across: one whole interval, opening ON a simulation tick.
 --
 -- Both parts of that are load-bearing and both were arrived at by getting them wrong. THIS MOD'S
--- HANDLERS RUN BEFORE RealisticFusion'S, because the rig depends on it and so loads after it. That
+-- HANDLERS RUN BEFORE realistic-fusion-refreshed'S, because the rig depends on it and so loads after it. That
 -- was not assumed -- it was measured: a window from tick 305 to 306, either side of a step, showed
 -- the pool LOSING heat, which is what a window containing no step at all looks like. So a reading
 -- taken on a step tick is the state that step is about to see, which is exactly what the prediction
@@ -398,7 +398,7 @@ local function build_row(surface, force, oy, count, tail, powered, label, unregi
     local cx = centre(origin + i * pitch, origin)
     local reactor = must(surface.create_entity({
       -- Suppressing the build event is the only way one mod can keep another's per-tick handler
-      -- off an entity: RealisticFusion registers a reactor from that event and rescans only at
+      -- off an entity: realistic-fusion-refreshed registers a reactor from that event and rescans only at
       -- on_init, which has already run. bench-reactors.ps1 -Ablate leans on the same seam.
       name = "rf-reactor", position = { cx, cy }, force = force, raise_built = not unregistered,
     }), label .. ": rf-reactor " .. i)
@@ -639,7 +639,7 @@ script.on_init(function()
   }
   -- The cell that isolates the ENGINE, and the one that turned a puzzling shortfall in the
   -- bookkeeping into a finding. Three reactors on a bridged run built with raise_built = false, so
-  -- RealisticFusion never registers them and no simulation ever runs on them. Every other cell here
+  -- realistic-fusion-refreshed never registers them and no simulation ever runs on them. Every other cell here
   -- has our Lua on it, and a loss seen there could always have been ours.
   storage.idle = build_row(surface, force, 540.5, 3, 0, 0, "idle", true)
   -- The three write shapes (#73), each on its own identical row: three reactors bridged, no tail,

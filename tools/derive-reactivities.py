@@ -168,7 +168,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("raw_dir", type=pathlib.Path, help="directory of *_cross-section.json files")
     ap.add_argument("-o", "--output", type=pathlib.Path,
-                    default=pathlib.Path("RealisticFusion/cross-section-data/reactivities.lua"))
+                    default=pathlib.Path("realistic-fusion-refreshed/cross-section-data/reactivities.lua"))
     args = ap.parse_args()
 
     grid = temperature_grid()

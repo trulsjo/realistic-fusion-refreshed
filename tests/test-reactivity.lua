@@ -8,7 +8,7 @@
 -- Written to Lua 5.2 semantics (what Factorio 2.0.77 runs) and verified on 5.4: no "//", no
 -- math.type, no assumptions about integer subtypes.
 
-package.path = "tests/?.lua;RealisticFusion/?.lua;" .. package.path
+package.path = "tests/?.lua;realistic-fusion-refreshed/?.lua;" .. package.path
 local H = require("harness")
 local R = require("scripts.reactivity")
 

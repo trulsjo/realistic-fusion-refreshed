@@ -609,8 +609,8 @@ In this repository:
 - `_reference/RealisticFusionPower_1.8.18/.../locale/{en,de,es-ES,zh-CN}/base.cfg` line 162, and
   `_reference/RealisticFusionPowerPort_1.9.{0,2}/.../locale/*/base.cfg` line 182 —
   `rfp-cold-fusion-theory`, orphaned.
-- `RealisticFusion/scripts/reactor-logic.lua`, `RealisticFusion/scripts/reactivity.lua`,
-  `RealisticFusion/cross-section-data/reactivities.lua`, `tools/derive-reactivities.py`.
+- `realistic-fusion-refreshed/scripts/reactor-logic.lua`, `realistic-fusion-refreshed/scripts/reactivity.lua`,
+  `realistic-fusion-refreshed/cross-section-data/reactivities.lua`, `tools/derive-reactivities.py`.
 
 ### What could not be sourced primarily
 
