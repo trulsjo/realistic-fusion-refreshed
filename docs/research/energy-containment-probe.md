@@ -118,13 +118,25 @@ repository's `contain()` uses the bare string and has no reason to change.
 bolt: the reactor's output sits on (0.5, 53.5) and points at (0.5, 52.5), and the exchanger stands at (0.5, 52)
 bolt: reactor output joins the exchanger directly, no pipe: YES
 bolt: the exchanger holds 199.333 units and reports working
-bolt: the reactor's own output box holds 1000 units of a 1000 capacity
+bolt: the reactor's output box held 998.667 units of a 1000 capacity going into this tick
+bolt: and it is on an electric network, so it is not sitting at no_power: full_output
 ```
 
-That last line is a diagnostic rather than a result and it is the reason the row can be trusted: a
-boiler that never pushed from its output box would look exactly like a bolt that did not take. The
-box being at its brim *while the exchanger is full and working* is a source keeping up with a sink,
-not a source that cannot deliver.
+**`joins=YES` and the exchanger's own `199.333 / working` are what carry this row.** The two lines
+after them rule things out rather than establishing anything: the source was never the constraint,
+and the reactor was not sitting at `no_power`.
+
+The 998.667 is worth one sentence, though, because the shortfall is exact. A full box that lost
+**1.333 units in one tick** is 80 MW at 1 MJ a unit — which is precisely two 40 MW exchangers
+drawing at once. Neither number was tuned to meet the other, so the arithmetic is independent
+confirmation that both machines in the chain are taking real fuel through this joint and not merely
+reporting a status.
+
+**Measured on the chain variant, not on the shipped one-connection shape.** Bolt and chain are one
+rig; two would mean two reactors to fill and two chances for the fill loop to differ. That costs
+nothing here: the connection doing the bolting is south `{0, 0.5}`, the same tile, facing and flow
+the shipped exchanger already declares. The variant adds two sideways connections and does not touch
+the one under test.
 
 **The reactor's output box is filled by Lua rather than by running the simulation.** What is under
 test is whether the boxes join and fluid crosses, not what the reactor computes — so this row says
@@ -153,6 +165,7 @@ the verdict.
 chain: the second exchanger joins the first: YES
 chain: it holds 199.333 units and reports working
 chain: against the first one's 199.333 units and working
+chain: and their WATER boxes join as well, so one feed serves the row: YES
 ```
 
 Both exchangers are full and both are making steam, from one reactor connection, with no pipe
@@ -180,8 +193,11 @@ bolt onto a north-facing reactor output. **Three energy connections, all `input-
 `flow_direction` is what decides whether a connection will join another machine's — the same
 distinction `rf-direct-energy-converter`'s own box already makes.
 
-A consequence for layout, measured incidentally: two exchangers three tiles apart **also join
-through their water boxes**, east `{1, 0.5}` against west `{-1, 0.5}`. One water feed serves the row.
+A consequence for layout, and measured rather than reasoned: two exchangers three tiles apart **also
+join through their water boxes**, east `{1, 0.5}` against west `{-1, 0.5}`, so one water feed serves
+the row. The rig asks that question directly — an earlier version of this note claimed it
+"incidentally" when nothing in the rig had ever asked it, which is an inference dressed as a
+measurement and the one thing a probe exists not to produce.
 
 ## AC 4 — the same questions on `rf-hc-exchanger`
 
