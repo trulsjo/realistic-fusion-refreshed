@@ -130,25 +130,42 @@ end
 
 ------------------------------------------------------------------------------------------- fuels
 
--- `sp` is the ion composition: charge and share of the TOTAL ion density. A like-species fuel has
--- one entry and carries the factor of one half in its rate, exactly as reactivity.rate does.
--- `mev` and `ch` mirror M.fuels' energy_per_reaction and charged_fraction.
+-- `ions` is the ion composition -- charge and share of the TOTAL ion density -- named to match the
+-- field the shipped `M.fuels` rows now carry, so `L.electrons` can be called on either. A
+-- like-species fuel has one entry and carries the factor of one half in its rate, exactly as
+-- reactivity.rate does. `j` and `ch` are the energy per reaction in joules and the charged fraction.
 local function mix(p, z1, f1, z2, f2)
-  local f = { mev = p.mev, ch = p.ch, sv = p.sv, like = (z2 == nil) }
-  if z2 then f.sp = { { z = z1, frac = f1 }, { z = z2, frac = f2 } }
-  else f.sp = { { z = z1, frac = 1 } } end
+  local f = { j = p.mev * 1e6 * EV, ch = p.ch, sv = p.sv, like = (z2 == nil) }
+  if z2 then f.ions = { { z = z1, frac = f1 }, { z = z2, frac = f2 } }
+  else f.ions = { { z = z1, frac = 1 } } end
   return f
 end
 
+--- A fuel this mod actually ships, taken FROM THE SHIPPED ROW rather than restated here (#98).
+--
+-- The composition, the energy per reaction and the charged fraction all come out of
+-- `M.fuels`, so the radiated powers this suite pins are pinned against the data #52 will read. That
+-- is the point of doing it this way round: restating the numbers locally would have made every
+-- figure below agree with itself forever while the shipped rows drifted underneath. Change a
+-- plasma's `ions` and the 3.13x, the 6.34x and the 4771 MW all move, here, at the bench.
+local function ship(key, sv)
+  local row = L.fuels[key]
+  -- The shipped table by reference, not copied element by element: nothing here mutates it, and a
+  -- copy is one more thing that can be edited into disagreeing with its original.
+  return { j = row.energy_per_reaction_j, ch = row.charged_fraction, sv = sv, ions = row.ions,
+           like = (#row.ions == 1) }
+end
+
 local F = {}
-F["D-D"]     = mix({ mev = 3.65,   ch = 4.85 / 7.30,      sv = shipped("D-D") },     1)
-F["T-T"]     = mix({ mev = 11.327, ch = 1.259 / 11.327,   sv = TT },                 1)
-F["He3-He3"] = mix({ mev = 12.859, ch = 1,                sv = shipped("He3-He3") }, 2)
-F["D-T"]     = mix({ mev = 17.59,  ch = 3.52 / 17.59,     sv = shipped("D-T") },     1, .5, 1, .5)
-F["D-He3"]   = mix({ mev = 18.353, ch = 1,                sv = shipped("D-He3") },   1, .5, 2, .5)
+F["D-D"]     = ship("rf-d-d-plasma", shipped("D-D"))
+F["D-T"]     = ship("rf-d-t-plasma", shipped("D-T"))
+F["D-He3"]   = ship("rf-d-he3-plasma", shipped("D-He3"))
+F["He3-He3"] = ship("rf-he3-he3-plasma", shipped("He3-He3"))
+-- The three this mod does not ship stay stated here, because there is no row to take them from.
+F["T-T"]     = mix({ mev = 11.327, ch = 1.259 / 11.327,   sv = TT }, 1)
 -- T-He3's branch energies are ORNL/TM-6914 Table II; 3.020 of the 13.006 MeV leaves as a neutron
 -- on the 4% branch and as nothing else, so the charged fraction is high but not one.
-F["T-He3"]   = mix({ mev = 13.006, ch = 1 - 3.020 / 13.006, sv = THE3 },             1, .5, 2, .5)
+F["T-He3"]   = mix({ mev = 13.006, ch = 1 - 3.020 / 13.006, sv = THE3 }, 1, .5, 2, .5)
 local function pb11_fuel(boron, which)
   return mix({ mev = 8.68, ch = 1, sv = pb11(which) }, 1, 1 - boron, 5, boron)
 end
@@ -158,18 +175,20 @@ end
 --- Every power in watts at ion temperature `t_k`, with electrons at `r * t_k`.
 local function powers(f, spec, n_i, t_k, r)
   r = r or 1
-  local n_e, z2n = 0, 0
-  for _, s in ipairs(f.sp) do
-    n_e = n_e + n_i * s.frac * s.z
-    z2n = z2n + n_i * s.frac * s.z * s.z
-  end
-  local z_eff = z2n / n_e
+  -- THE SHIPPED FUNCTION, not a second copy of it. This block used to recompute electrons per ion
+  -- and Z_eff inline with the identical formula, which is the exact failure mode this change cites
+  -- as its reason for deriving the two numbers rather than storing them -- two implementations, one
+  -- of which gets the fix. Calling L.electrons instead means every radiated power below is testing
+  -- the function #52 will call, and the non-shipped fuels above name their field `ions` so they can
+  -- go through it too.
+  local per_ion, z_eff = L.electrons(f)
+  local n_e = n_i * per_ion
   local sv = f.sv(t_k)
   if not sv then return nil end
   local rate
   if f.like then rate = 0.5 * n_i * n_i * sv
-  else rate = (n_i * f.sp[1].frac) * (n_i * f.sp[2].frac) * sv end
-  local p_fus = rate * spec.volume_m3 * f.mev * 1e6 * EV
+  else rate = (n_i * f.ions[1].frac) * (n_i * f.ions[2].frac) * sv end
+  local p_fus = rate * spec.volume_m3 * f.j
   -- (3/2)nkT for the ions plus the same for the electrons at their own temperature. The shipped
   -- model's 3nkT is this with n_e = n_i and r = 1.
   local loss = 1.5 * (n_i * t_k + n_e * r * t_k) * spec.volume_m3 * K_B / spec.confinement_time_s

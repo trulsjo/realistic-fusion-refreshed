@@ -94,7 +94,20 @@ fusion energy breakeven and gain as measured against the Lawson criterion", *Phy
 
 So the working SI form, and the one used for every number in this note:
 
-    P_brem = 5.34e-37 × Z_eff × n_e × n_i × sqrt(T_keV)   W/m³
+    P_brem = 5.34e-37 × Z_eff × n_e² × sqrt(T_keV)   W/m³
+
+> **Corrected 2026-08-21 (#98).** This read `Z_eff × n_e × n_i`, which is **wrong wherever the two
+> densities differ** — and this note's own quotation of `Z_eff` two paragraphs down is what proves
+> it. Putvinski's equation (7) is `n_i n_e Z²` for a single species, and `Z²` generalises to a mix
+> as `Σᵢ nᵢ Zᵢ²`, which by equation (41) is `Z_eff × n_e` and **not** `Z_eff × n_i`. So the
+> substitution has to leave `n_e²`, not `n_e n_i`.
+>
+> **No number in this note moves**, because every one of them is D-D or D-T, where `n_e = n_i` and
+> the two forms are identical. What the old form would have done is understate a **D-He3** plasma by
+> 1.5× and a **He3-He3** plasma by 2× — on top of the separate `n_e = n_i` error #98 is about, and in
+> the same direction. Anyone implementing
+> [#52](https://github.com/trulsjo/realistic-fusion-refreshed/issues/52) by copying the line above
+> would have understated exactly the two plasmas #98 exists to protect, and by a compounding factor.
 
 with `n` in m⁻³ and `T` in **keV**. Two independent primary sources, one derived from the other by
 unit conversion only, agreeing to three figures. `Z_eff` is defined in the same paper, equation (41):
@@ -209,9 +222,22 @@ edge. That is the real fragility in this model, and it is not the one anybody wr
 `M.reactor` in `reactor-logic.lua`: `volume_m3 = 1000`, `particles_per_unit = 1e20` over a 1000-unit
 box, so `n_e = n_i = 10²⁰ m⁻³` in a full reactor; `confinement_time_s = 30`; `heating_power_w = 50e6`.
 The model carries `(3/2)NkT` for ions and as much again for electrons, so `n_e = n_i` is exactly the
-assumption already in the code and `Z_eff = 1` is exactly right for both shipped plasmas.
+assumption already in the code and `Z_eff = 1` is exactly right **for the two plasmas this note
+analyses**.
 
-Bremsstrahlung over the whole plasma is therefore
+> **Corrected 2026-08-21 (#98).** This said "both shipped plasmas". **Four plasmas ship**, and the
+> claim holds for two of them: D-D and D-T are hydrogenic, so `n_e = n_i` and `Z_eff = 1`. Helium-3
+> is `Z = 2`, so **`rf-d-he3-plasma` carries 1.5 electrons per ion at `Z_eff = 5/3`** and
+> **`rf-he3-he3-plasma` carries 2.0 at `Z_eff = 2`** — 3.75 and 8 times hydrogen's `Z_eff × n_e²`
+> for the same ion density. Every figure below is D-D or D-T and none of them moves; what changes is
+> that the two constants must not be carried into an implementation as constants.
+>
+> Each `M.fuels` row now declares its ion composition and `reactor-logic.lua`'s `M.electrons`
+> derives both numbers from it, so #52 has them to read.
+> [`further-reactions.md`](further-reactions.md) has what they cost: counted properly, the He3-He3
+> tier has no ignited state at all and its shipped Q of 1.31 is an artefact of this term's absence.
+
+Bremsstrahlung over the whole plasma is therefore, **for a hydrogenic plasma**
 
     P_brem = 5.34e-37 × 1 × 1e20 × 1e20 × sqrt(T_keV) × 1000 m³
            = 5.34e6 × sqrt(T_keV)  W
