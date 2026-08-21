@@ -600,10 +600,18 @@ local function check_energy_outlets()
 
     -- The temperature apply() stamps on that fluid has to be one the fluid can hold. Cheap to
     -- check and newly load-bearing: since #46 the stamp is the reactor's own target_temperature
-    -- rather than a literal 15, so raising the target past the energy fluid's max_temperature
-    -- would make every write fail -- the same silent total loss the filter check above exists to
-    -- prevent, arriving by a different door. prototypes/fluids.lua declares max_temperature on
-    -- both energy fluids for exactly this reason; this is what stops the pair drifting.
+    -- rather than a literal 15. prototypes/fluids.lua declares max_temperature on both energy
+    -- fluids for exactly this reason; this is what stops the pair drifting.
+    --
+    -- THE STATED REASON IS NARROWER THAN IT WAS. This said an over-range target "would make every
+    -- write fail". #101 measured that the ENGINE's own boiler conversion does no such thing: it
+    -- stamped output at 500 C and at 5000 C against a declared maximum of 165 and neither clamped
+    -- nor refused. What that probe did NOT test is this file's path -- apply() reaches box 2
+    -- through a Lua write, which is not the boiler's internal transfer, and whether a Lua write
+    -- above max_temperature clamps, throws or is dropped is unmeasured. So this guard is
+    -- deliberately conservative: it fails the mod at load rather than shipping a write nobody has
+    -- characterised. Do not relax it on the strength of the engine being permissive elsewhere --
+    -- measure this path first. See docs/research/target-temperature.md.
     -- Never nil to guard against: the 2.0.77 LuaEntityPrototype docs say target_temperature
     -- "Defaults to 15 if not set", so the read below always answers a number even for a boiler
     -- that declares none. Which is why energy_temperature()'s memo is safe to key on truthiness.
