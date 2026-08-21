@@ -7,6 +7,16 @@ source in the archived four-module redesign —
 `RealisticFusionPower/scripts/gui.lua` (672 lines), `gui-events.lua` (370) and `reactor-logic.lua`
 (355), at <https://github.com/4881e05257b099383da78c50269d2ceb/realistic-fusion-dev>.
 
+> **Amended 2026-08-21.** The archive is now cloned locally at
+> `C:\src\factorio\_reference\realistic-fusion-dev` — 22 commits, HEAD `03748ec` "Indicate
+> deprecation in README.md" — so everything below is checkable against source rather than against a
+> reading of it. Every claim in the original pass survived that check, including all three line
+> counts. Two things changed and both are marked in place: the **reaction rates are multiplied by
+> hand-tuned constants**, which the first pass did not mention and which is the most important fact
+> about `reactor-logic.lua`; and the licensing section reached the right answer by the wrong route.
+> Cloning it is not a git relationship with the archive — `CLAUDE.md` forbids a remote, a fork or a
+> graft, and this is a sibling directory of reading material alongside the other predecessors.
+
 The short version: **the GUI exists, it is liftable, and three of its four levers are nearly free
 here while the fourth reaches into ADR 0011's state model.** The recording is not the archived HEAD —
 it can be dated to a specific commit, four months before the last GUI work.
@@ -82,7 +92,45 @@ of the difficulty.
 `reactor-logic.lua` holds `network.deuterium`, `.tritium`, `.helium_3`, `.helium_4` as unit counts and
 runs **all seven channels every tick** — `dd_t`, `dd_he3`, `dt`, `dhe3`, `tt`, `the3`, `he3he3` — with
 mix-weighted heat capacity (`c.d_heat_capacity * network.deuterium + …`) and per-species consumption
-bookkeeping written back each step. Species mix is state, and the sliders move it.
+bookkeeping written back each step. Species mix is state, and the sliders move it. The bookkeeping is
+not a sketch: `tritium_usage` subtracts `dd_t_reactions` and `helium_3_usage` subtracts
+`dd_he3_reactions`, so D-D by-products feed the other channels' fuel inside one composition.
+
+### The rates are falsified, and he says so
+
+**Added 2026-08-21, from the local clone.** Every channel but one is multiplied by a hand-tuned
+constant — `reactor-logic.lua:179-185`, with his own comments:
+
+| Channel | Multiplier | His comment |
+|---|---|---|
+| `D-D_T` | **×10** | *"random bullshit GO!"* |
+| `D-D_He3` | **×10** | *"look, I know that I'm supposed to make this realistic and all, but nothing except D-T works properly without these \*10s"* |
+| `D-T` | **none** | *"I'll hopefully somehow change the formulas to be more realistic at some point, but this is good enough for now"* |
+| `D-He3` | **×10** | |
+| `T-T` | **×20** | |
+| `T-He3` | **×100** | |
+| `He3-He3` | **×100** | |
+
+Three consequences, and they matter well beyond the GUI question:
+
+- **The seven-channel model is an architectural precedent and not a physics one.** It ran because its
+  rates were falsified, which is the "physics implied through recipe ratios" this project exists not
+  to be — worse, actually, since it is physics multiplied by arbitrary constants rather than physics
+  left out. Anyone citing the redesign as evidence that a multi-channel plasma *works* is citing the
+  fudge.
+- **The multiplier is an inverse viability signal.** `T-T` at ×20 and `T-He3` at ×100 produced roughly
+  a twentieth and a hundredth of a playable rate at his densities. Neither is in
+  [ADR 0010](../adr/0010-v1-module-layout-and-prototype-set.md)'s set of four, and the precedent
+  argues against adding them rather than for it.
+- **The fudges are probably artefacts of a broken reactivity table, and this repo already found the
+  break.** `cross-section-data/reactivities.lua`'s header records that his generator "paired the
+  temperature grid with the cross-section energy grid, putting the D-T peak about 3x too high at
+  about a fifth of the right temperature", and that his reactivities were deliberately not reused.
+  **D-T is the one channel with no multiplier** — exactly the pattern a table miscalibrated so that
+  D-T happened to land nearest would produce, with everything else scaled relative to it. So a
+  correctly-derived implementation might need none of these constants. **That is a hypothesis and not
+  a result.** It is checkable by running `tools/derive-reactivities.py`'s output against his
+  `estimate_r`, and nobody has.
 
 Ours encodes reaction identity in the plasma fluid: `scripts/reactor-logic.lua` reads
 `fuel.fractions[1], fuel.fractions[2]` for the fluid in the box, so one fluid means one reaction at
@@ -121,11 +169,36 @@ And one mechanic that is not a lever:
 
 ## Licensing
 
-`RealisticFusionPower/scripts/` carries **no `license.txt` and no `legal-note.txt`**, so it falls under
-the archive's root **WTFPL** — checked 2026-08-19 against the repo's file list. Under
-[ADR 0001](../adr/0001-liftable-predecessor-material.md) the GUI Lua is liftable. It is 1.1-era code,
-so a port is a port; and it is built around per-network state that ADR 0011 deliberately does not
-have, so "liftable" is not the same as "droppable in".
+`RealisticFusionPower/scripts/` carries **no `license.txt` and no `legal-note.txt`** of its own, so the
+governing pair is the **module's**: `RealisticFusionPower/license.txt` is **WTFPL**, and
+`RealisticFusionPower/legal-note.txt` beside it states the per-directory rule — *"Any file in a
+subdirectory of this mod that doesn't have a license.txt and/or a legal-note.txt in its directory is
+licensed under the WTFPL."* Under
+[ADR 0001](../adr/0001-liftable-predecessor-material.md) the GUI Lua is liftable, attributing
+Romner_set. It is 1.1-era code, so a port is a port; and it is built around per-network state that
+ADR 0011 deliberately does not have, so "liftable" is not the same as "droppable in".
+
+> **Corrected 2026-08-21.** This said `scripts/` "falls under the archive's root WTFPL", checked
+> against the repo's *file list* rather than the files. The conclusion was right and the route to it
+> was wrong: there is a nearer WTFPL, at the module root, and it is the one that governs. The
+> distinction is not pedantic — `CLAUDE.md` requires lifting a whole directory *with its licence file
+> and its legal note*, so which pair travels with the code depends on which one governs. Verified
+> against the clone: the archive root, and all three of `RealisticFusionPower`,
+> `RealisticFusionCore` and `RealisticFusionAntimatter`, each carry a WTFPL `license.txt` and the same
+> `legal-note.txt` text.
+
+The marked directories were verified against the clone at the same time, and all four match what
+`CLAUDE.md` already says — so nothing there needs revising, only confirming:
+
+| Directory | Licence | What its legal note says it is |
+|---|---|---|
+| `RealisticFusionCore/electric-boiler/` | **CC BY-NC-ND 4.0** | textures *and code* from angel's petrochem |
+| `RealisticFusionCore/graphics/icons/angels-numerals/` | **CC BY-NC-ND 4.0** | textures from angel's refining |
+| `RealisticFusionCore/graphics/icons/krastorio-2/` | **GPLv3** | taken/modified from Krastorio 2 |
+| `RealisticFusionAntimatter/graphics/particle-accelerator/` | **GPLv3** | modified from Krastorio 2 |
+
+The first two are the NonCommercial-NoDerivatives material ADR 0001 rules out outright. Nothing in
+either is liftable, for any purpose, however small.
 
 Attribute **Romner_set** for anything derived from it, in the commit and in the file.
 
