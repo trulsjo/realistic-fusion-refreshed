@@ -32,6 +32,53 @@ local M = {}
 local K_B = 1.380649e-23  -- J/K
 local CELSIUS_TO_KELVIN = 273.15
 
+-- Bremsstrahlung (#52). The plasma radiates X-rays and they leave, which is the loss channel this
+-- model carried none of until now. docs/research/bremsstrahlung.md has the derivation, the primary
+-- sources and the arithmetic; what matters here is the shape:
+--
+--     P_brem = C_B * n_e^2 * sqrt(T_e[keV]) * xi(T_e, Z_eff)   W/m^3
+--
+-- Z_eff lives INSIDE xi rather than multiplying it, because the relativistic correction splits into
+-- an electron-ion part that scales with charge and an electron-electron part that does not. Setting
+-- xi = Z_eff recovers the non-relativistic form, which is the limit as T goes to zero.
+--
+-- n_e IS NOT n_i AND Z_eff IS NOT 1 (#98). Both come off the fuel row through M.electrons, so a
+-- D-He3 plasma radiates against 1.5 electrons per ion at Z_eff 5/3 and a He3-He3 plasma against 2.0
+-- at Z_eff 2. Assuming hydrogen would understate those two by 3.13x and 6.34x.
+--
+-- KNOWN LIMITATION, RECORDED RATHER THAN GUARDED: this is free-free emission from a FULLY IONISED
+-- plasma, and it is applied at every temperature including ones where that is not true. Below a few
+-- eV -- tens of thousands of degrees -- hydrogen is only partly ionised, line radiation is the
+-- channel that would actually dominate, and this formula is out of its domain. The effect is that a
+-- sub-fusion plasma radiates harder than it should: around 350 kW against 200 kJ of thermal content
+-- at 5e4 C, so it falls to min_temperature_c in under a second.
+--
+-- Left as it is deliberately. Nothing downstream turns on it -- a reactor that cold is not fusing
+-- either way, and confinement heating is two orders larger than the radiated power, so start-up and
+-- re-ignition are unaffected (scripts/check-brownout.ps1 measures both). Gating the term on an
+-- ionisation threshold would mean inventing a constant to fix a state nothing reads, which is the
+-- wrong trade. What it DID change is one rig's tolerance -- see check-observability.ps1's idle case.
+local C_B = 5.34e-37       -- W m^3 keV^-1/2, NRL Plasma Formulary (2019) p. 58 in SI
+local KELVIN_PER_KEV = 1.1604518e7
+local MEC2_KEV = 511       -- electron rest energy; the correction's fit stops here
+
+--- The relativistic correction to bremsstrahlung, which is not optional at these temperatures.
+--
+-- The plain sqrt(T) form is non-relativistic and understates the radiation by 10-20% at the D-D
+-- settling point and more above it. #51 exists because two implementations of this term disagreed by
+-- about that much, and the resolution was that one of them had dropped this factor -- so leaving it
+-- out would reintroduce the exact discrepancy that ticket closed.
+--
+-- ABOVE 511 keV THE FIT IS OUT OF DOMAIN and this holds it at its edge value rather than
+-- extrapolating. That UNDERSTATES radiation above 5.93e9 K, stated because it is a real limit and
+-- because #58 may raise max_temperature_c: no shipped reactor reaches it (both clamp at 2e9 K, or
+-- 172 keV) but a future one could, and it should find this note rather than a silent extrapolation.
+local function radiation_factor(t_kev, z_eff)
+  local t = t_kev / MEC2_KEV
+  if t >= 1 then t = 1 - 1e-9 end
+  return z_eff * (1 + 1.78 * t ^ 1.34) + 2.12 * t * (1 + 1.1 * t + t * t - 1.25 * t ^ 2.5)
+end
+
 -- What each plasma is made of and what it releases, keyed by the fluid the reactor is holding.
 -- Adding a tier (#31) is a row here plus prototypes; the code below does not change.
 --
@@ -130,8 +177,8 @@ M.fuels = {
     --
     -- IT IGNITES, and that is the tier's defining behaviour rather than a balance number.
     --
-    -- D-D settles: heating plus self-heating balance the confinement loss partway up the curve, and
-    -- the plasma sits at about 8.8e8 C and Q 2. D-T at this reactor's density and confinement time
+    -- D-D settles: heating plus self-heating balance the confinement loss and the radiation partway
+    -- up the curve, and the plasma sits at about 2.42e8 C and Q 0.32. D-T at this density and
     -- passes Lawson by more than an order of magnitude, so the alpha heating alone outruns the loss
     -- term and the temperature climbs until the cross-section falls off past its peak. Left
     -- unbounded the model finds a real equilibrium out at 4.6e9 C; what it actually meets first is
@@ -143,9 +190,11 @@ M.fuels = {
     -- not lost at the clamp -- step() sells everything the plasma cannot hold -- so nothing is
     -- created or destroyed by it; it is a ceiling on the state variable, not on the accounting.
     --
-    -- It was ALSO justified as standing in for bremsstrahlung, the radiation loss this
-    -- zero-dimensional model does not carry. That was reasoning rather than arithmetic and it does
-    -- not survive being checked (docs/research/bremsstrahlung.md, against the NRL Plasma Formulary):
+    -- It was ALSO justified as standing in for bremsstrahlung, back when this model carried no
+    -- radiation at all. #52 put the term in, so the clamp no longer stands in for anything -- but
+    -- the reasoning is kept because it was wrong for reasons worth not repeating, and because the
+    -- clamp survived on the int32 argument alone (docs/research/bremsstrahlung.md, against the NRL
+    -- Plasma Formulary):
     --
     --   * Bremsstrahlung does not bite "long before" 4.6e9. It moves the equilibrium to 3.26e9 --
     --     real, but still half again above both this clamp and the int32 ceiling. Adding the term
@@ -156,10 +205,12 @@ M.fuels = {
     --     temperatures is two to three orders larger; it is absent because it cannot be written in
     --     one line, not because it is small.
     --
-    -- And the part that matters most if anyone is tempted: adding bremsstrahlung would break the
-    -- tier that works. D-D falls from Q 2.14 to Q 0.32 and stops being a fusion machine, because a
-    -- D-D plasma at 1e20 m^-3 with 30 s of confinement is genuinely nowhere near ignition. That is
-    -- the physics being right, and it is a balance decision rather than a fix.
+    -- And the part that mattered most: adding bremsstrahlung would cost the tier that works. It did.
+    -- D-D fell from Q 2.14 to Q 0.32 -- exactly as predicted -- because a D-D plasma at 1e20 m^-3
+    -- with 30 s of confinement is genuinely nowhere near ignition. ADR 0015 accepted that before the
+    -- term was written, which is why this is a decision that was taken rather than a fix that was
+    -- applied. **D-T is unaffected in behaviour**: it passes Lawson by orders of magnitude either
+    -- way, and the term moves its unbounded equilibrium to 3.26e9, still above this clamp.
     --
     -- What this costs in game is that the temperature reading is pinned for every D-T reactor, so
     -- the fuel line rather than the temperature is the throttle: an ignited reactor burns exactly
@@ -225,12 +276,24 @@ M.fuels = {
   -- where max_temperature_c stops the plasma at 172 keV, so it burns at about a hundredth of its
   -- peak reactivity. That is not a balance choice: the clamp is there because a plasma past 2e9
   -- truncates its own temperature circuit signal (see rf-d-t-plasma above), and this reaction
-  -- wants to run three times hotter than that ceiling. So He3-He3 arrives at Q 1.31 -- barely above
-  -- break-even -- where D-He3 in the same machine reaches Q 82.8, sixty times better. Both settle
-  -- AT the clamp; what separates them is how far each is from its own peak when it gets there.
-  -- Raise the ceiling to 7e9, which is where He3-He3's cross-section actually peaks, and it goes to
-  -- Q 16 -- so the clamp is the cause rather than the balance. ADR 0014 is what makes
-  -- that a legitimate place for a tier to be rather than a bug.
+  -- wants to run three times hotter than that ceiling.
+  --
+  -- RE-ANCHORED BY #52, AND THE CLAMP IS NO LONGER THE BINDING CONSTRAINT. This said the tier
+  -- "arrives at Q 1.31, barely above break-even, where D-He3 in the same machine reaches Q 82.8",
+  -- both settling at the clamp with only their distance from their own peak separating them. Those
+  -- were figures from a model that carried no radiation, and helium-3 is the worst case for that
+  -- omission: at Z = 2 it brings two electrons per nucleus, so it radiates against 6.34x what a
+  -- hydrogenic plasma of the same ion density would (#98).
+  --
+  -- With the term counted, no fill ignites this reaction. Thinning the plasma does reach the clamp,
+  -- but on heater power rather than on fusion -- Q peaks at 0.0131 around 300 units, which is not
+  -- ignition in CONTEXT.md's sense at all. D-He3 in the same machine is fine at half fill (Q 20.7)
+  -- and trapped at full, so the two tiers now differ in kind rather than in degree: one has an
+  -- operating density and the other has no operating point.
+  --
+  -- ADR 0014 still makes a marginal tier legitimate. WHETHER THIS ONE IS ACCEPTABLE AT ALL is a
+  -- balance decision reserved for Truls by #52's last criterion, and nothing here may be tuned to
+  -- avoid asking it. tests/test-reactor-logic.lua carries the fill sweeps.
   ["rf-he3-he3-plasma"] = {
     reaction = "He3-He3",
     energy_per_reaction_j = 12.859e6 * 1.602176634e-19,
@@ -293,11 +356,22 @@ end
 -- against the same numbers the game does, and passed into step() rather than read from it so a
 -- later tier can be a different reactor without a second copy of the physics.
 --
--- Left running with the plasma kept full, these reach about 8.8e8 C, Q 2.1, and 133 MW of thermal
--- output against 50 MW of heating. That is the equilibrium, and it takes minutes to get there
--- rather than seconds: fusion self-heating is positive feedback, so the plasma is still climbing
--- long after the thirty-second confinement time would suggest it had settled. Two minutes in it
--- is at 6.2e8 C and Q 1.4, which is what a player who just built one sees.
+-- Left running with the plasma kept full, these reach about 2.42e8 C at Q 0.32, selling 56.1 MW
+-- against the 50 MW of heating they draw. It takes minutes rather than seconds to get there: fusion
+-- self-heating is positive feedback, so the plasma is still climbing long after the thirty-second
+-- confinement time would suggest it had settled.
+--
+-- RE-ANCHORED BY #52. These read 8.8e8 C, Q 2.1 and 133 MW before the radiation term went in, and
+-- that equilibrium was an artefact of a loss channel the model did not carry. The tier is now below
+-- SCIENTIFIC break-even (Q < 1) by decision -- ADR 0015 calls it a breeder tier, whose product is
+-- fuel rather than electricity.
+--
+-- It is NOT below engineering break-even, and that is worth knowing before quoting either number:
+-- a plant pays for itself when Q >= (1 - capture_efficiency) / capture_efficiency, which here is
+-- 0.1765, and 0.32 clears it. The radiated X-rays are not thrown away -- they heat the first wall
+-- and step() sells them -- so the reactor makes marginally more than it consumes. See the shipped
+-- balance block in tests/test-reactor-logic.lua for why that leaves ADR 0015's wording in tension
+-- with its own arithmetic.
 --
 -- Provisional, like every other balance number in this repository.
 M.reactor = {
@@ -455,8 +529,20 @@ function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
   local t_k = (temperature_c or 0) + CELSIUS_TO_KELVIN
   if t_k < 0 then t_k = 0 end
 
-  -- (3/2)NkT for the ions and as much again for the electrons that come with them.
-  local thermal_j = 3 * particles * K_B * t_k
+  -- Electrons per ion and effective charge, from the fuel's own composition (#98). Both terms below
+  -- need them: the heat capacity because the electrons have to be heated too, and the radiation
+  -- because it goes as Z_eff n_e^2.
+  local per_ion, z_eff = M.electrons(fuel)
+
+  -- (3/2)NkT for the ions and as much again PER ELECTRON, not once.
+  --
+  -- This was a flat 3 before #52 -- (3/2) for the ions plus (3/2) for one electron each -- which is
+  -- exactly right for D-D and D-T and wrong for the other two. A helium-3 nucleus brings two
+  -- electrons, so a full He3-He3 plasma has three particles to heat per ion rather than two, and its
+  -- heat capacity is 4.5 NkT rather than 3. D-He3 is 3.75. The hydrogenic pair is untouched:
+  -- 1.5 * (1 + 1) is 3, the constant this replaces.
+  local heat_per_particle = 1.5 * (1 + per_ion) * K_B
+  local thermal_j = particles * heat_per_particle * t_k
 
   -- Reactions this step, from the interpolated reactivity. Capped at the fuel actually present:
   -- without the cap a long step at a high rate burns more deuterium than the reactor holds and
@@ -497,11 +583,36 @@ function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
   local loss_j = kept_j * dt / spec.confinement_time_s
   if loss_j > kept_j then loss_j = kept_j end
 
-  local new_thermal_j = kept_j + heating_j + charged_j - loss_j
+  -- Bremsstrahlung (#52). Against the plasma still present and at the temperature it started the
+  -- step at, both for the same reason loss_j is: charging radiation on fuel that has already been
+  -- burnt would over-cool, and would let captured_j below sell energy the plasma never had.
+  local brems_j = 0
+  if remaining > 0 and t_k > 0 then
+    local t_kev = t_k / KELVIN_PER_KEV
+    local n_e = per_ion * remaining / spec.volume_m3
+    brems_j = C_B * n_e * n_e * math.sqrt(t_kev)
+      * radiation_factor(t_kev, z_eff) * spec.volume_m3 * dt
+  end
+
+  -- CLAMPED JOINTLY, not one after the other. Each is bounded by kept_j on its own, but a hot thin
+  -- plasma can have either one alone smaller than what it holds and the two together larger -- and
+  -- then new_thermal_j goes negative, the temperature pins to the minimum, and left_j sells the
+  -- difference. That is energy from nothing, and it is the same free loop capture_efficiency exists
+  -- to prevent. Scaled rather than truncated so the two keep their ratio, which is what makes the
+  -- radiated share of a cooling plasma stay meaningful instead of being whatever was subtracted
+  -- first.
+  local drained_j = loss_j + brems_j
+  if drained_j > kept_j then
+    local scale = kept_j / drained_j
+    loss_j = loss_j * scale
+    brems_j = brems_j * scale
+  end
+
+  local new_thermal_j = kept_j + heating_j + charged_j - loss_j - brems_j
 
   local new_temperature_c = spec.min_temperature_c
   if remaining > 0 then
-    new_temperature_c = new_thermal_j / (3 * remaining * K_B) - CELSIUS_TO_KELVIN
+    new_temperature_c = new_thermal_j / (remaining * heat_per_particle) - CELSIUS_TO_KELVIN
     if new_temperature_c > spec.max_temperature_c then new_temperature_c = spec.max_temperature_c end
     if new_temperature_c < spec.min_temperature_c then new_temperature_c = spec.min_temperature_c end
   end
@@ -517,7 +628,7 @@ function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
   -- used to be discarded silently, and is now sold, because it did leave the plasma.
   local retained_j = 0
   if remaining > 0 then
-    retained_j = 3 * remaining * K_B * (new_temperature_c + CELSIUS_TO_KELVIN)
+    retained_j = remaining * heat_per_particle * (new_temperature_c + CELSIUS_TO_KELVIN)
   end
   local left_j = kept_j + heating_j + charged_j - retained_j
   if left_j < 0 then left_j = 0 end

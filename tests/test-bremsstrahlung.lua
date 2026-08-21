@@ -14,10 +14,17 @@
 -- correction the note's own section on it says must be used at these temperatures. The later sweep
 -- dropped the correction, so its whole confinement ladder is 10-20% optimistic.
 --
--- NOTHING SHIPPED USES THIS. reactor-logic.lua carries no radiation term and this file does not add
--- one to it; the models below are local, and whether any of them ever goes into the simulation is
--- #37 and #52. What this file checks is that the figures the docs quote still follow from the
--- repository's own reactivity dataset.
+-- ~~NOTHING SHIPPED USES THIS.~~ **NOT TRUE SINCE #52.** This said "reactor-logic.lua carries no
+-- radiation term and this file does not add one to it; the models below are local, and whether any
+-- of them ever goes into the simulation is #37 and #52". The term went in: `step()` now carries
+-- bremsstrahlung with the per-fuel electron density #98 supplied, and the D-D equilibrium this file
+-- pins is the one the shipped reactor actually settles at.
+--
+-- That makes the models below a SECOND IMPLEMENTATION of something shipped, which is the situation
+-- #51 was opened about -- two implementations of this term disagreeing by 20% with no harness to
+-- ask which was right. So the last block of this file now checks the local model against `step()`
+-- directly. Keeping them independent is deliberate: this one solves for the equilibrium and the
+-- shipped one integrates towards it, so agreement between them is evidence rather than tautology.
 --
 -- AND NOTHING RUNS IT FOR YOU. There is no CI here and no scripts/*.ps1 invokes the Lua tests, so
 -- regenerating cross-section-data/reactivities.lua invalidates bremsstrahlung.md and ADR 0014
@@ -539,5 +546,34 @@ check(dt_full > 0 and dt_65 / dt_full > 0.40 and dt_65 / dt_full < 0.50,
   "D-T de-rates as n^2 rather than up-rating, so the D-D mechanic is D-D's alone",
   string.format("%.1f%% of full at 65%% fill, where n^2 predicts %.1f%%",
     100 * dt_65 / dt_full, 100 * 0.65 * 0.65))
+
+-- ---------------------------------------------------------------- the shipped term agrees (#52)
+--
+-- The check this file could not make before the term existed, and the one #51 was really about: two
+-- implementations of bremsstrahlung, asked the same question, answering the same way.
+--
+-- They are independent in method rather than in physics, which is what makes this worth asserting.
+-- The model above SOLVES for the temperature at which net power is zero. reactor-logic's step()
+-- INTEGRATES a plasma forward from cold and is stopped when it stops moving. Nothing is shared but
+-- the reactivity dataset and the constants, so an error in either one's algebra shows up here as a
+-- disagreement rather than cancelling.
+--
+-- Run to twenty minutes of game time. The approach is slow because self-heating is positive
+-- feedback, and a shorter horizon reports a point on the way up -- the mistake the aneutronic block
+-- of tests/test-reactor-logic.lua records having made.
+local shipped_t = 15
+for _ = 1, 1200 * 60 do
+  local st = L.step(L.reactor, "rf-d-d-plasma", 1000, shipped_t, math.huge, 1 / 60)
+  shipped_t = st.temperature_c
+end
+-- Against the RELATIVISTIC root specifically -- `D-D/wurzel`, the 2.42e8 this file exists to
+-- distinguish from the non-relativistic 2.69e8. That is the discrimination that matters: had step()
+-- been implemented without the correction it would land on the other root, 11% away, and pass a
+-- looser check against either.
+near_pct(shipped_t + 273.15, found["D-D/wurzel"],
+  "the shipped step() settles on this file's RELATIVISTIC root, not the non-relativistic one")
+check(math.abs(shipped_t + 273.15 - found["D-D/nonrel"]) / found["D-D/nonrel"] > 0.05,
+  "and is distinguishably far from the non-relativistic root, so the correction is really in there",
+  string.format("%.4g K against a non-relativistic %.4g K", shipped_t + 273.15, found["D-D/nonrel"]))
 
 H.finish()
