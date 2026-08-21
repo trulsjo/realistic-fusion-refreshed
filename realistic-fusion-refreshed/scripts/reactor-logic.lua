@@ -69,6 +69,10 @@ M.fuels = {
     -- double-counting that follows from that is reactivity.rate's to undo, not this table's --
     -- D-D is in its LIKE_SPECIES set and carries a factor of one half there.
     fractions = { 1, 1 },
+    -- The ion POPULATION, as nuclear charge and share of the total ion density (#98). One species,
+    -- bare deuterons: one electron each and Z_eff 1. This is the hydrogenic case
+    -- docs/research/bremsstrahlung.md was written against, and it is correct for this row.
+    ions = { { z = 1, frac = 1 } },
     -- Nuclei consumed per reaction. Two, because both sides of D-D are deuterium.
     fuel_per_reaction = 2,
     -- Nuclei of each product per reaction, counted at the same particles_per_unit as the plasma so
@@ -105,6 +109,11 @@ M.fuels = {
     charged_fraction = 3.52 / 17.59,
     -- An even blend, because rf-d-t-mixing makes one: one deuteron and one triton per reaction.
     fractions = { 0.5, 0.5 },
+    -- Two species and both singly charged, so this plasma is hydrogenic too: one electron per ion
+    -- and Z_eff 1, the same as D-D by a different route. Written as two entries rather than
+    -- collapsed into one because the population IS two species -- collapsing it would make the row
+    -- disagree with `fractions` about what is in the box.
+    ions = { { z = 1, frac = 0.5 }, { z = 1, frac = 0.5 } },
     -- One nucleus from each side, so two out of the box -- the same as D-D, arrived at differently.
     fuel_per_reaction = 2,
     -- No products. The alpha is helium-4, which ADR 0010's fluid set does not contain, and the
@@ -181,6 +190,12 @@ M.fuels = {
     charged_fraction = 1,
     -- An even blend, because rf-d-he3-mixing makes one: one deuteron and one helium-3 per reaction.
     fractions = { 0.5, 0.5 },
+    -- AND HERE THE HYDROGENIC ASSUMPTION BREAKS (#98). Helium-3 is Z = 2, so an even mix carries
+    -- 1.5 electrons per ion and Z_eff = 5/3, not 1 and 1. bremsstrahlung.md says those constants
+    -- are "exactly right for both shipped plasmas" and it was right about the two it had analysed;
+    -- this is not one of them. Radiation goes as Z_eff * n_e^2, so a term that assumed hydrogen
+    -- would understate this plasma's by more than a factor of three.
+    ions = { { z = 1, frac = 0.5 }, { z = 2, frac = 0.5 } },
     fuel_per_reaction = 2,
     -- No products in ADR 0010's fluid set -- helium-4 and hydrogen are not modelled, the same
     -- omission D-D's proton already carries.
@@ -224,10 +239,55 @@ M.fuels = {
     -- double-counting is reactivity.rate's to undo -- He3-He3 is in its LIKE_SPECIES set, the same
     -- as D-D.
     fractions = { 1, 1 },
+    -- The furthest of the four from hydrogen (#98): one species, but doubly charged, so a full
+    -- reactor holds TWO electrons per ion and Z_eff = 2. Between the two terms that is eight times
+    -- hydrogen's electron-ion radiation for the same ion density, and it is the reason this tier's
+    -- shipped Q is an artefact of the missing term rather than a balance figure -- see
+    -- docs/research/further-reactions.md.
+    ions = { { z = 2, frac = 1 } },
     fuel_per_reaction = 2,
     neutrons_per_reaction = 0,
   },
 }
+
+--- The electron density and effective charge of a plasma, from its ion population (#98).
+--
+-- Returns electrons per ion and Z_eff, both per unit of TOTAL ion density -- so a caller with an ion
+-- density multiplies the first by it and gets n_e. Quasineutrality gives the first (every bound
+-- electron came off some nucleus, so n_e = sum of frac*z) and the standard definition gives the
+-- second (sum of frac*z^2 over sum of frac*z).
+--
+-- DERIVED RATHER THAN STORED, and that is the whole reason this is a function. #98 asks that each
+-- row "carry its electrons per ion and its Z_eff"; storing those two numbers beside `ions` would let
+-- them contradict it, and a plasma whose declared electron count disagrees with its declared
+-- composition is a bug nothing would catch. The charges are the physical fact; these two follow.
+--
+-- NOTHING SHIPPED CALLS THIS YET, because there is no radiation term to call it -- that is #52, and
+-- this exists so that when the term lands it has the right numbers to read instead of hydrogen's
+-- constants. tests/test-reactor-logic.lua asserts the four values, and
+-- tests/test-further-reactions.lua carries what they cost against the real radiation formula.
+--
+-- AND `ions` IS DELIBERATELY NOT IN control.lua's FUEL_FIELDS, which is the list that makes a row
+-- missing a field refuse to load. It belongs there the moment the radiation term reads it -- a
+-- plasma with no composition would then compute no radiation, silently, which is exactly the class
+-- of fault that list exists to catch. Until then the bench test covers every row including a new
+-- one, and refusing to start a game over a field nothing reads would be out of proportion.
+function M.electrons(fuel)
+  local n_e, z2n = 0, 0
+  for _, ion in ipairs(fuel.ions or {}) do
+    n_e = n_e + ion.frac * ion.z
+    z2n = z2n + ion.frac * ion.z * ion.z
+  end
+  -- A row with no composition, or one whose shares are all zero, would otherwise return 0/0 -- and
+  -- a nan electron density does not raise anything, it propagates into the radiation term and out
+  -- the far side as a plasma that radiates nothing. Loud beats silent: this is the one case where
+  -- the caller cannot recover and must not continue.
+  if n_e <= 0 then
+    error("reactor-logic: a plasma must declare at least one ion species with a positive share; "
+      .. "M.fuels row for " .. tostring(fuel.reaction) .. " declares no usable `ions`.")
+  end
+  return n_e, z2n / n_e
+end
 
 -- What the shipped rf-reactor is made of. Kept here rather than in control.lua so the tests run
 -- against the same numbers the game does, and passed into step() rather than read from it so a

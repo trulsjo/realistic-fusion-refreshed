@@ -93,7 +93,93 @@ for name, fuel in pairs(L.fuels) do
     string.format("%s cannot burn past its scarcest reactant", name),
     string.format("cap is 1/%g of the plasma against a scarcest share of %g",
       fuel.fuel_per_reaction, scarcest))
+
+  -- The ion composition every row must declare (#98). `fractions` cannot serve here and this is
+  -- the trap: it is a RATE multiplier, not a population -- D-D's two entries are both 1 because
+  -- both its reactants come out of one pool, so they do not sum to anything meaningful. `ions`
+  -- is the population, and its shares do sum to one.
+  -- Guarded rather than indexed straight through, following this file's own rule that a nil is a
+  -- failure and not an error: a row missing the field should fail one check and let the rest run,
+  -- not crash the suite and hide everything after it.
+  local has_ions = type(fuel.ions) == "table" and #fuel.ions >= 1
+  check(has_ions, string.format("%s declares its ion composition", name))
+  if has_ions then
+    local sum = 0
+    for _, ion in ipairs(fuel.ions) do
+      check(type(ion.z) == "number" and ion.z >= 1 and ion.z % 1 == 0,
+        string.format("%s declares an integer nuclear charge for each species", name))
+      sum = sum + (ion.frac or 0)
+    end
+    check(math.abs(sum - 1) < 1e-12,
+      string.format("%s's ion shares sum to one", name),
+      string.format("summed to %.12g", sum))
+  end
+
+  -- And the composition must agree with `fractions` about whether this is one species or two, so
+  -- the two fields cannot drift apart: a like-species row has both rate fractions at 1 and exactly
+  -- one population entry, an even mix has both at 0.5 and two entries.
+  local like = fuel.fractions[1] == 1 and fuel.fractions[2] == 1
+  check(has_ions and #fuel.ions == (like and 1 or 2),
+    string.format("%s's composition agrees with its fractions about being %s", name,
+      like and "one species" or "a mix"),
+    string.format("%s ion entries against fractions {%g, %g}",
+      has_ions and tostring(#fuel.ions) or "no", fuel.fractions[1], fuel.fractions[2]))
+
+  -- And for a mix, agrees about the SHARES and their order, not merely the count. Comparing counts
+  -- alone was the first version of this check and it did less than its name claimed: a row with
+  -- `fractions = {0.85, 0.15}` and `ions = {{z=1,frac=0.5},{z=5,frac=0.5}}` satisfied every check
+  -- above -- two entries, integral charges, shares summing to one -- while contradicting
+  -- `fractions` outright, and #52 would then have read the wrong n_e and Z_eff for it. Order
+  -- matters for the same reason and is free to pin while the shipped rows are still symmetric:
+  -- today's 50/50 rows cannot tell the two orders apart, and the first uneven row would.
+  if has_ions and not like then
+    for i = 1, 2 do
+      if fuel.ions[i] then
+        near(fuel.ions[i].frac, fuel.fractions[i], 1e-12,
+          string.format("%s's species %d holds the share its fractions claim", name, i))
+      end
+    end
+  end
 end
+
+-- ---------------------------------------------------------------- electrons per ion (#98)
+
+-- Why this exists. docs/research/bremsstrahlung.md states that Z_eff = 1 and n_e = n_i are "exactly
+-- right for both shipped plasmas", and it was right about the two it had analysed -- D-D and D-T are
+-- hydrogenic. Helium-3 is Z = 2, so they are wrong for the other two, and radiation goes as
+-- Z_eff * n_e^2. #52 must not bake hydrogen's constants in; these are the numbers it has to read.
+--
+-- Nothing shipped consumes them yet, because there is no radiation term to consume them. They are
+-- asserted here so that the row a later editor writes, or flattens, fails at the bench.
+for _, case in ipairs({
+  { "rf-d-d-plasma",     1.0, 1.0     },
+  { "rf-d-t-plasma",     1.0, 1.0     },
+  { "rf-d-he3-plasma",   1.5, 5 / 3   },
+  { "rf-he3-he3-plasma", 2.0, 2.0     },
+}) do
+  local n_e, z_eff = L.electrons(L.fuels[case[1]])
+  near(n_e, case[2], 1e-12, string.format("%s carries %.2f electrons per ion", case[1], case[2]))
+  near(z_eff, case[3], 1e-12, string.format("%s has Z_eff %.4g", case[1], case[3]))
+end
+
+-- The pair the whole ticket is about, stated as the comparison rather than as two numbers: a
+-- hydrogenic assumption understates their radiation, and by how much depends on both terms, so
+-- asserting only Z_eff would let n_e be flattened silently and the other way round.
+local dhe3_ne, dhe3_z = L.electrons(L.fuels["rf-d-he3-plasma"])
+local he3_ne, he3_z = L.electrons(L.fuels["rf-he3-he3-plasma"])
+check(dhe3_ne > 1 and dhe3_z > 1, "a D-He3 plasma is not hydrogenic in either term",
+  string.format("n_e/n_i %.4g, Z_eff %.4g", dhe3_ne, dhe3_z))
+check(he3_ne > dhe3_ne and he3_z > dhe3_z, "and a He3-He3 plasma is further from it in both",
+  string.format("n_e/n_i %.4g, Z_eff %.4g", he3_ne, he3_z))
+
+-- The electron-ion part of the radiation, which is what these two numbers multiply. The full
+-- factor is not this -- the relativistic correction adds an electron-electron term that does not
+-- scale with charge -- so tests/test-further-reactions.lua carries the 3.13x and 6.34x figures
+-- against the real form. This is the part that lives in the data rather than in the formula.
+near(dhe3_ne * dhe3_ne * dhe3_z, 3.75, 1e-9,
+  "D-He3's electron-ion radiation factor is 3.75 against hydrogen's 1")
+near(he3_ne * he3_ne * he3_z, 8.0, 1e-9,
+  "He3-He3's electron-ion radiation factor is 8 against hydrogen's 1")
 
 -- ---------------------------------------------------------------- heating and cooling
 
