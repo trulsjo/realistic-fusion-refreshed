@@ -4,6 +4,29 @@ require("util") -- table.deepcopy
 -- runs: Power requires Core, never the reverse.
 local claim = require("__realistic-fusion-refreshed-core__.prototypes.vanilla").claim
 
+-- The simulation's own constants, at the PROTOTYPE stage. The only thing taken from here is the
+-- confinement heating each reactor draws, and it is taken rather than retyped because that figure
+-- is stated to the player in two locale strings and a third statement of it would be a third thing
+-- to keep in step (#46). scripts/reactor-logic.lua is pure Lua and says so at its head -- it
+-- touches no data, game, storage or settings -- which is what makes requiring it here legitimate
+-- rather than a stage violation. This is the ONLY direction the dependency runs: nothing in
+-- scripts/ requires anything in prototypes/.
+local logic = require("scripts.reactor-logic")
+
+-- What a reactor's tooltip cannot say for itself. Both reactors are boilers (ADR 0011), so the
+-- engine reports the boiler's energy_consumption as "Max consumption" -- 1 W, seven orders below
+-- the truth, because the real draw is spent out of buffer_capacity by control.lua and the engine
+-- has no way to know. That figure is a HOST ARTEFACT in CONTEXT.md's sense: it belongs to the
+-- prototype the reactor is built on and not to the simulation, and the rule there is to explain
+-- one rather than correct it, because correcting this one hands the boiler a fluid conversion rate
+-- proportional to it -- which is precisely what the 1 W is for.
+--
+-- The megawatt figure is interpolated from the spec rather than written into the locale file, so
+-- the two reactors get 50 and 200 from one string each and neither can drift from heating_power_w.
+local function heating_note(spec, key)
+  return { key, string.format("%d", spec.heating_power_w / 1e6) }
+end
+
 -- Power's machines, built from vanilla ones: the base entity is chosen for its shape and fluid
 -- box count, which is the part that decides behaviour.
 --
@@ -123,7 +146,10 @@ reactor.pictures = reactor_graphics.pictures
 -- all -- neither structure nor fire will play, both measured; see the file above.
 data:extend({ reactor_graphics.core_animation("rf-reactor-core") })
 reactor.target_temperature = 165
+-- 1 W, and the tooltip's "Max consumption: 1 W" is a consequence of it rather than a bug -- see
+-- heating_note above, and localised_description below, which is where the player is told so.
 reactor.energy_consumption = "1W"
+reactor.localised_description = heating_note(logic.reactor, "entity-description.rf-reactor")
 reactor.energy_source = {
   type = "electric",
   usage_priority = "secondary-input",
@@ -476,7 +502,11 @@ aneutronic.pictures = aneutronic_graphics.pictures
 -- fusing. Same arrangement as rf-reactor and for the same measured reason: a boiler cannot animate.
 data:extend({ aneutronic_graphics.core_animation("rf-aneutronic-reactor-core") })
 aneutronic.target_temperature = 165
+-- 1 W for the reason rf-reactor's is, and the same tooltip consequence. This one draws 200 MW, so
+-- the interpolated figure differs and a hand-written sentence would have been wrong here.
 aneutronic.energy_consumption = "1W"
+aneutronic.localised_description =
+  heating_note(logic.aneutronic_reactor, "entity-description.rf-aneutronic-reactor")
 aneutronic.energy_source = {
   type = "electric",
   usage_priority = "secondary-input",

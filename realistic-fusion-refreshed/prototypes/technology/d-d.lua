@@ -29,10 +29,22 @@
 -- of ours it requires SOME reachable thing that drinks the steam for electricity, not this
 -- particular one. So the decision could be revisited without touching the check -- what cannot
 -- happen again is the tier having no answer at all, which is the state review caught by reading.
+
+-- The simulation's constants, for the one figure this technology states to the player. #37 put
+-- "draws 50 MW without pause" in the description; #46 makes it __1__ and passes it from here, so
+-- the sentence and heating_power_w cannot say different things. The 56 MW in the same string stays
+-- literal on purpose: it is the whole line's draw -- heater, electrolysers, extractor, chemical
+-- plant -- and no single constant owns it.
+local logic = require("scripts.reactor-logic")
+
 data:extend({
   {
     type = "technology",
     name = "rf-d-d-fusion",
+    localised_description = {
+      "technology-description.rf-d-d-fusion",
+      string.format("%d", logic.reactor.heating_power_w / 1e6),
+    },
     icon = "__realistic-fusion-refreshed__/graphics/krastorio-2/technologies/d-d.png",
     icon_size = 256,
     prerequisites = { "rf-deuterium-extraction", "advanced-circuit", "concrete" },

@@ -163,6 +163,18 @@ for that mechanism; do not call it a network.
 simulated object sharing a mixed plasma. Named here only so the term is recognised when it appears in
 predecessor code or research notes. **v1 has no networks.**
 
+**Host artefact** — a value the engine displays that belongs to the prototype an entity is *built on*
+rather than to the simulation. `rf-reactor` is a boiler ([ADR 0011](docs/adr/0011-per-reactor-simulation-fluid-coupled.md)),
+so it reports a consumption figure and a target temperature that its **physics** neither sets nor
+reads — `scripts/reactor-logic.lua` mentions neither. Both are host artefacts. Runtime glue may well
+read one in order to *display* it, and that does not stop it being a host artefact: what matters is
+whether the simulated quantity depends on it.
+
+The rule: **correct a host artefact only where the engine reads it; otherwise say what it is and is
+not.** Changing a value the engine acts on in order to fix a display is the wrong trade — it breaks
+behaviour to mend a tooltip. Not "bug": a host artefact is a consequence of a deliberate choice about
+what to build on, and calling it a bug invites a fix that breaks what it is a consequence of.
+
 ## Plumbing
 
 > **Plasma containment is built and gated. The energy half of this section is decided but not yet
