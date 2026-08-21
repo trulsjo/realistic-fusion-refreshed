@@ -670,45 +670,106 @@ near(aneutronic_hot.fusion_power_w / aneutronic_thin.fusion_power_w, 9, 1e-9,
 -- detail. Both aneutronic plasmas climb for a long time before they stop: at two minutes He3-He3
 -- is at 8.9e8 C and Q 0.12, which is a point on the way up and reads exactly like an equilibrium
 -- if it is asserted against. Every number below is the settled one.
+-- REWRITTEN BY #52, AND WHAT CHANGED IS THE PHYSICS RATHER THAN THE ASSERTION. Before the radiation
+-- term both aneutronic plasmas ignited and ran to the clamp. Neither does now, and helium-3's charge
+-- is why: at Z = 2 it brings two electrons per nucleus, radiation goes as Z_eff n_e^2, and the two
+-- terms together put a D-He3 plasma at 3.13x and a He3-He3 plasma at 6.34x the radiation a
+-- hydrogenic plasma of the same ion density would suffer (#98).
+--
+-- NO BALANCE CONSTANT WAS TOUCHED TO PRODUCE THESE NUMBERS, and none may be touched to move them
+-- back: #52's last criterion reserves the aneutronic tiers' response for Truls, precisely so nobody
+-- picks a heating power that makes this block pass. What is asserted here is what the shipped
+-- constants now do.
+--
+-- D-He3 IS DENSITY-SENSITIVE, WHICH IS THE WHOLE OF IT, and the first version of this block got it
+-- wrong by testing one fill and generalising. Radiation goes as n^2 and so does the fusion rate, but
+-- the HEATING IS FIXED at 200 MW -- so there is a density above which radiation swamps the heater
+-- before the plasma can climb, and below which it cannot. A full box traps the plasma cold; half a
+-- box ignites it and is close to the best the tier does:
+--
+--     3000 u  1.37e7 C   Q 6e-8      full, trapped
+--     2000 u  6.27e7 C   Q 0.0017    still trapped
+--     1500 u  clamp      Q 20.7      ignited, and the optimum
+--      500 u  clamp      Q 2.3        thinner: lights easily, fuses less
+--
+-- This is ADR 0016's operating-density lever, arriving on a tier that had no use for it before: "a
+-- reaction has a density at which it makes the most power, and it is not necessarily a full one".
+-- Here it is not a full one by a factor of two.
+--
+-- IT IS ALSO WHY THE MAP RIGS STILL PASS. scripts/check-aneutronic.ps1 sees this reactor ignite to
+-- the clamp, because a heater feeding a reactor does not hold its box at 3000 units. Nothing about
+-- the rigs was changed for #52; the in-game reactor was already on the lit side of the fold.
 local an_t, an_state = settle(ANEUTRONIC, SETTLE_S, math.huge, nil, "rf-d-he3-plasma", ANEUTRONIC_FULL)
-near(an_t, ANEUTRONIC.max_temperature_c, 1e-12, "a D-He3 plasma ignites and runs up to the clamp")
-check(an_state.q_factor > 50, "and runs far past breakeven there",
+check(an_t < 1e8, "a FULL D-He3 plasma no longer ignites: radiation traps it at the cold root",
+  string.format("%.3g C at %d units, against a clamp at %.3g C",
+    an_t, ANEUTRONIC_FULL, ANEUTRONIC.max_temperature_c))
+check(an_state.q_factor < 1e-3, "and fuses essentially nothing there",
   string.format("Q = %.3g", an_state.q_factor))
+-- Half the fill, nothing else changed -- not the heating, not a constant.
+local half_t, half_state = settle(ANEUTRONIC, SETTLE_S, math.huge, nil, "rf-d-he3-plasma",
+  ANEUTRONIC_FULL / 2)
+near(half_t, ANEUTRONIC.max_temperature_c, 1e-12,
+  "at half fill the same reactor ignites and runs to the clamp")
+check(half_state.q_factor > 10, "and runs far past break-even there, which is the tier's optimum",
+  string.format("Q = %.3g at %d units", half_state.q_factor, ANEUTRONIC_FULL / 2))
+-- Raising the heating clears the full box too, so the fold is a ratio rather than a wall.
+local lit = {}
+for key, value in pairs(ANEUTRONIC) do lit[key] = value end
+lit.heating_power_w = ANEUTRONIC.heating_power_w * 4
+local lit_t = settle(lit, SETTLE_S, math.huge, nil, "rf-d-he3-plasma", ANEUTRONIC_FULL)
+near(lit_t, ANEUTRONIC.max_temperature_c, 1e-12,
+  "and four times the heating clears a full box, so what matters is heating against n^2")
 
--- THE FINDING THAT MATTERS ABOUT HE3-HE3, and it is a real constraint rather than a balance number.
+-- THE FINDING THAT MATTERS ABOUT HE3-HE3, AND #52 REPLACED IT WITH A HARDER ONE.
 --
--- Its cross-section peaks past 600 keV -- above the top of the ENDF-derived dataset -- and
--- max_temperature_c stops the plasma at 172. So it too climbs to the clamp, but it gets there
--- burning at about a hundredth of its peak reactivity, where D-He3 at the same ceiling is near
--- enough to its own peak to be sixty times stronger. The last tier in the mod cannot reach its own
--- optimum, and arrives barely above break-even because of it.
+-- What this block used to say: the tier climbs to the clamp but gets there burning at about a
+-- hundredth of its peak reactivity, because its cross-section peaks past 600 keV and the clamp stops
+-- the plasma at 172 -- so it arrives barely above break-even, at Q 1.31, and ADR 0014 is what makes
+-- a marginal tier shippable rather than broken. All of that was true of a model with no radiation.
 --
--- ADR 0014 is what makes that shippable rather than broken: a tier may arrive marginal.
+-- WITH THE TERM COUNTED THERE IS NO IGNITED STATE TO ARRIVE AT. Its charged fusion power is between
+-- 1.7% and 6% of its own bremsstrahlung everywhere in the dataset, so there is nothing above the
+-- cold root to climb to at any heating power -- docs/research/further-reactions.md sweeps it and
+-- finds the clamp reachable only on about 10.2 GW, radiating 9 672 MW to make 261 MW. The Q of 1.31
+-- this tier used to report was an artefact of the missing channel, in exactly the way D-D's 2.14 was.
+--
+-- The raised-clamp check that used to live here is gone with it: it asked whether Q at the ceiling
+-- depends on where the ceiling is, and the plasma no longer reaches any ceiling, so the question has
+-- no subject. Nothing replaces it, because a clamp is not what stops this tier now.
+--
+-- WHETHER THAT IS ACCEPTABLE IS TRULS'S CALL AND IS NOT SETTLED HERE (#52's last criterion). What is
+-- asserted is only what the shipped constants do.
+-- AND THE DENSITY LEVER DOES NOT RESCUE IT, which is the difference between this tier and its
+-- neighbour. Thinning the plasma does get it to the clamp -- 300 units reaches 2e9 -- but reaching
+-- the clamp is not IGNITING. CONTEXT.md fixes that word: an ignited plasma is one "whose own fusion
+-- self-heating carries it without external confinement heating". At 300 units the 200 MW heater is
+-- carrying the whole thing and Q peaks at 0.0131. The plasma is hot because it is thin and being
+-- heated, not because it is fusing.
+--
+--     3000 u  3.11e6 C   Q 9e-48
+--      500 u  1.08e9 C   Q 0.0062
+--      300 u  clamp      Q 0.0131   <- the best it does, at any fill
+--      100 u  clamp      Q 0.0015
+--
+-- So D-He3 has a fold it can be moved across and this has a ceiling it cannot: every fill trades
+-- temperature against rate and none of them buys fusion. That is what "no ignited state" means here,
+-- and it is why the old Q of 1.31 was the missing term rather than the machine.
 local he3_t, he3_state = settle(ANEUTRONIC, SETTLE_S, math.huge, nil, "rf-he3-he3-plasma", ANEUTRONIC_FULL)
-near(he3_t, ANEUTRONIC.max_temperature_c, 1e-12,
-  "He3-He3 reaches the clamp too -- it is where it lands, not whether it gets there")
-check(he3_state.q_factor > 1, "and is just above break-even there",
+check(he3_t < 1e7, "a full He3-He3 plasma stays cold",
+  string.format("%.3g C, against a clamp at %.3g C", he3_t, ANEUTRONIC.max_temperature_c))
+check(he3_state.q_factor < 1,
+  "so the Q of 1.31 this tier used to report was the missing radiation term, not the machine",
   string.format("Q = %.3g", he3_state.q_factor))
-check(he3_state.q_factor < an_state.q_factor / 20,
-  "but far weaker than D-He3 in the same reactor, because the clamp is far below its peak",
-  string.format("Q %.3g against %.3g", he3_state.q_factor, an_state.q_factor))
-
--- AND THIS IS THE ONE THAT NOTICES A RAISED CLAMP, which the previous version of this block
--- claimed and did not do. Asserting "He3-He3 is weak" is not a statement about the clamp at all:
--- at a 120-second horizon the plasma had not reached the clamp, so raising max_temperature_c to
--- 7e9 left every figure here bit-identical and the check passed exactly as before.
---
--- Q at the ceiling is the quantity that actually depends on where the ceiling is. Let the plasma
--- run to 7e9 -- which is where He3-He3's reactivity peaks -- and it stops being marginal, so this
--- bound breaks and says why.
-local raised = {}
-for key, value in pairs(ANEUTRONIC) do raised[key] = value end
-raised.max_temperature_c = 7e9
-local _, raised_state = settle(raised, SETTLE_S, math.huge, nil, "rf-he3-he3-plasma", ANEUTRONIC_FULL)
-check(raised_state.q_factor > 5 * he3_state.q_factor,
-  "raising the clamp to He3-He3's own peak transforms it, which is what makes the clamp the cause",
-  string.format("Q %.3g at a 7e9 ceiling against %.3g at the shipped 2e9",
-    raised_state.q_factor, he3_state.q_factor))
+-- The fill that treats it best, so the claim is about the fuel rather than about one operating point.
+local he3_best_q = 0
+for _, amount in ipairs({ 1500, 1000, 500, 300, 200, 100 }) do
+  local _, st = settle(ANEUTRONIC, SETTLE_S, math.huge, nil, "rf-he3-he3-plasma", amount)
+  if st.q_factor > he3_best_q then he3_best_q = st.q_factor end
+end
+check(he3_best_q < 0.05,
+  "and no fill ignites it: thinning reaches the clamp on heater power alone, not on fusion",
+  string.format("best Q %.4g across six fills, against D-He3's %.3g at half fill",
+    he3_best_q, half_state.q_factor))
 
 -- Every spec the mod ships needs the fields step() and control.lua index without asking. The fuel
 -- rows are covered at the top of this file; this is the other half of the same guard, and it exists
@@ -729,20 +790,58 @@ near(ANEUTRONIC.particles_per_unit, SPEC.particles_per_unit, 0,
 
 -- ---------------------------------------------------------------- the shipped balance
 --
--- Not a physics check -- a check that the numbers the mod ships with produce a reactor worth
--- building. These bounds are wide on purpose: they catch a constant edited by accident, not a
--- deliberate rebalance, which should move them.
--- Reusing the equilibrium the cadence block already ran, which is also the point at which these
--- numbers mean what they say: the shipped reactor ends up around 8.8e8 C, Q 2.1, 133 MW. It passes
--- these bounds two minutes into a cold start as well, at 6.2e8 C and Q 1.4 -- which is why the
--- horizon is stated rather than left implicit.
+-- Not a physics check -- a check that the numbers the mod ships with produce the reactor that was
+-- INTENDED. Read the next paragraph before filing any of this as a regression.
+--
+-- THE D-D TIER IS BELOW BREAK-EVEN, AND THAT IS THE DECISION RATHER THAN A SHORTFALL. It settles
+-- around 2.4e8 C at Q 0.32 and sells less than the 50 MW it draws. Until #52 the model carried no
+-- radiation loss at all, and without one the same reactor read 8.8e8 C at Q 2.14 -- a number that
+-- was an artefact of the missing channel, not a property of the machine. Bremsstrahlung is real, it
+-- goes as Z_eff n_e^2 sqrt(T), and a D-D plasma at 1e20 m^-3 with 30 s of confinement is genuinely
+-- nowhere near ignition. ADR 0015 accepted that and named the consequence: the D-D tier is a
+-- BREEDER TIER, whose product is fuel rather than electricity and which is meant to be run at a
+-- loss until a player researches out of it. ADR 0014 makes a tier arriving net negative legitimate.
+--
+-- So the assertions below are inverted ON PURPOSE from what they said before #52. What would be a
+-- regression is D-D climbing back above break-even without a deliberate rebalance -- the reverse of
+-- what this block used to guard.
+--
+-- The figures are #51's, pinned to 1% in tests/test-bremsstrahlung.lua and reproduced here through
+-- the SHIPPED step() rather than a local model, which is the point: before #52 that file's header
+-- said "nothing shipped uses this", and now the shipped balance and the research note have to agree.
 local hot_t, hot_state = fine_t, fine_state
 local out_w = hot_state.energy_units * SPEC.energy_fluid_j_per_unit * 60
 check(hot_t > 1e8 and hot_t < 2e9, "the shipped reactor settles at a fusion temperature",
   string.format("%.3g C", hot_t))
-check(hot_state.q_factor > 1, "the shipped reactor reaches Q > 1", string.format("Q = %.3g", hot_state.q_factor))
-check(out_w > SPEC.heating_power_w, "the shipped reactor is net positive",
-  string.format("out %.3g W vs heating %.3g W", out_w, SPEC.heating_power_w))
+near(hot_t, 2.422e8, 0.01, "the shipped D-D reactor settles where #51 pinned it, 2.422e8 C")
+near(hot_state.q_factor, 0.3205, 0.01, "at #51's Q of 0.3205")
+check(hot_state.q_factor < 1, "which is below SCIENTIFIC break-even, by decision -- see ADR 0015",
+  string.format("Q = %.3g", hot_state.q_factor))
+
+-- AND HERE IS WHERE #52's OWN PREMISE DOES NOT SURVIVE ITS IMPLEMENTATION, recorded rather than
+-- smoothed over. That ticket says a D-D reactor "settles below break-even -- a machine a player runs
+-- at a loss". It settles below Q = 1, which is scientific break-even. It does NOT run at a loss.
+--
+-- Engineering break-even in this model is Q >= (1 - eta) / eta, which at eta = 0.85 is 0.1765 -- and
+-- D-D lands at 0.3205, comfortably above it. The reason is that the X-rays are not thrown away: they
+-- hit the first wall and heat it, so step() sells them through left_j at capture_efficiency, which
+-- docs/research/bremsstrahlung.md calls physically right and is why the term needed no new plumbing.
+-- The reactor therefore radiates hard, recovers most of it as wall heat, and clears its own heating
+-- bill: 56.1 MW sold against 50 MW drawn, net +6.1 MW.
+--
+-- WHAT THAT LEAVES OPEN, and it is not this file's to close: CONTEXT.md defines a breeder tier as one
+-- "which consumes more power than it makes", and ADR 0015 rests on the same phrase. Under the term as
+-- implemented that is false of D-D -- it makes slightly more than it consumes, at a tenth of what it
+-- used to. Either the glossary means scientific break-even and should say so, or the radiation should
+-- not be sold, or the tier really is meant to be marginally positive. That is a decision, so this
+-- block asserts the measurement and says plainly that the wording above it is now in tension with it.
+near(out_w / 1e6, 56.12, 0.01, "it sells 56.1 MW for the 50 MW it draws")
+check(out_w > SPEC.heating_power_w,
+  "so it is marginally NET POSITIVE, which is not what #52's premise or CONTEXT.md's glossary says",
+  string.format("out %.4g W vs heating %.4g W, net %+.3g W",
+    out_w, SPEC.heating_power_w, out_w - SPEC.heating_power_w))
+near((1 - SPEC.capture_efficiency) / SPEC.capture_efficiency, 0.1765, 0.01,
+  "engineering break-even is Q 0.1765 here, which is the number that decides the sentence above")
 
 -- ----------------------------------------------------------------
 

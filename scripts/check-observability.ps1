@@ -253,15 +253,28 @@ local function verify()
         record(temperature == 0, "starved: reports no temperature", tostring(temperature))
       else
         -- Within a few percent, not to the degree. The wire carries what the reactor published at
-        -- its last report -- control.lua reports every fifth simulation step, not every tick -- and
-        -- both of these reactors are still moving: the running one is climbing towards its
-        -- equilibrium and the idle one is slowly cooling. Demanding equality here would be
+        -- its last report -- control.lua reports every fifth simulation step, not every tick -- so a
+        -- reactor whose plasma is still moving reads slightly stale. Demanding equality here would be
         -- demanding that the reporting cadence be one tick, which is the thing it deliberately is
         -- not.
+        --
+        -- THE IDLE CASE GETS ITS OWN BOUND SINCE #52, and the reason is the point rather than the
+        -- number. This block used to say "the idle one is slowly cooling" and hold both cases to 5%.
+        -- It is not slowly cooling any more: with the radiation term carried, a plasma below fusion
+        -- temperature radiates away far more than it holds -- around 350 kW against 200 kJ of
+        -- thermal content at 5e4 C -- so it falls to the floor in well under a second and can more
+        -- than halve between one report and the next. That is the term working, not the signal
+        -- breaking: the running reactor is still held to 5%, and the same assertion catches a wire
+        -- that has stopped tracking its own reactor in every case where the plasma is not in free
+        -- fall.
+        --
+        -- The bound is a factor rather than a percentage because the quantity is no longer a drift.
         local drift = math.abs(temperature - actual) / actual
-        record(drift < 0.05,
+        local bound = (name == "idle") and 4.0 or 0.05
+        record(drift < bound,
           name .. ": the temperature on the wire is this reactor's own plasma, to within the report cadence",
-          string.format("wire %d, plasma %.6g, %.2f%% apart", temperature, actual, drift * 100))
+          string.format("wire %d, plasma %.6g, %.2f%% apart (bound %.0f%%)",
+            temperature, actual, drift * 100, bound * 100))
       end
 
       if name == "running" then
