@@ -39,7 +39,10 @@ and the light leaves. That is a loss: energy the reactor spent heating the plasm
 Three things matter about it for a reactor model:
 
 - **It goes as density squared.** Both an electron and an ion are needed, so the rate is proportional
-  to `n_e × n_i`. Double the density and you quadruple the radiation.
+  to `n_e × n_i`. Double the density and you quadruple the radiation. (In a plasma whose ions are not
+  all singly charged the second factor is the charge-weighted ion density rather than the plain one,
+  which makes it `Z_eff × n_e²` — see [the working form](#the-formula). The quadratic scaling is the
+  same either way, which is all this bullet is about.)
 - **It goes as the square root of temperature.** Weakly. This is the crux of everything below: fusion
   power rises very steeply with temperature and then rolls over, while bremsstrahlung just keeps
   creeping up. Where the two curves cross is where a plasma can or cannot sustain itself.
@@ -92,15 +95,17 @@ fusion energy breakeven and gain as measured against the Lawson criterion", *Phy
 > `P_B = C_B n_i n_e Z² T_e^(1/2) V`
 > […] in m³, and setting `C_B = 5.34 × 10⁻³⁷ W m³ keV^(-1/2)` gives `P_B` […]
 
-So the working SI form, and the one used for every number in this note:
+So the working SI form, and the one used for every number in this note — the superseded form struck
+rather than removed, per [#51](https://github.com/trulsjo/realistic-fusion-refreshed/issues/51):
 
-    P_brem = 5.34e-37 × Z_eff × n_e² × sqrt(T_keV)   W/m³
+- ~~`P_brem = 5.34e-37 × Z_eff × n_e × n_i × sqrt(T_keV)`~~ W/m³
+- **`P_brem = 5.34e-37 × Z_eff × n_e² × sqrt(T_keV)`** W/m³
 
-> **Corrected 2026-08-21 (#98).** This read `Z_eff × n_e × n_i`, which is **wrong wherever the two
-> densities differ** — and this note's own quotation of `Z_eff` two paragraphs down is what proves
-> it. Putvinski's equation (7) is `n_i n_e Z²` for a single species, and `Z²` generalises to a mix
-> as `Σᵢ nᵢ Zᵢ²`, which by equation (41) is `Z_eff × n_e` and **not** `Z_eff × n_i`. So the
-> substitution has to leave `n_e²`, not `n_e n_i`.
+> **Corrected 2026-08-21 (#98).** The struck form is **wrong wherever the two densities differ** —
+> and this note's own quotation of `Z_eff` two paragraphs down is what proves it. Putvinski's
+> equation (7) is `n_i n_e Z²` for a single species, and `Z²` generalises to a mix as `Σᵢ nᵢ Zᵢ²`,
+> which by equation (41) is `Z_eff × n_e` and **not** `Z_eff × n_i`. So the substitution has to leave
+> `n_e²`, not `n_e n_i`.
 >
 > **No number in this note moves**, because every one of them is D-D or D-T, where `n_e = n_i` and
 > the two forms are identical. What the old form would have done is understate a **D-He3** plasma by
@@ -222,10 +227,12 @@ edge. That is the real fragility in this model, and it is not the one anybody wr
 `M.reactor` in `reactor-logic.lua`: `volume_m3 = 1000`, `particles_per_unit = 1e20` over a 1000-unit
 box, so `n_e = n_i = 10²⁰ m⁻³` in a full reactor; `confinement_time_s = 30`; `heating_power_w = 50e6`.
 The model carries `(3/2)NkT` for ions and as much again for electrons, so `n_e = n_i` is exactly the
-assumption already in the code and `Z_eff = 1` is exactly right **for the two plasmas this note
-analyses**.
+assumption already in the code and:
 
-> **Corrected 2026-08-21 (#98).** This said "both shipped plasmas". **Four plasmas ship**, and the
+- ~~`Z_eff = 1` is exactly right for both shipped plasmas.~~
+- **`Z_eff = 1` is exactly right for the two plasmas this note analyses.**
+
+> **Corrected 2026-08-21 (#98).** The struck line said "both shipped plasmas". **Four plasmas ship**, and the
 > claim holds for two of them: D-D and D-T are hydrogenic, so `n_e = n_i` and `Z_eff = 1`. Helium-3
 > is `Z = 2`, so **`rf-d-he3-plasma` carries 1.5 electrons per ion at `Z_eff = 5/3`** and
 > **`rf-he3-he3-plasma` carries 2.0 at `Z_eff = 2`** — 3.75 and 8 times hydrogen's `Z_eff × n_e²`
@@ -463,18 +470,27 @@ Mechanically, almost nothing — which is exactly the trap. In `M.step`, alongsi
 `loss_j`:
 
 ```lua
--- Bremsstrahlung. NRL Plasma Formulary (2019) eq. (30), in SI: 5.34e-37 * Z_eff * n_e * n_i *
--- sqrt(T_keV) W/m^3, with Z_eff = 1 for a fully-ionised hydrogenic plasma. Taken against the
--- plasma still present, like loss_j, and for the same reason.
-local n_after = remaining / spec.volume_m3
-local brems_j = 5.34e-37 * n_after * n_after * math.sqrt(t_k / 1.1604518e7) * spec.volume_m3 * dt
+-- Bremsstrahlung. NRL Plasma Formulary (2019) eq. (30), in SI:
+-- 5.34e-37 * Z_eff * n_e^2 * sqrt(T_keV) W/m^3. Taken against the plasma still present, like
+-- loss_j, and for the same reason.
+--
+-- n_e IS NOT n_i, AND Z_eff IS NOT 1 (#98). Both come off the fuel row rather than being assumed:
+-- a D-He3 plasma carries 1.5 electrons per ion at Z_eff 5/3 and a He3-He3 plasma 2.0 at Z_eff 2,
+-- so assuming hydrogen understates them by 3.75x and 8x. M.electrons exists to supply these.
+local per_ion, z_eff = M.electrons(fuel)
+local n_i = remaining / spec.volume_m3
+local n_e = per_ion * n_i
+local brems_j = 5.34e-37 * z_eff * n_e * n_e * math.sqrt(t_k / 1.1604518e7) * spec.volume_m3 * dt
 ```
 
+For D-D and D-T, `per_ion` and `z_eff` are both exactly 1 and this reduces to `n_i²` — so the
+figures above are unaffected, which is the check that the generalisation is one.
+
 subtracted in `new_thermal_j` and clamped jointly with `loss_j` so the two together cannot exceed
-`kept_j`. It needs no new state, no new prototype field and no dependency: `left_j` is already
-computed as what went in minus what was retained, so the radiated energy routes itself into
-`captured_j` and gets sold at `capture_efficiency` — which is physically right, since the X-rays hit
-the first wall and heat it. Two lines and a guard.
+`kept_j`. It needs no new state and no new prototype field, and its only dependency is the fuel row's
+own ion composition (#98): `left_j` is already computed as what went in minus what was retained, so
+the radiated energy routes itself into `captured_j` and gets sold at `capture_efficiency` — which is
+physically right, since the X-rays hit the first wall and heat it. Four lines and a guard.
 
 The relativistic factor is a third line if wanted, and at these temperatures it should be wanted —
 it is worth 1.5× at the D-D point and 5.3× at the D-T one:
@@ -562,7 +578,7 @@ call. What is factually wrong and should not survive as written:
    encoding — not a radiation term.
 
 The honest one-line summary for whoever picks this up: **bremsstrahlung is real, it is a genuine gap
-in the model, adding it is two lines — and it would cost the D-D tier and buy nothing on D-T.**
+in the model, adding it is four lines — and it would cost the D-D tier and buy nothing on D-T.**
 
 ## Sources
 
