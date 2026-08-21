@@ -112,13 +112,30 @@ end
 -- what makes every reactor on one run of rf-pipe work from a single pool at a single mixed
 -- temperature, maintained by the engine, with no connectivity code anywhere in this mod.
 --
--- The boiler's own conversion is neutered rather than used, and energy_consumption is what does
--- it: at 1 W the engine can move on the order of one unit per fifty hours whatever the
--- temperatures are, which is nothing beside the simulation. target_temperature is NOT what makes
--- it safe -- plasma runs six to eight orders of magnitude above 165 C, so reasoning from the
--- temperature delta proves nothing. Measured rather than argued: a reactor seeded at 100 C, below
--- the target, and one seeded at 1e6 C, above it, both lose plasma only at the rate the simulation
--- burns it, and neither produces reactor energy the engine was not asked for.
+-- The boiler's own conversion is neutered rather than used, and #101 measured how -- correcting
+-- this comment, which had it backwards. It used to say "at 1 W the engine can move on the order of
+-- one unit per fifty hours whatever the temperatures are" and that "target_temperature is NOT what
+-- makes it safe [...] so reasoning from the temperature delta proves nothing". The delta is in
+-- fact the entire mechanism.
+--
+-- What the engine does, measured by scripts/probe-target-temperature.ps1 on boilers the simulation
+-- never touches, so the engine's conversion is separated from what control.lua burns:
+--
+--   * ABOVE the target it moves NOTHING. Not slowly -- exactly zero, at every target from 15 to
+--     1e6 and every draw up to 50 MW, with plasma at the shipped 2.42e8 C equilibrium. A fusing
+--     reactor would convert nothing even if energy_consumption were 50 MW.
+--   * BELOW the target it follows the documented formula to two parts in a thousand:
+--     energy_consumption / (heat_capacity * (target - input)), with heat_capacity 1000 J/unit/C.
+--
+-- So the 1 W is not what protects a running reactor -- being hotter than the target is. The 1 W is
+-- what protects an IDLE one: reactor-logic clamps plasma to min_temperature_c = 15, which is below
+-- this target, so a cold reactor sits in the converting regime and moves one unit per 41.7 hours.
+-- That is the "fifty hours" the old wording half-remembered, and it applies at the floor only.
+--
+-- One consequence, derived rather than observed and written up in docs/research/target-temperature.md:
+-- apply() SETS box 1 and ACCUMULATES box 2, so plasma the engine took is discarded while reactor
+-- energy it made is kept. At the floor that is about 6.7 W of output nothing paid plasma for --
+-- 1.3e-7 of the reactor's own draw, and negligible until energy_consumption is ever raised.
 --
 local reactor = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-reactor", {
   mining_time = 3,
