@@ -125,8 +125,11 @@ output.**
 ## Consequences
 
 - **ADR 0015 survives, and by arithmetic rather than by a rule.** #52 lands D-D at Q 0.32; +65% on the
-  sold side is about 0.53. Still below break-even, still a machine a player runs at a loss, still a
-  **breeder tier** in the glossary's sense. No per-fuel gate was needed to protect it.
+  sold side is about 0.53. Still below **scientific** break-even, still a **breeder tier** in the
+  glossary's sense. No per-fuel gate was needed to protect it.
+  *(Corrected 2026-08-21: this said "still a machine a player runs at a loss". Measured once #52
+  shipped, a D-D reactor sells 56.1 MW against 50 MW drawn -- above engineering break-even, which is
+  0.1765 here. See `CONTEXT.md` on **break-even**.)*
 - **ADR 0018 is untouched.** An aneutronic reactor releases no neutrons, so a blanket on one breeds
   nothing "by arithmetic rather than by a missing field" — blanket heat can therefore only ever be
   `rf-reactor-energy`, never the aneutronic fluid, and the two-category split is unaffected.

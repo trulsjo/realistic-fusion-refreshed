@@ -47,7 +47,8 @@ Run with the box kept full and unlimited power:
 
 | | settles at | Q | thermal out | burn |
 |---|---|---|---|---|
-| D-D, 20 min | 8.77×10⁸ °C | 2.14 | 133 MW | 3.7 u/s |
+| ~~D-D, 20 min~~ | ~~8.77×10⁸ °C~~ | ~~2.14~~ | ~~133 MW~~ | ~~3.7 u/s~~ |
+| **D-D, 20 min (#52)** | **2.42×10⁸ °C** | **0.32** | **56.1 MW** | 1.0 u/s |
 | D-T, 1 min | 2×10⁹ °C — **the clamp** | 96 | 4 127 MW | 34 u/s |
 
 D-D balances: heating plus alpha self-heating against the confinement loss, partway up the curve.
@@ -103,6 +104,13 @@ works.** D-D falls from Q 2.14 to Q 0.32, 107 MW of fusion power to 16 MW, takin
 arithmetic below with it. That is the physics being right — a D-D plasma at 10²⁰ m⁻³ with 30 s of
 confinement is genuinely nowhere near ignition, and the shipped tier only looks net positive because
 the dominant radiative loss is absent from the model.
+
+> **It landed 2026-08-21 (#52), and the prediction was exact** — Q 0.3205, 16.02 MW of fusion. One
+> word needs care, though: the tier is *not* net negative. It still sells **56.1 MW against the 50 MW
+> it draws**, because the radiated X-rays heat the first wall and that heat is recovered. So D-D fuses
+> at a loss and sells at a small profit: below **scientific** break-even, above **engineering**
+> break-even, which `CONTEXT.md` now distinguishes. Every figure in this note below this line is the
+> radiation-free one unless it says otherwise.
 
 ## Ignition is a control change, not a runaway
 

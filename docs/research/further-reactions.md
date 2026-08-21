@@ -639,8 +639,9 @@ That is the best of anything in this note that is not already shipped — better
 2.7× better than T-T's 0.21 — and it is still below 1, so **T-He3 cannot ignite in this model
 either**, and it is trapped at the cold root in both reactors exactly as D-He3 and He3-He3 are.
 
-**But look at what it does on the model as it actually ships**, with no radiation term, because that
-is what a player would see if a row went in tomorrow:
+**But look at what it does on the model as it shipped when this was written**, with no radiation term
+— #52 added one on 2026-08-21, so this comparison is now historical rather than a prediction of what
+a player would see:
 
 | | radiation-free (shipped model) | with bremsstrahlung |
 |---|---|---|

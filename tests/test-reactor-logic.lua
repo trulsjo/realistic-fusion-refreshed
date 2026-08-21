@@ -149,8 +149,9 @@ end
 -- hydrogenic. Helium-3 is Z = 2, so they are wrong for the other two, and radiation goes as
 -- Z_eff * n_e^2. #52 must not bake hydrogen's constants in; these are the numbers it has to read.
 --
--- Nothing shipped consumes them yet, because there is no radiation term to consume them. They are
--- asserted here so that the row a later editor writes, or flattens, fails at the bench.
+-- Consumed by step() since #52 -- both by the radiation term and by the heat capacity, which carried
+-- the same hydrogenic assumption. Asserted here so that the row a later editor writes, or flattens,
+-- fails at the bench rather than silently under-radiating a tier.
 for _, case in ipairs({
   { "rf-d-d-plasma",     1.0, 1.0     },
   { "rf-d-t-plasma",     1.0, 1.0     },
@@ -829,15 +830,18 @@ check(hot_state.q_factor < 1, "which is below SCIENTIFIC break-even, by decision
 -- The reactor therefore radiates hard, recovers most of it as wall heat, and clears its own heating
 -- bill: 56.1 MW sold against 50 MW drawn, net +6.1 MW.
 --
--- WHAT THAT LEAVES OPEN, and it is not this file's to close: CONTEXT.md defines a breeder tier as one
--- "which consumes more power than it makes", and ADR 0015 rests on the same phrase. Under the term as
--- implemented that is false of D-D -- it makes slightly more than it consumes, at a tenth of what it
--- used to. Either the glossary means scientific break-even and should say so, or the radiation should
--- not be sold, or the tier really is meant to be marginally positive. That is a decision, so this
--- block asserts the measurement and says plainly that the wording above it is now in tension with it.
+-- THIS FORCED A VOCABULARY DECISION, AND IT WAS TAKEN. CONTEXT.md used to define a breeder tier as
+-- one "which consumes more power than it makes", which the measurement above makes false. Truls chose
+-- to fix the wording rather than stop selling the radiation (2026-08-21): a breeder tier is now one
+-- that "makes no meaningful power", and CONTEXT.md carries a **break-even** entry distinguishing the
+-- scientific sense (Q = 1) from the engineering one (0.1765 here). D-D sits between them.
+--
+-- The alternative was to exclude the radiation from what is sold, which would have made the tier a
+-- genuine drain -- and would also have cut D-T's output, since a D-T reactor at the clamp radiates
+-- hard and currently sells all of it. Rejected as unphysical: the X-rays really do heat the wall.
 near(out_w / 1e6, 56.12, 0.01, "it sells 56.1 MW for the 50 MW it draws")
 check(out_w > SPEC.heating_power_w,
-  "so it is marginally NET POSITIVE, which is not what #52's premise or CONTEXT.md's glossary says",
+  "so it is marginally NET POSITIVE, which is what CONTEXT.md's break-even entry now describes",
   string.format("out %.4g W vs heating %.4g W, net %+.3g W",
     out_w, SPEC.heating_power_w, out_w - SPEC.heating_power_w))
 near((1 - SPEC.capture_efficiency) / SPEC.capture_efficiency, 0.1765, 0.01,

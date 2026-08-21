@@ -8,9 +8,9 @@ Accepted. Settles item **3** of
 [#37](https://github.com/trulsjo/realistic-fusion-refreshed/issues/37) — what under-supplying a
 reactor should do.
 
-**Depends on [ADR 0015](0015-the-d-d-tier-is-a-breeder.md).** Under the radiation-free model shipped
-today the behaviour this ADR accepts does not exist; it appears only once the bremsstrahlung term is
-carried. Split from ADR 0015 because it has a different blast radius: that one governs the technology
+**Depends on [ADR 0015](0015-the-d-d-tier-is-a-breeder.md).** The behaviour this ADR accepts exists
+only once the bremsstrahlung term is carried, which it now is (#52, 2026-08-21) -- when this was
+written the model was radiation-free and the behaviour was still in the future. Split from ADR 0015 because it has a different blast radius: that one governs the technology
 tree, this one governs what tooltips and status text have to say.
 
 Decided by Truls, 2026-08-19.
