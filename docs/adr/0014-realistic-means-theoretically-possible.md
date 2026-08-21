@@ -17,10 +17,17 @@ Decided by Truls. Recorded here because it is a decision, not a consequence of o
 
 ## Context
 
-The D-D tier ships at Q 2.14 — 133 MW of thermal output against 50 MW of confinement heating — so a
-player's first reactor pays for itself. That reading was never chosen. It is what falls out of the
-cross-section data at the shipped density and confinement time when the model carries no radiation
-loss at all.
+The D-D tier **shipped, when this was written,** at Q 2.14 — 133 MW of thermal output against 50 MW of
+confinement heating — so a player's first reactor paid for itself handsomely. That reading was never
+chosen. It is what fell out of the cross-section data at the shipped density and confinement time when
+the model carried no radiation loss at all.
+
+> **Re-anchored 2026-08-21 (#52).** The term is in, and this ADR's prediction held: the tier now
+> settles at **2.42×10⁸ °C, Q 0.32, 56.1 MW sold against 50 MW drawn**. Read the paragraphs below as
+> the argument that produced that change rather than as a description of what ships. One nuance this
+> ADR could not have known: at Q 0.32 the tier is below *scientific* break-even but slightly above
+> *engineering* break-even, because the radiated X-rays are recovered as wall heat — see `CONTEXT.md`
+> on **break-even**, which now distinguishes the two.
 
 [`bremsstrahlung.md`](../research/bremsstrahlung.md) checked the dominant omission against the NRL
 Plasma Formulary and found that counting it takes D-D from Q 2.14 to well under break-even. The

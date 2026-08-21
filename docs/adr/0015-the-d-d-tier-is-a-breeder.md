@@ -80,6 +80,19 @@ which is the thing this project exists not to be. #52 carries it.
 **Confinement time stays at 30 s, and D-D arrives below break-even.** Q 0.32 at full supply — 16 MW
 of fusion power against 50 MW of heating. (Q 0.45 at its density optimum; see
 [ADR 0016](0016-plasma-density-is-a-player-lever.md), which does not change the tier's character.)
+
+> **Confirmed 2026-08-21 (#52), with one word sharpened.** The term shipped and this figure was
+> exactly right: 2.42×10⁸ °C, Q 0.3205, 16.02 MW of fusion against 50 MW of heating, measured through
+> the shipped `step()` and pinned in `tests/test-reactor-logic.lua`.
+>
+> "Below break-even" here means **scientific** break-even, `Q = 1`. It is not below *engineering*
+> break-even: a plant pays for itself at `Q ≥ (1 − capture_efficiency) / capture_efficiency`, which is
+> 0.1765, and the tier sells **56.1 MW against the 50 MW it draws**. The X-rays this ADR added heat
+> the first wall and that heat is recovered, so the reactor fuses at a loss and sells at a small
+> profit. That does not change the decision — the tier's product is fuel and its power margin is
+> trivial — but it did make `CONTEXT.md`'s old gloss ("consumes more power than it makes") false, and
+> that has been corrected. Truls chose to fix the wording rather than stop selling the radiation,
+> 2026-08-21.
 The wider ladder this leaves #53 is part of the reason: from 0.32 to 2.08 is a progression, where a
 tier entering at break-even has one rung of headroom before the clamp.
 

@@ -23,9 +23,11 @@
 -- validation block below is that claim as four checks against figures bremsstrahlung.md publishes,
 -- and it is the reason to believe the rest: those four are not fitted here, they fall out.
 --
--- NOTHING SHIPPED USES THIS. scripts/reactor-logic.lua carries no radiation term, no electron
--- density and one temperature; this file adds none of them to it. The model below is local. Whether
--- any of it reaches the simulation is #52 and #98.
+-- WHAT IS SHIPPED AND WHAT IS NOT, since #52 and #98 moved the line. scripts/reactor-logic.lua now
+-- carries the radiation term and the per-fuel electron density, so two of the three generalisations
+-- below are no longer local to this file. The third still is: the shipped model has ONE temperature,
+-- and every p-11B figure here depends on electrons being colder than ions. That is the one that has
+-- no route into the simulation without a different step().
 --
 -- AND NOTHING RUNS IT FOR YOU. There is no CI here and no scripts/*.ps1 invokes the Lua tests, so
 -- regenerating cross-section-data/reactivities.lua invalidates further-reactions.md silently unless

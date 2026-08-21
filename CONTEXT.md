@@ -41,11 +41,30 @@ distinctly:
   a blanket with nowhere to put tritium makes neither. See
   [ADR 0019](docs/adr/0019-the-blanket-sells-its-capture-heat.md).
 
-**Breeder tier** — a tier whose product is fuel rather than electricity, and which consumes more power
-than it makes. **The D-D tier is one**, by decision and not by shortfall — see
+**Breeder tier** — a tier whose product is fuel rather than electricity, and which makes no meaningful
+power. **The D-D tier is one**, by decision and not by shortfall — see
 [ADR 0015](docs/adr/0015-the-d-d-tier-is-a-breeder.md). Say "breeder tier" of the tier and "D-D
 by-products" of what it makes; do not describe a D-D reactor as a power source, and do not call its
-negative balance a deficit, a shortfall or unfinished balance.
+thin margin a deficit, a shortfall or unfinished balance.
+
+> **Corrected 2026-08-21 (#52), when the radiation term shipped.** This said a breeder tier "consumes
+> more power than it makes", which was written as a prediction and turned out false: measured, a D-D
+> reactor sells **56.1 MW against the 50 MW it draws**. It pays for itself by a whisker. What makes it
+> a breeder tier is that its *product* is fuel and its power margin is trivial — not that the margin
+> is negative. Decided by Truls, 2026-08-21.
+
+**Break-even** — ambiguous on its own, and the two meanings now differ for a tier that ships, so say
+which:
+
+- **Scientific break-even** is `Q = 1`: the plasma releases as much fusion power as the heating put in.
+  This is what "below break-even" means everywhere in `docs/adr/`, and D-D is below it at Q 0.32.
+- **Engineering break-even** is the plant paying for itself, which happens at
+  `Q ≥ (1 − capture_efficiency) / capture_efficiency` — **0.1765** at the shipped 0.85. D-D is *above*
+  it.
+
+A reactor between the two is fusing at a loss and selling at a profit, which is not a contradiction:
+the radiated X-rays heat the first wall and that heat is recovered. **D-D is exactly there.** Never
+write "below break-even" of the D-D tier without saying which one is meant.
 
 ## Reactions
 

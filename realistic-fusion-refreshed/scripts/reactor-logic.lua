@@ -325,9 +325,9 @@ M.fuels = {
 -- them contradict it, and a plasma whose declared electron count disagrees with its declared
 -- composition is a bug nothing would catch. The charges are the physical fact; these two follow.
 --
--- NOTHING SHIPPED CALLS THIS YET, because there is no radiation term to call it -- that is #52, and
--- this exists so that when the term lands it has the right numbers to read instead of hydrogen's
--- constants. tests/test-reactor-logic.lua asserts the four values, and
+-- CALLED BY step() SINCE #52, which is what it was written for: the radiation term above reads both
+-- numbers from here rather than assuming hydrogen, and so does the heat capacity.
+-- tests/test-reactor-logic.lua asserts the four values, and
 -- tests/test-further-reactions.lua carries what they cost against the real radiation formula.
 --
 -- AND `ions` IS DELIBERATELY NOT IN control.lua's FUEL_FIELDS, which is the list that makes a row

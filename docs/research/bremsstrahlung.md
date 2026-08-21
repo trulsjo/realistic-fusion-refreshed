@@ -21,9 +21,15 @@ may act on it.
 **The short version: the claim is wrong in its load-bearing part, and right about something else.**
 Bremsstrahlung does not "bite long before 4.6×10⁹" for D-T — adding it moves that equilibrium to
 about 3.3×10⁹ K, still well above the int32 ceiling the clamp is really there to protect. What it
-does bite is **D-D**, the tier that currently works: adding bremsstrahlung drops the shipped D-D
-reactor from Q 2.1 to Q 0.32. The tier is playable *because* the term is missing. Details and
-arithmetic below.
+does bite is **D-D**: adding bremsstrahlung drops the shipped D-D reactor from Q 2.1 to Q 0.32.
+Details and arithmetic below.
+
+> **The term shipped on 2026-08-21 (#52)**, so this note has stopped being a prediction. Everything
+> below held: D-D settles at 2.42×10⁸ °C, Q 0.3205. What did NOT hold is the sentence that used to
+> end the paragraph above — "the tier is playable *because* the term is missing". It is playable with
+> the term: it sells **56.1 MW against the 50 MW it draws**, because the X-rays heat the first wall
+> and `step()` sells that heat. Below *scientific* break-even, above *engineering* break-even; see
+> `CONTEXT.md` on **break-even**.
 
 ## What bremsstrahlung is, for a reader who does not do plasma physics
 
@@ -464,7 +470,14 @@ the paper itself**. Pressure is separately capped by MHD stability — the Troyo
 was **not sourced in this pass at all** and is mentioned only so the list is not misleadingly short.
 Neither applies to this model, which has no plasma current, no field and no geometry.
 
-## What adding it to this model would take
+## What adding it to this model took
+
+> **Done, 2026-08-21 (#52).** This section was written as an estimate and is kept as one, because the
+> estimate was close: the sketch below is what landed, with three differences worth knowing. `n_e` and
+> `Z_eff` come off the fuel row through `M.electrons` rather than being constants (#98); the HEAT
+> CAPACITY needed the same treatment, because `3NkT` assumed one electron per ion and helium-3 brings
+> two; and the two drains are clamped **jointly and scaled**, not one after the other, or a hot thin
+> plasma sells the difference between them. Four lines and a guard rather than two.
 
 Mechanically, almost nothing — which is exactly the trap. In `M.step`, alongside the existing
 `loss_j`:
