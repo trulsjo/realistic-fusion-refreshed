@@ -21,6 +21,25 @@ local SPECS = {
   ["rf-aneutronic-reactor"] = logic.aneutronic_reactor,
 }
 
+-- The temperature apply() stamps on the reactor energy it writes, memoised per reactor by
+-- energy_temperature() below and taken from the prototype rather than hardcoded here. Nothing
+-- reads it -- the exchanger and the converter both burn their fluid by fuel_value -- so this is
+-- about what a player sees in the pipe and nothing else. See CONTEXT.md on HOST ARTEFACT (#46).
+local ENERGY_TEMPERATURE = {}
+
+-- Memoised at the point of use rather than filled by check_prototypes(), and that is not a
+-- preference. check_prototypes() runs from on_init and on_configuration_changed only -- NOT from
+-- on_load -- so a table filled there would be empty for every ordinary save load, apply() would
+-- write a nil temperature, and the engine would quietly reset the fluid to its default. Which is
+-- 15: exactly the literal this replaced, so the bug would have looked like nothing happening.
+local function energy_temperature(name)
+  local cached = ENERGY_TEMPERATURE[name]
+  if cached then return cached end
+  local resolved = prototypes.entity[name].target_temperature
+  ENERGY_TEMPERATURE[name] = resolved
+  return resolved
+end
+
 -- ADR 0005 pre-authorises throttling the simulation to a coarser cadence and requires that doing
 -- so be a change in one place. This is that place: nothing else in the mod knows how often the
 -- simulation steps, and the step itself is written in terms of elapsed seconds.
@@ -249,10 +268,15 @@ end
 
 --- Apply one reactor's step to the world.
 local function apply(entity, spec, plasma, result)
-  -- Spending straight out of the buffer is what makes the reactor's draw follow the simulation
-  -- rather than a fixed prototype figure: the network refills what was spent, so a brownout shows
-  -- up as a plasma that cannot hold its temperature. Measured on a reactor given 10 kW instead of
-  -- the 50 MW it wants: the buffer sits empty and the plasma never leaves six figures.
+  -- Spending straight out of the buffer rather than declaring a fixed prototype consumption: the
+  -- network refills what was spent, so a brownout shows up as a plasma that cannot hold its
+  -- temperature. Measured on a reactor given 10 kW instead of the 50 MW it wants: the buffer sits
+  -- empty and the plasma never leaves six figures.
+  --
+  -- This used to claim the mechanism makes the draw "follow the simulation". It does not, and #37
+  -- recorded as much when it closed: heating_power_w is a CONSTANT, so a supplied reactor draws
+  -- the same 50 MW whether it is barely fusing or sitting at the clamp. Only the SHORTFALL follows
+  -- anything. #46 rested part of its case on the retired claim.
   entity.energy = entity.energy - result.heating_used_j
 
   local box = entity.fluidbox
@@ -314,6 +338,14 @@ local function apply(entity, spec, plasma, result)
     -- energy. The temperature is stated rather than left out, because omitting it resets the
     -- fluid to its default every tick; nothing reads it, since the heat exchanger burns this by
     -- fuel_value.
+    --
+    -- It is READ FROM THE PROTOTYPE rather than written as a literal, and that is the whole of
+    -- #46's second item. This used to be a hardcoded 15, which is a number a player hovering the
+    -- line reads as room temperature and therefore as a bug -- and 15 is exactly what the engine
+    -- itself defaults an unset target_temperature to, so the literal was the absence of an answer
+    -- rather than an answer. Deriving it means the pipe and the reactor's own tooltip cannot
+    -- disagree, whatever the target becomes: whether 165 is the RIGHT number is #46's third item
+    -- and is still open, waiting on a probe.
     local produced = box[2]
     local amount = result.energy_units + (produced and produced.amount or 0)
     -- This box's own capacity. It used to say "the segment's, because get_capacity reports the
@@ -332,7 +364,11 @@ local function apply(entity, spec, plasma, result)
     -- interchangeable -- see prototypes/fluids.lua. Writing the wrong one here would be rejected by
     -- the box's filter and lose the reactor's entire output silently, which is why
     -- check_energy_outlets() below ties this field to the prototype rather than trusting it.
-    box[2] = { name = spec.energy_fluid, amount = amount, temperature = 15 }
+    box[2] = {
+      name = spec.energy_fluid,
+      amount = amount,
+      temperature = energy_temperature(entity.name),
+    }
   end
 
   -- What the reaction bred, if there is anywhere to put it. A reactor with no collector simply
@@ -560,6 +596,24 @@ local function check_energy_outlets()
       error(string.format(
         "%s: sells '%s', which has no fuel_value -- so a heat exchanger or converter burning it " ..
         "would produce nothing. Set one in prototypes/fluids.lua.", name, spec.energy_fluid))
+    end
+
+    -- The temperature apply() stamps on that fluid has to be one the fluid can hold. Cheap to
+    -- check and newly load-bearing: since #46 the stamp is the reactor's own target_temperature
+    -- rather than a literal 15, so raising the target past the energy fluid's max_temperature
+    -- would make every write fail -- the same silent total loss the filter check above exists to
+    -- prevent, arriving by a different door. prototypes/fluids.lua declares max_temperature on
+    -- both energy fluids for exactly this reason; this is what stops the pair drifting.
+    -- Never nil to guard against: the 2.0.77 LuaEntityPrototype docs say target_temperature
+    -- "Defaults to 15 if not set", so the read below always answers a number even for a boiler
+    -- that declares none. Which is why energy_temperature()'s memo is safe to key on truthiness.
+    local target = prototypes.entity[name].target_temperature
+    if target > fluid.max_temperature then
+      error(string.format(
+        "%s: stamps its output at the prototype's target_temperature of %s C, but '%s' holds at " ..
+        "most %s C -- so every unit the reactor produced would be rejected. Raise " ..
+        "max_temperature in prototypes/fluids.lua or lower the target in prototypes/entities.lua.",
+        name, tostring(target), spec.energy_fluid, tostring(fluid.max_temperature)))
     end
 
     -- Somewhere for it to go. Any entity that is not this reactor and has a fluid box filtered to
