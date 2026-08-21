@@ -559,23 +559,39 @@ change the note proposes, and neither document mentions it.
 
 ### What would have to change in the repo
 
-Not done here — this note modifies nothing but itself, as instructed — and the wording is Truls's
-call. What is factually wrong and should not survive as written:
+~~Not done here — this note modifies nothing but itself, as instructed — and the wording is Truls's
+call.~~ **All three are done. Audited 2026-08-21 (#98) and struck below, with where each was
+repaired.** The section is kept rather than deleted because the three claims it names were really
+made, and a reader meeting them in an older commit needs to find out here that they went.
 
-1. **`realistic-fusion-refreshed/scripts/reactor-logic.lua`, lines 115–119.** "would bite long before 4.6e9" is
+1. ~~**`realistic-fusion-refreshed/scripts/reactor-logic.lua`, lines 115–119.** "would bite long before 4.6e9" is
    not true; it moves the equilibrium to 3.26×10⁹. The sentence can be repaired without giving up the
    conclusion — the clamp *should* stay, because the int32 ceiling is a hard constraint and reason 2
    in `d-t-ignition.md` was always the load-bearing one. What has to go is the claim that
-   bremsstrahlung justifies it.
-2. **`docs/research/d-t-ignition.md`, the "equilibrium that isn't" section, point 1.** Same sentence,
+   bremsstrahlung justifies it.~~
+   **Done.** The claim is gone and the correction is in its place, now at `reactor-logic.lua:146-158`
+   — "That was reasoning rather than arithmetic and it does not survive being checked", followed by
+   the three bullets this note supplied, including that the clamp sheds about 640 MW where
+   bremsstrahlung is 169 MW. The clamp stayed, on the int32 argument, exactly as recommended. **The
+   line range above was already stale before this audit and is staler now** — #98 added about sixty
+   lines to that file — which is the argument against citing line numbers in prose at all.
+2. ~~**`docs/research/d-t-ignition.md`, the "equilibrium that isn't" section, point 1.** Same sentence,
    same problem. Its closing line — "Fixing it properly means a bremsstrahlung term, which would move
    D-D's balance too" — is half right in a useful way: bremsstrahlung *would* move D-D's balance, far
    more than the author seems to have expected, but it would **not** fix the pinned D-T temperature,
-   which is what that paragraph claims it would fix.
-3. **Ticket #37**, whatever it currently says about adding bremsstrahlung to lower the D-T
+   which is what that paragraph claims it would fix.~~
+   **Done**, and done in the form [#51](https://github.com/trulsjo/realistic-fusion-refreshed/issues/51)
+   asked for: `d-t-ignition.md`'s point 1 now carries the old claim struck with `~~…~~` and
+   **"Not supported; see above"** beside it, keeping what remains true — that energy is not invented
+   at the clamp. That file is the precedent this note's own corrections were brought into line with.
+3. ~~**Ticket #37**, whatever it currently says about adding bremsstrahlung to lower the D-T
    equilibrium below the int32 ceiling. It will not. If the pinned temperature signal is the goal,
    the levers that reach it are `τ_E`, `heating_power_w`, `particles_per_unit`, or a different signal
-   encoding — not a radiation term.
+   encoding — not a radiation term.~~
+   **Moot.** #37 was closed on 2026-08-19, and its body carries no such claim — grepping it for
+   `int32`, `bremsstrahlung`, `4.6` and `ceiling` finds only an unrelated note about a buffer
+   overshooting its declared capacity. The pinned-signal question moved to its own spec, #54 through
+   #58, which is where the levers this item lists are being weighed. **Nothing to repair.**
 
 The honest one-line summary for whoever picks this up: **bremsstrahlung is real, it is a genuine gap
 in the model, adding it is four lines — and it would cost the D-D tier and buy nothing on D-T.**
