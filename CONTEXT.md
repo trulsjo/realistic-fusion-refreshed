@@ -36,7 +36,10 @@ distinctly:
 - **D-D by-products** — tritium and helium-3 arising from the D-D reaction itself. The early route; the
   reactors are the breeder.
 - **Blanket breeding** — tritium bred from lithium in a blanket on a reactor. The later upgrade tier,
-  and the route real D-T reactors use.
+  and the route real D-T reactors use. It has **two** products, not one: the capture reactions are
+  exothermic, so a blanket sells heat as well as breeding tritium, and the heat follows the breeding —
+  a blanket with nowhere to put tritium makes neither. See
+  [ADR 0019](docs/adr/0019-the-blanket-sells-its-capture-heat.md).
 
 **Breeder tier** — a tier whose product is fuel rather than electricity, and which consumes more power
 than it makes. **The D-D tier is one**, by decision and not by shortfall — see
@@ -116,6 +119,16 @@ Measured, both of them, by `scripts/check-brownout.ps1`.
 **Q-factor** — the ratio of fusion power produced to heating power supplied. Exposed to the player as a
 circuit signal.
 
+**Q is a plasma statistic and only a plasma statistic.** A blanket's heat is released in a shell
+outside the plasma, so it is **excluded** from Q however much of the reactor's output it becomes
+(ADR 0019). The consequence is deliberate and worth knowing before reading a Q as a verdict on a
+machine: a blanketed reactor is economically better than its Q says. Q is not an economic number.
+
+**Blanket share** — the fraction of a reactor's sold energy that came from its blanket rather than its
+plasma, exposed as a third circuit signal and expressed as a percentage of the **total**. Not the
+*uplift* over a bare reactor, which is a larger number for the same machine — uplift is recoverable as
+`share / (1 - share)` and is deliberately not what the signal carries.
+
 **Tick cadence** — how often the simulation steps. Deliberately separate from the rate computation, so
 throttling is a configuration change. See ADR 0005.
 
@@ -193,6 +206,26 @@ Unlocking vanilla's turbine ourselves is **redundant rather than early** under B
 `steam-turbine` to `bob-steam-turbine-1` at the same science tier behind fewer prerequisites. Should
 Bob's ever become an integration target rather than a coexistence one (ADR 0007 defers, does not
 refuse), the thing to drop would be *our* unlock — Bob's already removes fission's.
+
+**Capture efficiency** — what fraction of everything leaving a plasma is recovered as reactor energy.
+Heat *recovery*, not heat-to-work: Factorio's turbine does the conversion and loses nothing, which is
+precisely why this term exists. It is **the only thing standing between this mod and perpetual
+motion** — at 1.0 a reactor that never fuses would sell back exactly the heating it was given and pay
+for itself for ever — and it also stands in for the divertor, cryoplant and magnet power the
+simulation does not model. Never describe it as a fudge factor, and never raise one toward 1.0 without
+reading [ADR 0020](docs/adr/0020-plant-efficiency-is-researchable.md).
+
+**Plant efficiency** — capture efficiency as a thing a player improves, by research, in finite steps
+that each close half the remaining distance to a ceiling below 1.0. Named for both jobs the constant
+does, which is why it is not "heat recovery"; the industry's own "balance of plant" means the same and
+reads as jargon. **The neutronic route only** — direct energy conversion is not researchable, and the
+two routes converging is what makes this file's claim about direct energy conversion literally rather
+than approximately true.
+
+> **Both of the terms above ADR 0019 and ADR 0020 introduce are decided and not yet built.** No
+> `rf-signal-blanket-share` and no `rf-plant-efficiency` technology exists yet, the blanket sells no
+> heat, and capture efficiency is still a constant no research touches. The terms are fixed now
+> because a decision fixes vocabulary, which is all this file does. Remove this note when both ship.
 
 ## Predecessors
 
