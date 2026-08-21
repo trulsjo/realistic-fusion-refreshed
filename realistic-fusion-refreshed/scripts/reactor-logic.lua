@@ -291,9 +291,18 @@ M.fuels = {
   -- and trapped at full, so the two tiers now differ in kind rather than in degree: one has an
   -- operating density and the other has no operating point.
   --
-  -- ADR 0014 still makes a marginal tier legitimate. WHETHER THIS ONE IS ACCEPTABLE AT ALL is a
-  -- balance decision reserved for Truls by #52's last criterion, and nothing here may be tuned to
-  -- avoid asking it. tests/test-reactor-logic.lua carries the fill sweeps.
+  -- AND THE CLAMP IS NO LONGER THE LEVER, which matters because #58 exists to raise it. Measured
+  -- with the term carried, lifting max_temperature_c does nothing for this reaction: Q saturates at
+  -- 0.0224 and stops improving past 3e9, because radiation now sets the equilibrium before the
+  -- ceiling does. The same test gave Q 16 at a 7e9 ceiling before #52. Whatever rescues this tier is
+  -- not the clamp.
+  --
+  -- DECIDED: LEFT AS IT IS, for now (Truls, 2026-08-21, #52's last criterion). ADR 0014 makes a
+  -- marginal tier legitimate, and keeping this one costs almost nothing in code -- the row, the fluid
+  -- and the technology all already exist, where removing it would mean deleting prototypes and
+  -- superseding ADR 0010's prototype set. The cost is a player's, not the codebase's: someone
+  -- researches the last tier and finds it will not fuse. Nothing here may be tuned to hide that.
+  -- tests/test-reactor-logic.lua carries the fill sweeps.
   ["rf-he3-he3-plasma"] = {
     reaction = "He3-He3",
     energy_per_reaction_j = 12.859e6 * 1.602176634e-19,
