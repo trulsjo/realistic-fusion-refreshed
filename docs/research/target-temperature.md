@@ -284,10 +284,11 @@ sub-fusion plasma reaches the floor in under a second, and stays until heating r
 built before its power, or one caught in a blackout, is in it the whole time. So the effect is
 continuous rather than occasional — and still invisible, because nothing is sold.
 
-**What each repair would cost.** Not a recommendation between them —
-[#103](https://github.com/trulsjo/realistic-fusion-refreshed/issues/103) reserves the choice, and each
-option asks what a plasma below the floor actually *is*, which this simulation has no answer to
-today.
+**What each repair would cost, and which was taken.** This was written while
+[#103](https://github.com/trulsjo/realistic-fusion-refreshed/issues/103) still reserved the choice, on
+the grounds that each option asks what a plasma below the floor actually *is* — a question the
+simulation had no answer to. [ADR 0021](../adr/0021-the-floor-is-where-the-model-stops.md) answered
+it, and the table below is kept with the costings intact because the sizes are the argument.
 
 | | conjured after | what it costs |
 |---|---:|---|
