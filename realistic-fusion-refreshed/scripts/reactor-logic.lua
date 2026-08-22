@@ -426,11 +426,19 @@ M.reactor = {
   -- What was taken instead: rf-reactor's target went to 550, which shrinks the leak to 1.9 W for
   -- nothing, because the rate goes as 1/(target - floor). See prototypes/entities.lua.
   --
-  -- THE 27 kW IS NOT A NEW PROBLEM AND IS NOT SOLVED HERE -- it is #103. Same class as the 34 W
-  -- loop the comment on left_j records closing, four thousand times the leak #46 was about, and
-  -- unsold and therefore invisible, which is exactly why it has survived this long. #103 measures
-  -- it rather than deriving it, and carries the options; do not change this line for it without
-  -- reading that ticket, because the obvious repairs each ask what a plasma below the floor IS.
+  -- THE CONJURED HEAT IS NOT A NEW PROBLEM AND IS NOT SOLVED HERE -- it is #103. Same class as the
+  -- 34 W loop the comment on left_j records closing, and unsold and therefore invisible, which is
+  -- exactly why it has survived this long.
+  --
+  -- MEASURED under #103 rather than derived: step() reports conjured_j, and
+  -- tests/test-reactor-logic.lua pins 26.6 kW for a full D-D reactor here -- and 322 kW for a full
+  -- He3-He3 one, which is the worst case in the mod and twelve times this figure, because that
+  -- tier holds three times the plasma AND helium-3 brings two electrons per ion. It is also not
+  -- purely radiation: the clamp restores bremsstrahlung PLUS the confinement loss, so the density
+  -- scaling is nearly n^2 rather than exactly it.
+  --
+  -- Do not change this line for #103 without reading that ticket: the obvious repairs each ask what
+  -- a plasma below the floor IS, and this simulation has no answer to that today.
   min_temperature_c = 15,
   max_temperature_c = 2e9,
 }
@@ -664,6 +672,25 @@ function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
   local left_j = kept_j + heating_j + charged_j - retained_j
   if left_j < 0 then left_j = 0 end
 
+  -- ENERGY THIS STEP CREATED FROM NOTHING, reported rather than derived (#103).
+  --
+  -- When the LOW clamp bites, retained_j is larger than the plasma physically has: the temperature
+  -- was put back up to min_temperature_c, so the joules radiated away below the floor are handed
+  -- back. Nobody pays for them. The high clamp is the opposite case and is not this -- there
+  -- retained_j is smaller, and the difference leaves through left_j above, correctly, because it
+  -- really did leave the plasma.
+  --
+  -- Reported as conjured_power_w below because #103 asks for it MEASURED rather than argued, and
+  -- because deriving it outside this function would mean a second implementation of the clamp --
+  -- the mistake #51 was opened about. Nothing reads it in the mod; tests/test-reactor-logic.lua
+  -- does, and pins 26.6 kW here against 322 kW on a full He3-He3 reactor.
+  --
+  -- It does NOT reach the player: left_j is floored at zero just above, so a plasma held at the
+  -- floor sells nothing. That is the property the tests pin, and the whole reason this has gone
+  -- unnoticed. See docs/research/target-temperature.md.
+  local conjured_j = retained_j - new_thermal_j
+  if conjured_j < 0 then conjured_j = 0 end
+
   -- capture_efficiency is what stops a reactor that never fuses from being a free 100% electric
   -- to thermal to electric loop: Factorio's steam turbines lose nothing, so without a loss here a
   -- cold reactor would exactly pay for its own heating forever. It also stands in for everything
@@ -691,11 +718,15 @@ function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
     -- products are: what the plasma does cannot depend on what a player bolted to the outside of
     -- it, so fitting a blanket later starts breeding at once rather than having a backlog to
     -- account for. breed() below is what turns this into tritium.
-    neutrons        = reactions * fuel.neutrons_per_reaction,
-    energy_units    = captured_j / spec.energy_fluid_j_per_unit,
-    heating_used_j  = heating_j,
-    fusion_power_w  = fusion_j / dt,
-    q_factor        = reactivity.q_factor(fusion_j, heating_j),
+    neutrons         = reactions * fuel.neutrons_per_reaction,
+    energy_units     = captured_j / spec.energy_fluid_j_per_unit,
+    heating_used_j   = heating_j,
+    -- What the clamp created from nothing this step, as a power. Zero in every state except a
+    -- plasma pinned at min_temperature_c. As a power rather than joules for the reason
+    -- fusion_power_w is: it does not move with dt. See where it is computed (#103).
+    conjured_power_w = conjured_j / dt,
+    fusion_power_w   = fusion_j / dt,
+    q_factor         = reactivity.q_factor(fusion_j, heating_j),
   }
 end
 

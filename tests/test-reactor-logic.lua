@@ -847,6 +847,80 @@ check(out_w > SPEC.heating_power_w,
 near((1 - SPEC.capture_efficiency) / SPEC.capture_efficiency, 0.1765, 0.01,
   "engineering break-even is Q 0.1765 here, which is the number that decides the sentence above")
 
+-- ---------------------------------------------------------------- the floor conjures (#103)
+
+-- What the temperature clamp creates from nothing, MEASURED rather than derived. #103 exists
+-- because target-temperature.md could only compute this figure from the shipped formula; step()
+-- now reports it, so this is the number the simulation actually produces.
+--
+-- The mechanism: a plasma below min_temperature_c is put back up to it, so the joules it radiated
+-- away are handed back. Nobody pays. It is invisible because left_j is floored at zero, which is
+-- the property the last block here pins.
+
+local function at_floor(spec, fluid, units)
+  return L.step(spec, fluid, units, spec.min_temperature_c, 0, TICK)
+end
+
+-- A cold, unpowered, full D-D reactor -- the state an idle reactor holding plasma sits in.
+local floor_dd = at_floor(SPEC, "rf-d-d-plasma", FULL)
+check(floor_dd.conjured_power_w > 0,
+  "a reactor parked at the floor conjures energy to stay there",
+  string.format("%.4g W", floor_dd.conjured_power_w))
+near(floor_dd.conjured_power_w / 1e3, 26.65, 0.01,
+  "and it is about 27 kW at full fill, which is what #103 was filed on")
+
+-- IT IS NOT PURELY RADIATION, which measuring is what showed. The clamp restores whatever took the
+-- plasma under the floor, and that is bremsstrahlung PLUS the confinement loss E/tau. Brems goes as
+-- n^2 and the loss goes as n, so the scaling is nearly quadratic and measurably not exactly so.
+--
+-- The two terms account for the whole of it. At full fill the plasma holds 1193 J, so E/tau is
+-- 39.8 W, and 26 600 W of bremsstrahlung plus that is 26 640 against the 26 649 measured here.
+local floor_half  = at_floor(SPEC, "rf-d-d-plasma", FULL / 2)
+local floor_tenth = at_floor(SPEC, "rf-d-d-plasma", FULL / 10)
+near(floor_dd.conjured_power_w / floor_half.conjured_power_w, 3.994, 0.01,
+  "halving the fill very nearly quarters it -- 3.994, not 4, and the shortfall is the linear term",
+  string.format("%.6g", floor_dd.conjured_power_w / floor_half.conjured_power_w))
+near(floor_half.conjured_power_w / floor_tenth.conjured_power_w, 24.71, 0.01,
+  "and a fifth of that fill is 24.7 rather than 25, for the same reason and more of it",
+  string.format("%.6g", floor_half.conjured_power_w / floor_tenth.conjured_power_w))
+
+-- THE WORST CASE IN THE MOD IS NOT THE ONE #103 WAS FILED ON. The aneutronic tier holds three times
+-- the plasma, and helium-3 is doubly charged, so it brings two electrons per ion where deuterium
+-- brings one. Density cubed into n^2 gives nine; the electrons give the rest.
+local floor_he3  = at_floor(ANEUTRONIC, "rf-he3-he3-plasma", 3000)
+local floor_dhe3 = at_floor(ANEUTRONIC, "rf-d-he3-plasma", 3000)
+near(floor_he3.conjured_power_w / 1e3, 322.2, 0.01,
+  "a full He3-He3 reactor conjures 322 kW, twelve times the D-D figure the ticket quotes")
+near(floor_dhe3.conjured_power_w / 1e3, 268.5, 0.01, "and a full D-He3 one 269 kW")
+check(floor_he3.conjured_power_w / floor_dd.conjured_power_w > 9,
+  "both are worse than the nine that density alone would give",
+  string.format("%.4g x", floor_he3.conjured_power_w / floor_dd.conjured_power_w))
+
+-- THE PROPERTY THAT MAKES IT INVISIBLE, and the one any fix must not break: none of it is sold.
+-- Not exactly zero for the reason the parked-reactor check above gives -- the round trip through
+-- celsius leaves a few bits -- and 4.6e-15 units a step is 2.8e-7 W against 26.6 kW conjured, which
+-- is eleven orders down.
+near(floor_dd.energy_units, 0, 1e-12, "none of the conjured energy is sold")
+near(floor_he3.energy_units, 0, 1e-12, "nor on the aneutronic tier")
+
+-- AND IT IS NOT LAUNDERED INTO BY-PRODUCTS. A D-D plasma at the floor does breed a trickle -- 4659
+-- neutrons a step -- but that comes from residual fusion, not from the clamp: 3.3e-7 W of it, which
+-- would be there whether or not the floor existed. Asserted as negligible rather than as zero,
+-- because zero is what this used to claim and it is not true.
+check(floor_dd.fusion_power_w < 1e-6,
+  "what fuses at the floor is negligible rather than absent",
+  string.format("%.4g W", floor_dd.fusion_power_w))
+check(floor_dd.neutrons > 0 and floor_dd.neutrons < 1e4,
+  "so its neutron trickle comes from fusion, not from the conjured energy",
+  string.format("%.6g per step", floor_dd.neutrons))
+near(floor_he3.neutrons, 0, 0, "and the aneutronic tier breeds none at all, floor or not")
+
+-- And it is confined to the floor: a reactor anywhere above it conjures nothing at all.
+local hot = L.step(SPEC, "rf-d-d-plasma", FULL, 2.42e8, math.huge, TICK)
+near(hot.conjured_power_w, 0, 0, "a fusing reactor conjures nothing")
+local warming = L.step(SPEC, "rf-d-d-plasma", FULL, 1e6, math.huge, TICK)
+near(warming.conjured_power_w, 0, 0, "and neither does one climbing under full heating")
+
 -- ----------------------------------------------------------------
 
 H.finish()

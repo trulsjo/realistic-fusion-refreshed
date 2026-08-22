@@ -221,22 +221,71 @@ comes from nowhere, and bremsstrahlung goes as `n²√T`. **Trading 6.7 W of una
 another 266 kW of conjured heat is the wrong direction**, however invisible the conjured half is. So
 the floor was left alone and the leak was shrunk by the target instead.
 
-Those figures are derived from the shipped term, not measured — but the same formula and constants
-predict **351 kW at 5×10⁴ °C** against the "around 350 kW" the bremsstrahlung known-limitation
-records, so the chain is trustworthy.
+Those figures are derived rather than measured, because measuring the others would mean actually
+moving the floor. Two things vouch for them: the same formula and constants predict **351 kW at
+5×10⁴ °C** against the "around 350 kW" the bremsstrahlung known-limitation records, and the shipped
+row has since been measured directly at **26.6 kW** against the 27 predicted — see below.
 
-### The larger finding, which is not fixed: #103
+### The larger finding: #103, now measured
 
-**A full cold reactor already conjures about 27 kW to hold 15 °C** — four thousand times the leak #46
-was about, and it predates all of this work. It is unsold, because `left_j` is `inputs − retained_j`
-floored at zero, so when the clamp lifts the temperature `retained_j` rises and nothing reaches the
-player. That invisibility is why it has survived.
+> **Measured 2026-08-22.** The figures below were derived when this note was written. `step()` now
+> reports `conjured_j` directly, and `tests/test-reactor-logic.lua` pins what it returns, so these
+> are what the simulation produces rather than what the formula predicts. Three things the
+> measurement changed.
+
+**A full cold D-D reactor conjures 26.6 kW to hold 15 °C** — close to the 27 kW derived here, and
+four thousand times the leak #46 was about. It predates all of this work. It is unsold, because
+`left_j` is `inputs − retained_j` floored at zero, so when the clamp lifts the temperature
+`retained_j` rises and nothing reaches the player. That invisibility is why it has survived.
+
+**The worst case is not the one the ticket was filed on.** The aneutronic tier holds three times the
+plasma, and helium-3 is doubly charged, so it brings two electrons per ion where deuterium brings one:
+
+| reactor, full box | conjured |
+|---|---:|
+| `rf-reactor`, D-D, 1000 u | **26.6 kW** |
+| `rf-aneutronic-reactor`, D-He3, 3000 u | **269 kW** |
+| `rf-aneutronic-reactor`, He3-He3, 3000 u | **322 kW** |
+
+Twelve times the D-D figure, where density alone would give nine.
+
+**And it is not purely radiation.** The clamp restores whatever took the plasma under the floor, which
+is bremsstrahlung *plus* the confinement loss `E/τ`. Brems goes as `n²` and the loss as `n`, so the
+density scaling is nearly quadratic and measurably not exactly so — halving the fill divides the power
+by 3.994 rather than 4, and a fifth of that fill by 24.71 rather than 25. The two terms account for
+all of it: at full fill the plasma holds 1193 J, so `E/τ` is 39.8 W, and 26 600 + 40 = 26 640 against
+26 649 measured.
+
+**What it does not do**, all pinned by the tests: none of it is sold, on either tier. It is not
+laundered into by-products either — a D-D plasma at the floor does breed a trickle of 4659 neutrons a
+step, but that comes from residual fusion of 3.3×10⁻⁷ W, which would be there whether or not the floor
+existed. The aneutronic tier breeds none at all.
+
+**How long does a reactor sit there?** Indefinitely. It is a state rather than a transient: a
+sub-fusion plasma reaches the floor in under a second, and stays until heating returns. A reactor
+built before its power, or one caught in a blackout, is in it the whole time. So the effect is
+continuous rather than occasional — and still invisible, because nothing is sold.
+
+**What each repair would cost, now that the two terms are separated.** Not a recommendation between
+them — [#103](https://github.com/trulsjo/realistic-fusion-refreshed/issues/103) reserves the choice,
+and each option asks what a plasma below the floor actually *is*, which this simulation has no answer
+to today.
+
+| | conjured after | what it costs |
+|---|---:|---|
+| **as shipped** | 26.6 kW / 322 kW | nothing; the state of play |
+| **gate radiation on ionisation** | ~40 W / ~90 W | a threshold constant the bremsstrahlung note explicitly declined to invent |
+| **destroy plasma instead of restoring heat** | 0 | an idle reactor slowly loses its plasma — a gameplay change, not just a fix |
+| **accept and record it** | 26.6 kW / 322 kW | the known-limitation note must name it, per this ticket |
+
+Gating the radiation is the high-leverage one because bremsstrahlung is **99.85% to 99.97%** of the
+total: the confinement loss left behind is 39.8 W on a full D-D reactor and 89.5 W on a full He3-He3
+one. But it is also the option the bremsstrahlung note already considered and turned down, on the
+grounds that it would mean "inventing a constant to fix a state nothing reads" — and what has changed
+since is only that the state is now known to be worth 322 kW at its worst rather than nothing.
 
 It is the same class as the 34 W loop `control.lua`'s comment on `left_j` records closing — that one
-closed the *selling*, not the *conjuring*. Filed as
-[#103](https://github.com/trulsjo/realistic-fusion-refreshed/issues/103), which measures it rather
-than deriving it and carries the options, each of which asks what a plasma below the floor actually
-*is* — a question this simulation has no answer to today.
+closed the *selling*, not the *conjuring*.
 
 The cost of moving the target at all is not the conversion, it is the coupling: a fluid must be able
 to hold what is stamped on it, and #46's `check_energy_outlets()` guard refuses to load until it can.
