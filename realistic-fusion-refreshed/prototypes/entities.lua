@@ -162,7 +162,28 @@ reactor.pictures = reactor_graphics.pictures
 -- fusing. It is a script rendering and not part of the entity because a boiler cannot animate at
 -- all -- neither structure nor fire will play, both measured; see the file above.
 data:extend({ reactor_graphics.core_animation("rf-reactor-core") })
-reactor.target_temperature = 165
+-- 550 C, and it is a real statement rather than boiler bookkeeping -- #46's third item, settled by
+-- Truls on 2026-08-22 once #101 measured what this field does.
+--
+-- What it is: reactor energy is the primary coolant in all but name, and BOTH exchangers raise
+-- steam to 500 C. A coolant cannot raise steam to its own temperature, so 165 was not merely
+-- arbitrary, it was backwards, and 500 would have been exactly marginal. 550 leaves the approach
+-- margin a real plant has.
+--
+-- Why it is free to move at all: #101 measured that the boiler's own conversion runs ONLY while the
+-- input fluid is colder than this, and is exactly zero at or above it -- at every target from 15 to
+-- 1e6 C and every draw to 50 MW. Plasma fuses six to eight orders above any of that, so a running
+-- reactor converts nothing whatever this says. See docs/research/target-temperature.md.
+--
+-- And raising it SHRINKS the one case that is not zero. An idle plasma parks at min_temperature_c,
+-- below this, where the rate is energy_consumption / (heat_capacity * dT): a bigger delta costs more
+-- joules per unit, so going 165 -> 550 takes the unaccounted output from 6.7 W to 1.9 W.
+--
+-- NOT RAISED FURTHER, and not by oversight. Pushing this higher would shrink that further still, and
+-- was rejected: above about 5000 C no number is a coolant temperature any more, and the point of
+-- this one is that it means something. The floor was left alone for the same reason in reverse --
+-- see min_temperature_c in scripts/reactor-logic.lua.
+reactor.target_temperature = 550
 -- 1 W, and the tooltip's "Max consumption: 1 W" is a consequence of it rather than a bug -- see
 -- heating_note above, and localised_description below, which is where the player is told so.
 reactor.energy_consumption = "1W"
@@ -518,6 +539,18 @@ aneutronic.pictures = aneutronic_graphics.pictures
 -- The moving core, drawn over the still one by scripts/reactor-animation.lua while the reactor is
 -- fusing. Same arrangement as rf-reactor and for the same measured reason: a boiler cannot animate.
 data:extend({ aneutronic_graphics.core_animation("rf-aneutronic-reactor-core") })
+-- LEFT AT 165 WHILE rf-reactor WENT TO 550, and the asymmetry is the decision rather than a
+-- missed edit (Truls, 2026-08-22, #46). This tier has no thermal stage at all: a direct energy
+-- converter decelerates charged particles against collector plates and takes current off them, and
+-- rf-aneutronic-reactor-energy's own description tells the player "Not heat". 550 would assert a
+-- coolant temperature the route does not have, which is the one thing ADR 0018 separates the two
+-- routes to avoid saying.
+--
+-- Cold was considered and rejected: 15 C is the reading #46 was opened about, and the fluid would
+-- have looked broken beside a description saying it is not heat. So 165 stays -- warm, claiming
+-- nothing -- and a player comparing a 550 C line against a 165 C one learns the routes differ,
+-- which is more than either number says alone. 165 is still under this reactor's own plasma floor,
+-- so the engine converts nothing here either.
 aneutronic.target_temperature = 165
 -- 1 W for the reason rf-reactor's is, and the same tooltip consequence. This one draws 200 MW, so
 -- the interpolated figure differs and a hand-written sentence would have been wrong here.

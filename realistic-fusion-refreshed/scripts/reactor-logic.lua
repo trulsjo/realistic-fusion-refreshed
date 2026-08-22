@@ -409,6 +409,28 @@ M.reactor = {
   -- whole mod shares.
   energy_fluid = "rf-reactor-energy",
   -- rf-d-d-plasma's default_temperature and max_temperature.
+  --
+  -- LEFT AT 15 DELIBERATELY, and it was nearly raised. #46 wanted the boiler's own conversion shut
+  -- off entirely, and #101 showed how: that conversion is exactly zero whenever plasma is at or
+  -- above the target, so a floor above the target closes it forever. A floor at a few eV -- the
+  -- boundary the bremsstrahlung note above names as where this model becomes valid -- would have
+  -- done it.
+  --
+  -- Rejected on the cost of holding it. The clamp below puts a cooling plasma back up to this
+  -- number, so the floor is held against radiation by energy that comes from nowhere, and
+  -- bremsstrahlung goes as sqrt(T): a full cold reactor already conjures about 27 kW to hold 15 C,
+  -- and 3 eV would have made it 293 kW. Trading 6.7 W of unaccounted output for another 266 kW of
+  -- conjured heat is the wrong direction, however invisible the conjured half is -- left_j is
+  -- floored at zero below, so none of it is ever sold.
+  --
+  -- What was taken instead: rf-reactor's target went to 550, which shrinks the leak to 1.9 W for
+  -- nothing, because the rate goes as 1/(target - floor). See prototypes/entities.lua.
+  --
+  -- THE 27 kW IS NOT A NEW PROBLEM AND IS NOT SOLVED HERE -- it is #103. Same class as the 34 W
+  -- loop the comment on left_j records closing, four thousand times the leak #46 was about, and
+  -- unsold and therefore invisible, which is exactly why it has survived this long. #103 measures
+  -- it rather than deriving it, and carries the options; do not change this line for it without
+  -- reading that ticket, because the obvious repairs each ask what a plasma below the floor IS.
   min_temperature_c = 15,
   max_temperature_c = 2e9,
 }

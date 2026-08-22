@@ -344,8 +344,9 @@ local function apply(entity, spec, plasma, result)
     -- line reads as room temperature and therefore as a bug -- and 15 is exactly what the engine
     -- itself defaults an unset target_temperature to, so the literal was the absence of an answer
     -- rather than an answer. Deriving it means the pipe and the reactor's own tooltip cannot
-    -- disagree, whatever the target becomes: whether 165 is the RIGHT number is #46's third item
-    -- and is still open, waiting on a probe.
+    -- disagree, whatever the target is. That question -- #46's third item -- is now SETTLED: 550
+    -- for rf-reactor and 165 for rf-aneutronic-reactor, for reasons that live beside each of them
+    -- in prototypes/entities.lua.
     local produced = box[2]
     local amount = result.energy_units + (produced and produced.amount or 0)
     -- This box's own capacity. It used to say "the segment's, because get_capacity reports the
@@ -823,7 +824,7 @@ local function check_steam_sinks()
         -- THE TWO HOPS ARE SPLIT BY HOW THE FLUID CARRIES ITS JOULES, and getting that wrong is what
         -- the second version of this check did. rf-reactor is a boiler too (ADR 0012: it is one so
         -- that mode = "output-to-separate-pipe" gives it plasma in and energy out), and it raises
-        -- rf-reactor-energy to 165 C -- so it looked like a steam source whose sink had to be a
+        -- rf-reactor-energy to 550 C -- so it looked like a steam source whose sink had to be a
         -- generator, and rf-heat-exchanger is not one. But reactor energy carries its joules in its
         -- fuel_value, not in its temperature, and the thing that cashes it is a boiler.
         --

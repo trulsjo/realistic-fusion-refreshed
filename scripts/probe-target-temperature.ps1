@@ -4,9 +4,14 @@
     Probe: what does target_temperature do to a boiler's own fluid conversion?
 
 .DESCRIPTION
-    Asserts nothing. #46 left one item undecided -- whether rf-reactor's target_temperature of
-    165 C is the right number -- and it cannot be settled by reading, because the documentation
-    and this repository disagree about what the field does.
+    Asserts nothing. #46 left one item undecided -- whether rf-reactor's target_temperature was the
+    right number -- and it could not be settled by reading, because the documentation and this
+    repository disagreed about what the field does.
+
+    THAT QUESTION IS NOW ANSWERED and the target is 550 C, so this probe is kept for the reason
+    CLAUDE.md keeps probes rather than for the decision it fed: it stays committed so the next engine
+    version can be asked the same question. Its sweep still starts at 15 and 165 deliberately -- the
+    shipped-at-the-time values are the ones a regression would show up against.
 
     The 2.0.77 BoilerPrototype docs make target_temperature "the temperature that the input fluid
     must reach to be moved to the output fluid box", which makes the conversion rate a function of
@@ -103,7 +108,8 @@ local PLASMA  = "rf-d-d-plasma"
 local SHIPPED_C = 2.42e8
 
 -- The input-temperature ladder, run against ONE variant so the only thing changing is how far the
--- plasma starts from the target. 100 C is below the 165 target; everything above it is above.
+-- plasma starts from the target. Run against the 165 variant, which was rf-reactor's target when
+-- this was written: 100 C is below it and everything above it is above.
 local INPUT_LADDER = { 100, 200, 1e6, SHIPPED_C, 2e9 }
 
 local FILL = 1000  -- the reactor's declared box volume, so every run starts from a full box

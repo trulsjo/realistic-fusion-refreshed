@@ -442,13 +442,17 @@ this table.
 ### The residual boiler leak, since quality multiplies it
 
 `rf-reactor` is a `boiler` in `output-to-separate-pipe` mode with `energy_consumption = 1 W` and
-`target_temperature = 165`. The plasmas declare no `heat_capacity`, so they take
+`target_temperature = 550`. The plasmas declare no `heat_capacity`, so they take
 `FluidPrototype.heat_capacity`'s documented default of `"1kJ"` — "Joule needed to heat 1 Unit by
-1 °C" — and 15 °C to 165 °C is 150 kJ per unit. At 1 W that is **one unit per 150 000 s ≈ 41.7 h**,
-which is the "on the order of one unit per fifty hours" the prototype comment records as measured.
+1 °C" — and 15 °C to 550 °C is 535 kJ per unit. At 1 W that is **one unit per 535 000 s ≈ 148.6 h**.
 Quality takes `energy_consumption` to 2.5 W, so a legendary reactor's engine-side conversion runs at
-one unit per 60 000 s ≈ 16.7 h — **1 MJ per 16.7 h, or 16.7 W**, against 50 MW of heating. Three parts
+one unit per 214 000 s ≈ 59.4 h — **1 MJ per 59.4 h, or 4.7 W**, against 50 MW of heating. One part
 in ten million.
+
+**And it only runs while the reactor is idle**, which [#101](https://github.com/trulsjo/realistic-fusion-refreshed/issues/101)
+established after this note was written: the conversion is exactly zero whenever the plasma is at or
+above the target, so a *fusing* reactor leaks nothing at any quality. The figures above are the cold
+case — a plasma parked at `min_temperature_c`.
 
 And it is a *fuel* leak rather than an energy exploit: the boiler consumes a unit of plasma —
 10²⁰ nuclei — to make 1 MJ, where fusing the same 10²⁰ D-D nuclei releases about 58 MJ. Quality makes

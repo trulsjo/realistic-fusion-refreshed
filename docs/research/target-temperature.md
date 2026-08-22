@@ -9,9 +9,12 @@ only, no bundled mods. Reproduce with:
 
 Opened for [#101](https://github.com/trulsjo/realistic-fusion-refreshed/issues/101), which exists
 because [#46](https://github.com/trulsjo/realistic-fusion-refreshed/issues/46)'s third item — whether
-`rf-reactor`'s `target_temperature` of 165 °C is the right number — could not be settled by reading.
-**Nothing here decides it.** The value is Truls's; this note measures what changing it would cost, and
-the trade-offs are laid out at the end.
+`rf-reactor`'s `target_temperature` of 165 °C was the right number — could not be settled by reading.
+
+> **SETTLED, 2026-08-22.** `rf-reactor` goes to **550 °C**, `rf-aneutronic-reactor` stays at **165**,
+> and `min_temperature_c` is **left at 15**. The measurements are unchanged; the last two sections
+> record the decision and what it turned on, including a larger finding this work uncovered and did
+> not fix ([#103](https://github.com/trulsjo/realistic-fusion-refreshed/issues/103)).
 
 ## The answer in one line
 
@@ -150,13 +153,14 @@ the engine's own path is more permissive — not that the engine refuses.
 
 ## The three candidate values, with what each costs
 
-**Not a recommendation between them beyond what the measurements support. The choice is Truls's.**
+These are the options as they were weighed. The one taken is in the next section.
 
 | | pipe reads | engine conversion at the floor | needs `max_temperature` raised | coherent with the steam route |
 |---|---|---|---|---|
-| **15** | 15 °C | **exactly zero, always** | no | no |
-| **165** (shipped) | 165 °C | 6.7 W | no | no |
-| **500** | 500 °C | 2.1 W | **yes, to ≥ 500** | yes |
+| 15 | 15 °C | **exactly zero, always** | no | no |
+| 165 (was shipped) | 165 °C | 6.7 W | no | no |
+| 500 | 500 °C | 2.1 W | yes, to ≥ 500 | marginal — equals its own steam |
+| **550 — chosen** | **550 °C** | **1.9 W** | **yes, to ≥ 550** | **yes, with an approach margin** |
 
 Three things the numbers say that the ticket could not:
 
@@ -167,34 +171,76 @@ Three things the numbers say that the ticket could not:
 - **500 leaks *less* than 165, not more.** A bigger ΔT costs more joules per unit, so the rate falls.
   Higher targets widen the band of input temperatures in which conversion can happen, but plasma is
   either at its floor or fusing, so the band is not where the cost is.
-- **Nothing about balance is at stake at any of the three.** At the shipped 1 W the largest effect in
-  the table is 6.7 W. This is a display decision, which is what #46 suspected and could not confirm.
+- **Nothing about balance is at stake at any of them.** At the shipped 1 W the largest effect in the
+  table is 6.7 W. This is a display decision, which is what #46 suspected and could not confirm — with
+  the sharp caveat that the *floor* is not a display decision at all, and is where the real energy is.
+  See #103.
 
-### The recommendation asked for, which is not a decision
+### The decision, and the thing that nearly went wrong
 
-**If asked: 500 for `rf-reactor`, and treat `rf-aneutronic-reactor` as a separate question.**
+**`rf-reactor` → 550 °C. `rf-aneutronic-reactor` → stays 165. The floor stays 15.** Truls,
+2026-08-22.
 
-The case for 500 on the neutronic side is that it wins on both axes at once rather than trading them
-off — it is the only value coherent with the 500 °C steam the tier's own exchangers raise, *and* it
-leaks a third of what the shipped 165 does. There is no measurement here that argues against it. Its
-cost is entirely the coupling below.
+**550 rather than 500**, which is where the recommendation started. Reactor energy is the primary
+coolant in all but name, and a coolant cannot raise steam to its own temperature — both exchangers
+make 500 °C steam, so 500 was exactly marginal and 165 was backwards. 550 leaves the approach margin a
+real plant has. It also takes the leak from 6.7 W to **1.9 W** for free, since the rate goes as
+`1/(target − floor)`.
 
-The case for leaving the aneutronic reactor alone is that no measurement here touches it. Its route has
-no thermal stage at all, so the question there is not "which temperature" but "should this fluid read as
-hot at all", and that is a claim about what the tier is rather than about what the engine does.
+**The aneutronic reactor stays at 165, and the asymmetry is the decision.** That route has no thermal
+stage — a direct energy converter decelerates charged particles against collector plates — and the
+fluid's own description already tells the player "Not heat". 550 would assert a thermal character
+[ADR 0018](../adr/0018-energy-is-contained-and-no-pipe-carries-it.md) separates the two routes
+precisely to avoid claiming. Cold was rejected too: 15 °C is the reading #46 was opened about. A player
+comparing a 550 °C line against a 165 °C one learns the routes differ, which is more than either
+number says alone.
 
-**`target = 15` is the option to take if the 6.7 W is ever judged to matter more than the display**,
-because it is the only value that closes the converting regime completely. Nothing measured here says
-6.7 W matters.
+**And the floor was nearly raised, which would have been much worse.** Since conversion is exactly
+zero at or above the target, a floor above the target closes the leak *completely* — and 3 eV, the
+boundary the bremsstrahlung note names as where this model becomes valid, was chosen for it. Then the
+cost of holding a floor was computed:
 
-The cost of **500** is not the conversion, it is the coupling: `rf-reactor-energy` and
-`rf-aneutronic-reactor-energy` would both need `max_temperature` raised to at least 500, and #46's
-guard means the mod refuses to load until they are — so the pair moves together or not at all.
+| floor | conjured to hold it against radiation |
+|---|---|
+| **15 °C (shipped)** | **27 kW** |
+| 165 °C | 33 kW |
+| 550 °C | 45 kW |
+| 5 000 °C | 114 kW |
+| 34 540 °C (3 eV) | **293 kW** |
 
-And the aneutronic asymmetry [#101](https://github.com/trulsjo/realistic-fusion-refreshed/issues/101)
-raised stands untouched by any of this: `rf-direct-energy-converter` has no thermal stage, so a hot
-number on `rf-aneutronic-reactor-energy` is a claim about heat that tier does not make. Nothing
-measured here argues for giving both reactors the same target.
+The clamp puts a cooling plasma back up to `min_temperature_c`, so the floor is held by energy that
+comes from nowhere, and bremsstrahlung goes as `n²√T`. **Trading 6.7 W of unaccounted output for
+another 266 kW of conjured heat is the wrong direction**, however invisible the conjured half is. So
+the floor was left alone and the leak was shrunk by the target instead.
+
+Those figures are derived from the shipped term, not measured — but the same formula and constants
+predict **351 kW at 5×10⁴ °C** against the "around 350 kW" the bremsstrahlung known-limitation
+records, so the chain is trustworthy.
+
+### The larger finding, which is not fixed: #103
+
+**A full cold reactor already conjures about 27 kW to hold 15 °C** — four thousand times the leak #46
+was about, and it predates all of this work. It is unsold, because `left_j` is `inputs − retained_j`
+floored at zero, so when the clamp lifts the temperature `retained_j` rises and nothing reaches the
+player. That invisibility is why it has survived.
+
+It is the same class as the 34 W loop `control.lua`'s comment on `left_j` records closing — that one
+closed the *selling*, not the *conjuring*. Filed as
+[#103](https://github.com/trulsjo/realistic-fusion-refreshed/issues/103), which measures it rather
+than deriving it and carries the options, each of which asks what a plasma below the floor actually
+*is* — a question this simulation has no answer to today.
+
+The cost of moving the target at all is not the conversion, it is the coupling: a fluid must be able
+to hold what is stamped on it, and #46's `check_energy_outlets()` guard refuses to load until it can.
+So a reactor's target and its energy fluid's `max_temperature` move together or not at all. **In the
+event only one pair moved** — `rf-reactor` and `rf-reactor-energy`, both to 550 —
+because `rf-aneutronic-reactor` stayed at 165 and its fluid therefore stayed at 165 too.
+
+That is the aneutronic asymmetry [#101](https://github.com/trulsjo/realistic-fusion-refreshed/issues/101)
+raised, and it was decided the way the measurement pointed: `rf-direct-energy-converter` has no
+thermal stage, so a hot number on `rf-aneutronic-reactor-energy` is a claim about heat that tier does
+not make. Nothing measured here argued for giving both reactors the same target, and they did not get
+one.
 
 ## What is not verified
 
