@@ -80,10 +80,20 @@ floor already is the constant.
 
 ## Consequences
 
-**Nothing observable changes.** A plasma at the floor sat there before and sits there now. The fix
-removes invented energy from the bookkeeping, not behaviour from the game. Verified: `load-check` and
-all ten map rigs pass unchanged, `check-brownout`'s blackout recovery and `check-observability`'s idle
-case included, and the D-D equilibrium stays at 2.42×10⁸ °C with Q 0.3205.
+**Almost nothing observable changes, and the exception is a correction.** A plasma at the floor sat
+there before and sits there now. Verified: `load-check` and all ten map rigs pass unchanged,
+`check-brownout`'s blackout recovery and `check-observability`'s idle case included, and the D-D
+equilibrium stays at 2.42×10⁸ °C with Q 0.3205.
+
+The exception: the new bound exceeds the old one whenever `heating_j + charged_j > floor_thermal_j`,
+which is every heated step. It only *bites* differently on the first step of a cold start, and only on
+the aneutronic tier, where the old bound capped radiation at what the plasma alone held and so
+suppressed emission that the incoming heating was simultaneously supplying. A full He3-He3 box
+starting at the floor under full heating now reaches 177 140.5 °C in that step against 178 565.6 °C
+before, selling 0.030336 units rather than 0.005102 — 0.8% cooler, and more sold because more
+genuinely left the plasma. It is self-correcting: both trajectories agree to seven significant figures
+by 10 s, total sold included, and the D-D tier shows no difference at any point. Recorded because
+"nothing changes" was the first draft of this section and it was not true.
 
 **The model now declines to describe something, deliberately.** A real plasma at 15 °C keeps
 radiating; this one does not. That is a fiction of *omission* where the previous behaviour was a
