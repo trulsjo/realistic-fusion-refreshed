@@ -66,12 +66,13 @@ Plasma held at **2.42×10⁸ °C** — the shipped D-D equilibrium — against e
 | target | 1 W | 1 MW | 50 MW |
 |---|---:|---:|---:|
 | 15 | 0 | 0 | 0 |
-| **165 (shipped)** | **0** | **0** | **0** |
+| 165 (was shipped) | 0 | 0 | 0 |
 | 500 | 0 | 0 | 0 |
+| **550 (shipped)** | **0** | **0** | **0** |
 | 5 000 | 0 | 0 | 0 |
 | 1 000 000 | 0 | 0 | 0 |
 
-Fifteen combinations, ten seconds each, zero units in every one. A separate ladder at the shipped
+Eighteen combinations, ten seconds each, zero units in every one. A separate ladder at the shipped
 target confirms where the edge is: at target 165, an input of **100 °C converts and 200 °C does not**.
 
 ### The cold side: the formula, to two parts in a thousand
@@ -85,6 +86,7 @@ also why the `target = 15` row converts nothing: ΔT is zero, not small.
 | 15 | 0 | — | — | **0** | — | **0** |
 | **165** | 150 | 150 k | 6.667 | **6.656** | 333.3 | **332.8** |
 | 500 | 485 | 485 k | 2.062 | **2.058** | 103.1 | **102.9** |
+| **550 (shipped)** | **535** | **535 k** | **1.869** | **1.866** | **93.46** | **93.30** |
 | 5 000 | 4 985 | 4.985 M | 0.2006 | **0.2003** | 10.03 | **10.01** |
 
 Worst fit in the table is 0.2%. The independent point from the input ladder agrees: target 165 against
@@ -185,7 +187,9 @@ Three things the numbers say that the ticket could not:
 coolant in all but name, and a coolant cannot raise steam to its own temperature — both exchangers
 make 500 °C steam, so 500 was exactly marginal and 165 was backwards. 550 leaves the approach margin a
 real plant has. It also takes the leak from 6.7 W to **1.9 W** for free, since the rate goes as
-`1/(target − floor)`.
+`1/(target − floor)` — and that is **measured, not inferred**: the probe sweeps 550 directly and
+returns 1.866 units/s per megawatt of draw against a predicted 1.869, which at the shipped 1 W is
+1.87 W of unaccounted output.
 
 **The aneutronic reactor stays at 165, and the asymmetry is the decision.** That route has no thermal
 stage — a direct energy converter decelerates charged particles against collector plates — and the
@@ -196,9 +200,13 @@ comparing a 550 °C line against a 165 °C one learns the routes differ, which i
 number says alone.
 
 **And the floor was nearly raised, which would have been much worse.** Since conversion is exactly
-zero at or above the target, a floor above the target closes the leak *completely* — and 3 eV, the
-boundary the bremsstrahlung note names as where this model becomes valid, was chosen for it. Then the
-cost of holding a floor was computed:
+zero at or above the target, a floor above the target closes the leak *completely*. The boundary
+picked for it was **3 eV** — a value chosen inside the range `scripts/reactor-logic.lua`'s own
+bremsstrahlung comment names, which says the formula is out of its domain "below a few eV — tens of
+thousands of degrees", where hydrogen is only partly ionised. Note that is the *code comment* above
+the term, not [`bremsstrahlung.md`](bremsstrahlung.md): that note bounds the model from **above**
+(`t < 1`, below 5.93×10⁹ K) and says nothing about a low-temperature floor. Then the cost of holding
+a floor was computed:
 
 | floor | conjured to hold it against radiation |
 |---|---|
@@ -206,7 +214,7 @@ cost of holding a floor was computed:
 | 165 °C | 33 kW |
 | 550 °C | 45 kW |
 | 5 000 °C | 114 kW |
-| 34 540 °C (3 eV) | **293 kW** |
+| 34 540 °C (3 eV) | **292 kW** |
 
 The clamp puts a cooling plasma back up to `min_temperature_c`, so the floor is held by energy that
 comes from nowhere, and bremsstrahlung goes as `n²√T`. **Trading 6.7 W of unaccounted output for
@@ -261,8 +269,12 @@ one.
   should carry, but it was not run.
 - **Nothing here was measured through a pipe.** The probe writes the input box directly, so fluid
   transport, mixing and segment sharing are all out of scope.
-- **No decision was taken and no prototype number was changed** by this work. The only file this ticket
-  edits besides the probe and this note is the stale claim in `prototypes/entities.lua`.
+- **A decision WAS taken, after this note was first written.** As filed, #101 changed no prototype
+  number and edited only the probe, this note and one stale claim in `prototypes/entities.lua`. #46's
+  third item was then settled on the strength of it — see the callout at the head — which moved
+  `rf-reactor.target_temperature` to 550 and `rf-reactor-energy.max_temperature` with it, and left
+  comments across `control.lua`, `entities.lua`, `fluids.lua` and `reactor-logic.lua`. The
+  measurements in this note are untouched by that; only the decision sections are new.
 
 ## Sources
 

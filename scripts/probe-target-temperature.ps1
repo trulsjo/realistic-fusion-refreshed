@@ -10,8 +10,9 @@
 
     THAT QUESTION IS NOW ANSWERED and the target is 550 C, so this probe is kept for the reason
     CLAUDE.md keeps probes rather than for the decision it fed: it stays committed so the next engine
-    version can be asked the same question. Its sweep still starts at 15 and 165 deliberately -- the
-    shipped-at-the-time values are the ones a regression would show up against.
+    version can be asked the same question. The sweep covers 550 -- the shipped value, so a
+    regression shows up against what actually ships -- and keeps 15 and 165, which are what it
+    shipped as before, so the measurements in the research note stay reproducible.
 
     The 2.0.77 BoilerPrototype docs make target_temperature "the temperature that the input fluid
     must reach to be moved to the output fluid box", which makes the conversion rate a function of
@@ -69,7 +70,7 @@ $data = @'
 -- rf- reactor set on purpose: control.lua's SPECS is keyed by entity name, so these are invisible
 -- to the simulation and their plasma is moved by the engine alone.
 
-local TARGETS = { 15, 165, 500, 5000, 1000000 }
+local TARGETS = { 15, 165, 500, 550, 5000, 1000000 }
 local DRAWS   = { { "1W", "1W" }, { "1MW", "1MW" }, { "50MW", "50MW" } }
 
 local made = {}
@@ -99,7 +100,7 @@ $lua = @'
 
 local function say(fmt, ...) log("TTPROBE " .. string.format(fmt, ...)) end
 
-local TARGETS = { 15, 165, 500, 5000, 1000000 }
+local TARGETS = { 15, 165, 500, 550, 5000, 1000000 }
 local DRAWS   = { "1W", "1MW", "50MW" }
 local PLASMA  = "rf-d-d-plasma"
 
