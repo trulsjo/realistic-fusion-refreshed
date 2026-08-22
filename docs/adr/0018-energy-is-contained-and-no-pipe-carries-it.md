@@ -254,7 +254,7 @@ impossible today.
 distance on the leg. Rejected: three entities beyond ADR 0010's set for a run that needs no distance,
 and it makes `rf-pipe` one of two pipes a player has to tell apart.
 
-**Keep it exactly as it is.** Defensible — 165 °C reactor energy is steam-like, not plasma, and the
+**Keep it exactly as it is.** Defensible — reactor energy is steam-like, not plasma, and the
 rule this repository actually wrote down is that vanilla pipes must not carry *plasma*. Rejected on
 the tanks and wagons above, and on diverging from the engine's own fusion on a point a reader will
 notice.

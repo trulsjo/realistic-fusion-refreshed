@@ -192,6 +192,9 @@ claim.
   hoped #37 might resolve its items 1 and 3. It does not: the draw's *shape* changes (#37's item 4b)
   but the declared `energy_consumption = "1W"` does not, so the seven-orders-out tooltip and the
   meaningless 165 °C both survive.
+  **True when written; both have since been answered** — #46's first item by a `localised_description`
+  carrying the real draw, and its third by a target of 550 °C chosen to be hotter than the steam the
+  tier's own exchangers raise.
 - **Nothing here is playtested.** Whether a tier that costs 40 MW to run reads as a satisfying
   investment or as a wall is exactly the sort of question CLAUDE.md holds behind playing the game.
   This ADR fixes the *shape*; the numbers inside it remain provisional.

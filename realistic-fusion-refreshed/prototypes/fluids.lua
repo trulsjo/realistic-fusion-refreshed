@@ -110,10 +110,12 @@ data:extend({
     order = "rf-p-z[reactor-energy]",
     default_temperature = 15,
     -- Declared, not defaulted: max_temperature otherwise falls back to default_temperature, and
-    -- rf-reactor names this fluid as a boiler output with a target of 165. Nothing depends on the
-    -- temperature -- the heat exchanger burns this by fuel_value -- but a prototype that asks for
-    -- a temperature the fluid cannot hold is a trap for whoever reads it next.
-    max_temperature = 165,
+    -- rf-reactor names this fluid as a boiler output with a target of 550. Nothing READS the
+    -- temperature -- the heat exchanger burns this by fuel_value -- but the target is stamped onto
+    -- every unit control.lua writes, and check_energy_outlets() refuses to load if this is below it.
+    -- So the pair moves together or not at all: see the target in prototypes/entities.lua for why
+    -- it is 550 and not 165.
+    max_temperature = 550,
     fuel_value = "1MJ",
     gas_temperature = 0,
     auto_barrel = false,
