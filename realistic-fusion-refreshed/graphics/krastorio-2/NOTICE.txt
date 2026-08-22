@@ -39,6 +39,32 @@ Unmodified copies, renamed to the prototype they serve:
     vanilla pipe prototype with its filenames repointed here and every width, height, shift and
     scale left exactly as vanilla declares them. Nothing was resized or recomposited.
 
+  buildings/composite-tank/composite-tank.png            <- buildings/big-storage-tank/big-storage-tank.png
+  buildings/composite-tank/composite-tank-shadow.png     <- buildings/big-storage-tank/big-storage-tank-sh.png
+  buildings/composite-tank/composite-tank-reflection.png <- buildings/big-storage-tank/big-storage-tank-reflection.png
+
+    rf-aneutronic-composite-tank's building (#45), closing a mismatch rather than choosing anything:
+    the icon above was already Krastorio 2's big storage tank while the building underneath was still
+    vanilla's. Its big storage tank is three tiles square like vanilla's, with the same four corner
+    connections, so this is a sprite swap and nothing moved. The fluid window, its background, the
+    flow animation and the gas sprite stay pointing at __base__ -- Krastorio 2 leaves them there too.
+
+  buildings/pump/pump-north.png  <- buildings/steel-pump/steel-pump-north.png
+  buildings/pump/pump-east.png   <- buildings/steel-pump/steel-pump-east.png
+  buildings/pump/pump-south.png  <- buildings/steel-pump/steel-pump-south.png
+  buildings/pump/pump-west.png   <- buildings/steel-pump/steel-pump-west.png
+  entities/pump.png              <- icons/entities/steel-pump.png
+
+    rf-pump's icon and building (#45). Only the "steel-" prefix is dropped. It used to wear vanilla's
+    coat, which was the hole in the plasma-safe set's own argument -- the set exists so a player can
+    see which equipment is plasma-rated, and rf-pipe and rf-pipe-to-ground already carry Krastorio 2's
+    steel line. Its steel pump is the same one-by-two as vanilla's, so this is a swap and nothing else.
+
+    The pipe COVERS a north- or south-facing pump draws are NOT taken. Krastorio 2 layers its own
+    steel cover there; that set is not vendored and rf-pipe does not take it either, so vanilla covers
+    are already what a plasma line shows at its open ends and the pump agrees with the pipe it sits
+    in. Vendor steel-pipe-covers/ and change both together, or leave both.
+
   buildings/reactor/reactor.png                  <- buildings/fusion-reactor/fusion-reactor.png
   buildings/reactor/reactor-shadow.png           <- buildings/fusion-reactor/fusion-reactor-shadow.png
   buildings/reactor/reactor-animation.png        <- buildings/fusion-reactor/fusion-reactor-animation.png
@@ -164,6 +190,9 @@ Unmodified copies, renamed to the prototype they serve:
 
   entities/aneutronic-reactor.png       <- icons/entities/antimatter-reactor.png
   entities/aneutronic-composite-tank.png <- icons/entities/big-storage-tank.png
+
+    The tank's BUILDING is taken too, below, so this is one of the pairs where icon and in-world
+    sprite are the same Krastorio 2 machine rather than two different ones.
   technologies/aneutronic-fusion.png     <- technologies/antimatter-reactor.png
   technologies/helium-3-breeding.png     <- technologies/steel-fluid-handling.png
   technologies/direct-energy-conversion.png <- technologies/energy-control-unit.png
@@ -243,6 +272,8 @@ DERIVED CODE -- also LGPLv3, and this is the reason it is in here at all:
   buildings/heater-pictures.lua
   buildings/aneutronic-reactor-pictures.lua
   buildings/hc-pictures.lua
+  buildings/composite-tank-pictures.lua
+  buildings/pump-pictures.lua
 
     Krastorio 2's mod is LGPLv3 as well as its assets. Every width, height, frame count, line
     length, shift and scale in these files is read off its prototypes/buildings/fusion-reactor.lua,
@@ -260,6 +291,14 @@ DERIVED CODE -- also LGPLv3, and this is the reason it is in here at all:
     high-capacity pair takes its geometry from two Krastorio 2 files rather than one, returning the
     turbine's sheets as horizontal_animation and vertical_animation because rf-hc-turbine is a copy
     of VANILLA's steam turbine and those are the fields that copy carries.
+
+    composite-tank-pictures.lua and pump-pictures.lua are read off
+    prototypes/buildings/big-storage-tank.lua and prototypes/buildings/steel-pump.lua. Both are
+    swaps onto a same-sized vanilla prototype, so neither restructures anything -- but both write
+    out shifts Krastorio 2 expresses as util.by_pixel(...), because util is a __base__ internal.
+    Worth knowing when checking them: Krastorio 2's own inline comments beside two of the pump's
+    by_pixel calls give values exactly double what the call evaluates to. Those comments are stale,
+    and it is the call that was transcribed.
 
 
 Where these are referenced
