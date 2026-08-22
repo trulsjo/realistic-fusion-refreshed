@@ -432,10 +432,15 @@ M.reactor = {
   --
   -- MEASURED under #103 rather than derived: step() reports conjured_j, and
   -- tests/test-reactor-logic.lua pins 26.6 kW for a full D-D reactor here -- and 322 kW for a full
-  -- He3-He3 one, which is the worst case in the mod and twelve times this figure, because that
-  -- tier holds three times the plasma AND helium-3 brings two electrons per ion. It is also not
-  -- purely radiation: the clamp restores bremsstrahlung PLUS the confinement loss, so the density
-  -- scaling is nearly n^2 rather than exactly it.
+  -- He3-He3 one, which is the worst case in the mod.
+  --
+  -- THE TWO ARE NOT THE SAME EFFECT, which is what measuring showed and deriving could not. Here the
+  -- clamp restores bremsstrahlung PLUS the confinement loss, so the scaling is nearly n^2 and
+  -- measurably not exactly so. On the aneutronic tier the joint clamp below is SATURATED at any fill
+  -- worth having -- unscaled bremsstrahlung is six times what the plasma has to give, so loss_j and
+  -- brems_j scale down to sum to exactly kept_j, new_thermal_j lands on zero, and the whole thermal
+  -- content is conjured back every step. That caps the figure at kept_j/dt and makes it scale as n
+  -- rather than n^2: 322 kW is a heat capacity, not a radiated power.
   --
   -- Do not change this line for #103 without reading that ticket: the obvious repairs each ask what
   -- a plasma below the floor IS, and this simulation has no answer to that today.

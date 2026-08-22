@@ -869,12 +869,13 @@ check(floor_dd.conjured_power_w > 0,
 near(floor_dd.conjured_power_w / 1e3, 26.65, 0.01,
   "and it is about 27 kW at full fill, which is what #103 was filed on")
 
--- IT IS NOT PURELY RADIATION, which measuring is what showed. The clamp restores whatever took the
--- plasma under the floor, and that is bremsstrahlung PLUS the confinement loss E/tau. Brems goes as
--- n^2 and the loss goes as n, so the scaling is nearly quadratic and measurably not exactly so.
+-- ON THIS REACTOR IT IS NOT PURELY RADIATION, which measuring is what showed. The clamp restores
+-- whatever took the plasma under the floor, and that is bremsstrahlung PLUS the confinement loss
+-- E/tau. Brems goes as n^2 and the loss goes as n, so the scaling is nearly quadratic and measurably
+-- not exactly so.
 --
--- The two terms account for the whole of it. At full fill the plasma holds 1193 J, so E/tau is
--- 39.8 W, and 26 600 W of bremsstrahlung plus that is 26 640 against the 26 649 measured here.
+-- The two terms account for the whole of it. At full fill the plasma holds 1194 J, so E/tau is
+-- 39.8 W, and 26 610 W of bremsstrahlung plus that is 26 650 against the 26 649 measured here.
 local floor_half  = at_floor(SPEC, "rf-d-d-plasma", FULL / 2)
 local floor_tenth = at_floor(SPEC, "rf-d-d-plasma", FULL / 10)
 near(floor_dd.conjured_power_w / floor_half.conjured_power_w, 3.994, 0.01,
@@ -884,17 +885,49 @@ near(floor_half.conjured_power_w / floor_tenth.conjured_power_w, 24.71, 0.01,
   "and a fifth of that fill is 24.7 rather than 25, for the same reason and more of it",
   string.format("%.6g", floor_half.conjured_power_w / floor_tenth.conjured_power_w))
 
--- THE WORST CASE IN THE MOD IS NOT THE ONE #103 WAS FILED ON. The aneutronic tier holds three times
--- the plasma, and helium-3 is doubly charged, so it brings two electrons per ion where deuterium
--- brings one. Density cubed into n^2 gives nine; the electrons give the rest.
+-- THE WORST CASE IN THE MOD IS NOT THE ONE #103 WAS FILED ON, AND IT IS NOT THE SAME EFFECT. On the
+-- aneutronic tier the joint clamp in step() is SATURATED: unscaled bremsstrahlung is several times
+-- what the plasma has to give, so loss_j and brems_j scale down together until they sum to exactly
+-- kept_j, new_thermal_j lands on zero, and the clamp conjures the entire thermal content back.
+--
+-- So these two figures are a CAP -- kept_j/dt, a heat capacity -- rather than a radiated power, and
+-- the 12x against D-D is not n^2 times an electron count. It is one reactor's radiated power set
+-- against another reactor's whole heat content, which are not comparable quantities. The block below
+-- pins the regime by its scaling rather than by recomputing kept_j here, which would be a second
+-- implementation of the thermal term for the reason #51 exists.
 local floor_he3  = at_floor(ANEUTRONIC, "rf-he3-he3-plasma", 3000)
 local floor_dhe3 = at_floor(ANEUTRONIC, "rf-d-he3-plasma", 3000)
 near(floor_he3.conjured_power_w / 1e3, 322.2, 0.01,
   "a full He3-He3 reactor conjures 322 kW, twelve times the D-D figure the ticket quotes")
 near(floor_dhe3.conjured_power_w / 1e3, 268.5, 0.01, "and a full D-He3 one 269 kW")
-check(floor_he3.conjured_power_w / floor_dd.conjured_power_w > 9,
-  "both are worse than the nine that density alone would give",
-  string.format("%.4g x", floor_he3.conjured_power_w / floor_dd.conjured_power_w))
+
+-- SATURATED SCALES AS n, WHICH IS HOW THE REGIME IS IDENTIFIED FROM OUTSIDE. Halving the fill halves
+-- the figure exactly, where an unsaturated plasma very nearly quarters it. Exact rather than nearly:
+-- both sides are the same multiple of the same per-unit heat content, so no tolerance is warranted.
+local he3_half = at_floor(ANEUTRONIC, "rf-he3-he3-plasma", 1500)
+near(floor_he3.conjured_power_w / he3_half.conjured_power_w, 2, 1e-12,
+  "saturated, halving the He3-He3 fill halves the conjured power exactly rather than quartering it",
+  string.format("%.12g", floor_he3.conjured_power_w / he3_half.conjured_power_w))
+
+-- AND BELOW SATURATION THE SAME TIER BEHAVES LIKE THE D-D ONE, which is what says the difference is
+-- the clamp and not the fuel. #103 asks for partial fill on both reactors, and this is that: an
+-- aneutronic plasma thin enough to escape the cap recovers the nearly-quadratic scaling above.
+local he3_thin   = at_floor(ANEUTRONIC, "rf-he3-he3-plasma", 300)
+local he3_thinner = at_floor(ANEUTRONIC, "rf-he3-he3-plasma", 150)
+near(he3_thin.conjured_power_w / 1e3, 19.17, 0.01, "a tenth-full He3-He3 reactor conjures 19.2 kW")
+near(he3_thin.conjured_power_w / he3_thinner.conjured_power_w, 3.998, 0.01,
+  "and halving THAT nearly quarters it -- 3.998, the D-D behaviour, because the clamp no longer bites",
+  string.format("%.6g", he3_thin.conjured_power_w / he3_thinner.conjured_power_w))
+-- The threshold itself, bracketed rather than pinned: 600 units is inside the cap and 300 is outside
+-- it, so He3-He3 crosses over somewhere between. Bracketed because the crossing point falls out of
+-- the radiation constants and is not a number this file should claim to three digits.
+local he3_600  = at_floor(ANEUTRONIC, "rf-he3-he3-plasma", 600)
+local he3_1200 = at_floor(ANEUTRONIC, "rf-he3-he3-plasma", 1200)
+near(he3_1200.conjured_power_w / he3_600.conjured_power_w, 2, 1e-12,
+  "600 units is already capped -- doubling it doubles the figure exactly")
+check(math.abs(he3_600.conjured_power_w / he3_thin.conjured_power_w - 2) > 0.5,
+  "and 300 units is not, so the tier crosses into the cap between the two",
+  string.format("%.4g x rather than 2", he3_600.conjured_power_w / he3_thin.conjured_power_w))
 
 -- THE PROPERTY THAT MAKES IT INVISIBLE, and the one any fix must not break: none of it is sold.
 -- Not exactly zero for the reason the parked-reactor check above gives -- the round trip through
