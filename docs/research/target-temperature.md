@@ -228,10 +228,12 @@ row has since been measured directly at **26.6 kW** against the 27 predicted —
 
 ### The larger finding: #103, now measured
 
-> **Measured 2026-08-22.** The figures below were derived when this note was written. `step()` now
-> reports `conjured_j` directly, and `tests/test-reactor-logic.lua` pins what it returns, so these
-> are what the simulation produces rather than what the formula predicts. Three things the
-> measurement changed.
+> **Measured 2026-08-22, then SETTLED the same day.** The figures below were derived when this note
+> was written, then measured, and are now **history**: every one of them is zero as shipped.
+> [ADR 0021](../adr/0021-the-floor-is-where-the-model-stops.md) settles `min_temperature_c` as the
+> edge of the model's domain and caps the drain so a plasma lands on the floor rather than under it,
+> which makes conjured energy zero by construction. Kept in full because the measurement is what made
+> the decision, and because the sizes are the argument against ever raising the floor.
 
 **A full cold D-D reactor conjures 26.6 kW to hold 15 °C** — close to the 27 kW derived here, and
 four thousand times the leak #46 was about. It predates all of this work. It is unsold, because
@@ -289,10 +291,18 @@ today.
 
 | | conjured after | what it costs |
 |---|---:|---|
-| **as shipped** | 26.6 kW / 322 kW | nothing; the state of play |
-| **gate radiation on ionisation** | ~40 W / ~90 W | a threshold constant the bremsstrahlung *code comment* explicitly declined to invent |
-| **destroy plasma instead of restoring heat** | 0 | an idle reactor slowly loses its plasma — a gameplay change, not just a fix |
-| **accept and record it** | 26.6 kW / 322 kW | the known-limitation note must name it, per this ticket |
+| ~~as shipped~~ | 26.6 kW / 322 kW | nothing; the state of play |
+| ~~gate radiation on ionisation~~ | ~40 W / ~90 W | a threshold constant the bremsstrahlung *code comment* explicitly declined to invent — and not zero, since the confinement loss still runs |
+| ~~destroy plasma instead of restoring heat~~ | 0 | an idle reactor slowly loses its plasma — a gameplay change, not just a fix |
+| ~~accept and record it~~ | 26.6 kW / 322 kW | the known-limitation note must name it, per this ticket |
+| **cap the drain at the floor** ← **chosen** | **0** | nothing: no constant, no gameplay change, and it also fixes the crossing step |
+
+**The option that was taken is not on the list this note originally carried.** It arrived from asking
+what the floor *is* rather than what to do about the radiation: if `min_temperature_c` is where the
+model stops having anything to say, then a plasma there is inert, and the fix is to stop the drain at
+the floor rather than to cancel one of its terms. Zero by construction, and no threshold invented —
+the floor already is the threshold. See
+[ADR 0021](../adr/0021-the-floor-is-where-the-model-stops.md).
 
 Gating the radiation is the high-leverage one: what it leaves behind is the confinement loss alone,
 **39.8 W** on a full D-D reactor and **89.5 W** on a full He3-He3 one — reductions of 99.85% and
