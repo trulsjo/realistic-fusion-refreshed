@@ -58,6 +58,14 @@ local CELSIUS_TO_KELVIN = 273.15
 -- re-ignition are unaffected (scripts/check-brownout.ps1 measures both). Gating the term on an
 -- ionisation threshold would mean inventing a constant to fix a state nothing reads, which is the
 -- wrong trade. What it DID change is one rig's tolerance -- see check-observability.ps1's idle case.
+--
+-- THE BOTTOM OF THAT RANGE IS HANDLED, WITHOUT THE CONSTANT (#103, ADR 0021). The trade above was
+-- weighed again when the out-of-domain radiation turned out to be paying for itself with energy
+-- from nothing, and declined again on the same grounds. What closed it instead was the floor: the
+-- drain is capped so a plasma lands on min_temperature_c rather than under it, which makes a
+-- cold-parked plasma inert and costs no threshold of its own, because min_temperature_c already
+-- IS the threshold. This term still runs out of its domain between a few eV and the floor, and that
+-- part is still merely recorded rather than guarded.
 local C_B = 5.34e-37       -- W m^3 keV^-1/2, NRL Plasma Formulary (2019) p. 58 in SI
 local KELVIN_PER_KEV = 1.1604518e7
 local MEC2_KEV = 511       -- electron rest energy; the correction's fit stops here
@@ -426,24 +434,22 @@ M.reactor = {
   -- What was taken instead: rf-reactor's target went to 550, which shrinks the leak to 1.9 W for
   -- nothing, because the rate goes as 1/(target - floor). See prototypes/entities.lua.
   --
-  -- THE CONJURED HEAT IS NOT A NEW PROBLEM AND IS NOT SOLVED HERE -- it is #103. Same class as the
-  -- 34 W loop the comment on left_j records closing, and unsold and therefore invisible, which is
-  -- exactly why it has survived this long.
+  -- AND SINCE #103, THIS NUMBER MEANS SOMETHING RATHER THAN MERELY BOUNDING SOMETHING. ADR 0021
+  -- settles it as a MODEL-DOMAIN BOUNDARY: 15 C is where this simulation stops having anything to
+  -- say. Below it hydrogen is only partly ionised, the bremsstrahlung term above is out of its
+  -- domain by its own admission, and no term here is valid. The engine forces a plasma fluid to
+  -- have some minimum -- default_temperature is a floor, not a default -- and this is where we put
+  -- the edge of the model inside that constraint.
   --
-  -- MEASURED under #103 rather than derived: step() reports conjured_j, and
-  -- tests/test-reactor-logic.lua pins 26.6 kW for a full D-D reactor here -- and 322 kW for a full
-  -- He3-He3 one, which is the worst case in the mod.
+  -- What follows from that is the clamp below: a COLD-PARKED plasma is inert, so the drain is capped
+  -- to land it exactly here rather than under, and nothing is handed back to hold it up. It cost
+  -- 26.6 kW of conjured heat on a full D-D reactor to hold this line before that, and 322 kW on a
+  -- full He3-He3 one, where the joint clamp saturates and the figure is the whole plasma every step
+  -- rather than a radiated power.
   --
-  -- THE TWO ARE NOT THE SAME EFFECT, which is what measuring showed and deriving could not. Here the
-  -- clamp restores bremsstrahlung PLUS the confinement loss, so the scaling is nearly n^2 and
-  -- measurably not exactly so. On the aneutronic tier the joint clamp below is SATURATED at any fill
-  -- worth having -- unscaled bremsstrahlung is six times what the plasma has to give, so loss_j and
-  -- brems_j scale down to sum to exactly kept_j, new_thermal_j lands on zero, and the whole thermal
-  -- content is conjured back every step. That caps the figure at kept_j/dt and makes it scale as n
-  -- rather than n^2: 322 kW is a heat capacity, not a radiated power.
-  --
-  -- Do not change this line for #103 without reading that ticket: the obvious repairs each ask what
-  -- a plasma below the floor IS, and this simulation has no answer to that today.
+  -- SO THE VALUE IS NOW LOAD-BEARING IN A SECOND WAY. Raising it no longer only shifts the boiler
+  -- leak; it moves where the model claims its physics stops, and it silently widens the band the
+  -- simulation refuses to describe. Read ADR 0021 before touching it, not just #46.
   min_temperature_c = 15,
   max_temperature_c = 2e9,
 }
@@ -500,6 +506,10 @@ M.aneutronic_reactor = {
   -- The same bounds, and the same reason: 2e9 is where a temperature stops fitting in the int32 a
   -- circuit signal is. It costs this tier more than it costs the last one -- He3-He3 wants to run
   -- past 7e9 -- and that cost is stated on its fuel row rather than hidden here.
+  --
+  -- The floor is the same number for the same reason too, and it mattered most here: this is the
+  -- tier where holding it was worth 322 kW of conjured heat before ADR 0021 capped the drain. See
+  -- the reactor above, where that reasoning is written out once.
   min_temperature_c = 15,
   max_temperature_c = 2e9,
 }
@@ -638,16 +648,38 @@ function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
       * radiation_factor(t_kev, z_eff) * spec.volume_m3 * dt
   end
 
-  -- CLAMPED JOINTLY, not one after the other. Each is bounded by kept_j on its own, but a hot thin
-  -- plasma can have either one alone smaller than what it holds and the two together larger -- and
-  -- then new_thermal_j goes negative, the temperature pins to the minimum, and left_j sells the
-  -- difference. That is energy from nothing, and it is the same free loop capture_efficiency exists
-  -- to prevent. Scaled rather than truncated so the two keep their ratio, which is what makes the
-  -- radiated share of a cooling plasma stay meaningful instead of being whatever was subtracted
-  -- first.
+  -- CLAMPED JOINTLY, not one after the other, and bounded by the FLOOR rather than by nothing left.
+  --
+  -- Jointly because a hot thin plasma can have either term alone smaller than what it can give and
+  -- the two together larger. Scaled rather than truncated so the two keep their ratio, which is what
+  -- makes the radiated share of a cooling plasma stay meaningful instead of being whatever happened
+  -- to be subtracted first.
+  --
+  -- THE BOUND IS min_temperature_c, NOT ZERO (#103, ADR 0021). Draining past the floor used to be
+  -- allowed, and the temperature clamp below then put the plasma back up to it -- which handed back
+  -- joules that had already left, and created them from nothing to do it. A full cold He3-He3
+  -- reactor was worth 322 kW of that, every step, for as long as it sat there. Capping the drain
+  -- here instead means the plasma cools exactly to the floor and stops, so the low clamp below
+  -- never bites and there is nothing to hand back.
+  --
+  -- What that asserts is that a COLD-PARKED plasma is inert: it neither radiates nor leaks, because
+  -- the floor is where this model stops having anything to say, and the bremsstrahlung term above is
+  -- already out of its domain there by its own admission. A fiction of omission, and the consistent
+  -- one -- the alternative was a fiction of creation. Nothing observable changes: a plasma at the
+  -- floor sat there before and sits there now.
+  --
+  -- And no threshold constant had to be invented for it, which is the trade the bremsstrahlung
+  -- comment above weighed and declined. The floor is the constant.
   local drained_j = loss_j + brems_j
-  if drained_j > kept_j then
-    local scale = kept_j / drained_j
+
+  -- What the plasma has to give before it reaches the floor. Zero rather than negative if it is
+  -- somehow already below one: temperature is an argument here, and a caller is not owed trust.
+  local floor_thermal_j = remaining * heat_per_particle * (spec.min_temperature_c + CELSIUS_TO_KELVIN)
+  local drainable_j = kept_j + heating_j + charged_j - floor_thermal_j
+  if drainable_j < 0 then drainable_j = 0 end
+
+  if drained_j > drainable_j then
+    local scale = drainable_j / drained_j
     loss_j = loss_j * scale
     brems_j = brems_j * scale
   end
@@ -677,22 +709,22 @@ function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
   local left_j = kept_j + heating_j + charged_j - retained_j
   if left_j < 0 then left_j = 0 end
 
-  -- ENERGY THIS STEP CREATED FROM NOTHING, reported rather than derived (#103).
+  -- ENERGY THIS STEP CREATED FROM NOTHING. MUST BE ZERO, and is kept as the guard that says so.
   --
-  -- When the LOW clamp bites, retained_j is larger than the plasma physically has: the temperature
-  -- was put back up to min_temperature_c, so the joules radiated away below the floor are handed
-  -- back. Nobody pays for them. The high clamp is the opposite case and is not this -- there
-  -- retained_j is smaller, and the difference leaves through left_j above, correctly, because it
-  -- really did leave the plasma.
+  -- If the LOW clamp ever bites, retained_j comes out larger than the plasma physically has: the
+  -- temperature would have been put back up to min_temperature_c, handing back joules that had
+  -- already left. The drain cap above is what stops that happening, by never letting the plasma go
+  -- under the floor in the first place. This subtraction is how we know the cap still works.
   --
-  -- Reported as conjured_power_w below because #103 asks for it MEASURED rather than argued, and
-  -- because deriving it outside this function would mean a second implementation of the clamp --
-  -- the mistake #51 was opened about. Nothing reads it in the mod; tests/test-reactor-logic.lua
-  -- does, and pins 26.6 kW here against 322 kW on a full He3-He3 reactor.
+  -- The high clamp is the opposite case and is NOT this -- there retained_j is smaller, and the
+  -- difference leaves through left_j above, correctly, because it really did leave the plasma.
   --
-  -- It does NOT reach the player: left_j is floored at zero just above, so a plasma held at the
-  -- floor sells nothing. That is the property the tests pin, and the whole reason this has gone
-  -- unnoticed. See docs/research/target-temperature.md.
+  -- Kept rather than deleted once the cap made it zero (#103), because the defect it watches for is
+  -- a one-line property of the clamp above, and the comment on left_j records this file losing a
+  -- very similar property once already. Computed here rather than in the test because deriving it
+  -- outside this function would mean a second implementation of the clamp -- the mistake #51 was
+  -- opened about. tests/test-reactor-logic.lua asserts it is zero in every state it can reach; it
+  -- was 26.6 kW on a full D-D reactor and 322 kW on a full He3-He3 one before the cap.
   local conjured_j = retained_j - new_thermal_j
   if conjured_j < 0 then conjured_j = 0 end
 
@@ -726,9 +758,9 @@ function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
     neutrons         = reactions * fuel.neutrons_per_reaction,
     energy_units     = captured_j / spec.energy_fluid_j_per_unit,
     heating_used_j   = heating_j,
-    -- What the clamp created from nothing this step, as a power. Zero in every state except a
-    -- plasma pinned at min_temperature_c. As a power rather than joules for the reason
-    -- fusion_power_w is: it does not move with dt. See where it is computed (#103).
+    -- What the clamp created from nothing this step, as a power. ALWAYS ZERO since the drain cap
+    -- (#103, ADR 0021); it is a regression guard, not a quantity. As a power rather than joules for
+    -- the reason fusion_power_w is: it does not move with dt. See where it is computed.
     conjured_power_w = conjured_j / dt,
     fusion_power_w   = fusion_j / dt,
     q_factor         = reactivity.q_factor(fusion_j, heating_j),

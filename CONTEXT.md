@@ -124,6 +124,22 @@ state, and not either of the two above: it is not **under-supplied**, because no
 **starved**, because the plasma is there. It is the only state in which a reactor is a net drain on its
 network, and the only one a player has to climb out of.
 
+**Cold-parked** — a plasma sitting at the bottom of its temperature range, where the model's domain
+ends. A fourth state, and a *temperature* one where the three above are about density: the plasma is
+all there, and it is cold. A reactor reaches it within a second of losing its heating and stays
+indefinitely, so it is the state an unpowered reactor is in rather than a moment on the way anywhere.
+
+**A cold-parked plasma is inert.** It neither radiates nor leaks, because the floor is where this
+simulation stops having anything valid to say — see
+[ADR 0021](docs/adr/0021-the-floor-is-where-the-model-stops.md). That is a deliberate silence rather
+than a physical claim: a real plasma that cold has recombined and is not plasma at all, and the mod
+does not model that. Do not read "inert" as "stable" in the physical sense; it means the simulation
+does nothing to it.
+
+Not a synonym for **sub-ignition**, and the two are easy to swap. Sub-ignition is a reactor *running*
+below where its reaction carries itself, with a player able to climb out by adding density.
+Cold-parked is a reactor not running at all, and only heating gets it out.
+
 Two words for losing power that are **not** interchangeable, because at the D-T tier they have
 opposite consequences and conflating them is how a wrong premise about this mod got written down:
 
