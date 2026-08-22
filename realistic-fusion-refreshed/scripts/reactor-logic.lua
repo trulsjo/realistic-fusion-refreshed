@@ -419,7 +419,7 @@ M.reactor = {
   -- Rejected on the cost of holding it. The clamp below puts a cooling plasma back up to this
   -- number, so the floor is held against radiation by energy that comes from nowhere, and
   -- bremsstrahlung goes as sqrt(T): a full cold reactor already conjures about 27 kW to hold 15 C,
-  -- and 3 eV would have made it 293 kW. Trading 6.7 W of unaccounted output for another 266 kW of
+  -- and 3 eV would have made it 292 kW. Trading 6.7 W of unaccounted output for another 266 kW of
   -- conjured heat is the wrong direction, however invisible the conjured half is -- left_j is
   -- floored at zero below, so none of it is ever sold.
   --
