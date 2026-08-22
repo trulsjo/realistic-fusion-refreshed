@@ -699,9 +699,15 @@ local tank = pin(table.deepcopy(data.raw["storage-tank"]["storage-tank"]), "rf-a
 -- second it is about eight minutes of supply, long enough to ride out a heater going down and short
 -- enough that it is still a pipe network rather than a stockpile. Provisional.
 tank.fluid_box.volume = 50000
--- In-world it is vanilla's storage tank and the icon is Krastorio 2's big storage tank, so the two
--- do not match -- the same gap rf-isotope-collector and rf-lithium-blanket have, left open for the
--- same reason. See the NOTICE.
+-- In-world it is Krastorio 2's big storage tank, which is where the icon already came from, so the
+-- thing in the hand and the thing on the ground are the same building (#45). It is a sprite swap and
+-- nothing else: K2's is three tiles square like vanilla's, with the same four corner connections, so
+-- no footprint moved and there is nothing to migrate. rf-isotope-collector and rf-lithium-blanket
+-- still have the mismatch this used to have -- theirs are not swaps. See the NOTICE.
+local tank_graphics = require("graphics.krastorio-2.buildings.composite-tank-pictures")
+tank.pictures.picture = tank_graphics.picture
+tank.window_bounding_box = tank_graphics.window_bounding_box
+tank.water_reflection = tank_graphics.water_reflection
 
 -- ---------------------------------------------------------------- plasma-safe fluid handling
 
@@ -777,12 +783,12 @@ contain(pipe_to_ground.fluid_box)
 -- all, and without this there would be no way to lift plasma over a distance or to force its
 -- direction.
 local pump = pin(table.deepcopy(data.raw["pump"]["pump"]), "rf-pump", { mining_time = 0.2 })
--- pin() derives an icon path from the entity's name, and there is no Krastorio 2 pump in
--- graphics/krastorio-2/ to derive it from. Vanilla's is referenced rather than copied -- no file
--- moves, so no licence travels. The art is provisional: this is a plasma pump wearing an ordinary
--- pump's coat, and it reads as one until someone draws it. Nothing depends on the picture, because
--- the containment is in the connections rather than in the sprite.
-pump.icons = { { icon = "__base__/graphics/icons/pump.png", icon_size = 64 } }
+-- Krastorio 2's steel pump, icon and building both (#45). It used to wear vanilla's coat, which was
+-- the hole in the plasma-safe set's own argument: the set exists so a player can SEE which equipment
+-- is plasma-rated, and rf-pipe and rf-pipe-to-ground already carry K2's steel line. A swap and only a
+-- swap -- K2's pump is the same one-by-two as vanilla's -- so pin()'s derived icon path now resolves
+-- to graphics/krastorio-2/entities/pump.png and nothing else about the prototype moves.
+pump.animations = require("graphics.krastorio-2.buildings.pump-pictures").animations
 -- A pump is the one entity that moves fluid without a pipe connection at the far end: it also loads
 -- and unloads fluid wagons, which would be a way around every rule above -- rf-pump into a vanilla
 -- wagon, vanilla pump out of it, plasma anywhere. It is not. FluidWagonPrototype carries a
