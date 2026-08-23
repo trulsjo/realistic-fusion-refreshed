@@ -12,6 +12,9 @@ local claim = require("__realistic-fusion-refreshed-core__.prototypes.vanilla").
 -- rather than a stage violation. This is the ONLY direction the dependency runs: nothing in
 -- scripts/ requires anything in prototypes/.
 local logic = require("scripts.reactor-logic")
+-- Drawn placeholders for the machines with no art of their own (#45). Our own work and
+-- our own licence, unlike graphics/krastorio-2/ -- see the module for why that matters.
+local mockup = require("graphics.mockup.pictures")
 
 -- What a reactor's tooltip cannot say for itself. Both reactors are boilers (ADR 0011), so the
 -- engine reports the boiler's energy_consumption as "Max consumption" -- 1 W, seven orders below
@@ -253,6 +256,30 @@ reactor.output_fluid_box = {
 -- rf-reactor-energy for its fuel_value is what converts the simulation's joules into steam:
 -- energy_consumption sets the burn rate, and everything downstream is ordinary vanilla steam at
 -- 500 C, which vanilla steam turbines already accept.
+--
+-- THE SHAPE IS THE ORIGINAL MOD'S, AND THE ART IS A PLACEHOLDER (#45). Truls's decision,
+-- 2026-08-22: five by fifteen, butted flush along one face of the fifteen-tile reactor the way
+-- Realistic Fusion Power laid it out, and Durikkan's 2.0 port still declares that footprint. The
+-- shape is a look rather than a throughput argument -- #48 measured the link at 31-62x of headroom
+-- and #47 found the flush contact buys nothing.
+--
+-- IT CANNOT COME FROM KRASTORIO 2. Its building set is essentially square -- 7x7 and 15x15 -- and its
+-- only elongated pieces are the advanced steam turbine at 5x7, which rf-hc-turbine already wears, and
+-- a 22x3 logo. So the shape leaves Route B whichever way it is reached.
+--
+-- AND IT IS NOT TAKEN FROM THE PREDECESSOR, THOUGH THE EXACT ART EXISTS. Realistic Fusion Power's
+-- graphics/entity/heat-exchanger.png is a 383x1088 sheet -- precisely this shape, needing no
+-- derivation. It is also UNMARKED: no license.txt and no legal-note.txt in that directory, only in
+-- graphics/particle-accelerator/. The port's root Unlicense covers it formally, but a public-domain
+-- dedication disposes only of what its declarer owned, and the changelog credits YuokiTani, angel's
+-- discarded thread and PreLeyZero for unmarked art without saying which files are whose. CLAUDE.md's
+-- rule is to ask rather than assume, it was asked, and the answer was no.
+--
+-- SO: original art, drawn for this mod (Route C), and #108 is where the real thing is tracked. What
+-- it wears in the meantime is a drawn mockup at the right size rather than a vanilla sprite at the
+-- wrong one -- see graphics/mockup/pictures.lua. Do not swap in a Krastorio 2 building to close this
+-- early: the only two that ever fitted this machine's footprint were a spaceship part and a tank,
+-- and a building that lies about what it does is worse than a box that admits what it is.
 local exchanger = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-heat-exchanger", {
   mining_time = 0.5,
 })
@@ -270,12 +297,40 @@ exchanger.energy_source = {
     production_type = "input",
     volume = 200,
     pipe_covers = table.deepcopy(exchanger.fluid_box.pipe_covers),
-    -- Where vanilla's heat pipe connected.
+    -- A LONG SIDE, which is the whole reason for the 5x15 shape: butted against a fifteen-tile
+    -- reactor this face touches along its entire length, the way Realistic Fusion Power laid the
+    -- pair out. On a short end only one tile would meet the reactor and the shape would buy nothing.
     pipe_connections = {
-      { flow_direction = "input", direction = defines.direction.south, position = { 0, 0.5 } },
+      { flow_direction = "input", direction = defines.direction.west, position = { -2, 0 } },
     },
     filter = "rf-reactor-energy",
   },
+}
+
+-- FIVE BY FIFTEEN, ON MOCKUP ART (#45). Truls's decision: this machine takes the original mod's
+-- footprint, which Durikkan's 2.0 port still declares, and it gets a drawn placeholder until the
+-- real art of #108 exists. What it wore before was vanilla's heat exchanger at 3x2 -- a sprite that
+-- looked finished while being the wrong size, which is worse than a box that admits what it is.
+--
+-- BOTH LONG FACES CARRY THE BIG FLOWS, which is what the 5x15 shape is for. Reactor energy comes in
+-- along the whole west face and steam leaves along the whole east one, so the machine stands between
+-- the reactor and the turbine hall with a full-length contact on either side rather than a pipe
+-- stub at a corner. That is the arrangement the original mod had and the reason it drew the machine
+-- this shape.
+--
+-- Water goes on the short ends, both of them. It is the small flow of the three -- a unit of water
+-- against a unit of reactor energy carrying a megajoule -- and putting it on the ends means one pipe
+-- run can thread a column of exchangers end to end while their long faces stay clear for the
+-- flows that need the length.
+exchanger.collision_box = { { -2.25, -7.25 }, { 2.25, 7.25 } }
+exchanger.selection_box = { { -2.5, -7.5 }, { 2.5, 7.5 } }
+exchanger.pictures = mockup.boiler("heat-exchanger", 5, 15)
+exchanger.fluid_box.pipe_connections = {
+  { flow_direction = "input-output", direction = defines.direction.north, position = { 0, -7 } },
+  { flow_direction = "input-output", direction = defines.direction.south, position = { 0, 7 } },
+}
+exchanger.output_fluid_box.pipe_connections = {
+  { flow_direction = "output", direction = defines.direction.east, position = { 2, 0 } },
 }
 
 -- ---------------------------------------------------------------- high-capacity steam pair
@@ -461,6 +516,29 @@ end
 collector.fluid_box = emit(collector.fluid_box, "rf-tritium")
 collector.output_fluid_box = emit(collector.output_fluid_box, "rf-helium-3")
 
+-- FIVE BY FIVE, ON MOCKUP ART (#45). It was vanilla's 3x2 boiler, which is both the wrong machine
+-- and, Truls's judgement, too small for something that does work. There is no counterpart in the
+-- original mod to take a size from -- the collector is ours, from #27 -- and Krastorio 2 has
+-- nothing at 3x2 but a spaceship part, so this is a drawn placeholder at a size chosen rather than
+-- inherited.
+--
+-- Square on purpose: it makes the machine its own rotation, so one sheet serves all four
+-- directions and a player is not made to think about which way it faces to bolt it on.
+--
+-- Growing it does not change the pairing. entity-management pairs one collector to a reactor by
+-- the tiles touching it, with a whole tile of margin, so a bigger collector still touches -- and a
+-- reactor has at most one either way, so nothing about the economics moves.
+collector.collision_box = { { -2.25, -2.25 }, { 2.25, 2.25 } }
+collector.selection_box = { { -2.5, -2.5 }, { 2.5, 2.5 } }
+collector.pictures = mockup.boiler("isotope-collector", 5, 5)
+collector.fluid_box.pipe_connections = {
+  { flow_direction = "output", direction = defines.direction.west, position = { -2, 0 } },
+  { flow_direction = "output", direction = defines.direction.east, position = { 2, 0 } },
+}
+collector.output_fluid_box.pipe_connections = {
+  { flow_direction = "output", direction = defines.direction.north, position = { 0, -2 } },
+}
+
 -- ---------------------------------------------------------------- lithium blanket
 
 -- The second breeding route (#30, CONTEXT.md): a shell of lithium bolted to a reactor, catching
@@ -506,9 +584,21 @@ local blanket = pin(table.deepcopy(data.raw["container"]["steel-chest"]), "rf-li
 -- that it is still a supply line rather than a warehouse. Twice a vanilla steel chest, which is
 -- about the right size for a fitting. Provisional like every other balance number here.
 blanket.inventory_size = 100
--- In-world it is vanilla's steel chest, and the icon is Krastorio 2's energy storage, so the two
--- do not match -- the same gap rf-isotope-collector has and for the same reason: there is no K2
--- building of this shape to take, and drawing one is not this ticket. See the NOTICE.
+-- FIVE BY FIVE, ON MOCKUP ART (#45). It was a 1x1 steel chest, which Truls judged far too small for
+-- something that does work -- and it is a shell wrapped round a fifteen-tile reactor, so a single
+-- tile was never the right reading of it. There is no counterpart in the original mod to take a
+-- size from, the blanket being ours from #30, and Krastorio 2 has no 1x1 container at all: every
+-- 1x1 building in that mod is a belt, a loader, an inserter or a remnant. So the size is chosen
+-- rather than inherited, and the art is drawn rather than taken.
+--
+-- No connections to mark on it: lithium arrives by inserter and the tritium it breeds leaves
+-- through the collector bolted to the same reactor, which is the design recorded at length above.
+--
+-- Growing it changes no economics. A reactor pairs with at most one blanket, by the tiles touching
+-- it, so five tiles square still touches and still counts once.
+blanket.collision_box = { { -2.25, -2.25 }, { 2.25, 2.25 } }
+blanket.selection_box = { { -2.5, -2.5 }, { 2.5, 2.5 } }
+blanket.picture = mockup.still("lithium-blanket", 5, 5)
 
 -- ---------------------------------------------------------------- aneutronic reactor
 
@@ -525,20 +615,33 @@ local aneutronic = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf
 })
 aneutronic.mode = "output-to-separate-pipe"
 
--- Ten tiles square, following the art the way rf-reactor's fifteen does (ADR 0013). Krastorio 2's
--- antimatter reactor is drawn for a 10x10 building and this takes its boxes with it.
+-- FIFTEEN TILES SQUARE, ON MOCKUP ART (Truls, 2026-08-23). It was ten, following Krastorio 2's
+-- antimatter reactor, which is drawn for a 10x10 building -- the last machine whose size came from
+-- the art rather than from the mod. The original had both reactors at fifteen and this returns to
+-- that, which also makes it the right partner for a 5x15 exchanger or converter laid along a face:
+-- fifteen against fifteen touches all the way.
 --
--- The size difference from rf-reactor is not incidental and is worth keeping: two reactors that a
--- player cannot tell apart on the ground is the complaint that separated rf-reactor from
--- rf-heat-exchanger, and a fifteen-tile building beside a ten-tile one is the cheapest possible
--- answer to it.
-aneutronic.collision_box = { { -4.75, -4.75 }, { 4.75, 4.75 } }
-aneutronic.selection_box = { { -4.95, -4.95 }, { 4.95, 4.95 } }
-local aneutronic_graphics = require("graphics.krastorio-2.buildings.aneutronic-reactor-pictures")
-aneutronic.pictures = aneutronic_graphics.pictures
+-- IT COSTS THE SIZE DIFFERENCE FROM rf-reactor, which was a real argument and is now answered a
+-- different way. Two reactors a player cannot tell apart on the ground is the complaint that
+-- separated rf-reactor from rf-heat-exchanger, and ten-beside-fifteen was the cheapest answer to
+-- it. What separates them now is the art itself -- one is Krastorio 2's fusion reactor, the other a
+-- labelled box saying ANEUTRONIC REACTOR -- and when real art replaces the box it will have to keep
+-- doing that work, because the footprints no longer will.
+--
+-- Krastorio 2's antimatter reactor art is not merely unused here, it CANNOT be used: it is drawn
+-- for ten tiles, and stretching a 10x10 sheet over a 15x15 building is the kind of guess this
+-- repository does not make. graphics/krastorio-2/buildings/aneutronic-reactor-pictures.lua and its
+-- PNGs stay in the tree for whoever draws the real thing, and the NOTICE says so.
+aneutronic.collision_box = { { -7.25, -7.25 }, { 7.25, 7.25 } }
+aneutronic.selection_box = { { -7.5, -7.5 }, { 7.5, 7.5 } }
+aneutronic.pictures = mockup.boiler("aneutronic-reactor", 15, 15)
 -- The moving core, drawn over the still one by scripts/reactor-animation.lua while the reactor is
 -- fusing. Same arrangement as rf-reactor and for the same measured reason: a boiler cannot animate.
-data:extend({ aneutronic_graphics.core_animation("rf-aneutronic-reactor-core") })
+--
+-- It has to exist even on a mockup. reactor-animation.lua records that a reactor whose
+-- "<name>-core" animation is missing crashes rendering.draw_animation the first time it starts
+-- fusing, on a live save -- so this is a drawn one rather than nothing.
+data:extend({ mockup.core_animation("rf-aneutronic-reactor-core", "aneutronic-reactor-core", 15) })
 -- LEFT AT 165 WHILE rf-reactor WENT TO 550, and the asymmetry is the decision rather than a
 -- missed edit (Truls, 2026-08-22, #46). This tier has no thermal stage at all: a direct energy
 -- converter decelerates charged particles against collector plates and takes current off them, and
@@ -584,9 +687,11 @@ aneutronic.fluid_box = {
   -- goes on meaning the same thing in every pipe.
   volume = 3000,
   pipe_covers = aneutronic_covers,
+  -- The edge of the fifteen-tile footprint, on whole numbers because fifteen is odd -- the same
+  -- arithmetic rf-reactor's connections use, and they were on halves at ten.
   pipe_connections = {
-    { flow_direction = "input-output", direction = defines.direction.west, position = { -4.5, 0.5 } },
-    { flow_direction = "input-output", direction = defines.direction.east, position = { 4.5, 0.5 } },
+    { flow_direction = "input-output", direction = defines.direction.west, position = { -7, 0 } },
+    { flow_direction = "input-output", direction = defines.direction.east, position = { 7, 0 } },
   },
   -- Unfiltered, like rf-reactor's and for the same reason (#28): one reactor burns whichever plasma
   -- it is plumbed to, and control.lua's check_every_plasma_burns is what guarantees every plasma a
@@ -603,7 +708,7 @@ aneutronic.output_fluid_box = {
   volume = 1000,
   pipe_covers = aneutronic_covers,
   pipe_connections = {
-    { flow_direction = "output", direction = defines.direction.north, position = { 0.5, -4.5 } },
+    { flow_direction = "output", direction = defines.direction.north, position = { 0, -7 } },
   },
   -- The tier's own energy fluid, which is what keeps the two conversion routes from being
   -- interchangeable. See prototypes/fluids.lua for why there are two.
@@ -660,12 +765,13 @@ converter.fluid_box = {
   -- back simply do not connect, so every one after the first sits dry with nothing to look at. The
   -- layout works for the whole neutronic tier and silently would not have here.
   --
-  -- At ±2 rather than ±2.5: the entity is three by five, so its collision box stops at 2.35 and a
-  -- connection has to sit inside it -- the outermost tile centre is 2. Factorio refuses to load
-  -- otherwise, which is how this number was arrived at.
+  -- BOTH LONG FACES, at ±2 -- the outermost tile centres across the 5-wide axis. One butts the
+  -- reactor along its whole length, which is what the 5x15 shape is for; the other passes fluid to
+  -- the next converter in the row, which is the chaining the comment above records as easy to lose.
+  -- They were on the short ends and that put one tile against the reactor.
   pipe_connections = {
-    { flow_direction = "input-output", direction = defines.direction.south, position = { 0, 2 } },
-    { flow_direction = "input-output", direction = defines.direction.north, position = { 0, -2 } },
+    { flow_direction = "input-output", direction = defines.direction.west, position = { -2, 0 } },
+    { flow_direction = "input-output", direction = defines.direction.east, position = { 2, 0 } },
   },
   filter = "rf-aneutronic-reactor-energy",
 }
@@ -673,6 +779,21 @@ converter.energy_source = {
   type = "electric",
   usage_priority = "secondary-output",
 }
+
+-- FIVE BY FIFTEEN, ON MOCKUP ART (#45). The original mod's footprint for this machine, which
+-- Durikkan's 2.0 port still declares, and the same size its heat exchanger takes -- the two are a
+-- pair in that layout, one per route. It was vanilla's 3x5 steam turbine, which is the machine this
+-- tier exists to REMOVE: a direct energy converter decelerates charged particles against collector
+-- plates and never raises steam at all (ADR 0018), so wearing a turbine was the plainest lie in the
+-- mod.
+--
+-- Both connections sit on the long faces, so a row of these joins side by side rather than end to
+-- end -- the same chaining, turned ninety degrees with the machine.
+converter.collision_box = { { -2.25, -7.25 }, { 2.25, 7.25 } }
+converter.selection_box = { { -2.5, -7.5 }, { 2.5, 7.5 } }
+local converter_art = mockup.generator("direct-energy-converter", 5, 15)
+converter.vertical_animation = converter_art.vertical
+converter.horizontal_animation = converter_art.horizontal
 
 -- ---------------------------------------------------------------- aneutronic composite tank
 

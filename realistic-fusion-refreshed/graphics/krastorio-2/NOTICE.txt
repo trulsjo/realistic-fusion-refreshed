@@ -142,8 +142,15 @@ Unmodified copies, renamed to the prototype they serve:
 
     The aneutronic reactor's in-world building (#31). Renamed only -- "antimatter-" becomes
     "aneutronic-", "-sh" becomes "-shadow" and "-anim" becomes "-animation" to match the names
-    reactor/ already uses. Not one pixel is changed, and rf-aneutronic-reactor takes Krastorio 2's
-    collision and selection boxes with them: ten tiles square, where rf-reactor is fifteen.
+    reactor/ already uses. Not one pixel is changed.
+
+    CURRENTLY UNUSED, and kept deliberately (2026-08-23). rf-aneutronic-reactor went from ten tiles
+    square to fifteen, on Truls's decision that both reactors should match the original mod, and
+    these sheets are drawn for ten. Stretching a 10x10 sheet over a 15x15 building is a guess this
+    repository does not make, so the machine wears a drawn mockup instead -- see graphics/mockup/.
+    The files stay because they are the best starting point anyone drawing the real thing will have,
+    and because deleting them would lose the provenance recorded here. Its ICON below is still in
+    use; only the building is not.
 
     THE ANTIMATTER REACTOR RATHER THAN A SECOND TINT OF THE FUSION ONE, and that is the whole
     reason a second building was taken at all. rf-reactor already wears K2's fusion reactor; a
@@ -227,6 +234,45 @@ Unmodified copies, renamed to the prototype they serve:
   fluids/d-d-plasma.png         <- icons/fluids/matter.png
   technologies/d-d.png          <- technologies/fusion-energy.png
 
+The four machines with no Krastorio 2 building, and why
+------------------------------------------------------
+
+None of these four takes anything from this directory beyond its icon. They wear drawn placeholders
+instead -- see graphics/mockup/ and scripts/make-mockup-art.ps1, which are the repository's own work
+under the repository's own licence. This section records why nothing here could serve, so the search
+is not run a third time.
+
+Searched exhaustively 2026-08-22 against every Krastorio 2 building, by footprint (#45). The rule
+applied was same-size-only: take a Krastorio 2 building where one matches the machine's footprint, so
+nothing breaks a save, and otherwise leave it. The search found nothing usable.
+
+  rf-heat-exchanger      3x2 -> 5x15  Decided separately and NOT by this rule: it takes the original
+                                     mod's footprint, which Krastorio 2 cannot supply at all. #108
+                                     tracks the real art.
+
+  rf-direct-energy-converter 3x5 -> 5x15
+                                     The original mod's footprint too, and the pair to the exchanger
+                                     in that layout. At its old size the only matches were
+                                     kr-advanced-tank -- a VEHICLE -- and a 5x3 research computer.
+
+  rf-isotope-collector    3x2 -> 5x5  One match at its old size, kr-spaceship-material-fabricator-1.
+                                     Not taken: its icon here is already the flare stack, so the
+                                     building would have disagreed with its own icon -- the mismatch
+                                     the composite tank just stopped having -- and a spaceship part
+                                     is a long way from a by-product collector. Resized on Truls's
+                                     judgement that 3x2 is too small for a machine that does work.
+
+  rf-lithium-blanket      1x1 -> 5x5  No match at any size worth having. Every 1x1 building in
+                                     Krastorio 2 is a belt, a loader, an inserter, a pipe-to-ground
+                                     or a remnant; the nearest container, kr-strongbox, is 2x2.
+                                     Resized for the same reason as the collector.
+
+Krastorio 2's building set is essentially square -- 7x7 and 15x15 -- and its only elongated pieces
+are the advanced steam turbine at 5x7, which rf-hc-turbine already wears, and a 22x3 logo. That is
+the shape of the problem for all four, and it is why growing them would mean picking a building for
+its size rather than for what it depicts.
+
+
 MODIFIED -- these are derivative works and remain LGPLv3:
 
   fluids/reactor-energy.png     <- icons/fluids/matter.png, recoloured.
@@ -270,7 +316,7 @@ DERIVED CODE -- also LGPLv3, and this is the reason it is in here at all:
 
   buildings/reactor-pictures.lua
   buildings/heater-pictures.lua
-  buildings/aneutronic-reactor-pictures.lua
+  buildings/aneutronic-reactor-pictures.lua   (currently unused -- see above)
   buildings/hc-pictures.lua
   buildings/composite-tank-pictures.lua
   buildings/pump-pictures.lua
