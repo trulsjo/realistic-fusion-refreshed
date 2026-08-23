@@ -382,11 +382,34 @@ script.on_init(function()
   -- the two prototypes' own connection geometry rather than written down -- if it is wrong the
   -- converter simply gets no fluid, and the check below says so.
   local out_connection = dhe3.fluidbox.get_pipe_connections(2)[1]
+
+  -- Both offsets below come off the converter's own selection box rather than being written down,
+  -- because they were written down once and the machine outgrew them: it was three by five when
+  -- this rig was built and #45 took it to five by fifteen, at which point a hardcoded 2 put it
+  -- nowhere near the reactor and three checks failed at once.
+  --
+  -- ROTATED, AND THAT IS THE POINT OF THE SHAPE. #45 moved this machine's connections onto its long
+  -- faces, so that butted against a reactor it touches along its whole fifteen tiles instead of at
+  -- one tile. The reactor sells its energy through its NORTH face, so the converter has to lie
+  -- sideways for a long face to meet it -- which is the arrangement the original mod had, with a
+  -- 5x15 exchanger flush along its reactor.
+  --
+  -- Turned west rather than east: a quarter turn anticlockwise sends the west-facing connection to
+  -- (0, +reach) pointing south, which is the one that can meet a north-facing output. Turning it the
+  -- other way puts that connection on the far side and it meets nothing.
+  --
+  -- Both offsets come off the prototype rather than being written down, because they were written
+  -- down once and the machine outgrew them twice: three by five when this rig was built, then five
+  -- by fifteen, and a hardcoded number failed loudly each time.
+  local converter_box = prototypes.entity[CONVERTER].selection_box
+  local converter_short = converter_box.right_bottom.x - converter_box.left_top.x
+  local converter_reach = converter_short / 2 - 0.5
+
   local converter = must(surface.create_entity({
     name = CONVERTER,
-    -- The converter's own south connection has to land on the tile the reactor's output points at.
-    -- Its connections are symmetric about its centre, so the offset is half its height.
-    position = { out_connection.target_position.x, out_connection.target_position.y - 2 },
+    direction = defines.direction.west,
+    -- Its south-facing connection has to land on the tile the reactor's output points at.
+    position = { out_connection.target_position.x, out_connection.target_position.y - converter_reach },
     force = force, raise_built = true,
   }), CONVERTER)
 
@@ -397,11 +420,13 @@ script.on_init(function()
   -- after the first sat dry with nothing on screen to say why. Found on review by probing it in
   -- game, which is the only way it could have been found.
   --
-  -- Five tiles on, because the converter is five tall and its connections sit two either side of
-  -- centre -- so the second one's south connection lands exactly on the first one's north.
+  -- One machine-depth further out, in the same rotation, so the second one's south connection lands
+  -- exactly on the first one's north. A row of these stacks away from the reactor, which is how a
+  -- row of steam turbines has always been laid. Read off the prototype for the reason above.
   local second_converter = must(surface.create_entity({
     name = CONVERTER,
-    position = { converter.position.x, converter.position.y - 5 },
+    direction = defines.direction.west,
+    position = { converter.position.x, converter.position.y - converter_short },
     force = force, raise_built = true,
   }), "second " .. CONVERTER)
   -- Its own supply area. Without it the machine sits full of fluid reporting
