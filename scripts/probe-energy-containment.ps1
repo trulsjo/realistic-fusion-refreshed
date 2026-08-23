@@ -351,6 +351,17 @@ end
 -- `side` picks WHICH connection, geometrically rather than by index. The chain variant declares
 -- three of them and pairs iterates in whatever order it likes, so taking the first would bolt the
 -- exchanger on by a different face from one run to the next.
+-- `side` may be nil, meaning "the box's only connection, wherever it is".
+--
+-- IT USED TO BE MANDATORY AND THAT BROKE THIS PROBE. Both shipped exchangers took their energy on
+-- the south face when this was written, so the two calls below said "south" and meant "the energy
+-- inlet". #45 moved rf-heat-exchanger's onto its west long face -- five by fifteen exists so that a
+-- long side lies along a reactor -- and the probe stopped running with "has no connection on its
+-- south face". A rig that names a face is asserting a layout it does not own.
+--
+-- So a caller that just wants the one connection asks for it that way, and only a box with several
+-- has to say which. The chain variant below is the one with several, and it is rig-defined, so the
+-- face it names is a face it declares itself.
 local function place_facing(surface, force, name, fluid, side, target, seed)
   local probe = must(surface.create_entity({ name = name, position = seed, force = force }),
     "a probe " .. name)
@@ -359,16 +370,27 @@ local function place_facing(surface, force, name, fluid, side, target, seed)
     probe.destroy()
     error(name .. " has no box filtered to " .. fluid)
   end
+  local connections = probe.fluidbox.get_pipe_connections(index)
   local chosen
-  for _, c in pairs(probe.fluidbox.get_pipe_connections(index)) do
-    local dx = c.target_position.x - probe.position.x
-    local dy = c.target_position.y - probe.position.y
-    local matches =
-      (side == "south" and dy > 0 and dx == 0) or
-      (side == "north" and dy < 0 and dx == 0) or
-      (side == "west"  and dx < 0) or
-      (side == "east"  and dx > 0)
-    if matches then chosen = c.target_position end
+  if side == nil then
+    if #connections ~= 1 then
+      probe.destroy()
+      error(string.format(
+        "%s's %s box has %d connections, so the caller has to say which face to align",
+        name, fluid, #connections))
+    end
+    chosen = connections[1].target_position
+  else
+    for _, c in pairs(connections) do
+      local dx = c.target_position.x - probe.position.x
+      local dy = c.target_position.y - probe.position.y
+      local matches =
+        (side == "south" and dy > 0 and dx == 0) or
+        (side == "north" and dy < 0 and dx == 0) or
+        (side == "west"  and dx < 0) or
+        (side == "east"  and dx > 0)
+      if matches then chosen = c.target_position end
+    end
   end
   if not chosen then
     probe.destroy()
@@ -465,7 +487,8 @@ end
 --- One refuse-or-accept row: an exchanger with a single pipe on the tile its energy intake points
 --- at, and nothing else touching that box.
 local function offer(surface, force, label, exchanger_name, pipe_name, at)
-  local e = place_facing(surface, force, exchanger_name, ENERGY, "south",
+  -- nil rather than "south": whichever face the shipped machine takes its energy on. See above.
+  local e = place_facing(surface, force, exchanger_name, ENERGY, nil,
     { x = at[1], y = at[2] }, { at[1], at[2] - 20 })
   local pipe = must(surface.create_entity({ name = pipe_name, position = at, force = force }),
     pipe_name .. " for " .. label)
