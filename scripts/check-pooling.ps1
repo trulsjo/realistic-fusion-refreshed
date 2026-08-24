@@ -596,6 +596,22 @@ script.on_init(function()
   local surface = game.surfaces[1]
   local force   = game.forces.player
   force.research_all_technologies()
+  -- AND THEN PUT THE CONFINEMENT LADDER BACK (#53), which is the one thing this rig must not have
+  -- researched. Every prediction below is computed with logic.reactor -- the module's own spec --
+  -- against a reactor the game is simulating, and #53 made confinement time a per-force number, so
+  -- a researched force runs a reactor this rig would be predicting the wrong physics for. It shows
+  -- up as the pool gaining MORE than the reactors were predicted to spend (102.5% of it, at the top
+  -- rung), which reads exactly like energy appearing from nowhere and is not.
+  --
+  -- Held at the shipped value rather than followed, because this rig is a controlled experiment
+  -- about what the ENGINE does to a fluid segment, and confinement time is not one of its variables.
+  -- What research does to a reactor is scripts/check-confinement.ps1's subject.
+  --
+  -- The rungs unlock nothing, so nothing else here loses anything by their going.
+  for _, rung in ipairs(logic.reactor.confinement_ladder or {}) do
+    local technology = force.technologies[rung.technology]
+    if technology then technology.researched = false end
+  end
 
   local size = reactor_footprint()
   local span_x = 6 * (size + GAP) + TAIL + 40

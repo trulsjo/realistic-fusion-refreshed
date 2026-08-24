@@ -21,6 +21,88 @@ local SPECS = {
   ["rf-aneutronic-reactor"] = logic.aneutronic_reactor,
 }
 
+-- The same constants AS ONE FORCE RUNS THEM (#53).
+--
+-- Confinement time is researchable now, and research is per force, so SPECS above stopped being
+-- the whole answer: two forces on one map run the same reactor prototype with different physics.
+-- What resolves the difference is scripts/reactor-logic.lua's confinement ladder; what this holds
+-- is the result, so no reactor ever reads force.technologies inside the tick loop.
+--
+-- [force_index][prototype name] -> the spec to hand step(). A force with nothing researched maps
+-- STRAIGHT BACK to the module table rather than to a copy of it -- derive() returns `base`
+-- unchanged -- so a fresh save allocates nothing at all and every reactor on it is running the
+-- exact table the tests drive.
+--
+-- NOT IN `storage`, AND THAT IS THE WHOLE OF THE MIGRATION THIS FEATURE NEEDS. Factorio rebuilds
+-- the Lua state on every load, so this table starts empty every time and is refilled from
+-- force.technologies, which the save already carries. An existing save part way through the ladder
+-- therefore gets exactly what its research says on the first tick after loading, and a rung added,
+-- removed or renamed in a later version cannot leave a stale number behind because there is no
+-- stored number to go stale. A migration script would have had to migrate precisely this, and
+-- could only have got it wrong.
+--
+-- And it is why neither on_init nor on_configuration_changed clears it: a fresh Lua state has
+-- nothing to clear, so a call there would read as diligence and do nothing at all.
+--
+-- ADR 0020 reaches the same place for capture_efficiency by a different route -- an argument to
+-- step() rather than a spec per force -- and its four requirements are what this is built to meet:
+-- reactor-logic stays free of anything Factorio, nothing is allocated per step, the answer is
+-- cached per force, and it is invalidated on research rather than re-read in the loop. When that
+-- ticket lands, its constant belongs in derive() beside this one.
+local force_specs = {}
+
+--- This force's version of one reactor's constants.
+local function derive(base, force)
+  local tau = logic.confinement_time(base, function(name)
+    local technology = force.technologies[name]
+    -- Guarded rather than indexed: a ladder rung whose technology prototype is missing is a
+    -- developer error, and the useful behaviour is that the force simply has not researched it.
+    -- check_confinement_ladder() below is what refuses to load over it, once, with a message.
+    return technology ~= nil and technology.researched
+  end)
+  if tau == base.confinement_time_s then return base end
+
+  local spec = {}
+  for k, v in pairs(base) do spec[k] = v end
+  spec.confinement_time_s = tau
+  return spec
+end
+
+--- The constants to simulate this reactor with, for the force that owns it.
+--
+-- entity.force_index rather than entity.force.index: the same answer for one property read instead
+-- of two, on a path that runs once per reactor per step. entity.force is fetched only on a cache
+-- miss, which for a settled game is never.
+local function spec_for(entity)
+  local base = SPECS[entity.name]
+  -- A reactor no technology moves -- rf-aneutronic-reactor, deliberately (see the ladder's note in
+  -- scripts/reactor-logic.lua) -- never touches the cache at all.
+  if not base.confinement_ladder then return base end
+
+  local index = entity.force_index
+  local by_force = force_specs[index]
+  if not by_force then
+    by_force = {}
+    force_specs[index] = by_force
+  end
+
+  local spec = by_force[entity.name]
+  if not spec then
+    spec = derive(base, entity.force)
+    by_force[entity.name] = spec
+  end
+  return spec
+end
+
+--- Drop everything, so the next reactor to be stepped rebuilds it.
+--
+-- The whole cache rather than the one force the event names, because the events below do not all
+-- name one -- and because a force's entry is two table lookups to rebuild. There is no cost here
+-- worth being clever about.
+local function forget_force_specs()
+  force_specs = {}
+end
+
 -- The temperature apply() stamps on the reactor energy it writes, memoised per reactor by
 -- energy_temperature() below and taken from the prototype rather than hardcoded here. Nothing
 -- reads it -- the exchanger and the converter both burn their fluid by fuel_value -- so this is
@@ -430,11 +512,11 @@ local function update()
 
   for unit_number, entity in pairs(entities.registry()) do
     if entity.valid then
-      -- The reactor's own constants (#31). check_reactor_specs() guarantees this is never nil for
-      -- anything the register can hold, so there is no fallback here on purpose: a fallback would
-      -- silently simulate an aneutronic reactor as a neutronic one, which looks like a balance
-      -- problem rather than a missing entry.
-      local spec = SPECS[entity.name]
+      -- The reactor's own constants (#31), as this reactor's OWNER has researched them (#53).
+      -- check_reactor_specs() guarantees SPECS is never nil for anything the register can hold, so
+      -- spec_for has no fallback on purpose: a fallback would silently simulate an aneutronic
+      -- reactor as a neutronic one, which looks like a balance problem rather than a missing entry.
+      local spec = spec_for(entity)
       local plasma = entity.fluidbox[1]
       local result = logic.step(spec, plasma and plasma.name, plasma and plasma.amount,
         plasma and plasma.temperature, entity.energy, dt)
@@ -1083,10 +1165,82 @@ local function check_fuel_rows()
   end
 end
 
+--- Refuse to load a confinement ladder whose top rung parks D-D against the temperature clamp (#53).
+--
+-- The same shape as every other invariant here and for the same reason: it can only fire on a
+-- developer edit -- a rung added or raised in scripts/reactor-logic.lua -- and without it the mod
+-- loads perfectly and the defect surfaces in a player's save, as a reactor whose thermometer has
+-- stopped moving and whose research has therefore stopped doing anything a player can see. The D-T
+-- tier already reads that way at the clamp on purpose (docs/research/d-t-ignition.md); D-D arriving
+-- there by accident is what this refuses.
+--
+-- ONE FUEL, AND THE SPEC SAYS WHICH -- confinement_guard_fuel, beside the ladder itself. The
+-- exemption is the point rather than a narrowing: D-T settles at the clamp at every rung of the
+-- ladder and at none of them, because it passes Lawson by more than an order of magnitude and is
+-- pinned there whatever the confinement time is. A guard over every fuel would fail on the day it
+-- was written, which is a guard nobody can keep. Reading the fuel off the spec rather than naming
+-- it here is what stops a second reactor with a ladder being settled on a plasma it cannot burn.
+--
+-- THE DECISION IS reactor-logic's, not this function's. logic.confinement_ladder_overruns settles
+-- the top rung and answers; this supplies the operating point, the horizon and the message. That
+-- split is what lets tests/test-reactor-logic.lua negative-test the guard by breaking a ladder,
+-- which is not something a check that only exists inside on_init could be asked to prove.
+--
+-- WHAT IT COSTS: about 40 ms, once, in on_init and on_configuration_changed. Not in the tick loop
+-- and not at data stage.
+-- Twenty minutes of simulated time, which is converged rather than merely long: the same answer to
+-- five figures at two hours, over the whole ladder and well past it. Stepped at the cadence
+-- update() actually runs, so the guard is asked about the simulation the game performs; a coarser
+-- step settles hotter, which is the safe direction for a guard and the wrong one for a figure.
+local LADDER_GUARD_SECONDS = 1200
+
+local function check_confinement_ladder()
+  for name, spec in pairs(SPECS) do
+    if spec.confinement_ladder then
+      -- Box 1 is the plasma box -- the same index update() reads the plasma out of, so the two
+      -- cannot come to disagree about which box this is. Full, which is the reference operating
+      -- point rather than the hottest one: see the note on confinement_ladder_overruns, which is
+      -- where the argument for checking that one point lives.
+      local volume = prototypes.entity[name].fluidbox_prototypes[1].volume
+      local top = spec.confinement_ladder[#spec.confinement_ladder]
+      local fuel = spec.confinement_guard_fuel
+      if not fuel then
+        error(string.format(
+          "%s: has a confinement ladder but no confinement_guard_fuel, so there is no plasma to " ..
+          "settle it against and the ladder would go unguarded. Name one in " ..
+          "scripts/reactor-logic.lua, beside the ladder.", name))
+      end
+      local reached = logic.confinement_ladder_overruns(spec, fuel, volume,
+        LADDER_GUARD_SECONDS, UPDATE_INTERVAL / 60)
+      if reached then
+        error(string.format(
+          "%s: the confinement ladder's top rung (%s, %g s) settles %s at %.6g C, which is the " ..
+          "simulation's own clamp of %.6g C -- so the reactor's temperature would be pinned there " ..
+          "and further research would do nothing a player can see. Lower the top rung or shorten " ..
+          "the ladder in scripts/reactor-logic.lua.",
+          name, top.technology, top.confinement_time_s, fuel, reached, spec.max_temperature_c))
+      end
+      -- The prototypes the ladder names have to exist, or the force cache above silently reads a
+      -- rung nobody can research and the line quietly stops one short. Cheap, and it catches a
+      -- rename in prototypes/technology/confinement.lua that nothing else would.
+      for _, rung in ipairs(spec.confinement_ladder) do
+        if not prototypes.technology[rung.technology] then
+          error(string.format(
+            "%s: the confinement ladder names the technology '%s', which no loaded mod defines -- " ..
+            "so no force could ever reach %g s of confinement. Reconcile " ..
+            "scripts/reactor-logic.lua with prototypes/technology/confinement.lua.",
+            name, rung.technology, rung.confinement_time_s))
+        end
+      end
+    end
+  end
+end
+
 local function check_prototypes()
   check_fuel_rows()
   check_reactor_specs()
   check_cadence()
+  check_confinement_ladder()
   check_plasma_bounds()
   check_every_plasma_burns()
   check_collector_boxes()
@@ -1118,6 +1272,29 @@ script.on_configuration_changed(function()
 end)
 
 script.on_nth_tick(UPDATE_INTERVAL, update)
+
+-- What makes a force's confinement time change (#53). Each of these drops the derived spec cache;
+-- the next reactor to be stepped rebuilds it from force.technologies, which is the only place the
+-- answer is ever stored.
+--
+-- Wired through a table constructor and pairs() for the reason entity-management wires its build
+-- events that way: a name this engine version does not define is simply a value the constructor
+-- does not store, and pairs iterates what is there. ipairs would stop at the hole and silently drop
+-- every event after it.
+--
+-- on_research_finished is the one that fires in normal play. The rest are the ways a force can end
+-- up with different research WITHOUT finishing any -- reversed by a mod or the console, reset by a
+-- scenario, merged into another force -- and every one of them would otherwise leave a reactor
+-- running the confinement time of research its owner no longer has, for the rest of the save.
+for _, event in pairs({
+  defines.events.on_research_finished,
+  defines.events.on_research_reversed,
+  defines.events.on_technology_effects_reset,
+  defines.events.on_force_reset,
+  defines.events.on_forces_merged,
+}) do
+  script.on_event(event, forget_force_specs)
+end
 
 -- The reactor's signals sit on a companion entity a player cannot see, and the engine will not
 -- offer it to a wire drag on its own -- the reactor outranks it for selection, and dragging a wire

@@ -41,17 +41,13 @@ local SETTLE_S = 1200
 -- in the same volume, which is its whole difference, so it has to be passed -- a settle() that
 -- silently used 1000 units for both would run the second reactor at a third of its density and
 -- report the answer as its equilibrium. It did, before this parameter existed.
+--
+-- THE LOOP ITSELF LIVES IN reactor-logic SINCE #53, and this is a wrapper over it rather than a
+-- second copy. control.lua's confinement guard has to settle a reactor at load, and #51 is the
+-- record of what it costs to have one piece of arithmetic implemented twice. What stayed here is
+-- the argument order and the defaults, which every call below is written against.
 local function settle(spec, seconds, available_j, dt, fluid, amount)
-  dt = dt or TICK
-  fluid = fluid or "rf-d-d-plasma"
-  amount = amount or FULL
-  local t_c, last = spec.min_temperature_c, nil
-  for _ = 1, math.floor(seconds / dt) do
-    last = L.step(spec, fluid, amount, t_c, available_j, dt)
-    if not last then break end
-    t_c = last.temperature_c
-  end
-  return t_c, last
+  return L.settle(spec, fluid or "rf-d-d-plasma", amount or FULL, seconds, available_j, dt or TICK)
 end
 
 -- ---------------------------------------------------------------- nothing to do
@@ -939,6 +935,157 @@ check(floor_dd.neutrons > 0 and floor_dd.neutrons < 1e4,
   "so its neutron trickle comes from fusion, not from the clamp",
   string.format("%.6g per step", floor_dd.neutrons))
 near(floor_he3.neutrons, 0, 0, "and the aneutronic tier breeds none at all, floor or not")
+
+-- ---------------------------------------------------------------- the confinement ladder (#53)
+--
+-- What research does, what each rung's tooltip claims, and the guard that stops the ladder growing
+-- into the temperature clamp.
+--
+-- THE LADDER IS THE PROGRESSION #53 IS ABOUT: a player who has researched nothing runs a D-D
+-- reactor below break-even (the block above, and ADR 0015 on why that is intended), and a player
+-- who has researched all of it runs one net positive. Everything here is at FULL SUPPLY unless it
+-- says otherwise, which ADR 0016 makes a load-bearing qualifier rather than a pedantic one: a
+-- player picks their own density, and at these temperatures full is not always the best pick.
+
+local LADDER = SPEC.confinement_ladder
+check(type(LADDER) == "table" and #LADDER > 0, "the neutronic reactor has a confinement ladder")
+check(ANEUTRONIC.confinement_ladder == nil,
+  "and the aneutronic reactor deliberately has none -- see the ladder's note in reactor-logic")
+-- The plasma the load guard is asked about. It lives on the spec so that a second reactor given a
+-- ladder names its own, and control.lua refuses to load a ladder that has none -- but it can only
+-- refuse over a spec it can see, and this is the earlier place.
+check(L.fuels[SPEC.confinement_guard_fuel or ""] ~= nil,
+  "the ladder names a plasma the simulation can actually burn to guard it",
+  tostring(SPEC.confinement_guard_fuel))
+
+-- Strictly upward from the shipped value. A rung at or below the one before it is a technology that
+-- does nothing, or undoes something, and neither would fail anything else here.
+local previous_tau = SPEC.confinement_time_s
+for level, rung in ipairs(LADDER) do
+  check(rung.confinement_time_s > previous_tau,
+    string.format("rung %d raises confinement time", level),
+    string.format("%g s after %g s", rung.confinement_time_s, previous_tau))
+  check(type(rung.technology) == "string" and rung.technology ~= "",
+    string.format("rung %d names a technology", level))
+  previous_tau = rung.confinement_time_s
+end
+
+-- Resolution. THE HIGHEST RESEARCHED RUNG WINS, not the count of them: the prerequisite chain is a
+-- player-facing ordering and the console does not respect it, so a force holding level 3 alone must
+-- get level 3's number rather than the base one.
+local function researched(...)
+  local held = {}
+  for _, name in ipairs({ ... }) do held[name] = true end
+  return function(name) return held[name] end
+end
+
+local TOP = LADDER[#LADDER]
+
+near(L.confinement_time(SPEC, researched()), SPEC.confinement_time_s, 0,
+  "a force with nothing researched runs the shipped confinement time")
+near(L.confinement_time(SPEC, researched(TOP.technology)), TOP.confinement_time_s, 0,
+  "a force holding only the top rung gets the top rung, not the base")
+near(L.confinement_time(ANEUTRONIC, researched(TOP.technology)), ANEUTRONIC.confinement_time_s, 0,
+  "and the ladder does not reach the aneutronic reactor however much is researched")
+near(L.confinement_time(SPEC, researched(LADDER[1].technology)), LADDER[1].confinement_time_s, 0,
+  "a force part way up gets the rung it has reached and no more")
+
+--- The spec one rung up, as control.lua's derive() builds it.
+local function at_rung(level)
+  local spec = {}
+  for k, v in pairs(SPEC) do spec[k] = v end
+  spec.confinement_time_s = LADDER[level].confinement_time_s
+  return spec
+end
+
+--- Q at one rung and one fill of the input box.
+local function q_at(level, fill)
+  local _, state = settle(at_rung(level), SETTLE_S, math.huge, nil, nil, FULL * (fill or 1))
+  return state.q_factor
+end
+
+-- THE RUNGS THEMSELVES, pinned to 1% the way #51 requires every balance figure to be. These are the
+-- numbers reactor-logic's ladder note quotes and the numbers the technology descriptions describe
+-- in words; a rebalance moves them here first and everything downstream is a deliberate edit.
+near(q_at(1), 0.5777, 0.01, "rung 1 reaches Q 0.578 at full supply")
+near(q_at(2), 0.9503, 0.01, "rung 2 reaches Q 0.950 at full supply")
+near(q_at(3), 1.4675, 0.01, "rung 3 reaches Q 1.468 at full supply")
+
+-- THE PROGRESSION THE TICKET ASKS FOR, stated as the claim rather than as three numbers: below
+-- break-even unresearched, above it with the ladder done, and no rung wasted in between.
+check(hot_state.q_factor < 1 and q_at(1) < 1,
+  "an unresearched D-D reactor is below break-even, and one rung does not fix it",
+  string.format("Q %.3f unresearched, %.3f at rung 1", hot_state.q_factor, q_at(1)))
+check(q_at(#LADDER) > 1,
+  "researching the whole ladder takes it net positive",
+  string.format("Q %.3f", q_at(#LADDER)))
+
+-- WHAT EACH TECHNOLOGY'S DESCRIPTION CLAIMS, asserted here because the strings are prose and prose
+-- cannot be derived from the constants the way the seconds are -- prototypes/technology/
+-- confinement.lua records why no Q is quoted in game. If a rebalance falsifies one of these, this
+-- is what says so before a player does.
+--
+-- Rung 2 is the interesting one and its whole tooltip turns on it: full supply misses break-even
+-- and about 85% full clears it. That fill is ADR 0016's own figure for the optimum at this
+-- confinement time, quoted so the tooltip, the ADR and the model all say one thing.
+check(q_at(2) < 1 and q_at(2, 0.85) > 1,
+  "rung 2's tooltip is true: full falls short, 85% full crosses break-even",
+  string.format("Q %.3f full, %.3f at 85%%", q_at(2), q_at(2, 0.85)))
+
+-- Rung 3 says a full reactor is finally net positive and that tuning is worth little now. Both
+-- halves, because "worth little" is the half that would quietly stop being true.
+local unresearched_gain = select(2,
+  settle(SPEC, SETTLE_S, math.huge, nil, nil, FULL * 0.65)).q_factor / hot_state.q_factor - 1
+local top_gain = q_at(3, 0.9) / q_at(3) - 1
+check(q_at(3) > 1, "rung 3's tooltip is true: a FULL reactor is net positive",
+  string.format("Q %.3f", q_at(3)))
+check(top_gain < 0.10 and unresearched_gain > 0.30,
+  "and tuning the supply is worth under 10% there, against over 30% unresearched",
+  string.format("%.1f%% at rung 3, %.1f%% unresearched", top_gain * 100, unresearched_gain * 100))
+
+-- ------------------------------------------------------------------------------- the guard (#53)
+--
+-- control.lua's check_confinement_ladder refuses to load a ladder whose top rung settles D-D
+-- against max_temperature_c, where the reactor inherits the pinned temperature reading the D-T tier
+-- already has and further research stops doing anything a player can see. The DECISION is
+-- reactor-logic's so that it can be broken here; control.lua supplies only the operating point and
+-- the message.
+--
+-- Stepped at the game's own cadence rather than at a tick, which is what GUARD_DT reproduces: it is
+-- control.lua's UPDATE_INTERVAL of six ticks. A coarser step settles hotter, which is the safe
+-- direction for a guard and the wrong one for a published figure.
+local GUARD_DT = 6 / 60
+
+check(L.confinement_ladder_overruns(SPEC, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT) == nil,
+  "the shipped ladder does not reach the clamp",
+  string.format("top rung %g s settles at %.4g C, clamp %.4g C", TOP.confinement_time_s,
+    settle(at_rung(#LADDER), SETTLE_S, math.huge, GUARD_DT), SPEC.max_temperature_c))
+
+-- BREAKING IT, which is the half that makes the line above mean anything. A fourth rung at 200 s is
+-- past the crossing -- D-D reaches the clamp somewhere near 175 s in this model -- and the guard has
+-- to say so rather than shrug.
+local OVERRUN = {}
+for k, v in pairs(SPEC) do OVERRUN[k] = v end
+OVERRUN.confinement_ladder = {}
+for _, rung in ipairs(LADDER) do
+  OVERRUN.confinement_ladder[#OVERRUN.confinement_ladder + 1] = rung
+end
+OVERRUN.confinement_ladder[#OVERRUN.confinement_ladder + 1] =
+  { technology = "rf-plasma-confinement-4", confinement_time_s = 200 }
+
+local overrun_at = L.confinement_ladder_overruns(OVERRUN, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT)
+check(overrun_at ~= nil, "a ladder with a rung at 200 s is caught",
+  overrun_at and string.format("%.6g C", overrun_at) or "NOT CAUGHT")
+-- `or 0` follows this file's rule that a nil is a failure and not an error: H.near would throw on
+-- one, and a broken guard should fail the two checks it breaks rather than take the suite down and
+-- hide everything after it.
+near(overrun_at or 0, SPEC.max_temperature_c, 0,
+  "and what it reports is the clamp itself, which is the reading a player would be stuck with")
+
+-- A spec with no ladder at all is not an overrun, it is nothing to check. The aneutronic reactor is
+-- exactly that case and passes through control.lua's loop untouched.
+check(L.confinement_ladder_overruns(ANEUTRONIC, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT) == nil,
+  "a reactor with no ladder has nothing to overrun")
 
 -- ----------------------------------------------------------------
 

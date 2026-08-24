@@ -165,6 +165,20 @@ loadable modules would have shown raw names like `rf-m-reactor` in game.
 **Power — technologies**: `rf-d-d-fusion`, `rf-tritium-breeding`, `rf-d-t-fusion`,
 `rf-helium-3-breeding`, `rf-aneutronic-fusion`, `rf-blanket-breeding`, `rf-direct-energy-conversion`.
 
+> **Extended 2026-08-24 (#53): three more, `rf-plasma-confinement-1/2/3`.** They raise the reactor's
+> energy confinement time from 30 s to 40, 50 and 60, which is what takes a D-D reactor from Q 0.320
+> to Q 1.467 and out of the sub-break-even state
+> [ADR 0015](0015-the-d-d-tier-is-a-breeder.md) put it in. They unlock nothing: `control.lua` reads
+> which of them a force holds and hands its reactors a different confinement time.
+>
+> Recorded here rather than as an ADR of its own because this list is the record of what Power
+> contains and #53 built these; whether the line also deserves an ADR — as capture efficiency got
+> [ADR 0020](0020-plant-efficiency-is-researchable.md), which names confinement time as "the real
+> lever" and #53 as its job — is Truls's call and is not settled by this note. The rungs are
+> provisional balance numbers like every other one in this repository; the reasoning behind them,
+> and behind stopping at three, lives on `M.reactor.confinement_ladder` in
+> `scripts/reactor-logic.lua`.
+
 Vanilla pipes must not carry plasma.
 
 > **Corrected 2026-08-17 (#26).** This said the original enforced that in `control.lua` and that v1
