@@ -954,9 +954,19 @@ check(ANEUTRONIC.confinement_ladder == nil,
 -- The plasma the load guard is asked about. It lives on the spec so that a second reactor given a
 -- ladder names its own, and control.lua refuses to load a ladder that has none -- but it can only
 -- refuse over a spec it can see, and this is the earlier place.
-check(L.fuels[SPEC.confinement_guard_fuel or ""] ~= nil,
-  "the ladder names a plasma the simulation can actually burn to guard it",
-  tostring(SPEC.confinement_guard_fuel))
+--
+-- OVER EVERY SPEC THAT HAS A LADDER rather than over the neutronic one, which is the shape this
+-- check should have had from the start: it read SPEC alone, so the day a second reactor was given a
+-- ladder its guard fuel would have gone unchecked here -- and an unchecked one used to switch the
+-- load guard off in silence rather than fail it. reactor-logic raises over that now, but this is
+-- the bench that says so before a map is ever made.
+for label, spec in pairs({ ["rf-reactor"] = SPEC, ["rf-aneutronic-reactor"] = ANEUTRONIC }) do
+  if spec.confinement_ladder then
+    check(L.fuels[spec.confinement_guard_fuel or ""] ~= nil,
+      string.format("%s's ladder names a plasma the simulation can actually burn to guard it", label),
+      tostring(spec.confinement_guard_fuel))
+  end
+end
 
 -- Strictly upward from the shipped value. A rung at or below the one before it is a technology that
 -- does nothing, or undoes something, and neither would fail anything else here.
@@ -1086,6 +1096,33 @@ near(overrun_at or 0, SPEC.max_temperature_c, 0,
 -- exactly that case and passes through control.lua's loop untouched.
 check(L.confinement_ladder_overruns(ANEUTRONIC, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT) == nil,
   "a reactor with no ladder has nothing to overrun")
+
+-- AND THE WAY THE GUARD USED TO LIE, which is worth a test of its own because it made every line
+-- above meaningless without failing any of them. Asked about a plasma with no fuel row, step()
+-- returns nil, settle() breaks on the first one, and the settled temperature comes back at the seed
+-- -- so the old code compared min_temperature_c against the clamp and answered "safe" having
+-- simulated nothing. One character wrong in confinement_guard_fuel switched the invariant off.
+--
+-- The SAME overrunning ladder is used for both halves deliberately: it is caught above with the
+-- fuel named correctly, so if this half stopped raising, the pair would disagree about a ladder
+-- that is definitely unsafe rather than about one that is definitely fine.
+local raised, message = pcall(L.confinement_ladder_overruns,
+  OVERRUN, "rf-not-a-plasma", FULL, SETTLE_S, GUARD_DT)
+check(raised == false, "an unsimulatable guard fuel raises rather than reporting the ladder safe",
+  raised and "RETURNED, so the guard can still be switched off silently" or "raised")
+check(type(message) == "string" and message:find("rf%-not%-a%-plasma", 1, false) ~= nil,
+  "and it names the plasma it could not simulate, so the typo is visible",
+  tostring(message))
+
+-- The other two ways to ask and get no answer. Neither can happen from control.lua -- it passes a
+-- prototype's own volume and a fixed horizon -- but they reach the same nil and must reach the same
+-- refusal, or the fix above is about one input rather than about the property.
+check(select(1, pcall(L.confinement_ladder_overruns,
+    OVERRUN, SPEC.confinement_guard_fuel, 0, SETTLE_S, GUARD_DT)) == false,
+  "an empty reactor raises too, rather than passing a ladder it never ran")
+check(select(1, pcall(L.confinement_ladder_overruns,
+    OVERRUN, SPEC.confinement_guard_fuel, FULL, 0, GUARD_DT)) == false,
+  "and so does a horizon too short for a single step")
 
 -- ----------------------------------------------------------------
 

@@ -961,6 +961,9 @@ end
 --
 -- (ADR 0016 does say the density optimum walks up the fill axis as confinement rises, and it does.
 -- But that is the optimum in Q, which is a different curve from temperature and does not bound it.)
+--
+-- IT RAISES RATHER THAN ANSWERING WHEN IT CANNOT SIMULATE, and that case is the whole reason this
+-- function has more than two lines in it. See the note on `last` below.
 function M.confinement_ladder_overruns(spec, fluid_name, amount, seconds, dt)
   local ladder = spec.confinement_ladder
   if not ladder or #ladder == 0 then return nil end
@@ -969,7 +972,46 @@ function M.confinement_ladder_overruns(spec, fluid_name, amount, seconds, dt)
   for k, v in pairs(spec) do top[k] = v end
   top.confinement_time_s = ladder[#ladder].confinement_time_s
 
-  local t_c = M.settle(top, fluid_name, amount, seconds, math.huge, dt)
+  local t_c, last = M.settle(top, fluid_name, amount, seconds, math.huge, dt)
+
+  -- A GUARD THAT CANNOT EVALUATE MUST NOT PASS, and there was exactly one way for this one to do
+  -- it. step() returns nil for a fluid with no row in M.fuels; settle() breaks on the first of
+  -- those, so t_c comes back still at its seed of min_temperature_c -- nowhere near the clamp, so
+  -- the comparison below would report the ladder SAFE having simulated nothing whatsoever. A
+  -- renamed or mistyped confinement_guard_fuel would therefore switch this entire invariant off in
+  -- silence, and scripts/load-check.ps1 would report a clean pass over a check that never ran.
+  --
+  -- Measured before it was closed, because a guard's failure mode deserves the same treatment as a
+  -- balance figure: a ladder with a 200 s top rung is caught at 2e9 C with the fuel named
+  -- correctly, and reported safe with one character of it changed.
+  --
+  -- `last` is what separates the two cases: nil means not one step ran, where a plasma that
+  -- genuinely stayed cool has a result table from every step. settle() already returned it -- the
+  -- tests read Q off it -- so the distinction was available all along and simply was not asked for.
+  -- It also covers an amount of zero and a horizon shorter than one step, which are the other two
+  -- ways to ask this question and get no answer.
+  --
+  -- Raised rather than returned, and that is deliberate: the contract above is that a truthy return
+  -- means "this ladder is unsafe", so reporting "I could not tell" through the same channel would
+  -- make every caller decide what to do about it, and control.lua's loop would read it as an
+  -- overrun and print a temperature that was never measured. There is no correct answer to give,
+  -- so it gives none.
+  --
+  -- It is the second error() in this file and the same judgement as the first -- M.electrons raises
+  -- on a fuel row with no usable `ions`, on the grounds that "loud beats silent: this is the one
+  -- case where the caller cannot recover and must not continue". This is the other one. Everything
+  -- else here returns nil for input it cannot use, because everything else here is asked its
+  -- question every tick by a running game; these two are asked about a spec a developer has just
+  -- edited, where a nil is indistinguishable from an answer.
+  if not last then
+    error(string.format(
+      "confinement_ladder_overruns: nothing was simulated for the top rung (%s, %g s), so the " ..
+      "ladder cannot be guarded and must not be reported safe. The plasma asked for was '%s' -- " ..
+      "give confinement_guard_fuel the name of one M.fuels carries, beside the ladder itself.",
+      tostring(ladder[#ladder].technology), ladder[#ladder].confinement_time_s,
+      tostring(fluid_name)))
+  end
+
   if t_c >= spec.max_temperature_c then return t_c end
   return nil
 end
