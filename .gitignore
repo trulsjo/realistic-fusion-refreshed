@@ -11,3 +11,6 @@ graphify-out/
 # describes this project. If a project-scoped setting is ever worth sharing, negate it
 # here rather than dropping this rule.
 .claude/
+
+# Built mod zips — reproducible from the working tree with scripts/pack-mods.ps1
+dist/

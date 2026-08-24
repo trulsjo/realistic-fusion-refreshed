@@ -87,13 +87,27 @@ the borrowed art.
 
 ## Consequences
 
-- **A release that changes only code costs a player ~590 KB instead of ~11.1 MB.** That is the point,
+- **A release that changes only code costs a player 166 KB instead of 9.9 MB.** That is the point,
   and it is the only benefit claimed.
+
+  > **Corrected 2026-08-24 (#112), when the zips were first built.** This said "~590 KB instead of
+  > ~11.1 MB", which were directory sizes on disk. What a player downloads is the compressed zip,
+  > and nobody had built one: measured, the three are 9.7 MB, 34 KB and 132 KB. So the code-only
+  > cost is 166 KB, not 590, and the ratio the Context section calls "about nineteen times" is
+  > nearer sixty. The decision is unaffected and the error ran in the conservative direction — but
+  > it was a prediction stated as a figure, and it is now a measurement.
 - **A stale floor is a load failure on someone else's machine and cannot fail on this one.** The dev
   loop junctions the current assets mod, so `Find-MissingAssets` resolves every path whatever the
-  floor says. `ship-check.ps1` is the only thing standing between that and
+  floor says. `ship-check.ps1` is what stands between that and
   `File __…-assets__/….png not found` in a player's log. Both new asserts were tested by breaking
   them deliberately before this was committed.
+
+  > **Narrowed 2026-08-24 (#112), on review.** This said ship-check was "the only thing standing"
+  > there, which claimed more than the assert does. It catches a version bumped without the floor
+  > following. It does not catch art added without the version moving at all — floor and version
+  > still agree, so every gate passes, and a player holding that same version never re-downloads.
+  > Closing that needs a rule about bumping the assets version whenever its content changes, which
+  > is deliberately not built while nothing is published.
 - **A footprint retry now bumps the assets mod**, because the mockups live there. Accepted above.
 - **Three portal entries, three `info.json`, three legal notes, three copies of LICENSE and
   LICENSE.GPL.** ADR 0002 counted this cost at two and accepted it; this is the same cost once more.

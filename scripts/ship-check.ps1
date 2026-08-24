@@ -36,6 +36,17 @@
         made, and neither can fail on this machine: art paths resolve against whatever assets version
         the PLAYER has, while the dev loop junctions the current one.
 
+        WHAT THE FLOOR ASSERT DOES NOT COVER, stated because the first version of this comment
+        claimed more than it delivered. It catches a version bumped without the floor following. It
+        does NOT catch the likelier mistake: adding a sprite and the code that names it while
+        leaving the assets version alone. Floor and version still agree, so this passes; the freshly
+        built zip has the file, so load-check passes; and a player already holding that same assets
+        version satisfies the floor, never re-downloads, and gets the missing-file error anyway.
+        Nothing here can see that, because nothing here knows what a player already has -- it needs
+        a rule about bumping the assets version whenever its content changes, which is deliberately
+        not built while the mod is unpublished. Tracked separately; do not read a pass here as
+        cover for it.
+
     WHAT IT CANNOT CHECK
 
     That the sentences are true, or that a player reads them. It matches on the load-bearing words --
