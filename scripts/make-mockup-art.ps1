@@ -62,6 +62,7 @@ $MACHINES = @(
         # the small flow and goes on the short ends, where a single pipe run can thread a column of
         # exchangers end to end.
         Mod = 'realistic-fusion-refreshed'; Name = 'heat-exchanger'; Label = "HEAT`nEXCHANGER"
+        Prototype = 'boiler'
         Width = 5; Height = 15; Core = $false
         Connections = @(
             @{ X = -2; Y =  0; Kind = 'energy'; Text = 'energy' },
@@ -74,6 +75,7 @@ $MACHINES = @(
         # Both long sides, so one butts the reactor and the other passes fluid to the next converter
         # in the row -- the chaining rf-hc-turbine and vanilla's steam turbine also do.
         Mod = 'realistic-fusion-refreshed'; Name = 'direct-energy-converter'; Label = "DIRECT`nENERGY`nCONVERTER"
+        Prototype = 'generator'
         Width = 5; Height = 15; Core = $false
         Connections = @(
             @{ X = -2; Y = 0; Kind = 'energy'; Text = 'energy' },
@@ -82,6 +84,7 @@ $MACHINES = @(
     },
     @{
         Mod = 'realistic-fusion-refreshed'; Name = 'aneutronic-reactor'; Label = "ANEUTRONIC`nREACTOR"
+        Prototype = 'boiler'
         Width = 15; Height = 15; Core = $true
         Connections = @(
             @{ X = -7; Y =  0; Kind = 'input';  Text = 'plasma' },
@@ -91,6 +94,7 @@ $MACHINES = @(
     },
     @{
         Mod = 'realistic-fusion-refreshed'; Name = 'isotope-collector'; Label = "ISOTOPE`nCOLLECTOR"
+        Prototype = 'boiler'
         Width = 5; Height = 5; Core = $false
         Connections = @(
             @{ X = -2; Y =  0; Kind = 'output'; Text = 'tritium' },
@@ -102,6 +106,7 @@ $MACHINES = @(
         # A container: lithium arrives by inserter and the tritium it breeds leaves through the
         # reactor's own pipe, so it has no connections of its own to mark. See entities.lua.
         Mod = 'realistic-fusion-refreshed'; Name = 'lithium-blanket'; Label = "LITHIUM`nBLANKET"
+        Prototype = 'still'
         Width = 5; Height = 5; Core = $false
         Connections = @()
     }
@@ -213,21 +218,57 @@ function Write-MockupSprite {
     finally { $g.Dispose(); $bmp.Dispose() }
 }
 
-# The engine rotates nothing: a boiler wants a picture per direction and a generator wants one per
-# axis, so an oblong machine needs its sideways self drawn as well. Rotating a quarter turn clockwise
-# sends a connection at (x, y) to (-y, x).
+# THE ENGINE ROTATES NOTHING, and the connections rotate anyway. That is the whole reason this is
+# more than one sheet per machine: a boiler's pipe_connections are declared in its own frame and the
+# engine turns them with the entity's direction, while the picture is whatever the picture set names
+# for that direction. So every direction whose connections differ needs its own drawing.
 #
-# A square machine is its own rotation, so it gets one sheet and every direction shares it.
-function Get-Rotated {
-    param([Parameter(Mandatory)] [hashtable] $Machine)
-    $turned = @{
-        Mod = $Machine.Mod; Name = "$($Machine.Name)-h"; Label = $Machine.Label
-        Width = $Machine.Height; Height = $Machine.Width; Core = $false
-        Connections = @($Machine.Connections | ForEach-Object {
-            @{ X = -$_.Y; Y = $_.X; Kind = $_.Kind; Text = $_.Text }
-        })
+# THE FIRST VERSION OF THIS GOT IT WRONG and shipped art that lied. It drew one sideways sheet and
+# gave it to BOTH east and west, and gave one upright sheet to both north and south. Those are four
+# different rotations, not two:
+#
+#     north  (x,  y)      east  (-y,  x)      south  (-x, -y)      west  (y, -x)
+#
+# Sharing is only safe when the connections a rotation swaps are identical in kind. It is not for
+# rf-heat-exchanger, where 180 degrees exchanges the energy inlet with the steam outlet, nor for the
+# square machines, whose single output connection lands on a different edge every quarter turn --
+# so a rotated one drew its outlet on the wrong side of the building.
+#
+# A generator is the exception, and only by luck: it has just two pictures, one per axis, and
+# rf-direct-energy-converter's two connections are the same kind, so every rotation produces the same
+# picture. If a generator ever gets connections that differ, two sheets stop being enough and the
+# prototype cannot express four.
+$TURNS = @(
+    @{ Suffix = '';   Turn = 0 },   # north
+    @{ Suffix = '-e'; Turn = 1 },   # east
+    @{ Suffix = '-s'; Turn = 2 },   # south
+    @{ Suffix = '-w'; Turn = 3 }    # west
+)
+
+function Get-Turned {
+    param(
+        [Parameter(Mandatory)] [hashtable] $Machine,
+        [Parameter(Mandatory)] [int]       $Turn,
+        [Parameter(Mandatory)] [AllowEmptyString()] [string] $Suffix
+    )
+    $conns = @($Machine.Connections | ForEach-Object {
+        $x = $_.X; $y = $_.Y
+        switch ($Turn) {
+            1 { $nx = -$y; $ny =  $x }
+            2 { $nx = -$x; $ny = -$y }
+            3 { $nx =  $y; $ny = -$x }
+            default { $nx = $x; $ny = $y }
+        }
+        @{ X = $nx; Y = $ny; Kind = $_.Kind; Text = $_.Text }
+    })
+    $swap = ($Turn % 2) -eq 1
+    return @{
+        Mod = $Machine.Mod; Name = "$($Machine.Name)$Suffix"; Label = $Machine.Label
+        Width  = $(if ($swap) { $Machine.Height } else { $Machine.Width })
+        Height = $(if ($swap) { $Machine.Width }  else { $Machine.Height })
+        Core = $false; Prototype = $Machine.Prototype
+        Connections = $conns
     }
-    return $turned
 }
 
 # A reactor's lit core, drawn over the building while it is fusing. It has to exist: a reactor whose
@@ -276,8 +317,19 @@ foreach ($m in $MACHINES) {
         Write-Host ("{0,-28} core {1} x {1}" -f "$($m.Name)-core", $m.Width)
     }
 
-    $variants = @($m)
-    if ($m.Width -ne $m.Height) { $variants += (Get-Rotated -Machine $m) }
+    # How many faces the prototype can actually express, which is what decides how many sheets are
+    # worth drawing. A boiler names four; a generator names two, one per axis; a container names one
+    # and does not rotate.
+    $faces = switch ($m.Prototype) {
+        'boiler'    { 4 }
+        'generator' { 2 }
+        default     { 1 }
+    }
+
+    $variants = @()
+    for ($i = 0; $i -lt $faces; $i++) {
+        $variants += (Get-Turned -Machine $m -Turn $TURNS[$i].Turn -Suffix $TURNS[$i].Suffix)
+    }
 
     foreach ($v in $variants) {
         Write-MockupSprite -Machine $v -Path (Join-Path $dir "$($v.Name).png")

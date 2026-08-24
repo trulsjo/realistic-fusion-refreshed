@@ -15,9 +15,10 @@
 -- about both its size and where its pipes are. These are meant to be replaced -- #108 for the heat
 -- exchanger, and whatever follows it for the rest.
 --
--- THE ENGINE ROTATES NOTHING. A boiler wants a picture per direction and a generator one per axis,
--- so each oblong machine has a sideways sheet as well, named "-h". A square machine is its own
--- rotation and every direction shares one sheet.
+-- THE ENGINE ROTATES THE CONNECTIONS AND NOT THE PICTURE, which is why there is a sheet per
+-- direction rather than per shape. A boiler gets four, named "", "-e", "-s" and "-w"; a generator
+-- gets the two its prototype can hold. See M.boiler for what sharing one sheet across a pair
+-- actually drew, and why a square machine needs four just as much as an oblong one.
 
 local DIRECTORY = "__realistic-fusion-refreshed__/graphics/mockup/"
 
@@ -55,33 +56,47 @@ end
 
 local M = {}
 
---- A BoilerPictureSet built from one upright sheet and one sideways one.
+--- A BoilerPictureSet, one sheet per direction.
 --
--- North and south share the upright sheet, east and west the sideways one. A real building would
--- differ between the two of each pair -- a machine seen from the front is not the same as from
--- behind -- but a labelled rectangle is symmetric and pretending otherwise would be drawing detail
--- that is not there.
+-- FOUR SHEETS, NOT TWO, and the first version of this got it wrong in a way that mattered. It gave
+-- one upright sheet to north AND south and one sideways sheet to east AND west, on the reasoning
+-- that a labelled rectangle is symmetric. The rectangle is; the connections drawn on it are not.
 --
--- Only `structure` is given. Vanilla's boiler pictures also carry `fire` and `fire_glow` layers,
--- and dropping them is deliberate: those are drawn for the firebox of vanilla's own sprite and
--- would sit in the wrong place on anything else.
+-- pipe_connections are declared in the entity's own frame and the ENGINE turns them with the
+-- entity's direction, while the picture is whatever the set names for that direction. The four
+-- rotations are all different:
+--
+--     north  (x,  y)      east  (-y,  x)      south  (-x, -y)      west  (y, -x)
+--
+-- So a south-facing rf-heat-exchanger really takes energy on its east side and vents steam to the
+-- west, and the shared sheet drew the reverse. On the square machines it was worse: their single
+-- output connection lands on a different edge every quarter turn, and one sheet for all four drew it
+-- on the north edge in every orientation. Art whose whole job is to say where the pipes go was
+-- wrong in three orientations out of four.
+--
+-- Only `structure` is given. Vanilla's boiler pictures also carry `fire` and `fire_glow` layers, and
+-- dropping them is deliberate: those are drawn for the firebox of vanilla's own sprite and would sit
+-- in the wrong place on anything else.
 function M.boiler(file, tiles_w, tiles_h)
-  local upright  = sheet(file, tiles_w, tiles_h)
-  local sideways = (tiles_w == tiles_h) and upright or sheet(file .. "-h", tiles_h, tiles_w)
   return {
-    north = { structure = upright },
-    south = { structure = upright },
-    east  = { structure = sideways },
-    west  = { structure = sideways },
+    north = { structure = sheet(file,          tiles_w, tiles_h) },
+    east  = { structure = sheet(file .. "-e",  tiles_h, tiles_w) },
+    south = { structure = sheet(file .. "-s",  tiles_w, tiles_h) },
+    west  = { structure = sheet(file .. "-w",  tiles_h, tiles_w) },
   }
 end
 
 --- The two animations a generator wants, as single frames.
+--
+-- TWO IS ALL A GENERATOR HAS -- one picture per axis, not per direction -- so this only stays honest
+-- while the machine's connections are symmetric under a half turn. rf-direct-energy-converter's are:
+-- both are energy, on opposite long faces, so every rotation draws the same picture. A generator
+-- whose connections differ from each other cannot be depicted correctly by this prototype at all,
+-- and would need a different one rather than a third sheet.
 function M.generator(file, tiles_w, tiles_h)
   return {
-    vertical   = sheet(file, tiles_w, tiles_h),
-    horizontal = (tiles_w == tiles_h) and sheet(file, tiles_w, tiles_h)
-                 or sheet(file .. "-h", tiles_h, tiles_w),
+    vertical   = sheet(file,         tiles_w, tiles_h),
+    horizontal = sheet(file .. "-e", tiles_h, tiles_w),
   }
 end
 
