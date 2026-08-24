@@ -152,7 +152,7 @@ Sets that are **impossible** as requested, at any version:
 version **2.0.77** on this machine, matching the base game. `space-age` declares
 `base >= 2.0.0, elevated-rails >= 2.0.0, quality >= 2.0.0`.
 
-They are already handled: `Get-BundledMods` in `scripts/factorio-lib.ps1:288` discovers them from
+They are already handled: `Get-BundledMods` in `scripts/factorio-lib.ps1:305` discovers them from
 `data/` rather than hardcoding them, and `Resolve-BundledSelection` closes over the hard dependencies,
 so `-With space-age` alone pulls in the other two. `Write-ModList` writes every bundled mod not
 requested as explicitly `enabled: false`, which is what makes a genuine base-2.0 run possible. Nothing
@@ -758,10 +758,17 @@ Everything in this section is about a gap that currently exists, not a defect. `
 built for this repository's own mods and does that job; third-party mods are simply outside what it
 was asked to do.
 
-**What the script does today.** `scripts/load-check.ps1:212` calls `New-ModJunctions` for
-`$ourMods = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')` only — it junctions those two directories from
-the repo into a temporary mod directory. `Write-ModList` (`scripts/factorio-lib.ps1:351`) then writes a
-`mod-list.json` enabling `base`, the requested bundled mods, and every name passed in `-Mods`.
+**What the script does today.** `scripts/load-check.ps1:324` calls `New-ModJunctions` for
+`$ourMods = Get-RepoMods` only — the **three** mods this repository publishes since
+[ADR 0023](../adr/0023-art-ships-in-its-own-mod.md) split the art out
+(`realistic-fusion-refreshed-assets`, `realistic-fusion-refreshed-core` and
+`realistic-fusion-refreshed`), junctioned from the repo into a temporary mod directory.
+`Write-ModList` (`scripts/factorio-lib.ps1:368`) then writes a `mod-list.json` enabling `base`, the
+requested bundled mods, and every name passed in `-Mods`.
+
+That is the default path. `-FromZips` builds the three zips instead and copies them in, which changes
+nothing about the gap described here: either way the mods junctioned or copied are this repository's
+own, and a third-party mod still has to arrive by some other means.
 
 **`Write-ModList` already accepts arbitrary names.** It writes `@{ name = $m; enabled = $true }` for
 each entry of `-Mods` without validating anything. So enabling a third-party mod needs no change to
