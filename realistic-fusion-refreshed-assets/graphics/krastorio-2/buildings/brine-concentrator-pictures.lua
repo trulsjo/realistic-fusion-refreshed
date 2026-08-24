@@ -13,7 +13,7 @@
 -- decision about how the chain reads rather than part of putting the building on the ground. The
 -- machinery still turns without them.
 
-local DIRECTORY = "__realistic-fusion-refreshed-core__/graphics/krastorio-2/buildings/brine-concentrator/"
+local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/buildings/brine-concentrator/"
 
 return {
   animation = {

@@ -71,7 +71,7 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$ourMods  = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
+$ourMods  = Get-RepoMods
 $PREFIX   = 'rf-'   # ADR 0009: everything this project defines carries it
 
 # Prototype types with no player-visible name at all, where an absent locale entry is correct rather

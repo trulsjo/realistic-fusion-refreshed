@@ -13,7 +13,7 @@ data:extend({
   {
     type = "technology",
     name = "rf-gas-mixing",
-    icon = "__realistic-fusion-refreshed-core__/graphics/krastorio-2/technologies/gas-mixing.png",
+    icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/technologies/gas-mixing.png",
     icon_size = 256,
     prerequisites = { "rf-deuterium-extraction" },
     effects = {

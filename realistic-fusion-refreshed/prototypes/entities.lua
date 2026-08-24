@@ -14,7 +14,7 @@ local claim = require("__realistic-fusion-refreshed-core__.prototypes.vanilla").
 local logic = require("scripts.reactor-logic")
 -- Drawn placeholders for the machines with no art of their own (#45). Our own work and
 -- our own licence, unlike graphics/krastorio-2/ -- see the module for why that matters.
-local mockup = require("graphics.mockup.pictures")
+local mockup = require("__realistic-fusion-refreshed-assets__.graphics.mockup.pictures")
 
 -- What a reactor's tooltip cannot say for itself. Both reactors are boilers (ADR 0011), so the
 -- engine reports the boiler's energy_consumption as "Max consumption" -- 1 W, seven orders below
@@ -40,7 +40,7 @@ end
 -- Every stat that affects balance is pinned rather than inherited, because a deep copy taken here
 -- picks up whatever a mod sorting earlier has already done to the source prototype.
 
-local ENTITY = "__realistic-fusion-refreshed__/graphics/krastorio-2/entities/"
+local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entities/"
 
 -- Plasma must not travel through vanilla pipes (CONTEXT.md, ADR 0010). This is what enforces it.
 --
@@ -92,7 +92,7 @@ heater.allowed_effects = { "consumption", "speed", "pollution", "quality" }
 -- Krastorio 2's fuel refinery, which is the icon this machine already carries and is modelled on
 -- the same vanilla chemical plant -- same boxes, same four pipe positions. So unlike the reactor
 -- this is a sprite swap and nothing else. LGPLv3; see the file for why it lives over there.
-heater.graphics_set = require("graphics.krastorio-2.buildings.heater-pictures")
+heater.graphics_set = require("__realistic-fusion-refreshed-assets__.graphics.krastorio-2.buildings.heater-pictures")
 -- Plasma leaves through the output boxes, so those are plasma-safe only; the input boxes stay
 -- ordinary because deuterium arrives through ordinary pipes. Selected by production_type rather
 -- than by index: which box a chemical plant puts a result in is the recipe's business, and the two
@@ -159,7 +159,7 @@ reactor.collision_box = { { -7.25, -7.25 }, { 7.25, 7.25 } }
 reactor.selection_box = { { -7.5, -7.5 }, { 7.5, 7.5 } }
 -- Derived from K2's own prototype and LGPLv3, which is why it lives in the graphics directory and
 -- not here. See the note at the top of that file for what a boiler forced to change.
-local reactor_graphics = require("graphics.krastorio-2.buildings.reactor-pictures")
+local reactor_graphics = require("__realistic-fusion-refreshed-assets__.graphics.krastorio-2.buildings.reactor-pictures")
 reactor.pictures = reactor_graphics.pictures
 -- The moving core, drawn over the still one by scripts/reactor-animation.lua while the reactor is
 -- fusing. It is a script rendering and not part of the entity because a boiler cannot animate at
@@ -358,7 +358,7 @@ exchanger.output_fluid_box.pipe_connections = {
 -- max_power_output at all and letting the engine derive one. This declares it -- every stat that
 -- affects balance is pinned here rather than inherited -- and scripts/check-hc.ps1 asserts the
 -- engine agrees with the arithmetic, so the number cannot drift away from the fluid it is made of.
-local hc_graphics = require("graphics.krastorio-2.buildings.hc-pictures")
+local hc_graphics = require("__realistic-fusion-refreshed-assets__.graphics.krastorio-2.buildings.hc-pictures")
 
 -- Ten times rf-heat-exchanger's 40 MW. A boiler's energy_consumption is what it puts INTO the fluid,
 -- so this is 400 MW of steam and there is no second figure to keep in step with it.
@@ -829,7 +829,7 @@ tank.fluid_box.volume = 50000
 -- nothing else: K2's is three tiles square like vanilla's, with the same four corner connections, so
 -- no footprint moved and there is nothing to migrate. rf-isotope-collector and rf-lithium-blanket
 -- still have the mismatch this used to have -- theirs are not swaps. See the NOTICE.
-local tank_graphics = require("graphics.krastorio-2.buildings.composite-tank-pictures")
+local tank_graphics = require("__realistic-fusion-refreshed-assets__.graphics.krastorio-2.buildings.composite-tank-pictures")
 tank.pictures.picture = tank_graphics.picture
 tank.window_bounding_box = tank_graphics.window_bounding_box
 tank.water_reflection = tank_graphics.water_reflection
@@ -889,7 +889,7 @@ local function repoint(value, directory, names)
   return value
 end
 
-local GRAPHICS = "__realistic-fusion-refreshed__/graphics/krastorio-2/"
+local GRAPHICS = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/"
 
 local pipe = repoint(
   pin(table.deepcopy(data.raw["pipe"]["pipe"]), "rf-pipe", { mining_time = 0.1 }),
@@ -913,7 +913,7 @@ local pump = pin(table.deepcopy(data.raw["pump"]["pump"]), "rf-pump", { mining_t
 -- is plasma-rated, and rf-pipe and rf-pipe-to-ground already carry K2's steel line. A swap and only a
 -- swap -- K2's pump is the same one-by-two as vanilla's -- so pin()'s derived icon path now resolves
 -- to graphics/krastorio-2/entities/pump.png and nothing else about the prototype moves.
-pump.animations = require("graphics.krastorio-2.buildings.pump-pictures").animations
+pump.animations = require("__realistic-fusion-refreshed-assets__.graphics.krastorio-2.buildings.pump-pictures").animations
 -- A pump is the one entity that moves fluid without a pipe connection at the far end: it also loads
 -- and unloads fluid wagons, which would be a way around every rule above -- rf-pump into a vanilla
 -- wagon, vanilla pump out of it, plasma anywhere. It is not. FluidWagonPrototype carries a

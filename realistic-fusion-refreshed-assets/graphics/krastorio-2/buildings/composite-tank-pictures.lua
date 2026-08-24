@@ -21,7 +21,7 @@
 -- -- so this is its arrangement kept rather than a gap. window_bounding_box below is Krastorio 2's,
 -- because the window has to land on ITS shell rather than on vanilla's.
 
-local DIRECTORY = "__realistic-fusion-refreshed__/graphics/krastorio-2/buildings/composite-tank/"
+local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/buildings/composite-tank/"
 
 local M = {}
 

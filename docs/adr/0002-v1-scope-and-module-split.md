@@ -7,6 +7,12 @@ Date: 2026-08-13
 Accepted. Resolves
 [Does the four-module split survive?](https://github.com/trulsjo/realistic-fusion-refreshed/issues/3).
 
+**Amended by [ADR 0023](0023-art-ships-in-its-own-mod.md)** in one place: the count below is now
+three published mods, not two. A third, `realistic-fusion-refreshed-assets`, holds the art both
+others draw so that a code-only release stops re-shipping it. Everything else here stands — the
+scope, Core as a library, Core not being a committed public API, and the deferral of Antimatter and
+Weaponry.
+
 ## Context
 
 The archived redesign splits the mod four ways — Core, Power, Weaponry, Antimatter. The 1.1 original
@@ -42,7 +48,8 @@ Two facts shaped the scope half of this decision:
 are deferred to a later effort; they are not cancelled, but they are not specified here and nothing in
 v1 waits on them.
 
-**The four-module split survives in reduced form: two published mods, Core and Power.** Core remains a
+**The four-module split survives in reduced form: two published mods, Core and Power** — three since
+ADR 0023 added an assets mod beside them. Core remains a
 separate published dependency rather than being folded into Power, so that Antimatter, Weaponry or
 anything else can attach later without restructuring or a save migration.
 

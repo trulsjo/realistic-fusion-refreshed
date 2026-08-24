@@ -20,7 +20,7 @@
 -- gets the two its prototype can hold. See M.boiler for what sharing one sheet across a pair
 -- actually drew, and why a square machine needs four just as much as an oblong one.
 
-local DIRECTORY = "__realistic-fusion-refreshed__/graphics/mockup/"
+local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/mockup/"
 
 -- 64 pixels to the tile at scale 0.5, which is what make-mockup-art.ps1 draws and what vanilla and
 -- Krastorio 2 both use. Stated once here so the two cannot drift apart silently.

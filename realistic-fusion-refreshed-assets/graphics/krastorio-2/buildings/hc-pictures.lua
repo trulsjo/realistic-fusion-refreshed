@@ -19,7 +19,7 @@
 -- Both files are shared by one module because the two prototypes are one tier and one ticket, and
 -- because a reader comparing their geometry should not have to open two files to do it.
 
-local DIRECTORY = "__realistic-fusion-refreshed__/graphics/krastorio-2/buildings/"
+local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/buildings/"
 
 local M = {}
 

@@ -8,7 +8,7 @@ data:extend({
   {
     type = "technology",
     name = "rf-heavy-water",
-    icon = "__realistic-fusion-refreshed-core__/graphics/krastorio-2/technologies/heavy-water.png",
+    icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/technologies/heavy-water.png",
     icon_size = 256,
     prerequisites = { "chemical-science-pack", "fluid-handling" },
     effects = {
@@ -34,7 +34,7 @@ data:extend({
   {
     type = "technology",
     name = "rf-deuterium-extraction",
-    icon = "__realistic-fusion-refreshed-core__/graphics/krastorio-2/technologies/deuterium-extraction.png",
+    icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/technologies/deuterium-extraction.png",
     icon_size = 256,
     prerequisites = { "rf-heavy-water" },
     effects = {

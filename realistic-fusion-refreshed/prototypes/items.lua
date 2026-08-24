@@ -1,7 +1,7 @@
 -- Placement items. Icons are derived from Krastorio 2 (LGPLv3) and live in graphics/krastorio-2/
 -- with the licence and a NOTICE naming every source file -- see the note at the top of
 -- prototypes/fluids.lua.
-local ENTITY = "__realistic-fusion-refreshed__/graphics/krastorio-2/entities/"
+local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entities/"
 
 -- `icon` overrides the derived path. Nothing needs it since rf-pump gained Krastorio 2 art (#45) --
 -- it was the last machine with none -- but it is kept because the next entity added is likelier to

@@ -1,7 +1,7 @@
 -- Placement items for Core's machines. Icons are derived from Krastorio 2 (LGPLv3) and live in
 -- graphics/krastorio-2/ with the licence and a NOTICE naming every source file -- see the same
 -- note at the top of prototypes/fluids.lua.
-local ENTITY = "__realistic-fusion-refreshed-core__/graphics/krastorio-2/entities/"
+local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entities/"
 
 local function item(name, icon, subgroup, order, stack_size)
   return {
@@ -28,7 +28,7 @@ data:extend({
   {
     type = "item",
     name = "rf-lithium",
-    icons = { { icon = "__realistic-fusion-refreshed-core__/graphics/krastorio-2/items/lithium.png", icon_size = 64 } },
+    icons = { { icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/items/lithium.png", icon_size = 64 } },
     subgroup = "intermediate-product",
     order = "rf-a[lithium]",
     stack_size = 100,

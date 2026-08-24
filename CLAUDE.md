@@ -6,10 +6,11 @@ is and where it came from; this file is how to work in the repo.
 ## State
 
 **In development.** `realistic-fusion-refreshed-core` and `realistic-fusion-refreshed` load against
-Factorio 2.0.77 and all four of ADR 0010's reactions are playable: the water-to-deuterium extraction
-chain, D-D reactors that
-breed their own tritium and helium-3, D-T fusion burning it, lithium blankets breeding more, and an
-aneutronic tier running D-He3 and He3-He3 in a second reactor through a direct energy converter.
+Factorio 2.0.77, on top of `realistic-fusion-refreshed-assets`, which holds every sprite the two of
+them draw and nothing else (ADR 0023). All four of ADR 0010's reactions are playable: the
+water-to-deuterium extraction chain, D-D reactors that breed their own tritium and helium-3, D-T
+fusion burning it, lithium blankets breeding more, and an aneutronic tier running D-He3 and He3-He3
+in a second reactor through a direct energy converter.
 **Every prototype ADR 0010 names for Power now exists** — thirteen entities and seven technologies,
 high-capacity steam equipment included. **Every balance number is still provisional**, and coverage
 is not the same as being finished: nothing here has been played for longer than a rig runs.
@@ -18,8 +19,12 @@ Verification here is by running the game, not by reading. `tests/*.lua` cover th
 outside Factorio; `scripts/check-*.ps1` and `scripts/load-check.ps1` create real maps and assert against
 them, and `load-check.ps1` is where the invariants tying the simulation to the prototypes are enforced.
 `scripts/locale-check.ps1` and `scripts/name-check.ps1` only dump prototypes and create no map, so a
-pass there says nothing about runtime. `scripts/ship-check.ps1` runs no game at all — it is the one
-check about prose, and it holds the two statements ADR 0003 and ADR 0006 oblige the mods to make.
+pass there says nothing about runtime. `scripts/ship-check.ps1` runs no game at all — it is the
+check about the claims the mods make about themselves: the two statements ADR 0003 and ADR 0006
+oblige them to make, the credits, the licence files, and since ADR 0023 the assets dependency floor.
+That last one is the only invariant here that **cannot** fail on this machine — the dev loop
+junctions the current assets mod, so every sprite path resolves whatever the floor says, and a stale
+floor fails only in a player's log.
 Run them rather than reasoning about whether a change is safe.
 
 `scripts/probe-*.ps1` are **not** in that list and are not gates. A probe builds a real map like a

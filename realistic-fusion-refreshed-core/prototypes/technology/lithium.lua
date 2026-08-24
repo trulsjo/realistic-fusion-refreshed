@@ -8,7 +8,7 @@ data:extend({
   {
     type = "technology",
     name = "rf-lithium-extraction",
-    icon = "__realistic-fusion-refreshed-core__/graphics/krastorio-2/technologies/lithium-extraction.png",
+    icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/technologies/lithium-extraction.png",
     icon_size = 256,
     prerequisites = { "chemical-science-pack", "fluid-handling" },
     effects = {

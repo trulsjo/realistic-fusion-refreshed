@@ -2,7 +2,7 @@ require("util") -- table.deepcopy
 
 local claim = require("prototypes.vanilla").claim
 
-local ENTITY = "__realistic-fusion-refreshed-core__/graphics/krastorio-2/entities/"
+local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entities/"
 
 -- Core's machines are built from vanilla ones rather than modelled from scratch.
 --
@@ -34,7 +34,7 @@ local function from_vanilla(source_name, name, categories, opts)
   -- read off the mod repository rather than measured off the sprite sheets, because the shifts
   -- they carry are not recoverable from a PNG and a building placed by eye sits a fraction of a
   -- tile out from its own collision box.
-  e.graphics_set = require("graphics.krastorio-2.buildings." .. opts.pictures)
+  e.graphics_set = require("__realistic-fusion-refreshed-assets__.graphics.krastorio-2.buildings." .. opts.pictures)
 
   -- A machine that grows has to say where its pipes went. Taken from the Krastorio 2 building where
   -- it has as many connections as this machine needs, and stated here where it does not -- see each

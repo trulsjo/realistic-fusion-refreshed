@@ -6,7 +6,7 @@
 -- colours below now only drive base_color/flow_color -- what the fluid looks like *in a pipe*,
 -- which the icon cannot express.
 local function icon(name)
-  return { { icon = "__realistic-fusion-refreshed-core__/graphics/krastorio-2/fluids/" .. name .. ".png", icon_size = 64 } }
+  return { { icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/fluids/" .. name .. ".png", icon_size = 64 } }
 end
 
 local function fluid(name, colour, order)

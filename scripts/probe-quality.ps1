@@ -28,7 +28,7 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 . "$repoRoot/scripts/factorio-lib.ps1"
 
-$ourMods = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
+$ourMods = Get-RepoMods
 $rigName = 'rf-quality-probe'
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe

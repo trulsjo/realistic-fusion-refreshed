@@ -39,7 +39,7 @@
 -- fusion-reactor-reflection.png is a water_reflection, which is worth nothing to a building this
 -- size that nobody will place on a shoreline.
 
-local DIRECTORY = "__realistic-fusion-refreshed__/graphics/krastorio-2/buildings/reactor/"
+local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/buildings/reactor/"
 
 -- Twelve, because that is the frame count of Krastorio 2's core animation. Anything still that
 -- shares a layer stack with it repeats to match: an Animation's layers must agree on frame count.

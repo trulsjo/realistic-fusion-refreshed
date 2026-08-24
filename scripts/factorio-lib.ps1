@@ -11,6 +11,23 @@
     reports it as enabled. One implementation, fixed once.
 #>
 
+function Get-RepoMods {
+    <#  The mods this repository publishes, in dependency order.
+
+        Here rather than in each caller because it was a literal in twenty-two scripts until a
+        third mod arrived (ADR 0023), and twenty-two copies of a list is the same fault this
+        file's header describes: one of them gets missed. Callers want it as $ourMods.
+
+        Assets first. It holds every sprite the other two reference and declares no dependency
+        of its own, so nothing it needs can load after it.  #>
+
+    return @(
+        'realistic-fusion-refreshed-assets',
+        'realistic-fusion-refreshed-core',
+        'realistic-fusion-refreshed'
+    )
+}
+
 function Resolve-FactorioExe {
     <#  Preferred path, then $env:FACTORIO_EXE, then the Steam install on this machine. #>
     param([string] $Path)

@@ -162,8 +162,7 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$ourMods  = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
-
+$ourMods  = Get-RepoMods
 # Refused rather than combined. The self-test's canary halves reason about what a broken mod does to
 # a clean load, and a third-party overhaul in the same run makes a failure ambiguous -- worse, mods
 # present in the directory but absent from mod-list.json are auto-enabled by Factorio, so "not
