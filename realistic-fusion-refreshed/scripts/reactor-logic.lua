@@ -421,8 +421,15 @@ M.reactor = {
   --
   -- WHERE THE RUNGS ARE, and why each. Full supply, and the qualifier is load-bearing: under
   -- ADR 0016 a player picks their own density, and at the bottom of this ladder the best density is
-  -- not full. Figures are pinned in tests/test-reactor-logic.lua and reproduced by
-  -- tests/test-bremsstrahlung.lua.
+  -- not full.
+  --
+  -- WHERE THE FIGURES ARE KEPT, stated exactly because "pinned" and "agrees with" are different
+  -- claims and this file has no business blurring them. All three Q values below are pinned to 1%
+  -- in tests/test-reactor-logic.lua, through the shipped step(). tests/test-bremsstrahlung.lua
+  -- reaches the same ladder from its own equilibrium solver and is a CROSS-CHECK rather than a
+  -- second pin: it says nothing about 40 s, brackets 50 s at Q < 1, and pins 60 s by TEMPERATURE
+  -- (6.48e8 K) rather than by Q. The two agree everywhere they overlap, which is the point of
+  -- having both -- but only one of them fails if a rung's Q moves.
   --
   --   30 s  shipped, unresearched   Q 0.320   the breeder tier ADR 0015 describes
   --   40 s  rf-plasma-confinement-1 Q 0.578   better, still a machine run at a loss
