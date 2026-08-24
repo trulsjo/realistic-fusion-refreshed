@@ -267,10 +267,11 @@ nothing breaks a save, and otherwise leave it. The search found nothing usable.
                                      or a remnant; the nearest container, kr-strongbox, is 2x2.
                                      Resized for the same reason as the collector.
 
-Krastorio 2's building set is essentially square -- 7x7 and 15x15 -- and its only elongated pieces
-are the advanced steam turbine at 5x7, which rf-hc-turbine already wears, and a 22x3 logo. That is
-the shape of the problem for all four, and it is why growing them would mean picking a building for
-its size rather than for what it depicts.
+The shape of the problem for all four: Krastorio 2's large buildings are close to square -- 7x7 and
+15x15 -- and its non-square ones are small. It has a 5x7 turbine, which rf-hc-turbine wears, a 5x3
+research computer, a 3x5 vehicle, a 12x11 transceiver and a 22x3 logo, and nothing anywhere near
+five by fifteen. So growing any of these to fit a Krastorio 2 building would mean picking it for its
+size rather than for what it depicts.
 
 
 MODIFIED -- these are derivative works and remain LGPLv3:
@@ -343,8 +344,9 @@ DERIVED CODE -- also LGPLv3, and this is the reason it is in here at all:
     swaps onto a same-sized vanilla prototype, so neither restructures anything -- but both write
     out shifts Krastorio 2 expresses as util.by_pixel(...), because util is a __base__ internal.
     Worth knowing when checking them: Krastorio 2's own inline comments beside two of the pump's
-    by_pixel calls give values exactly double what the call evaluates to. Those comments are stale,
-    and it is the call that was transcribed.
+    by_pixel calls disagree with what the call evaluates to -- roughly double, and not exactly, so
+    they are stale rather than a different unit. by_pixel(8, 3.5) is {0.25, 0.109375} against a
+    comment reading {0.515625, 0.21875}. It is the call that was transcribed either way.
 
 
 Where these are referenced

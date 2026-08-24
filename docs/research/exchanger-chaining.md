@@ -15,11 +15,13 @@ A lit D-T reactor sells about **322 MW** (measured by `scripts/check-brownout.ps
 
 | | rating | per reactor |
 |---|---:|---:|
-| `rf-heat-exchanger` | 40 MW | **8** |
+| `rf-heat-exchanger` | 40 MW | **9** — eight is 320 MW and leaves 2 MW unconverted |
 | `rf-hc-exchanger` | 400 MW | **1**, with 20% spare |
 
-So the ordinary machine needs eight per reactor, which is what `rf-hc-exchanger` exists to remove
-(#32) — and the ×10 factor is the predecessor's own. Eight machines is a plumbing problem, and the
+So the ordinary machine needs eight to cover all but 2 MW of it and nine to cover it outright, which
+is what `rf-hc-exchanger` exists to remove (#32) — and the ×10 factor is the predecessor's own.
+(`entities.lua`'s own comment says "eight exchangers and fifty-five turbines" against a rounded
+320 MW; the figure here is the measured 322.) Eight machines is a plumbing problem, and the
 question was whether they could be laid in a row that feeds itself rather than each dropped onto a
 manifold.
 

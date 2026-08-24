@@ -15,6 +15,15 @@
 -- antimatter reactor is a different building at a different size -- ten tiles against fifteen --
 -- so the two tiers read apart on the ground before anything is clicked.
 --
+-- NOT IN USE SINCE ADR 0022, and that sentence is why. rf-aneutronic-reactor is fifteen tiles square
+-- now, following the original mod rather than this art, and these sheets are drawn for ten --
+-- stretching them is the rescale ADR 0013 rejected. The machine wears a drawn mockup instead
+-- (graphics/mockup/), which also means the argument above no longer does the work it describes:
+-- what tells the two tiers apart is the drawing, not the footprint.
+--
+-- Kept because it is the best starting point anyone drawing the real thing will have, and because
+-- deleting it would lose the provenance NOTICE.txt records. Its icon is still in use.
+--
 -- Nothing about antimatter is claimed by using it. It is the art of a reactor that is not the
 -- fusion reactor, which is the whole of what was needed; this mod has no antimatter and the
 -- locale never says the word.
