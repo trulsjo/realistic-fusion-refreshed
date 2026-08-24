@@ -19,7 +19,7 @@
 
     IT DOES MORE THAN THE DATA STAGE, and the difference matters to anyone editing the
     simulation. Creating a map runs `on_init`, which is where control.lua's check_prototypes()
-    fires -- so this script enforces eleven invariants that no amount of prototype validation
+    fires -- so this script enforces twelve invariants that no amount of prototype validation
     would catch:
 
       check_fuel_rows()           Every row of reactor-logic's fuel table declares the fields
@@ -54,6 +54,15 @@
                                   fluid's declared range. Widen one without the other and the
                                   mod loads perfectly, then throws on a live save the first
                                   time a reactor gets hot.
+      check_signal_ceiling()      The simulation's temperature ceiling against what a circuit
+                                  signal can carry. check_plasma_bounds above ties the ceiling to
+                                  what the FLUID holds; this ties it to what the WIRE reports, and
+                                  a ceiling can pass the first and fail the second. It fails
+                                  quietly: a signal is a 32-bit integer, so a ceiling past
+                                  2147483647 leaves every reactor reporting that number for ever
+                                  while running perfectly. The ceiling is 2e9 BECAUSE of that
+                                  integer and nothing in game says so, which is what makes raising
+                                  it for a later tier the easy mistake (#54, #55).
       check_every_plasma_burns()  Every fluid an rf-plasma-heating recipe produces has a row in
                                   reactor-logic's fuel table. Reachable since #28 removed the
                                   reactor's input filter; without it a plasma no reactor can
@@ -556,7 +565,7 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
     # docstring above used to make: creating the map ran control.lua's check_prototypes() too.
     $how = if ($FromZips) { 'built zips' } else { 'junctioned repo directories' }
     Write-Host "OK - prototypes valid, every referenced asset present, map created and the"
-    Write-Host "     simulation's eleven load-time invariants hold, loading from $how."
+    Write-Host "     simulation's twelve load-time invariants hold, loading from $how."
     exit 0
 }
 finally {

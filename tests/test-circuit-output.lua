@@ -51,8 +51,17 @@ equal(C.signals({ temperature_c = 15, q_factor = 0.997 }).q, 100,
 -- "Given min value (3e+09) is too big, allowed values are from -2147483648 to 2147483647" --
 -- an error, not a wrap, so an unclamped write is a crash in front of a player.
 
-local INT32_MAX = 2147483647
-local INT32_MIN = -2147483648
+-- READ OFF THE MODULE SINCE #55, not retyped. This file kept its own copy of both numbers, and
+-- control.lua was about to want a third for its ceiling guard -- one equation in three places,
+-- which is what #51 was opened about. circuit-output owns them because it is the file that knows
+-- why the limit exists.
+local INT32_MAX = C.INT32_MAX
+local INT32_MIN = C.INT32_MIN
+
+-- And the copies that were here are now assertions rather than definitions: the constants have to
+-- BE the int32 bounds, or everything below is checking the module against itself.
+equal(INT32_MAX, 2147483647, "the module's int32 ceiling is the int32 ceiling")
+equal(INT32_MIN, -2147483648, "and its floor is the int32 floor")
 
 equal(C.signals({ temperature_c = 1e12, q_factor = 0 }).temperature, INT32_MAX,
   "a temperature past int32 is clamped, not wrapped")
@@ -64,9 +73,44 @@ equal(C.signals({ temperature_c = -1e12, q_factor = 0 }).temperature, INT32_MIN,
 -- The reason the clamp is not merely defensive: the shipped fluid's ceiling is 2e9 C, which fits
 -- with about 7% to spare. Any later tier raising max_temperature past int32 starts losing the top
 -- of the range silently, so the headroom is asserted here rather than assumed.
-check(SPEC.max_temperature_c <= INT32_MAX,
-  "the shipped plasma's maximum temperature fits in a circuit signal",
-  string.format("%.6g C against int32 max %d", SPEC.max_temperature_c, INT32_MAX))
+--
+-- OVER EVERY SHIPPED REACTOR SINCE #55, where it read the neutronic spec alone. The ceiling lives
+-- on the spec, so a second reactor can declare its own -- and the one that would break the readout
+-- is whichever spec someone raised without thinking about the wire.
+--
+-- THE LIST IS COUNTED BEFORE IT IS WALKED, because a table literal keyed on module fields can
+-- shrink without anyone noticing: rename M.aneutronic_reactor and `pairs` simply yields one entry,
+-- so this would report a clean pass over a reactor it never looked at. That is the same silent
+-- switch-off reactor-logic's confinement guard raises over, and it is cheaper to catch here.
+local CEILINGS = { ["rf-reactor"] = SPEC, ["rf-aneutronic-reactor"] = L.aneutronic_reactor }
+local ceiling_count = 0
+for _, spec in pairs(CEILINGS) do
+  if spec then ceiling_count = ceiling_count + 1 end
+end
+equal(ceiling_count, 2, "both shipped reactors are present to be checked")
+
+for label, spec in pairs(CEILINGS) do
+  check(spec.max_temperature_c <= INT32_MAX,
+    label .. "'s maximum plasma temperature fits in a circuit signal",
+    string.format("%.6g C against int32 max %d", spec.max_temperature_c, INT32_MAX))
+end
+
+-- THE DECISION control.lua's check_signal_ceiling MAKES, and the negative half of it. That guard
+-- refuses to load a ceiling a wire cannot carry; the comparison lives in circuit-output so it can
+-- be broken here, because a guard nobody has watched fail is a guard nobody knows the shape of.
+--
+-- Note what the failing case RETURNS: not `true`, but the number a player would actually be shown
+-- instead. That is what the refusal message quotes, and it is the difference between "this is too
+-- big" and "every reactor would read 2147483647 C for ever".
+check(C.unrepresentable(SPEC.max_temperature_c) == nil,
+  "the shipped ceiling is representable, so the load guard passes",
+  string.format("%.6g C", SPEC.max_temperature_c))
+equal(C.unrepresentable(INT32_MAX), nil,
+  "a ceiling exactly at the int32 maximum still fits -- the clamp keeps that value")
+equal(C.unrepresentable(INT32_MAX + 1), INT32_MAX,
+  "one degree past it does not, and the guard is told what a wire would show instead")
+equal(C.unrepresentable(6.9e9), INT32_MAX,
+  "nor does #54's proposed 6.9e9 ceiling, which is the case this guard exists for")
 
 -- ---------------------------------------------------------------- status
 

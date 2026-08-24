@@ -999,6 +999,13 @@ end
 -- whichever fluid's range is narrowest. Both shipped reactors declare the same bounds, so this
 -- checks four pairs to prove one thing -- and the day a tier wants a hotter clamp, it is the pair
 -- it forgot that this names.
+-- MEASURED AND NOT FIXED, 2026-08-24 (#119, found by #55): the comparison below is a Lua double
+-- against a value the engine hands back at SINGLE precision, so a ceiling that is not exactly
+-- representable as a float32 reads back smaller than it was declared and this throws over two
+-- numbers that were typed identically. 6.9e9 -- the ceiling #54 proposes -- stores as 6899999744.
+-- 2e9 and 4e9 are both exact, which is why nothing fails today. Left alone here because choosing
+-- between comparing at float32 precision, allowing a tolerance, and requiring the ceiling to be
+-- representable is a decision rather than a correction; #119 carries it.
 local function check_plasma_bounds()
   for name in pairs(logic.fuels) do
     local fluid = prototypes.fluid[name]
@@ -1017,6 +1024,52 @@ local function check_plasma_bounds()
           reactor, spec.min_temperature_c, spec.max_temperature_c, name,
           fluid.default_temperature, fluid.max_temperature))
       end
+    end
+  end
+end
+
+--- Refuse to load a temperature ceiling a circuit signal cannot carry (#55).
+--
+-- THE SIBLING OF check_plasma_bounds ABOVE, and it belongs beside it because it closes the other
+-- half of the same question. That one ties the simulation's ceiling to what the FLUID can hold;
+-- this one ties it to what the WIRE can report. A ceiling can satisfy the first and fail the
+-- second, and the failure is worse for being quiet: the fluid accepts the temperature, the reactor
+-- runs correctly, and the number a player reads stops moving.
+--
+-- WHAT MAKES IT WORTH A LOAD-TIME CHECK RATHER THAN A COMMENT. The ceiling is 2e9 because a signal
+-- is a 32-bit integer, and nothing anywhere in the game states that connection -- so the number
+-- reads as a physics constant. Raise it for a later tier and every reactor's temperature readout
+-- saturates with no error and no clue, which is the defect #54 exists to undo. It is the same shape
+-- as every other invariant here: a developer edit that a player finds.
+--
+-- IT PASSES TODAY with about 7% to spare, and that is the point rather than a reason to skip it.
+-- The guard costs nothing while the ceiling fits and starts earning its keep the moment #58 raises
+-- it -- at which point it says, in one line, the thing that would otherwise take a bug report to
+-- learn.
+--
+-- The decision is scripts/circuit-output.lua's, not this function's: that file owns INT32_MAX and
+-- knows why the limit exists, and keeping the comparison there is what lets
+-- tests/test-circuit-output.lua break it. This supplies the loop and the message.
+--
+-- Over every reactor, because the ceiling lives on the spec and a second reactor may declare its
+-- own. Both shipped reactors currently name 2e9, so this checks two specs to prove one thing --
+-- and the day a tier wants a hotter clamp, it is the one someone forgot that this names.
+--
+-- IT RUNS AFTER check_plasma_bounds AND CAN BE MASKED BY IT, which is worth knowing before relying
+-- on it. That check throws first, and #119 records a precision trap in it that fires at exactly the
+-- ceiling #54 proposes -- so raising the ceiling to 6.9e9 today reports a fluid-range contradiction
+-- rather than this. Verified end to end at 4e9, which is float32-exact and therefore reaches here:
+-- the mod refuses to load and names both numbers.
+local function check_signal_ceiling()
+  for name, spec in pairs(SPECS) do
+    local shown = circuit.unrepresentable(spec.max_temperature_c)
+    if shown then
+      error(string.format(
+        "%s: the simulation clamps temperature to %.6g C but a circuit signal is a 32-bit integer " ..
+        "and stops at %d, so every reactor of this kind would report %d C for ever instead of its " ..
+        "own plasma temperature. Lower max_temperature_c in scripts/reactor-logic.lua, or give the " ..
+        "temperature signal a scale that fits (see #54).",
+        name, spec.max_temperature_c, circuit.INT32_MAX, shown))
     end
   end
 end
@@ -1247,6 +1300,7 @@ local function check_prototypes()
   check_cadence()
   check_confinement_ladder()
   check_plasma_bounds()
+  check_signal_ceiling()
   check_every_plasma_burns()
   check_collector_boxes()
   check_blanket_feed()
