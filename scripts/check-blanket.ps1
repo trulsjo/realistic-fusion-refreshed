@@ -316,6 +316,22 @@ script.on_init(function()
   gate.blanket_unlocked = force.recipes[BLANKET].enabled
 
   force.research_all_technologies()
+  -- AND THEN PUT THE CONFINEMENT LADDER BACK DOWN (#53), for the reason written out at length in
+  -- scripts/check-pooling.ps1: a rig is a controlled experiment and confinement time is not one of
+  -- this one's variables. What it costs here is headroom rather than correctness -- the ratio this
+  -- rig measures is confinement-independent -- but the margin below is real and was measured:
+  -- researched, the D-D collector takes 70.6 units of helium-3 in the default 7200 ticks and
+  -- saturates near 51 000; held down, 31.4 units and near 115 000.
+  --
+  -- Discovered from the technologies rather than read off reactor-logic's ladder, because this rig
+  -- does not require that module and pulling it in for four lines would be the larger change. A
+  -- rung renamed leaves this loop finding nothing and the headroom halving quietly, which is a
+  -- worse failure than it looks and is why the number above is stated rather than trusted.
+  for level = 1, 20 do
+    local t = force.technologies["rf-plasma-confinement-" .. level]
+    if not t then break end
+    t.researched = false
+  end
 
   surface.request_to_generate_chunks({ 0, 0 }, 10)
   surface.force_generate_chunk_requests()
@@ -568,8 +584,11 @@ script.on_nth_tick(CHECK_AT, function()
   -- that and it would have passed the one-item-per-step ceiling this rig was written to catch.
   -- The denominator has to be a count rather than a full box, and that is not a formality. The
   -- collector's helium-3 box is deliberately left unplumbed here, deposit() clamps to its capacity
-  -- and discards the rest, and at this rate it fills somewhere around 43 000 ticks -- well inside
-  -- what -Ticks accepts. Anyone raising it to give the reactors longer would otherwise get a
+  -- and discards the rest, and at this rate it fills somewhere around 115 000 ticks -- well inside
+  -- what -Ticks accepts. (It said 43 000 until #53 measured it: that figure predates #52's
+  -- radiation term, which cooled the D-D tier and slowed the fill. #53 moved it the other way and
+  -- is why the confinement ladder is put back down above -- researched, this is 51 000 rather than
+  -- 115 000.) Anyone raising -Ticks to give the reactors longer would otherwise get a
   -- saturated denominator, a ratio far above 1.1, and a failure pointing at the blanket instead of
   -- at the rig. Capacity is read off the prototype rather than written down.
   local capacity = 0

@@ -13,9 +13,10 @@ whose output goes straight to electricity through a direct energy converter, wit
 All balance is provisional and the mod is not published on the mod portal.
 
 **Every prototype ADR 0010 names for the Power module now exists** — all thirteen entities and all
-seven technologies, high-capacity steam equipment included. That is a statement about coverage and
-not about balance: the numbers behind them are still provisional, and nothing here has been played
-for longer than a test rig runs.
+seven technologies, high-capacity steam equipment included, plus a three-rung **confinement research
+ladder** that ADR 0010 did not name and that takes a D-D reactor from below break-even to net
+positive. That is a statement about coverage and not about balance: the numbers behind them are still
+provisional, and nothing here has been played for longer than a test rig runs.
 
 ## Before you install
 

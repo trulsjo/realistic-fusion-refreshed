@@ -261,6 +261,22 @@ Unlocking vanilla's turbine ourselves is **redundant rather than early** under B
 Bob's ever become an integration target rather than a coexistence one (ADR 0007 defers, does not
 refuse), the thing to drop would be *our* unlock — Bob's already removes fission's.
 
+**Confinement ladder** — the three technologies that raise a reactor's energy confinement time, and
+the route out of the sub-break-even D-D tier ([ADR 0015](docs/adr/0015-the-d-d-tier-is-a-breeder.md)
+makes that tier deliberate; this is what a player does about it). Say "ladder" of the line and "rung"
+of a step in it. It moves **a physical parameter and never a power bonus**, which
+[ADR 0014](docs/adr/0014-realistic-means-theoretically-possible.md) requires and
+[ADR 0005](docs/adr/0005-real-time-fusion-simulation.md) makes unavoidable: the reaction rate is read
+off cross-section data, so there is nowhere for a flat megawatt bonus to live. **It is per force** —
+two forces on one map run the same reactor prototype at different confinement times — and
+**neutronic only**, like plant efficiency and for a related reason: the aneutronic reactor's balance
+was settled at 60 s and a technology named for the machine below it must not reopen that.
+
+**Any figure quoted for a rung has to name its supply**, which is [ADR
+0016](docs/adr/0016-plasma-density-is-a-player-lever.md)'s doing rather than pedantry: at the middle
+rung a full reactor misses break-even and one held around 85% full clears it. Both are true
+and they are different sentences.
+
 **Capture efficiency** — what fraction of everything leaving a plasma is recovered as reactor energy.
 Heat *recovery*, not heat-to-work: Factorio's turbine does the conversion and loses nothing, which is
 precisely why this term exists. It is **the only thing standing between this mod and perpetual

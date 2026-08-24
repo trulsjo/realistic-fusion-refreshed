@@ -404,7 +404,70 @@ M.reactor = {
   -- Energy confinement time: how long the plasma holds its heat. This is the reactor's defining
   -- statistic -- it decides the temperature the heating settles at, and therefore, through the
   -- cross-section data, everything else.
+  --
+  -- IT IS THE STARTING VALUE SINCE #53, NOT THE ONLY ONE. confinement_ladder below moves it per
+  -- force; M.confinement_time() is what resolves the two, and control.lua is the only caller of it
+  -- in the mod.
+  -- Nothing in step() knows any of that happened -- it reads one number off one spec, and the spec
+  -- it reads is the one the caller handed it.
   confinement_time_s = 30,
+  -- What research does to the number above (#53).
+  --
+  -- ADR 0014 fixes the shape this had to take: research moves a PHYSICAL PARAMETER and never adds
+  -- megawatts. ADR 0005 makes the reaction rate a reading off cross-section data rather than a
+  -- number anyone chose, so a flat "+30 MW" has nowhere in this file to live. Confinement time is
+  -- the honest lever, and raising n-tau-T is what fusion research actually is -- so the faithful
+  -- implementation and the flavourful one are the same one.
+  --
+  -- WHERE THE RUNGS ARE, and why each. Full supply, and the qualifier is load-bearing: under
+  -- ADR 0016 a player picks their own density, and at the bottom of this ladder the best density is
+  -- not full. Figures are pinned in tests/test-reactor-logic.lua and reproduced by
+  -- tests/test-bremsstrahlung.lua.
+  --
+  --   30 s  shipped, unresearched   Q 0.320   the breeder tier ADR 0015 describes
+  --   40 s  rf-plasma-confinement-1 Q 0.578   better, still a machine run at a loss
+  --   50 s  rf-plasma-confinement-2 Q 0.950   full supply misses break-even; the density
+  --                                           optimum (~85% fill) crosses it at Q 1.085
+  --   60 s  rf-plasma-confinement-3 Q 1.467   net positive held FULL, which is the first rung
+  --                                           that is; the optimum (~90%) adds 4% on top
+  --
+  -- ADR 0016's MECHANIC CLOSES ALONG THE LADDER WITHOUT QUITE SHUTTING, and the ladder stops one
+  -- rung short of where that ADR says it shuts. Tuning density is worth +40% at 30 s, +27% at 40,
+  -- +14% at 50 and +4% at 60: the optimum walks up the fill axis as the plasma gets hotter, and
+  -- reaches about 90% at the top of this line -- ADR 0016 puts it at full supply by 70 s, which is
+  -- past the ladder. So a player who never tunes is not left behind by any of this, and one who
+  -- does is still slightly ahead at the end of it.
+  --
+  -- SO THE TOP RUNG IS THE ANEUTRONIC REACTOR'S SHIPPED NUMBER, and that is the ladder's whole
+  -- story rather than a coincidence: the later machine already holds its heat for 60 s
+  -- (M.aneutronic_reactor), and this line is the first machine being brought up to it.
+  --
+  -- WHY IT STOPS THERE, which is the half a future proposal has to read first. Taken far enough D-D
+  -- settles against max_temperature_c and inherits the pinned temperature reading the D-T tier
+  -- already has (docs/research/d-t-ignition.md) -- at about 175 s in this model, so 60 s is not
+  -- near it. That is a bound rather than a target, and control.lua's check_confinement_ladder
+  -- refuses to load a ladder whose top rung crosses it, because it is a developer edit that would
+  -- otherwise fail silently in a player's save. M.confinement_ladder_overruns below is the decision
+  -- it makes.
+  --
+  -- NEUTRONIC ONLY. M.aneutronic_reactor deliberately has no ladder: #52 settled that tier's
+  -- balance at 60 s, and raising it would reopen the aneutronic pair's numbers as a side effect of
+  -- a technology named for the machine below them. The same shape ADR 0020 gives plant efficiency.
+  --
+  -- Rungs are provisional, like every other balance number in this repository. The technology
+  -- prototypes read this table rather than restating it, so a rung and its tooltip cannot disagree.
+  confinement_ladder = {
+    { technology = "rf-plasma-confinement-1", confinement_time_s = 40 },
+    { technology = "rf-plasma-confinement-2", confinement_time_s = 50 },
+    { technology = "rf-plasma-confinement-3", confinement_time_s = 60 },
+  },
+  -- The plasma the guard above is asked about, stated HERE rather than in control.lua because it is
+  -- a property of the reactor and not of the check. Only one fuel can be guarded and it has to be
+  -- the one whose equilibrium the ladder moves: D-T is pinned at the clamp at every rung and at
+  -- none of them, so a guard over it would fail on the day it was written. A second reactor given a
+  -- ladder would name its own fuel here, and would otherwise have been silently settled on a plasma
+  -- it cannot burn.
+  confinement_guard_fuel = "rf-d-d-plasma",
   -- What is recovered of everything leaving the plasma. Below 1 because Factorio's steam turbines
   -- lose nothing, so at 1 a reactor that never fuses would pay for its own heating forever; it
   -- also stands in for the divertor, cryoplant and magnet power that v1 does not model.
@@ -813,6 +876,102 @@ function M.breed(spec, blanket, neutrons, charge)
     tritium_units = bred / spec.particles_per_unit,
     nuclei_used   = bred,
   }
+end
+
+-- ---------------------------------------------------------------------------------------------
+-- The confinement ladder (#53).
+--
+-- Three functions, and the seam between them and control.lua is the point: everything below is
+-- pure Lua over a spec, so the ladder's arithmetic, the equilibrium it settles at and the decision
+-- the load guard makes can all be driven from tests/test-reactor-logic.lua. control.lua supplies
+-- the force, the fluidbox and the error message, and owns none of the reasoning.
+
+--- The confinement time a force actually runs this reactor at.
+--
+-- @param spec        reactor constants -- one without a confinement_ladder simply never moves
+-- @param researched  function(technology_name) -> truthy when that force has it
+--
+-- The HIGHEST researched rung wins rather than the count of them, which matters for a force that
+-- was granted level 3 from the console without the two below it: the prerequisite chain is a
+-- player-facing ordering, not something the simulation may assume held.
+function M.confinement_time(spec, researched)
+  local tau = spec.confinement_time_s
+  if spec.confinement_ladder then
+    for _, rung in ipairs(spec.confinement_ladder) do
+      if researched(rung.technology) then tau = rung.confinement_time_s end
+    end
+  end
+  return tau
+end
+
+--- Run a reactor from cold until its temperature stops moving.
+--
+-- Here rather than in a test file because control.lua's load guard needs the same answer the tests
+-- do, and #51 is the record of what two implementations of one piece of arithmetic cost. The
+-- reactor is held full and given all the power it asks for, which is the operating point the guard
+-- is sited at -- see M.confinement_ladder_overruns.
+--
+-- @param spec         reactor constants
+-- @param fluid_name   the plasma to run
+-- @param amount       plasma held, in fluid units -- a full input box, for the shipped reactor 1000
+-- @param seconds      how long to run. 1200 is converged for every shipped spec: the same answer
+--                     to five figures at 7200, verified over the whole ladder and past it.
+-- @param available_j  electrical energy per step, or math.huge for a reactor that is never starved
+-- @param dt           step size in seconds
+-- @return the settled temperature in celsius, and the last step's result table
+--
+-- A COARSER dt SETTLES HOTTER, by about 2% at dt = 1 s against a tick. That is the safe direction
+-- for the guard and the wrong one for a published figure, which is why the tests below run this at
+-- a tick and control.lua runs it at the cadence the game actually steps.
+function M.settle(spec, fluid_name, amount, seconds, available_j, dt)
+  local t_c, last = spec.min_temperature_c, nil
+  for _ = 1, math.floor(seconds / dt) do
+    local result = M.step(spec, fluid_name, amount, t_c, available_j, dt)
+    if not result then break end
+    last = result
+    t_c = result.temperature_c
+  end
+  return t_c, last
+end
+
+--- Does the top of this spec's ladder park the plasma against max_temperature_c?
+--
+-- @return nil when the ladder is safe, otherwise the temperature its top rung settles at
+--
+-- THE DEFECT THIS EXISTS FOR is a developer edit, not anything a player can do: a rung added or
+-- raised far enough leaves D-D settled at the clamp, where it inherits the pinned temperature
+-- reading the D-T tier already has (docs/research/d-t-ignition.md) -- a reactor whose thermometer
+-- has stopped meaning anything, and whose research therefore stops doing anything visible. The mod
+-- loads perfectly with that ladder and only a player's save shows it, which is the same reason
+-- every other invariant in control.lua's check_prototypes is checked at load.
+--
+-- THE TOP RUNG ALONE, because the settled temperature rises monotonically with confinement time --
+-- every rung below the top is cooler than it by construction.
+--
+-- AT FULL SUPPLY, WHICH IS THE REFERENCE OPERATING POINT AND NOT THE HOTTEST ONE. The distinction
+-- was got wrong once on the way here and is worth keeping: a thinner plasma settles HOTTER, and
+-- monotonically so, because the same 50 MW is heating fewer particles. A reactor held at a tenth of
+-- a box is against the clamp ALREADY, at the shipped 30 s, with nothing researched -- so a guard
+-- over every fill would fail on the day it was written and could never be made to pass.
+--
+-- What is worth refusing is a ladder that puts a NORMALLY SUPPLIED reactor there, because that is
+-- the machine every published figure describes and the one a player builds. ADR 0016 makes running
+-- thin a lever a player may choose; choosing it far enough to pin their own thermometer is their
+-- business and not a defect in the ladder.
+--
+-- (ADR 0016 does say the density optimum walks up the fill axis as confinement rises, and it does.
+-- But that is the optimum in Q, which is a different curve from temperature and does not bound it.)
+function M.confinement_ladder_overruns(spec, fluid_name, amount, seconds, dt)
+  local ladder = spec.confinement_ladder
+  if not ladder or #ladder == 0 then return nil end
+
+  local top = {}
+  for k, v in pairs(spec) do top[k] = v end
+  top.confinement_time_s = ladder[#ladder].confinement_time_s
+
+  local t_c = M.settle(top, fluid_name, amount, seconds, math.huge, dt)
+  if t_c >= spec.max_temperature_c then return t_c end
+  return nil
 end
 
 return M
