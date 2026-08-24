@@ -27,6 +27,27 @@ junctions the current assets mod, so every sprite path resolves whatever the flo
 floor fails only in a player's log.
 Run them rather than reasoning about whether a change is safe.
 
+**`load-check.ps1` loads the mods two ways, and the default is not the player's.** Without arguments
+it junctions the repository's directories in, so the game reads the working tree; `-FromZips` builds
+the distributable zips with `scripts/pack-mods.ps1` and loads those instead, resolving every sprite
+against the unpacked archive rather than against the repo. A file that resolves through a junction
+and never reaches a zip passes the default and breaks a player's game. Use `-FromZips` before
+anything that ships.
+
+`-SelfTest -FromZips` is a **different** self-test from `-SelfTest` alone, because zip mode has its
+own way of passing while proving nothing: point the asset map back at the repository and every
+sprite resolves against the working tree, so the run reports a clean pass over an archive it never
+opened. That half deletes a referenced file from the unpacked archive and requires it to be caught.
+Two traps it already fell into, both fixed and both worth knowing before editing it — the victim
+must be a file the prototypes actually NAME (the `aneutronic-reactor/` sheets are shipped but
+unreferenced, so deleting one is correctly silent), and it refuses to delete anything outside the
+scratch directory, because the mis-wiring it exists to catch once made it delete the repository's
+own sprite.
+
+`pack-mods.ps1` is a build tool rather than a gate; it uploads nothing and changes no version, and
+its own `-SelfTest` proves that a **git-ignored** file planted inside a mod cannot reach a zip —
+ignored specifically, since merely-untracked would be excluded for the wrong reason.
+
 `scripts/probe-*.ps1` are **not** in that list and are not gates. A probe builds a real map like a
 check does, but it asserts nothing and answers a question a decision is waiting on — exit 0 means it
 ran and reported, never that the answer was the hoped-for one. Its findings belong in

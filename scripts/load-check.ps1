@@ -10,6 +10,13 @@
     resolves, and nothing references a prototype that does not exist -- broader coverage than a
     test suite, for the cost of this script.
 
+    IT CAN LOAD THE MODS TWO WAYS, and -FromZips is the one a player is on. By default the
+    repository's directories are junctioned in, so the game reads the working tree in place; that is
+    fast and it is what every other check here does, but it cannot see a file that resolves through
+    a junction and never reaches a zip. -FromZips builds the zips and loads those instead. Which one
+    ran is printed, and appears again in the closing line, because a green run of the wrong one is
+    worse than no run.
+
     IT DOES MORE THAN THE DATA STAGE, and the difference matters to anyone editing the
     simulation. Creating a map runs `on_init`, which is where control.lua's check_prototypes()
     fires -- so this script enforces ten invariants that no amount of prototype validation
@@ -133,12 +140,34 @@
     The asset check does not cover the extra mods: Find-MissingAssets only resolves paths for mods
     it is given a directory for, and a third-party mod's graphics are not this repo's to police.
 
+.PARAMETER FromZips
+    Build the distributable zips with pack-mods.ps1 and load those, instead of junctioning the
+    repository's directories in. This is the packaging path a player installs, and until it is
+    exercised nothing here has ever opened one of these zips.
+
+    The zips are built into the run's own temporary directory rather than taken from dist/, so the
+    check always tests what the working tree currently makes. A dist/ zip can be older than the code
+    beside it, and a stale artefact reported as a pass is the failure this mode exists to prevent.
+
+    The asset check follows the mods. Find-MissingAssets resolves against the UNPACKED zips, not
+    against the repository, so a sprite that is referenced but absent from the archive is caught --
+    which is the whole point, and is not something junction mode can tell you. Since ADR 0023 those
+    references cross a mod boundary, so there is now a seam for one to fall through.
+
 .PARAMETER SelfTest
     Verify the check can fail. Three halves: the repo as it stands must pass; a mod carrying an
     invalid prototype must fail; and a mod naming an icon file that does not exist must be
     caught. The first is required or the others prove nothing, since Factorio also exits non-zero
     when the repo is genuinely broken. The third is the one Factorio itself exits 0 on. Run this
     whenever the script changes.
+
+    WITH -FromZips it runs a different self-test, because zip mode has a different way of passing
+    while proving nothing. Wire the asset check's directory map back at the repository and every
+    sprite resolves against the working tree, so the run reports a clean pass over an archive it
+    never opened -- and it would keep doing so for as long as the repo and the zip agreed, which is
+    almost always. That half packs, then deletes one PNG from the UNPACKED archive and requires it
+    to be reported: invisible if the check is looking at the repository, caught if it is looking at
+    the zip. The two self-tests do not overlap and both are worth running.
 
 .PARAMETER KeepTemp
     Keep the temporary save and captured output for debugging. Junctions are always removed.
@@ -147,19 +176,23 @@
     pwsh -File scripts/load-check.ps1
     pwsh -File scripts/load-check.ps1 -With space-age
     pwsh -File scripts/load-check.ps1 -AlsoModDirectory C:\somewhere\k2-2.0
+    pwsh -File scripts/load-check.ps1 -FromZips
     pwsh -File scripts/load-check.ps1 -SelfTest
+    pwsh -File scripts/load-check.ps1 -SelfTest -FromZips
 #>
 [CmdletBinding()]
 param(
     [string]   $FactorioExe,
     [string[]] $With = @(),
     [string]   $AlsoModDirectory,
+    [switch]   $FromZips,
     [switch]   $SelfTest,
     [switch]   $KeepTemp
 )
 
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $ourMods  = Get-RepoMods
@@ -170,6 +203,9 @@ $ourMods  = Get-RepoMods
 if ($SelfTest -and $AlsoModDirectory) {
     throw '-SelfTest and -AlsoModDirectory cannot be combined: the self-test needs a clean mod set to prove anything.'
 }
+# -SelfTest -FromZips is a DIFFERENT self-test, not the canary one. The canary halves junction
+# deliberately broken mod directories in, and those are not tracked, so pack-mods.ps1 cannot ship
+# them. What zip mode needs proving is its own thing anyway -- see Test-ZipModeSelfTest below.
 
 $alsoMods = @()
 if ($AlsoModDirectory) {
@@ -232,6 +268,9 @@ function Test-Assets {
         would report a clean pass over every graphic this repo ships.  #>
     param([string] $Tag)
 
+    # $ourDirectories is set by the caller below, and points at the repository or at the unpacked
+    # zips depending on how the mods were mounted. -SelfTest -FromZips is what proves it really
+    # follows the mods rather than always pointing at the repository.
     $result = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
         -Arguments @('--dump-data') -OutputDirectory $temp -Tag "$Tag-dump"
     if ($result.Code -ne 0) {
@@ -239,9 +278,6 @@ function Test-Assets {
         Write-FactorioTail $result
         exit $result.Code
     }
-
-    $ourDirectories = @{}
-    foreach ($mod in $ourMods) { $ourDirectories[$mod] = Join-Path $repoRoot $mod }
 
     $missing = Find-MissingAssets `
         -DumpPath (Join-Path $temp 'write-data/script-output/data-raw-dump.json') `
@@ -256,10 +292,146 @@ function Test-Assets {
 }
 
 try {
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+    # Where Find-MissingAssets should look for each of our mods' files. In junction mode that is the
+    # repository; in zip mode it must be the unpacked archive, or the check would resolve every
+    # sprite against the working tree and certify a zip it never opened.
+    $ourDirectories = @{}
+
+    if ($FromZips) {
+        $zipDir    = Join-Path $temp 'zips'
+        $unpackDir = Join-Path $temp 'unpacked'
+        Write-Host 'mods: from zips built by pack-mods.ps1 (the path a player installs)'
+
+        & (Join-Path $PSScriptRoot 'pack-mods.ps1') -OutputDirectory $zipDir | Out-Host
+        if ($LASTEXITCODE -ne 0) { throw "pack-mods.ps1 exited $LASTEXITCODE; nothing to load." }
+
+        foreach ($mod in $ourMods) {
+            $version = (Get-Content (Join-Path $repoRoot "$mod/info.json") -Raw | ConvertFrom-Json).version
+            $zip     = Join-Path $zipDir "${mod}_${version}.zip"
+            if (-not (Test-Path -LiteralPath $zip)) { throw "pack-mods.ps1 produced no zip for $mod at $zip" }
+
+            Copy-Item -LiteralPath $zip -Destination $modDir
+            $target = Join-Path $unpackDir $mod
+            [IO.Compression.ZipFile]::ExtractToDirectory($zip, $unpackDir)
+            if (-not (Test-Path -LiteralPath $target)) {
+                throw "$mod's zip did not unpack to a single top-level folder named after the mod."
+            }
+            $ourDirectories[$mod] = $target
+        }
+    }
+    else {
+        Write-Host 'mods: junctioned from the repository (the dev loop, not the shipped zip)'
+        New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+        foreach ($mod in $ourMods) { $ourDirectories[$mod] = Join-Path $repoRoot $mod }
+    }
+
     if ($alsoMods) {
         New-ModJunctions -ModDirectory $modDir -RepoRoot $AlsoModDirectory -Mods $alsoMods
         Write-Host "also loading: $($alsoMods -join ', ')"
+    }
+
+    if ($SelfTest -and $FromZips) {
+        # Zip mode can pass by finding nothing, which is the same reason the canary halves exist.
+        # The specific regression it guards: wire $ourDirectories back to $repoRoot and every sprite
+        # resolves against the working tree, so the check reports a clean pass over a zip it never
+        # opened. Deleting a file from the UNPACKED archive is what tells the two apart -- against
+        # the repository that deletion is invisible, against the archive it must be reported.
+        Write-Host 'self-test 1/2: the built zips must load and resolve every asset.'
+        $dump = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
+            -Arguments @('--dump-data') -OutputDirectory $temp -Tag 'zip-selftest-dump'
+        if ($dump.Code -ne 0) { Write-FactorioTail $dump; exit $dump.Code }
+
+        $dumpPath = Join-Path $temp 'write-data/script-output/data-raw-dump.json'
+        $dataDir  = Get-FactorioDataDirectory -FactorioExe $FactorioExe
+        $before = Find-MissingAssets -DumpPath $dumpPath -DataDir $dataDir -ModDirectories $ourDirectories
+        if ($before) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the built zips are already missing $($before.Count) asset(s),"
+            Write-Host '         so removing one would prove nothing.'
+            foreach ($m in $before) { Write-Host "    $($m.Reference)" }
+            exit 1
+        }
+
+        # Taken from the unpacked archive only. The repository keeps its copy, so a check that
+        # resolved against the repo would not notice and would report a pass here.
+        #
+        # The victim has to be a file the PROTOTYPES NAME, not merely one the zip contains. The
+        # first version of this took the first .png it found and drew
+        # aneutronic-reactor-animation-glow.png, which graphics/krastorio-2/NOTICE.txt records as
+        # currently unused -- kept deliberately, referenced by nothing. Deleting an unreferenced
+        # file is correctly not reported, so the self-test failed the check rather than the other
+        # way round. Candidates therefore come from the dump.
+        Write-Host 'self-test 2/2: a file removed from the unpacked zip must be reported missing.'
+        $dumpText = Get-Content -LiteralPath $dumpPath -Raw
+        $referenced = [regex]::Matches($dumpText, '__(?<mod>[A-Za-z0-9_ .-]+)__/(?<rel>[^"]+?\.png)') |
+            ForEach-Object { [pscustomobject]@{ Mod = $_.Groups['mod'].Value; Rel = $_.Groups['rel'].Value } } |
+            Where-Object { $ourDirectories.ContainsKey($_.Mod) } |
+            Sort-Object Mod, Rel -Unique
+
+        # More than one candidate on purpose. A sprite that declares `stripes` keeps a `filename`
+        # beside them that the engine never opens, and Find-MissingAssets skips those by design --
+        # picking one would fail this test for a reason that is not a fault. Trying a handful means
+        # a single such pick cannot decide the result.
+        $caught = $null
+        $tried  = @()
+        foreach ($candidate in ($referenced | Select-Object -First 5)) {
+            $path = Join-Path $ourDirectories[$candidate.Mod] $candidate.Rel
+
+            # This self-test deletes files, so it refuses to delete one outside the scratch
+            # directory. Found the hard way: wiring $ourDirectories back at the repository -- the
+            # exact regression this test exists to catch -- made it delete the repository's own
+            # sprite while proving the point. A test that damages the working tree when it fails is
+            # not a test anyone will run twice.
+            $resolved = [IO.Path]::GetFullPath($path)
+            if (-not $resolved.StartsWith([IO.Path]::GetFullPath($unpackDir), [StringComparison]::OrdinalIgnoreCase)) {
+                Write-Host ''
+                Write-Host 'FAILED - self-test: the asset map does not point inside the unpacked archive.'
+                Write-Host "         $($candidate.Mod) resolves to $resolved"
+                Write-Host "         but the archive was unpacked to $unpackDir."
+                Write-Host '         Refusing to delete anything outside it; nothing was touched.'
+                exit 1
+            }
+            if (-not (Test-Path -LiteralPath $path)) { continue }
+            $tried += $candidate.Rel
+            $bytes = [IO.File]::ReadAllBytes($path)
+            Remove-Item -LiteralPath $path -Force
+
+            $after = Find-MissingAssets -DumpPath $dumpPath -DataDir $dataDir -ModDirectories $ourDirectories
+            if ($after | Where-Object { $_.Reference -like "*/$($candidate.Rel)" }) {
+                $caught = $candidate
+                break
+            }
+            # Not reported: put it back before trying the next, so a run that ends up failing does
+            # not also leave the unpacked archive shredded behind it.
+            [IO.File]::WriteAllBytes($path, $bytes)
+        }
+
+        if (-not $caught) {
+            Write-Host ''
+            Write-Host 'FAILED - self-test: removing a referenced file from the unpacked zip was NOT'
+            Write-Host '         reported missing. The asset check is resolving against something other'
+            Write-Host '         than the archive -- most likely the repository -- so a zip-mode pass'
+            Write-Host '         says nothing about what is in the zip.'
+            Write-Host "         Tried: $($tried -join ', ')"
+            exit 1
+        }
+        $victimRepoCopy = Join-Path $repoRoot (Join-Path $caught.Mod $caught.Rel)
+        # Asserted rather than mentioned: if the repository's copy were gone too, the deletion
+        # would have been caught by either resolution and this would prove nothing about which one
+        # the check used.
+        if (-not (Test-Path -LiteralPath $victimRepoCopy)) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the repository's copy of $($caught.Rel) is missing, so"
+            Write-Host '         catching the deletion does not show the check read the archive.'
+            exit 1
+        }
+
+        Write-Host ''
+        Write-Host 'OK - self-test passed: the built zips load and resolve every asset, and a file'
+        Write-Host "     removed from the unpacked archive was caught ($($caught.Rel))"
+        Write-Host "     while the repository's own copy of it stayed put -- so the asset check"
+        Write-Host '     follows the mods rather than always reading the working tree.'
+        exit 0
     }
 
     if ($SelfTest) {
@@ -374,8 +546,9 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
 
     # Says what actually passed rather than "data stage valid", which was the same undersell the
     # docstring above used to make: creating the map ran control.lua's check_prototypes() too.
-    Write-Host 'OK - prototypes valid, every referenced asset present, map created and the'
-    Write-Host "     simulation's ten load-time invariants hold."
+    $how = if ($FromZips) { 'built zips' } else { 'junctioned repo directories' }
+    Write-Host "OK - prototypes valid, every referenced asset present, map created and the"
+    Write-Host "     simulation's ten load-time invariants hold, loading from $how."
     exit 0
 }
 finally {
