@@ -152,6 +152,19 @@ plumbing. Not a runaway, and not free.
 > The 1.4-reactor figure still describes a player who has not researched `rf-blanket-breeding`, and
 > that is the progression rather than an obsolescence.
 
+> **And the arithmetic above it is stale twice over — flagged 2026-08-24 (#53), not fixed.** It
+> quotes 3.66 u/s of deuterium and 133 MW, which are **pre-#52** figures: that ticket re-anchored
+> the equilibrium table further up this page and left this section alone, so the numerator moved
+> and the ratio did not. #53 then made it **research-dependent** as well — D-D's by-products go
+> from 0.137 to 0.627 u/s across the confinement ladder, 4.6x, so a researched player needs far
+> fewer D-D reactors per D-T reactor than an unresearched one.
+> 
+> Left to #117 rather than re-picked here, because fixing it means **choosing an
+> operating point** and the section does not currently hold one: it quotes a heater-limited D-T
+> reactor (2.5 u/s) against a saturated D-D one, which are not the same kind of number. Deciding
+> which the fuel chain should be quoted at is a balance question, and settling it as a side effect
+> of a confinement ladder is exactly the drift this page exists to stop.
+
 Balance is provisional here as everywhere in this repository, and this section is the first thing
 that should move if it is retuned.
 

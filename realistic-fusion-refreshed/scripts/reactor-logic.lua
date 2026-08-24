@@ -413,11 +413,11 @@ M.reactor = {
   confinement_time_s = 30,
   -- What research does to the number above (#53).
   --
-  -- ADR 0014 fixes the shape this had to take: research moves a PHYSICAL PARAMETER and never adds
-  -- megawatts. ADR 0005 makes the reaction rate a reading off cross-section data rather than a
-  -- number anyone chose, so a flat "+30 MW" has nowhere in this file to live. Confinement time is
-  -- the honest lever, and raising n-tau-T is what fusion research actually is -- so the faithful
-  -- implementation and the flavourful one are the same one.
+  -- ADR 0024 places this ladder; ADR 0014 fixed the shape it had to take. Research moves a PHYSICAL
+  -- PARAMETER and never adds megawatts, and ADR 0005 makes the reaction rate a reading off
+  -- cross-section data rather than a number anyone chose, so a flat "+30 MW" has nowhere in this
+  -- file to live. Confinement time is the honest lever, and raising n-tau-T is what fusion research
+  -- actually is -- so the faithful implementation and the flavourful one are the same one.
   --
   -- WHERE THE RUNGS ARE, and why each. Full supply, and the qualifier is load-bearing: under
   -- ADR 0016 a player picks their own density, and at the bottom of this ladder the best density is

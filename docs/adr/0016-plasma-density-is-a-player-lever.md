@@ -95,8 +95,17 @@ on building properly.
   table**, and is annotated as such. Break-even depends on supply: at τ 50 s a tuned reactor is above
   it (Q 1.085) and a full one is not (Q 0.950), so a player who tunes crosses a rung earlier than the
   record read.
-- **#53 is not complicated by it.** At the top of the ladder full supply is optimal, so the guard
-  against the clamp is still sited at full density and nothing under-supplied can exceed it.
+- ~~**#53 is not complicated by it.** At the top of the ladder full supply is optimal, so the guard
+  against the clamp is still sited at full density and nothing under-supplied can exceed it.~~
+  **Corrected 2026-08-24 ([ADR 0024](0024-confinement-time-is-the-researchable-lever.md), #53).**
+  The guard *is* sited at full density, but not for this reason and not with this justification.
+  Thinning a plasma raises its settled **temperature** monotonically — the same 50 MW heats fewer
+  particles — so an under-supplied reactor is *hotter*, and one held at a tenth of a box is against
+  the clamp already, at the shipped 30 s, with nothing researched. What this ADR established is that
+  the optimum in **Q** walks up the fill axis and leaves the range by 70 s; that is a different curve
+  and it does not bound temperature. Full supply is the guard's **reference operating point**, not
+  its hottest case. (The first clause is a near miss too: the ladder stops at 60 s, where the optimum
+  is near 90% fill rather than at full.)
 - **`CONTEXT.md` gains the term**, so "under-supplied" stops being usable as a synonym for "starved".
 - **Not playtested.** Whether a 40% reward for under-supplying reads as depth or as an exploit is a
   play question, and the honest answer today is that nobody has played it. This ADR accepts the shape;
