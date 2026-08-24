@@ -138,6 +138,30 @@ loadable modules would have shown raw names like `rf-m-reactor` in game.
 > machine, not a Power one, and it is nothing to do with plasma. Left unbuilt and moved to its own
 > ticket rather than invented here.
 
+> **Settled 2026-08-24 (#50): `rf-discharge-pump` is not in v1 at all.** Truls's call. The ticket
+> above held that the machine could not be specified until the Core water chain's scope was settled
+> — specifically whether the deuterium-depleted-water loop exists. It does, and it was built without
+> the pump: `rf-depleted-water-recycling` returns 100 depleted water as 100 water in the vanilla
+> `chemistry` category, unlocked alongside the step that produces the stream. It is deliberately
+> lossy by exactly the heavy water drawn off, so it is a sink rather than a water source, and it
+> exists because base 2.0 has no fluid void — without it the enrichment machine fills its output box
+> after one craft and strands the hydrogen sulfide charge.
+>
+> So the job the pump existed to do is done, by one recipe rather than a machine. Building it now
+> would add an entity, an item, a recipe, a technology and locale for a single recipe that a vanilla
+> chemical plant already runs, plus art that Krastorio 2 cannot supply — another drawn placeholder
+> on top of the one [#108](https://github.com/trulsjo/realistic-fusion-refreshed/issues/108) already
+> tracks.
+>
+> **The design it belonged to was declined too, and that is the substantive half.** In the original
+> the pump pairs with `rf-ddw-recycling`, which duplicates *every water-consuming recipe* to accept
+> depleted water, making DDW a usable input rather than something converted back. This repository
+> took the simpler shape instead. The pump is a fitting for plumbing that was never laid.
+>
+> Reversible if the water chain ever grows: nothing here forecloses adding it, and the recipe would
+> move rather than be rewritten. It is not deferred pending anything, though — no ticket waits on
+> it.
+
 **Power — technologies**: `rf-d-d-fusion`, `rf-tritium-breeding`, `rf-d-t-fusion`,
 `rf-helium-3-breeding`, `rf-aneutronic-fusion`, `rf-blanket-breeding`, `rf-direct-energy-conversion`.
 
