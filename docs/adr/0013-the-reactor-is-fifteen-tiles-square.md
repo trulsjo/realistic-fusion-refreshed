@@ -11,6 +11,12 @@ than drifted from. Closes the reactor's half of
 
 Decided by Truls. Recorded here because it is a decision, not a consequence of one.
 
+**Partly superseded by [ADR 0022](0022-footprints-follow-the-original-mod.md), 2026-08-24.** Two
+things below no longer hold: the heat exchanger does not stay 3x2, and the ordering is reversed --
+where the art and the original mod disagree about a footprint, the original mod now wins and the art
+is redrawn. `rf-reactor` at fifteen tiles square is untouched, and so is everything here about why it
+is fifteen and about where its graphics definitions live.
+
 ## Context
 
 The reactor and the heat exchanger were the same building in two tints — both `table.deepcopy` of
@@ -34,8 +40,16 @@ a fusion reactor, and they are not variations on each other:
 **The footprint follows the art: `rf-reactor` becomes 15x15, using Krastorio 2's own boxes.** The
 sprite then lands where it was drawn to land, with no rescaling and no recompositing.
 
-**The heat exchanger stays 3x2 and stays vanilla-shaped.** It is a heat exchanger; vanilla's is the
-right size and shape for one, and the pair is now unmistakable at a glance.
+*(The figure stands; the rule does not. [ADR 0022](0022-footprints-follow-the-original-mod.md)
+reverses the ordering where the art and the original mod disagree, which they do not here.)*
+
+~~**The heat exchanger stays 3x2 and stays vanilla-shaped.** It is a heat exchanger; vanilla's is the
+right size and shape for one, and the pair is now unmistakable at a glance.~~
+
+**Superseded by [ADR 0022](0022-footprints-follow-the-original-mod.md).** It is 5x15, the original
+mod's footprint. The reasoning above was sound for what it was answering -- this clause was written
+when the exchanger and the reactor were the same 3x2 building in two tints -- and at 5x15 beside a
+15x15 reactor nothing about that problem survives either.
 
 **The pipe connections move to the new edge**: plasma in at west `{-7, 0}` and east `{7, 0}`, reactor
 energy out at north `{0, -7}`. Whole tiles rather than the halves a 3x2 needed, because fifteen is
@@ -75,6 +89,9 @@ directory — Lua included".
 - **The other six machines are still vanilla shapes**, and #45 stays open for them. They are a
   smaller problem than this one was: most are 3x3 assembling machines, and Krastorio 2 has 3x3
   buildings.
+  *(Settled by [ADR 0022](0022-footprints-follow-the-original-mod.md). The prediction was half
+  right: the assembling machines were repoints, and the four with no Krastorio 2 counterpart at any
+  size turned out to be the harder problem this one was.)*
 - **This is not a decision about what a reactor is.** #43 and #44 ask whether it should stay a
   boiler at all, and a `reactor`-type prototype would bring its own graphics fields. Nothing here
   forecloses that; it changes two boxes, three pipe positions and a picture set.
