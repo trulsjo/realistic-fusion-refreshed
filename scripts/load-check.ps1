@@ -6,7 +6,7 @@
 
 .DESCRIPTION
     Creates a throwaway map in an isolated mod directory containing only the game's bundled
-    mods plus this repository's two. Exit 0 means every prototype is valid, every dependency
+    mods plus this repository's three. Exit 0 means every prototype is valid, every dependency
     resolves, and nothing references a prototype that does not exist -- broader coverage than a
     test suite, for the cost of this script.
 

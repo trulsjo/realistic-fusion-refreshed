@@ -4,7 +4,7 @@
     Launch the Factorio client with this repository's mods, in an isolated mod directory.
 
 .DESCRIPTION
-    The full GUI game, pointed at a mod directory containing only base plus this repo's two mods.
+    The full GUI game, pointed at a mod directory containing only base plus this repo's three mods.
     The repo's mods are junctioned in, so editing a prototype and restarting the game is the whole
     edit-test loop -- nothing is copied and nothing needs reinstalling.
 

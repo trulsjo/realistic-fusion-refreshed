@@ -214,7 +214,7 @@ running the game, per this repo's standard.
 | Half | What it demands | Enforced where |
 |---|---|---|
 | **Buildable at the near end** | every ingredient of a recipe a technology unlocks is reachable inside that technology's own prerequisite closure | `scripts/check-blanket.ps1:296–304` (for `rf-blanket-breeding`), `scripts/check-hc.ps1:177–185` (for `rf-d-t-fusion`), `scripts/check-aneutronic.ps1:243–257` |
-| **Usable at the far end** | every tier of ours that makes steam has something inside its own closure that drinks it for electricity | `realistic-fusion-refreshed/control.lua:621`, called at `:916`; documented in `scripts/load-check.ps1:67–72` |
+| **Usable at the far end** | every tier of ours that makes steam has something inside its own closure that drinks it for electricity | `realistic-fusion-refreshed/control.lua:621`, called at `:916`; documented in `scripts/load-check.ps1:74–79` |
 
 **Correction to how that was described to me: the buildable half is enforced per-technology by
 individual rigs, not globally.** Three rigs hard-code three roots — `research_closure("rf-blanket-breeding", {})`
@@ -876,8 +876,8 @@ In this repository:
 - `realistic-fusion-refreshed/prototypes/entities.lua` (the six vanilla deepcopies, and `rf-hc-turbine` at :301);
   `realistic-fusion-refreshed/prototypes/recipes/*.lua` (all nine, for the ingredient set in §2b).
 - `scripts/check-blanket.ps1`, `scripts/check-hc.ps1`, `scripts/check-aneutronic.ps1` (the closure
-  rigs); `realistic-fusion-refreshed/control.lua:621` and `scripts/load-check.ps1:67–72` — **uncommitted working
-  tree**, see the caveat above.
+  rigs); `realistic-fusion-refreshed/control.lua:621` and `scripts/load-check.ps1:74–79` — committed
+  since this note was written; the caveat above is what was true on the day.
 - `CONTEXT.md`; ADRs [0002](../adr/0002-v1-scope-and-module-split.md),
   [0005](../adr/0005-real-time-fusion-simulation.md),
   [0007](../adr/0007-coexistence-without-integration.md),
