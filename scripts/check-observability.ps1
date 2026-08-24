@@ -18,10 +18,9 @@
     whole thing can work while being impossible to attach a wire to, because the reactor wins the
     cursor over the entity that carries the connector (ADR 0012).
 
-    So this builds three reactors in the three states the ticket names, wires each one's combinator
-    to a second combinator ten tiles away, and reads the values back off the far end of that wire.
-    Reading at the far end is the point: it is the difference between "the mod set some filters"
-    and "a player can act on this".
+    So this builds five reactors, wires each one's combinator to a second combinator ten tiles away,
+    and reads the values back off the far end of that wire. Reading at the far end is the point: it
+    is the difference between "the mod set some filters" and "a player can act on this".
 
     WHAT EACH REACTOR IS FOR
 
@@ -30,9 +29,26 @@
                 electric network, so it cannot climb. Holding plasma, not fusing.
       starved   No plasma line at all.
 
-    Three states, three reactors, one save -- which is also what makes the aggregate check possible:
+    Three states, one save -- which is also what makes the aggregate check possible:
     running and idle sit at temperatures three orders of magnitude apart, so if either one's wire
     carried a figure for "the reactors" rather than for itself, they could not both be right.
+
+      ignited-full   D-T plasma, a full box, powered.
+      ignited-thin   D-T plasma, a third of a box, powered.
+
+    THOSE TWO ARE NOT A FOURTH AND FIFTH STATE (#55). They are both "running", and they exist to be
+    compared with EACH OTHER. Their real equilibria differ -- a thinner plasma settles hotter -- and
+    both are far above the simulation's 2e9 ceiling, so both are clamped to it and both report the
+    same number. A player cannot tell them apart on a wire. That is what #54 is about, and the two
+    `note` lines at the end of a run measure it rather than assert it: neutronic reports YES today
+    and ignited reports no, and the second flips when #56 to #58 land. A rig that asserted the
+    current answer would have to be edited as the first step of fixing it.
+
+    They are seeded and topped up directly rather than fed by an infinity pipe, and that is not a
+    shortcut: a feed replaces burnt plasma AT THE FEED TEMPERATURE, which on a reactor burning 34
+    units a second is a large cooling flow. Fed that way the thin one sat at 6.28e8 for the whole
+    run -- pinned by its feed rather than by the ceiling -- and the pair then differed for the one
+    reason this measurement has to exclude.
 
     WHAT IT CANNOT CHECK
 
@@ -63,6 +79,17 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 $ourMods  = Get-RepoMods
 $rigName  = 'rf-observability-rig'
 
+# The rig verifies once, at SettleTicks, and the run has to outlast that. Kept here rather than in
+# two languages: the settle tick is substituted into the rig's Lua below, so there is one number
+# instead of a pair that can drift apart. Lowering the budget under the settle tick used to produce
+# "the rig reported nothing", which points at the rig rather than at the budget.
+$script:SettleTicks    = 2400
+$script:BenchmarkTicks = 2600
+if ($script:BenchmarkTicks -le $script:SettleTicks) {
+    throw ("this script is misconfigured: the benchmark budget ($script:BenchmarkTicks ticks) must " +
+           "exceed the tick the rig verifies at ($script:SettleTicks), or it never reports.")
+}
+
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
 $bundled     = Get-BundledMods -FactorioExe $FactorioExe
 
@@ -90,36 +117,73 @@ local TEMPERATURE = { type = "virtual", name = "rf-signal-plasma-temperature", q
 local Q_FACTOR    = { type = "virtual", name = "rf-signal-q-factor", quality = "normal" }
 local RED = defines.wire_connector_id.circuit_red
 
--- Three reactors, twenty-five tiles apart so a fifteen-tile building and its wiring never touch the
+-- Five reactors, twenty-five tiles apart so a fifteen-tile building and its wiring never touch the
 -- next one. powered = false is how the idle case is held idle: with no network the reactor cannot
 -- heat, so plasma injected at a heater's temperature stays there.
+--
+-- `status` is the status line the case should show and `distinct` marks the three whose lines have
+-- to differ from each other. Both exist because #55 added two cases that are deliberately NOT a
+-- fourth and fifth state: the ignited pair are both "running", and they are here to be compared
+-- with each other rather than with anything else.
+--
+-- THE IGNITED PAIR (#55, for #54). Two D-T reactors, both powered, SEEDED RATHER THAN FED -- see
+-- the note where they are built -- and differing only in how full they are held. Their real
+-- equilibria differ; both are far above the simulation's 2e9
+-- ceiling, so both are clamped to it and both report the same number. That is the defect #54 is
+-- about, and this rig's job here is to MEASURE whether it is still true rather than to assert it
+-- either way -- see the two notes at the end of verify().
 local CASES = {
-  { name = "running", plasma = 6e8, powered = true  },
-  { name = "idle",    plasma = 1e6, powered = false },
-  { name = "starved", plasma = nil, powered = true  },
+  { name = "running", plasma = 6e8, powered = true,  distinct = true },
+  { name = "idle",    plasma = 1e6, powered = false, distinct = true },
+  { name = "starved", plasma = nil, powered = true,  distinct = true },
+  { name = "ignited-full", powered = true, status = "running",
+    fuel = "rf-d-t-plasma", seed = 6e8, units = 1000 },
+  { name = "ignited-thin", powered = true, status = "running",
+    fuel = "rf-d-t-plasma", seed = 6e8, units = 350 },
 }
 
 local lines = {}
 local failures = 0
+-- Counted separately from `lines`, because note() writes into `lines` too and a note is not a
+-- check. Reporting #lines as the check count inflated the verdict by one per note.
+local checks = 0
 
 local function record(ok, name, detail)
+  checks = checks + 1
   if not ok then failures = failures + 1 end
   lines[#lines + 1] = string.format("%s  %s%s", ok and "ok  " or "FAIL", name,
     detail and ("  -- " .. detail) or "")
+end
+
+--- A measurement the rig reports and does not judge (#55).
+--
+-- Deliberately not a check. What the ignited pair does today is a defect #54 is open about, so
+-- asserting the current behaviour would mean writing down "both reactors report the same number" as
+-- a thing that must stay true -- and then deleting it as the first step of fixing it. Asserting the
+-- FIXED behaviour would fail the rig today for a reason nobody is going to act on this ticket.
+--
+-- So it is neither. It prints, it never fails, and it is the line whoever lands #56 to #58 reads to
+-- know they have finished. A note that never changes is a note nobody needed; this one changes.
+local function note(name, detail)
+  lines[#lines + 1] = string.format("note  %s%s", name, detail and ("  -- " .. detail) or "")
 end
 
 script.on_init(function()
   local surface = game.surfaces[1]
   local force   = game.forces.player
 
-  surface.request_to_generate_chunks({ 40, 0 }, 5)
+  -- Five cases at 25 tiles apart since #55, not three: the far reactor sits at x=100 and its probe
+  -- at 110, so the generated area and the landfill below both had to grow with them. A probe on
+  -- ungenerated ground is a wire that reaches nothing, which reads exactly like a mod that never
+  -- published.
+  surface.request_to_generate_chunks({ 70, 0 }, 7)
   surface.force_generate_chunk_requests()
   local tiles = {}
-  for x = -20, 110 do
+  for x = -20, 170 do
     for y = -20, 20 do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
   end
   surface.set_tiles(tiles)
-  for _, e in pairs(surface.find_entities_filtered({ area = { { -20, -20 }, { 110, 20 } } })) do
+  for _, e in pairs(surface.find_entities_filtered({ area = { { -20, -20 }, { 170, 20 } } })) do
     if e.type ~= "character" then e.destroy() end
   end
 
@@ -152,6 +216,9 @@ script.on_init(function()
         name = "__PLASMAFEED__", position = connections[1].target_position, force = force,
       })
       if not feed then error("infinity-pipe refused for " .. case.name) end
+      -- Always D-D and always full: the only cases that reach here are the original three, and the
+      -- ignited pair are seeded rather than fed (see below). This briefly took the fuel and the
+      -- fill off the case, which was dead the moment the pair stopped using a feed.
       feed.set_infinity_pipe_filter({
         name = "rf-d-d-plasma", percentage = 1, temperature = case.plasma, mode = "at-least",
       })
@@ -161,6 +228,17 @@ script.on_init(function()
         if connection.target then joined = true end
       end
       if not joined then error("the plasma feed for " .. case.name .. " reaches nothing") end
+    end
+
+    -- THE IGNITED PAIR ARE NOT FED (#55). An infinity pipe holds a box at a fill by replacing what
+    -- the reactor burns, and it replaces it AT THE FEED'S TEMPERATURE -- which on a reactor burning
+    -- 34 units a second is a large cooling flow, not a top-up. Fed that way the thin one never left
+    -- 6.28e8: it was pinned by its feed rather than by the ceiling, and the pair then differed for
+    -- the one reason this measurement must exclude. So they get plasma written straight into the
+    -- box and topped back up below, temperature preserved, which is the same instrument
+    -- scripts/check-confinement.ps1 uses and for the same reason.
+    if case.seed then
+      reactor.fluidbox[1] = { name = case.fuel, amount = case.units, temperature = case.seed }
     end
 
     -- The far end of the wire: an ordinary constant combinator a player could have placed, ten
@@ -229,11 +307,16 @@ local function verify()
     local reactor = entry.reactor
 
     -- The status line, read back off the entity rather than recomputed.
+    -- The expected line is the case's `status`, which is its own name for the original three and
+    -- "running" for the ignited pair -- they are two reactors in one state, not two more states.
+    local expected = entry.case.status or name
     local status = reactor.custom_status
     local label = status and status.label and status.label[1]
-    record(label == "rf-reactor-status." .. name,
-      name .. ": the status line says " .. name, tostring(label))
-    if label then
+    record(label == "rf-reactor-status." .. expected,
+      name .. ": the status line says " .. expected, tostring(label))
+    -- Uniqueness binds only the three that are meant to be distinct. Asking it of all five would
+    -- demand the ignited pair differ from each other, which is the opposite of what they are for.
+    if label and entry.case.distinct then
       record(seen_labels[label] == nil, name .. ": the three states are three different lines", label)
       seen_labels[label] = true
     end
@@ -258,7 +341,18 @@ local function verify()
         -- demanding that the reporting cadence be one tick, which is the thing it deliberately is
         -- not.
         --
-        -- THE IDLE CASE GETS ITS OWN BOUND SINCE #52, and the reason is the point rather than the
+        -- THE IDLE CASE'S WIDE BOUND WENT WHEN THE READ TICK MOVED (#55). What is below records
+        -- why it existed; it is kept because the reasoning is still true of a reactor read while
+        -- its plasma is falling, and this rig simply no longer reads one. At 2400 ticks the idle
+        -- plasma has been at the floor for most of the run -- 15 C on the wire against 15 C in the
+        -- box -- so it is as steady as the running one and is held to the same 5%.
+        --
+        -- IT HAD TO GO RATHER THAN MERELY BEING UNNECESSARY. Against an actual of 15 C, a wire
+        -- reporting nothing at all gives a drift of 1.0, which sat comfortably inside the old bound
+        -- of 4.0 -- so the check would have passed a signal that had stopped being published, which
+        -- is precisely the failure it exists to catch.
+        --
+        -- THE ORIGINAL REASON, SINCE #52, and the reason is the point rather than the
         -- number. This block used to say "the idle one is slowly cooling" and hold both cases to 5%.
         -- It is not slowly cooling any more: with the radiation term carried, a plasma below fusion
         -- temperature radiates away far more than it holds -- around 350 kW against 200 kJ of
@@ -270,7 +364,7 @@ local function verify()
         --
         -- The bound is a factor rather than a percentage because the quantity is no longer a drift.
         local drift = math.abs(temperature - actual) / actual
-        local bound = (name == "idle") and 4.0 or 0.05
+        local bound = 0.05
         record(drift < bound,
           name .. ": the temperature on the wire is this reactor's own plasma, to within the report cadence",
           string.format("wire %d, plasma %.6g, %.2f%% apart (bound %.0f%%)",
@@ -290,14 +384,81 @@ local function verify()
     "each reactor reports itself, not an aggregate of both",
     string.format("running %s, idle %s", tostring(running), tostring(idle)))
 
+  -- ------------------------------------------------------ can a player tell two reactors apart?
+  --
+  -- #55's measurement, and the reason it is two lines rather than one: the answer is yes on the
+  -- neutronic tier and no on the ignited one, and #54 exists to make it yes on both. Reported per
+  -- tier so that the second line changing is unambiguous when #56 to #58 land.
+  --
+  -- The neutronic pair are in different STATES; the ignited pair are in the same state at different
+  -- densities. That difference is deliberate. Two ignited reactors one of which is idle would
+  -- differ trivially -- an idle plasma is cold whatever tier it belongs to -- and would say nothing
+  -- about the ceiling. Two that are both running and both fusing, at real equilibria that genuinely
+  -- differ, are the case the clamp flattens.
+  local function differ(a, b)
+    if a == nil or b == nil then return "unreadable" end
+    return (a ~= b) and "YES" or "no"
+  end
+
+  note("neutronic: two reactors in different states report different temperatures?",
+    string.format("%s -- running %s, idle %s",
+      differ(running, idle), tostring(running), tostring(idle)))
+
+  local full, thin = temperatures["ignited-full"], temperatures["ignited-thin"]
+  note("ignited: two reactors at different densities report different temperatures?",
+    string.format("%s -- full %s, thin %s%s",
+      differ(full, thin), tostring(full), tostring(thin),
+      (full ~= nil and full == thin)
+        and string.format(" (both at the %d C ceiling, so the wire cannot tell them apart -- #54)",
+          full) or ""))
+
   lines[#lines + 1] = string.format("%s: %d checks, %d failures",
-    failures == 0 and "PASS" or "FAIL", #lines, failures)
+    failures == 0 and "PASS" or "FAIL", checks, failures)
   for _, line in ipairs(lines) do log("OBS-RIG " .. line) end
 end
 
 -- Tick 0 fires every interval, and at tick 0 nothing has happened yet: the infinity pipes have not
--- filled and no reactor has ever been stepped, so all three would report "starved" and read exactly
--- like a broken mod. Then one pass to wire, and a later one to read.
+-- filled and no reactor has ever been stepped, so every case would report "starved" and read
+-- exactly like a broken mod. Then one pass to wire, and a much later one to read.
+--
+-- This describes the handler below it, not the top-up handler above: that one runs from the first
+-- interval and has nothing to wait for.
+-- Held at a fixed amount, temperature untouched, so the only thing separating the ignited pair is
+-- how much plasma each holds. A reactor left to drain changes density as it burns, and density is
+-- the variable under test.
+script.on_nth_tick(60, function()
+  for _, entry in ipairs(storage.cases or {}) do
+    if entry.case.units then
+      local plasma = entry.reactor.fluidbox[1]
+      -- A box that has drained COMPLETELY is re-seeded rather than skipped. Reading the name and
+      -- temperature off the plasma that is there only works while some is; with nothing there the
+      -- old guard gave up for the rest of the run and the case quietly degraded into a fourth
+      -- "starved" reactor, failing on its status line rather than saying what happened. Not
+      -- reachable at the shipped burn -- measured drawdown between top-ups is 4.3% held full and
+      -- 1.5% held thin -- but a hotter tier or a longer interval would reach it.
+      if not plasma then
+        entry.reactor.fluidbox[1] =
+          { name = entry.case.fuel, amount = entry.case.units, temperature = entry.case.seed }
+      elseif plasma.amount < entry.case.units then
+        entry.reactor.fluidbox[1] =
+          { name = plasma.name, amount = entry.case.units, temperature = plasma.temperature }
+      end
+    end
+  end
+end)
+
+-- READ AFTER THE PLASMAS HAVE SETTLED, which #55 had to raise from 240 ticks and is a condition
+-- rather than a cushion. The ignited pair are compared with each other, so both have to have
+-- ARRIVED: a D-T reactor fed at 6e8 reaches the 2e9 ceiling after about 400 ticks held full and
+-- about 1200 held at 35%, so a reading at 240 catches both mid-climb and finds them different
+-- because one is ahead of the other, which is not the question being asked. It also broke the
+-- drift check on the full one -- a plasma climbing that fast moves more than 5% between one report
+-- and the next, so the wire looked stale when it was merely behind a fast-moving reactor.
+--
+-- 2400 is twice the slower of the two. The three original cases are read at the same tick and are
+-- indifferent to it: two are held at their feed temperature and the third has no plasma at all.
+local SETTLE_TICKS = __SETTLETICKS__
+
 script.on_nth_tick(120, function()
   if game.tick == 0 then return end
   if not storage.wired then
@@ -306,13 +467,13 @@ script.on_nth_tick(120, function()
     wire_everything()
     return
   end
-  if storage.done then return end
+  if storage.done or game.tick < SETTLE_TICKS then return end
   storage.done = true
   verify()
 end)
 '@
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') `
-        -Value $lua.Replace('__PLASMAFEED__', $feed)
+        -Value $lua.Replace('__PLASMAFEED__', $feed).Replace('__SETTLETICKS__', "$script:SettleTicks")
 }
 
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }
@@ -325,11 +486,17 @@ try {
     $save = Join-Path $temp 'obs.zip'
     Invoke-FactorioStep @step -Arguments @('--create', $save) -Tag 'create' | Out-Null
     $runOut = Invoke-FactorioStep @step -Tag 'run' -Arguments @(
-        '--benchmark', $save, '--benchmark-ticks', '400', '--benchmark-runs', '1', '--disable-audio')
+        '--benchmark', $save, '--benchmark-ticks', "$script:BenchmarkTicks", '--benchmark-runs', '1',
+        '--disable-audio')
 
-    $reported = @(Get-Content $runOut | Select-String -Pattern 'OBS-RIG (ok|FAIL|PASS|FAIL:)' |
+    # 'note' is in the pattern since #55: those lines are measurements the rig reports and does not
+    # judge, and a measurement nobody prints is a measurement nobody takes.
+    $reported = @(Get-Content $runOut | Select-String -Pattern 'OBS-RIG (ok|note|FAIL|PASS|FAIL:)' |
         ForEach-Object { ($_ -split 'OBS-RIG ', 2)[1].TrimEnd() })
-    if ($reported.Count -eq 0) { throw 'the rig reported nothing; it never reached its check tick.' }
+    if ($reported.Count -eq 0) {
+        throw ("the rig reported nothing; it never reached its check tick. It verifies at " +
+               "$script:SettleTicks ticks and this run was given $script:BenchmarkTicks.")
+    }
 
     foreach ($line in $reported) { Write-Host "  $line" }
 

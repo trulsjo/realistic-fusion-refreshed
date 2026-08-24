@@ -46,12 +46,42 @@ M.LOCALE_PREFIX = "rf-reactor-status."
 local INT32_MAX = 2147483647
 local INT32_MIN = -2147483648
 
+-- Public for the reason M.LOCALE_PREFIX is: so that the things which have to agree with this number
+-- read it instead of retyping it. control.lua's check_signal_ceiling refuses to load a temperature
+-- ceiling past it (#55) and tests/test-circuit-output.lua asserts the shipped headroom. The test
+-- had its own copy of 2147483647 and the guard was about to want a third, which is one constant in
+-- three places and exactly the drift #51 was opened about. The locals above stay because to_signal
+-- is on the reporting path and a local is a cheaper lookup than a table field.
+M.INT32_MAX = INT32_MAX
+M.INT32_MIN = INT32_MIN
+
 --- Round to the nearest integer and clamp into int32.
 local function to_signal(value)
   if value ~= value then return 0 end          -- NaN: report nothing rather than throw
   if value >= INT32_MAX then return INT32_MAX end
   if value <= INT32_MIN then return INT32_MIN end
   return math.floor(value + 0.5)
+end
+
+--- Would a wire show this temperature, or something else instead? (#55)
+--
+-- @return nil when a circuit signal can carry it, otherwise the value a wire would actually show
+--
+-- The question control.lua's check_signal_ceiling asks of every reactor's max_temperature_c, and it
+-- is asked HERE because this is the file that knows why the ceiling exists. A signal is an int32,
+-- so a plasma hotter than 2147483647 C is reported as 2147483647 C -- the reading stops being a
+-- measurement and becomes a constant, silently, with the reactor working perfectly.
+--
+-- The shipped ceiling is 2e9 and fits with about 7% to spare, so this returns nil today and the
+-- guard passes. It becomes load-bearing the moment anyone raises the ceiling, which is #54's whole
+-- subject: the ceiling is where it is BECAUSE of this integer, and nothing in the game says so.
+--
+-- Its own function rather than a comparison written out at the call site, so that the decision can
+-- be broken in tests/test-circuit-output.lua. A guard nobody has watched fail is a guard nobody
+-- knows the shape of.
+function M.unrepresentable(temperature_c)
+  if temperature_c > INT32_MAX then return INT32_MAX end
+  return nil
 end
 
 --- The two values a reactor puts on the wire.
