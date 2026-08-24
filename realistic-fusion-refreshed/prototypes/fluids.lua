@@ -5,7 +5,7 @@
 -- and a NOTICE naming every source file and every modification. Do not move one of these out of
 -- that directory: the licence travels with the directory, not with this file (legal-note.txt).
 local function icon(name)
-  return { { icon = "__realistic-fusion-refreshed__/graphics/krastorio-2/fluids/" .. name .. ".png", icon_size = 64 } }
+  return { { icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/fluids/" .. name .. ".png", icon_size = 64 } }
 end
 
 data:extend({

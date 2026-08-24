@@ -27,7 +27,7 @@ data:extend({
   {
     type = "technology",
     name = "rf-blanket-breeding",
-    icon = "__realistic-fusion-refreshed__/graphics/krastorio-2/technologies/blanket-breeding.png",
+    icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/technologies/blanket-breeding.png",
     icon_size = 256,
     prerequisites = { "rf-d-t-fusion", "rf-tritium-breeding", "rf-lithium-extraction" },
     effects = {

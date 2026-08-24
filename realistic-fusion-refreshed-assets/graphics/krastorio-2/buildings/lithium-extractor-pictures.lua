@@ -12,7 +12,7 @@
 -- The whole building is one thirty-frame animation rather than a still with a working overlay, so
 -- this machine turns while it crafts without anything further being taken.
 
-local DIRECTORY = "__realistic-fusion-refreshed-core__/graphics/krastorio-2/buildings/lithium-extractor/"
+local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/buildings/lithium-extractor/"
 
 local FRAMES = 30
 

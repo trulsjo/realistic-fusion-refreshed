@@ -42,7 +42,7 @@
 -- sheets on top for the working animation. So `BODY` below is a whole building rather than a
 -- building with a hole in it, and the overlay adds motion rather than filling a gap.
 
-local DIRECTORY = "__realistic-fusion-refreshed__/graphics/krastorio-2/buildings/aneutronic-reactor/"
+local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/buildings/aneutronic-reactor/"
 
 -- Thirty, because that is the frame count of Krastorio 2's animation sheets. Anything still that
 -- shares a layer stack with them repeats to match: an Animation's layers must agree on frame count.

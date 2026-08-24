@@ -61,7 +61,7 @@ $MACHINES = @(
         # between the reactor and the turbine hall with a full-length contact on each side. Water is
         # the small flow and goes on the short ends, where a single pipe run can thread a column of
         # exchangers end to end.
-        Mod = 'realistic-fusion-refreshed'; Name = 'heat-exchanger'; Label = "HEAT`nEXCHANGER"
+        Mod = 'realistic-fusion-refreshed-assets'; Name = 'heat-exchanger'; Label = "HEAT`nEXCHANGER"
         Prototype = 'boiler'
         Width = 5; Height = 15; Core = $false
         Connections = @(
@@ -74,7 +74,7 @@ $MACHINES = @(
     @{
         # Both long sides, so one butts the reactor and the other passes fluid to the next converter
         # in the row -- the chaining rf-hc-turbine and vanilla's steam turbine also do.
-        Mod = 'realistic-fusion-refreshed'; Name = 'direct-energy-converter'; Label = "DIRECT`nENERGY`nCONVERTER"
+        Mod = 'realistic-fusion-refreshed-assets'; Name = 'direct-energy-converter'; Label = "DIRECT`nENERGY`nCONVERTER"
         Prototype = 'generator'
         Width = 5; Height = 15; Core = $false
         Connections = @(
@@ -83,7 +83,7 @@ $MACHINES = @(
         )
     },
     @{
-        Mod = 'realistic-fusion-refreshed'; Name = 'aneutronic-reactor'; Label = "ANEUTRONIC`nREACTOR"
+        Mod = 'realistic-fusion-refreshed-assets'; Name = 'aneutronic-reactor'; Label = "ANEUTRONIC`nREACTOR"
         Prototype = 'boiler'
         Width = 15; Height = 15; Core = $true
         Connections = @(
@@ -93,7 +93,7 @@ $MACHINES = @(
         )
     },
     @{
-        Mod = 'realistic-fusion-refreshed'; Name = 'isotope-collector'; Label = "ISOTOPE`nCOLLECTOR"
+        Mod = 'realistic-fusion-refreshed-assets'; Name = 'isotope-collector'; Label = "ISOTOPE`nCOLLECTOR"
         Prototype = 'boiler'
         Width = 5; Height = 5; Core = $false
         Connections = @(
@@ -105,7 +105,7 @@ $MACHINES = @(
     @{
         # A container: lithium arrives by inserter and the tritium it breeds leaves through the
         # reactor's own pipe, so it has no connections of its own to mark. See entities.lua.
-        Mod = 'realistic-fusion-refreshed'; Name = 'lithium-blanket'; Label = "LITHIUM`nBLANKET"
+        Mod = 'realistic-fusion-refreshed-assets'; Name = 'lithium-blanket'; Label = "LITHIUM`nBLANKET"
         Prototype = 'still'
         Width = 5; Height = 5; Core = $false
         Connections = @()

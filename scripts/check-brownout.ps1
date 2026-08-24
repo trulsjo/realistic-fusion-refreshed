@@ -189,7 +189,7 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$ourMods  = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
+$ourMods  = Get-RepoMods
 $rigName  = 'rf-brownout-rig'
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe

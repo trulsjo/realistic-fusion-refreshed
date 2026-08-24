@@ -17,7 +17,7 @@
 -- Krastorio 2's own arrangement -- one unchanging image held across the twenty frames the
 -- machinery animates over. The water reflection is NOT taken, matching every other building here.
 
-local DIRECTORY = "__realistic-fusion-refreshed-core__/graphics/krastorio-2/buildings/gas-mixer/"
+local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/buildings/gas-mixer/"
 
 local FRAMES = 20
 local SPEED = 0.25

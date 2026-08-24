@@ -19,7 +19,7 @@ data:extend({
   {
     type = "technology",
     name = "rf-tritium-breeding",
-    icon = "__realistic-fusion-refreshed__/graphics/krastorio-2/technologies/tritium-breeding.png",
+    icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/technologies/tritium-breeding.png",
     icon_size = 256,
     prerequisites = { "rf-d-d-fusion" },
     effects = {
@@ -53,7 +53,7 @@ data:extend({
   {
     type = "technology",
     name = "rf-d-t-fusion",
-    icon = "__realistic-fusion-refreshed__/graphics/krastorio-2/technologies/d-t.png",
+    icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/technologies/d-t.png",
     icon_size = 256,
     prerequisites = { "rf-tritium-breeding", "rf-gas-mixing" },
     effects = {

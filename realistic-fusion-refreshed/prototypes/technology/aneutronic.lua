@@ -32,7 +32,7 @@ data:extend({
   {
     type = "technology",
     name = "rf-helium-3-breeding",
-    icon = "__realistic-fusion-refreshed__/graphics/krastorio-2/technologies/helium-3-breeding.png",
+    icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/technologies/helium-3-breeding.png",
     icon_size = 256,
     -- rf-tritium-breeding, because that is what unlocks the collector -- there is no helium-3 in a
     -- pipe anywhere until a player has one, so gating storage behind it is the honest order.
@@ -61,7 +61,7 @@ data:extend({
   {
     type = "technology",
     name = "rf-direct-energy-conversion",
-    icon = "__realistic-fusion-refreshed__/graphics/krastorio-2/technologies/direct-energy-conversion.png",
+    icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/technologies/direct-energy-conversion.png",
     icon_size = 256,
     -- processing-unit is a prerequisite for the converter's ingredients; production-science-pack is
     -- one for the RESEARCH ITSELF, and it is the same closure rule applied one layer out. This
@@ -103,7 +103,7 @@ data:extend({
   {
     type = "technology",
     name = "rf-aneutronic-fusion",
-    icon = "__realistic-fusion-refreshed__/graphics/krastorio-2/technologies/aneutronic-fusion.png",
+    icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/technologies/aneutronic-fusion.png",
     icon_size = 256,
     prerequisites = { "rf-direct-energy-conversion", "rf-d-t-fusion", "rf-gas-mixing" },
     effects = {

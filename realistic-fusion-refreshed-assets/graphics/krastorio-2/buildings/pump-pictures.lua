@@ -29,7 +29,7 @@
 -- runtime by the fluid rather than drawn per building, and Krastorio 2 keeps vanilla's for the same
 -- reason.
 
-local DIRECTORY = "__realistic-fusion-refreshed__/graphics/krastorio-2/buildings/pump/"
+local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/buildings/pump/"
 
 -- Krastorio 2's shifts are util.by_pixel(...); written out as tiles because util is a __base__
 -- internal this file does not depend on. by_pixel divides by 32, so by_pixel(8, 3.5) is

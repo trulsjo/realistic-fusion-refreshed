@@ -5,7 +5,7 @@ require("util") -- table.deepcopy
 --
 -- Loaded after prototypes/entities.lua because each combinator borrows its reactor's selection box.
 
-local GRAPHICS = "__realistic-fusion-refreshed__/graphics/krastorio-2/"
+local GRAPHICS = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/"
 
 -- Two signals rather than a GUI. ADR 0010 chose that deliberately: GUI was 929 of the redesign's
 -- ~1,736 runtime lines, and these carry the same two numbers through the engine's own idiom.

@@ -1,7 +1,7 @@
 #Requires -Version 7
 <#
 .SYNOPSIS
-    Fails if the two things a player must be told before installing have stopped being said.
+    Fails if the claims the shipped mods make about themselves have stopped being true.
 
 .DESCRIPTION
     ADR 0003 and ADR 0006 each create an obligation that is a sentence rather than code: the clean
@@ -10,7 +10,10 @@
     in this repository would notice if they were edited away, because neither is a prototype, a name
     or a number -- load-check, locale-check and name-check all pass on a mod that says nothing at all.
 
-    So this check is deliberately about prose and files, and it needs no Factorio. It asserts:
+    So this check is deliberately about prose and files, and it needs no Factorio. Since ADR 0023
+    it also covers one claim that is a number rather than a sentence -- the assets dependency floor --
+    because that one has the same shape: nothing else here would notice it going stale, and the cost
+    of it going stale is a player's game refusing to load. It asserts:
 
       - LICENSE, LICENSE.GPL and legal-note.txt ship inside each mod, not only at the repo root, and
         each mod's legal-note.txt still ends with the root one verbatim, behind a preamble saying
@@ -20,9 +23,18 @@
         because Factorio reads one before the locale loads and the other after, and a player sees
         whichever the moment supplies -- so the two saying different things is the failure that would
         never be noticed.
-      - Both descriptions, and README.md, carry the clean break and the quality gap.
-      - Romner_set, Durikkan and PreLeyZero are credited. No licence asks for it (see CLAUDE.md); it
-        is a community norm, which is exactly the kind of thing that quietly disappears in an edit.
+      - The two CODE mods' descriptions, and README.md, carry the clean break and the quality gap.
+        The assets mod is exempt from those two and from nothing else: it ships no prototype, so
+        "saves are not supported" and "not balanced for quality" would be claims about nothing. It is
+        NOT exempt from the licence files, the description match or the credits -- it is the mod that
+        actually carries the Krastorio 2 art, so it is the one that most needs them (ADR 0023).
+      - Romner_set, Durikkan and PreLeyZero are credited, in all three.  No licence asks for it (see
+        CLAUDE.md); it is a community norm, which is exactly the kind of thing that quietly
+        disappears in an edit.
+      - Each code mod's declared floor on realistic-fusion-refreshed-assets equals the version that
+        mod actually declares, and no .png is left behind in a code mod. Both guard the split ADR 0023
+        made, and neither can fail on this machine: art paths resolve against whatever assets version
+        the PLAYER has, while the dev loop junctions the current one.
 
     WHAT IT CANNOT CHECK
 
@@ -47,7 +59,12 @@ param()
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$mods     = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
+. "$PSScriptRoot/factorio-lib.ps1"   # for Get-RepoMods only; this script still starts no game.
+
+$mods      = Get-RepoMods
+$assetsMod = 'realistic-fusion-refreshed-assets'
+# Every mod that ships a prototype, which is every mod that can make a claim about a save.
+$codeMods  = @($mods | Where-Object { $_ -ne $assetsMod })
 
 $failures = [System.Collections.Generic.List[string]]::new()
 $checks   = 0
@@ -74,6 +91,12 @@ $CLAIMS = @{
     'the clean break'  = @('are NOT supported', 'are not supported')
     'which predecessors' = @('Realistic Fusion Power')
     'the quality gap'  = @('NOT balanced for quality', 'not balanced for quality')
+}
+
+# Kept apart from $CLAIMS because the two sets have different scope. The claims above are about what
+# a mod does to a save, which the assets mod does not do; these are about whose work this is built
+# on, which is truest of the mod that holds the art.
+$CREDITS = @{
     'credit to Romner_set'  = @('Romner_set')
     'credit to Durikkan'    = @('Durikkan')
     'credit to PreLeyZero'  = @('PreLeyZero')
@@ -148,24 +171,64 @@ foreach ($mod in $mods) {
         }
     }
 
-    Test-Claim -Where "$mod/info.json" -Text $info.description -Needles $CLAIMS
+    Test-Claim -Where "$mod/info.json" -Text $info.description -Needles $CREDITS
+    if ($mod -ne $assetsMod) {
+        Test-Claim -Where "$mod/info.json" -Text $info.description -Needles $CLAIMS
+    }
 }
 
-# 3. The repository's own front page, which is where anyone arriving from the mod portal lands.
+# 3. The assets split (ADR 0023). Both halves fail only for a player, never here: the junctioned
+# assets mod is always the current one, so load-check resolves every sprite path whatever the floor
+# says. These two are the whole of what stands between that and "File __...-assets__/....png not
+# found" on someone else's machine.
+$assetsInfo    = Get-Content (Join-Path $repoRoot "$assetsMod/info.json") -Raw | ConvertFrom-Json
+$assetsVersion = $assetsInfo.version
+$floorPattern  = "^\s*" + [regex]::Escape($assetsMod) + "\s*>=\s*(?<floor>\S+)\s*$"
+
+foreach ($mod in $codeMods) {
+    $checks++
+    $deps  = @((Get-Content (Join-Path $repoRoot "$mod/info.json") -Raw | ConvertFrom-Json).dependencies)
+    $floor = $deps | ForEach-Object { [regex]::Match($_, $floorPattern) } |
+             Where-Object { $_.Success } | Select-Object -First 1
+
+    if (-not $floor) {
+        $failures.Add("$mod/info.json does not require '$assetsMod >= <version>'")
+    }
+    elseif ($floor.Groups['floor'].Value -ne $assetsVersion) {
+        $declared = $floor.Groups['floor'].Value
+        $failures.Add("$mod/info.json requires $assetsMod >= $declared, but that mod is at " +
+            "$assetsVersion. Raise the floor in the same commit that bumps the assets version -- " +
+            'otherwise a player keeps the older assets mod and the sprite the newer code names is ' +
+            'not in it.')
+    }
+
+    $checks++
+    $strays = @(Get-ChildItem (Join-Path $repoRoot $mod) -Recurse -File -Filter *.png -ErrorAction SilentlyContinue)
+    if ($strays) {
+        $named = ($strays | Select-Object -First 3 | ForEach-Object { $_.Name }) -join ', '
+        $failures.Add("$mod ships $($strays.Count) .png. Art belongs in $assetsMod (ADR 0023); " +
+            "left here it is re-downloaded on every code release: $named")
+    }
+}
+
+# 4. The repository's own front page, which is where anyone arriving from the mod portal lands.
 $readme = Get-Content (Join-Path $repoRoot 'README.md') -Raw
 Test-Claim -Where 'README.md' -Text $readme -Needles $CLAIMS
+Test-Claim -Where 'README.md' -Text $readme -Needles $CREDITS
 
 if ($failures.Count) {
     Write-Host ''
     foreach ($f in $failures) { Write-Host "FAIL  $f" -ForegroundColor Red }
     Write-Host ''
     Write-Host ("{0} of {1} checks failed." -f $failures.Count, $checks) -ForegroundColor Red
-    Write-Host 'See docs/adr/0003-space-age-tolerated-not-targeted.md and'
-    Write-Host '    docs/adr/0006-clean-break-from-predecessor-saves.md for why these are obligations.'
+    Write-Host 'See docs/adr/0003-space-age-tolerated-not-targeted.md,'
+    Write-Host '    docs/adr/0006-clean-break-from-predecessor-saves.md and'
+    Write-Host '    docs/adr/0023-art-ships-in-its-own-mod.md for why these are obligations.'
     exit 1
 }
 
 Write-Host ("ship-check: {0} checks, 0 failures." -f $checks) -ForegroundColor Green
-Write-Host 'The clean break and the quality gap are stated in both mod descriptions and in README.md;'
-Write-Host 'the licence and the scope rule ship inside both mods.'
+Write-Host 'The clean break and the quality gap are stated in both code mods and in README.md; the'
+Write-Host 'licence and the scope rule ship inside all three; the assets floor matches and no code mod'
+Write-Host 'ships art.'
 exit 0

@@ -139,7 +139,7 @@ $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$ourMods  = @('realistic-fusion-refreshed-core', 'realistic-fusion-refreshed')
+$ourMods  = Get-RepoMods
 $rigName  = 'rf-pooling-rig'
 
 # The shipped cadence, read rather than remembered. The rig samples on and around the simulation's

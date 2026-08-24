@@ -15,7 +15,7 @@
 -- ponytail: the water reflection is not taken. It is worth nothing to a machine nobody will place
 -- on a shoreline, and taking it would mean another file in here to account for.
 
-local DIRECTORY = "__realistic-fusion-refreshed-core__/graphics/krastorio-2/buildings/deuterium-extractor/"
+local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/buildings/deuterium-extractor/"
 
 -- Five, because that is the frame count of the condenser's own animation. The still and the shadow
 -- repeat to match it: an Animation's layers must agree on how many frames they have.

@@ -6,7 +6,7 @@ these concepts, it uses the term as defined here rather than a synonym.
 Created alongside [ADR 0010](docs/adr/0010-v1-module-layout-and-prototype-set.md), which specified v1.
 Decisions live in `docs/adr/`; this file only fixes the language.
 
-## The two mods
+## The three mods
 
 **Core** — `realistic-fusion-refreshed-core`, title "Realistic Fusion Refreshed Core". Owns every
 fluid and item prototype, and the extraction chain that produces feedstock. Never references Power.
@@ -15,8 +15,15 @@ fluid and item prototype, and the extraction chain that produces feedstock. Neve
 generation, and depends on Core. Referred to as "the main mod" when distinguishing it from the
 library.
 
-Dependencies run **one way only**: Power → Core. Where a reactor produces a Core-owned fluid, the
-prototype is defined in Core and the recipe lives in Power.
+**Assets** — `realistic-fusion-refreshed-assets`, title "Realistic Fusion Refreshed Assets". Owns
+every sprite the other two draw, and nothing else: no fluid, no item, no entity, no technology. Both
+of the others depend on it; it depends on neither. Added 2026-08-24 by
+[ADR 0023](docs/adr/0023-art-ships-in-its-own-mod.md). Say "Assets" of the mod and "art" of what it
+holds; it is not "the graphics mod", because a mod that held graphics *code* would be a different
+thing and Power is where that would go.
+
+Dependencies run **one way only**: Power → Core, and both → Assets. Where a reactor produces a
+Core-owned fluid, the prototype is defined in Core and the recipe lives in Power.
 
 ## The fuel chain
 

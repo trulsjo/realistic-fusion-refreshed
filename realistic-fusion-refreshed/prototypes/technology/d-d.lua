@@ -45,7 +45,7 @@ data:extend({
       "technology-description.rf-d-d-fusion",
       string.format("%d", logic.reactor.heating_power_w / 1e6),
     },
-    icon = "__realistic-fusion-refreshed__/graphics/krastorio-2/technologies/d-d.png",
+    icon = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/technologies/d-d.png",
     icon_size = 256,
     prerequisites = { "rf-deuterium-extraction", "advanced-circuit", "concrete" },
     effects = {

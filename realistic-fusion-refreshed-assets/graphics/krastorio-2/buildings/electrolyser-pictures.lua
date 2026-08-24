@@ -14,7 +14,7 @@
 -- fluid's colour. Left that way deliberately -- picking a colour per recipe is a design decision
 -- about how the chain reads, not part of putting the right building on the ground.
 
-local DIRECTORY = "__realistic-fusion-refreshed-core__/graphics/krastorio-2/buildings/electrolyser/"
+local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/buildings/electrolyser/"
 
 local function still(file, extra)
   local layer = {

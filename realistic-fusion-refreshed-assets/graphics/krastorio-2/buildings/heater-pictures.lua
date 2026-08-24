@@ -19,7 +19,7 @@
 -- taken. They are four per-direction pixel offsets and a recipe tint for a puddle, on a machine
 -- whose whole job here is one recipe. Add them if the heater ever gains a second.
 
-local DIRECTORY = "__realistic-fusion-refreshed__/graphics/krastorio-2/buildings/heater/"
+local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/buildings/heater/"
 
 -- North, east, south, west, in that order along each sheet -- the order the base helper uses and
 -- the order the sheets are laid out in.
