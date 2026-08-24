@@ -257,7 +257,9 @@ reactor.output_fluid_box = {
 -- energy_consumption sets the burn rate, and everything downstream is ordinary vanilla steam at
 -- 500 C, which vanilla steam turbines already accept.
 --
--- THE SHAPE IS THE ORIGINAL MOD'S, AND THE ART IS A PLACEHOLDER (#45). Truls's decision,
+-- THE SHAPE IS THE ORIGINAL MOD'S, AND THE ART IS A PLACEHOLDER (ADR 0022, which reverses ADR
+-- 0013's "the heat exchanger stays 3x2" for this machine and inverts its footprint-follows-art
+-- ordering; #45). Truls's decision,
 -- 2026-08-22: five by fifteen, butted flush along one face of the fifteen-tile reactor the way
 -- Realistic Fusion Power laid it out, and Durikkan's 2.0 port still declares that footprint. The
 -- shape is a look rather than a throughput argument -- #48 measured the link at 31-62x of headroom
@@ -307,7 +309,7 @@ exchanger.energy_source = {
   },
 }
 
--- FIVE BY FIFTEEN, ON MOCKUP ART (#45). Truls's decision: this machine takes the original mod's
+-- FIVE BY FIFTEEN, ON MOCKUP ART (#45, ADR 0022). Truls's decision: this machine takes the original mod's
 -- footprint, which Durikkan's 2.0 port still declares, and it gets a drawn placeholder until the
 -- real art of #108 exists. What it wore before was vanilla's heat exchanger at 3x2 -- a sprite that
 -- looked finished while being the wrong size, which is worse than a box that admits what it is.
@@ -516,7 +518,7 @@ end
 collector.fluid_box = emit(collector.fluid_box, "rf-tritium")
 collector.output_fluid_box = emit(collector.output_fluid_box, "rf-helium-3")
 
--- FIVE BY FIVE, ON MOCKUP ART (#45). It was vanilla's 3x2 boiler, which is both the wrong machine
+-- FIVE BY FIVE, ON MOCKUP ART (#45, ADR 0022). It was vanilla's 3x2 boiler, both the wrong machine
 -- and, Truls's judgement, too small for something that does work. There is no counterpart in the
 -- original mod to take a size from -- the collector is ours, from #27 -- and Krastorio 2 has
 -- nothing at 3x2 but a spaceship part, so this is a drawn placeholder at a size chosen rather than
@@ -584,7 +586,7 @@ local blanket = pin(table.deepcopy(data.raw["container"]["steel-chest"]), "rf-li
 -- that it is still a supply line rather than a warehouse. Twice a vanilla steel chest, which is
 -- about the right size for a fitting. Provisional like every other balance number here.
 blanket.inventory_size = 100
--- FIVE BY FIVE, ON MOCKUP ART (#45). It was a 1x1 steel chest, which Truls judged far too small for
+-- FIVE BY FIVE, ON MOCKUP ART (#45, ADR 0022). It was a 1x1 steel chest, which Truls judged too small for
 -- something that does work -- and it is a shell wrapped round a fifteen-tile reactor, so a single
 -- tile was never the right reading of it. There is no counterpart in the original mod to take a
 -- size from, the blanket being ours from #30, and Krastorio 2 has no 1x1 container at all: every
@@ -615,7 +617,7 @@ local aneutronic = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf
 })
 aneutronic.mode = "output-to-separate-pipe"
 
--- FIFTEEN TILES SQUARE, ON MOCKUP ART (Truls, 2026-08-23). It was ten, following Krastorio 2's
+-- FIFTEEN TILES SQUARE, ON MOCKUP ART (ADR 0022; Truls, 2026-08-23). It was ten, following Krastorio 2's
 -- antimatter reactor, which is drawn for a 10x10 building -- the last machine whose size came from
 -- the art rather than from the mod. The original had both reactors at fifteen and this returns to
 -- that, which also makes it the right partner for a 5x15 exchanger or converter laid along a face:
@@ -780,7 +782,7 @@ converter.energy_source = {
   usage_priority = "secondary-output",
 }
 
--- FIVE BY FIFTEEN, ON MOCKUP ART (#45). The original mod's footprint for this machine, which
+-- FIVE BY FIFTEEN, ON MOCKUP ART (#45, ADR 0022). The original mod's footprint for this machine, which
 -- Durikkan's 2.0 port still declares, and the same size its heat exchanger takes -- the two are a
 -- pair in that layout, one per route. It was vanilla's 3x5 steam turbine, which is the machine this
 -- tier exists to REMOVE: a direct energy converter decelerates charged particles against collector
