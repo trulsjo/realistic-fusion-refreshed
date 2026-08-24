@@ -1203,6 +1203,11 @@ local function check_confinement_ladder()
       -- where the argument for checking that one point lives.
       local volume = prototypes.entity[name].fluidbox_prototypes[1].volume
       local top = spec.confinement_ladder[#spec.confinement_ladder]
+      -- Two questions, not one, and they are asked in two places on purpose. This one is whether
+      -- the spec NAMED a fuel; reactor-logic's is whether the name WORKS, and it raises rather
+      -- than answering when it cannot simulate -- which is what stops a mistyped name switching
+      -- this whole invariant off in silence. A nil field gets the clearer message of the two, and
+      -- it gets it here, beside every other refusal this file makes.
       local fuel = spec.confinement_guard_fuel
       if not fuel then
         error(string.format(
