@@ -36,9 +36,10 @@ local DIRECTORY = "__realistic-fusion-refreshed__/graphics/krastorio-2/buildings
 -- {0.25, 0.109375}.
 --
 -- NOTE THAT KRASTORIO 2'S OWN INLINE COMMENTS DISAGREE with that arithmetic -- it writes
--- "-- {0.515625, 0.21875}" beside by_pixel(8, 3.5), which is exactly double, and the same doubling
--- beside the south shift. Those comments are stale, left over from before a scale change; the CALL
--- is what the game evaluates, and the call is what is written out here.
+-- "-- {0.515625, 0.21875}" beside by_pixel(8, 3.5), which evaluates to {0.25, 0.109375}. Roughly
+-- double and not exactly, on either axis, so those comments are stale rather than written in another
+-- unit. The same disagreement sits beside the south shift. The CALL is what the game evaluates, and
+-- the call is what is written out here.
 local BODY = {
   north = { width = 103, height = 164, shift = {  0.25,    0.109375 } },
   east  = { width = 130, height = 109, shift = { -0.015625, 0.0546875 } },

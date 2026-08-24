@@ -88,8 +88,9 @@
 
     Off by default, and that is deliberate: an unmixed run is the rig #24 measured, down to the power
     it supplies, so the two readings stay comparable. A mixed run changes three things and says so --
-    two reactor footprints instead of one (15x15 and 10x10), four plasmas instead of one, and four
-    times the power per cell so the aneutronic reactors are not clamped.
+    four plasmas instead of one and four times the power per cell so the aneutronic reactors are not
+    clamped. It used to change the footprints too, when rf-aneutronic-reactor was ten tiles against
+    rf-reactor's fifteen; ADR 0022 made both fifteen.
 
     Reactions are assigned by ROW rather than round-robin by index, because a pooled row is a single
     fluid segment and a segment carries one fluid. The consequence is that small counts are not
@@ -311,11 +312,15 @@ local CASES = MIXED and {
 -- overlapped, the feed pipe sat six tiles clear of the connection it was meant to touch, and the
 -- rig's own "every reactor hot" gate refused to report a number -- which is the gate working, but
 -- it took issue #49 to notice why. Read the footprint, do not remember it.
--- Read per CASE, not once, because the two reactors are not the same shape: rf-reactor is 15x15
--- (ADR 0013) and rf-aneutronic-reactor is 10x10. That difference is not cosmetic. An odd-sized
--- entity centres on a tile CENTRE and an even-sized one on a tile BOUNDARY, so the two cannot even
--- share an origin, let alone a reach -- and getting that wrong is #49 again, silently, with the
--- reactors placed and the feed pipes not quite touching them.
+-- Read per CASE, not once, because nothing here may assume the two reactors are the same shape.
+-- They are, as of ADR 0022: both fifteen tiles square, where rf-aneutronic-reactor used to be ten.
+-- Reading it anyway is the point -- an odd-sized entity centres on a tile CENTRE and an even-sized
+-- one on a tile BOUNDARY, so a rig that remembers a size cannot survive one changing, and getting
+-- that wrong is #49 again: reactors placed, feed pipes not quite touching them, no error.
+--
+-- The parity arithmetic below is therefore currently exercised by only one case. It stays because
+-- the day a tier arrives at an even size is the day it is needed, and that day will not announce
+-- itself.
 local function footprint(name)
   local proto = prototypes.entity[name]
   if not proto then error("no such entity prototype: " .. name) end
@@ -352,9 +357,10 @@ local CELL_REACH = (SIZE + 1) / 2
 local function even(v) return math.floor(v + 0.5) end
 local function odd(v)  return math.floor(v) + 0.5 end
 
--- The nearest centre this entity's parity allows. A 10x10 dropped on a 15x15's centre would be off
--- by half a tile in both axes, which places without error and puts every edge connection half a
--- tile from where the feed pipe is about to go.
+-- The nearest centre this entity's parity allows. An even-sized entity dropped on an odd-sized one's
+-- centre is off by half a tile in both axes, which places without error and puts every edge
+-- connection half a tile from where the feed pipe is about to go. Both reactors are odd-sized today
+-- (ADR 0022); this exists so that stops being something the rig relies on.
 local function centre(v, foot)
   if foot.origin == 0.5 then return math.floor(v) + 0.5 else return math.floor(v + 0.5) end
 end

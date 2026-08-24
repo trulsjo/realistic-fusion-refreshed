@@ -265,9 +265,11 @@ reactor.output_fluid_box = {
 -- shape is a look rather than a throughput argument -- #48 measured the link at 31-62x of headroom
 -- and #47 found the flush contact buys nothing.
 --
--- IT CANNOT COME FROM KRASTORIO 2. Its building set is essentially square -- 7x7 and 15x15 -- and its
--- only elongated pieces are the advanced steam turbine at 5x7, which rf-hc-turbine already wears, and
--- a 22x3 logo. So the shape leaves Route B whichever way it is reached.
+-- IT CANNOT COME FROM KRASTORIO 2, which has nothing at this shape. It is not that the set is all
+-- square -- it has a 5x7 turbine that rf-hc-turbine already wears, a 5x3 research computer, a 3x5
+-- vehicle, a 12x11 transceiver and a 22x3 logo. It is that nothing is five by fifteen or anywhere
+-- near it: the pieces close in aspect are a third the size, and the large ones are close to square.
+-- So the shape leaves Route B whichever way it is reached.
 --
 -- AND IT IS NOT TAKEN FROM THE PREDECESSOR, THOUGH THE EXACT ART EXISTS. Realistic Fusion Power's
 -- graphics/entity/heat-exchanger.png is a 383x1088 sheet -- precisely this shape, needing no

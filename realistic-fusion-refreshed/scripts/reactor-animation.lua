@@ -60,8 +60,10 @@ function M.set(entity, running)
       animation = entity.name .. ANIMATION_SUFFIX,
       surface = entity.surface,
       target = entity,
-      -- Above the building it covers. The animation carries Krastorio 2's own shift, so it lands on
-      -- the core it replaces without anything being positioned here.
+      -- Above the building it covers, and nothing is positioned here on purpose: each animation
+      -- carries its own shift. rf-reactor's is Krastorio 2's, so it lands on the core it replaces;
+      -- rf-aneutronic-reactor's is a mockup drawn square to its footprint and centred (ADR 0022),
+      -- so it needs none. A future animation has to bring its own too.
       render_layer = "higher-object-above",
     })
   elseif drawn then

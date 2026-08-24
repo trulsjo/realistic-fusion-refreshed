@@ -383,11 +383,6 @@ script.on_init(function()
   -- converter simply gets no fluid, and the check below says so.
   local out_connection = dhe3.fluidbox.get_pipe_connections(2)[1]
 
-  -- Both offsets below come off the converter's own selection box rather than being written down,
-  -- because they were written down once and the machine outgrew them: it was three by five when
-  -- this rig was built and #45 took it to five by fifteen, at which point a hardcoded 2 put it
-  -- nowhere near the reactor and three checks failed at once.
-  --
   -- ROTATED, AND THAT IS THE POINT OF THE SHAPE. #45 moved this machine's connections onto its long
   -- faces, so that butted against a reactor it touches along its whole fifteen tiles instead of at
   -- one tile. The reactor sells its energy through its NORTH face, so the converter has to lie
