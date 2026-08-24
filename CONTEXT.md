@@ -263,8 +263,10 @@ refuse), the thing to drop would be *our* unlock — Bob's already removes fissi
 
 **Confinement ladder** — the three technologies that raise a reactor's energy confinement time, and
 the route out of the sub-break-even D-D tier ([ADR 0015](docs/adr/0015-the-d-d-tier-is-a-breeder.md)
-makes that tier deliberate; this is what a player does about it). Say "ladder" of the line and "rung"
-of a step in it. It moves **a physical parameter and never a power bonus**, which
+makes that tier deliberate;
+[ADR 0024](docs/adr/0024-confinement-time-is-the-researchable-lever.md) is what a player does about
+it). Say "ladder" of the line and "rung" of a step in it. It moves **a physical parameter and never a
+power bonus**, which
 [ADR 0014](docs/adr/0014-realistic-means-theoretically-possible.md) requires and
 [ADR 0005](docs/adr/0005-real-time-fusion-simulation.md) makes unavoidable: the reaction rate is read
 off cross-section data, so there is nowhere for a flat megawatt bonus to live. **It is per force** —

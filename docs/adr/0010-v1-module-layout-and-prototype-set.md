@@ -171,13 +171,10 @@ loadable modules would have shown raw names like `rf-m-reactor` in game.
 > [ADR 0015](0015-the-d-d-tier-is-a-breeder.md) put it in. They unlock nothing: `control.lua` reads
 > which of them a force holds and hands its reactors a different confinement time.
 >
-> Recorded here rather than as an ADR of its own because this list is the record of what Power
-> contains and #53 built these; whether the line also deserves an ADR — as capture efficiency got
-> [ADR 0020](0020-plant-efficiency-is-researchable.md), which names confinement time as "the real
-> lever" and #53 as its job — is Truls's call and is not settled by this note. The rungs are
-> provisional balance numbers like every other one in this repository; the reasoning behind them,
-> and behind stopping at three, lives on `M.reactor.confinement_ladder` in
-> `scripts/reactor-logic.lua`.
+> **The decision is [ADR 0024](0024-confinement-time-is-the-researchable-lever.md)** — where the
+> rungs land, why the line stops at 60 s, why it is neutronic only, and where the load-time guard
+> against the temperature clamp sits. This entry exists because this list is the record of what
+> Power contains; that ADR is the record of why.
 
 Vanilla pipes must not carry plasma.
 
