@@ -34,7 +34,7 @@
     carried a figure for "the reactors" rather than for itself, they could not both be right.
 
       ignited-full   D-T plasma, a full box, powered.
-      ignited-thin   D-T plasma, a third of a box, powered.
+      ignited-thin   D-T plasma, 35% of a box, powered.
 
     THOSE TWO ARE NOT A FOURTH AND FIFTH STATE (#55). They are both "running", and they exist to be
     compared with EACH OTHER. Their real equilibria differ -- a thinner plasma settles hotter -- and
