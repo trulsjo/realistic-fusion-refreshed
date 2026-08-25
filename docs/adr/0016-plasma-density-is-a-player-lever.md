@@ -57,7 +57,14 @@ full one.
 
 **D-T is untouched**, and the reason matters: it sits far *past* its optimum rather than below it, so
 its temperature barely moves as the plasma thins and it de-rates almost exactly as n² — 45% of full at
-65% fill against n²'s 42%. Its equilibrium is above `max_temperature_c` at every fill either way.
+65% fill against n²'s 42%. ~~Its equilibrium is above `max_temperature_c` at every fill either way.~~
+
+> **That last sentence was superseded 2026-08-25 by
+> [#58](https://github.com/trulsjo/realistic-fusion-refreshed/issues/58).** It was the reason D-T's
+> reading did not move: the equilibrium sat above a 2×10⁹ clamp at every fill, so the plasma was
+> always pinned. At the raised 5×10⁹ ceiling it is **below** the clamp at every fill that matters —
+> 3.25×10⁹ full, 3.55×10⁹ at a tenth — so D-T now reports its own temperature. The de-rating
+> reasoning this ADR rests on is unaffected; only the claim about the clamp is.
 
 Every figure above is asserted in `tests/test-bremsstrahlung.lua`, which already owns the term's
 maths; `lua tests/test-bremsstrahlung.lua` prints both tables. It is in that file rather than a second

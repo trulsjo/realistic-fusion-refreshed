@@ -322,9 +322,19 @@ as `n²` and the density cancels.
 | **T-T** | 0.21 | 0.21 | **0.21** | 0.21 | 0.18 | 0.16 | 0.13 | 0.11 |
 | **He3-He3** | 0.010 | 0.022 | **0.027** | 0.033 | 0.041 | 0.047 | 0.054 | 0.059 |
 
-172 keV is bolded because it is **2×10⁹ K, the shipped `max_temperature_c`** — the hottest a plasma in
-this mod is allowed to get, for the int32 reason `d-t-ignition.md` records. Everything to the right of
-that column is unreachable in the game as it stands.
+~~172 keV is bolded because it is **2×10⁹ K, the shipped `max_temperature_c`** — the hottest a plasma
+in this mod is allowed to get, for the int32 reason `d-t-ignition.md` records. Everything to the right
+of that column is unreachable in the game as it stands.~~
+
+> **Both halves of that were retired on 2026-08-25.** The int32 reason went with
+> [#57](https://github.com/trulsjo/realistic-fusion-refreshed/issues/57), which rescaled the signal to
+> kilodegrees; the ceiling went to **5×10⁹** with
+> [#58](https://github.com/trulsjo/realistic-fusion-refreshed/issues/58) and
+> [ADR 0025](../adr/0025-a-plasma-temperature-ships-in-kilodegrees.md). So 172 keV is no longer the
+> bound, and the columns to its right up to about 430 keV are reachable now.
+>
+> The table itself is unaffected — it is reactivity against temperature, not a claim about the
+> ceiling. Only the sentence reading the bound off it was wrong.
 
 Solved for the crossings rather than read off the columns — the *ideal ignition band* of each fuel,
 which is the same quantity `bremsstrahlung.md` computes for the two it looked at:

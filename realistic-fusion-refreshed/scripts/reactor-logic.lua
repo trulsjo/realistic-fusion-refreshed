@@ -299,8 +299,10 @@ M.fuels = {
   -- peak, so it burns at a small fraction of its peak reactivity. That is not a balance choice: the
   -- clamp sits at 5e9 since #58, its old int32 reason having been retired by #57 (see rf-d-t-plasma
   -- above), and this reaction wants to run well past even that. #58 raising the ceiling took its
-  -- best Q from 0.0177 to 0.0307 -- no rescue, because radiation rather than the clamp is what
-  -- holds it down.
+  -- best Q from 0.0177 to 0.0318 -- no rescue, because radiation rather than the clamp is what
+  -- holds it down. (Peaks at 349 units before and 179 after, found on a one-unit sweep. A coarser
+  -- sweep steps over both and reports the fill it happened to sample; that is how 0.0307 got into
+  -- three files at once.)
   --
   -- RE-ANCHORED BY #52, AND THE CLAMP IS NO LONGER THE BINDING CONSTRAINT. This said the tier
   -- "arrives at Q 1.31, barely above break-even, where D-He3 in the same machine reaches Q 82.8",
@@ -310,16 +312,19 @@ M.fuels = {
   -- hydrogenic plasma of the same ion density would (#98).
   --
   -- With the term counted, no fill ignites this reaction. Thinning the plasma does reach the clamp,
-  -- but on heater power rather than on fusion -- Q peaks at 0.0131 around 300 units, which is not
+  -- but on heater power rather than on fusion -- ~~Q peaks at 0.0131 around 300 units~~ Q reaches
+  -- 0.0131 at 300 units and peaks at 0.0177 around 349, which is not
   -- ignition in CONTEXT.md's sense at all. D-He3 in the same machine is fine at half fill (Q 20.7)
   -- and trapped at full, so the two tiers now differ in kind rather than in degree: one has an
   -- operating density and the other has no operating point.
   --
-  -- AND THE CLAMP IS NO LONGER THE LEVER, which matters because #58 exists to raise it. Measured
-  -- with the term carried, lifting max_temperature_c does nothing for this reaction: Q saturates at
-  -- 0.0224 and stops improving past 3e9, because radiation now sets the equilibrium before the
-  -- ceiling does. The same test gave Q 16 at a 7e9 ceiling before #52. Whatever rescues this tier is
-  -- not the clamp.
+  -- AND THE CLAMP WAS NEVER THE LEVER, which mattered because #58 existed to raise it. #58 has since
+  -- raised it, and this held: measured with the term carried, the tier goes from a best Q of 0.0177
+  -- to 0.0318 -- a factor of 1.8 on a number two orders below break-even. ~~Q saturates at 0.0224
+  -- and stops improving past 3e9~~; 0.0224 is the 300-unit figure rather than the peak, and the
+  -- shape of the claim survives its arithmetic. Radiation sets the equilibrium before the ceiling
+  -- does. The same test gave Q 16 at a 7e9 ceiling before #52. Whatever rescues this tier is not
+  -- the clamp.
   --
   -- DECIDED: LEFT AS IT IS, for now (Truls, 2026-08-21, #52's last criterion). ADR 0014 makes a
   -- marginal tier legitimate, and keeping this one costs almost nothing in code -- the row, the fluid
@@ -486,11 +491,16 @@ M.reactor = {
   },
   -- The plasma the guard above is asked about, stated HERE rather than in control.lua because it is
   -- a property of the reactor and not of the check. Only one fuel can be guarded and it has to be
-  -- the one whose equilibrium the ladder moves. ~~D-T is pinned at the clamp at every rung~~ -- not
-  -- since #58; it now moves with confinement too, 3.25e9 to 3.92e9 across the ladder, and at
-  -- none of them, so a guard over it would fail on the day it was written. A second reactor given a
-  -- ladder would name its own fuel here, and would otherwise have been silently settled on a plasma
-  -- it cannot burn.
+  -- the one whose equilibrium the ladder moves.
+  --
+  -- ~~D-T is pinned at the clamp at every rung and at none of them, so a guard over it would fail on
+  -- the day it was written.~~ That was the reason for choosing D-D, and #58 removed it: D-T moves
+  -- with confinement now too, 3.25e9 to 3.92e9 across the ladder. D-D remains the right fuel to
+  -- guard anyway, because it is the tier the ladder exists FOR and the one whose equilibrium the
+  -- rungs were placed against -- so the choice outlived its original argument.
+  --
+  -- A second reactor given a ladder would name its own fuel here, and would otherwise have been
+  -- silently settled on a plasma it cannot burn.
   confinement_guard_fuel = "rf-d-d-plasma",
   -- What is recovered of everything leaving the plasma. Below 1 because Factorio's steam turbines
   -- lose nothing, so at 1 a reactor that never fuses would pay for its own heating forever; it

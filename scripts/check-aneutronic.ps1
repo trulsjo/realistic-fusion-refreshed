@@ -653,8 +653,9 @@ script.on_nth_tick(CHECK_AT, function()
   -- this reactor reaches, so the reaction runs at a small fraction of its peak reactivity and is
   -- marginal for that reason rather than through any balance choice. ~~max_temperature_c stops the
   -- plasma at 172 keV.~~ **Not since #58** -- radiation stops it first, and raising the ceiling to
-  -- 5e9 took its best Q from 0.0131 to 0.0224, which is not a rescue. The clamp was never what was
-  -- wrong with this tier.
+  -- 5e9 took its best Q from 0.0177 to 0.0318, which is not a rescue. The clamp was never what was
+  -- wrong with this tier. (~~0.0131 to 0.0224~~ -- those are the values at 300 units, one fill off
+  -- the peak on both sides.)
   -- Its OWN ceiling, not the one bound for D-He3 above. Both plasmas declare 5e9 today, so the
   -- printed number would be accidentally right either way -- and this is the one line a reader
   -- consults to decide whether He3-He3's clamp is where its fuel row says it is, which is exactly

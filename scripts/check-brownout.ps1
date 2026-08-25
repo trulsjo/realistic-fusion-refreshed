@@ -1059,10 +1059,18 @@ script.on_nth_tick(REPORT, function()
   -- question has to be asked against what lit looks like rather than against a declared bound. The
   -- discrimination is real either way: 900s of blackout leaves this reactor at 1.7e9 and still
   -- falling, well outside this band.
+  -- AND AN ABSOLUTE FLOOR BESIDE THE RELATIVE ONE. A bar set purely at 90% of this rig's own lit
+  -- reactor moves down with the baseline: degrade every cell together and each check still passes
+  -- against a degraded reference. record() does not abort, so the baseline failing does not stop
+  -- this from being asked. 1e9 is a fixed bar a genuinely lit D-T reactor clears by threefold and a
+  -- decaying one does not -- 900s of blackout leaves 1.7e9 and falling -- so the pair together say
+  -- "back to where this rig was, AND hot enough to be fusing at all".
+  local LIT_FLOOR_C = 1e9
   local lit_reference = snaps.lit.full.plasma[1]
   local back = snaps.back.recover.plasma[1]
   record(back ~= nil and lit_reference ~= nil
-      and back.temperature >= lit_reference.temperature * 0.9,
+      and back.temperature >= lit_reference.temperature * 0.9
+      and back.temperature > LIT_FLOOR_C,
     "recover: the supply comes back and the reactor re-ignites with no help of any kind",
     back and string.format("%.4g C, %.4g u, %.1fs after the supply returned",
       back.temperature, back.amount, RESTORE / 60) or "no plasma")
@@ -1116,13 +1124,15 @@ script.on_nth_tick(REPORT, function()
   local ps = snaps.deep.plant.plasma[1]
   record(ps ~= nil and plant_reference ~= nil
       and ps.temperature >= plant_reference.temperature * 0.9
+      and ps.temperature > LIT_FLOOR_C
       and snaps.deep.plant.turbine == "working",
     "plant: with its starter switched off the plant carries its own confinement heating",
     ps and string.format("%.4g C, turbine %s, heater %s",
       ps.temperature, snaps.deep.plant.turbine, snaps.deep.plant.heater) or "no plasma")
   local pb = snaps.back.plant.plasma[1]
   record(pb ~= nil and plant_reference ~= nil
-      and pb.temperature >= plant_reference.temperature * 0.9,
+      and pb.temperature >= plant_reference.temperature * 0.9
+      and pb.temperature > LIT_FLOOR_C,
     "plant: and overloading it past what it can make does not make it eat itself",
     pb and string.format("%.4g C at %.4g MW of load, turbine %s, heater %s",
       pb.temperature, (snaps.back.plant.load or 0) / 1e6, snaps.back.plant.turbine, snaps.back.plant.heater)

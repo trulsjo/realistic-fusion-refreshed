@@ -32,4 +32,4 @@ Date: 2026-08-25
       now runs hotter like the others do. Supplied normally, nothing about the first tier moved.
     - Helium-3 against itself is still not worth building. Raising the limit was expected to rescue
       it and does not: radiation, not the limit, is what stops that reaction. Its best case improves
-      from about 0.018 to 0.031 times break-even, which is not a tier becoming worth reaching.
+      from about 0.018 to 0.032 times break-even, which is not a tier becoming worth reaching.

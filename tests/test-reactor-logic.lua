@@ -766,13 +766,16 @@ near(lit_t, 4.584e9, 0.01,
 --      500 u  1.08e9 C   Q 0.0062
 --      300 u  2.51e9 C   Q 0.0224
 --      200 u  4.33e9 C   Q 0.0306
---      175 u  5.00e9 C   Q 0.0307   <- the best it does, at any fill, and already at the clamp
+--      179 u  5.00e9 C   Q 0.0318   <- the best it does, at any fill, and already at the clamp
 --      150 u  5.00e9 C   Q 0.0226      thinner still is worse, and pinned
+--
+-- The peak is at 179 units and was found on a ONE-UNIT sweep. A 25-unit sweep misses it and reports
+-- whichever sampled fill happened to be highest -- which is how 0.0307 reached three files at once.
 --
 -- AND #58 DID NOT RESCUE IT EITHER, which is worth stating because #58's own ticket expected it to.
 -- That ticket predicted this tier would arrive "materially stronger" at a raised ceiling, Q 1.31 to
 -- 15.9. Those were pre-#52 figures, from a model carrying no radiation. Measured with the term in,
--- raising the ceiling from 2e9 to 5e9 takes its best Q from 0.0177 to 0.0307 -- a factor of 1.7 on
+-- raising the ceiling from 2e9 to 5e9 takes its best Q from 0.0177 to 0.0318 -- a factor of 1.8 on
 -- a number two orders below break-even, which is not a rescue in any sense a player would notice.
 -- Radiation sets this equilibrium, not the clamp, and no ceiling changes that.
 --

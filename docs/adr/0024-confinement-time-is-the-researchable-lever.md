@@ -179,9 +179,16 @@ own thermometer stays a player's choice under ADR 0016 and is not a defect in th
   +14% at 50 and +4% at 60. A player who never tunes is not left behind by the end of this line, and
   one who does is still slightly ahead — which is a better landing than either extreme, and it is the
   landing choosing 60 s over 70 s bought.
-- **D-T is untouched, to the joule.** It is pinned at the clamp at every rung and at none of them, so
-  the ladder moves neither its temperature nor its output. Nothing downstream of the D-T tier moves
-  *because of the reactor*.
+- ~~**D-T is untouched, to the joule.** It is pinned at the clamp at every rung and at none of them,
+  so the ladder moves neither its temperature nor its output. Nothing downstream of the D-T tier
+  moves *because of the reactor*.~~
+
+  > **Superseded 2026-08-25 by [#58](https://github.com/trulsjo/realistic-fusion-refreshed/issues/58)
+  > / [ADR 0025](0025-a-plasma-temperature-ships-in-kilodegrees.md).** True only while the clamp sat
+  > under D-T's equilibrium. At the raised 5×10⁹ ceiling D-T is no longer pinned, so **the ladder now
+  > moves its temperature too** — 3.25×10⁹ at the shipped 30 s to 3.92×10⁹ at the top rung. Its
+  > *output* still follows the fuel line rather than the temperature, so the last sentence holds; the
+  > first two do not.
 - **But the fuel chain between the tiers moves a long way.** D-D's by-products go from 0.137 to
   0.627 u/s across the ladder — **4.6×** — so a researched player needs far fewer D-D reactors to feed
   one D-T reactor. [`d-t-ignition.md`](../research/d-t-ignition.md)'s "about 1.4 D-D reactors feed one
