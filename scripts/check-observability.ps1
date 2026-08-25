@@ -117,6 +117,14 @@ local TEMPERATURE = { type = "virtual", name = "rf-signal-plasma-temperature", q
 local Q_FACTOR    = { type = "virtual", name = "rf-signal-q-factor", quality = "normal" }
 local RED = defines.wire_connector_id.circuit_red
 
+-- READ OFF THE MOD, not retyped (#57). A wire carries thousands of degrees while a fluidbox reports
+-- whole ones, so every comparison below has to know the scale -- and a rig holding its own copy of
+-- it would pass happily while the mod shipped something else, which is the one failure a rig must
+-- not have. This mod is a dependency, so the number comes from the file that owns it, which is also
+-- where the scale is explained: scripts/circuit-output.lua at TEMPERATURE_SCALE.
+local circuit = require("__realistic-fusion-refreshed__/scripts/circuit-output")
+local SCALE = circuit.TEMPERATURE_SCALE
+
 -- Five reactors, twenty-five tiles apart so a fifteen-tile building and its wiring never touch the
 -- next one. powered = false is how the idle case is held idle: with no network the reactor cannot
 -- heat, so plasma injected at a heater's temperature stays there.
@@ -301,7 +309,7 @@ end
 
 local function verify()
   local seen_labels = {}
-  local temperatures = {}
+  local wire_kc_by_case = {}
   for _, entry in ipairs(storage.cases) do
     local name = entry.case.name
     local reactor = entry.reactor
@@ -325,15 +333,24 @@ local function verify()
     local network = entry.probe.get_circuit_network(RED)
     record(network ~= nil, name .. ": the probe is on a circuit network")
     if network then
-      local temperature = network.get_signal(TEMPERATURE)
+      -- SUFFIXED BY UNIT (#57), because two of them live here and they are a thousand
+      -- apart: the wire carries kilodegrees and a fluidbox reports whole degrees.
+      -- Unsuffixed, the only thing saying which was which was the format string below.
+      local wire_kc = network.get_signal(TEMPERATURE)
       local q = network.get_signal(Q_FACTOR)
-      temperatures[name] = temperature
+      wire_kc_by_case[name] = wire_kc
 
       local plasma = reactor.fluidbox[1]
-      local actual = plasma and plasma.temperature or 0
+      local plasma_c = plasma and plasma.temperature or 0
 
       if name == "starved" then
-        record(temperature == 0, "starved: reports no temperature", tostring(temperature))
+        -- STILL TRUE, AND NO LONGER DISCRIMINATING (#57) -- the same erosion the idle drift check
+        -- below records, and it reaches this one too. Idle reads 0 now, so "starved reports 0" no
+        -- longer separates a reactor with no plasma from one holding cold plasma; only the status
+        -- line does. Kept because the assertion is still true of a starved reactor and would still
+        -- catch it reporting something, and because what it stopped covering is covered by the
+        -- running and ignited cases, which are hot enough for the wire to resolve.
+        record(wire_kc == 0, "starved: reports no temperature", tostring(wire_kc))
       else
         -- Within a few percent, not to the degree. The wire carries what the reactor published at
         -- its last report -- control.lua reports every fifth simulation step, not every tick -- so a
@@ -362,13 +379,28 @@ local function verify()
         -- that has stopped tracking its own reactor in every case where the plasma is not in free
         -- fall.
         --
-        -- The bound is a factor rather than a percentage because the quantity is no longer a drift.
-        local drift = math.abs(temperature - actual) / actual
-        local bound = 0.05
-        record(drift < bound,
+        -- COMPARED ON THE WIRE'S OWN TERMS SINCE #57. The signal is in kilodegrees and the fluidbox
+        -- reports whole degrees, so the two are no longer the same quantity and subtracting them
+        -- directly would fail every case by a factor of a thousand.
+        --
+        -- The slack is 5% OR half a scale-step, whichever is larger, and the second half is not
+        -- padding: half a step is precisely what the encoding cannot resolve, so demanding better
+        -- would be demanding the wire carry a number it has no room for.
+        --
+        -- WHAT THAT COSTS, STATED RATHER THAN HIDDEN: the idle case stops discriminating. Its plasma
+        -- sits at the 15 C floor, which is 0.015 of a kilodegree, so a wire reporting 0 and a wire
+        -- reporting nothing at all are the same reading and this check passes either. It is kept for
+        -- the cases that ARE resolvable -- a dead wire on the running reactor is 368862 kilodegrees
+        -- adrift and still caught -- and idle is covered instead by its status line, which is
+        -- asserted separately, and by the aggregate check below. The alternative was to widen the
+        -- bound until 0-against-15 passed as a drift, which is the bound #55 removed for exactly
+        -- this reason: a check that passes an unpublished signal is worse than no check.
+        local expected_kc = plasma_c / SCALE
+        local slack_kc = math.max(0.05 * expected_kc, 0.5)
+        record(math.abs(wire_kc - expected_kc) <= slack_kc,
           name .. ": the temperature on the wire is this reactor's own plasma, to within the report cadence",
-          string.format("wire %d, plasma %.6g, %.2f%% apart (bound %.0f%%)",
-            temperature, actual, drift * 100, bound * 100))
+          string.format("wire %d kC, plasma %.6g C (%.6g kC), slack %.6g kC",
+            wire_kc, plasma_c, expected_kc, slack_kc))
       end
 
       if name == "running" then
@@ -377,12 +409,17 @@ local function verify()
     end
   end
 
-  -- The aggregate check. These two are three orders of magnitude apart; one number could not
-  -- describe both.
-  local running, idle = temperatures["running"], temperatures["idle"]
-  record(running and idle and running > idle * 10,
+  -- The aggregate check. If one number described both reactors, these two would be equal.
+  --
+  -- IT NEEDED STRENGTHENING AT #57, because idle now reads 0 rather than 15 -- the floor is under
+  -- what a kilodegree wire resolves. "Three orders of magnitude apart" silently became "running is
+  -- greater than zero", which a single stuck signal could satisfy. So the ratio is kept AND running
+  -- is required to be a genuine reading: 1000 kilodegrees is 1e6 C, far under any fusion temperature
+  -- and far over anything a floor or an artefact produces.
+  local running_kc, idle_kc = wire_kc_by_case["running"], wire_kc_by_case["idle"]
+  record(running_kc and idle_kc and running_kc > 1000 and running_kc > idle_kc * 10,
     "each reactor reports itself, not an aggregate of both",
-    string.format("running %s, idle %s", tostring(running), tostring(idle)))
+    string.format("running %s kC, idle %s kC", tostring(running_kc), tostring(idle_kc)))
 
   -- ------------------------------------------------------ can a player tell two reactors apart?
   --
@@ -402,15 +439,15 @@ local function verify()
 
   note("neutronic: two reactors in different states report different temperatures?",
     string.format("%s -- running %s, idle %s",
-      differ(running, idle), tostring(running), tostring(idle)))
+      differ(running_kc, idle_kc), tostring(running_kc), tostring(idle_kc)))
 
-  local full, thin = temperatures["ignited-full"], temperatures["ignited-thin"]
+  local full_kc, thin_kc = wire_kc_by_case["ignited-full"], wire_kc_by_case["ignited-thin"]
   note("ignited: two reactors at different densities report different temperatures?",
     string.format("%s -- full %s, thin %s%s",
-      differ(full, thin), tostring(full), tostring(thin),
-      (full ~= nil and full == thin)
-        and string.format(" (both at the %d C ceiling, so the wire cannot tell them apart -- #54)",
-          full) or ""))
+      differ(full_kc, thin_kc), tostring(full_kc), tostring(thin_kc),
+      (full_kc ~= nil and full_kc == thin_kc)
+        and string.format(" (both at the %d kC ceiling, so the wire cannot tell them apart -- #54)",
+          full_kc) or ""))
 
   lines[#lines + 1] = string.format("%s: %d checks, %d failures",
     failures == 0 and "PASS" or "FAIL", checks, failures)
