@@ -1036,40 +1036,37 @@ end
 -- second, and the failure is worse for being quiet: the fluid accepts the temperature, the reactor
 -- runs correctly, and the number a player reads stops moving.
 --
--- WHAT MAKES IT WORTH A LOAD-TIME CHECK RATHER THAN A COMMENT. The ceiling is 2e9 because a signal
--- is a 32-bit integer, and nothing anywhere in the game states that connection -- so the number
--- reads as a physics constant. Raise it for a later tier and every reactor's temperature readout
--- saturates with no error and no clue, which is the defect #54 exists to undo. It is the same shape
--- as every other invariant here: a developer edit that a player finds.
+-- THE CEILING IS NO LONGER SET BY THE INTEGER (#57, ADR 0025), and this comment used to say it was.
+-- Why, what a wire carries now, and why this check is kept although it can no longer fire:
+-- scripts/circuit-output.lua, at TEMPERATURE_SCALE. That is the one place it is written down.
 --
--- IT PASSES TODAY with about 7% to spare, and that is the point rather than a reason to skip it.
--- The guard costs nothing while the ceiling fits and starts earning its keep the moment #58 raises
--- it -- at which point it says, in one line, the thing that would otherwise take a bug report to
--- learn.
---
--- The decision is scripts/circuit-output.lua's, not this function's: that file owns INT32_MAX and
--- knows why the limit exists, and keeping the comparison there is what lets
+-- The decision is that file's rather than this function's: it owns both INT32_MAX and the scale, and
+-- knows what a wire carries. Keeping the comparison there is what lets
 -- tests/test-circuit-output.lua break it. This supplies the loop and the message.
 --
 -- Over every reactor, because the ceiling lives on the spec and a second reactor may declare its
 -- own. Both shipped reactors currently name 2e9, so this checks two specs to prove one thing --
 -- and the day a tier wants a hotter clamp, it is the one someone forgot that this names.
 --
--- IT RUNS AFTER check_plasma_bounds AND CAN BE MASKED BY IT, which is worth knowing before relying
--- on it. That check throws first, and #119 records a precision trap in it that fires at exactly the
--- ceiling #54 proposes -- so raising the ceiling to 6.9e9 today reports a fluid-range contradiction
--- rather than this. Verified end to end at 4e9, which is float32-exact and therefore reaches here:
--- the mod refuses to load and names both numbers.
+-- IT RUNS AFTER check_plasma_bounds AND IS NOW ALWAYS MASKED BY IT IN PRACTICE. That check throws
+-- first, and it ties the ceiling to what the FLUID accepts -- a bound far under 2.1e12 C. So any
+-- ceiling big enough to reach this one fails that one first, which is another way of saying this
+-- guard is slack rather than live.
+--
+-- ~~Verified end to end at 4e9, which is float32-exact and therefore reaches here.~~ It did before
+-- #57; 4e9 is carried comfortably now and proves nothing. Breaking this guard means breaking the
+-- scale, which tests/test-circuit-output.lua does directly rather than through a game.
 local function check_signal_ceiling()
   for name, spec in pairs(SPECS) do
     local shown = circuit.unrepresentable(spec.max_temperature_c)
     if shown then
       error(string.format(
-        "%s: the simulation clamps temperature to %.6g C but a circuit signal is a 32-bit integer " ..
-        "and stops at %d, so every reactor of this kind would report %d C for ever instead of its " ..
-        "own plasma temperature. Lower max_temperature_c in scripts/reactor-logic.lua, or give the " ..
-        "temperature signal a scale that fits (see #54).",
-        name, spec.max_temperature_c, circuit.INT32_MAX, shown))
+        "%s: the simulation clamps temperature to %.6g C, but a wire carries thousands of degrees " ..
+        "in a 32-bit integer and so stops at %.6g C, meaning every reactor of this kind would " ..
+        "report %d for ever instead of its own plasma temperature. Lower max_temperature_c in " ..
+        "scripts/reactor-logic.lua, or raise TEMPERATURE_SCALE in scripts/circuit-output.lua -- " ..
+        "and if you raise the scale, read what it costs the bottom of the range first (ADR 0025).",
+        name, spec.max_temperature_c, circuit.INT32_MAX * circuit.TEMPERATURE_SCALE, shown))
     end
   end
 end

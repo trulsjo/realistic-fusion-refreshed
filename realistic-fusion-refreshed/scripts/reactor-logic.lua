@@ -192,21 +192,24 @@ M.fuels = {
     -- unbounded the model finds a real equilibrium out at 4.6e9 C; what it actually meets first is
     -- the clamp at max_temperature_c, and the plasma parks there.
     --
-    -- The clamp is therefore load-bearing on this tier where it was decoration on the last one, and
-    -- it stays for one reason that holds: int32 stops at 2.147e9, so a plasma allowed past 2e9 would
-    -- start truncating its own temperature circuit signal (scripts/circuit-output.lua). Energy is
-    -- not lost at the clamp -- step() sells everything the plasma cannot hold -- so nothing is
-    -- created or destroyed by it; it is a ceiling on the state variable, not on the accounting.
+    -- The clamp is therefore load-bearing on this tier where it was decoration on the last one.
+    -- ~~It stays for one reason that holds: int32 stops at 2.147e9.~~ **Retired by #57** -- see
+    -- scripts/circuit-output.lua at TEMPERATURE_SCALE. The clamp is here only until #58 moves it
+    -- to where the reactions actually settle. Energy is not lost at the clamp -- step() sells
+    -- everything the plasma cannot hold -- so nothing is created or destroyed by it; it is a
+    -- ceiling on the state variable, not on the accounting.
     --
     -- It was ALSO justified as standing in for bremsstrahlung, back when this model carried no
     -- radiation at all. #52 put the term in, so the clamp no longer stands in for anything -- but
     -- the reasoning is kept because it was wrong for reasons worth not repeating, and because the
-    -- clamp survived on the int32 argument alone (docs/research/bremsstrahlung.md, against the NRL
-    -- Plasma Formulary):
+    -- clamp survived on the int32 argument alone AT THE TIME (docs/research/bremsstrahlung.md,
+    -- against the NRL Plasma Formulary). Read that last clause as history: #57 has since retired
+    -- the int32 argument too, so the clamp now survives on neither and is simply awaiting #58:
     --
     --   * Bremsstrahlung does not bite "long before" 4.6e9. It moves the equilibrium to 3.26e9 --
-    --     real, but still half again above both this clamp and the int32 ceiling. Adding the term
-    --     would NOT unpin the temperature reading, which is the thing anyone would add it for.
+    --     real, but still half again above this clamp (and, when this was written, above the int32
+    --     ceiling too; #57 has since removed that one). Adding the term would NOT unpin the
+    --     temperature reading, which is the thing anyone would add it for.
     --   * The clamp is not standing in for it. The clamp sheds about 640 MW at 2e9 where
     --     bremsstrahlung is 169 MW -- four times too small to be what the clamp is doing.
     --   * It is not the dominant omission either. Unreabsorbed cyclotron radiation at these
@@ -223,9 +226,11 @@ M.fuels = {
     -- What this costs in game is that the temperature reading is pinned for every D-T reactor, so
     -- the fuel line rather than the temperature is the throttle: an ignited reactor burns exactly
     -- what it is fed and its output follows. tests/test-reactor-logic.lua asserts that, and
-    -- docs/research/d-t-ignition.md has the measurements. The levers that would actually reach the
-    -- int32 ceiling are confinement_time_s and the plasma's purity, not a radiation term -- both
-    -- re-tune D-D as well, so both are balance decisions. Balance is provisional, as everywhere.
+    -- docs/research/d-t-ignition.md has the measurements. ~~The levers that would actually reach
+    -- the int32 ceiling are confinement_time_s and the plasma's purity.~~ **There is no int32
+    -- ceiling to reach since #57**, and what unpins this reading is #58 raising max_temperature_c
+    -- past 3.92e9 -- the hottest D-T settles at, top confinement rung, measured for ADR 0025.
+    -- Balance is provisional, as everywhere.
   },
 
   -- D + He3 -> He4 (3.6 MeV) + p (14.7 MeV), a single branch releasing 18.353 MeV (#31).
@@ -282,9 +287,9 @@ M.fuels = {
   -- IT IS ALSO THE HARDEST REACTION IN THE MOD BY A LONG WAY, and the reactor cannot reach its
   -- optimum. Its cross-section peaks past 600 keV -- above the top of the ENDF-derived dataset --
   -- where max_temperature_c stops the plasma at 172 keV, so it burns at about a hundredth of its
-  -- peak reactivity. That is not a balance choice: the clamp is there because a plasma past 2e9
-  -- truncates its own temperature circuit signal (see rf-d-t-plasma above), and this reaction
-  -- wants to run three times hotter than that ceiling.
+  -- peak reactivity. That is not a balance choice: the clamp is simply where it still sits until
+  -- #58 moves it (its old int32 reason was retired by #57, see rf-d-t-plasma above), and this
+  -- reaction wants to run three times hotter than that ceiling.
   --
   -- RE-ANCHORED BY #52, AND THE CLAMP IS NO LONGER THE BINDING CONSTRAINT. This said the tier
   -- "arrives at Q 1.31, barely above break-even, where D-He3 in the same machine reaches Q 82.8",
@@ -573,9 +578,10 @@ M.aneutronic_reactor = {
   capture_efficiency = 0.95,
   energy_fluid_j_per_unit = 1e6,
   energy_fluid = "rf-aneutronic-reactor-energy",
-  -- The same bounds, and the same reason: 2e9 is where a temperature stops fitting in the int32 a
-  -- circuit signal is. It costs this tier more than it costs the last one -- He3-He3 wants to run
-  -- past 7e9 -- and that cost is stated on its fuel row rather than hidden here.
+  -- The same bounds, and ~~the same reason~~ no longer any reason of the signal's: retired by #57,
+  -- see rf-d-t-plasma above. 2e9 is where the number sits until #58 moves it, and it costs this
+  -- tier more than the last: D-He3 settles at 4.41e9 held at its best density, so this clamp is
+  -- what pins it. That cost is stated on the fuel rows rather than here.
   --
   -- The floor is the same number for the same reason too, and it mattered most here: this is the
   -- tier where holding it was worth 322 kW of conjured heat before ADR 0021 capped the drain. See

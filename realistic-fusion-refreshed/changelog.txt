@@ -1,0 +1,15 @@
+---------------------------------------------------------------------------------------------------
+Version: 0.1.0
+Date: 2026-08-25
+  Circuit Network:
+    - The plasma temperature signal now reads in THOUSANDS of degrees Celsius. A reactor at 600
+      million degrees used to put 600000000 on the wire and now puts 600000. Any decider or
+      arithmetic combinator comparing this signal against a fixed number needs that number divided
+      by 1000.
+    - Why: a circuit signal is a 32-bit number and stops at 2147483647, which is colder than a
+      deuterium-tritium plasma actually runs. The old scale meant the hottest reactors all reported
+      the same figure no matter how hot they really were. They no longer do.
+    - A reactor below 500 degrees now reports 0, the same as one holding no plasma. The status line
+      under the reactor still tells the two apart.
+    - The plasma's own tooltip, on the pipe, still reads in whole degrees. It will look a thousand
+      times larger than the wire. The wire is the number to write conditions against.

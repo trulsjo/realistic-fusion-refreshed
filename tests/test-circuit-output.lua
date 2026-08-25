@@ -28,14 +28,28 @@ local SPEC = L.reactor
 
 -- ---------------------------------------------------------------- signal values
 
--- Temperature is emitted in whole degrees, which is the only scale that both fits int32 and reads
--- naturally on a combinator.
-equal(C.signals({ temperature_c = 6.0e8, q_factor = 1.4 }).temperature, 600000000,
-  "temperature is emitted in whole degrees")
-equal(C.signals({ temperature_c = 15, q_factor = 0 }).temperature, 15,
-  "a cold reactor reports its floor temperature")
-equal(C.signals({ temperature_c = 877079999.6, q_factor = 0 }).temperature, 877080000,
+-- KILODEGREES SINCE #57 (ADR 0025), not whole degrees. Whole degrees cannot carry a fusion
+-- temperature: a signal is an int32 and stops at 2.147e9, below where D-T actually settles, so the
+-- readout was bounding the physics. The scale is read off the module rather than retyped, for the
+-- reason INT32_MAX is below.
+local SCALE = C.TEMPERATURE_SCALE
+equal(SCALE, 1000, "the wire carries thousands of degrees, which is what ADR 0025 decided")
+
+equal(C.signals({ temperature_c = 6.0e8, q_factor = 1.4 }).temperature, 600000,
+  "temperature is emitted in kilodegrees")
+equal(C.signals({ temperature_c = 877079999.6, q_factor = 0 }).temperature, 877080,
   "temperature rounds rather than truncates")
+
+-- THE ACCEPTED COST OF THE SCALE, asserted so it is a known property rather than a surprise found
+-- in a game. Everything under half a kilodegree reads zero, which is the same number a reactor with
+-- no plasma at all reports -- so below 500 C the status signal is the only thing separating a cold
+-- reactor from an empty one. ADR 0025 took this deliberately; see its Consequences.
+equal(C.signals({ temperature_c = 15, q_factor = 0 }).temperature, 0,
+  "a reactor at the 15 C floor reads zero, indistinguishable from empty on this signal alone")
+equal(C.signals({ temperature_c = 499, q_factor = 0 }).temperature, 0,
+  "and so does anything under half a kilodegree")
+equal(C.signals({ temperature_c = 500, q_factor = 0 }).temperature, 1,
+  "half a kilodegree is where the signal starts moving")
 
 -- Q is fractional and a circuit signal is an integer, so it goes out as a percentage. Q 2.1 is 210,
 -- which also means a decider testing "Q > 100" is asking "is it net positive", the question worth
@@ -63,12 +77,40 @@ local INT32_MIN = C.INT32_MIN
 equal(INT32_MAX, 2147483647, "the module's int32 ceiling is the int32 ceiling")
 equal(INT32_MIN, -2147483648, "and its floor is the int32 floor")
 
-equal(C.signals({ temperature_c = 1e12, q_factor = 0 }).temperature, INT32_MAX,
-  "a temperature past int32 is clamped, not wrapped")
+-- THE CLAMP IS NOW A SCALE FURTHER OUT. A wire still stops at INT32_MAX, but it takes
+-- INT32_MAX * SCALE degrees to reach it -- about 2.1e12 C, three orders past anything the
+-- cross-section data can even be asked about.
+local WIRE_CEILING_C = INT32_MAX * SCALE
+equal(C.signals({ temperature_c = WIRE_CEILING_C * 2, q_factor = 0 }).temperature, INT32_MAX,
+  "a temperature past what the scaled wire can carry is clamped, not wrapped")
 equal(C.signals({ temperature_c = 15, q_factor = 1e9 }).q, INT32_MAX,
   "a Q past int32 is clamped, not wrapped")
-equal(C.signals({ temperature_c = -1e12, q_factor = 0 }).temperature, INT32_MIN,
-  "a negative past int32 is clamped too")
+equal(C.signals({ temperature_c = -WIRE_CEILING_C * 2, q_factor = 0 }).temperature, INT32_MIN,
+  "a negative past it is clamped too")
+
+-- NaN reaches here whenever a ratio's denominator is zero, and the engine THROWS on a bad signal
+-- write rather than wrapping -- so an unhandled NaN is a crash in front of a player, not a wrong
+-- reading. Reported as nothing instead.
+local NAN = 0 / 0
+check(NAN ~= NAN, "the test's own NaN is a NaN")
+equal(C.signals({ temperature_c = NAN, q_factor = 0 }).temperature, 0,
+  "a NaN temperature is reported as zero rather than thrown")
+equal(C.signals({ temperature_c = 15, q_factor = NAN }).q, 0,
+  "and so is a NaN Q")
+
+-- ROUND TRIP AT THE CEILING #58 IS GOING TO SET (ADR 0025: 5e9). #57 does not move the ceiling --
+-- the specs below still declare 2e9 -- but the whole point of the encoding change is that 5e9
+-- becomes carryable, so it is asserted here before the ticket that relies on it.
+local NEXT_CEILING_C = 5e9
+equal(C.signals({ temperature_c = NEXT_CEILING_C, q_factor = 0 }).temperature, 5000000,
+  "the ceiling ADR 0025 chose survives the trip to a signal without saturating")
+equal(C.signals({ temperature_c = NEXT_CEILING_C, q_factor = 0 }).temperature * SCALE, NEXT_CEILING_C,
+  "and back again, which is what makes the number on the wire a temperature")
+check(C.signals({ temperature_c = NEXT_CEILING_C, q_factor = 0 }).temperature < INT32_MAX,
+  "with the wire nowhere near its own limit",
+  string.format("%d against %d", C.signals({ temperature_c = NEXT_CEILING_C }).temperature, INT32_MAX))
+equal(C.signals({ temperature_c = NEXT_CEILING_C + SCALE, q_factor = 0 }).temperature, 5000001,
+  "one scale-step past it is still reported rather than wrapped")
 
 -- The reason the clamp is not merely defensive: the shipped fluid's ceiling is 2e9 C, which fits
 -- with about 7% to spare. Any later tier raising max_temperature past int32 starts losing the top
@@ -89,11 +131,20 @@ for _, spec in pairs(CEILINGS) do
 end
 equal(ceiling_count, 2, "both shipped reactors are present to be checked")
 
+-- THE SCALE IS ASSERTED AGAINST THE CEILING, which is the pairing that must not drift: the wire
+-- can carry INT32_MAX * SCALE degrees, and every spec's ceiling has to sit under that. Change the
+-- scale without checking the ceilings, or raise a ceiling without checking the scale, and this is
+-- what notices. It is the same comparison check_signal_ceiling refuses to load over.
 for label, spec in pairs(CEILINGS) do
-  check(spec.max_temperature_c <= INT32_MAX,
-    label .. "'s maximum plasma temperature fits in a circuit signal",
-    string.format("%.6g C against int32 max %d", spec.max_temperature_c, INT32_MAX))
+  check(spec.max_temperature_c <= WIRE_CEILING_C,
+    label .. "'s maximum plasma temperature fits on a wire at this scale",
+    string.format("%.6g C against %.6g C carryable (%d x %d)",
+      spec.max_temperature_c, WIRE_CEILING_C, INT32_MAX, SCALE))
 end
+
+check(NEXT_CEILING_C <= WIRE_CEILING_C,
+  "and so does the ceiling #58 will set, which is the point of doing this first",
+  string.format("%.6g C against %.6g C carryable", NEXT_CEILING_C, WIRE_CEILING_C))
 
 -- THE DECISION control.lua's check_signal_ceiling MAKES, and the negative half of it. That guard
 -- refuses to load a ceiling a wire cannot carry; the comparison lives in circuit-output so it can
@@ -102,15 +153,22 @@ end
 -- Note what the failing case RETURNS: not `true`, but the number a player would actually be shown
 -- instead. That is what the refusal message quotes, and it is the difference between "this is too
 -- big" and "every reactor would read 2147483647 C for ever".
+-- IT ASKS THE QUESTION AT THE SCALE SINCE #57, and that is the whole substance of this ticket's
+-- change to the guard. It used to compare raw celsius against INT32_MAX; had the scale changed
+-- underneath it, a 5e9 ceiling would have failed 5e9 > 2147483647 and REFUSED TO LOAD -- the mod
+-- broken by its own new ceiling. It divides first now.
 check(C.unrepresentable(SPEC.max_temperature_c) == nil,
   "the shipped ceiling is representable, so the load guard passes",
   string.format("%.6g C", SPEC.max_temperature_c))
-equal(C.unrepresentable(INT32_MAX), nil,
-  "a ceiling exactly at the int32 maximum still fits -- the clamp keeps that value")
-equal(C.unrepresentable(INT32_MAX + 1), INT32_MAX,
-  "one degree past it does not, and the guard is told what a wire would show instead")
-equal(C.unrepresentable(6.9e9), INT32_MAX,
-  "nor does #54's proposed 6.9e9 ceiling, which is the case this guard exists for")
+check(C.unrepresentable(NEXT_CEILING_C) == nil,
+  "and so is the one #58 will set -- the guard permits the higher ceiling",
+  string.format("%.6g C", NEXT_CEILING_C))
+equal(C.unrepresentable(WIRE_CEILING_C), nil,
+  "a ceiling exactly at what the wire can carry still fits -- the clamp keeps that value")
+equal(C.unrepresentable(WIRE_CEILING_C + SCALE), INT32_MAX,
+  "one scale-step past it does not, and the guard is told what a wire would show instead")
+equal(C.unrepresentable(6.9e9), nil,
+  "#54's proposed 6.9e9 ceiling is carryable now, which is what #57 was for")
 
 -- ---------------------------------------------------------------- status
 

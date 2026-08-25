@@ -39,12 +39,36 @@ M.LOCALE_PREFIX = "rf-reactor-status."
 -- value (3e+09) is too big, allowed values are from -2147483648 to 2147483647". Probed against
 -- 2.0.77 rather than assumed, because the difference between wrapping and throwing is the
 -- difference between a wrong reading and a crash in front of a player.
---
--- rf-d-d-plasma tops out at 2e9 C, so the shipped range fits with about 7% to spare. A later tier
--- raising max_temperature past this starts losing the top of its range, which is why the test
--- asserts the headroom rather than trusting this comment.
 local INT32_MAX = 2147483647
 local INT32_MIN = -2147483648
+
+-- WHAT A WIRE CARRIES A TEMPERATURE IN, AND WHY THE CEILING NO LONGER TURNS ON IT (#57, ADR 0025).
+--
+-- THIS IS THE CANONICAL STATEMENT OF IT. control.lua's check_signal_ceiling, the five clamp
+-- comments in scripts/reactor-logic.lua and scripts/check-observability.ps1 all point here rather
+-- than restating it, because the same explanation kept in six places is the same drift keeping one
+-- constant in six places -- and that is the thing this very block exists to stop.
+--
+-- Thousands of degrees celsius. Whole degrees could not carry a fusion temperature: an int32 stops
+-- at 2.147e9, colder than D-T actually settles, so the hottest reactors all reported one number and
+-- the READOUT WAS BOUNDING THE PHYSICS. Scaled, a wire reaches about 2.1e12 C -- past anything the
+-- cross-section data can be asked about -- so the ceiling is a question about that data instead,
+-- and ADR 0025 places it at where every reaction runs free.
+--
+-- A THOUSAND rather than a million, which is the one real choice here: a megadegree wire reads zero
+-- for everything under 500 000 C, and that is every reactor that has not lit yet.
+--
+-- THE COST IS THE BOTTOM OF THE RANGE, real rather than theoretical: anything under half a
+-- kilodegree reads 0, the same as a reactor holding no plasma at all, so below 500 C the status
+-- signal is the only thing telling a cold reactor from an empty one. Taken deliberately.
+--
+-- THE COUPLING IS STILL REAL, WHICH IS WHY THE GUARD STAYS. An encoding still decides which
+-- ceilings are expressible; it is only that this one is no longer binding. Public so everything
+-- that must agree with it reads it rather than retyping it -- the guard below, the test that
+-- asserts it against every spec's ceiling, and the observability rig. Those drifting apart is how
+-- a mod comes to refuse to load over its own ceiling.
+local TEMPERATURE_SCALE = 1000
+M.TEMPERATURE_SCALE = TEMPERATURE_SCALE
 
 -- Public for the reason M.LOCALE_PREFIX is: so that the things which have to agree with this number
 -- read it instead of retyping it. control.lua's check_signal_ceiling refuses to load a temperature
@@ -68,19 +92,23 @@ end
 -- @return nil when a circuit signal can carry it, otherwise the value a wire would actually show
 --
 -- The question control.lua's check_signal_ceiling asks of every reactor's max_temperature_c, and it
--- is asked HERE because this is the file that knows why the ceiling exists. A signal is an int32,
--- so a plasma hotter than 2147483647 C is reported as 2147483647 C -- the reading stops being a
+-- is asked HERE because this is the file that knows what a wire carries. A signal is an int32, so a
+-- plasma the wire cannot describe is reported at its limit for ever -- the reading stops being a
 -- measurement and becomes a constant, silently, with the reactor working perfectly.
 --
--- The shipped ceiling is 2e9 and fits with about 7% to spare, so this returns nil today and the
--- guard passes. It becomes load-bearing the moment anyone raises the ceiling, which is #54's whole
--- subject: the ceiling is where it is BECAUSE of this integer, and nothing in the game says so.
+-- IT DIVIDES BY THE SCALE FIRST (#57), and that is not a detail. Comparing raw celsius against
+-- INT32_MAX was correct only while a wire carried whole degrees. Left alone through the encoding
+-- change it would have failed 5e9 > 2147483647 and REFUSED TO LOAD the ceiling #58 exists to set --
+-- the mod broken by its own new ceiling, from a guard written to protect it. The question is what
+-- the WIRE would carry, so it has to be asked at the wire's scale.
+--
+-- Why it can no longer fire, and why it is kept regardless: see TEMPERATURE_SCALE above.
 --
 -- Its own function rather than a comparison written out at the call site, so that the decision can
 -- be broken in tests/test-circuit-output.lua. A guard nobody has watched fail is a guard nobody
 -- knows the shape of.
 function M.unrepresentable(temperature_c)
-  if temperature_c > INT32_MAX then return INT32_MAX end
+  if temperature_c / TEMPERATURE_SCALE > INT32_MAX then return INT32_MAX end
   return nil
 end
 
@@ -97,7 +125,7 @@ end
 -- reactor net positive", which is the question worth wiring.
 function M.signals(result)
   return {
-    temperature = to_signal(result and result.temperature_c or 0),
+    temperature = to_signal((result and result.temperature_c or 0) / TEMPERATURE_SCALE),
     q           = to_signal((result and result.q_factor or 0) * 100),
   }
 end
