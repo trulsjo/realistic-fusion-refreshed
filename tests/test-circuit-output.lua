@@ -112,9 +112,11 @@ check(C.signals({ temperature_c = NEXT_CEILING_C, q_factor = 0 }).temperature < 
 equal(C.signals({ temperature_c = NEXT_CEILING_C + SCALE, q_factor = 0 }).temperature, 5000001,
   "one scale-step past it is still reported rather than wrapped")
 
--- The reason the clamp is not merely defensive: the shipped fluid's ceiling is 2e9 C, which fits
--- with about 7% to spare. Any later tier raising max_temperature past int32 starts losing the top
--- of the range silently, so the headroom is asserted here rather than assumed.
+-- ~~The reason the clamp is not merely defensive: the shipped fluid's ceiling is 2e9 C, which fits
+-- with about 7% to spare.~~ **Three orders of magnitude to spare since #57**, not 7% -- the wire
+-- carries WIRE_CEILING_C, computed above, and 2e9 is nowhere near it. The headroom is still
+-- asserted rather than assumed, because a later tier can still raise max_temperature past what the
+-- scale carries; it is simply a long way further off than it was.
 --
 -- OVER EVERY SHIPPED REACTOR SINCE #55, where it read the neutronic spec alone. The ceiling lives
 -- on the spec, so a second reactor can declare its own -- and the one that would break the readout

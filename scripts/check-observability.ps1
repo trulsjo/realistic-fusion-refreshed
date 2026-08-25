@@ -29,9 +29,14 @@
                 electric network, so it cannot climb. Holding plasma, not fusing.
       starved   No plasma line at all.
 
-    Three states, one save -- which is also what makes the aggregate check possible:
-    running and idle sit at temperatures three orders of magnitude apart, so if either one's wire
-    carried a figure for "the reactors" rather than for itself, they could not both be right.
+    Three states, one save -- which is also what makes the aggregate check possible: running and
+    idle report different figures, so if either one's wire carried a value for "the reactors"
+    rather than for itself, they could not both be right.
+
+    THAT USED TO READ "three orders of magnitude apart", AND #57 BROKE THE ARITHMETIC BEHIND IT.
+    Idle's plasma sits at the 15 C floor, which a kilodegree wire reports as 0, so the ratio the
+    check rested on quietly became "running is greater than zero". The check was strengthened where
+    it is made rather than being left to mean less than it says; see the comment there.
 
       ignited-full   D-T plasma, a full box, powered.
       ignited-thin   D-T plasma, 35% of a box, powered.
