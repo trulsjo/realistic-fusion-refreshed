@@ -9,11 +9,18 @@ Accepted. Decided by Truls, 2026-08-25, settling
 it names, the wire encoding and the ceiling, on figures measured while deciding rather than on the
 ones the ticket carried.
 
-**Retires the reason written into `scripts/circuit-output.lua` and `control.lua`.** Both currently
-state that the ceiling is 2e9 *because* a circuit signal is a 32-bit integer, which
+**Retires the reason written into three files.** `scripts/circuit-output.lua`, `control.lua` and —
+most extensively — `scripts/reactor-logic.lua` all state that the ceiling is 2e9 *because* a circuit
+signal is a 32-bit integer, which
 [#55](https://github.com/trulsjo/realistic-fusion-refreshed/issues/55) built a load-time guard
-around. That sentence stops being true here. The guard is not deleted — it stops binding, and
-[#57](https://github.com/trulsjo/realistic-fusion-refreshed/issues/57) rewrites what it says.
+around. That sentence stops being true here.
+
+`reactor-logic.lua` carries it in five places and is the easiest to miss, because it is the file the
+other two point *at* rather than the one they point from: lines 196-197 ("it stays for one reason
+that holds: int32 stops at 2.147e9"), 204, 208, 227, and 576-578 ("2e9 is where a temperature stops
+fitting in the int32 a circuit signal is"). All five are
+[#57](https://github.com/trulsjo/realistic-fusion-refreshed/issues/57)'s to rewrite, and #57 is more
+than a wording change — see [Consequences](#consequences).
 
 **Spends [ADR 0014](0014-realistic-means-theoretically-possible.md)** the way
 [ADR 0024](0024-confinement-time-is-the-researchable-lever.md) does. ADR 0014 fixed what "realistic"
@@ -103,13 +110,23 @@ ticket assumed. And thinning drives temperature up without bound — ADR 0016's 
 no ceiling that unpins every reaction at every fill, and placing one against the thinnest conceivable
 supply would mean placing it past the data.
 
-### The dataset is a real bound, and float32 is a nearer one
+### Three bounds, and the physics one is nearer than the dataset
 
 `cross-section-data/reactivities.lua` tops out at 6.96271e9 K and `M.interpolate` clamps flat above
 its top row, so any ceiling past about 7e9 balances the plasma against a constant rather than against
 physics.
 
-Nearer than that: a prototype's `max_temperature` is returned at single precision, so a ceiling that
+**Nearer than the dataset, and the bound this ADR nearly missed: the radiation term goes out of
+domain at 5.93e9 K.** `scripts/reactor-logic.lua` states it above `radiation_factor`, and states it
+*for this decision specifically* — "ABOVE 511 keV THE FIT IS OUT OF DOMAIN and this holds it at its
+edge value rather than extrapolating. That UNDERSTATES radiation above 5.93e9 K, stated because it is
+a real limit and because #58 may raise `max_temperature_c`: no shipped reactor reaches it … but a
+future one could, and **it should find this note rather than a silent extrapolation**." A comment left
+to be found by exactly this work. **Two figures in the table above sit past it** — He3-He3 at 150
+units (6.43e9) and D-He3 at 150 units (1.19e10) — so both understate radiation and neither may be
+leant on. Every equilibrium the decision actually rests on is below 5.93e9.
+
+Nearest of all: a prototype's `max_temperature` is returned at single precision, so a ceiling that
 is not float32-exact reads back smaller than it was declared and
 [#119](https://github.com/trulsjo/realistic-fusion-refreshed/issues/119) rejects it over two numbers
 that print identically. Of the candidates, 2e9, 4e9, 5e9 and 6.8e9 are exact; 6.5e9 and **6.9e9 —
@@ -134,11 +151,21 @@ placed by where the reactions land, not by where the data ends.
 
 ## Consequences
 
-**The int32 justification is retired, and the guard goes slack.** In kilodegrees a 5e9 ceiling ships
-as 5 000 000 against a limit of 2 147 483 647 — three orders of magnitude of headroom.
-`check_signal_ceiling` stops being a live constraint. It is kept, because a guard that cannot fire
-today still names the coupling, but its message must stop claiming the ceiling exists because of the
-integer. #57 owns that rewrite. **Until it lands, both files state a reason this ADR has made false.**
+**The int32 justification is retired, and #57 must change the guard's ARITHMETIC, not just its
+words.** This is the trap in implementing this ADR, so it is stated before the rest.
+
+`check_signal_ceiling` passes the **raw Celsius** `spec.max_temperature_c` to
+`circuit.unrepresentable`, which tests `temperature_c > INT32_MAX`. Neither knows the wire is scaled.
+Raise the ceiling to 5e9 and change only `M.signals`, and the guard evaluates `5e9 > 2147483647`,
+fires, **and the mod refuses to load.** The check must compare the *scaled* value — what the wire
+would actually carry — before any of this is true.
+
+Once it does, the guard goes slack rather than away: 5e9 ships as 5 000 000 against 2 147 483 647,
+three orders of magnitude of headroom. **Keep it.** A guard that cannot fire today still names the
+coupling, and the coupling is real — it is only the ceiling that has stopped being set by it. Its
+message must stop claiming the ceiling exists because of the integer.
+
+**Until #57 lands, all three files above state a reason this ADR has made false.**
 
 **The wire disagrees with the engine's own tooltip by 1000x.** Plasma temperature lives on the fluid,
 and Factorio renders fluid temperature in °C natively. That display is not ours to rescale, so a
@@ -148,9 +175,15 @@ express.
 
 **A cold reactor reads 0.** Anything below 500 °C rounds to nothing, so a reactor at the 15 °C floor
 reports 0 on the temperature signal — the same as one with no plasma at all. The status signal already
-separates starved from idle, and that is now the only thing that does. `scripts/check-observability.ps1`
-asserts an idle reactor's wire tracks its plasma; at 15 °C that assertion cannot survive, though the
-cold-start case at 4.97e4 °C still reads 50 and can.
+separates starved from idle, and that is now the only thing that does.
+
+**`scripts/check-observability.ps1` has an assertion that cannot survive this**, and no softer reading
+of it is available. Its `idle` case reads at `SettleTicks = 2400`, by which point the plasma has been
+at the floor for most of the run — the rig's own comment says "15 C on the wire against 15 C in the
+box". In kilodegrees that wire reads 0 against an actual of 15, a drift of 1.0 against a bound of
+0.05, so the check fails. It is measuring something real and must be re-sited rather than loosened:
+a bound wide enough to pass 0-against-15 is the bound #120 already removed for not discriminating.
+#57 owns it.
 
 **Three of four reactions stop reporting the same number.** D-T unpins to 3.27–3.92e9 depending on
 research, D-He3 to 4.41e9 at its operating density, He3-He3 to 2.51e9. #54's complaint is answered for
@@ -184,8 +217,11 @@ player, and it divorces the wire from every other temperature the game shows. Re
 
 **A 6.8e9 ceiling.** Float32-exact and at the dataset's edge. Buys one thing over 5e9: He3-He3 stays
 free when thinned to 150 units. Costs the margin inside the data, so equilibria near the top are set
-against the last interpolated rows. Rejected as paying real margin for a fill nobody operates at, in
-a tier that does not ignite.
+against the last interpolated rows. **Rejected on the radiation bound rather than on that margin**:
+6.8e9 is past 5.93e9, where the bremsstrahlung fit is out of domain and understates the loss, so a
+plasma settling up there settles against a term known to be wrong — and the 6.43e9 figure that is the
+whole case for the ceiling is itself computed that way. Paying real margin for a fill nobody operates
+at, in a tier that does not ignite, on a number that cannot be trusted at the temperature it names.
 
 **A 4e9 ceiling.** Float32-exact and conservative. Leaves D-He3 pinned, since its equilibrium is
 4.41e9 — so the aneutronic pair still could not be told apart, which is #54's complaint surviving in
