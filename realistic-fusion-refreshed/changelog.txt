@@ -8,7 +8,9 @@ Date: 2026-08-25
       by 1000.
     - Why: a circuit signal is a 32-bit number and stops at 2147483647, which is colder than a
       deuterium-tritium plasma actually runs. The old scale meant the hottest reactors all reported
-      the same figure no matter how hot they really were. They no longer do.
+      the same figure no matter how hot they really were. This does not fix that on its own -- the
+      temperature limit has not moved yet, so the hottest reactors still read alike -- but it is
+      what has to happen first, and it lifts the limit that was stopping it.
     - A reactor below 500 degrees now reports 0, the same as one holding no plasma. The status line
       under the reactor still tells the two apart.
     - The plasma's own tooltip, on the pipe, still reads in whole degrees. It will look a thousand

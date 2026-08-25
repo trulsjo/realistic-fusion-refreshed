@@ -44,10 +44,13 @@ local INT32_MIN = -2147483648
 
 -- WHAT A WIRE CARRIES A TEMPERATURE IN, AND WHY THE CEILING NO LONGER TURNS ON IT (#57, ADR 0025).
 --
--- THIS IS THE CANONICAL STATEMENT OF IT. control.lua's check_signal_ceiling, the five clamp
--- comments in scripts/reactor-logic.lua and scripts/check-observability.ps1 all point here rather
--- than restating it, because the same explanation kept in six places is the same drift keeping one
--- constant in six places -- and that is the thing this very block exists to stop.
+-- THIS IS THE CANONICAL STATEMENT OF IT, because the same explanation kept in six places is the
+-- same drift as one constant kept in six places, and that is the thing this very block exists to
+-- stop. Pointed at directly by control.lua's check_signal_ceiling, by
+-- scripts/check-observability.ps1, and by scripts/reactor-logic.lua's D-T fuel row; that row is in
+-- turn what the other clamp comments in reactor-logic defer to, so they reach here in two hops
+-- rather than one. Said precisely because a claim about what points where is exactly the kind that
+-- rots first.
 --
 -- Thousands of degrees celsius. Whole degrees could not carry a fusion temperature: an int32 stops
 -- at 2.147e9, colder than D-T actually settles, so the hottest reactors all reported one number and
@@ -117,8 +120,10 @@ end
 -- @param result  what reactor-logic.step returned
 -- @return { temperature = int32, q = int32 }
 --
--- Temperature goes out in whole degrees: it is the only scale that both fits int32 across the
--- fluid's whole range and reads naturally on a combinator.
+-- Temperature goes out in kilodegrees -- TEMPERATURE_SCALE above, which is where the scale and its
+-- cost are explained. ~~Whole degrees: the only scale that both fits int32 across the fluid's whole
+-- range and reads naturally on a combinator.~~ That was true only while the fluid's range stopped
+-- below int32, which is the thing #57 undid.
 --
 -- Q is dimensionless and fractional, and a signal is an integer, so it goes out as a percentage.
 -- That is not just to avoid truncating to 2: it makes "Q > 100" the decider condition for "is this
