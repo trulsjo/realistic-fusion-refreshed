@@ -963,8 +963,11 @@ script.on_nth_tick(REPORT, function()
 
   -- ------------------------------------------------------------ full: the baseline
   local lit = snaps.lit.full.plasma[1]
-  record(lit ~= nil and lit.temperature >= clamp * 0.999,
-    "full: a heater-fed D-T reactor ignites and parks at the top of its range",
+  -- ~~Parks at the top of its range.~~ **Short of it since #58** -- the ceiling is above where D-T
+  -- settles now, so this is its own equilibrium. What this rig cares about is unchanged: that it is
+  -- lit at all, and stays lit through the shortfall below.
+  record(lit ~= nil and lit.temperature > 1e9 and lit.temperature < clamp * 0.999,
+    "full: a heater-fed D-T reactor ignites and settles short of the top of its range",
     lit and string.format("%.4g C against a ceiling of %.4g", lit.temperature, clamp) or "no plasma")
   local sold, drawn = span("full", "lit", "deep")
   record(sold > drawn, "full: and pays for its own confinement heating many times over",
@@ -1049,8 +1052,17 @@ script.on_nth_tick(REPORT, function()
     dead and dead.amount or 0))
 
   -- ------------------------------------------------------------ 2. it recovers unattended
+  --
+  -- MEASURED AGAINST THE RIG'S OWN LIT REACTOR SINCE #58, not against the clamp. "Back at the
+  -- clamp" was a serviceable stand-in for "lit" only while a lit D-T reactor sat on the clamp. It
+  -- no longer does -- it settles at its own equilibrium near 3e9, with the ceiling at 5e9 -- so the
+  -- question has to be asked against what lit looks like rather than against a declared bound. The
+  -- discrimination is real either way: 900s of blackout leaves this reactor at 1.7e9 and still
+  -- falling, well outside this band.
+  local lit_reference = snaps.lit.full.plasma[1]
   local back = snaps.back.recover.plasma[1]
-  record(back ~= nil and back.temperature >= clamp * 0.999,
+  record(back ~= nil and lit_reference ~= nil
+      and back.temperature >= lit_reference.temperature * 0.9,
     "recover: the supply comes back and the reactor re-ignites with no help of any kind",
     back and string.format("%.4g C, %.4g u, %.1fs after the supply returned",
       back.temperature, back.amount, RESTORE / 60) or "no plasma")
@@ -1099,14 +1111,18 @@ script.on_nth_tick(REPORT, function()
   -- The only cell where the loop closes, so the only one in which a spiral is a thing that can
   -- happen rather than a thing inferred from numbers. It is asked twice: once with the starter gone,
   -- and once with more load than it can carry.
+  -- Against the lit reactor rather than the clamp, for the reason recorded at the recover check.
+  local plant_reference = snaps.lit.full.plasma[1]
   local ps = snaps.deep.plant.plasma[1]
-  record(ps ~= nil and ps.temperature >= clamp * 0.999
+  record(ps ~= nil and plant_reference ~= nil
+      and ps.temperature >= plant_reference.temperature * 0.9
       and snaps.deep.plant.turbine == "working",
     "plant: with its starter switched off the plant carries its own confinement heating",
     ps and string.format("%.4g C, turbine %s, heater %s",
       ps.temperature, snaps.deep.plant.turbine, snaps.deep.plant.heater) or "no plasma")
   local pb = snaps.back.plant.plasma[1]
-  record(pb ~= nil and pb.temperature >= clamp * 0.999,
+  record(pb ~= nil and plant_reference ~= nil
+      and pb.temperature >= plant_reference.temperature * 0.9,
     "plant: and overloading it past what it can make does not make it eat itself",
     pb and string.format("%.4g C at %.4g MW of load, turbine %s, heater %s",
       pb.temperature, (snaps.back.plant.load or 0) / 1e6, snaps.back.plant.turbine, snaps.back.plant.heater)

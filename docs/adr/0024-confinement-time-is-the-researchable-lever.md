@@ -152,6 +152,18 @@ A reactor held at a tenth of a box is against the clamp **today, at the shipped 
 researched**. So a guard over every fill would have failed on the day it was written and could never
 have been made to pass.
 
+> **The clamp in this table is 2×10⁹, and it moved to 5×10⁹ on 2026-08-25**
+> ([#58](https://github.com/trulsjo/realistic-fusion-refreshed/issues/58),
+> [ADR 0025](0025-a-plasma-temperature-ships-in-kilodegrees.md)). The reasoning above is unaffected —
+> a thin plasma still rises without bound and still reaches whatever clamp exists, which is why the
+> guard is still sited at full supply. What changed is the cells: at 30 s a tenth-full reactor now
+> settles at 3.55×10⁹ rather than against the clamp, and at 60 s it is against the new one at
+> 5×10⁹. The 25% cell at 60 s comes off the clamp entirely, to 2.76×10⁹.
+>
+> This is also the passage that caught #58 overclaiming: that ticket's work asserted "D-D is
+> unchanged" from a full-fill measurement, which this table had already shown could not be true of
+> every fill.
+
 What ADR 0016 actually established is that the optimum in **Q** walks up the fill axis and leaves the
 range by 70 s. That is correct, and it is a different curve: Q is fusion power over heating power and
 has an interior maximum; temperature has none. The two were conflated, here and in #53's own comment,

@@ -58,11 +58,12 @@
                                   signal can carry. check_plasma_bounds above ties the ceiling to
                                   what the FLUID holds; this ties it to what the WIRE reports, and
                                   a ceiling can pass the first and fail the second. It fails
-                                  quietly: a signal is a 32-bit integer, so a ceiling past
-                                  2147483647 leaves every reactor reporting that number for ever
-                                  while running perfectly. The ceiling is 2e9 BECAUSE of that
-                                  integer and nothing in game says so, which is what makes raising
-                                  it for a later tier the easy mistake (#54, #55).
+                                  quietly: a signal is a 32-bit integer, so a ceiling past what a
+                                  wire carries leaves every reactor reporting one number for ever
+                                  while running perfectly. ~~The ceiling is 2e9 BECAUSE of that
+                                  integer.~~ Not since #57 rescaled the signal to kilodegrees and
+                                  #58 moved the ceiling to 5e9 on physics grounds; the guard is
+                                  kept but can no longer fire (ADR 0025).
       check_every_plasma_burns()  Every fluid an rf-plasma-heating recipe produces has a row in
                                   reactor-logic's fuel table. Reachable since #28 removed the
                                   reactor's input filter; without it a plasma no reactor can

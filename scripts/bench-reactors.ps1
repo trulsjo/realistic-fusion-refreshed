@@ -489,8 +489,9 @@ script.on_init(function()
           name = "__PLASMAFEED__", position = { west.x, west.y }, force = force,
         })
         if not feed then error(string.format("infinity-pipe refused at cell %d,%d", col, row)) end
-        -- 6e8 C for every reaction: all four plasmas declare max_temperature 2e9, and holding the
-        -- whole rig at one temperature keeps the mix the only thing that differs from #24.
+        -- 6e8 C for every reaction: all four plasmas declare the same max_temperature -- 5e9 since
+        -- #58 -- and holding the whole rig at one temperature keeps the mix the only thing that
+        -- differs from #24.
         feed.set_infinity_pipe_filter({ name = case.plasma, percentage = 1, temperature = 6e8, mode = "at-least" })
       end
       storage.reactors[#storage.reactors + 1] = r

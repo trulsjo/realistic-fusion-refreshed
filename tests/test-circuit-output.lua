@@ -98,9 +98,11 @@ equal(C.signals({ temperature_c = NAN, q_factor = 0 }).temperature, 0,
 equal(C.signals({ temperature_c = 15, q_factor = NAN }).q, 0,
   "and so is a NaN Q")
 
--- ROUND TRIP AT THE CEILING #58 IS GOING TO SET (ADR 0025: 5e9). #57 does not move the ceiling --
--- the specs below still declare 2e9 -- but the whole point of the encoding change is that 5e9
--- becomes carryable, so it is asserted here before the ticket that relies on it.
+-- ROUND TRIP AT THE SHIPPED CEILING (ADR 0025: 5e9). Written for #57, when this was the ceiling
+-- #58 was going to set and the specs still declared 2e9 -- the encoding had to make 5e9 carryable
+-- before the ticket that relied on it could land. **#58 has since set it**, so the specs declare
+-- 5e9 too and this is no longer a forward assertion; it is the shipped value, checked from the
+-- other side of the module boundary.
 local NEXT_CEILING_C = 5e9
 equal(C.signals({ temperature_c = NEXT_CEILING_C, q_factor = 0 }).temperature, 5000000,
   "the ceiling ADR 0025 chose survives the trip to a signal without saturating")
@@ -145,7 +147,7 @@ for label, spec in pairs(CEILINGS) do
 end
 
 check(NEXT_CEILING_C <= WIRE_CEILING_C,
-  "and so does the ceiling #58 will set, which is the point of doing this first",
+  "and so does the ceiling #58 set, which is why this had to come first",
   string.format("%.6g C against %.6g C carryable", NEXT_CEILING_C, WIRE_CEILING_C))
 
 -- THE DECISION control.lua's check_signal_ceiling MAKES, and the negative half of it. That guard
@@ -163,7 +165,7 @@ check(C.unrepresentable(SPEC.max_temperature_c) == nil,
   "the shipped ceiling is representable, so the load guard passes",
   string.format("%.6g C", SPEC.max_temperature_c))
 check(C.unrepresentable(NEXT_CEILING_C) == nil,
-  "and so is the one #58 will set -- the guard permits the higher ceiling",
+  "and so is the one #58 set -- the guard permits the raised ceiling",
   string.format("%.6g C", NEXT_CEILING_C))
 equal(C.unrepresentable(WIRE_CEILING_C), nil,
   "a ceiling exactly at what the wire can carry still fits -- the clamp keeps that value")

@@ -49,7 +49,7 @@ Run with the box kept full and unlimited power:
 |---|---|---|---|---|
 | ~~D-D, 20 min~~ | ~~8.77×10⁸ °C~~ | ~~2.14~~ | ~~133 MW~~ | ~~3.7 u/s~~ |
 | **D-D, 20 min (#52)** | **2.42×10⁸ °C** | **0.32** | **56.1 MW** | 1.0 u/s |
-| D-T, 1 min | 2×10⁹ °C — **the clamp** | 96 | 4 127 MW | 34 u/s |
+| D-T, 1 min | 2×10⁹ °C — the clamp *as it then was; 3.25×10⁹ since #58* | 96 | 4 127 MW | 34 u/s |
 
 D-D balances: heating plus alpha self-heating against the confinement loss, partway up the curve.
 D-T does not. At n = 10²⁰ m⁻³ and τ_E = 30 s this reactor passes the Lawson criterion for D-T by
@@ -61,12 +61,24 @@ where the cross-section is falling.
 
 | ceiling | settles at | Q | thermal out |
 |---|---|---|---|
-| 2×10⁹ °C (shipped) | 2×10⁹ (pinned) | 96 | 4 127 MW |
-| 5×10⁹ °C | 4.63×10⁹ | 58.9 | 2 547 MW |
-| 10¹⁰ °C | 4.63×10⁹ | 58.9 | 2 547 MW |
-| 10¹¹ °C | 4.63×10⁹ | 58.9 | 2 547 MW |
+| 2×10⁹ °C (then shipped) | 2×10⁹ (pinned) | 96 | 4 127 MW |
+| ~~5×10⁹ °C~~ | ~~4.63×10⁹~~ | ~~58.9~~ | ~~2 547 MW~~ |
+| ~~10¹⁰ °C~~ | ~~4.63×10⁹~~ | ~~58.9~~ | ~~2 547 MW~~ |
+| ~~10¹¹ °C~~ | ~~4.63×10⁹~~ | ~~58.9~~ | ~~2 547 MW~~ |
 
-**The shipped ceiling stays where it is.** One reason holds, and it is the second one below.
+> **Superseded 2026-08-25 by #52, and the correction matters because #58 was written against these
+> rows.** Every raised-ceiling figure above predates the radiation term. Re-measured through the
+> shipped `step()` with the term carried, D-T settles at **3.25×10⁹ °C, Q 73.1** at 30 s of
+> confinement — not 4.63×10⁹ at Q 58.9 — and moves up the confinement ladder to **3.92×10⁹ °C,
+> Q 65.4** at the top rung, which these rows could not show because the ladder did not exist yet.
+> The unpinned equilibrium is *cooler* and its Q *higher* than this table claimed.
+>
+> The shape the table was drawn to show survives: past about 4×10⁹ the ceiling stops mattering,
+> because the plasma settles below it whatever it is set to.
+
+~~**The shipped ceiling stays where it is.** One reason holds, and it is the second one below.~~
+**It moved to 5×10⁹ on 2026-08-25** (#58, ADR 0025), and neither of the two reasons below is why it
+is where it is now — see the section following them.
 
 > **Corrected 2026-08-17.** This section originally gave two reasons "in order of weight", and led
 > with the wrong one. Reason 1 as written — that the clamp is the less wrong physics because
@@ -85,19 +97,35 @@ where the cross-section is falling.
    not carry at all — and it would bite long before 4.6×10⁹ K.~~ **Not supported; see above.** What
    remains true of it: energy is not invented at the clamp, because `step()` sells everything the
    plasma cannot hold. The clamp is a ceiling on the state variable, not on the accounting.
-2. **It would cost the temperature circuit signal.** A signal is an int32 and Factorio throws rather
+2. ~~**It would cost the temperature circuit signal.** A signal is an int32 and Factorio throws rather
    than wraps; the ceiling stops at 2 147 483 647, so the shipped 2×10⁹ fits with 7% to spare and
-   4.6×10⁹ does not (`scripts/circuit-output.lua`). **This is the whole of the case for the clamp.**
+   4.6×10⁹ does not. **This is the whole of the case for the clamp.**~~
 
-What it costs as it stands is that the temperature reading is **pinned at 2×10⁹ for every D-T
-reactor**, whatever it is doing. That is a real loss of information and it is the one thing about
-this tier worth revisiting.
+## Both of those are settled, 2026-08-25 (#57, #58, ADR 0025)
+
+**The int32 case is gone.** [#57](https://github.com/trulsjo/realistic-fusion-refreshed/issues/57)
+rescaled the signal to kilodegrees, so a wire reaches about 2.1×10¹² °C and no longer bounds anything.
+
+**And the clamp moved**, to 5×10⁹ °C
+([#58](https://github.com/trulsjo/realistic-fusion-refreshed/issues/58),
+[ADR 0025](../adr/0025-a-plasma-temperature-ships-in-kilodegrees.md)) — placed where every shipped
+reaction runs free beneath it, not where a readout stops.
+
+~~What it costs as it stands is that the temperature reading is **pinned at 2×10⁹ for every D-T
+reactor**, whatever it is doing.~~ **It is not pinned any more.** Measured through the shipped
+`step()` at the raised ceiling, D-T settles at **3.25×10⁹ °C** at the shipped 30 s of confinement and
+moves with the ladder to **3.92×10⁹ °C** at the top rung — so the reading is a measurement again, and
+it moves with the reactor. `scripts/check-d-t.ps1` sees 3.13×10⁹ °C in game.
+
+The correction below stands and is worth keeping, because it is why the fix was the signal rather
+than the physics:
 
 ~~Fixing it properly means a bremsstrahlung term~~ — **it does not.** A bremsstrahlung term lands the
 D-T equilibrium at 3.26×10⁹ K, still 52% above the int32 ceiling, so it would not unpin the reading.
 The levers that reach it are `confinement_time_s` (10 s puts D-T at 2.02×10⁹) or plasma purity
 (`Z_eff ≈ 6`, with `Z_eff = 7` extinguishing the plasma entirely — a knife edge). Both re-tune D-D as
-well, so both are balance decisions rather than fixes.
+well, so both are balance decisions rather than fixes. **What actually unpinned it was neither**: the
+ceiling was never physics, and moving the readout out of the way cost no balance at all.
 
 And the finding this section originally missed: **adding bremsstrahlung would break the tier that
 works.** D-D falls from Q 2.14 to Q 0.32, 107 MW of fusion power to 16 MW, taking the fuel-chain
@@ -114,7 +142,7 @@ the dominant radiative loss is absent from the model.
 
 ## Ignition is a control change, not a runaway
 
-The pinned temperature is not a stuck reactor. At the ceiling the reactor burns **exactly what it is
+~~The pinned temperature is not a stuck reactor.~~ *(Nothing is pinned since #58; kept because the point about fuel-line throttling is unchanged.)* At the ceiling the reactor burns **exactly what it is
 fed** and the output follows the fuel line:
 
 | feed | D-T out | D-T burn | | D-D out |
@@ -211,7 +239,7 @@ Outside Factorio, at the same density and the same temperature and with no power
 
 | | one step from 6×10⁸ °C | after five unpowered minutes |
 |---|---|---|
-| **D-T** | **rises** to 6.046×10⁸ | 2×10⁹ °C — the top of its range |
+| **D-T** | **rises** to 6.046×10⁸ | 2×10⁹ °C — then the top of its range; 5×10⁹ since #58 |
 | **D-D** | falls to 5.998×10⁸ | 7.45×10⁴ °C — out of the fusing range entirely |
 
 Three and a half orders apart, from the same starting point, on the same reactor. That is ignition,
