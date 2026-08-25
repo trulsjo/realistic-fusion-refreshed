@@ -296,8 +296,12 @@ script.on_nth_tick(CHECK_AT, function()
     plasma and plasma.name or "nothing in the box")
 
   local dt_max = prototypes.fluid[DT].max_temperature
-  record(plasma ~= nil and plasma.temperature >= dt_max * 0.999,
-    "and ignites: the plasma runs up to the top of its range and parks there",
+  -- ~~Runs up to the top of its range and parks there.~~ **BELOW IT SINCE #58.** The ceiling moved
+  -- to 5e9, above where this reaction settles, so a D-T reactor now stops on its own cross-section
+  -- and the temperature a player reads is a measurement rather than the clamp. That is the whole of
+  -- what #58 bought, and it is asserted here in a game rather than only in the pure-Lua model.
+  record(plasma ~= nil and plasma.temperature > 1e9 and plasma.temperature < dt_max * 0.999,
+    "and ignites: the plasma settles at its own equilibrium, short of the top of its range",
     plasma and string.format("%.4g C against a ceiling of %.4g", plasma.temperature, dt_max) or "no plasma")
 
   -- ------------------------------------------------------------ materially different from D-D

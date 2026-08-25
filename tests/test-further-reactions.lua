@@ -321,10 +321,27 @@ ne, zeff = geometry(F["He3-He3"])
 near(ne, 2.00, 0, "a He3-He3 plasma has two electrons per ion")
 near(zeff, 2.00, 0, "a He3-He3 plasma has Z_eff 2")
 
--- What that costs, at the clamp in the reactor these two fuels actually burn in. The factor is not
--- simply Z_eff * (n_e/n_i)^2 because xi's electron-electron term does not scale with charge.
+-- What that costs, at a fixed reference temperature in the reactor these two fuels actually burn
+-- in. The factor is not simply Z_eff * (n_e/n_i)^2 because xi's electron-electron term does not
+-- scale with charge.
 local A = L.aneutronic_reactor
-local t_clamp = A.max_temperature_c + 273.15
+
+-- DELIBERATELY NOT max_temperature_c SINCE #58, and the decoupling is the point rather than the
+-- value. This file surveys candidate fuels against each other, and every figure below is a physics
+-- evaluation at one temperature they share. While the clamp was 2e9 it was the natural reference
+-- and this read it off the spec.
+--
+-- #58 moved the clamp to 5e9 and every number here moved with it -- radiation roughly tripled, the
+-- z_eff understatement factors shifted, and D-He3's fusion-to-radiation ratio fell through 1. None
+-- of that is a fact about the fuels; it is the survey being re-anchored by a balance decision it
+-- has nothing to do with, and it would happen again on the next ceiling change. So the reference is
+-- pinned here, at the value the research notes in docs/research/ quote, and the figures stay
+-- comparable with them.
+--
+-- NOTHING SETTLES HERE ANY MORE, which is worth knowing when reading the numbers: 2e9 used to be
+-- where the aneutronic plasmas were pinned, and since #58 it is simply a reference point.
+local REFERENCE_T_C = 2e9
+local t_clamp = REFERENCE_T_C + 273.15
 local function understatement(f)
   local p = powers(f, A, 3e20, t_clamp, 1)
   local naive = C_B * 3e20 * 3e20 * math.sqrt(t_clamp / KEV) * xi(t_clamp / KEV, 1) * A.volume_m3
@@ -403,18 +420,22 @@ check(t_he3_shipped ~= nil and t_he3_shipped < 1e7,
   t_he3_shipped and string.format("%.3g K", t_he3_shipped) or "no equilibrium at all")
 
 -- The Q the tier ships, taken from the SHIPPED step() rather than from the balance above, because
--- that is the number the tier actually reports and the one the note calls an artefact. The clamp is
--- where it lands: reactor-logic's own comment says this tier "cannot reach its optimum", and the
--- clamp is how far up it gets.
-local shipped_step = L.step(A, "rf-he3-he3-plasma", 3000, A.max_temperature_c, A.heating_power_w, 1)
-check(shipped_step ~= nil, "the shipped model has a He3-He3 step at the clamp")
-near(shipped_step.q_factor, 1.31, 0.01, "the shipped He3-He3 tier reports Q 1.31 at the clamp")
+-- that is the number the note calls an artefact.
+--
+-- ~~The clamp is where it lands.~~ **It lands nowhere near it, and did not even before #58** --
+-- with radiation counted this tier settles at the cold root, which is what the check above asserts.
+-- Read at the same fixed reference as everything else in this block: the question is what Q the
+-- radiation-free model claimed at that temperature, which is the artefact being documented.
+local shipped_step = L.step(A, "rf-he3-he3-plasma", 3000, REFERENCE_T_C, A.heating_power_w, 1)
+check(shipped_step ~= nil, "the shipped model has a He3-He3 step at the reference temperature")
+near(shipped_step.q_factor, 1.31, 0.01,
+  "the He3-He3 tier reported Q 1.31 there, which is the figure the note calls an artefact")
 -- And the point: the same fuel, once its own radiation is charged against it, cannot get near the
 -- temperature that Q was read at.
-check(t_he3_shipped ~= nil and t_he3_shipped < 0.01 * (A.max_temperature_c + 273.15),
+check(t_he3_shipped ~= nil and t_he3_shipped < 0.01 * t_clamp,
   "with radiation counted it settles below a hundredth of that temperature",
-  t_he3_shipped and string.format("%.3g K against a clamp at %.3g K",
-    t_he3_shipped, A.max_temperature_c + 273.15) or "no equilibrium")
+  t_he3_shipped and string.format("%.3g K against a reference of %.3g K",
+    t_he3_shipped, t_clamp) or "no equilibrium")
 
 -- D-He3 is trapped rather than dead, and the distinction is the whole of its entry in the note:
 -- 200 MW cannot climb out of the cold root, four times it can, and past that the fuel is good.

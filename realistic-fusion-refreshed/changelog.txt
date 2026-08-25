@@ -15,3 +15,21 @@ Date: 2026-08-25
       under the reactor still tells the two apart.
     - The plasma's own tooltip, on the pipe, still reads in whole degrees. It will look a thousand
       times larger than the wire. The wire is the number to write conditions against.
+  Balancing:
+    - Deuterium-tritium reactors now run hotter and are no longer stuck at one temperature. The
+      limit that was holding them there has moved from 2 billion to 5 billion degrees, so a D-T
+      reactor settles where its own physics puts it -- about 3.25 billion degrees, rising to 3.9
+      billion with the confinement research done -- and the temperature you read now moves with the
+      reactor instead of sitting still.
+    - Its Q factor reads LOWER as a result, about 73 instead of 96. The reactor is not worse; it was
+      being flattered by a limit that stopped it before its output fell off. Nothing about what it
+      produces got smaller.
+    - Deuterium-helium-3 gives a little back, Q about 19 instead of 21, because the extra
+      temperature carries it past the point its reaction works best. That is the physics and it is
+      not a nerf aimed at the tier.
+    - Deuterium-deuterium reactors are unchanged at any normal supply. If you deliberately run one
+      very thin -- around a tenth of a box -- it was already sitting against the old limit, so it
+      now runs hotter like the others do. Supplied normally, nothing about the first tier moved.
+    - Helium-3 against itself is still not worth building. Raising the limit was expected to rescue
+      it and does not: radiation, not the limit, is what stops that reaction. Its best case improves
+      from about 0.018 to 0.031 times break-even, which is not a tier becoming worth reaching.

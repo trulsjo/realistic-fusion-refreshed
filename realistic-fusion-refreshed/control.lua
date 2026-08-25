@@ -1002,8 +1002,9 @@ end
 -- MEASURED AND NOT FIXED, 2026-08-24 (#119, found by #55): the comparison below is a Lua double
 -- against a value the engine hands back at SINGLE precision, so a ceiling that is not exactly
 -- representable as a float32 reads back smaller than it was declared and this throws over two
--- numbers that were typed identically. 6.9e9 -- the ceiling #54 proposes -- stores as 6899999744.
--- 2e9 and 4e9 are both exact, which is why nothing fails today. Left alone here because choosing
+-- numbers that were typed identically. 6.9e9 -- the ceiling #54 proposed -- stores as 6899999744.
+-- 2e9, 4e9 and 5e9 are all exact, and 5e9 being exact is why the shipped ceiling clears this check
+-- since #58: ADR 0025 chose it partly on that account. Left alone here because choosing
 -- between comparing at float32 precision, allowing a tolerance, and requiring the ceiling to be
 -- representable is a decision rather than a correction; #119 carries it.
 local function check_plasma_bounds()
@@ -1045,7 +1046,7 @@ end
 -- tests/test-circuit-output.lua break it. This supplies the loop and the message.
 --
 -- Over every reactor, because the ceiling lives on the spec and a second reactor may declare its
--- own. Both shipped reactors currently name 2e9, so this checks two specs to prove one thing --
+-- own. Both shipped reactors currently name 5e9 (#58), so this checks two specs to prove one thing --
 -- and the day a tier wants a hotter clamp, it is the one someone forgot that this names.
 --
 -- IT RUNS AFTER check_plasma_bounds AND IS NOW ALWAYS MASKED BY IT IN PRACTICE. That check throws

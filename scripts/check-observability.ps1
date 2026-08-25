@@ -43,11 +43,14 @@
 
     THOSE TWO ARE NOT A FOURTH AND FIFTH STATE (#55). They are both "running", and they exist to be
     compared with EACH OTHER. Their real equilibria differ -- a thinner plasma settles hotter -- and
-    both are far above the simulation's 2e9 ceiling, so both are clamped to it and both report the
-    same number. A player cannot tell them apart on a wire. That is what #54 is about, and the two
-    `note` lines at the end of a run measure it rather than assert it: neutronic reports YES today
-    and ignited reports no, and the second flips when #56 to #58 land. A rig that asserted the
-    current answer would have to be edited as the first step of fixing it.
+    ~~both are far above the simulation's 2e9 ceiling, so both are clamped to it and both report the
+    same number.~~ **NOT SINCE #58**, and this is the rig that recorded it changing. The ceiling
+    moved to 5e9, above where D-T settles, so the pair now report their own equilibria and differ --
+    the `note` line at the end of a run says YES where it said no. That was #54's whole complaint.
+
+    The two `note` lines measure rather than assert, which is why neither had to be edited to record
+    the fix: a rig that had asserted the broken answer would have needed deleting as the first step
+    of fixing it.
 
     They are seeded and topped up directly rather than fed by an infinity pipe, and that is not a
     shortcut: a feed replaces burnt plasma AT THE FEED TEMPERATURE, which on a reactor burning 34
@@ -141,8 +144,9 @@ local SCALE = circuit.TEMPERATURE_SCALE
 --
 -- THE IGNITED PAIR (#55, for #54). Two D-T reactors, both powered, SEEDED RATHER THAN FED -- see
 -- the note where they are built -- and differing only in how full they are held. Their real
--- equilibria differ; both are far above the simulation's 2e9
--- ceiling, so both are clamped to it and both report the same number. That is the defect #54 is
+-- equilibria differ, and since #58 raised the ceiling to 5e9 they report those equilibria rather
+-- than a shared clamp. ~~Both are far above the ceiling, so both are clamped and report the same
+-- number.~~ That was the defect #54 is
 -- about, and this rig's job here is to MEASURE whether it is still true rather than to assert it
 -- either way -- see the two notes at the end of verify().
 local CASES = {
@@ -491,11 +495,18 @@ end)
 
 -- READ AFTER THE PLASMAS HAVE SETTLED, which #55 had to raise from 240 ticks and is a condition
 -- rather than a cushion. The ignited pair are compared with each other, so both have to have
--- ARRIVED: a D-T reactor fed at 6e8 reaches the 2e9 ceiling after about 400 ticks held full and
--- about 1200 held at 35%, so a reading at 240 catches both mid-climb and finds them different
--- because one is ahead of the other, which is not the question being asked. It also broke the
+-- ARRIVED: a D-T reactor fed at 6e8 reached the then-2e9 ceiling after about 400 ticks held full
+-- and about 1200 held at 35%, so a reading at 240 caught both mid-climb and found them different
+-- because one was ahead of the other, which is not the question being asked. It also broke the
 -- drift check on the full one -- a plasma climbing that fast moves more than 5% between one report
 -- and the next, so the wire looked stale when it was merely behind a fast-moving reactor.
+--
+-- #58 RAISED THE TARGET AND 2400 STILL CLEARS IT. The pair no longer climb to a shared ceiling but
+-- to their own equilibria, higher than the old clamp -- 2.89e9 full and 2.02e9 thin -- so arrival
+-- takes longer than it did. The tick is not re-derived here because the rig proves it directly: the
+-- drift check holds both cases to 5% of their own plasma at the moment of reading, and a reactor
+-- still climbing fails it. That check passing at both fills IS the evidence that 2400 is enough,
+-- which is a better guarantee than an arrival time quoted in a comment.
 --
 -- 2400 is twice the slower of the two. The three original cases are read at the same tick and are
 -- indifferent to it: two are held at their feed temperature and the third has no plasma at all.

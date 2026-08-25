@@ -25,9 +25,10 @@
 
     WHAT IS BUILT
 
-      dhe3      An rf-aneutronic-reactor fed rf-d-he3-plasma. It must fuse, ignite to the top of
-                the plasma's range, and sell rf-aneutronic-reactor-energy -- not the neutronic
-                fluid.
+      dhe3      An rf-aneutronic-reactor fed rf-d-he3-plasma. It must fuse, ignite and settle at
+                its own equilibrium SHORT of the top of the plasma's range (#58 raised that range
+                above where this reaction lands), and sell rf-aneutronic-reactor-energy -- not the
+                neutronic fluid.
       converter An rf-direct-energy-converter plumbed to that reactor's output box, with nothing
                 between them. It must consume the fluid and put power on the network, measured as
                 its own contribution rather than the network's total, because the reactor's heating
@@ -548,8 +549,11 @@ script.on_nth_tick(CHECK_AT, function()
     plasma and plasma.name or "nothing in the box")
 
   local ceiling = prototypes.fluid[DHE3].max_temperature
-  record(plasma ~= nil and plasma.temperature >= ceiling * 0.999,
-    "and ignites: the plasma runs up to the top of its range and parks there",
+  -- ~~Parks at the top of its range.~~ **BELOW IT SINCE #58**, like D-T -- and this tier is the one
+  -- the old 2e9 was really pinning: D-He3 settles at 4.41e9 in the model at its best density, which
+  -- the old ceiling cut off less than halfway.
+  record(plasma ~= nil and plasma.temperature > 1e9 and plasma.temperature < ceiling * 0.999,
+    "and ignites: the plasma settles at its own equilibrium, short of the top of its range",
     plasma and string.format("%.4g C against a ceiling of %.4g", plasma.temperature, ceiling) or "no plasma")
 
   -- ------------------------------------------------------------ each reactor sells its own fluid
@@ -645,21 +649,24 @@ script.on_nth_tick(CHECK_AT, function()
   -- can be checked against the cross-section it comes from. What this rig is for is that the tier
   -- reaches a reactor at all. The number is logged so a rebalance shows up as a number moving.
   --
-  -- Worth knowing while reading it: He3-He3's cross-section peaks past 600 keV and
-  -- max_temperature_c stops the plasma at 172, so this reaction runs at about a hundredth of its
-  -- peak reactivity and is marginal for that reason rather than through any balance choice.
-  -- Its OWN ceiling, not the one bound for D-He3 above. Both plasmas declare 2e9 today, so the
+  -- Worth knowing while reading it: He3-He3's cross-section peaks past 600 keV, far above anything
+  -- this reactor reaches, so the reaction runs at a small fraction of its peak reactivity and is
+  -- marginal for that reason rather than through any balance choice. ~~max_temperature_c stops the
+  -- plasma at 172 keV.~~ **Not since #58** -- radiation stops it first, and raising the ceiling to
+  -- 5e9 took its best Q from 0.0131 to 0.0224, which is not a rescue. The clamp was never what was
+  -- wrong with this tier.
+  -- Its OWN ceiling, not the one bound for D-He3 above. Both plasmas declare 5e9 today, so the
   -- printed number would be accidentally right either way -- and this is the one line a reader
   -- consults to decide whether He3-He3's clamp is where its fuel row says it is, which is exactly
   -- the number that stops being shared the day a tier wants a hotter range.
   local he3_ceiling = prototypes.fluid[HE3].max_temperature
   -- "Climbing", not "settled", and the distinction is measured rather than pedantic: at this rig's
-  -- horizon He3-He3 is still on its way up -- it needs about twenty minutes of game time to reach
-  -- the clamp, where tests/test-reactor-logic.lua runs it and finds Q 1.31. Calling a transient an
-  -- equilibrium is exactly the mistake that block had to have corrected, and it is not going to be
-  -- made twice in the same tier.
+  -- horizon He3-He3 is still on its way up. Where it ends up is not the clamp -- radiation sets its
+  -- equilibrium well under one, at a Q around 0.022 that no ceiling improves -- so this line asserts
+  -- only that the tier reaches a reactor and burns. Calling a transient an equilibrium is exactly the
+  -- mistake that block had to have corrected, and it is not going to be made twice in the same tier.
   record(he3_plasma ~= nil,
-    "He3-He3 is climbing toward the clamp, which is far below its cross-section peak",
+    "He3-He3 is burning, far below both its cross-section peak and the clamp",
     he3_plasma and string.format("%.4g C, ceiling %.4g", he3_plasma.temperature, he3_ceiling)
       or "no plasma")
 

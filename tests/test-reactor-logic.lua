@@ -220,8 +220,13 @@ for _ = 1, math.floor(300 / TICK) do
   held_dt = L.step(SPEC, "rf-d-t-plasma", FULL, held_dt, 0, TICK).temperature_c
   held_dd = L.step(SPEC, "rf-d-d-plasma", FULL, held_dd, 0, TICK).temperature_c
 end
-near(held_dt, SPEC.max_temperature_c, 1e-12,
-  "five unpowered minutes take the D-T plasma all the way to the top of its range")
+-- ~~All the way to the top of its range.~~ **To its own equilibrium since #58** -- it used to reach
+-- the clamp because the clamp was under the equilibrium, not because five minutes is enough to
+-- arrive anywhere in particular. Unpowered, an ignited D-T plasma still climbs on alpha heating
+-- alone; where it stops is now physics rather than a declared bound.
+check(held_dt > 3e9 and held_dt < SPEC.max_temperature_c,
+  "five unpowered minutes take the D-T plasma to its own equilibrium, short of the clamp",
+  string.format("%.6g C, clamp %.6g C", held_dt, SPEC.max_temperature_c))
 check(held_dd < held_dt / 1000, "and take the D-D plasma out of the fusing range entirely",
   string.format("%.6g C against %.6g C", held_dd, held_dt))
 
@@ -416,11 +421,19 @@ near(dt_gulp.plasma_consumed, FULL, 1e-12, "a very long D-T step burns exactly t
 -- at every temperature the data covers below the peak, and the temperature climbs until something
 -- stops it. What stops it here is the clamp at the top of the fluid's declared range.
 --
--- That is asserted rather than avoided, because it is the behaviour and hiding it in a bound that
--- happened to pass would be worse. See the note in M.fuels and docs/research/d-t-ignition.md for
--- what the clamp stands in for and what the alternative costs.
+-- ~~What stops it here is the clamp at the top of the fluid's declared range.~~ **NOT SINCE #58.**
+-- The clamp moved to 5e9, which is above where this reaction settles, so what stops it now is its
+-- own cross-section rolling over past its peak. That is the whole of what #58 bought: the number a
+-- player reads is a measurement again rather than a constant.
+--
+-- 3.25e9 at the shipped 30 s, measured through step() at this file's tick. It moves with
+-- confinement -- 3.92e9 at the top rung -- which is the property the ladder test below pins, and
+-- the reason this one is a band rather than a point.
 local dt_t, dt_state = settle(SPEC, 60, math.huge, nil, "rf-d-t-plasma")
-near(dt_t, SPEC.max_temperature_c, 1e-12, "a D-T plasma ignites and runs up to the top of its range")
+near(dt_t, 3.248e9, 0.01, "a D-T plasma ignites and settles at its own equilibrium")
+check(dt_t < SPEC.max_temperature_c,
+  "which is BELOW the clamp, so the reading is its temperature and not the ceiling (#58)",
+  string.format("%.6g C against a clamp at %.6g C", dt_t, SPEC.max_temperature_c))
 check(dt_state.q_factor > 10, "an ignited D-T reactor runs far past breakeven",
   string.format("Q = %.3g", dt_state.q_factor))
 
@@ -705,8 +718,15 @@ check(an_state.q_factor < 1e-3, "and fuses essentially nothing there",
 -- Half the fill, nothing else changed -- not the heating, not a constant.
 local half_t, half_state = settle(ANEUTRONIC, SETTLE_S, math.huge, nil, "rf-d-he3-plasma",
   ANEUTRONIC_FULL / 2)
-near(half_t, ANEUTRONIC.max_temperature_c, 1e-12,
-  "at half fill the same reactor ignites and runs to the clamp")
+-- ~~Runs to the clamp.~~ **To 4.41e9 since #58**, which is where D-He3 actually settles at this
+-- density -- and this tier is the one the old 2e9 was really pinning. Its Q falls slightly with the
+-- unpinning, 20.7 to 18.8, because the plasma now runs past its own cross-section peak instead of
+-- being held below it. That is correct rather than a regression: see the fuel row.
+near(half_t, 4.406e9, 0.01,
+  "at half fill the same reactor ignites and settles at its own equilibrium")
+check(half_t < ANEUTRONIC.max_temperature_c,
+  "below the clamp, so this tier stopped being pinned too (#58)",
+  string.format("%.6g C against a clamp at %.6g C", half_t, ANEUTRONIC.max_temperature_c))
 check(half_state.q_factor > 10, "and runs far past break-even there, which is the tier's optimum",
   string.format("Q = %.3g at %d units", half_state.q_factor, ANEUTRONIC_FULL / 2))
 -- Raising the heating clears the full box too, so the fold is a ratio rather than a wall.
@@ -714,7 +734,7 @@ local lit = {}
 for key, value in pairs(ANEUTRONIC) do lit[key] = value end
 lit.heating_power_w = ANEUTRONIC.heating_power_w * 4
 local lit_t = settle(lit, SETTLE_S, math.huge, nil, "rf-d-he3-plasma", ANEUTRONIC_FULL)
-near(lit_t, ANEUTRONIC.max_temperature_c, 1e-12,
+near(lit_t, 4.584e9, 0.01,
   "and four times the heating clears a full box, so what matters is heating against n^2")
 
 -- THE FINDING THAT MATTERS ABOUT HE3-HE3, AND #52 REPLACED IT WITH A HARDER ONE.
@@ -737,18 +757,26 @@ near(lit_t, ANEUTRONIC.max_temperature_c, 1e-12,
 -- WHETHER THAT IS ACCEPTABLE IS TRULS'S CALL AND IS NOT SETTLED HERE (#52's last criterion). What is
 -- asserted is only what the shipped constants do.
 -- AND THE DENSITY LEVER DOES NOT RESCUE IT, which is the difference between this tier and its
--- neighbour. Thinning the plasma does get it to the clamp -- 300 units reaches 2e9 -- but reaching
--- the clamp is not IGNITING. CONTEXT.md fixes that word: an ignited plasma is one "whose own fusion
--- self-heating carries it without external confinement heating". At 300 units the 200 MW heater is
--- carrying the whole thing and Q peaks at 0.0131. The plasma is hot because it is thin and being
--- heated, not because it is fusing.
+-- neighbour. Thinning gets it hot -- 300 units settles at 2.51e9 -- but being hot is not IGNITING.
+-- CONTEXT.md fixes that word: an ignited plasma is one "whose own fusion self-heating carries it
+-- without external confinement heating". At 300 units the 200 MW heater is carrying the whole
+-- thing. The plasma is hot because it is thin and being heated, not because it is fusing.
 --
 --     3000 u  3.11e6 C   Q 9e-48
 --      500 u  1.08e9 C   Q 0.0062
---      300 u  clamp      Q 0.0131   <- the best it does, at any fill
---      100 u  clamp      Q 0.0015
+--      300 u  2.51e9 C   Q 0.0224
+--      200 u  4.33e9 C   Q 0.0306
+--      175 u  5.00e9 C   Q 0.0307   <- the best it does, at any fill, and already at the clamp
+--      150 u  5.00e9 C   Q 0.0226      thinner still is worse, and pinned
 --
--- So D-He3 has a fold it can be moved across and this has a ceiling it cannot: every fill trades
+-- AND #58 DID NOT RESCUE IT EITHER, which is worth stating because #58's own ticket expected it to.
+-- That ticket predicted this tier would arrive "materially stronger" at a raised ceiling, Q 1.31 to
+-- 15.9. Those were pre-#52 figures, from a model carrying no radiation. Measured with the term in,
+-- raising the ceiling from 2e9 to 5e9 takes its best Q from 0.0177 to 0.0307 -- a factor of 1.7 on
+-- a number two orders below break-even, which is not a rescue in any sense a player would notice.
+-- Radiation sets this equilibrium, not the clamp, and no ceiling changes that.
+--
+-- So D-He3 has a fold it can be moved across and this has a wall it cannot: every fill trades
 -- temperature against rate and none of them buys fusion. That is what "no ignited state" means here,
 -- and it is why the old Q of 1.31 was the missing term rather than the machine.
 local he3_t, he3_state = settle(ANEUTRONIC, SETTLE_S, math.huge, nil, "rf-he3-he3-plasma", ANEUTRONIC_FULL)
@@ -764,7 +792,7 @@ for _, amount in ipairs({ 1500, 1000, 500, 300, 200, 100 }) do
   if st.q_factor > he3_best_q then he3_best_q = st.q_factor end
 end
 check(he3_best_q < 0.05,
-  "and no fill ignites it: thinning reaches the clamp on heater power alone, not on fusion",
+  "and no fill ignites it, at the raised ceiling either -- heater power, not fusion (#58)",
   string.format("best Q %.4g across six fills, against D-He3's %.3g at half fill",
     he3_best_q, half_state.q_factor))
 
@@ -812,6 +840,70 @@ check(hot_t > 1e8 and hot_t < 2e9, "the shipped reactor settles at a fusion temp
   string.format("%.3g C", hot_t))
 near(hot_t, 2.422e8, 0.01, "the shipped D-D reactor settles where #51 pinned it, 2.422e8 C")
 near(hot_state.q_factor, 0.3205, 0.01, "at #51's Q of 0.3205")
+
+-- ------------------------------------------------------------------ what #58 moved, and what not
+--
+-- The ceiling went 2e9 -> 5e9. These four assertions are the whole of what that did, each measured
+-- through the shipped step() at both ceilings rather than argued from one.
+--
+-- THE FIRST TIER IS UNTOUCHED, and this is the assertion that proves it rather than asserting it.
+-- Same spec, same fuel, the two ceilings differing: D-D settles at the same temperature to the last
+-- figure the model carries, because it was never anywhere near either clamp. A balance change that
+-- moved the tier a player starts on would be a different ticket.
+local function at_ceiling(ceiling, fuel, amount)
+  local s = {}
+  for k, v in pairs(SPEC) do s[k] = v end
+  s.max_temperature_c = ceiling
+  local temperature, state = settle(s, SETTLE_S, math.huge, nil, fuel, amount)
+  return temperature, state
+end
+local dd_low = at_ceiling(2e9, "rf-d-d-plasma", FULL)
+local dd_high = at_ceiling(5e9, "rf-d-d-plasma", FULL)
+near(dd_high, dd_low, 1e-12,
+  "#58 moved the ceiling and a normally supplied D-D reactor did not move at all")
+
+-- AND THE QUALIFICATION, WHICH THE FULL-FILL CHECK ABOVE CANNOT SEE AND WHICH IT WOULD BE DISHONEST
+-- TO OMIT. "D-D is unchanged" is true of a supplied reactor and FALSE of a thin one, because a thin
+-- D-D plasma was already against the old 2e9 clamp -- ADR 0024 records exactly that: "a reactor held
+-- at a tenth of a box is against the clamp already, at the shipped 30 s". Anything that was pinned
+-- necessarily moves when the pin moves. That is unpinning rather than re-tuning, and it is the same
+-- effect #58 was opened to produce on D-T; it reaches this tier too at fills nobody has to run.
+--
+--     tau 30, 1000 u   2.422e8 -> unchanged        tau 60, 1000 u   6.483e8 -> unchanged
+--     tau 30,  250 u   1.463e9 -> unchanged        tau 60,  250 u   2e9 -> 2.755e9   moved
+--     tau 30,  100 u   2e9 -> 3.545e9   moved      tau 60,  100 u   2e9 -> 5e9       still pinned
+--
+-- So the honest claim is the one asserted here: unchanged wherever it was not already against the
+-- old clamp, and moved exactly where it was. Asserted both ways so neither half can rot.
+local dd_thin_low = at_ceiling(2e9, "rf-d-d-plasma", FULL / 10)
+local dd_thin_high = at_ceiling(5e9, "rf-d-d-plasma", FULL / 10)
+near(dd_thin_low, 2e9, 1e-12,
+  "a tenth-full D-D plasma was against the old clamp, which is why it is the case that moves")
+check(dd_thin_high > dd_thin_low * 1.5,
+  "so it unpins with the ceiling -- D-D is unchanged when SUPPLIED, not unconditionally (#58)",
+  string.format("%.6g C, up from a pinned %.6g C", dd_thin_high, dd_thin_low))
+
+-- D-T IS THE TIER THE TICKET IS FOR: pinned at the old ceiling, free at the new one. Both measured
+-- here so the change is a comparison rather than a claim.
+local dt_low = at_ceiling(2e9, "rf-d-t-plasma", FULL)
+local dt_high = at_ceiling(5e9, "rf-d-t-plasma", FULL)
+near(dt_low, 2e9, 1e-12, "D-T was pinned against the old 2e9 ceiling")
+check(dt_high > dt_low * 1.5 and dt_high < 5e9,
+  "and is free of the new one, settling on its own cross-section instead (#58)",
+  string.format("%.6g C, up from a pinned %.6g C", dt_high, dt_low))
+
+-- AND THE PART OF #58 THAT IS A LOSS, asserted so it cannot later be filed as a regression. D-He3
+-- gives Q back when it unpins, because the extra temperature carries it past its own cross-section
+-- peak. The ticket says so too; this is the measurement behind it.
+local _, dhe3_low = (function()
+  local s = {}
+  for k, v in pairs(ANEUTRONIC) do s[k] = v end
+  s.max_temperature_c = 2e9
+  return settle(s, SETTLE_S, math.huge, nil, "rf-d-he3-plasma", ANEUTRONIC_FULL / 2)
+end)()
+check(half_state.q_factor < dhe3_low.q_factor,
+  "D-He3 gives Q back at the raised ceiling -- past its cross-section peak, not a regression (#58)",
+  string.format("Q %.4g at 5e9 against %.4g at 2e9", half_state.q_factor, dhe3_low.q_factor))
 check(hot_state.q_factor < 1, "which is below SCIENTIFIC break-even, by decision -- see ADR 0015",
   string.format("Q = %.3g", hot_state.q_factor))
 
@@ -1071,11 +1163,24 @@ check(L.confinement_ladder_overruns(SPEC, SPEC.confinement_guard_fuel, FULL, SET
   string.format("top rung %g s settles at %.4g C, clamp %.4g C", TOP.confinement_time_s,
     settle(at_rung(#LADDER), SETTLE_S, math.huge, GUARD_DT), SPEC.max_temperature_c))
 
--- BREAKING IT, which is the half that makes the line above mean anything. A fourth rung at 200 s is
--- past the crossing -- D-D reaches the clamp somewhere near 175 s in this model -- and the guard has
--- to say so rather than shrug.
+-- BREAKING IT, which is the half that makes the line above mean anything.
+--
+-- IT IS BROKEN BY LOWERING THE CEILING SINCE #58, NOT BY RAISING THE RUNG, and the reason is the
+-- point rather than the technique. ~~A fourth rung at 200 s is past the crossing -- D-D reaches the
+-- clamp somewhere near 175 s in this model.~~ That was true against a 2e9 ceiling. Against 5e9 no
+-- rung reaches it at all: a full D-D box climbs with confinement but converges far under the clamp
+-- -- 2.13e9 at 200 s, 2.64e9 at 600 s, and still only 2.90e9 at 20 000 s, which is a rung nobody
+-- would write. The guard cannot be tripped by any ladder a person would write. (Converges: it is
+-- not flat by 600 s, so do not read that figure as a limit.)
+--
+-- So the overrunning case is built the other way round -- the same 200 s rung against the ceiling
+-- this reactor used to have -- which still exercises exactly what the guard decides: whether the
+-- top rung pins the plasma against ITS OWN spec's clamp. What changed is the clamp, not the shape
+-- of the question, and a guard that can no longer fire on shipped values still has to be known to
+-- work.
 local OVERRUN = {}
 for k, v in pairs(SPEC) do OVERRUN[k] = v end
+OVERRUN.max_temperature_c = 2e9
 OVERRUN.confinement_ladder = {}
 for _, rung in ipairs(LADDER) do
   OVERRUN.confinement_ladder[#OVERRUN.confinement_ladder + 1] = rung
@@ -1084,12 +1189,12 @@ OVERRUN.confinement_ladder[#OVERRUN.confinement_ladder + 1] =
   { technology = "rf-plasma-confinement-4", confinement_time_s = 200 }
 
 local overrun_at = L.confinement_ladder_overruns(OVERRUN, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT)
-check(overrun_at ~= nil, "a ladder with a rung at 200 s is caught",
+check(overrun_at ~= nil, "a ladder that pins its own spec's clamp is caught",
   overrun_at and string.format("%.6g C", overrun_at) or "NOT CAUGHT")
 -- `or 0` follows this file's rule that a nil is a failure and not an error: H.near would throw on
 -- one, and a broken guard should fail the two checks it breaks rather than take the suite down and
 -- hide everything after it.
-near(overrun_at or 0, SPEC.max_temperature_c, 0,
+near(overrun_at or 0, OVERRUN.max_temperature_c, 0,
   "and what it reports is the clamp itself, which is the reading a player would be stuck with")
 
 -- A spec with no ladder at all is not an overrun, it is nothing to check. The aneutronic reactor is

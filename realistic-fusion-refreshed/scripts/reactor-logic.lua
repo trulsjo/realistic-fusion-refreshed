@@ -79,8 +79,10 @@ local MEC2_KEV = 511       -- electron rest energy; the correction's fit stops h
 --
 -- ABOVE 511 keV THE FIT IS OUT OF DOMAIN and this holds it at its edge value rather than
 -- extrapolating. That UNDERSTATES radiation above 5.93e9 K, stated because it is a real limit and
--- because #58 may raise max_temperature_c: no shipped reactor reaches it (both clamp at 2e9 K, or
--- 172 keV) but a future one could, and it should find this note rather than a silent extrapolation.
+-- because #58 may raise max_temperature_c. **#58 has now raised it, to 5e9, which is still under
+-- this bound** -- the ceiling was placed partly on that account; see the note at max_temperature_c.
+-- No shipped reaction settles above 5.93e9 either, so nothing is currently evaluated out of domain.
+-- A future tier could, and it should find this note rather than a silent extrapolation.
 local function radiation_factor(t_kev, z_eff)
   local t = t_kev / MEC2_KEV
   if t >= 1 then t = 1 - 1e-9 end
@@ -190,11 +192,13 @@ M.fuels = {
     -- passes Lawson by more than an order of magnitude, so the alpha heating alone outruns the loss
     -- term and the temperature climbs until the cross-section falls off past its peak. Left
     -- unbounded the model finds a real equilibrium out at 4.6e9 C; what it actually meets first is
-    -- the clamp at max_temperature_c, and the plasma parks there.
+    -- ~~the clamp at max_temperature_c, and the plasma parks there.~~ **Its own roll-off since #58**
+    -- -- the clamp moved above this equilibrium, so the plasma stops on physics and settles at
+    -- 3.25e9 at the shipped confinement.
     --
     -- The clamp is therefore load-bearing on this tier where it was decoration on the last one.
     -- ~~It stays for one reason that holds: int32 stops at 2.147e9.~~ **Retired by #57** -- see
-    -- scripts/circuit-output.lua at TEMPERATURE_SCALE. The clamp is here only until #58 moves it
+    -- scripts/circuit-output.lua at TEMPERATURE_SCALE. The clamp is at 5e9 since #58 moved it
     -- to where the reactions actually settle. Energy is not lost at the clamp -- step() sells
     -- everything the plasma cannot hold -- so nothing is created or destroyed by it; it is a
     -- ceiling on the state variable, not on the accounting.
@@ -203,15 +207,20 @@ M.fuels = {
     -- radiation at all. #52 put the term in, so the clamp no longer stands in for anything -- but
     -- the reasoning is kept because it was wrong for reasons worth not repeating, and because the
     -- clamp survived on the int32 argument alone AT THE TIME (docs/research/bremsstrahlung.md,
-    -- against the NRL Plasma Formulary). Read that last clause as history: #57 has since retired
-    -- the int32 argument too, so the clamp now survives on neither and is simply awaiting #58:
+    -- against the NRL Plasma Formulary). Read that last clause as history: #57 retired the int32
+    -- argument and #58 moved the clamp to 5e9 on physics grounds, so it survives on neither of the
+    -- reasons argued below:
     --
     --   * Bremsstrahlung does not bite "long before" 4.6e9. It moves the equilibrium to 3.26e9 --
-    --     real, but still half again above this clamp (and, when this was written, above the int32
-    --     ceiling too; #57 has since removed that one). Adding the term would NOT unpin the
-    --     temperature reading, which is the thing anyone would add it for.
-    --   * The clamp is not standing in for it. The clamp sheds about 640 MW at 2e9 where
-    --     bremsstrahlung is 169 MW -- four times too small to be what the clamp is doing.
+    --     real, but when this was written that was half again above both the clamp and the int32
+    --     ceiling, so adding the term would NOT have unpinned the temperature reading, which is the
+    --     thing anyone would add it for. ~~Still above this clamp.~~ **Below it since #58** -- the
+    --     clamp is 5e9 now and 3.26e9 is exactly where D-T settles, so what finally unpinned the
+    --     reading was moving the clamp, not the physics. The argument held; the conclusion expired.
+    --   * The clamp is not standing in for it. The clamp shed about 640 MW at 2e9 where
+    --     bremsstrahlung is 169 MW -- four times too small to be what the clamp was doing. (Both
+    --     figures are at 2e9, where the clamp then sat. Nothing reaches 2e9 now, so read them as a
+    --     comparison at a temperature rather than as a current loss.)
     --   * It is not the dominant omission either. Unreabsorbed cyclotron radiation at these
     --     temperatures is two to three orders larger; it is absent because it cannot be written in
     --     one line, not because it is small.
@@ -286,10 +295,12 @@ M.fuels = {
   --
   -- IT IS ALSO THE HARDEST REACTION IN THE MOD BY A LONG WAY, and the reactor cannot reach its
   -- optimum. Its cross-section peaks past 600 keV -- above the top of the ENDF-derived dataset --
-  -- where max_temperature_c stops the plasma at 172 keV, so it burns at about a hundredth of its
-  -- peak reactivity. That is not a balance choice: the clamp is simply where it still sits until
-  -- #58 moves it (its old int32 reason was retired by #57, see rf-d-t-plasma above), and this
-  -- reaction wants to run three times hotter than that ceiling.
+  -- where ~~max_temperature_c stops the plasma at 172 keV~~ radiation stops it far short of that
+  -- peak, so it burns at a small fraction of its peak reactivity. That is not a balance choice: the
+  -- clamp sits at 5e9 since #58, its old int32 reason having been retired by #57 (see rf-d-t-plasma
+  -- above), and this reaction wants to run well past even that. #58 raising the ceiling took its
+  -- best Q from 0.0177 to 0.0307 -- no rescue, because radiation rather than the clamp is what
+  -- holds it down.
   --
   -- RE-ANCHORED BY #52, AND THE CLAMP IS NO LONGER THE BINDING CONSTRAINT. This said the tier
   -- "arrives at Q 1.31, barely above break-even, where D-He3 in the same machine reaches Q 82.8",
@@ -475,7 +486,8 @@ M.reactor = {
   },
   -- The plasma the guard above is asked about, stated HERE rather than in control.lua because it is
   -- a property of the reactor and not of the check. Only one fuel can be guarded and it has to be
-  -- the one whose equilibrium the ladder moves: D-T is pinned at the clamp at every rung and at
+  -- the one whose equilibrium the ladder moves. ~~D-T is pinned at the clamp at every rung~~ -- not
+  -- since #58; it now moves with confinement too, 3.25e9 to 3.92e9 across the ladder, and at
   -- none of them, so a guard over it would fail on the day it was written. A second reactor given a
   -- ladder would name its own fuel here, and would otherwise have been silently settled on a plasma
   -- it cannot burn.
@@ -526,7 +538,34 @@ M.reactor = {
   -- leak; it moves where the model claims its physics stops, and it silently widens the band the
   -- simulation refuses to describe. Read ADR 0021 before touching it, not just #46.
   min_temperature_c = 15,
-  max_temperature_c = 2e9,
+  -- WHERE THE PHYSICS STOPS, NOT WHERE THE WIRE DOES (#58, ADR 0025). ~~2e9~~ until 2026-08-25,
+  -- when it was the hottest plasma a whole-degree circuit signal could describe -- the readout
+  -- bounding the model. #57 rescaled the signal and that reason went; this is the replacement, and
+  -- it is a different KIND of bound, so read it before moving the number again.
+  --
+  -- 5e9 is where every shipped reaction runs free beneath it AT THE DENSITIES A PLAYER OPERATES,
+  -- measured through step() at every confinement rung: D-D 6.48e8 full at the top rung, D-T 3.92e9
+  -- full, D-He3 4.41e9 at its best density, He3-He3 2.51e9 at 300 units.
+  --
+  -- IT IS NOT "NOTHING REACHES IT", and the difference matters because thinning is a lever ADR 0016
+  -- hands the player. Equilibrium rises without bound as a plasma thins, so every reaction still
+  -- pins somewhere: He3-He3 at 175 units, D-He3 below about 200, D-D at a tenth of a box on the top
+  -- confinement rung. No ceiling short of the dataset can change that -- see ADR 0025, which placed
+  -- this one against operating densities for exactly that reason.
+  --
+  -- THREE THINGS BOUND IT ABOVE, and the nearest is not the one anybody reaches for:
+  --
+  --   5.93e9  the bremsstrahlung fit leaves its domain (511 keV) and UNDERSTATES loss past it.
+  --           See radiation_factor above. This is the nearest bound and the easiest to miss.
+  --   6.96e9  the reactivity dataset's top row; interpolation clamps flat above it, so a plasma
+  --           past this balances against a constant rather than against physics.
+  --   2.1e12  what a kilodegree circuit signal can carry. Three orders away and not a constraint
+  --           on anything, which is the whole point of #57.
+  --
+  -- And float32: a prototype's max_temperature reads back at single precision, so a ceiling that is
+  -- not float32-exact is rejected by check_plasma_bounds over two numbers that print the same
+  -- (#119). 5e9 is exact. 6.9e9 is not -- it stores as 6899999744, which is why it was not chosen.
+  max_temperature_c = 5e9,
 }
 
 -- What the shipped rf-aneutronic-reactor is made of (#31).
@@ -579,7 +618,7 @@ M.aneutronic_reactor = {
   energy_fluid_j_per_unit = 1e6,
   energy_fluid = "rf-aneutronic-reactor-energy",
   -- The same bounds, and ~~the same reason~~ no longer any reason of the signal's: retired by #57,
-  -- see rf-d-t-plasma above. 2e9 is where the number sits until #58 moves it, and it costs this
+  -- see rf-d-t-plasma above. #58 moved it to 5e9, and it still costs this
   -- tier more than the last: D-He3 settles at 4.41e9 held at its best density, so this clamp is
   -- what pins it. That cost is stated on the fuel rows rather than here.
   --
@@ -587,7 +626,10 @@ M.aneutronic_reactor = {
   -- tier where holding it was worth 322 kW of conjured heat before ADR 0021 capped the drain. See
   -- the reactor above, where that reasoning is written out once.
   min_temperature_c = 15,
-  max_temperature_c = 2e9,
+  -- The same ceiling, and the same reason: see M.reactor above (#58, ADR 0025). It matters more
+  -- here -- D-He3 settles at 4.41e9 held at its best density, so this tier is the one that was
+  -- actually pinned by the old 2e9, where D-T merely brushed it.
+  max_temperature_c = 5e9,
 }
 
 -- What the shipped rf-lithium-blanket is made of (#30).
@@ -995,8 +1037,10 @@ function M.confinement_ladder_overruns(spec, fluid_name, amount, seconds, dt)
   -- silence, and scripts/load-check.ps1 would report a clean pass over a check that never ran.
   --
   -- Measured before it was closed, because a guard's failure mode deserves the same treatment as a
-  -- balance figure: a ladder with a 200 s top rung is caught at 2e9 C with the fuel named
-  -- correctly, and reported safe with one character of it changed.
+  -- balance figure: a ladder with a 200 s top rung was caught at 2e9 C with the fuel named
+  -- correctly, and reported safe with one character of it changed. **Against a 2e9 clamp** -- since
+  -- #58 raised it to 5e9 no writable rung reaches it at full fill, so the test constructs a spec
+  -- with the old ceiling to exercise this at all. See tests/test-reactor-logic.lua.
   --
   -- `last` is what separates the two cases: nil means not one step ran, where a plasma that
   -- genuinely stayed cool has a result table from every step. settle() already returned it -- the
