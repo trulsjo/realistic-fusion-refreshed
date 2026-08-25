@@ -1083,4 +1083,109 @@ function M.confinement_ladder_overruns(spec, fluid_name, amount, seconds, dt)
   return nil
 end
 
+--- Is this value exactly representable as a 32-bit float? (#119)
+--
+-- @return true when the engine will hand the number back unchanged
+--
+-- WHY A SIMULATION FILE CARES ABOUT A STORAGE FORMAT. A fluid prototype returns max_temperature at
+-- SINGLE precision. The ceiling here is a Lua double. Declare the same literal in both places and,
+-- if it is not representable, the engine hands back a slightly smaller number -- so
+-- control.lua's check_plasma_bounds sees a contradiction between two numbers that were typed
+-- identically and print identically, and refuses to load. 6.9e9 comes back as 6899999744, and the
+-- 256 C between them is invisible at any sane print precision.
+--
+-- DECIDED (Truls, 2026-08-26, #119): the ceiling must BE representable, rather than the comparison
+-- being loosened to tolerate one that is not. The alternative readings were considered and
+-- rejected: comparing at float32 precision would accept 6.9e9 and leave the simulation clamping 256
+-- C above what the fluid can actually hold, and a relative tolerance would put a fudge factor
+-- inside the one invariant whose entire value is being exact.
+--
+-- The strict reading is affordable because representable values are dense here: 512 C apart at 5e9,
+-- one part in ten million, and every round number this project has reached for except 6.9e9 is
+-- already exact.
+--
+-- NO math.frexp, NO string.pack. frexp is gone in Lua 5.4 (which tests/ is verified against) and
+-- string.pack does not exist in 5.2 (which Factorio runs), so neither is portable across both. This
+-- normalises the value into the significand's range by exact powers of two -- every division here
+-- is by a power of two and therefore lossless -- and then asks whether what is left is a whole
+-- number of steps. Checked against string.pack('<f') as an offline oracle across the normal
+-- range, the subnormals, and both ends of it; the oracle cannot ship, which is the whole reason
+-- this exists.
+local SIGNIFICAND_MAX = 2 ^ 24        -- exclusive top of the normalised significand's range
+local SIGNIFICAND_MIN = 2 ^ 23        -- and its inclusive bottom: 24 bits, the hidden one included
+local FLOAT32_MAX = (2 - 2 ^ -23) * 2 ^ 127   -- the largest finite float32; past this rounds to inf
+local FLOAT32_MIN_STEP = 2 ^ -149     -- the subnormal step, and the smallest gap a float32 has
+
+-- Shared by all three functions below: the power of two whose multiples are exactly the float32s
+-- around |value|. For a normal value that is the power putting it into [2^23, 2^24); below the
+-- smallest normal the spacing stops shrinking and stays at 2^-149, which the second loop clamps to
+-- rather than dividing past -- without that clamp every subnormal, and every value under one,
+-- reports representable when the engine would flush it to zero.
+--
+-- Returns nil where no such scale exists: NaN, the infinities, zero (representable, but it has no
+-- exponent to normalise), and anything over FLOAT32_MAX, which the engine cannot store as itself.
+local function mantissa_scale(value)
+  if value ~= value then return nil end                      -- NaN
+  if value == math.huge or value == -math.huge then return nil end
+  if value == 0 then return nil end
+  local magnitude = value < 0 and -value or value
+  if magnitude > FLOAT32_MAX then return nil end
+  -- 1.0 RATHER THAN 1, AND THE DIFFERENCE IS LOAD-BEARING. In Lua 5.3+ the literal 1 is an integer, so
+  -- `scale = scale * 2` wraps at 2^63 and every exactly representable value above 2^86 was read
+  -- back as unrepresentable -- on 5.4, which is the interpreter tests/ runs. Factorio's 5.2 has no
+  -- integer subtype and never showed it. A float scale cannot wrap; it can only reach infinity,
+  -- which the FLOAT32_MAX bound above already rules out.
+  local scale = 1.0
+  -- Both loops terminate without a counter: magnitude is finite and at most FLOAT32_MAX, so the
+  -- first runs at most ~105 times, and the second is floored at FLOAT32_MIN_STEP.
+  while magnitude / scale >= SIGNIFICAND_MAX do
+    scale = scale * 2
+  end
+  while magnitude / scale < SIGNIFICAND_MIN and scale > FLOAT32_MIN_STEP do
+    scale = scale / 2
+  end
+  return scale
+end
+
+--- True when a 32-bit float holds this value exactly, so the engine hands back what was declared.
+--
+-- FALSE FOR THE INFINITIES, although a float32 does carry them: this answers whether a declared
+-- TEMPERATURE survives the round trip, and an infinite ceiling is not a value to accept. NaN, and
+-- anything the engine would round to infinity, are false for the same reason. Zero is true.
+function M.float32_exact(value)
+  if value == 0 then return true end                         -- both signs of it
+  local scale = mantissa_scale(value)
+  if not scale then return false end                         -- NaN, an infinity, or out of range
+  local steps = value / scale
+  return steps == math.floor(steps)
+end
+
+--- The largest exactly representable value at or below this one. (#119)
+--
+-- AT OR BELOW, NEVER ABOVE, and that direction is the point rather than a detail: this suggests a
+-- replacement for a CEILING in a refusal message, and a suggestion above the number someone asked
+-- for could carry a later tier past a bound it was chosen under -- the reactivity dataset's edge,
+-- or the radiation fit's domain. Rounding down can only ever be safe.
+function M.float32_floor(value)
+  local scale = mantissa_scale(value)
+  if not scale then return value end
+  local steps = value / scale
+  if steps == math.floor(steps) then return value end
+  return math.floor(steps) * scale
+end
+
+--- The smallest exactly representable value at or above this one. (#119)
+--
+-- THE MIRROR OF float32_floor, AND IT EXISTS FOR THE SAME REASON READ THE OTHER WAY. A FLOOR
+-- suggested downwards would sit below the bound someone chose, which is the direction that loses
+-- the guarantee: check_plasma_bounds refuses when the simulation's minimum falls under what the
+-- fluid starts at, so a floored minimum moves toward that failure rather than away from it.
+function M.float32_ceil(value)
+  local scale = mantissa_scale(value)
+  if not scale then return value end
+  local steps = value / scale
+  if steps == math.floor(steps) then return value end
+  return (math.floor(steps) + 1) * scale
+end
+
 return M

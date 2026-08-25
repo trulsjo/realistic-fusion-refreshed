@@ -1234,4 +1234,118 @@ check(select(1, pcall(L.confinement_ladder_overruns,
 
 -- ----------------------------------------------------------------
 
+-- ---------------------------------------------------------------- float32 representability (#119)
+--
+-- A prototype hands its numbers back at SINGLE precision. So a ceiling declared as a Lua double in
+-- this file and as the same literal in prototypes/fluids.lua comes back from the engine slightly
+-- SMALLER whenever the value is not exactly representable, control.lua's check_plasma_bounds sees
+-- the two disagree, and the mod refuses to load over a pair of numbers that were typed identically
+-- and print identically. Measured on 2.0.77 while building #55.
+--
+-- DECIDED (Truls, 2026-08-26, #119): a ceiling has to BE representable. Not "compare at float32
+-- precision", which would accept 6.9e9 and let the simulation clamp 256 C above what the fluid can
+-- hold; not a tolerance, which would put a fudge factor inside an invariant whose whole value is
+-- being exact. The check refuses an unrepresentable ceiling and names the nearest one that works.
+--
+-- It costs a person almost nothing, which is what makes the strict reading affordable: representable
+-- values are 512 C apart at 5e9 -- one part in ten million -- and 2, 3, 4, 5, 6, 6.8, 6.912, 6.96
+-- and 7 x10^9 are all exact. Of the numbers this project has actually reached for, only 6.9e9 and
+-- the dataset edge itself are not.
+--
+-- NO math.frexp AND NO string.pack. The first is gone in 5.4 (this file is verified there) and the
+-- second does not exist in 5.2 (which is what Factorio runs), so neither is portable across both.
+-- The implementation normalises by exact powers of two instead, which every version has.
+
+check(L.float32_exact ~= nil and L.float32_floor ~= nil,
+  "reactor-logic exposes the representability predicate and the nearest representable value")
+
+-- The shipped ceilings, which are the reason this is asserted at all rather than merely tested.
+check(L.float32_exact(SPEC.max_temperature_c),
+  "the neutronic ceiling is representable, so check_plasma_bounds can compare it as declared",
+  string.format("%.10g", SPEC.max_temperature_c))
+check(L.float32_exact(ANEUTRONIC.max_temperature_c),
+  "and so is the aneutronic one",
+  string.format("%.10g", ANEUTRONIC.max_temperature_c))
+
+-- Ground truth computed offline with string.pack("<f") on standalone Lua 5.4 and pasted in as
+-- literals. The oracle cannot ship -- 5.2 has no string.pack, which is the whole reason
+-- float32_exact exists -- so what is asserted here is agreement with a round trip run elsewhere.
+for _, value in ipairs({ 15, 1, 0.5, 2e9, 3e9, 4e9, 5e9, 6e9, 6.8e9, 6.912e9, 6.96e9, 7e9 }) do
+  check(L.float32_exact(value), string.format("%.10g survives a float32 round trip", value))
+end
+for _, value in ipairs({ 6.5e9, 6.9e9, 6.96271e9 }) do
+  check(not L.float32_exact(value),
+    string.format("%.10g does not, which is the case #119 was opened about", value))
+end
+
+-- The two the project actually reached for, to the digit, so a wrong exponent cannot pass.
+near(L.float32_floor(6.9e9), 6899999744, 0,
+  "6.9e9 stores as 6899999744 -- the 256 C that made two identical numbers disagree")
+near(L.float32_floor(6.96271e9), 6962709504, 0,
+  "and the reactivity dataset's own edge is not representable either")
+
+-- float32_floor never rounds UP, which matters because it suggests a replacement for a CEILING:
+-- a suggestion above the value asked for could push a later tier past a bound it was chosen under.
+for _, value in ipairs({ 6.5e9, 6.9e9, 6.96271e9, 1.234e9, 3.7e8 }) do
+  local floored = L.float32_floor(value)
+  check(floored <= value and L.float32_exact(floored),
+    string.format("float32_floor(%.10g) lands on a representable value at or below it", value),
+    string.format("%.10g", floored))
+end
+
+-- An already-representable value is its own floor, or the message would suggest changing a number
+-- that is already fine.
+for _, value in ipairs({ 2e9, 5e9, 6.912e9 }) do
+  near(L.float32_floor(value), value, 0,
+    string.format("%.10g is its own nearest representable value", value))
+end
+
+-- Degenerate inputs reach this from a spec someone is editing, so they answer rather than throw.
+check(L.float32_exact(0), "zero is representable")
+check(L.float32_exact(-2e9), "and so is a negative, which the sign must not confuse")
+check(not L.float32_exact(0 / 0), "a NaN is not representable rather than an error")
+check(not L.float32_exact(math.huge), "nor is an infinity")
+
+-- THE LARGE END, WHERE THE FIRST VERSION OF THIS WAS WRONG. `local scale = 1` made scale an INTEGER
+-- on Lua 5.4, so doubling it wrapped at 2^63 and every representable value from 2^86 up came back
+-- unrepresentable. Factorio's 5.2 has no integer subtype and never showed it, so only this file
+-- could catch it. These are float32-exact by construction: powers of two, and FLOAT32_MAX itself.
+for _, value in ipairs({ 2 ^ 86, 2 ^ 100, 2 ^ 127, (2 - 2 ^ -23) * 2 ^ 127 }) do
+  check(L.float32_exact(value),
+    string.format("%.10g is representable, above where integer scale used to wrap", value))
+end
+
+-- Past the largest finite float32 nothing is representable: the engine rounds it to infinity, which
+-- is not the value that was declared.
+for _, value in ipairs({ 2 ^ 128, 1e300, 3.5e38 }) do
+  check(not L.float32_exact(value),
+    string.format("%.10g overflows a float32 rather than surviving it", value))
+end
+
+-- THE SMALL END, WHERE IT WAS ALSO WRONG. Below 2^-126 a float32's spacing stops halving and stays
+-- at 2^-149, so normalising past that reported every subnormal -- and everything under one -- as
+-- representable when the engine flushes it to zero.
+check(L.float32_exact(2 ^ -140), "a subnormal that is a whole number of 2^-149 steps is representable")
+check(L.float32_exact(2 ^ -149), "and so is the smallest subnormal itself")
+for _, value in ipairs({ 2 ^ -150, 2 ^ -1074, 1e-320 }) do
+  check(not L.float32_exact(value),
+    string.format("%.10g is below every float32 step and flushes to zero", value))
+end
+
+-- float32_ceil is float32_floor's mirror, and the guard uses it for the MINIMUM bound: a floor
+-- suggested downwards would sit under the value someone chose, which is the direction
+-- check_plasma_bounds refuses on.
+for _, value in ipairs({ 6.5e9, 6.9e9, 6.96271e9, 1.234e9 }) do
+  local ceiled = L.float32_ceil(value)
+  check(ceiled >= value and L.float32_exact(ceiled),
+    string.format("float32_ceil(%.10g) lands on a representable value at or above it", value),
+    string.format("%.10g", ceiled))
+end
+near(L.float32_ceil(6.9e9), 6900000256, 0,
+  "6.9e9's representable neighbours are 6899999744 below and 6900000256 above")
+for _, value in ipairs({ 15, 2e9, 5e9 }) do
+  near(L.float32_ceil(value), value, 0,
+    string.format("%.10g is its own ceiling as well as its own floor", value))
+end
+
 H.finish()

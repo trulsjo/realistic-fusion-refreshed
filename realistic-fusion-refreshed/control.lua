@@ -1008,6 +1008,41 @@ end
 -- between comparing at float32 precision, allowing a tolerance, and requiring the ceiling to be
 -- representable is a decision rather than a correction; #119 carries it.
 local function check_plasma_bounds()
+  -- FIRST, THAT THE COMPARISON BELOW CAN MEAN ANYTHING (#119). A fluid hands max_temperature back at
+  -- SINGLE precision while the spec's number is a double, so a ceiling that is not exactly
+  -- representable comes back smaller than it was declared and the comparison below fires over two
+  -- numbers that were typed identically and print identically. That is not a contradiction to
+  -- report; it is a question that cannot be asked yet.
+  --
+  -- So the ceiling has to BE representable, which is #119's decision rather than this code's: see
+  -- M.float32_exact in scripts/reactor-logic.lua for the two readings that were rejected and why the
+  -- strict one is affordable. Refusing here rather than tolerating it means the message can name the
+  -- value that works, which is the whole difference between an hour lost and a one-line fix.
+  for reactor, spec in pairs(SPECS) do
+    -- EACH BOUND IS SUGGESTED IN THE DIRECTION THAT KEEPS IT. Rounding a ceiling down and a floor
+    -- up both narrow the range rather than widen it, so taking the advice can never carry a value
+    -- past the bound it was chosen under. The other direction would hand back a minimum below the
+    -- one asked for, which is the exact failure the comparison further down exists to catch.
+    for _, bound in ipairs({
+      { label = "max_temperature_c", value = spec.max_temperature_c,
+        nearest = logic.float32_floor, side = "at or below" },
+      { label = "min_temperature_c", value = spec.min_temperature_c,
+        nearest = logic.float32_ceil, side = "at or above" },
+    }) do
+      if not logic.float32_exact(bound.value) then
+        local usable = bound.nearest(bound.value)
+        local gap = bound.value - usable
+        error(string.format(
+          "%s: %s is %.10g, which a 32-bit float cannot hold exactly. The engine stores every fluid " ..
+          "temperature at single precision, so this value and the one it is compared against in " ..
+          "prototypes/fluids.lua come back different and the check below would report two numbers " ..
+          "that print the same. Use %.10g -- the nearest value %s it that a float32 does hold " ..
+          "exactly, %.10g C away (#119).",
+          reactor, bound.label, bound.value, usable, bound.side, gap < 0 and -gap or gap))
+      end
+    end
+  end
+
   for name in pairs(logic.fuels) do
     local fluid = prototypes.fluid[name]
     if not fluid then
