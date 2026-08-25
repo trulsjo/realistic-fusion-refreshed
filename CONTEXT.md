@@ -143,6 +143,19 @@ than a physical claim: a real plasma that cold has recombined and is not plasma 
 does not model that. Do not read "inert" as "stable" in the physical sense; it means the simulation
 does nothing to it.
 
+**Pinned** — a plasma held at the top of its temperature range by the ceiling rather than settling at
+its own equilibrium. The counterpart to **cold-parked** at the other end, and a *temperature* state in
+the same way. A pinned plasma is fusing normally; it is the *reading* that has stopped being a
+measurement, which is why several reactions pinned at one ceiling report the identical number and a
+wire cannot tell them apart — see
+[ADR 0025](docs/adr/0025-a-plasma-temperature-ships-in-kilodegrees.md).
+
+**The ceiling** — the temperature a plasma is clamped to. Placed at where every shipped reaction runs
+free beneath it with margin, and deliberately **not** at where the cross-section data ends, which is
+higher. **Do not read it as the floor's counterpart**: the floor is where the model stops having
+anything valid to say, the ceiling is where the reactions land. A reaction that settles higher obliges
+revisiting it; regenerating the dataset does not, by itself.
+
 Not a synonym for **sub-ignition**, and the two are easy to swap. Sub-ignition is a reactor *running*
 below where its reaction carries itself, with a player able to climb out by adding density.
 Cold-parked is a reactor not running at all, and only heating gets it out.
@@ -165,6 +178,13 @@ circuit signal.
 outside the plasma, so it is **excluded** from Q however much of the reactor's output it becomes
 (ADR 0019). The consequence is deliberate and worth knowing before reading a Q as a verdict on a
 machine: a blanketed reactor is economically better than its Q says. Q is not an economic number.
+
+**Kilodegrees** — the unit a plasma temperature reaches a wire in: thousands of degrees Celsius, so a
+5×10⁹ °C plasma reads 5 000 000. Whole degrees cannot carry a fusion temperature in a 32-bit signal,
+and this is the same move Q makes in shipping as a percentage rather than a ratio — the output carries
+the scale that makes a good condition, not raw SI. **The engine's own fluid tooltip still reads
+degrees**, so a pipe and a wire disagree by 1000× on purpose; say which one a quoted figure came from.
+See [ADR 0025](docs/adr/0025-a-plasma-temperature-ships-in-kilodegrees.md).
 
 **Blanket share** — the fraction of a reactor's sold energy that came from its blanket rather than its
 plasma, exposed as a third circuit signal and expressed as a percentage of the **total**. Not the
