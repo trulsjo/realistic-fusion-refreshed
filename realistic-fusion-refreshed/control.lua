@@ -999,20 +999,21 @@ end
 -- whichever fluid's range is narrowest. Both shipped reactors declare the same bounds, so this
 -- checks four pairs to prove one thing -- and the day a tier wants a hotter clamp, it is the pair
 -- it forgot that this names.
--- MEASURED AND NOT FIXED, 2026-08-24 (#119, found by #55): the comparison below is a Lua double
--- against a value the engine hands back at SINGLE precision, so a ceiling that is not exactly
--- representable as a float32 reads back smaller than it was declared and this throws over two
--- numbers that were typed identically. 6.9e9 -- the ceiling #54 proposed -- stores as 6899999744.
--- 2e9, 4e9 and 5e9 are all exact, and 5e9 being exact is why the shipped ceiling clears this check
--- since #58: ADR 0025 chose it partly on that account. Left alone here because choosing
+-- ~~MEASURED AND NOT FIXED, 2026-08-24 (#119, found by #55) ... Left alone here because choosing
 -- between comparing at float32 precision, allowing a tolerance, and requiring the ceiling to be
--- representable is a decision rather than a correction; #119 carries it.
+-- representable is a decision rather than a correction; #119 carries it.~~ FIXED 2026-08-26 (#119,
+-- PR #124), and the fix is the first thing the function does -- see below. The reading chosen was
+-- the third: a bound must BE representable, and one that is not is refused by name rather than
+-- tolerated. 6.9e9 -- the ceiling #54 proposed -- stores as 6899999744; 2e9, 4e9 and 5e9 are all
+-- exact, and 5e9 being exact is why the shipped ceiling clears this check at all, which ADR 0025
+-- chose it partly on account of.
 local function check_plasma_bounds()
   -- FIRST, THAT THE COMPARISON BELOW CAN MEAN ANYTHING (#119). A fluid hands max_temperature back at
-  -- SINGLE precision while the spec's number is a double, so a ceiling that is not exactly
-  -- representable comes back smaller than it was declared and the comparison below fires over two
-  -- numbers that were typed identically and print identically. That is not a contradiction to
-  -- report; it is a question that cannot be asked yet.
+  -- SINGLE precision while the spec's number is a double, so a bound that is not exactly
+  -- representable comes back as whichever float32 is NEAREST -- lower for 6.9e9, higher for
+  -- 6.96271e9 -- and the comparison below fires over two numbers that were typed identically and
+  -- print identically. That is not a contradiction to report; it is a question that cannot be
+  -- asked yet.
   --
   -- So the ceiling has to BE representable, which is #119's decision rather than this code's: see
   -- M.float32_exact in scripts/reactor-logic.lua for the two readings that were rejected and why the

@@ -1085,14 +1085,22 @@ end
 
 --- Is this value exactly representable as a 32-bit float? (#119)
 --
--- @return true when the engine will hand the number back unchanged
+-- @return true when a FINITE value survives the round trip unchanged. False for NaN, for the
+--         infinities (a float32 carries them, but an infinite bound is not one to accept) and
+--         for anything the engine would round to infinity. See the function's own note below.
 --
 -- WHY A SIMULATION FILE CARES ABOUT A STORAGE FORMAT. A fluid prototype returns max_temperature at
 -- SINGLE precision. The ceiling here is a Lua double. Declare the same literal in both places and,
--- if it is not representable, the engine hands back a slightly smaller number -- so
--- control.lua's check_plasma_bounds sees a contradiction between two numbers that were typed
--- identically and print identically, and refuses to load. 6.9e9 comes back as 6899999744, and the
--- 256 C between them is invisible at any sane print precision.
+-- if it is not representable, the engine hands back the NEAREST float32 -- which may be smaller or
+-- larger: 6.9e9 comes back as 6899999744, while 6.96271e9, the reactivity dataset's own edge, comes
+-- back as 6962710016, above what was asked for. Either way control.lua's check_plasma_bounds sees a
+-- contradiction between two numbers that were typed identically and print identically, and refuses
+-- to load. The 256 C in the first case is invisible at any sane print precision.
+--
+-- WHICH DIRECTION IT ROUNDS IS NOT WHAT float32_floor ANSWERS. That returns the nearest
+-- representable value at or BELOW, and float32_ceil the nearest at or ABOVE, because a refusal
+-- message suggests a replacement that must narrow the bound rather than move it either way the
+-- hardware happens to go.
 --
 -- DECIDED (Truls, 2026-08-26, #119): the ceiling must BE representable, rather than the comparison
 -- being loosened to tolerate one that is not. The alternative readings were considered and
