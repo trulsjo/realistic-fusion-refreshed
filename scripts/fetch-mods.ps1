@@ -42,9 +42,19 @@
     takes its $Error to the grave, so only an in-process call can see that leak.
 
 .PARAMETER Set
-    Which pinned set to fetch. One per overhaul family, because declared incompatibilities make a
-    combined list impossible: krastorio2, angels, bobs, madclowns, spaceex, seablock, riteg, fluid.
-    Pinned to each family's last factorio_version 2.0 release per ADR 0026 -- see the manifest.
+    Which pinned set to fetch. Eight are one per overhaul family, because declared incompatibilities
+    make a single combined list impossible: krastorio2, angels, bobs, madclowns, spaceex, seablock,
+    riteg, fluid. Pinned to each family's last factorio_version 2.0 release per ADR 0026 -- see the
+    manifest.
+
+    Three more are UNIONS of those families, for the lanes #61 asks for that no single family covers:
+    k2-spaceex, angels-bobs and angels-bobs-madclowns. They are composed from the family pins rather
+    than written out again, so refreshing a family refreshes every lane it appears in. Which
+    combinations are possible at all is a matter of declaration, not taste -- SE declares
+    `! space-age` and `!` against fourteen Angel's and Bob's mods, SeaBlockWanne declares
+    `! space-age` and `! Krastorio2`, and Krastorio2 declares `! Clowns-Nuclear`,
+    `! bobequipment` and `! bobvehicleequipment`. Those combinations have no set here and are not
+    meant to get one.
 
 .PARAMETER CacheDirectory
     Where the mods live between runs. Defaults to `.mod-cache/<set>/` beside the repository root,
@@ -80,8 +90,9 @@
     no real credentials.
 
 .PARAMETER SelfTest
-    Prove this script does what it claims: that a missing credential is reported as such, that the
-    token reaches no output, and that a corrupted cached zip is rejected rather than used.
+    Prove this script does what it claims: that a union pinning one mod at two versions is refused
+    rather than silently resolved, that a missing credential is reported as such, that the token
+    reaches no output, and that a corrupted cached zip is rejected rather than used.
 
 .EXAMPLE
     pwsh -File scripts/fetch-mods.ps1
@@ -299,6 +310,60 @@ $MOD_SETS = @{
         @{ Name = 'rf-selftest-mod'; Version = '1.0.0' }
     )
 }
+
+# ---------------------------------------------------------------------------------------------
+# The combination lanes -- COMPOSED, NOT TRANSCRIBED.
+#
+# #61's table asks for three sets that are not families but unions of them. They are built from the
+# family sets above rather than written out again, so a pin lives in exactly one place: refreshing
+# a family refreshes every lane it appears in, and there is no second copy to forget.
+#
+# WHY EACH ONE IS A LANE AT ALL.
+#   k2-spaceex             SE declares `(?) Krastorio2 >= 2.0.10` -- a hidden optional dependency,
+#                          so SE ships K2-aware code and loads after K2 when it is present. The
+#                          pair therefore exercises interop paths NEITHER mod runs alone, which is
+#                          why #61 calls it the lane with the most to say. Space Age is out by
+#                          construction here: SE declares `! space-age`.
+#   angels-bobs            No declared conflict in either direction. Its members are all inside
+#                          `seablock` too, so it is the isolation lane for that pair: a seablock
+#                          failure among these 20 mods lands here with 26 fewer suspects.
+#   angels-bobs-madclowns  The same plus `Clowns-Processing`, which no other lane pairs with Bob's.
+#
+# THE COUNTS DIFFER FROM #61's TABLE, and the pins are why. That table was computed from the
+# CURRENT releases, which are factorio_version 2.1; ADR 0026 pins the 2.0 line, whose closures are
+# smaller -- Bob's is 12 mods at 2.0 and 18 at 2.1. So 22 / 20 / 21 here against the table's
+# 20 / 26 / 30. Neither number is wrong; they are different major versions of the same families.
+function Join-ModSets {
+    <#  One lane's mods from several family sets, deduplicated by name.
+
+        The overlap is real rather than defensive: `madclowns` carries six Angel's mods that
+        `angels` carries too. A name pinned at two DIFFERENT versions is refused rather than
+        resolved, because picking one would be a version decision made silently by a helper --
+        `flib` is 0.16.2 in `krastorio2` and 0.16.5 in `seablock`, so the case exists today and
+        only stays out of these three unions by luck.  #>
+    param([Parameter(Mandatory)] [string[]] $Names)
+
+    $byName = [ordered]@{}
+    foreach ($set in $Names) {
+        if (-not $MOD_SETS.ContainsKey($set)) { throw "Join-ModSets: no such set '$set'." }
+        foreach ($mod in $MOD_SETS[$set]) {
+            if ($byName.Contains($mod.Name)) {
+                if ($byName[$mod.Name].Version -ne $mod.Version) {
+                    throw ("$($mod.Name) is pinned at $($byName[$mod.Name].Version) and at " +
+                           "$($mod.Version) across $($Names -join ' + '). One lane cannot hold both " +
+                           "versions of a mod; reconcile the pins rather than letting this pick.")
+                }
+                continue
+            }
+            $byName[$mod.Name] = $mod
+        }
+    }
+    return @($byName.Values | Sort-Object { $_.Name })
+}
+
+$MOD_SETS['k2-spaceex']            = Join-ModSets 'krastorio2', 'spaceex'
+$MOD_SETS['angels-bobs']           = Join-ModSets 'angels', 'bobs'
+$MOD_SETS['angels-bobs-madclowns'] = Join-ModSets 'angels', 'bobs', 'madclowns'
 
 # ---------------------------------------------------------------------------------------------
 # Helpers
@@ -704,8 +769,56 @@ function Invoke-SelfTest {
     }
 
     try {
-        # --- 1/4 -------------------------------------------------------------------------------
-        Write-Host 'self-test 1/5: a machine with no Factorio credentials must say so.'
+        # --- 1/6 -------------------------------------------------------------------------------
+        # THE MANIFEST BEFORE THE PORTAL. This half needs no fixture, no network and no credentials,
+        # so a broken set list is reported before a fake portal is spent on it -- the same order
+        # name-check.ps1 reads its neighbours in, and for the same reason.
+        #
+        # What it holds is Join-ModSets' refusal, not its arithmetic. A union that deduplicates by
+        # name has exactly one way to be quietly wrong: two families pinning the same mod at
+        # different versions, where picking either is a version decision ADR 0026 says belongs in
+        # the manifest rather than in a helper. `krastorio2` + `seablock` is that case today --
+        # flib at 0.16.2 and 0.16.5 -- and it is not one of the three lanes composed above, so
+        # without this the guard would never run.
+        Write-Host 'self-test 1/6: a union of two sets pinning one mod at two versions must be refused.'
+        $composed = @{}
+        foreach ($lane in 'k2-spaceex', 'angels-bobs', 'angels-bobs-madclowns') {
+            $composed[$lane] = @($MOD_SETS[$lane])
+        }
+        # PER LANE, not across all three: angels-bobs and angels-bobs-madclowns share twenty mods
+        # by design, and flattening them together reported every one of those as a duplicate.
+        $dupes = @()
+        foreach ($lane in $composed.Keys) {
+            foreach ($g in ($composed[$lane] | Group-Object { $_.Name })) {
+                if ($g.Count -gt 1) { $dupes += "$($g.Name) twice in $lane" }
+            }
+        }
+        try {
+            Join-ModSets 'krastorio2', 'seablock' | Out-Null
+            Write-Host '  FAILED: flib at 0.16.2 and 0.16.5 in one lane was not refused.'; $failures++
+        }
+        catch {
+            if ($_.Exception.Message -notmatch 'flib is pinned at') {
+                Write-Host "  FAILED: refused for the wrong reason -- $($_.Exception.Message)"; $failures++
+            }
+            elseif ($dupes) {
+                Write-Host "  FAILED: $($dupes -join '; ')"; $failures++
+            }
+            elseif ($composed['k2-spaceex'].Count -ne 22 -or $composed['angels-bobs'].Count -ne 20 -or
+                    $composed['angels-bobs-madclowns'].Count -ne 21) {
+                Write-Host ('  FAILED: composed lane sizes are {0}/{1}/{2}, expected 22/20/21.' -f
+                    $composed['k2-spaceex'].Count, $composed['angels-bobs'].Count,
+                    $composed['angels-bobs-madclowns'].Count)
+                $failures++
+            }
+            else {
+                Write-Host '  ok: the conflict is named and refused, and the three composed lanes are'
+                Write-Host '      22/20/21 mods with no name appearing twice'
+            }
+        }
+
+        # --- 2/6 -------------------------------------------------------------------------------
+        Write-Host 'self-test 2/6: a machine with no Factorio credentials must say so.'
         try {
             Get-PortalCredential -Path (Join-Path $temp 'absent.json') | Out-Null
             Write-Host '  FAILED: a missing player-data.json did not throw.'; $failures++
@@ -727,8 +840,8 @@ function Invoke-SelfTest {
             else { Write-Host "  FAILED: wrong message -- $($_.Exception.Message)"; $failures++ }
         }
 
-        # --- 2/4 -------------------------------------------------------------------------------
-        Write-Host 'self-test 2/5: the token must travel, and must reach no captured output.'
+        # --- 3/6 -------------------------------------------------------------------------------
+        Write-Host 'self-test 3/6: the token must travel, and must reach no captured output.'
         $log = Join-Path $temp 'requests-fail.log'
         New-Item -ItemType File -Path $log -Force | Out-Null
         $job = Start-FakePortal -Port $port -RequestLog $log -Name $modName -Version '1.0.0' `
@@ -759,8 +872,8 @@ function Invoke-SelfTest {
             }
         }
 
-        # --- 3/4 -------------------------------------------------------------------------------
-        Write-Host 'self-test 3/5: a download whose sha1 does not match must be refused.'
+        # --- 4/6 -------------------------------------------------------------------------------
+        Write-Host 'self-test 4/6: a download whose sha1 does not match must be refused.'
         $log2 = Join-Path $temp 'requests-badsha.log'
         New-Item -ItemType File -Path $log2 -Force | Out-Null
         $job = Start-FakePortal -Port $port -RequestLog $log2 -Name $modName -Version '1.0.0' `
@@ -780,8 +893,8 @@ function Invoke-SelfTest {
         }
         else { Write-Host '  ok: the mismatch is named and nothing reaches the cache' }
 
-        # --- 4/4 -------------------------------------------------------------------------------
-        Write-Host 'self-test 4/5: a good download lands, and a second run reuses the cached zip.'
+        # --- 5/6 -------------------------------------------------------------------------------
+        Write-Host 'self-test 5/6: a good download lands, and a second run reuses the cached zip.'
         $log3 = Join-Path $temp 'requests-good.log'
         New-Item -ItemType File -Path $log3 -Force | Out-Null
         $job = Start-FakePortal -Port $port -RequestLog $log3 -Name $modName -Version '1.0.0' `
@@ -806,12 +919,12 @@ function Invoke-SelfTest {
             Write-Host '      zip against the portal sha1 rather than downloading it again'
         }
 
-        # --- 5/5 -------------------------------------------------------------------------------
+        # --- 6/6 -------------------------------------------------------------------------------
         # THE LEAK THE CHILD-PROCESS CHECK CANNOT SEE. 2/4 above reads files the child wrote, and a
         # child that exits takes its $Error with it -- so a token sitting in the ErrorRecord looks
         # identical to no token at all. This calls Save-PortalMod IN THIS PROCESS, where $Error
         # survives the failure and can be read, which is the only way to tell those apart.
-        Write-Host 'self-test 5/5: a failed download must leave no token in $Error either.'
+        Write-Host 'self-test 6/6: a failed download must leave no token in $Error either.'
         $log4 = Join-Path $temp 'requests-errorscan.log'
         New-Item -ItemType File -Path $log4 -Force | Out-Null
         $job = Start-FakePortal -Port $port -RequestLog $log4 -Name $modName -Version '1.0.0' `
@@ -856,9 +969,10 @@ function Invoke-SelfTest {
         Write-Host "FAILED - self-test: $failures check(s) did not hold."
         exit 1
     }
-    Write-Host 'OK - self-test passed: a missing credential is named, the token travels to the portal'
-    Write-Host '     and reaches neither captured output nor $Error, a bad sha1 is refused, and a good'
-    Write-Host '     download is cached and re-verified rather than refetched.'
+    Write-Host 'OK - self-test passed: a conflicting union is refused, a missing credential is named,'
+    Write-Host '     the token travels to the portal and reaches neither captured output nor $Error, a'
+    Write-Host '     bad sha1 is refused, and a good download is cached and re-verified rather than'
+    Write-Host '     refetched.'
     exit 0
 }
 
