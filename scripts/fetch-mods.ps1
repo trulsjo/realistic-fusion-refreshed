@@ -361,9 +361,29 @@ function Join-ModSets {
     return @($byName.Values | Sort-Object { $_.Name })
 }
 
-$MOD_SETS['k2-spaceex']            = Join-ModSets 'krastorio2', 'spaceex'
-$MOD_SETS['angels-bobs']           = Join-ModSets 'angels', 'bobs'
-$MOD_SETS['angels-bobs-madclowns'] = Join-ModSets 'angels', 'bobs', 'madclowns'
+# WHICH FAMILIES EACH LANE IS, RATHER THAN THE COMPOSED LIST -- so nothing is composed until a lane
+# is actually asked for.
+#
+# Composing all three at script load looks tidier and puts the guard's blast radius everywhere: the
+# day someone bumps `flib` in one family and not another, Join-ModSets throws before `param` dispatch
+# is reached, and `-Set riteg` -- a single mod sharing nothing with any of this -- dies with an
+# unhandled error. So does `-SelfTest`, the one run that exists to explain what went wrong. Resolving
+# per request keeps the refusal exactly where it belongs and nowhere else.
+$COMBINED_SETS = [ordered]@{
+    'k2-spaceex'            = @('krastorio2', 'spaceex')
+    'angels-bobs'           = @('angels', 'bobs')
+    'angels-bobs-madclowns' = @('angels', 'bobs', 'madclowns')
+}
+
+function Resolve-ModSet {
+    <#  One set's mods by name, whether it is a family or a composed lane.  #>
+    param([Parameter(Mandatory)] [string] $Name)
+
+    if ($MOD_SETS.Contains($Name))      { return @($MOD_SETS[$Name]) }
+    if ($COMBINED_SETS.Contains($Name)) { return @(Join-ModSets $COMBINED_SETS[$Name]) }
+    $known = @($MOD_SETS.Keys) + @($COMBINED_SETS.Keys) | Sort-Object
+    throw "Unknown set '$Name'. Defined: $($known -join ', ')."
+}
 
 # ---------------------------------------------------------------------------------------------
 # Helpers
@@ -781,40 +801,60 @@ function Invoke-SelfTest {
         # flib at 0.16.2 and 0.16.5 -- and it is not one of the three lanes composed above, so
         # without this the guard would never run.
         Write-Host 'self-test 1/6: a union of two sets pinning one mod at two versions must be refused.'
-        $composed = @{}
-        foreach ($lane in 'k2-spaceex', 'angels-bobs', 'angels-bobs-madclowns') {
-            $composed[$lane] = @($MOD_SETS[$lane])
+
+        # THE EXPECTED SIZES ARE DERIVED, NOT WRITTEN DOWN. This file says in as many words that
+        # refreshing the pins is editing numbers in $MOD_SETS, and that ADR 0008's trigger will
+        # re-point the whole manifest at the 2.1 releases -- where Bob's is eighteen mods and not
+        # twelve. A hardcoded 22/20/21 turns that correct refresh into "composed lane sizes are
+        # 28/26/27, expected 22/20/21": a hard failure, in the one check meant to certify the
+        # manifest, for doing exactly what the manifest asks. So the expectation is counted from the
+        # family sets by hand here -- same data, different code path from Join-ModSets, which is what
+        # makes it worth asserting at all.
+        $composed = [ordered]@{}
+        $expected = [ordered]@{}
+        foreach ($lane in $COMBINED_SETS.Keys) {
+            $composed[$lane] = @(Join-ModSets $COMBINED_SETS[$lane])
+            $distinct = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+            foreach ($family in $COMBINED_SETS[$lane]) {
+                foreach ($mod in $MOD_SETS[$family]) { [void] $distinct.Add($mod.Name) }
+            }
+            $expected[$lane] = $distinct.Count
         }
+
         # PER LANE, not across all three: angels-bobs and angels-bobs-madclowns share twenty mods
         # by design, and flattening them together reported every one of those as a duplicate.
         $dupes = @()
+        $wrongSize = @()
         foreach ($lane in $composed.Keys) {
             foreach ($g in ($composed[$lane] | Group-Object { $_.Name })) {
                 if ($g.Count -gt 1) { $dupes += "$($g.Name) twice in $lane" }
             }
+            if ($composed[$lane].Count -ne $expected[$lane]) {
+                $wrongSize += "$lane is $($composed[$lane].Count) mods, expected $($expected[$lane])"
+            }
         }
+
+        # OUTSIDE THE CATCH. These three assertions used to sit inside it, so they ran only when the
+        # flib guard threw -- if it ever stopped throwing, the run reported that one failure and
+        # silently skipped the other two rather than also evaluating them.
+        $refused = ''
         try {
             Join-ModSets 'krastorio2', 'seablock' | Out-Null
+        }
+        catch { $refused = $_.Exception.Message }
+
+        if (-not $refused) {
             Write-Host '  FAILED: flib at 0.16.2 and 0.16.5 in one lane was not refused.'; $failures++
         }
-        catch {
-            if ($_.Exception.Message -notmatch 'flib is pinned at') {
-                Write-Host "  FAILED: refused for the wrong reason -- $($_.Exception.Message)"; $failures++
-            }
-            elseif ($dupes) {
-                Write-Host "  FAILED: $($dupes -join '; ')"; $failures++
-            }
-            elseif ($composed['k2-spaceex'].Count -ne 22 -or $composed['angels-bobs'].Count -ne 20 -or
-                    $composed['angels-bobs-madclowns'].Count -ne 21) {
-                Write-Host ('  FAILED: composed lane sizes are {0}/{1}/{2}, expected 22/20/21.' -f
-                    $composed['k2-spaceex'].Count, $composed['angels-bobs'].Count,
-                    $composed['angels-bobs-madclowns'].Count)
-                $failures++
-            }
-            else {
-                Write-Host '  ok: the conflict is named and refused, and the three composed lanes are'
-                Write-Host '      22/20/21 mods with no name appearing twice'
-            }
+        elseif ($refused -notmatch 'flib is pinned at') {
+            Write-Host "  FAILED: refused for the wrong reason -- $refused"; $failures++
+        }
+        if ($dupes)     { Write-Host "  FAILED: $($dupes -join '; ')"; $failures++ }
+        if ($wrongSize) { Write-Host "  FAILED: $($wrongSize -join '; ')"; $failures++ }
+        if ($refused -match 'flib is pinned at' -and -not $dupes -and -not $wrongSize) {
+            Write-Host '  ok: the conflict is named and refused, and the composed lanes are'
+            Write-Host ("      $(($composed.Keys | ForEach-Object { "$_ $($composed[$_].Count)" }) -join ', ') " +
+                        'mods, each matching its families'' distinct count with no name appearing twice')
         }
 
         # --- 2/6 -------------------------------------------------------------------------------
@@ -982,10 +1022,7 @@ function Invoke-SelfTest {
 
 if ($SelfTest) { Invoke-SelfTest -ScriptPath $PSCommandPath }
 
-if (-not $MOD_SETS.ContainsKey($Set)) {
-    throw "Unknown set '$Set'. Defined: $(($MOD_SETS.Keys | Sort-Object) -join ', ')."
-}
-$mods = $MOD_SETS[$Set]
+$mods = Resolve-ModSet -Name $Set
 
 Write-Host "fetch-mods: $Set -- $($mods.Count) mods into $CacheDirectory"
 if ($PreferPortal) { Write-Host '            -PreferPortal: taking the portal route even where a git source exists' }

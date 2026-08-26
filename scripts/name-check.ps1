@@ -113,10 +113,14 @@
 
     The set is harvested by regex as well, and that half is not redundant. The dumps see a
     collision where WE replace THEM. They cannot see it running the other way: a set that loads
-    after us and redefines one of our names puts its version in both dumps, so the name cancels out
-    of the difference and the accident is invisible -- our entity is gone and nothing says so. The
-    harvest reads what their Lua names rather than what the game ended up with, so it catches that
-    direction. Two instruments, two blind spots, neither covering the other.
+    after us and redefines one of our names unconditionally puts its version in both dumps, so the
+    name cancels out of the difference and the accident would be invisible -- our entity gone from
+    the game and nothing saying so. The harvest reads what their Lua NAMES rather than what the game
+    ended up with, so it catches that direction. Two instruments, two blind spots.
+
+    That only works because the scan is given every prefixed name present in the loaded game and not
+    merely the difference -- the name it needs to test is precisely the one the difference lost. The
+    two lists are identical when no set is loaded, so nothing about the base check changes.
 
     A FAILURE HERE NEEDS TRIAGE AND IS NOT AUTOMATICALLY OURS. An overhaul that walks data.raw --
     which Angel's and Bob's both do -- reacts to prototypes this repo adds, so it can generate
@@ -126,6 +130,12 @@
     only the first is a defect here. ADR 0026 predicted this shape of triage for the coexistence
     lanes and it applies to names as much as to loading: read what the check found before reading it
     as a bug.
+
+    It does not guard against the set failing to load, because Factorio does that itself and does it
+    by exiting: a mod declaring factorio_version 2.1 and a directory whose name disagrees with its
+    info.json both stop --dump-data with an error naming the mod. The run reports how many of the
+    set's mods put prototypes in the dump instead, which is the same reassurance without a gate that
+    could only ever fire on a set of pure asset mods.
 
     Cannot be combined with -SelfTest: the canary half derives from a clean baseline, and an
     overhaul in the same two dumps makes what it finds ambiguous.
@@ -390,6 +400,26 @@ function Get-SetDerived {
         $from = $mine | Where-Object { $n.Contains($_) } | Select-Object -First 1
         if ($from) { $fromSet[$n] = $from }
     }
+
+    # A GENERATOR GENERATES MORE THAN ONE, and requiring that is what keeps this from excusing our
+    # own mistakes. "Embeds one of our names" alone does not say who DEFINED the prototype: a name
+    # this repo added as `fill-rf-brine-barrel` -- ours, unprefixed, outside $DERIVED's shape --
+    # embeds `rf-brine-barrel` exactly as `kr-crush-rf-brine-barrel` does, so it would be excused
+    # whenever a set happened to be loaded and reported whenever one was not. The same repo passing
+    # or failing on an unrelated flag is not a check.
+    #
+    # A mod that walks data.raw emits one prototype per thing it finds, so its marker appears many
+    # times over: 30 `kr-crush-` and 17 `kr-burn-` against Krastorio 2. A one-off does not.
+    #
+    # ponytail: two is the threshold, and it is a heuristic with a known ceiling -- a set that
+    # derives exactly ONE prototype from us fails and wants reading. That is the right way round:
+    # it fails loudly and a human looks, rather than passing quietly and nobody does.
+    $singletons = @($fromSet.Keys |
+        Group-Object { ($_ -split [regex]::Escape($fromSet[$_]), 2)[0] } |
+        Where-Object { $_.Count -lt 2 } |
+        ForEach-Object { $_.Group })
+    foreach ($n in $singletons) { $fromSet.Remove($n) }
+
     return $fromSet
 }
 
@@ -452,7 +482,13 @@ function Get-DerivedUnlock {
 function Test-Names {
     <#  The check itself, over a given set of our prototypes. Returns the failures as strings so the
         self-test can assert on them instead of on an exit code it would have to trust.  #>
-    param([hashtable] $Ours, [hashtable] $References, [string[]] $Replaced = @(), [string[]] $Exempt = @())
+    param(
+        [hashtable] $Ours,
+        [hashtable] $References,
+        [string[]]  $Replaced = @(),
+        [string[]]  $Exempt = @(),
+        [string[]]  $AlsoClaimed = @()
+    )
 
     $failures = @()
 
@@ -468,10 +504,23 @@ function Test-Names {
         $failures += "unprefixed: '$n' ($($Ours[$n] -join ', ')) does not start with '$PREFIX' -- ADR 0009"
     }
 
+    # $AlsoClaimed IS NOT COSMETIC, and leaving it out was a hole this file's own comments claimed
+    # was covered. The scan used to test $Ours.Keys alone -- the DIFFERENCE between the two dumps.
+    # A set that loads after us and redefines one of our names unconditionally puts its version in
+    # BOTH dumps, so the name cancels out of the difference and is not in $Ours at all: the harvest
+    # finds `rf-brine` in their Lua, and nothing compares it against anything. Our fluid is gone
+    # from the game and the run exits 0 saying no name of ours is used by the set.
+    #
+    # So the caller also passes every prefixed name present in the loaded game, which is the same
+    # list as $Ours in a run with no set and therefore changes nothing about the base check.
+    $claimed = @{}
+    foreach ($n in @($Ours.Keys)) { $claimed[$n] = $Ours[$n] -join ', ' }
+    foreach ($n in $AlsoClaimed) { if (-not $claimed.ContainsKey($n)) { $claimed[$n] = 'present in the loaded game' } }
+
     foreach ($ref in $References.Keys | Sort-Object) {
-        $shared = @($Ours.Keys | Where-Object { $References[$ref].Contains($_) } | Sort-Object)
+        $shared = @($claimed.Keys | Where-Object { $References[$ref].Contains($_) } | Sort-Object)
         foreach ($n in $shared) {
-            $failures += "collision: '$n' ($($Ours[$n] -join ', ')) is also defined by $ref"
+            $failures += "collision: '$n' ($($claimed[$n])) is also defined by $ref"
         }
     }
     return $failures
@@ -556,6 +605,42 @@ try {
     if ($alsoMods) { New-ModJunctions -ModDirectory $modDir -RepoRoot $AlsoModDirectory -Mods $alsoMods }
     $withoutUs = Get-PrototypeNames -Mods $alsoMods -Tag 'without-us'
 
+    # EVIDENCE THAT THE SET LOADED, WHICH IS NOT THE SAME AS A GUARD -- and it is worth saying why
+    # there is no guard, because the obvious one is dead code.
+    #
+    # The worry is real in shape: $alsoMods is a list of DIRECTORY names, and a set that is skipped
+    # is skipped in BOTH dumps, so the difference is identical to a run with no set at all and the
+    # closing line would still claim "none is used by the 46-mod set". A check that can quietly not
+    # run is worse than no check, which is why every other scan here carries a floor.
+    #
+    # But Factorio already refuses both ways a mod can fail to load, and it refuses by EXITING,
+    # which Get-PrototypeNames turns into a throw before any of this is reached. Measured on 2.0.77
+    # rather than assumed -- a mod declaring factorio_version 2.1 gives *"Incompatible Factorio
+    # version (current: 2.0, required: 2.1)"*, and a directory whose name disagrees with its
+    # info.json gives *"Directory name of mod ... doesn't match the expected <name> (case
+    # sensitive!)"*. Both exit 1 with a better message than anything written here would produce.
+    # A guard on top of that could only fire when every mod in the set defines no prototypes, which
+    # is a set with nothing to check.
+    #
+    # So this reports instead. The number is the honest form of the reassurance: a mod with no .lua
+    # at all is an assets mod -- Krastorio2Assets is 376 MB of sprites and not one Lua file, and
+    # every family ships graphics mods of that shape -- while a mod with a full harvest and nothing
+    # in the dump is not, and is worth a look. Failing on the first would have failed the Krastorio 2
+    # lane immediately and most of the others on their graphics mods.
+    if ($alsoMods) {
+        $baselineNames = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+        foreach ($k in $withoutUs.Keys) { [void] $baselineNames.Add(($k -split '/', 2)[1]) }
+
+        $visible = @()
+        $silent  = @()
+        foreach ($m in $alsoMods) {
+            if (@($scanned["$m (set)"] | Where-Object { $baselineNames.Contains($_) })) { $visible += $m }
+            else { $silent += "$m ($($scanned["$m (set)"].Count) name(s) harvested)" }
+        }
+        Write-Host "the set loaded: $($visible.Count) of $($alsoMods.Count) mod(s) put prototypes in the baseline dump"
+        if ($silent) { Write-Host "  contributed none the dump can see: $($silent -join ', ')" }
+    }
+
     $ours = Get-OurNames -WithUs $withUs -Baseline $withoutUs
     if ($ours.Count -eq 0) {
         throw 'the two dumps differ by nothing, so this repo appears to define no prototypes at all. That is not a pass.'
@@ -594,7 +679,15 @@ try {
         $replaced = @($replaced | Where-Object { $_ -notin $derivedUnlocks })
     }
 
-    $failures = Test-Names -Ours $ours -References $scanned -Replaced $replaced -Exempt @($setDerived.Keys)
+    # Every prefixed name the game ended up with, not only the ones in the difference -- see
+    # Test-Names' $AlsoClaimed. Identical to $ours' prefixed half when no set is loaded.
+    $inGame = @($withUs.Keys |
+        ForEach-Object { ($_ -split '/', 2)[1] } |
+        Where-Object { $_.StartsWith($PREFIX, [StringComparison]::Ordinal) } |
+        Sort-Object -Unique)
+
+    $failures = Test-Names -Ours $ours -References $scanned -Replaced $replaced `
+        -Exempt @($setDerived.Keys) -AlsoClaimed $inGame
 
     if ($SelfTest) {
         # Half one: the repo as it stands must pass, or halves two and three prove nothing.
@@ -690,7 +783,17 @@ data.raw.item["iron-plate"].stack_size = 123' |
         # beside them, one per way the rule could be too generous.
         $ourName    = 'rf-brine'
         $setName    = 'kr-burn-rf-brine'
-        $fake       = @{ $ourName = @('fluid'); $setName = @('recipe'); 'fusion-reactor' = @('reactor') }
+        # TWO of the set's, sharing a marker, because one is not a generator -- see Get-SetDerived.
+        # `fill-rf-brine-barrel` is the singleton that must NOT be excused: it is the shape one of
+        # OUR unprefixed names would have, and it embeds a name of ours exactly as the set's do.
+        $fake = @{
+            $ourName                = @('fluid')
+            'rf-deuterium'          = @('fluid')
+            $setName                = @('recipe')
+            'kr-burn-rf-deuterium'  = @('recipe')
+            'fill-rf-brine-barrel'  = @('recipe')
+            'fusion-reactor'        = @('reactor')
+        }
         $classified = Get-SetDerived -Ours $fake
 
         if (-not $classified.ContainsKey($setName)) {
@@ -709,9 +812,40 @@ data.raw.item["iron-plate"].stack_size = 123' |
             Write-Host '         which would hide the one failure this whole check exists to catch.'
             exit 1
         }
+        # THE NEGATIVE THE FIRST ONE DOES NOT REACH. `fusion-reactor` embeds no name of ours, so it
+        # would survive a classifier keyed on embedding alone. A singleton that DOES embed one is
+        # the case that separates "the set generated it" from "we misnamed it".
+        if ($classified.ContainsKey('fill-rf-brine-barrel')) {
+            Write-Host 'FAILED - self-test: a lone unprefixed name embedding one of ours was excused as the'
+            Write-Host '         set''s derivation. A generator generates more than one; this is the shape'
+            Write-Host '         one of OUR unprefixed names would have.'
+            exit 1
+        }
         if (Test-Names -Ours $fake -References @{} -Exempt @($classified.Keys) |
                 Where-Object { $_ -like "unprefixed: '$setName'*" }) {
             Write-Host "FAILED - self-test: '$setName' was classified but still reported as unprefixed."
+            exit 1
+        }
+        if (-not (Test-Names -Ours $fake -References @{} -Exempt @($classified.Keys) |
+                Where-Object { $_ -like "unprefixed: 'fill-rf-brine-barrel'*" })) {
+            Write-Host "FAILED - self-test: the lone 'fill-rf-brine-barrel' was not reported as unprefixed."
+            exit 1
+        }
+
+        # AND THE COLLISION THE DIFFERENCE LOSES. A set that redefines one of our names
+        # unconditionally holds it in both dumps, so it is absent from $Ours -- passing it in
+        # $AlsoClaimed is the only reason the scan can still see it.
+        $harvest = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+        [void] $harvest.Add('rf-eaten-by-the-set')
+        $swallowed = Test-Names -Ours @{} -References @{ 'the set' = $harvest } -AlsoClaimed @('rf-eaten-by-the-set')
+        if (-not ($swallowed | Where-Object { $_ -like "collision: 'rf-eaten-by-the-set'*" })) {
+            Write-Host 'FAILED - self-test: a name of ours that the set redefines in BOTH dumps -- so it never'
+            Write-Host '         reaches the difference -- was not caught by the scan. That is the direction'
+            Write-Host '         the dumps cannot see, and the only one the harvest is there for.'
+            exit 1
+        }
+        if (Test-Names -Ours @{} -References @{ 'the set' = $harvest }) {
+            Write-Host 'FAILED - self-test: a reference harvest with nothing claimed against it still reported.'
             exit 1
         }
 
@@ -744,8 +878,10 @@ data.raw.item["iron-plate"].stack_size = 123' |
             }
         }
         Write-Host 'self-test 5/5: the set-derivation classifiers excuse what the set built from us, and'
-        Write-Host '               nothing else -- an unprefixed name of ours, an unlock for a recipe'
-        Write-Host '               that is not ours, a changed field and a removed effect all survive.'
+        Write-Host '               nothing else -- an unprefixed name of ours, a LONE one embedding one'
+        Write-Host '               of ours, an unlock for a recipe that is not ours, a changed field and'
+        Write-Host '               a removed effect all survive; and a name the set redefines in both'
+        Write-Host '               dumps is still caught by the scan.'
 
         Write-Host ''
         Write-Host 'OK - self-test passed: clean repo passes; unprefixed name, borrowed name and a real'
@@ -769,7 +905,6 @@ data.raw.item["iron-plate"].stack_size = 123' |
     # from us, and calling 47 of Krastorio 2's recipes "names this repo defines" would be wrong in
     # the sentence that is meant to be the answer.
     $mineCount = $ours.Count - $setDerived.Count
-    Write-Host ''
     Write-Host "OK - all $mineCount prototype names this repo defines carry '$PREFIX', and none is used by"
     Write-Host "     $against. Bundled enabled: $bundledOn."
     if ($setDerived.Count -or $derivedUnlocks) {
