@@ -260,3 +260,10 @@ The five canonical roles, unchanged: `needs-triage`, `needs-info`, `ready-for-ag
 
 Single-context — `CONTEXT.md` and `docs/adr/` at the repo root, created lazily. See
 `docs/agents/domain.md`.
+
+### Code review
+
+`/code-review`'s 80-point filter gates **what gets posted to the PR**, not what gets reported. Its
+rubric only emits 0/25/50/75/100, so the filter admits 100 alone — a finding can be verified,
+important and dropped. Report every surviving finding with its score; a review that posts nothing
+must still say what it filtered. See `docs/agents/code-review.md`.
