@@ -78,10 +78,22 @@ did it is the reason the numbers below are trustworthy rather than copied.
 | `fluid` | 1 | Advanced Fluid Handling; slug is `underground-pipe-pack` |
 
 **SeaBlock NG is pinned as-intended rather than minimal, and it is the expensive choice.**
-`SeaBlockWanne` declares `SeaBlockPack` with `+`, which the game does not enforce — and which is not
-documented at all in the 2.0.77 version of the mod-structure page, appearing only in the 2.1 docs.
-The enforced minimum is a handful of mods; the pack's closure is **46**. Taking the pack means the
-lane exercises what a SeaBlock player actually installs. Two consequences follow and neither is
+
+> **Corrected 2026-08-26 (#127 review), same day.** This paragraph first justified the pack by
+> saying `SeaBlockWanne` declares `SeaBlockPack` with `+`, a prefix the game does not enforce. **That
+> is not true of the version pinned here.** `SeaBlockWanne` **1.0.5** names no `SeaBlockPack` at
+> all; its hard requirements are the four Angel's content mods and their `~` graphics, a closure of
+> **nine**. The `+ SeaBlockPack` line first appears in **1.1.4**, which is `factorio_version` 2.1 —
+> a release this very ADR declines to target. At 2.0 the dependency runs the other way round:
+> `SeaBlockPack` requires `SeaBlockWanne`. The claim was read out of
+> `docs/research/mod-set-coexistence-targets.md` and never checked against the pinned release, which
+> is exactly the discipline CLAUDE.md asks for and this ADR is about. **The decision stands and the
+> reason is replaced**, below.
+
+The real choice is between **nine** mods and **46**, and the pack is taken deliberately rather than
+because any dependency asks for it: the lane is worth more answering *"does this mod load beside
+what a SeaBlock player installs"* than *"beside the nine that strictly must load"*. Taking the pack
+means the lane exercises the real configuration. Two consequences follow and neither is
 optional: it needs **`-With quality`**, because `quality` is bundled with the game rather than on the
 portal, and quality does not drag in `space-age`, which matters because `SeaBlockWanne` declares
 `! space-age`. And it **overlaps the `angels` and `bobs` lanes**, because `SeaBlockPack` hard-depends
@@ -126,6 +138,11 @@ No single mod list can hold these families together, so each is its own set and 
   arrived with #60 and this ADR extends it from one optional family to seven.
 - **Refreshing the pins is re-deriving them**, not editing prose. When ADR 0008's trigger fires the
   same derivation runs against the 2.1 releases and the manifest is replaced wholesale.
+- **The cache is per set**, `.mod-cache/<set>/`. One shared directory accumulated every set ever
+  fetched and `load-check` junctions all of it, so krastorio2 followed by seablock produced a 51-mod
+  directory that no lane asked for and that `SeaBlockWanne` forbids (`! Krastorio2`). It also could
+  not hold `flib` at both 0.16.2 and 0.16.5, which the two lanes pin separately. Corrected in the
+  same review as the rationale above.
 
 ## Alternatives considered
 
@@ -147,7 +164,10 @@ the machinery to check them now exists and is cheap to point at them.
 and MadClown's, whose 2.0 lines are mid-development. Rejected as a rule that needs a judgement per
 family and revisiting each time one is added, for a saving that is mostly rig time.
 
-**SeaBlock NG at its enforced minimum** rather than the full pack. Rejected: the game not enforcing
-`+` is a statement about what loads, not about what a SeaBlock player installs, and the lane is worth
-more answering the second question. The cost is 46 mods and an overlap with two other lanes, both
-stated above.
+**SeaBlock NG at its enforced minimum** rather than the full pack — **nine** mods: `SeaBlockWanne`
+1.0.5, the four Angel's content mods, and their four `~` graphics mods. That is genuinely all the
+pinned release requires. Rejected because what strictly loads is not what a SeaBlock player installs,
+and the lane is worth more answering the second question. The cost is 46 mods against nine, and an
+overlap with two other lanes, both stated above. **This alternative was first written up as a `+`
+prefix argument, which was wrong** — see the correction above; nine-versus-46 is the real trade, and
+it is a wider gap than the one originally weighed.

@@ -54,6 +54,14 @@ Two consequences for the lists below:
   The `+` prefix is **not** documented in the 2.0.77 version of the same page; it appears only in the
   2.1 documentation.
 
+  > **Corrected 2026-08-26 (#59, [ADR 0026](../adr/0026-third-party-mods-are-pinned-to-their-2-0-line.md)).**
+  > That `+` declaration belongs to `SeaBlockWanne` **1.1.4**, which is `factorio_version` 2.1.
+  > **The 2.0 release this project pins — 1.0.5 — names no `SeaBlockPack` at all**, and at 2.0 the
+  > dependency runs the other way: `SeaBlockPack` requires `SeaBlockWanne`. So on the 2.0 line the
+  > minimal closure is **9 mods** and the pack closure is **46**, not the 9-versus-32 recorded below.
+  > The figures further down describe the 2.1 releases surveyed on 2026-08-18 and are left as that
+  > record; ADR 0026 carries the pinned numbers.
+
 ---
 
 ## The 2.0/2.1 wall — the single most decision-relevant fact
@@ -75,6 +83,11 @@ Krastorio 2 is 2.1.2 (`base >= 2.1.7`); Angel's is 2.1.x (`base >= 2.1.0`); Bob'
 1.1.4. **None of them will load on the Factorio 2.0.77 this repository currently checks against.**
 
 That leaves exactly two routes, and choosing between them is a decision, not a finding:
+
+> **Decided 2026-08-26 (#59, [ADR 0026](../adr/0026-third-party-mods-are-pinned-to-their-2-0-line.md)):
+> the second route.** Pin the last `factorio_version` 2.0 release of each family; do not move to 2.1
+> while it is still the experimental branch. The pins live in `scripts/fetch-mods.ps1`'s `$MOD_SETS`
+> as data, derived from the portal API rather than transcribed from this table.
 
 | Route | What it costs | What it buys |
 |---|---|---|
@@ -686,6 +699,7 @@ $set = @(
 ```
 
 **As intended (`SeaBlockWanne` + the recommended `SeaBlockPack` and its hard requirements) — 32 mods:**
+*(at the 2.1 releases surveyed here. Pinned at the 2.0 line the same closure is **46** — see ADR 0026.)*
 
 ```powershell
 $set = @(
@@ -807,7 +821,7 @@ What that implies, without deciding any of it:
   download step would need to keep the URL out of anything captured. Reading the file at all is
   something this environment's permission policy has blocked before (recorded in the predecessor
   survey), so it may need explicit allowance.
-- **Caching is close to mandatory.** The SeaBlock NG list is 32 mods and Space Exploration ships five
+- **Caching is close to mandatory.** The SeaBlock NG list is 32 mods here and 46 as pinned, and Space Exploration ships five
   separate graphics mods that are large by design. Re-downloading per run would be slow and would hit
   the portal hard for no benefit. The API gives what a cache needs: each release carries `file_name`
   (*"Always seems to follow the pattern `{name}_{version}.zip`"*) and `sha1`, so a cached zip can be

@@ -47,12 +47,20 @@
     Pinned to each family's last factorio_version 2.0 release per ADR 0026 -- see the manifest.
 
 .PARAMETER CacheDirectory
-    Where the mods live between runs. Defaults to .mod-cache/ beside the repository root, which is
-    git-ignored. Deliberately NOT the temp mod directory a check builds: that is torn down per run,
-    and refetching per run would be slow and rude. Measured, the Krastorio 2 set is 414 MB -- 376 of
-    it Krastorio2Assets, which is the mod that actually motivates caching; Krastorio2 itself is 28.
-    Nearly half of that total is .git: --depth 1 keeps the history shallow, not absent, and an asset
-    repository's single commit is still every sprite.
+    Where the mods live between runs. Defaults to `.mod-cache/<set>/` beside the repository root,
+    which is git-ignored. Deliberately NOT the temp mod directory a check builds: that is torn down
+    per run, and refetching per run would be slow and rude. Measured, the Krastorio 2 set is
+    414 MB -- 376 of it Krastorio2Assets, which is the mod that actually motivates caching;
+    Krastorio2 itself is 28. Nearly half of that total is .git: --depth 1 keeps the history shallow,
+    not absent, and an asset repository's single commit is still every sprite.
+
+    PER SET, AND NOT BY PREFERENCE. One shared directory accumulates every set ever fetched, and
+    load-check junctions everything it finds -- so fetching seablock after krastorio2 produced a
+    51-mod directory containing both, which is not a set anybody chose and which SeaBlockWanne
+    forbids outright (`! Krastorio2`). The same shape bites on versions: `flib` is pinned 0.16.2 for
+    krastorio2 and 0.16.5 for seablock, and a cache keyed by name alone can only hold one of them.
+    Separate directories cost duplicated downloads where lanes overlap and remove both problems.
+    Pass this explicitly only if you want that behaviour back.
 
 .PARAMETER PreferPortal
     Take the portal route even for a mod that has a Git source. Nothing needs this to work; it exists
@@ -77,7 +85,7 @@
 
 .EXAMPLE
     pwsh -File scripts/fetch-mods.ps1
-    pwsh -File scripts/load-check.ps1 -AlsoModDirectory .mod-cache
+    pwsh -File scripts/load-check.ps1 -AlsoModDirectory .mod-cache/krastorio2
 
 .EXAMPLE
     pwsh -File scripts/fetch-mods.ps1 -PreferPortal
@@ -98,7 +106,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-if (-not $CacheDirectory) { $CacheDirectory = Join-Path $repoRoot '.mod-cache' }
+if (-not $CacheDirectory) { $CacheDirectory = Join-Path $repoRoot (Join-Path '.mod-cache' $Set) }
 if (-not $PlayerDataPath) { $PlayerDataPath = Join-Path $env:APPDATA 'Factorio\player-data.json' }
 
 # ---------------------------------------------------------------------------------------------
@@ -205,9 +213,18 @@ $MOD_SETS = @{
     )
 
     # SeaBlock NG, AS INTENDED RATHER THAN AS ENFORCED -- Truls's call, 2026-08-26 (ADR 0026).
-    # SeaBlockWanne declares SeaBlockPack with `+`, which the game does not enforce and which
-    # the 2.0.77 docs do not even document. Taking the pack anyway makes this lane the
-    # configuration a player installs rather than the minimum that loads.
+    #
+    # CORRECTED 2026-08-26: this comment used to say SeaBlockWanne declares SeaBlockPack with `+`.
+    # It does not, at the version pinned here. SeaBlockWanne 1.0.5 names no SeaBlockPack at all --
+    # its hard requirements are the four Angel's content mods and nothing else, a closure of nine.
+    # The `+ SeaBlockPack` line appears first in 1.1.4, which is factorio_version 2.1 and therefore
+    # a release this project does not target. At 2.0 the dependency runs the other way: SeaBlockPack
+    # requires SeaBlockWanne.
+    #
+    # So the pack is pinned as a DELIBERATE CHOICE and not because a dependency asks for it: the
+    # lane is worth more answering "does our mod load beside what a SeaBlock player installs" than
+    # "beside the nine mods that strictly must load". The choice stands; the reason it was first
+    # given was a 2.1 fact read onto a 2.0 pin.
     #
     # TWO THINGS THIS LANE NEEDS THAT NO OTHER DOES. It requires `quality`, which ships with
     # the game rather than the portal, so run load-check with -With quality; quality does not

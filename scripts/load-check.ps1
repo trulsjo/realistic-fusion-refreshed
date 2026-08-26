@@ -153,8 +153,8 @@
     scripts/fetch-mods.ps1, which fills a directory at pinned versions -- by git where a source
     exists, by the mod portal otherwise. Run it, then point this at what it wrote:
 
-        pwsh -File scripts/fetch-mods.ps1
-        pwsh -File scripts/load-check.ps1 -AlsoModDirectory .mod-cache
+        pwsh -File scripts/fetch-mods.ps1 -Set krastorio2
+        pwsh -File scripts/load-check.ps1 -AlsoModDirectory .mod-cache/krastorio2
 
     Putting the mods there by hand still works and always did.
 
@@ -241,8 +241,8 @@ $alsoMods = @()
 if ($AlsoModDirectory) {
     if (-not (Test-Path $AlsoModDirectory)) { throw "-AlsoModDirectory not found: $AlsoModDirectory" }
     # ABSOLUTE, BECAUSE A JUNCTION TARGET MUST BE. New-ModJunctions hands the path to New-Item,
-    # which refuses a relative target -- so `-AlsoModDirectory .mod-cache`, the obvious thing to
-    # type after scripts/fetch-mods.ps1, failed inside the library rather than here (#60).
+    # which refuses a relative target -- so `-AlsoModDirectory .mod-cache/krastorio2`, the obvious
+    # thing to type after scripts/fetch-mods.ps1, failed inside the library rather than here (#60).
     $AlsoModDirectory = (Resolve-Path -LiteralPath $AlsoModDirectory).Path
     $alsoMods = @(Get-ChildItem -Path $AlsoModDirectory -Directory |
         Where-Object { Test-Path (Join-Path $_.FullName 'info.json') } |
