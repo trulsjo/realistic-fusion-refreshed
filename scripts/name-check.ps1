@@ -2,7 +2,7 @@
 <#
 .SYNOPSIS
     Fails if this repo defines a prototype name that is not its own, or one another mod already
-    uses. Discharges #33's collision criterion.
+    uses. Discharges #33's collision criterion, and -AlsoModDirectory extends it per set for #61.
 
 .DESCRIPTION
     ADR 0007 commits to coexistence with other mods, Krastorio 2 most of all. Coexistence means
@@ -66,6 +66,12 @@
     So it answers "would these names collide", and does not answer "do these mods load together",
     which is load-check.ps1's job.
 
+    SINCE #61 IT CAN DO BOTH FOR A SET IT IS GIVEN. -AlsoModDirectory loads a coexistence lane's
+    mods into both dumps, which turns the second half from a regex scan into a measurement: what
+    this repo replaces in that set is derived from the game rather than harvested from its Lua. The
+    scan stays for the direction the dumps cannot see, and for the mods that can never be loaded
+    here at all. See that parameter.
+
     WHAT THIS DOES NOT PROVE
 
     - **Not that the mods load together.** Nothing here runs Factorio with another mod present. A
@@ -90,17 +96,57 @@
     location. These are not this repo's to ship -- see docs/adr/0001-liftable-predecessor-material.md
     -- so they are read where they already are rather than vendored in.
 
+.PARAMETER AlsoModDirectory
+    A directory of third-party mod directories to LOAD as well as scan, e.g. what
+    scripts/fetch-mods.ps1 wrote for one of #61's coexistence lanes. Same shape load-check.ps1 takes
+    it in, and for the same reason: this script downloads nothing.
+
+        pwsh -File scripts/fetch-mods.ps1 -Set angels
+        pwsh -File scripts/name-check.ps1 -AlsoModDirectory .mod-cache/angels
+
+    THIS IS THE PER-SET COLLISION CHECK, and it is a stronger instrument than the scan. The set is
+    junctioned in and enabled in BOTH dumps, so the baseline becomes "the game with that set and
+    without us". The difference is therefore still exactly what this repo adds -- and $replaced
+    becomes what this repo CHANGES in the set as well as in vanilla, which is the silent overwrite
+    ADR 0007 calls the most likely way coexistence fails. Without a set loaded the check can only
+    say our names carry the prefix; with one it can say what actually happened when both loaded.
+
+    The set is harvested by regex as well, and that half is not redundant. The dumps see a
+    collision where WE replace THEM. They cannot see it running the other way: a set that loads
+    after us and redefines one of our names puts its version in both dumps, so the name cancels out
+    of the difference and the accident is invisible -- our entity is gone and nothing says so. The
+    harvest reads what their Lua names rather than what the game ended up with, so it catches that
+    direction. Two instruments, two blind spots, neither covering the other.
+
+    A FAILURE HERE NEEDS TRIAGE AND IS NOT AUTOMATICALLY OURS. An overhaul that walks data.raw --
+    which Angel's and Bob's both do -- reacts to prototypes this repo adds, so it can generate
+    prototypes of its own from ours or touch vanilla ones it would otherwise leave alone. Those land
+    in the difference attributed to this repo, because the difference is defined by our presence and
+    cannot tell "we defined it" from "they defined it BECAUSE of us". Both are worth knowing and
+    only the first is a defect here. ADR 0026 predicted this shape of triage for the coexistence
+    lanes and it applies to names as much as to loading: read what the check found before reading it
+    as a bug.
+
+    Cannot be combined with -SelfTest: the canary half derives from a clean baseline, and an
+    overhaul in the same two dumps makes what it finds ambiguous.
+
 .PARAMETER With
     Bundled mods to enable, e.g. -With space-age. Worth running both ways: the expansion generates a
     recycling recipe per item, so it adds prototypes that inherit our names and must carry the
     prefix too.
 
 .PARAMETER SelfTest
-    Verify the check can fail. Four halves: the repo as it stands must pass; an unprefixed name must
+    Verify the check can fail. Five halves: the repo as it stands must pass; an unprefixed name must
     be caught; a name a reference mod already uses must be caught; and -- through a real canary mod
     and a third dump -- a prototype added without the prefix AND a vanilla prototype replaced must
     both be derived from the dumps rather than merely judged once handed over. The first half is
-    required or the rest prove nothing; the last is the only one that tests the derivation itself.
+    required or the rest prove nothing; the fourth is the only one that tests the derivation itself.
+
+    The fifth pins the two classifiers -AlsoModDirectory brought with it, and it is there because
+    they are the only code here that SUPPRESSES a finding: an over-broad rule turns a real collision
+    into a counted line and the run still exits 0. It asserts the negatives as hard as the
+    positives -- an unprefixed name of ours, an unlock naming a recipe that is not ours, a field
+    other than `effects` changing, and an effect being removed must all still be reported.
 
 .PARAMETER KeepTemp
     Keep the dumps for inspection. Junctions are always removed.
@@ -108,12 +154,14 @@
 .EXAMPLE
     pwsh -File scripts/name-check.ps1
     pwsh -File scripts/name-check.ps1 -With space-age
+    pwsh -File scripts/name-check.ps1 -AlsoModDirectory .mod-cache/angels
     pwsh -File scripts/name-check.ps1 -SelfTest
 #>
 [CmdletBinding()]
 param(
     [string]   $FactorioExe,
     [string]   $ReferenceDirectory,
+    [string]   $AlsoModDirectory,
     [string[]] $With = @(),
     [switch]   $SelfTest,
     [switch]   $KeepTemp
@@ -165,6 +213,29 @@ $REFERENCE_MODS = @(
 
 if (-not $ReferenceDirectory) {
     $ReferenceDirectory = if ($env:RF_REFERENCE_DIR) { $env:RF_REFERENCE_DIR } else { 'C:\src\factorio\_reference' }
+}
+
+# The set to check against, if one was named. Read in the same shape load-check.ps1 reads it,
+# deliberately: both take a DIRECTORY of unpacked mods rather than a mod name, because neither
+# downloads anything -- scripts/fetch-mods.ps1 owns that half.
+$alsoMods = @()
+if ($AlsoModDirectory) {
+    if ($SelfTest) {
+        throw ('-SelfTest and -AlsoModDirectory cannot be combined: the canary half derives from a ' +
+               'clean baseline, and a third-party overhaul in the same two dumps makes what it finds ' +
+               'ambiguous. Run them separately.')
+    }
+    if (-not (Test-Path $AlsoModDirectory)) { throw "-AlsoModDirectory not found: $AlsoModDirectory" }
+    # ABSOLUTE, BECAUSE A JUNCTION TARGET MUST BE -- the same trap #60 hit in load-check.ps1.
+    $AlsoModDirectory = (Resolve-Path -LiteralPath $AlsoModDirectory).Path
+    $alsoMods = @(Get-ChildItem -Path $AlsoModDirectory -Directory |
+        Where-Object { Test-Path (Join-Path $_.FullName 'info.json') } |
+        ForEach-Object { $_.Name } | Sort-Object)
+    # Empty is an error rather than an empty run: it would otherwise report a collision-free pass
+    # against a set that was never loaded, which is the exact failure this check is shaped to avoid.
+    if (-not $alsoMods) {
+        throw "-AlsoModDirectory holds no mod directories (a directory with an info.json in it): $AlsoModDirectory"
+    }
 }
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
@@ -280,10 +351,108 @@ function Get-ReferenceNames {
     return ,$found
 }
 
+function Get-SetDerived {
+    <#  Names in the difference that the LOADED SET built out of ours: name -> the name of ours it
+        was built from.
+
+        The third shape of "ours by consequence, not by choice", after `$DERIVED`'s barrels and Space
+        Age's recycling recipes -- and the first one that does not carry the prefix. An overhaul that
+        walks data.raw makes a prototype per thing it finds, and Krastorio 2 makes two: measured
+        against K2 2.0.19 on 2026-08-27, it generates `kr-burn-<fluid>` for each of our eleven fluids
+        and two energy fluids, and `kr-crush-<item>` for each of our entities and barrels -- 47
+        recipes, every one named `kr-` first and `rf-` second. They are K2's prototypes in K2's
+        namespace; ADR 0009 has nothing to say about how another mod names its own, and reporting
+        them as this repo's unprefixed names is simply wrong.
+
+        WHAT KEEPS THIS FROM EXCUSING A REAL COLLISION. The name must EMBED one of ours that carries
+        the prefix, which means it could not have existed before this repo did -- `kr-burn-rf-brine`
+        is not a name Krastorio 2 could have chosen independently, because `rf-brine` is ours. A
+        prototype of ours genuinely named without the prefix embeds no such name and is still caught.
+
+        ONLY WITH A SET LOADED. Without -AlsoModDirectory this never runs and nothing about the check
+        changes, which is what keeps ADR 0007's existing discharge exactly as measured.  #>
+    param([Parameter(Mandatory)] [hashtable] $Ours)
+
+    # Longest match wins, so `kr-crush-rf-brine-barrel` is attributed to `rf-brine-barrel` and not to
+    # `rf-brine`. Only cosmetic -- both are ours -- but the report should name the right parent.
+    $mine = @($Ours.Keys |
+        Where-Object { $_.StartsWith($PREFIX, [StringComparison]::Ordinal) } |
+        Sort-Object { $_.Length } -Descending)
+
+    # NOT $derived, WHICH IS $DERIVED. PowerShell variable names are case-insensitive, so a local
+    # named $derived here IS the barrel pattern at script scope -- and it would be a hashtable by the
+    # time the loop below tried to match against it, so every barrel recipe would sail through as one
+    # of the set's derivations. It did, and reported 58 where 47 was right. This file has been bitten
+    # by the same trap twice before ($REFERENCE_MODS, $derivedNames); the comments there say so.
+    $fromSet = @{}
+    foreach ($n in @($Ours.Keys)) {
+        if ($n.StartsWith($PREFIX, [StringComparison]::Ordinal) -or $n -match $DERIVED) { continue }
+        $from = $mine | Where-Object { $n.Contains($_) } | Select-Object -First 1
+        if ($from) { $fromSet[$n] = $from }
+    }
+    return $fromSet
+}
+
+function Get-DerivedUnlock {
+    <#  Replaced prototypes whose entire difference is the set wiring its own derivations in.
+
+        The other half of the same mechanism, and it arrives on the same run: having generated
+        `kr-burn-rf-<fluid>` per fluid of ours, Krastorio 2 appends an unlock-recipe effect for each
+        into `technology/kr-fluid-excess-handling` -- its own technology, gaining its own recipes.
+        Exactly the shape base Factorio's barrel generation has against `technology/fluid-handling`,
+        which is the one entry `$ALLOWED_EDITS` declares.
+
+        NARROW ON PURPOSE, and the narrowness is the safety. Three conditions, all required: the
+        ONLY field that differs is `effects`; the diff is additions only, so nothing the set had was
+        removed; and every added effect is an `unlock-recipe` naming a recipe Get-SetDerived already
+        attributed to us. A prototype of theirs that this repo genuinely overwrites fails all three
+        and is still reported.
+
+        ponytail: `effects` is the only field this recognises, because it is the only one the
+        mechanism touches. A set that wires its derivations in some other way (a prerequisite, an
+        item's subgroup) will surface as a plain `replaces:` and want reading -- which is the right
+        default for a shape nobody has seen yet.  #>
+    param(
+        [Parameter(Mandatory)] [string[]]  $Replaced,
+        [Parameter(Mandatory)] [hashtable] $WithUs,
+        [Parameter(Mandatory)] [hashtable] $Baseline,
+        [Parameter(Mandatory)] [hashtable] $SetDerived
+    )
+
+    $exempt = @()
+    foreach ($key in $Replaced) {
+        $a = $WithUs[$key]   | ConvertFrom-Json
+        $b = $Baseline[$key] | ConvertFrom-Json
+
+        $fields = @($a.PSObject.Properties.Name) + @($b.PSObject.Properties.Name) | Sort-Object -Unique
+        $differing = @()
+        foreach ($f in $fields) {
+            $va = $a.$f | ConvertTo-Json -Depth 100 -Compress -WarningAction SilentlyContinue
+            $vb = $b.$f | ConvertTo-Json -Depth 100 -Compress -WarningAction SilentlyContinue
+            if ($va -ne $vb) { $differing += $f }
+        }
+        if ($differing.Count -ne 1 -or $differing[0] -ne 'effects') { continue }
+
+        $before = @($b.effects | ForEach-Object { $_ | ConvertTo-Json -Depth 20 -Compress })
+        $after  = @($a.effects | ForEach-Object { $_ | ConvertTo-Json -Depth 20 -Compress })
+        # Additions only: anything the baseline had and the run does not is a removal, not a wiring.
+        if (@($before | Where-Object { $_ -notin $after })) { continue }
+
+        $added = @($a.effects | Where-Object { ($_ | ConvertTo-Json -Depth 20 -Compress) -notin $before })
+        if (-not $added) { continue }
+        $foreign = @($added | Where-Object { $_.type -ne 'unlock-recipe' -or -not $SetDerived.ContainsKey($_.recipe) })
+        if (-not $foreign) { $exempt += $key }
+    }
+    # No unary comma. `return ,$exempt` would hand back an array WRAPPING the array, and the caller's
+    # @() does not flatten it -- so the one key printed correctly and then failed to match `-notin`,
+    # reporting a finding the run had just explained away.
+    return $exempt
+}
+
 function Test-Names {
     <#  The check itself, over a given set of our prototypes. Returns the failures as strings so the
         self-test can assert on them instead of on an exit code it would have to trust.  #>
-    param([hashtable] $Ours, [hashtable] $References, [string[]] $Replaced = @())
+    param([hashtable] $Ours, [hashtable] $References, [string[]] $Replaced = @(), [string[]] $Exempt = @())
 
     $failures = @()
 
@@ -293,7 +462,7 @@ function Test-Names {
     }
 
     $unprefixed = @($Ours.Keys |
-        Where-Object { -not $_.StartsWith($PREFIX, [StringComparison]::Ordinal) -and $_ -notmatch $DERIVED } |
+        Where-Object { -not $_.StartsWith($PREFIX, [StringComparison]::Ordinal) -and $_ -notmatch $DERIVED -and $_ -notin $Exempt } |
         Sort-Object)
     foreach ($n in $unprefixed) {
         $failures += "unprefixed: '$n' ($($Ours[$n] -join ', ')) does not start with '$PREFIX' -- ADR 0009"
@@ -310,6 +479,10 @@ function Test-Names {
 
 try {
     New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+    if ($alsoMods) {
+        New-ModJunctions -ModDirectory $modDir -RepoRoot $AlsoModDirectory -Mods $alsoMods
+        Write-Host "also loading: $($alsoMods.Count) mod(s) -- $($alsoMods -join ', ')"
+    }
 
     # Read the neighbours first: it needs no Factorio and a missing directory should be reported
     # before spending two dumps on it.
@@ -335,17 +508,53 @@ try {
         Write-Host "scanned $($r.Label): $($harvested.Count) candidate names"
     }
 
+    # The set gets harvested too, and it is not redundant with loading it.
+    #
+    # The dumps below catch a name of ours that REPLACES one of theirs, because our definition
+    # changes a prototype the baseline already had. They cannot catch the collision running the
+    # other way: if the set loads AFTER us and redefines one of our names, its version is what both
+    # dumps hold, the name cancels out of the difference, and the whole accident is invisible --
+    # our entity is simply gone from the game and nothing says so. The harvest sees that one,
+    # because it reads what their Lua NAMES rather than what the game ended up with. Weaker
+    # instrument, different blind spot; the two are worth having together.
+    foreach ($m in $alsoMods) {
+        $path = Join-Path $AlsoModDirectory $m
+        $harvested = Get-ReferenceNames -Path $path
+        # No per-mod floor here: a set holds mods of every size and RITEG is one small mod, so a
+        # floor that suited Krastorio 2 would fail honestly-empty ones. The SET's total is guarded
+        # instead, below -- an empty harvest across every mod in it means the scan did not run.
+        $scanned["$m (set)"] = $harvested
+    }
+    if ($alsoMods) {
+        $setNames = ($alsoMods | ForEach-Object { $scanned["$_ (set)"].Count } | Measure-Object -Sum).Sum
+        if (-not $setNames) {
+            throw ("harvested no prototype names at all from the $($alsoMods.Count) mod(s) in " +
+                   "$AlsoModDirectory. Either they are not Lua mods or the harvest regex has stopped " +
+                   "matching -- both of which would otherwise read as a collision-free pass against them.")
+        }
+        Write-Host "scanned the set: $setNames candidate names across $($alsoMods.Count) mod(s)"
+    }
+
     # Ours by difference, not by prefix. See METHOD: deriving them from the prefix would assume the
     # thing being checked.
     Write-Host 'dumping with this repo, then without it...'
-    $withUs = Get-PrototypeNames -Mods $ourMods -Tag 'with-us'
+    $withUs = Get-PrototypeNames -Mods ($ourMods + $alsoMods) -Tag 'with-us'
 
     # The junctions have to GO for the baseline, not merely be left out of the mod list. Factorio
     # enables any mod it finds in the mod directory that the list does not mention, so a list that
     # simply omits ours produces a second dump identical to the first -- which then reads as "this
     # repo defines nothing" rather than as a broken baseline. It did.
     Remove-ModJunctions -ModDirectory $modDir
-    $withoutUs = Get-PrototypeNames -Mods @() -Tag 'without-us'
+    # THE SET STAYS FOR THE BASELINE, and re-linking it is not optional: Remove-ModJunctions deletes
+    # every junction in the directory, ours and theirs alike. Without this the baseline is a plain
+    # vanilla dump, so every prototype the set defines lands in the difference as one of OURS --
+    # which fails loudly rather than quietly, but for entirely the wrong reason.
+    #
+    # The baseline is the game WITH the set and WITHOUT us, so the difference is still exactly what
+    # this repo adds, and $replaced becomes what this repo changes in the set as well as in vanilla.
+    # That second half is the per-set collision check #61 asks for.
+    if ($alsoMods) { New-ModJunctions -ModDirectory $modDir -RepoRoot $AlsoModDirectory -Mods $alsoMods }
+    $withoutUs = Get-PrototypeNames -Mods $alsoMods -Tag 'without-us'
 
     $ours = Get-OurNames -WithUs $withUs -Baseline $withoutUs
     if ($ours.Count -eq 0) {
@@ -358,12 +567,34 @@ try {
     # pattern before Test-Names below ever reads it. Same trap as $REFERENCE_MODS above, and it bit
     # here too.
     $derivedNames = @($ours.Keys | Where-Object { $_ -match $DERIVED })
-    Write-Host ("this repo defines {0} prototype name(s) the game does not; {1} of them are barrel recipes base Factorio named." -f
+    Write-Host ("the difference is {0} prototype name(s) the game does not have; {1} of them are barrel recipes base Factorio named." -f
         $ours.Count, $derivedNames.Count)
     Write-Host ("it changes {0} prototype(s) the game already defines, beyond the {1} declared in `$ALLOWED_EDITS." -f
         $replaced.Count, $ALLOWED_EDITS.Count)
 
-    $failures = Test-Names -Ours $ours -References $scanned -Replaced $replaced
+    # What the SET made out of us, told apart from what we made. Counted and named rather than
+    # waived: a jump here means the set started generating something new from this repo's
+    # prototypes, which is worth seeing even though it is not a failure.
+    $setDerived     = @{}
+    $derivedUnlocks = @()
+    if ($alsoMods) {
+        $setDerived = Get-SetDerived -Ours $ours
+        if ($setDerived.Count) {
+            $byPrefix = $setDerived.Keys |
+                Group-Object { ($_ -split [regex]::Escape($setDerived[$_]), 2)[0] } |
+                Sort-Object Count -Descending
+            Write-Host ("of those, {0} are the SET's own prototypes generated from ours -- {1}" -f
+                $setDerived.Count, (($byPrefix | ForEach-Object { "$($_.Count)x '$($_.Name)<ours>'" }) -join ', '))
+        }
+        $derivedUnlocks = @(Get-DerivedUnlock -Replaced $replaced -WithUs $withUs -Baseline $withoutUs -SetDerived $setDerived)
+        foreach ($k in $derivedUnlocks) {
+            Write-Host ("  '$k' gains only unlock-recipe effects for those, so it is the set wiring its " +
+                        'own derivations in rather than this repo replacing it.')
+        }
+        $replaced = @($replaced | Where-Object { $_ -notin $derivedUnlocks })
+    }
+
+    $failures = Test-Names -Ours $ours -References $scanned -Replaced $replaced -Exempt @($setDerived.Keys)
 
     if ($SelfTest) {
         # Half one: the repo as it stands must pass, or halves two and three prove nothing.
@@ -372,7 +603,7 @@ try {
             foreach ($f in $failures) { Write-Host "    $f" }
             exit 1
         }
-        Write-Host 'self-test 1/4: the repo as it stands passes.'
+        Write-Host 'self-test 1/5: the repo as it stands passes.'
 
         # Half two: an unprefixed name must be caught. Injected into the parsed set rather than into
         # a canary mod, because what is being tested is this script's judgement, not Factorio's --
@@ -384,7 +615,7 @@ try {
             Write-Host 'FAILED - self-test: an unprefixed prototype name was NOT caught.'
             exit 1
         }
-        Write-Host 'self-test 2/4: an unprefixed name is caught.'
+        Write-Host 'self-test 2/5: an unprefixed name is caught.'
 
         # Half three: a name a reference mod already uses must be caught, even when it is prefixed
         # correctly. Takes a name from the harvest rather than inventing one, so the test breaks if
@@ -398,7 +629,7 @@ try {
             Write-Host "FAILED - self-test: a name already used by a reference mod ('$borrowed') was NOT caught."
             exit 1
         }
-        Write-Host 'self-test 3/4: a name a reference mod already uses is caught.'
+        Write-Host 'self-test 3/5: a name a reference mod already uses is caught.'
 
         # Half four: the DERIVATION itself, through a real mod and a real dump.
         #
@@ -443,11 +674,83 @@ data.raw.item["iron-plate"].stack_size = 123' |
             Write-Host 'FAILED - self-test: the replaced prototype was derived but not reported as a failure.'
             exit 1
         }
-        Write-Host 'self-test 4/4: a real mod adding an unprefixed name and replacing a vanilla prototype is caught.'
+        Write-Host 'self-test 4/5: a real mod adding an unprefixed name and replacing a vanilla prototype is caught.'
+
+        # Half five: the two classifiers -AlsoModDirectory relies on, and specifically the LIMITS of
+        # what they excuse.
+        #
+        # These are the only code here that SUPPRESSES a finding, which makes them the code most
+        # worth pinning: an over-broad rule turns a real collision into a counted line and the run
+        # still exits 0. They are pure functions over parsed sets, so this half needs no third-party
+        # mod and no further dump -- the same reason halves two and three inject rather than build.
+        #
+        # The positive cases are taken from a REAL measurement rather than invented: Krastorio 2
+        # 2.0.19 generates kr-burn-<fluid> and kr-crush-<item> from this repo's prototypes and
+        # appends the unlocks into its own technology/kr-fluid-excess-handling. Four negatives sit
+        # beside them, one per way the rule could be too generous.
+        $ourName    = 'rf-brine'
+        $setName    = 'kr-burn-rf-brine'
+        $fake       = @{ $ourName = @('fluid'); $setName = @('recipe'); 'fusion-reactor' = @('reactor') }
+        $classified = Get-SetDerived -Ours $fake
+
+        if (-not $classified.ContainsKey($setName)) {
+            Write-Host "FAILED - self-test: '$setName' was not recognised as the set's own prototype built from ours."
+            exit 1
+        }
+        if ($classified[$setName] -ne $ourName) {
+            Write-Host "FAILED - self-test: '$setName' was attributed to '$($classified[$setName])', not '$ourName'."
+            exit 1
+        }
+        # THE NEGATIVE THAT MATTERS MOST. An unprefixed name of ours embeds no name of ours, so it
+        # must survive the classifier -- otherwise the ADR 0009 check has a hole exactly the width
+        # of this feature.
+        if ($classified.ContainsKey('fusion-reactor')) {
+            Write-Host 'FAILED - self-test: an unprefixed name of ours was excused as the set''s derivation,'
+            Write-Host '         which would hide the one failure this whole check exists to catch.'
+            exit 1
+        }
+        if (Test-Names -Ours $fake -References @{} -Exempt @($classified.Keys) |
+                Where-Object { $_ -like "unprefixed: '$setName'*" }) {
+            Write-Host "FAILED - self-test: '$setName' was classified but still reported as unprefixed."
+            exit 1
+        }
+
+        # And the unlock half, with its three negatives.
+        $tech    = 'technology/kr-fluid-excess-handling'
+        $before  = @{ name = 'kr-fluid-excess-handling'; effects = @(@{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }) }
+        $wired   = @{ name = 'kr-fluid-excess-handling'; effects = @(
+                        @{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }
+                        @{ type = 'unlock-recipe'; recipe = $setName }) }
+        $foreign = @{ name = 'kr-fluid-excess-handling'; effects = @(
+                        @{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }
+                        @{ type = 'unlock-recipe'; recipe = 'kr-something-of-theirs' }) }
+        $renamed = @{ name = 'ours-now'; effects = @(@{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }) }
+        $dropped = @{ name = 'kr-fluid-excess-handling'; effects = @() }
+        $j = { param($o) $o | ConvertTo-Json -Depth 100 -Compress }
+
+        $cases = @(
+            @{ Label = 'the set wiring its own derivation in'; After = $wired;   Exempt = $true }
+            @{ Label = 'an unlock for a recipe that is NOT ours'; After = $foreign; Exempt = $false }
+            @{ Label = 'a field other than effects changing'; After = $renamed; Exempt = $false }
+            @{ Label = 'an effect being REMOVED'; After = $dropped; Exempt = $false }
+        )
+        foreach ($c in $cases) {
+            $got = @(Get-DerivedUnlock -Replaced @($tech) -WithUs @{ $tech = (& $j $c.After) } `
+                        -Baseline @{ $tech = (& $j $before) } -SetDerived $classified)
+            $was = [bool] ($got -contains $tech)
+            if ($was -ne $c.Exempt) {
+                Write-Host "FAILED - self-test: $($c.Label) was $(if ($was) { 'excused' } else { 'reported' }), expected the opposite."
+                exit 1
+            }
+        }
+        Write-Host 'self-test 5/5: the set-derivation classifiers excuse what the set built from us, and'
+        Write-Host '               nothing else -- an unprefixed name of ours, an unlock for a recipe'
+        Write-Host '               that is not ours, a changed field and a removed effect all survive.'
 
         Write-Host ''
         Write-Host 'OK - self-test passed: clean repo passes; unprefixed name, borrowed name and a real'
-        Write-Host '     mod that adds and replaces are all caught.'
+        Write-Host '     mod that adds and replaces are all caught; and the set-derivation classifiers'
+        Write-Host '     excuse only what the set built from us.'
         exit 0
     }
 
@@ -459,9 +762,20 @@ data.raw.item["iron-plate"].stack_size = 123' |
     }
 
     $bundledOn = if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.0 only)' }
+    $against   = if ($alsoMods) { "Krastorio 2, either predecessor, or the $($alsoMods.Count)-mod set at $AlsoModDirectory" }
+                 else           { 'Krastorio 2 or either predecessor' }
     Write-Host ''
-    Write-Host "OK - all $($ours.Count) prototype names this repo defines carry '$PREFIX', and none is used by"
-    Write-Host "     Krastorio 2 or either predecessor. Bundled enabled: $bundledOn."
+    # OURS, not the difference: with a set loaded the difference also holds what the SET generated
+    # from us, and calling 47 of Krastorio 2's recipes "names this repo defines" would be wrong in
+    # the sentence that is meant to be the answer.
+    $mineCount = $ours.Count - $setDerived.Count
+    Write-Host ''
+    Write-Host "OK - all $mineCount prototype names this repo defines carry '$PREFIX', and none is used by"
+    Write-Host "     $against. Bundled enabled: $bundledOn."
+    if ($setDerived.Count -or $derivedUnlocks) {
+        Write-Host ("     A further $($setDerived.Count) name(s) in the difference are the SET's own prototypes built " +
+                    "from ours, and $($derivedUnlocks.Count) prototype(s) of theirs gained only the unlocks for them.")
+    }
     exit 0
 }
 finally {
