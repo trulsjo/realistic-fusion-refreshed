@@ -42,7 +42,9 @@
     takes its $Error to the grave, so only an in-process call can see that leak.
 
 .PARAMETER Set
-    Which pinned set to fetch. 'krastorio2' is the only one defined so far; #61 adds the rest.
+    Which pinned set to fetch. One per overhaul family, because declared incompatibilities make a
+    combined list impossible: krastorio2, angels, bobs, madclowns, spaceex, seablock, riteg, fluid.
+    Pinned to each family's last factorio_version 2.0 release per ADR 0026 -- see the manifest.
 
 .PARAMETER CacheDirectory
     Where the mods live between runs. Defaults to .mod-cache/ beside the repository root, which is
@@ -102,8 +104,18 @@ if (-not $PlayerDataPath) { $PlayerDataPath = Join-Path $env:APPDATA 'Factorio\p
 # ---------------------------------------------------------------------------------------------
 # The pins.
 #
-# THESE ARE VERSION DECISIONS, NOT MACHINERY, and #60 says so in as many words: "build the pin as a
-# parameter and the answer fills it in later". Editing a number here is meant to be the whole job.
+# THESE ARE VERSION DECISIONS, NOT MACHINERY, and #60 said so in as many words: "build the pin as a
+# parameter and the answer fills it in later". #59 filled it in (ADR 0026): every family is pinned
+# to its last factorio_version 2.0 release, because 2.1 is still the experimental branch and this
+# repo still declares 2.0. Editing a number here is meant to be the whole job.
+#
+# DERIVED, NOT TRANSCRIBED. Each closure was computed from the portal API at the last fv 2.0
+# release of every member, following no-prefix and `~` dependencies and ignoring `?`, `(?)`, `!`
+# and `+`. Refreshing these means re-deriving them, which is also what happens when ADR 0008's
+# trigger fires and the whole manifest re-points at the 2.1 releases.
+#
+# A PASSING LANE PROVES COEXISTENCE WITH THAT FAMILY'S 2.0 LINE AND NOTHING ELSE. ADR 0026 forbids
+# an unqualified "works with Angel's" reaching a listing or a README on the strength of one.
 #
 # The Krastorio 2 set is FIVE mods and not the four #60's acceptance criteria list. At 2.0.19 --
 # the last factorio_version 2.0 release, and the only K2 that loads beside this repo on 2.0.77 --
@@ -122,6 +134,144 @@ $MOD_SETS = @{
         @{ Name = 'Krastorio2';                Version = '2.0.19'; Git = 'https://codeberg.org/raiguard/Krastorio2.git' }
         @{ Name = 'Krastorio2Assets';          Version = '2.0.5';  Git = 'https://codeberg.org/raiguard/Krastorio2Assets.git' }
         @{ Name = 'Krastorio2MenuSimulations'; Version = '2.0.2';  Git = 'https://codeberg.org/raiguard/Krastorio2MenuSimulations.git' }
+    )
+
+
+    # Angel's -- the four content mods and the four graphics mods they declare `~`, which is a
+    # HARD requirement that only waives load order. Missing them looks optional and is not.
+    angels = @(
+        @{ Name = 'angelsbioprocessing';        Version = '2.0.3' }
+        @{ Name = 'angelsbioprocessinggraphics'; Version = '2.0.0' }
+        @{ Name = 'angelspetrochem';            Version = '2.0.3' }
+        @{ Name = 'angelspetrochemgraphics';    Version = '2.0.1' }
+        @{ Name = 'angelsrefining';             Version = '2.0.4' }
+        @{ Name = 'angelsrefininggraphics';     Version = '2.0.0' }
+        @{ Name = 'angelssmelting';             Version = '2.0.5' }
+        @{ Name = 'angelssmeltinggraphics';     Version = '2.0.0' }
+    )
+
+    # Bob's. THE VERSION NUMBERS LIE HERE: Bob's 2.1.x is a factorio_version 2.0 mod and Bob's
+    # 3.0.x is the 2.1 one. The mod's own numbering and the game's major version move
+    # independently and happen to collide.
+    bobs = @(
+        @{ Name = 'bobassembly';   Version = '2.1.0' }
+        @{ Name = 'bobelectronics'; Version = '2.1.1' }
+        @{ Name = 'bobinserters';  Version = '2.0.3' }
+        @{ Name = 'boblibrary';    Version = '2.1.0' }
+        @{ Name = 'boblogistics';  Version = '2.1.1' }
+        @{ Name = 'bobmodules';    Version = '2.1.0' }
+        @{ Name = 'bobores';       Version = '2.1.2' }
+        @{ Name = 'bobplates';     Version = '2.1.1' }
+        @{ Name = 'bobpower';      Version = '2.1.0' }
+        @{ Name = 'bobrevamp';     Version = '2.1.1' }
+        @{ Name = 'bobtech';       Version = '2.1.0' }
+        @{ Name = 'bobwarfare';    Version = '2.1.0' }
+    )
+
+    # MadClown's. Four of five Clowns mods are alive and `Clowns-Science` is factorio_version
+    # 1.1 ONLY, so this lane is incomplete at any version -- not a pinning artefact. The six
+    # Angel's mods are Clowns-Processing's own hard requirements.
+    madclowns = @(
+        @{ Name = 'angelspetrochem';        Version = '2.0.3' }
+        @{ Name = 'angelspetrochemgraphics'; Version = '2.0.1' }
+        @{ Name = 'angelsrefining';         Version = '2.0.4' }
+        @{ Name = 'angelsrefininggraphics'; Version = '2.0.0' }
+        @{ Name = 'angelssmelting';         Version = '2.0.5' }
+        @{ Name = 'angelssmeltinggraphics'; Version = '2.0.0' }
+        @{ Name = 'Clowns-Processing';      Version = '2.0.14' }
+    )
+
+    # Space Exploration. Five deliberately large graphics mods, which is most of the download.
+    # SE declares `!` against Space Age and against fourteen Angel's and Bob's mods, so this
+    # lane can never be combined with those.
+    spaceex = @(
+        @{ Name = 'aai-containers';                    Version = '0.3.2' }
+        @{ Name = 'aai-industry';                      Version = '0.6.16' }
+        @{ Name = 'aai-signal-transmission';           Version = '0.5.3' }
+        @{ Name = 'alien-biomes';                      Version = '0.7.4' }
+        @{ Name = 'alien-biomes-graphics';             Version = '0.7.1' }
+        @{ Name = 'informatron';                       Version = '0.4.0' }
+        @{ Name = 'jetpack';                           Version = '0.4.17' }
+        @{ Name = 'robot_attrition';                   Version = '0.6.6' }
+        @{ Name = 'shield-projector';                  Version = '0.2.2' }
+        @{ Name = 'space-exploration';                 Version = '0.7.57' }
+        @{ Name = 'space-exploration-graphics';        Version = '0.7.5' }
+        @{ Name = 'space-exploration-graphics-2';      Version = '0.7.2' }
+        @{ Name = 'space-exploration-graphics-3';      Version = '0.7.2' }
+        @{ Name = 'space-exploration-graphics-4';      Version = '0.7.2' }
+        @{ Name = 'space-exploration-graphics-5';      Version = '0.7.3' }
+        @{ Name = 'space-exploration-menu-simulations'; Version = '0.7.4' }
+        @{ Name = 'space-exploration-postprocess';     Version = '0.7.5' }
+    )
+
+    # SeaBlock NG, AS INTENDED RATHER THAN AS ENFORCED -- Truls's call, 2026-08-26 (ADR 0026).
+    # SeaBlockWanne declares SeaBlockPack with `+`, which the game does not enforce and which
+    # the 2.0.77 docs do not even document. Taking the pack anyway makes this lane the
+    # configuration a player installs rather than the minimum that loads.
+    #
+    # TWO THINGS THIS LANE NEEDS THAT NO OTHER DOES. It requires `quality`, which ships with
+    # the game rather than the portal, so run load-check with -With quality; quality does not
+    # pull in space-age, which matters because SeaBlockWanne declares `! space-age`. And it
+    # overlaps the angels and bobs lanes -- twenty of their mods are hard requirements here,
+    # so the three sets are not independent samples.
+    seablock = @(
+        @{ Name = 'angelsaddons-storage';             Version = '2.0.1' }
+        @{ Name = 'angelsbioprocessing';              Version = '2.0.3' }
+        @{ Name = 'angelsbioprocessinggraphics';      Version = '2.0.0' }
+        @{ Name = 'angelspetrochem';                  Version = '2.0.3' }
+        @{ Name = 'angelspetrochemgraphics';          Version = '2.0.1' }
+        @{ Name = 'angelsrefining';                   Version = '2.0.4' }
+        @{ Name = 'angelsrefininggraphics';           Version = '2.0.0' }
+        @{ Name = 'angelssmelting';                   Version = '2.0.5' }
+        @{ Name = 'angelssmeltinggraphics';           Version = '2.0.0' }
+        @{ Name = 'bobassembly';                      Version = '2.1.0' }
+        @{ Name = 'bobelectronics';                   Version = '2.1.1' }
+        @{ Name = 'bobequipment';                     Version = '2.1.0' }
+        @{ Name = 'bobinserters';                     Version = '2.0.3' }
+        @{ Name = 'boblibrary';                       Version = '2.1.0' }
+        @{ Name = 'boblogistics';                     Version = '2.1.1' }
+        @{ Name = 'bobmodules';                       Version = '2.1.0' }
+        @{ Name = 'bobores';                          Version = '2.1.2' }
+        @{ Name = 'bobplates';                        Version = '2.1.1' }
+        @{ Name = 'bobpower';                         Version = '2.1.0' }
+        @{ Name = 'bobrevamp';                        Version = '2.1.1' }
+        @{ Name = 'bobtech';                          Version = '2.1.0' }
+        @{ Name = 'bobvehicleequipment';              Version = '2.1.1' }
+        @{ Name = 'cargo-ships';                      Version = '1.0.33' }
+        @{ Name = 'cargo-ships-graphics';             Version = '1.0.5' }
+        @{ Name = 'configurable-pollution-absorption'; Version = '1.0.1' }
+        @{ Name = 'even-distribution';                Version = '2.0.2' }
+        @{ Name = 'FactorySearch';                    Version = '1.14.3' }
+        @{ Name = 'flib';                             Version = '0.16.5' }
+        @{ Name = 'helmod';                           Version = '2.2.14' }
+        @{ Name = 'inventory-repair';                 Version = '20.0.3' }
+        @{ Name = 'KS_Power';                         Version = '2.0.0' }
+        @{ Name = 'loaders-modernized';               Version = '2.0.13' }
+        @{ Name = 'nicefill-scriptfix';               Version = '1.1.2' }
+        @{ Name = 'no_placement_restriction';         Version = '1.0.0' }
+        @{ Name = 'no-pipe-touching';                 Version = '1.1.28' }
+        @{ Name = 'QueueToFrontLimited';              Version = '2.0.3' }
+        @{ Name = 'RecursiveResourceCalculator';      Version = '1.1.9' }
+        @{ Name = 'saplib';                           Version = '0.0.3' }
+        @{ Name = 'ScienceCostTweakerM';              Version = '2.0.4' }
+        @{ Name = 'SeaBlockPack';                     Version = '1.0.1' }
+        @{ Name = 'SeaBlockWanne';                    Version = '1.0.5' }
+        @{ Name = 'shortwave_fix';                    Version = '0.5.2' }
+        @{ Name = 'squeak-through-2';                 Version = '0.1.5' }
+        @{ Name = 'stack-inserters';                  Version = '1.0.1' }
+        @{ Name = 'TurboBelt';                        Version = '1.1.0' }
+        @{ Name = 'wood-to-landfill-spaceage';        Version = '1.0.2' }
+    )
+
+    # RITEG. factorio_version 2.0 only -- it never got a 2.1 release, so this is the one lane
+    # that a move to 2.1 would drop rather than re-pin.
+    riteg = @(
+        @{ Name = 'RITEG'; Version = '1.3.11' }
+    )
+
+    # Advanced Fluid Handling. The portal slug is not the display name.
+    fluid = @(
+        @{ Name = 'underground-pipe-pack'; Version = '2.0.6' }
     )
 
     # A FIXTURE, NOT A MOD. -SelfTest fetches this against a portal it starts itself, which is the
@@ -709,8 +859,11 @@ $mods = $MOD_SETS[$Set]
 Write-Host "fetch-mods: $Set -- $($mods.Count) mods into $CacheDirectory"
 if ($PreferPortal) { Write-Host '            -PreferPortal: taking the portal route even where a git source exists' }
 
-$results = Invoke-Fetch -Mods $mods -CacheDirectory $CacheDirectory -PlayerDataPath $PlayerDataPath `
-    -BaseUrl $PortalBaseUrl -PreferPortal:$PreferPortal -Force:$Force
+# @() BECAUSE POWERSHELL UNROLLS A ONE-ELEMENT ARRAY ON RETURN. Without it a single-mod set --
+# riteg, fluid -- comes back as the bare hashtable, and $results.Count then counts its three KEYS
+# rather than one mod, so the summary claimed "3 mods" for a set of one.
+$results = @(Invoke-Fetch -Mods $mods -CacheDirectory $CacheDirectory -PlayerDataPath $PlayerDataPath `
+    -BaseUrl $PortalBaseUrl -PreferPortal:$PreferPortal -Force:$Force)
 
 Write-Host ''
 foreach ($r in $results) {

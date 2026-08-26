@@ -7,6 +7,14 @@ Date: 2026-08-14
 Accepted. Resolves
 [Which Factorio 2.0.x is the minimum supported version?](https://github.com/trulsjo/realistic-fusion-refreshed/issues/13).
 
+**Note added 2026-08-26 (#59, [ADR 0026](0026-third-party-mods-are-pinned-to-their-2-0-line.md)).**
+Nothing below is superseded — `factorio_version` is still `"2.0"`, the floor is still
+`base >= 2.0.77`, and the trigger this ADR set is still unfired: stable was 2.0.77 on 2026-08-14 and
+is 2.0.77 today, while experimental went 2.1.14 → 2.1.16. What changed is that every overhaul family
+shipped a `factorio_version` 2.1 release anyway, so the ecosystem moved before the trigger did. ADR
+0026 answers what to check against in the meantime: the last 2.0 release of each family, pinned as
+data. When 2.1 does become stable, both decisions come back together.
+
 ## Context
 
 Checked against <https://lua-api.factorio.com/> on 2026-08-14:
