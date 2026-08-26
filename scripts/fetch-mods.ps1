@@ -1,0 +1,664 @@
+#Requires -Version 7
+<#
+.SYNOPSIS
+    Fill a cache directory with third-party mods at pinned versions, for load-check -AlsoModDirectory.
+
+.DESCRIPTION
+    The one step that was missing (#60). `load-check.ps1 -AlsoModDirectory` already junctions whatever
+    mod directories it finds, and `Write-ModList` already enables any name it is handed without
+    validating it, so nothing downstream needed changing. What did not exist was a way to GET a
+    third-party mod onto disk at a version somebody chose.
+
+    GIT FIRST, PORTAL AS THE FALLBACK -- Truls's call, 2026-08-26 (#60). The ticket set out three
+    shapes and declined to choose between them. Git-only is cheapest but cannot reach a mod that
+    publishes nowhere else; portal-only reaches everything but makes every coexistence check
+    unrunnable on a machine that has never signed in to Factorio. This does both, and the cost is
+    honestly two mechanisms to keep working rather than one.
+
+    Consequence worth stating: a mod with a Git entry NEVER touches the portal, so it never reads
+    player-data.json and never builds a URL with a token in it. The whole Krastorio 2 set is in that
+    category, which is why the credential path below can be exercised deliberately (-PreferPortal)
+    rather than only by accident.
+
+    WHY A TAG IS A BETTER PIN THAN A VERSION STRING. `git clone --depth 1 --branch v2.0.19` names an
+    immutable object and git verifies its own integrity on the way in, so there is no sha1 step to
+    write and no "latest" to drift. The portal half has no such property, which is why it does have
+    one: every release carries a `sha1` and it is checked before the zip is used, cached or fresh.
+
+    WHAT THE PIN DOES NOT GUARANTEE, and it is worth knowing before trusting this for a coexistence
+    claim: a git tag is the mod's SOURCE, and the portal zip is the mod's RELEASE. They are usually
+    the same tree and are not required to be. Every mod fetched here therefore has its info.json
+    version checked against the pin afterwards -- that catches a mistagged release, though not a
+    release built from a tree that was never tagged.
+
+    THE TOKEN IS THE DANGEROUS PART. The portal's download endpoint takes credentials as QUERY
+    PARAMETERS, so the URL itself is a secret. Three things follow, and all three are enforced rather
+    than hoped for: the URL is never written to output, `Invoke-WebRequest` is called with
+    -Verbose:$false so a caller's -Verbose cannot print it, and every error that escapes the download
+    is scrubbed before it is rethrown -- a failed request would otherwise carry the URI, and with it
+    the token, into whatever captured that error. `-SelfTest` proves the absence with a sentinel
+    rather than asserting it.
+
+.PARAMETER Set
+    Which pinned set to fetch. 'krastorio2' is the only one defined so far; #61 adds the rest.
+
+.PARAMETER CacheDirectory
+    Where the mods live between runs. Defaults to .mod-cache/ beside the repository root, which is
+    git-ignored. Deliberately NOT the temp mod directory a check builds: that is torn down per run,
+    and re-cloning Krastorio 2's 30 MB every time would be slow and rude.
+
+.PARAMETER PreferPortal
+    Take the portal route even for a mod that has a Git source. Nothing needs this to work; it exists
+    so the credential path can be exercised on a mod whose git route is known good, instead of only
+    ever running when some other mod happens to lack a repository.
+
+.PARAMETER Force
+    Re-fetch even when the cache already holds the pinned version.
+
+.PARAMETER PlayerDataPath
+    Where to read the mod-portal credentials. Defaults to %APPDATA%\Factorio\player-data.json. A
+    parameter rather than a constant so -SelfTest can point it at a file it controls.
+
+.PARAMETER PortalBaseUrl
+    The mod portal's base URL. A parameter for the same reason: it lets -SelfTest exercise the
+    download path against an address that refuses instantly, so the leak check needs no network and
+    no real credentials.
+
+.PARAMETER SelfTest
+    Prove this script does what it claims: that a missing credential is reported as such, that the
+    token reaches no output, and that a corrupted cached zip is rejected rather than used.
+
+.EXAMPLE
+    pwsh -File scripts/fetch-mods.ps1
+    pwsh -File scripts/load-check.ps1 -AlsoModDirectory .mod-cache
+
+.EXAMPLE
+    pwsh -File scripts/fetch-mods.ps1 -PreferPortal
+    pwsh -File scripts/fetch-mods.ps1 -SelfTest
+#>
+[CmdletBinding()]
+param(
+    [string] $Set = 'krastorio2',
+    [string] $CacheDirectory,
+    [switch] $PreferPortal,
+    [switch] $Force,
+    [switch] $SelfTest,
+    [string] $PlayerDataPath,
+    [string] $PortalBaseUrl = 'https://mods.factorio.com'
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+
+$repoRoot = Split-Path -Parent $PSScriptRoot
+if (-not $CacheDirectory) { $CacheDirectory = Join-Path $repoRoot '.mod-cache' }
+if (-not $PlayerDataPath) { $PlayerDataPath = Join-Path $env:APPDATA 'Factorio\player-data.json' }
+
+# ---------------------------------------------------------------------------------------------
+# The pins.
+#
+# THESE ARE VERSION DECISIONS, NOT MACHINERY, and #60 says so in as many words: "build the pin as a
+# parameter and the answer fills it in later". Editing a number here is meant to be the whole job.
+#
+# The Krastorio 2 set is FIVE mods and not the four #60's acceptance criteria list. At 2.0.19 --
+# the last factorio_version 2.0 release, and the only K2 that loads beside this repo on 2.0.77 --
+# Krastorio2's info.json declares `ChangeInserterDropLane >= 1.1.0` with NO PREFIX, which in
+# Factorio's dependency syntax is a hard requirement (`?` optional, `(?)` hidden optional, `!`
+# incompatible, `~` required but not load-order-affecting, bare = required). Fetching four would
+# fail at load on a missing dependency. docs/research/mod-set-coexistence-targets.md records the
+# same five, loaded rather than merely computed, and notes it is untrue of the 2.1 line.
+#
+# Tag defaults to 'v' + Version, which is what all five publish. Give an explicit Tag when it isn't.
+# ---------------------------------------------------------------------------------------------
+$MOD_SETS = @{
+    krastorio2 = @(
+        @{ Name = 'ChangeInserterDropLane';    Version = '1.2.0';  Git = 'https://codeberg.org/raiguard/ChangeInserterDropLane.git' }
+        @{ Name = 'flib';                      Version = '0.16.2'; Git = 'https://github.com/factoriolib/flib.git' }
+        @{ Name = 'Krastorio2';                Version = '2.0.19'; Git = 'https://codeberg.org/raiguard/Krastorio2.git' }
+        @{ Name = 'Krastorio2Assets';          Version = '2.0.5';  Git = 'https://codeberg.org/raiguard/Krastorio2Assets.git' }
+        @{ Name = 'Krastorio2MenuSimulations'; Version = '2.0.2';  Git = 'https://codeberg.org/raiguard/Krastorio2MenuSimulations.git' }
+    )
+
+    # A FIXTURE, NOT A MOD. -SelfTest fetches this against a portal it starts itself, which is the
+    # only way to drive the download path -- and therefore the token -- without real credentials, a
+    # network, or a dependency on some third party's zip staying byte-identical. It has no Git entry
+    # on purpose: that is what makes it take the fallback.
+    selftest = @(
+        @{ Name = 'rf-selftest-mod'; Version = '1.0.0' }
+    )
+}
+
+# ---------------------------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------------------------
+
+function Get-ModVersion {
+    <#  The version a fetched directory actually declares, or $null if it is not a mod at all.  #>
+    param([Parameter(Mandatory)] [string] $Path)
+
+    $info = Join-Path $Path 'info.json'
+    if (-not (Test-Path -LiteralPath $info)) { return $null }
+    try { return (Get-Content -LiteralPath $info -Raw | ConvertFrom-Json).version }
+    catch { return $null }
+}
+
+function Assert-PinnedVersion {
+    <#  A tag is a promise about a tree, not about what the tree says it is. Check.  #>
+    param(
+        [Parameter(Mandatory)] [string] $Path,
+        [Parameter(Mandatory)] [string] $Name,
+        [Parameter(Mandatory)] [string] $Version,
+        [Parameter(Mandatory)] [string] $Source
+    )
+
+    $actual = Get-ModVersion -Path $Path
+    if (-not $actual) {
+        throw "$Name`: fetched from $Source but there is no readable info.json in $Path -- the source may not have the mod at its root."
+    }
+    if ($actual -ne $Version) {
+        throw "$Name`: pinned at $Version but $Source delivered $actual. Either the pin is wrong or the tag moved; fix the pin in scripts/fetch-mods.ps1 rather than loosening this check."
+    }
+}
+
+function Protect-Token {
+    <#  Replace a secret with a marker wherever it appears in a string.
+
+        THE LAST LINE OF DEFENCE FOR THE DOWNLOAD URL. Invoke-WebRequest's failures can carry the
+        request URI, and the URI carries the token as a query parameter, so an unscrubbed error
+        message is a leak into whatever captured it. Called on the way out of every portal failure.  #>
+    param(
+        [string] $Text,
+        [string] $Secret
+    )
+
+    if (-not $Text) { return $Text }
+    if (-not $Secret) { return $Text }
+    return $Text.Replace($Secret, '<token-redacted>')
+}
+
+function Get-PortalCredential {
+    <#  Read service-username and service-token out of Factorio's own player-data.json.
+
+        FAILS BY NAMING THE CAUSE, which is a requirement rather than politeness (#60). A machine
+        that has never signed in to Factorio cannot fetch from the portal at all, and that is a real
+        new precondition on these checks. Surfaced here, it says so; surfaced by the game, it is a
+        403 behind a Cloudflare challenge or a missing-zip error, and reads as this repo being
+        broken.  #>
+    param([Parameter(Mandatory)] [string] $Path)
+
+    $advice = @(
+        "The mod portal needs the credentials Factorio itself stores. Sign in once in the game"
+        "(Settings -> Your Factorio account) and they appear. Mods with a Git source need none of"
+        "this -- only the portal fallback does."
+    ) -join ' '
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        throw "No Factorio credentials: $Path does not exist. $advice"
+    }
+
+    try { $data = Get-Content -LiteralPath $Path -Raw | ConvertFrom-Json }
+    catch { throw "No Factorio credentials: $Path could not be parsed as JSON. $advice" }
+
+    $username = $null
+    $token    = $null
+    foreach ($p in $data.PSObject.Properties) {
+        if ($p.Name -eq 'service-username') { $username = $p.Value }
+        if ($p.Name -eq 'service-token')    { $token    = $p.Value }
+    }
+
+    $missing = @()
+    if (-not $username) { $missing += 'service-username' }
+    if (-not $token)    { $missing += 'service-token' }
+    if ($missing) {
+        throw "No Factorio credentials: $Path has no $($missing -join ' and '). $advice"
+    }
+
+    return @{ Username = $username; Token = $token }
+}
+
+function Get-PortalRelease {
+    <#  The pinned release's file_name, sha1 and download_url.
+
+        This half of the API needs no authentication -- the portal's own wiki says so -- which is
+        why the token is not read until the download itself. Picks by exact version: taking "latest"
+        is what makes a check that passes today fail the next time an author bumps a major.  #>
+    param(
+        [Parameter(Mandatory)] [string] $Name,
+        [Parameter(Mandatory)] [string] $Version,
+        [Parameter(Mandatory)] [string] $BaseUrl
+    )
+
+    $url = "$BaseUrl/api/mods/$Name/full"
+    try { $full = Invoke-RestMethod -Uri $url -Method Get -Verbose:$false }
+    catch { throw "$Name`: could not reach the mod portal API at $url -- $($_.Exception.Message)" }
+
+    $release = @($full.releases) | Where-Object { $_.version -eq $Version } | Select-Object -First 1
+    if (-not $release) {
+        $have = (@($full.releases) | ForEach-Object { $_.version }) -join ', '
+        throw "$Name`: the portal has no release $Version. It has: $have."
+    }
+    return $release
+}
+
+function Save-PortalMod {
+    <#  Download the pinned release, check its sha1, and unpack it into the cache.
+
+        CACHED ZIP, CHECKED ANYWAY. The hash is verified whether the zip was just downloaded or
+        found on disk from a previous run: a cache is exactly where a truncated or tampered file
+        would sit unnoticed, and re-checking costs a hash of a file we already have.  #>
+    param(
+        [Parameter(Mandatory)] [hashtable] $Mod,
+        [Parameter(Mandatory)] [string]    $CacheDirectory,
+        [Parameter(Mandatory)] [string]    $PlayerDataPath,
+        [Parameter(Mandatory)] [string]    $BaseUrl
+    )
+
+    $name    = $Mod.Name
+    $version = $Mod.Version
+    $release = Get-PortalRelease -Name $name -Version $version -BaseUrl $BaseUrl
+
+    $zipDir = Join-Path $CacheDirectory '.zips'
+    New-Item -ItemType Directory -Path $zipDir -Force | Out-Null
+    $zip = Join-Path $zipDir $release.file_name
+
+    $needDownload = -not (Test-Path -LiteralPath $zip)
+    if (-not $needDownload) {
+        $cachedHash = (Get-FileHash -LiteralPath $zip -Algorithm SHA1).Hash
+        if ($cachedHash -ne $release.sha1.ToUpperInvariant()) {
+            Write-Host "  $name`: cached zip fails its sha1, discarding and refetching"
+            Remove-Item -LiteralPath $zip -Force
+            $needDownload = $true
+        }
+        else { Write-Host "  $name`: cached zip matches the portal's sha1" }
+    }
+
+    if ($needDownload) {
+        # The token is read HERE and nowhere earlier, so a git-only run never touches it.
+        $cred = Get-PortalCredential -Path $PlayerDataPath
+        $url  = "$BaseUrl$($release.download_url)?username=$([uri]::EscapeDataString($cred.Username))&token=$([uri]::EscapeDataString($cred.Token))"
+        Write-Host "  $name`: downloading $($release.file_name) from the mod portal"
+        try {
+            # -Verbose:$false so a caller's -Verbose cannot print the URI, which is a secret here.
+            $ProgressPreference = 'SilentlyContinue'
+            Invoke-WebRequest -Uri $url -OutFile $zip -Verbose:$false | Out-Null
+        }
+        catch {
+            $safe = Protect-Token -Text $_.Exception.Message -Secret $cred.Token
+            if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
+            throw "$name`: the mod portal download failed -- $safe"
+        }
+        finally { $url = $null; $cred = $null }
+
+        $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA1).Hash
+        if ($hash -ne $release.sha1.ToUpperInvariant()) {
+            Remove-Item -LiteralPath $zip -Force
+            throw "$name`: the downloaded zip's sha1 is $hash but the portal says $($release.sha1). Not using it."
+        }
+    }
+
+    # Unpack beside the cache, then move into place: a mod's folder inside its zip is named
+    # {name}_{version}, and load-check finds mods by DIRECTORY NAME, so it has to end up as {name}.
+    $staging = Join-Path $CacheDirectory ('.staging-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    $target  = Join-Path $CacheDirectory $name
+    try {
+        Expand-Archive -LiteralPath $zip -DestinationPath $staging -Force
+        $inner = @(Get-ChildItem -Path $staging -Directory)
+        $root  = if ($inner.Count -eq 1 -and (Test-Path (Join-Path $inner[0].FullName 'info.json'))) { $inner[0].FullName } else { $staging }
+        if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
+        Move-Item -LiteralPath $root -Destination $target
+    }
+    finally {
+        if (Test-Path -LiteralPath $staging) { Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+
+    Assert-PinnedVersion -Path $target -Name $name -Version $version -Source 'the mod portal'
+    return 'portal'
+}
+
+function Save-GitMod {
+    <#  Clone the pinned tag, shallow. No credential, no hash step -- git verifies its own objects.  #>
+    param(
+        [Parameter(Mandatory)] [hashtable] $Mod,
+        [Parameter(Mandatory)] [string]    $CacheDirectory
+    )
+
+    $name   = $Mod.Name
+    $tag    = if ($Mod.ContainsKey('Tag')) { $Mod.Tag } else { 'v' + $Mod.Version }
+    $target = Join-Path $CacheDirectory $name
+
+    if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force }
+
+    Write-Host "  $name`: cloning $tag from $($Mod.Git)"
+    # GIT_TERMINAL_PROMPT=0 so a moved tag or a private URL fails instead of blocking on a prompt
+    # this script has no way to answer.
+    $previous = $env:GIT_TERMINAL_PROMPT
+    $env:GIT_TERMINAL_PROMPT = '0'
+    try {
+        # git writes ordinary progress to stderr, and with $ErrorActionPreference = 'Stop' that
+        # alone would throw before the exit code is ever read. Gather the streams under Continue
+        # and judge the command by its exit code, which is the only thing that means failure.
+        $output = & {
+            $ErrorActionPreference = 'Continue'
+            & git clone --quiet --depth 1 --branch $tag -- $Mod.Git $target 2>&1
+        }
+        if ($LASTEXITCODE -ne 0) {
+            throw "$name`: git clone of $tag from $($Mod.Git) failed -- $(($output | ForEach-Object { $_.ToString() }) -join ' ')"
+        }
+    }
+    finally { $env:GIT_TERMINAL_PROMPT = $previous }
+
+    Assert-PinnedVersion -Path $target -Name $name -Version $Mod.Version -Source "git tag $tag"
+    return 'git'
+}
+
+function Invoke-Fetch {
+    <#  Fetch one set into the cache, and report where each mod came from.  #>
+    param(
+        [Parameter(Mandatory)] [array]  $Mods,
+        [Parameter(Mandatory)] [string] $CacheDirectory,
+        [Parameter(Mandatory)] [string] $PlayerDataPath,
+        [Parameter(Mandatory)] [string] $BaseUrl,
+        [switch] $PreferPortal,
+        [switch] $Force
+    )
+
+    New-Item -ItemType Directory -Path $CacheDirectory -Force | Out-Null
+    $results = @()
+
+    foreach ($mod in $Mods) {
+        $target = Join-Path $CacheDirectory $mod.Name
+        if (-not $Force -and (Get-ModVersion -Path $target) -eq $mod.Version) {
+            Write-Host "  $($mod.Name)`: already cached at $($mod.Version)"
+            $results += @{ Name = $mod.Name; Version = $mod.Version; Source = 'cache' }
+            continue
+        }
+
+        $useGit = $mod.ContainsKey('Git') -and $mod.Git -and -not $PreferPortal
+        $source = if ($useGit) {
+            Save-GitMod -Mod $mod -CacheDirectory $CacheDirectory
+        }
+        else {
+            Save-PortalMod -Mod $mod -CacheDirectory $CacheDirectory -PlayerDataPath $PlayerDataPath -BaseUrl $BaseUrl
+        }
+        $results += @{ Name = $mod.Name; Version = $mod.Version; Source = $source }
+    }
+
+    return $results
+}
+
+# ---------------------------------------------------------------------------------------------
+# Self-test
+# ---------------------------------------------------------------------------------------------
+
+function Start-FakePortal {
+    <#  A mod portal on loopback, so the download path can be driven without credentials.
+
+        WHY THIS EXISTS RATHER THAN A REFUSING ADDRESS. The first version of this self-test pointed
+        -PortalBaseUrl at a port nothing listens on and searched the output for a sentinel token. It
+        passed, and it proved nothing: the API call fails first, so Get-PortalCredential is never
+        reached and the token never enters the URL the check exists to police. A leak test that never
+        handles the secret is the same class of pass as an asset check that never opens the archive.
+
+        So this answers /api/mods/{name}/full for real, hands back a download_url, and logs every
+        request line it receives -- INCLUDING the query string, token and all. That log is the proof
+        the token actually travelled; the leak check is only meaningful because it did.  #>
+    param(
+        [Parameter(Mandatory)] [int]    $Port,
+        [Parameter(Mandatory)] [string] $RequestLog,
+        [Parameter(Mandatory)] [string] $Name,
+        [Parameter(Mandatory)] [string] $Version,
+        [Parameter(Mandatory)] [string] $ClaimedSha1,
+        [string] $ZipPath,
+        [switch] $FailDownload
+    )
+
+    Start-ThreadJob -ScriptBlock {
+        param($port, $log, $name, $version, $sha1, $zip, $fail)
+        $h = [System.Net.HttpListener]::new()
+        $h.Prefixes.Add("http://localhost:$port/")
+        $h.Start()
+        try {
+            while ($true) {
+                $ctx = $h.GetContext()
+                $req = $ctx.Request
+                $res = $ctx.Response
+                Add-Content -LiteralPath $log -Value $req.Url.PathAndQuery
+                $path = $req.Url.AbsolutePath
+                if ($path -eq '/__stop') { $res.StatusCode = 200; $res.Close(); break }
+                elseif ($path -like '/api/mods/*/full') {
+                    $body = @{
+                        name     = $name
+                        releases = @(@{
+                            version      = $version
+                            file_name    = ($name + '_' + $version + '.zip')
+                            sha1         = $sha1
+                            download_url = '/download/' + $name + '/0000000000000000000000000000000000000000'
+                        })
+                    } | ConvertTo-Json -Depth 5
+                    $b = [Text.Encoding]::UTF8.GetBytes($body)
+                    $res.ContentType = 'application/json'
+                    $res.StatusCode = 200
+                    $res.OutputStream.Write($b, 0, $b.Length)
+                    $res.Close()
+                }
+                elseif ($path -like '/download/*') {
+                    if ($fail -or -not $zip) { $res.StatusCode = 500; $res.Close() }
+                    else {
+                        $b = [IO.File]::ReadAllBytes($zip)
+                        $res.ContentType = 'application/zip'
+                        $res.StatusCode = 200
+                        $res.OutputStream.Write($b, 0, $b.Length)
+                        $res.Close()
+                    }
+                }
+                else { $res.StatusCode = 404; $res.Close() }
+            }
+        }
+        finally { $h.Stop(); $h.Close() }
+    } -ArgumentList $Port, $RequestLog, $Name, $Version, $ClaimedSha1, $ZipPath, ([bool]$FailDownload)
+}
+
+function Invoke-SelfTest {
+    <#  Prove the four things a passing fetch does not show.
+
+        Every portal check runs the real script in a child process against the loopback portal above,
+        so what is exercised is the shipped code path rather than a re-implementation of it.  #>
+    param([Parameter(Mandatory)] [string] $ScriptPath)
+
+    $temp = Join-Path ([IO.Path]::GetTempPath()) ('rf-fetchmods-selftest-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    New-Item -ItemType Directory -Path $temp -Force | Out-Null
+    $failures = 0
+    $sentinel = 'SENTINEL-TOKEN-b3a1f29c47d5'
+
+    # The credentials the child will use: real shape, invented values.
+    $creds = Join-Path $temp 'player-data.json'
+    @{ 'service-username' = 'selftest-user'; 'service-token' = $sentinel } |
+        ConvertTo-Json | Set-Content -LiteralPath $creds -Encoding utf8
+
+    # The zip the fake portal serves: a real archive holding a real info.json, so the unpack and the
+    # version check downstream are exercised rather than stubbed.
+    $modName = 'rf-selftest-mod'
+    $stage = Join-Path $temp ('stage\' + $modName + '_1.0.0')
+    New-Item -ItemType Directory -Path $stage -Force | Out-Null
+    @{ name = $modName; version = '1.0.0'; title = 'fetch-mods self-test fixture'
+       author = 'fetch-mods.ps1'; factorio_version = '2.0'; dependencies = @('base') } |
+        ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stage 'info.json') -Encoding utf8
+    $zip = Join-Path $temp 'served.zip'
+    Compress-Archive -Path $stage -DestinationPath $zip -Force
+    $trueSha1 = (Get-FileHash -LiteralPath $zip -Algorithm SHA1).Hash
+
+    # A free port, taken and released so the listener can claim it.
+    $probe = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, 0)
+    $probe.Start(); $port = $probe.LocalEndpoint.Port; $probe.Stop()
+
+    $runChild = {
+        param([string] $CacheDir, [string] $CaptureDir, [bool] $Loud)
+        New-Item -ItemType Directory -Path $CaptureDir -Force | Out-Null
+        $out = Join-Path $CaptureDir 'stdout.txt'
+        $err = Join-Path $CaptureDir 'stderr.txt'
+        $psArgs = @(
+            '-NoProfile', '-File', $ScriptPath,
+            '-Set', 'selftest',
+            '-CacheDirectory', $CacheDir,
+            '-PlayerDataPath', $creds,
+            '-PortalBaseUrl', ('http://localhost:' + $port),
+            '-Force'
+        )
+        if ($Loud) { $psArgs += '-Verbose' }
+        $p = Start-Process -FilePath 'pwsh' -ArgumentList $psArgs -NoNewWindow -Wait -PassThru `
+            -RedirectStandardOutput $out -RedirectStandardError $err
+        $text = (Get-Content -LiteralPath $out -Raw -ErrorAction SilentlyContinue) + "`n" +
+                (Get-Content -LiteralPath $err -Raw -ErrorAction SilentlyContinue)
+        return @{ Code = $p.ExitCode; CaptureDir = $CaptureDir; Text = $text }
+    }
+
+    $stopPortal = {
+        param($Job)
+        try { Invoke-WebRequest -Uri ('http://localhost:' + $port + '/__stop') -TimeoutSec 5 -Verbose:$false | Out-Null } catch { }
+        Wait-Job -Job $Job -Timeout 10 | Out-Null
+        Remove-Job -Job $Job -Force -ErrorAction SilentlyContinue
+    }
+
+    try {
+        # --- 1/4 -------------------------------------------------------------------------------
+        Write-Host 'self-test 1/4: a machine with no Factorio credentials must say so.'
+        try {
+            Get-PortalCredential -Path (Join-Path $temp 'absent.json') | Out-Null
+            Write-Host '  FAILED: a missing player-data.json did not throw.'; $failures++
+        }
+        catch {
+            if ($_.Exception.Message -match 'No Factorio credentials') { Write-Host '  ok: a missing file names the cause' }
+            else { Write-Host "  FAILED: wrong message -- $($_.Exception.Message)"; $failures++ }
+        }
+        $signedOut = Join-Path $temp 'signed-out.json'
+        '{ "last-played-version": { "build_version": 84539 } }' | Set-Content -LiteralPath $signedOut -Encoding utf8
+        try {
+            Get-PortalCredential -Path $signedOut | Out-Null
+            Write-Host '  FAILED: a player-data.json without the keys did not throw.'; $failures++
+        }
+        catch {
+            if ($_.Exception.Message -match 'service-username' -and $_.Exception.Message -match 'service-token') {
+                Write-Host '  ok: a signed-out player-data.json names both missing keys'
+            }
+            else { Write-Host "  FAILED: wrong message -- $($_.Exception.Message)"; $failures++ }
+        }
+
+        # --- 2/4 -------------------------------------------------------------------------------
+        Write-Host 'self-test 2/4: the token must travel, and must reach no captured output.'
+        $log = Join-Path $temp 'requests-fail.log'
+        New-Item -ItemType File -Path $log -Force | Out-Null
+        $job = Start-FakePortal -Port $port -RequestLog $log -Name $modName -Version '1.0.0' `
+            -ClaimedSha1 $trueSha1 -ZipPath $zip -FailDownload
+        $r = & $runChild (Join-Path $temp 'cache-fail') (Join-Path $temp 'capture-fail') $true
+        & $stopPortal $job
+
+        $served = Get-Content -LiteralPath $log -Raw -ErrorAction SilentlyContinue
+        # The anti-vacuous half: unless the portal SAW the token, the leak check below is empty.
+        if ($served -notmatch [regex]::Escape($sentinel)) {
+            Write-Host '  FAILED: the token never reached the download request, so this proves nothing.'
+            Write-Host "          requests seen: $served"
+            $failures++
+        }
+        elseif ($r.Code -eq 0) {
+            Write-Host '  FAILED: a 500 from the download endpoint did not fail the run.'; $failures++
+        }
+        else {
+            $leaked = @(Get-ChildItem -Path $r.CaptureDir -File -Recurse | Where-Object {
+                (Get-Content -LiteralPath $_.FullName -Raw -ErrorAction SilentlyContinue) -match [regex]::Escape($sentinel) })
+            if ($leaked) {
+                Write-Host "  FAILED: the token reached $($leaked.Count) captured file(s): $(($leaked.Name) -join ', ')"
+                $failures++
+            }
+            else {
+                Write-Host "  ok: the portal saw the token, the run failed, and $($r.Text.Length) bytes of"
+                Write-Host '      captured stdout/stderr -- taken with -Verbose, the obvious way a URL leaks -- hold none of it'
+            }
+        }
+
+        # --- 3/4 -------------------------------------------------------------------------------
+        Write-Host 'self-test 3/4: a download whose sha1 does not match must be refused.'
+        $log2 = Join-Path $temp 'requests-badsha.log'
+        New-Item -ItemType File -Path $log2 -Force | Out-Null
+        $job = Start-FakePortal -Port $port -RequestLog $log2 -Name $modName -Version '1.0.0' `
+            -ClaimedSha1 ('a' * 40) -ZipPath $zip
+        $cacheBad = Join-Path $temp 'cache-badsha'
+        $r = & $runChild $cacheBad (Join-Path $temp 'capture-badsha') $false
+        & $stopPortal $job
+
+        if ($r.Code -eq 0) {
+            Write-Host '  FAILED: a zip whose sha1 disagreed with the portal was accepted.'; $failures++
+        }
+        elseif ($r.Text -notmatch 'sha1') {
+            Write-Host "  FAILED: it failed, but not with a message about the hash -- $($r.Text)"; $failures++
+        }
+        elseif (Test-Path (Join-Path $cacheBad $modName)) {
+            Write-Host '  FAILED: the mod was unpacked into the cache despite failing its hash.'; $failures++
+        }
+        else { Write-Host '  ok: the mismatch is named and nothing reaches the cache' }
+
+        # --- 4/4 -------------------------------------------------------------------------------
+        Write-Host 'self-test 4/4: a good download lands, and a second run reuses the cached zip.'
+        $log3 = Join-Path $temp 'requests-good.log'
+        New-Item -ItemType File -Path $log3 -Force | Out-Null
+        $job = Start-FakePortal -Port $port -RequestLog $log3 -Name $modName -Version '1.0.0' `
+            -ClaimedSha1 $trueSha1 -ZipPath $zip
+        $cacheGood = Join-Path $temp 'cache-good'
+        $first  = & $runChild $cacheGood (Join-Path $temp 'capture-good-1') $false
+        $second = & $runChild $cacheGood (Join-Path $temp 'capture-good-2') $false
+        & $stopPortal $job
+
+        $landed = Get-ModVersion -Path (Join-Path $cacheGood $modName)
+        if ($first.Code -ne 0) {
+            Write-Host "  FAILED: a valid download did not succeed (exit $($first.Code)) -- $($first.Text)"; $failures++
+        }
+        elseif ($landed -ne '1.0.0') {
+            Write-Host "  FAILED: the cache holds '$landed', not the pinned 1.0.0."; $failures++
+        }
+        elseif ($second.Text -notmatch 'cached zip matches') {
+            Write-Host "  FAILED: the second run did not reuse and re-verify the cached zip -- $($second.Text)"; $failures++
+        }
+        else {
+            Write-Host '  ok: unpacked at its pinned version, and the second run re-checked the cached'
+            Write-Host '      zip against the portal sha1 rather than downloading it again'
+        }
+    }
+    finally {
+        Get-Job -ErrorAction SilentlyContinue | Remove-Job -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    Write-Host ''
+    if ($failures -gt 0) {
+        Write-Host "FAILED - self-test: $failures check(s) did not hold."
+        exit 1
+    }
+    Write-Host 'OK - self-test passed: a missing credential is named, the token travels to the portal'
+    Write-Host '     and reaches no captured output, a bad sha1 is refused, and a good download is'
+    Write-Host '     cached and re-verified rather than refetched.'
+    exit 0
+}
+
+# ---------------------------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------------------------
+
+if ($SelfTest) { Invoke-SelfTest -ScriptPath $PSCommandPath }
+
+if (-not $MOD_SETS.ContainsKey($Set)) {
+    throw "Unknown set '$Set'. Defined: $(($MOD_SETS.Keys | Sort-Object) -join ', ')."
+}
+$mods = $MOD_SETS[$Set]
+
+Write-Host "fetch-mods: $Set -- $($mods.Count) mods into $CacheDirectory"
+if ($PreferPortal) { Write-Host '            -PreferPortal: taking the portal route even where a git source exists' }
+
+$results = Invoke-Fetch -Mods $mods -CacheDirectory $CacheDirectory -PlayerDataPath $PlayerDataPath `
+    -BaseUrl $PortalBaseUrl -PreferPortal:$PreferPortal -Force:$Force
+
+Write-Host ''
+foreach ($r in $results) {
+    Write-Host ("  {0,-28} {1,-8} {2}" -f $r.Name, $r.Version, $r.Source)
+}
+Write-Host ''
+Write-Host "OK - $($results.Count) mods at their pinned versions in $CacheDirectory"
+Write-Host "     Load them with: pwsh -File scripts/load-check.ps1 -AlsoModDirectory $CacheDirectory"

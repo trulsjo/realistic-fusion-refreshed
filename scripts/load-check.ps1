@@ -228,6 +228,10 @@ if ($SelfTest -and $AlsoModDirectory) {
 $alsoMods = @()
 if ($AlsoModDirectory) {
     if (-not (Test-Path $AlsoModDirectory)) { throw "-AlsoModDirectory not found: $AlsoModDirectory" }
+    # ABSOLUTE, BECAUSE A JUNCTION TARGET MUST BE. New-ModJunctions hands the path to New-Item,
+    # which refuses a relative target -- so `-AlsoModDirectory .mod-cache`, the obvious thing to
+    # type after scripts/fetch-mods.ps1, failed inside the library rather than here (#60).
+    $AlsoModDirectory = (Resolve-Path -LiteralPath $AlsoModDirectory).Path
     $alsoMods = @(Get-ChildItem -Path $AlsoModDirectory -Directory |
         Where-Object { Test-Path (Join-Path $_.FullName 'info.json') } |
         ForEach-Object { $_.Name } | Sort-Object)

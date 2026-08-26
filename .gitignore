@@ -14,3 +14,7 @@ graphify-out/
 
 # Built mod zips — reproducible from the working tree with scripts/pack-mods.ps1
 dist/
+
+# Third-party mods fetched by scripts/fetch-mods.ps1 at pinned versions. Reproducible, and
+# large -- Krastorio 2 alone is 30 MB. Never this repo's own code.
+.mod-cache*/
