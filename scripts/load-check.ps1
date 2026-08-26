@@ -162,8 +162,13 @@
     Krastorio 2 2.1.x will NOT load next to this repo on 2.0.77 however the mod list is written --
     the 2.0 line (2.0.19) is the one that loads. See docs/research/mod-set-coexistence-targets.md.
 
-    The asset check does not cover the extra mods: Find-MissingAssets only resolves paths for mods
-    it is given a directory for, and a third-party mod's graphics are not this repo's to police.
+    The asset check half-covers the extra mods, and the distinction matters. Find-MissingAssets is
+    given a directory only for this repo's mods, so a third-party mod's OWN assets are skipped --
+    not this repo's to police. But `__base__/...` paths are always resolvable, whoever names them,
+    so a third-party mod referencing a base file that 2.0 removed IS reported. Found the first time
+    a pinned set was loaded (#59): RITEG 1.3.11 and underground-pipe-pack 2.0.6 both name
+    `__base__/sound/car-metal-impact.ogg`, which does not exist in 2.0.77. That is upstream's bug
+    and it fails this check, which is worth knowing before reading such a failure as ours.
 
 .PARAMETER FromZips
     Build the distributable zips with pack-mods.ps1 and load those, instead of junctioning the
