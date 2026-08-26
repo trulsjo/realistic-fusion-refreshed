@@ -148,8 +148,15 @@
     enabled; anything else in there is ignored.
 
     This is ADR 0007's obligation -- coexistence with other mods, Krastorio 2 most of all -- and it
-    takes a directory rather than a mod name because there is nothing here that downloads: the mods
-    have to be put there first, by git or by hand. Enabling them is the part this script owns.
+    takes a directory rather than a mod name because this script downloads nothing: enabling mods is
+    the part it owns, and getting them onto disk is somebody else's job. Since #60 that somebody is
+    scripts/fetch-mods.ps1, which fills a directory at pinned versions -- by git where a source
+    exists, by the mod portal otherwise. Run it, then point this at what it wrote:
+
+        pwsh -File scripts/fetch-mods.ps1
+        pwsh -File scripts/load-check.ps1 -AlsoModDirectory .mod-cache
+
+    Putting the mods there by hand still works and always did.
 
     Note the version trap. A mod's factorio_version must match the game's major version exactly, so
     Krastorio 2 2.1.x will NOT load next to this repo on 2.0.77 however the mod list is written --

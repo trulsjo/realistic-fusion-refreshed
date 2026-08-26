@@ -32,12 +32,14 @@
     release built from a tree that was never tagged.
 
     THE TOKEN IS THE DANGEROUS PART. The portal's download endpoint takes credentials as QUERY
-    PARAMETERS, so the URL itself is a secret. Three things follow, and all three are enforced rather
-    than hoped for: the URL is never written to output, `Invoke-WebRequest` is called with
-    -Verbose:$false so a caller's -Verbose cannot print it, and every error that escapes the download
-    is scrubbed before it is rethrown -- a failed request would otherwise carry the URI, and with it
-    the token, into whatever captured that error. `-SelfTest` proves the absence with a sentinel
-    rather than asserting it.
+    PARAMETERS, so the URL itself is a secret. Four things follow, and all four are enforced rather
+    than hoped for: the URL is never written to output; `Invoke-WebRequest` is called with
+    -Verbose:$false so a caller's -Verbose cannot print it; every error that escapes the download is
+    scrubbed before it is rethrown; and the ErrorRecord PowerShell files in $Error is DROPPED, because
+    a scrubbed message is not the only copy -- the record's TargetObject holds the request URI, token
+    and all, even when the message does not. `-SelfTest` proves all of it with a sentinel rather than
+    asserting it, and checks 2/5 and 5/5 are two different checks for that reason: a child process
+    takes its $Error to the grave, so only an in-process call can see that leak.
 
 .PARAMETER Set
     Which pinned set to fetch. 'krastorio2' is the only one defined so far; #61 adds the rest.
@@ -45,7 +47,10 @@
 .PARAMETER CacheDirectory
     Where the mods live between runs. Defaults to .mod-cache/ beside the repository root, which is
     git-ignored. Deliberately NOT the temp mod directory a check builds: that is torn down per run,
-    and re-cloning Krastorio 2's 30 MB every time would be slow and rude.
+    and refetching per run would be slow and rude. Measured, the Krastorio 2 set is 414 MB -- 376 of
+    it Krastorio2Assets, which is the mod that actually motivates caching; Krastorio2 itself is 28.
+    Nearly half of that total is .git: --depth 1 keeps the history shallow, not absent, and an asset
+    repository's single commit is still every sprite.
 
 .PARAMETER PreferPortal
     Take the portal route even for a mod that has a Git source. Nothing needs this to work; it exists
@@ -277,6 +282,8 @@ function Save-PortalMod {
         $cred = Get-PortalCredential -Path $PlayerDataPath
         $url  = "$BaseUrl$($release.download_url)?username=$([uri]::EscapeDataString($cred.Username))&token=$([uri]::EscapeDataString($cred.Token))"
         Write-Host "  $name`: downloading $($release.file_name) from the mod portal"
+        # Where $Error stood before the request, so the records this one adds can be dropped again.
+        $errorFloor = $Error.Count
         try {
             # -Verbose:$false so a caller's -Verbose cannot print the URI, which is a secret here.
             $ProgressPreference = 'SilentlyContinue'
@@ -285,6 +292,16 @@ function Save-PortalMod {
         catch {
             $safe = Protect-Token -Text $_.Exception.Message -Secret $cred.Token
             if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
+            # THE RETHROWN MESSAGE IS NOT THE ONLY COPY, which is what the first version of this
+            # missed. PowerShell appends the original ErrorRecord to $Error whatever we throw, and
+            # that record's TargetObject is the HttpRequestMessage -- whose RequestUri still holds
+            # ?username=...&token=... in clear, even when Exception.Message does not. Measured on
+            # 7.6.5: Message clean, TargetObject dirty, `$Error[0] | Format-List *` dirty.
+            #
+            # Scrubbing the message and leaving the record is a leak into anything that later reads
+            # $Error: a CI wrapper dumping it on failure, a transcript, or a session that dot-sourced
+            # this script. Dropping the records rather than trusting nobody looks.
+            while ($Error.Count -gt $errorFloor) { $Error.RemoveAt(0) }
             throw "$name`: the mod portal download failed -- $safe"
         }
         finally { $url = $null; $cred = $null }
@@ -459,7 +476,7 @@ function Start-FakePortal {
 }
 
 function Invoke-SelfTest {
-    <#  Prove the four things a passing fetch does not show.
+    <#  Prove the five things a passing fetch does not show.
 
         Every portal check runs the real script in a child process against the loopback portal above,
         so what is exercised is the shipped code path rather than a re-implementation of it.  #>
@@ -521,7 +538,7 @@ function Invoke-SelfTest {
 
     try {
         # --- 1/4 -------------------------------------------------------------------------------
-        Write-Host 'self-test 1/4: a machine with no Factorio credentials must say so.'
+        Write-Host 'self-test 1/5: a machine with no Factorio credentials must say so.'
         try {
             Get-PortalCredential -Path (Join-Path $temp 'absent.json') | Out-Null
             Write-Host '  FAILED: a missing player-data.json did not throw.'; $failures++
@@ -544,7 +561,7 @@ function Invoke-SelfTest {
         }
 
         # --- 2/4 -------------------------------------------------------------------------------
-        Write-Host 'self-test 2/4: the token must travel, and must reach no captured output.'
+        Write-Host 'self-test 2/5: the token must travel, and must reach no captured output.'
         $log = Join-Path $temp 'requests-fail.log'
         New-Item -ItemType File -Path $log -Force | Out-Null
         $job = Start-FakePortal -Port $port -RequestLog $log -Name $modName -Version '1.0.0' `
@@ -576,7 +593,7 @@ function Invoke-SelfTest {
         }
 
         # --- 3/4 -------------------------------------------------------------------------------
-        Write-Host 'self-test 3/4: a download whose sha1 does not match must be refused.'
+        Write-Host 'self-test 3/5: a download whose sha1 does not match must be refused.'
         $log2 = Join-Path $temp 'requests-badsha.log'
         New-Item -ItemType File -Path $log2 -Force | Out-Null
         $job = Start-FakePortal -Port $port -RequestLog $log2 -Name $modName -Version '1.0.0' `
@@ -597,7 +614,7 @@ function Invoke-SelfTest {
         else { Write-Host '  ok: the mismatch is named and nothing reaches the cache' }
 
         # --- 4/4 -------------------------------------------------------------------------------
-        Write-Host 'self-test 4/4: a good download lands, and a second run reuses the cached zip.'
+        Write-Host 'self-test 4/5: a good download lands, and a second run reuses the cached zip.'
         $log3 = Join-Path $temp 'requests-good.log'
         New-Item -ItemType File -Path $log3 -Force | Out-Null
         $job = Start-FakePortal -Port $port -RequestLog $log3 -Name $modName -Version '1.0.0' `
@@ -621,6 +638,46 @@ function Invoke-SelfTest {
             Write-Host '  ok: unpacked at its pinned version, and the second run re-checked the cached'
             Write-Host '      zip against the portal sha1 rather than downloading it again'
         }
+
+        # --- 5/5 -------------------------------------------------------------------------------
+        # THE LEAK THE CHILD-PROCESS CHECK CANNOT SEE. 2/4 above reads files the child wrote, and a
+        # child that exits takes its $Error with it -- so a token sitting in the ErrorRecord looks
+        # identical to no token at all. This calls Save-PortalMod IN THIS PROCESS, where $Error
+        # survives the failure and can be read, which is the only way to tell those apart.
+        Write-Host 'self-test 5/5: a failed download must leave no token in $Error either.'
+        $log4 = Join-Path $temp 'requests-errorscan.log'
+        New-Item -ItemType File -Path $log4 -Force | Out-Null
+        $job = Start-FakePortal -Port $port -RequestLog $log4 -Name $modName -Version '1.0.0' `
+            -ClaimedSha1 $trueSha1 -ZipPath $zip -FailDownload
+        $thrown = ''
+        try {
+            Save-PortalMod -Mod @{ Name = $modName; Version = '1.0.0' } `
+                -CacheDirectory (Join-Path $temp 'cache-errorscan') `
+                -PlayerDataPath $creds -BaseUrl ('http://localhost:' + $port) | Out-Null
+        }
+        catch { $thrown = $_.Exception.Message }
+        & $stopPortal $job
+
+        $sawToken = (Get-Content -LiteralPath $log4 -Raw -ErrorAction SilentlyContinue) -match [regex]::Escape($sentinel)
+        $errorDump = ($Error | Format-List * -Force | Out-String)
+        if (-not $sawToken) {
+            Write-Host '  FAILED: the token never reached the download request, so this proves nothing.'
+            $failures++
+        }
+        elseif (-not $thrown) {
+            Write-Host '  FAILED: a 500 from the download endpoint did not throw.'; $failures++
+        }
+        elseif ($thrown -match [regex]::Escape($sentinel)) {
+            Write-Host '  FAILED: the thrown message carries the token.'; $failures++
+        }
+        elseif ($errorDump -match [regex]::Escape($sentinel)) {
+            Write-Host '  FAILED: the token survives in $Error -- the ErrorRecord holds the request'
+            Write-Host '          URI even when the message is clean, so scrubbing the message is not enough.'
+            $failures++
+        }
+        else {
+            Write-Host '  ok: the portal saw the token, the throw is clean, and $Error holds no copy'
+        }
     }
     finally {
         Get-Job -ErrorAction SilentlyContinue | Remove-Job -Force -ErrorAction SilentlyContinue
@@ -633,8 +690,8 @@ function Invoke-SelfTest {
         exit 1
     }
     Write-Host 'OK - self-test passed: a missing credential is named, the token travels to the portal'
-    Write-Host '     and reaches no captured output, a bad sha1 is refused, and a good download is'
-    Write-Host '     cached and re-verified rather than refetched.'
+    Write-Host '     and reaches neither captured output nor $Error, a bad sha1 is refused, and a good'
+    Write-Host '     download is cached and re-verified rather than refetched.'
     exit 0
 }
 
