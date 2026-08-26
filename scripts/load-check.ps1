@@ -158,6 +158,12 @@
 
     Putting the mods there by hand still works and always did.
 
+    THIS IS HALF THE COEXISTENCE QUESTION AND NOT THE HALF THAT FAILS SILENTLY. A prototype-name
+    collision does not stop the game loading -- the second definition replaces the first and the
+    map is created without a word -- so a pass here is no evidence at all about it.
+    `scripts/name-check.ps1 -AlsoModDirectory <same dir>` is the other half, and #61's lanes run
+    both against every set.
+
     Note the version trap. A mod's factorio_version must match the game's major version exactly, so
     Krastorio 2 2.1.x will NOT load next to this repo on 2.0.77 however the mod list is written --
     the 2.0 line (2.0.19) is the one that loads. See docs/research/mod-set-coexistence-targets.md.

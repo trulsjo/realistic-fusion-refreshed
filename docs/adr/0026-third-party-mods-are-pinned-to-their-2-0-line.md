@@ -109,6 +109,16 @@ No single mod list can hold these families together, so each is its own set and 
 - **[#61](https://github.com/trulsjo/realistic-fusion-refreshed/issues/61) is unblocked** and
   inherits the pins. This ADR does not run the lanes, and a set that resolves on the portal is not
   yet a set that loads. Six of the eight have never been loaded at all.
+
+  > **Note, 2026-08-27 (#61).** #61 split into one child ticket per lane, and three of its lanes are
+  > combinations no single family covers: Krastorio 2 + Space Exploration, Angel's + Bob's, and
+  > those two with MadClown's. They are `$MOD_SETS` entries — `k2-spaceex`, `angels-bobs`,
+  > `angels-bobs-madclowns` — **composed from the eight family sets above rather than pinned
+  > separately**, so this ADR's table is still the whole list of pins and a refresh of a family
+  > still reaches every lane it appears in. `Join-ModSets` refuses a union whose families pin one
+  > mod at two versions rather than picking, which is not hypothetical: `flib` is 0.16.2 for
+  > `krastorio2` and 0.16.5 for `seablock`. The combinations this ADR records as forbidden by
+  > declaration get no set and no child ticket.
 - **The two that were smoke-tested both failed, and the failure is upstream's.** `riteg` and `fluid`
   were fetched and loaded to prove the pins are real rather than plausible. Both trip the asset
   check: RITEG 1.3.11 and `underground-pipe-pack` 2.0.6 each name
