@@ -1022,7 +1022,13 @@ function Invoke-SelfTest {
 
 if ($SelfTest) { Invoke-SelfTest -ScriptPath $PSCommandPath }
 
-$mods = Resolve-ModSet -Name $Set
+# @() FOR THE SAME REASON THE $results LINE BELOW HAS ONE, and this needed it only once Resolve-ModSet
+# existed: `$MOD_SETS[$Set]` was a hashtable INDEX and indexes do not unroll, while a function RETURN
+# does. Without it riteg, fluid and selftest came back as the bare hashtable, so $mods.Count counted
+# its two KEYS and the banner said "2 mods" for a set of one. Invoke-Fetch declares [array] $Mods and
+# coerces, so the fetch itself still worked and -SelfTest still passed -- which is exactly why the
+# wrong number is the only symptom, and why it would have survived a long time.
+$mods = @(Resolve-ModSet -Name $Set)
 
 Write-Host "fetch-mods: $Set -- $($mods.Count) mods into $CacheDirectory"
 if ($PreferPortal) { Write-Host '            -PreferPortal: taking the portal route even where a git source exists' }
