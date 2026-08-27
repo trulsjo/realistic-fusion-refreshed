@@ -500,6 +500,11 @@ Cannot be combined with `-With space-age` (declared `!`).
 > `Join-ModSets` from the two family pins rather than transcribed from here, so it resolves to 22 and
 > needs no edit** — verified. See
 > [#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130).
+>
+> **Run 2026-08-27 (#130), all 22 at their pins.** The game loads all twenty-five mods and creates a
+> map, and `name-check.ps1` is green — but **`load-check.ps1` exits 1**, on the same five `__base__`
+> paths SE and the two AAI mods name and Factorio 2.0 removed. Krastorio 2 adds no sixth. That red is
+> recorded and it is upstream's; see ADR 0007's lane table before reading it as a regression.
 
 Added 2026-08-18, after the first pass of this document omitted the pairing. Both dependency arrays were
 re-read from `/full` on that date.

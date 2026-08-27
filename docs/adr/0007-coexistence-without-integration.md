@@ -154,6 +154,7 @@ manifest can move under it.
 | Lane | Set | `load-check` | `name-check` | Cause |
 |---|---|---|---|---|
 | Space Exploration ([#129](https://github.com/trulsjo/realistic-fusion-refreshed/issues/129)) | `spaceex`, 17 mods | **red** | green | the red is upstream's — below |
+| Krastorio 2 + Space Exploration ([#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130)) | `k2-spaceex`, 22 mods | **red** | green | the same five paths, still upstream's — below |
 
 **Space Exploration, 2026-08-27 ([#129](https://github.com/trulsjo/realistic-fusion-refreshed/issues/129)).
 Red on the assets, green on the names, and this repo causes neither outcome.** The lane this ADR
@@ -241,6 +242,60 @@ identical rows appended to K2's generator as well, and the expected result is **
 exemptions rather than two findings. **If either is reported instead, the shape differs from this one
 and wants reading** — that is the signal the rule leaves intact rather than the noise it removes. The
 red that matters is the asset gate, and it is upstream's.
+
+**Krastorio 2 + Space Exploration, 2026-08-27 ([#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130)).
+The prediction above held exactly — two **tooltip** exemptions rather than two findings, and not one
+new asset.** (Three exemption lines in all; the third is K2's technology, which #33 already records.) This is the lane with the most to say and it is **not the sum of two lanes**: SE declares
+`(?) Krastorio2 >= 2.0.10`, a hidden optional dependency, so it ships K2-aware code that loads after
+K2 and runs in this lane and in no other. At the data stage that code is **10,916 lines across 96
+files** under `prototypes/phase-{1,2,3}/compatibility/krastorio2/`, each phase entered through an
+`if mods["Krastorio2"]` guard in its own `krastorio2.lua` — and it is not quite all of it, since
+`phase-1/compatibility/recycling.lua` carries a K2 branch outside that tree and
+`scripts/compatibility/krastorio2.lua` is another 146 lines at the **control** stage, which this lane
+loads but does not exercise. Count the quoted path and you get 96 and 10,916; the wider figure needs
+saying which stage it is for. A lane that did not run any of it would be the `spaceex` lane wearing a
+bigger set.
+
+**It ran, and the measurement is the difference between the two lanes' baselines** — the dumps
+`name-check.ps1 -KeepTemp` leaves as `without-us-data-raw.json`, which are the game with the set and
+without this repo. Against `spaceex`'s: **2,715** prototypes present here and absent there, and
+**259 of them are SE's own `se-`-named prototypes that exist only because K2 loaded** — 132 recipes,
+73 items, 25 technologies, 7 item-subgroups, 6 resources, 6 roboports and the rest, from
+`furnace/se-kr-advanced-condenser-turbine` to the 13 `se-kr-*-data` science items. Sixteen run the
+other way and vanish when K2 is present, `recipe/se-pulverised-sand` and `technology/sand-processing`
+among them, because K2 supplies `kr-sand` in place of SE's. **The difference is not empty and this
+lane therefore proves more than the `spaceex` one did**, which is the condition #130 set on being
+recorded as a pass at all.
+
+**`load-check` is red on the same five paths and not one more.** Factorio loaded all twenty-five
+mods, created a 1.45 MB map with SE's universe generated into it and exited 0 — prototypes valid, the
+simulation's twelve load-time invariants holding with K2 and SE both present — and `load-check.ps1`
+then exited 1 at the asset gate on the identical set the row above tabulates: SE 0.7.57's four
+`connection-patch-*.png` and `car-metal-impact.ogg` from the two AAI mods. **Krastorio 2 names none
+of the five** — grepped across the set, and only `space-exploration` and the two AAI mods do — so
+adding K2 to the lane added no asset failure of its own, and the cause is unchanged: upstream's, and
+not a pin artefact.
+
+**`name-check` is green and its arithmetic is exactly additive.** No `collision:` and no
+`unprefixed:` against **3,053** candidate names across the 22 mods; 15 of them put prototypes in the
+baseline dump and the 7 that did not are the pure graphics mods and `Krastorio2Assets`. The
+difference is **155**, which accounts for itself: **86** ours, and **69** the set's own generated
+from ours — 30 `kr-crush-`, 17 `kr-burn-`, 11 `se-delivery-cannon-pack-` and 11
+`se-delivery-cannon-package-`. That 69 is K2's 47 plus SE's 22 with **no cross term**: the
+`krastorio2` set re-run alone the same day still reports 133 and 47, and #129's `spaceex` run that
+morning reported 108 and 22 — so neither mod generates anything new from this repo on account of the
+other being present. Three prototypes of theirs gained only wiring, all three
+classified and none reported: `generator/kr-gas-power-station` and `generator/se-fluid-burner-generator`
+each gained the same two tooltip rows naming `rf-reactor-energy` and `rf-aneutronic-reactor-energy`,
+and `technology/kr-fluid-excess-handling` gained only `unlock-recipe` effects — **17** of them,
+52 to 69, one per `kr-burn-`. Not 47: the 30 `kr-crush-` recipes are generated enabled and no
+technology in K2 or in SE's K2 compat unlocks them, so the check's *"for those"* names the derived
+group rather than a per-effect count.
+
+**So the lane that was priced highest finds no defect in this repo, no collision, and no new red.**
+The two tooltip exemptions are the second and third data points the classifier rule was decided on,
+and they came out the way the rule predicted rather than needing it widened. **Loading is still not
+playing** — nothing here has been played, and this says nothing about balance.
 
 ## Alternatives considered
 
