@@ -573,6 +573,19 @@ $set = @(
 The core four plus their four required graphics mods. `angelsindustries` and `angelsexploration`
 cannot be added — no 2.x release exists.
 
+> **Run 2026-08-27 (#131), all 8 at their pins — green on both halves, the first lane that is.**
+> `load-check.ps1` exits 0 with every referenced asset present, and `name-check.ps1` exits 0 with no
+> collision, nothing unprefixed and no `replaces:`. **But green does not mean untouched**: Angel's
+> edits **41 of this repo's 145 prototype objects** — our barrel recipes onto its barreling pump, and
+> our chemical-plant clones inheriting its rebalance (pollution 4 → 1.8/min, fluid-box volume
+> 100 → 1000). Neither check can see that, for different reasons: `name-check` compares content only
+> for prototypes present in **both** dumps, and a prototype of ours is by construction in only one;
+> `load-check` never diffs anything, it asserts validity, assets and runtime invariants. **The barrel
+> and tint edits are Angel's own uniform policy; the machine drift is ours** — Core's `from_vanilla`
+> and Power's hand-set `rf-heater` both leave `energy_source` and fluid-box `volume` inherited,
+> despite a comment in each file claiming every balance stat is set explicitly. See ADR 0007's lane
+> section before reading the green as "no effect".
+
 ### Angel's + Space Age — same 8 mods
 
 ```powershell

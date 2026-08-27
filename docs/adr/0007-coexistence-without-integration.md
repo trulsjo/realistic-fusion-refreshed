@@ -155,6 +155,7 @@ manifest can move under it.
 |---|---|---|---|---|
 | Space Exploration ([#129](https://github.com/trulsjo/realistic-fusion-refreshed/issues/129)) | `spaceex`, 17 mods | **red** | green | the red is upstream's — below |
 | Krastorio 2 + Space Exploration ([#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130)) | `k2-spaceex`, 22 mods | **red** | green | the same five paths, still upstream's — below |
+| Angel's ([#131](https://github.com/trulsjo/realistic-fusion-refreshed/issues/131)) | `angels`, 8 mods | green | green | green, and it still edits 41 prototypes of ours that neither check can see — two inherited stats of which are ours — below |
 
 **Space Exploration, 2026-08-27 ([#129](https://github.com/trulsjo/realistic-fusion-refreshed/issues/129)).
 Red on the assets, green on the names, and this repo causes neither outcome.** The lane this ADR
@@ -296,6 +297,90 @@ group rather than a per-effect count.
 The two tooltip exemptions are the second and third data points the classifier rule was decided on,
 and they came out the way the rule predicted rather than needing it widened. **Loading is still not
 playing** — nothing here has been played, and this says nothing about balance.
+
+**Angel's, 2026-08-27 ([#131](https://github.com/trulsjo/realistic-fusion-refreshed/issues/131)).
+The first lane green on both halves — and the one that shows what green does not cover.** Eight mods,
+the core four plus their four `~`-declared graphics mods. `load-check` exits 0: prototypes valid,
+**every referenced asset present** (no `__base__` casualty here, unlike every lane above), a map
+created with the whole set loaded, and the twelve load-time invariants holding. `name-check` exits 0
+against 2,600 candidate names, with **no `collision:`, no `unprefixed:`, no `replaces:`**, and a
+difference of exactly **86** — the same 86 it reports with no set at all.
+
+**That last number is the finding.** Against Krastorio 2 the difference is 133 and against Space
+Exploration 108, because each generates prototypes of its own from ours. Angel's generates **none**.
+The issue's triage note expected the opposite, and the reason it did not happen is worth having: K2
+and SE derive *new prototypes* from our fluids, which lands in the difference and is counted; Angel's
+instead **edits the prototypes we already defined**, which lands nowhere the check looks.
+
+**So the lane is green and Angel's changes 41 of this repo's 145 prototype objects.** Measured by
+dumping with the set and without it and diffing our own prototypes across the two — not something
+either check does today. **145 is not a second opinion about the 86**: `name-check` counts prototype
+*names*, and a name can carry several prototypes — `rf-electrolyser` is an item, a recipe and an
+entity. The same difference keyed by type *and* name is 145 objects across those 86 names, 40 of
+which appear under more than one type. Names for the collision question, objects for this one.
+
+| What Angel's changes | Count | Mechanism |
+|---|---|---|
+| our barrel recipes — `category` to `angels-barreling-pump`, plus `subgroup`, `order`, `hide_from_player_crafting`, and `ingredients`/`results` losing `ignored_by_stats` | 22 | `angelsrefining/prototypes/refining-override.lua:75` walks `data.raw.fluid` and patches `<fluid>-barrel` / `empty-<fluid>-barrel` by name |
+| our barrel items — a fourth `icons` layer, `subgroup` to `angels-fluid-control-fluid` | 11 | same pass, plus `create_barreling_fluid_subgroup()` |
+| our six assembling machines — `allowed_module_categories` gained; and on the five that are chemical-plant clones, pollution **4 → 1.8/min**, output `fluid_boxes` volume **100 → 1000**, plus `corpse`, `dying_explosion`, `impact_category` and `water_reflection` | 6 | **not** Angel's touching us — we `table.deepcopy` vanilla `chemical-plant`/`oil-refinery` in `data.lua` and Angel's sorts earlier, so our clones inherit its rebalance field-for-field (verified: every one matches Angel's vanilla machine exactly). **Two clone sites, not one**: Core's `from_vanilla` (`realistic-fusion-refreshed-core/prototypes/entities.lua:24`) for five of them, and Power's `pin` (`realistic-fusion-refreshed/prototypes/entities.lua:82`) for `rf-heater` |
+| two of our `chemistry` recipes gaining a default `crafting_machine_tint` | 2 | `angelspetrochem/prototypes/petrochem-global-override.lua:32` walks `data.raw.recipe` and tints every untinted, non-hidden `chemistry` recipe |
+
+22 + 11 + 6 + 2 = 41, so nothing in the set is unattributed. **The first three groups are theirs and
+are not defects** — Angel's applies its barrel and tint policies uniformly, to every fluid and every
+untinted `chemistry` recipe in the game: all 268 barrel-shaped recipes in its own baseline sit on
+`angels-barreling-pump`, vanilla's `water-barrel` included. Nothing there singles this repo out.
+
+**The machine row is different, and its cause is ours.** Both mods that clone a vanilla machine
+already warn about exactly this mechanism, in their own words. Core: *"A deep copy taken in
+`data.lua` picks up whatever another mod has already done to the source prototype, and mods sorting
+before this one alphabetically … would silently rewrite all four machines"*, with the mitigation
+*"Every stat that affects balance is set explicitly rather than inherited."* Power, thirty lines
+above `rf-heater`: *"Every stat that affects balance is pinned rather than inherited, because a deep
+copy taken here picks up whatever a mod sorting earlier has already done to the source prototype."*
+
+**Both claims are the same two stats short, in both files.** Core's `from_vanilla`
+(`realistic-fusion-refreshed-core/prototypes/entities.lua:23-59`, five machines) sets
+`crafting_speed`, `energy_usage`, `module_slots` and `allowed_effects`; Power sets the same four on
+`rf-heater` by hand (`realistic-fusion-refreshed/prototypes/entities.lua:82-101`) and reaches into
+its output boxes only to set `connection_category`. **Neither sets `energy_source`, and neither sets
+the fluid boxes' `volume`** — so under Angel's this repo's five chemical-plant machines emit **1.8
+pollution/minute instead of 4** and buffer **1000 units per output box instead of 100**. Neither is
+a collision, neither breaks anything, and both are balance changes to shipped entities that arrive
+silently from a third-party mod.
+
+`rf-deuterium-extractor` is the control that proves the mechanism: it is the one `from_vanilla` call
+that clones `oil-refinery`, which Angel's barely touches, and it alone picks up nothing but the
+global module change.
+
+**What to do about it is not settled here**, because pinning either stat means choosing a number and
+balance numbers are Truls's call — see this repo's `CLAUDE.md`. Whichever way it goes it lands in
+two places, not one, since Core and Power clone separately. The options are to set both stats
+explicitly at each clone site (making both comments' claims true), or to decide inheritance is
+wanted here and narrow both comments to say so. Carried to
+[#153](https://github.com/trulsjo/realistic-fusion-refreshed/issues/153) rather than settled as a
+side effect of a lane run — which also picks up a stale count found in the same lines: Core's header
+comment says *"all four machines"* and *"three of the four had to grow"* where `from_vanilla` is
+called five times and four of the five grow.
+
+**What this lane establishes is a limit of the instrument, stated plainly.** **An overhaul that edits
+our prototypes rather than colliding with their names is invisible to both checks** — for two
+different reasons, which is why neither covers for the other. `name-check` compares content only for
+prototypes present in **both** dumps, which is what makes `replaces:` a measurement rather than a
+guess; a prototype of *ours* is by construction in only one dump, so it is never content-compared at
+all. `load-check` diffs nothing — it asserts that prototypes are valid, that assets resolve and that
+the runtime invariants hold, and an edited stat fails none of those. So the gap is structural in one
+and out of scope in the other, however much changes. Here that is a tenfold fluid-box volume and a pollution rate on machines this repo
+ships. Whether the check should grow a third instrument for it is **not settled here** — it is a real
+option with a real cost, since the comparison needs a set-free dump as its reference and would report
+every uniform overhaul policy as a difference. Recorded so the next lane does not rediscover it.
+
+**Green on both halves, then, and narrower than it sounds.** ADR 0026's scope still applies: this is
+Angel's `factorio_version` 2.0 line — `angelsrefining` 2.0.4, `angelspetrochem` 2.0.3,
+`angelssmelting` 2.0.5, `angelsbioprocessing` 2.0.3 — and not the 2.1 releases players run. Angel's
+Industries and Angel's Exploration are 1.1-only and deprecated; they are not in this lane at any
+version. **And loading is still not playing** — the 41 edits above are exactly the kind of thing only
+a playthrough would price.
 
 ## Alternatives considered
 
