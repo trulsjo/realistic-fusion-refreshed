@@ -16,10 +16,20 @@ Three kinds of evidence, kept separate throughout:
   Run once with the bundled `quality` mod alone and once with `space-age` as well; **every number was
   identical**, so this note quotes one set.
 
-**The rig is not committed.** It lives in a scratchpad, because the task that produced this note was
-scoped to this file alone. That is a deviation from `CLAUDE.md`'s rule that a probe stays committed so
-the next engine version can be asked the same question, and it should be repaired by landing it as
-`scripts/probe-quality.ps1` — the numbers below are unreproducible until someone does.
+**The rig is checked in as `scripts/probe-quality.ps1`** ([#97](https://github.com/trulsjo/realistic-fusion-refreshed/issues/97)).
+Run it to reproduce the numbers below rather than taking them on trust:
+
+    pwsh -File scripts/probe-quality.ps1             # the bundled quality mod alone
+    pwsh -File scripts/probe-quality.ps1 -SpaceAge   # and again with space-age
+
+Re-measured that way on 2026-08-27 against Factorio 2.0.77: 261 reported rows per run, **identical
+between the two configurations** — which is the claim above, checked rather than remembered.
+
+**Nothing runs it for you.** It is a probe rather than a check: it asserts nothing, exit 0 means it
+ran and reported, and no check, bench or gate sweep invokes it — `load-check.ps1` included. So a
+later engine version can change any number here and this document goes stale in silence unless
+somebody types that command. The rig exists and is not wired; say that plainly rather than claiming a
+guarantee the repository does not have.
 
 ## The short version
 
@@ -483,8 +493,6 @@ Stated plainly, because this repository treats an unverified claim as a defect.
 - **`PumpPrototype` and `StorageTankPrototype` were not read** for quality properties. Their behaviour
   was measured (`rf-pump` scales, the tank does not); whether a per-property opt-out exists for them
   is unchecked.
-- **The rig is not committed**, so none of the measurements above is currently reproducible from this
-  repository. See the head of this note.
 - **Fluid box capacity was checked on the entities this mod ships and four vanilla ones.** It is flat
   on all of them. This note does not claim it is flat for every prototype type in the game — a
   `fluid-wagon` has `fluid_wagon_capacity_multiplier` and certainly is not.
@@ -665,12 +673,16 @@ First-party design statement:
 
 Measured for this note:
 
-- A rig placing every entity in
+- `scripts/probe-quality.ps1`, which reads every entity in
   `realistic-fusion-refreshed/prototypes/entities.lua` and
-  `realistic-fusion-refreshed-core/prototypes/entities.lua` at all five quality levels, plus vanilla
-  `boiler`, `heat-exchanger`, `steam-turbine` and `steel-chest` as controls. Two runs: bundled
-  `quality` alone, and `space-age` (which pulls in `quality` and `elevated-rails`). Identical results.
-  **Not committed** — see the head of this note.
+  `realistic-fusion-refreshed-core/prototypes/entities.lua` off the prototype at all five quality
+  levels, plus vanilla `boiler`, `heat-exchanger`, `steam-turbine`, `storage-tank` and `steel-chest`
+  as controls — and **places twelve of them** on a surface to ask the same questions of a live
+  entity, `steam-turbine` being the only control among the twelve. The two reads are not
+  interchangeable and the distinction matters: `control.lua` calls `get_capacity` on a live entity's
+  fluid box, not on the prototype, so the placed rows are the ones that speak to what the simulation
+  sees. Two runs: bundled `quality` alone, and `space-age` (which pulls in `quality` and
+  `elevated-rails`). Identical results. See the head of this note for the commands.
 
 Not sourced primarily, and flagged where used:
 
