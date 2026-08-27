@@ -109,7 +109,8 @@ It still embeds the prefix, so it still cannot collide.
 **Loading alongside Krastorio 2: verified.** `scripts/load-check.ps1 -AlsoModDirectory <dir>` junctions
 a directory of third-party mods in and enables them. With Krastorio 2 and its four hard dependencies
 present, it passes: prototypes valid, every referenced asset present, **a map created with the whole set
-loaded**, and the simulation's nine load-time invariants still holding.
+loaded**, and the simulation's nine load-time invariants still holding — nine as of that run;
+`check_prototypes()` makes twelve calls today, which is the figure the lanes below quote.
 
 **Which release, and why it is not the current one.** K2's current release is 2.1.3
 (`factorio_version 2.1`, `base >= 2.1.7`). This project declares `2.0` and the game here is 2.0.77, and
@@ -138,6 +139,80 @@ three is `docs/research/mod-set-coexistence-targets.md`.
 
 **So this ADR's minimum — *"at minimum, loading alongside Krastorio 2 should be verified before v1
 ships"* — is met**, for the 2.0 line and for name collision both.
+
+### The wider lanes (#61)
+
+One row per lane as it runs. **#59 is settled and it settled the scope rather than the question**:
+[ADR 0026](0026-third-party-mods-are-pinned-to-their-2-0-line.md) pins every family to its last
+`factorio_version` 2.0 release and confines what a lane proves to exactly that, which leaves the
+paragraph above still true — none of this reaches the release players run today. So a row here is a
+claim about the pinned release and about nothing else — no unqualified *"works with X"* may reach a
+portal listing, `README.md`, a mod description or a changelog on the strength of one. The pins live
+in `scripts/fetch-mods.ps1`'s `$MOD_SETS`; a row names the version it was proved against because the
+manifest can move under it.
+
+| Lane | Set | `load-check` | `name-check` | Cause |
+|---|---|---|---|---|
+| Space Exploration ([#129](https://github.com/trulsjo/realistic-fusion-refreshed/issues/129)) | `spaceex`, 17 mods | red | red | neither is this repo's — below |
+
+**Space Exploration, 2026-08-27 ([#129](https://github.com/trulsjo/realistic-fusion-refreshed/issues/129)).
+Red on both halves, and this repo causes neither.** The lane this ADR priced highest — 1,290 lines in
+the 1.1 original, *"half the burden"* as the Context above puts it — and the `rf-` prefix had never
+met it. (#129 words it as more than every other target combined, which the attributed rows support
+and the 2,595 total does not; half is the claim both readings agree on, so it is the one used here.) Both reds are worth reading in full before the next lane runs, because one of them is the shape
+ADR 0026 predicted and the other is a shape nobody had seen.
+
+**The game half passed and the gate that follows it did not.** Factorio loaded all twenty mods,
+created a 1.4 MB map with SE's universe generated into it and exited 0 — so the prototypes are valid
+and the simulation's twelve load-time invariants hold with the whole set present. `load-check.ps1`
+then exits 1 at the asset gate on **five `__base__` paths the set names and Factorio 2.0.77 does not
+have**:
+
+| Reference | Named by | Why it is gone |
+|---|---|---|
+| `graphics/entity/nuclear-reactor/connection-patch-{north,east,south,west}.png` | `space-exploration` 0.7.57, for its antimatter reactor and its energy transmitter | 2.0 ships one combined `reactor-connect-patches.png` in place of the four 1.1 sheets |
+| `sound/car-metal-impact.ogg` | `aai-industry` 0.6.16 and `aai-signal-transmission` 0.5.3, as `vehicle_impact_sound` | removed in 2.0; the same path that already reddened `riteg` and `fluid` under ADR 0026 |
+
+This repo names none of the five — checked, not assumed. **Nor is it a pin artefact:** both mods are
+pinned at the last `factorio_version` 2.0 release their family has, so there is no later 2.0 release
+to move to and the reference cannot be pinned away. It is the cost ADR 0026 said to budget for,
+arriving a third time.
+
+**The collision half found one thing, and it is theirs generated from ours.** No `collision:` and no
+`unprefixed:` — the half ADR 0007 calls the most likely way coexistence fails is clean against SE's
+2,313 candidate names. The difference is **108** prototype names, and it accounts for itself
+completely: **86** are what the same check reports with no set loaded at all, and **22** are SE's own,
+generated from our 11 barrelled fluids — `prototypes/phase-2/delivery-cannon-barrels.lua` registers
+every fluid not marked `auto_barrel = false`, and `prototypes/phase-3/delivery-cannon.lua` extends the
+prototypes from the barrel ITEM's name. So they are 11 recipes `se-delivery-cannon-pack-rf-<fluid>-barrel`
+and 11 items `se-delivery-cannon-package-rf-<fluid>-barrel`, read out of the dump rather than inferred
+from the check's `<ours>` placeholder. 86 + 22 = 108, so nothing in the difference is unattributed. Eleven of the seventeen mods put prototypes in the dump; the six that did not are the
+pure graphics mods, which is what they are for.
+
+What fails is one `replaces:`, on **`generator/se-fluid-burner-generator`**. Measured across the two
+dumps rather than argued from the Lua: the only field that differs is `custom_tooltip_fields`, it
+goes from 2 entries to 4, **nothing is removed**, the two SE already had are unchanged and still in
+order, and the two added ones name `rf-reactor-energy` and `rf-aneutronic-reactor-energy` — our only
+two fluids carrying a `fuel_value`. SE's `prototypes/phase-3/custom-tooltips.lua` walks
+`data.raw.fluid` and appends a consumption line per non-hidden fuel fluid, so its generator's tooltip
+gained two rows because this repo exists. That is the same mechanism `Get-DerivedUnlock` already
+excuses for `unlock-recipe` effects, wired through a different field — and `name-check.ps1`'s own
+docstring predicted exactly this: *"A set that wires its derivations in some other way ... will
+surface as a plain `replaces:` and want reading."* It has now been read.
+
+**So the lane finds no defect in this repo and no collision, and it stays red.** Whether
+`name-check` should learn the `custom_tooltip_fields` shape is left open deliberately: it would widen
+the only code in that check that *suppresses* a finding, and an over-broad rule there turns a real
+collision into a counted line while the run still exits 0.
+
+**And [#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130) will meet TWO of these,
+not one — expect it rather than triage it twice.** That same `custom-tooltips.lua` loops over
+`se-fluid-burner-generator` *and* `kr-gas-power-station`, and Krastorio 2 2.0.19 defines the latter
+(`prototypes/buildings/gas-power-station.lua`). So the Krastorio 2 + Space Exploration lane gets the
+identical two tooltip rows appended to K2's generator as well, and `name-check` will report
+`replaces: generator/kr-gas-power-station` beside the SE one. Two prototypes, one mechanism, neither
+of them a collision — which is also the second data point the classifier question above should be
+decided on. The red that matters is the asset gate, and it is upstream's.
 
 ## Alternatives considered
 
