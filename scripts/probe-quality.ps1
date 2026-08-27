@@ -65,8 +65,13 @@
                 the cap scaled faster than the usage, a legendary machine would convert more
                 cheaply than a normal one and the mod's energy ledger would have a hole in it.
 
-      BOILER    Each exchanger's fluid energy source effectivity, which is a plain attribute with
-                no quality form -- the other place an efficiency could have hidden.
+      BOILER    Every boiler's target_temperature, and the fluid energy source effectivity of the
+                two that have one -- a plain attribute with no quality form, and the other place an
+                efficiency could have hidden. The reactors and the collector report no effectivity,
+                which is the row saying their energy source is electric or void rather than a gap in
+                the reading. rf-reactor's target_temperature is the number the research note's
+                residual-leak arithmetic is built on, which is why the row asks every boiler rather
+                than the two exchangers it started with.
 
     VANILLA CONTROLS
 
