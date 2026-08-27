@@ -1,21 +1,126 @@
 #Requires -Version 7
 <#
 .SYNOPSIS
-    Probe: what does the Quality mechanic actually scale on this mod's entities?
+    Probes what Factorio's Quality mechanic actually scales on this mod's entities. The rig behind
+    docs/research/quality.md.
 
 .DESCRIPTION
-    Asserts nothing. Places one of each of this mod's entities at every quality level and reports
-    the numbers the simulation reads at runtime -- fluid box capacities, electric buffer, energy
-    usage, inventory size -- plus the generator/boiler throughput pair whose ratio is what would
-    or would not be free energy.
+    A PROBE, NOT A CHECK. Every line it prints is a measurement, and a negative answer is as much
+    of a result as a positive one -- so exit 0 means the probe ran and every row reported, never
+    that the answers were the ones anybody hoped for. Nothing here decides anything and nothing
+    here ships. It must not be added to a check sweep, a bench sweep or to load-check.ps1.
 
-    Findings are written up in docs/research/quality.md. Exit 0 means it ran and reported, never
-    that the answer was the hoped-for one -- this is a probe, not a gate, so no check sweep and no
-    load-check invokes it. Run with -SpaceAge to repeat the measurement with space-age enabled; the
-    note's claim is that both runs agree.
+    WHY MEASURING IS THE ONLY WAY TO ASK
 
-    NOT YET VERIFIED IN THE TREE: landed from a scratchpad under #97, which is the ticket that
-    checks it still reproduces the note's tables in both configurations.
+    Which properties the engine multiplies by quality is not declared in any prototype and cannot
+    be read out of the files. QualityPrototype's named multipliers cover assemblers, labs,
+    inserters, beacons, drills, accumulators, containers, poles and robots, and say nothing at all
+    about boilers, generators, pumps or storage tanks -- which are what this mod is almost entirely
+    made of. Those types scale anyway, by default_multiplier, with no field naming them. Neither
+    BoilerPrototype nor GeneratorPrototype has a single quality property at 2.0.77.
+
+    There is a reliable TELL in the runtime API: a property quality scales is exposed as a method
+    taking an optional QualityID, and one it does not scale stays a plain attribute. That is how
+    control.lua came to call get_max_energy_production() rather than read the field, and it is what
+    check-buffer.ps1 and check-brownout.ps1 both record. But the tell is NECESSARY AND NOT
+    SUFFICIENT: get_fluid_capacity takes a quality and returns the same number at all five levels
+    on every entity here. So the tell narrows the question and the answer still has to be measured,
+    which is this file.
+
+    THE ONE ANSWER THE WHOLE RESEARCH NOTE RESTS ON is that fluid box capacity does not scale.
+    Had it scaled, a legendary rf-reactor would hold 2500 units of plasma in a volume_m3 that is a
+    Lua constant at 1000 -- 2.5x the density, and because the reaction rate goes as n^2 at fixed
+    volume, 6.25x the fusion power, while reactor-logic.lua went on reporting a Q computed from a
+    density it had assumed. That is the failure the note went looking for. It does not happen, and
+    nothing in the prototype files says it does not happen.
+
+    WHAT IT REPORTS
+
+      quality   The quality set the loaded mods define, with each level. The levels are 0, 1, 2, 3
+                and 5 -- legendary JUMPS to 5, which is where +150% comes from rather than +120%,
+                and anyone writing 1 + 0.3 * index gets it wrong.
+
+                quality-unknown is excluded from every measurement below. It is the engine's
+                placeholder for a quality a save refers to and the current mod set does not define
+                (core/prototypes/unknown.lua, level 0, hidden), not a level a player can hold.
+
+      proto     The quality_affects_* booleans and the *_quality_multiplier dictionaries, which are
+                the only per-property levers a mod author has -- and they exist on crafting
+                machines and containers only.
+
+      get       Every quality-taking getter, at every level, labelled SCALES or flat by comparing
+                the five answers. This is the section that answers the capacity question.
+
+      src       The electric energy source: buffer_capacity and drain as plain attributes, the two
+                flow limits through their getters. The asymmetry is the tell doing its work --
+                the buffer has no quality form and the flow limits do.
+
+      placed    The same questions asked of REAL ENTITIES on a surface, at each level, through
+                fluidbox.get_capacity, electric_buffer_size and the container inventory. The
+                prototype getters and the placed entities are both reported because they are two
+                different reads and only the second is what the simulation actually sees.
+
+      GEN       The generator ratio, which is the thing that would or would not be free energy: the
+                fluid a generator burns per tick against the power cap it declares, per level. If
+                the cap scaled faster than the usage, a legendary machine would convert more
+                cheaply than a normal one and the mod's energy ledger would have a hole in it.
+
+      BOILER    Each exchanger's fluid energy source effectivity, which is a plain attribute with
+                no quality form -- the other place an efficiency could have hidden.
+
+    VANILLA CONTROLS
+
+    boiler, heat-exchanger, steam-turbine, storage-tank and steel-chest are measured alongside
+    ours, and they are not padding. They are entities whose quality behaviour is Wube's rather than
+    this repository's, so a flat reading on ours means something only if a vanilla entity of the
+    same prototype type reads the same way. steam-turbine additionally carries a GEN row, because
+    the ratio being exactly 1 on a machine nobody here wrote is what says the ratio is the engine's
+    property and not an accident of our numbers.
+
+    WHAT IT DOES NOT DO
+
+    It places entities and reads what the engine reports. It does not step the simulation, light a
+    reactor or watch a power network -- so the note's central conclusion, that a legendary reactor
+    reaches the same equilibrium as a normal one because every input to that equilibrium is
+    quality-flat, is a DEDUCTION from measured prototype values rather than an observation of two
+    reactors side by side. Closing that means a probe that lights a legendary reactor next to a
+    normal one and compares temperature and Q. This is not that probe.
+
+    A NOTE FOR ANYONE TEMPTED TO ASSERT AGAINST THESE NUMBERS
+
+    The multiplied values round-trip through float32 and three of the five come back short:
+    fluid_usage_per_tick on steam-turbine reads 1, 1.2999999523163, 1.6000000238419,
+    1.8999999761581, 2.5. Normal and legendary are exact; uncommon, rare and epic are not. Any
+    check built on this would need a tolerance, the same way check-hc.ps1 does.
+
+.PARAMETER FactorioExe
+    Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
+
+.PARAMETER SpaceAge
+    Enable space-age instead of quality alone.
+
+    THE SWITCH IS THE POINT, and both runs have to stay possible. QualityPrototype.level at 2.0.77
+    carries the note "Requires Space Age to use level greater than 0", which read literally would
+    mean quality does nothing under base + quality. Measured, it does not mean that: with
+    space-age explicitly disabled the four higher levels still report 1, 2, 3, 5 and every
+    multiplier is unchanged. That finding is what ADR 0003 needs -- it tolerates Space Age rather
+    than targeting it, and a player may well run quality on its own -- and it is only checkable
+    while both configurations can still be run and compared.
+
+    Without the switch, the bundled quality mod alone. With it, space-age, which pulls in quality
+    and elevated-rails through Resolve-BundledSelection.
+
+.PARAMETER KeepTemp
+    Keep the save, the rig mod and the captured output.
+
+.EXAMPLE
+    pwsh -File scripts/probe-quality.ps1
+
+.EXAMPLE
+    pwsh -File scripts/probe-quality.ps1 -SpaceAge
+
+    The second configuration. Every number the research note quotes was identical across the two,
+    which is the claim these two runs together support.
 #>
 [CmdletBinding()]
 param(
@@ -25,37 +130,44 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$repoRoot = Split-Path $PSScriptRoot -Parent
-. "$repoRoot/scripts/factorio-lib.ps1"
+. "$PSScriptRoot/factorio-lib.ps1"
 
-$ourMods = Get-RepoMods
-$rigName = 'rf-quality-probe'
+$repoRoot = Split-Path $PSScriptRoot -Parent
+$ourMods  = Get-RepoMods
+$rigName  = 'rf-quality-probe'
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
 $bundled     = Get-BundledMods -FactorioExe $FactorioExe
 
-$temp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-q-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+$temp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-quality-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 $modDir = Join-Path $temp 'mods'
 $rigDir = Join-Path $modDir $rigName
 New-Item -ItemType Directory -Path $rigDir -Force | Out-Null
 
-@{
-    name = $rigName; version = '0.0.1'; title = 'Quality probe'
-    author = 'probe-quality.ps1'; factorio_version = '2.0'
-    dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
-} | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
+function Write-Rig {
+    @{
+        name = $rigName; version = '0.0.1'; title = 'Quality probe'
+        author = 'probe-quality.ps1'; factorio_version = '2.0'
+        dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed')
+    } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
 
-$lua = @'
+    Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'data.lua') -Value '-- nothing; this rig reads, it does not declare'
+
+    $lua = @'
 -- Generated by probe-quality.ps1. Nothing here ships. Reports; asserts nothing.
 
 local function say(fmt, ...) log("QPROBE " .. string.format(fmt, ...)) end
 
+-- Every entity this mod ships, plus the vanilla controls. The controls are not padding: a flat
+-- reading on ours means something only against an entity of the same prototype type whose quality
+-- behaviour is Wube's rather than this repository's.
 local OURS = {
   "rf-reactor", "rf-aneutronic-reactor", "rf-lithium-blanket", "rf-heater",
   "rf-heat-exchanger", "rf-hc-exchanger", "rf-hc-turbine", "rf-direct-energy-converter",
-  "rf-isotope-collector", "rf-aneutronic-composite-tank", "rf-pipe", "rf-pump",
-  "rf-electrolyser", "rf-deuterium-extractor", "rf-brine-concentrator", "rf-gas-mixer",
-  "rf-lithium-extractor", "steam-turbine", "heat-exchanger", "steel-chest", "boiler",
+  "rf-isotope-collector", "rf-aneutronic-composite-tank", "rf-pipe", "rf-pipe-to-ground",
+  "rf-pump", "rf-electrolyser", "rf-deuterium-extractor", "rf-brine-concentrator",
+  "rf-gas-mixer", "rf-lithium-extractor",
+  "steam-turbine", "heat-exchanger", "storage-tank", "steel-chest", "boiler",
 }
 
 script.on_nth_tick(60, function()
@@ -75,6 +187,9 @@ script.on_nth_tick(60, function()
     say("quality %-16s level=%d hidden=%s", q.name, q.level, tostring(q.hidden))
   end
 
+  -- quality-unknown is the engine's placeholder for a quality a save names and the mod set does
+  -- not define. It is hidden and no player can hold one, so measuring at it would add a sixth
+  -- column that means nothing and would make a "flat" verdict harder to read, not easier.
   local order = {}
   for _, q in ipairs(levels) do
     if q.name ~= "quality-unknown" then order[#order + 1] = q.name end
@@ -84,6 +199,8 @@ script.on_nth_tick(60, function()
   for _, name in ipairs(OURS) do
     local p = prototypes.entity[name]
     if not p then
+      -- Reported rather than skipped. A renamed prototype would otherwise drop silently out of
+      -- every table below and read as a clean run over a shorter list.
       say("MISSING prototype %s", name)
     else
       say("proto %-30s type=%-20s q_energy=%s q_inv=%s q_slots=%s q_supply=%s q_mining=%s",
@@ -101,6 +218,8 @@ script.on_nth_tick(60, function()
   end
 
   -- ------------------------------------------------------------ prototype getters per quality
+  -- SCALES or flat is decided by comparing the five answers rather than against the multiplier
+  -- table, because the whole question is whether the engine applies the multiplier here at all.
   local function getter(name, fn)
     local p = prototypes.entity[name]
     if not p or type(p[fn]) ~= "function" then return end
@@ -138,7 +257,8 @@ script.on_nth_tick(60, function()
     end
   end
 
-  -- electric energy source: buffer_capacity is a field, the flow limits are methods
+  -- The electric energy source, where the tell is visible in one place: buffer_capacity and drain
+  -- are plain attributes with no quality form, and the two flow limits are methods that take one.
   for _, name in ipairs({ "rf-reactor", "rf-aneutronic-reactor", "rf-heater", "rf-electrolyser" }) do
     local p = prototypes.entity[name]
     local s = p and p.electric_energy_source_prototype
@@ -157,6 +277,9 @@ script.on_nth_tick(60, function()
   end
 
   -- ------------------------------------------------------------ placed entities
+  -- The prototype getters above and the placed reads below are two different questions. Only the
+  -- second is what the simulation actually sees: control.lua reads box.get_capacity off a live
+  -- entity, not off the prototype.
   local surface = game.create_surface("qprobe", {
     water = 0,
     starting_area = 0,
@@ -173,16 +296,23 @@ script.on_nth_tick(60, function()
   surface.force_generate_chunk_requests()
   local force = game.forces.player
 
+  -- Name, and how many fluid boxes to read on it. The count is written down rather than discovered
+  -- because get_capacity on an index the entity does not have is an error, not a nil.
   local placed = {
     { "rf-reactor", 2 }, { "rf-aneutronic-reactor", 2 }, { "rf-lithium-blanket", 0 },
     { "rf-heat-exchanger", 2 }, { "rf-hc-exchanger", 2 }, { "rf-hc-turbine", 1 },
-    { "rf-direct-energy-converter", 1 }, { "rf-isotope-collector", 4 },
+    -- The collector is TWO: prototypes/entities.lua gives it fluid_box (rf-tritium) and
+    -- output_fluid_box (rf-helium-3) and nothing else. It said four until #97 ran the thing and read
+    -- the row it printed -- ten ERR cells, five levels by two boxes that were never there.
+    { "rf-direct-energy-converter", 1 }, { "rf-isotope-collector", 2 },
     { "rf-aneutronic-composite-tank", 1 }, { "rf-heater", 4 }, { "steam-turbine", 1 },
     { "rf-pipe", 1 },
   }
   local x = 0
   for _, row in ipairs(placed) do
     local name, boxes = row[1], row[2]
+    -- Sixty tiles apart in both axes: far enough that no two of these ever join a fluid segment or
+    -- share an electric network, so a capacity read is the entity's own and not a segment's.
     local y = -200
     local caps, buffers, invs = {}, {}, {}
     for _, q in ipairs(order) do
@@ -221,6 +351,13 @@ script.on_nth_tick(60, function()
     end
   end
 
+  -- out/in is the whole perpetual-motion question in one number. The generator's declared power cap
+  -- against the energy content of the fluid it is allowed to draw per tick: if the cap ever scaled
+  -- faster than the usage, a legendary machine would convert more cheaply than a normal one.
+  --
+  -- Derived two ways because generators are two kinds. One burns its fluid and takes fuel_value per
+  -- unit; the other takes the heat between the fluid's default temperature and the generator's
+  -- maximum, which is heat_capacity's business.
   local function generator_ratio(ename, fname)
     local g, f = prototypes.entity[ename], prototypes.fluid[fname]
     if not g or not f then return end
@@ -244,7 +381,15 @@ script.on_nth_tick(60, function()
   generator_ratio("rf-hc-turbine", "steam")
   generator_ratio("steam-turbine", "steam")
 
-  for _, ename in ipairs({ "rf-heat-exchanger", "rf-hc-exchanger" }) do
+  -- The other place an efficiency could have hidden. A fluid energy source's effectivity is a plain
+  -- attribute, so by the tell it does not scale -- reported rather than reasoned.
+  --
+  -- EVERY BOILER, not just the two with a fluid energy source, because target_temperature is the
+  -- other number this row carries and the research note's residual-leak arithmetic is built on
+  -- rf-reactor's. The reactors report no effectivity at all, which is the row saying their energy
+  -- source is electric -- a nil here is a reading, not a hole.
+  for _, ename in ipairs({ "rf-reactor", "rf-aneutronic-reactor", "rf-heat-exchanger",
+                           "rf-hc-exchanger", "rf-isotope-collector" }) do
     local ex = prototypes.entity[ename]
     if ex then
       local fs = ex.fluid_energy_source_prototype
@@ -257,30 +402,45 @@ script.on_nth_tick(60, function()
   say("done")
 end)
 '@
-Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
-Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'data.lua') -Value '-- nothing'
+    Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
+}
 
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }
+
 try {
     New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
     $want = if ($SpaceAge) { @('space-age') } else { @('quality') }
     $enabled = Resolve-BundledSelection -Requested $want -Bundled $bundled
     Write-Host "bundled enabled: $($enabled -join ', ')"
     Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabled -Mods ($ourMods + $rigName)
+    Write-Rig
 
-    $save = Join-Path $temp 'q.zip'
+    $save = Join-Path $temp 'quality-probe.zip'
     Invoke-FactorioStep @step -Arguments @('--create', $save) -Tag 'create' | Out-Null
+    # 240 ticks against a report on the first multiple of 60: generous, and nothing here measures a
+    # rate, so the only requirement is that the surface has generated by the time the rig reports.
     $runOut = Invoke-FactorioStep @step -Tag 'run' -Arguments @(
         '--benchmark', $save, '--benchmark-ticks', '240', '--benchmark-runs', '1', '--disable-audio')
 
     $reported = @(Get-Content $runOut | Select-String -Pattern 'QPROBE ' |
         ForEach-Object { ($_ -split 'QPROBE ', 2)[1].TrimEnd() })
-    if ($reported.Count -eq 0) { throw 'the probe reported nothing.' }
-    $reported | ForEach-Object { Write-Host $_ }
+    if ($reported.Count -eq 0) { throw 'the rig reported nothing; it never reached its report tick.' }
+
+    foreach ($line in $reported) { Write-Host "  $line" }
+
+    # The sentinel, for the same reason probe-energy-containment checks for one: a rig that died
+    # part way through its report prints rows that look exactly like a complete run.
+    if (-not ($reported | Where-Object { $_ -eq 'done' })) {
+        throw 'the rig stopped before the end of its report; the rows above are incomplete.'
+    }
+
+    Write-Host ''
+    Write-Host 'OK - the probe ran and every row reported. The answers are above, and they are'
+    Write-Host '     measurements rather than a verdict, so nothing here passes or fails.'
+    Write-Host '     docs/research/quality.md is what they were read into.'
 }
 finally {
-    if (-not $KeepTemp) {
-        Remove-ModJunctions -ModDirectory $modDir
-        Remove-TempDirectory -Path $temp -Label 'probe-quality'
-    } else { Write-Host "kept: $temp" }
+    if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }
+    Remove-ModJunctions -ModDirectory $modDir
+    if (-not $KeepTemp) { Remove-TempDirectory -Path $temp -Label 'probe-quality' }
 }
