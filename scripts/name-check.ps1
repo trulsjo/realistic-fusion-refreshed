@@ -155,8 +155,11 @@
     The fifth pins the two classifiers -AlsoModDirectory brought with it, and it is there because
     they are the only code here that SUPPRESSES a finding: an over-broad rule turns a real collision
     into a counted line and the run still exits 0. It asserts the negatives as hard as the
-    positives -- an unprefixed name of ours, an unlock naming a recipe that is not ours, a field
-    other than `effects` changing, and an effect being removed must all still be reported.
+    positives, across both wiring shapes Get-DerivedWiring knows -- an unprefixed name of ours, an
+    unlock naming a recipe that is not ours, a tooltip row naming nothing of ours, a row of theirs
+    reworded in the same diff as one of ours, a field outside the shape's own changing, and any
+    entry being removed must all still be reported. It also asserts each exemption is granted for
+    the RIGHT shape, since one loop dispatches both.
 
 .PARAMETER KeepTemp
     Keep the dumps for inspection. Junctions are always removed.
@@ -434,25 +437,49 @@ function Get-SetDerived {
     return $fromSet
 }
 
-function Get-DerivedUnlock {
+function Get-DerivedWiring {
     <#  Replaced prototypes whose entire difference is the set wiring its own derivations in.
 
-        The other half of the same mechanism, and it arrives on the same run: having generated
-        `kr-burn-rf-<fluid>` per fluid of ours, Krastorio 2 appends an unlock-recipe effect for each
-        into `technology/kr-fluid-excess-handling` -- its own technology, gaining its own recipes.
-        Exactly the shape base Factorio's barrel generation has against `technology/fluid-handling`,
-        which is the one entry `$ALLOWED_EDITS` declares.
+        The other half of the same mechanism, and it arrives on the same run. TWO shapes are
+        recognised, and both were found on a real lane rather than imagined:
 
-        NARROW ON PURPOSE, and the narrowness is the safety. Three conditions, all required: the
-        ONLY field that differs is `effects`; the diff is additions only, so nothing the set had was
-        removed; and every added effect is an `unlock-recipe` naming a recipe Get-SetDerived already
-        attributed to us. A prototype of theirs that this repo genuinely overwrites fails all three
-        and is still reported.
+        `effects` -- having generated `kr-burn-rf-<fluid>` per fluid of ours, Krastorio 2 appends an
+        unlock-recipe effect for each into `technology/kr-fluid-excess-handling` -- its own
+        technology, gaining its own recipes. Exactly the shape base Factorio's barrel generation has
+        against `technology/fluid-handling`, which is the one entry `$ALLOWED_EDITS` declares.
 
-        ponytail: `effects` is the only field this recognises, because it is the only one the
-        mechanism touches. A set that wires its derivations in some other way (a prerequisite, an
-        item's subgroup) will surface as a plain `replaces:` and want reading -- which is the right
-        default for a shape nobody has seen yet.  #>
+        `custom_tooltip_fields` -- Space Exploration's `prototypes/phase-3/custom-tooltips.lua`
+        walks `data.raw.fluid` and appends a consumption row per non-hidden fuel fluid to
+        `generator/se-fluid-burner-generator`, and to `kr-gas-power-station` as well when Krastorio 2
+        is there. So its generator's tooltip grows a row per fuel fluid of ours while the entity
+        itself is untouched. Added on Truls's call after the spaceex lane reported it (#129); the
+        measurement that lane made is the specification: only `custom_tooltip_fields` differed, it
+        went from 2 rows to 4, nothing was removed, and the two new rows named this repo's only two
+        fluids carrying a `fuel_value`.
+
+        NARROW ON PURPOSE, and the narrowness is the safety. Both shapes require: the ONLY field
+        that differs is that shape's own field; the diff is additions only, counted as a MULTISET, so
+        nothing the set had was removed, altered or de-duplicated; and every added entry is one the
+        set can be shown to have generated. A prototype of theirs that this repo genuinely overwrites
+        fails these and is still reported.
+
+        THE TWO SHAPES DO NOT PROVE AUTHORSHIP EQUALLY WELL, and pretending otherwise is how a
+        suppression rule goes bad. An added `unlock-recipe` names a prototype of THEIRS that
+        Get-SetDerived already attributed to the set, which is real evidence. A tooltip row names a
+        prototype of OURS, which is equally consistent with the set describing our fluid and with
+        this repo appending a row to their entity -- the two are byte-identical in a dump. The
+        tooltip predicate carries what that costs, and its own ceiling; read it before widening it.
+
+        WHY THE TOOLTIP TEST NAMES OUR PROTOTYPES RATHER THAN MATCHING THE PREFIX. A prefix test
+        would be the circular reasoning this whole file exists to avoid, and it would fail in the
+        worst direction: a row about a prototype of ours that was MISNAMED carries no `rf-`, so a
+        prefix test would stop excusing it and report it as a replacement -- burying an ADR 0009
+        breach under a finding about somebody else's generator. Testing against the difference
+        excuses the row and still reports the unprefixed name, which is the right way round.
+
+        ponytail: two fields, listed rather than generalised. A set that wires its derivations
+        through a third (a prerequisite, an item's subgroup) surfaces as a plain `replaces:` and
+        wants reading -- which is exactly how both of these were found.  #>
     param(
         # ALLOWEMPTYCOLLECTION, BECAUSE EMPTY IS THE HEALTHY CASE. A Mandatory [string[]] REFUSES an
         # empty array -- "Cannot bind argument to parameter 'Replaced' because it is null" -- and
@@ -464,10 +491,19 @@ function Get-DerivedUnlock {
         [Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Replaced,
         [Parameter(Mandatory)] [hashtable] $WithUs,
         [Parameter(Mandatory)] [hashtable] $Baseline,
-        [Parameter(Mandatory)] [hashtable] $SetDerived
+        [Parameter(Mandatory)] [hashtable] $SetDerived,
+        # The names this repo defines -- $ours.Keys at the call site. Empty is legitimate: the
+        # unlock shape never reads it, so a caller testing only that half has nothing to pass.
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $OurNames
     )
 
-    $exempt = @()
+    # The fields a wiring is allowed to touch, and the shape each one is. Adding a third means
+    # adding its predicate below and its self-test cases -- not editing a regex. The predicate switch
+    # THROWS on a shape it does not know, so a half-done addition stops the run instead of borrowing
+    # another shape's test.
+    $SHAPES = @{ 'effects' = 'unlock'; 'custom_tooltip_fields' = 'tooltip' }
+
+    $exempt = @{}
     foreach ($key in $Replaced) {
         $a = $WithUs[$key]   | ConvertFrom-Json
         $b = $Baseline[$key] | ConvertFrom-Json
@@ -479,21 +515,104 @@ function Get-DerivedUnlock {
             $vb = $b.$f | ConvertTo-Json -Depth 100 -Compress -WarningAction SilentlyContinue
             if ($va -ne $vb) { $differing += $f }
         }
-        if ($differing.Count -ne 1 -or $differing[0] -ne 'effects') { continue }
+        if ($differing.Count -ne 1 -or -not $SHAPES.ContainsKey($differing[0])) { continue }
+        $field = $differing[0]
 
-        $before = @($b.effects | ForEach-Object { $_ | ConvertTo-Json -Depth 20 -Compress })
-        $after  = @($a.effects | ForEach-Object { $_ | ConvertTo-Json -Depth 20 -Compress })
-        # Additions only: anything the baseline had and the run does not is a removal, not a wiring.
-        if (@($before | Where-Object { $_ -notin $after })) { continue }
+        # AN ABSENT FIELD IS AN EMPTY LIST, NOT A LIST HOLDING 'null'. PowerShell pipes $null as one
+        # item, so `@($null | ForEach-Object {...})` is @('null') -- a phantom entry that is then
+        # missing from $after, which the additions-only test below reads as a REMOVAL. A prototype
+        # that gains the field from nothing would be reported for a reason that has nothing to do
+        # with what it gained. Measured, not assumed: `$null | ForEach-Object` iterates once.
+        $rowsBefore = if ($null -eq $b.$field) { @() } else { @($b.$field) }
+        $rowsAfter  = if ($null -eq $a.$field) { @() } else { @($a.$field) }
+        $tally = {
+            param($rows)
+            $m = @{}
+            foreach ($r in $rows) {
+                $k = $r | ConvertTo-Json -Depth 20 -Compress
+                if ($m.ContainsKey($k)) { $m[$k]++ } else { $m[$k] = 1 }
+            }
+            return $m
+        }
+        $mBefore = & $tally $rowsBefore
+        $mAfter  = & $tally $rowsAfter
 
-        $added = @($a.effects | Where-Object { ($_ | ConvertTo-Json -Depth 20 -Compress) -notin $before })
+        # ADDITIONS ONLY, AND AS A MULTISET RATHER THAN A SET. Presence alone was not enough: two
+        # identical entries in the baseline and one of them deleted leaves the string still present
+        # in the run, so the deletion was invisible and the prototype was excused. Counting closes
+        # that for both shapes at once. It catches an EDIT for free -- a reworded entry is a
+        # disappearance and a reappearance -- so a set quietly rewriting one of its own rows while
+        # appending one of ours fails here rather than riding in on the legitimate addition.
+        $lost = @($mBefore.Keys | Where-Object {
+            -not $mAfter.ContainsKey($_) -or $mAfter[$_] -lt $mBefore[$_]
+        })
+        if ($lost) { continue }
+
+        # The SURPLUS occurrences, as objects rather than strings, because the predicates below read
+        # their fields. An entry duplicated by the run counts as added on its second occurrence.
+        $seen  = @{}
+        $added = @()
+        foreach ($row in $rowsAfter) {
+            $k = $row | ConvertTo-Json -Depth 20 -Compress
+            if ($seen.ContainsKey($k)) { $seen[$k]++ } else { $seen[$k] = 1 }
+            $allowed = if ($mBefore.ContainsKey($k)) { $mBefore[$k] } else { 0 }
+            if ($seen[$k] -gt $allowed) { $added += $row }
+        }
         if (-not $added) { continue }
-        $foreign = @($added | Where-Object { $_.type -ne 'unlock-recipe' -or -not $SetDerived.ContainsKey($_.recipe) })
-        if (-not $foreign) { $exempt += $key }
+
+        # ONE PREDICATE PER SHAPE, SELECTED BY THE SHAPE AND NOT BY THE FIELD, so the shape recorded
+        # against the key and the test that granted it come from the same place. `default` throws
+        # rather than falling through: an `else` here meant a third $SHAPES entry added without its
+        # own predicate would silently be judged by another shape's test and printed with a null
+        # reason. A missing predicate should stop the run, not quietly borrow one.
+        $foreign = switch ($SHAPES[$field]) {
+            'unlock' {
+                @($added | Where-Object { $_.type -ne 'unlock-recipe' -or -not $SetDerived.ContainsKey($_.recipe) })
+            }
+            'tooltip' {
+                # WHAT THIS CAN AND CANNOT SEE, because it is a suppression rule and the limit is the
+                # point. A row the set generated ABOUT a fluid of ours and a row THIS REPO appended to
+                # the set's prototype are byte-identical in the dump: the data records what the
+                # prototype ended up as, never who wrote it. So authorship cannot be proved here the
+                # way the unlock shape proves it -- an unlock names a prototype of THEIRS that
+                # Get-SetDerived already attributed to the set, whereas a tooltip row names a
+                # prototype of OURS, which is equally consistent with either author.
+                #
+                # Two conditions together are the closest available, and both are required:
+                #
+                #   1. the row NAMES a prototype this repo defines -- embedded in a localised string
+                #      the set built, `[fluid=rf-reactor-energy]` in SE's case, rather than sitting in
+                #      a field of its own, hence a substring test over the serialised row. Ordinal
+                #      and case-sensitive, which is what prototype names are.
+                #   2. the row is of a KIND the set already emits on that same prototype -- its
+                #      localised key already appears there in the baseline. That is what makes it
+                #      another row from an existing generator rather than a row invented on their
+                #      entity, and it is the half that keeps a hand-written addition of ours out.
+                #
+                # ponytail: evidence, not proof, and the ceiling is condition 2. A repo change that
+                # appended a row using the set's OWN localised key would still be excused. Nothing in
+                # the dump can separate that case; separating it needs a source-level instrument --
+                # who called add_custom_tooltip_field -- which does not exist here. If this ever needs
+                # to be airtight, that is the upgrade, not a cleverer diff.
+                $kinds = @($rowsBefore | ForEach-Object { $_.name } | Sort-Object -Unique)
+                @($added | Where-Object {
+                    $row = $_ | ConvertTo-Json -Depth 20 -Compress
+                    (-not @($OurNames | Where-Object { $row.Contains($_) })) -or ($_.name -notin $kinds)
+                })
+            }
+            default {
+                throw ("Get-DerivedWiring: shape '$_' has no predicate, so it would be judged by " +
+                       "another shape's test. Add one beside its `$SHAPES entry.")
+            }
+        }
+        if (-not $foreign) { $exempt[$key] = $SHAPES[$field] }
     }
-    # No unary comma. `return ,$exempt` would hand back an array WRAPPING the array, and the caller's
-    # @() does not flatten it -- so the one key printed correctly and then failed to match `-notin`,
-    # reporting a finding the run had just explained away.
+    # A HASHTABLE, and it disarms two traps an array return carried. `return ,$exempt` would have
+    # handed back an array WRAPPING the array, and the caller's @() does not flatten it -- so the one
+    # key printed correctly and then failed to match `-notin`, reporting a finding the run had just
+    # explained away. An empty array also unrolls to $null on return, which is the trap $Replaced
+    # above carries its own note about. A hashtable does neither, and it carries WHICH shape excused
+    # each key, which the caller needs in order to say what it found rather than only how many.
     return $exempt
 }
 
@@ -666,7 +785,7 @@ try {
     # @() BECAUSE AN EMPTY ARRAY UNROLLS TO $null ON RETURN -- the third instance of this trap in
     # this change, and the one with teeth. Get-Replaced returning nothing is the HEALTHY result: it
     # means this repo changes no prototype of the set's. But $replaced was then $null rather than
-    # @(), and Get-DerivedUnlock's Mandatory [string[]] refuses null, so every lane where nothing is
+    # @(), and Get-DerivedWiring's Mandatory [string[]] refuses null, so every lane where nothing is
     # replaced died with "Cannot bind argument to parameter 'Replaced' because it is null".
     # Krastorio 2 hid it completely: its flare-stack generation replaces exactly one technology, so
     # the only lane ever run had a one-element array. riteg and fluid both replace nothing and both
@@ -687,8 +806,8 @@ try {
     # What the SET made out of us, told apart from what we made. Counted and named rather than
     # waived: a jump here means the set started generating something new from this repo's
     # prototypes, which is worth seeing even though it is not a failure.
-    $setDerived     = @{}
-    $derivedUnlocks = @()
+    $setDerived    = @{}
+    $derivedWiring = @{}
     if ($alsoMods) {
         $setDerived = Get-SetDerived -Ours $ours
         if ($setDerived.Count) {
@@ -698,12 +817,18 @@ try {
             Write-Host ("of those, {0} are the SET's own prototypes generated from ours -- {1}" -f
                 $setDerived.Count, (($byPrefix | ForEach-Object { "$($_.Count)x '$($_.Name)<ours>'" }) -join ', '))
         }
-        $derivedUnlocks = @(Get-DerivedUnlock -Replaced $replaced -WithUs $withUs -Baseline $withoutUs -SetDerived $setDerived)
-        foreach ($k in $derivedUnlocks) {
-            Write-Host ("  '$k' gains only unlock-recipe effects for those, so it is the set wiring its " +
-                        'own derivations in rather than this repo replacing it.')
+        $derivedWiring = Get-DerivedWiring -Replaced $replaced -WithUs $withUs -Baseline $withoutUs `
+                            -SetDerived $setDerived -OurNames @($ours.Keys)
+        foreach ($k in @($derivedWiring.Keys | Sort-Object)) {
+            $what = switch ($derivedWiring[$k]) {
+                'unlock'  { 'gains only unlock-recipe effects for those' }
+                'tooltip' { 'gains only tooltip rows of a kind it already had, naming ours' }
+                default   { "gains only wiring classified '$_'" }
+            }
+            Write-Host ("  '$k' $what, so it is the set wiring its own derivations in rather than " +
+                        'this repo replacing it.')
         }
-        $replaced = @($replaced | Where-Object { $_ -notin $derivedUnlocks })
+        $replaced = @($replaced | Where-Object { -not $derivedWiring.ContainsKey($_) })
     }
 
     # Every prefixed name the game ended up with, not only the ones in the difference -- see
@@ -876,7 +1001,7 @@ data.raw.item["iron-plate"].stack_size = 123' |
             exit 1
         }
 
-        # And the unlock half, with its three negatives.
+        # And the two wiring shapes, each with its negatives. The unlock half first.
         $tech    = 'technology/kr-fluid-excess-handling'
         $before  = @{ name = 'kr-fluid-excess-handling'; effects = @(@{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }) }
         $wired   = @{ name = 'kr-fluid-excess-handling'; effects = @(
@@ -887,17 +1012,71 @@ data.raw.item["iron-plate"].stack_size = 123' |
                         @{ type = 'unlock-recipe'; recipe = 'kr-something-of-theirs' }) }
         $renamed = @{ name = 'ours-now'; effects = @(@{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }) }
         $dropped = @{ name = 'kr-fluid-excess-handling'; effects = @() }
+
+        # THE TOOLTIP HALF (#129), and the fixtures are the shape SE really produced: a row per
+        # non-hidden fuel fluid, the name embedded in a localised string rather than in a field.
+        # $tipOurs is the measured case -- one row of theirs kept untouched, one row of ours appended.
+        $ourFluid   = 'rf-reactor-energy'
+        $gen        = 'generator/se-fluid-burner-generator'
+        $theirRow   = @{ name = 'description.fluid-consumption'; value = @('', '[fluid=se-antimatter-stream]', ' ', '60', 'per-second-suffix') }
+        $ourRow     = @{ name = 'description.fluid-consumption'; value = @('', "[fluid=$ourFluid]", ' ', '30', 'per-second-suffix') }
+        $tipBefore  = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($theirRow) }
+        $tipOurs    = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($theirRow, $ourRow) }
+        # A row naming a fluid of THEIRS that the baseline did not have. Nothing to do with us, so
+        # it must not be excused just because the field is the right one.
+        $tipTheirs  = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @(
+                        $theirRow
+                        @{ name = 'description.fluid-consumption'; value = @('', '[fluid=se-something-of-theirs]', ' ', '30', 'per-second-suffix') }) }
+        $tipDropped = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($ourRow) }
+        # THE ONE THAT MATTERS MOST: our row appended AND a row of theirs reworded in the same diff.
+        # An additions-only test that compared counts, or that stopped at "one of the added rows is
+        # ours", would wave this through -- and it is a real edit to a prototype of theirs.
+        $tipEdited  = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @(
+                        @{ name = 'description.fluid-consumption'; value = @('', '[fluid=se-antimatter-stream]', ' ', '99', 'per-second-suffix') }
+                        $ourRow) }
+        # And the field allow-list, from the tooltip side: rows identical, something else changed.
+        $tipOther   = @{ name = 'se-fluid-burner-generator'; efficiency = 0.5; custom_tooltip_fields = @($theirRow) }
+        # THE DE-DUPLICATION CASE (#129 review). Two identical rows of theirs, one deleted, one of
+        # ours appended. A presence test sees their row still there and excuses the lot; only a
+        # multiset sees the loss. The fixture is the whole reason the counting exists.
+        $tipDupBase = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($theirRow, $theirRow) }
+        $tipDeduped = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($theirRow, $ourRow) }
+        # A row of a KIND the prototype did not have. It names a fluid of ours, so condition 1 passes
+        # and condition 2 must reject it: an invented row on their entity is what this repo appending
+        # to a third-party prototype looks like, and it must not be excused as their generator.
+        $tipNewKind = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @(
+                        $theirRow
+                        @{ name = 'description.rf-something-of-ours'; value = @('', "[fluid=$ourFluid]") }) }
+        # No tooltip field at all in the baseline, so there is no kind to match and no generator of
+        # theirs demonstrably at work. Reported, and the run must reach that verdict on condition 2
+        # rather than on the phantom 'null' entry an absent field used to serialise to.
+        $tipNoBase  = @{ name = 'se-fluid-burner-generator'; efficiency = 1 }
+        # The same absent-field shape on the UNLOCK side, where it IS a wiring: a technology of
+        # theirs that had no effects at all gains one, for a recipe the set derived from us. This is
+        # the case the phantom entry silently reported, and it must be excused.
+        $techNoBase = @{ name = 'kr-fluid-excess-handling' }
+        $techGained = @{ name = 'kr-fluid-excess-handling'; effects = @(@{ type = 'unlock-recipe'; recipe = $setName }) }
+
         $j = { param($o) $o | ConvertTo-Json -Depth 100 -Compress }
 
         $cases = @(
-            @{ Label = 'the set wiring its own derivation in'; After = $wired;   Exempt = $true }
-            @{ Label = 'an unlock for a recipe that is NOT ours'; After = $foreign; Exempt = $false }
-            @{ Label = 'a field other than effects changing'; After = $renamed; Exempt = $false }
-            @{ Label = 'an effect being REMOVED'; After = $dropped; Exempt = $false }
+            @{ Label = 'the set wiring its own derivation in';       Key = $tech; Before = $before; After = $wired;   Exempt = $true }
+            @{ Label = 'an unlock for a recipe that is NOT ours';    Key = $tech; Before = $before; After = $foreign; Exempt = $false }
+            @{ Label = 'a field other than effects changing';        Key = $tech; Before = $before; After = $renamed; Exempt = $false }
+            @{ Label = 'an effect being REMOVED';                    Key = $tech; Before = $before; After = $dropped; Exempt = $false }
+            @{ Label = 'a tooltip row naming a fluid of ours';       Key = $gen;  Before = $tipBefore; After = $tipOurs;    Exempt = $true }
+            @{ Label = 'a tooltip row naming nothing of ours';       Key = $gen;  Before = $tipBefore; After = $tipTheirs;  Exempt = $false }
+            @{ Label = 'a tooltip row being REMOVED';                Key = $gen;  Before = $tipBefore; After = $tipDropped; Exempt = $false }
+            @{ Label = 'a row of theirs REWORDED beside ours';       Key = $gen;  Before = $tipBefore; After = $tipEdited;  Exempt = $false }
+            @{ Label = 'a field other than the tooltips changing';   Key = $gen;  Before = $tipBefore; After = $tipOther;   Exempt = $false }
+            @{ Label = 'a DUPLICATE row of theirs de-duplicated';    Key = $gen;  Before = $tipDupBase; After = $tipDeduped; Exempt = $false }
+            @{ Label = 'a row of a kind the prototype did not have'; Key = $gen;  Before = $tipBefore;  After = $tipNewKind; Exempt = $false }
+            @{ Label = 'a tooltip field appearing from nothing';     Key = $gen;  Before = $tipNoBase;  After = $tipOurs;    Exempt = $false }
+            @{ Label = 'an effects field appearing from nothing';    Key = $tech; Before = $techNoBase; After = $techGained; Exempt = $true }
         )
         # THE EMPTY CASE FIRST, because it is the one a real lane hits most and the one the K2 lane
         # could never reach. Nothing replaced is what a clean coexistence result looks like.
-        $none = @(Get-DerivedUnlock -Replaced @() -WithUs @{} -Baseline @{} -SetDerived @{})
+        $none = Get-DerivedWiring -Replaced @() -WithUs @{} -Baseline @{} -SetDerived @{} -OurNames @()
         if ($none.Count -ne 0) {
             Write-Host "FAILED - self-test: an empty `$Replaced returned $($none.Count) exemption(s)."
             exit 1
@@ -917,19 +1096,33 @@ data.raw.item["iron-plate"].stack_size = 123' |
         }
 
         foreach ($c in $cases) {
-            $got = @(Get-DerivedUnlock -Replaced @($tech) -WithUs @{ $tech = (& $j $c.After) } `
-                        -Baseline @{ $tech = (& $j $before) } -SetDerived $classified)
-            $was = [bool] ($got -contains $tech)
+            $k   = $c.Key
+            $got = Get-DerivedWiring -Replaced @($k) -WithUs @{ $k = (& $j $c.After) } `
+                        -Baseline @{ $k = (& $j $c.Before) } -SetDerived $classified -OurNames @($ourFluid)
+            $was = [bool] $got.ContainsKey($k)
             if ($was -ne $c.Exempt) {
                 Write-Host "FAILED - self-test: $($c.Label) was $(if ($was) { 'excused' } else { 'reported' }), expected the opposite."
                 exit 1
             }
+            # The SHAPE is asserted too, not just the verdict. Both shapes are excused by the same
+            # loop, so a dispatch that fell through to the wrong predicate could excuse the right
+            # key for the wrong reason -- and the per-key line the caller prints would then say
+            # something untrue about what the set did.
+            $want = if ($k -eq $tech) { 'unlock' } else { 'tooltip' }
+            if ($was -and $got[$k] -ne $want) {
+                Write-Host "FAILED - self-test: $($c.Label) was excused as '$($got[$k])', expected '$want'."
+                exit 1
+            }
         }
         Write-Host 'self-test 5/5: an empty replacement list binds, and the set-derivation classifiers'
-        Write-Host '               excuse what the set built from us and nothing else -- an unprefixed'
-        Write-Host '               name of ours, a LONE one embedding one'
-        Write-Host '               of ours, an unlock for a recipe that is not ours, a changed field and'
-        Write-Host '               a removed effect all survive; and a name the set redefines in both'
+        Write-Host '               excuse what the set built from us and nothing else, in both wiring'
+        Write-Host '               shapes -- an unprefixed name of ours, a LONE one embedding one of'
+        Write-Host '               ours, an unlock for a recipe that is not ours, a tooltip row naming'
+        Write-Host '               nothing of ours, a row of theirs reworded beside ours, a duplicate'
+        Write-Host '               row of theirs de-duplicated, a row of a kind the prototype did not'
+        Write-Host '               have, a changed field and a removed entry all survive; an effects'
+        Write-Host '               field appearing from nothing is still a wiring; each exemption is'
+        Write-Host '               checked for the RIGHT shape; and a name the set redefines in both'
         Write-Host '               dumps is still caught by the scan.'
 
         Write-Host ''
@@ -956,9 +1149,9 @@ data.raw.item["iron-plate"].stack_size = 123' |
     $mineCount = $ours.Count - $setDerived.Count
     Write-Host "OK - all $mineCount prototype names this repo defines carry '$PREFIX', and none is used by"
     Write-Host "     $against. Bundled enabled: $bundledOn."
-    if ($setDerived.Count -or $derivedUnlocks) {
+    if ($setDerived.Count -or $derivedWiring.Count) {
         Write-Host ("     A further $($setDerived.Count) name(s) in the difference are the SET's own prototypes built " +
-                    "from ours, and $($derivedUnlocks.Count) prototype(s) of theirs gained only the unlocks for them.")
+                    "from ours, and $($derivedWiring.Count) prototype(s) of theirs gained only the wiring for them.")
     }
     exit 0
 }

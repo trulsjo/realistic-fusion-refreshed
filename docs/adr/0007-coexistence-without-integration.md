@@ -153,13 +153,15 @@ manifest can move under it.
 
 | Lane | Set | `load-check` | `name-check` | Cause |
 |---|---|---|---|---|
-| Space Exploration ([#129](https://github.com/trulsjo/realistic-fusion-refreshed/issues/129)) | `spaceex`, 17 mods | red | red | neither is this repo's — below |
+| Space Exploration ([#129](https://github.com/trulsjo/realistic-fusion-refreshed/issues/129)) | `spaceex`, 17 mods | **red** | green | the red is upstream's — below |
 
 **Space Exploration, 2026-08-27 ([#129](https://github.com/trulsjo/realistic-fusion-refreshed/issues/129)).
-Red on both halves, and this repo causes neither.** The lane this ADR priced highest — 1,290 lines in
-the 1.1 original, *"half the burden"* as the Context above puts it — and the `rf-` prefix had never
-met it. (#129 words it as more than every other target combined, which the attributed rows support
-and the 2,595 total does not; half is the claim both readings agree on, so it is the one used here.) Both reds are worth reading in full before the next lane runs, because one of them is the shape
+Red on the assets, green on the names, and this repo causes neither outcome.** The lane this ADR
+priced highest — 1,290 lines in the 1.1 original, *"half the burden"* as the Context above puts it —
+and the `rf-` prefix had never met it. (#129 words it as more than every other target combined, which
+the attributed rows support and the 2,595 total does not; half is the claim both readings agree on,
+so it is the one used here.) It ran red on both halves first; the name half went green when the
+classifier learned the shape it had found, which is the last subsection below. Both reds are worth reading in full before the next lane runs, because one of them is the shape
 ADR 0026 predicted and the other is a shape nobody had seen.
 
 **The game half passed and the gate that follows it did not.** Factorio loaded all twenty mods,
@@ -200,19 +202,45 @@ excuses for `unlock-recipe` effects, wired through a different field — and `na
 docstring predicted exactly this: *"A set that wires its derivations in some other way ... will
 surface as a plain `replaces:` and want reading."* It has now been read.
 
-**So the lane finds no defect in this repo and no collision, and it stays red.** Whether
-`name-check` should learn the `custom_tooltip_fields` shape is left open deliberately: it would widen
-the only code in that check that *suppresses* a finding, and an over-broad rule there turns a real
-collision into a counted line while the run still exits 0.
+**So the lane finds no defect in this repo and no collision.**
 
-**And [#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130) will meet TWO of these,
-not one — expect it rather than triage it twice.** That same `custom-tooltips.lua` loops over
-`se-fluid-burner-generator` *and* `kr-gas-power-station`, and Krastorio 2 2.0.19 defines the latter
+**`name-check` now knows the shape — Truls's call, 2026-08-27, on this finding.** The question was
+whether to teach it, and it is not a free one: `Get-DerivedWiring` is the only code in that check
+that *suppresses* a finding, so an over-broad rule there turns a real collision into a counted line
+while the run still exits 0. It was taught narrowly and the narrowness is the whole safety — a
+wiring is excused only when the single differing field is that shape's own; the diff is additions
+only, counted as a **multiset**, so nothing of theirs was removed, reworded or de-duplicated; and
+every added row both **names a prototype this repo defines** and is **of a kind the set already
+emits on that same prototype**. It matches against the difference rather than against the `rf-`
+prefix deliberately: a prefix test would stop excusing a row about a prototype of ours that was
+*misnamed*, and would then report an ADR 0009 breach as somebody else's generator being replaced.
+
+**The second condition is there because this shape cannot prove authorship, and that limit is
+recorded rather than papered over.** An added `unlock-recipe` names a prototype of *theirs* that the
+set demonstrably generated, which is evidence. A tooltip row names a prototype of *ours* — equally
+consistent with the set describing our fluid and with this repo appending a row to their entity, and
+the two are byte-identical in a dump, because the dump records what a prototype became and never who
+wrote it. Requiring the row to match a kind the set already emits there is the closest available
+substitute: it admits another row from an existing generator and keeps out a row invented on their
+entity. Its ceiling is stated in the code — a change here that appended a row using the set's *own*
+localised key would still be excused, and separating that needs a source-level instrument this repo
+does not have.
+
+The self-test's fifth half now carries **thirteen** classifier cases and asserts each exemption is
+granted for the *right* shape; the predicate is selected by shape and throws on one it does not know,
+so a third shape added without its own test stops the run rather than borrowing another's. An
+over-broad version of the rule was written deliberately and half five caught it, naming the case.
+The lane's name half is green, the finding is still **counted and named** in the output, and a jump
+in that count is still worth reading.
+
+**[#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130) meets this twice, and now
+it should meet it silently.** That same `custom-tooltips.lua` loops over `se-fluid-burner-generator`
+*and* `kr-gas-power-station`, and Krastorio 2 2.0.19 defines the latter
 (`prototypes/buildings/gas-power-station.lua`). So the Krastorio 2 + Space Exploration lane gets the
-identical two tooltip rows appended to K2's generator as well, and `name-check` will report
-`replaces: generator/kr-gas-power-station` beside the SE one. Two prototypes, one mechanism, neither
-of them a collision — which is also the second data point the classifier question above should be
-decided on. The red that matters is the asset gate, and it is upstream's.
+identical rows appended to K2's generator as well, and the expected result is **two** wiring
+exemptions rather than two findings. **If either is reported instead, the shape differs from this one
+and wants reading** — that is the signal the rule leaves intact rather than the noise it removes. The
+red that matters is the asset gate, and it is upstream's.
 
 ## Alternatives considered
 
