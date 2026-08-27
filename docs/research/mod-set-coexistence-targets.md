@@ -481,7 +481,25 @@ $set = @(
 
 Cannot be combined with `-With space-age` (declared `!`).
 
+> **Corrected 2026-08-27 (#129). This list of 16 is short by one, and the missing mod is a HARD
+> dependency.** `space-exploration` 0.7.57 declares `space-exploration-menu-simulations >= 0.7.1`
+> **with no prefix**, which in Factorio's dependency syntax is a requirement and not a suggestion —
+> the same trap the `krastorio2` set records for `ChangeInserterDropLane`. The pin in
+> `scripts/fetch-mods.ps1` is therefore **17** mods and is the correct one; this section is the
+> derivation that missed it. Do not trim the set to match. All 17 fetch, and the game loads all
+> twenty mods and creates a map — but **`load-check.ps1` still exits 1**, on `__base__` paths SE and
+> the two AAI mods name and Factorio 2.0 removed. That red is recorded and it is upstream's; see
+> ADR 0007's lane table before reading it as a regression.
+
 ### Krastorio 2 + Space Exploration — 20 mods
+
+> **Same correction, 2026-08-27 (#129), and this list is short by two.** It omits
+> `space-exploration-menu-simulations` for the reason above, and `ChangeInserterDropLane`, which
+> `Krastorio2` 2.0.19 declares with no prefix — the trap the `krastorio2` set already records. The 20
+> below is therefore 16 + 4 where the pins are 17 + 5. **`$MOD_SETS`' `k2-spaceex` is composed by
+> `Join-ModSets` from the two family pins rather than transcribed from here, so it resolves to 22 and
+> needs no edit** — verified. See
+> [#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130).
 
 Added 2026-08-18, after the first pass of this document omitted the pairing. Both dependency arrays were
 re-read from `/full` on that date.
