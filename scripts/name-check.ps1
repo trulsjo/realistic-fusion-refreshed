@@ -352,7 +352,14 @@ function Get-ReferenceNames {
 
     $found = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     foreach ($file in Get-ChildItem -Path $Path -Filter '*.lua' -Recurse -File) {
-        foreach ($m in [regex]::Matches((Get-Content -LiteralPath $file.FullName -Raw), '\bname\s*=\s*"([^"]+)"')) {
+        # ?? '' BECAUSE AN EMPTY .lua FILE READS AS $null, and [regex]::Matches($null, ...) throws
+        # "Value cannot be null. (Parameter 'input')" rather than matching nothing. Latent here for
+        # as long as this only read Krastorio 2 and the two predecessors, none of which ships a
+        # zero-byte Lua file. It became reachable the moment -AlsoModDirectory started feeding
+        # arbitrary third-party sets through the same harvest, and the first one tried it:
+        # underground-pipe-pack 2.0.6 ships an empty init.lua, which killed the `fluid` lane.
+        $text = (Get-Content -LiteralPath $file.FullName -Raw) ?? ''
+        foreach ($m in [regex]::Matches($text, '\bname\s*=\s*"([^"]+)"')) {
             [void] $found.Add($m.Groups[1].Value)
         }
     }
@@ -447,7 +454,14 @@ function Get-DerivedUnlock {
         item's subgroup) will surface as a plain `replaces:` and want reading -- which is the right
         default for a shape nobody has seen yet.  #>
     param(
-        [Parameter(Mandatory)] [string[]]  $Replaced,
+        # ALLOWEMPTYCOLLECTION, BECAUSE EMPTY IS THE HEALTHY CASE. A Mandatory [string[]] REFUSES an
+        # empty array -- "Cannot bind argument to parameter 'Replaced' because it is null" -- and
+        # $replaced is empty on every lane where this repo changes nothing of the set's, which is
+        # what a good result looks like. Krastorio 2 hid it: K2's flare-stack generation replaces
+        # exactly one technology, so the only lane ever run had a one-element array. RITEG replaces
+        # nothing and crashed the check outright. An empty HASHTABLE binds to a Mandatory parameter
+        # without complaint, which is why the other three need nothing.
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Replaced,
         [Parameter(Mandatory)] [hashtable] $WithUs,
         [Parameter(Mandatory)] [hashtable] $Baseline,
         [Parameter(Mandatory)] [hashtable] $SetDerived
@@ -649,7 +663,16 @@ try {
     if ($ours.Count -eq 0) {
         throw 'the two dumps differ by nothing, so this repo appears to define no prototypes at all. That is not a pass.'
     }
-    $replaced = Get-Replaced -WithUs $withUs -Baseline $withoutUs
+    # @() BECAUSE AN EMPTY ARRAY UNROLLS TO $null ON RETURN -- the third instance of this trap in
+    # this change, and the one with teeth. Get-Replaced returning nothing is the HEALTHY result: it
+    # means this repo changes no prototype of the set's. But $replaced was then $null rather than
+    # @(), and Get-DerivedUnlock's Mandatory [string[]] refuses null, so every lane where nothing is
+    # replaced died with "Cannot bind argument to parameter 'Replaced' because it is null".
+    # Krastorio 2 hid it completely: its flare-stack generation replaces exactly one technology, so
+    # the only lane ever run had a one-element array. riteg and fluid both replace nothing and both
+    # crashed. AllowEmptyCollection on the parameter is not enough on its own -- it permits an empty
+    # COLLECTION, not $null -- so the array is made real here, at the source.
+    $replaced = @(Get-Replaced -WithUs $withUs -Baseline $withoutUs)
     # The derived count is printed rather than quietly excused: it is an exception to ADR 0009 and a
     # jump in it means the game started generating something new from our prototypes.
     # Not $derived: that is $DERIVED to PowerShell, and assigning the list here would overwrite the
@@ -872,6 +895,27 @@ data.raw.item["iron-plate"].stack_size = 123' |
             @{ Label = 'a field other than effects changing'; After = $renamed; Exempt = $false }
             @{ Label = 'an effect being REMOVED'; After = $dropped; Exempt = $false }
         )
+        # THE EMPTY CASE FIRST, because it is the one a real lane hits most and the one the K2 lane
+        # could never reach. Nothing replaced is what a clean coexistence result looks like.
+        $none = @(Get-DerivedUnlock -Replaced @() -WithUs @{} -Baseline @{} -SetDerived @{})
+        if ($none.Count -ne 0) {
+            Write-Host "FAILED - self-test: an empty `$Replaced returned $($none.Count) exemption(s)."
+            exit 1
+        }
+        # AND THE SHAPE THAT ACTUALLY BIT: Get-Replaced's empty result unrolls to $null on return,
+        # so the caller must hand this an array it made real itself. Proving the parameter tolerates
+        # @() while the real call site could still pass $null is how this was missed the first time.
+        $rawEmpty = Get-Replaced -WithUs @{} -Baseline @{}
+        if ($null -ne $rawEmpty) {
+            Write-Host 'FAILED - self-test: Get-Replaced no longer unrolls an empty result to $null,'
+            Write-Host '         so the @() at its call site may have been dropped as redundant. It is not.'
+            exit 1
+        }
+        if ((@($rawEmpty)).Count -ne 0) {
+            Write-Host 'FAILED - self-test: @() around an empty Get-Replaced result is not an empty array.'
+            exit 1
+        }
+
         foreach ($c in $cases) {
             $got = @(Get-DerivedUnlock -Replaced @($tech) -WithUs @{ $tech = (& $j $c.After) } `
                         -Baseline @{ $tech = (& $j $before) } -SetDerived $classified)
@@ -881,8 +925,9 @@ data.raw.item["iron-plate"].stack_size = 123' |
                 exit 1
             }
         }
-        Write-Host 'self-test 5/5: the set-derivation classifiers excuse what the set built from us, and'
-        Write-Host '               nothing else -- an unprefixed name of ours, a LONE one embedding one'
+        Write-Host 'self-test 5/5: an empty replacement list binds, and the set-derivation classifiers'
+        Write-Host '               excuse what the set built from us and nothing else -- an unprefixed'
+        Write-Host '               name of ours, a LONE one embedding one'
         Write-Host '               of ours, an unlock for a recipe that is not ours, a changed field and'
         Write-Host '               a removed effect all survive; and a name the set redefines in both'
         Write-Host '               dumps is still caught by the scan.'
