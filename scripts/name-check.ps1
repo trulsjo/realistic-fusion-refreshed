@@ -368,9 +368,13 @@ function Get-SetDerived {
         The third shape of "ours by consequence, not by choice", after `$DERIVED`'s barrels and Space
         Age's recycling recipes -- and the first one that does not carry the prefix. An overhaul that
         walks data.raw makes a prototype per thing it finds, and Krastorio 2 makes two: measured
-        against K2 2.0.19 on 2026-08-27, it generates `kr-burn-<fluid>` for each of our eleven fluids
-        and two energy fluids, and `kr-crush-<item>` for each of our entities and barrels -- 47
-        recipes, every one named `kr-` first and `rf-` second. They are K2's prototypes in K2's
+        against K2 2.0.19 on 2026-08-27, it generates `kr-burn-<fluid>` for each of our seventeen
+        fluids -- eleven ordinary ones, four plasmas and two energy fluids -- and `kr-crush-<item>`
+        for each of our entities and barrels: 30 plus 17, the 47 below, every one named `kr-` first
+        and `rf-` second. The plasmas are NOT exempt, which this said they were until the arithmetic
+        was checked against the 17 quoted further down. K2's flare_stack_lib.auto_generate() loops
+        the whole of data.raw.fluid and skips only a name blacklist, `hidden` and `parameter`; the
+        plasmas set `auto_barrel = false`, which is a different mechanism entirely. They are K2's prototypes in K2's
         namespace; ADR 0009 has nothing to say about how another mod names its own, and reporting
         them as this repo's unprefixed names is simply wrong.
 
