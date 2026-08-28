@@ -596,6 +596,23 @@ pwsh -File scripts/load-check.ps1 -With space-age   # plus the 8 above
 Nothing in Angel's declares `space-age` in any direction. A pass proves the prototypes coexist and
 nothing about progression.
 
+> **Run 2026-08-28 (#132) — green on both halves, and the silence is compatibility.** Fourteen mods
+> loaded — this repo's three, the eight above, and `space-age` with `elevated-rails` and `quality`
+> behind it. `load-check.ps1` and `name-check.ps1` both exit 0, with no collision, nothing unprefixed
+> and no `replaces:`. The difference is **116** against the Angel's lane's 86; the extra **30** are
+> Space Age recycling recipes generated from our items, every one carrying `rf-` because it embeds
+> the name it recycles. **No prototype of ours is touched only in combination**: measured across four
+> dumps, Space Age changes 9 of our 145 baseline objects on its own, and with Angel's 41 (above) the
+> total is 49 — exactly the union, with `rf-heater` the only object both touch. That is a claim about
+> *which* objects are touched; on `rf-heater` the two **do** interact, producing an
+> `allowed_module_categories` value neither yields alone. See ADR 0007's lane section, including why
+> this lane adds a third field to #153.
+>
+> Space Age's nine, for the record: `rf-pipe`, `rf-pump`, `rf-pipe-to-ground`,
+> `rf-aneutronic-composite-tank`, `rf-isotope-collector`, `rf-lithium-blanket`, `rf-hc-turbine`,
+> `rf-direct-energy-converter` and `rf-heater` — Aquilo's freezing model (`heating_energy`,
+> `surface_conditions`, `frozen_patch` sprites, `pipe_covers_frozen` graphics), no volume changed.
+
 ### Bob's — 18 mods
 
 ```powershell
