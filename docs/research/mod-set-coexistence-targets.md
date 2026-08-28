@@ -574,17 +574,9 @@ The core four plus their four required graphics mods. `angelsindustries` and `an
 cannot be added — no 2.x release exists.
 
 > **Run 2026-08-27 (#131), all 8 at their pins — green on both halves, the first lane that is.**
-> `load-check.ps1` exits 0 with every referenced asset present, and `name-check.ps1` exits 0 with no
-> collision, nothing unprefixed and no `replaces:`. **But green does not mean untouched**: Angel's
-> edits **41 of this repo's 145 prototype objects** — our barrel recipes onto its barreling pump, and
-> our chemical-plant clones inheriting its rebalance (pollution 4 → 1.8/min, fluid-box volume
-> 100 → 1000). Neither check can see that, for different reasons: `name-check` compares content only
-> for prototypes present in **both** dumps, and a prototype of ours is by construction in only one;
-> `load-check` never diffs anything, it asserts validity, assets and runtime invariants. **The barrel
-> and tint edits are Angel's own uniform policy; the machine drift is ours** — Core's `from_vanilla`
-> and Power's hand-set `rf-heater` both leave `energy_source` and fluid-box `volume` inherited,
-> despite a comment in each file claiming every balance stat is set explicitly. See ADR 0007's lane
-> section before reading the green as "no effect".
+> `load-check.ps1` and `name-check.ps1` both exit 0. **Green does not mean untouched**: Angel's edits
+> 41 of this repo's 145 prototype objects, which neither check can see. Verdict and findings in ADR
+> 0007; the run log is in the issue.
 
 ### Angel's + Space Age — same 8 mods
 
@@ -597,21 +589,10 @@ Nothing in Angel's declares `space-age` in any direction. A pass proves the prot
 nothing about progression.
 
 > **Run 2026-08-28 (#132) — green on both halves, and the silence is compatibility.** Fourteen mods
-> loaded — this repo's three, the eight above, and `space-age` with `elevated-rails` and `quality`
-> behind it. `load-check.ps1` and `name-check.ps1` both exit 0, with no collision, nothing unprefixed
-> and no `replaces:`. The difference is **116** against the Angel's lane's 86; the extra **30** are
-> Space Age recycling recipes generated from our items, every one carrying `rf-` because it embeds
-> the name it recycles. **No prototype of ours is touched only in combination**: measured across four
-> dumps, Space Age changes 9 of our 145 baseline objects on its own, and with Angel's 41 (above) the
-> total is 49 — exactly the union, with `rf-heater` the only object both touch. That is a claim about
-> *which* objects are touched; on `rf-heater` the two **do** interact, producing an
-> `allowed_module_categories` value neither yields alone. See ADR 0007's lane section, including why
-> this lane adds a third field to #153.
->
-> Space Age's nine, for the record: `rf-pipe`, `rf-pump`, `rf-pipe-to-ground`,
-> `rf-aneutronic-composite-tank`, `rf-isotope-collector`, `rf-lithium-blanket`, `rf-hc-turbine`,
-> `rf-direct-energy-converter` and `rf-heater` — Aquilo's freezing model (`heating_energy`,
-> `surface_conditions`, `frozen_patch` sprites, `pipe_covers_frozen` graphics), no volume changed.
+> loaded: this repo's three, the eight above, and `space-age` with `elevated-rails` and `quality`
+> behind it. Both checks exit 0. The difference is 116 against the Angel's lane's 86, the extra 30
+> being Space Age recycling recipes that embed our names. Verdict and findings in ADR 0007; the run
+> log is in the issue.
 
 ### Bob's — 18 mods
 
