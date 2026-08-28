@@ -349,3 +349,12 @@ to.
 What v1 does *not* do, for any mod. See [ADR 0007](docs/adr/0007-coexistence-without-integration.md).
 
 The distinction is load-bearing: "compatible with X" is ambiguous between them and should be avoided.
+
+**Set** — a pinned list of third-party mods, defined in `scripts/fetch-mods.ps1`'s `$MOD_SETS` and
+named there (`krastorio2`, `spaceex`, `angels`). The pins are the definition; prose never re-derives
+them.
+
+**Lane** — one set, plus the bundled selection it is loaded with, verified as a unit. `angels` alone
+and `angels` with Space Age are two lanes over one set. A lane yields a **verdict**, which is durable
+and lives in [ADR 0007](docs/adr/0007-coexistence-without-integration.md), and a run log, which lives
+in the lane's issue — see [ADR 0027](docs/adr/0027-the-lane-issue-is-the-run-log.md).
