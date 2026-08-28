@@ -156,6 +156,7 @@ manifest can move under it.
 | Space Exploration ([#129](https://github.com/trulsjo/realistic-fusion-refreshed/issues/129)) | `spaceex`, 17 mods | **red** | green | the red is upstream's — below |
 | Krastorio 2 + Space Exploration ([#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130)) | `k2-spaceex`, 22 mods | **red** | green | the same five paths, still upstream's — below |
 | Angel's ([#131](https://github.com/trulsjo/realistic-fusion-refreshed/issues/131)) | `angels`, 8 mods | green | green | green, and it still edits 41 prototypes of ours that neither check can see — two inherited stats of which are ours — below |
+| Angel's + Space Age ([#132](https://github.com/trulsjo/realistic-fusion-refreshed/issues/132)) | `angels`, 8 mods, `-With space-age` | green | green | green; the silence is compatibility, and no prototype is touched only in combination — below |
 
 **Space Exploration, 2026-08-27 ([#129](https://github.com/trulsjo/realistic-fusion-refreshed/issues/129)).
 Red on the assets, green on the names, and this repo causes neither outcome.** The lane this ADR
@@ -381,6 +382,72 @@ Angel's `factorio_version` 2.0 line — `angelsrefining` 2.0.4, `angelspetrochem
 Industries and Angel's Exploration are 1.1-only and deprecated; they are not in this lane at any
 version. **And loading is still not playing** — the 41 edits above are exactly the kind of thing only
 a playthrough would price.
+
+**Angel's + Space Age, 2026-08-28 ([#132](https://github.com/trulsjo/realistic-fusion-refreshed/issues/132)).
+Green on both halves, and the silence resolves to compatibility.** The same eight mods with
+`-With space-age`, which pulls in `elevated-rails` and `quality` alongside it — so **fourteen mods
+loaded**: this repo's three, Angel's eight, and those three bundled.
+No Angel's mod names `space-age` in any direction, so this lane existed to find out whether that
+silence was compatibility or an unstated conflict. `load-check` exits 0 with every referenced asset
+present and the twelve invariants holding; `name-check` exits 0 with **no `collision:`, no
+`unprefixed:`, no `replaces:`**.
+
+**The difference is 116 where the Angel's lane gives 86, and the extra 30 are the declared shape.**
+All thirty are Space Age recycling recipes — `rf-<item>-recycling`, one per recyclable item of ours,
+`rf-reactor-recycling` and the eleven `rf-<fluid>-barrel-recycling` among them. **Every one carries
+`rf-`**, because
+each embeds the name of the item it recycles, so the generated set cannot collide however it grows.
+Nothing of ours goes missing. #132 predicted 113 against #33's 83; the same +30 now reads 116 against
+86, the base having moved by three since.
+
+**No prototype of ours is touched only in combination — and that is a narrower claim than "the two
+mods do not interact", deliberately.** Dumping our own prototypes under four configurations — neither
+mod, Angel's alone, Space Age alone, both — and diffing each against the first:
+
+| Configuration | Of our 145 baseline objects, changed |
+|---|---|
+| Angel's alone | 41 |
+| Space Age alone | 9 |
+| both | **49** |
+
+41 + 9 − 1 shared = 49, and the set of changed objects under both is **exactly the union** of the two
+taken separately: no object is changed in combination that neither changes alone, and nothing changed
+alone is undone by the other — see `rf-heater` below, where that does not carry over.
+
+Space Age's nine are its own uniform pass over our fluid-handling entities, all of it Aquilo's
+freezing model: `heating_energy`, `surface_conditions`, and the `frozen_patch` sprites
+(`horizontal_`/`vertical_` on `rf-hc-turbine` and `rf-direct-energy-converter`). Not every one gets
+every part — `rf-lithium-blanket`, a container, gains only `surface_conditions`. Where `fluid_box`
+differs it is **graphics, not capacity**: the added field is `pipe_covers_frozen`, pointing at
+`__space-age__/graphics/entity/frozen/`, and **no volume changes** — `rf-pump` stays at 400,
+`rf-pipe` and `rf-pipe-to-ground` at 100, measured across both dumps. (The Angel's lane above *does*
+move a volume, 100 to 1000.) The nine are listed in the research doc.
+
+**One prototype is touched by both, and there the two mods DO interact: `rf-heater`.** The edits
+compose rather than one winning — Angel's `energy_source` and remnants, Space Age's `heating_energy`,
+both present in the result. And the composition produces a value neither mod produces alone:
+`allowed_module_categories` is `null` bare, `["productivity", "speed", "efficiency"]` under Angel's,
+still `null` under Space Age, and **`["productivity", "speed", "efficiency", "quality"]` under both**.
+Traced: Angel's writes that list onto every assembling machine including vanilla `chemical-plant`,
+and the list it writes gains `quality` when the `quality` mod is loaded. Our machines mirror vanilla's
+field for field, as the lane above already established.
+
+**That makes this lane an unplanned check on
+[#153](https://github.com/trulsjo/realistic-fusion-refreshed/issues/153), and it passes it in both
+directions: the field already pinned holds, and the field not yet pinned is shown to really drift.**
+`allowed_effects` is set **explicitly** at both clone sites, and on `rf-heater` it is
+`["consumption", "speed", "pollution", "quality"]` in all four configurations — pinned, and it holds.
+(The two sites do not write the same list, and that is deliberate rather than drift: Core's
+`from_vanilla` sets five entries including `productivity`, and Power omits it on `rf-heater` because
+*"a productivity bonus on this recipe would conjure plasma, and plasma is energy"*. The four-entry
+list above is Power's; Core's differs only by including `productivity`.)
+`allowed_module_categories`, which **neither** sets, drifts with whatever else is loaded. So it is a
+**third** field in the same class as `energy_source` and fluid-box `volume`, and #153 should decide it
+alongside them rather than discover it later.
+
+**Scope, as ever**, and the lane above states it for these pins. What this lane adds is the Space Age
+half: it is the one Factorio 2.0.77 ships, not a separately pinned mod. **Loading is still not
+playing** — 49 edits to our prototypes are what only a playthrough would price.
 
 ## Alternatives considered
 
