@@ -76,7 +76,23 @@
   .card .bonus { color: #7fa8d9; }
   .far .card .body { display: none; }
   .far .card { border-width: 2px; }
-  .far .card .head { font-size: 18px; padding: 8px 10px; }
+  .far .card .head { font-size: 18px; padding: 8px 10px; background: var(--modc); color: #0d0f10; }
+  .far .card .head .ovbadge { color: #000; }
+  .card.faded { opacity: .18; }
+  .card.boost { transform: scale(1.12); transform-origin: center; box-shadow: 0 0 0 2px #fff;
+                z-index: 5; }
+  #b-tools { position: absolute; top: 10px; left: 10px; z-index: 15; background: #26292cee;
+             border: 1px solid #3a3e42; border-radius: 6px; padding: 8px 12px; font-size: 12px;
+             max-width: 250px; max-height: calc(100% - 80px); overflow-y: auto; }
+  #b-tools h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #9aa0a6;
+                margin: 8px 0 3px; }
+  #b-tools button { background: #0f6bd7; color: #fff; border: 0; border-radius: 4px;
+                    padding: 4px 8px; cursor: pointer; }
+  #b-tools .modchip { display: block; cursor: pointer; padding: 3px 7px; border-radius: 4px;
+                      margin: 3px 0; color: #101214; font-weight: 600; opacity: .8;
+                      border: 2px solid transparent; }
+  #b-tools .modchip.on { opacity: 1; border-color: #fff; }
+  #b-tools .pk { padding: 1px 0; color: #c9ced3; }
 
   /* Variant C */
   #c-view { position: absolute; inset: 0; right: 340px; }
@@ -257,47 +273,88 @@ function initB(stage) {
       to the CDN-vs-inlined sub-question: variant A works offline, this one does not.</p></div>`;
     return;
   }
-  stage.innerHTML = `<div id="b-view"><div id="b-world"></div></div>`;
-  const g = new dagre.graphlib.Graph().setGraph({ rankdir: 'LR', nodesep: 16, ranksep: 90, marginx: 40, marginy: 40 });
-  g.setDefaultEdgeLabel(() => ({}));
-  const CARDW = 230, SHOW = 4;
-  for (const t of DATA.techs) {
-    const lines = Math.min(t.unlocks.length, SHOW) + (t.unlocks.length > SHOW ? 1 : 0) + (t.bonuses.length ? 1 : 0);
-    g.setNode(t.id, { width: CARDW, height: 52 + lines * 15 });
-  }
-  for (const [a, b] of edges) g.setEdge(a, b);
-  dagre.layout(g);
+  stage.innerHTML = `<div id="b-view"><div id="b-world"></div></div>
+    <div id="b-tools">
+      <button id="b-orient"></button>
+      <h4>Mods — click to emphasize</h4>
+      ${Object.entries(MODS).map(([k, m]) =>
+        `<span class="modchip" data-mod="${k}" style="background:${m.color}">${esc(m.label)}</span>`).join('')}
+      <h4>Science packs</h4>
+      ${DATA.packs.map(p => `<div class="pk"><span class="dot" style="background:${packColor(p)}"></span> ${esc(DATA.packLabels[p] || p)}</div>`).join('')}
+    </div>`;
 
   const world = document.getElementById('b-world');
-  const gw = g.graph().width, gh = g.graph().height;
-  let html = [`<svg width="${gw}" height="${gh}">`];
-  for (const e of g.edges()) {
-    const pts = g.edge(e).points;
-    html.push(`<path class="b-edge" d="M${pts.map(p => `${p.x},${p.y}`).join(' L')}"/>`);
-  }
-  html.push('</svg>');
-  for (const t of DATA.techs) {
-    const n = g.node(t.id), color = (MODS[t.mod] || {}).color || '#888';
-    const shown = t.unlocks.slice(0, SHOW);
-    html.push(`<div class="card" style="left:${n.x - n.width / 2}px;top:${n.y - n.height / 2}px;width:${n.width}px;height:${n.height}px">
-      <div class="head" style="border-left-color:${color}">${t.overlap ? '<span class="ovbadge">⚠ </span>' : ''}${esc(t.label)}</div>
-      <div class="body">
-        <div class="packs">${packChips(t)} <span class="n">${t.formula ? esc(t.formula) : (t.count ? t.count + '×' : (t.trigger ? 'trigger' : ''))}</span></div>
-        ${shown.map(u => `<div class="u ${(u.results||[]).some(r => overlapNames.has(r)) ? 'ov' : ''}">▸ ${esc(u.label)}</div>`).join('')}
-        ${t.unlocks.length > SHOW ? `<div class="u muted">… ${t.unlocks.length - SHOW} more</div>` : ''}
-        ${t.bonuses.length ? `<div class="bonus">+ ${t.bonuses.length} bonus effect${t.bonuses.length > 1 ? 's' : ''}</div>` : ''}
-      </div></div>`);
-  }
-  world.innerHTML = html.join('');
+  const viewEl = document.getElementById('b-view'), view = d3.select(viewEl);
+  const CARDW = 230, SHOW = 4;
+  let rankdir = 'LR', gw = 1, gh = 1;
+  const selMods = new Set();
 
-  const view = d3.select('#b-view');
   const zoom = d3.zoom().scaleExtent([0.04, 2.5]).on('zoom', ev => {
     world.style.transform = `translate(${ev.transform.x}px,${ev.transform.y}px) scale(${ev.transform.k})`;
     world.classList.toggle('far', ev.transform.k < 0.5);
   });
   view.call(zoom);
-  const k = Math.min(innerWidth / gw, (innerHeight - 40) / gh) * 0.95;
-  view.call(zoom.transform, d3.zoomIdentity.scale(Math.max(k, 0.04)));
+
+  function applyEmphasis() {
+    for (const c of world.querySelectorAll('.card')) {
+      const on = selMods.size && selMods.has(c.dataset.mod);
+      c.classList.toggle('boost', !!on);
+      c.classList.toggle('faded', selMods.size > 0 && !on);
+    }
+  }
+  function fit() {
+    const vw = viewEl.clientWidth, vh = viewEl.clientHeight;
+    const k = Math.max(Math.min(vw / gw, vh / gh) * 0.95, 0.04);
+    view.call(zoom.transform, d3.zoomIdentity.translate((vw - gw * k) / 2, (vh - gh * k) / 2).scale(k));
+  }
+  function render() {
+    const g = new dagre.graphlib.Graph().setGraph({ rankdir, nodesep: 16, ranksep: 90, marginx: 40, marginy: 40 });
+    g.setDefaultEdgeLabel(() => ({}));
+    for (const t of DATA.techs) {
+      const lines = Math.min(t.unlocks.length, SHOW) + (t.unlocks.length > SHOW ? 1 : 0) + (t.bonuses.length ? 1 : 0);
+      g.setNode(t.id, { width: CARDW, height: 52 + lines * 15 });
+    }
+    for (const [a, b] of edges) g.setEdge(a, b);
+    dagre.layout(g);
+    gw = g.graph().width; gh = g.graph().height;
+    let html = [`<svg width="${gw}" height="${gh}">`];
+    for (const e of g.edges()) {
+      const pts = g.edge(e).points;
+      html.push(`<path class="b-edge" d="M${pts.map(p => `${p.x},${p.y}`).join(' L')}"/>`);
+    }
+    html.push('</svg>');
+    for (const t of DATA.techs) {
+      const n = g.node(t.id), color = (MODS[t.mod] || {}).color || '#888';
+      const shown = t.unlocks.slice(0, SHOW);
+      html.push(`<div class="card" data-mod="${t.mod}" style="left:${n.x - n.width / 2}px;top:${n.y - n.height / 2}px;width:${n.width}px;height:${n.height}px;--modc:${color}">
+        <div class="head" style="border-left-color:${color}">${t.overlap ? '<span class="ovbadge">⚠ </span>' : ''}${esc(t.label)}</div>
+        <div class="body">
+          <div class="packs">${packChips(t)} <span class="n">${t.formula ? esc(t.formula) : (t.count ? t.count + '×' : (t.trigger ? 'trigger' : ''))}</span></div>
+          ${shown.map(u => `<div class="u ${(u.results||[]).some(r => overlapNames.has(r)) ? 'ov' : ''}">▸ ${esc(u.label)}</div>`).join('')}
+          ${t.unlocks.length > SHOW ? `<div class="u muted">… ${t.unlocks.length - SHOW} more</div>` : ''}
+          ${t.bonuses.length ? `<div class="bonus">+ ${t.bonuses.length} bonus effect${t.bonuses.length > 1 ? 's' : ''}</div>` : ''}
+        </div></div>`);
+    }
+    world.innerHTML = html.join('');
+    document.getElementById('b-orient').textContent =
+      rankdir === 'LR' ? 'flow: left → right (click for top ↓ down)' : 'flow: top ↓ down (click for left → right)';
+    applyEmphasis();
+    fit();
+  }
+  render();
+
+  document.getElementById('b-orient').addEventListener('click', () => {
+    rankdir = rankdir === 'LR' ? 'TB' : 'LR';
+    render();
+  });
+  document.getElementById('b-tools').addEventListener('click', e => {
+    const chip = e.target.closest('.modchip');
+    if (!chip) return;
+    const m = chip.dataset.mod;
+    selMods.has(m) ? selMods.delete(m) : selMods.add(m);
+    chip.classList.toggle('on', selMods.has(m));
+    applyEmphasis();
+  });
 }
 
 /* ---------- Variant C: cytoscape canvas atlas — minimal nodes, lens, search, side panel ---------- */
