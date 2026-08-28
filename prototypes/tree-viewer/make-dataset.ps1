@@ -11,6 +11,7 @@
 param(
     [string] $FactorioExe,
     [string] $DumpDir,      # reuse an existing dump instead of running the game
+    [string] $FocusMod = 'realistic-fusion-refreshed',   # whose things form the left side of every overlap pair
     [switch] $KeepTemp
 )
 
@@ -85,11 +86,11 @@ $things = foreach ($c in $catalogues) {
         [pscustomobject]@{ Name = $kv.Key; Label = $kv.Value; Cat = $c.cat; Mod = Get-Mod $kv.Key }
     }
 }
-$rfThings    = @($things | Where-Object Mod -eq 'realistic-fusion-refreshed')
-$otherThings = @($things | Where-Object { $_.Mod -ne 'realistic-fusion-refreshed' -and $_.Mod -ne 'base' })
+$focusThings = @($things | Where-Object Mod -eq $FocusMod)
+$otherThings = @($things | Where-Object { $_.Mod -ne $FocusMod })   # base included; pairs carry a flag
 
 $overlaps = [System.Collections.Generic.List[object]]::new()
-foreach ($a in $rfThings) {
+foreach ($a in $focusThings) {
     $ta = Get-Tokens $a.Label
     foreach ($b in $otherThings) {
         $score = 0; $tier = 0
@@ -103,13 +104,18 @@ foreach ($a in $rfThings) {
         $overlaps.Add([pscustomobject]@{
             a = $a.Name; aLabel = $a.Label; aCat = $a.Cat; aMod = $a.Mod
             b = $b.Name; bLabel = $b.Label; bCat = $b.Cat; bMod = $b.Mod
-            score = $score; tier = $tier
+            score = $score; tier = $tier; base = ($b.Mod -eq 'base')
         })
     }
 }
-$overlaps = @($overlaps | Sort-Object score -Descending | Select-Object -First 120)
+# base pairs are computed but viewer-filtered (#160): keep them distinct so the viewer's
+# "include base-game overlaps" toggle has something to reveal without drowning the mod pairs
+$overlaps = @(
+    @($overlaps | Where-Object { -not $_.base } | Sort-Object score -Descending | Select-Object -First 120) +
+    @($overlaps | Where-Object base            | Sort-Object score -Descending | Select-Object -First 80)
+)
 $overlapNames = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
-foreach ($o in $overlaps) { [void]$overlapNames.Add($o.a); [void]$overlapNames.Add($o.b) }
+foreach ($o in ($overlaps | Where-Object { -not $_.base })) { [void]$overlapNames.Add($o.a); [void]$overlapNames.Add($o.b) }
 
 # ---- recipe products, for unlock labels and overlap badging ----
 function Get-RecipeResults($recipe) {
@@ -178,6 +184,7 @@ $dataset = [ordered]@{
         lane      = 'krastorio2'
         mods      = ($ourMods + $laneMods)
         techCount = $techs.Count
+        focusMod  = $FocusMod
         note      = 'PROTOTYPE dataset (#161). Attribution is prefix-based; overlap scoring is a rough cut of #160.'
     }
     packs    = @($packOrder)

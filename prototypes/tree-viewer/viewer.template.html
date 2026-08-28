@@ -84,8 +84,10 @@
                      border-radius: 5px; }
   .b-edge.hot-in  { stroke: #e05c5c; stroke-opacity: 1; stroke-width: 3; }
   .b-edge.hot-out { stroke: #57ab5a; stroke-opacity: 1; stroke-width: 3; }
+  /* ~1.5px on screen at any far zoom — matches how the 3px stroke looks right at the
+     detail threshold (k=0.5), which Truls judged the right thickness */
   .far .b-edge.hot-in,
-  .far .b-edge.hot-out { stroke-width: calc(3px * var(--inv, 1)); }
+  .far .b-edge.hot-out { stroke-width: calc(1.5px * var(--inv, 1)); }
   /* corner overlap badge: counter-scaled by --inv (set from the zoom level) so it stays
      readable at any distance instead of shrinking away with the card */
   .card .ovb { position: absolute; top: -3px; right: -3px; color: #e8a33d; font-size: 14px;
@@ -163,14 +165,24 @@ for (const t of DATA.techs) t.depth = depth(t.id);
 const edges = [];
 for (const t of DATA.techs) for (const p of t.pre) edges.push([p, t.id]);
 
-const overlapNames = new Set();
-for (const o of DATA.overlaps) { overlapNames.add(o.a); overlapNames.add(o.b); }
+/* the active overlap set is dynamic: base-game pairs are in the data (flagged o.base) but
+   filtered out until the viewer's "include base-game overlaps" toggle turns them on (#160) */
+const overlapFocus = DATA.meta.focusMod || 'realistic-fusion-refreshed';
+let activeOv = [], overlapNames = new Set();
+function setBaseOverlaps(on) {
+  activeOv = DATA.overlaps.filter(o => on || !o.base);
+  overlapNames = new Set();
+  for (const o of activeOv) { overlapNames.add(o.a); overlapNames.add(o.b); }
+}
+setBaseOverlaps(false);
 const techResults = t => new Set(t.unlocks.flatMap(u => u.results || []));
+const isOverlap = t => { for (const r of techResults(t)) if (overlapNames.has(r)) return true; return false; };
 const overlapPairsFor = t => {
   const rs = techResults(t);
-  return DATA.overlaps.filter(o => rs.has(o.a) || rs.has(o.b));
+  return activeOv.filter(o => rs.has(o.a) || rs.has(o.b));
 };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const modName = m => (MODS[m] || {}).label || m;
 
 function costHtml(t) {
   if (t.formula) return `<span class="mono">${esc(t.formula)}</span> × ${t.time}s`;
@@ -199,8 +211,8 @@ function detailHtml(t) {
     <ul>${t.unlocks.map(u => `<li class="${(u.results||[]).some(r => overlapNames.has(r)) ? 'ovbadge' : ''}">${esc(u.label)}</li>`).join('') || '<li class="muted">none</li>'}</ul>
     ${t.bonuses.length ? `<h3>Bonuses</h3><ul>${t.bonuses.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}
     ${pairs.length ? `<h3>Overlap candidates touching this tech</h3>
-      <ul>${pairs.map(o => `<li class="pair">[${o.score}] ${esc(o.aLabel)} <span class="muted">(${o.aCat})</span>
-        ~ ${esc(o.bLabel)} <span class="muted">(${o.bCat}, ${esc(o.bMod)})</span></li>`).join('')}</ul>` : ''}`;
+      <ul>${pairs.map(o => `<li class="pair">[${o.score}] ${esc(o.aLabel)} <span class="muted">(${o.aCat}, ${esc(modName(o.aMod))})</span>
+        ~ ${esc(o.bLabel)} <span class="muted">(${o.bCat}, ${esc(modName(o.bMod))})</span></li>`).join('')}</ul>` : ''}`;
 }
 
 /* layered layout used by variant A: layers by depth, a few barycenter passes */
@@ -230,7 +242,7 @@ function initA(stage) {
                      <aside class="panel" id="a-panel"><h2>Nothing selected</h2>
                      <p class="muted">Click a technology. Drag to pan, wheel to zoom.</p>
                      <h3>Top overlap candidates</h3>
-                     <ul>${DATA.overlaps.slice(0, 15).map(o => `<li class="pair">[${o.score}] ${esc(o.aLabel)} ~ ${esc(o.bLabel)} <span class="muted">(${esc(o.bMod)})</span></li>`).join('')}</ul></aside>`;
+                     <ul>${activeOv.slice(0, 15).map(o => `<li class="pair">[${o.score}] ${esc(o.aLabel)} ~ ${esc(o.bLabel)} <span class="muted">(${esc(o.bMod)})</span></li>`).join('')}</ul></aside>`;
   const { layers, idx } = layeredLayout();
   const pos = new Map();
   for (const t of DATA.techs) pos.set(t.id, { x: t.depth * COLW, y: idx.get(t.id) * ROWH });
@@ -252,7 +264,7 @@ function initA(stage) {
       <rect class="card" width="${W}" height="${H}"/>
       <rect width="4" height="${H}" fill="${stripe}"/>
       <text x="10" y="13">${esc(label)}</text>${dots}
-      ${t.overlap ? `<text x="${W - 12}" y="13" fill="#e8a33d" font-weight="bold">⚠</text>` : ''}</g>`);
+      ${isOverlap(t) ? `<text x="${W - 12}" y="13" fill="#e8a33d" font-weight="bold">⚠</text>` : ''}</g>`);
   }
   world.innerHTML = svgParts.join('');
 
@@ -303,6 +315,9 @@ function initB(stage) {
       <h4>Selected tech's links</h4>
       <div class="pk"><span class="dot" style="background:#e05c5c"></span> needed to research it</div>
       <div class="pk"><span class="dot" style="background:#57ab5a"></span> techs it helps unlock</div>
+      <h4>Overlaps</h4>
+      <div class="pk muted">left side of every pair: ${esc((MODS[overlapFocus] || {}).label || overlapFocus)}</div>
+      <label class="pk" style="cursor:pointer"><input type="checkbox" id="b-base-ov"> include base-game overlaps</label>
     </div>
     <aside class="panel" id="b-panel"></aside>`;
 
@@ -332,7 +347,7 @@ function initB(stage) {
     const k = Math.max(Math.min(vw / gw, vh / gh) * 0.95, 0.04);
     view.call(zoom.transform, d3.zoomIdentity.translate((vw - gw * k) / 2, (vh - gh * k) / 2).scale(k));
   }
-  function render() {
+  function render(keepView = false) {
     const g = new dagre.graphlib.Graph().setGraph({ rankdir, nodesep: 16, ranksep: 90, marginx: 40, marginy: 40 });
     g.setDefaultEdgeLabel(() => ({}));
     for (const t of DATA.techs) {
@@ -352,7 +367,7 @@ function initB(stage) {
       const n = g.node(t.id), color = (MODS[t.mod] || {}).color || '#888';
       const shown = t.unlocks.slice(0, SHOW);
       html.push(`<div class="card" data-mod="${t.mod}" data-id="${t.id}" style="left:${n.x - n.width / 2}px;top:${n.y - n.height / 2}px;width:${n.width}px;height:${n.height}px;--modc:${color}">
-        ${t.overlap ? '<div class="ovb">⚠</div>' : ''}
+        ${isOverlap(t) ? '<div class="ovb">⚠</div>' : ''}
         <div class="head" style="border-left-color:${color}">${esc(t.label)}</div>
         <div class="body">
           <div class="packs">${packChips(t)} <span class="n">${t.formula ? esc(t.formula) : (t.count ? t.count + '×' : (t.trigger ? 'trigger' : ''))}</span></div>
@@ -365,13 +380,18 @@ function initB(stage) {
     document.getElementById('b-orient').textContent =
       rankdir === 'LR' ? 'flow: left → right (click for top ↓ down)' : 'flow: top ↓ down (click for left → right)';
     applyEmphasis();
-    fit();
+    if (!keepView) fit();
   }
   render();
 
   document.getElementById('b-orient').addEventListener('click', () => {
     rankdir = rankdir === 'LR' ? 'TB' : 'LR';
     render();
+  });
+  document.getElementById('b-base-ov').addEventListener('change', e => {
+    setBaseOverlaps(e.target.checked);
+    panel.style.display = 'none';
+    render(true);   // same layout, same zoom — only the badges and pair lists change
   });
   document.getElementById('b-tools').addEventListener('click', e => {
     const chip = e.target.closest('.modchip');
@@ -424,7 +444,7 @@ function initC(stage) {
     document.getElementById('c-panel').innerHTML = `<h2>Overlap candidates</h2>
       <p class="muted">The heuristic's top pairs (#160 tiers 1–2). Click one to zoom to the techs
       that unlock it. Click any node for detail.</p>
-      <ul>${DATA.overlaps.slice(0, 30).map((o, i) => `<li class="pair" data-i="${i}">[${o.score}] ${esc(o.aLabel)}
+      <ul>${activeOv.slice(0, 30).map((o, i) => `<li class="pair" data-i="${i}">[${o.score}] ${esc(o.aLabel)}
         <span class="muted">(${o.aCat})</span> ~ ${esc(o.bLabel)} <span class="muted">(${o.bCat}, ${esc(o.bMod)})</span></li>`).join('')}</ul>`;
   };
   defaultPanel();
@@ -433,7 +453,7 @@ function initC(stage) {
   const cy = cytoscape({
     container: document.getElementById('c-cy'),
     elements: [
-      ...DATA.techs.map(t => ({ data: { id: t.id, label: t.label, color: (MODS[t.mod] || {}).color || '#888', ov: t.overlap ? 1 : 0 } })),
+      ...DATA.techs.map(t => ({ data: { id: t.id, label: t.label, color: (MODS[t.mod] || {}).color || '#888', ov: isOverlap(t) ? 1 : 0 } })),
       ...edges.map(([a, b]) => ({ data: { source: a, target: b } })),
     ],
     style: [
@@ -461,7 +481,7 @@ function initC(stage) {
   document.getElementById('c-panel').addEventListener('click', e => {
     const li = e.target.closest('.pair[data-i]');
     if (!li) return;
-    const o = DATA.overlaps[+li.dataset.i];
+    const o = activeOv[+li.dataset.i];
     const ids = [...(thingToTechs.get(o.a) || []), ...(thingToTechs.get(o.b) || [])];
     if (!ids.length) return;
     const coll = cy.collection(ids.map(id => cy.getElementById(id)));
@@ -502,8 +522,7 @@ const step = d => go(KEYS[(KEYS.indexOf(cur) + d + KEYS.length) % KEYS.length]);
 document.getElementById('banner').innerHTML =
   `<b>PROTOTYPE #161</b><span>lane: <b>${esc(DATA.meta.lane)}</b> · ${DATA.meta.techCount} techs ·
    ${DATA.overlaps.length} overlap candidates · Factorio ${esc(DATA.meta.factorio)}</span>
-   <span class="note">${Object.values(MODS).map(m => `<span class="dot" style="background:${m.color}"></span>${m.label}`).join(' &nbsp; ')}
-   &nbsp; <span class="ovbadge">⚠</span> overlap candidate</span>
+   <span class="note"><span class="ovbadge">⚠</span> overlap candidate</span>
    <span class="note">generated ${esc(DATA.meta.generated)}; attribution is prefix-based (crude, #158 unresolved)</span>`;
 document.getElementById('switcher').innerHTML =
   `<button id="sw-prev">◀</button><span>${cur} — ${VARIANTS[cur].name}</span><button id="sw-next">▶</button>`;
