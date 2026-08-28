@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PROTOTYPE — lane tech-tree viewer (#161)</title>
+<!-- PROTOTYPE (#161), throwaway. Three variants of the lane tech-tree viewer on one file,
+     switchable via ?variant=A|B|C and the floating bottom bar. Build with build-viewer.ps1,
+     which splices dataset.json over the __DATASET__ placeholder. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body { background: #1b1d1f; color: #d8dbde; font: 13px/1.4 "Segoe UI", system-ui, sans-serif; }
+
+  #banner { position: fixed; top: 0; left: 0; right: 0; z-index: 20; padding: 6px 12px;
+            background: #26292c; border-bottom: 1px solid #3a3e42; display: flex; gap: 14px;
+            align-items: baseline; flex-wrap: wrap; }
+  #banner b { color: #e8a33d; }
+  #banner .note { color: #9aa0a6; font-size: 12px; }
+  #stage { position: absolute; top: 34px; bottom: 0; left: 0; right: 0; }
+
+  /* floating variant switcher — deliberately loud, not part of the design under evaluation */
+  #switcher { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); z-index: 30;
+              display: flex; align-items: center; gap: 10px; background: #0f6bd7; color: #fff;
+              border-radius: 999px; padding: 6px 12px; box-shadow: 0 4px 16px rgba(0,0,0,.5);
+              font-weight: 600; }
+  #switcher button { background: rgba(255,255,255,.15); color: #fff; border: 0; border-radius: 50%;
+                     width: 26px; height: 26px; cursor: pointer; font-size: 14px; }
+  #switcher button:hover { background: rgba(255,255,255,.35); }
+
+  .chip { display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 11px;
+          color: #101214; font-weight: 600; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 2px;
+         vertical-align: -1px; border: 1px solid rgba(0,0,0,.4); }
+  .ovbadge { color: #e8a33d; font-weight: 700; }
+  .panel { position: absolute; top: 0; right: 0; bottom: 0; width: 340px; overflow-y: auto;
+           background: #26292c; border-left: 1px solid #3a3e42; padding: 12px 14px; z-index: 10; }
+  .panel h2 { font-size: 15px; margin-bottom: 4px; }
+  .panel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #9aa0a6;
+              margin: 12px 0 4px; }
+  .panel ul { list-style: none; }
+  .panel li { padding: 2px 0; border-bottom: 1px solid #303336; }
+  .panel .pair { font-size: 12px; padding: 4px 0; cursor: pointer; }
+  .panel .pair:hover { background: #2e3236; }
+  .muted { color: #9aa0a6; }
+  .mono  { font-family: Consolas, monospace; font-size: 12px; }
+
+  /* Variant A */
+  #a-view { position: absolute; inset: 0; right: 340px; overflow: hidden; cursor: grab; user-select: none; }
+  #a-view:active { cursor: grabbing; }
+  #a-view svg { width: 100%; height: 100%; }
+  .a-node rect.card { fill: #2b2f33; stroke: #43484d; rx: 4; }
+  .a-node.sel rect.card { stroke: #0f6bd7; stroke-width: 2; }
+  .a-node text { fill: #d8dbde; font-size: 11px; pointer-events: none; }
+  .a-edge { fill: none; stroke: #4a4f54; stroke-opacity: .45; stroke-width: 1.2; }
+  .a-edge.hot { stroke: #0f9bd7; stroke-opacity: 1; stroke-width: 2; }
+
+  /* Variant B */
+  #b-view { position: absolute; inset: 0; overflow: hidden; background: #17181a; }
+  #b-world { position: absolute; transform-origin: 0 0; }
+  #b-world svg { position: absolute; top: 0; left: 0; overflow: visible; }
+  .b-edge { fill: none; stroke: #45525e; stroke-opacity: .6; stroke-width: 1.5; }
+  .card { position: absolute; background: #26292c; border: 1px solid #3d4247; border-radius: 6px;
+          overflow: hidden; font-size: 11px; }
+  .card .head { padding: 4px 8px; font-weight: 600; font-size: 12px; color: #f0f2f4;
+                border-left: 4px solid transparent; background: #2e3236; }
+  .card .body { padding: 4px 8px 6px; }
+  .card .packs { margin-bottom: 3px; }
+  .card .packs .n { font-size: 10px; color: #9aa0a6; margin-right: 5px; }
+  .card .u { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #b9bec3; }
+  .card .u.ov { color: #e8a33d; }
+  .card .more { color: #6f7578; }
+  .card .bonus { color: #7fa8d9; }
+  .far .card .body { display: none; }
+  .far .card { border-width: 2px; }
+  .far .card .head { font-size: 18px; padding: 8px 10px; }
+
+  /* Variant C */
+  #c-view { position: absolute; inset: 0; right: 340px; }
+  #c-cy { position: absolute; inset: 0; }
+  #c-tools { position: absolute; top: 10px; left: 10px; z-index: 15; display: flex; gap: 10px;
+             background: #26292ccc; padding: 6px 10px; border-radius: 6px; align-items: center; }
+  #c-tools input[type=text] { background: #17181a; color: #d8dbde; border: 1px solid #3a3e42;
+                              border-radius: 4px; padding: 3px 8px; width: 180px; }
+  .fallback { padding: 80px 40px; max-width: 640px; margin: 0 auto; color: #c9ced3; }
+</style>
+</head>
+<body>
+<div id="banner"></div>
+<div id="stage"></div>
+<div id="switcher"></div>
+
+<script>
+const DATA = "__DATASET__";
+
+/* ---------- shared: attribution colors, pack colors, graph shape ---------- */
+const MODS = {
+  'base':                       { color: '#8a8f98', label: 'Base 2.0' },
+  'Krastorio2':                 { color: '#e0762b', label: 'Krastorio 2' },
+  'realistic-fusion-refreshed': { color: '#2bb3c0', label: 'Realistic Fusion Refreshed' },
+};
+const PACK_COLORS = {
+  'automation-science-pack': '#e5534b', 'logistic-science-pack': '#57ab5a',
+  'military-science-pack': '#768390',   'chemical-science-pack': '#539bf5',
+  'production-science-pack': '#986ee2', 'utility-science-pack': '#c69026',
+  'space-science-pack': '#e6edf3',      'kr-basic-tech-card': '#a3adb8',
+  'kr-advanced-tech-card': '#e8a33d',   'kr-matter-tech-card': '#d94fd0',
+  'kr-singularity-tech-card': '#8250df',
+};
+const packColor = p => PACK_COLORS[p] || '#5cc9a7';
+
+const byId = new Map(DATA.techs.map(t => [t.id, t]));
+for (const t of DATA.techs) t.pre = (t.prereqs || []).filter(p => byId.has(p));
+const depthMemo = new Map();
+function depth(id, seen = new Set()) {
+  if (depthMemo.has(id)) return depthMemo.get(id);
+  if (seen.has(id)) return 0;                       // cycle guard; should not happen
+  seen.add(id);
+  const t = byId.get(id);
+  const d = t.pre.length ? 1 + Math.max(...t.pre.map(p => depth(p, seen))) : 0;
+  depthMemo.set(id, d);
+  return d;
+}
+for (const t of DATA.techs) t.depth = depth(t.id);
+const edges = [];
+for (const t of DATA.techs) for (const p of t.pre) edges.push([p, t.id]);
+
+const overlapNames = new Set();
+for (const o of DATA.overlaps) { overlapNames.add(o.a); overlapNames.add(o.b); }
+const techResults = t => new Set(t.unlocks.flatMap(u => u.results || []));
+const overlapPairsFor = t => {
+  const rs = techResults(t);
+  return DATA.overlaps.filter(o => rs.has(o.a) || rs.has(o.b));
+};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function costHtml(t) {
+  if (t.formula) return `<span class="mono">${esc(t.formula)}</span> × ${t.time}s`;
+  if (t.count)   return `${t.count} × ${t.time}s`;
+  if (t.trigger) return `<span class="muted">trigger:</span> ${esc(t.trigger)}`;
+  return '<span class="muted">free</span>';
+}
+function packChips(t, withCounts = true) {
+  return t.packs.map(([p, n]) =>
+    `<span class="dot" style="background:${packColor(p)}" title="${esc(DATA.packLabels[p] || p)}"></span>` +
+    (withCounts && n > 1 ? `<span class="n">×${n}</span>` : '')).join(' ');
+}
+function modChip(mod) {
+  const m = MODS[mod] || { color: '#888', label: mod };
+  return `<span class="chip" style="background:${m.color}">${esc(m.label)}</span>`;
+}
+function detailHtml(t) {
+  const pairs = overlapPairsFor(t);
+  return `
+    <h2>${esc(t.label)} ${t.overlap ? '<span class="ovbadge">⚠</span>' : ''}</h2>
+    <div>${modChip(t.mod)} <span class="muted mono">${esc(t.id)}</span></div>
+    <h3>Cost</h3>
+    <div>${costHtml(t)}</div>
+    <div style="margin-top:4px">${packChips(t)}</div>
+    <h3>Unlocks (${t.unlocks.length})</h3>
+    <ul>${t.unlocks.map(u => `<li class="${(u.results||[]).some(r => overlapNames.has(r)) ? 'ovbadge' : ''}">${esc(u.label)}</li>`).join('') || '<li class="muted">none</li>'}</ul>
+    ${t.bonuses.length ? `<h3>Bonuses</h3><ul>${t.bonuses.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}
+    ${pairs.length ? `<h3>Overlap candidates touching this tech</h3>
+      <ul>${pairs.map(o => `<li class="pair">[${o.score}] ${esc(o.aLabel)} <span class="muted">(${o.aCat})</span>
+        ~ ${esc(o.bLabel)} <span class="muted">(${o.bCat}, ${esc(o.bMod)})</span></li>`).join('')}</ul>` : ''}`;
+}
+
+/* layered layout used by variant A: layers by depth, a few barycenter passes */
+function layeredLayout() {
+  const layers = [];
+  for (const t of DATA.techs) (layers[t.depth] ||= []).push(t);
+  for (const L of layers) L.sort((a, b) => a.label.localeCompare(b.label));
+  const idx = new Map();
+  const reindex = () => layers.forEach(L => L.forEach((t, i) => idx.set(t.id, i)));
+  reindex();
+  for (let pass = 0; pass < 4; pass++) {
+    for (let d = 1; d < layers.length; d++) {
+      layers[d].sort((a, b) => {
+        const m = t => t.pre.length ? t.pre.reduce((s, p) => s + (idx.get(p) ?? 0), 0) / t.pre.length : idx.get(t.id);
+        return m(a) - m(b);
+      });
+      reindex();
+    }
+  }
+  return { layers, idx };
+}
+
+/* ---------- Variant A: hand-rolled SVG ledger + side panel (no libraries) ---------- */
+function initA(stage) {
+  const W = 200, H = 30, COLW = 270, ROWH = 40;
+  stage.innerHTML = `<div id="a-view"><svg><g id="a-world"></g></svg></div>
+                     <aside class="panel" id="a-panel"><h2>Nothing selected</h2>
+                     <p class="muted">Click a technology. Drag to pan, wheel to zoom.</p>
+                     <h3>Top overlap candidates</h3>
+                     <ul>${DATA.overlaps.slice(0, 15).map(o => `<li class="pair">[${o.score}] ${esc(o.aLabel)} ~ ${esc(o.bLabel)} <span class="muted">(${esc(o.bMod)})</span></li>`).join('')}</ul></aside>`;
+  const { layers, idx } = layeredLayout();
+  const pos = new Map();
+  for (const t of DATA.techs) pos.set(t.id, { x: t.depth * COLW, y: idx.get(t.id) * ROWH });
+
+  const world = document.getElementById('a-world');
+  let svgParts = [];
+  for (const [a, b] of edges) {
+    const p = pos.get(a), q = pos.get(b);
+    const x1 = p.x + W, y1 = p.y + H / 2, x2 = q.x, y2 = q.y + H / 2, mx = (x1 + x2) / 2;
+    svgParts.push(`<path class="a-edge" data-a="${a}" data-b="${b}" d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}"/>`);
+  }
+  for (const t of DATA.techs) {
+    const { x, y } = pos.get(t.id);
+    const stripe = (MODS[t.mod] || {}).color || '#888';
+    const label = t.label.length > 26 ? t.label.slice(0, 25) + '…' : t.label;
+    const dots = t.packs.map(([p], i) =>
+      `<circle cx="${W - 10 - i * 9}" cy="${H - 8}" r="3.5" fill="${packColor(p)}"/>`).join('');
+    svgParts.push(`<g class="a-node" data-id="${t.id}" transform="translate(${x},${y})">
+      <rect class="card" width="${W}" height="${H}"/>
+      <rect width="4" height="${H}" fill="${stripe}"/>
+      <text x="10" y="13">${esc(label)}</text>${dots}
+      ${t.overlap ? `<text x="${W - 12}" y="13" fill="#e8a33d" font-weight="bold">⚠</text>` : ''}</g>`);
+  }
+  world.innerHTML = svgParts.join('');
+
+  const view = document.getElementById('a-view'), svg = view.querySelector('svg');
+  let tx = 30, ty = 20, s = 0.85;
+  const apply = () => world.setAttribute('transform', `translate(${tx},${ty}) scale(${s})`);
+  apply();
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const k = e.deltaY < 0 ? 1.15 : 1 / 1.15, r = svg.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    tx = mx - (mx - tx) * k; ty = my - (my - ty) * k; s *= k; apply();
+  }, { passive: false });
+  let drag = null;
+  svg.addEventListener('pointerdown', e => { drag = { x: e.clientX - tx, y: e.clientY - ty }; svg.setPointerCapture(e.pointerId); });
+  svg.addEventListener('pointermove', e => { if (drag) { tx = e.clientX - drag.x; ty = e.clientY - drag.y; apply(); } });
+  svg.addEventListener('pointerup', () => drag = null);
+
+  svg.addEventListener('click', e => {
+    const g = e.target.closest('.a-node');
+    if (!g) return;
+    svg.querySelectorAll('.a-node.sel').forEach(n => n.classList.remove('sel'));
+    svg.querySelectorAll('.a-edge.hot').forEach(n => n.classList.remove('hot'));
+    g.classList.add('sel');
+    const id = g.dataset.id;
+    svg.querySelectorAll(`.a-edge[data-a="${CSS.escape(id)}"],.a-edge[data-b="${CSS.escape(id)}"]`)
+       .forEach(n => n.classList.add('hot'));
+    document.getElementById('a-panel').innerHTML = detailHtml(byId.get(id));
+  });
+}
+
+/* ---------- Variant B: dagre layout + d3 zoom, all detail on the node card ---------- */
+function initB(stage) {
+  if (!window.dagre || !window.d3) {
+    stage.innerHTML = `<div class="fallback"><h2>Variant B needs the CDN</h2>
+      <p>dagre/d3 did not load — you are offline or the CDN is blocked. That is itself an answer
+      to the CDN-vs-inlined sub-question: variant A works offline, this one does not.</p></div>`;
+    return;
+  }
+  stage.innerHTML = `<div id="b-view"><div id="b-world"></div></div>`;
+  const g = new dagre.graphlib.Graph().setGraph({ rankdir: 'LR', nodesep: 16, ranksep: 90, marginx: 40, marginy: 40 });
+  g.setDefaultEdgeLabel(() => ({}));
+  const CARDW = 230, SHOW = 4;
+  for (const t of DATA.techs) {
+    const lines = Math.min(t.unlocks.length, SHOW) + (t.unlocks.length > SHOW ? 1 : 0) + (t.bonuses.length ? 1 : 0);
+    g.setNode(t.id, { width: CARDW, height: 52 + lines * 15 });
+  }
+  for (const [a, b] of edges) g.setEdge(a, b);
+  dagre.layout(g);
+
+  const world = document.getElementById('b-world');
+  const gw = g.graph().width, gh = g.graph().height;
+  let html = [`<svg width="${gw}" height="${gh}">`];
+  for (const e of g.edges()) {
+    const pts = g.edge(e).points;
+    html.push(`<path class="b-edge" d="M${pts.map(p => `${p.x},${p.y}`).join(' L')}"/>`);
+  }
+  html.push('</svg>');
+  for (const t of DATA.techs) {
+    const n = g.node(t.id), color = (MODS[t.mod] || {}).color || '#888';
+    const shown = t.unlocks.slice(0, SHOW);
+    html.push(`<div class="card" style="left:${n.x - n.width / 2}px;top:${n.y - n.height / 2}px;width:${n.width}px;height:${n.height}px">
+      <div class="head" style="border-left-color:${color}">${t.overlap ? '<span class="ovbadge">⚠ </span>' : ''}${esc(t.label)}</div>
+      <div class="body">
+        <div class="packs">${packChips(t)} <span class="n">${t.formula ? esc(t.formula) : (t.count ? t.count + '×' : (t.trigger ? 'trigger' : ''))}</span></div>
+        ${shown.map(u => `<div class="u ${(u.results||[]).some(r => overlapNames.has(r)) ? 'ov' : ''}">▸ ${esc(u.label)}</div>`).join('')}
+        ${t.unlocks.length > SHOW ? `<div class="u muted">… ${t.unlocks.length - SHOW} more</div>` : ''}
+        ${t.bonuses.length ? `<div class="bonus">+ ${t.bonuses.length} bonus effect${t.bonuses.length > 1 ? 's' : ''}</div>` : ''}
+      </div></div>`);
+  }
+  world.innerHTML = html.join('');
+
+  const view = d3.select('#b-view');
+  const zoom = d3.zoom().scaleExtent([0.04, 2.5]).on('zoom', ev => {
+    world.style.transform = `translate(${ev.transform.x}px,${ev.transform.y}px) scale(${ev.transform.k})`;
+    world.classList.toggle('far', ev.transform.k < 0.5);
+  });
+  view.call(zoom);
+  const k = Math.min(innerWidth / gw, (innerHeight - 40) / gh) * 0.95;
+  view.call(zoom.transform, d3.zoomIdentity.scale(Math.max(k, 0.04)));
+}
+
+/* ---------- Variant C: cytoscape canvas atlas — minimal nodes, lens, search, side panel ---------- */
+function initC(stage) {
+  if (!window.cytoscape) {
+    stage.innerHTML = `<div class="fallback"><h2>Variant C needs the CDN</h2>
+      <p>cytoscape did not load — offline or blocked. Variant A is the no-dependency answer.</p></div>`;
+    return;
+  }
+  stage.innerHTML = `<div id="c-view"><div id="c-cy"></div>
+      <div id="c-tools">
+        <input type="text" id="c-search" placeholder="search techs… (Enter zooms)">
+        <label><input type="checkbox" id="c-lens"> overlap lens</label>
+      </div></div>
+    <aside class="panel" id="c-panel"></aside>`;
+
+  const thingToTechs = new Map();
+  for (const t of DATA.techs) for (const r of techResults(t))
+    (thingToTechs.get(r) || thingToTechs.set(r, []).get(r)).push(t.id);
+
+  const defaultPanel = () => {
+    document.getElementById('c-panel').innerHTML = `<h2>Overlap candidates</h2>
+      <p class="muted">The heuristic's top pairs (#160 tiers 1–2). Click one to zoom to the techs
+      that unlock it. Click any node for detail.</p>
+      <ul>${DATA.overlaps.slice(0, 30).map((o, i) => `<li class="pair" data-i="${i}">[${o.score}] ${esc(o.aLabel)}
+        <span class="muted">(${o.aCat})</span> ~ ${esc(o.bLabel)} <span class="muted">(${o.bCat}, ${esc(o.bMod)})</span></li>`).join('')}</ul>`;
+  };
+  defaultPanel();
+
+  if (window.cytoscapeDagre) cytoscape.use(window.cytoscapeDagre);
+  const cy = cytoscape({
+    container: document.getElementById('c-cy'),
+    elements: [
+      ...DATA.techs.map(t => ({ data: { id: t.id, label: t.label, color: (MODS[t.mod] || {}).color || '#888', ov: t.overlap ? 1 : 0 } })),
+      ...edges.map(([a, b]) => ({ data: { source: a, target: b } })),
+    ],
+    style: [
+      { selector: 'node', style: { 'background-color': 'data(color)', label: 'data(label)', color: '#c9ced3',
+          'font-size': 9, 'min-zoomed-font-size': 11, width: 14, height: 14, 'text-valign': 'bottom', 'text-margin-y': 3 } },
+      { selector: 'node[ov = 1]', style: { 'border-width': 3, 'border-color': '#e8a33d', width: 20, height: 20 } },
+      { selector: 'edge', style: { 'curve-style': 'straight', width: 1, 'line-color': '#4a4f54', opacity: .55 } },
+      { selector: '.dim', style: { opacity: .07 } },
+      { selector: '.hit', style: { 'background-color': '#0f9bd7', 'border-color': '#fff', 'border-width': 2 } },
+      { selector: ':selected', style: { 'border-color': '#0f6bd7', 'border-width': 4 } },
+    ],
+    layout: window.cytoscapeDagre
+      ? { name: 'dagre', rankDir: 'LR', nodeSep: 14, rankSep: 110 }
+      : { name: 'breadthfirst', directed: true, spacingFactor: 1.1 },
+    wheelSensitivity: 0.2,
+  });
+
+  cy.on('tap', 'node', ev => {
+    document.getElementById('c-panel').innerHTML =
+      detailHtml(byId.get(ev.target.id())) + `<h3></h3><div class="pair muted" id="c-back">◀ back to overlap list</div>`;
+    document.getElementById('c-back').onclick = defaultPanel;
+  });
+  cy.on('tap', ev => { if (ev.target === cy) defaultPanel(); });
+
+  document.getElementById('c-panel').addEventListener('click', e => {
+    const li = e.target.closest('.pair[data-i]');
+    if (!li) return;
+    const o = DATA.overlaps[+li.dataset.i];
+    const ids = [...(thingToTechs.get(o.a) || []), ...(thingToTechs.get(o.b) || [])];
+    if (!ids.length) return;
+    const coll = cy.collection(ids.map(id => cy.getElementById(id)));
+    cy.elements().removeClass('hit'); coll.addClass('hit');
+    cy.animate({ fit: { eles: coll, padding: 120 }, duration: 350 });
+  });
+
+  document.getElementById('c-search').addEventListener('keydown', e => e.stopPropagation());
+  document.getElementById('c-search').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    cy.elements().removeClass('hit');
+    if (q.length < 2) return;
+    cy.nodes().filter(n => n.data('label').toLowerCase().includes(q) || n.id().includes(q)).addClass('hit');
+  });
+  document.getElementById('c-search').addEventListener('keyup', e => {
+    if (e.key === 'Enter') { const h = cy.nodes('.hit'); if (h.length) cy.animate({ fit: { eles: h, padding: 100 }, duration: 350 }); }
+  });
+  document.getElementById('c-lens').addEventListener('change', e => {
+    cy.elements().removeClass('dim');
+    if (!e.target.checked) return;
+    const ov = cy.nodes('[ov = 1]');
+    const keep = ov.union(ov.neighborhood());
+    cy.elements().not(keep).addClass('dim');
+  });
+}
+
+/* ---------- switcher ---------- */
+const VARIANTS = {
+  A: { name: 'Ledger — hand-rolled SVG + side panel (works offline)', init: initA },
+  B: { name: 'Cards — dagre+d3, all detail on the node (CDN)', init: initB },
+  C: { name: 'Atlas — cytoscape canvas, overlap lens + search (CDN)', init: initC },
+};
+const KEYS = Object.keys(VARIANTS);
+const cur = (() => { const v = new URLSearchParams(location.search).get('variant'); return KEYS.includes(v) ? v : 'A'; })();
+function go(v) { const u = new URL(location.href); u.searchParams.set('variant', v); location.href = u; }
+const step = d => go(KEYS[(KEYS.indexOf(cur) + d + KEYS.length) % KEYS.length]);
+
+document.getElementById('banner').innerHTML =
+  `<b>PROTOTYPE #161</b><span>lane: <b>${esc(DATA.meta.lane)}</b> · ${DATA.meta.techCount} techs ·
+   ${DATA.overlaps.length} overlap candidates · Factorio ${esc(DATA.meta.factorio)}</span>
+   <span class="note">${Object.values(MODS).map(m => `<span class="dot" style="background:${m.color}"></span>${m.label}`).join(' &nbsp; ')}
+   &nbsp; <span class="ovbadge">⚠</span> overlap candidate</span>
+   <span class="note">generated ${esc(DATA.meta.generated)}; attribution is prefix-based (crude, #158 unresolved)</span>`;
+document.getElementById('switcher').innerHTML =
+  `<button id="sw-prev">◀</button><span>${cur} — ${VARIANTS[cur].name}</span><button id="sw-next">▶</button>`;
+document.getElementById('sw-prev').onclick = () => step(-1);
+document.getElementById('sw-next').onclick = () => step(1);
+addEventListener('keydown', e => {
+  if (e.target.matches('input,textarea,[contenteditable]')) return;
+  if (e.key === 'ArrowLeft') step(-1);
+  if (e.key === 'ArrowRight') step(1);
+});
+
+VARIANTS[cur].init(document.getElementById('stage'));
+</script>
+</body>
+</html>
