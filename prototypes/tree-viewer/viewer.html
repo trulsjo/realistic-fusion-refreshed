@@ -77,7 +77,17 @@
   .far .card .body { display: none; }
   .far .card { border-width: 2px; }
   .far .card .head { font-size: 18px; padding: 8px 10px; background: var(--modc); color: #0d0f10; }
-  .far .card .head .ovbadge { color: #000; }
+  /* corner overlap badge: counter-scaled by --inv (set from the zoom level) so it stays
+     readable at any distance instead of shrinking away with the card */
+  .card .ovb { position: absolute; top: -3px; right: -3px; color: #e8a33d; font-size: 14px;
+               font-weight: 700; text-shadow: 0 0 3px #000, 0 0 3px #000; transform-origin: top right;
+               z-index: 2; pointer-events: none; }
+  .far .card .ovb { transform: scale(var(--inv, 1)); }
+  .card.sel { box-shadow: 0 0 0 3px #0f6bd7; }
+  #b-panel { display: none; }
+  #b-panel .close { position: sticky; top: 0; float: right; cursor: pointer; color: #9aa0a6;
+                    font-size: 18px; line-height: 1; padding: 0 2px; }
+  #b-panel .close:hover { color: #fff; }
   .card.faded { opacity: .18; }
   .card.boost { transform: scale(1.12); transform-origin: center; box-shadow: 0 0 0 2px #fff;
                 z-index: 5; }
@@ -281,17 +291,20 @@ function initB(stage) {
         `<span class="modchip" data-mod="${k}" style="background:${m.color}">${esc(m.label)}</span>`).join('')}
       <h4>Science packs</h4>
       ${DATA.packs.map(p => `<div class="pk"><span class="dot" style="background:${packColor(p)}"></span> ${esc(DATA.packLabels[p] || p)}</div>`).join('')}
-    </div>`;
+    </div>
+    <aside class="panel" id="b-panel"></aside>`;
 
   const world = document.getElementById('b-world');
   const viewEl = document.getElementById('b-view'), view = d3.select(viewEl);
+  const panel = document.getElementById('b-panel');
   const CARDW = 230, SHOW = 4;
-  let rankdir = 'LR', gw = 1, gh = 1;
+  let rankdir = 'TB', gw = 1, gh = 1;
   const selMods = new Set();
 
   const zoom = d3.zoom().scaleExtent([0.04, 2.5]).on('zoom', ev => {
     world.style.transform = `translate(${ev.transform.x}px,${ev.transform.y}px) scale(${ev.transform.k})`;
     world.classList.toggle('far', ev.transform.k < 0.5);
+    world.style.setProperty('--inv', Math.min(1 / ev.transform.k, 25));
   });
   view.call(zoom);
 
@@ -326,8 +339,9 @@ function initB(stage) {
     for (const t of DATA.techs) {
       const n = g.node(t.id), color = (MODS[t.mod] || {}).color || '#888';
       const shown = t.unlocks.slice(0, SHOW);
-      html.push(`<div class="card" data-mod="${t.mod}" style="left:${n.x - n.width / 2}px;top:${n.y - n.height / 2}px;width:${n.width}px;height:${n.height}px;--modc:${color}">
-        <div class="head" style="border-left-color:${color}">${t.overlap ? '<span class="ovbadge">⚠ </span>' : ''}${esc(t.label)}</div>
+      html.push(`<div class="card" data-mod="${t.mod}" data-id="${t.id}" style="left:${n.x - n.width / 2}px;top:${n.y - n.height / 2}px;width:${n.width}px;height:${n.height}px;--modc:${color}">
+        ${t.overlap ? '<div class="ovb">⚠</div>' : ''}
+        <div class="head" style="border-left-color:${color}">${esc(t.label)}</div>
         <div class="body">
           <div class="packs">${packChips(t)} <span class="n">${t.formula ? esc(t.formula) : (t.count ? t.count + '×' : (t.trigger ? 'trigger' : ''))}</span></div>
           ${shown.map(u => `<div class="u ${(u.results||[]).some(r => overlapNames.has(r)) ? 'ov' : ''}">▸ ${esc(u.label)}</div>`).join('')}
@@ -354,6 +368,18 @@ function initB(stage) {
     selMods.has(m) ? selMods.delete(m) : selMods.add(m);
     chip.classList.toggle('on', selMods.has(m));
     applyEmphasis();
+  });
+  world.addEventListener('click', e => {
+    const c = e.target.closest('.card');
+    if (!c) return;
+    world.querySelectorAll('.card.sel').forEach(x => x.classList.remove('sel'));
+    c.classList.add('sel');
+    panel.innerHTML = `<span class="close" title="close">×</span>` + detailHtml(byId.get(c.dataset.id));
+    panel.style.display = 'block';
+    panel.querySelector('.close').onclick = () => {
+      panel.style.display = 'none';
+      world.querySelectorAll('.card.sel').forEach(x => x.classList.remove('sel'));
+    };
   });
 }
 
