@@ -63,10 +63,14 @@
   #b-world { position: absolute; transform-origin: 0 0; }
   #b-world svg { position: absolute; top: 0; left: 0; overflow: visible; }
   .b-edge { fill: none; stroke: #45525e; stroke-opacity: .6; stroke-width: 1.5; }
+  /* overflow must stay visible on the card itself: the corner overlap badge counter-scales far
+     beyond the card's bounds when zoomed out, and overflow:hidden was clipping it away */
   .card { position: absolute; background: #26292c; border: 1px solid #3d4247; border-radius: 6px;
-          overflow: hidden; font-size: 11px; }
+          font-size: 11px; }
   .card .head { padding: 4px 8px; font-weight: 600; font-size: 12px; color: #f0f2f4;
-                border-left: 4px solid transparent; background: #2e3236; }
+                border-left: 4px solid transparent; background: #2e3236; overflow: hidden;
+                border-radius: 5px 5px 0 0; }
+  .card .body { overflow: hidden; }
   .card .body { padding: 4px 8px 6px; }
   .card .packs { margin-bottom: 3px; }
   .card .packs .n { font-size: 10px; color: #9aa0a6; margin-right: 5px; }
@@ -76,7 +80,12 @@
   .card .bonus { color: #7fa8d9; }
   .far .card .body { display: none; }
   .far .card { border-width: 2px; }
-  .far .card .head { font-size: 18px; padding: 8px 10px; background: var(--modc); color: #0d0f10; }
+  .far .card .head { font-size: 18px; padding: 8px 10px; background: var(--modc); color: #0d0f10;
+                     border-radius: 5px; }
+  .b-edge.hot-in  { stroke: #e05c5c; stroke-opacity: 1; stroke-width: 3; }
+  .b-edge.hot-out { stroke: #57ab5a; stroke-opacity: 1; stroke-width: 3; }
+  .far .b-edge.hot-in,
+  .far .b-edge.hot-out { stroke-width: calc(3px * var(--inv, 1)); }
   /* corner overlap badge: counter-scaled by --inv (set from the zoom level) so it stays
      readable at any distance instead of shrinking away with the card */
   .card .ovb { position: absolute; top: -3px; right: -3px; color: #e8a33d; font-size: 14px;
@@ -291,6 +300,9 @@ function initB(stage) {
         `<span class="modchip" data-mod="${k}" style="background:${m.color}">${esc(m.label)}</span>`).join('')}
       <h4>Science packs</h4>
       ${DATA.packs.map(p => `<div class="pk"><span class="dot" style="background:${packColor(p)}"></span> ${esc(DATA.packLabels[p] || p)}</div>`).join('')}
+      <h4>Selected tech's links</h4>
+      <div class="pk"><span class="dot" style="background:#e05c5c"></span> needed to research it</div>
+      <div class="pk"><span class="dot" style="background:#57ab5a"></span> techs it helps unlock</div>
     </div>
     <aside class="panel" id="b-panel"></aside>`;
 
@@ -333,7 +345,7 @@ function initB(stage) {
     let html = [`<svg width="${gw}" height="${gh}">`];
     for (const e of g.edges()) {
       const pts = g.edge(e).points;
-      html.push(`<path class="b-edge" d="M${pts.map(p => `${p.x},${p.y}`).join(' L')}"/>`);
+      html.push(`<path class="b-edge" data-a="${e.v}" data-b="${e.w}" d="M${pts.map(p => `${p.x},${p.y}`).join(' L')}"/>`);
     }
     html.push('</svg>');
     for (const t of DATA.techs) {
@@ -369,16 +381,23 @@ function initB(stage) {
     chip.classList.toggle('on', selMods.has(m));
     applyEmphasis();
   });
+  function clearSelection() {
+    world.querySelectorAll('.card.sel').forEach(x => x.classList.remove('sel'));
+    world.querySelectorAll('.b-edge.hot-in,.b-edge.hot-out').forEach(x => x.classList.remove('hot-in', 'hot-out'));
+  }
   world.addEventListener('click', e => {
     const c = e.target.closest('.card');
     if (!c) return;
-    world.querySelectorAll('.card.sel').forEach(x => x.classList.remove('sel'));
+    clearSelection();
     c.classList.add('sel');
+    const id = CSS.escape(c.dataset.id);
+    world.querySelectorAll(`.b-edge[data-b="${id}"]`).forEach(x => x.classList.add('hot-in'));   // prerequisites
+    world.querySelectorAll(`.b-edge[data-a="${id}"]`).forEach(x => x.classList.add('hot-out'));  // what it feeds
     panel.innerHTML = `<span class="close" title="close">×</span>` + detailHtml(byId.get(c.dataset.id));
     panel.style.display = 'block';
     panel.querySelector('.close').onclick = () => {
       panel.style.display = 'none';
-      world.querySelectorAll('.card.sel').forEach(x => x.classList.remove('sel'));
+      clearSelection();
     };
   });
 }
