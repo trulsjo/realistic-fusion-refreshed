@@ -196,12 +196,16 @@ try {
     Write-Host 'parsing dumps...'
     $raw     = Get-Content -LiteralPath $rawPath  -Raw | ConvertFrom-Json -AsHashtable
     $history = Get-Content -LiteralPath $histPath -Raw | ConvertFrom-Json -AsHashtable
+    # EVERY read of a key from these two dumps uses INDEX access, never dot (#167). On a hashtable,
+    # dot-access falls back to .NET members when the key is absent, so a missing key yields metadata
+    # instead of $null: `.item` renders the Item indexer's signature, `.count` the entry count. Both
+    # shipped. Dot-access on the tables THIS script builds ($h.c, $t.packs) is safe and stays.
 
     function Read-LocaleNames([string] $File) {
         $p = Join-Path $scriptOutput $File
         if (-not (Test-Path $p)) { return @{} }
         $parsed = Get-Content -LiteralPath $p -Raw | ConvertFrom-Json -AsHashtable
-        if ($parsed.names) { return $parsed.names } else { return @{} }
+        if ($parsed['names']) { return $parsed['names'] } else { return @{} }
     }
     $techLocale   = Read-LocaleNames 'technology-locale.json'
     $itemLocale   = Read-LocaleNames 'item-locale.json'
@@ -209,13 +213,28 @@ try {
     $entityLocale = Read-LocaleNames 'entity-locale.json'
     $recipeLocale = Read-LocaleNames 'recipe-locale.json'
 
-    # helpers.table_to_json writes an empty Lua array as {}, so "no changes" arrives as an empty
-    # OBJECT rather than an empty array -- normalise here, once.
+    # Both dumps write an empty Lua table as {}, so a key that should be a list arrives as an empty
+    # OBJECT -- and an absent key arrives as $null, which @() turns into a one-element array holding
+    # $null. Either ships junk the template silently filters. Every list-valued dump key comes
+    # through here (#167); the comma keeps the empty array from unrolling to $null on return.
+    function Get-DumpList($Value) {
+        if ($Value -is [System.Collections.IList]) { return ,@($Value) }
+        return ,@()
+    }
+
+    # A trigger's item/entity is an ItemIDFilter/EntityIDFilter at 2.0.77: a bare ID *or* a
+    # {name, quality, comparator} table. Joining the table form into the label would print
+    # "System.Collections.Hashtable" -- the same leak of .NET metadata into node text this fixes.
+    # <https://lua-api.factorio.com/2.0.77/types/EntityIDFilter.html>
+    function Get-FilterName($Value) {
+        if ($Value -is [System.Collections.IDictionary]) { return $Value['name'] }
+        return $Value
+    }
+
     function Get-History([string] $Class, [string] $Name) {
         $row = $history[$Class][$Name]
         if (-not $row) { return @{ c = 'base'; ch = @() } }
-        $ch = if ($row.ch -is [System.Collections.IList]) { @($row.ch) } else { @() }
-        return @{ c = $row.c; ch = $ch }
+        return @{ c = $row['c']; ch = (Get-DumpList $row['ch']) }
     }
 
     # ------------------------------------------------------------------------- overlap candidates (#160)
@@ -283,8 +302,8 @@ try {
 
     # ------------------------------------------------------------------------- technologies (#159)
     function Get-RecipeResults($recipe) {
-        if (-not $recipe.results) { return @() }
-        @($recipe.results | ForEach-Object { $_.name } | Where-Object { $_ })
+        if (-not $recipe['results']) { return @() }
+        @($recipe['results'] | ForEach-Object { $_['name'] } | Where-Object { $_ })
     }
 
     $techs = [System.Collections.Generic.List[object]]::new()
@@ -292,30 +311,41 @@ try {
         $name = $kv.Key; $t = $kv.Value
         $h = Get-History 'technology' $name
         $packs = @(); $count = $null; $formula = $null; $trigger = $null; $time = $null
-        if ($t.unit) {
-            $count = $t.unit.count; $formula = $t.unit.count_formula; $time = $t.unit.time
-            $packs = @($t.unit.ingredients | ForEach-Object { ,@($_[0], $_[1]) })
+        if ($t['unit']) {
+            $u = $t['unit']
+            $count = $u['count']; $formula = $u['count_formula']; $time = $u['time']
+            $packs = @($u['ingredients'] | ForEach-Object { ,@($_[0], $_[1]) })
         }
-        elseif ($t.research_trigger) {
-            $rt = $t.research_trigger
-            $trigger = (@($rt.type, $rt.item, $rt.entity, $rt.count) | Where-Object { $_ }) -join ' '
+        elseif ($t['research_trigger']) {
+            # Every field of every TechnologyTrigger variant at 2.0.77: craft-item (item, count,
+            # default 1), craft-fluid (fluid, amount, default 0), mine-entity and build-entity
+            # (entity), send-item-to-orbit (item), capture-spawner / create-space-platform /
+            # scripted (type alone). Absent keys just drop out of the join.
+            # <https://lua-api.factorio.com/2.0.77/types/TechnologyTrigger.html>
+            $rt = $t['research_trigger']
+            $trigger = (@($rt['type'], (Get-FilterName $rt['item']), (Get-FilterName $rt['entity']),
+                          $rt['fluid'], $rt['count'], $rt['amount']) | Where-Object { $_ }) -join ' '
         }
         $unlocks = [System.Collections.Generic.List[object]]::new()
         $bonuses = [System.Collections.Generic.List[string]]::new()
-        foreach ($e in @($t.effects)) {
+        # `effects = {}` dumps as an empty OBJECT, which survives the per-effect guard as one truthy
+        # element and adds a blank bonus -- 66 techs here, rf-plasma-confinement-1 among them.
+        foreach ($e in (Get-DumpList $t['effects'])) {
             if (-not $e) { continue }
-            if ($e.type -eq 'unlock-recipe') {
-                $r = $raw['recipe'][$e.recipe]
+            if ($e['type'] -eq 'unlock-recipe') {
+                $recipeName = $e['recipe']
+                $r = $raw['recipe'][$recipeName]
                 $results = if ($r) { Get-RecipeResults $r } else { @() }
-                $label = if ($recipeLocale[$e.recipe]) { $recipeLocale[$e.recipe] }
+                $label = if ($recipeLocale[$recipeName]) { $recipeLocale[$recipeName] }
                          elseif ($results.Count -and $itemLocale[$results[0]]) { $itemLocale[$results[0]] }
                          elseif ($results.Count -and $fluidLocale[$results[0]]) { $fluidLocale[$results[0]] }
-                         else { $e.recipe }
-                $unlocks.Add(@{ name = $e.recipe; label = $label; results = @($results) })
+                         else { $recipeName }
+                $unlocks.Add(@{ name = $recipeName; label = $label; results = @($results) })
             }
             else {
-                $desc = $e.type
-                if ($null -ne $e.modifier -and $e.modifier -isnot [bool]) { $desc += " $($e.modifier)" }
+                $desc = $e['type']
+                $modifier = $e['modifier']
+                if ($null -ne $modifier -and $modifier -isnot [bool]) { $desc += " $modifier" }
                 $bonuses.Add($desc)
             }
         }
@@ -325,7 +355,9 @@ try {
         $techs.Add([ordered]@{
             id = $name; label = if ($techLocale[$name]) { $techLocale[$name] } else { $name }
             mod = $h.c; changedBy = @($changedBy)
-            prereqs = @($t.prerequisites)
+            # Absent when a tech has none, so @() alone shipped [null] -- steam-power and
+            # electronics here, filtered by the template and wrong in the dataset all the same.
+            prereqs = (Get-DumpList $t['prerequisites'])
             count = $count; formula = $formula; trigger = $trigger; time = $time
             packs = $packs; unlocks = @($unlocks); bonuses = @($bonuses)
         })
