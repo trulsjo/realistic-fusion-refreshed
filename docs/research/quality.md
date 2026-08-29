@@ -214,13 +214,19 @@ The dictionaries are the strong form: a mod can write `crafting_speed_quality_mu
 1, uncommon = 1, rare = 1, epic = 1, legendary = 1}` and flatten crafting speed for that one machine
 without touching anything else in the game.
 
-**No equivalent exists for boilers, generators, pumps or storage tanks.** Checked at 2.0.77 on
-`BoilerPrototype` and `GeneratorPrototype`, both of which have no quality property whatever. For those
-types there is no per-property lever at all — which matters here, because `rf-reactor`,
-`rf-aneutronic-reactor`, both exchangers, `rf-isotope-collector`, `rf-hc-turbine` and
-`rf-direct-energy-converter` are all boilers or generators. (`PumpPrototype` and
-`StorageTankPrototype` were not checked; `rf-pump` scales its pumping speed and the tank scales
-nothing, both measured.)
+**No equivalent exists for boilers, generators, pumps or storage tanks — all four checked.** Read in
+full at 2.0.77: `BoilerPrototype`, `GeneratorPrototype`,
+[`PumpPrototype`](https://lua-api.factorio.com/2.0.77/prototypes/PumpPrototype.html) and
+[`StorageTankPrototype`](https://lua-api.factorio.com/2.0.77/prototypes/StorageTankPrototype.html)
+each declare no quality property whatever. (All four inherit `quality_indicator_shift` and
+`quality_indicator_scale` from `EntityWithOwnerPrototype`, which place and size the quality badge
+sprite — cosmetic, not a lever.) For those four types there is no per-property opt-out at all — which
+matters here, because `rf-reactor`, `rf-aneutronic-reactor`, both exchangers, `rf-isotope-collector`,
+`rf-hc-turbine` and `rf-direct-energy-converter` are all boilers or generators, and it settles
+`rf-pump`: its measured 2.5× pumping-speed scaling ([#97](https://github.com/trulsjo/realistic-fusion-refreshed/issues/97))
+is not a choice the prototype can decline. A mod that wants it flat has only the blunter levers —
+`allow_quality = false` on the recipe, the global `QualityPrototype` route, or runtime script. The
+tank scales nothing, and has nothing it could opt out of.
 
 ### Denying the quality version outright
 
@@ -490,9 +496,6 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   without Space Age, since the measurement contradicts the literal reading of
   `QualityPrototype.level`'s note. That is an inference. The flag is not documented anywhere this pass
   reached.
-- **`PumpPrototype` and `StorageTankPrototype` were not read** for quality properties. Their behaviour
-  was measured (`rf-pump` scales, the tank does not); whether a per-property opt-out exists for them
-  is unchecked.
 - **Fluid box capacity was checked on the entities this mod ships and four vanilla ones.** It is flat
   on all of them. This note does not claim it is flat for every prototype type in the game — a
   `fluid-wagon` has `fluid_wagon_capacity_multiplier` and certainly is not.
@@ -636,6 +639,13 @@ Primary, read directly at 2.0.77:
 - [`BoilerPrototype`](https://lua-api.factorio.com/2.0.77/prototypes/BoilerPrototype.html) and
   [`GeneratorPrototype`](https://lua-api.factorio.com/2.0.77/prototypes/GeneratorPrototype.html) —
   read in full; **no quality property on either**.
+- [`PumpPrototype`](https://lua-api.factorio.com/2.0.77/prototypes/PumpPrototype.html) and
+  [`StorageTankPrototype`](https://lua-api.factorio.com/2.0.77/prototypes/StorageTankPrototype.html)
+  — read in full ([#149](https://github.com/trulsjo/realistic-fusion-refreshed/issues/149), 2026-08-29);
+  **no quality property on either**.
+- [`EntityWithOwnerPrototype`](https://lua-api.factorio.com/2.0.77/prototypes/EntityWithOwnerPrototype.html)
+  — `quality_indicator_shift` and `quality_indicator_scale`, the cosmetic badge placement every
+  entity-with-owner inherits.
 - [`RecipePrototype`](https://lua-api.factorio.com/2.0.77/prototypes/RecipePrototype.html) —
   `allow_quality`, `allow_quality_message`. Type and default only; no description text.
 - [`FluidPrototype`](https://lua-api.factorio.com/2.0.77/prototypes/FluidPrototype.html) —
