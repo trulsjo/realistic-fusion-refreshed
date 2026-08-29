@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lane tech tree</title>
+<!--
+  Template for scripts/tree-viewer.ps1, which splices the dataset over the __DATASET__ placeholder
+  and writes the result to tree-viewer-out/. Do not open this file directly; it has no data.
+
+  The design is the one settled on the "Zoomable tree viewer prototype" ticket (#161) after four
+  reaction rounds: dagre-layered cards, top-down by default, full detail on the card up close and
+  mod-coloured heads with counter-scaled badges from afar, click for a side panel with links
+  highlighted in both directions. Attribution follows #164/#165: colour = PrototypeHistory.created,
+  the changed chain rides in the panel, and a tick marks "changed by a mod other than its creator".
+
+  The dagre and d3 libraries come from cdnjs by deliberate choice (#161): this is a dev-side
+  instrument, and the prototype's variant A proved an offline hand-rolled fallback is possible if
+  that trade-off is ever revisited.
+-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body { background: #1b1d1f; color: #d8dbde; font: 13px/1.4 "Segoe UI", system-ui, sans-serif; }
+
+  #banner { position: fixed; top: 0; left: 0; right: 0; z-index: 20; padding: 6px 12px;
+            background: #26292c; border-bottom: 1px solid #3a3e42; display: flex; gap: 14px;
+            align-items: baseline; flex-wrap: wrap; }
+  #banner b { color: #e8a33d; }
+  #banner .note { color: #9aa0a6; font-size: 12px; }
+  #stage { position: absolute; top: 34px; bottom: 0; left: 0; right: 0; }
+
+  .chip { display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 11px;
+          color: #101214; font-weight: 600; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 2px;
+         vertical-align: -1px; border: 1px solid rgba(0,0,0,.4); }
+  .ovbadge { color: #e8a33d; font-weight: 700; }
+  .chbadge { color: #7fa8d9; font-weight: 700; }
+  .muted { color: #9aa0a6; }
+  .mono  { font-family: Consolas, monospace; font-size: 12px; }
+
+  .panel { position: absolute; top: 0; right: 0; bottom: 0; width: 340px; overflow-y: auto;
+           background: #26292c; border-left: 1px solid #3a3e42; padding: 12px 14px; z-index: 10;
+           display: none; }
+  .panel h2 { font-size: 15px; margin-bottom: 4px; }
+  .panel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: #9aa0a6;
+              margin: 12px 0 4px; }
+  .panel ul { list-style: none; }
+  .panel li { padding: 2px 0; border-bottom: 1px solid #303336; }
+  .panel .pair { font-size: 12px; padding: 4px 0; }
+  .panel .close { position: sticky; top: 0; float: right; cursor: pointer; color: #9aa0a6;
+                  font-size: 18px; line-height: 1; padding: 0 2px; }
+  .panel .close:hover { color: #fff; }
+
+  #view { position: absolute; inset: 0; overflow: hidden; background: #17181a; }
+  #world { position: absolute; transform-origin: 0 0; }
+  #world svg { position: absolute; top: 0; left: 0; overflow: visible; }
+  .edge { fill: none; stroke: #45525e; stroke-opacity: .6; stroke-width: 1.5; }
+  .edge.hot-in  { stroke: #e05c5c; stroke-opacity: 1; stroke-width: 3; }
+  .edge.hot-out { stroke: #57ab5a; stroke-opacity: 1; stroke-width: 3; }
+  /* ~1.5px on screen at any far zoom — the thickness at the detail threshold, judged right on the
+     prototype */
+  .far .edge.hot-in,
+  .far .edge.hot-out { stroke-width: calc(1.5px * var(--inv, 1)); }
+
+  /* overflow stays visible on the card: the corner badges counter-scale far beyond the card's
+     bounds when zoomed out, and overflow:hidden clipped them away on the prototype */
+  .card { position: absolute; background: #26292c; border: 1px solid #3d4247; border-radius: 6px;
+          font-size: 11px; }
+  .card .head { padding: 4px 8px; font-weight: 600; font-size: 12px; color: #f0f2f4;
+                border-left: 4px solid transparent; background: #2e3236; overflow: hidden;
+                border-radius: 5px 5px 0 0; }
+  .card .body { padding: 4px 8px 6px; overflow: hidden; }
+  .card .packs { margin-bottom: 3px; }
+  .card .packs .n { font-size: 10px; color: #9aa0a6; margin-right: 5px; }
+  .card .u { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #b9bec3; }
+  .card .u.ov { color: #e8a33d; }
+  .card .bonus { color: #7fa8d9; }
+  .card.sel { box-shadow: 0 0 0 3px #0f6bd7; }
+  .card.faded { opacity: .18; }
+  .card.boost { transform: scale(1.12); transform-origin: center; box-shadow: 0 0 0 2px #fff;
+                z-index: 5; }
+
+  /* corner badges, counter-scaled by --inv (set from the zoom level) so they stay readable at any
+     distance instead of shrinking away with the card. ⚠ top-right: overlap candidate.
+     ✎ top-left: changed by a mod other than its creator. */
+  .card .ovb, .card .chb { position: absolute; top: -3px; font-size: 14px; font-weight: 700;
+                           text-shadow: 0 0 3px #000, 0 0 3px #000; z-index: 2;
+                           pointer-events: none; }
+  .card .ovb { right: -3px; color: #e8a33d; transform-origin: top right; }
+  .card .chb { left: -3px; color: #7fa8d9; transform-origin: top left; }
+  .far .card .ovb, .far .card .chb { transform: scale(var(--inv, 1)); }
+
+  .far .card .body { display: none; }
+  .far .card { border-width: 2px; }
+  .far .card .head { font-size: 18px; padding: 8px 10px; background: var(--modc); color: #0d0f10;
+                     border-radius: 5px; }
+
+  #tools { position: absolute; top: 10px; left: 10px; z-index: 15; background: #26292cee;
+           border: 1px solid #3a3e42; border-radius: 6px; padding: 8px 12px; font-size: 12px;
+           max-width: 260px; max-height: calc(100% - 80px); overflow-y: auto; }
+  #tools h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: #9aa0a6;
+              margin: 8px 0 3px; }
+  #tools button { background: #0f6bd7; color: #fff; border: 0; border-radius: 4px;
+                  padding: 4px 8px; cursor: pointer; }
+  #tools .modchip { display: block; cursor: pointer; padding: 3px 7px; border-radius: 4px;
+                    margin: 3px 0; color: #101214; font-weight: 600; opacity: .8;
+                    border: 2px solid transparent; }
+  #tools .modchip.on { opacity: 1; border-color: #fff; }
+  #tools .pk { padding: 1px 0; color: #c9ced3; }
+
+  .fallback { padding: 80px 40px; max-width: 640px; margin: 0 auto; color: #c9ced3; }
+</style>
+</head>
+<body>
+<div id="banner"></div>
+<div id="stage"></div>
+
+<script>
+const DATA = "__DATASET__";
+
+/* ---------- attribution, packs, graph shape ---------- */
+const MODS = Object.fromEntries(DATA.mods.map(m => [m.name, m]));
+const modName  = m => (MODS[m] || {}).label || m;
+const modColor = m => (MODS[m] || {}).color || '#888';
+const PACK_PALETTE = ['#e5534b', '#57ab5a', '#539bf5', '#768390', '#c69026', '#e6edf3', '#986ee2',
+                      '#a3adb8', '#e8a33d', '#d94fd0', '#8250df', '#5cc9a7', '#c0562b'];
+const packColor = p => PACK_PALETTE[DATA.packs.indexOf(p) % PACK_PALETTE.length];
+
+const byId = new Map(DATA.techs.map(t => [t.id, t]));
+for (const t of DATA.techs) t.pre = (t.prereqs || []).filter(p => byId.has(p));
+const edges = [];
+for (const t of DATA.techs) for (const p of t.pre) edges.push([p, t.id]);
+
+/* the active overlap set is dynamic: base-game pairs ship flagged (o.base) and stay filtered out
+   until the "include base-game overlaps" toggle turns them on (#160) */
+const overlapFocus = DATA.meta.focusMods || [];
+let activeOv = [], overlapNames = new Set();
+function setBaseOverlaps(on) {
+  activeOv = DATA.overlaps.filter(o => on || !o.base);
+  overlapNames = new Set();
+  for (const o of activeOv) { overlapNames.add(o.a); overlapNames.add(o.b); }
+}
+setBaseOverlaps(false);
+const techResults = t => new Set(t.unlocks.flatMap(u => u.results || []));
+const isOverlap = t => { for (const r of techResults(t)) if (overlapNames.has(r)) return true; return false; };
+const overlapPairsFor = t => {
+  const rs = techResults(t);
+  return activeOv.filter(o => rs.has(o.a) || rs.has(o.b));
+};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function costHtml(t) {
+  if (t.formula) return `<span class="mono">${esc(t.formula)}</span> × ${t.time}s`;
+  if (t.count)   return `${t.count} × ${t.time}s`;
+  if (t.trigger) return `<span class="muted">trigger:</span> ${esc(t.trigger)}`;
+  return '<span class="muted">free</span>';
+}
+function packChips(t, withCounts = true) {
+  return t.packs.map(([p, n]) =>
+    `<span class="dot" style="background:${packColor(p)}" title="${esc(DATA.packLabels[p] || p)}"></span>` +
+    (withCounts && n > 1 ? `<span class="n">×${n}</span>` : '')).join(' ');
+}
+function detailHtml(t) {
+  const pairs = overlapPairsFor(t);
+  return `
+    <h2>${esc(t.label)} ${isOverlap(t) ? '<span class="ovbadge">⚠</span>' : ''}${t.changedBy.length ? ' <span class="chbadge">✎</span>' : ''}</h2>
+    <div><span class="chip" style="background:${modColor(t.mod)}">${esc(modName(t.mod))}</span>
+         <span class="muted mono">${esc(t.id)}</span></div>
+    ${t.changedBy.length ? `<div style="margin-top:4px" class="muted">changed by:
+      ${t.changedBy.map(m => `<span class="chip" style="background:${modColor(m)}">${esc(modName(m))}</span>`).join(' ')}
+      <span class="muted">(in order)</span></div>` : ''}
+    <h3>Cost</h3>
+    <div>${costHtml(t)}</div>
+    <div style="margin-top:4px">${packChips(t)}</div>
+    <h3>Unlocks (${t.unlocks.length})</h3>
+    <ul>${t.unlocks.map(u => `<li class="${(u.results||[]).some(r => overlapNames.has(r)) ? 'ovbadge' : ''}">${esc(u.label)}</li>`).join('') || '<li class="muted">none</li>'}</ul>
+    ${t.bonuses.length ? `<h3>Bonuses</h3><ul>${t.bonuses.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}
+    ${pairs.length ? `<h3>Overlap candidates touching this tech</h3>
+      <ul>${pairs.map(o => `<li class="pair">[${o.score}] ${esc(o.aLabel)} <span class="muted">(${o.aCat}, ${esc(modName(o.aMod))})</span>
+        ~ ${esc(o.bLabel)} <span class="muted">(${o.bCat}, ${esc(modName(o.bMod))})</span></li>`).join('')}</ul>` : ''}`;
+}
+
+/* ---------- the viewer ---------- */
+function init(stage) {
+  if (!window.dagre || !window.d3) {
+    stage.innerHTML = `<div class="fallback"><h2>The CDN did not load</h2>
+      <p>This viewer needs dagre and d3 from cdnjs (a deliberate trade-off, #161). Connect to the
+      network and reload.</p></div>`;
+    return;
+  }
+  stage.innerHTML = `<div id="view"><div id="world"></div></div>
+    <div id="tools">
+      <button id="orient"></button>
+      <h4>Mods — click to emphasize</h4>
+      ${DATA.mods.map(m =>
+        `<span class="modchip" data-mod="${esc(m.name)}" style="background:${m.color}">${esc(m.label)}</span>`).join('')}
+      <h4>Science packs</h4>
+      ${DATA.packs.map(p => `<div class="pk"><span class="dot" style="background:${packColor(p)}"></span> ${esc(DATA.packLabels[p] || p)}</div>`).join('')}
+      <h4>Selected tech's links</h4>
+      <div class="pk"><span class="dot" style="background:#e05c5c"></span> needed to research it</div>
+      <div class="pk"><span class="dot" style="background:#57ab5a"></span> techs it helps unlock</div>
+      <h4>Badges</h4>
+      <div class="pk"><span class="ovbadge">⚠</span> unlocks an overlap candidate</div>
+      <div class="pk"><span class="chbadge">✎</span> changed by another mod</div>
+      <h4>Overlaps</h4>
+      ${overlapFocus.length
+        ? `<div class="pk muted">left side of every pair: ${(DATA.meta.focusLabels || overlapFocus).map(esc).join(', ')}</div>
+           <label class="pk" style="cursor:pointer"><input type="checkbox" id="base-ov"> include base-game overlaps</label>`
+        : `<div class="pk muted">no focus mod in this set — overlap analysis off</div>`}
+    </div>
+    <aside class="panel" id="panel"></aside>`;
+
+  const world = document.getElementById('world');
+  const viewEl = document.getElementById('view'), view = d3.select(viewEl);
+  const panel = document.getElementById('panel');
+  const CARDW = 230, SHOW = 4;
+  let rankdir = 'TB', gw = 1, gh = 1;
+  const selMods = new Set();
+
+  const zoom = d3.zoom().scaleExtent([0.02, 2.5]).on('zoom', ev => {
+    world.style.transform = `translate(${ev.transform.x}px,${ev.transform.y}px) scale(${ev.transform.k})`;
+    world.classList.toggle('far', ev.transform.k < 0.5);
+    world.style.setProperty('--inv', Math.min(1 / ev.transform.k, 25));
+  });
+  view.call(zoom);
+
+  function applyEmphasis() {
+    for (const c of world.querySelectorAll('.card')) {
+      const on = selMods.size && selMods.has(c.dataset.mod);
+      c.classList.toggle('boost', !!on);
+      c.classList.toggle('faded', selMods.size > 0 && !on);
+    }
+  }
+  function fit() {
+    const vw = viewEl.clientWidth, vh = viewEl.clientHeight;
+    const k = Math.max(Math.min(vw / gw, vh / gh) * 0.95, 0.02);
+    view.call(zoom.transform, d3.zoomIdentity.translate((vw - gw * k) / 2, (vh - gh * k) / 2).scale(k));
+  }
+  function render(keepView = false) {
+    const g = new dagre.graphlib.Graph().setGraph({ rankdir, nodesep: 16, ranksep: 90, marginx: 40, marginy: 40 });
+    g.setDefaultEdgeLabel(() => ({}));
+    for (const t of DATA.techs) {
+      const lines = Math.min(t.unlocks.length, SHOW) + (t.unlocks.length > SHOW ? 1 : 0) + (t.bonuses.length ? 1 : 0);
+      g.setNode(t.id, { width: CARDW, height: 52 + lines * 15 });
+    }
+    for (const [a, b] of edges) g.setEdge(a, b);
+    dagre.layout(g);
+    gw = g.graph().width; gh = g.graph().height;
+    let html = [`<svg width="${gw}" height="${gh}">`];
+    for (const e of g.edges()) {
+      const pts = g.edge(e).points;
+      html.push(`<path class="edge" data-a="${e.v}" data-b="${e.w}" d="M${pts.map(p => `${p.x},${p.y}`).join(' L')}"/>`);
+    }
+    html.push('</svg>');
+    for (const t of DATA.techs) {
+      const n = g.node(t.id), color = modColor(t.mod);
+      const shown = t.unlocks.slice(0, SHOW);
+      html.push(`<div class="card" data-mod="${esc(t.mod)}" data-id="${t.id}" style="left:${n.x - n.width / 2}px;top:${n.y - n.height / 2}px;width:${n.width}px;height:${n.height}px;--modc:${color}">
+        ${isOverlap(t) ? '<div class="ovb">⚠</div>' : ''}
+        ${t.changedBy.length ? '<div class="chb">✎</div>' : ''}
+        <div class="head" style="border-left-color:${color}">${esc(t.label)}</div>
+        <div class="body">
+          <div class="packs">${packChips(t)} <span class="n">${t.formula ? esc(t.formula) : (t.count ? t.count + '×' : (t.trigger ? 'trigger' : ''))}</span></div>
+          ${shown.map(u => `<div class="u ${(u.results||[]).some(r => overlapNames.has(r)) ? 'ov' : ''}">▸ ${esc(u.label)}</div>`).join('')}
+          ${t.unlocks.length > SHOW ? `<div class="u muted">… ${t.unlocks.length - SHOW} more</div>` : ''}
+          ${t.bonuses.length ? `<div class="bonus">+ ${t.bonuses.length} bonus effect${t.bonuses.length > 1 ? 's' : ''}</div>` : ''}
+        </div></div>`);
+    }
+    world.innerHTML = html.join('');
+    document.getElementById('orient').textContent =
+      rankdir === 'TB' ? 'flow: top ↓ down (click for left → right)' : 'flow: left → right (click for top ↓ down)';
+    applyEmphasis();
+    if (!keepView) fit();
+  }
+  render();
+
+  document.getElementById('orient').addEventListener('click', () => {
+    rankdir = rankdir === 'TB' ? 'LR' : 'TB';
+    render();
+  });
+  const baseOv = document.getElementById('base-ov');
+  if (baseOv) baseOv.addEventListener('change', e => {
+    setBaseOverlaps(e.target.checked);
+    panel.style.display = 'none';
+    render(true);   // same layout, same zoom — only the badges and pair lists change
+  });
+  document.getElementById('tools').addEventListener('click', e => {
+    const chip = e.target.closest('.modchip');
+    if (!chip) return;
+    const m = chip.dataset.mod;
+    selMods.has(m) ? selMods.delete(m) : selMods.add(m);
+    chip.classList.toggle('on', selMods.has(m));
+    applyEmphasis();
+  });
+
+  function clearSelection() {
+    world.querySelectorAll('.card.sel').forEach(x => x.classList.remove('sel'));
+    world.querySelectorAll('.edge.hot-in,.edge.hot-out').forEach(x => x.classList.remove('hot-in', 'hot-out'));
+  }
+  world.addEventListener('click', e => {
+    const c = e.target.closest('.card');
+    if (!c) return;
+    clearSelection();
+    c.classList.add('sel');
+    const id = CSS.escape(c.dataset.id);
+    world.querySelectorAll(`.edge[data-b="${id}"]`).forEach(x => x.classList.add('hot-in'));   // prerequisites
+    world.querySelectorAll(`.edge[data-a="${id}"]`).forEach(x => x.classList.add('hot-out'));  // what it feeds
+    panel.innerHTML = `<span class="close" title="close">×</span>` + detailHtml(byId.get(c.dataset.id));
+    panel.style.display = 'block';
+    panel.querySelector('.close').onclick = () => {
+      panel.style.display = 'none';
+      clearSelection();
+    };
+  });
+}
+
+document.getElementById('banner').innerHTML =
+  `<b>${esc(DATA.meta.name)}</b>
+   <span>${DATA.meta.techCount} techs · ${DATA.overlaps.length} overlap candidates · Factorio ${esc(DATA.meta.factorio)}</span>
+   <span class="note">${esc(DATA.meta.modList.join(', '))}</span>
+   <span class="note">generated ${esc(DATA.meta.generated)} · attribution: engine PrototypeHistory</span>`;
+document.title = DATA.meta.name;
+init(document.getElementById('stage'));
+</script>
+</body>
+</html>

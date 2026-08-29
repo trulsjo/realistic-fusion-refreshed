@@ -18,3 +18,6 @@ dist/
 # Third-party mods fetched by scripts/fetch-mods.ps1 at pinned versions. Reproducible, and
 # large -- Krastorio 2 alone is 30 MB. Never this repo's own code.
 .mod-cache*/
+
+# Rendered tech-tree viewers -- rebuildable from any mod set with scripts/tree-viewer.ps1
+tree-viewer-out/
