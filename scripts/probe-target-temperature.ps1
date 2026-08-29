@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Probe: what does target_temperature do to a boiler's own fluid conversion?
@@ -33,6 +32,8 @@
     reported, never that the answer was the hoped-for one -- this is a probe, not a gate, so no
     check sweep and no load-check invokes it.
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

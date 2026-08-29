@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Probes whether a reactor prototype can emit native heat and still pool plasma on a run of
@@ -100,6 +99,8 @@
 .EXAMPLE
     pwsh -File scripts/probe-native-heat.ps1
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Checks that a lithium blanket bolted to a running reactor breeds tritium from lithium, that it
@@ -62,6 +61,8 @@
 .EXAMPLE
     pwsh -File scripts/check-blanket.ps1
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

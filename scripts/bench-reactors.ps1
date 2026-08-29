@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Measures what a simulated reactor costs per tick. Discharges the measurement half of #24.
@@ -190,6 +189,8 @@ Compared against a reading taken just BEFORE
     pwsh -Command "& ./scripts/bench-reactors.ps1 -Counts 0,1,10 -Ticks 300 -Runs 1"
     pwsh -Command "& ./scripts/bench-reactors.ps1 -Mixed -Counts 0,16,64,256"
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

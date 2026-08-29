@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Probes whether a connection_category declared on a FLUID ENERGY SOURCE's nested fluid box
@@ -117,6 +116,8 @@
 .EXAMPLE
     pwsh -File scripts/probe-energy-containment.ps1
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

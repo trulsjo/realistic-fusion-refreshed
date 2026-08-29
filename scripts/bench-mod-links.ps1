@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Measures how much fluid this mod's own links carry, at a running equilibrium. Discharges #48.
@@ -81,6 +80,8 @@
     pwsh -File scripts/bench-mod-links.ps1
     pwsh -File scripts/bench-mod-links.ps1 -Ticks 24000 -Window 4000 -KeepTemp
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

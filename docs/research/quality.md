@@ -143,8 +143,8 @@ single quality-related property at 2.0.77. Their scaling is not declared anywher
 **What the docs do give you is a reliable tell, and the repository already found it by accident.**
 `realistic-fusion-refreshed/control.lua:795` records that `max_energy_production` had to become
 `get_max_energy_production()` because "the quality system made these getters — and reading the field
-throws". `scripts/check-buffer.ps1:299` puts the rule in one line: "The flow limits are methods rather
-than attributes in 2.0 because quality scales them"; `scripts/check-brownout.ps1:726` says the same,
+throws". `scripts/check-buffer.ps1:300` puts the rule in one line: "The flow limits are methods rather
+than attributes in 2.0 because quality scales them"; `scripts/check-brownout.ps1:727` says the same,
 and adds the trap — "control.lua reads buffer_capacity off the same class as a field, which is what
 made the wrong one look right". That is the general rule: **in 2.0 a prototype property that quality scales is exposed as a method
 taking an optional `QualityID`, and one it does not scale stays a plain attribute.**

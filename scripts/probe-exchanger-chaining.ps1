@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Probes whether a boiler's FLUID ENERGY SOURCE box can be chained -- whether one heat exchanger
@@ -37,6 +36,8 @@
     Findings belong in docs/research/. Kept committed so the next engine version can be asked the
     same question.
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

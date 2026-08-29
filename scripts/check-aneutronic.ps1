@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Checks that the aneutronic tier works end to end: a second reactor burns D-He3 and He3-He3, and
@@ -69,6 +68,8 @@
 .EXAMPLE
     pwsh -File scripts/check-aneutronic.ps1
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

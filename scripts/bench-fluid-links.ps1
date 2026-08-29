@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Measures how much fluid a link between two entities will carry, against connection count and
@@ -104,6 +103,8 @@
     pwsh -File scripts/bench-fluid-links.ps1
     pwsh -File scripts/bench-fluid-links.ps1 -Distances 0,1 -Measure 600 -KeepTemp
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

@@ -1,7 +1,7 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
-    Fails if the claims the shipped mods make about themselves have stopped being true.
+    Fails if the claims the shipped mods make about themselves have stopped being true, or if
+    the scripts in this directory have stopped answering Get-Help.
 
 .DESCRIPTION
     ADR 0003 and ADR 0006 each create an obligation that is a sentence rather than code: the clean
@@ -47,6 +47,18 @@
         not built while the mod is unpublished. Tracked separately; do not read a pass here as
         cover for it.
 
+    Since #151 it also asserts one thing that is not about the mods at all: that every script in
+    scripts/ which declares a .SYNOPSIS actually answers Get-Help. It lives here because it is the
+    same shape as everything above -- a claim made in prose, invisible to every other gate, and
+    checkable without starting a game. Twenty-seven scripts had a #Requires line above their help
+    block, which detaches it: PowerShell synthesised syntax-only help and the reasoning in the block
+    was unreachable, while the file read exactly the same. Nothing but an assert can see that --
+    including the second half of the same trap, which the first fix for it walked into: sitting
+    directly against the block's closing delimiter, the requires statement is absorbed into the
+    last section and rendered back to the reader as help prose. It needs a blank line between
+    the two. (Spelling that delimiter out here would end this block early, which is its own
+    small demonstration of how literally the parser reads these.)
+
     WHAT IT CANNOT CHECK
 
     That the sentences are true, or that a player reads them. It matches on the load-bearing words --
@@ -58,12 +70,21 @@
     uploaded by hand and this repository cannot see it.
 
     There is no -SelfTest here, unlike the checks that read a Factorio dump. Those need one because
-    they can pass by finding nothing; this one names every file and string it requires, so a mistake
-    in it fails rather than goes quiet.
+    they can pass by finding nothing; sections 1 to 4 name every file and string they require, so a
+    mistake in them fails rather than goes quiet.
+
+    SECTION 5 IS THE EXCEPTION, and is stated here rather than left to be discovered. It selects by
+    scanning this directory and matching a predicate, so it is exactly the shape that can pass by
+    finding nothing. What stands in for a self-test is its floor: a script that opens with a comment
+    block but is not in scope fails. That is narrower than a -SelfTest would be, because it cannot
+    see a mistake in the scan itself -- break that and there is nothing left to check and so nothing
+    left to fail.
 
 .EXAMPLE
     pwsh -File scripts/ship-check.ps1
 #>
+
+#Requires -Version 7
 
 param()
 
@@ -226,6 +247,70 @@ foreach ($mod in $codeMods) {
 $readme = Get-Content (Join-Path $repoRoot 'README.md') -Raw
 Test-Claim -Where 'README.md' -Text $readme -Needles $CLAIMS
 Test-Claim -Where 'README.md' -Text $readme -Needles $CREDITS
+
+# 5. The scripts in this directory answer Get-Help. Comment-based help at the top of a script is
+# recognised only when nothing but comments and blank lines precedes it, so a #Requires statement
+# above the block silently detaches it: PowerShell then synthesises syntax-only help from the param
+# block, and the reasoning in the block -- 6100 characters in probe-quality.ps1 alone -- becomes
+# unreachable by the documented means of reaching it. Twenty-seven scripts were broken this way,
+# and a twenty-eighth by the adjacency below (#151). It is asserted rather than eyeballed because
+# the failure is invisible in the file: the block reads exactly the same whether PowerShell can
+# see it or not.
+$allScripts = @(Get-ChildItem $PSScriptRoot -File -Filter *.ps1 | Sort-Object Name)
+$documented = @($allScripts | Where-Object { (Get-Content $_.FullName -Raw) -match '(?m)^\s*\.SYNOPSIS\s*$' })
+
+# The floor, because everything below it passes by finding nothing. Break the predicate above --
+# rename the keyword, reformat the line -- and every script leaves scope while this still prints
+# green. A script that OPENS with a comment block is documented and has to be reachable; one that
+# does not (factorio-lib.ps1, dot-sourced rather than invoked) is not being asked to grow help it
+# never had, which #151 put out of scope.
+$checks++
+$undeclared = @($allScripts | Where-Object {
+    (Get-Content $_.FullName -TotalCount 1) -eq '<#' -and $_.Name -notin $documented.Name })
+if ($undeclared) {
+    $failures.Add('these open with a comment block but declare no .SYNOPSIS, so nothing below ' +
+        "checks their help: $(($undeclared.Name) -join ', ')")
+}
+
+foreach ($ps1 in $documented) {
+    # A parse error arrives here as "could not find ... in a help file", which names neither the
+    # cause nor the fix -- and under $ErrorActionPreference = 'Stop' it would end the run before the
+    # failures gathered in sections 1-4 are ever printed.
+    try { $help = Get-Help $ps1.FullName }
+    catch {
+        $checks++
+        $failures.Add("$($ps1.Name): Get-Help failed, which usually means a parse error: " +
+            $_.Exception.Message)
+        continue
+    }
+
+    $checks++
+    $rendered = (@($help.description) | ForEach-Object { $_.Text }) -join ''
+    if (-not $rendered.Trim()) {
+        $failures.Add("$($ps1.Name): Get-Help renders no .DESCRIPTION -- either its #Requires line " +
+            'sits above the closing #>, where it detaches the block, or the block declares none.')
+    }
+
+    $checks++
+    # The synthesised stand-in is the syntax line, which opens with the file name. A real .SYNOPSIS
+    # does not, by the convention every script here follows, so this tells the two apart without
+    # knowing what any of them is supposed to say.
+    if ($help.Synopsis -like ([WildcardPattern]::Escape($ps1.Name) + '*')) {
+        $failures.Add("$($ps1.Name): Get-Help returns the generated syntax line, not its .SYNOPSIS")
+    }
+
+    $checks++
+    # The other half of the same trap, and the one the first fix for #151 walked into: moved to the
+    # line IMMEDIATELY below #>, the requires statement is absorbed into the block's last section --
+    # the final .EXAMPLE's remarks, in most of these -- and rendered to the reader as prose. Help
+    # that is reachable and wrong is not obviously better than help that is unreachable.
+    $remarks = (@($help.examples.example) |
+                ForEach-Object { @($_.remarks) | ForEach-Object { $_.Text } }) -join ' '
+    if ("$rendered $remarks" -match 'Requires -Version') {
+        $failures.Add("$($ps1.Name): its #Requires line is rendered as help text. It needs a blank " +
+            'line between it and the closing #>, or the help parser absorbs it into the last section.')
+    }
+}
 
 if ($failures.Count) {
     Write-Host ''

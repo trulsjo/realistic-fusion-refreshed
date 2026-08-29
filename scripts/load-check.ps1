@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Loads the Realistic Fusion Refreshed mods, creates a map, and enforces the invariants that tie the
@@ -216,6 +215,8 @@
     pwsh -File scripts/load-check.ps1 -SelfTest
     pwsh -File scripts/load-check.ps1 -SelfTest -FromZips
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string]   $FactorioExe,

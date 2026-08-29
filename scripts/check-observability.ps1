@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Checks that a reactor actually reports itself -- status line, both signals, on a real wire.
@@ -74,6 +73,8 @@
 .EXAMPLE
     pwsh -File scripts/check-observability.ps1
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

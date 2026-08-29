@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Launch the Factorio client with this repository's mods, in an isolated mod directory.
@@ -50,6 +49,8 @@
     pwsh -File scripts/dev-launch.ps1 -With space-age
     pwsh -File scripts/dev-launch.ps1 -Clean
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string[]] $With = @(),

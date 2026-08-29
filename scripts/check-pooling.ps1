@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Checks that reactors on one run of rf-pipe really do work from a single pool, under supply that
@@ -126,6 +125,8 @@
     pwsh -File scripts/check-pooling.ps1
     pwsh -File scripts/check-pooling.ps1 -Tail 40 -KeepTemp
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,
