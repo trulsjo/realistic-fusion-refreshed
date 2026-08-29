@@ -32,6 +32,11 @@
     are expected and fine: the viewer surfaces candidates, a human judges. Base-game pairs are
     computed, shipped flagged, and hidden behind a viewer toggle.
 
+    Researchability rides along the same way (#168): each technology carries its `enabled`,
+    `hidden` and `visible_when_disabled` state, and the ones no player can research are kept off
+    the canvas until a toggle reveals them, dashed and dimmed. They are flagged, never dropped --
+    a dead base tech another mod left standing is a finding about how the lane interleaves.
+
     The viewer itself is the design settled on #161 (scripts/tree-viewer.template.html): dagre
     layered cards, top-down, d3 pan/zoom, detail on the card near and counter-scaled badges far,
     click for a side panel with prerequisite/dependent links highlighted. dagre and d3 load from
@@ -222,6 +227,15 @@ try {
         return ,@()
     }
 
+    # A boolean the dump OMITS when it holds its default -- which is how all three of a
+    # technology's researchability flags arrive when nothing switched them (#168): `enabled`
+    # defaults to true, `hidden` and `visible_when_disabled` to false.
+    # <https://lua-api.factorio.com/2.0.77/prototypes/TechnologyPrototype.html>
+    function Get-DumpFlag($Value, [bool] $Default) {
+        if ($null -eq $Value) { return $Default }
+        return [bool]$Value
+    }
+
     # Two of a trigger's six ID-bearing fields are FILTER unions at 2.0.77 -- a bare ID *or* a
     # {name, quality, comparator} table: craft-item's `item` (ItemIDFilter) and build-entity's
     # `entity` (EntityIDFilter). The rest are plain IDs: mine-entity's and capture-spawner's
@@ -370,6 +384,14 @@ try {
             prereqs = (Get-DumpList $t['prerequisites'])
             count = $count; formula = $formula; trigger = $trigger; time = $time
             packs = $packs; unlocks = @($unlocks); bonuses = @($bonuses)
+            # Researchability, shipped rather than dropped (#168): a tech another mod switched off
+            # is a finding about how the lane interleaves, so the viewer flags and hides it behind
+            # a toggle instead of the dataset losing it. Angels leaves 72 of these on the canvas,
+            # sulfur-processing among them -- an orphan card with no edges, which is what a reader
+            # notices first.
+            enabled = (Get-DumpFlag $t['enabled'] $true)
+            hidden = (Get-DumpFlag $t['hidden'] $false)
+            visibleWhenDisabled = (Get-DumpFlag $t['visible_when_disabled'] $false)
         })
     }
 
@@ -426,9 +448,10 @@ try {
         Set-Content -Path $outPath -Encoding utf8
 
     $ticked = @($techs | Where-Object { $_.changedBy.Count -gt 0 }).Count
+    $dead   = @($techs | Where-Object { -not $_.enabled -or $_.hidden }).Count
     Write-Host ''
-    Write-Host ("reported: {0} techs ({1} changed by another mod), {2} overlap candidates ({3} base-flagged), {4} mods named" -f
-        $techs.Count, $ticked, $overlaps.Count, @($overlaps | Where-Object base).Count, $mods.Count)
+    Write-Host ("reported: {0} techs ({1} changed by another mod, {2} unresearchable), {3} overlap candidates ({4} base-flagged), {5} mods named" -f
+        $techs.Count, $ticked, $dead, $overlaps.Count, @($overlaps | Where-Object base).Count, $mods.Count)
     Write-Host "viewer:   $outPath"
     Write-Host ''
     Write-Host 'OK - the tool ran and reported. It asserts nothing: the tree and its overlap'

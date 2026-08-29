@@ -78,6 +78,12 @@
   .card .u.ov { color: #e8a33d; }
   .card .bonus { color: #7fa8d9; }
   .card.sel { box-shadow: 0 0 0 3px #0f6bd7; }
+  /* a technology no player can research (#168) — dashed and dimmed, with ⊘ in its head. Kept off
+     the canvas entirely until the tools toggle asks for it. Placed before .faded so mod emphasis
+     still wins over it. */
+  .card.dead { border-style: dashed; opacity: .5; }
+  .deadb  { color: #e5534b; font-weight: 700; }
+  .blockb { color: #d98a8a; font-weight: 700; }
   .card.faded { opacity: .18; }
   .card.boost { transform: scale(1.12); transform-origin: center; box-shadow: 0 0 0 2px #fff;
                 z-index: 5; }
@@ -129,9 +135,28 @@ const PACK_PALETTE = ['#e5534b', '#57ab5a', '#539bf5', '#768390', '#c69026', '#e
 const packColor = p => PACK_PALETTE[DATA.packs.indexOf(p) % PACK_PALETTE.length];
 
 const byId = new Map(DATA.techs.map(t => [t.id, t]));
-for (const t of DATA.techs) t.pre = (t.prereqs || []).filter(p => byId.has(p));
-const edges = [];
-for (const t of DATA.techs) for (const p of t.pre) edges.push([p, t.id]);
+
+/* a technology no player can research: another mod switched it off. The dataset ships all three
+   flags rather than dropping the tech (#168) — a dead base tech left on the canvas is a finding
+   about how the lane interleaves, not noise. Off by default; the toggle brings them back dashed
+   and dimmed, and the layout is recomputed because the node set changed. Angels leaves 72 here,
+   sulfur-processing among them, with its prerequisites emptied too — an orphan with no edges. */
+const isDead = t => !t.enabled || t.hidden;
+const deadCount = DATA.techs.filter(isDead).length;
+let techs = [], edges = [], blocked = new Set();
+function setShowDead(on) {
+  techs = DATA.techs.filter(t => on || !isDead(t));
+  const shown = new Set(techs.map(t => t.id));
+  edges = techs.flatMap(t => (t.prereqs || []).filter(p => shown.has(p)).map(p => [p, t.id]));
+  /* a live tech gated behind a hidden one loses its in-edge with it, and dagre then draws it at
+     rank 0 -- reading as freely researchable when it is in fact unreachable. Marked, not bridged:
+     an invented prereq-to-dependent edge would misstate the tree the other way. Empty while the
+     toggle is on, because then the edge is on the canvas for a reader to follow. Angels has none
+     of these; a lane that disables a tech others still list will. */
+  blocked = new Set(techs.filter(t =>
+    (t.prereqs || []).some(p => byId.has(p) && !shown.has(p))).map(t => t.id));
+}
+setShowDead(false);
 
 /* the active overlap set is dynamic: base-game pairs ship flagged (o.base) and stay filtered out
    until the "include base-game overlaps" toggle turns them on (#160) */
@@ -168,6 +193,11 @@ function detailHtml(t) {
     <h2>${esc(t.label)} ${isOverlap(t) ? '<span class="ovbadge">⚠</span>' : ''}${t.changedBy.length ? ' <span class="chbadge">✎</span>' : ''}</h2>
     <div><span class="chip" style="background:${modColor(t.mod)}">${esc(modName(t.mod))}</span>
          <span class="muted mono">${esc(t.id)}</span></div>
+    ${blocked.has(t.id) ? `<div style="margin-top:4px" class="muted"><span class="blockb">⊝</span> gated behind a
+      hidden technology: <span class="mono">${(t.prereqs || []).filter(p => byId.has(p) && isDead(byId.get(p))).map(esc).join(', ')}</span></div>` : ''}
+    ${isDead(t) ? `<div style="margin-top:4px" class="muted"><span class="deadb">⊘</span> not researchable:
+      <span class="mono">${[!t.enabled ? 'enabled = false' : '', t.hidden ? 'hidden = true' : '',
+        t.visibleWhenDisabled ? 'visible_when_disabled = true' : ''].filter(Boolean).join(', ')}</span></div>` : ''}
     ${t.changedBy.length ? `<div style="margin-top:4px" class="muted">changed by:
       ${t.changedBy.map(m => `<span class="chip" style="background:${modColor(m)}">${esc(modName(m))}</span>`).join(' ')}
       <span class="muted">(in order)</span></div>` : ''}
@@ -204,6 +234,15 @@ function init(stage) {
       <h4>Badges</h4>
       <div class="pk"><span class="ovbadge">⚠</span> unlocks an overlap candidate</div>
       <div class="pk"><span class="chbadge">✎</span> changed by another mod</div>
+      <div class="pk"><span class="deadb">⊘</span> not researchable in this set</div>
+      <div class="pk"><span class="blockb">⊝</span> gated behind a hidden technology</div>
+      <h4>Unresearchable</h4>
+      ${deadCount
+        ? `<label class="pk" style="cursor:pointer"><input type="checkbox" id="show-dead">
+             show ${deadCount} unresearchable tech${deadCount > 1 ? 's' : ''}</label>
+           <div class="pk muted">another mod disabled them at game start, or hid them from the
+             tech screen — drawn dashed and dimmed</div>`
+        : `<div class="pk muted">none — every tech in this set is researchable</div>`}
       <h4>Overlaps</h4>
       ${overlapFocus.length
         ? `<div class="pk muted">left side of every pair: ${(DATA.meta.focusLabels || overlapFocus).map(esc).join(', ')}</div>
@@ -241,7 +280,7 @@ function init(stage) {
   function render(keepView = false) {
     const g = new dagre.graphlib.Graph().setGraph({ rankdir, nodesep: 16, ranksep: 90, marginx: 40, marginy: 40 });
     g.setDefaultEdgeLabel(() => ({}));
-    for (const t of DATA.techs) {
+    for (const t of techs) {
       const lines = Math.min(t.unlocks.length, SHOW) + (t.unlocks.length > SHOW ? 1 : 0) + (t.bonuses.length ? 1 : 0);
       g.setNode(t.id, { width: CARDW, height: 52 + lines * 15 });
     }
@@ -254,13 +293,13 @@ function init(stage) {
       html.push(`<path class="edge" data-a="${e.v}" data-b="${e.w}" d="M${pts.map(p => `${p.x},${p.y}`).join(' L')}"/>`);
     }
     html.push('</svg>');
-    for (const t of DATA.techs) {
+    for (const t of techs) {
       const n = g.node(t.id), color = modColor(t.mod);
       const shown = t.unlocks.slice(0, SHOW);
-      html.push(`<div class="card" data-mod="${esc(t.mod)}" data-id="${t.id}" style="left:${n.x - n.width / 2}px;top:${n.y - n.height / 2}px;width:${n.width}px;height:${n.height}px;--modc:${color}">
+      html.push(`<div class="card${isDead(t) ? ' dead' : ''}" data-mod="${esc(t.mod)}" data-id="${t.id}" style="left:${n.x - n.width / 2}px;top:${n.y - n.height / 2}px;width:${n.width}px;height:${n.height}px;--modc:${color}">
         ${isOverlap(t) ? '<div class="ovb">⚠</div>' : ''}
         ${t.changedBy.length ? '<div class="chb">✎</div>' : ''}
-        <div class="head" style="border-left-color:${color}">${esc(t.label)}</div>
+        <div class="head" style="border-left-color:${color}">${isDead(t) ? '<span class="deadb">⊘</span> ' : ''}${blocked.has(t.id) ? '<span class="blockb">⊝</span> ' : ''}${esc(t.label)}</div>
         <div class="body">
           <div class="packs">${packChips(t)} <span class="n">${t.formula ? esc(t.formula) : (t.count ? t.count + '×' : (t.trigger ? 'trigger' : ''))}</span></div>
           ${shown.map(u => `<div class="u ${(u.results||[]).some(r => overlapNames.has(r)) ? 'ov' : ''}">▸ ${esc(u.label)}</div>`).join('')}
@@ -279,6 +318,12 @@ function init(stage) {
   document.getElementById('orient').addEventListener('click', () => {
     rankdir = rankdir === 'TB' ? 'LR' : 'TB';
     render();
+  });
+  const showDead = document.getElementById('show-dead');
+  if (showDead) showDead.addEventListener('change', e => {
+    setShowDead(e.target.checked);
+    panel.style.display = 'none';
+    render();   // the node set changed, so the layout changes with it — refit
   });
   const baseOv = document.getElementById('base-ov');
   if (baseOv) baseOv.addEventListener('change', e => {
@@ -318,7 +363,7 @@ function init(stage) {
 
 document.getElementById('banner').innerHTML =
   `<b>${esc(DATA.meta.name)}</b>
-   <span>${DATA.meta.techCount} techs · ${DATA.overlaps.length} overlap candidates · Factorio ${esc(DATA.meta.factorio)}</span>
+   <span>${DATA.meta.techCount} techs${deadCount ? ` (${deadCount} unresearchable)` : ''} · ${DATA.overlaps.length} overlap candidates · Factorio ${esc(DATA.meta.factorio)}</span>
    <span class="note">${esc(DATA.meta.modList.join(', '))}</span>
    <span class="note">generated ${esc(DATA.meta.generated)} · attribution: engine PrototypeHistory</span>`;
 document.title = DATA.meta.name;
