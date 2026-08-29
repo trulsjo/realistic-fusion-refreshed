@@ -350,6 +350,12 @@ What v1 does *not* do, for any mod. See [ADR 0007](docs/adr/0007-coexistence-wit
 
 The distinction is load-bearing: "compatible with X" is ambiguous between them and should be avoided.
 
+**Overlap candidate** — two prototypes from *different* mods that likely represent the same concept
+(two deuterium fluids) without sharing a prototype name. Heuristic by construction and judged by a
+human, never by the engine. Distinct from a **collision**, which is one prototype name defined twice —
+the silent replacement `scripts/name-check.ps1` exists to catch. An overlap candidate is a finding to
+weigh, not a fault: coexistence tolerates duplicated concepts by design.
+
 **Set** — a pinned list of third-party mods, defined in `scripts/fetch-mods.ps1`'s `$MOD_SETS` and
 named there (`krastorio2`, `spaceex`, `angels`). The pins are the definition; prose never re-derives
 them.
