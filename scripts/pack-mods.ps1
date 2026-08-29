@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Build one distributable zip per mod, named the way the mod portal requires.
@@ -50,6 +49,8 @@
     pwsh -File scripts/pack-mods.ps1 -OutputDirectory C:\somewhere\else
     pwsh -File scripts/pack-mods.ps1 -SelfTest
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $OutputDirectory,

@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Fails if this repo defines a prototype name that is not its own, or one another mod already
@@ -170,6 +169,8 @@
     pwsh -File scripts/name-check.ps1 -AlsoModDirectory .mod-cache/angels
     pwsh -File scripts/name-check.ps1 -SelfTest
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string]   $FactorioExe,

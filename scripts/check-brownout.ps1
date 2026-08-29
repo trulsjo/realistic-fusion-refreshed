@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Checks what a brownout and a blackout actually do to a running reactor, at both neutronic tiers.
@@ -173,6 +172,8 @@
     pwsh -File scripts/check-brownout.ps1 -Cut 1200 -KeepTemp
     pwsh -File scripts/check-brownout.ps1 -Report docs/research/brownout-rig.md
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

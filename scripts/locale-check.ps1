@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Fails if any prototype this repo defines would show as "Unknown key" in game.
@@ -59,6 +58,8 @@
     pwsh -File scripts/locale-check.ps1 -With space-age
     pwsh -File scripts/locale-check.ps1 -SelfTest
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string]   $FactorioExe,

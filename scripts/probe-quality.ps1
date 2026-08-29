@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Probes what Factorio's Quality mechanic actually scales on this mod's entities. The rig behind
@@ -127,6 +126,8 @@
     The second configuration. Every number the research note quotes was identical across the two,
     which is the claim these two runs together support.
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

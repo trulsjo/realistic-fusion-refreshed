@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Fill a cache directory with third-party mods at pinned versions, for load-check -AlsoModDirectory.
@@ -102,6 +101,8 @@
     pwsh -File scripts/fetch-mods.ps1 -PreferPortal
     pwsh -File scripts/fetch-mods.ps1 -SelfTest
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $Set = 'krastorio2',

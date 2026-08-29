@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Checks that the confinement ladder is per force: four forces on one map, same reactor, same
@@ -62,6 +61,8 @@
 .EXAMPLE
     pwsh -File scripts/check-confinement.ps1
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

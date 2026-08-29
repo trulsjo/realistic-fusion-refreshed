@@ -245,10 +245,10 @@ mechanism is the same one, and the ordinary exchanger's rows establish it.
 - **`rf-heat-exchanger` needs three energy connections**, south plus west and east, all
   `input-output`, at the tiles named above. `rf-hc-exchanger` has a seven-tile face and more room,
   but the same reasoning applies to it.
-- **Two shipped assertions invert.** `scripts/check-containment.ps1:338-342` asserts that an ordinary
+- **Two shipped assertions invert.** `scripts/check-containment.ps1:339-343` asserts that an ordinary
   pipe still joins the reactor's energy output and carries reactor energy. Both are correct today and
   wrong afterwards.
-- **One shipped gate becomes true-but-meaningless.** `scripts/check-aneutronic.ps1:678` asserts the
+- **One shipped gate becomes true-but-meaningless.** `scripts/check-aneutronic.ps1:679` asserts the
   composite tank buffers the tier's energy fluid, but fills it with `insert_fluid` on an unplumbed
   tank (`:463-466`), and Lua insertion ignores connection categories. It would keep passing after the
   capability was gone.

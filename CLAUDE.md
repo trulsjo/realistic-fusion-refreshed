@@ -25,6 +25,9 @@ oblige them to make, the credits, the licence files, and since ADR 0023 the asse
 That last one is the only invariant here that **cannot** fail on this machine — the dev loop
 junctions the current assets mod, so every sprite path resolves whatever the floor says, and a stale
 floor fails only in a player's log.
+Since #151 it also asserts one thing that is not a claim about the mods at all: that every
+script in `scripts/` which declares a `.SYNOPSIS` answers `Get-Help`. It lives there because it
+has the same shape as the rest — prose no other gate can see, checkable without starting a game.
 Run them rather than reasoning about whether a change is safe.
 
 **`load-check.ps1` loads the mods two ways, and the default is not the player's.** Without arguments

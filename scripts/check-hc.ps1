@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Checks that the high-capacity steam pair delivers what it declares, and that it is ten times the
@@ -55,6 +54,8 @@
     pwsh -File scripts/check-hc.ps1
     pwsh -File scripts/check-hc.ps1 -Quality
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

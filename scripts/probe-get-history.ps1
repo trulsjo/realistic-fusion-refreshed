@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Probes what PrototypeHistory reports for the cases the 2.0.77 docs leave open. The rig behind
@@ -49,6 +48,8 @@
 .EXAMPLE
     pwsh -File scripts/probe-get-history.ps1
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

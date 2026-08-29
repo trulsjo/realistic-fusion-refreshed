@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Checks that a running D-D reactor breeds tritium and helium-3, that they can be captured and
@@ -54,6 +53,8 @@
 .EXAMPLE
     pwsh -File scripts/check-breeding.ps1
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

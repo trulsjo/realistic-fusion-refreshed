@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Measures what an electric buffer_capacity actually holds at runtime, against what the prototype
@@ -81,6 +80,8 @@
 .EXAMPLE
     pwsh -File scripts/check-buffer.ps1
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

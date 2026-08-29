@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Checks that the D-T tier works end to end: the mix becomes plasma, the same reactor burns it,
@@ -59,6 +58,8 @@
     pwsh -File scripts/check-d-t.ps1
     pwsh -File scripts/check-d-t.ps1 -With space-age
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,

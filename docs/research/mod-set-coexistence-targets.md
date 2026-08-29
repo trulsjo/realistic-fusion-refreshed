@@ -806,7 +806,7 @@ Everything in this section is about a gap that currently exists, not a defect. `
 built for this repository's own mods and does that job; third-party mods are simply outside what it
 was asked to do.
 
-**What the script does today.** `scripts/load-check.ps1:324` calls `New-ModJunctions` for
+**What the script does today.** `scripts/load-check.ps1:325` calls `New-ModJunctions` for
 `$ourMods = Get-RepoMods` only — the **three** mods this repository publishes since
 [ADR 0023](../adr/0023-art-ships-in-its-own-mod.md) split the art out
 (`realistic-fusion-refreshed-assets`, `realistic-fusion-refreshed-core` and

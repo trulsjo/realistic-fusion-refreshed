@@ -1,4 +1,3 @@
-#Requires -Version 7
 <#
 .SYNOPSIS
     Checks that plasma cannot enter a vanilla pipe, that the plasma-safe set carries it end to end,
@@ -47,6 +46,8 @@
 .EXAMPLE
     pwsh -File scripts/check-containment.ps1
 #>
+
+#Requires -Version 7
 [CmdletBinding()]
 param(
     [string] $FactorioExe,
