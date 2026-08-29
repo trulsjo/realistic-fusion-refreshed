@@ -222,9 +222,15 @@ try {
         return ,@()
     }
 
-    # A trigger's item/entity is an ItemIDFilter/EntityIDFilter at 2.0.77: a bare ID *or* a
-    # {name, quality, comparator} table. Joining the table form into the label would print
-    # "System.Collections.Hashtable" -- the same leak of .NET metadata into node text this fixes.
+    # Two of a trigger's six ID-bearing fields are FILTER unions at 2.0.77 -- a bare ID *or* a
+    # {name, quality, comparator} table: craft-item's `item` (ItemIDFilter) and build-entity's
+    # `entity` (EntityIDFilter). The rest are plain IDs: mine-entity's and capture-spawner's
+    # `entity` are EntityID, send-item-to-orbit's `item` is ItemID, craft-fluid's `fluid` is
+    # FluidID. Joining a table form into the label would print "System.Collections.Hashtable" --
+    # the same leak of .NET metadata into node text this fixes -- so the two filter fields go
+    # through here. A bare ID passes straight back, which is why the caller can apply it to both
+    # `item` and `entity` without caring which variant it holds.
+    # <https://lua-api.factorio.com/2.0.77/types/ItemIDFilter.html>
     # <https://lua-api.factorio.com/2.0.77/types/EntityIDFilter.html>
     function Get-FilterName($Value) {
         if ($Value -is [System.Collections.IDictionary]) { return $Value['name'] }
@@ -317,11 +323,15 @@ try {
             $packs = @($u['ingredients'] | ForEach-Object { ,@($_[0], $_[1]) })
         }
         elseif ($t['research_trigger']) {
-            # Every field of every TechnologyTrigger variant at 2.0.77: craft-item (item, count,
-            # default 1), craft-fluid (fluid, amount, default 0), mine-entity and build-entity
-            # (entity), send-item-to-orbit (item), capture-spawner / create-space-platform /
-            # scripted (type alone). Absent keys just drop out of the join.
-            # <https://lua-api.factorio.com/2.0.77/types/TechnologyTrigger.html>
+            # The data-bearing field of every TechnologyTrigger variant at 2.0.77: craft-item
+            # (item, count, default 1), craft-fluid (fluid, amount, default 0), mine-entity and
+            # build-entity (entity), send-item-to-orbit (item), capture-spawner (entity,
+            # optional), create-space-platform (type alone). Absent keys -- which is how the dump
+            # writes a field left at its default -- just drop out of the join.
+            # Not rendered: scripted's trigger_description and icon fields, which describe how the
+            # trigger PRESENTS itself rather than what satisfies it, and so say nothing about the
+            # tree. Read the variant pages, not the union page: it lists the variants without
+            # their fields. <https://lua-api.factorio.com/2.0.77/types/TechnologyTrigger.html>
             $rt = $t['research_trigger']
             $trigger = (@($rt['type'], (Get-FilterName $rt['item']), (Get-FilterName $rt['entity']),
                           $rt['fluid'], $rt['count'], $rt['amount']) | Where-Object { $_ }) -join ' '
