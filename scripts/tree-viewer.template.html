@@ -317,11 +317,16 @@ function init(stage) {
   /* 230 -> 170 is the whole of #171. Measured in the rendered viewer over the Angels lane's 406
      live technologies, the canvas goes from 42796x8265 to 33682x8424: 21% narrower for 1.9%
      taller, with the median edge down 18% (5072 -> 4156) and the LONGEST edge down 18% too
-     (47152 -> 38501), which is the test the ticket set. Card width is the only lever that moves width at all -- ranksep buys height
-     without touching it, forcing `align` is worse in every column, and weighting sole-prerequisite
-     edges is worse still. What it costs: 8% of the visible unlock lines ellipsis rather than 1%,
-     and 22 names clip in the far-zoom head, which renders at 18px. What it buys back: no name is
-     cut at normal zoom any more, where 8 were. */
+     (47152 -> 38501), which is the test the ticket set. Card width is the only lever that moves
+     width at all -- ranksep buys height without touching it, forcing `align` is worse in every
+     column, and weighting sole-prerequisite edges is worse still.
+     What it buys: no name is cut at normal zoom any more, where 8 were. What it costs: 8% of the
+     visible unlock lines ellipsis rather than 1%, and a worse far zoom, where the head renders at
+     18px -- 35 names need a third line there and 15 of those overflow their card by up to 25px.
+     They SPILL past its bottom border rather than clipping: .card .head sets overflow:hidden but
+     no height, and .card is deliberately overflow:visible, so nothing is there to clip against.
+     Measured in the rendered viewer, which is the only way this was ever going to be right --
+     the same canvas-metrics guess that mis-measured a title also produced a made-up count here. */
   const CARDW = 170, SHOW = 4;
 
   /* dagre is given every card's height before any card exists, so a wrapped title has to be

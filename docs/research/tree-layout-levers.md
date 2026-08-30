@@ -90,6 +90,27 @@ did not wrap, it is 21% narrower for 1.9% taller. Either way the longest edge fa
 rising, which is the test the ticket set. Below 170 the returns keep coming but the card stops
 reading: at 150 a sixth of the visible unlock rows are cut, at 130 nearly a third.
 
+### The far zoom is where it costs
+
+Below `k < 0.5` the viewer swaps to `.far`: the body is hidden and the head renders at 18px on a
+25.2px line box. The card keeps the height it was given, which was measured at 12px, so a name that
+needed one line up close can need three down here. Counted in the rendered viewer at 170px:
+
+| far-zoom head, 406 cards | count |
+|---|---|
+| needing three lines or more | 35 |
+| overflowing their card's height | 15 |
+| worst overflow | 25px (`physical-projectile-damage-7`) |
+| **clipped** | **0** |
+
+Nothing clips, and the distinction matters: `.card .head` sets `overflow: hidden` but never a
+height, and `.card` is deliberately `overflow: visible` so the counter-scaled corner badges can
+escape it. There is no box for the text to be clipped against. Those 15 titles hang a little past
+the bottom border into the 90px rank gap. Left alone: sizing every card for its 18px head would
+make the whole canvas taller for a zoom level at which the reader is scanning colour and shape.
+
+### Wrapping
+
 Wrapping the title to a second line is what makes the narrowing affordable. It costs 56 of the 406
 cards an extra 17px and buys back the 8 names that were being cut at 230px, so the narrower card is
 **more** legible than the wide one, not less.
@@ -138,8 +159,9 @@ after. Recorded as its own ticket rather than forced into this one.
   that card's text hung 20px below its border. The viewer now measures with a real off-screen
   `div.card > div.head` — the thing that will render it.
 - **A row assumed to be one line was two.** `.card .packs` carries the count formula, and
-  `artillery-shell-speed-1`'s `1000+3^(L-1)*1000` wrapped at 170px where it had fitted at 230px,
-  making 84 technologies' worth of that shape taller than the height dagre was told. The row is
+  `artillery-shell-speed-1`'s `1000+3^(L-1)*1000` wrapped at 170px where it had fitted at 230px:
+  that row rendered 31px tall against the 15px the height formula allows, leaving the card 18px
+  short. 84 technologies carry that shape. The row is
   `nowrap` with an ellipsis now, like the unlock rows beneath it; the formula is still printed in
   full in the detail panel.
 - **The measurement missed what the render drew.** The probe measured the technology's name; the
