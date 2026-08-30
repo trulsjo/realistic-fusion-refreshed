@@ -244,6 +244,45 @@ and the dump reflects exactly that: no key `physical-projectile-damage`, no "7" 
 
 `descriptions` is sparser than `names` (207 vs 210 technologies here); descriptions are optional.
 
+### 4a. What a dumped value looks like when resolution fails
+
+Measured 2026-08-30 for [#179](https://github.com/trulsjo/realistic-fusion-refreshed/issues/179),
+on the same 2.0.77 build, with a throwaway mod defining one item per case. This corrects the
+premise [#169](https://github.com/trulsjo/realistic-fusion-refreshed/issues/169) worked from and
+`tree-viewer.ps1` recorded: **`--dump-prototype-locale` has no failure sentinel.**
+
+| What the prototype does | What the dump does |
+|---|---|
+| no `localised_name`, no locale entry for the derived key | **omitted** from the dump |
+| `localised_name` naming a key that does not exist | **omitted** |
+| `localised_name` whose nested parameter names a key that does not exist | **omitted** |
+| locale value contains `__ITEM__no-such-item__` | present, value contains `Unknown key: "item-name.no-such-item"` |
+| locale value contains `__CONTROL__no-such-control__` | present, value contains `Unknown control sequence: "no-such-control"` |
+| locale value expects `__1__`, no parameter supplied | present, value keeps the literal `__1__` |
+| parameter supplied that the value never uses | present, parameter dropped, value fine |
+| `localised_name` nested deeper than 20 | **the data stage fails**: *"Too deep recursion for localised string: 21 > 20 (limit)"* — the game does not start |
+| `localised_name` with more than 20 parameters | **the data stage fails**: *"Too many parameters for localised string: 30 > 20 (limit)"* |
+| `localised_name = {}` | **the data stage fails**: *"Value must be a string in property tree"* |
+
+Two consequences for anything reading the dump:
+
+- **Absence and unreadability are different failures.** A name that cannot be looked up at all is
+  absent — which is exactly what `locale-check.ps1` has always exploited. A name that resolved to
+  text containing an engine error is *present*, so membership alone calls it clean.
+- **`"Something went wrong"` is not the engine's.** It is the literal value Angels' own locale
+  gives `[item-name] angels-void` (`angelsrefining/locale/en/ore-refining.cfg`), alongside an
+  `[item-description]` reading *"You are missing dependencies or something went wrong…"*. The 334
+  Angels recipes carrying it point their `localised_name` at that key deliberately, to mark a
+  recipe a missing dependency left stranded. It is a placeholder another mod ships, not a
+  diagnosis — and a viewer is still right to refuse it as a label, for that reason rather than the
+  one #169 gave.
+
+`scripts/factorio-lib.ps1` holds the result as two lists behind `Get-LocaleFailure`, because the
+two consumers ask different questions. `locale-check.ps1` calls it `-EngineOnly` and fails: a
+foreign placeholder is a true finding about a label and a false one about a locale entry, and that
+check can never load a mod that ships one. `tree-viewer.ps1` reads both and falls through past
+either, which is what #169 needed.
+
 ## The field map, in one place
 
 What an extraction script reads per technology `T` in `data-raw-dump.json.technology`, all facts

@@ -32,12 +32,15 @@
     are expected and fine: the viewer surfaces candidates, a human judges. Base-game pairs are
     computed, shipped flagged, and hidden behind a viewer toggle.
 
-    Read "localized-name" there with one caveat (#169). --dump-prototype-locale answers with the
-    string "Something went wrong" for a prototype whose name it cannot resolve, and a thing in that
-    state is labelled by its PROTOTYPE name instead, so the first two tiers then compare that name
-    rather than a localized one. The run reports how many prototypes the set failed to localize;
-    the number is the mod's own localisation, not this tool's, and nothing here tries to fix it.
-    What is fixed is that no label is ever the error string.
+    Read "localized-name" there with one caveat (#169, corrected by #179). Some dumped names are
+    not names: an engine "Unknown key" or "Unknown control sequence" left inside the resolved text,
+    or a placeholder another mod ships deliberately -- Angels gives [item-name] angels-void the
+    literal value "Something went wrong" and points 334 of its recipes at it. Get-LocaleFailure in
+    factorio-lib.ps1 holds the list and the measurements behind it. A thing in that state is
+    labelled by its PROTOTYPE name instead, so the first two tiers then compare that name rather
+    than a localized one. The run reports how many the set failed to localize; the number is the
+    mods' own localisation, not this tool's, and nothing here tries to fix it. What is fixed is
+    that no label is ever one of those strings.
 
     Researchability rides along the same way (#168): each technology carries its `enabled`,
     `hidden` and `visible_when_disabled` state, and the ones no player can research are kept off
@@ -219,24 +222,24 @@ try {
         $p = Join-Path $scriptOutput $File
         if (-not (Test-Path $p)) { return @{} }
         $parsed = Get-Content -LiteralPath $p -Raw | ConvertFrom-Json -AsHashtable
+        # -AsHashtable gives a CASE-INSENSITIVE map, where locale-check.ps1 builds an ordinal one
+        # over the same files. Left as it is on purpose: prototype names are lowercase by
+        # convention, and if one ever is not, the gate is the lane that must not guess. Here a
+        # case-folded hit returns a plausible label instead of none, which for a tool that asserts
+        # nothing is the better of the two wrong answers.
         if ($parsed['names']) { return $parsed['names'] } else { return @{} }
     }
-    # --dump-prototype-locale writes this EXACT string as a prototype's resolved name when the
-    # engine cannot work the localised name out. It is a failure sentinel, not a name, and a caller
-    # that takes it for one ships an error message as node text -- which is how "Something went
-    # wrong" reached the Sulphur processing card (#169). Observed on Factorio 2.0.77: 334 of the
-    # Angels lane's 1767 recipes carry it, one of its 1009 items (angels-void), and none of its
-    # fluids, entities or technologies. Matching an engine string literally is fragile, so the
-    # version is pinned here rather than left as a bare constant: should a later engine word it
-    # differently, the labels go back to reading the sentinel, which is visible in the viewer.
-    $LOCALE_FAILED = 'Something went wrong'
-
-    # Absent key OR sentinel -> $null, so a caller's existing fall-through runs. Nothing else here
-    # changes: the chain behind an unlock label already knew where to look next, and was only ever
-    # stopped by the sentinel arriving as a truthy value. Every locale read goes through this.
+    # Absent key OR a value that is not a name -> $null, so a caller's existing fall-through runs.
+    # Nothing else here changes: the chain behind an unlock label already knew where to look next,
+    # and was only ever stopped by an unusable value arriving as a truthy one -- which is how
+    # "Something went wrong" reached the Sulphur processing card (#169). Every locale read goes
+    # through this, and what counts as unusable lives in factorio-lib.ps1 (#179) -- which keeps
+    # two lists, not one. This reads BOTH, engine errors and the placeholders other mods ship,
+    # because the question here is whether a string makes a usable label. locale-check.ps1 asks
+    # the narrower question of whether it resolved, so it reads only the engine half.
     function Get-LocaleName($Map, [string] $Key) {
         $v = $Map[$Key]
-        if (-not $v -or $v -eq $LOCALE_FAILED) { return $null }
+        if (-not $v -or (Get-LocaleFailure $v)) { return $null }
         return $v
     }
 
@@ -305,12 +308,14 @@ try {
         $catName, $locale = $cat
         foreach ($kv in $locale.GetEnumerator()) {
             $h = Get-History $catName $kv.Key
-            # A sentinel-named thing stays in the analysis under its prototype name rather than
-            # dropping out of it (#169). Tier 3 reads the prototype name anyway, so it can still
-            # pair; and a thing silently missing from the pool is a worse answer than one labelled
-            # plainly. Its tokens then come from that name, not from the error string -- "wrong"
-            # and "something" are four letters or more and pass the stopword filter, so the
-            # sentinel was feeding tier 2 real tokens. One such thing here: angels-void.
+            # A thing whose dumped name is not usable as one stays in the analysis under its
+            # prototype name rather than dropping out of it (#169). Tier 3 reads the prototype name
+            # anyway, so it can still pair; and a thing silently missing from the pool is a worse
+            # answer than one labelled plainly. Its tokens then come from that name, not from the
+            # unusable text -- and that text carries real tokens if you let it. "wrong" and
+            # "something" from Angels' placeholder, "unknown" and "sequence" from an engine error:
+            # four letters or more, straight through the stopword filter, and feeding tier 2
+            # overlap between two things that have nothing whatever in common.
             $label = Get-LocaleName $locale $kv.Key
             if (-not $label) { $label = $kv.Key }
             $things.Add([pscustomobject]@{
@@ -501,19 +506,19 @@ try {
     $template.Replace('"__DATASET__"', ($dataset | ConvertTo-Json -Depth 8 -Compress)) |
         Set-Content -Path $outPath -Encoding utf8
 
-    # Surfaced, not silenced: the sentinel count is the mod's own localisation failing, which is
+    # Surfaced, not silenced: the count is the mods own localisation failing, which is
     # none of this repo's business to fix but every bit of it worth reporting (#169).
     $failedLocale = @(@($recipeLocale.Values) + @($itemLocale.Values) + @($fluidLocale.Values) +
                       @($entityLocale.Values) + @($techLocale.Values) |
-                      Where-Object { $_ -eq $LOCALE_FAILED }).Count
+                      Where-Object { Get-LocaleFailure $_ }).Count
     $ticked = @($techs | Where-Object { $_.changedBy.Count -gt 0 }).Count
     $dead   = @($techs | Where-Object { -not $_.enabled -or $_.hidden }).Count
     Write-Host ''
     Write-Host ("reported: {0} techs ({1} changed by another mod, {2} unresearchable), {3} overlap candidates ({4} base-flagged), {5} mods named" -f
         $techs.Count, $ticked, $dead, $overlaps.Count, @($overlaps | Where-Object base).Count, $mods.Count)
     if ($failedLocale) {
-        Write-Host ("          {0} prototypes have no localised name in this set; the engine dumped '{1}' for each, and every label naming one falls through to what the recipe produces, or last of all to the prototype name" -f
-            $failedLocale, $LOCALE_FAILED)
+        Write-Host ("          {0} prototypes have no usable localised name in this set -- an 'Unknown key' left in the text, or a placeholder the mod ships on purpose -- and every label naming one falls through to what the recipe produces, or last of all to the prototype name" -f
+            $failedLocale)
     }
     Write-Host "viewer:   $outPath"
     Write-Host ''
