@@ -7,8 +7,8 @@ player can research. **Facts only.** The change these fed is `CARDW 230 → 170`
 title; what each rejected lever costs is recorded here so nobody sweeps them again.
 
 Extended 2026-08-30 ([#182](https://github.com/trulsjo/realistic-fusion-refreshed/issues/182))
-with the rank split measured on a second lane. That section changed nothing in the viewer; it is
-the record of a lever that does not hold.
+with two more levers. The rank split changed nothing in the viewer and is the record of a lever
+that does not hold; `edgesep` is the one that did, and ships at 6.
 
 ## The question
 
@@ -301,15 +301,97 @@ Nor does the orientation, in `rankdir LR`:
 - **The viewer is unchanged.** `scripts/tree-viewer.template.html` still runs one layout per cache
   key, and `scripts/tree-viewer.ps1` still asserts nothing and stays out of every check sweep.
 
-The lever left unspent is the one recorded in `docs/research/dag-layout-algorithms.md`: `edgesep`,
-which the viewer never sets, measured there at 12% off the width and 10% off both total and longest
-for no height at all. That is a different change from this one and is Truls's to call.
+The lever that was left unspent when this section was written is the one recorded in
+`docs/research/dag-layout-algorithms.md`: `edgesep`, which the viewer never set. It is spent now —
+the next section is what it bought and what it cost.
 
 ### A caveat on every timing here
 
 A layout took between 2.9 and 12.8 seconds in this session, where #175 recorded 4459 ms for the same
 Angels graph, and repeats of identical work on the same page varied by a factor of three. Read the
 *ratio* between a candidate and its baseline; never the absolute.
+
+## `edgesep`: the lever that took nothing back — shipped 2026-08-30 (#182)
+
+Measured with `scripts/tree-layout-probe.js` on both lanes and both orientations, and **shipped at
+`edgesep: 6`** — Truls's call, made by looking at the busiest rank gap rather than at the table.
+
+dagre separates two **dummy** nodes by `edgesep` and two cards by `nodesep`, and its dummies carry
+`width: 0`, so a dummy occupies gutter and nothing else. The viewer set `nodesep: 16` and never set
+`edgesep`, leaving all 2346 of the Angels lane's dummies at dagre's default of **20** — wider apart
+than the cards they thread between. It was missing from #171's sweep entirely.
+
+| Angels, `rankdir TB` | W | H | total | median | longest |
+|---|---|---|---|---|---|
+| *`edgesep` 20 — the default, and what #171 shipped* | *33682* | *8424* | *6016714* | *4156* | *38501* |
+| 10 | 31104 | 8424 | 5631778 | 3918 | 35981 |
+| **6 — shipped** | **30127** | **8424** | **5486094** | **3819** | **35018** |
+| 4 | 29639 | 8424 | 5413412 | 3749 | 34529 |
+| 2 | 29150 | 8424 | 5340861 | 3693 | 34039 |
+
+| Lane and orientation, 20 → 6 | W | H | total | longest |
+|---|---|---|---|---|
+| Angels, TB | 33682 → **30127** | 8424 → 8424 | −8.8% | −9.0% |
+| Angels, LR | 10390 → 10390 | 22308 → **18431** | −13.6% | −13.1% |
+| Krastorio 2, TB | 19907 → **18901** | 5203 → 5203 | −5.0% | −6.0% |
+| Krastorio 2, LR | 6750 → 6750 | 11443 → **10390** | −8.1% | −10.2% |
+
+Three things that table says:
+
+- **It compresses one axis and leaves the other to the pixel.** Top-down the height is 8424 in every
+  row; left-right the width is 10390 in every row. `edgesep` is purely a cross-rank quantity, so
+  unlike the card width (#171) and unlike the rank split above, no trade is being made at all.
+- **It holds on both lanes.** Krastorio 2 gains half what Angels does — 5% of width against 11% —
+  but it gains in every column, in both orientations. That is exactly what the rank split could not
+  do.
+- **The returns flatten.** 6 → 4 is another 1.6% of width; 4 → 2 another 1.6% again.
+
+### What it spends, and why 6 rather than 4
+
+The gap between adjacent edge lanes, and only at the crowded end. Measured across all 39 rank gaps
+of the Angels lane — 3253 adjacent pairs, against a 1.5px stroke:
+
+| `edgesep` | tightest pair | 10th percentile | median | pairs under 3px |
+|---|---|---|---|---|
+| 20 | 0.7 | 20.0 | 103.0 | 8 |
+| **6** | 0.2 | **6.0** | 96.0 | 28 |
+| 4 | 0.1 | 4.0 | 95.0 | 30 |
+
+The median barely moves, because the typical pair of lanes was never near the floor. **The 10th
+percentile IS `edgesep`, exactly, at every value** — that is where the whole cost lands. At 6 two
+neighbouring lines keep four stroke widths of paper between them; at 4 they keep under three, for
+1.6% more width.
+
+The pairs closer than a stroke width are a different thing and should not be read as lane spacing:
+they are edges converging on a shared endpoint, and 8 of them exist at the default already. Those
+touch somewhere along their length whatever this number is.
+
+### The version it was measured against, and two neighbours
+
+All of it is dagre **0.8.5**, which is what `scripts/tree-viewer.template.html` loads from cdnjs and
+[the only version cdnjs has](https://api.cdnjs.com/libraries?search=dagre) — its dagre list is
+`0.8.5`, `dagre-d3 0.6.4`, `graphlib 4.0.5`, and the maintained `@dagrejs/dagre` is not on it at
+all. Checked again 2026-08-30. Two neighbours were run against the same graph while the question was
+open, because "would a newer dagre draw this better" is cheap to answer and otherwise gets guessed:
+
+| dagre | how it loads | Angels TB at `edgesep 6` |
+|---|---|---|
+| **0.8.5** (cdnjs) | `<script src>`, sets `window.dagre` | 30127 x 8424, total 5486094, longest 35018 |
+| `@dagrejs/dagre` **2.0.4** (jsdelivr) | **not** by `<script src>` — see below | 30127 x 8424, total 5486094, longest 35018 |
+| `@dagrejs/dagre` **3.1.1** (jsdelivr) | `<script src>`, sets `window.dagre` | 30127 x 8424, total 5486094, longest 35018 |
+
+**Identical, to the pixel and to the last unit of edge length.** Eight years and three major versions
+change nothing about how this graph is drawn, so there is no layout argument for moving.
+
+**And 2.0.x cannot be loaded the way the viewer loads a library.** Its `dist/dagre.min.js` is 30 KB
+against 0.8.5's 284 KB because it externalises `@dagrejs/graphlib` rather than bundling it; loaded
+from a `<script>` tag it throws `Error: Dynamic require of "@dagrejs/graphlib" is not supported`
+before defining anything, and the viewer's own "the CDN did not load" fallback is what appears.
+Reaching 2.0.4 at all meant `import('https://cdn.jsdelivr.net/npm/@dagrejs/dagre@2.0.4/+esm')`,
+which is jsdelivr bundling the dependency in on the fly — a module import, where the viewer's
+startup is a synchronous global. **3.1.1's bundle is self-contained again** and drops straight in;
+the only thing it costs is leaving cdnjs, which is #161's trade-off and a decision rather than a
+swap.
 
 ## Three measurement traps, all hit here
 

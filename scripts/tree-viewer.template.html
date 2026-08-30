@@ -384,7 +384,21 @@ function init(stage) {
     const key = `${rankdir}|${deadShown}`;
     const cached = layouts.get(key);
     if (cached) return cached;
-    const g = new dagre.graphlib.Graph().setGraph({ rankdir, nodesep: 16, ranksep: 90, marginx: 40, marginy: 40 });
+    /* edgesep 6, against dagre's default of 20 (#182). dagre separates two DUMMY nodes by edgesep
+       and two cards by nodesep, and its dummies carry no width -- so this is the gutter the 2346
+       chains of dummy nodes reserve in every rank they cross, and it was left at the default while
+       the cards were tuned to 16. Measured on both lanes and both orientations, it is the only
+       lever in either research note that takes nothing back: it compresses the axis cards spread
+       along and leaves the other one to the pixel. Angels top-down 33682 -> 30127 wide with the
+       height at 8424 either way, total edge length -8.8%, longest -9.0%; left-right the height
+       falls 22308 -> 18431 with the width unchanged at 10390. Krastorio 2 gains less, 5% rather
+       than 11%, but gains in every column both ways round -- which the rank split #182 went looking
+       for could not manage on two lanes at once.
+       What it spends is lane spacing, and only at the crowded end: the median gap between adjacent
+       edge lanes moves 103px to 96px, while the 10th percentile IS this number, exactly. 6 leaves
+       four stroke widths of paper between neighbours where 4 leaves under three, for 1.6% more
+       width -- Truls's call, made by looking at the busiest rank gap rather than at the table. */
+    const g = new dagre.graphlib.Graph().setGraph({ rankdir, nodesep: 16, ranksep: 90, edgesep: 6, marginx: 40, marginy: 40 });
     g.setDefaultEdgeLabel(() => ({}));
     for (const t of techs) {
       const lines = Math.min(t.unlocks.length, SHOW) + (t.unlocks.length > SHOW ? 1 : 0) + (t.bonuses.length ? 1 : 0);

@@ -182,6 +182,11 @@ quantity. That makes it the only lever measured anywhere in these two notes that
 card width traded legibility, splitting ranks traded 25% more height and was unstable, and `ranksep`
 bought nothing. Returns flatten below 4 — 4 to 2 is another 1.6%.
 
+**Outcome: `edgesep: 6` shipped 2026-08-30** — Truls's call, after the gap between adjacent edge
+lanes was measured and the busiest rank gap was drawn and looked at. The two-lane, two-orientation
+tables and the lane-spacing distribution are in `docs/research/tree-layout-levers.md`; the
+prediction below is what sent someone to measure them.
+
 What it spends instead is the gap between adjacent edge lanes, which no number here captures.
 Edges draw at 1.5px, so at `edgesep: 4` two neighbouring lanes are 4px apart and at 2 they nearly
 touch. Whether a rank carrying 137 crossings still reads at that spacing is a judgement to be made
