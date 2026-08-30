@@ -93,11 +93,19 @@
      bounds when zoomed out, and overflow:hidden clipped them away on the prototype */
   .card { position: absolute; background: #26292c; border: 1px solid #3d4247; border-radius: 6px;
           font-size: 11px; }
+  /* The title wraps to at most two lines rather than being cut at one (#171). The card is narrow
+     enough now that some of the Angels lane's names need the second line, and the height dagre was
+     given already counts it -- headExtra() below measures a real head, badges and all, to find
+     out. */
   .card .head { padding: 4px 8px; font-weight: 600; font-size: 12px; color: #f0f2f4;
                 border-left: 4px solid transparent; background: #2e3236; overflow: hidden;
                 border-radius: 5px 5px 0 0; }
   .card .body { padding: 4px 8px 6px; overflow: hidden; }
-  .card .packs { margin-bottom: 3px; }
+  /* One line, like the unlock rows below it. A count formula can be long -- artillery-shell-speed-1
+     carries 1000+3^(L-1)*1000 -- and at 170px it wrapped to two, making the card 18px taller than
+     the height dagre was given and hanging its text below the border. The formula is never lost:
+     the detail panel prints it in full. (#171) */
+  .card .packs { margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .card .packs .n { font-size: 10px; color: #9aa0a6; margin-right: 5px; }
   .card .u { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #b9bec3; }
   .card .u.ov { color: #e8a33d; }
@@ -219,6 +227,14 @@ function packChips(t, withCounts = true) {
     `<span class="dot" style="background:${packColor(p)}" title="${esc(DATA.packLabels[p] || p)}"></span>` +
     (withCounts && n > 1 ? `<span class="n">×${n}</span>` : '')).join(' ');
 }
+/* The head's exact content, used BOTH to render the card and to measure how tall it will be
+   (#171). One function because the two must not drift: the measurement missed the badges while
+   the render drew them, so a dead technology's name could wrap on a card sized for one line. */
+const headHtml = t =>
+  `${isDead(t) ? '<span class="deadb">⊘</span> ' : ''}` +
+  `${blocked.has(t.id) ? '<span class="blockb">⊝</span> ' : ''}` +
+  `${esc(t.label)}`;
+
 function detailHtml(t) {
   const pairs = overlapPairsFor(t);
   // Every flag the canvas can put on a card, as one compact run beside the name, so the pinned
@@ -298,7 +314,38 @@ function init(stage) {
   const world = document.getElementById('world');
   const viewEl = document.getElementById('view'), view = d3.select(viewEl);
   const panel = document.getElementById('panel');
-  const CARDW = 230, SHOW = 4;
+  /* 230 -> 170 is the whole of #171. Measured in the rendered viewer over the Angels lane's 406
+     live technologies, the canvas goes from 42796x8265 to 33682x8424: 21% narrower for 1.9%
+     taller, with the median edge down 18% (5072 -> 4156) and the LONGEST edge down 18% too
+     (47152 -> 38501), which is the test the ticket set. Card width is the only lever that moves width at all -- ranksep buys height
+     without touching it, forcing `align` is worse in every column, and weighting sole-prerequisite
+     edges is worse still. What it costs: 8% of the visible unlock lines ellipsis rather than 1%,
+     and 22 names clip in the far-zoom head, which renders at 18px. What it buys back: no name is
+     cut at normal zoom any more, where 8 were. */
+  const CARDW = 170, SHOW = 4;
+
+  /* dagre is given every card's height before any card exists, so a wrapped title has to be
+     measured ahead of the render. It is measured with a REAL element carrying the real class, not
+     with canvas text metrics: canvas measureText disagrees with the browser's own line breaking on
+     any label landing near the boundary, and "Advanced nickel smelting 2" is one of them -- it
+     measured as one line, rendered as two, and left that card's text hanging 20px below its
+     border. The probe breaks where the head breaks because it IS a head. */
+  const headHeight = (() => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.cssText = `position:absolute; visibility:hidden; left:-9999px; top:0; width:${CARDW}px`;
+    const head = document.createElement('div');
+    head.className = 'head';
+    card.appendChild(head);
+    document.body.appendChild(card);
+    return html => { head.innerHTML = html; return head.offsetHeight; };
+  })();
+  const HEAD1 = headHeight('X');   // one line, whatever the stylesheet makes that
+  /* Whatever the head really needs beyond one line, uncapped. A cap would only mean allocating
+     less height than the card goes on to use: .card .head grows in normal flow, and .card is
+     deliberately overflow:visible for the counter-scaled corner badges, so a title too tall for
+     its allocation pushes the body out below the border rather than being clipped. */
+  const headExtra = t => Math.max(0, headHeight(headHtml(t)) - HEAD1);
   let rankdir = 'TB', gw = 1, gh = 1;
   const selMods = new Set();
 
@@ -336,7 +383,7 @@ function init(stage) {
     g.setDefaultEdgeLabel(() => ({}));
     for (const t of techs) {
       const lines = Math.min(t.unlocks.length, SHOW) + (t.unlocks.length > SHOW ? 1 : 0) + (t.bonuses.length ? 1 : 0);
-      g.setNode(t.id, { width: CARDW, height: 52 + lines * 15 });
+      g.setNode(t.id, { width: CARDW, height: 52 + lines * 15 + headExtra(t) });
     }
     for (const [a, b] of edges) g.setEdge(a, b);
     dagre.layout(g);
@@ -363,7 +410,7 @@ function init(stage) {
       html.push(`<div class="card${isDead(t) ? ' dead' : ''}" data-mod="${esc(t.mod)}" data-id="${t.id}" style="left:${n.x - n.width / 2}px;top:${n.y - n.height / 2}px;width:${n.width}px;height:${n.height}px;--modc:${color}">
         ${isOverlap(t) ? '<div class="ovb">⚠</div>' : ''}
         ${t.changedBy.length ? '<div class="chb">✎</div>' : ''}
-        <div class="head" style="border-left-color:${color}">${isDead(t) ? '<span class="deadb">⊘</span> ' : ''}${blocked.has(t.id) ? '<span class="blockb">⊝</span> ' : ''}${esc(t.label)}</div>
+        <div class="head" style="border-left-color:${color}">${headHtml(t)}</div>
         <div class="body">
           <div class="packs">${packChips(t)} <span class="n">${t.formula ? esc(t.formula) : (t.count ? t.count + '×' : (t.trigger ? 'trigger' : ''))}</span></div>
           ${shown.map(u => `<div class="u ${(u.results||[]).some(r => overlapNames.has(r)) ? 'ov' : ''}">▸ ${esc(u.label)}</div>`).join('')}
