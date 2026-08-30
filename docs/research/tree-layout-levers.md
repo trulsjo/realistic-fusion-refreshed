@@ -6,6 +6,10 @@ Chrome against `tree-viewer-out/angels-lane.html`, built from `.mod-cache/angels
 player can research. **Facts only.** The change these fed is `CARDW 230 → 170` with a wrapping
 title; what each rejected lever costs is recorded here so nobody sweeps them again.
 
+Extended 2026-08-30 ([#182](https://github.com/trulsjo/realistic-fusion-refreshed/issues/182))
+with the rank split measured on a second lane. That section changed nothing in the viewer; it is
+the record of a lever that does not hold.
+
 ## The question
 
 Truls asked whether the tree can be optimised for shorter links, and said growing taller and
@@ -150,7 +154,162 @@ an invisible coin is worse than one that is merely wide.
 What would make it safe is not a better guess but a measurement: generate several candidate splits,
 lay each out, keep whichever has the shortest total. A layout is ~4500 ms and the viewer already
 caches one per `rankdir|deadShown` (#175), so the search costs seconds once per state and nothing
-after. Recorded as its own ticket rather than forced into this one.
+after. Recorded as its own ticket rather than forced into this one —
+[#182](https://github.com/trulsjo/realistic-fusion-refreshed/issues/182), whose answer is the
+next section.
+
+## The rank split, measured on two lanes (#182)
+
+Measured 2026-08-30 in Chrome with `scripts/tree-layout-probe.js`, against
+`tree-viewer-out/angels-lane.html` and a `tree-viewer-out/krastorio2-lane.html` regenerated the same
+day so both lanes carry the shipped 170px card. **The answer is that no rank-split rule holds: the
+split wins on Angels and loses on Krastorio 2, in every variant tried. Nothing was shipped to the
+viewer.**
+
+### How it was measured
+
+The probe is committed rather than pasted and lost, because this is the third ad-hoc dagre harness
+this one question has needed. It takes each node's size **off the rendered card** —
+`offsetWidth`/`offsetHeight` on the `.card` the viewer drew — instead of re-deriving the viewer's
+height formula, so it cannot drift from the render — which is what all three traps below were.
+
+The scaffolding is stated exactly here because #171's version of it was not written down precisely
+enough to reproduce, and the numbers differ as a result. Within a rank of `n` cards, ordered by
+`order`, the first `k` are the upper half and the rest the lower, joined pairwise `A[i] → B[i]`;
+`half` says where `k` falls on an odd `n`.
+
+| knob | value | meaning |
+|---|---|---|
+| `order` | `graph` | the order the viewer added the nodes |
+| | `x` | by cross-rank coordinate in the first layout, ascending |
+| | `xrev` | the same, descending |
+| `half` | `floor` | k = floor(n/2) |
+| | `ceil` | k = ceil(n/2) |
+| | `alt` | no block split at all: even indices up, odd indices down |
+
+Scaffolding edges are marked, never drawn, and excluded from every number below. They cannot close a
+cycle: they join two cards of the same rank, and same rank means there is no path between them in
+either direction.
+
+The baseline row reproduces #171's shipped layout exactly — 33682 x 8424, total 6016714, longest
+38501, which is the evidence that it is measuring the same thing the earlier sweep did.
+
+### Angels lane — the split wins
+
+406 live technologies, 946 edges, 40 ranks, widest rank 41 cards. `rankdir TB`:
+
+| candidate | W | H | total | median | longest | ranks |
+|---|---|---|---|---|---|---|
+| *baseline* | *33682* | *8424* | *6016714* | *4156* | *38501* | *40* |
+| **graph / `ceil`** | **29879** | 10203 | **5531519** | 4658 | **28761** | 49 |
+| graph / `floor` | 32524 | 10562 | 5912902 | 5212 | 39450 | 51 |
+| graph / `alt` | 36833 | 11739 | 6683283 | 4255 | 62467 | 56 |
+| x / `floor` | 38248 | 10996 | 7103609 | 4723 | 37461 | 53 |
+| x / `ceil` | 36380 | 10807 | 7015125 | 4819 | 56565 | 52 |
+| x / `alt` | 35544 | 11580 | 6734475 | 4741 | 43048 | 55 |
+| xrev / `floor` | 37024 | 10257 | 7356331 | 4899 | 59587 | 49 |
+| xrev / `ceil` | 31644 | 10386 | 6004111 | 4630 | 28498 | 50 |
+| xrev / `alt` | 37448 | 11851 | 7464588 | 4773 | 52743 | 57 |
+
+Three of the nine beat the baseline on total length; two of those three also beat it on the longest
+edge. Selecting by shortest total picks `graph/ceil`, which is **8.1% off the total and 25.3% off
+the longest edge, for 21% more height and 11% less width** — and is within 1% of the best longest
+edge in the table, so the two criteria do not fight here.
+
+The same three candidates in `rankdir LR`:
+
+| candidate | W | H | total | median | longest | ranks |
+|---|---|---|---|---|---|---|
+| *baseline* | *10390* | *22308* | *4216707* | *3139* | *29113* | *40* |
+| **graph / `ceil`** | 12730 | 18979 | **3912752** | 3385 | **18475** | 49 |
+| graph / `floor` | 13250 | 20713 | 4188731 | 3776 | 26456 | 51 |
+
+`graph/ceil` wins there too — 7.2% off the total, 36.5% off the longest edge — so the Angels result
+is not an artefact of one orientation.
+
+**And #171's coin is still there, with its sign reversed.** `graph/floor` and `graph/ceil` differ
+only in `floor` versus `ceil` on odd-length ranks, and that alone moves the longest edge from 39450,
+which is *worse* than the baseline, to 28761. In #171's sweep `floor` was the good side and `ceil`
+the bad one; under the scaffolding spelled out above it is the other way round. So the tie-break is
+not merely arbitrary — **which side of it is good does not survive a re-implementation of the same
+description.**
+
+### Krastorio 2 lane — nothing wins
+
+329 live technologies (330 dumped, 1 unresearchable), 617 edges, 26 ranks — and the widest rank holds
+**41 cards, exactly as Angels does**, so this is not a lane that lacks the pathology. `rankdir TB`:
+
+| candidate | W | H | total | median | longest | ranks |
+|---|---|---|---|---|---|---|
+| *baseline* | *19907* | *5203* | *1968230* | *1816* | *14669* | *26* |
+| graph / `floor` | 22612 | 6978 | 2203290 | 2575 | 18296 | 35 |
+| graph / `ceil` | 24127 | 6344 | 2421383 | 2686 | 24591 | 32 |
+| graph / `alt` | 20028 | 7023 | 2082356 | 2423 | 15927 | 35 |
+| x / `floor` | 21711 | 7163 | 2453436 | 2360 | 23434 | 36 |
+| x / `ceil` | 21959 | 7277 | 2720910 | 3064 | 23102 | 37 |
+| x / `alt` | 21231 | 7307 | 2166297 | 2363 | 16005 | 37 |
+| xrev / `floor` | 23631 | 5828 | 2165218 | 2448 | 33526 | 29 |
+| xrev / `ceil` | 22761 | 5611 | 2170492 | 2530 | 20877 | 28 |
+| xrev / `alt` | 21544 | 6943 | 2162255 | 2461 | 18485 | 34 |
+
+Every one of them loses to the baseline on all four of width, height, total and longest. The nearest
+miss is `xrev/alt`, at 9.9% *more* total length.
+
+Splitting only the ranks that are actually wide does not rescue it — the same `graph` ordering,
+applied to ranks above a size threshold and left alone below it. The probe's third argument is
+that threshold, so these rows are `RIG.start('TB', ['graph/floor', 'graph/ceil'], 20)`:
+
+| candidate | W | H | total | median | longest | ranks |
+|---|---|---|---|---|---|---|
+| *baseline* | *19907* | *5203* | *1968230* | *1816* | *14669* | *26* |
+| only ranks > 12 / `floor` | 21339 | 5667 | 2065640 | 2214 | 16615 | 28 |
+| only ranks > 12 / `ceil` | 21432 | 5594 | 2216218 | 2507 | 18213 | 28 |
+| only ranks > 20 / `floor` | 22364 | 5562 | 2181961 | 2550 | 19550 | 28 |
+| only ranks > 20 / `ceil` | 20671 | 5362 | 2000256 | 2166 | 19326 | 27 |
+
+That last row is the closest anything came anywhere on this lane — 1.6% more total length — and it
+still pays 31.7% on the longest edge, which is the column the split exists to improve.
+
+Nor does the orientation, in `rankdir LR`:
+
+| candidate | W | H | total | median | longest | ranks |
+|---|---|---|---|---|---|---|
+| *baseline* | *6750* | *11443* | *1241574* | *1313* | *8578* | *26* |
+| graph / `floor` | 9090 | 12927 | 1431997 | 1689 | 11085 | 35 |
+| graph / `ceil` | 8310 | 13878 | 1534147 | 1827 | 14274 | 32 |
+| graph / `alt` | 9090 | 11595 | 1398772 | 1795 | 10654 | 35 |
+
+**Sixteen variants, three families, two orientations, and not one of them beats doing nothing.**
+
+### What that settles
+
+- **There is no stable rank-split rule.** #182 asked for one that reliably shortens edges. The
+  mechanism takes 8% off one lane and adds 10% to the other, and the sign of its tie-break is not
+  stable between two implementations of the same description. No rule can be stated, which is the
+  outcome the ticket allowed for.
+- **Selecting by measurement would be safe, and is still not worth it.** Score every candidate and
+  keep the best, with the first layout's own result standing as a candidate, and the outcome can
+  never be worse than the baseline: Angels would pick `graph/ceil`, Krastorio 2 would pick the
+  baseline. But it costs **three layouts per `rankdir|deadShown` cache key instead of one**, on a
+  wait #175 had to work to make visible rather than broken-looking, and on the second lane it buys
+  exactly nothing. Not shipped.
+- **A candidate cannot be scored more cheaply than by laying it out**, which #182 asked to check.
+  dagre 0.8.5's whole public surface is `{ graphlib, layout, debug, util: { time, notime },
+  version }` — checked against the cdnjs bundle the viewer loads. `rank`, `order` and `position`
+  are internal, so there is no way to obtain a ranking, and therefore no rank-space score,
+  without paying for the coordinate phase that is the expensive part.
+- **The viewer is unchanged.** `scripts/tree-viewer.template.html` still runs one layout per cache
+  key, and `scripts/tree-viewer.ps1` still asserts nothing and stays out of every check sweep.
+
+The lever left unspent is the one recorded in `docs/research/dag-layout-algorithms.md`: `edgesep`,
+which the viewer never sets, measured there at 12% off the width and 10% off both total and longest
+for no height at all. That is a different change from this one and is Truls's to call.
+
+### A caveat on every timing here
+
+A layout took between 2.9 and 12.8 seconds in this session, where #175 recorded 4459 ms for the same
+Angels graph, and repeats of identical work on the same page varied by a factor of three. Read the
+*ratio* between a candidate and its baseline; never the absolute.
 
 ## Three measurement traps, all hit here
 
