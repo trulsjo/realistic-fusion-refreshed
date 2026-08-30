@@ -276,7 +276,9 @@ and a player may well run `quality` on its own.
 Whether a mod may add a *sixth* grade was not established. FFF #375 mentions "restrictions on
 mod-defined quality tiers outside the standard five levels" without stating them, and no 2.0.77 doc
 page found in this pass says what happens if a mod declares another `quality` prototype. **Not
-verified. Do not build on it.**
+verified. Do not build on it.** [`inverted-quality.md`](inverted-quality.md) narrows this: a shipped
+mod defines three extra grades and a mod-portal thread reports 98. That is read evidence rather than
+a measurement here, and it says nothing about what this mod's entities do at a sixth grade.
 
 ### Reading quality from the simulation
 
@@ -491,7 +493,8 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   inferred from the locale string, from four base-game uses, and from the property's presence on
   `RecipePrototype` — the docs themselves give it no description sentence.
 - **Whether a mod may add a sixth quality level is unknown.** FFF #375 refers to restrictions without
-  stating them and no 2.0.77 doc page found in this pass covers it.
+  stating them and no 2.0.77 doc page found in this pass covers it. Narrowed but not measured by
+  [`inverted-quality.md`](inverted-quality.md).
 - **`"quality_required": true`** in the bundled mod's `info.json` is very likely what enables level > 0
   without Space Age, since the measurement contradicts the literal reading of
   `QualityPrototype.level`'s note. That is an inference. The flag is not documented anywhere this pass
