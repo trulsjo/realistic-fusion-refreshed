@@ -32,6 +32,13 @@
     are expected and fine: the viewer surfaces candidates, a human judges. Base-game pairs are
     computed, shipped flagged, and hidden behind a viewer toggle.
 
+    Read "localized-name" there with one caveat (#169). --dump-prototype-locale answers with the
+    string "Something went wrong" for a prototype whose name it cannot resolve, and a thing in that
+    state is labelled by its PROTOTYPE name instead, so the first two tiers then compare that name
+    rather than a localized one. The run reports how many prototypes the set failed to localize;
+    the number is the mod's own localisation, not this tool's, and nothing here tries to fix it.
+    What is fixed is that no label is ever the error string.
+
     Researchability rides along the same way (#168): each technology carries its `enabled`,
     `hidden` and `visible_when_disabled` state, and the ones no player can research are kept off
     the canvas until a toggle reveals them, dashed and dimmed. They are flagged, never dropped --
@@ -212,6 +219,25 @@ try {
         $parsed = Get-Content -LiteralPath $p -Raw | ConvertFrom-Json -AsHashtable
         if ($parsed['names']) { return $parsed['names'] } else { return @{} }
     }
+    # --dump-prototype-locale writes this EXACT string as a prototype's resolved name when the
+    # engine cannot work the localised name out. It is a failure sentinel, not a name, and a caller
+    # that takes it for one ships an error message as node text -- which is how "Something went
+    # wrong" reached the Sulphur processing card (#169). Observed on Factorio 2.0.77: 334 of the
+    # Angels lane's 1767 recipes carry it, one of its 1009 items (angels-void), and none of its
+    # fluids, entities or technologies. Matching an engine string literally is fragile, so the
+    # version is pinned here rather than left as a bare constant: should a later engine word it
+    # differently, the labels go back to reading the sentinel, which is visible in the viewer.
+    $LOCALE_FAILED = 'Something went wrong'
+
+    # Absent key OR sentinel -> $null, so a caller's existing fall-through runs. Nothing else here
+    # changes: the chain behind an unlock label already knew where to look next, and was only ever
+    # stopped by the sentinel arriving as a truthy value. Every locale read goes through this.
+    function Get-LocaleName($Map, [string] $Key) {
+        $v = $Map[$Key]
+        if (-not $v -or $v -eq $LOCALE_FAILED) { return $null }
+        return $v
+    }
+
     $techLocale   = Read-LocaleNames 'technology-locale.json'
     $itemLocale   = Read-LocaleNames 'item-locale.json'
     $fluidLocale  = Read-LocaleNames 'fluid-locale.json'
@@ -277,9 +303,17 @@ try {
         $catName, $locale = $cat
         foreach ($kv in $locale.GetEnumerator()) {
             $h = Get-History $catName $kv.Key
+            # A sentinel-named thing stays in the analysis under its prototype name rather than
+            # dropping out of it (#169). Tier 3 reads the prototype name anyway, so it can still
+            # pair; and a thing silently missing from the pool is a worse answer than one labelled
+            # plainly. Its tokens then come from that name, not from the error string -- "wrong"
+            # and "something" are four letters or more and pass the stopword filter, so the
+            # sentinel was feeding tier 2 real tokens. One such thing here: angels-void.
+            $label = Get-LocaleName $locale $kv.Key
+            if (-not $label) { $label = $kv.Key }
             $things.Add([pscustomobject]@{
-                Name = $kv.Key; Label = $kv.Value; Cat = $catName; Mod = $h.c
-                Tokens = Get-Tokens $kv.Value; Stems = Get-StemTokens $kv.Key
+                Name = $kv.Key; Label = $label; Cat = $catName; Mod = $h.c
+                Tokens = Get-Tokens $label; Stems = Get-StemTokens $kv.Key
             })
         }
     }
@@ -321,9 +355,15 @@ try {
     )
 
     # ------------------------------------------------------------------------- technologies (#159)
+    # The comma is load-bearing, exactly as in Get-DumpList: PowerShell UNROLLS a one-element
+    # array on return, so a single-result recipe came back as the bare string and $results[0] then
+    # indexed that STRING -- yielding 's' for sulfuric-acid, never the name. Silent since #159,
+    # because the label chain only reaches $results[0] when the recipe's own locale entry misses,
+    # which before #169 also meant it had stopped on the sentinel. Nineteen of the Angels lane's
+    # twenty-eight failed labels are this bug, not the sentinel.
     function Get-RecipeResults($recipe) {
-        if (-not $recipe['results']) { return @() }
-        @($recipe['results'] | ForEach-Object { $_['name'] } | Where-Object { $_ })
+        if (-not $recipe['results']) { return ,@() }
+        ,@($recipe['results'] | ForEach-Object { $_['name'] } | Where-Object { $_ })
     }
 
     $techs = [System.Collections.Generic.List[object]]::new()
@@ -360,10 +400,15 @@ try {
                 $recipeName = $e['recipe']
                 $r = $raw['recipe'][$recipeName]
                 $results = if ($r) { Get-RecipeResults $r } else { @() }
-                $label = if ($recipeLocale[$recipeName]) { $recipeLocale[$recipeName] }
-                         elseif ($results.Count -and $itemLocale[$results[0]]) { $itemLocale[$results[0]] }
-                         elseif ($results.Count -and $fluidLocale[$results[0]]) { $fluidLocale[$results[0]] }
-                         else { $recipeName }
+                # Recipe name, then the first result's item and fluid names, then the prototype
+                # name. Same order as before; it just no longer halts on the sentinel, so
+                # sulfuric-acid falls through the failed recipe entry to the fluid's "Sulfuric
+                # acid". The last step is the prototype name and never the sentinel (#169).
+                $first = if ($results.Count) { $results[0] } else { $null }
+                $label = Get-LocaleName $recipeLocale $recipeName
+                if (-not $label -and $first) { $label = Get-LocaleName $itemLocale  $first }
+                if (-not $label -and $first) { $label = Get-LocaleName $fluidLocale $first }
+                if (-not $label) { $label = $recipeName }
                 $unlocks.Add(@{ name = $recipeName; label = $label; results = @($results) })
             }
             else {
@@ -376,8 +421,12 @@ try {
         # The changed chain, order kept, deduplicated, without the creator's own later edits (#164).
         $changedBy = [System.Collections.Generic.List[string]]::new()
         foreach ($c in $h.ch) { if ($c -ne $h.c -and $changedBy -notcontains $c) { $changedBy.Add($c) } }
+        # No technology carries the sentinel on the Angels lane, but the path has the same shape
+        # and no lane is proof of every lane (#169).
+        $techLabel = Get-LocaleName $techLocale $name
+        if (-not $techLabel) { $techLabel = $name }
         $techs.Add([ordered]@{
-            id = $name; label = if ($techLocale[$name]) { $techLocale[$name] } else { $name }
+            id = $name; label = $techLabel
             mod = $h.c; changedBy = @($changedBy)
             # Absent when a tech has none, so @() alone shipped [null] -- steam-power and
             # electronics here, filtered by the template and wrong in the dataset all the same.
@@ -398,7 +447,10 @@ try {
     $packOrder = [System.Collections.Generic.List[string]]::new()
     foreach ($t in $techs) { foreach ($p in $t.packs) { if ($packOrder -notcontains $p[0]) { $packOrder.Add($p[0]) } } }
     $packLabels = @{}
-    foreach ($p in $packOrder) { $packLabels[$p] = if ($itemLocale[$p]) { $itemLocale[$p] } else { $p } }
+    foreach ($p in $packOrder) {
+        $n = Get-LocaleName $itemLocale $p
+        $packLabels[$p] = if ($n) { $n } else { $p }
+    }
 
     # ------------------------------------------------------------------------- mod legend and colours
     # Every mod the viewer will name: creators of techs, their modifiers, and both sides of every
@@ -447,11 +499,20 @@ try {
     $template.Replace('"__DATASET__"', ($dataset | ConvertTo-Json -Depth 8 -Compress)) |
         Set-Content -Path $outPath -Encoding utf8
 
+    # Surfaced, not silenced: the sentinel count is the mod's own localisation failing, which is
+    # none of this repo's business to fix but every bit of it worth reporting (#169).
+    $failedLocale = @(@($recipeLocale.Values) + @($itemLocale.Values) + @($fluidLocale.Values) +
+                      @($entityLocale.Values) + @($techLocale.Values) |
+                      Where-Object { $_ -eq $LOCALE_FAILED }).Count
     $ticked = @($techs | Where-Object { $_.changedBy.Count -gt 0 }).Count
     $dead   = @($techs | Where-Object { -not $_.enabled -or $_.hidden }).Count
     Write-Host ''
     Write-Host ("reported: {0} techs ({1} changed by another mod, {2} unresearchable), {3} overlap candidates ({4} base-flagged), {5} mods named" -f
         $techs.Count, $ticked, $dead, $overlaps.Count, @($overlaps | Where-Object base).Count, $mods.Count)
+    if ($failedLocale) {
+        Write-Host ("          {0} prototypes have no localised name in this set; the engine dumped '{1}' for each, and every label naming one falls through to what the recipe produces, or last of all to the prototype name" -f
+            $failedLocale, $LOCALE_FAILED)
+    }
     Write-Host "viewer:   $outPath"
     Write-Host ''
     Write-Host 'OK - the tool ran and reported. It asserts nothing: the tree and its overlap'
