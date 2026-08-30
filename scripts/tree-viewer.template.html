@@ -115,6 +115,12 @@
                     border: 2px solid transparent; }
   #tools .modchip.on { opacity: 1; border-color: #fff; }
   #tools .pk { padding: 1px 0; color: #c9ced3; }
+  /* An uncached layout is seconds long, and the controls are disabled and the cursor busy for it.
+     `progress` has to be forced onto the descendants: the button carries cursor:pointer above and
+     the two toggle labels carry it inline, so a rule on body alone shows nothing until the pointer
+     leaves the control that was just clicked -- which is the one place it is not. */
+  body.busy, body.busy * { cursor: progress !important; }
+  #tools button:disabled { opacity: .6; }
 
   .fallback { padding: 80px 40px; max-width: 640px; margin: 0 auto; color: #c9ced3; }
 </style>
@@ -143,8 +149,9 @@ const byId = new Map(DATA.techs.map(t => [t.id, t]));
    sulfur-processing among them, with its prerequisites emptied too — an orphan with no edges. */
 const isDead = t => !t.enabled || t.hidden;
 const deadCount = DATA.techs.filter(isDead).length;
-let techs = [], edges = [], blocked = new Set();
+let techs = [], edges = [], blocked = new Set(), deadShown = false;
 function setShowDead(on) {
+  deadShown = !!on;
   techs = DATA.techs.filter(t => on || !isDead(t));
   const shown = new Set(techs.map(t => t.id));
   edges = techs.flatMap(t => (t.prereqs || []).filter(p => shown.has(p)).map(p => [p, t.id]));
@@ -277,7 +284,17 @@ function init(stage) {
     const k = Math.max(Math.min(vw / gw, vh / gh) * 0.95, 0.02);
     view.call(zoom.transform, d3.zoomIdentity.translate((vw - gw * k) / 2, (vh - gh * k) / 2).scale(k));
   }
-  function render(keepView = false) {
+  /* dagre.layout() is the whole cost of a toggle and then some: 4459 ms over the 406 live techs
+     and 5766 ms over all 478, against 3 ms to rebuild the card HTML and 9 ms to put it in the DOM
+     (#175). Only FOUR layouts exist, though -- two node sets by two orientations -- and no other
+     control moves a node: a card's height reads t.unlocks and t.bonuses alone, so the overlap
+     toggle cannot change one. So each is laid out once and kept, and every later render of a
+     state already seen is the ~12 ms of rebuilding the cards. */
+  const layouts = new Map();
+  function layoutFor() {
+    const key = `${rankdir}|${deadShown}`;
+    const cached = layouts.get(key);
+    if (cached) return cached;
     const g = new dagre.graphlib.Graph().setGraph({ rankdir, nodesep: 16, ranksep: 90, marginx: 40, marginy: 40 });
     g.setDefaultEdgeLabel(() => ({}));
     for (const t of techs) {
@@ -286,6 +303,16 @@ function init(stage) {
     }
     for (const [a, b] of edges) g.setEdge(a, b);
     dagre.layout(g);
+    layouts.set(key, g);
+    return g;
+  }
+
+  function setOrientLabel() {
+    document.getElementById('orient').textContent =
+      rankdir === 'TB' ? 'flow: top ↓ down (click for left → right)' : 'flow: left → right (click for top ↓ down)';
+  }
+  function render(keepView = false) {
+    const g = layoutFor();
     gw = g.graph().width; gh = g.graph().height;
     let html = [`<svg width="${gw}" height="${gh}">`];
     for (const e of g.edges()) {
@@ -308,28 +335,57 @@ function init(stage) {
         </div></div>`);
     }
     world.innerHTML = html.join('');
-    document.getElementById('orient').textContent =
-      rankdir === 'TB' ? 'flow: top ↓ down (click for left → right)' : 'flow: left → right (click for top ↓ down)';
+    setOrientLabel();
     applyEmphasis();
     if (!keepView) fit();
   }
   render();
 
+  /* a change handler runs to completion before the browser paints anything, so a control that
+     triggers an uncached layout does not even show its own new state for five seconds. Truls read
+     that as the checkboxes being broken (#175), which is the worse half of the bug -- a slow
+     control and a dead one look identical. Two frames put that state on screen before the work
+     starts, so the wait that remains is visibly a wait.
+     Disabling every control for the duration does the rest of the job. It is feedback, since a
+     greyed control is a visible "not now"; and it is the reason two of these can never overlap,
+     which they otherwise would -- the first to finish would clear the busy state while the second
+     layout still ran, and a second click on the orientation button would flip rankdir back under
+     a render already queued, landing on the orientation the reader started from. */
+  function afterPaint(work) {
+    document.body.classList.add('busy');
+    const controls = [...document.querySelectorAll('#tools input, #tools button')];
+    for (const c of controls) c.disabled = true;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      try { work(); }
+      finally {
+        document.body.classList.remove('busy');
+        for (const c of controls) c.disabled = false;
+      }
+    }));
+  }
+
   document.getElementById('orient').addEventListener('click', () => {
     rankdir = rankdir === 'TB' ? 'LR' : 'TB';
-    render();
+    setOrientLabel();   // the button's label IS its state; render's copy comes too late to see
+    afterPaint(() => render());
   });
   const showDead = document.getElementById('show-dead');
   if (showDead) showDead.addEventListener('change', e => {
-    setShowDead(e.target.checked);
-    panel.style.display = 'none';
-    render();   // the node set changed, so the layout changes with it — refit
+    const on = e.target.checked;
+    afterPaint(() => {
+      setShowDead(on);
+      panel.style.display = 'none';
+      render();   // a different node set, so a different layout — and a refit to it
+    });
   });
   const baseOv = document.getElementById('base-ov');
   if (baseOv) baseOv.addEventListener('change', e => {
-    setBaseOverlaps(e.target.checked);
-    panel.style.display = 'none';
-    render(true);   // same layout, same zoom — only the badges and pair lists change
+    const on = e.target.checked;
+    afterPaint(() => {
+      setBaseOverlaps(on);
+      panel.style.display = 'none';
+      render(true);   // same layout, same zoom — only the badges and pair lists change
+    });
   });
   document.getElementById('tools').addEventListener('click', e => {
     const chip = e.target.closest('.modchip');
