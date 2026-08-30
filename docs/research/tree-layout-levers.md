@@ -94,6 +94,43 @@ Wrapping the title to a second line is what makes the narrowing affordable. It c
 cards an extra 17px and buys back the 8 names that were being cut at 230px, so the narrower card is
 **more** legible than the wide one, not less.
 
+## Splitting a rank: the one lever that could still win
+
+Raised by Truls: use more ranks, so each holds fewer cards. `minlen` is the obvious knob and is not
+the right one — forcing every edge to span two ranks leaves **40 ranks and 41 cards on the
+widest**, identical width, 42% more height. It scales the same structure apart, which is
+`ranksep` again.
+
+The idea needs the ranks genuinely split, which means adding scaffolding edges between cards that
+currently share a rank. Layout runs twice: once to learn the ranks, once with the scaffolding in.
+The scaffolding is never drawn; only the real edges are measured below.
+
+| how each rank was halved | W | H | total | median | longest |
+|---|---|---|---|---|---|
+| *baseline, 40 ranks* | *33682* | *8424* | *6016714* | *4156* | *38501* |
+| graph order, `floor` pairing | **29445** | 10547 | **4649671** | 3993 | **21477** |
+| by x, reversed | 29663 | 10259 | 5261621 | 4520 | 22111 |
+| by x, forward, `ceil` blocks | 34026 | 10809 | 6123492 | 4319 | **53907** |
+| random, seed 999 | 34374 | 11989 | 6377902 | 4486 | 45081 |
+| random, seed 42 | 34584 | 12412 | 6326137 | 4625 | 55309 |
+| thirds, by x | 31631 | 12491 | 5513497 | 4327 | 23095 |
+
+**The best of these is the best result anywhere in this document** — the longest edge nearly
+halved, total length down 23%, width down 13%, for 25% more height, which is exactly the trade
+the ticket authorised.
+
+**And it is not shippable as measured.** Rows two and four differ only in `floor` versus `ceil` on
+odd-length ranks, and that single tie-break moves the longest edge from 21477 to 53907 — from 44%
+better than the baseline to 40% worse. Random pairings lose consistently, so the ordering plainly
+matters; but the two structured orderings that win and the structured ordering that loses are not
+told apart by anything measured here. The mechanism is not understood, and a layout that depends on
+an invisible coin is worse than one that is merely wide.
+
+What would make it safe is not a better guess but a measurement: generate several candidate splits,
+lay each out, keep whichever has the shortest total. A layout is ~4500 ms and the viewer already
+caches one per `rankdir|deadShown` (#175), so the search costs seconds once per state and nothing
+after. Recorded as its own ticket rather than forced into this one.
+
 ## Three measurement traps, all hit here
 
 - **`canvas.measureText` does not agree with the browser's line breaking.** A greedy word-wrap over
