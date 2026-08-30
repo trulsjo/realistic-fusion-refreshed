@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
-    Fails if the claims the shipped mods make about themselves have stopped being true, or if
-    the scripts in this directory have stopped answering Get-Help.
+    Fails if the claims the shipped mods make about themselves have stopped being true, if the
+    scripts in this directory have stopped answering Get-Help, or if a docs/ note this repo cites
+    is not there to be read.
 
 .DESCRIPTION
     ADR 0003 and ADR 0006 each create an obligation that is a sentence rather than code: the clean
@@ -46,6 +47,12 @@
         a rule about bumping the assets version whenever its content changes, which is deliberately
         not built while the mod is unpublished. Tracked separately; do not read a pass here as
         cover for it.
+
+    Since #183 it also asserts that every docs/ path cited anywhere in scripts/ or docs/ resolves
+    to a file that exists. Two notes were researched, written and committed for #158 and #159, and
+    never merged; three files on main cited them, both tickets read as completed, and the findings
+    could not be opened. The citing line is a comment or a markdown link, so no parser reads it,
+    and an unmerged branch looks merged from everywhere except `git merge-base`.
 
     Since #151 it also asserts one thing that is not about the mods at all: that every script in
     scripts/ which declares a .SYNOPSIS actually answers Get-Help. It lives here because it is the
@@ -310,6 +317,46 @@ foreach ($ps1 in $documented) {
         $failures.Add("$($ps1.Name): its #Requires line is rendered as help text. It needs a blank " +
             'line between it and the closing #>, or the help parser absorbs it into the last section.')
     }
+}
+
+# 6. Every docs/ path this repo cites in prose actually exists. Two research notes were written for
+# #158 and #159, committed to their own branches, cited from three files on main -- and never
+# merged. Both tickets read as completed while the findings they produced could not be opened, and
+# scripts/tree-viewer.ps1 sent a reader to a field-semantics note that was not there. Nothing could
+# see it: the citing line is a comment or a link, so no parser reads it, and the branch it lived on
+# looked merged from anywhere except `git merge-base`. Same shape as section 5 -- a claim made in
+# prose, invisible to every other gate, checkable without starting a game (#183).
+$citing = @(Get-ChildItem $PSScriptRoot -File -Filter *.ps1) +
+          @(Get-ChildItem (Join-Path $repoRoot 'docs') -File -Filter *.md -Recurse)
+$cited = [System.Collections.Generic.List[object]]::new()
+foreach ($file in $citing) {
+    $n = 0
+    foreach ($line in (Get-Content $file.FullName)) {
+        $n++
+        # A path pointing into docs/ and ending .md. Globs are patterns, not citations, and a
+        # fenced or inline code span naming a directory is not a promise that a file is in it.
+        foreach ($m in [regex]::Matches($line, '(?<![\w./-])docs/[\w./-]+\.md')) {
+            if ($m.Value -match '\*') { continue }
+            $cited.Add([pscustomobject]@{ Path = $m.Value; From = $file.Name; Line = $n })
+        }
+    }
+}
+
+# The floor, as in section 5: everything below passes by finding nothing, so a regex that stops
+# matching would take this check out of scope while still printing green. The repo cites its own
+# notes constantly -- if this ever finds none, the predicate broke, not the habit.
+$checks++
+if ($cited.Count -lt 10) {
+    $failures.Add(("only $($cited.Count) docs/ citations found across $($citing.Count) files, which " +
+        'means the pattern above stopped matching rather than that the repo stopped citing'))
+}
+
+$checks++
+$dangling = @($cited | Where-Object { -not (Test-Path (Join-Path $repoRoot $_.Path)) } |
+              Sort-Object Path, From)
+if ($dangling) {
+    $shown = ($dangling | ForEach-Object { "$($_.Path) (cited by $($_.From):$($_.Line))" }) -join '; '
+    $failures.Add("these docs/ paths are cited but do not exist: $shown")
 }
 
 if ($failures.Count) {
