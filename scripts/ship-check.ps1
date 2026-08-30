@@ -326,7 +326,10 @@ foreach ($ps1 in $documented) {
 # see it: the citing line is a comment or a link, so no parser reads it, and the branch it lived on
 # looked merged from anywhere except `git merge-base`. Same shape as section 5 -- a claim made in
 # prose, invisible to every other gate, checkable without starting a game (#183).
-$citing = @(Get-ChildItem $PSScriptRoot -File -Filter *.ps1) +
+# Every file in scripts/, not only the .ps1 ones: the help above promises "anywhere in scripts/",
+# and scripts/tree-layout-probe.js cites a research note from a JavaScript comment, which a .ps1
+# filter would have walked straight past (#182).
+$citing = @(Get-ChildItem $PSScriptRoot -File) +
           @(Get-ChildItem (Join-Path $repoRoot 'docs') -File -Filter *.md -Recurse)
 $cited = [System.Collections.Generic.List[object]]::new()
 foreach ($file in $citing) {
