@@ -8,9 +8,15 @@ whether both directions could coexist — perhaps by changing the level of `norm
 The answer is no on 2.0, for three reasons of very different hardness, and the level of `normal` is
 not one of them. Factorio 2.1 adds the missing mechanism but in a different shape.
 
-**Nothing is lifted from this mod.** Its source is GPLv3 and was read, not copied — see
-[ADR 0001](../adr/0001-liftable-predecessor-material.md) for why that distinction is the one that
-matters here. Reading a mod's Lua for prototype patterns is exactly the use ADR 0001 permits.
+**Nothing is lifted from this mod.** Its source is GPLv3 and was read, not copied.
+
+That distinction is not covered by anything the repository has decided.
+[ADR 0001](../adr/0001-liftable-predecessor-material.md) governs the *predecessors* — Romner's
+original, Durikkan's port, the four-module redesign and UFP — and Inverted Quality is none of them.
+The nearest thing to a precedent is `CLAUDE.md`'s line about UFP, *"Reading its Lua for 2.0/2.1
+prototype patterns is fine"*, and this note generalises that to an unrelated third-party mod on its
+own authority. No rule here forbids it and none permits it either; saying so is more honest than
+citing an ADR that decided a different question.
 
 Three kinds of evidence, kept separate throughout:
 
@@ -36,8 +42,9 @@ line that Wube's `quality` mod uses to point `normal` upward.
 
 The level idea is sound as far as it goes — levels are free-form and the mod already shifts every one
 of them — but it solves the arithmetic, not the topology, and it does not touch the second real
-blocker: **there is no primitive that moves an item *down* a chain.** Degradation exists in this mod
-only because the chain itself points down.
+blocker: **no primitive that moves an item *down* a chain was found.** Degradation exists in this mod
+only because the chain itself points down. That second blocker is an absence rather than a quoted
+fact, and it is the softest thing this note rests on — it is qualified where it is argued.
 
 ## What the mod is
 
@@ -205,12 +212,22 @@ legendary` — is linear and so is not blocked by this. It is blocked by the nex
 
 ### 2. Nothing moves an item down a chain
 
-A quality effect moves an item toward `next` and there is no opposite. Inverted Quality gets
-degradation only by pointing the chain downward from the base tier. On a merged eight-tier chain,
-every machine's quality effect would push toward `legendary` and nothing would ever reach `shoddy`.
+A quality effect moves an item toward `next`. **No opposite was found**, and every mechanism this
+pass identified moves in that one direction: Inverted Quality gets degradation only by pointing the
+chain downward from the base tier, which is what a mod would not need to do if a downward roll
+existed. On a merged eight-tier chain, every machine's quality effect would push toward `legendary`
+and nothing would ever reach `shoddy`.
 
-This is the blocker that the level idea does not touch, and it is the one that decides the question on
-2.0.
+**This is weaker than blockers 1 and 3, and deliberately so.** Those two are read off a developer
+statement and off the mod's own code. This one is an absence — no 2.0.77 doc page or prototype field
+found in this pass provides a downward move, and the closest candidate is untested: Inverted Quality
+ships a **commented-out** `base_effect.quality = -100`, so a negative quality effect is expressible
+and nobody here has run it. See [What is not established](#what-is-not-established). If that negative
+value turns out to walk an item down the chain, this blocker weakens and the question is worth
+reopening — blockers 1 and 3 would still stand.
+
+Subject to that, this is the blocker the level idea does not touch, and the one that decides the
+question on 2.0.
 
 ### 3. The stat rewrite is global
 
@@ -280,7 +297,8 @@ a sixth grade. The caveat in `quality.md` is narrowed, not removed.
   found in this pass states it. This is the load-bearing unknown for anyone who wants to try the
   single-chain design.
 - **Whether a negative `base_effect.quality` moves an item down a chain.** Expressible, shipped
-  commented-out, untested here.
+  commented-out, untested here. **Blocker 2 rests on this being no**, which is why that blocker is
+  the softest of the three; settling it would need a game, and no game was run for this note.
 - **Whether `defective` and `broken` sharing level 0 is deliberate.**
 - **Everything about 2.1**, which was read from the wiki changelog and a forum thread, not from an
   installed build. This repository has no 2.1 to check against.
