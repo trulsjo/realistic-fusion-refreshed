@@ -366,9 +366,9 @@ The pairs closer than a stroke width are a different thing and should not be rea
 they are edges converging on a shared endpoint, and 8 of them exist at the default already. Those
 touch somewhere along their length whatever this number is.
 
-### The version it was measured against, and two neighbours
+### The version it was measured against, and the move that followed
 
-All of it is dagre **0.8.5**, which is what `scripts/tree-viewer.template.html` loads from cdnjs and
+All of it is dagre **0.8.5**, which is what `scripts/tree-viewer.template.html` loaded from cdnjs and
 [the only version cdnjs has](https://api.cdnjs.com/libraries?search=dagre) — its dagre list is
 `0.8.5`, `dagre-d3 0.6.4`, `graphlib 4.0.5`, and the maintained `@dagrejs/dagre` is not on it at
 all. Checked again 2026-08-30. Two neighbours were run against the same graph while the question was
@@ -383,15 +383,49 @@ open, because "would a newer dagre draw this better" is cheap to answer and othe
 **Identical, to the pixel and to the last unit of edge length.** Eight years and three major versions
 change nothing about how this graph is drawn, so there is no layout argument for moving.
 
-**And 2.0.x cannot be loaded the way the viewer loads a library.** Its `dist/dagre.min.js` is 30 KB
-against 0.8.5's 284 KB because it externalises `@dagrejs/graphlib` rather than bundling it; loaded
-from a `<script>` tag it throws `Error: Dynamic require of "@dagrejs/graphlib" is not supported`
-before defining anything, and the viewer's own "the CDN did not load" fallback is what appears.
-Reaching 2.0.4 at all meant `import('https://cdn.jsdelivr.net/npm/@dagrejs/dagre@2.0.4/+esm')`,
-which is jsdelivr bundling the dependency in on the fly — a module import, where the viewer's
-startup is a synchronous global. **3.1.1's bundle is self-contained again** and drops straight in;
-the only thing it costs is leaving cdnjs, which is #161's trade-off and a decision rather than a
-swap.
+**And 2.0.x cannot be loaded the way the viewer loads a library.** Its `dist/dagre.min.js` is
+30 KB against 0.8.5's 284 KB because it externalises `@dagrejs/graphlib` rather than bundling it;
+loaded from a `<script>` tag it throws `Error: Dynamic require of "@dagrejs/graphlib" is not
+supported` before defining anything, and what a reader sees is the viewer's own "a library did not
+load" fallback with no clue why — which is what that message was rewritten to name. Reaching 2.0.4
+at all meant
+`import('https://cdn.jsdelivr.net/npm/@dagrejs/dagre@2.0.4/+esm')`, which is jsdelivr bundling the
+dependency in on the fly — a module import, where the viewer's startup is a synchronous global.
+
+### Shipped: `@dagrejs/dagre` 3.1.1 from jsdelivr — Truls's call, 2026-08-30
+
+3.1.1's bundle is self-contained again, so the move is one URL: the call shape
+(`dagre.graphlib.Graph`, `setNode`, `setEdge`, `dagre.layout`, `g.node().x,y`, `g.edge().points`)
+is unchanged across all three versions and no viewer code changed with it. What it costs is leaving
+cdnjs for dagre — #161's convention, reopened deliberately rather than drifted out of. d3 stays on
+cdnjs, so the viewer now loads from two hosts and its failure message names which one is missing.
+
+Verified on both lanes and both orientations, by splicing the updated template over each lane's real
+dataset:
+
+| on 3.1.1 | W | H | total | median | longest |
+|---|---|---|---|---|---|
+| Angels TB | 30127 | 8424 | 5486094 | 3819 | 35018 |
+| Angels LR | 10390 | 18431 | 3643990 | 2750 | 25286 |
+| Krastorio 2 TB | 18901 | 5203 | 1870281 | 1763 | 13782 |
+| Krastorio 2 LR | 6750 | 10390 | 1140995 | 1287 | 7706 |
+
+Every figure equals 0.8.5's. **The drawing did not change at all.**
+
+One thing did: it is **faster**. Both libraries were loaded into the same page — 0.8.5 evaluated
+into a private module object so it could not clobber the global — and the Angels TB layout run
+alternately: 0.8.5 at 3822, 3479, 3289 ms against 3.1.1 at 2283, 2218, 3093, 2839 ms. Roughly a
+quarter off, and the two sets do not quite separate, so read it as "faster" and not as a factor.
+Absolute numbers on this machine ran 3x higher earlier in the same session under load, which is why
+the comparison is alternated on one page rather than taken across runs.
+
+**What it does not buy:** 3.1's own new features are per-cluster `rankdir`/`ranksep`/`nodesep` and
+dynamic-layout options, and this viewer uses no clusters. The reason to move is that the package
+can still receive a fix and cdnjs's copy never will.
+
+**A caveat on the changelog**, since it is the obvious thing to reach for: it lists no breaking
+change touching any of this, but it reads as partly generated — it cites "semandtic-versioning.org"
+— and it is not a migration guide. The identical-output result above is measurement, not changelog.
 
 ## Three measurement traps, all hit here
 

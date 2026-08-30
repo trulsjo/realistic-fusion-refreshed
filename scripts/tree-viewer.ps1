@@ -46,8 +46,10 @@
 
     The viewer itself is the design settled on #161 (scripts/tree-viewer.template.html): dagre
     layered cards, top-down, d3 pan/zoom, detail on the card near and counter-scaled badges far,
-    click for a side panel with prerequisite/dependent links highlighted. dagre and d3 load from
-    cdnjs -- the accepted trade-off; the output needs network to render.
+    click for a side panel with prerequisite/dependent links highlighted. The libraries load from a
+    CDN -- the accepted trade-off; the output needs network to render. Two CDNs, since #182: d3 from
+    cdnjs as #161 settled, dagre from jsdelivr, because cdnjs's dagre stops at 0.8.5 and the
+    maintained package is not on cdnjs at any version. The template's own comment carries the rest.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.

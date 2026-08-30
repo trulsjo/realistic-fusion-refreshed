@@ -13,12 +13,26 @@
   highlighted in both directions. Attribution follows #164/#165: colour = PrototypeHistory.created,
   the changed chain rides in the panel, and a tick marks "changed by a mod other than its creator".
 
-  The dagre and d3 libraries come from cdnjs by deliberate choice (#161): this is a dev-side
-  instrument, and the prototype's variant A proved an offline hand-rolled fallback is possible if
-  that trade-off is ever revisited.
+  The libraries come from a CDN by deliberate choice (#161): this is a dev-side instrument, and the
+  prototype's variant A proved an offline hand-rolled fallback is possible if that trade-off is ever
+  revisited. d3 is cdnjs, as #161 settled. dagre is NOT, and the split is the point:
+
+  cdnjs's dagre stops at 0.8.5 and always will -- the maintained package renamed itself to
+  @dagrejs/dagre, which cdnjs does not carry at any version -- so staying on cdnjs meant staying on
+  a 2020 release for the life of the tool. Moving is safe because it is not a change: 0.8.5, 2.0.4
+  and 3.1.1 were all run against the Angels lane and all three return 30127 x 8424, total edge
+  length 5486094, longest 35018. Identical to the pixel. Nothing about this graph's drawing is being
+  traded here; what is bought is a library that can still receive a fix.
+
+  Pin the exact version, and prefer a version whose dist/dagre.min.js is SELF-CONTAINED. 2.0.x is
+  not, and cannot be loaded this way at all: it externalises @dagrejs/graphlib and throws
+  `Dynamic require of "@dagrejs/graphlib" is not supported` before defining a global, so what a
+  reader sees is the "CDN did not load" fallback below and no clue why. 3.1.1 bundles graphlib again
+  and needs no other change -- the call shape below, dagre.graphlib.Graph / setNode / setEdge /
+  dagre.layout / g.node().x,y / g.edge().points, is unchanged across all three.
 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dagre/0.8.5/dagre.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@dagrejs/dagre@3.1.1/dist/dagre.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; }
   html, body { height: 100%; overflow: hidden; }
@@ -274,10 +288,16 @@ function detailHtml(t) {
 
 /* ---------- the viewer ---------- */
 function init(stage) {
-  if (!window.dagre || !window.d3) {
-    stage.innerHTML = `<div class="fallback"><h2>The CDN did not load</h2>
-      <p>This viewer needs dagre and d3 from cdnjs (a deliberate trade-off, #161). Connect to the
-      network and reload.</p></div>`;
+  /* Names which one is missing, because the two come from different CDNs now and a reader who has
+     to fix this needs to know which host to look at. It is also not always the network: a dagre
+     build that externalises its dependency throws on load and leaves the global undefined, which
+     arrives here looking exactly like a failed fetch (#182). */
+  const missing = [!window.dagre && 'dagre (jsdelivr)', !window.d3 && 'd3 (cdnjs)'].filter(Boolean);
+  if (missing.length) {
+    stage.innerHTML = `<div class="fallback"><h2>A library did not load</h2>
+      <p>This viewer needs ${missing.join(' and ')} — loading them from a CDN is a deliberate
+      trade-off (#161). Connect to the network and reload; if that does not fix it, the browser
+      console will say what the script did instead of defining its global.</p></div>`;
     return;
   }
   stage.innerHTML = `<div id="view"><div id="world"></div></div>
