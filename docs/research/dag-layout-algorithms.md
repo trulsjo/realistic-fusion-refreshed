@@ -1,7 +1,9 @@
 # What the layout literature and the reachable libraries offer a 4:1 technology DAG
 
 Read 2026-08-30 for [#182](https://github.com/trulsjo/realistic-fusion-refreshed/issues/182),
-against **dagre 0.8.5** as `scripts/tree-viewer.template.html` loads it from cdnjs, **d3 7.9.0**,
+against **dagre 0.8.5**, which is what `scripts/tree-viewer.template.html` loaded from cdnjs when
+this was written — it loads `@dagrejs/dagre` 3.1.1 from jsdelivr now, Truls's call on the strength
+of §4 below, and the three versions were measured to draw this graph identically. **d3 7.9.0**,
 and the Factorio modding API pinned at **2.0.77**. **Facts only.** The decision this feeds — whether
 #182's rank split is replaced, kept and stabilised, or dropped for a different mechanism, and
 whether the viewer's library set changes at all — is Truls's and is recorded on the ticket, not
@@ -200,16 +202,20 @@ separation between ranks"*. That is #171's measured finding stated by both imple
 
 ## 4. What is reachable from the viewer's page
 
-The template's own comment is the constraint: *"The dagre and d3 libraries come from cdnjs by
-deliberate choice (#161): this is a dev-side instrument, and the prototype's variant A proved an
-offline hand-rolled fallback is possible if that trade-off is ever revisited."* That is a
+The template's own comment was the constraint. **As it read when this section was written**, and no
+longer — the move recorded at the top of this note rewrote it, so this is quoted as the state of the
+file on 2026-08-30 before that change, not as its current text: *"The dagre and d3 libraries come
+from cdnjs by deliberate choice (#161): this is a dev-side instrument, and the prototype's variant A
+proved an offline hand-rolled fallback is possible if that trade-off is ever revisited."* That is a
 convention, not a technical limit — the viewer is a local file, not a sandboxed page — so anything
-below marked "jsdelivr only" is a decision about #161's trade-off, not an impossibility.
+below marked "jsdelivr only" is a decision about #161's trade-off, not an impossibility. **Which is
+the decision that was then taken**, for dagre alone; d3 is still cdnjs.
 
 **cdnjs, checked directly against `api.cdnjs.com` on 2026-08-30.** Searching `dagre` returns exactly
 `dagre 0.8.5`, `dagre-d3 0.6.4`, `graphlib 4.0.5`. `dagre`'s version list ends at 0.8.5 — **the
-maintained `@dagrejs/dagre` (3.1.x) is not on cdnjs at all**, so the viewer is pinned to a 0.8.5
-that cdnjs will never move. `elkjs`: 404. `d3-dag`: 404. `@hpcc-js/wasm`: no match. `webcola`: no
+maintained `@dagrejs/dagre` (3.1.x) is not on cdnjs at all**, so a viewer that stays on cdnjs is
+pinned to a 0.8.5 that cdnjs will never move. **That is the sentence the library move turned on**
+— see the outcome recorded in `docs/research/tree-layout-levers.md`. `elkjs`: 404. `d3-dag`: 404. `@hpcc-js/wasm`: no match. `webcola`: no
 match. Present: `viz.js 2.1.2`, `cytoscape 3.34.2`, `vis-network 10.1.2`, `d3-graphviz 5.6.0`.
 
 ### ELK / elkjs
