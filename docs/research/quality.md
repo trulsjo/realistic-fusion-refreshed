@@ -9,14 +9,17 @@ Three kinds of evidence, kept separate throughout:
 - **The prototype and runtime API docs at 2.0.77**, quoted.
 - **Wube's own `quality` mod**, read off this machine at
   `D:\SteamLibrary\steamapps\common\Factorio\data\quality\`, version 2.0.77.
-- **Measurement.** Which properties the engine actually multiplies is not declared in any prototype
-  and cannot be read out of the files, so it was measured: a rig places one of every entity this mod
-  ships at each of the five quality levels and reads back what the simulation reads —
+- **Measurement, standing still.** Which properties the engine actually multiplies is not declared in
+  any prototype and cannot be read out of the files, so it was measured: a rig places one of every
+  entity this mod ships at each of the five quality levels and reads back what the simulation reads —
   `fluidbox.get_capacity`, `electric_buffer_size`, the prototype getters, container inventory size.
   Run once with the bundled `quality` mod alone and once with `space-age` as well; **every number was
   identical**, so this note quotes one set.
+- **Measurement, running.** Five reactors, one per quality level, lit and settled to equilibrium with
+  temperature and Q read off the signal wire. That is [its own section](#the-equilibrium-measured) and
+  its own rig, and it is what closes the one deduction the rest of this note rests on.
 
-**The rig is checked in as `scripts/probe-quality.ps1`** ([#97](https://github.com/trulsjo/realistic-fusion-refreshed/issues/97)).
+**The first rig is checked in as `scripts/probe-quality.ps1`** ([#97](https://github.com/trulsjo/realistic-fusion-refreshed/issues/97)).
 Run it to reproduce the numbers below rather than taking them on trust:
 
     pwsh -File scripts/probe-quality.ps1             # the bundled quality mod alone
@@ -25,11 +28,11 @@ Run it to reproduce the numbers below rather than taking them on trust:
 Re-measured that way on 2026-08-27 against Factorio 2.0.77: 261 reported rows per run, **identical
 between the two configurations** — which is the claim above, checked rather than remembered.
 
-**Nothing runs it for you.** It is a probe rather than a check: it asserts nothing, exit 0 means it
-ran and reported, and no check, bench or gate sweep invokes it — `load-check.ps1` included. So a
-later engine version can change any number here and this document goes stale in silence unless
-somebody types that command. The rig exists and is not wired; say that plainly rather than claiming a
-guarantee the repository does not have.
+**Nothing runs either of them for you.** Both are probes rather than checks: they assert nothing,
+exit 0 means the run reported, and no check, bench or gate sweep invokes them — `load-check.ps1`
+included. So a later engine version can change any number here and this document goes stale in
+silence unless somebody types those commands. The rigs exist and are not wired; say that plainly
+rather than claiming a guarantee the repository does not have.
 
 ## The short version
 
@@ -40,6 +43,11 @@ factor — measured out/in = 1.000000 at all five levels — so no conversion an
 cheaper. `capture_efficiency` is a Lua constant that no prototype field feeds, so nothing quality
 touches can reach it. **No combination of quality levels moves a reactor toward break-even without
 fusion**; the arithmetic is in [The perpetual-motion question](#the-perpetual-motion-question).
+
+**And a legendary reactor reaches the same equilibrium as a normal one — measured, since #145, not
+deduced.** Five reactors, one per level, each on its own network at the same plasma density, settle at
+the same 2.42382e8 °C and the same Q of 32%, with a spread of exactly zero. That was this note's one
+remaining deduction; [the section is here](#the-equilibrium-measured).
 
 What quality *does* do here is real but unremarkable, and one item on the list is a near-miss worth
 knowing about:
@@ -455,7 +463,10 @@ The table is arithmetic off the measured flow limits, not an observed brownout.
 `scripts/check-brownout.ps1` is the rig that measures the real thing, and it reads the same
 `get_input_flow_limit()` to calibrate — but it runs at normal quality only, so **a brownout has never
 been measured on a legendary reactor.** Adding a quality lane to that rig is the cheap way to check
-this table.
+this table, and [#146](https://github.com/trulsjo/realistic-fusion-refreshed/issues/146) is the ticket
+for it. The flow limits it would be calibrated against are re-measured on placed entities in
+[the equilibrium section](#the-equilibrium-measured) — 60 MW to 150 MW, unchanged — so what is left
+open is the brownout behaviour, not the numbers driving it.
 
 ### The residual boiler leak, since quality multiplies it
 
@@ -474,21 +485,86 @@ case — a plasma parked at `min_temperature_c`.
 
 And it is a *fuel* leak rather than an energy exploit: the boiler consumes a unit of plasma —
 10²⁰ nuclei — to make 1 MJ, where fusing the same 10²⁰ D-D nuclei releases about 58 MJ. Quality makes
-a bad trade 2.5× more frequent. **Not re-measured at quality**: the rig places entities and reads
-prototypes, it does not run a reactor, so this is arithmetic off declared fields plus the repository's
-own normal-quality measurement.
+a bad trade 2.5× more frequent. **Not re-measured at quality**: `probe-quality.ps1` places entities
+and reads prototypes rather than running one, and `probe-quality-equilibrium.ps1` runs a *hot* reactor
+— where #101 says the leak is exactly zero — so neither rig reaches this figure. It is arithmetic off
+declared fields plus the repository's own normal-quality measurement, and
+[#147](https://github.com/trulsjo/realistic-fusion-refreshed/issues/147) is the ticket for measuring
+it.
+
+## The equilibrium, measured
+
+The section above and everything before it is prototype measurement plus arithmetic. This one is five
+reactors running.
+
+**The rig is checked in as `scripts/probe-quality-equilibrium.ps1`**
+([#145](https://github.com/trulsjo/realistic-fusion-refreshed/issues/145)). Five `rf-reactor`s, one
+per quality level, each on **its own electric network**, each holding **1000 units of D-D plasma**
+topped back to that same fill every second with the temperature preserved, all five **cold-started at
+15 °C** and left to find their own equilibrium. Temperature and Q are read **off the signal wire** —
+a constant combinator ten tiles away, wired to the reactor's own signals combinator — so what is
+measured is the path a player reads, not a Lua internal.
+
+    pwsh -File scripts/probe-quality-equilibrium.ps1                          # 1200 s, tests' own SETTLE_S
+    pwsh -File scripts/probe-quality-equilibrium.ps1 -Seconds 2400            # and again at twice the length
+    pwsh -File scripts/probe-quality-equilibrium.ps1 -Seconds 60 -SampleSeconds 15   # the short run quoted below
+
+Measured 2026-08-31 against Factorio 2.0.77. The table quotes the 2400 s run; the `energy_consumption`
+row is rounded, and comes back off the engine as 1.299999952 / 1.600000024 / 1.899999976 for the
+reason in [The floating point does not come back clean](#the-floating-point-does-not-come-back-clean):
+
+| | normal | uncommon | rare | epic | legendary |
+|---|---|---|---|---|---|
+| level | 0 | 1 | 2 | 3 | 5 |
+| `input_flow_limit` | 60 MW | 78 MW | 96 MW | 114 MW | **150 MW** |
+| `energy_consumption` | 1 W | 1.3 W | 1.6 W | 1.9 W | **2.5 W** |
+| fluid box capacity | 1000 | 1000 | 1000 | 1000 | 1000 |
+| electric buffer capacity | 10.67 MJ | 10.67 MJ | 10.67 MJ | 10.67 MJ | 10.67 MJ |
+| electric network id | 1 | 2 | 3 | 4 | 5 |
+| buffer held at reading | 5.667 MJ | 5.667 MJ | 5.667 MJ | 5.667 MJ | 5.667 MJ |
+| plasma held at reading | 999.4515529 u | 999.4515529 u | 999.4515529 u | 999.4515529 u | 999.4515529 u |
+| **settled temperature** | **242382 kC** | **242382 kC** | **242382 kC** | **242382 kC** | **242382 kC** |
+| **settled Q** | **32%** | **32%** | **32%** | **32%** | **32%** |
+
+**The spread across the five is zero — not "within tolerance", identical to the digit the wire
+carries.** So is the Q. The two rows that *do* differ are the point of the table: `input_flow_limit`
+and `energy_consumption` really are 2.5× at legendary, so the five entities genuinely were at five
+different quality levels, and five equal temperatures are a result rather than a rig that forgot to
+set the quality. Five distinct network ids are the other control: no cell could draw at another's
+expense, which is exactly what a 2.5× flow limit against an unchanged 50 MW spend would otherwise
+allow.
+
+**Two of the rows are there to stop the result being a tautology.** *Plasma held at reading* is taken
+**before** the second's top-up, not after — read after it, every cell reports the fill it was just
+given and the row is true whatever the reactors did. Read before it, it is what the cell had left
+after a second of burning: equal to ten digits, so the five really were at one density. *Buffer held
+at reading* is non-zero and equal, which is what says all five cells were **powered** — five unlit
+reactors would also print a spread of zero, and nothing but the absolute temperature would separate
+that from the real answer.
+
+**The number matches the model.** `tests/test-reactor-logic.lua` pins the shipped D-D reactor at
+2.422e8 °C outside Factorio; the wire reads 2.42382e8 °C in it.
+
+**It really had settled**, and the probe reports the evidence rather than asserting it. It prints the
+whole approach curve, and at 2400 s the last twelve samples are the same number — flat from tick
+104 400 to tick 144 000, which is 39 600 ticks or eleven game minutes. The two run lengths agree to
+**0.051%**: 242258 kC at 1200 s, 242382 kC at 2400 s. A shorter run would not have done; at
+3600 ticks the same rig reads 195129 kC, which is a point on the way up and looks exactly like an
+equilibrium if it is quoted as one.
+
+**Only `rf-reactor`, only D-D, only at full fill, only with nothing researched.** The aneutronic tier,
+the D-T tier and the confinement ladder are each another lane and none of them is what #145 asked.
 
 ## What is not verified
 
 Stated plainly, because this repository treats an unverified claim as a defect.
 
-- **Nothing was measured running.** The rig places entities and reads what the engine reports; it does
-  not step the simulation, does not fuse anything and does not watch a power network. So the central
-  claim — that a legendary reactor reaches the same equilibrium as a normal one, because every input
-  to the equilibrium is quality-flat — is a **deduction from measured prototype values**, not an
-  observation of two reactors running side by side. So are the brownout table and the boiler leak. A
-  probe that lights a legendary reactor next to a normal one and compares the temperature and Q
-  signals is the thing that would close it, and it is the obvious next step.
+- **The brownout table and the boiler leak were not measured running.** [The equilibrium is
+  now](#the-equilibrium-measured); those two are not. Both are arithmetic off declared fields, both
+  want a rig of this shape, and neither wants it at full supply on a hot plasma — so they are
+  [#146](https://github.com/trulsjo/realistic-fusion-refreshed/issues/146) and
+  [#147](https://github.com/trulsjo/realistic-fusion-refreshed/issues/147) rather than a line in this
+  one.
 - **`allow_quality = false` was not tested.** No recipe in this repository was modified. Its effect is
   inferred from the locale string, from four base-game uses, and from the property's presence on
   `RecipePrototype` — the docs themselves give it no description sentence.

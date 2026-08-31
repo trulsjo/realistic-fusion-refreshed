@@ -86,9 +86,15 @@
     It places entities and reads what the engine reports. It does not step the simulation, light a
     reactor or watch a power network -- so the note's central conclusion, that a legendary reactor
     reaches the same equilibrium as a normal one because every input to that equilibrium is
-    quality-flat, is a DEDUCTION from measured prototype values rather than an observation of two
-    reactors side by side. Closing that means a probe that lights a legendary reactor next to a
-    normal one and compares temperature and Q. This is not that probe.
+    quality-flat, could not be observed here and stood as a DEDUCTION from measured prototype values.
+
+    ~~Closing that means a probe that lights a legendary reactor next to a normal one and compares
+    temperature and Q. This is not that probe.~~ THAT PROBE NOW EXISTS, as
+    scripts/probe-quality-equilibrium.ps1 (#145): it lights one reactor per quality level, settles
+    each to equilibrium on its own electric network at one plasma density, and reads temperature and
+    Q off the signal wire. All five settle at 2.42382e8 C and Q 32%, spread zero. This file still
+    does not do it, which is the point of this section -- but the deduction it named is no longer a
+    deduction.
 
     A NOTE FOR ANYONE TEMPTED TO ASSERT AGAINST THESE NUMBERS
 
