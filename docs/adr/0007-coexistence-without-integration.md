@@ -211,6 +211,8 @@ base-generated barrel unlocks before we arrived. `CONTEXT.md` defines both terms
 it means a set started doing something new with this repo. The rule that does the classifying is the
 only code in that check which *suppresses* a finding; its conditions, its labels and its stated
 ceiling live in `scripts/name-check.ps1`, where they can be tested, not here.
+[ADR 0028](0028-a-suppression-rule-reports-on-doubt.md) states the bar those conditions have to clear:
+where authorship cannot be shown either way, the check reports.
 
 **4. Neither check can see what a set does to our *own* prototypes.** `name-check` compares content
 only for prototypes present in **both** dumps, and a prototype of ours is by construction in only one;

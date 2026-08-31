@@ -356,6 +356,13 @@ human, never by the engine. Distinct from a **collision**, which is one prototyp
 the silent replacement `scripts/name-check.ps1` exists to catch. An overlap candidate is a finding to
 weigh, not a fault: coexistence tolerates duplicated concepts by design.
 
+**Replacement** — this repo changing the *content* of a prototype the game or a set already defines,
+rather than adding one beside it. **The claim is about authorship, not about difference.** A
+`replaces:` finding says *we* changed it — so a difference that upstream can be shown to have caused
+is not one, however visible it is. Distinct from a **collision**, which is about the name rather than
+the content, and from **set-derived** and **re-homed unlock** below, which name things a set does to
+us rather than the reverse.
+
 **Set** — a pinned list of third-party mods, defined in `scripts/fetch-mods.ps1`'s `$MOD_SETS` and
 named there (`krastorio2`, `spaceex`, `angels`). The pins are the definition; prose never re-derives
 them.
