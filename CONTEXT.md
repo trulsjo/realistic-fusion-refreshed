@@ -364,3 +364,19 @@ them.
 and `angels` with Space Age are two lanes over one set. A lane yields a **verdict**, which is durable
 and lives in [ADR 0007](docs/adr/0007-coexistence-without-integration.md), and a run log, which lives
 in the lane's issue — see [ADR 0027](docs/adr/0027-the-lane-issue-is-the-run-log.md).
+
+**Set-derived** — a prototype the *set* generated *from one of ours*, because it walks `data.raw` and
+reacts to what it finds there. Krastorio 2 turning our fluids into `kr-burn-rf-<fluid>` recipes is the
+example. Set-derived prototypes embed our names and so cannot collide with us however they multiply,
+and a set wiring its own derivations into its own technology is not a replacement.
+
+**Re-homed unlock** — a set moving an unlock the *game* generated for one of our prototypes onto a
+technology of the set's own. Bob's is the example: base Factorio puts every barrel recipe's unlock on
+`fluid-handling`, and `bobplates` sweeps them all — vanilla's, ours and every other mod's — onto a
+technology of its own.
+
+The two are easy to confuse and are not the same claim. **A set-derived prototype could only exist
+because the set made it; a re-homed unlock names a prototype of ours that the game made.** So the
+evidence that a re-homing is the set's doing cannot be our name — it has to be the set's own visible
+behaviour, such as the destination technology already carrying such unlocks before we arrived. Both
+are counted rather than failed, and neither is a **collision**.
