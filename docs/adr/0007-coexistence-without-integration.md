@@ -112,7 +112,7 @@ playthrough.** A red lane is not automatically a defect here — see the second 
 | Angel's + Space Age ([#132](https://github.com/trulsjo/realistic-fusion-refreshed/issues/132)) | `angels`, 8 mods, `-With space-age` | green | green | the silence is compatibility; no prototype touched only in combination, but on `rf-heater` the two compose |
 | Bob's ([#133](https://github.com/trulsjo/realistic-fusion-refreshed/issues/133)) | `bobs`, 12 mods | green | green | green since [#192](https://github.com/trulsjo/realistic-fusion-refreshed/issues/192) taught the classifier the **re-homed unlock**. `bobplates` moves every `-barrel` unlock off vanilla `fluid-handling` onto its own `bob-fluid-barrel-processing`, unconditionally, so our 22 land there: `effects` is the only field that differs, 22 added and none removed, and the 30 unlocks the technology already carried name `barrelling` recipes of vanilla's — the set's own pass visibly already running before we arrived |
 | Bob's + Space Age ([#134](https://github.com/trulsjo/realistic-fusion-refreshed/issues/134)) | `bobs`, 12 mods, `-With space-age` | green | green | the same re-homing on the same technology, classified the same way; Space Age adds no further finding |
-| Angel's + Bob's ([#135](https://github.com/trulsjo/realistic-fusion-refreshed/issues/135)) | `angels-bobs`, 20 mods | green | **red** | upstream's, and the re-homed shape one step outside the rule [#191](https://github.com/trulsjo/realistic-fusion-refreshed/issues/191) deliberately drew. `angelspetrochem` recategorises every barrel recipe to `angels-barreling-pump`, so 142 of the destination technology's 144 baseline unlocks are that and not `barrelling`, and the category condition declines it. `effects` is still the only field that differs, 22 added and none removed. Whether the rule widens is [#194](https://github.com/trulsjo/realistic-fusion-refreshed/issues/194) |
+| Angel's + Bob's ([#135](https://github.com/trulsjo/realistic-fusion-refreshed/issues/135)) | `angels-bobs`, 20 mods | green | **red** | upstream's, and the re-homed shape one step outside the rule [#191](https://github.com/trulsjo/realistic-fusion-refreshed/issues/191) deliberately drew. `angelspetrochem` recategorises every barrel recipe to `angels-barreling-pump`, so **not one** of the destination technology's 144 baseline unlocks names a `barrelling` recipe — 142 are `angels-barreling-pump`, one is `crafting`, one declares no category. The condition is an *any*-match rather than a majority, so it is the absence of every `barrelling` unlock that declines the lane, not the proportion. `effects` is still the only field that differs, 22 added and none removed. Whether the rule widens is [#194](https://github.com/trulsjo/realistic-fusion-refreshed/issues/194) |
 | Angel's + Bob's + Space Age ([#136](https://github.com/trulsjo/realistic-fusion-refreshed/issues/136)) | `angels-bobs`, 20 mods, `-With space-age` | green | **red** | the same single finding, unchanged by Space Age |
 | Angel's + Bob's + MadClown's ([#137](https://github.com/trulsjo/realistic-fusion-refreshed/issues/137)) | `angels-bobs-madclowns`, 21 mods | green | **red** | the same single finding; `Clowns-Processing` adds none of its own |
 | Angel's + Bob's + MadClown's + Space Age ([#138](https://github.com/trulsjo/realistic-fusion-refreshed/issues/138)) | `angels-bobs-madclowns`, 21 mods, `-With space-age` | green | **red** | the same single finding |
@@ -130,14 +130,16 @@ verdict and what the lanes have taught.
 Five findings, and they grow when a lane teaches something new rather than once per lane.
 
 **1. The `rf-` prefix has held, and against the predecessors it cannot fail by construction.** No
-`collision:` and nothing `unprefixed:` in any lane, at 740 to 3,053 candidate names each. Against the
-predecessors it is structural rather than lucky, which discharges
-[ADR 0006](0006-clean-break-from-predecessor-saves.md)'s one hard requirement: Durikkan's port
-defines **210** distinct `rfp-` names and the 1.1 original **216**, and **neither defines a single
-name beginning `rf-`** — measured, not assumed. (The harvest counts 299 and 293 `name =` occurrences
-respectively; the same name recurs across an item and its recipe, so the distinct figure is the
-smaller one and is what "defines" means here.) Two shapes are counted rather than waived: base
-Factorio generates `empty-rf-<fluid>-barrel` for each barrelled fluid of ours, which no discipline
+`collision:` and nothing `unprefixed:` in any of the thirteen lanes, at **11 to 7,146** candidate
+names each — a range that read 740 to 3,053 while the table held five rows and neither a one-mod lane
+nor a 46-mod one was in it. Against the predecessors it is structural rather than lucky, which
+discharges [ADR 0006](0006-clean-break-from-predecessor-saves.md)'s one hard requirement:
+Durikkan's port defines **210** distinct `rfp-` names and the 1.1 original **216**, and **neither
+defines a single name beginning `rf-`** — measured, not assumed. (The harvest counts 299 and 293
+`name =` occurrences respectively; the same name recurs across an item and its recipe, so the
+distinct figure is the smaller one and is what "defines" means here.) Two shapes are counted
+rather than waived: base Factorio generates `empty-rf-<fluid>-barrel` for each barrelled fluid of
+ours, which no discipline
 here can rename and which still embeds the prefix; and exactly one shared prototype is edited,
 `technology/fluid-handling`, which the game's own barrel generation appends our barrel recipes to.
 
@@ -154,25 +156,33 @@ checked rather than assumed. ADR 0026 said to budget for exactly this.
 `bobplates` re-homes every `-barrel` unlock from vanilla `fluid-handling` onto a technology of its
 own, so the unlocks base Factorio generated for our fluids move with everyone else's. Still
 upstream's — the pass names nothing of ours and tests for no prefix of ours — but it is a
-*replacement* finding rather than a missing asset. Since [#192](https://github.com/trulsjo/realistic-fusion-refreshed/issues/192) the classifier knows the shape and
-both Bob's lanes are green. The **five** lanes that load Angel's beside Bob's are still red, because
-`angelspetrochem` recategorises every barrel recipe to `angels-barreling-pump`, so the destination
-technology's 142 baseline barrel unlocks are not `barrelling` and the rule counts `barrelling` only.
-That narrowness is deliberate — see finding 3 — and whether it widens is [#194](https://github.com/trulsjo/realistic-fusion-refreshed/issues/194).
+*replacement* finding rather than a missing asset. Since
+[#192](https://github.com/trulsjo/realistic-fusion-refreshed/issues/192)
+the classifier knows the shape and both Bob's lanes are green. The **five** lanes that load Angel's
+beside Bob's are still red, because
+`angelspetrochem` recategorises every barrel recipe to `angels-barreling-pump`, so not one of the
+destination technology's 144 baseline unlocks names a `barrelling` recipe and the rule counts
+`barrelling` only. The condition is an *any*-match rather than a majority, so what declines the lane
+is the absence of every `barrelling` unlock and not their proportion. That narrowness is
+deliberate — see finding 3 — and whether it widens is
+[#194](https://github.com/trulsjo/realistic-fusion-refreshed/issues/194).
 
 **The third shape arrived with SeaBlock and is weaker evidence than either.** `no-pipe-touching`'s
 `data-final-fixes` walks `data.raw["infinity-pipe"]` and adds every pipe connection category it has
 collected, so our `rf-pipe` and `rf-plasma` join Bob's ten on a **vanilla** prototype. Upstream's by
 its own source comment, but the classifier cannot see it at all: the difference is nested two levels
 inside `fluid_box`, where `$SHAPES` is keyed by the top-level field, and a connection category of
-ours in their list is equally consistent with either author. [#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195).
+ours in their list is equally consistent with either author.
+[#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195).
 
 **One claim in this finding has been measured false and is left here rather than quietly dropped.**
-It used to count `fluid` among the asset-shape reds on ADR 0026's smoke test. Re-run for [#141](https://github.com/trulsjo/realistic-fusion-refreshed/issues/141) on
-2026-08-31, that lane is green on both halves, while `underground-pipe-pack` 2.0.6 still names
+It used to count `fluid` among the asset-shape reds on ADR 0026's smoke test. Re-run on 2026-08-31
+for [#141](https://github.com/trulsjo/realistic-fusion-refreshed/issues/141),
+that lane is green on both halves, while `underground-pipe-pack` 2.0.6 still names
 `__base__/sound/car-metal-impact.ogg` in a file its `data.lua` requires unconditionally. RITEG names
 the same path in the same field and still fails, so the check has not stopped working in general.
-Why the two differ is [#196](https://github.com/trulsjo/realistic-fusion-refreshed/issues/196) and is not settled here.
+Why the two differ is
+[#196](https://github.com/trulsjo/realistic-fusion-refreshed/issues/196) and is not settled here.
 
 **3. A set reacts to our prototypes in two different ways, and both are counted rather than failed.**
 
@@ -183,8 +193,10 @@ that gains only the unlocks for them is wiring rather than replacement.
 
 **Or it re-homes an unlock the *game* generated from ours.** Base Factorio makes a fill and an empty
 barrel recipe per barrelled fluid and puts their unlocks on `fluid-handling`; `bobplates` sweeps
-every one of them onto a technology of its own, ours along with vanilla's. Added by [#192](https://github.com/trulsjo/realistic-fusion-refreshed/issues/192) on
-[#191](https://github.com/trulsjo/realistic-fusion-refreshed/issues/191)'s decision, after [#133](https://github.com/trulsjo/realistic-fusion-refreshed/issues/133) found it.
+every one of them onto a technology of its own, ours along with vanilla's. Added by
+[#192](https://github.com/trulsjo/realistic-fusion-refreshed/issues/192) on
+[#191](https://github.com/trulsjo/realistic-fusion-refreshed/issues/191)'s decision,
+after [#133](https://github.com/trulsjo/realistic-fusion-refreshed/issues/133) found it.
 
 **The two are not the same claim and the check does not print them as one.** A set-derived prototype
 *could only exist* because the set made it, which is real evidence of authorship. A re-homed unlock
