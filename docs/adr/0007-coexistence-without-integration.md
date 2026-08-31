@@ -130,7 +130,7 @@ verdict and what the lanes have taught.
 Five findings, and they grow when a lane teaches something new rather than once per lane.
 
 **1. The `rf-` prefix has held, and against the predecessors it cannot fail by construction.** No
-`collision:` and nothing `unprefixed:` in any of the thirteen lanes, at **11 to 7,146** candidate
+`collision:` and nothing `unprefixed:` in any of the fourteen lanes, at **11 to 7,146** candidate
 names each — a range that read 740 to 3,053 while the table held five rows and neither a one-mod lane
 nor a 46-mod one was in it. Against the predecessors it is structural rather than lucky, which
 discharges [ADR 0006](0006-clean-break-from-predecessor-saves.md)'s one hard requirement:

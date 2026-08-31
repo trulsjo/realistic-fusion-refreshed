@@ -79,11 +79,11 @@ that document is a derivation of which mods form which set, and is already 700+ 
 a different subject, and it would inherit exactly the growth problem being solved.
 
 **One file per lane under `docs/research/lanes/`.** Cleanest growth story, each file small. Rejected as
-thirteen files holding what the issues already hold, and it fragments the cross-lane comparisons —
+fourteen files holding what the issues already hold, and it fragments the cross-lane comparisons —
 which have been the most valuable findings the programme produced.
 
 **Keep lane records whole in ADR 0007 and accept the length.** The argument for it is real: a verdict
 is only trustworthy because the measurement sat next to it, and a table row invites a reader to trust
 a result whose evidence they cannot see. Rejected because the evidence is one link away rather than
-absent, and because at thirteen lanes the ADR would document that lanes ran without making it possible
+absent, and because at fourteen lanes the ADR would document that lanes ran without making it possible
 to find what they decided.
