@@ -801,8 +801,28 @@ try {
     $derivedNames = @($ours.Keys | Where-Object { $_ -match $DERIVED })
     Write-Host ("the difference is {0} prototype name(s) the game does not have; {1} of them are barrel recipes base Factorio named." -f
         $ours.Count, $derivedNames.Count)
-    Write-Host ("it changes {0} prototype(s) the game already defines, beyond the {1} declared in `$ALLOWED_EDITS." -f
-        $replaced.Count, $ALLOWED_EDITS.Count)
+    # WHICH DECLARED EDITS FIRED, rather than how many are declared. The old line printed
+    # $ALLOWED_EDITS.Count -- a static list length -- immediately after a live count, so it read as
+    # though the declared edit had happened. It always said "the 1 declared", on every lane, whether
+    # or not anything was excused.
+    #
+    # THE BOB'S LANE IS WHERE THAT MISLEADS (#133), and it is the reason this is worth two lines
+    # instead of one. bobplates walks data.raw and moves every -barrel recipe's unlock off
+    # technology/fluid-handling onto a technology of its own, so ours go with vanilla's: the one
+    # declared edit does NOT fire, and with that set loaded this repo changes no vanilla prototype
+    # at all. The old wording said the opposite to the one reader who most needed the truth -- the
+    # one chasing that lane's replaces: finding, deciding whether it was ours.
+    #
+    # Named as well as counted, because "1 fired" and "which one" are different questions and the
+    # list is one entry long.
+    $firedEdits = @($ALLOWED_EDITS | Where-Object {
+        $withUs.ContainsKey($_) -and $withoutUs.ContainsKey($_) -and $withUs[$_] -ne $withoutUs[$_] } |
+        Sort-Object)
+    Write-Host ("it changes {0} prototype(s) the game already defines, beyond what `$ALLOWED_EDITS declares." -f
+        $replaced.Count)
+    Write-Host ("of the {0} declared edit(s), {1} fired{2}." -f
+        $ALLOWED_EDITS.Count, $firedEdits.Count,
+        $(if ($firedEdits.Count) { ' -- ' + ($firedEdits -join ', ') } else { '' }))
 
     # What the SET made out of us, told apart from what we made. Counted and named rather than
     # waived: a jump here means the set started generating something new from this repo's
