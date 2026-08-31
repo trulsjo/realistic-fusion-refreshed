@@ -154,11 +154,14 @@
     The fifth pins the two classifiers -AlsoModDirectory brought with it, and it is there because
     they are the only code here that SUPPRESSES a finding: an over-broad rule turns a real collision
     into a counted line and the run still exits 0. It asserts the negatives as hard as the
-    positives, across both wiring shapes Get-DerivedWiring knows -- an unprefixed name of ours, an
-    unlock naming a recipe that is not ours, a tooltip row naming nothing of ours, a row of theirs
-    reworded in the same diff as one of ours, a field outside the shape's own changing, and any
-    entry being removed must all still be reported. It also asserts each exemption is granted for
-    the RIGHT shape, since one loop dispatches both.
+    positives, across both wiring shapes Get-DerivedWiring knows and all three stories they carry --
+    an unprefixed name of ours, an unlock naming a recipe that is not ours, a barrel unlock built
+    from no fluid of ours, our barrel unlocks landing on a technology that carried none, a tooltip
+    row naming nothing of ours, a row of theirs reworded in the same diff as one of ours, a field
+    outside the shape's own changing, and any entry being removed must all still be reported. It
+    also asserts each exemption is granted under the RIGHT label -- `unlock`, `rehomed`,
+    `unlock+rehomed` or `tooltip` -- since one loop dispatches every one of them and a prototype
+    excused for the wrong reason prints a sentence that is not true.
 
 .PARAMETER KeepTemp
     Keep the dumps for inspection. Junctions are always removed.
@@ -532,13 +535,28 @@ function Get-DerivedWiring {
         [Parameter(Mandatory)] [hashtable] $SetDerived,
         # The names this repo defines -- $ours.Keys at the call site. Empty is legitimate: the
         # unlock shape never reads it, so a caller testing only that half has nothing to pass.
-        [Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $OurNames
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $OurNames,
+        # The FLUIDS this repo defines, which is a narrower thing than $OurNames and cannot be
+        # derived from it: the caller's map is name -> its types, and by the time it is flattened to
+        # names the type is gone. The re-homed predicate builds barrel recipe names out of these and
+        # has to know that `rf-brine` is a fluid while `rf-brine-barrel` is not. Empty is legitimate
+        # for the same reason $OurNames' is -- a caller testing only the tooltip half passes none.
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $OurFluids
     )
 
     # The fields a wiring is allowed to touch, and the shape each one is. Adding a third means
     # adding its predicate below and its self-test cases -- not editing a regex. The predicate switch
     # THROWS on a shape it does not know, so a half-done addition stops the run instead of borrowing
     # another shape's test.
+    #
+    # KEYED BY FIELD AND NOT BY PROTOTYPE TYPE, deliberately (#191). Both shapes have only ever been
+    # seen on one type each, but a type test would guard against something nobody has observed while
+    # making the rule harder to read.
+    #
+    # A SHAPE IS NOT A LABEL. The `effects` shape carries two stories -- the set wiring in its own
+    # derivations, and the set re-homing an unlock base Factorio generated from a fluid of ours --
+    # and a prototype can hold both at once. The shape selects the predicate; the predicate says
+    # which story or stories actually fired, and that is what gets recorded and printed.
     $SHAPES = @{ 'effects' = 'unlock'; 'custom_tooltip_fields' = 'tooltip' }
 
     $exempt = @{}
@@ -603,9 +621,76 @@ function Get-DerivedWiring {
         # rather than falling through: an `else` here meant a third $SHAPES entry added without its
         # own predicate would silently be judged by another shape's test and printed with a null
         # reason. A missing predicate should stop the run, not quietly borrow one.
+        #
+        # THE LABEL, which starts as the shape's own name and only a predicate that can tell two
+        # stories apart ever refines it. `tooltip` has one story and never touches this.
+        $label = $SHAPES[$field]
         $foreign = switch ($SHAPES[$field]) {
             'unlock' {
-                @($added | Where-Object { $_.type -ne 'unlock-recipe' -or -not $SetDerived.ContainsKey($_.recipe) })
+                # TWO STORIES SHARE THIS SHAPE, and telling them apart is the whole of #191.
+                #
+                # `unlock` -- the added effect names a recipe Get-SetDerived already attributed to
+                # the SET. That is real evidence of authorship: `kr-burn-rf-brine` could not exist
+                # unless Krastorio 2 made it.
+                #
+                # `rehomed` -- the added effect names a barrel recipe BASE FACTORIO generated from a
+                # fluid of ours, and the set has moved it onto a technology of its own. bobplates
+                # walks data.raw and re-homes every barrel unlock off vanilla `fluid-handling`, so
+                # ours go across with vanilla's and every other mod's; the pass names nothing of
+                # ours and tests for no prefix of ours.
+                #
+                # WHY OUR NAME IS NOT THE EVIDENCE HERE, and this is the trap #191 rejected an
+                # earlier rule for. A technology of theirs gaining `unlock-recipe rf-brine-barrel` is
+                # EQUALLY consistent with the set sweeping our recipe in and with this repo wiring
+                # our recipe into their technology. The dump records what a prototype ended up as,
+                # never who wrote it, so the two are byte-identical. Testing "the recipe is one of
+                # ours" would therefore excuse our own edit to a third party's technology -- and it
+                # would also undo Get-SetDerived's deliberate skip of any name carrying the prefix.
+                #
+                # So the evidence is the SET'S OWN VISIBLE BEHAVIOUR, and both halves are required:
+                #
+                #   1. the recipe is one base Factorio generates from a fluid of ours -- CONSTRUCTED
+                #      as `<fluid>-barrel` and `empty-<fluid>-barrel` from the fluids this repo
+                #      defines, rather than matched by pattern. $DERIVED covers only the `empty-`
+                #      half, and this file's rule is that a new shape brings a predicate, not a
+                #      wider regex.
+                #   2. the destination technology ALREADY CARRIED base-generated barrel unlocks in
+                #      the baseline -- judged by the unlocked recipe's declared `category` being
+                #      `barrelling` in the baseline dump, not by its name. That is what shows a pass
+                #      of theirs was visibly already running before we arrived. A technology with no
+                #      such unlock that gains only ours is not a re-homing and is still reported.
+                #
+                # ponytail: `barrelling` only, which is the narrowest rule covering what has been
+                # observed. A set that re-homes WITHOUT recategorising surfaces as a plain
+                # `replaces:`, gets read, and earns its own widening then -- which is how both of
+                # the stories above were found in the first place.
+                $barrels = @{}
+                foreach ($f in $OurFluids) {
+                    $barrels["$f-barrel"]       = $true
+                    $barrels["empty-$f-barrel"] = $true
+                }
+                $barrelHost = 0 -lt @($rowsBefore | Where-Object {
+                    $_.type -eq 'unlock-recipe' -and
+                    $Baseline.ContainsKey("recipe/$($_.recipe)") -and
+                    ($Baseline["recipe/$($_.recipe)"] | ConvertFrom-Json).category -eq 'barrelling'
+                }).Count
+
+                # PER ENTRY, NOT ALL-OR-NOTHING (#191). A technology that both re-homes our barrel
+                # unlocks and wires in a recipe the set derived from us is fully explained, and
+                # rejecting it because two explanations met in one prototype would be wrong. What is
+                # all-or-nothing is the verdict: one unexplained addition and the whole key reports.
+                $told     = [ordered] @{ 'unlock' = $false; 'rehomed' = $false }
+                $rejected = @()
+                foreach ($row in $added) {
+                    if ($row.type -ne 'unlock-recipe')          { $rejected += $row; continue }
+                    if ($SetDerived.ContainsKey($row.recipe))   { $told['unlock']  = $true; continue }
+                    if ($barrelHost -and $barrels.ContainsKey($row.recipe)) { $told['rehomed'] = $true; continue }
+                    $rejected += $row
+                }
+                # `unlock+rehomed` when both fired, and the order is fixed by $told rather than by
+                # which row happened to come first, so one prototype cannot print two spellings.
+                if (-not $rejected) { $label = @($told.Keys | Where-Object { $told[$_] }) -join '+' }
+                $rejected
             }
             'tooltip' {
                 # WHAT THIS CAN AND CANNOT SEE, because it is a suppression rule and the limit is the
@@ -643,7 +728,7 @@ function Get-DerivedWiring {
                        "another shape's test. Add one beside its `$SHAPES entry.")
             }
         }
-        if (-not $foreign) { $exempt[$key] = $SHAPES[$field] }
+        if (-not $foreign) { $exempt[$key] = $label }
     }
     # A HASHTABLE, and it disarms two traps an array return carried. `return ,$exempt` would have
     # handed back an array WRAPPING the array, and the caller's @() does not flatten it -- so the one
@@ -867,16 +952,39 @@ try {
             Write-Host ("of those, {0} are the SET's own prototypes generated from ours -- {1}" -f
                 $setDerived.Count, (($byPrefix | ForEach-Object { "$($_.Count)x '$($_.Name)<ours>'" }) -join ', '))
         }
+        # THE FLUIDS SEPARATELY FROM THE NAMES, because the re-homed predicate builds barrel recipe
+        # names out of them and $ours.Keys has already thrown the type away. `fluid` is the type
+        # Factorio dumps them under, and $ours maps each name to every type it appears as.
+        $ourFluids = @($ours.GetEnumerator() |
+            Where-Object { $_.Value -contains 'fluid' } |
+            ForEach-Object { $_.Key })
         $derivedWiring = Get-DerivedWiring -Replaced $replaced -WithUs $withUs -Baseline $withoutUs `
-                            -SetDerived $setDerived -OurNames @($ours.Keys)
+                            -SetDerived $setDerived -OurNames @($ours.Keys) -OurFluids $ourFluids
         foreach ($k in @($derivedWiring.Keys | Sort-Object)) {
+            # ONE SENTENCE PER LABEL, ENDING INCLUDED. The tail used to be shared -- "so it is the
+            # set wiring its own derivations in" -- and that sentence is FALSE of a re-homing: the
+            # recipe was generated by base Factorio, not by the set. Printing the wrong story on the
+            # one line a reader sees would undo the distinction the label exists to draw (#191).
             $what = switch ($derivedWiring[$k]) {
-                'unlock'  { 'gains only unlock-recipe effects for those' }
-                'tooltip' { 'gains only tooltip rows of a kind it already had, naming ours' }
-                default   { "gains only wiring classified '$_'" }
+                'unlock' {
+                    'gains only unlock-recipe effects for recipes the set derived from ours, so it ' +
+                    'is the set wiring its own derivations in'
+                }
+                'rehomed' {
+                    'gains only barrel unlocks base Factorio generated from our fluids, onto a ' +
+                    'technology that already carried such unlocks, so it is the set re-homing them'
+                }
+                'unlock+rehomed' {
+                    'gains only recipes the set derived from ours and barrel unlocks base Factorio ' +
+                    'generated from our fluids, so it is the set both wiring and re-homing'
+                }
+                'tooltip' {
+                    'gains only tooltip rows of a kind it already had, naming ours, so it is the ' +
+                    'set describing our prototypes'
+                }
+                default { "gains only wiring classified '$_'" }
             }
-            Write-Host ("  '$k' $what, so it is the set wiring its own derivations in rather than " +
-                        'this repo replacing it.')
+            Write-Host ("  '$k' $what rather than this repo replacing it.")
         }
         $replaced = @($replaced | Where-Object { -not $derivedWiring.ContainsKey($_) })
     }
@@ -1107,14 +1215,62 @@ data.raw.item["iron-plate"].stack_size = 123' |
         $techNoBase = @{ name = 'kr-fluid-excess-handling' }
         $techGained = @{ name = 'kr-fluid-excess-handling'; effects = @(@{ type = 'unlock-recipe'; recipe = $setName }) }
 
+        # THE RE-HOMED HALF (#192, decided on #191), and the fixtures are the shape bobplates really
+        # produces: a technology of the SET's that already carries base Factorio's barrel unlocks,
+        # gaining the ones base Factorio generated from OUR fluids. Nothing here is named by us and
+        # nothing here is generated by the set -- which is exactly why the unlock predicate alone
+        # declines it, and why our own names cannot be the evidence that excuses it.
+        $ourFluidB  = 'rf-brine'
+        $bobTech    = 'technology/bob-fluid-barrel-processing'
+        # The category lives on the RECIPE, not on the effect, so the baseline dump has to be
+        # consulted for it. Two vanilla barrel recipes and one non-barrel recipe of theirs, so a
+        # test that merely found SOME recipe in the baseline would not pass by accident.
+        $barrelBase = @{
+            'recipe/water-barrel'       = '{"name":"water-barrel","category":"barrelling"}'
+            'recipe/empty-water-barrel' = '{"name":"empty-water-barrel","category":"barrelling"}'
+            'recipe/bob-alloy'          = '{"name":"bob-alloy","category":"crafting"}'
+        }
+        $vanillaFill  = @{ type = 'unlock-recipe'; recipe = 'water-barrel' }
+        $vanillaEmpty = @{ type = 'unlock-recipe'; recipe = 'empty-water-barrel' }
+        $oursFill     = @{ type = 'unlock-recipe'; recipe = "$ourFluidB-barrel" }
+        $oursEmpty    = @{ type = 'unlock-recipe'; recipe = "empty-$ourFluidB-barrel" }
+        $bobBefore  = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill, $vanillaEmpty) }
+        $bobRehomed = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill, $vanillaEmpty, $oursFill, $oursEmpty) }
+        # MIXED, and it must pass reporting BOTH stories. A technology that both re-homes our barrel
+        # unlocks and wires in a recipe the set derived from us is fully explained; rejecting it
+        # because two explanations met in one prototype would be wrong, and printing only one of them
+        # would tell the reader half the truth on the single line they see.
+        $bobMixed   = @{ name = 'bob-fluid-barrel-processing'; effects = @(
+                        $vanillaFill, $vanillaEmpty, $oursFill
+                        @{ type = 'unlock-recipe'; recipe = $setName }) }
+        # A BARREL UNLOCK THAT IS NOT BUILT FROM A FLUID OF OURS. `bob-lubricant` is not in
+        # $OurFluids, so nothing here constructed that name and the row is a plain replacement.
+        $bobNotOurs = @{ name = 'bob-fluid-barrel-processing'; effects = @(
+                        $vanillaFill, $vanillaEmpty
+                        @{ type = 'unlock-recipe'; recipe = 'bob-lubricant-barrel' }) }
+        # CONDITION 2 SAYING NO. The same added unlocks, onto a technology whose baseline carried no
+        # barrelling unlock at all -- so no pass of theirs is visibly already running, and the only
+        # thing left pointing at an author is our name, which #191 rejected as evidence.
+        $plainTech   = 'technology/bob-something-else'
+        $plainBefore = @{ name = 'bob-something-else'; effects = @(@{ type = 'unlock-recipe'; recipe = 'bob-alloy' }) }
+        $plainGained = @{ name = 'bob-something-else'; effects = @(
+                        @{ type = 'unlock-recipe'; recipe = 'bob-alloy' }
+                        $oursFill, $oursEmpty) }
+        # A DIFF THAT IS NOT ONLY ADDED UNLOCKS, on the re-homed shape rather than the wiring one:
+        # the barrel unlocks arrive AND a second field moves. The field allow-list must still bite.
+        $bobOther   = @{ name = 'bob-fluid-barrel-processing'; unit = 42; effects = @($vanillaFill, $vanillaEmpty, $oursFill, $oursEmpty) }
+        # AN EFFECT REMOVED beside the re-homed additions. Their own unlock disappears while ours
+        # arrive, which is an edit to their technology however well-explained the additions are.
+        $bobDropped = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill, $oursFill, $oursEmpty) }
+
         $j = { param($o) $o | ConvertTo-Json -Depth 100 -Compress }
 
         $cases = @(
-            @{ Label = 'the set wiring its own derivation in';       Key = $tech; Before = $before; After = $wired;   Exempt = $true }
+            @{ Label = 'the set wiring its own derivation in';       Key = $tech; Before = $before; After = $wired;   Exempt = $true; Shape = 'unlock' }
             @{ Label = 'an unlock for a recipe that is NOT ours';    Key = $tech; Before = $before; After = $foreign; Exempt = $false }
             @{ Label = 'a field other than effects changing';        Key = $tech; Before = $before; After = $renamed; Exempt = $false }
             @{ Label = 'an effect being REMOVED';                    Key = $tech; Before = $before; After = $dropped; Exempt = $false }
-            @{ Label = 'a tooltip row naming a fluid of ours';       Key = $gen;  Before = $tipBefore; After = $tipOurs;    Exempt = $true }
+            @{ Label = 'a tooltip row naming a fluid of ours';       Key = $gen;  Before = $tipBefore; After = $tipOurs;    Exempt = $true; Shape = 'tooltip' }
             @{ Label = 'a tooltip row naming nothing of ours';       Key = $gen;  Before = $tipBefore; After = $tipTheirs;  Exempt = $false }
             @{ Label = 'a tooltip row being REMOVED';                Key = $gen;  Before = $tipBefore; After = $tipDropped; Exempt = $false }
             @{ Label = 'a row of theirs REWORDED beside ours';       Key = $gen;  Before = $tipBefore; After = $tipEdited;  Exempt = $false }
@@ -1122,11 +1278,17 @@ data.raw.item["iron-plate"].stack_size = 123' |
             @{ Label = 'a DUPLICATE row of theirs de-duplicated';    Key = $gen;  Before = $tipDupBase; After = $tipDeduped; Exempt = $false }
             @{ Label = 'a row of a kind the prototype did not have'; Key = $gen;  Before = $tipBefore;  After = $tipNewKind; Exempt = $false }
             @{ Label = 'a tooltip field appearing from nothing';     Key = $gen;  Before = $tipNoBase;  After = $tipOurs;    Exempt = $false }
-            @{ Label = 'an effects field appearing from nothing';    Key = $tech; Before = $techNoBase; After = $techGained; Exempt = $true }
+            @{ Label = 'an effects field appearing from nothing';    Key = $tech; Before = $techNoBase; After = $techGained; Exempt = $true; Shape = 'unlock' }
+            @{ Label = 'our barrel unlocks re-homed onto their tech'; Key = $bobTech; Before = $bobBefore; After = $bobRehomed; Exempt = $true; Shape = 'rehomed' }
+            @{ Label = 'a re-homing AND a wiring in one technology';  Key = $bobTech; Before = $bobBefore; After = $bobMixed;   Exempt = $true; Shape = 'unlock+rehomed' }
+            @{ Label = 'a barrel unlock built from no fluid of ours'; Key = $bobTech;   Before = $bobBefore;   After = $bobNotOurs;  Exempt = $false }
+            @{ Label = 'our barrel unlocks onto a NON-barrel tech';   Key = $plainTech; Before = $plainBefore; After = $plainGained; Exempt = $false }
+            @{ Label = 'a re-homing with another field changed';      Key = $bobTech;   Before = $bobBefore;   After = $bobOther;    Exempt = $false }
+            @{ Label = 'a re-homing with an effect REMOVED';          Key = $bobTech;   Before = $bobBefore;   After = $bobDropped;  Exempt = $false }
         )
         # THE EMPTY CASE FIRST, because it is the one a real lane hits most and the one the K2 lane
         # could never reach. Nothing replaced is what a clean coexistence result looks like.
-        $none = Get-DerivedWiring -Replaced @() -WithUs @{} -Baseline @{} -SetDerived @{} -OurNames @()
+        $none = Get-DerivedWiring -Replaced @() -WithUs @{} -Baseline @{} -SetDerived @{} -OurNames @() -OurFluids @()
         if ($none.Count -ne 0) {
             Write-Host "FAILED - self-test: an empty `$Replaced returned $($none.Count) exemption(s)."
             exit 1
@@ -1147,8 +1309,15 @@ data.raw.item["iron-plate"].stack_size = 123' |
 
         foreach ($c in $cases) {
             $k   = $c.Key
+            # THE BASELINE IS THE WHOLE DUMP, not just the prototype under test. The re-homed
+            # predicate reads each baseline unlock's RECIPE out of it to find the category, so a
+            # fixture holding only the technology would make condition 2 unsatisfiable and every
+            # re-homing would report -- a green proving the opposite of what it claimed.
+            $base = @{ $k = (& $j $c.Before) }
+            foreach ($r in $barrelBase.GetEnumerator()) { $base[$r.Key] = $r.Value }
             $got = Get-DerivedWiring -Replaced @($k) -WithUs @{ $k = (& $j $c.After) } `
-                        -Baseline @{ $k = (& $j $c.Before) } -SetDerived $classified -OurNames @($ourFluid)
+                        -Baseline $base -SetDerived $classified -OurNames @($ourFluid) `
+                        -OurFluids @($ourFluidB)
             $was = [bool] $got.ContainsKey($k)
             if ($was -ne $c.Exempt) {
                 Write-Host "FAILED - self-test: $($c.Label) was $(if ($was) { 'excused' } else { 'reported' }), expected the opposite."
@@ -1158,21 +1327,26 @@ data.raw.item["iron-plate"].stack_size = 123' |
             # loop, so a dispatch that fell through to the wrong predicate could excuse the right
             # key for the wrong reason -- and the per-key line the caller prints would then say
             # something untrue about what the set did.
-            $want = if ($k -eq $tech) { 'unlock' } else { 'tooltip' }
-            if ($was -and $got[$k] -ne $want) {
-                Write-Host "FAILED - self-test: $($c.Label) was excused as '$($got[$k])', expected '$want'."
+            # DECLARED PER CASE rather than inferred from the key, since #192: one key now carries
+            # three different right answers -- `rehomed`, `unlock+rehomed`, and reported -- so a
+            # rule keyed on the prototype would assert the same thing for all three.
+            if ($was -and $got[$k] -ne $c.Shape) {
+                Write-Host "FAILED - self-test: $($c.Label) was excused as '$($got[$k])', expected '$($c.Shape)'."
                 exit 1
             }
         }
         Write-Host 'self-test 5/6: an empty replacement list binds, and the set-derivation classifiers'
-        Write-Host '               excuse what the set built from us and nothing else, in both wiring'
-        Write-Host '               shapes -- an unprefixed name of ours, a LONE one embedding one of'
-        Write-Host '               ours, an unlock for a recipe that is not ours, a tooltip row naming'
+        Write-Host '               excuse what the set built from us and what base Factorio built from'
+        Write-Host '               us that the set re-homed, and nothing else -- an unprefixed name of'
+        Write-Host '               ours, a LONE one embedding one of ours, an unlock for a recipe that'
+        Write-Host '               is not ours, a barrel unlock built from no fluid of ours, our barrel'
+        Write-Host '               unlocks onto a technology that carried none, a tooltip row naming'
         Write-Host '               nothing of ours, a row of theirs reworded beside ours, a duplicate'
         Write-Host '               row of theirs de-duplicated, a row of a kind the prototype did not'
         Write-Host '               have, a changed field and a removed entry all survive; an effects'
-        Write-Host '               field appearing from nothing is still a wiring; each exemption is'
-        Write-Host '               checked for the RIGHT shape; and a name the set redefines in both'
+        Write-Host '               field appearing from nothing is still a wiring; a technology that'
+        Write-Host '               both wires and re-homes passes and says so; each exemption is'
+        Write-Host '               checked under the RIGHT label; and a name the set redefines in both'
         Write-Host '               dumps is still caught by the scan.'
 
         # ---------------------------------------------------------------- half six
@@ -1250,8 +1424,9 @@ data.raw.item["iron-plate"].stack_size = 123' |
         Write-Host ''
         Write-Host 'OK - self-test passed: clean repo passes; unprefixed name, borrowed name and a real'
         Write-Host '     mod that adds and replaces are all caught; the set-derivation classifiers'
-        Write-Host '     excuse only what the set built from us; and the declared-edit line reports'
-        Write-Host '     what fired rather than what is permitted.'
+        Write-Host '     excuse only what the set built from us and the barrel unlocks it re-homed of'
+        Write-Host '     ours; and the declared-edit line reports what fired rather than what is'
+        Write-Host '     permitted.'
         exit 0
     }
 
@@ -1272,9 +1447,26 @@ data.raw.item["iron-plate"].stack_size = 123' |
     $mineCount = $ours.Count - $setDerived.Count
     Write-Host "OK - all $mineCount prototype names this repo defines carry '$PREFIX', and none is used by"
     Write-Host "     $against. Bundled enabled: $bundledOn."
+    # TWO SENTENCES, EACH PRINTED ONLY IF IT IS TRUE (#192). This was one sentence -- "N names are
+    # the set's own prototypes built from ours, and M prototypes of theirs gained only the wiring for
+    # THEM" -- which ties the second count to the first. The Bob's lane broke that: it derives
+    # NOTHING from us and still has one prototype excused, so the line read "a further 0 name(s) ...
+    # and 1 prototype(s) of theirs gained only the wiring for them", where "them" is nothing at all.
+    # A re-homing is not wiring for a set-derived name and must not be reported as though it were.
     if ($setDerived.Count -or $derivedWiring.Count) {
-        Write-Host ("     A further $($setDerived.Count) name(s) in the difference are the SET's own prototypes built " +
-                    "from ours, and $($derivedWiring.Count) prototype(s) of theirs gained only the wiring for them.")
+        if ($setDerived.Count) {
+            Write-Host ("     A further $($setDerived.Count) name(s) in the difference are the SET's own " +
+                        'prototypes built from ours.')
+        }
+        if ($derivedWiring.Count) {
+            # BROKEN DOWN BY LABEL, because the counts answer different questions: `unlock` is the
+            # set wiring in what it derived, `rehomed` is the set moving what base Factorio derived,
+            # and a reader chasing a jump needs to know which one moved.
+            $byLabel = @($derivedWiring.Values | Group-Object | Sort-Object Name |
+                ForEach-Object { "$($_.Count) $($_.Name)" })
+            Write-Host ("     $($derivedWiring.Count) prototype(s) of theirs changed only in ways the set " +
+                        "explains: $($byLabel -join ', ').")
+        }
     }
     exit 0
 }

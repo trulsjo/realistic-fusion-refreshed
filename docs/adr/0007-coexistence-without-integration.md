@@ -110,7 +110,15 @@ playthrough.** A red lane is not automatically a defect here — see the second 
 | Krastorio 2 + Space Exploration ([#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130)) | `k2-spaceex`, 22 mods | **red** | green | the same five paths; K2 names none of them and adds no sixth |
 | Angel's ([#131](https://github.com/trulsjo/realistic-fusion-refreshed/issues/131)) | `angels`, 8 mods | green | green | green, and it still edits 41 prototypes of ours neither check can see — two inherited stats of which are ours ([#153](https://github.com/trulsjo/realistic-fusion-refreshed/issues/153)) |
 | Angel's + Space Age ([#132](https://github.com/trulsjo/realistic-fusion-refreshed/issues/132)) | `angels`, 8 mods, `-With space-age` | green | green | the silence is compatibility; no prototype touched only in combination, but on `rf-heater` the two compose |
-| Bob's ([#133](https://github.com/trulsjo/realistic-fusion-refreshed/issues/133)) | `bobs`, 12 mods | green | **red** | upstream's — `bobplates` moves every `-barrel` unlock off vanilla `fluid-handling` onto its own `bob-fluid-barrel-processing`, unconditionally, so our 22 land there. `effects` is the only field that differs, 22 added and none removed. It is `$ALLOWED_EDITS`' declared shape one hop further, and the classifier misses it because base Factorio generated those recipes rather than the set |
+| Bob's ([#133](https://github.com/trulsjo/realistic-fusion-refreshed/issues/133)) | `bobs`, 12 mods | green | green | green since [#192](https://github.com/trulsjo/realistic-fusion-refreshed/issues/192) taught the classifier the **re-homed unlock**. `bobplates` moves every `-barrel` unlock off vanilla `fluid-handling` onto its own `bob-fluid-barrel-processing`, unconditionally, so our 22 land there: `effects` is the only field that differs, 22 added and none removed, and the 30 unlocks the technology already carried name `barrelling` recipes of vanilla's — the set's own pass visibly already running before we arrived |
+| Bob's + Space Age ([#134](https://github.com/trulsjo/realistic-fusion-refreshed/issues/134)) | `bobs`, 12 mods, `-With space-age` | green | green | the same re-homing on the same technology, classified the same way; Space Age adds no further finding |
+| Angel's + Bob's ([#135](https://github.com/trulsjo/realistic-fusion-refreshed/issues/135)) | `angels-bobs`, 20 mods | green | **red** | upstream's, and the re-homed shape one step outside the rule [#191](https://github.com/trulsjo/realistic-fusion-refreshed/issues/191) deliberately drew. `angelspetrochem` recategorises every barrel recipe to `angels-barreling-pump`, so 142 of the destination technology's 144 baseline unlocks are that and not `barrelling`, and the category condition declines it. `effects` is still the only field that differs, 22 added and none removed. Whether the rule widens is [#194](https://github.com/trulsjo/realistic-fusion-refreshed/issues/194) |
+| Angel's + Bob's + Space Age ([#136](https://github.com/trulsjo/realistic-fusion-refreshed/issues/136)) | `angels-bobs`, 20 mods, `-With space-age` | green | **red** | the same single finding, unchanged by Space Age |
+| Angel's + Bob's + MadClown's ([#137](https://github.com/trulsjo/realistic-fusion-refreshed/issues/137)) | `angels-bobs-madclowns`, 21 mods | green | **red** | the same single finding; `Clowns-Processing` adds none of its own |
+| Angel's + Bob's + MadClown's + Space Age ([#138](https://github.com/trulsjo/realistic-fusion-refreshed/issues/138)) | `angels-bobs-madclowns`, 21 mods, `-With space-age` | green | **red** | the same single finding |
+| SeaBlock NG ([#139](https://github.com/trulsjo/realistic-fusion-refreshed/issues/139)) | `seablock`, 46 mods, `-With quality` | **red** | **red** | two reds, both upstream's and neither the same as the other. `load-check` fails on `__base__/sound/car-metal-impact.ogg`, named by `KS_Power` — the asset shape again. `name-check` reports the Angel's re-homing above **and** a second finding of its own: `no-pipe-touching`'s `data-final-fixes` walks `data.raw["infinity-pipe"]` and collects every pipe connection category it has seen onto it, so our `rf-pipe` and `rf-plasma` join Bob's ten. A third evidence shape, nested two levels inside `fluid_box`, and [#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195) |
+| RITEG ([#140](https://github.com/trulsjo/realistic-fusion-refreshed/issues/140)) | `riteg`, 1 mod | **red** | green | upstream's — `__base__/sound/car-metal-impact.ogg`, the 1.1-era path 2.0 removed, named by RITEG and not by this repo. ADR 0026 smoke-tested this and predicted it; the lane now has a row |
+| Advanced Fluid Handling ([#141](https://github.com/trulsjo/realistic-fusion-refreshed/issues/141)) | `fluid`, 1 mod | green | green | green on both halves — and `underground-pipe-pack` 2.0.6 still names the same `__base__/sound/car-metal-impact.ogg` in an unconditionally required file, without the asset check failing on it. That is a change from what ADR 0026 measured and is [#196](https://github.com/trulsjo/realistic-fusion-refreshed/issues/196) |
 
 **The run log is the lane's issue**, not this ADR — counts, prototype enumerations, which dumps were
 compared, and what was and was not run. Each row links to it.
@@ -133,32 +141,64 @@ Factorio generates `empty-rf-<fluid>-barrel` for each barrelled fluid of ours, w
 here can rename and which still embeds the prefix; and exactly one shared prototype is edited,
 `technology/fluid-handling`, which the game's own barrel generation appends our barrel recipes to.
 
-**2. A red lane is usually upstream's, and there are now two shapes of red rather than one.** Five
-sets have run red. **Four are the asset shape** — the two `load-check` reds in the table above, plus
-`riteg` and `fluid`, which are ADR 0026's own smoke tests and have no row here — every one on a
-1.1-era `__base__` path Factorio 2.0 removed, `sound/car-metal-impact.ogg` and the four
+**2. A red lane is usually upstream's, and there are three shapes of red rather than one.** **The
+asset shape** is the `load-check` half: `spaceex` and `k2-spaceex` in the table above, plus `riteg`
+and `seablock`, every one on a 1.1-era `__base__` path Factorio 2.0 removed —
+`sound/car-metal-impact.ogg`, named by RITEG and by `KS_Power`, and the four
 `nuclear-reactor/connection-patch-*.png` that 2.0 replaced with one combined sheet. **Not pin
 artefacts:** each mod is pinned at the last `factorio_version` 2.0 release its family has, so there
 is no later release to move to and the reference cannot be pinned away. This repo names none of them,
 checked rather than assumed. ADR 0026 said to budget for exactly this.
 
-**The fifth is a different shape, and it is the first red on the `name-check` half.** Bob's
+**The second shape is on the `name-check` half: a re-homed unlock the classifier declines.**
 `bobplates` re-homes every `-barrel` unlock from vanilla `fluid-handling` onto a technology of its
 own, so the unlocks base Factorio generated for our fluids move with everyone else's. Still
 upstream's — the pass names nothing of ours and tests for no prefix of ours — but it is a
-*replacement* finding rather than a missing asset, and it is the shape finding 3's classifier was
-written for while sitting just outside what that classifier will accept. See
-[#133](https://github.com/trulsjo/realistic-fusion-refreshed/issues/133); whether the classifier
-should learn it is open.
+*replacement* finding rather than a missing asset. Since [#192](https://github.com/trulsjo/realistic-fusion-refreshed/issues/192) the classifier knows the shape and
+both Bob's lanes are green. The **five** lanes that load Angel's beside Bob's are still red, because
+`angelspetrochem` recategorises every barrel recipe to `angels-barreling-pump`, so the destination
+technology's 142 baseline barrel unlocks are not `barrelling` and the rule counts `barrelling` only.
+That narrowness is deliberate — see finding 3 — and whether it widens is [#194](https://github.com/trulsjo/realistic-fusion-refreshed/issues/194).
 
-**3. An overhaul that walks `data.raw` generates prototypes from ours, and that is counted, not
-failed.** Krastorio 2 makes 47 (`kr-burn-`/`kr-crush-`), Space Exploration 22 delivery-cannon
-prototypes from our barrelled fluids, Space Age 30 recycling recipes. All of them embed our names, so
-they cannot collide however they grow. `name-check` classifies the shape and still exits 0 — **a jump
-in that count is worth reading**, because it means a set started generating something new from this
-repo. The rule that does the classifying is the only code in that check which *suppresses* a finding;
-its two conditions and its stated ceiling live in `scripts/name-check.ps1`, where they can be tested,
-not here.
+**The third shape arrived with SeaBlock and is weaker evidence than either.** `no-pipe-touching`'s
+`data-final-fixes` walks `data.raw["infinity-pipe"]` and adds every pipe connection category it has
+collected, so our `rf-pipe` and `rf-plasma` join Bob's ten on a **vanilla** prototype. Upstream's by
+its own source comment, but the classifier cannot see it at all: the difference is nested two levels
+inside `fluid_box`, where `$SHAPES` is keyed by the top-level field, and a connection category of
+ours in their list is equally consistent with either author. [#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195).
+
+**One claim in this finding has been measured false and is left here rather than quietly dropped.**
+It used to count `fluid` among the asset-shape reds on ADR 0026's smoke test. Re-run for [#141](https://github.com/trulsjo/realistic-fusion-refreshed/issues/141) on
+2026-08-31, that lane is green on both halves, while `underground-pipe-pack` 2.0.6 still names
+`__base__/sound/car-metal-impact.ogg` in a file its `data.lua` requires unconditionally. RITEG names
+the same path in the same field and still fails, so the check has not stopped working in general.
+Why the two differ is [#196](https://github.com/trulsjo/realistic-fusion-refreshed/issues/196) and is not settled here.
+
+**3. A set reacts to our prototypes in two different ways, and both are counted rather than failed.**
+
+**It generates prototypes from ours.** Krastorio 2 makes 47 (`kr-burn-`/`kr-crush-`), Space
+Exploration 22 delivery-cannon prototypes from our barrelled fluids, Space Age 30 recycling recipes.
+All of them embed our names, so they cannot collide however they grow, and a technology of theirs
+that gains only the unlocks for them is wiring rather than replacement.
+
+**Or it re-homes an unlock the *game* generated from ours.** Base Factorio makes a fill and an empty
+barrel recipe per barrelled fluid and puts their unlocks on `fluid-handling`; `bobplates` sweeps
+every one of them onto a technology of its own, ours along with vanilla's. Added by [#192](https://github.com/trulsjo/realistic-fusion-refreshed/issues/192) on
+[#191](https://github.com/trulsjo/realistic-fusion-refreshed/issues/191)'s decision, after [#133](https://github.com/trulsjo/realistic-fusion-refreshed/issues/133) found it.
+
+**The two are not the same claim and the check does not print them as one.** A set-derived prototype
+*could only exist* because the set made it, which is real evidence of authorship. A re-homed unlock
+names a prototype of **ours** that the **game** made — and a technology of theirs holding
+`unlock-recipe rf-brine-barrel` is equally consistent with the set sweeping it in and with this repo
+wiring it into their technology, because a dump records what a prototype ended up as and never who
+wrote it. So the re-homed rule tests the set's own visible behaviour instead: the recipe is one base
+Factorio constructs from a fluid of ours, and the destination technology already carried
+base-generated barrel unlocks before we arrived. `CONTEXT.md` defines both terms against each other.
+
+`name-check` classifies both and still exits 0 — **a jump in either count is worth reading**, because
+it means a set started doing something new with this repo. The rule that does the classifying is the
+only code in that check which *suppresses* a finding; its conditions, its labels and its stated
+ceiling live in `scripts/name-check.ps1`, where they can be tested, not here.
 
 **4. Neither check can see what a set does to our *own* prototypes.** `name-check` compares content
 only for prototypes present in **both** dumps, and a prototype of ours is by construction in only one;
