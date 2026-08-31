@@ -345,6 +345,43 @@ function Get-Replaced {
         Sort-Object)
 }
 
+function Get-FiredEdits {
+    <#  Which of the DECLARED edits actually happened on this run.
+
+        $ALLOWED_EDITS names the vanilla prototypes this repo may change, and Get-Replaced above
+        excludes them unconditionally so they are never reported as collisions. That exclusion makes
+        the declared list say what is PERMITTED and never what OCCURRED -- and the summary line used
+        to print the list's LENGTH beside a live count, so it read as though the permitted edit had
+        happened. It said "the 1 declared" on every lane, whether or not anything was excused.
+
+        THE BOB'S LANE IS WHERE THAT MISLEADS (#133). bobplates walks data.raw and moves every
+        -barrel recipe's unlock off technology/fluid-handling onto a technology of its own, so the
+        unlocks base Factorio generated for our fluids go across with vanilla's: the declared edit
+        does NOT fire, and with that set loaded this repo changes no vanilla prototype at all. The
+        old wording said the opposite to the one reader who most needed the truth -- the one chasing
+        that lane's replaces: finding and deciding whether it was ours.
+
+        ITS OWN FUNCTION RATHER THAN AN EXPRESSION AT THE CALL SITE, for the reason Get-DerivedWiring
+        is one: this file's rule is that a judgement printed to a human must be breakable in the
+        self-test, and an inline Where-Object cannot be. Half six poses it four questions a real run
+        does not -- a declared edit that differs, one that does not, one absent from the baseline,
+        and an undeclared name that differs -- and then checks the live answer as well.
+
+        NOT SHARED WITH Get-Replaced, though the comparison inside is the same one. That function
+        walks every shared key and EXCLUDES the declared list; this one walks the declared list and
+        keeps what differs. They are complementary halves, so folding them together would mean
+        giving Get-Replaced a mode switch to serve a reporting line.  #>
+    param(
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Declared,
+        [Parameter(Mandatory)] [hashtable] $WithUs,
+        [Parameter(Mandatory)] [hashtable] $Baseline
+    )
+
+    return @($Declared |
+        Where-Object { $WithUs.ContainsKey($_) -and $Baseline.ContainsKey($_) -and $WithUs[$_] -ne $Baseline[$_] } |
+        Sort-Object)
+}
+
 function Get-ReferenceNames {
     <#  Harvest prototype names from a mod's Lua by regex.
 
@@ -801,23 +838,15 @@ try {
     $derivedNames = @($ours.Keys | Where-Object { $_ -match $DERIVED })
     Write-Host ("the difference is {0} prototype name(s) the game does not have; {1} of them are barrel recipes base Factorio named." -f
         $ours.Count, $derivedNames.Count)
-    # WHICH DECLARED EDITS FIRED, rather than how many are declared. The old line printed
-    # $ALLOWED_EDITS.Count -- a static list length -- immediately after a live count, so it read as
-    # though the declared edit had happened. It always said "the 1 declared", on every lane, whether
-    # or not anything was excused.
+    # WHICH DECLARED EDITS FIRED, rather than how many are declared -- see Get-FiredEdits above for
+    # what the old wording got wrong and which lane found it.
     #
-    # THE BOB'S LANE IS WHERE THAT MISLEADS (#133), and it is the reason this is worth two lines
-    # instead of one. bobplates walks data.raw and moves every -barrel recipe's unlock off
-    # technology/fluid-handling onto a technology of its own, so ours go with vanilla's: the one
-    # declared edit does NOT fire, and with that set loaded this repo changes no vanilla prototype
-    # at all. The old wording said the opposite to the one reader who most needed the truth -- the
-    # one chasing that lane's replaces: finding, deciding whether it was ours.
+    # @() FOR THE REASON $replaced HAS IT, twelve lines up: a bare return of an empty array unrolls
+    # to $null, and the healthy case here is zero. Without it .Count below is $null rather than 0.
     #
     # Named as well as counted, because "1 fired" and "which one" are different questions and the
     # list is one entry long.
-    $firedEdits = @($ALLOWED_EDITS | Where-Object {
-        $withUs.ContainsKey($_) -and $withoutUs.ContainsKey($_) -and $withUs[$_] -ne $withoutUs[$_] } |
-        Sort-Object)
+    $firedEdits = @(Get-FiredEdits -Declared $ALLOWED_EDITS -WithUs $withUs -Baseline $withoutUs)
     Write-Host ("it changes {0} prototype(s) the game already defines, beyond what `$ALLOWED_EDITS declares." -f
         $replaced.Count)
     Write-Host ("of the {0} declared edit(s), {1} fired{2}." -f
@@ -869,7 +898,7 @@ try {
             foreach ($f in $failures) { Write-Host "    $f" }
             exit 1
         }
-        Write-Host 'self-test 1/5: the repo as it stands passes.'
+        Write-Host 'self-test 1/6: the repo as it stands passes.'
 
         # Half two: an unprefixed name must be caught. Injected into the parsed set rather than into
         # a canary mod, because what is being tested is this script's judgement, not Factorio's --
@@ -881,7 +910,7 @@ try {
             Write-Host 'FAILED - self-test: an unprefixed prototype name was NOT caught.'
             exit 1
         }
-        Write-Host 'self-test 2/5: an unprefixed name is caught.'
+        Write-Host 'self-test 2/6: an unprefixed name is caught.'
 
         # Half three: a name a reference mod already uses must be caught, even when it is prefixed
         # correctly. Takes a name from the harvest rather than inventing one, so the test breaks if
@@ -895,7 +924,7 @@ try {
             Write-Host "FAILED - self-test: a name already used by a reference mod ('$borrowed') was NOT caught."
             exit 1
         }
-        Write-Host 'self-test 3/5: a name a reference mod already uses is caught.'
+        Write-Host 'self-test 3/6: a name a reference mod already uses is caught.'
 
         # Half four: the DERIVATION itself, through a real mod and a real dump.
         #
@@ -940,7 +969,7 @@ data.raw.item["iron-plate"].stack_size = 123' |
             Write-Host 'FAILED - self-test: the replaced prototype was derived but not reported as a failure.'
             exit 1
         }
-        Write-Host 'self-test 4/5: a real mod adding an unprefixed name and replacing a vanilla prototype is caught.'
+        Write-Host 'self-test 4/6: a real mod adding an unprefixed name and replacing a vanilla prototype is caught.'
 
         # Half five: the two classifiers -AlsoModDirectory relies on, and specifically the LIMITS of
         # what they excuse.
@@ -1135,7 +1164,7 @@ data.raw.item["iron-plate"].stack_size = 123' |
                 exit 1
             }
         }
-        Write-Host 'self-test 5/5: an empty replacement list binds, and the set-derivation classifiers'
+        Write-Host 'self-test 5/6: an empty replacement list binds, and the set-derivation classifiers'
         Write-Host '               excuse what the set built from us and nothing else, in both wiring'
         Write-Host '               shapes -- an unprefixed name of ours, a LONE one embedding one of'
         Write-Host '               ours, an unlock for a recipe that is not ours, a tooltip row naming'
@@ -1146,10 +1175,83 @@ data.raw.item["iron-plate"].stack_size = 123' |
         Write-Host '               checked for the RIGHT shape; and a name the set redefines in both'
         Write-Host '               dumps is still caught by the scan.'
 
+        # ---------------------------------------------------------------- half six
+        #
+        # THE DECLARED-EDIT LINE SAYS WHAT HAPPENED, NOT WHAT IS PERMITTED (#133). The number beside
+        # "declared" used to be $ALLOWED_EDITS.Count, so it was the same on every lane and true on
+        # none of them in particular. Get-FiredEdits replaced it, and a claim printed to a human is
+        # only worth what breaks when it is wrong.
+        #
+        # SYNTHETIC DUMPS FOR THE FOUR JUDGEMENT CASES, for the reason halves two and three inject
+        # into the parsed set rather than building a canary mod: what is under test is this script's
+        # judgement, and a controlled pair of hashtables can pose questions a real run does not. Only
+        # one of the four -- "differs, so it fired" -- occurs on a clean run at all.
+        $fakeWith = @{
+            'technology/differs'   = '{"effects":[1,2]}'   # declared, and changed: fired
+            'technology/unchanged' = '{"effects":[1]}'     # declared, identical: the Bob's shape
+            'technology/ours-only' = '{"effects":[1]}'     # declared, absent from the baseline
+            'technology/undeclared' = '{"effects":[9]}'    # changed, but nobody declared it
+        }
+        $fakeBase = @{
+            'technology/differs'   = '{"effects":[1]}'
+            'technology/unchanged' = '{"effects":[1]}'
+            'technology/undeclared' = '{"effects":[8]}'
+        }
+        $fakeDeclared = @('technology/differs', 'technology/unchanged', 'technology/ours-only')
+        $fired = @(Get-FiredEdits -Declared $fakeDeclared -WithUs $fakeWith -Baseline $fakeBase)
+
+        # Each case named, so a failure says WHICH judgement went wrong rather than that a count
+        # moved. A predicate comparing the wrong way round fails the first two together; one reading
+        # the wrong dump fails the third; one that forgot to restrict itself to the declared list
+        # fails the fourth.
+        $wantFired = @(
+            @{ Key = 'technology/differs';    Want = $true;
+               Why = 'a declared edit whose content changed really did fire' }
+            @{ Key = 'technology/unchanged';  Want = $false;
+               Why = 'a declared edit identical in both dumps did NOT fire -- the shape the Bob''s lane found' }
+            @{ Key = 'technology/ours-only';  Want = $false;
+               Why = 'a declared name the baseline does not have is not an edit to it' }
+            @{ Key = 'technology/undeclared'; Want = $false;
+               Why = 'a changed name nobody declared is Get-Replaced''s business, not this line''s' }
+        )
+        foreach ($case in $wantFired) {
+            $got = $fired -contains $case.Key
+            if ($got -ne $case.Want) {
+                Write-Host ("FAILED - self-test: Get-FiredEdits {0} '{1}'. Expected: {2}." -f
+                    $(if ($got) { 'reported' } else { 'did not report' }), $case.Key, $case.Why)
+                exit 1
+            }
+        }
+
+        # The empty case binds and counts, which is the trap this file has been caught by three
+        # times: a bare return of an empty array unrolls to $null, and $null.Count is not 0.
+        $noneFired = @(Get-FiredEdits -Declared @() -WithUs $fakeWith -Baseline $fakeBase)
+        if ($noneFired.Count -ne 0) {
+            Write-Host 'FAILED - self-test: Get-FiredEdits with nothing declared did not come back as an empty array.'
+            exit 1
+        }
+
+        # AND THE LIVE ANSWER, which is the half the synthetic cases cannot give: it is the only one
+        # that would catch the call site being wired to the wrong variables, since a self-test run
+        # loads no set and $ALLOWED_EDITS' own comment says exactly one edit is expected there.
+        if ($firedEdits.Count -ne 1 -or $firedEdits[0] -ne 'technology/fluid-handling') {
+            Write-Host ("FAILED - self-test: on a run with no set loaded, exactly one declared edit " +
+                        "should fire and it should be technology/fluid-handling -- base Factorio's " +
+                        "barrel generation appending our fluids to it. Got {0}: {1}." -f
+                        $firedEdits.Count, ($firedEdits -join ', '))
+            exit 1
+        }
+        Write-Host 'self-test 6/6: the declared-edit line reports what fired rather than what is'
+        Write-Host '               permitted -- a declared edit that changed fires, one identical in'
+        Write-Host '               both dumps does not, one the baseline lacks does not, an undeclared'
+        Write-Host '               change is left to Get-Replaced, nothing declared binds as empty,'
+        Write-Host '               and the live run names technology/fluid-handling and only it.'
+
         Write-Host ''
         Write-Host 'OK - self-test passed: clean repo passes; unprefixed name, borrowed name and a real'
-        Write-Host '     mod that adds and replaces are all caught; and the set-derivation classifiers'
-        Write-Host '     excuse only what the set built from us.'
+        Write-Host '     mod that adds and replaces are all caught; the set-derivation classifiers'
+        Write-Host '     excuse only what the set built from us; and the declared-edit line reports'
+        Write-Host '     what fired rather than what is permitted.'
         exit 0
     }
 
