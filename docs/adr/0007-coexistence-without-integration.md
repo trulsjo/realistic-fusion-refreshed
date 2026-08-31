@@ -110,6 +110,7 @@ playthrough.** A red lane is not automatically a defect here — see the second 
 | Krastorio 2 + Space Exploration ([#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130)) | `k2-spaceex`, 22 mods | **red** | green | the same five paths; K2 names none of them and adds no sixth |
 | Angel's ([#131](https://github.com/trulsjo/realistic-fusion-refreshed/issues/131)) | `angels`, 8 mods | green | green | green, and it still edits 41 prototypes of ours neither check can see — two inherited stats of which are ours ([#153](https://github.com/trulsjo/realistic-fusion-refreshed/issues/153)) |
 | Angel's + Space Age ([#132](https://github.com/trulsjo/realistic-fusion-refreshed/issues/132)) | `angels`, 8 mods, `-With space-age` | green | green | the silence is compatibility; no prototype touched only in combination, but on `rf-heater` the two compose |
+| Bob's ([#133](https://github.com/trulsjo/realistic-fusion-refreshed/issues/133)) | `bobs`, 12 mods | green | **red** | upstream's — `bobplates` moves every `-barrel` unlock off vanilla `fluid-handling` onto its own `bob-fluid-barrel-processing`, unconditionally, so our 22 land there. `effects` is the only field that differs, 22 added and none removed. It is `$ALLOWED_EDITS`' declared shape one hop further, and the classifier misses it because base Factorio generated those recipes rather than the set |
 
 **The run log is the lane's issue**, not this ADR — counts, prototype enumerations, which dumps were
 compared, and what was and was not run. Each row links to it.
@@ -132,14 +133,23 @@ Factorio generates `empty-rf-<fluid>-barrel` for each barrelled fluid of ours, w
 here can rename and which still embeds the prefix; and exactly one shared prototype is edited,
 `technology/fluid-handling`, which the game's own barrel generation appends our barrel recipes to.
 
-**2. A red lane is usually upstream's, and usually the same shape.** Four sets have run red — the
-two in the table above, plus `riteg` and `fluid`, which are ADR 0026's own smoke tests and have no
-row here — and every one on a 1.1-era `__base__` path Factorio 2.0 removed,
-`sound/car-metal-impact.ogg` and the four `nuclear-reactor/connection-patch-*.png` that 2.0
-replaced with one combined sheet. **Not pin artefacts:** each mod is pinned at the last
-`factorio_version` 2.0 release its family has, so there is no later release to move to and the
-reference cannot be pinned away. This repo names none of them, checked rather than assumed. ADR 0026
-said to budget for exactly this.
+**2. A red lane is usually upstream's, and there are now two shapes of red rather than one.** Five
+sets have run red. **Four are the asset shape** — the two `load-check` reds in the table above, plus
+`riteg` and `fluid`, which are ADR 0026's own smoke tests and have no row here — every one on a
+1.1-era `__base__` path Factorio 2.0 removed, `sound/car-metal-impact.ogg` and the four
+`nuclear-reactor/connection-patch-*.png` that 2.0 replaced with one combined sheet. **Not pin
+artefacts:** each mod is pinned at the last `factorio_version` 2.0 release its family has, so there
+is no later release to move to and the reference cannot be pinned away. This repo names none of them,
+checked rather than assumed. ADR 0026 said to budget for exactly this.
+
+**The fifth is a different shape, and it is the first red on the `name-check` half.** Bob's
+`bobplates` re-homes every `-barrel` unlock from vanilla `fluid-handling` onto a technology of its
+own, so the unlocks base Factorio generated for our fluids move with everyone else's. Still
+upstream's — the pass names nothing of ours and tests for no prefix of ours — but it is a
+*replacement* finding rather than a missing asset, and it is the shape finding 3's classifier was
+written for while sitting just outside what that classifier will accept. See
+[#133](https://github.com/trulsjo/realistic-fusion-refreshed/issues/133); whether the classifier
+should learn it is open.
 
 **3. An overhaul that walks `data.raw` generates prototypes from ours, and that is counted, not
 failed.** Krastorio 2 makes 47 (`kr-burn-`/`kr-crush-`), Space Exploration 22 delivery-cannon
