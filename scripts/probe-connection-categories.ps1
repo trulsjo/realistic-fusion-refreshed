@@ -86,7 +86,12 @@
     a prefix that changed, a dump written somewhere else: each of those reports zero differences,
     which reads exactly like containment surviving. So the `declared` side must hold at least one
     connection carrying `rf-plasma` or the run throws. That is an instrument fault rather than a
-    finding, which is why it is the one thing here that is allowed to exit non-zero.
+    finding, and it is the only non-zero exit that comes from anything this probe MEASURED. The
+    others are the run refusing to happen at all rather than reporting on it: a missing or empty
+    -AlsoModDirectory, an unknown -With name, a Factorio run that exits non-zero (Invoke-FactorioStep
+    throws), or a dump that is not where it should be (Get-OurConnections throws, on either run).
+    None of those is a finding either, and none of them can be mistaken for one -- which is the
+    property that matters, and is a narrower claim than this paragraph used to make.
 
     A PROTOTYPE OF OURS THAT IS GONE from the loaded side is reported as a row rather than skipped.
     It is not a category change and the probe does not pretend it is one, but a set that removes or
@@ -301,7 +306,8 @@ try {
     $subjects = @($declared.Keys | Where-Object { $declared[$_].Count } | Sort-Object)
 
     # THE FLOOR. Everything below reports by finding nothing, so a broken walk reads as containment
-    # surviving. An instrument fault, not a finding -- the one thing here allowed to exit non-zero.
+    # surviving. An instrument fault, not a finding -- and the only non-zero exit that comes from
+    # what was measured rather than from the run refusing to happen. See the header for the others.
     $carrying = @($declared.Values | ForEach-Object { $_.Values } |
         Where-Object { $_.Set -ccontains $PLASMA_CATEGORY })
     if (-not $carrying) {
