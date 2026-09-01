@@ -53,6 +53,26 @@
     Everything around the links is unbounded on purpose -- deuterium in, water in, steam out, all
     infinity pipes -- so that the only thing being measured is the two links themselves.
 
+    THE MAP IS QUIETED, AND A DAMAGED RIG FAILS LOUDLY (#190)
+
+    The default run is 126 000 ticks -- thirty-five minutes -- with five crafting machines running
+    the whole time, which is the pollution scripts/check-brownout.ps1 blames for the attack that ate
+    a substation at fifty. So it calls the shared guard, Get-QuietMapLua in scripts/factorio-lib.ps1,
+    before it builds: pollution off, enemy expansion off, peaceful mode, and the nests already on
+    the surface destroyed. The report says so and prints how many enemy entities went, so the
+    quieting is visible rather than assumed.
+
+    Every entity a cell is metered through -- the reactor, the exchangers -- and everything that
+    keeps it supplied -- the whole heater bank, not only the metered one, and the substations and
+    power sources -- is then checked valid once a second. A cell that has lost one errors with the
+    cell and the part named.
+
+    WHAT MAKES THAT WORTH DOING IS THE SHAPE OF THE FAILURE, not its probability. This bench does not
+    crash when it is damaged; it reports a quiet wrong number. A heater that loses power stops
+    crafting, the link goes idle, the excluded fraction climbs, and the mean is taken over the busy
+    ticks only -- exactly the way the meter above says this method misleads. The rates in
+    docs/research/fluid-link-throughput.md are what would be wrong, and nothing else would say so.
+
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
@@ -256,12 +276,52 @@ local function assert_joined(entity, index, what)
   error(what .. ": no connection on this box reaches anything")
 end
 
+__QUIETMAP__
+--- Every entity a cell is metered through, and the power that keeps it running, checked before the
+--- numbers are believed.
+--
+-- THIS BENCH REPORTS A QUIET WRONG NUMBER RATHER THAN CRASHING. The meter is a source box compared
+-- against what it held last tick, and it already drops ticks where production and outflow cannot be
+-- separated. A heater that loses power stops crafting: the link goes idle, the dropped fraction
+-- climbs, and the mean is quietly taken over the busy ticks only -- which the header above names as
+-- the way this method misleads. The rates in docs/research/fluid-link-throughput.md are what would
+-- be wrong, and nothing else here would say so.
+--
+-- The reading path is in here even though destroying a metered entity makes amount_in() raise on
+-- its own: "LuaEntity API call when LuaEntity was invalid" does not say which cell or what went.
+-- The supply path is in here because it raises NOTHING -- a heater whose substation is eaten stays
+-- perfectly valid and simply stops crafting.
+--
+-- Called once a second rather than on every one of the 126 000 ticks, the same cadence as
+-- probe-quality-equilibrium.ps1's: a run this length is ruined by damage whenever it arrives, so a
+-- second's delay in noticing costs nothing and 60x the valid checks buys nothing.
+local function assert_intact(cell)
+  local function check(what, entity)
+    if entity and not entity.valid then
+      error(string.format("%s cell: %s is gone -- something destroyed part of the rig mid-run, so "
+        .. "this run measures damage rather than throughput", cell.name, what))
+    end
+  end
+  check("its reactor", cell.reactor)
+  -- Every heater, not only the metered one. build() runs a bank on purpose -- a reactor a few
+  -- percent short of plasma reads well under its own equilibrium and the headroom comes out
+  -- flatteringly large -- so losing heater 2 of 4 never touches the meter and moves the answer.
+  for i, heater in ipairs(cell.heaters) do
+    check(i == 1 and "the metered heater" or ("heater " .. i), heater)
+  end
+  for i, exchanger in ipairs(cell.exchangers) do check("heat exchanger " .. i, exchanger) end
+  for _, part in ipairs(cell.power) do check(part[1], part[2]) end
+end
+
 -- ------------------------------------------------------------------ one cell
 --
 -- ox is the cell's origin. The reactor sits there; the plasma line runs west out of its west
 -- connection to a heater, and the energy line runs north out of its north connection to either a
 -- bank of heat exchangers or an infinity pipe that swallows whatever arrives.
-local function build(surface, force, ox, drain)
+--
+-- power is this cell's substations and energy interfaces, already placed. The cell keeps them so
+-- assert_intact() can see the supply path; nothing here reads them for a measurement.
+local function build(surface, force, ox, drain, power)
   local reactor = surface.create_entity({
     name = "rf-reactor", position = { ox + 0.5, 0.5 }, force = force, raise_built = true,
   })
@@ -295,14 +355,17 @@ local function build(surface, force, ox, drain)
   local west = { ox + 0.5 - 8, 0.5 }
   pipe_run(surface, force, "rf-pipe", west, { -1, 0 }, PIPES + 3 * (HEATERS - 1))
   local heater
+  local heaters = {}
   for i = 0, HEATERS - 1 do
     local built = place_facing(surface, force, "rf-heater", PLASMA,
       { west[1] - (PIPES - 1) - 3 * i, west[2] }, { ox - 24.5 - 4 * i, 20.5 })
     unbound(surface, force, built, box_of(built, "rf-deuterium"),
       { name = "rf-deuterium", percentage = 1, mode = "at-least" })
     -- The first is the one the meter watches. They all feed the same segment, so one is a fair
-    -- sample of the link; what the others do is add supply.
+    -- sample of the link; what the others do is add supply -- which is why assert_intact() keeps
+    -- the whole bank rather than only the metered one.
     heater = heater or built
+    heaters[#heaters + 1] = built
   end
 
   -- Energy: the reactor's north connection -> PIPES pipes -> a header -> the exchangers.
@@ -355,7 +418,7 @@ local function build(surface, force, ox, drain)
 
   return {
     name = drain and "sink" or "chain",
-    reactor = reactor, heater = heater, exchangers = exchangers,
+    reactor = reactor, heater = heater, heaters = heaters, exchangers = exchangers, power = power,
     plasma_box = plasma_box, energy_box = energy_box,
     heater_box = box_of(heater, PLASMA),
     -- Meter state. last_* is what the source box held at the previous sample.
@@ -375,6 +438,14 @@ script.on_init(function()
 
   surface.request_to_generate_chunks({ 0, 0 }, 8)
   surface.force_generate_chunk_requests()
+
+  -- AFTER the chunks exist, which is the shared guard's one precondition: it clears what it can
+  -- see, and it can only see chunks that have been generated. The count goes into the built line so
+  -- a reader can tell the quieting happened rather than take it on trust. The clear-the-area loop
+  -- below is not a substitute -- it removes what is in the build box and leaves pollution and enemy
+  -- expansion switched on, which is what brings the attention over the next thirty-five minutes.
+  storage.quieted = __QUIETFN__(surface)
+
   local tiles = {}
   for x = -120, 120 do
     for y = -60, 40 do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
@@ -389,7 +460,12 @@ script.on_init(function()
   -- the far side of it, which is further than one substation's supply area reaches. A single
   -- substation covering the reactor leaves the heater dark -- it places, it just never crafts, and
   -- the only symptom is a link that carries nothing.
+  --
+  -- Kept per cell, so assert_intact() can see the supply path: losing either half takes a cell's
+  -- heater dark without invalidating anything the meter touches.
+  local power = {}
   for _, ox in ipairs({ 0, 60 }) do
+    power[ox] = {}
     for _, dx in ipairs({ 9, -9 }) do
       local sub = surface.create_entity({ name = "substation", position = { ox + dx, 5 }, force = force })
       if not sub then error("substation refused") end
@@ -399,16 +475,20 @@ script.on_init(function()
       })
       if not eei then error("power source refused") end
       eei.power_production = 4e6   -- J/tick, ~240 MW against a reactor's 50 and a heater's 5
+      local side = dx > 0 and "east" or "west"
+      power[ox][#power[ox] + 1] = { "its " .. side .. " substation", sub }
+      power[ox][#power[ox] + 1] = { "its " .. side .. " power source", eei }
     end
   end
 
-  storage.cells = { build(surface, force, 0, false), build(surface, force, 60, true) }
+  storage.cells = { build(surface, force, 0, false, power[0]), build(surface, force, 60, true, power[60]) }
   for _, cell in ipairs(storage.cells) do
     cell.last_plasma = amount_in(cell.heater, cell.heater_box)
     cell.last_energy = amount_in(cell.reactor, cell.energy_box)
   end
 
-  log(string.format("LINKRIG built cells=%d pipes=%d exchangers=%d heaters=%d", #storage.cells, PIPES, EXCHANGERS, HEATERS))
+  log(string.format("LINKRIG built cells=%d pipes=%d exchangers=%d heaters=%d quieted=%d",
+    #storage.cells, PIPES, EXCHANGERS, HEATERS, storage.quieted))
 end)
 
 local function report(cell, window)
@@ -442,7 +522,10 @@ local function report(cell, window)
 end
 
 script.on_event(defines.events.on_tick, function()
+  local audit = game.tick % 60 == 0
   for _, cell in ipairs(storage.cells) do
+    if audit then assert_intact(cell) end
+
     -- The meter. A fall in the source box is fluid that crossed; a rise is production, and that
     -- tick is dropped rather than netted, because the two cannot be separated afterwards.
     local plasma = amount_in(cell.heater, cell.heater_box)
@@ -467,8 +550,11 @@ script.on_event(defines.events.on_tick, function()
   end
 end)
 '@
-    $lua = $lua.Replace('__WINDOW__', "$Window").Replace('__EXCHANGERS__', "$Exchangers").
-                Replace('__PIPES__', "$Pipes").Replace('__HEATERS__', "$Heaters")
+    $lua = $lua.
+        Replace('__QUIETMAP__', (Get-QuietMapLua)).
+        Replace('__QUIETFN__', $script:QuietMapFunction).
+        Replace('__WINDOW__', "$Window").Replace('__EXCHANGERS__', "$Exchangers").
+        Replace('__PIPES__', "$Pipes").Replace('__HEATERS__', "$Heaters")
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $lua -Encoding utf8
 }
 
@@ -489,6 +575,8 @@ try {
 
     $built = Get-Content $createOut | Select-String -Pattern 'LINKRIG built' | Select-Object -Last 1
     if ("$built" -notmatch 'cells=2\b') { throw "rig did not build both cells: '$built'" }
+    if ("$built" -notmatch 'quieted=(\d+)') { throw "the rig did not report quieting the map: '$built'" }
+    $quieted = [int] $Matches[1]
 
     $runOut = Invoke-FactorioStep @step -Tag 'run' -Arguments @(
         '--benchmark', $save, '--benchmark-ticks', "$Ticks", '--benchmark-runs', '1', '--disable-audio')
@@ -578,6 +666,7 @@ try {
 
     Write-Host ''
     Write-Host "Factorio $version -- $Ticks ticks, $Window per window, $Pipes pipes per link, $Exchangers exchangers"
+    Write-Host ("map quieted: pollution and enemy expansion off, peaceful mode, {0} enemy entities removed" -f $quieted)
     Write-Host ''
     Write-Host ('{0,-8}{1,16}{2,16}{3,14}{4,14}{5,16}{6,12}' -f
         'cell', 'plasma u/tick', 'energy u/tick', 'energy MW', 'plasma held', 'plasma degC', 'ticks met')
