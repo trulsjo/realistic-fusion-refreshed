@@ -85,8 +85,9 @@ Checked against the installed 2.0.77 Space Age data
   plumbing a player can build, and the set of things sharing a category is open. Reported and left
   red on that lane — [#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195).
 
-  **A set does also take a category away, and that matters more than collecting one. MEASURED, and
-  it happens.** [#206](https://github.com/trulsjo/realistic-fusion-refreshed/issues/206) dumped the
+  **A set does also take a category away, and that matters more than collecting one. MEASURED, it
+  happened, and it is CLOSED on the one lane where it did** — the fix is the last paragraph of this
+  bullet, and everything between here and there is the measurement it was taken on. [#206](https://github.com/trulsjo/realistic-fusion-refreshed/issues/206) dumped the
   lane on 2026-09-01 against 2.0.77 and
   [#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207) swept all fourteen; it was
   a reading of somebody else's Lua when this bullet was written and it is a measurement now. That

@@ -2,13 +2,19 @@
 
 Evidence for [#206](https://github.com/trulsjo/realistic-fusion-refreshed/issues/206), which the
 [code review of PR #205](https://github.com/trulsjo/realistic-fusion-refreshed/pull/205#issuecomment-5485579064)
-opened by finding that PR's central claim false. **Nothing here decides anything.** What to do about
-it is [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) and Truls's call, and
-the gate that would catch the class is
-[#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209).
-[#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207) has since swept all fourteen
-lanes and this one is the only one that changes a category of ours —
-[`connection-categories-by-lane.md`](connection-categories-by-lane.md).
+opened by finding that PR's central claim false. **Nothing here decides anything.**
+
+> **READ THIS FIRST: the breach this note measures was closed later the same day.**
+> [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) took that mod's own
+> opt-out, so `rf-pipe-to-ground` holds `rf-plasma` on both connections on that lane again, and
+> re-running the probe reports neither the `LOST` row nor the `WIDENED` row. The tunnel this note
+> reasons about was then measured for real: plasma **did** cross into a vanilla pipe-to-ground, and
+> does not now — [`plasma-tunnel.md`](plasma-tunnel.md). Everything below is left as measured, and
+> the sentences that treat #208 as open were written while it was.
+> [#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207) swept all fourteen lanes
+> and this was the only one that changed a category of ours —
+> [`connection-categories-by-lane.md`](connection-categories-by-lane.md).
+> [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209) is the gate.
 
 Measured on **2026-09-01** against **Factorio 2.0.77** (file version 2.0.77.84539) by
 `scripts/probe-connection-categories.ps1`, on the `seablock` lane — 46 mods from
@@ -16,14 +22,6 @@ Measured on **2026-09-01** against **Factorio 2.0.77** (file version 2.0.77.8453
 suspicion is **`no-pipe-touching` 1.1.28**. The script is committed rather than the numbers alone,
 because these are facts about a version of an engine and of somebody else's mod, and the next version
 of either is entitled to different ones.
-
-> **Closed on 2026-09-01 by
-> [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208):** `rf-pipe-to-ground`
-> carries `npt_compat = { ignore = true }`, which gates the only pass that reaches it, and re-running
-> the probe on this lane reports neither the `LOST` row nor the `WIDENED` row. The tunnel this note
-> reasons about was then measured for real — plasma did cross into a vanilla pipe-to-ground, and
-> does not now: [`plasma-tunnel.md`](plasma-tunnel.md). What follows is the measurement the decision
-> was taken on and is left as it was.
 
 ## The answer in one line
 
@@ -185,10 +183,13 @@ away". The first is what #209 has to be built for; the second is all this lane s
   pipe-to-ground beside a plasma line on this lane and watched plasma cross. The category is the
   mechanism and the dump is where it lives, so this is the right place to measure it — but "the
   declaration is gone" and "the plasma moves" are two claims and only the first is measured.
+  **Since answered:** #208 required the second before its answer shipped, and
+  [`plasma-tunnel.md`](plasma-tunnel.md) reports it — plasma crossed five tiles underground into a
+  vanilla pipe-to-ground, and a bob pipe on the surface connection carried it away. Both refuse now.
 - **Nothing about which fix is right.** Four shapes exist at least — declare `npt_compat`, keep a
   second category nothing buildable carries (which is how Wube's own `fusion-plasma` handles the
   editor pipe, ADR 0018), re-assert containment in a `data-final-fixes` of our own, or accept the
-  lane as red. Choosing is #208's and Truls's.
+  lane as red. Choosing was #208's and Truls's; it chose the opt-out.
 - **Nothing about how the probe behaves on a set that changes nothing.** It has been run on one lane.
   Its floor asserts the instrument is reading containment at all — 14 connections on the declared
   side — which is what rules out a clean report caused by a broken walk. **Since answered:** #207 ran

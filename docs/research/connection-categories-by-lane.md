@@ -3,9 +3,17 @@
 Evidence for [#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207), which ran
 [#206](https://github.com/trulsjo/realistic-fusion-refreshed/issues/206)'s probe across all fourteen
 lanes in [ADR 0007](../adr/0007-coexistence-without-integration.md)'s table. **Nothing here decides
-anything.** What to do about the one lane that breaches containment is
-[#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) and Truls's call;
-[#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209) is the gate.
+anything.**
+
+> **READ THIS FIRST: the lane this note reports as breached was closed later the same day.**
+> [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) took that mod's own
+> opt-out, and re-running the probe reports **44 differences, all of them the benign
+> default-widening** — the `LOST` and `WIDENED` rows below are gone. Everything here is left as
+> measured on the morning of 2026-09-01, because it is the evidence the decision was taken on, and
+> the forward-looking sentences below were written while #208 was still open. The table records what
+> the sweep found, not what the lane does now.
+> [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209) is the gate that would
+> notice a second mod doing it.
 
 Measured on **2026-09-01** against **Factorio 2.0.77** (file version 2.0.77.84539) by
 `scripts/probe-connection-categories.ps1`, one run per lane, 28 `--dump-data` runs in 6.1 minutes.
@@ -15,14 +23,6 @@ Every lane exited 0.
 else** — [ADR 0026](../adr/0026-third-party-mods-are-pinned-to-their-2-0-line.md) confines it to that,
 and no unqualified "works with X" may be built on one. The per-lane run log is the lane's own issue
 ([ADR 0027](../adr/0027-the-lane-issue-is-the-run-log.md)); each row links to it.
-
-> **The SeaBlock row was closed on 2026-09-01 by
-> [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208), after this sweep ran.**
-> `rf-pipe-to-ground` now carries that mod's own opt-out, and re-running the probe on that lane
-> reports **44 differences, all of them the benign default-widening** — the `LOST` and `WIDENED` rows
-> below are gone. Everything in this note is left as measured on the morning of that day, because it
-> is the evidence the decision was taken on; the table records what the sweep found, not what the
-> lane does now.
 
 ## The answer in one line
 
@@ -38,8 +38,8 @@ three, less the lane counted in both, plus eleven, is fourteen.
 
 **What that gives #208 is an asymmetry, not an answer.** Adding is done by two mods on three lanes by
 two mechanisms; removing is done by one mod on one lane, to one prototype. Whether that makes a
-mod-specific response sufficient, or merely cheap today, is #208's to weigh — and the limits below
-bear on it in the other direction.
+mod-specific response sufficient, or merely cheap today, was #208's to weigh — and the limits
+below bore on it in the other direction. It weighed it and took the opt-out; see the note at the top.
 
 ## The table
 
@@ -119,8 +119,8 @@ sets of boxes and they do not append the same list, which is worth knowing befor
 rule keyed on our own name appearing somewhere.
 
 Two unrelated mods, two mechanisms, the same benign effect. **Adding is what a pipe mod does;
-removing, on this evidence, is what one mod does.** That asymmetry is the result; what to build on it
-is #208's.
+removing, on this evidence, is what one mod does.** That asymmetry is the result; what was built on
+it is #208's answer, recorded in ADR 0007's finding 4.
 
 ## Three things worth knowing beyond the counts
 

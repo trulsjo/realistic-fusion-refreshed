@@ -244,11 +244,11 @@ collects connection categories will collect ours, without naming us or knowing w
 for. Neither of those reaches a player in normal play, and neither is a defect; reading the guarantee
 as covering them would be.
 
-**A set can also take a category away, and then the guarantee does not hold at all.** Containment is
-a declaration, so it lasts exactly as long as the declaration does. **Measured on 2026-09-01 against
-Factorio 2.0.77, on the `seablock` lane, it happens** — `no-pipe-touching` 1.1.28 overwrites
-`rf-pipe-to-ground`'s underground connection with the literal `pipe-to-ground` and appends twelve
-categories to its surface one, and a category is a whitelist, so both open the box. Containment holds
+**A set can also take a category away, and where it does the guarantee does not hold by itself.**
+Containment is a declaration, so it lasts exactly as long as the declaration does. **Measured on
+2026-09-01 against Factorio 2.0.77, on the `seablock` lane, it happened** — `no-pipe-touching` 1.1.28
+overwrote `rf-pipe-to-ground`'s underground connection with the literal `pipe-to-ground` and appended
+twelve categories to its surface one, and a category is a whitelist, so both opened the box. Containment holds
 on the other twelve contained connections, so this is one pass over one prototype type rather than
 the guarantee failing in general. `scripts/probe-connection-categories.ps1` is what sees it, and
 neither gate does — see [ADR 0007](docs/adr/0007-coexistence-without-integration.md)'s finding 4 and

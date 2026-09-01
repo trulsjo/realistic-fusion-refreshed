@@ -244,10 +244,11 @@ by [#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207), on 
 2.0.77. Every lane sees the same subject — **17 prototypes of ours with pipe connections, 58
 connections, 14 of them contained with `rf-plasma`** — and:
 
-- **One lane of fourteen changes a contained connection**, SeaBlock NG (#139), on `rf-pipe-to-ground`
-  alone: the underground connection is overwritten with the literal `pipe-to-ground` and the surface
-  one keeps `rf-plasma` with twelve categories appended. A category is a whitelist, so both open the
-  box. `no-pipe-touching` 1.1.28 is in no other lane's pin.
+- **One lane of fourteen changed a contained connection**, SeaBlock NG (#139), on
+  `rf-pipe-to-ground` alone: the underground connection was overwritten with the literal
+  `pipe-to-ground` and the surface one kept `rf-plasma` with twelve categories appended. A category
+  is a whitelist, so both opened the box. `no-pipe-touching` 1.1.28 is in no other lane's pin.
+  **Closed the same day by #208 — see below; the past tense is deliberate.**
 - **Three lanes add a category to connections we left `default`** and none of them removes one
   there — Krastorio 2's `kr-steel-pipe` on #33 and #130, and SeaBlock's own sweep on #139, which is
   therefore in both this bullet and the one above. Two mods, two mechanisms, and `default` survives

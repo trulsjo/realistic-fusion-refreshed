@@ -965,9 +965,19 @@ contain(pipe_to_ground.fluid_box)
 -- one. A category is a whitelist, so both open the box.
 --
 -- `ignore` is the mod's own documented opt-out and it gates that guard completely, so this ONE FIELD
--- closes BOTH. It is the only pass that reaches this prototype: pipe-to-ground is not in the entity
--- list at :47-68, and the other two passes walk data.raw.pipe. The mod deletes the field afterwards
--- (:230-232), so nothing of it survives into the loaded prototype.
+-- closes BOTH. The mod deletes the field afterwards (:230-232), so nothing of it survives into the
+-- loaded prototype.
+--
+-- IT IS THE ONLY PASS THAT REACHES THIS PROTOTYPE, AND THAT TAKES TWO REASONS RATHER THAN ONE.
+-- pipe-to-ground is not in the entity list at :47-68, so the entity pass never looks at it. But the
+-- data.raw.pipe pass is NOT confined to pipes: it has a nested loop at :157-169 that walks
+-- data.raw["pipe-to-ground"] and can write a category and solved_by_npt on an underground it matches
+-- by name, stripping "-to-ground" and looking for the pipe. Ours IS that shape -- rf-pipe-to-ground
+-- strips to rf-pipe, which exists. What keeps it out is the branch's own guard: it fires only if
+-- rf-pipe holds a default category, and rf-pipe holds rf-plasma on all four connections. So this
+-- entity is out of that pass's reach BECAUSE rf-pipe is contained, which is the same shape as the
+-- breach itself -- containment deciding which branch claims us. Saying only "the other two passes
+-- walk data.raw.pipe" would be true of the loop header and wrong about the loop.
 --
 -- WHY THIS AND NOT A data-final-fixes OF OUR OWN re-asserting the category: ours would run after
 -- theirs and would work, but it is a general defence against a problem measured on one lane, and it

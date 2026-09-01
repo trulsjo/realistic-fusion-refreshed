@@ -37,9 +37,16 @@ fix-surface   rf-pipe-to-ground      bob-copper-pipe  100.000   100.000     0.00
 control       rf-pipe-to-ground      rf-pipe          100.000   100.000   100.000
 ```
 
-`rf-probe-tunnel-bare` is the shipped prototype with `npt_compat` removed and **nothing else
-changed** — the state `rf-pipe-to-ground` was in before #208. Both are on the same map so the hole
-and the fix are compared against one loaded copy of the set rather than across two runs.
+`rf-probe-tunnel-bare` is the shipped prototype with `npt_compat` removed, which is the state
+`rf-pipe-to-ground` was in before #208. Both are on the same map, so the hole and the fix are
+compared against one loaded copy of the set rather than across two runs.
+
+**Four fields differ, not one, and the distinction is worth stating rather than rounding off.**
+`npt_compat` is the one under test; `name` must differ or it is not a second prototype; and
+`minable`, `fast_replaceable_group` and `next_upgrade` are nilled because they name an item and
+prototypes belonging to the original. **None of the three is read by the pass under test** — its
+guard consults `npt_compat`, `solved_by_npt` and whether any connection holds a default category.
+So the difference that *matters* is one field, and the diff is four.
 
 **The tunnel is real.** A vanilla pipe-to-ground five tiles away receives our plasma, underground and
 out of sight — exactly the case `prototypes/entities.lua` says cannot happen.
