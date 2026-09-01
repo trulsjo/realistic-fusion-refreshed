@@ -254,8 +254,10 @@ the guarantee failing in general. `scripts/probe-connection-categories.ps1` is w
 neither gate does — see [ADR 0007](docs/adr/0007-coexistence-without-integration.md)'s finding 4 and
 `docs/research/connection-category-reassignment.md`.
 [#206](https://github.com/trulsjo/realistic-fusion-refreshed/issues/206) measured it,
-[#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207) swept the remaining lanes and
-found **one of fourteen** does it,
+[#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207) ran the same probe on all
+fourteen lanes and **this is the only one that does it** — the other thirteen change no category of
+ours, and eleven of them change nothing at all
+(`docs/research/connection-categories-by-lane.md`),
 [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) decides what to do and is
 Truls's, and [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209) is the gate.
 
