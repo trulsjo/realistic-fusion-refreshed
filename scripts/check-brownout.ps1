@@ -653,8 +653,9 @@ script.on_init(function()
 
   -- LONG RUNS GET ATTACKED, and this rig is where that was learned the expensive way. The guard
   -- itself is shared -- see Get-QuietMapLua in scripts/factorio-lib.ps1 -- because two sibling rigs
-  -- now run long enough to need it too. Only the reporting is this rig's.
-  local removed = rf_quiet_map(surface)
+  -- now run long enough to need it, though neither has adopted it yet. This rig is still its only
+  -- caller; only the reporting is this rig's.
+  local removed = __QUIETFN__(surface)
   record(true, "the map is stopped from fighting back, so a long run measures the reactor",
     string.format("pollution and expansion off, peaceful, %d enemy entities removed", removed))
 
@@ -1210,6 +1211,7 @@ end)
 '@
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value (
         $lua.Replace('__QUIETMAP__', (Get-QuietMapLua)).
+             Replace('__QUIETFN__', $script:QuietMapFunction).
              Replace('__PLASMAFEED__', $feed).
              Replace('__SETTLE__',  "$settleTicks").
              Replace('__CUT__',     "$cutTicks").
