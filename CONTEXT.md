@@ -255,11 +255,18 @@ neither gate does — see [ADR 0007](docs/adr/0007-coexistence-without-integrati
 `docs/research/connection-category-reassignment.md`.
 [#206](https://github.com/trulsjo/realistic-fusion-refreshed/issues/206) measured it,
 [#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207) ran the same probe on all
-fourteen lanes and **this is the only one that does it** — the other thirteen change no category of
+fourteen lanes and **that was the only one that did it** — the other thirteen change no category of
 ours, and eleven of them change nothing at all
-(`docs/research/connection-categories-by-lane.md`),
-[#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) decides what to do and is
-Truls's, and [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209) is the gate.
+(`docs/research/connection-categories-by-lane.md`). **Closed on that lane by
+[#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) on 2026-09-01**, so both of
+that entity's connections hold `rf-plasma` again there.
+
+**The term is unchanged and the guarantee is narrower than it reads.** Containment still means what
+it says above. But it is a declaration, and a mod that rewrites the declaration takes it away; where
+it survives such a mod, it survives by that mod's leave rather than by our enforcement. ADR 0018 and
+`prototypes/entities.lua` state what it is worth and how it is held;
+[#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209) is the gate that would
+notice a second one.
 
 **Bolted** — of a connection: made by two machines' faces meeting, with no pipe between them. This is
 how reactor energy is *to* travel, because no pipe is to carry it. Reserve the word for a connection

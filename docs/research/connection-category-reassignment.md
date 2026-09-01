@@ -17,6 +17,14 @@ suspicion is **`no-pipe-touching` 1.1.28**. The script is committed rather than 
 because these are facts about a version of an engine and of somebody else's mod, and the next version
 of either is entitled to different ones.
 
+> **Closed on 2026-09-01 by
+> [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208):** `rf-pipe-to-ground`
+> carries `npt_compat = { ignore = true }`, which gates the only pass that reaches it, and re-running
+> the probe on this lane reports neither the `LOST` row nor the `WIDENED` row. The tunnel this note
+> reasons about was then measured for real — plasma did cross into a vanilla pipe-to-ground, and
+> does not now: [`plasma-tunnel.md`](plasma-tunnel.md). What follows is the measurement the decision
+> was taken on and is left as it was.
+
 ## The answer in one line
 
 **Yes. Reproduced, not refuted.** `rf-pipe-to-ground`'s **underground** connection is declared

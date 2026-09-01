@@ -58,7 +58,10 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 -- no prefix. That lane reports the infinity pipe as a replacement and stays red on purpose (#195,
 -- ADR 0028).
 --
--- A SET DOES ALSO TAKE A CATEGORY AWAY, AND THERE THIS GUARANTEE DOES NOT HOLD. MEASURED on
+-- A SET DOES ALSO TAKE A CATEGORY AWAY, AND ON ONE LANE THIS GUARANTEE IS HELD BY PERMISSION
+-- RATHER THAN BY DECLARATION -- see the opt-out at the pipe-to-ground below, which is what closes
+-- it. What follows is what the guarantee is worth without that field, and it is stated in full
+-- because the field is one mod wide and the next mod gets none of it. MEASURED on
 -- 2026-09-01 against 2.0.77 by scripts/probe-connection-categories.ps1 on the seablock lane, and
 -- written up in docs/research/connection-category-reassignment.md -- it was a reading of somebody
 -- else's Lua when #206 opened and it is a dump now. That mod's last pipe-to-ground pass fires for a
@@ -78,12 +81,19 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 -- knowing anyway: it is not leaving our contained boxes alone, it is making twelve equivalent edits.
 --
 -- Neither gate can see any of it -- both are blind to what a set does to prototypes of OURS
--- (ADR 0007's finding 4). #207 has since swept all fourteen and ONE of them does this -- only the
--- seablock lane, only no-pipe-touching, only rf-pipe-to-ground; three lanes add a category to
--- boxes we left default and remove nothing, and eleven change nothing at all
--- (docs/research/connection-categories-by-lane.md). #208 is what to do about it and is Truls's,
--- #209 is the gate. Until #208 is decided, write nothing here that assumes containment survives
--- an arbitrary set.
+-- (ADR 0007's finding 4). #207 swept all fourteen and ONE of them does this -- only the seablock
+-- lane, only no-pipe-touching, only rf-pipe-to-ground; three lanes add a category to boxes we left
+-- default and remove nothing, and eleven change nothing at all
+-- (docs/research/connection-categories-by-lane.md).
+--
+-- SO WHAT IS THE GUARANTEE WORTH UNDER A SET THAT REASSIGNS CATEGORIES? Exactly this much, and #208
+-- decided to leave it here rather than build past it: THE DECLARATION ALONE DOES NOT SURVIVE A
+-- data-final-fixes THAT REWRITES IT, AND NOTHING IN THIS REPO MAKES IT SURVIVE. What holds on the
+-- one lane where that happens is a field naming that mod's own opt-out, which defends against that
+-- mod and against nothing else. A second mod doing the same thing would open the same hole again and
+-- neither gate would see it -- #209 is the gate that would, and it is the trigger for reopening #208.
+-- Write nothing here that assumes containment survives an arbitrary set: it does not, and the fix
+-- below is a permission rather than a defence.
 --
 -- The 1.1 original could not do this and spent 160 lines of control.lua hunting down plasma-carrying
 -- vanilla pipes and destroying them. That is a tick cost, a surprise for whoever built the pipe, and
@@ -939,12 +949,37 @@ local pipe_to_ground = repoint(
 -- Both of its connections, which is the point: the underground one carries the category too, so a
 -- vanilla pipe-to-ground cannot tunnel into a plasma line from out of sight.
 --
--- AND THIS IS THE ONE PROTOTYPE WHERE THAT HAS BEEN MEASURED TO FAIL. On the seablock lane
--- no-pipe-touching rewrites both of these connections; the tunnel the line above rules out is open
--- there. Left as it stands rather than softened, because it is what the declaration says and it
--- holds everywhere else measured -- see the header, and
--- docs/research/connection-category-reassignment.md for which connection went how.
+-- AND THIS IS THE ONE PROTOTYPE WHERE THAT WAS MEASURED TO FAIL, which is why it is also the only
+-- one carrying the opt-out below. #206 dumped the seablock lane and found no-pipe-touching 1.1.28
+-- rewriting BOTH of these connections; #207 ran all fourteen lanes and found no other mod doing it.
 contain(pipe_to_ground.fluid_box)
+
+-- THE ONE PLACE THIS REPO TAKES A THIRD-PARTY MOD'S PRIVATE HOOK, and it is here because the
+-- guarantee stated three lines above is false without it on one lane a player can install.
+--
+-- no-pipe-touching's last pass (data-final-fixes.lua:216-225) fires for a pipe-to-ground that is not
+-- solved_by_npt, carries no npt_compat, and holds NO DEFAULT CATEGORY ON ANY CONNECTION -- which is
+-- the shape contain() itself gives this entity, so containment is what qualifies it. The body then
+-- writes the literal "pipe-to-ground" over the underground connection, discarding rf-plasma and
+-- landing our tunnel in the same category as vanilla's, and appends twelve pipe names to the surface
+-- one. A category is a whitelist, so both open the box.
+--
+-- `ignore` is the mod's own documented opt-out and it gates that guard completely, so this ONE FIELD
+-- closes BOTH. It is the only pass that reaches this prototype: pipe-to-ground is not in the entity
+-- list at :47-68, and the other two passes walk data.raw.pipe. The mod deletes the field afterwards
+-- (:230-232), so nothing of it survives into the loaded prototype.
+--
+-- WHY THIS AND NOT A data-final-fixes OF OUR OWN re-asserting the category: ours would run after
+-- theirs and would work, but it is a general defence against a problem measured on one lane, and it
+-- works by overriding whatever another mod did -- which is the opposite of ADR 0007's
+-- coexistence-without-integration line. Truls's call on #208, 2026-09-01, to be reassessed if a
+-- second mod ever does this. #209 is the gate that would notice.
+--
+-- rf-pipe deliberately does NOT get this field. It needs no protection -- the pass that rewrites
+-- data.raw.pipe entries is guarded on their holding a default category, and rf-pipe holds none -- and
+-- setting it there would stop the mod collecting our prototype's bare NAME, which is half of a
+-- finding #195 declined to suppress on the same day.
+pipe_to_ground.npt_compat = { ignore = true }
 
 -- The plasma set needs a pump of its own for the same reason it needs pipes of its own: a vanilla
 -- pump is a vanilla pipe connection, so with containment in place it cannot join a plasma line at

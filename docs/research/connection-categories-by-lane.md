@@ -16,6 +16,14 @@ else** — [ADR 0026](../adr/0026-third-party-mods-are-pinned-to-their-2-0-line.
 and no unqualified "works with X" may be built on one. The per-lane run log is the lane's own issue
 ([ADR 0027](../adr/0027-the-lane-issue-is-the-run-log.md)); each row links to it.
 
+> **The SeaBlock row was closed on 2026-09-01 by
+> [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208), after this sweep ran.**
+> `rf-pipe-to-ground` now carries that mod's own opt-out, and re-running the probe on that lane
+> reports **44 differences, all of them the benign default-widening** — the `LOST` and `WIDENED` rows
+> below are gone. Everything in this note is left as measured on the morning of that day, because it
+> is the evidence the decision was taken on; the table records what the sweep found, not what the
+> lane does now.
+
 ## The answer in one line
 
 **Reassigning a containment category is one mod's behaviour, not a pattern. Adding a category to an

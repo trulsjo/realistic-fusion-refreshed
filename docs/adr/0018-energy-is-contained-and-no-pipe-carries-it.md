@@ -100,9 +100,18 @@ Checked against the installed 2.0.77 Space Age data
   [`connection-categories-by-lane.md`](../research/connection-categories-by-lane.md) for the sweep.
   [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) decides the response and
   is Truls's; [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209) is the gate
-  that would catch the class. **Until that gate lands, this ADR claims containment for what it
-  declares, not for what survives an arbitrary set** — which is now a statement about a measured
-  exception rather than about an unexamined risk.
+  that would catch the class.
+
+  **#208 answered on 2026-09-01: take that mod's own opt-out.** `rf-pipe-to-ground` carries
+  `npt_compat = { ignore = true }`, which gates the only pass that reaches it, so both of its
+  connections come out of that lane holding `rf-plasma`. **So what is this ADR's claim worth under a
+  set that reassigns categories?** Precisely this: **the declaration alone is not worth anything
+  against a `data-final-fixes` that rewrites it, and this repo builds nothing that makes it
+  survive.** Where it holds against such a mod, it holds because that mod published an opt-out and we
+  took it — a permission, not a defence, good for one mod and no others. A general
+  re-assertion pass of our own was declined as integration's posture rather than coexistence's; see
+  ADR 0007's finding 4. **This ADR therefore claims containment for what it declares, plus one
+  named exception, and not for what survives an arbitrary set.**
 - `fusion-plasma` is `auto_barrel = false`, and carries its energy in **temperature**
   (`heat_capacity = "25J"`, default 1 000 000 °C, max 10 000 000) — the exact inverse of
   `rf-reactor-energy`, which is 1 MJ per unit at 15 °C.
