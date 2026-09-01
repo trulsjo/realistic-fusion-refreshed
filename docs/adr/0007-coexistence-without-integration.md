@@ -259,13 +259,37 @@ connections, 14 of them contained with `rf-plasma`** — and:
   and *not* that Space Age changes nothing. `-With` enables a bundled mod on both sides of the
   comparison, so it cancels out and this instrument cannot see it either way.
 
-So **reassignment is one mod's behaviour and addition is a pattern** — which is what
-[#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) needs in order to decide
-whether a mod-specific response is adequate.
+So **reassignment is one mod's behaviour and addition is a pattern**.
 [`connection-categories-by-lane.md`](../research/connection-categories-by-lane.md) is the cross-lane
 write-up; each lane's own numbers are on its issue, per ADR 0027. **Neither gate sees any of it yet**
 — that is [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209), and until it
 lands this finding's first sentence still holds.
+
+**And the answer to a set that does it is to take that set's own opt-out — Truls's call on
+[#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208), 2026-09-01.**
+`rf-pipe-to-ground` now carries `npt_compat = { ignore = true }`, which gates the only pass that
+reaches it and closes both connections with one field. Three things about that decision belong in
+this ADR rather than only in the code:
+
+- **It is a permission, not a defence, and the difference is the whole of what containment is now
+  worth under an arbitrary set.** The declaration does not survive a `data-final-fixes` that rewrites
+  it and nothing here makes it survive; what holds on that lane is a field naming one mod's hook. A
+  second mod doing the same thing reopens #208, and #209 is the gate that would notice.
+- **The general alternative was declined on this ADR's own line.** A `data-final-fixes` of ours
+  re-asserting the category would run after theirs and would work, but it defends against a problem
+  measured on one lane by overriding whatever another mod did — which is integration's posture, not
+  coexistence's. Recorded because a future reader will ask why the robust option was not taken.
+- **`rf-pipe` deliberately did not get the field.** It needs none: the pass that rewrites
+  `data.raw.pipe` entries is guarded on their holding a default category and it holds none. Setting
+  it would additionally stop the mod collecting our prototype's bare *name*, which is half of the
+  finding [#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195) declined to
+  suppress on the same day, and it would not clear that lane anyway — `rf-plasma` still reaches the
+  `infinity-pipe` through `rf-pump`.
+
+**What this costs the coexistence position is one line of another mod's private vocabulary in our
+shipped data**, on one prototype, deleted by that mod as it runs. `underground-pipe-pack` 2.0.6 sets
+the same field on its own prototypes with no dependency on the mod that reads it, so the shape is not
+unprecedented among mods that have never met.
 
 **5. Where two sets meet, their effects compose.** Angel's and Space Age touch disjoint sets of our
 prototypes but for one, and no object is changed only in combination — yet on `rf-heater` the two
