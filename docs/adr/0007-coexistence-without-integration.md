@@ -116,7 +116,7 @@ playthrough.** A red lane is not automatically a defect here — see the second 
 | Angel's + Bob's + Space Age ([#136](https://github.com/trulsjo/realistic-fusion-refreshed/issues/136)) | `angels-bobs`, 20 mods, `-With space-age` | green | **red** | the same single finding, unchanged by Space Age |
 | Angel's + Bob's + MadClown's ([#137](https://github.com/trulsjo/realistic-fusion-refreshed/issues/137)) | `angels-bobs-madclowns`, 21 mods | green | **red** | the same single finding; `Clowns-Processing` adds none of its own |
 | Angel's + Bob's + MadClown's + Space Age ([#138](https://github.com/trulsjo/realistic-fusion-refreshed/issues/138)) | `angels-bobs-madclowns`, 21 mods, `-With space-age` | green | **red** | the same single finding |
-| SeaBlock NG ([#139](https://github.com/trulsjo/realistic-fusion-refreshed/issues/139)) | `seablock`, 46 mods, `-With quality` | **red** | **red** | two reds, both upstream's and neither the same as the other. `load-check` fails on `__base__/sound/car-metal-impact.ogg`, named by `KS_Power` — the asset shape again. `name-check` reports the Angel's re-homing above **and** a second finding of its own: `no-pipe-touching`'s `data-final-fixes` walks `data.raw["infinity-pipe"]` and collects every pipe connection category it has seen onto it, so our `rf-pipe` and `rf-plasma` join Bob's ten. A third evidence shape, nested two levels inside `fluid_box`, and [#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195) |
+| SeaBlock NG ([#139](https://github.com/trulsjo/realistic-fusion-refreshed/issues/139)) | `seablock`, 46 mods, `-With quality` | **red** | **red** | two reds, both upstream's and neither the same as the other. `load-check` fails on `__base__/sound/car-metal-impact.ogg`, named by `KS_Power` — the asset shape again. `name-check` reports the Angel's re-homing above **and** a second finding of its own: `no-pipe-touching`'s `data-final-fixes` walks `data.raw["infinity-pipe"]` and collects every pipe connection category it has seen onto it, so our `rf-plasma` and the bare name of our pipe prototype `rf-pipe` join Bob's ten. A third evidence shape, nested two levels inside `fluid_box`, **declined on 2026-09-01** under ADR 0028 — the lane stays red with the cause recorded. [#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195) |
 | RITEG ([#140](https://github.com/trulsjo/realistic-fusion-refreshed/issues/140)) | `riteg`, 1 mod | **red** | green | upstream's — `__base__/sound/car-metal-impact.ogg`, the 1.1-era path 2.0 removed, named by RITEG and not by this repo. ADR 0026 smoke-tested this and predicted it; the lane now has a row |
 | Advanced Fluid Handling ([#141](https://github.com/trulsjo/realistic-fusion-refreshed/issues/141)) | `fluid`, 1 mod | green | green | green on both halves — and `underground-pipe-pack` 2.0.6 still names the same `__base__/sound/car-metal-impact.ogg` in an unconditionally required file, without the asset check failing on it. That is a change from what ADR 0026 measured and is [#196](https://github.com/trulsjo/realistic-fusion-refreshed/issues/196) |
 
@@ -167,12 +167,15 @@ is the absence of every `barrelling` unlock and not their proportion. That narro
 deliberate — see finding 3 — and whether it widens is
 [#194](https://github.com/trulsjo/realistic-fusion-refreshed/issues/194).
 
-**The third shape arrived with SeaBlock and is weaker evidence than either.** `no-pipe-touching`'s
-`data-final-fixes` walks `data.raw["infinity-pipe"]` and adds every pipe connection category it has
-collected, so our `rf-pipe` and `rf-plasma` join Bob's ten on a **vanilla** prototype. Upstream's by
-its own source comment, but the classifier cannot see it at all: the difference is nested two levels
-inside `fluid_box`, where `$SHAPES` is keyed by the top-level field, and a connection category of
-ours in their list is equally consistent with either author.
+**The third shape arrived with SeaBlock, is weaker evidence than either, and was declined.**
+`no-pipe-touching`'s `data-final-fixes` walks `data.raw["infinity-pipe"]` and adds every pipe
+connection category it has collected. **Two entries of ours land there by two different passes**, and
+only one of them is a category we wrote: `rf-plasma`, collected off `rf-pump`'s box, and the bare
+**name** of our pipe prototype `rf-pipe`, collected because the mod takes the name of every
+`data.raw.pipe` entry that has not opted out of it. Upstream's by its own source comment, but the
+classifier cannot see it at all: the difference is nested two levels inside `fluid_box`, where
+`$SHAPES` is keyed by the top-level field, and a connection category of ours in their list is equally
+consistent with either author. Declined rather than built — see finding 3.
 [#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195).
 
 **One claim in this finding has been measured false and is left here rather than quietly dropped.**
@@ -206,6 +209,17 @@ wiring it into their technology, because a dump records what a prototype ended u
 wrote it. So the re-homed rule tests the set's own visible behaviour instead: the recipe is one base
 Factorio constructs from a fluid of ours, and the destination technology already carried
 base-generated barrel unlocks before we arrived. `CONTEXT.md` defines both terms against each other.
+
+**A third way was declined rather than added, and the refusal is the finding.** SeaBlock's
+`no-pipe-touching` collects connection categories onto vanilla `infinity-pipe`, ours among them
+(finding 2 above). Put to Truls on 2026-09-01 and refused: a category of ours in their list is
+equally consistent with either author, and the nearest available evidence — the baseline already
+holding ten categories of Bob's — shows a collecting pass ran without showing that it swept **ours**
+in. That is one step weaker than the re-homed rule's second condition, so it fails the bar below and
+the lane stays red with its cause recorded.
+[#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195), which also closed the
+implementation ticket
+[#201](https://github.com/trulsjo/realistic-fusion-refreshed/issues/201).
 
 `name-check` classifies both and still exits 0 — **a jump in either count is worth reading**, because
 it means a set started doing something new with this repo. The rule that does the classifying is the
