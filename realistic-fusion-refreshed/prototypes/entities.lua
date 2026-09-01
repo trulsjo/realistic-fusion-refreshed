@@ -58,18 +58,23 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 -- no prefix. That lane reports the infinity pipe as a replacement and stays red on purpose (#195,
 -- ADR 0028).
 --
--- A SET MAY ALSO TAKE A CATEGORY AWAY, AND THEN THIS GUARANTEE SIMPLY DOES NOT HOLD. Read from that
--- same mod's source: its last pipe-to-ground pass fires for a prototype that is not solved_by_npt,
--- carries no npt_compat and holds no default category -- which is the shape containment itself gives
--- rf-pipe-to-ground -- and writes the literal "pipe-to-ground" over the underground connection,
--- discarding rf-plasma. That would remove precisely the protection stated at contain() on the
--- pipe-to-ground below.
+-- A SET DOES ALSO TAKE A CATEGORY AWAY, AND THERE THIS GUARANTEE DOES NOT HOLD. MEASURED on
+-- 2026-09-01 against 2.0.77 by scripts/probe-connection-categories.ps1 on the seablock lane, and
+-- written up in docs/research/connection-category-reassignment.md -- it was a reading of somebody
+-- else's Lua when #206 opened and it is a dump now. That mod's last pipe-to-ground pass fires for a
+-- prototype that is not solved_by_npt, carries no npt_compat and holds no default category -- which
+-- is the shape containment itself gives rf-pipe-to-ground -- and BOTH of that entity's connections
+-- come out changed: the underground one reads the literal "pipe-to-ground" with rf-plasma gone, and
+-- the surface one keeps rf-plasma with twelve more categories appended beside it. A category is a
+-- whitelist, so the second is a breach as much as the first. Precisely the protection stated at
+-- contain() on the pipe-to-ground below, removed twice over.
 --
--- NOT MEASURED, and the distinction matters here more than usual: that is a reading of somebody
--- else's Lua, not a dump. #206 runs the lane and settles it, #209 is the gate that would catch the
--- class. Neither check can see it either way -- both are blind to what a set does to prototypes of
--- OURS (ADR 0007's finding 4) -- so until #206 reports, write nothing here that assumes containment
--- survives an arbitrary set.
+-- WHAT SURVIVED IS THE OTHER HALF OF THE FINDING. Twelve of the fourteen contained connections are
+-- untouched on that lane, rf-pipe's four among them, so this is one pass over one prototype type and
+-- not containment failing in general. Neither gate can see it either way -- both are blind to what a
+-- set does to prototypes of OURS (ADR 0007's finding 4). #208 is what to do about it and is Truls's,
+-- #207 sweeps the remaining lanes, #209 is the gate. Until #208 is decided, write nothing here that
+-- assumes containment survives an arbitrary set.
 --
 -- The 1.1 original could not do this and spent 160 lines of control.lua hunting down plasma-carrying
 -- vanilla pipes and destroying them. That is a tick cost, a surprise for whoever built the pipe, and
@@ -924,6 +929,12 @@ local pipe_to_ground = repoint(
   GRAPHICS .. "pipe-to-ground/", PIPE_TO_GROUND_SPRITES)
 -- Both of its connections, which is the point: the underground one carries the category too, so a
 -- vanilla pipe-to-ground cannot tunnel into a plasma line from out of sight.
+--
+-- AND THIS IS THE ONE PROTOTYPE WHERE THAT HAS BEEN MEASURED TO FAIL. On the seablock lane
+-- no-pipe-touching rewrites both of these connections; the tunnel the line above rules out is open
+-- there. Left as it stands rather than softened, because it is what the declaration says and it
+-- holds everywhere else measured -- see the header, and
+-- docs/research/connection-category-reassignment.md for which connection went how.
 contain(pipe_to_ground.fluid_box)
 
 -- The plasma set needs a pump of its own for the same reason it needs pipes of its own: a vanilla
