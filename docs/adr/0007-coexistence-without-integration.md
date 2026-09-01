@@ -253,8 +253,11 @@ connections, 14 of them contained with `rf-plasma`** — and:
   therefore in both this bullet and the one above. Two mods, two mechanisms, and `default` survives
   in every case, so ordinary boxes stay ordinary. One, plus three, less the lane counted twice, plus
   eleven, is fourteen.
-- **Eleven lanes change nothing at all**, Space Age adds nothing on any of the four lanes that enable
-  it, and no lane removed a prototype, emptied a fluid box, or took `default` away.
+- **Eleven lanes change nothing at all**, and no lane removed a prototype, emptied a fluid box, or
+  took `default` away. The four lanes that enable Space Age report the same as their plain
+  counterparts, which means **adding a set on top of Space Age does what adding it alone does** —
+  and *not* that Space Age changes nothing. `-With` enables a bundled mod on both sides of the
+  comparison, so it cancels out and this instrument cannot see it either way.
 
 So **reassignment is one mod's behaviour and addition is a pattern** — which is what
 [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) needs in order to decide

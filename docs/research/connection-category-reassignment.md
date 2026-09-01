@@ -3,10 +3,12 @@
 Evidence for [#206](https://github.com/trulsjo/realistic-fusion-refreshed/issues/206), which the
 [code review of PR #205](https://github.com/trulsjo/realistic-fusion-refreshed/pull/205#issuecomment-5485579064)
 opened by finding that PR's central claim false. **Nothing here decides anything.** What to do about
-it is [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) and Truls's call, the
-sweep of the other lanes is [#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207),
-and the gate that would catch the class is
+it is [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) and Truls's call, and
+the gate that would catch the class is
 [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209).
+[#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207) has since swept all fourteen
+lanes and this one is the only one that changes a category of ours —
+[`connection-categories-by-lane.md`](connection-categories-by-lane.md).
 
 Measured on **2026-09-01** against **Factorio 2.0.77** (file version 2.0.77.84539) by
 `scripts/probe-connection-categories.ps1`, on the `seablock` lane — 46 mods from
@@ -181,7 +183,9 @@ away". The first is what #209 has to be built for; the second is all this lane s
   lane as red. Choosing is #208's and Truls's.
 - **Nothing about how the probe behaves on a set that changes nothing.** It has been run on one lane.
   Its floor asserts the instrument is reading containment at all — 14 connections on the declared
-  side — which is what rules out a clean report caused by a broken walk.
+  side — which is what rules out a clean report caused by a broken walk. **Since answered:** #207 ran
+  it on fourteen lanes and **eleven report no difference at all**, so the quiet case is now measured
+  rather than assumed.
 
 ## One thing the instrument got wrong first, since it bears on trusting the counts
 

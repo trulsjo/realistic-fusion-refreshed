@@ -80,8 +80,10 @@ numbers are in
 [`connection-category-reassignment.md`](connection-category-reassignment.md) and are not repeated
 here.
 
-**`no-pipe-touching` is in one lane's cache and no other**, and nothing in the other thirteen lanes
-has a pass of that shape. So the breach is confined by which mod is present.
+**`no-pipe-touching` is in one lane's cache and no other**, and no other lane changes a category of
+ours. So the breach is confined by which mod is present. Stated as an effect rather than as a claim
+about their source, deliberately: a zero-diff lane shows that nothing *happened*, not that no mod in
+it carries a pass of that shape whose guard simply declined to fire.
 
 **It is not confined by anything about our prototypes, and the shape of ours is half the cause.**
 That pass fires on a `pipe-to-ground` holding *no default category on any connection*, which is the
@@ -114,10 +116,19 @@ is #208's.
 
 ## Three things worth knowing beyond the counts
 
-**Space Age changes nothing, on any lane.** The four `-With space-age` lanes report the same as their
-plain counterparts — checked by hashing each run's report body, not by eye, and all eight hash the
-same because all eight report no difference. Whatever Space Age does to our prototypes — ADR 0007's
-finding 4 records nine objects edited — it does not touch a pipe connection category.
+**Adding a set on top of Space Age does the same as adding it alone.** The four `-With space-age`
+lanes report the same as their plain counterparts — checked by hashing each run's report body, not
+by eye, and all eight hash the same because all eight report no difference.
+
+**That is not the same as "Space Age changes nothing", and an earlier draft of this note said the
+stronger thing.** `-With` enables a bundled mod on **both** sides of the comparison: the probe builds
+one `$enabledBundled` list and `Get-OurConnections` passes it to `Write-ModList` on the declared run
+and the loaded run alike (`scripts/probe-connection-categories.ps1:270`). So Space Age is in the
+baseline as well as in the subject and **cancels out of the diff**. If Space Age appended a category
+to `rf-heater`'s output box, all four of those lanes would still report zero, and hashing the report
+bodies would not catch it because it only shows that all eight are empty. Whatever Space Age does to
+our prototypes — ADR 0007's finding 4 records nine objects edited — **this instrument cannot see
+it**, and could not have.
 
 **Bob's alone does not sweep our boxes.** The `bob-*` categories reach our connections only through
 `no-pipe-touching` in the SeaBlock lane. Bob's twelve mods, with and without Space Age, change
@@ -132,6 +143,11 @@ the SeaBlock result and is now measured rather than assumed.
 
 ## What this does not establish
 
+- **Nothing about what the bundled mods do.** Anything enabled with `-With` — Space Age on four
+  lanes, `quality` on SeaBlock — is loaded on both sides of every comparison and cancels out. This
+  instrument measures what a **junctioned set** does on top of whatever bundled mods are enabled, and
+  it is blind to the bundled mods themselves. Measuring those would need a baseline without them,
+  which the probe does not currently build.
 - **Nothing about mods outside these fourteen lanes.** The pins are ADR 0026's; a set nobody has
   fetched is not evidence of anything.
 - **Nothing about a later release of any of them.** `no-pipe-touching` 1.1.28 is what was measured.

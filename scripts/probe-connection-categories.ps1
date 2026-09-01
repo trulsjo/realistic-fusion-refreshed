@@ -100,7 +100,9 @@
     with its fluid box emptied, which reports a row per lost connection instead: the two are
     different accidents and a reader chasing the wrong one would be looking in the wrong place.
 
-    Findings are written up in docs/research/connection-category-reassignment.md.
+    Findings are written up in docs/research/. The seablock lane's mechanism is in
+    connection-category-reassignment.md; a run across every lane belongs in
+    connection-categories-by-lane.md, which is where #207 put the sweep.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
@@ -447,7 +449,7 @@ try {
 
     Write-Host ''
     Write-Host 'This is a probe. Exit 0 means it ran and reported, not that the answer was the'
-    Write-Host 'hoped-for one. Findings go in docs/research/connection-category-reassignment.md.'
+    Write-Host 'hoped-for one. Findings go in docs/research/ -- see the header for which note.'
 }
 finally {
     # UNCONDITIONALLY, AND NOT INSIDE THE -KeepTemp BRANCH. The junctions point at the repository's
