@@ -255,10 +255,9 @@ function Get-QuietMapLua {
 
         Shared BEFORE it is copied, because check-brownout.ps1 is no longer the only rig long
         enough to be attacked: probe-quality-equilibrium.ps1 runs twenty minutes by default and
-        bench-mod-links.ps1 thirty-five. NEITHER OF THEM CALLS THIS YET -- check-brownout.ps1 is the
-        only caller today, and it is here rather than in the rig so that the second and third rig to
-        need it adopt one tested version instead of writing their own, which is where a copied
-        safety guard starts to drift silently.
+        bench-mod-links.ps1 thirty-five. Both now call this -- #189 and #190 -- so all three long
+        rigs quiet the map the same way, which is the point of it being here rather than in a rig:
+        three copies is where a safety guard starts to drift silently.
 
         The emitted function returns how many enemy entities it FOUND on the surface, all of which
         it destroys, so an adopting rig can report the figure. Found rather than destroyed because

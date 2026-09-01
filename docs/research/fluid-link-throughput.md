@@ -87,6 +87,26 @@ Taken at 360 000 ticks — 100 minutes of game time, five times the twenty #37 m
 with the reactor holding a full 1 000 units of plasma at 6.88×10⁸ °C. The run is gated on rate,
 temperature *and* plasma inventory having each stopped moving across the last two windows.
 
+> **These figures no longer reproduce, and the table is left standing rather than corrected
+> ([#215](https://github.com/trulsjo/realistic-fusion-refreshed/issues/215)).** Re-run 2026-09-01
+> against the same Factorio 2.0.77 (build 84539) at the same 360 000 ticks, while discharging #190:
+> the **`chain` cell carries no reactor energy at all** — the reactor's output box sits full at its
+> 1 000 capacity and the exchangers report `no_input_fluid` — so the run fails its own gate and half
+> the measurement below is missing. What the surviving `sink` cell reports has moved too: plasma
+> 0.0968 units/tick while flowing against 0.089, energy 1.3683 against 1.63, sustained 1.140 against
+> 1.354, **68.4 MW** against 81, and the plasma settling at 5.346×10⁸ °C rather than 6.88×10⁸. The
+> prime suspect is `c3abb81`, six days after this run, which took `rf-heat-exchanger` from 3×2 to
+> 5×15, moved its reactor-energy inlet to the long west face and its water connections to the short
+> ends, against a rig whose exchanger pitch and stubs are still the numbers the 3×2 machine needed;
+> `587f699`, selling reactor energy at 550 °C, is a second candidate for the `sink` movement.
+> Neither is diagnosed. The rig itself also differs from the one that produced the table — the
+> re-run carried #190's map-quieting and validity guard — but that is defence only, and an A/B
+> against the pre-#190 script at 30 000 ticks returned every digit identical. **Nothing here is
+> rewritten to the new numbers because a rig whose `chain` half produces nothing measures damage
+> rather than throughput** — recording that as a finding is the failure #189 and #190 exist to
+> prevent. The conclusions the section draws are unaffected in direction: both links remain two
+> orders of magnitude clear of their ceilings on the figures that did survive.
+
 | link | arrangement | carries, while flowing | its ceiling | headroom |
 |---|---|---|---|---|
 | heater → reactor (plasma) | output into **input-output** | 0.089 units/tick | ~50 units/tick | **~560×** |
@@ -101,7 +121,9 @@ between 3 and 6 GW.
 built as a real chain and again with the exchangers replaced by an infinity pipe that removes
 reactor energy as fast as it arrives — the most this mod could ever ask of that link, whatever is
 plumbed downstream. **Both cells returned the same number to four digits**, so the exchangers are
-not throttling it and 81 MW is simply what the reactor makes.
+not throttling it and 81 MW is simply what the reactor makes. (That agreement is what #215 broke:
+the real-chain cell now returns zero, so today's run cannot say whether the exchangers throttle the
+link.)
 
 **So the 1.1 geometry answers a question this mod does not have.** Whatever case there is for a
 15-wide heat exchanger butted flush against the reactor — and there is one, about how the machines
