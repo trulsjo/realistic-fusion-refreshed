@@ -47,13 +47,25 @@
     matters more here than usual, because "pipe-to-ground" and {"rf-plasma", "pipe", ...} are
     different accidents with different fixes, and one of them is not obviously an accident at all.
 
-    EVERY DIFFERENCE IS REPORTED AND THEY ARE NOT ONE FINDING, so each row carries a verdict and the
-    verdicts sort before the rows. A category we declared that is GONE is containment removed. A
-    category we declared that survives beside additions is containment WIDENED, which is a breach as
-    well -- a connection category is a whitelist, and adding to one we wrote opens the box to
-    whatever was added. Additions to a connection we left `default` are neither: that is an ordinary
-    box of ours being treated like every other ordinary box in the game, and against `seablock` it is
-    44 of the 46 rows. Sorting them last is what makes the other two readable.
+    COMPARED AS CATEGORY SETS, NOT AS PRINTED TEXT, and that is load-bearing rather than tidy.
+    `contain()` writes the BARE STRING "rf-plasma"; `no-pipe-touching` assigns `unify(...)` back to
+    the field on every connection it merely INSPECTS (has_default_category, data-final-fixes.lua:14),
+    so twelve contained connections of ours come back as the one-element list ["rf-plasma"]. That is
+    the same category to the engine and changes nothing about what connects. Compared as text it
+    would be twelve rows filed under WIDENED -- a box reported as opened with nothing added to it.
+    Measured on the seablock lane, not assumed: all twelve are rewritten and all twelve are
+    set-identical.
+
+    EVERY REAL DIFFERENCE IS REPORTED AND THEY ARE NOT ONE FINDING, so each row carries a verdict and
+    the verdicts sort before the rows. A category WE WROTE that is gone is containment removed. One
+    that survives beside additions is containment WIDENED, which is a breach as well -- a connection
+    category is a whitelist, and adding to one we wrote opens the box to whatever was added.
+    Additions to a connection we left `default` are neither: that is an ordinary box of ours being
+    treated like every other ordinary box in the game, and against `seablock` it is 44 of the 46
+    rows. Sorting them last is what makes the other two readable. A `default` that is REPLACED rather
+    than added to gets its own verdict, because it is not a containment finding and must not claim to
+    be one -- Expand-Category synthesises `default` for an absent field, and a synthesised value is
+    not a declaration of ours.
 
     WALKED AS AN OBJECT GRAPH, NOT BY KNOWN FIELD NAME. A pipe connection is not only at
     `fluid_box.pipe_connections`: the heat exchanger's is nested inside its energy source
@@ -79,7 +91,9 @@
     A PROTOTYPE OF OURS THAT IS GONE from the loaded side is reported as a row rather than skipped.
     It is not a category change and the probe does not pretend it is one, but a set that removes or
     renames the prototype out from under containment is the same class of accident, and silently
-    comparing nothing is how an instrument lies.
+    comparing nothing is how an instrument lies. It is kept DISTINCT from a prototype that survives
+    with its fluid box emptied, which reports a row per lost connection instead: the two are
+    different accidents and a reader chasing the wrong one would be looking in the wrong place.
 
     Findings are written up in docs/research/connection-category-reassignment.md.
 
@@ -200,7 +214,16 @@ function Add-Connections {
             foreach ($connection in @($property.Value)) {
                 $index++
                 $fields = $connection.PSObject.Properties
-                $category = if ($fields['connection_category']) { $connection.connection_category } else { $null }
+                # A PLAIN ASSIGNMENT, NOT `$category = if (...) { $connection.connection_category }`.
+                # An `if` used as an expression writes its block's output to the pipeline, and a
+                # ONE-ELEMENT array sent to the pipeline arrives as its element -- so the array
+                # ["rf-plasma"] was read as the string "rf-plasma" and this probe could not tell the
+                # two apart at all. It mattered: `no-pipe-touching` rewrites the field in place as a
+                # one-element list on twelve contained connections of ours, and the instrument was
+                # blind to the rewrite by accident rather than by decision. The set comparison below
+                # is what decides such a rewrite is a no-op; this line is what lets it see one.
+                $category = $null
+                if ($fields['connection_category']) { $category = $connection.connection_category }
                 $Into["$Path.pipe_connections[$index]"] = [pscustomobject]@{
                     Category = Format-Category $category
                     # @() because a PowerShell function returning a one-element array returns the
@@ -228,14 +251,23 @@ function Get-OurConnections {
         "type/name" -> (path -> connection). Prototypes with no pipe connection are left out.  #>
     param([Parameter(Mandatory)] [string[]] $Mods, [Parameter(Mandatory)] [string] $Tag)
 
+    $rawPath = Join-Path $temp 'write-data/script-output/data-raw-dump.json'
+
+    # DELETED BEFORE THE RUN, NOT MERELY OVERWRITTEN BY IT. Both runs write this one path, so a
+    # second run that exits 0 without writing -- and Invoke-FactorioStep only throws on a non-zero
+    # exit -- leaves the FIRST run's dump sitting here for Test-Path to find. `loaded` would then be
+    # a copy of `declared`, every connection would compare equal, and the report would read "no
+    # difference: every connection of ours holds the category our data stage set." That is the last
+    # way this instrument could pass by finding nothing, and the floor below cannot catch it: the
+    # floor only inspects the declared side, which would be genuinely fine.
+    Remove-Item -LiteralPath $rawPath -Force -ErrorAction SilentlyContinue
+
     Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled -Mods $Mods
     Invoke-FactorioStep -FactorioExe $FactorioExe -ModDirectory $modDir `
         -Arguments @('--dump-data') -OutputDirectory $temp -Tag $Tag | Out-Null
 
-    $rawPath = Join-Path $temp 'write-data/script-output/data-raw-dump.json'
     if (-not (Test-Path $rawPath)) { throw "no data-raw-dump.json at $rawPath." }
-    # Both runs write the same path, so the second overwrites the first. Kept aside under the tag so
-    # -KeepTemp leaves both to compare by hand.
+    # Kept aside under the tag so -KeepTemp leaves both dumps to compare by hand.
     Copy-Item -LiteralPath $rawPath -Destination (Join-Path $temp "$Tag-data-raw.json") -Force
 
     $found = @{}
@@ -245,7 +277,10 @@ function Get-OurConnections {
             if (-not $prototype.Name.StartsWith($PREFIX, [StringComparison]::Ordinal)) { continue }
             $connections = @{}
             Add-Connections -Node $prototype.Value -Path '' -Into $connections
-            if ($connections.Count) { $found["$($type.Name)/$($prototype.Name)"] = $connections }
+            # Kept even when EMPTY, so that "the prototype is gone" and "its fluid box was emptied"
+            # stay different findings. Dropping the empty ones made the second read as the first, and
+            # a reader chasing a deleted rf-reactor would have been looking for the wrong accident.
+            $found["$($type.Name)/$($prototype.Name)"] = $connections
         }
     }
     return $found
@@ -259,17 +294,23 @@ try {
     New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
     $declared = Get-OurConnections -Mods $ourMods -Tag 'declared'
 
+    # Every rf- prototype is in $declared, most of them with no connections at all -- items, recipes,
+    # technologies. Only the ones that HAVE a pipe connection are subjects; the rest are in the map
+    # solely so that a prototype's ABSENCE from the loaded dump can be told from its fluid box being
+    # emptied, which are different accidents.
+    $subjects = @($declared.Keys | Where-Object { $declared[$_].Count } | Sort-Object)
+
     # THE FLOOR. Everything below reports by finding nothing, so a broken walk reads as containment
     # surviving. An instrument fault, not a finding -- the one thing here allowed to exit non-zero.
     $carrying = @($declared.Values | ForEach-Object { $_.Values } |
         Where-Object { $_.Set -ccontains $PLASMA_CATEGORY })
     if (-not $carrying) {
         throw ("the declared dump holds no connection carrying '$PLASMA_CATEGORY' across " +
-               "$($declared.Count) prototype(s) of ours. Either containment has been removed from " +
+               "$($subjects.Count) prototype(s) of ours. Either containment has been removed from " +
                'the data stage or this probe has stopped reading it -- and both would otherwise ' +
                'report a clean pass against any set at all.')
     }
-    Write-Host ("declared: $($declared.Count) prototype(s) of ours with pipe connections, " +
+    Write-Host ("declared: $($subjects.Count) prototype(s) of ours with pipe connections, " +
                 "$($carrying.Count) connection(s) carrying $PLASMA_CATEGORY")
 
     Write-Host 'dumping with the set loaded beside them (loaded)...'
@@ -303,11 +344,19 @@ try {
     $rows     = [System.Collections.Generic.List[object]]::new()
 
     # Sorted, not merely labelled: the answer has to be at the top of the output.
-    $LOST = 'LOST -- a category we declared is gone'
-    $WIDE = 'WIDENED -- added to a connection we categorised'
-    $OPEN = 'widened -- added to a connection we left default'
+    #
+    # LOST says "a category WE WROTE is gone" and it must not say it about a category we never wrote.
+    # Expand-Category synthesises `default` for an absent field, because that is what the engine
+    # reads an absent field as and the comparison turns on it -- but that synthesised value is not a
+    # declaration of ours. Without $REPLACED below, a set that OVERWRITES an ordinary box of ours
+    # would land in LOST, sorted above the real findings, claiming we declared something we did not.
+    # `no-pipe-touching` writes exactly such a literal at :225, so this is a shape that exists.
+    $LOST       = 'LOST -- a category we wrote is gone'
+    $WIDE       = 'WIDENED -- added to a connection we categorised'
+    $REPLACED   = 'REPLACED -- an ordinary box of ours no longer holds the default category'
     $STRUCTURAL = 'STRUCTURAL -- the connection or the prototype is not there to compare'
-    $ORDER = @{ $LOST = 0; $WIDE = 1; $STRUCTURAL = 2; $OPEN = 3 }
+    $OPEN       = 'widened -- added to a connection we left default'
+    $ORDER = @{ $LOST = 0; $WIDE = 1; $REPLACED = 2; $STRUCTURAL = 3; $OPEN = 4 }
 
     function Add-Row {
         param($Verdict, $Prototype, $Connection, $Type, $Declared, $Loaded)
@@ -316,9 +365,9 @@ try {
             Type = $Type; Declared = $Declared; Loaded = $Loaded })
     }
 
-    foreach ($key in ($declared.Keys | Sort-Object)) {
+    foreach ($key in $subjects) {
         if (-not $loaded.ContainsKey($key)) {
-            Add-Row $STRUCTURAL $key '(the whole prototype)' '-' 'present' 'ABSENT with the set loaded'
+            Add-Row $STRUCTURAL $key '(the whole prototype)' '-' 'present' 'the prototype is gone from the dump'
             continue
         }
         $mine  = $declared[$key]
@@ -329,18 +378,35 @@ try {
                 continue
             }
             $compared++
-            if ($mine[$path].Category -ceq $their[$path].Category) { continue }
+            $mineSet  = $mine[$path].Set
+            $theirSet = $their[$path].Set
 
+            # COMPARED AS SETS, NOT AS RENDERED TEXT, and that is not a refinement -- comparing the
+            # printed form reports a difference where the engine sees none. `contain()` writes the
+            # BARE STRING "rf-plasma", while `no-pipe-touching` rewrites the field in place as a
+            # one-element list on every connection it merely INSPECTS
+            # (has_default_category, data-final-fixes.lua:14, called for its side effect on
+            # prototypes it then leaves alone). "rf-plasma" and {"rf-plasma"} are the same category
+            # to the engine, so a row for that pair would be a false positive -- and it would land
+            # in WIDENED, claiming a box was opened with nothing added to it.
+            #
             # Ordinal, because a category is a name the engine matches exactly and PowerShell's
             # -contains is not: a set writing "RF-Plasma" would compare equal and be a real breach.
-            $gone = @($mine[$path].Set | Where-Object {
+            $gone = @($mineSet | Where-Object {
                 $name = $_
-                -not @($their[$path].Set | Where-Object { $_ -ceq $name }) })
+                -not @($theirSet | Where-Object { $_ -ceq $name }) })
+            $added = @($theirSet | Where-Object {
+                $name = $_
+                -not @($mineSet | Where-Object { $_ -ceq $name }) })
+            if (-not $gone -and -not $added) { continue }
+
             # Scalar comparisons, not array ones: PowerShell's -ceq with an ARRAY on the left is a
             # filter and not a test, so `$set -ceq @('default')` returns elements rather than $true
             # or $false and every row would classify the same way.
-            $wasDefault = $mine[$path].Set.Count -eq 1 -and $mine[$path].Set[0] -ceq 'default'
-            $verdict = if ($gone) { $LOST } elseif ($wasDefault) { $OPEN } else { $WIDE }
+            $wasDefault = $mineSet.Count -eq 1 -and $mineSet[0] -ceq 'default'
+            $verdict = if ($wasDefault) { if ($gone) { $REPLACED } else { $OPEN } }
+                       elseif ($gone) { $LOST }
+                       else { $WIDE }
             Add-Row $verdict $key $path $mine[$path].Type $mine[$path].Category $their[$path].Category
         }
         # A connection the set ADDED. Not a reassignment, but it is a box of ours the set has been
@@ -352,7 +418,7 @@ try {
     }
 
     Write-Host ''
-    Write-Host "compared $compared connection(s) across $($declared.Count) prototype(s) of ours"
+    Write-Host "compared $compared connection(s) across $($subjects.Count) prototype(s) of ours"
     if (-not $rows) {
         Write-Host 'no difference: every connection of ours holds the category our data stage set.'
     }
@@ -378,9 +444,14 @@ try {
     Write-Host 'hoped-for one. Findings go in docs/research/connection-category-reassignment.md.'
 }
 finally {
-    if (-not $KeepTemp) {
-        Remove-ModJunctions -ModDirectory $modDir
-        Remove-TempDirectory -Path $temp -Label 'probe-connection-categories'
-    }
-    else { Write-Host "kept: $temp" }
+    # UNCONDITIONALLY, AND NOT INSIDE THE -KeepTemp BRANCH. The junctions point at the repository's
+    # own mod directories and at the cache; anything that later deletes this temp directory
+    # recursively follows them and deletes the source through the link. Remove-TempDirectory's own
+    # header says it follows junctions rather than skipping them, and Storage Sense, Disk Cleanup or
+    # a hand Remove-Item -Recurse all do the same. load-check.ps1 and every probe here remove them
+    # unconditionally for exactly this reason. -KeepTemp is for reading the two dumps, which do not
+    # need the links to still be there.
+    Remove-ModJunctions -ModDirectory $modDir
+    if (-not $KeepTemp) { Remove-TempDirectory -Path $temp -Label 'probe-connection-categories' }
+    else { Write-Host "kept: $temp (mod junctions removed; the two dumps are *-data-raw.json)" }
 }

@@ -69,12 +69,18 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 -- whitelist, so the second is a breach as much as the first. Precisely the protection stated at
 -- contain() on the pipe-to-ground below, removed twice over.
 --
--- WHAT SURVIVED IS THE OTHER HALF OF THE FINDING. Twelve of the fourteen contained connections are
--- untouched on that lane, rf-pipe's four among them, so this is one pass over one prototype type and
--- not containment failing in general. Neither gate can see it either way -- both are blind to what a
--- set does to prototypes of OURS (ADR 0007's finding 4). #208 is what to do about it and is Truls's,
--- #207 sweeps the remaining lanes, #209 is the gate. Until #208 is decided, write nothing here that
--- assumes containment survives an arbitrary set.
+-- WHAT SURVIVED IS THE OTHER HALF OF THE FINDING, AND "SURVIVED" IS NOT "UNTOUCHED". Containment
+-- holds on the other twelve of the fourteen contained connections, rf-pipe's four among them, so
+-- this is one pass over one prototype type and not containment failing in general. But that mod
+-- rewrites the field in place on ALL fourteen -- the bare string this function writes comes back as
+-- a one-element list -- because its has_default_category assigns unify() back to every connection it
+-- merely inspects. Same category to the engine, nothing changed about what connects, and worth
+-- knowing anyway: it is not leaving our contained boxes alone, it is making twelve equivalent edits.
+--
+-- Neither gate can see any of it -- both are blind to what a set does to prototypes of OURS
+-- (ADR 0007's finding 4). #208 is what to do about it and is Truls's, #207 sweeps the remaining
+-- lanes, #209 is the gate. Until #208 is decided, write nothing here that assumes containment
+-- survives an arbitrary set.
 --
 -- The 1.1 original could not do this and spent 160 lines of control.lua hunting down plasma-carrying
 -- vanilla pipes and destroying them. That is a tick cost, a surprise for whoever built the pipe, and
