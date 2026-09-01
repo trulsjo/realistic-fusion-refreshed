@@ -78,9 +78,12 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 -- knowing anyway: it is not leaving our contained boxes alone, it is making twelve equivalent edits.
 --
 -- Neither gate can see any of it -- both are blind to what a set does to prototypes of OURS
--- (ADR 0007's finding 4). #208 is what to do about it and is Truls's, #207 sweeps the remaining
--- lanes, #209 is the gate. Until #208 is decided, write nothing here that assumes containment
--- survives an arbitrary set.
+-- (ADR 0007's finding 4). #207 has since swept all fourteen and ONE of them does this -- only the
+-- seablock lane, only no-pipe-touching, only rf-pipe-to-ground; three lanes add a category to
+-- boxes we left default and remove nothing, and eleven change nothing at all
+-- (docs/research/connection-categories-by-lane.md). #208 is what to do about it and is Truls's,
+-- #209 is the gate. Until #208 is decided, write nothing here that assumes containment survives
+-- an arbitrary set.
 --
 -- The 1.1 original could not do this and spent 160 lines of control.lua hunting down plasma-carrying
 -- vanilla pipes and destroying them. That is a tick cost, a surprise for whoever built the pipe, and

@@ -167,7 +167,10 @@ away". The first is what #209 has to be built for; the second is all this lane s
 ## What this does not establish
 
 - **Nothing about the other lanes.** Thirteen more exist and none was run here; that is a separate
-  ticket, which uses this probe.
+  ticket, which uses this probe. **Since answered:**
+  [#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207) swept all fourteen on
+  the same day and this lane is the only one that changes a contained connection — see
+  [`connection-categories-by-lane.md`](connection-categories-by-lane.md).
 - **Nothing about the runtime consequence.** The probe reads prototypes. Nobody has built a
   pipe-to-ground beside a plasma line on this lane and watched plasma cross. The category is the
   mechanism and the dump is where it lives, so this is the right place to measure it — but "the

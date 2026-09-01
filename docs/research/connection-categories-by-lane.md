@@ -23,13 +23,15 @@ ordinary box of ours is a pattern, and it is benign.**
 
 One lane of fourteen changes a connection this repo contained, and it is
 [SeaBlock NG](https://github.com/trulsjo/realistic-fusion-refreshed/issues/139) — the lane #206 already
-measured, on the strength of `no-pipe-touching` 1.1.28, which appears in no other lane. Two lanes add
-a category to connections we left `default`, by a different mechanism that removes nothing. **Eleven
-of the fourteen change nothing at all.**
+measured, on the strength of `no-pipe-touching` 1.1.28, which appears in no other lane. **Three**
+lanes add a category to connections we left `default` — SeaBlock among them, doing both things —
+and none of the three removes one there. **Eleven of the fourteen change nothing at all.** One plus
+three, less the lane counted in both, plus eleven, is fourteen.
 
-That matters for #208 because it is the question that decides whether a mod-specific response is
-adequate: on this evidence it is. A response shaped for one mod's `data-final-fixes` covers every
-breach measured.
+**What that gives #208 is an asymmetry, not an answer.** Adding is done by two mods on three lanes by
+two mechanisms; removing is done by one mod on one lane, to one prototype. Whether that makes a
+mod-specific response sufficient, or merely cheap today, is #208's to weigh — and the limits below
+bear on it in the other direction.
 
 ## The table
 
@@ -50,7 +52,7 @@ all fourteen runs, which is the instrument reporting that it read the same thing
 | Angel's + Bob's + Space Age | [#136](https://github.com/trulsjo/realistic-fusion-refreshed/issues/136) | 20 | **0** | 0 | 0 | 0 | nothing |
 | Angel's + Bob's + MadClown's | [#137](https://github.com/trulsjo/realistic-fusion-refreshed/issues/137) | 21 | **0** | 0 | 0 | 0 | nothing |
 | Angel's + Bob's + MadClown's + SA | [#138](https://github.com/trulsjo/realistic-fusion-refreshed/issues/138) | 21 | **0** | 0 | 0 | 0 | nothing |
-| **SeaBlock NG** | [#139](https://github.com/trulsjo/realistic-fusion-refreshed/issues/139) | 46 | **46** | **1** | **1** | 44 | **overwrites and widens `rf-pipe-to-ground`**; adds vanilla `pipe`, `rf-pipe` and Bob's ten elsewhere |
+| **SeaBlock NG** | [#139](https://github.com/trulsjo/realistic-fusion-refreshed/issues/139) | 46 | **46** | **1** | **1** | 44 | **overwrites and widens `rf-pipe-to-ground`**; adds vanilla `pipe` and Bob's ten to the 44 (`rf-pipe` only on the contained one) |
 | RITEG | [#140](https://github.com/trulsjo/realistic-fusion-refreshed/issues/140) | 1 | **0** | 0 | 0 | 0 | nothing |
 | Advanced Fluid Handling | [#141](https://github.com/trulsjo/realistic-fusion-refreshed/issues/141) | 1 | **0** | 0 | 0 | 0 | nothing |
 
@@ -78,27 +80,43 @@ numbers are in
 [`connection-category-reassignment.md`](connection-category-reassignment.md) and are not repeated
 here.
 
-**`no-pipe-touching` is in one lane's cache and no other**, so this is confined by which mod is
-present rather than by anything about our prototypes. Nothing in the other thirteen lanes has a pass
-of that shape.
+**`no-pipe-touching` is in one lane's cache and no other**, and nothing in the other thirteen lanes
+has a pass of that shape. So the breach is confined by which mod is present.
+
+**It is not confined by anything about our prototypes, and the shape of ours is half the cause.**
+That pass fires on a `pipe-to-ground` holding *no default category on any connection*, which is the
+shape containment itself gives `rf-pipe-to-ground`; and `rf-pipe` keeping `rf-plasma` on all four of
+its connections is what stops the earlier pass marking the underground sibling `solved_by_npt` and
+taking it out of scope. `connection-category-reassignment.md` sets that out in full. **The more
+thoroughly a box is contained, the more certainly this pass claims it** — so "only one mod does
+this" and "our own prototypes qualify themselves for it" are both true, and the second is the half
+that would carry over to a mod nobody has fetched.
 
 ## The pattern that does exist, and why it is not the same finding
 
-**Two lanes add a category to connections we left `default`, and both keep `default`**, so an
-ordinary pipe still connects and nothing of ours is closed off:
+**Three lanes add a category to connections we left `default`, and every one keeps `default`**, so
+an ordinary pipe still connects and nothing of ours is closed off. Two mods account for the three:
 
-- **Krastorio 2** adds `kr-steel-pipe` to all 44, in both the lane where it appears alone and the one
-  where it appears with Space Exploration. Its own pipe wanting to join ordinary boxes.
-- **SeaBlock NG** adds vanilla `pipe`, the bare name `rf-pipe`, and Bob's ten, via `no-pipe-touching`.
+- **Krastorio 2** adds `kr-steel-pipe` to all 44, on both the lane where it appears alone (#33) and
+  the one where it appears with Space Exploration (#130). Its own pipe wanting to join ordinary boxes.
+- **SeaBlock NG** (#139) adds vanilla `pipe` and Bob's ten — **eleven**, via `no-pipe-touching`.
 
-Two unrelated mods, two mechanisms, the same effect. **Adding is what a pipe mod does; removing is
-what one mod does.** That asymmetry is the useful result here, and it is the reason a mod-specific
-response is defensible where a general one would be over-built.
+**`rf-pipe` is not among those eleven, and the difference is measured rather than tidied.** The bare
+name of our own pipe prototype reaches only the *contained* surface connection of
+`rf-pipe-to-ground`, where twelve are appended. Not one of the 44 default rows carries it; every one
+of them holds exactly `{default, pipe, bob-*...}`. Two passes of that mod append to two different
+sets of boxes and they do not append the same list, which is worth knowing before anyone writes a
+rule keyed on our own name appearing somewhere.
+
+Two unrelated mods, two mechanisms, the same benign effect. **Adding is what a pipe mod does;
+removing, on this evidence, is what one mod does.** That asymmetry is the result; what to build on it
+is #208's.
 
 ## Three things worth knowing beyond the counts
 
-**Space Age changes nothing, on any lane.** The four `-With space-age` lanes are byte-identical in
-this instrument to their plain counterparts. Whatever Space Age does to our prototypes — ADR 0007's
+**Space Age changes nothing, on any lane.** The four `-With space-age` lanes report the same as their
+plain counterparts — checked by hashing each run's report body, not by eye, and all eight hash the
+same because all eight report no difference. Whatever Space Age does to our prototypes — ADR 0007's
 finding 4 records nine objects edited — it does not touch a pipe connection category.
 
 **Bob's alone does not sweep our boxes.** The `bob-*` categories reach our connections only through
