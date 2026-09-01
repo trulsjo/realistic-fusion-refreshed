@@ -50,8 +50,17 @@
 
     WHY A DEEPCOPY FOR THE HOLE ROWS rather than reverting the shipped prototype: the hole and the
     fix are then measured in ONE run, on ONE map, against ONE loaded copy of the set. Two runs would
-    be two mod configurations and two chances for something other than the opt-out to differ. The
-    copy is the shipped prototype with a single field removed and nothing else changed.
+    be two mod configurations and two chances for something other than the opt-out to differ.
+
+    THE COPY DIFFERS IN FOUR FIELDS, NOT ONE, and saying otherwise would be the overclaim this
+    repository keeps catching. `npt_compat` is the one under test. `name` must differ or it is not a
+    second prototype. `minable`, `fast_replaceable_group` and `next_upgrade` are nilled because they
+    name an item and prototypes that belong to the ORIGINAL -- a copy keeping them mines into the
+    shipped item and offers an upgrade path to itself, which is the same reason
+    probe-energy-containment.ps1's bare() helper nils them. None of the three is read by the pass
+    under test: its guard consults `npt_compat`, `solved_by_npt` and whether any connection holds a
+    default category, and nothing else. So the difference that matters is still one field -- but the
+    diff is four, and the reader should be told which.
 
     WHAT THIS CANNOT SHOW. It measures fluid crossing between two entities a player can place. It
     says nothing about the other thirteen lanes (probe-connection-categories.ps1 covers those at the

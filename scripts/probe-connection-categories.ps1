@@ -14,7 +14,7 @@
     realistic-fusion-refreshed/prototypes/entities.lua gives every plasma-carrying pipe connection
     the category `rf-plasma`, and 2.0 joins two connections only when their categories match. A
     vanilla pipe beside a plasma line therefore does not connect -- the plasma never enters, which is
-    a stronger statement than noticing that it did (ADR 0011, #26).
+    a stronger statement than noticing that it did (CONTEXT.md, ADR 0010, #26).
 
     That guarantee lasts exactly as long as nobody rewrites the field. `no-pipe-touching` 1.1.28, in
     the `seablock` set, has a final `data-final-fixes` pass over `data.raw["pipe-to-ground"]` whose
