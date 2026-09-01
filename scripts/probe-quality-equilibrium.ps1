@@ -81,8 +81,13 @@
     attacked -- so it calls the shared guard, Get-QuietMapLua in scripts/factorio-lib.ps1, before it
     builds: pollution off, enemy expansion off, peaceful mode, and the nests already on the surface
     destroyed. The report says so and prints how many enemy entities went, so the quieting is visible
-    rather than assumed. Every entity a cell is measured through is then checked valid before each
-    reading, and a cell that has lost one errors with its quality level named.
+    rather than assumed.
+
+    Every entity a cell is measured through -- the reading path AND the supply path -- is then checked
+    valid every second, at the top-up, and again at every sample. A cell that has lost one errors with
+    its quality level named. The supply path is in there because it is the half that fails QUIETLY: a
+    reactor whose substation is gone stays perfectly valid and simply goes cold, and at the default
+    cadence the once-a-second top-up is what catches it, sixty times more often than the sample does.
 
     THE PROBABILITY IS LOW AND THE GUARD IS CHEAP, and both halves are worth writing down.
     scripts/check-brownout.ps1, where this was learned, names "eight heaters and an exchanger" as the
@@ -336,7 +341,8 @@ script.on_init(function()
     cells[#cells + 1] = {
       quality = q.name, level = q.level, reactor = reactor, probe = probe,
       -- Kept rather than discarded, so assert_intact() can see the supply path. Nothing reads them
-      -- for a measurement; losing either is what makes a cell go cold without saying anything.
+      -- for a measurement: they are here because losing either would take a cell cold, and until
+      -- the guard existed it would have done that without saying anything.
       substation = substation, power = eei,
       capacity = reactor.fluidbox.get_capacity(1),
       samples = {},
