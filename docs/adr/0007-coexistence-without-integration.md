@@ -237,6 +237,30 @@ Space Age **9**, including a pollution rate and a tenfold fluid-box volume on ma
 ships. Found by #131, confirmed by #132, and the reason
 [#153](https://github.com/trulsjo/realistic-fusion-refreshed/issues/153) exists.
 
+**The blind spot now has a measured figure for the one case where the consequence is a removed
+guarantee rather than a changed stat.** `scripts/probe-connection-categories.ps1` was committed by
+[#206](https://github.com/trulsjo/realistic-fusion-refreshed/issues/206) and run on all fourteen lanes
+by [#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207), on 2026-09-01 against
+2.0.77. Every lane sees the same subject — **17 prototypes of ours with pipe connections, 58
+connections, 14 of them contained with `rf-plasma`** — and:
+
+- **One lane of fourteen changes a contained connection**, SeaBlock NG (#139), on `rf-pipe-to-ground`
+  alone: the underground connection is overwritten with the literal `pipe-to-ground` and the surface
+  one keeps `rf-plasma` with twelve categories appended. A category is a whitelist, so both open the
+  box. `no-pipe-touching` 1.1.28 is in no other lane's pin.
+- **Two lanes add a category to connections we left `default`** and remove nothing — Krastorio 2's
+  `kr-steel-pipe` on #33 and #130, and SeaBlock's sweep. Ordinary boxes stay ordinary.
+- **Eleven lanes change nothing at all**, Space Age adds nothing on any of the four lanes that enable
+  it, and no lane removed a prototype, emptied a fluid box, or took `default` away.
+
+So **reassignment is one mod's behaviour and addition is a pattern** — which is what
+[#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) needs in order to decide
+whether a mod-specific response is adequate.
+[`connection-categories-by-lane.md`](../research/connection-categories-by-lane.md) is the cross-lane
+write-up; each lane's own numbers are on its issue, per ADR 0027. **Neither gate sees any of it yet**
+— that is [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209), and until it
+lands this finding's first sentence still holds.
+
 **5. Where two sets meet, their effects compose.** Angel's and Space Age touch disjoint sets of our
 prototypes but for one, and no object is changed only in combination — yet on `rf-heater` the two
 edits compose into an `allowed_module_categories` value neither produces alone. **A clean object-level
