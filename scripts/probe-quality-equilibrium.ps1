@@ -75,6 +75,28 @@
     measured almost nothing: a rig that starts at the answer can only report that it did not move.
     Starting cold, all five have to find the equilibrium themselves.
 
+    THE MAP IS QUIETED, AND A DAMAGED RIG FAILS LOUDLY (#189)
+
+    It runs twenty minutes by default and forty in the cross-check above, which is long enough to be
+    attacked -- so it calls the shared guard, Get-QuietMapLua in scripts/factorio-lib.ps1, before it
+    builds: pollution off, enemy expansion off, peaceful mode, and the nests already on the surface
+    destroyed. The report says so and prints how many enemy entities went, so the quieting is visible
+    rather than assumed. Every entity a cell is measured through is then checked valid before each
+    reading, and a cell that has lost one errors with its quality level named.
+
+    THE PROBABILITY IS LOW AND THE GUARD IS CHEAP, and both halves are worth writing down.
+    scripts/check-brownout.ps1, where this was learned, names "eight heaters and an exchanger" as the
+    pollution that bought the attention; this rig has five reactors, no heater, no exchanger and no
+    meaningful pollution. Enemy expansion does not need pollution, though, so the hazard is reduced
+    rather than removed.
+
+    WHAT MAKES IT WORTH DOING ANYWAY IS THE SHAPE OF THE FAILURE. A cell that quietly loses its
+    substation stops heating and cools, and reports a temperature below its four neighbours -- and
+    this probe's entire finding is that all five agree. Rig damage would arrive looking exactly like
+    the discovery that quality changes the equilibrium after all, which is the one wrong answer the
+    rig exists to rule out. The guard asserts nothing about the physics: it distinguishes "this run
+    did not happen" from a number that reads like a measurement.
+
     WHAT IT DOES NOT COVER
 
     Only rf-reactor, only D-D plasma, only at full fill, only with nothing researched. The
@@ -218,6 +240,35 @@ local function must(entity, what)
   return entity
 end
 
+__QUIETMAP__
+--- Every entity a cell is measured through, checked before it is measured through.
+--
+-- A PROBE THAT LOSES PART OF ITS RIG MUST SAY SO RATHER THAN REPORT. A cell whose substation is
+-- eaten stops heating, cools, and prints a temperature well below its four neighbours -- and this
+-- probe's whole finding is that all five agree, so damage would arrive looking exactly like the
+-- discovery that quality changes the equilibrium after all. That is the one wrong answer this rig
+-- exists to rule out. Erroring with the level named asserts nothing about the physics; it is the
+-- difference between "this run did not happen" and a number that reads like a measurement.
+--
+-- The supply path is in here as well as the reading path, because it is the supply path that fails
+-- QUIETLY: a reactor with no substation stays perfectly valid and simply goes cold.
+local function assert_intact(cell)
+  local parts = {
+    { "its reactor",            cell.reactor },
+    { "its probe combinator",   cell.probe },
+    { "its substation",         cell.substation },
+    { "its power source",       cell.power },
+    { "its signals combinator", cell.signals },
+  }
+  for _, part in ipairs(parts) do
+    local what, entity = part[1], part[2]
+    if entity and not entity.valid then
+      error(string.format("%s: %s is gone -- something destroyed part of the rig mid-run, so this "
+        .. "run measures damage rather than quality", cell.quality, what))
+    end
+  end
+end
+
 script.on_init(function()
   local surface = game.surfaces[1]
   local force   = game.forces.player
@@ -232,6 +283,11 @@ script.on_init(function()
   local span = #levels * SPACING
   surface.request_to_generate_chunks({ span / 2, 0 }, math.ceil(span / 32) + 2)
   surface.force_generate_chunk_requests()
+
+  -- AFTER the chunks exist, which is the shared guard's one precondition: it clears what it can see,
+  -- and it can only see chunks that have been generated. The count goes into the report so a reader
+  -- can tell the quieting happened rather than take it on trust.
+  storage.quieted = __QUIETFN__(surface)
   local tiles = {}
   for x = -20, span + 20 do
     for y = -20, 20 do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
@@ -263,7 +319,8 @@ script.on_init(function()
     --
     -- The report prints each reactor's buffer contents at the reading, which is what says a cell
     -- was actually powered rather than merely wired to something.
-    must(surface.create_entity({ name = "substation", position = { ox + 9, 5 }, force = force }),
+    local substation = must(
+      surface.create_entity({ name = "substation", position = { ox + 9, 5 }, force = force }),
       "substation at " .. q.name)
     local eei = must(surface.create_entity({
       name = "electric-energy-interface", position = { ox + 11.5, 5.5 }, force = force,
@@ -278,6 +335,9 @@ script.on_init(function()
 
     cells[#cells + 1] = {
       quality = q.name, level = q.level, reactor = reactor, probe = probe,
+      -- Kept rather than discarded, so assert_intact() can see the supply path. Nothing reads them
+      -- for a measurement; losing either is what makes a cell go cold without saying anything.
+      substation = substation, power = eei,
       capacity = reactor.fluidbox.get_capacity(1),
       samples = {},
     }
@@ -316,6 +376,7 @@ local function wire_everything()
       error(string.format("%s: expected one signals combinator at the reactor and found %d",
         c.quality, #found))
     end
+    c.signals = found[1]
     local from = must(found[1].get_wire_connector(RED, true), c.quality .. ": combinator red connector")
     local to   = must(c.probe.get_wire_connector(RED, true), c.quality .. ": probe red connector")
     if not from.connect_to(to) then
@@ -331,6 +392,7 @@ end
 -- probe would measure density and quality at once. Same instrument as check-confinement.ps1.
 local function top_up()
   for _, c in ipairs(storage.cells) do
+    assert_intact(c)
     local plasma = c.reactor.fluidbox[1]
     if plasma and plasma.amount < storage.fill then
       c.reactor.fluidbox[1] = { name = plasma.name, amount = storage.fill, temperature = plasma.temperature }
@@ -341,6 +403,7 @@ end
 --- One reading of every cell, off the wire.
 local function sample(tick)
   for _, c in ipairs(storage.cells) do
+    assert_intact(c)
     local network = c.probe.get_circuit_network(RED)
     local plasma  = c.reactor.fluidbox[1]
     c.samples[#c.samples + 1] = {
@@ -367,6 +430,8 @@ local function report()
   say("fill              every box held at %.10g units, the smallest capacity of the %d cells",
     storage.fill, #cells)
   say("run               %d ticks, sampled every %d", RUN_TICKS, SAMPLE_TICKS)
+  say("map               quieted before the run: pollution and expansion off, peaceful, %d enemy "
+    .. "entities removed", storage.quieted)
 
   -- ------------------------------------------------------------ the cells, and their separation
   local ids, distinct = {}, {}
@@ -496,6 +561,8 @@ end)
 '@
 
     $lua = $lua.
+        Replace('__QUIETMAP__', (Get-QuietMapLua)).
+        Replace('__QUIETFN__', $script:QuietMapFunction).
         Replace('__RUN_TICKS__', "$($Seconds * 60)").
         Replace('__SAMPLE_TICKS__', "$($SampleSeconds * 60)")
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
