@@ -638,6 +638,7 @@ end
 
 -- ---------------------------------------------------------------- the map
 
+__QUIETMAP__
 script.on_init(function()
   local surface = game.surfaces[1]
   local force   = game.forces.player
@@ -650,21 +651,12 @@ script.on_init(function()
     "engine power figures are joules per tick, so watts convert by sixty",
     string.format("vanilla steam-turbine reads %.4g MW that way", turbine_w / 1e6))
 
-  -- LONG RUNS GET ATTACKED, and no other rig here is long enough to have found that out. The siblings
-  -- run two minutes; this one runs half an hour, and a probe run at fifty minutes died with "LuaEntity
-  -- API call when LuaEntity was invalid" inside flows() -- a cell's substation had been eaten. Eight
-  -- heaters and an exchanger produce the pollution that buys that attention.
-  --
-  -- Turned off at the source rather than defended against: a rig measuring a power balance has no
-  -- business also being a defence exercise, and a cell that loses a substation mid-run produces a
-  -- reading that looks like physics.
-  game.map_settings.pollution.enabled        = false
-  game.map_settings.enemy_expansion.enabled  = false
-  surface.peaceful_mode = true
-  local nests = surface.find_entities_filtered({ force = "enemy" })
-  for _, nest in pairs(nests) do nest.destroy() end
+  -- LONG RUNS GET ATTACKED, and this rig is where that was learned the expensive way. The guard
+  -- itself is shared -- see Get-QuietMapLua in scripts/factorio-lib.ps1 -- because two sibling rigs
+  -- now run long enough to need it too. Only the reporting is this rig's.
+  local removed = rf_quiet_map(surface)
   record(true, "the map is stopped from fighting back, so a long run measures the reactor",
-    string.format("pollution and expansion off, peaceful, %d enemy entities removed", #nests))
+    string.format("pollution and expansion off, peaceful, %d enemy entities removed", removed))
 
   force.research_all_technologies()
 
@@ -1217,7 +1209,8 @@ script.on_nth_tick(REPORT, function()
 end)
 '@
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value (
-        $lua.Replace('__PLASMAFEED__', $feed).
+        $lua.Replace('__QUIETMAP__', (Get-QuietMapLua)).
+             Replace('__PLASMAFEED__', $feed).
              Replace('__SETTLE__',  "$settleTicks").
              Replace('__CUT__',     "$cutTicks").
              Replace('__RESTORE__', "$restoreTicks").
