@@ -260,9 +260,19 @@ function Get-QuietMapLua {
         need it adopt one tested version instead of writing their own, which is where a copied
         safety guard starts to drift silently.
 
-        The emitted function returns how many enemy entities it destroyed, so an adopting rig can
-        report the figure. The per-rig validity guard is deliberately NOT here: knowing which
-        entities a rig owns is rig-specific by nature and belongs in the rig.
+        The emitted function returns how many enemy entities it FOUND on the surface, all of which
+        it destroys, so an adopting rig can report the figure. Found rather than destroyed because
+        that is what the number counts: a destroy() that failed would raise rather than be missed.
+
+        CALL IT AFTER THE RIG HAS GENERATED ITS CHUNKS, or the count is short and so is the clearing:
+        find_entities_filtered only sees entities in chunks that already exist, so nests in an area
+        generated afterwards survive. check-brownout.ps1 calls it before its own
+        request_to_generate_chunks and is unharmed -- with expansion off and the surface peaceful,
+        what it leaves behind never attacks -- but a rig that wants the surface actually cleared has
+        to order the two calls the other way round.
+
+        The per-rig validity guard is deliberately NOT here: knowing which entities a rig owns is
+        rig-specific by nature and belongs in the rig.
 
         Returns the Lua to place at the top level of a rig's control.lua.  #>
 
@@ -272,7 +282,8 @@ function Get-QuietMapLua {
 -- LONG RUNS GET ATTACKED: a fifty-minute probe run died with "LuaEntity API call when LuaEntity was
 -- invalid" because a cell's substation had been eaten. A rig measuring a power balance has no
 -- business also being a defence exercise, and a cell that loses a substation mid-run produces a
--- reading that looks like physics. Returns how many enemy entities were removed.
+-- reading that looks like physics. Returns how many enemy entities it found and destroyed; call it
+-- after the rig has generated its chunks, or it can see neither.
 local function $script:QuietMapFunction(surface)
   game.map_settings.pollution.enabled        = false
   game.map_settings.enemy_expansion.enabled  = false

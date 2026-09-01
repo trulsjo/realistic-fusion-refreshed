@@ -324,13 +324,19 @@ Both are undocumented in the 2.0 API and both are silent when got wrong, which i
   *identical* to the uncut one — which reads as the physics being insensitive to power rather than as
   a battery nobody had noticed. The interfaces now carry a fifth of a second of reserve, and the rig
   asserts that its three supply levels produce three different draws.
-- **A long run gets attacked, and no other rig here is long enough to have found out.** The siblings
-  run two minutes; this one runs fifty. A probe at that length died with *"LuaEntity API call when
-  LuaEntity was invalid"* inside the rig's own statistics read — a cell's substation had been eaten,
-  bought by the pollution of eight heaters and an exchanger. The rig now turns pollution and enemy
-  expansion off, sets the surface peaceful and clears the nests before it builds, and checks every
-  entity it measures through is still valid so that losing part of the rig reports itself instead of
-  arriving as a stack trace.
+- **A long run gets attacked, and this rig is where that was found out.** A probe at fifty minutes
+  died with *"LuaEntity API call when LuaEntity was invalid"* inside the rig's own statistics read —
+  a cell's substation had been eaten, bought by the pollution of eight heaters and an exchanger. The
+  rig now turns pollution and enemy expansion off, sets the surface peaceful and clears the nests
+  before it builds, and checks every entity it measures through is still valid so that losing part of
+  the rig reports itself instead of arriving as a stack trace.
+
+  **This rig is no longer the only one long enough to care** — when this was written the siblings ran
+  two minutes, and `probe-quality-equilibrium.ps1` now runs twenty by default while
+  `bench-mod-links.ps1` runs thirty-five. So the map settings are shared rather than rig-local
+  (#188): `Get-QuietMapLua` in `scripts/factorio-lib.ps1` emits them, and this rig is still their
+  only caller. The validity check stays per-rig, because knowing which entities a rig owns is
+  rig-specific by nature.
 - **Which `LuaFlowStatistics` category holds an electric network's consumption** is documented for
   neither `"input"` nor `"output"`. The rig derives it: whichever category puts a satisfied reactor's
   draw within a factor of three of its own declared `input_flow_limit` is consumption, and that
