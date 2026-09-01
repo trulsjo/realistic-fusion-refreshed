@@ -227,15 +227,27 @@ what to build on, and calling it a bug invites a fix that breaks what it is a co
 > because a decision fixes vocabulary, which is all this file does; the behaviour arrives with the
 > implementation. Remove this note when the energy categories ship.
 
-**Contained** — of a fluid: its boxes carry a connection category of their own, so nothing joins them
-but plumbing that shares it. Three fluids take a category of their own — plasma, and the two reactor
-energies — and they are **separate** categories, so being contained is not one club: a plasma line and
-an energy line cannot join each other either.
+**Contained** — of a fluid: its boxes carry a connection category of their own, so nothing a player
+can build joins them but plumbing that shares it. Three fluids take a category of their own —
+plasma, and the two reactor energies — and they are **separate** categories, so being contained is
+not one club: a plasma line and an energy line cannot join each other either.
 
 Say it of the fluid or of the box, never of the entity. Containment is declared per box, and the
 entities carry a mixture: a reactor's plasma box and its energy box are contained under different
 categories, while `rf-heater`'s deuterium intake is not contained at all and a player plumbs it with
 ordinary pipes.
+
+**The guarantee is about buildable plumbing, and the set of things sharing a category is open.** The
+engine's own editor pipe is deliberately given a second category so that an instrument can feed a
+fluid nothing buildable carries — Wube do it to their own fusion plasma — and a third-party mod that
+collects connection categories will collect ours, without naming us or knowing what the category is
+for. Neither of those reaches a player in normal play, and neither is a defect; reading the guarantee
+as covering them would be.
+
+**A set can also take a category away, and then the guarantee does not hold at all.** Containment is
+a declaration, so it lasts exactly as long as the declaration does, and nothing this repo runs can
+see a set overwrite one. Whether that happens is being measured —
+[#206](https://github.com/trulsjo/realistic-fusion-refreshed/issues/206).
 
 **Bolted** — of a connection: made by two machines' faces meeting, with no pipe between them. This is
 how reactor energy is *to* travel, because no pipe is to carry it. Reserve the word for a connection

@@ -49,6 +49,28 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 -- not connect -- the same way it already refuses to join a heat pipe. The plasma never enters,
 -- which is a stronger statement than noticing that it did.
 --
+-- WHAT THE GUARANTEE COVERS IS PLUMBING A PLAYER CAN BUILD, and the set of things sharing the
+-- category is open. Wube give the editor's infinity pipe a SECOND category on purpose --
+-- space-age/base-data-updates.lua sets it to {"default", "fusion-plasma"} -- so that an instrument
+-- can feed what nothing buildable carries; ADR 0018 records it. And a mod that COLLECTS categories
+-- will collect ours: SeaBlock's `no-pipe-touching` sweeps `rf-plasma` onto vanilla `infinity-pipe`,
+-- along with the bare name of every pipe prototype it finds, naming nothing of ours and testing for
+-- no prefix. That lane reports the infinity pipe as a replacement and stays red on purpose (#195,
+-- ADR 0028).
+--
+-- A SET MAY ALSO TAKE A CATEGORY AWAY, AND THEN THIS GUARANTEE SIMPLY DOES NOT HOLD. Read from that
+-- same mod's source: its last pipe-to-ground pass fires for a prototype that is not solved_by_npt,
+-- carries no npt_compat and holds no default category -- which is the shape containment itself gives
+-- rf-pipe-to-ground -- and writes the literal "pipe-to-ground" over the underground connection,
+-- discarding rf-plasma. That would remove precisely the protection stated at contain() on the
+-- pipe-to-ground below.
+--
+-- NOT MEASURED, and the distinction matters here more than usual: that is a reading of somebody
+-- else's Lua, not a dump. #206 runs the lane and settles it, #209 is the gate that would catch the
+-- class. Neither check can see it either way -- both are blind to what a set does to prototypes of
+-- OURS (ADR 0007's finding 4) -- so until #206 reports, write nothing here that assumes containment
+-- survives an arbitrary set.
+--
 -- The 1.1 original could not do this and spent 160 lines of control.lua hunting down plasma-carrying
 -- vanilla pipes and destroying them. That is a tick cost, a surprise for whoever built the pipe, and
 -- a race with whatever put the plasma there. None of it is needed against 2.0, so none of it is
@@ -226,9 +248,10 @@ reactor.fluid_box = {
   -- tiers. One reactor that burns whichever plasma it is plumbed to is what that list describes.
   --
   -- What the filter was guarding against is closed by containment (#26) rather than left open: this
-  -- box's connections carry PLASMA_CATEGORY, so the only things that can reach it at all are the
-  -- plasma set and rf-heater's output -- and the heater's only recipes are the plasmas themselves.
-  -- A stray water pipe cannot connect, never mind fill it.
+  -- box's connections carry PLASMA_CATEGORY, so the only things that can reach it are the plasma
+  -- set and rf-heater's output -- and the heater's only recipes are the plasmas themselves. A stray
+  -- water pipe cannot connect, never mind fill it. Scoped the way the header of this file scopes it:
+  -- true of everything a player can build, and a set that rewrites categories is #206.
   --
   -- What the filter did also do, and what replaces it: a plasma with no entry in reactor-logic's
   -- fuel table can now reach a reactor, and would sit there doing nothing while the reactor

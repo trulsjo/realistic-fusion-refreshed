@@ -78,6 +78,21 @@ Checked against the installed 2.0.77 Space Age data
   fluid nothing buildable can carry. An earlier version of this ADR said "Space Age ships no pipe
   with that category" and "those two machines are the only prototypes that have it", and both were
   simply false.
+
+  **And a third party can do the same without the rationale.** SeaBlock's `no-pipe-touching` collects
+  every connection category it finds onto `infinity-pipe`, `rf-plasma` among them, naming nothing of
+  ours. So the exception is not one prototype the engine controls: what the guarantee covers is
+  plumbing a player can build, and the set of things sharing a category is open. Reported and left
+  red on that lane — [#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195).
+
+  **Whether a set can also take a category away is open, and it matters more than collecting one.**
+  Read from that same mod's source, its last `pipe-to-ground` pass looks able to overwrite
+  `rf-pipe-to-ground`'s underground connection, which would remove the protection this mechanism
+  rests on for a prototype a player builds. **Not measured** — it is a reading of somebody else's
+  Lua. [#206](https://github.com/trulsjo/realistic-fusion-refreshed/issues/206) dumps the lane and
+  settles it; [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209) is the gate
+  that would catch the class. Until then this ADR claims containment for what it **declares**, not
+  for what survives an arbitrary set.
 - `fusion-plasma` is `auto_barrel = false`, and carries its energy in **temperature**
   (`heat_capacity = "25J"`, default 1 000 000 °C, max 10 000 000) — the exact inverse of
   `rf-reactor-energy`, which is 1 MJ per unit at 15 °C.
