@@ -26,8 +26,11 @@ The same prototype's **surface** connection is a second finding the ticket predi
 the same one: `rf-plasma` survives there, with **twelve** further categories appended beside it —
 vanilla `pipe`, the bare name `rf-pipe`, and ten of Bob's.
 
-**Everything else contained survived.** Twelve of the fourteen contained connections are untouched,
-including all four of `rf-pipe`'s.
+**Containment holds on the other twelve, but none of the fourteen was left alone.** The mod rewrites
+the field in place on every contained connection it inspects — bare string `"rf-plasma"` to
+one-element list `["rf-plasma"]` — which is the same category to the engine and no change at all to
+what connects. Twelve come out set-identical. Saying they were "untouched" would be wrong, and the
+difference is measured below rather than assumed.
 
 ## What the probe measured
 
@@ -128,14 +131,35 @@ It is reported rather than filtered because the count is worth reading — a jum
 started doing something new to us — and it is sorted last because 44 rows of it would otherwise bury
 the two above.
 
-## What survived, and why that matters
+## What survived, stated exactly
 
-**Twelve of the fourteen contained connections are unchanged**, across five prototypes: `rf-pipe`
-(4), `rf-pump` (2), `rf-reactor` (2), `rf-aneutronic-reactor` (2) and `rf-heater`'s two output boxes.
-So the breach is **not** general to containment. It is one pass, over one prototype type, and only
-`pipe-to-ground` has it: `no-pipe-touching` treats `data.raw.pipe` and `data.raw["pipe-to-ground"]`
-in separate loops with separate guards, and only the second one has a branch that fires on the
-absence of a default category.
+**Twelve of the fourteen contained connections keep the category set our data stage declared** —
+`rf-pipe` (4), `rf-pump` (2), `rf-reactor` (2), `rf-aneutronic-reactor` (2) and `rf-heater`'s two
+output boxes. Containment holds on all twelve.
+
+**All twelve were nevertheless rewritten**, and the probe reports no row for it because the rewrite
+is a no-op:
+
+| Connection | declared | loaded |
+|---|---|---|
+| `pipe/rf-pipe` × 4 | `"rf-plasma"` | `["rf-plasma"]` |
+| `pump/rf-pump` × 2 | `"rf-plasma"` | `["rf-plasma"]` |
+| `boiler/rf-reactor` × 2 | `"rf-plasma"` | `["rf-plasma"]` |
+| `boiler/rf-aneutronic-reactor` × 2 | `"rf-plasma"` | `["rf-plasma"]` |
+| `assembling-machine/rf-heater` `fluid_boxes[3]`, `[4]` | `"rf-plasma"` | `["rf-plasma"]` |
+
+`contain()` writes the bare string; `no-pipe-touching`'s `has_default_category`
+(`data-final-fixes.lua:14`) assigns `unify(connection_category)` back to the field on **every
+connection it merely inspects**, including the ones it then decides to leave alone. A bare string and
+a one-element list are the same category to the engine, so nothing about what connects changes. **The
+probe compares category sets rather than the printed form for exactly this reason** — comparing text
+would file all twelve under WIDENED, reporting a box as opened with nothing added to it.
+
+Two things follow. First, **the mod reaches inside all fourteen**, so "it does not touch our
+contained boxes" is not what the evidence says; what it says is that twelve rewrites are equivalent.
+Second, the breach is **not** general to containment: it is one pass over one prototype type.
+`no-pipe-touching` walks `data.raw.pipe` and `data.raw["pipe-to-ground"]` in separate loops with
+separate guards, and only the second has a branch that fires on the *absence* of a default category.
 
 That is the difference between "a set can take a category away" and "this set takes this category
 away". The first is what #209 has to be built for; the second is all this lane shows.
@@ -155,3 +179,17 @@ away". The first is what #209 has to be built for; the second is all this lane s
 - **Nothing about how the probe behaves on a set that changes nothing.** It has been run on one lane.
   Its floor asserts the instrument is reading containment at all — 14 connections on the declared
   side — which is what rules out a clean report caused by a broken walk.
+
+## One thing the instrument got wrong first, since it bears on trusting the counts
+
+The first working version of the probe read the category with
+`$category = if ($field) { $connection.connection_category }`. An `if` used as an expression sends
+its block's output to the pipeline, and **a one-element array sent to the pipeline arrives as its
+element** — so `["rf-plasma"]` was read as `"rf-plasma"` and the probe could not tell a list from a
+string at all. It reported the same 46 differences it reports now, for the wrong reason: the twelve
+in-place rewrites were invisible rather than judged equivalent.
+
+Caught by `/code-review`, which reasoned from the mod's source that twelve rows were missing, and
+settled by reading the two kept dumps directly — the reassuring half of this note's conclusion is the
+half most worth distrusting, so it is the half that got checked against the JSON rather than against
+the report. The count is unchanged; what changed is that the probe now sees what it is dismissing.
