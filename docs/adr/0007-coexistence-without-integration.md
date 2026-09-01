@@ -248,8 +248,11 @@ connections, 14 of them contained with `rf-plasma`** — and:
   alone: the underground connection is overwritten with the literal `pipe-to-ground` and the surface
   one keeps `rf-plasma` with twelve categories appended. A category is a whitelist, so both open the
   box. `no-pipe-touching` 1.1.28 is in no other lane's pin.
-- **Two lanes add a category to connections we left `default`** and remove nothing — Krastorio 2's
-  `kr-steel-pipe` on #33 and #130, and SeaBlock's sweep. Ordinary boxes stay ordinary.
+- **Three lanes add a category to connections we left `default`** and none of them removes one
+  there — Krastorio 2's `kr-steel-pipe` on #33 and #130, and SeaBlock's own sweep on #139, which is
+  therefore in both this bullet and the one above. Two mods, two mechanisms, and `default` survives
+  in every case, so ordinary boxes stay ordinary. One, plus three, less the lane counted twice, plus
+  eleven, is fourteen.
 - **Eleven lanes change nothing at all**, Space Age adds nothing on any of the four lanes that enable
   it, and no lane removed a prototype, emptied a fluid box, or took `default` away.
 
