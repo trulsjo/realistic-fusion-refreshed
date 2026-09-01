@@ -245,9 +245,18 @@ for. Neither of those reaches a player in normal play, and neither is a defect; 
 as covering them would be.
 
 **A set can also take a category away, and then the guarantee does not hold at all.** Containment is
-a declaration, so it lasts exactly as long as the declaration does, and nothing this repo runs can
-see a set overwrite one. Whether that happens is being measured —
-[#206](https://github.com/trulsjo/realistic-fusion-refreshed/issues/206).
+a declaration, so it lasts exactly as long as the declaration does. **Measured on 2026-09-01 against
+Factorio 2.0.77, on the `seablock` lane, it happens** — `no-pipe-touching` 1.1.28 overwrites
+`rf-pipe-to-ground`'s underground connection with the literal `pipe-to-ground` and appends twelve
+categories to its surface one, and a category is a whitelist, so both open the box. Containment holds
+on the other twelve contained connections, so this is one pass over one prototype type rather than
+the guarantee failing in general. `scripts/probe-connection-categories.ps1` is what sees it, and
+neither gate does — see [ADR 0007](docs/adr/0007-coexistence-without-integration.md)'s finding 4 and
+`docs/research/connection-category-reassignment.md`.
+[#206](https://github.com/trulsjo/realistic-fusion-refreshed/issues/206) measured it,
+[#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207) sweeps the remaining lanes,
+[#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208) decides what to do and is
+Truls's, and [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209) is the gate.
 
 **Bolted** — of a connection: made by two machines' faces meeting, with no pipe between them. This is
 how reactor energy is *to* travel, because no pipe is to carry it. Reserve the word for a connection
