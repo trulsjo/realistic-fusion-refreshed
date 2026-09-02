@@ -110,7 +110,8 @@ function Write-Rig {
         dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
 
-    # Writes data.lua. The probe prototypes are appended to it below, so this call comes first.
+    # Appends to data.lua, creating it if this is the first writer (#84). The probe prototypes go
+    # in below; since neither writer owns the file, the order of the two no longer matters.
     $feed = Write-PlasmaFeed -RigDirectory $rigDir
 
     Add-Content -Encoding utf8 -Path (Join-Path $rigDir 'data.lua') -Value @'

@@ -106,12 +106,20 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 -- here: this file is the whole of the enforcement and control.lua gains nothing.
 --
 -- Applied per box rather than per entity, because the reactor's other box carries reactor energy
--- through ordinary pipes on purpose, and the heater is fed deuterium through them.
+-- through ordinary pipes today, and the heater is fed deuterium through them.
 local PLASMA_CATEGORY = "rf-plasma"
 
-local function contain(box)
+-- THE CATEGORY IS AN ARGUMENT, not this function's own constant, and that is the whole of #84's
+-- share of it. ADR 0018 gives rf-reactor-energy and rf-aneutronic-reactor-energy a category each,
+-- so containment needs three rather than one; a helper that names plasma internally would have to
+-- be rewritten by the ticket that can least afford a wide diff. Passing it costs one word per call
+-- and leaves #86 changing call sites rather than this.
+--
+-- Nothing but plasma passes one yet. That is deliberate: #84 contains nothing new.
+local function contain(box, category)
+  if not category then error("contain() needs a connection category; see ADR 0018") end
   for _, connection in ipairs(box.pipe_connections or {}) do
-    connection.connection_category = PLASMA_CATEGORY
+    connection.connection_category = category
   end
   return box
 end
@@ -149,7 +157,7 @@ heater.graphics_set = require("__realistic-fusion-refreshed-assets__.graphics.kr
 -- than by index: which box a chemical plant puts a result in is the recipe's business, and the two
 -- output boxes are interchangeable.
 for _, box in ipairs(heater.fluid_boxes) do
-  if box.production_type == "output" then contain(box) end
+  if box.production_type == "output" then contain(box, PLASMA_CATEGORY) end
 end
 
 -- ---------------------------------------------------------------- reactor
@@ -291,7 +299,7 @@ reactor.fluid_box = {
 -- Plasma in and plasma out of the shared pool, so both faces are plasma-safe only. The energy box
 -- below is deliberately not: reactor energy is an ordinary fluid and a player plumbs it with
 -- ordinary pipes.
-contain(reactor.fluid_box)
+contain(reactor.fluid_box, PLASMA_CATEGORY)
 reactor.output_fluid_box = {
   production_type = "output",
   volume = 1000,
@@ -758,7 +766,7 @@ aneutronic.fluid_box = {
   -- are usually a poor idea -- the constants are matched to the reactions in the tier. That is the
   -- same freedom the D-D and D-T tiers already share, one machine further along.
 }
-contain(aneutronic.fluid_box)
+contain(aneutronic.fluid_box, PLASMA_CATEGORY)
 aneutronic.output_fluid_box = {
   production_type = "output",
   volume = 1000,
@@ -946,7 +954,7 @@ local GRAPHICS = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/"
 local pipe = repoint(
   pin(table.deepcopy(data.raw["pipe"]["pipe"]), "rf-pipe", { mining_time = 0.1 }),
   GRAPHICS .. "pipe/", PIPE_SPRITES)
-contain(pipe.fluid_box)
+contain(pipe.fluid_box, PLASMA_CATEGORY)
 
 local pipe_to_ground = repoint(
   pin(table.deepcopy(data.raw["pipe-to-ground"]["pipe-to-ground"]), "rf-pipe-to-ground", { mining_time = 0.1 }),
@@ -957,7 +965,7 @@ local pipe_to_ground = repoint(
 -- AND THIS IS THE ONE PROTOTYPE WHERE THAT WAS MEASURED TO FAIL, which is why it is also the only
 -- one carrying the opt-out below. #206 dumped the seablock lane and found no-pipe-touching 1.1.28
 -- rewriting BOTH of these connections; #207 ran all fourteen lanes and found no other mod doing it.
-contain(pipe_to_ground.fluid_box)
+contain(pipe_to_ground.fluid_box, PLASMA_CATEGORY)
 
 -- THE ONE PLACE THIS REPO TAKES A THIRD-PARTY MOD'S PRIVATE HOOK, and it is here because the
 -- guarantee stated three lines above is false without it on one lane a player can install.
@@ -1016,7 +1024,7 @@ pump.animations = require("__realistic-fusion-refreshed-assets__.graphics.krasto
 -- containing the fluid box below closes the wagon route with it. The consequence is deliberate and
 -- worth stating: there is no wagon that can carry plasma, and shipping one would mean a fluid wagon
 -- prototype of our own. Barrelling is shut off separately, on the fluids themselves (fluids.lua).
-contain(pump.fluid_box)
+contain(pump.fluid_box, PLASMA_CATEGORY)
 
 data:extend({ heater, reactor, exchanger, hc_exchanger, hc_turbine, collector, blanket,
               aneutronic, converter, tank,
