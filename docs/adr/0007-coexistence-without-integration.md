@@ -251,14 +251,46 @@ ceiling live in `scripts/name-check.ps1`, where they can be tested, not here.
 [ADR 0028](0028-a-suppression-rule-reports-on-doubt.md) states the bar those conditions have to clear:
 where authorship cannot be shown either way, the check reports.
 
-**4. Neither check can see what a set does to our *own* prototypes.** `name-check` compares content
-only for prototypes present in **both** dumps, and a prototype of ours is by construction in only one;
-`load-check` diffs nothing at all — it asserts validity, assets and invariants, and an edited stat
-fails none of them. So an overhaul that edits our prototypes rather than colliding with their names is
-invisible to both, however much it changes: Angel's alters **41 of our 145** prototype objects and
-Space Age **9**, including a pollution rate and a tenfold fluid-box volume on machines this repo
-ships. Found by #131, confirmed by #132, and the reason
+**4. What a set does to our *own* prototypes is mostly still invisible, and exactly one slice of it
+is now a gate.** `name-check` compares content only for prototypes present in **both** dumps, and a
+prototype of ours is by construction in only one. `load-check` asserts validity, assets, the
+simulation's invariants — and, since
+[#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209) on 2026-09-02, that
+containment survived the load. Everything else an overhaul does to our prototypes is still invisible
+to both, however much it changes: Angel's alters **41 of our 145** prototype objects and Space Age
+**9**, including a pollution rate and a tenfold fluid-box volume on machines this repo ships. Found
+by #131, confirmed by #132, and the reason
 [#153](https://github.com/trulsjo/realistic-fusion-refreshed/issues/153) exists.
+
+**The containment slice is closed because containment is the one rule enforced by declaration
+rather than by code.** `contain()` writes the category and 2.0 refuses to join two connections whose
+categories differ, so nothing watches it at runtime — an argument that holds only while the
+declaration survives, and a `data-final-fixes` can take it away silently (finding 2's third shape,
+#195). So `load-check` now dumps the game twice on every lane: once with our mods alone for what our
+data stage declared, once with the set for what survived. A category we wrote that is gone from the
+second **fails the run**, naming the prototype, the connection and both values.
+
+Three properties of that gate belong here rather than only in the script:
+
+- **It runs before the asset check, deliberately.** Four lanes — `spaceex`, `k2-spaceex`, `seablock`,
+  `riteg` — are permanently red on a 1.1-era `__base__` path their own mods name, and with the asset
+  check first the containment gate would never have run on any of them. That includes `seablock`, the
+  only lane that has ever reassigned a category of ours. A gate that cannot reach the lane it was
+  built for closes nothing.
+- **Additions do not fail it.** A category is a whitelist, so an addition does open the box — but that
+  is #195's shape, decided on 2026-09-01, and it reports through
+  `scripts/probe-connection-categories.ps1` rather than failing a run. The gate counts them into its
+  pass line so they are not silent, and does not name the connections: that is the probe's report.
+- **It cannot see a bundled mod doing it.** Both dumps enable the same `-With` selection, so Space Age
+  cancels out of the comparison exactly as it cancels out of every other `-With` lane's difference.
+
+**Measured across all fourteen lanes on 2026-09-02 against 2.0.77: every one green, 14 contained
+connections each**, the four asset-red lanes included — which is the result
+[#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207)'s sweep predicted and
+[#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208)'s opt-out earned on
+`seablock`. **Green is the claim**: the gate exists to notice the fifteenth lane, and it is what #208
+meant by *reassess if a second mod ever reassigns a containment category* — that mod now fails a run
+instead of waiting to be read out of somebody's `data-final-fixes`.
 
 **The blind spot now has a measured figure for the one case where the consequence is a removed
 guarantee rather than a changed stat.** `scripts/probe-connection-categories.ps1` was committed by
@@ -285,9 +317,11 @@ connections, 14 of them contained with `rf-plasma`** — and:
 
 So **reassignment is one mod's behaviour and addition is a pattern**.
 [`connection-categories-by-lane.md`](../research/connection-categories-by-lane.md) is the cross-lane
-write-up; each lane's own numbers are on its issue, per ADR 0027. **Neither gate sees any of it yet**
-— that is [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209), and until it
-lands this finding's first sentence still holds.
+write-up; each lane's own numbers are on its issue, per ADR 0027. **One gate now sees the half of it
+that is containment** — [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209),
+landed 2026-09-02: `load-check` fails when a category we wrote is gone. The additions on connections
+we left `default` are outside it by design, so those stay a measurement rather than a verdict, and
+this finding's first sentence still holds for everything that is not a connection category.
 
 **And the answer to a set that does it is to take that set's own opt-out — Truls's call on
 [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208), 2026-09-01.**
@@ -298,7 +332,8 @@ this ADR rather than only in the code:
 - **It is a permission, not a defence, and the difference is the whole of what containment is now
   worth under an arbitrary set.** The declaration does not survive a `data-final-fixes` that rewrites
   it and nothing here makes it survive; what holds on that lane is a field naming one mod's hook. A
-  second mod doing the same thing reopens #208, and #209 is the gate that would notice.
+  second mod doing the same thing reopens #208, and since 2026-09-02 #209's gate is what notices:
+  it fails the run rather than leaving the reassignment to be found by reading their Lua.
 - **The general alternative was declined on this ADR's own line.** A `data-final-fixes` of ours
   re-asserting the category would run after theirs and would work, but it defends against a problem
   measured on one lane by overriding whatever another mod did — which is integration's posture, not

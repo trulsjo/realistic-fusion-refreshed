@@ -478,19 +478,38 @@ function Resolve-BundledSelection {
 
 function Write-ModList {
     <#  Write mod-list.json enabling base, the given mods, and exactly the bundled mods in
-        $EnabledBundled -- every other bundled mod is written explicitly disabled.  #>
+        $EnabledBundled -- every other bundled mod is written explicitly disabled.
+
+        OMITTING A MOD DOES NOT KEEP IT OUT, and that is the whole reason $Disabled exists.
+        Factorio AUTO-ENABLES a mod present in the mod directory but absent from mod-list.json, so
+        a list naming only some of what is on disk loads all of it. load-check.ps1's header has said
+        so for a while -- it is why -SelfTest and -AlsoModDirectory are refused together -- and #209
+        met it again from the other side: the containment gate takes a second dump with only our
+        mods enabled, and with the set junctioned in beside them that dump silently loaded the set
+        too. Both dumps were then the same dump, every category compared equal, and the gate reported
+        containment surviving whatever the set had done. Name what must stay out; do not merely leave
+        it unnamed.  #>
     param(
         [Parameter(Mandatory)] [string]    $ModDirectory,
         [Parameter(Mandatory)] [hashtable] $Bundled,
         [string[]] $EnabledBundled = @(),
-        [string[]] $Mods = @()
+        [string[]] $Mods = @(),
+        [string[]] $Disabled = @()
     )
+
+    # A name in both lists is a caller fault rather than a precedence question: Factorio reads the
+    # last entry for a name and nothing here should depend on knowing that.
+    $both = @($Mods | Where-Object { $Disabled -contains $_ })
+    if ($both) {
+        throw "Write-ModList: $($both -join ', ') given as both enabled and disabled."
+    }
 
     $entries = @(@{ name = 'base'; enabled = $true })
     foreach ($m in ($Bundled.Keys | Sort-Object)) {
         $entries += @{ name = $m; enabled = [bool]($EnabledBundled -contains $m) }
     }
     foreach ($m in $Mods) { $entries += @{ name = $m; enabled = $true } }
+    foreach ($m in $Disabled) { $entries += @{ name = $m; enabled = $false } }
 
     @{ mods = $entries } | ConvertTo-Json -Depth 4 |
         Set-Content -Path (Join-Path $ModDirectory 'mod-list.json') -Encoding utf8
@@ -532,4 +551,150 @@ function Remove-ModJunctions {
     Get-ChildItem -Path $ModDirectory -Directory -ErrorAction SilentlyContinue |
         Where-Object { $_.LinkType -eq 'Junction' } |
         ForEach-Object { [IO.Directory]::Delete($_.FullName) }
+}
+
+function Format-Category {
+    <#  One connection's category as the report prints it.
+
+        The three forms are kept distinguishable on purpose. A bare string and a one-element list are
+        the same thing to the engine and NOT the same evidence: `no-pipe-touching` writes a bare
+        string over an underground connection and a list onto a surface one, and telling which
+        happened is most of what identifies the pass that did it. Absent is a third case again -- the
+        engine reads it as "default", which is the category every vanilla pipe carries, so an absent
+        field is containment gone rather than containment unset.  #>
+    param([object] $Value)
+
+    if ($null -eq $Value) { return 'default (no field)' }
+    if ($Value -is [string]) { return $Value }
+    $items = @($Value)
+    if ($items.Count -eq 0) { return 'default (empty list)' }
+    return '{' + ($items -join ', ') + '}'
+}
+
+function Expand-Category {
+    <#  One connection's category as a SET of names, for comparing rather than for printing.
+
+        Absent and empty both become "default", because that is what the engine reads them as -- and
+        the whole comparison below turns on it. Without this, a connection whose category the set
+        DELETED would compare as "absent versus absent" against one we never categorised, and the
+        two are opposite findings.  #>
+    param([object] $Value)
+
+    if ($null -eq $Value) { return @('default') }
+    if ($Value -is [string]) { return @($Value) }
+    $items = @($Value | ForEach-Object { [string]$_ })
+    if ($items.Count -eq 0) { return @('default') }
+    return $items
+}
+
+function Add-Connections {
+    <#  Every pipe connection under $Node, as "path" -> its category and connection type.
+
+        Recursive over the whole prototype rather than over a list of known field names: see the
+        header. The path is the connection's identity across the two dumps, so it has to be built the
+        same way on both sides, and it is, by this one function running on both.  #>
+    param([object] $Node, [string] $Path, [Parameter(Mandatory)] [hashtable] $Into)
+
+    if ($Node -is [System.Management.Automation.PSCustomObject]) {
+        foreach ($property in $Node.PSObject.Properties) {
+            if ($null -eq $property.Value) { continue }
+            if ($property.Name -ne 'pipe_connections') {
+                Add-Connections -Node $property.Value -Path "$Path.$($property.Name)" -Into $Into
+                continue
+            }
+            $index = 0
+            foreach ($connection in @($property.Value)) {
+                $index++
+                $fields = $connection.PSObject.Properties
+                # A PLAIN ASSIGNMENT, NOT `$category = if (...) { $connection.connection_category }`.
+                # An `if` used as an expression writes its block's output to the pipeline, and a
+                # ONE-ELEMENT array sent to the pipeline arrives as its element -- so the array
+                # ["rf-plasma"] was read as the string "rf-plasma" and this probe could not tell the
+                # two apart at all. It mattered: `no-pipe-touching` rewrites the field in place as a
+                # one-element list on twelve contained connections of ours, and the instrument was
+                # blind to the rewrite by accident rather than by decision. The set comparison below
+                # is what decides such a rewrite is a no-op; this line is what lets it see one.
+                $category = $null
+                if ($fields['connection_category']) { $category = $connection.connection_category }
+                $Into["$Path.pipe_connections[$index]"] = [pscustomobject]@{
+                    Category = Format-Category $category
+                    # @() because a PowerShell function returning a one-element array returns the
+                    # ELEMENT: `Set` was then the string "default", whose .Count is 1 and whose [0]
+                    # is the character "d", so every uncategorised connection classified as one we
+                    # had categorised. The wrap is what makes it a collection on both sides.
+                    Set = @(Expand-Category $category)
+                    # Default per the 2.0.77 prototype docs. Reported rather than used: which
+                    # connection is underground is exactly what decides the branch taken by the pass
+                    # under suspicion, so a reader needs it beside the value.
+                    Type = if ($fields['connection_type']) { [string]$connection.connection_type } else { 'normal' }
+                }
+            }
+        }
+    }
+    elseif ($Node -is [System.Object[]]) {
+        for ($i = 0; $i -lt $Node.Count; $i++) {
+            Add-Connections -Node $Node[$i] -Path "$Path[$($i + 1)]" -Into $Into
+        }
+    }
+}
+
+function Get-ConnectionsFromDump {
+    <#  Our prototypes' pipe connections, out of a --dump-data written earlier, as
+        "type/name" -> (path -> connection).
+
+        SHARED BY THE PROBE AND THE GATE (#209), which is why it is here rather than in either.
+        scripts/probe-connection-categories.ps1 measures a lane and asserts nothing;
+        scripts/load-check.ps1 asserts that containment survived the load. They must read a
+        connection the same way or the gate would fail on shapes the probe calls no-ops -- and the
+        two traps this walk exists to avoid are recorded above Add-Connections and Expand-Category.
+        One implementation, one set of traps.
+
+        OURS BY PREFIX, WHICH IS EXACT BECAUSE ANOTHER CHECK MAKES IT SO. scripts/name-check.ps1
+        derives this repository's prototypes by difference between two dumps and asserts every one
+        carries `rf-`, with one declared exception -- base Factorio's generated
+        `empty-rf-<fluid>-barrel` recipes, which have no fluid box and so cannot appear here.  #>
+    param([Parameter(Mandatory)] [string] $DumpPath, [string] $Prefix = 'rf-')
+
+    if (-not (Test-Path -LiteralPath $DumpPath)) { throw "no data-raw-dump.json at $DumpPath." }
+
+    $found = @{}
+    $parsed = Get-Content -LiteralPath $DumpPath -Raw | ConvertFrom-Json
+    foreach ($type in $parsed.PSObject.Properties) {
+        foreach ($prototype in $type.Value.PSObject.Properties) {
+            if (-not $prototype.Name.StartsWith($Prefix, [StringComparison]::Ordinal)) { continue }
+            $connections = @{}
+            Add-Connections -Node $prototype.Value -Path '' -Into $connections
+            # Kept even when EMPTY, so that "the prototype is gone" and "its fluid box was emptied"
+            # stay different findings. Dropping the empty ones made the second read as the first, and
+            # a reader chasing a deleted rf-reactor would have been looking for the wrong accident.
+            $found["$($type.Name)/$($prototype.Name)"] = $connections
+        }
+    }
+    return $found
+}
+
+function Get-MissingCategories {
+    <#  The categories in $Declared that $Loaded does not hold, compared ORDINALLY as sets.
+
+        BOTH HALVES OF THAT SENTENCE ARE LOAD-BEARING. As sets, because `contain()` writes the bare
+        string "rf-plasma" while a set that merely INSPECTS a connection can write it back as the
+        one-element list ["rf-plasma"] -- the same category to the engine, and twelve such rewrites
+        were measured on the seablock lane. Comparing rendered text would call every one of them a
+        difference. Ordinally, because a category is a name the engine matches exactly and
+        PowerShell's -contains is not: a set writing "RF-Plasma" would compare equal and is a real
+        breach.
+
+        A FILTER, NOT A TEST, is the other trap: `$set -ceq @('default')` with an array on the left
+        returns matching elements rather than $true or $false, so every comparison of that shape
+        classifies the same way. Callers wanting "was this only `default`" must test the count and
+        the element separately, as the probe's $wasDefault does.  #>
+    param(
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Declared,
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Loaded
+    )
+
+    return @($Declared | Where-Object {
+        $name = $_
+        -not @($Loaded | Where-Object { $_ -ceq $name })
+    })
 }

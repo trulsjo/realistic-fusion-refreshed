@@ -117,6 +117,21 @@
     at had been RENAMED in base Factorio, so nothing here was missing and the game still refused
     to start (20f325c).
 
+    IT THEN CHECKS THAT CONTAINMENT SURVIVED THE LOAD, which is the one rule this mod enforces by
+    declaration rather than by code (#209). contain() gives every plasma-carrying pipe connection the
+    category `rf-plasma`, and 2.0 joins two connections only when their categories match -- so a
+    vanilla pipe beside a plasma line does not connect, and nothing has to watch it at runtime. That
+    argument holds exactly as long as the declaration survives, and a third-party mod's
+    `data-final-fixes` can overwrite it silently: `name-check` compares only prototypes present in
+    BOTH dumps and ours are in one, and nothing else here fails on a reassigned category. So this
+    script dumps the game twice when a set is loaded -- once with our mods alone for what our data
+    stage declared, once with the set for what survived -- and fails if a category we wrote is gone.
+    Removal and replacement fail; an addition to a connection we categorised is counted into the
+    pass line and does not, which is #195's shape and reports through
+    scripts/probe-connection-categories.ps1 instead. See
+    Get-ContainmentBreaches for what it can and cannot see, and ADR 0007's finding 4 for the rest of
+    the blind spot this closes one slice of.
+
     It does NOT check locale coverage. Factorio's data stage loads a prototype with no locale
     entry without complaint; the omission only shows in game as "Unknown key". ADR 0010 singles
     that failure out, so it has its own check: scripts/locale-check.ps1. A pass here says nothing
@@ -200,11 +215,20 @@
     references cross a mod boundary, so there is now a seam for one to fall through.
 
 .PARAMETER SelfTest
-    Verify the check can fail. Three halves: the repo as it stands must pass; a mod carrying an
-    invalid prototype must fail; and a mod naming an icon file that does not exist must be
-    caught. The first is required or the others prove nothing, since Factorio also exits non-zero
-    when the repo is genuinely broken. The third is the one Factorio itself exits 0 on. Run this
-    whenever the script changes.
+    Verify the check can fail. FOUR halves, and the run prints each one numbered as it passes, so a
+    reader can count them against this list: the repo as it stands must pass; a mod carrying an
+    invalid prototype must fail; a mod naming an icon file that does not exist must be caught; and a
+    mod that reassigns one of our containment categories must be caught. The first is required or
+    the others prove nothing, since Factorio also exits non-zero when the repo is genuinely broken.
+    The third and the fourth are the two Factorio itself exits 0 on. Run this whenever the script
+    changes.
+
+    The fourth is #209's, and it is the same shape the real breach had: a canary whose
+    `data-final-fixes` writes a literal over the first connection of ours carrying `rf-plasma` --
+    whatever that connection is, since a hard-coded victim would fail on the day a pipe is renamed.
+    The canary records which prototype it broke in its own item's `order` field, and the assertion
+    compares the reported breach against that name: "caught" has to mean "named correctly" here,
+    because the report is the whole value of the check.
 
     WITH -FromZips it runs a different self-test, because zip mode has a different way of passing
     while proving nothing. Wire the asset check's directory map back at the repository and every
@@ -243,6 +267,14 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $ourMods  = Get-RepoMods
+
+# The category contain() writes, which the containment floor below looks for.
+#
+# Named PLASMA_CATEGORY and not CONTAINED, because PowerShell variable names are case-INSENSITIVE:
+# `$contained` for the connections holding it would be the SAME VARIABLE, and the constant would be
+# gone by the time a message quoted it. probe-connection-categories.ps1 carries the same note for
+# the same reason, and name-check.ps1's $REFERENCE_MODS is where this file's family first met it.
+$PLASMA_CATEGORY = 'rf-plasma'
 # Refused rather than combined. The self-test's canary halves reason about what a broken mod does to
 # a clean load, and a third-party overhaul in the same run makes a failure ambiguous -- worse, mods
 # present in the directory but absent from mod-list.json are auto-enabled by Factorio, so "not
@@ -316,22 +348,19 @@ function Test-Assets {
 
         Runs off --dump-data, so it sees the paths the game resolved rather than the strings in
         the source. The mods build most of their icon paths by concatenation; a scan of the Lua
-        would report a clean pass over every graphic this repo ships.  #>
-    param([string] $Tag)
+        would report a clean pass over every graphic this repo ships.
+
+        HANDED THE DUMP RATHER THAN TAKING ONE (#209). The containment gate reads the same loaded
+        dump and then takes a second one of its own under a different mod list, so the dumping moved
+        out to Invoke-DataDump and both gates read the copy it keeps aside. One --dump-data per mod
+        list, and neither gate can be looking at the other's.  #>
+    param([Parameter(Mandatory)] [string] $DumpPath)
 
     # $ourDirectories is set by the caller below, and points at the repository or at the unpacked
     # zips depending on how the mods were mounted. -SelfTest -FromZips is what proves it really
     # follows the mods rather than always pointing at the repository.
-    $result = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
-        -Arguments @('--dump-data') -OutputDirectory $temp -Tag "$Tag-dump"
-    if ($result.Code -ne 0) {
-        Write-Host "FAILED - Factorio exited $($result.Code) on --dump-data."
-        Write-FactorioTail $result
-        exit $result.Code
-    }
-
     $missing = Find-MissingAssets `
-        -DumpPath (Join-Path $temp 'write-data/script-output/data-raw-dump.json') `
+        -DumpPath $DumpPath `
         -DataDir (Get-FactorioDataDirectory -FactorioExe $FactorioExe) `
         -ModDirectories $ourDirectories
     if ($missing) {
@@ -340,6 +369,239 @@ function Test-Assets {
         exit 1
     }
     Write-Host 'assets: every referenced file is present.'
+}
+
+function Invoke-DataDump {
+    <#  Dump the game with exactly $Mods enabled, and return the path of the dump kept aside for it.
+
+        The walk and the category semantics are factorio-lib.ps1's, shared with
+        scripts/probe-connection-categories.ps1 (#209); what is here is running the game the way the
+        rest of this script runs it -- Invoke-Factorio, and an explicit failure rather than a throw.
+
+        THE DUMP PATH IS DELETED FIRST, NOT MERELY OVERWRITTEN. Every dump in this run writes the one
+        path, so a Factorio run that exits 0 without writing would leave the PREVIOUS dump there for
+        the parse to find -- and the declared side would then be a copy of the loaded side, every
+        connection would compare equal, and the gate would report containment surviving. That is the
+        one way this check could pass by finding nothing that the floor cannot catch, because the
+        floor only inspects the declared side, which would be genuinely fine.  #>
+    param(
+        [Parameter(Mandatory)] [string[]] $Mods,
+        [Parameter(Mandatory)] [string] $Tag,
+        # WHAT MUST STAY OUT, NAMED. Leaving a mod unlisted does not disable it -- Factorio
+        # auto-enables anything in the mod directory that mod-list.json does not mention, and by the
+        # time this runs the set (or the self-test's canary) is junctioned in beside our mods. The
+        # first version of this omitted them and got a declared dump with the set loaded in it: both
+        # dumps identical, every category equal, containment reported as surviving. Write-ModList's
+        # own header carries the note now.
+        [string[]] $Disabled = @()
+    )
+
+    $rawPath = Join-Path $temp 'write-data/script-output/data-raw-dump.json'
+    Remove-Item -LiteralPath $rawPath -Force -ErrorAction SilentlyContinue
+
+    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled `
+        -Mods $Mods -Disabled $Disabled
+    $result = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
+        -Arguments @('--dump-data') -OutputDirectory $temp -Tag $Tag
+    if ($result.Code -ne 0) {
+        Write-Host "FAILED - Factorio exited $($result.Code) on --dump-data for the $Tag dump."
+        Write-FactorioTail $result
+        exit $result.Code
+    }
+    if (-not (Test-Path -LiteralPath $rawPath)) {
+        Write-Host "FAILED - Factorio exited 0 but wrote no data-raw-dump.json for the $Tag dump,"
+        Write-Host '         so containment could not be compared. Treating as a failure rather than'
+        Write-Host '         reporting a pass it did not earn.'
+        exit 1
+    }
+    # KEPT ASIDE UNDER THE TAG, and the copy is what every caller reads. All the dumps in a run
+    # write the one path, so a caller holding on to that path would be reading the NEXT dump by the
+    # time it looked. -KeepTemp leaves each of them to compare by hand.
+    $kept = Join-Path $temp "$Tag-data-raw.json"
+    Copy-Item -LiteralPath $rawPath -Destination $kept -Force
+    return $kept
+}
+
+function Get-ContainmentBreaches {
+    <#  Connections our data stage contained that no longer hold what it declared, once the whole
+        set is loaded. Returns a row per breach; empty means containment survived.
+
+        WHY THIS IS A GATE AND NOT A PROBE (#209). Containment is the only rule this mod enforces by
+        declaration rather than by code: contain() gives every plasma-carrying connection the
+        category `rf-plasma`, 2.0 joins two connections only when their categories match, and so a
+        vanilla pipe beside a plasma line does not connect at all. The argument for that design is
+        that nothing has to watch it at runtime -- which holds exactly as long as the declaration
+        survives the load. Nothing checked that it did. `name-check` compares only prototypes present
+        in BOTH dumps and ours are in one; the rest of this script asserts validity, assets and the
+        simulation's invariants, none of which a reassigned category fails. ADR 0007's finding 4 said
+        so for a while before this closed the containment slice of it.
+
+        TWO DUMPS, AND THE DECLARED ONE IS OUR MODS ALONE. Our data stage's own output is not visible
+        in a loaded dump -- that dump is what the set left behind. So the declared side is a second
+        --dump-data with only our mods enabled, which is what the probe does and for the same reason:
+        a category assembled by a helper or a loop is then read exactly as a literal is.
+
+        WHAT FAILS, AND WHAT DELIBERATELY DOES NOT.
+
+          fails    A category we declared is not in the loaded value -- whether the field was
+                   emptied, deleted, or overwritten with something else. Containment is gone from
+                   that connection and a player's pipes now match against whatever is there.
+
+          passes   Everything we declared is still there and MORE was added. A connection category
+                   is a whitelist, so an addition does open the box -- but #209 scopes this gate to
+                   removal and replacement, and the collecting shape reports through
+                   scripts/probe-connection-categories.ps1 and #195 instead. Additions are not
+                   breaches, so they are not rows: this function returns none for them, and
+                   Test-Containment COUNTS them into its pass line so a reader sees that some
+                   happened without the gate claiming they are what it caught. Which connections
+                   they landed on is the probe's report, not this one's.
+
+          passes   Anything on a connection we left `default`. That is an ordinary box of ours being
+                   treated like every other ordinary box in the game; against the seablock lane it is
+                   44 of 46 differences, and failing on it would bury the two rows that matter.
+
+        WHAT IT CANNOT SEE, because both dumps enable the same bundled selection: a bundled mod
+        reassigning one of our categories cancels out. `-With space-age` is on both sides by
+        construction, so this says nothing about the expansion -- the same limitation ADR 0007
+        records for every `-With` lane.
+
+        THE WALK IS SHARED WITH THE PROBE, in factorio-lib.ps1, and that is not tidiness. Two traps
+        live in it -- a one-element category list read as a string, and comparing rendered text
+        rather than category sets -- and a second implementation would have been free to fall into
+        either. The probe's header records both.
+
+        A CONNECTION'S IDENTITY IS ITS POSITION, and that is the sharpest edge on this gate. The path
+        ends in `pipe_connections[N]`, so a set that INSERTS a connection ahead of a contained one
+        shifts ours down the list: the declaration at [1] is compared against the set's new
+        connection at [1], which reports `rf-plasma` lost on a connection that never carried it,
+        while ours -- now at [2] -- is never examined. The failure is real either way, since a set
+        rewriting our fluid box is worth a red run, but the ROW would name the wrong connection and
+        the reason. Nothing in a dump distinguishes an insertion from a replacement: the engine
+        records what the box ended up as, in order, and no field survives to say which entry used to
+        be where. Tolerable while it only produced a row in the probe's report; worth knowing now
+        that it decides an exit code. Read the two values in the row before believing the index.  #>
+    param(
+        [Parameter(Mandatory)] [hashtable] $Declared,
+        [Parameter(Mandatory)] [hashtable] $Loaded
+    )
+
+    # ONE PREDICATE FOR "WE CONTAINED THIS", used by both branches below. Expand-Category synthesises
+    # `default` for an absent field, because that is what the engine reads one as -- but a synthesised
+    # value is not a declaration of ours, and treating it as one would make this gate fire on every
+    # ordinary box of ours that a set touches.
+    #
+    # Scalar comparisons, not array ones: PowerShell's -ceq with an ARRAY on the left is a filter and
+    # not a test, so `$set -ceq @('default')` returns elements rather than $true or $false.
+    $contained = {
+        param($Connection)
+        $set = $Connection.Set
+        -not ($set.Count -eq 1 -and $set[0] -ceq 'default')
+    }
+
+    $breaches = [System.Collections.Generic.List[object]]::new()
+    foreach ($key in ($Declared.Keys | Sort-Object)) {
+        $mine = $Declared[$key]
+        # WHAT WE CONTAINED ON IT, not how many connections it has. Counting all of them made a
+        # prototype of ours with nothing but `default` boxes a subject of the whole-prototype branch
+        # below -- so a set that removed or renamed such a prototype failed the gate under a row
+        # saying "present, with contained connections", which was not true of it. Caught in review of
+        # #209 before it shipped; the probe classifies that shape as STRUCTURAL rather than LOST for
+        # the same reason.
+        $mineContained = @($mine.Values | Where-Object { & $contained $_ })
+        if (-not $mineContained) { continue }
+
+        # A PROTOTYPE OF OURS THAT IS GONE is a breach of this invariant rather than a skip, now that
+        # we know it carried containment. A set that removes or renames the prototype out from under
+        # the declaration has taken the declaration with it, and comparing nothing is how a check
+        # reports a pass it did not earn.
+        if (-not $Loaded.ContainsKey($key)) {
+            $breaches.Add([pscustomobject]@{
+                Prototype = $key; Connection = '(the whole prototype)'
+                Declared = "$($mineContained.Count) contained connection(s)"
+                Loaded = 'gone from the dump' })
+            continue
+        }
+        $their = $Loaded[$key]
+        foreach ($path in ($mine.Keys | Sort-Object)) {
+            $mineSet = $mine[$path].Set
+            if (-not (& $contained $mine[$path])) { continue }
+
+            if (-not $their.ContainsKey($path)) {
+                $breaches.Add([pscustomobject]@{
+                    Prototype = $key; Connection = $path
+                    Declared = $mine[$path].Category; Loaded = 'the connection is gone' })
+                continue
+            }
+            $missing = @(Get-MissingCategories -Declared $mineSet -Loaded $their[$path].Set)
+            if (-not $missing) { continue }
+            $breaches.Add([pscustomobject]@{
+                Prototype = $key; Connection = $path
+                Declared = $mine[$path].Category; Loaded = $their[$path].Category
+                Missing = $missing })
+        }
+    }
+    return $breaches
+}
+
+function Test-Containment {
+    <#  The gate half of Get-ContainmentBreaches: report, and exit non-zero on a breach.
+
+        Separate from the comparison for the reason Test-Assets is separate from Find-MissingAssets:
+        the self-test has to ask the question without the answer ending the run.  #>
+    param(
+        [Parameter(Mandatory)] [hashtable] $Declared,
+        [Parameter(Mandatory)] [hashtable] $Loaded,
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Against
+    )
+
+    # THE FLOOR, BECAUSE EVERYTHING BELOW PASSES BY FINDING NOTHING. A walk that stopped matching, a
+    # prefix that changed, a dump written somewhere else: each reports zero breaches, which reads
+    # exactly like containment surviving. So the declared side must hold at least one connection
+    # carrying the category before any comparison is believed. An instrument fault, not a finding.
+    $carrying = @($Declared.Values | ForEach-Object { $_.Values } |
+        Where-Object { $_.Set -ccontains $PLASMA_CATEGORY })
+    if (-not $carrying) {
+        Write-Host ''
+        Write-Host "FAILED - containment: the declared dump holds no connection carrying '$PLASMA_CATEGORY'."
+        Write-Host '         Either contain() has stopped writing it or this check has stopped'
+        Write-Host '         reading it -- and both would otherwise report a clean pass against any'
+        Write-Host '         set at all.'
+        exit 1
+    }
+
+    $breaches = @(Get-ContainmentBreaches -Declared $Declared -Loaded $Loaded)
+    if ($breaches) {
+        Write-Host ''
+        Write-Host "FAILED - containment: $($breaches.Count) contained connection(s) no longer hold what"
+        Write-Host '         our data stage declared. A connection category is what keeps plasma out of'
+        Write-Host '         an ordinary pipe, and nothing watches it at runtime.'
+        foreach ($b in $breaches) {
+            Write-Host "    $($b.Prototype)  $($b.Connection)"
+            Write-Host "      declared: $($b.Declared)"
+            Write-Host "      loaded:   $($b.Loaded)"
+            if ($b.Missing) { Write-Host "      lost:     $($b.Missing -join ', ')" }
+        }
+        exit 1
+    }
+
+    # Additions are not failures, and they are not silence either -- see Get-ContainmentBreaches.
+    $added = 0
+    foreach ($key in $Declared.Keys) {
+        if (-not $Loaded.ContainsKey($key)) { continue }
+        foreach ($path in $Declared[$key].Keys) {
+            if (-not $Loaded[$key].ContainsKey($path)) { continue }
+            $mineSet = $Declared[$key][$path].Set
+            if ($mineSet.Count -eq 1 -and $mineSet[0] -ceq 'default') { continue }
+            if (@(Get-MissingCategories -Declared $Loaded[$key][$path].Set -Loaded $mineSet)) { $added++ }
+        }
+    }
+    $note = if ($added) { " ($added widened by additions, which this gate does not fail on -- see #195)" } else { '' }
+    Write-Host ("containment: all $($carrying.Count) contained connection(s) still hold what our data " +
+                "stage declared$note.")
+    if (-not $Against) {
+        Write-Host '             No set was loaded, so this compared our mods against themselves: the'
+        Write-Host '             floor above is what the run proved, not that any set left them alone.'
+    }
 }
 
 try {
@@ -487,7 +749,7 @@ try {
 
     if ($SelfTest) {
         # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
-        Write-Host 'self-test 1/3: the repo as it stands must load.'
+        Write-Host 'self-test 1/4: the repo as it stands must load.'
         $clean = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'clean'
         # Same pass criterion as a real run: exit 0 without a save is a failure there, so it must
         # be a failure here too, or -SelfTest could certify a check a plain run would reject.
@@ -511,7 +773,7 @@ try {
         'data:extend({{ type = "item", name = "rf-loadcheck-canary-item" }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 2/3: an invalid prototype must be rejected.'
+        Write-Host 'self-test 2/4: an invalid prototype must be rejected.'
         $broken = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'canary'
         if ($broken.Code -eq 0) {
             Write-Host ''
@@ -530,7 +792,7 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
   icon = D .. "no-such-icon" .. ".png", icon_size = 64 }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 3/3: a prototype naming a file that is not there must be caught.'
+        Write-Host 'self-test 3/4: a prototype naming a file that is not there must be caught.'
         $withCanary = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'assets'
         if ($withCanary.Code -ne 0) {
             Write-Host ''
@@ -558,15 +820,116 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
             exit 1
         }
 
+        # Half four: a set that reassigns one of our containment categories must be caught (#209).
+        # This is the half that proves the newest invariant, and it is the same shape the real breach
+        # had: `no-pipe-touching`'s data-final-fixes writes a literal over a connection of ours that
+        # qualifies BECAUSE it is contained. The canary does exactly that, in as few lines.
+        #
+        # IT RECORDS WHAT IT BROKE, in its own item's `order` field, and the assertion below compares
+        # the reported breach against that name. Without it this half could only assert that SOME
+        # breach was reported, and a check that reported the wrong prototype would pass -- the report
+        # is the whole value of this gate, so "caught" has to mean "named correctly".
+        #
+        # THE VICTIM IS WHATEVER IS CONTAINED, not a prototype named here. A hard-coded victim would
+        # make this half fail on the day a pipe is renamed, which is the day it is least welcome.
+        'local function break_one(node, seen)
+  if type(node) ~= "table" or seen[node] then return nil end
+  seen[node] = true
+  if node.pipe_connections then
+    for _, c in pairs(node.pipe_connections) do
+      local cat = c.connection_category
+      if cat == "rf-plasma" or (type(cat) == "table" and cat[1] == "rf-plasma") then
+        c.connection_category = "pipe-to-ground"
+        return true
+      end
+    end
+  end
+  for _, v in pairs(node) do
+    if break_one(v, seen) then return true end
+  end
+  return nil
+end
+
+local function first_contained()
+  for type_name, protos in pairs(data.raw) do
+    for name, proto in pairs(protos) do
+      if name:sub(1, 3) == "rf-" and break_one(proto, {}) then
+        return type_name .. "/" .. name
+      end
+    end
+  end
+  return nil
+end
+
+local victim = first_contained()
+if not victim then
+  error("load-check canary: no connection carrying rf-plasma to reassign, so half four would prove nothing")
+end
+data.raw.item["rf-loadcheck-canary-item"].order = victim' |
+            Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
+        # Valid, and with an icon that exists this time: half three's missing icon would fail the
+        # asset check rather than reaching this one.
+        'data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
+  icon = "__base__/graphics/icons/iron-plate.png", icon_size = 64 }})' |
+            Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
+
+        Write-Host 'self-test 4/4: a set reassigning one of our containment categories must be caught.'
+        $reassigned = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'contain'
+        if ($reassigned.Code -ne 0) {
+            Write-Host ''
+            Write-Host 'FAILED - self-test: the containment canary did not load, so the containment'
+            Write-Host "         check was never reached (exit $($reassigned.Code)). A canary that cannot"
+            Write-Host '         load proves nothing about a gate that runs after the load.'
+            Write-FactorioTail $reassigned
+            exit 1
+        }
+
+        $loadedDumpPath    = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'contain-loaded'
+        $loadedContainment = Get-ConnectionsFromDump -DumpPath $loadedDumpPath
+        $declaredContainment = Get-ConnectionsFromDump -DumpPath (
+            Invoke-DataDump -Mods $ourMods -Tag 'contain-declared' -Disabled @('rf-loadcheck-canary'))
+
+        $victim = (Get-Content -LiteralPath $loadedDumpPath -Raw |
+            ConvertFrom-Json).item.'rf-loadcheck-canary-item'.order
+        if (-not $victim) {
+            Write-Host ''
+            Write-Host 'FAILED - self-test: the containment canary recorded no victim, so it never found'
+            Write-Host '         a contained connection to reassign and this half proves nothing.'
+            exit 1
+        }
+
+        $breaches = @(Get-ContainmentBreaches -Declared $declaredContainment -Loaded $loadedContainment)
+        $named    = @($breaches | Where-Object { $_.Prototype -eq $victim })
+        if (-not $named) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the canary reassigned a contained connection on $victim and the"
+            Write-Host '         containment check did NOT report it. Nothing else in this repo notices a'
+            Write-Host '         category being overwritten -- name-check compares only prototypes present'
+            Write-Host '         in both dumps, and ours is in one.'
+            if ($breaches) {
+                Write-Host "         It reported $($breaches.Count) other breach(es):"
+                foreach ($b in $breaches) { Write-Host "           $($b.Prototype)  $($b.Connection)" }
+            }
+            exit 1
+        }
+        if (-not @($named | Where-Object { $_.Missing -ccontains $PLASMA_CATEGORY })) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the breach reported on $victim does not name $PLASMA_CATEGORY as"
+            Write-Host '         the category lost, so the row would not tell a reader what was taken.'
+            foreach ($b in $named) { Write-Host "           $($b.Connection): lost $($b.Missing -join ', ')" }
+            exit 1
+        }
+
         Write-Host ''
         Write-Host 'OK - self-test passed: clean repo loads, invalid prototype rejected'
-        Write-Host "     (exit $($broken.Code)), missing asset caught."
+        Write-Host "     (exit $($broken.Code)), missing asset caught, and a reassigned"
+        Write-Host "     containment category caught by name on $victim."
         exit 0
     }
 
     $result = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + $alsoMods) -Tag 'run'
 
-    # After the load, not before: Test-Assets reads a --dump-data written under the mod list
+    # After the load, not before: both gates below read a --dump-data written under the mod list
     # Invoke-LoadCheck just put in place, and a repo that does not load has nothing to dump.
     #
     # A missing capture file is a failure rather than a skip. It used to be one half of an `and`,
@@ -581,7 +944,32 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
             Write-Host '         reporting a pass it did not earn.'
             exit 1
         }
-        Test-Assets -Tag 'run'
+        # 'run-dump' AND NOT 'run': Invoke-Factorio names its captures after the tag, so dumping
+        # under the load's own tag overwrote run-stdout.txt with the dump's -- and -KeepTemp, which
+        # is how a red lane gets investigated, would then hand a reader the wrong log. Caught in
+        # review of #209.
+        $loadedDump = Invoke-DataDump -Mods ($ourMods + $alsoMods) -Tag 'run-dump'
+
+        # CONTAINMENT BEFORE THE ASSET CHECK, DELIBERATELY, and the reason is which lanes each one
+        # can reach. Both exit on failure, so the order decides only which failure a reader sees
+        # first -- but four lanes are permanently red on a 1.1-era `__base__` path their own mods
+        # name, which is upstream's and cannot be pinned away. With the asset check first,
+        # containment would never run on any of them -- `seablock` included, the one lane that has
+        # ever actually reassigned a category of ours (#195, #207, #208). A gate that cannot run on
+        # the lane it was built for closes nothing, so containment goes first and the upstream asset
+        # reds are reported after it.
+        #
+        # The loaded side is the dump above, parsed rather than dumped again. The declared side needs
+        # a run of its own and only when a set is loaded: without one the two dumps would be the same
+        # dump, and the floor inside Test-Containment is the whole of what there is to prove.
+        $loadedConnections   = Get-ConnectionsFromDump -DumpPath $loadedDump
+        $declaredConnections = if ($alsoMods) {
+            Get-ConnectionsFromDump -DumpPath (
+                Invoke-DataDump -Mods $ourMods -Tag 'declared' -Disabled $alsoMods)
+        } else { $loadedConnections }
+        Test-Containment -Declared $declaredConnections -Loaded $loadedConnections -Against $alsoMods
+
+        Test-Assets -DumpPath $loadedDump
     }
 
     if ($result.Code -ne 0) {
@@ -598,8 +986,9 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
     # Says what actually passed rather than "data stage valid", which was the same undersell the
     # docstring above used to make: creating the map ran control.lua's check_prototypes() too.
     $how = if ($FromZips) { 'built zips' } else { 'junctioned repo directories' }
-    Write-Host "OK - prototypes valid, every referenced asset present, map created and the"
-    Write-Host "     simulation's twelve load-time invariants hold, loading from $how."
+    Write-Host "OK - prototypes valid, every referenced asset present, map created, the"
+    Write-Host "     simulation's twelve load-time invariants hold and containment survived the"
+    Write-Host "     load, loading from $how."
     exit 0
 }
 finally {

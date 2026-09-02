@@ -4,9 +4,21 @@
 
 .DESCRIPTION
     A PROBE, NOT A GATE. It asserts nothing about what it finds and exits 0 whatever it reports, so a
-    row saying containment was overwritten is a measurement and not a failure. #209 is the gate; this
-    is the instrument that tells whoever writes it what there is to catch. Nothing here decides
+    row saying containment was overwritten is a measurement and not a failure. Nothing here decides
     anything and nothing here ships.
+
+    THE GATE LANDED IN #209 and it is `load-check.ps1`, which now fails when a category our data
+    stage wrote is gone from the loaded dump. The two are not redundant, and this one is still worth
+    running:
+
+      the gate     fails on removal and replacement, over whatever set is loaded, and says nothing
+                   about anything else. Additions are printed and pass.
+      this probe   reports EVERY difference with a verdict per row -- LOST, WIDENED, REPLACED,
+                   STRUCTURAL and the ordinary `widened` on boxes we left default -- which is what a
+                   lane investigation needs and what a gate must not turn into a failure.
+
+    So the gate answers "did containment survive"; this answers "what did this set do to our boxes".
+    They share the walk (factorio-lib.ps1) precisely so the two answers cannot drift apart.
 
     WHY THIS EXISTS
 
@@ -24,12 +36,14 @@
     literal "pipe-to-ground" over every underground connection and appends every pipe name it
     collected to the surface ones.
 
-    All of that is READ FROM SOURCE. Verification in this repository is by running the game, and the
-    two checks that load a set are both blind here: `load-check` asks whether the game starts and
-    `name-check` asks what we do to THEIR prototypes, not what they do to ours (ADR 0007, finding 4).
-    A dump-and-diff of this shape has been done by hand before -- #131 and #132 measured Angel's
-    editing 41 of our 145 prototype objects that way, and #153 records it -- but nothing committed
-    did it, so the containment guarantee had no repeatable instrument until this one.
+    All of that is READ FROM SOURCE. Verification in this repository is by running the game, and when
+    this probe was written the two checks that load a set were both blind here: `load-check` asked
+    whether the game starts and `name-check` asks what we do to THEIR prototypes, not what they do to
+    ours (ADR 0007, finding 4). A dump-and-diff of this shape had been done by hand before -- #131 and
+    #132 measured Angel's editing 41 of our 145 prototype objects that way, and #153 records it -- but
+    nothing committed did it, so the containment guarantee had no repeatable instrument until this
+    one. Since #209 `load-check` is no longer blind to the containment slice of that: it makes the
+    same comparison and fails on it. The rest of finding 4's blind spot is still a blind spot.
 
     HOW IT MEASURES
 
@@ -168,94 +182,13 @@ $temp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-category-' + [guid]::NewGuid
 $modDir = Join-Path $temp 'mods'
 New-Item -ItemType Directory -Path $modDir -Force | Out-Null
 
-function Format-Category {
-    <#  One connection's category as the report prints it.
-
-        The three forms are kept distinguishable on purpose. A bare string and a one-element list are
-        the same thing to the engine and NOT the same evidence: `no-pipe-touching` writes a bare
-        string over an underground connection and a list onto a surface one, and telling which
-        happened is most of what identifies the pass that did it. Absent is a third case again -- the
-        engine reads it as "default", which is the category every vanilla pipe carries, so an absent
-        field is containment gone rather than containment unset.  #>
-    param([object] $Value)
-
-    if ($null -eq $Value) { return 'default (no field)' }
-    if ($Value -is [string]) { return $Value }
-    $items = @($Value)
-    if ($items.Count -eq 0) { return 'default (empty list)' }
-    return '{' + ($items -join ', ') + '}'
-}
-
-function Expand-Category {
-    <#  One connection's category as a SET of names, for comparing rather than for printing.
-
-        Absent and empty both become "default", because that is what the engine reads them as -- and
-        the whole comparison below turns on it. Without this, a connection whose category the set
-        DELETED would compare as "absent versus absent" against one we never categorised, and the
-        two are opposite findings.  #>
-    param([object] $Value)
-
-    if ($null -eq $Value) { return @('default') }
-    if ($Value -is [string]) { return @($Value) }
-    $items = @($Value | ForEach-Object { [string]$_ })
-    if ($items.Count -eq 0) { return @('default') }
-    return $items
-}
-
-function Add-Connections {
-    <#  Every pipe connection under $Node, as "path" -> its category and connection type.
-
-        Recursive over the whole prototype rather than over a list of known field names: see the
-        header. The path is the connection's identity across the two dumps, so it has to be built the
-        same way on both sides, and it is, by this one function running on both.  #>
-    param([object] $Node, [string] $Path, [Parameter(Mandatory)] [hashtable] $Into)
-
-    if ($Node -is [System.Management.Automation.PSCustomObject]) {
-        foreach ($property in $Node.PSObject.Properties) {
-            if ($null -eq $property.Value) { continue }
-            if ($property.Name -ne 'pipe_connections') {
-                Add-Connections -Node $property.Value -Path "$Path.$($property.Name)" -Into $Into
-                continue
-            }
-            $index = 0
-            foreach ($connection in @($property.Value)) {
-                $index++
-                $fields = $connection.PSObject.Properties
-                # A PLAIN ASSIGNMENT, NOT `$category = if (...) { $connection.connection_category }`.
-                # An `if` used as an expression writes its block's output to the pipeline, and a
-                # ONE-ELEMENT array sent to the pipeline arrives as its element -- so the array
-                # ["rf-plasma"] was read as the string "rf-plasma" and this probe could not tell the
-                # two apart at all. It mattered: `no-pipe-touching` rewrites the field in place as a
-                # one-element list on twelve contained connections of ours, and the instrument was
-                # blind to the rewrite by accident rather than by decision. The set comparison below
-                # is what decides such a rewrite is a no-op; this line is what lets it see one.
-                $category = $null
-                if ($fields['connection_category']) { $category = $connection.connection_category }
-                $Into["$Path.pipe_connections[$index]"] = [pscustomobject]@{
-                    Category = Format-Category $category
-                    # @() because a PowerShell function returning a one-element array returns the
-                    # ELEMENT: `Set` was then the string "default", whose .Count is 1 and whose [0]
-                    # is the character "d", so every uncategorised connection classified as one we
-                    # had categorised. The wrap is what makes it a collection on both sides.
-                    Set = @(Expand-Category $category)
-                    # Default per the 2.0.77 prototype docs. Reported rather than used: which
-                    # connection is underground is exactly what decides the branch taken by the pass
-                    # under suspicion, so a reader needs it beside the value.
-                    Type = if ($fields['connection_type']) { [string]$connection.connection_type } else { 'normal' }
-                }
-            }
-        }
-    }
-    elseif ($Node -is [System.Object[]]) {
-        for ($i = 0; $i -lt $Node.Count; $i++) {
-            Add-Connections -Node $Node[$i] -Path "$Path[$($i + 1)]" -Into $Into
-        }
-    }
-}
-
 function Get-OurConnections {
     <#  Dump the game as currently junctioned, and return our prototypes' pipe connections as
-        "type/name" -> (path -> connection). Prototypes with no pipe connection are left out.  #>
+        "type/name" -> (path -> connection). Prototypes with no pipe connection are left out.
+
+        THE WALK ITSELF MOVED TO factorio-lib.ps1 IN #209, unchanged, because load-check's
+        containment gate has to read a connection exactly the way this probe does. What is left here
+        is the half that is this script's own: which mods to enable and running the game.  #>
     param([Parameter(Mandatory)] [string[]] $Mods, [Parameter(Mandatory)] [string] $Tag)
 
     $rawPath = Join-Path $temp 'write-data/script-output/data-raw-dump.json'
@@ -277,20 +210,7 @@ function Get-OurConnections {
     # Kept aside under the tag so -KeepTemp leaves both dumps to compare by hand.
     Copy-Item -LiteralPath $rawPath -Destination (Join-Path $temp "$Tag-data-raw.json") -Force
 
-    $found = @{}
-    $parsed = Get-Content -LiteralPath $rawPath -Raw | ConvertFrom-Json
-    foreach ($type in $parsed.PSObject.Properties) {
-        foreach ($prototype in $type.Value.PSObject.Properties) {
-            if (-not $prototype.Name.StartsWith($PREFIX, [StringComparison]::Ordinal)) { continue }
-            $connections = @{}
-            Add-Connections -Node $prototype.Value -Path '' -Into $connections
-            # Kept even when EMPTY, so that "the prototype is gone" and "its fluid box was emptied"
-            # stay different findings. Dropping the empty ones made the second read as the first, and
-            # a reader chasing a deleted rf-reactor would have been looking for the wrong accident.
-            $found["$($type.Name)/$($prototype.Name)"] = $connections
-        }
-    }
-    return $found
+    return Get-ConnectionsFromDump -DumpPath $rawPath -Prefix $PREFIX
 }
 
 try {
@@ -400,12 +320,8 @@ try {
             #
             # Ordinal, because a category is a name the engine matches exactly and PowerShell's
             # -contains is not: a set writing "RF-Plasma" would compare equal and be a real breach.
-            $gone = @($mineSet | Where-Object {
-                $name = $_
-                -not @($theirSet | Where-Object { $_ -ceq $name }) })
-            $added = @($theirSet | Where-Object {
-                $name = $_
-                -not @($mineSet | Where-Object { $_ -ceq $name }) })
+            $gone  = @(Get-MissingCategories -Declared $mineSet  -Loaded $theirSet)
+            $added = @(Get-MissingCategories -Declared $theirSet -Loaded $mineSet)
             if (-not $gone -and -not $added) { continue }
 
             # Scalar comparisons, not array ones: PowerShell's -ceq with an ARRAY on the left is a

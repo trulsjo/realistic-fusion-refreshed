@@ -112,7 +112,11 @@ Checked against the installed 2.0.77 Space Age data
   took it — a permission, not a defence, good for one mod and no others. A general
   re-assertion pass of our own was declined as integration's posture rather than coexistence's; see
   ADR 0007's finding 4. **This ADR therefore claims containment for what it declares, plus one
-  named exception, and not for what survives an arbitrary set.**
+  named exception, and not for what survives an arbitrary set.** What changed on 2026-09-02 is that
+  the repo now *notices*: [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209)
+  made `load-check` fail when a category this ADR declares is gone from the loaded dump. That is
+  detection and not defence — the second mod #208 said to reassess on now fails a gate instead of
+  waiting to be read out of somebody's `data-final-fixes`.
 - `fusion-plasma` is `auto_barrel = false`, and carries its energy in **temperature**
   (`heat_capacity = "25J"`, default 1 000 000 °C, max 10 000 000) — the exact inverse of
   `rf-reactor-energy`, which is 1 MJ per unit at 15 °C.

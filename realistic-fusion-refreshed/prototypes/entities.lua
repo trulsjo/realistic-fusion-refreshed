@@ -80,8 +80,12 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 -- merely inspects. Same category to the engine, nothing changed about what connects, and worth
 -- knowing anyway: it is not leaving our contained boxes alone, it is making twelve equivalent edits.
 --
--- Neither gate can see any of it -- both are blind to what a set does to prototypes of OURS
--- (ADR 0007's finding 4). #207 swept all fourteen and ONE of them does this -- only the seablock
+-- load-check FAILS on it since #209 (2026-09-02): it dumps the game twice on every lane, once with
+-- our mods alone for what this file declared and once with the set, and a category written here that
+-- is gone from the second ends the run. What it does not fail on is an ADDITION to a connection we
+-- categorised -- that is #195's shape, and the probe below reports it. name-check is still blind to
+-- all of it, and so is everything else about what a set does to prototypes of OURS beyond connection
+-- categories (ADR 0007's finding 4). #207 swept all fourteen and ONE of them does this -- only the seablock
 -- lane, only no-pipe-touching, only rf-pipe-to-ground; three lanes add a category to boxes we left
 -- default and remove nothing, and eleven change nothing at all
 -- (docs/research/connection-categories-by-lane.md).
@@ -91,7 +95,8 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 -- data-final-fixes THAT REWRITES IT, AND NOTHING IN THIS REPO MAKES IT SURVIVE. What holds on the
 -- one lane where that happens is a field naming that mod's own opt-out, which defends against that
 -- mod and against nothing else. A second mod doing the same thing would open the same hole again and
--- neither gate would see it -- #209 is the gate that would, and it is the trigger for reopening #208.
+-- #209's gate now sees it: load-check fails when a category written here is gone from the loaded
+-- dump, which is the trigger for reopening #208 rather than a thing to be noticed by reading Lua.
 -- Write nothing here that assumes containment survives an arbitrary set: it does not, and the fix
 -- below is a permission rather than a defence.
 --
@@ -983,7 +988,8 @@ contain(pipe_to_ground.fluid_box)
 -- theirs and would work, but it is a general defence against a problem measured on one lane, and it
 -- works by overriding whatever another mod did -- which is the opposite of ADR 0007's
 -- coexistence-without-integration line. Truls's call on #208, 2026-09-01, to be reassessed if a
--- second mod ever does this. #209 is the gate that would notice.
+-- second mod ever does this. #209's gate is what notices, since 2026-09-02: load-check fails the
+-- run rather than leaving it to whoever next reads another mod's data-final-fixes.
 --
 -- rf-pipe deliberately does NOT get this field. It needs no protection -- the pass that rewrites
 -- data.raw.pipe entries is guarded on their holding a default category, and rf-pipe holds none -- and

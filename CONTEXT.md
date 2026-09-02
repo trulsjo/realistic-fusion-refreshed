@@ -250,9 +250,15 @@ Containment is a declaration, so it lasts exactly as long as the declaration doe
 overwrote `rf-pipe-to-ground`'s underground connection with the literal `pipe-to-ground` and appended
 twelve categories to its surface one, and a category is a whitelist, so both opened the box. Containment holds
 on the other twelve contained connections, so this is one pass over one prototype type rather than
-the guarantee failing in general. `scripts/probe-connection-categories.ps1` is what sees it, and
-neither gate does — see [ADR 0007](docs/adr/0007-coexistence-without-integration.md)'s finding 4 and
-`docs/research/connection-category-reassignment.md`.
+the guarantee failing in general. `scripts/probe-connection-categories.ps1` is what measured it, and
+**since [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209) `load-check` fails
+on it**: on every lane it dumps the game twice, once with our mods alone for what our data stage
+declared and once with the set, and a category we wrote that is gone from the second is a failure.
+Additions to a connection we categorised are counted into the pass line and do not fail, which is
+#195's shape; which connections they landed on is the probe's report. The
+gate closes the containment slice of
+[ADR 0007](docs/adr/0007-coexistence-without-integration.md)'s finding 4 and no more of it; the
+mechanism on that lane is in `docs/research/connection-category-reassignment.md`.
 [#206](https://github.com/trulsjo/realistic-fusion-refreshed/issues/206) measured it,
 [#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207) ran the same probe on all
 fourteen lanes and **that was the only one that did it** — the other thirteen change no category of
