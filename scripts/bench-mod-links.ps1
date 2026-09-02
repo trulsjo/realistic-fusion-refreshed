@@ -150,6 +150,9 @@ local HEATERS    = __HEATERS__
 
 local PLASMA = "rf-d-d-plasma"
 local ENERGY = "rf-reactor-energy"
+-- Write-EnergyFeed's prototype: a plain vanilla infinity pipe today, and the single place a
+-- connection category lands when ADR 0018 does (#84).
+local ENERGY_FEED = "__ENERGYFEED__"
 
 -- The recipe that makes PLASMA, named rather than discovered.
 --
@@ -377,7 +380,7 @@ local function build(surface, force, ox, drain, power)
   if drain then
     -- Nothing downstream to throttle the link: whatever crosses is removed the same tick.
     local at = { north[1], header_y - 1 }
-    local pipe = surface.create_entity({ name = "infinity-pipe", position = at, force = force })
+    local pipe = surface.create_entity({ name = ENERGY_FEED, position = at, force = force })
     if not pipe then error("drain refused") end
     pipe.set_infinity_pipe_filter({ name = ENERGY, percentage = 0, mode = "at-most" })
   else
@@ -554,7 +557,8 @@ end)
         Replace('__QUIETMAP__', (Get-QuietMapLua)).
         Replace('__QUIETFN__', $script:QuietMapFunction).
         Replace('__WINDOW__', "$Window").Replace('__EXCHANGERS__', "$Exchangers").
-        Replace('__PIPES__', "$Pipes").Replace('__HEATERS__', "$Heaters")
+        Replace('__PIPES__', "$Pipes").Replace('__HEATERS__', "$Heaters").
+        Replace('__ENERGYFEED__', (Write-EnergyFeed -RigDirectory $rigDir))
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $lua -Encoding utf8
 }
 

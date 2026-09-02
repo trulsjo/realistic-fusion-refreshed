@@ -97,6 +97,9 @@ local HC_TURBINE   = "rf-hc-turbine"
 local EXCHANGER    = "rf-heat-exchanger"
 local TURBINE      = "steam-turbine"
 local ENERGY       = "rf-reactor-energy"
+-- Write-EnergyFeed's prototype. A plain vanilla infinity pipe today; the one place a category
+-- lands when ADR 0018 does (#84).
+local ENERGY_FEED  = "__ENERGYFEED__"
 
 local function record(ok, name, detail)
   storage.report = storage.report or { lines = {}, failures = 0 }
@@ -138,7 +141,10 @@ local function feed(surface, force, entity, fluid, temperature)
   if not index then error(entity.name .. " has no box that takes " .. fluid) end
   for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
     local supply = must(surface.create_entity({
-      name = "infinity-pipe", position = connection.target_position, force = force,
+      -- Energy comes from the shared feed, water and steam from a vanilla pipe. The two are the
+      -- same entity today and will not be once reactor energy is contained (#84, ADR 0018).
+      name = (fluid == ENERGY) and ENERGY_FEED or "infinity-pipe",
+      position = connection.target_position, force = force,
     }), "supply of " .. fluid .. " for " .. entity.name)
     supply.set_infinity_pipe_filter({
       name = fluid, percentage = 1, temperature = temperature, mode = "at-least",
@@ -420,8 +426,12 @@ script.on_nth_tick(CHECK_AT, function()
   for _, line in ipairs(report.lines) do log("HC-RIG " .. line) end
 end)
 '@
+    $energyFeed = Write-EnergyFeed -RigDirectory $rigDir
+    $body = $lua.Replace('__TICKS__', "$Ticks").
+        Replace('__QUALITY__', $(if ($Quality) { 'true' } else { 'false' })).
+        Replace('__ENERGYFEED__', $energyFeed)
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') `
-        -Value $lua.Replace('__TICKS__', "$Ticks").Replace('__QUALITY__', $(if ($Quality) { 'true' } else { 'false' }))
+        -Value $body
 }
 
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }

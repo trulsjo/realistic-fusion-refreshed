@@ -139,18 +139,18 @@ New-Item -ItemType Directory -Path $rigDir -Force | Out-Null
 
 # ------------------------------------------------------------------------------ the rig's data
 #
-# Write-PlasmaFeed OWNS data.lua -- it writes the file rather than appending to it -- so the feed is
-# created first and the one subject prototype is appended after. Written the other way round, the
-# subject silently vanished and every row read as "partner prototype is not in this game".
+# Both halves are APPENDED, and neither owns the file. Write-PlasmaFeed used to write data.lua
+# outright, so this probe had to read the file back and re-write it whole to keep its own subject --
+# and written the other way round the subject silently vanished, every row reading as "partner
+# prototype is not in this game". #84 moved both writers onto Add-RigData, so order no longer
+# matters and the read-back is gone.
 
 # The plasma feed: an infinity pipe carrying the plasma category, because a vanilla one cannot join a
 # contained line at all. Shared with every other rig here so they cannot drift.
 $feedName = Write-PlasmaFeed -RigDirectory $rigDir
-# Write-PlasmaFeed owns data.lua, so the subject above has to be appended rather than overwritten.
-$feedLua = Get-Content -LiteralPath (Join-Path $rigDir 'data.lua') -Raw
 $subject = @'
 
--- Appended by probe-plasma-tunnel.ps1: the unprotected copy, after Write-PlasmaFeed's own data.lua.
+-- Appended by probe-plasma-tunnel.ps1: the unprotected copy.
 local shipped = data.raw["pipe-to-ground"]["rf-pipe-to-ground"]
 if not shipped then error("the probe needs rf-pipe-to-ground and it is missing") end
 if not shipped.npt_compat then
@@ -165,7 +165,7 @@ bare.fast_replaceable_group = nil
 bare.next_upgrade = nil
 data:extend({ bare })
 '@
-Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'data.lua') -Value ($feedLua + $subject)
+Add-RigData -RigDirectory $rigDir -Lua $subject
 
 # ------------------------------------------------------------------------------ the rig's control
 $control = @'
