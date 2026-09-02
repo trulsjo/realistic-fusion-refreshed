@@ -479,8 +479,15 @@ local function build(surface, force, ox, drain, power)
       { name = ENERGY_FEED, position = at, force = force }, "the drain's infinity pipe")
     pipe.set_infinity_pipe_filter({ name = ENERGY, percentage = 0, mode = "at-most" })
   else
-    -- Six tiles apart: the exchanger is three wide and wants an infinity pipe on each end, so
-    -- four would have neighbouring cells fighting over the same tile.
+    -- SIX TILES APART, AND STALE SINCE c3abb81 (#215). This said "the exchanger is three wide and
+    -- wants an infinity pipe on each end, so four would have neighbouring cells fighting over the
+    -- same tile", which described rf-heat-exchanger when it was vanilla's 3x2. It is 5x15, and at
+    -- this pitch exchanger i's steam outlet targets exchanger i+1's stub -- so the fight the
+    -- comment set out to avoid is exactly what happens, between steam and reactor energy.
+    --
+    -- The numbers are left as they are ON PURPOSE. Deriving them needs a target distance to derive
+    -- them AGAINST, and the distances this rig has always used cannot be met by a 5x15 body: see
+    -- the issue. place_or_die() above now refuses the layout rather than building it.
     local first = north[1] - 3 * (EXCHANGERS - 1)
     pipe_run(surface, force, "pipe", { first, header_y }, { 1, 0 }, 6 * (EXCHANGERS - 1) + 1)
     for i = 0, EXCHANGERS - 1 do
