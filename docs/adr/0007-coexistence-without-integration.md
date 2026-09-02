@@ -110,13 +110,13 @@ playthrough.** A red lane is not automatically a defect here — see the second 
 | Krastorio 2 + Space Exploration ([#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130)) | `k2-spaceex`, 22 mods | **red** | green | the same five paths; K2 names none of them and adds no sixth |
 | Angel's ([#131](https://github.com/trulsjo/realistic-fusion-refreshed/issues/131)) | `angels`, 8 mods | green | green | green, and it still edits 41 prototypes of ours neither check can see — two inherited stats of which are ours ([#153](https://github.com/trulsjo/realistic-fusion-refreshed/issues/153)) |
 | Angel's + Space Age ([#132](https://github.com/trulsjo/realistic-fusion-refreshed/issues/132)) | `angels`, 8 mods, `-With space-age` | green | green | the silence is compatibility; no prototype touched only in combination, but on `rf-heater` the two compose |
-| Bob's ([#133](https://github.com/trulsjo/realistic-fusion-refreshed/issues/133)) | `bobs`, 12 mods | green | green | green since [#192](https://github.com/trulsjo/realistic-fusion-refreshed/issues/192) taught the classifier the **re-homed unlock**. `bobplates` moves every `-barrel` unlock off vanilla `fluid-handling` onto its own `bob-fluid-barrel-processing`, unconditionally, so our 22 land there: `effects` is the only field that differs, 22 added and none removed, and the 30 unlocks the technology already carried name `barrelling` recipes of vanilla's — the set's own pass visibly already running before we arrived |
-| Bob's + Space Age ([#134](https://github.com/trulsjo/realistic-fusion-refreshed/issues/134)) | `bobs`, 12 mods, `-With space-age` | green | green | the same re-homing on the same technology, classified the same way; Space Age adds no further finding |
-| Angel's + Bob's ([#135](https://github.com/trulsjo/realistic-fusion-refreshed/issues/135)) | `angels-bobs`, 20 mods | green | **red** | upstream's, and the re-homed shape one step outside the rule [#191](https://github.com/trulsjo/realistic-fusion-refreshed/issues/191) deliberately drew. `angelspetrochem` recategorises every barrel recipe to `angels-barreling-pump`, so **not one** of the destination technology's 144 baseline unlocks names a `barrelling` recipe — 142 are `angels-barreling-pump`, one is `crafting`, one declares no category. The condition is an *any*-match rather than a majority, so it is the absence of every `barrelling` unlock that declines the lane, not the proportion. `effects` is still the only field that differs, 22 added and none removed. Whether the rule widens is [#194](https://github.com/trulsjo/realistic-fusion-refreshed/issues/194) |
-| Angel's + Bob's + Space Age ([#136](https://github.com/trulsjo/realistic-fusion-refreshed/issues/136)) | `angels-bobs`, 20 mods, `-With space-age` | green | **red** | the same single finding, unchanged by Space Age |
-| Angel's + Bob's + MadClown's ([#137](https://github.com/trulsjo/realistic-fusion-refreshed/issues/137)) | `angels-bobs-madclowns`, 21 mods | green | **red** | the same single finding; `Clowns-Processing` adds none of its own |
-| Angel's + Bob's + MadClown's + Space Age ([#138](https://github.com/trulsjo/realistic-fusion-refreshed/issues/138)) | `angels-bobs-madclowns`, 21 mods, `-With space-age` | green | **red** | the same single finding |
-| SeaBlock NG ([#139](https://github.com/trulsjo/realistic-fusion-refreshed/issues/139)) | `seablock`, 46 mods, `-With quality` | **red** | **red** | two reds, both upstream's and neither the same as the other. `load-check` fails on `__base__/sound/car-metal-impact.ogg`, named by `KS_Power` — the asset shape again. `name-check` reports the Angel's re-homing above **and** a second finding of its own: `no-pipe-touching`'s `data-final-fixes` walks `data.raw["infinity-pipe"]` and collects every pipe connection category it has seen onto it, so our `rf-plasma` and the bare name of our pipe prototype `rf-pipe` join Bob's ten. A third evidence shape, nested two levels inside `fluid_box`, **declined on 2026-09-01** under ADR 0028 — the lane stays red with the cause recorded. [#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195) |
+| Bob's ([#133](https://github.com/trulsjo/realistic-fusion-refreshed/issues/133)) | `bobs`, 12 mods | green | green | green since [#192](https://github.com/trulsjo/realistic-fusion-refreshed/issues/192) taught the classifier the **re-homed unlock**. `bobplates` moves every `-barrel` unlock off vanilla `fluid-handling` onto its own `bob-fluid-barrel-processing`, unconditionally, so our 22 land there: `effects` is the only field that differs, 22 added and none removed, and 30 of the 31 unlocks the technology already carried are barrels the game generated from fluids of vanilla's and Bob's — the set's own pass visibly already running before we arrived. Condition 2 became a construction test in [#200](https://github.com/trulsjo/realistic-fusion-refreshed/issues/200) and this lane's verdict and label are unchanged; re-measured 2026-09-02 |
+| Bob's + Space Age ([#134](https://github.com/trulsjo/realistic-fusion-refreshed/issues/134)) | `bobs`, 12 mods, `-With space-age` | green | green | the same re-homing on the same technology, classified the same way; Space Age adds no further finding. 32 of 33 baseline unlocks host, re-measured 2026-09-02 |
+| Angel's + Bob's ([#135](https://github.com/trulsjo/realistic-fusion-refreshed/issues/135)) | `angels-bobs`, 20 mods | green | green | green since [#200](https://github.com/trulsjo/realistic-fusion-refreshed/issues/200) made condition 2 of the re-homed rule a construction test, on [#194](https://github.com/trulsjo/realistic-fusion-refreshed/issues/194)'s decision. `angelspetrochem` recategorises every barrel recipe to `angels-barreling-pump` — 142 of the 144 baseline unlocks, one `crafting`, one with no category — so a rule counting `barrelling` could never fire here, while the recipes stayed base Factorio's, edited in place rather than generated by the set. Asked instead whether the destination already unlocked barrels built from a fluid in the **baseline** dump, **142 of the 144** answer yes. `effects` is still the only field that differs, 22 added and none removed. Measured 2026-09-02 |
+| Angel's + Bob's + Space Age ([#136](https://github.com/trulsjo/realistic-fusion-refreshed/issues/136)) | `angels-bobs`, 20 mods, `-With space-age` | green | green | the same re-homing, classified the same way; 146 of 148 baseline unlocks host. Space Age adds no further finding |
+| Angel's + Bob's + MadClown's ([#137](https://github.com/trulsjo/realistic-fusion-refreshed/issues/137)) | `angels-bobs-madclowns`, 21 mods | green | green | the same re-homing; 148 of 150 baseline unlocks host. `Clowns-Processing` adds none of its own |
+| Angel's + Bob's + MadClown's + Space Age ([#138](https://github.com/trulsjo/realistic-fusion-refreshed/issues/138)) | `angels-bobs-madclowns`, 21 mods, `-With space-age` | green | green | the same re-homing; 152 of 154 baseline unlocks host |
+| SeaBlock NG ([#139](https://github.com/trulsjo/realistic-fusion-refreshed/issues/139)) | `seablock`, 46 mods, `-With quality` | **red** | **red** | two reds, both upstream's and neither the same as the other. `load-check` fails on `__base__/sound/car-metal-impact.ogg`, named by `KS_Power` — the asset shape again. `name-check`'s share of that pair is now **one** finding rather than two: the Angel's re-homing above is classified `rehomed` since [#200](https://github.com/trulsjo/realistic-fusion-refreshed/issues/200) — 136 of 138 baseline unlocks host, 14 added and none removed, measured 2026-09-02 — and what keeps the lane red is only this one, which is its own: `no-pipe-touching`'s `data-final-fixes` walks `data.raw["infinity-pipe"]` and collects every pipe connection category it has seen onto it, so our `rf-plasma` and the bare name of our pipe prototype `rf-pipe` join Bob's ten. A third evidence shape, nested two levels inside `fluid_box`, **declined on 2026-09-01** under ADR 0028 — the lane stays red with the cause recorded. [#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195) |
 | RITEG ([#140](https://github.com/trulsjo/realistic-fusion-refreshed/issues/140)) | `riteg`, 1 mod | **red** | green | upstream's — `__base__/sound/car-metal-impact.ogg`, the 1.1-era path 2.0 removed, named by RITEG and not by this repo. ADR 0026 smoke-tested this and predicted it; the lane now has a row |
 | Advanced Fluid Handling ([#141](https://github.com/trulsjo/realistic-fusion-refreshed/issues/141)) | `fluid`, 1 mod | green | green | green on both halves — and `underground-pipe-pack` 2.0.6 still names the same `__base__/sound/car-metal-impact.ogg` in an unconditionally required file, without the asset check failing on it: 2.0 migrated `vehicle_impact_sound` to `impact_category` for `pump` and not for `electric-energy-interface`, so the string never reaches the dump the check walks. Measured 2026-08-31 against 2.0.77 — ADR 0026's contrary claim is corrected, this verdict stands, see finding 2 and [#196](https://github.com/trulsjo/realistic-fusion-refreshed/issues/196) |
 
@@ -143,7 +143,8 @@ ours, which no discipline
 here can rename and which still embeds the prefix; and exactly one shared prototype is edited,
 `technology/fluid-handling`, which the game's own barrel generation appends our barrel recipes to.
 
-**2. A red lane is usually upstream's, and there are three shapes of red rather than one.** **The
+**2. A red lane is usually upstream's, and three shapes of red have been seen rather than one — of
+which only two are red today, the second having been taught to the classifier.** **The
 asset shape** is the `load-check` half: `spaceex` and `k2-spaceex` in the table above, plus `riteg`
 and `seablock`, every one on a 1.1-era `__base__` path Factorio 2.0 removed —
 `sound/car-metal-impact.ogg`, named by RITEG and by `KS_Power`, and the four
@@ -152,20 +153,33 @@ artefacts:** each mod is pinned at the last `factorio_version` 2.0 release its f
 is no later release to move to and the reference cannot be pinned away. This repo names none of them,
 checked rather than assumed. ADR 0026 said to budget for exactly this.
 
-**The second shape is on the `name-check` half: a re-homed unlock the classifier declines.**
-`bobplates` re-homes every `-barrel` unlock from vanilla `fluid-handling` onto a technology of its
-own, so the unlocks base Factorio generated for our fluids move with everyone else's. Still
-upstream's — the pass names nothing of ours and tests for no prefix of ours — but it is a
-*replacement* finding rather than a missing asset. Since
+**The second shape was on the `name-check` half: a re-homed unlock the classifier declined. It is
+now classified on every lane that shows it, and the past tense is deliberate.** `bobplates` re-homes
+every `-barrel` unlock from vanilla `fluid-handling` onto a technology of its own, so the unlocks
+base Factorio generated for our fluids move with everyone else's. Still upstream's — the pass names
+nothing of ours and tests for no prefix of ours — but it is a *replacement* finding rather than a
+missing asset. Since
 [#192](https://github.com/trulsjo/realistic-fusion-refreshed/issues/192)
-the classifier knows the shape and both Bob's lanes are green. The **five** lanes that load Angel's
-beside Bob's are still red, because
-`angelspetrochem` recategorises every barrel recipe to `angels-barreling-pump`, so not one of the
-destination technology's 144 baseline unlocks names a `barrelling` recipe and the rule counts
-`barrelling` only. The condition is an *any*-match rather than a majority, so what declines the lane
-is the absence of every `barrelling` unlock and not their proportion. That narrowness is
-deliberate — see finding 3 — and whether it widens is
-[#194](https://github.com/trulsjo/realistic-fusion-refreshed/issues/194).
+the classifier knows the shape, and since
+[#200](https://github.com/trulsjo/realistic-fusion-refreshed/issues/200) it knows it on the five
+lanes that load Angel's beside Bob's as well.
+
+**What had to change was the proxy, not the purpose.** The rule used to ask whether a baseline unlock's
+recipe declared the `barrelling` **category**, and a category is a label a set can swap wholesale:
+`angelspetrochem` recategorises every barrel recipe — vanilla's, Bob's and ours alike — to
+`angels-barreling-pump`, so **not one** of the destination technology's 144 baseline unlocks named a
+`barrelling` recipe and no measurement on an Angel's lane could ever have satisfied it. The recipes
+were still base Factorio's; `angelsrefining` edits them in place rather than generating its own. So
+condition 2 now asks the question it was always standing in for — has the destination already unlocked
+barrels **the game generated**, built as `<fluid>-barrel` and `empty-<fluid>-barrel` from the fluids in
+the **baseline** dump. Measured 2026-09-02: **142 of 144** on `angels-bobs`, 146 of 148 with Space Age,
+148 of 150 with MadClown's, 152 of 154 with both, 136 of 138 on SeaBlock, and 30 of 31 and 32 of 33 on
+the two Bob's lanes that were already green. Four lanes turned green; **SeaBlock stays red on the third
+shape below**, which this did not touch. Our own fluids cannot satisfy the condition by construction
+rather than by exclusion — they are not in the baseline — and the `≥1` threshold is unchanged from
+#192, deliberately: [#194](https://github.com/trulsjo/realistic-fusion-refreshed/issues/194) held that
+moving mechanism and threshold together would make any regression unattributable. That threshold is
+the rule's loosest joint, and it is stated as such in the code.
 
 **The third shape arrived with SeaBlock, is weaker evidence than either, and was declined.**
 `no-pipe-touching`'s `data-final-fixes` walks `data.raw["infinity-pipe"]` and adds every pipe
