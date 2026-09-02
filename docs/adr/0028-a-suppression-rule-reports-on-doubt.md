@@ -89,7 +89,10 @@ consistent with either author, so under this ADR it reports unless someone finds
 about the set's own behaviour. The decision there is still Truls's; what changes is that the default
 is now written down.
 
-**It does not settle how a known-red lane is recorded.** Fourteen lanes have run and eight stand red.
+**It does not settle how a known-red lane is recorded.** Fourteen lanes have run and **four** stand
+red, down from eight on 2026-09-02 when
+[#200](https://github.com/trulsjo/realistic-fusion-refreshed/issues/200) turned the four Angel's-beside-Bob's
+lanes green — see ADR 0007's table, which is the count that is current.
 That is the programme's problem across ADR 0007's table, and inventing a second suppression mechanism
 inside a check that deliberately has one would be the wrong place to solve it — the same conclusion
 #191 reached when it was two lanes.
