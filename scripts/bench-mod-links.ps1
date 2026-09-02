@@ -46,7 +46,7 @@
 
       chain   A reactor fed by a heater and drained by heat exchangers -- what a player builds, and
               what the energy link actually carries.
-      sink    The same reactor with the exchangers replaced by an infinity pipe that removes
+      drain   The same reactor with the exchangers replaced by an infinity pipe that removes
               reactor energy as fast as it arrives. Nothing throttles the link, so this is the most
               this mod will ever ask of it, whatever anyone plumbs downstream.
 
@@ -154,6 +154,17 @@ local ENERGY = "rf-reactor-energy"
 -- connection category lands when ADR 0018 does (#84).
 local ENERGY_FEED = "__ENERGYFEED__"
 
+-- create_entity collision-checks nothing, so every silent overlap in this rig got built rather
+-- than refused (#215). can_place_entity is the check, and WHICH check matters: its build_check_type
+-- defaults to ghost_revive, which is not what a player placing by hand gets. Named here so the
+-- weaker default cannot creep back in, and asserted because an unknown key would read as nil and
+-- quietly restore that default.
+local BUILD_CHECK = defines.build_check_type.manual
+if not BUILD_CHECK then
+  error("defines.build_check_type.manual is gone; this rig's placement guard would silently "
+    .. "fall back to ghost_revive")
+end
+
 -- The recipe that makes PLASMA, named rather than discovered.
 --
 -- It used to take the first recipe in the heater's crafting category, on the stated grounds that
@@ -209,9 +220,17 @@ end
 local function unbound(surface, force, entity, index, filter)
   local attached = 0
   for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
-    local pipe = surface.create_entity({
-      name = "infinity-pipe", position = connection.target_position, force = force,
-    })
+    local at = connection.target_position
+    -- #215: when the exchanger's water connections moved to its short ends, these pipes landed
+    -- eight tiles out -- inside the reactor's own footprint -- and placed anyway.
+    if not surface.can_place_entity({
+      name = "infinity-pipe", position = at, force = force, build_check_type = BUILD_CHECK,
+    }) then
+      error(string.format("%s's %s infinity pipe will not fit at (%g, %g): something is already "
+        .. "there, so this rig's layout is stale against that prototype's footprint",
+        entity.name, filter.name, at.x, at.y))
+    end
+    local pipe = surface.create_entity({ name = "infinity-pipe", position = at, force = force })
     if pipe then
       pipe.set_infinity_pipe_filter(filter)
       attached = attached + 1
@@ -242,6 +261,13 @@ local function place_facing(surface, force, name, fluid, target, seed)
   local position = { seed[1] + (target[1] - at.x), seed[2] + (target[2] - at.y) }
   probe.destroy()
 
+  -- Asked before it is built, for the same reason as in unbound() above.
+  if not surface.can_place_entity({
+    name = name, position = position, force = force, build_check_type = BUILD_CHECK,
+  }) then
+    error(string.format("%s will not fit at (%g, %g): something is already there, so this rig's "
+      .. "layout is stale against that prototype's footprint", name, position[1], position[2]))
+  end
   local entity = surface.create_entity({ name = name, position = position, force = force })
   if not entity then
     error(string.format("%s refused at (%g, %g)", name, position[1], position[2]))
@@ -277,6 +303,70 @@ local function assert_joined(entity, index, what)
     if connection.target then return end
   end
   error(what .. ": no connection on this box reaches anything")
+end
+
+-- AND THAT IT REACHES THE RIGHT THING, which is a different question and the one #215 turned on.
+--
+-- Every fluid here has its own plumbing, and the engine merges any two segments whose tiles touch.
+-- A steam pipe landing on the energy line breaks no connection -- assert_joined above passes on
+-- every box in the rig -- it merely makes a segment that cannot accept reactor energy. The reactor
+-- then reads as a machine that produces nothing rather than as a plumbing mistake, which is exactly
+-- how the exchanger bank sat broken from 2026-08-23 to 2026-09-02 with every check green.
+--
+-- So each box is asked which segment it is in, and two DIFFERENT fluids sharing one is the error.
+-- Same fluid sharing is not: the whole point of the energy line is that the reactor and every
+-- exchanger sit in one segment, and adjacent exchangers' water pipes may touch without harm.
+local function assert_segments(cell)
+  local owner = {}
+  -- WHOSE segment id, and it is not the machine's own. get_fluid_segment_id on a machine's box
+  -- returns nil far more often than not -- measured on this rig, it answered for the reactor's
+  -- plasma box and for every exchanger's water box, and nil for its energy box, every heater box
+  -- and every steam box. bench-fluid-links.ps1 only ever tostring()s the value into a log line, so
+  -- nothing here had established that. The pipe on the other side of the connection always has one,
+  -- so the segment is read through the connection's target.
+  local function claim(entity, index, fluid, what)
+    if not index then error(cell.name .. " cell: " .. what .. ": no box carries " .. fluid) end
+    local ids = {}
+    for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
+      if connection.target then
+        local id = connection.target.get_fluid_segment_id(connection.target_fluidbox_index)
+        if id then ids[#ids + 1] = id end
+      end
+    end
+    -- Flush against another machine there is no pipe to ask, and then the box's own id is the only
+    -- one there is. Neither being available means nothing can be judged, which is not a pass.
+    if #ids == 0 then
+      local own = entity.fluidbox.get_fluid_segment_id(index)
+      if not own then
+        error(cell.name .. " cell: " .. what .. ": in no fluid segment, and neither is anything it "
+          .. "connects to -- this box cannot be judged")
+      end
+      ids[1] = own
+    end
+    for _, id in ipairs(ids) do
+      local held = owner[id]
+      if held and held.fluid ~= fluid then
+        error(string.format(
+          "%s cell: %s carries %s, but shares fluid segment %d with %s, which carries %s. Two "
+          .. "fluids in one segment: neither line can carry what it is for, and nothing else in "
+          .. "this rig says so", cell.name, what, fluid, id, held.what, held.fluid))
+      end
+      owner[id] = { fluid = fluid, what = what }
+    end
+  end
+
+  claim(cell.reactor, cell.plasma_box, PLASMA, "the reactor's plasma box")
+  claim(cell.reactor, cell.energy_box, ENERGY, "the reactor's energy box")
+  for i, heater in ipairs(cell.heaters) do
+    claim(heater, box_of(heater, PLASMA), PLASMA, "heater " .. i .. "'s plasma output")
+    claim(heater, box_of(heater, "rf-deuterium"), "rf-deuterium",
+      "heater " .. i .. "'s deuterium input")
+  end
+  for i, exchanger in ipairs(cell.exchangers) do
+    claim(exchanger, box_of(exchanger, ENERGY), ENERGY, "exchanger " .. i .. "'s energy input")
+    claim(exchanger, box_of(exchanger, "water"), "water", "exchanger " .. i .. "'s water input")
+    claim(exchanger, box_of(exchanger, "steam"), "steam", "exchanger " .. i .. "'s steam output")
+  end
 end
 
 __QUIETMAP__
@@ -419,8 +509,11 @@ local function build(surface, force, ox, drain, power)
     assert_joined(exchanger, box_of(exchanger, "steam"), "exchanger steam output")
   end
 
-  return {
-    name = drain and "sink" or "chain",
+  local cell = {
+    -- "drain", not "sink": the variable behind it has always been called drain, and
+    -- docs/research/fluid-link-throughput.md spends its first half using "sink" for the RECEIVING
+    -- END of a link. One word for two things in one document (#215).
+    name = drain and "drain" or "chain",
     reactor = reactor, heater = heater, heaters = heaters, exchangers = exchangers, power = power,
     plasma_box = plasma_box, energy_box = energy_box,
     heater_box = box_of(heater, PLASMA),
@@ -428,6 +521,9 @@ local function build(surface, force, ox, drain, power)
     last_plasma = 0, last_energy = 0,
     plasma_out = 0, energy_out = 0, plasma_ticks = 0, energy_ticks = 0, plasma_skipped = 0,
   }
+
+  assert_segments(cell)
+  return cell
 end
 
 script.on_init(function()
@@ -617,7 +713,7 @@ try {
     # ------------------------------------------------------- equilibrium, and the meter's own honesty
     $faults = @()
     $summary = @()
-    foreach ($cell in @('chain', 'sink')) {
+    foreach ($cell in @('chain', 'drain')) {
         $rows = @($windows | Where-Object { $_.Cell -eq $cell } | Sort-Object Window)
         $last = $rows[-1]; $prev = $rows[-2]
 
@@ -723,7 +819,7 @@ try {
 
     Write-Host ''
     Write-Host 'window trace (energy units/tick, then plasma degC)'
-    foreach ($cell in @('chain', 'sink')) {
+    foreach ($cell in @('chain', 'drain')) {
         $rows = @($windows | Where-Object { $_.Cell -eq $cell } | Sort-Object Window)
         Write-Host ('  {0,-6} {1}' -f $cell, (($rows | ForEach-Object { '{0:N2}' -f $_.EnergyTick }) -join '  '))
         Write-Host ('  {0,-6} {1}' -f '', (($rows | ForEach-Object { '{0:N3}e8' -f ($_.TempC / 1e8) }) -join '  '))
