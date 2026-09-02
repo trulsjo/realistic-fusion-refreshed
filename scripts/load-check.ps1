@@ -170,8 +170,10 @@
     The asset check half-covers the extra mods, and the distinction matters. Find-MissingAssets is
     given a directory only for this repo's mods, so a third-party mod's OWN assets are skipped --
     not this repo's to police. But `__base__/...` paths are always resolvable, whoever names them,
-    so a third-party mod referencing a base file that 2.0 removed IS reported. Found the first time
-    a pinned set was loaded (#59): RITEG 1.3.11 names `__base__/sound/car-metal-impact.ogg`, which
+    so a third-party mod referencing a base file that 2.0 removed is reported -- PROVIDED THE
+    REFERENCE REACHES THE DUMP, which is not the same as the mod writing it. Read the next paragraph
+    before treating a silent lane as proof that no such reference is there. Found the first time a
+    pinned set was loaded (#59): RITEG 1.3.11 names `__base__/sound/car-metal-impact.ogg`, which
     does not exist in 2.0.77. That is upstream's bug and it fails this check, which is worth
     knowing before reading such a failure as ours.
 
