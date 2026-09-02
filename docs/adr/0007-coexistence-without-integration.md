@@ -118,7 +118,7 @@ playthrough.** A red lane is not automatically a defect here — see the second 
 | Angel's + Bob's + MadClown's + Space Age ([#138](https://github.com/trulsjo/realistic-fusion-refreshed/issues/138)) | `angels-bobs-madclowns`, 21 mods, `-With space-age` | green | **red** | the same single finding |
 | SeaBlock NG ([#139](https://github.com/trulsjo/realistic-fusion-refreshed/issues/139)) | `seablock`, 46 mods, `-With quality` | **red** | **red** | two reds, both upstream's and neither the same as the other. `load-check` fails on `__base__/sound/car-metal-impact.ogg`, named by `KS_Power` — the asset shape again. `name-check` reports the Angel's re-homing above **and** a second finding of its own: `no-pipe-touching`'s `data-final-fixes` walks `data.raw["infinity-pipe"]` and collects every pipe connection category it has seen onto it, so our `rf-plasma` and the bare name of our pipe prototype `rf-pipe` join Bob's ten. A third evidence shape, nested two levels inside `fluid_box`, **declined on 2026-09-01** under ADR 0028 — the lane stays red with the cause recorded. [#195](https://github.com/trulsjo/realistic-fusion-refreshed/issues/195) |
 | RITEG ([#140](https://github.com/trulsjo/realistic-fusion-refreshed/issues/140)) | `riteg`, 1 mod | **red** | green | upstream's — `__base__/sound/car-metal-impact.ogg`, the 1.1-era path 2.0 removed, named by RITEG and not by this repo. ADR 0026 smoke-tested this and predicted it; the lane now has a row |
-| Advanced Fluid Handling ([#141](https://github.com/trulsjo/realistic-fusion-refreshed/issues/141)) | `fluid`, 1 mod | green | green | green on both halves — and `underground-pipe-pack` 2.0.6 still names the same `__base__/sound/car-metal-impact.ogg` in an unconditionally required file, without the asset check failing on it. That is a change from what ADR 0026 measured and is [#196](https://github.com/trulsjo/realistic-fusion-refreshed/issues/196) |
+| Advanced Fluid Handling ([#141](https://github.com/trulsjo/realistic-fusion-refreshed/issues/141)) | `fluid`, 1 mod | green | green | green on both halves — and `underground-pipe-pack` 2.0.6 still names the same `__base__/sound/car-metal-impact.ogg` in an unconditionally required file, without the asset check failing on it: 2.0 migrated `vehicle_impact_sound` to `impact_category` for `pump` and not for `electric-energy-interface`, so the string never reaches the dump the check walks. Measured 2026-08-31 against 2.0.77 — ADR 0026's contrary claim is corrected, this verdict stands, see finding 2 and [#196](https://github.com/trulsjo/realistic-fusion-refreshed/issues/196) |
 
 **The run log is the lane's issue**, not this ADR — counts, prototype enumerations, which dumps were
 compared, and what was and was not run. Each row links to it.
@@ -184,8 +184,17 @@ for [#141](https://github.com/trulsjo/realistic-fusion-refreshed/issues/141),
 that lane is green on both halves, while `underground-pipe-pack` 2.0.6 still names
 `__base__/sound/car-metal-impact.ogg` in a file its `data.lua` requires unconditionally. RITEG names
 the same path in the same field and still fails, so the check has not stopped working in general.
-Why the two differ is
-[#196](https://github.com/trulsjo/realistic-fusion-refreshed/issues/196) and is not settled here.
+
+**Why the two differ is now settled, and it is the field rather than the check.** Measured on
+2026-08-31 against Factorio 2.0.77 by inspecting both dumps: **2.0 migrated
+`vehicle_impact_sound` to `impact_category` for the `pump` prototype type and not for
+`electric-energy-interface`.** Both mods write the same Lua; the engine keeps it on RITEG's
+interface and discards it on the pipe pack's `pump/underground-mini-pump`, so the path occurs once
+in the `riteg` dump (on `electric-energy-interface/RITEG-1`) and zero times in the `fluid` one,
+where no prototype declares `vehicle_impact_sound` at all and 219 declare `impact_category` —
+vanilla's own `pump/pump` among them. `Find-MissingAssets` walks the dump as an object graph, so a
+property the engine never records is not a hole in it — **both verdicts are correct.**
+[#196](https://github.com/trulsjo/realistic-fusion-refreshed/issues/196).
 
 **3. A set reacts to our prototypes in two different ways, and both are counted rather than failed.**
 
