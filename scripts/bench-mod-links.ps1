@@ -165,6 +165,30 @@ if not BUILD_CHECK then
     .. "fall back to ghost_revive")
 end
 
+-- A position arrives here two ways: written as { x, y } by this script, or read off a connection
+-- as a MapPosition. Only the error messages care, and they would rather not care twice.
+local function xy(position)
+  return position.x or position[1], position.y or position[2]
+end
+
+-- EVERY entity this rig builds goes through here, which is the point. Guarding only the two
+-- functions that placed the exchangers would have left pipe_run, the drain's infinity pipe, the
+-- reactor and the power islands still placing silently into whatever is already there -- and
+-- pipe_run's own comment has said "create_entity does not collision-check" the whole time.
+local function place_or_die(surface, spec, what)
+  local x, y = xy(spec.position)
+  if not surface.can_place_entity({
+    name = spec.name, position = spec.position, force = spec.force,
+    direction = spec.direction, build_check_type = BUILD_CHECK,
+  }) then
+    error(string.format("%s will not fit at (%g, %g): something is already there, so this rig's "
+      .. "layout is stale against that prototype's footprint", what, x, y))
+  end
+  local entity = surface.create_entity(spec)
+  if not entity then error(string.format("%s refused at (%g, %g)", what, x, y)) end
+  return entity
+end
+
 -- The recipe that makes PLASMA, named rather than discovered.
 --
 -- It used to take the first recipe in the heater's crafting category, on the stated grounds that
@@ -220,21 +244,13 @@ end
 local function unbound(surface, force, entity, index, filter)
   local attached = 0
   for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
-    local at = connection.target_position
     -- #215: when the exchanger's water connections moved to its short ends, these pipes landed
     -- eight tiles out -- inside the reactor's own footprint -- and placed anyway.
-    if not surface.can_place_entity({
-      name = "infinity-pipe", position = at, force = force, build_check_type = BUILD_CHECK,
-    }) then
-      error(string.format("%s's %s infinity pipe will not fit at (%g, %g): something is already "
-        .. "there, so this rig's layout is stale against that prototype's footprint",
-        entity.name, filter.name, at.x, at.y))
-    end
-    local pipe = surface.create_entity({ name = "infinity-pipe", position = at, force = force })
-    if pipe then
-      pipe.set_infinity_pipe_filter(filter)
-      attached = attached + 1
-    end
+    local pipe = place_or_die(surface,
+      { name = "infinity-pipe", position = connection.target_position, force = force },
+      entity.name .. "'s " .. filter.name .. " infinity pipe")
+    pipe.set_infinity_pipe_filter(filter)
+    attached = attached + 1
   end
   if attached == 0 then
     error(string.format("could not attach any infinity pipe to %s box %d", entity.name, index))
@@ -248,6 +264,8 @@ end
 -- exactly the class of remembered constant that broke the reactor benchmark (#49). So the entity
 -- is placed once, asked where its connection actually points, and moved by the difference.
 local function place_facing(surface, force, name, fluid, target, seed)
+  -- Not place_or_die: this one is thrown away, and it exists to be asked where its connections
+  -- point. That answer is relative to itself, so an overlap here changes nothing it is asked for.
   local probe = surface.create_entity({ name = name, position = seed, force = force })
   if not probe then error("could not place a probe " .. name) end
   if probe.type == "assembling-machine" then probe.set_recipe(plasma_recipe()) end
@@ -261,17 +279,7 @@ local function place_facing(surface, force, name, fluid, target, seed)
   local position = { seed[1] + (target[1] - at.x), seed[2] + (target[2] - at.y) }
   probe.destroy()
 
-  -- Asked before it is built, for the same reason as in unbound() above.
-  if not surface.can_place_entity({
-    name = name, position = position, force = force, build_check_type = BUILD_CHECK,
-  }) then
-    error(string.format("%s will not fit at (%g, %g): something is already there, so this rig's "
-      .. "layout is stale against that prototype's footprint", name, position[1], position[2]))
-  end
-  local entity = surface.create_entity({ name = name, position = position, force = force })
-  if not entity then
-    error(string.format("%s refused at (%g, %g)", name, position[1], position[2]))
-  end
+  local entity = place_or_die(surface, { name = name, position = position, force = force }, name)
   if entity.type == "assembling-machine" then entity.set_recipe(plasma_recipe()) end
   return entity
 end
@@ -289,9 +297,7 @@ local function pipe_run(surface, force, name, from, step, count)
   for i = 0, count - 1 do
     local at = { from[1] + step[1] * i, from[2] + step[2] * i }
     if not surface.find_entity(name, at) then
-      if not surface.create_entity({ name = name, position = at, force = force }) then
-        error(string.format("%s refused at (%g, %g)", name, at[1], at[2]))
-      end
+      place_or_die(surface, { name = name, position = at, force = force }, name)
     end
   end
 end
@@ -415,10 +421,9 @@ end
 -- power is this cell's substations and energy interfaces, already placed. The cell keeps them so
 -- assert_intact() can see the supply path; nothing here reads them for a measurement.
 local function build(surface, force, ox, drain, power)
-  local reactor = surface.create_entity({
-    name = "rf-reactor", position = { ox + 0.5, 0.5 }, force = force, raise_built = true,
-  })
-  if not reactor then error("rf-reactor refused") end
+  local reactor = place_or_die(surface,
+    { name = "rf-reactor", position = { ox + 0.5, 0.5 }, force = force, raise_built = true },
+    "rf-reactor")
   if not reactor.electric_network_id then error("rf-reactor is on no electric network") end
 
   -- The reactor's plasma box is box 1, by index and not by filter. It is the one place in this rig
@@ -470,8 +475,8 @@ local function build(surface, force, ox, drain, power)
   if drain then
     -- Nothing downstream to throttle the link: whatever crosses is removed the same tick.
     local at = { north[1], header_y - 1 }
-    local pipe = surface.create_entity({ name = ENERGY_FEED, position = at, force = force })
-    if not pipe then error("drain refused") end
+    local pipe = place_or_die(surface,
+      { name = ENERGY_FEED, position = at, force = force }, "the drain's infinity pipe")
     pipe.set_infinity_pipe_filter({ name = ENERGY, percentage = 0, mode = "at-most" })
   else
     -- Six tiles apart: the exchanger is three wide and wants an infinity pipe on each end, so
@@ -566,13 +571,12 @@ script.on_init(function()
   for _, ox in ipairs({ 0, 60 }) do
     power[ox] = {}
     for _, dx in ipairs({ 9, -9 }) do
-      local sub = surface.create_entity({ name = "substation", position = { ox + dx, 5 }, force = force })
-      if not sub then error("substation refused") end
-      local eei = surface.create_entity({
+      local sub = place_or_die(surface,
+        { name = "substation", position = { ox + dx, 5 }, force = force }, "a substation")
+      local eei = place_or_die(surface, {
         name = "electric-energy-interface",
         position = { ox + dx + (dx > 0 and 2.5 or -2.5), 5.5 }, force = force,
-      })
-      if not eei then error("power source refused") end
+      }, "a power source")
       eei.power_production = 4e6   -- J/tick, ~240 MW against a reactor's 50 and a heater's 5
       local side = dx > 0 and "east" or "west"
       power[ox][#power[ox] + 1] = { "its " .. side .. " substation", sub }
