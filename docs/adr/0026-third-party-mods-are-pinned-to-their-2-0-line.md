@@ -119,15 +119,26 @@ No single mod list can hold these families together, so each is its own set and 
   > mod at two versions rather than picking, which is not hypothetical: `flib` is 0.16.2 for
   > `krastorio2` and 0.16.5 for `seablock`. The combinations this ADR records as forbidden by
   > declaration get no set and no child ticket.
-- **The two that were smoke-tested both failed, and the failure is upstream's.** `riteg` and `fluid`
-  were fetched and loaded to prove the pins are real rather than plausible. Both trip the asset
-  check: RITEG 1.3.11 and `underground-pipe-pack` 2.0.6 each name
-  `__base__/sound/car-metal-impact.ogg`, a path Factorio 2.0 removed. Neither is our bug and
-  neither is a pinning artefact — a 1.1-era reference that survived into a 2.0 release. It is the
-  predicted cost arriving on the first run: **triage on these lanes will often end at "upstream's",
-  and #61 should budget for that rather than read a red lane as a defect here.** It also corrected a
-  claim in `load-check.ps1`, which said the asset check does not cover the extra mods; it does cover
-  the `__base__` paths they name.
+- **The two that were smoke-tested were fetched and loaded to prove the pins are real rather than
+  plausible, and one of them trips the asset check.** RITEG 1.3.11 names
+  `__base__/sound/car-metal-impact.ogg`, a path Factorio 2.0 removed, in `vehicle_impact_sound` on
+  an `electric-energy-interface`. Not our bug and not a pinning artefact — a 1.1-era reference that
+  survived into a 2.0 release. It is the predicted cost arriving on the first run: **triage on these
+  lanes will often end at "upstream's", and #61 should budget for that rather than read a red lane
+  as a defect here.** It also corrected a claim in `load-check.ps1`, which said the asset check does
+  not cover the extra mods; it does cover the `__base__` paths they name.
+
+  > **This consequence read "both failed", and half of that was measured false. Corrected
+  > 2026-09-02 ([#196](https://github.com/trulsjo/realistic-fusion-refreshed/issues/196)).**
+  > `underground-pipe-pack` 2.0.6 writes the identical Lua — `vehicle_impact_sound = {filename =
+  > '__base__/sound/car-metal-impact.ogg', volume = 0.65}`, in a file its `data.lua` requires
+  > unconditionally — but on a `pump`, and **Factorio 2.0 migrated `vehicle_impact_sound` to
+  > `impact_category` for `pump` and not for `electric-energy-interface`**, so the string never
+  > reaches the dumped prototypes the asset check walks. Measured against 2.0.77 on 2026-08-31 at
+  > the pins above; the counts are in ADR 0007's finding 2, which is their one home. The check sees
+  > a reference only if the engine records it, so `fluid` is legitimately green and `riteg`
+  > legitimately red, and neither verdict is a defect in `Find-MissingAssets`. The smoke test did
+  > fail on both when it ran; what went stale was reading that run as a standing claim.
 - **[#33](https://github.com/trulsjo/realistic-fusion-refreshed/issues/33) keeps its answer.** Its
   Krastorio 2 half was checked against 2.0.19, which is what this ADR pins, so nothing it recorded
   needs redoing.

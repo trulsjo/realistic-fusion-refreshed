@@ -171,9 +171,17 @@
     given a directory only for this repo's mods, so a third-party mod's OWN assets are skipped --
     not this repo's to police. But `__base__/...` paths are always resolvable, whoever names them,
     so a third-party mod referencing a base file that 2.0 removed IS reported. Found the first time
-    a pinned set was loaded (#59): RITEG 1.3.11 and underground-pipe-pack 2.0.6 both name
-    `__base__/sound/car-metal-impact.ogg`, which does not exist in 2.0.77. That is upstream's bug
-    and it fails this check, which is worth knowing before reading such a failure as ours.
+    a pinned set was loaded (#59): RITEG 1.3.11 names `__base__/sound/car-metal-impact.ogg`, which
+    does not exist in 2.0.77. That is upstream's bug and it fails this check, which is worth
+    knowing before reading such a failure as ours.
+
+    IT REPORTS WHAT THE ENGINE RECORDS, not what a mod writes, and the two can differ.
+    underground-pipe-pack 2.0.6 names that same path in the same field, in a file its data.lua
+    requires unconditionally, and this check stays silent: Factorio 2.0 migrated
+    `vehicle_impact_sound` to `impact_category` for the `pump` prototype type and not for
+    `electric-energy-interface`, so the string never reaches the dumped prototypes that
+    Find-MissingAssets walks. Measured on 2026-08-31 against 2.0.77 (#196) -- this parameter said
+    both mods fail until then. A property a later version stops recording goes quiet the same way.
 
 .PARAMETER FromZips
     Build the distributable zips with pack-mods.ps1 and load those, instead of junctioning the
