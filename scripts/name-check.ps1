@@ -145,11 +145,13 @@
     prefix too.
 
 .PARAMETER SelfTest
-    Verify the check can fail. Five halves: the repo as it stands must pass; an unprefixed name must
-    be caught; a name a reference mod already uses must be caught; and -- through a real canary mod
-    and a third dump -- a prototype added without the prefix AND a vanilla prototype replaced must
-    both be derived from the dumps rather than merely judged once handed over. The first half is
-    required or the rest prove nothing; the fourth is the only one that tests the derivation itself.
+    Verify the check can fail. SIX halves, and the run prints each one numbered as it passes, so a
+    reader can count them against this list: the repo as it stands must pass; an unprefixed name
+    must be caught; a name a reference mod already uses must be caught; and -- through a real canary
+    mod and a third dump -- a prototype added without the prefix AND a vanilla prototype replaced
+    must both be derived from the dumps rather than merely judged once handed over. The first half
+    is required or the rest prove nothing; the fourth is the only one that tests the derivation
+    itself.
 
     The fifth pins the two classifiers -AlsoModDirectory brought with it, and it is there because
     they are the only code here that SUPPRESSES a finding: an over-broad rule turns a real collision
@@ -166,6 +168,21 @@
     also asserts each exemption is granted under the RIGHT label -- `unlock`, `rehomed`,
     `unlock+rehomed` or `tooltip` -- since one loop dispatches every one of them and a prototype
     excused for the wrong reason prints a sentence that is not true.
+
+    The sixth pins Get-FiredEdits, which carries the other claim this run makes to a human: the
+    declared-edit line must say what actually FIRED rather than what is permitted. The number beside
+    "declared" used to be $ALLOWED_EDITS.Count, so it read the same on every lane and was true on
+    none of them in particular. Against synthetic dumps it poses the four judgements a clean run
+    cannot -- a declared edit whose content changed, one identical in both dumps, one the baseline
+    does not have, and a change nobody declared -- each asserted under its own name so a failure
+    says which judgement went wrong; then it requires nothing-declared to fire nothing, and the live
+    run to name technology/fluid-handling and only it. That empty case is weaker than the one
+    Get-Replaced gets beside it, and the difference is measured rather than assumed: the call site
+    wraps the result in @(), and @() over a function that emitted nothing is an empty array whether
+    or not the function kept its own @(). So the case catches a rewrite that returns an explicit
+    $null -- @($null) counts one -- and would NOT catch @() being dropped inside Get-FiredEdits as
+    redundant. Closing that needs an assertion on the unwrapped result, which is the shape
+    Get-Replaced's pair uses.
 
 .PARAMETER KeepTemp
     Keep the dumps for inspection. Junctions are always removed.
