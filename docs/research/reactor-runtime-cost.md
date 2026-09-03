@@ -426,6 +426,37 @@ reading. What landed in between is #30's lithium blanket, #31's aneutronic tier 
 radiation loss; which of them costs what was not isolated here, and attributing it is the kind of thing
 [#39](https://github.com/trulsjo/realistic-fusion-refreshed/issues/39) exists for.
 
+> **Closed 2026-09-03 by [#63](https://github.com/trulsjo/realistic-fusion-refreshed/issues/63): the
+> cause is measurement, not code, and #39 already held it.** #63 was filed to bisect the doubling —
+> three hours before #39 closed and withdrew it. There is nothing to bisect, and what follows is
+> measurement rather than argument.
+>
+> **Re-measured on the shipped tree.** Four invocations of `scripts/bench-reactors.ps1` with no
+> arguments — D-D alone, vented, `0,1,10,50,200`, the configuration both #27 and #34's D-D column
+> measured — one after another on the same machine, never two at once. The three whose logs were
+> kept report **2.49, 2.49 and 2.78 µs** per reactor at *n* = 200, a spread of 1.12×, and the
+> fourth agreed; not one of their fifteen launches flagged `BUSY`, the part reading between 9 and
+> 42% of itself beforehand against the 60% at which the rig warns. That is #39's 2.6 reproduced
+> sixteen days later, and it straddles #27's 2.85. **The 6.3 – 6.9 pair is the only excursion
+> among this note's readings of that configuration**, which otherwise run 2.4 to 3.7 across #27,
+> #39, #62 and today.
+>
+> **And the check that says which of the two readings is the broken one is already below.**
+> Per-reactor cost cannot rise with *n* for a linear cost. The #34 D-D column rose — 4.4, 6.3, 6.88
+> at *n* = 10, 50, 200. Today's three do not: 3.00, 2.45, 2.49; then 2.86, 2.39, 2.49; then 3.57,
+> 2.96, 2.78. Each drops between *n* = 10 and 50 and then holds — from 50 to 200 two move by under
+> 0.1 µs and the third falls by 0.18. See *[What this corrects above](#what-this-corrects-above)*.
+>
+> **So it is accepted, and nothing is handed on for fixing.** Not "accepted because 2.5 µs is cheap
+> enough" — accepted because the change #63 asks to have attributed did not happen. #30's blanket,
+> #31's aneutronic tier and the radiation-loss work are all in the tree that measures 2.5, so none
+> of them is chargeable. That leaves
+> [#66](https://github.com/trulsjo/realistic-fusion-refreshed/issues/66) — the fix ticket #63 was
+> blocking, opened to cut a D-D step's cost once its cause was known — waiting on a cause that does
+> not exist; what becomes of it is not this note's call. What #63 asked for that outlives it is the
+> guard, and #39 built it: `-BusyPercent`, and the instruction to grep for `BUSY` before quoting a
+> number.
+
 ### Verdict
 
 **Acceptable at the shipped cadence. No further throttling.**
@@ -651,6 +682,11 @@ no expensive case: every reaction costs about the same, and a D-D-only base is n
 above *n* = 10 — this note says so itself, and every clean sweep shows it settling downwards: 3.40 µs
 at *n* = 10, 2.54 at 50, 2.42 at 200. The figures it recorded **rose**: 4.4, then 6.3, then 6.88. A
 linear cost divided by *n* cannot do that. A machine getting busier as the sweep runs can, and did.
+
+**That check still passes 2026-09-03.** Three fresh unflagged sweeps settle the same way and land at
+2.49, 2.49 and 2.78 µs at *n* = 200 — which is why #63, opened to bisect the doubling this section
+withdrew, closed without a bisect. See the block under *[Compared against the early
+reading](#compared-against-the-early-reading)*.
 
 **What does not change is the verdict.** 2.5 µs per reactor is cheaper than the 2.9 to 4.0 the
 decision was discharged on, so *acceptable at the shipped cadence, no further throttling* holds with
