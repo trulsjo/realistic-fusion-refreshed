@@ -440,16 +440,18 @@ radiation loss; which of them costs what was not isolated here, and attributing 
 > state cannot be shown and it is not part of this.) All three land just **below** #27's 2.85 and
 > inside #39's quiet band of 2.4 – 3.2 — which is #39's median of 2.6 reproduced sixteen days
 > later. **Every gap-5 reading of that configuration at *n* = 200 lies between 2.4 and 3.2, except
-> the 6.3 – 6.9 pair**: #27's 2.85, #39's ten-run 2.39 – 3.20, and today's three. #62's 3.68 is
-> excluded because it is a `-Gap 6` figure, which this note says elsewhere is not directly
-> comparable to the gap-5 ones.
+> the 6.3 – 6.9 pair**: #27's 2.85, both of #39's quiet sets (ten-run 2.39 – 3.20 and six-run
+> 2.56 – 2.85), and today's three. #62's 3.68 is excluded because it is a `-Gap 6` figure, which
+> this note says elsewhere is not directly comparable to the gap-5 ones.
 >
 > **And the check that says which of the two readings is the broken one is already below.**
 > Per-reactor cost settles as *n* grows; it does not climb, because a linear cost divided by *n*
 > cannot. The #34 D-D column climbed — 4.4, then 6.3, then 6.88 at *n* = 10, 50, 200.
 > Today's three settle: 3.00, 2.45, 2.49; then 2.86, 2.39, 2.49; then 3.57, 2.96, 2.78. Each drops
-> hard from *n* = 10 to 50 and then goes flat — the last step moves +0.04, +0.09 and −0.18 µs, all
-> of it well inside the 1.35× floor. See *[What this corrects above](#what-this-corrects-above)*.
+> hard from *n* = 10 to 50 and then holds. The step from 50 to 200 is **1.02×, 1.04× and 1.07×** —
+> two of them up, one down — against the 1.35× floor. As a ratio, because the floor is one: an
+> absolute µs delta cannot be compared to it. See *[What this corrects
+> above](#what-this-corrects-above)*.
 >
 > **So it is accepted, and nothing is handed on for fixing.** Not "accepted because 2.5 µs is cheap
 > enough" — accepted because the change #63 asks to have attributed did not happen. #30's blanket,
@@ -688,9 +690,9 @@ at *n* = 10, 2.54 at 50, 2.42 at 200. The figures it recorded **rose**: 4.4, the
 linear cost divided by *n* cannot do that. A machine getting busier as the sweep runs can, and did.
 
 **That check still passes 2026-09-03.** Three fresh unflagged sweeps settle the same way — 3.00,
-2.45, 2.49; 2.86, 2.39, 2.49; 3.57, 2.96, 2.78 — dropping hard to *n* = 50 and then flat inside a
-fifth of a µs, against a column that climbed at every step. Which is why #63, opened to
-bisect the doubling this section withdrew, closed without a bisect. See the block under *[Compared
+2.45, 2.49; 2.86, 2.39, 2.49; 3.57, 2.96, 2.78 — dropping hard to *n* = 50 and then holding within
+1.07×, against a column that climbed at every step. Which is why #63, opened to bisect the
+doubling this section withdrew, closed without a bisect. See the block under *[Compared
 against the early reading](#compared-against-the-early-reading)*.
 
 **What does not change is the verdict.** 2.5 µs per reactor is cheaper than the 2.9 to 4.0 the
