@@ -431,21 +431,25 @@ radiation loss; which of them costs what was not isolated here, and attributing 
 > three hours before #39 closed and withdrew it. There is nothing to bisect, and what follows is
 > measurement rather than argument.
 >
-> **Re-measured on the shipped tree.** Four invocations of `scripts/bench-reactors.ps1` with no
-> arguments — D-D alone, vented, `0,1,10,50,200`, the configuration both #27 and #34's D-D column
-> measured — one after another on the same machine, never two at once. The three whose logs were
-> kept report **2.49, 2.49 and 2.78 µs** per reactor at *n* = 200, a spread of 1.12×, and the
-> fourth agreed; not one of their fifteen launches flagged `BUSY`, the part reading between 9 and
-> 42% of itself beforehand against the 60% at which the rig warns. That is #39's 2.6 reproduced
-> sixteen days later, and it straddles #27's 2.85. **The 6.3 – 6.9 pair is the only excursion
-> among this note's readings of that configuration**, which otherwise run 2.4 to 3.7 across #27,
-> #39, #62 and today.
+> **Re-measured on the shipped tree.** Three invocations of `scripts/bench-reactors.ps1` with no
+> arguments — D-D alone, vented, `-Gap 5`, `0,1,10,50,200`, the configuration both #27 and #34's
+> D-D column measured — one after another on the same machine, never two at once. They report
+> **2.49, 2.49 and 2.78 µs** per reactor at *n* = 200, a spread of 1.12×, and not one of their
+> fifteen launches flagged `BUSY`: the part read between 9 and 42% of itself beforehand, against
+> the 60% at which the rig warns. (A fourth ran first and its log was not kept, so its `BUSY`
+> state cannot be shown and it is not part of this.) All three land just **below** #27's 2.85 and
+> inside #39's quiet band of 2.4 – 3.2 — which is #39's median of 2.6 reproduced sixteen days
+> later. **Every gap-5 reading of that configuration at *n* = 200 lies between 2.4 and 3.2, except
+> the 6.3 – 6.9 pair**: #27's 2.85, #39's ten-run 2.39 – 3.20, and today's three. #62's 3.68 is
+> excluded because it is a `-Gap 6` figure, which this note says elsewhere is not directly
+> comparable to the gap-5 ones.
 >
 > **And the check that says which of the two readings is the broken one is already below.**
-> Per-reactor cost cannot rise with *n* for a linear cost. The #34 D-D column rose — 4.4, 6.3, 6.88
-> at *n* = 10, 50, 200. Today's three do not: 3.00, 2.45, 2.49; then 2.86, 2.39, 2.49; then 3.57,
-> 2.96, 2.78. Each drops between *n* = 10 and 50 and then holds — from 50 to 200 two move by under
-> 0.1 µs and the third falls by 0.18. See *[What this corrects above](#what-this-corrects-above)*.
+> Per-reactor cost settles as *n* grows; it does not climb, because a linear cost divided by *n*
+> cannot. The #34 D-D column climbed — 4.4, then 6.3, then 6.88 at *n* = 10, 50, 200.
+> Today's three settle: 3.00, 2.45, 2.49; then 2.86, 2.39, 2.49; then 3.57, 2.96, 2.78. Each drops
+> hard from *n* = 10 to 50 and then goes flat — the last step moves +0.04, +0.09 and −0.18 µs, all
+> of it well inside the 1.35× floor. See *[What this corrects above](#what-this-corrects-above)*.
 >
 > **So it is accepted, and nothing is handed on for fixing.** Not "accepted because 2.5 µs is cheap
 > enough" — accepted because the change #63 asks to have attributed did not happen. #30's blanket,
@@ -683,10 +687,11 @@ above *n* = 10 — this note says so itself, and every clean sweep shows it sett
 at *n* = 10, 2.54 at 50, 2.42 at 200. The figures it recorded **rose**: 4.4, then 6.3, then 6.88. A
 linear cost divided by *n* cannot do that. A machine getting busier as the sweep runs can, and did.
 
-**That check still passes 2026-09-03.** Three fresh unflagged sweeps settle the same way and land at
-2.49, 2.49 and 2.78 µs at *n* = 200 — which is why #63, opened to bisect the doubling this section
-withdrew, closed without a bisect. See the block under *[Compared against the early
-reading](#compared-against-the-early-reading)*.
+**That check still passes 2026-09-03.** Three fresh unflagged sweeps settle the same way — 3.00,
+2.45, 2.49; 2.86, 2.39, 2.49; 3.57, 2.96, 2.78 — dropping hard to *n* = 50 and then flat inside a
+fifth of a µs, against a column that climbed at every step. Which is why #63, opened to
+bisect the doubling this section withdrew, closed without a bisect. See the block under *[Compared
+against the early reading](#compared-against-the-early-reading)*.
 
 **What does not change is the verdict.** 2.5 µs per reactor is cheaper than the 2.9 to 4.0 the
 decision was discharged on, so *acceptable at the shipped cadence, no further throttling* holds with
