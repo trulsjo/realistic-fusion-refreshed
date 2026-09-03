@@ -108,11 +108,25 @@ requires restructuring is not a fallback.
   and 4.84 µs — inside the floor, though it more than doubles the tritium a D-D reactor yields. See
   *Collectors attached (#62)* in [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md).
 
-  What is **not** discharged: the measurement is a rig, not a factory. #34 asked for a real base at
-  scale and there is no such save in this project. The per-reactor cost is the mod's own contribution
-  and stands; how it behaves beside a loaded engine is unmeasured. That residue is
-  [#67](https://github.com/trulsjo/realistic-fusion-refreshed/issues/67)'s, behind #64 and #65 —
-  #34 carries the rig measurement and nothing more.
+  What is **not** discharged: the measurement is a rig, not a factory. The per-reactor cost is the
+  mod's own contribution and stands; how it behaves beside a loaded engine is still unmeasured, and
+  that residue is [#67](https://github.com/trulsjo/realistic-fusion-refreshed/issues/67)'s — #34
+  carries the rig measurement and nothing more.
+
+  **Both things #67 was waiting on now exist, so the residue is the measurement itself and no longer
+  the means of taking it.** This note used to say there was no such save in this project, which was
+  true and is the narrower claim now. `bench-reactors.ps1 -Save` benchmarks a save the script did not
+  build ([#64](https://github.com/trulsjo/realistic-fusion-refreshed/issues/64), 2026-09-03), and
+  `-PlantInto` builds the rig on a surface of its own inside a **borrowed base** —
+  [#65](https://github.com/trulsjo/realistic-fusion-refreshed/issues/65), 2026-09-03, TimEv's vanilla
+  megabase, which spends about 14 ms a tick with this mod absent. **The slope survives that move,
+  which is more than #65 was scoped to deliver**: planted reactors were never in the save, so the
+  same save swept at count zero is a real baseline and #67 gets a subtraction on a loaded tick rather than an
+  absolute figure. What it costs is a reproducibility concession recorded in
+  [ADR 0029](0029-the-factory-measurement-rests-on-a-borrowed-base.md) — the input is a third-party
+  save this project may use but not ship, so this one figure is re-takeable only by someone holding
+  that file. Provenance and method:
+  [`docs/research/borrowed-base.md`](../research/borrowed-base.md).
 - **The premultiplication the redesign left undone is the obvious first optimisation** if measurement
   shows a problem — reactivities multiplied by reaction energies once at load rather than per lookup.
   Recorded here so it is not rediscovered from scratch.

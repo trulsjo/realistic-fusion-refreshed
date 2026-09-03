@@ -218,6 +218,37 @@ not.** Changing a value the engine acts on in order to fix a display is the wron
 behaviour to mend a tooltip. Not "bug": a host artefact is a consequence of a deliberate choice about
 what to build on, and calling it a bug invites a fix that breaks what it is a consequence of.
 
+## Measurement words
+
+Two maps a figure can come off, and they are not interchangeable. Say which one a quoted number was
+taken on; the whole of [ADR 0005](docs/adr/0005-real-time-fusion-simulation.md)'s open residue was the
+difference between them.
+
+**Rig** — a map this repository builds itself, to make one question answerable: flat ground, power,
+the entities under test, and deliberately nothing else. Every `scripts/check-*.ps1` builds one, and so
+does `bench-reactors.ps1`'s own sweep. A rig can be built twice and varied in one respect, which is
+what makes a subtraction possible; what it cannot do is load the engine, because there are no belts,
+no trains, no biters and one surface. "A rig is not a factory" is the sentence #34 left unresolved.
+
+**Borrowed base** — somebody else's factory, used as the ground a measurement stands on. Named for
+the licensing position rather than for the size, because that is the part nobody may re-derive: it is
+**borrowed**, so it is used locally, never redistributed, and no derivative of it is either. This
+project has exactly one, TimEv's *Modular 10k SPM Vanilla 2.0 Megabase*, and it is not in this
+repository and cannot be — see
+[ADR 0029](docs/adr/0029-the-factory-measurement-rests-on-a-borrowed-base.md) and
+[`docs/research/borrowed-base.md`](docs/research/borrowed-base.md).
+
+**Planted** — of reactors: created inside a borrowed base by `bench-reactors.ps1 -PlantInto`, on a
+surface the script also creates, as the rig mod's `on_init` runs. Say "planted" of ours and leave the
+borrowed base's own contents unqualified; the distinction is load-bearing, because **nothing planted
+is ever saved** — `--benchmark` writes no save, so a planted surface dies with its process and no
+derivative of anyone's work exists to ship by accident.
+
+The word also carries what makes the figure trustworthy. Planted reactors were **never in the save**,
+so the same save swept at count zero is a real baseline, and the per-reactor cost a borrowed
+base yields is a subtraction rather than an estimate. `-Save`, which measures a save exactly as it is,
+can produce no such figure — a factory cannot be un-built.
+
 ## Plumbing
 
 > **Plasma containment is built and gated. The energy half of this section is decided but not yet

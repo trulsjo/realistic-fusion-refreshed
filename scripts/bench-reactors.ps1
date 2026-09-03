@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Measures what a simulated reactor costs per tick. Discharges the measurement half of #24.
 
@@ -58,6 +58,12 @@
     for somebody else's factory and every per-reactor number here is a subtraction against one. What
     it delivers instead is the absolute cost of that map and the reactor census behind it. See
     .PARAMETER Save.
+
+    -PlantInto BUYS THE SLOPE BACK (#65), by not asking anyone to un-build a factory. It builds the
+    rig on a surface of ITS OWN inside somebody else's save, so those reactors were never in that
+    save and the same save with this mod switched off is the n = 0 baseline -- the identical map,
+    the identical factory, no reactors. That is a real subtraction on a tick the rig cannot produce,
+    and it is what ADR 0005 has been waiting for since #34. See .PARAMETER PlantInto.
 
     Nor does it resolve small differences. Ten invocations of the same binary on the same map, none
     of them flagged BUSY, spanned 1.34x (docs/research/reactor-runtime-cost.md, #39); treat anything
@@ -125,9 +131,69 @@
     patch would be noise. The header line prints what the save asked for, so the difference is on
     the record either way.
 
+.PARAMETER PlantInto
+    Build the rig on a surface of its own inside this save, and sweep -Counts against it (#65). The
+    BORROWED BASE: somebody else's factory, loading the engine the way a rig by construction cannot,
+    with our reactors beside it rather than in it.
+
+    A THIRD MODE, not a modifier on -Save, and that is deliberate. -Save benchmarks a map exactly as
+    it is and refuses every switch describing a rig, because a report naming a mix the save may not
+    contain would be a claim about the wrong map. Here the switches are HONOURED, because this mode
+    is what built the configuration -- and -Save's contract is untouched.
+
+    All eight of them, enumerated rather than gestured at, since seven behave and one does not:
+    -Counts, -Pooled, -Mixed, -Collectors, -Blankets, -Gap and -ReportEvery mean exactly what they
+    mean in a rig. -Ablate is REFUSED, and the reason is below.
+
+    WHY THIS GETS A PER-REACTOR FIGURE AND -Save CANNOT. Every per-reactor number here is
+    (cost at n minus cost at 0) / n, and -Save has no n = 0 because a factory cannot be un-built.
+    These reactors were never in the borrowed base: they are created by on_init as this mod is added
+    to it, on a surface this mod also creates. So n = 0 is the same save with COUNT set to zero --
+    the same factory, the same tick, the same mod loaded, the same surface generated and powered --
+    and the difference between that and n = 200 is reactors and nothing else. The rig's whole method
+    survives the move; only the ground under it changes.
+
+    MEASURED ON 2.0.77 BEFORE ANY OF THIS WAS WRITTEN, because the mode rests on it: a mod newly
+    added to an existing save DOES run its on_init under --benchmark, and the surface and entities
+    it creates there are present for the ticked run. Factorio's own --help offers no save-writing
+    mode but --create and --start-server, so the alternative was a multiplayer server run plus
+    game.server_save; planting at load needs neither, writes no save, and is the reason this mode
+    hands back a baseline instead of an absolute number.
+
+    IT WRITES NOTHING. --benchmark never saves, so the borrowed base is opened read-only in effect
+    and every planted surface dies with the process. Nothing is redistributed either, which for this
+    project's borrowed base is not a nicety -- see docs/research/borrowed-base.md and
+    docs/adr/0029-the-factory-measurement-rests-on-a-borrowed-base.md.
+
+    THE SURFACE IS REFUSED RATHER THAN REUSED if the save already has one by that name. Building
+    over a surface somebody else made would destroy their work in a run they thought was read-only,
+    and the landfill-and-clear pass below would do it silently.
+
+    FOUR THINGS IT DOES NOT DO, none of them a defect and all of them easy to assume away.
+
+    It does not put the reactors ON the base's power. 200 rf-reactors draw about 10 GW of heating
+    and this adds no generation, so wiring them into the borrowed base's grid would brown out the
+    whole factory -- every consumer is secondary-input and takes the same fraction, so the base
+    would simply stop, and the report would look fine. Each cell keeps its own substation and
+    interface exactly as the rig builds them, on an island connected to nothing.
+
+    It does not make scriptUpdate this repo's Lua. A borrowed base carries its own mod set and every
+    one of them is enabled; what cancels out of the SUBTRACTION is everything that is the same at
+    every count, which is all of it except the reactors. So the per-reactor figure is attributable
+    and the absolute one is not, which is the reverse of -Save.
+
+    It does not measure a reactor plumbed into a factory. Nothing consumes the energy or the
+    by-products, exactly as in the rig, and for the same reason: this measures what the simulation
+    costs, not what a fusion plant is worth. The steam route is absent on purpose -- control.lua
+    clamps the energy write to the box and discards the overflow, and the whole step runs anyway.
+
+    And it does not clear the whole planted surface, only the build area. That is enough at
+    benchmark length and would not be over a long run: enemy expansion is a global map setting and
+    is deliberately left alone, since changing it would change the borrowed base's own behaviour.
+
 .PARAMETER SaveModDirectory
-    Where the save's third-party mods are found, for -Save. Defaults to your own Factorio mod
-    directory, which is where the saves next to it were built.
+    Where the save's third-party mods are found, for -Save and -PlantInto. Defaults to your own
+    Factorio mod directory, which is where the saves next to it were built.
 
     READ-ONLY, which is why this is allowed to default to it where scripts/dev-launch.ps1 refuses the
     same directory outright: that one rewrites mod-list.json in place and would lose which mods you
@@ -337,6 +403,10 @@ Compared against a reading taken just BEFORE
     pwsh -File scripts/bench-reactors.ps1 -Save "$env:APPDATA\Factorio\saves\my-factory.zip"
     pwsh -File scripts/bench-reactors.ps1 -SelfTest
 
+    The borrowed base (#65), which needs -Counts and so needs -Command -- see the note below:
+
+    pwsh -Command "& ./scripts/bench-reactors.ps1 -PlantInto 'C:/src/factorio/_reference/Megabase in 2.0.zip' -Counts 0,50,200 -Collectors -Blankets -Gap 6"
+
     A LIST ARGUMENT NEEDS -Command, NOT -File, and this is not a style preference. -File hands each
     argument to the script as a string, and converting a string to [int[]] is culture-aware: where
     the decimal separator is a comma -- which it is on the machine this was written on --
@@ -353,6 +423,7 @@ Compared against a reading taken just BEFORE
 param(
     [string] $FactorioExe,
     [string] $Save,
+    [string] $PlantInto,
     [string] $SaveModDirectory,
     [switch] $SelfTest,
     [ValidateRange(0, 100000)]        [int[]] $Counts = @(0, 1, 10, 50, 200),
@@ -375,6 +446,11 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $ourMods  = Get-RepoMods
 $rigName  = 'rf-bench-rig'
+
+# The surface -PlantInto builds on inside a borrowed base (#65). Prefixed like everything else this
+# repo names, so a collision with a surface the save already has is implausible -- and refused by
+# the rig rather than built over if it happens anyway.
+$plantSurface = 'rf-bench-plant'
 
 # Lithium per blanket, in items, and one place for it: the rig loads this much and the gate below
 # requires the total to have fallen without reaching zero, so a second copy of the number would let
@@ -691,14 +767,45 @@ if ($SelfTest) {
                "$($alsoGiven -join ', '). Pass -SelfTest alone.")
     }
 }
+if ($Save -and $PlantInto) {
+    throw ('-Save and -PlantInto are two different questions about a save: -Save measures it as it ' +
+           'is, -PlantInto builds a rig inside it and sweeps -Counts. Pick one.')
+}
 if ($Save) {
     $given = @($rigOnly | Where-Object { $PSBoundParameters.ContainsKey($_) })
     if ($given.Count -gt 0) {
         throw ("-Save benchmarks a map this script did not build, so it can honour none of: " +
                "$($given -join ', '). Drop them, or drop -Save to measure a rig.")
     }
+} elseif ($PlantInto) {
+    # -PlantInto honours every rig switch except this one, and the exception is not arbitrary. An
+    # ablated rung suppresses raise_built so the shipped mod registers nothing and the rig owns the
+    # step -- which is a way of asking where a per-reactor microsecond goes, on a map built to make
+    # that answerable. The borrowed base exists to answer a different question, its load dominates
+    # the run, and no rung has ever been measured against one. Refused rather than allowed
+    # untested.
+    if ($Ablate -ne 'none') {
+        throw ("-Ablate $Ablate is a rig diagnostic and has never been measured on a borrowed " +
+               'base; see .PARAMETER PlantInto. Drop it, or drop -PlantInto.')
+    }
 } elseif ($SaveModDirectory) {
-    throw '-SaveModDirectory has nothing to resolve without -Save.'
+    throw '-SaveModDirectory has nothing to resolve without -Save or -PlantInto.'
+}
+# Shared by both save-reading modes, and defaulted here rather than inside either so the two
+# cannot drift on where a save's mods live.
+if ($Save -or $PlantInto) {
+    if (-not $SaveModDirectory) { $SaveModDirectory = Join-Path $env:APPDATA 'Factorio\mods' }
+    if (-not (Test-Path -LiteralPath $SaveModDirectory)) {
+        throw ("-SaveModDirectory not found: $SaveModDirectory. That is where the save's own mods " +
+               'are looked for; pass one explicitly if they live elsewhere.')
+    }
+    # New-ModJunctions refuses a relative target, and a mod directory given relative to the
+    # repository is the obvious thing to type.
+    $SaveModDirectory = (Resolve-Path -LiteralPath $SaveModDirectory).Path
+}
+if ($PlantInto) {
+    if (-not (Test-Path -LiteralPath $PlantInto)) { throw "-PlantInto not found: $PlantInto" }
+    $PlantInto = (Resolve-Path -LiteralPath $PlantInto).Path
 }
 
 if ($SelfTest) {
@@ -938,6 +1045,12 @@ local LITHIUM_LOADED = __LITHIUM__
 local ABLATE   = "__ABLATE__"
 local INTERVAL = __INTERVAL__
 
+-- WHERE the rig is built (#65). Empty is the map this script made with --create and owns outright,
+-- so it builds on surface 1. A NAME is -PlantInto: the rig goes on a surface of its own inside
+-- somebody else's save -- the borrowed base -- so nothing of theirs is touched and the same run
+-- with COUNT = 0 is a real n = 0 baseline. See .PARAMETER PlantInto.
+local SURFACE = "__SURFACE__"
+
 -- What each reactor burns. ADR 0010's four reactions run in two different entities, and #34 is the
 -- measurement with all four present -- the early reading (#24) had only the first, because it was
 -- the only one that existed.
@@ -1137,7 +1250,25 @@ script.on_init(function()
   storage.blankets   = {}
   storage.neutronic_blankets = 0
 
-  local surface = game.surfaces[1]
+  -- On surface 1 for a map this script created, on a surface of our own for a borrowed base.
+  --
+  -- on_init RUNS WHEN A MOD IS ADDED TO AN EXISTING SAVE, which is the whole mechanism -PlantInto
+  -- rests on and was measured on 2.0.77 before it was written: the surface and the entities created
+  -- here are present for the ticked run, and --benchmark never saves, so none of it survives the
+  -- process.
+  --
+  -- REFUSED RATHER THAN REUSED if the name is taken. The landfill-and-clear pass below destroys
+  -- every entity in its area, so building over a surface somebody else made would wreck their work
+  -- in a run they had every reason to think was read-only -- and it would do it in silence.
+  local surface
+  if SURFACE == "" then
+    surface = game.surfaces[1]
+  elseif game.surfaces[SURFACE] then
+    error(string.format("this save already has a surface called '%s'; the rig will not build over " ..
+      "one it did not create, because it landfills and clears everything in its area", SURFACE))
+  else
+    surface = game.create_surface(SURFACE)
+  end
   local force   = game.forces.player
   local area    = { { -EDGE, -EDGE }, { SPAN + EDGE, SPAN + EDGE } }
 
@@ -1501,7 +1632,8 @@ end)
                 Replace('__COLLECTORS__', $(if ($Collectors) { 'true' } else { 'false' })).
                 Replace('__BLANKETS__', $(if ($Blankets) { 'true' } else { 'false' })).
                 Replace('__LITHIUM__', "$lithiumPerBlanket").
-                Replace('__ABLATE__', $Ablate).Replace('__INTERVAL__', "$interval")
+                Replace('__ABLATE__', $Ablate).Replace('__INTERVAL__', "$interval").
+                Replace('__SURFACE__', ($PlantInto ? $plantSurface : ''))
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $lua -Encoding utf8
 }
 
@@ -2012,14 +2144,8 @@ if ($Save) {
     if (-not (Test-Path -LiteralPath $Save)) { throw "-Save not found: $Save" }
     $Save = (Resolve-Path -LiteralPath $Save).Path
 
-    if (-not $SaveModDirectory) { $SaveModDirectory = Join-Path $env:APPDATA 'Factorio\mods' }
-    if (-not (Test-Path -LiteralPath $SaveModDirectory)) {
-        throw ("-SaveModDirectory not found: $SaveModDirectory. That is where the save's own mods " +
-               'are looked for; pass one explicitly if they live elsewhere.')
-    }
-    # New-ModJunctions refuses a relative target, and a mod directory given relative to the
-    # repository is the obvious thing to type.
-    $SaveModDirectory = (Resolve-Path -LiteralPath $SaveModDirectory).Path
+    # -SaveModDirectory is defaulted, checked and resolved with the mode guards above, which both
+    # save-reading modes share.
 
     # Inside the try, not before it: the temp directory exists by this point, and reading the
     # save's header or refusing an unresolved mod is exactly where this path fails. Left outside,
@@ -2248,10 +2374,59 @@ if ($Save) {
 }
 
 try {
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
-    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled @() -Mods ($ourMods + $rigName)
+    # ---- the borrowed base's own mod set (#65)
+    #
+    # The same argument -Save makes, for the same reason, and it applies here even though this mode
+    # builds the thing being measured: Factorio loads a save whose mods are absent, runs it, and
+    # exits 0 without a warning of any kind. A planted run over a map with every mod's entities
+    # stripped out of it would look exactly like a good one -- and worse than under -Save, because
+    # the subtraction would still produce a confident per-reactor figure from a factory that was not
+    # there. Resolved out of the save's own header; anything unresolved is named and refused.
+    $plantBundled = @()
+    $plantForeign = @()
+    if ($PlantInto) {
+        $wanted   = Get-SaveModList -Path $PlantInto
+        $resolved = Resolve-SaveMods -Wanted $wanted -SourceDirectory $SaveModDirectory `
+            -Bundled $bundled -Ours $ourMods
+        $plantBundled = $resolved.Bundled
+        $plantForeign = @($resolved.Foreign | ForEach-Object { $_.Name })
 
-    Write-Host "grid $grid x $grid cells, $Ticks ticks x $Runs run(s) per count, pooled: $([bool]$Pooled), collectors: $([bool]$Collectors), blankets: $([bool]$Blankets), ablate: $Ablate (interval $interval)"
+        Write-Host "borrowed : $PlantInto"
+        Write-Host ("mod set  : {0} from the save's own header -- {1}" -f $wanted.Count,
+            (($wanted | ForEach-Object { "$($_.Name) $($_.Version)" }) -join ', '))
+        Write-Host ("resolved : {0} bundled, {1} from $SaveModDirectory, {2} junctioned from this working tree" -f
+            $resolved.Bundled.Count, $resolved.Foreign.Count, $ourMods.Count)
+
+        # Copied for zips and junctioned for unpacked directories, exactly as -Save does it, and
+        # only the mods the save names -- so a mod directory holding several overhauls contributes
+        # whichever this save asked for and none of the rest.
+        $toJunction = @()
+        foreach ($mod in $resolved.Foreign) {
+            if ($mod.IsZip) { Copy-Item -LiteralPath $mod.Source -Destination $modDir }
+            else { $toJunction += (Split-Path $mod.Source -Leaf) }
+        }
+        if ($toJunction.Count -gt 0) {
+            New-ModJunctions -ModDirectory $modDir -RepoRoot $SaveModDirectory -Mods $toJunction
+        }
+        # Startup settings change prototypes, and a benchmark of a map with different prototypes is
+        # a benchmark of a different map. Identical at every count, so it cancels out of the
+        # subtraction either way -- but it decides which map the whole sweep describes.
+        $modSettings = Join-Path $SaveModDirectory 'mod-settings.dat'
+        if (Test-Path -LiteralPath $modSettings) { Copy-Item -LiteralPath $modSettings -Destination $modDir }
+    }
+
+    # Ours last and from the repository, so the working tree wins over any installed copy of the
+    # same name -- measuring a released zip while editing the repo is the one outcome nobody wants.
+    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $plantBundled `
+        -Mods ($plantForeign + $ourMods + $rigName)
+
+    if ($PlantInto) {
+        Write-Host ("planting : surface '$plantSurface', $grid x $grid cells, $Ticks ticks x $Runs run(s) per count, " +
+                    "pooled: $([bool]$Pooled), collectors: $([bool]$Collectors), blankets: $([bool]$Blankets)")
+    } else {
+        Write-Host "grid $grid x $grid cells, $Ticks ticks x $Runs run(s) per count, pooled: $([bool]$Pooled), collectors: $([bool]$Collectors), blankets: $([bool]$Blankets), ablate: $Ablate (interval $interval)"
+    }
     Write-Host ''
 
     $results = @()
@@ -2263,16 +2438,41 @@ try {
         # a live assignment leaning on.
         $rigSave = Join-Path $temp "n$count.zip"
 
-        $createOut = Invoke-FactorioStep @step -Arguments @('--create', $rigSave) -Tag "create-n$count"
-        $rig = Get-Content $createOut | Select-String -Pattern 'BENCH-RIG' | Select-Object -Last 1
-        if ($rig -notmatch "placed=$count\b") { throw "rig built the wrong number of reactors: $rig" }
+        # TWO INVOCATIONS FOR A RIG, ONE FOR A BORROWED BASE. A rig is created and then loaded, so
+        # placed= comes out of the --create; planting happens as the mod is added to the save being
+        # benchmarked, so the run that measures is also the run that builds and placed= is read out
+        # of it below. The gate is the same gate either way, and it is not optional: a short build
+        # makes every figure a claim about a count that was never on the map.
+        # Pattern on 'grid=' rather than on 'BENCH-RIG' alone, because a planted run's output also
+        # carries the report ticks and -Last 1 would take one of those instead.
+        if (-not $PlantInto) {
+            $createOut = Invoke-FactorioStep @step -Arguments @('--create', $rigSave) -Tag "create-n$count"
+            $rig = Get-Content $createOut | Select-String -Pattern 'BENCH-RIG grid=' | Select-Object -Last 1
+            if ($rig -notmatch "placed=$count\b") { throw "rig built the wrong number of reactors: $rig" }
+        }
 
         # Read before the launch, while the machine is free of us. See Get-ForeignLoad.
         $load = Get-ForeignLoad
         $cpu  = Get-ClockPercent
         $benchOut = Invoke-FactorioStep @step -Tag "bench-n$count" -Arguments @(
-            '--benchmark', $rigSave, '--benchmark-ticks', "$Ticks", '--benchmark-runs', "$Runs",
-            '--benchmark-verbose', 'all', '--disable-audio')
+            '--benchmark', ($PlantInto ? $PlantInto : $rigSave), '--benchmark-ticks', "$Ticks",
+            '--benchmark-runs', "$Runs", '--benchmark-verbose', 'all', '--disable-audio')
+
+        if ($PlantInto) {
+            $rig = Get-Content $benchOut | Select-String -Pattern 'BENCH-RIG grid=' | Select-Object -Last 1
+            if (-not $rig) {
+                # ${count}, not $count: a colon straight after a variable name is a SCOPE
+                # qualifier, so "$count:" parses as a variable called nothing in a scope called
+                # "count" and the whole file stops parsing. The elseif branch below sidesteps the
+                # same trap with a backtick, which is the form the rest of this script uses.
+                throw ("nothing was planted into '$PlantInto' at n=${count}: $rigName never logged its " +
+                       'build line, so on_init did not run and the figures would be the borrowed ' +
+                       "base's own cost with our name on them.")
+            }
+            if ($rig -notmatch "placed=$count\b") {
+                throw "planting built the wrong number of reactors at n=$count`: $rig"
+            }
+        }
 
         # The rig's last word on what it was actually doing, and a hard gate rather than a note in
         # the output. Everything above this line would happily produce a confident per-reactor
@@ -2493,6 +2693,29 @@ try {
             Write-Host ("{0} reactors: {1:N2} us of Lua per tick on average, {2:N4} us per reactor, {3:N2}% of a 16.67 ms tick." -f
                 $top.Reactors, $cost, ($cost / $top.Reactors), (100.0 * $cost / 16670.0))
         }
+    }
+
+    # ---- what a borrowed base's figures do and do not say, said rather than left to be inferred
+    #
+    # The mirror of the block -Save prints. There, the absolute cost is the answer and no
+    # per-reactor figure exists; here the per-reactor figure is the answer and the absolute cost is
+    # somebody else's factory. Printing one without the other is how a number gets quoted for the
+    # wrong claim.
+    if ($PlantInto) {
+        Write-Host ''
+        Write-Host 'this sweep ran on a borrowed base, so read the two kinds of figure differently:'
+        Write-Host '  The PER-REACTOR figures are attributable. Every count loads the same save with the same'
+        Write-Host '  mods and generates the same planted surface with the same power; only the reactors differ,'
+        Write-Host "  so everything else -- the factory's own engine and Lua cost included -- cancels."
+        Write-Host '  The ABSOLUTE figures are not ours. wholeUpdate and scriptUpdate here are mostly the'
+        Write-Host '  borrowed base doing what it does, which is the point of measuring on one and is not a'
+        Write-Host '  cost this mod causes.'
+        $others = $plantBundled.Count + $plantForeign.Count
+        if ($others -gt 0) {
+            Write-Host ("  The save enables {0} mod(s) on top of base besides ours; none of it is separable" -f $others)
+            Write-Host '  from scriptUpdate, and none of it needs to be, because it is identical at every count.'
+        }
+        Write-Host '  Nothing was written. --benchmark never saves, so the planted surface died with each run.'
     }
 
     # The tables above are Write-Host, which "> file" does not capture. The rows go to the
