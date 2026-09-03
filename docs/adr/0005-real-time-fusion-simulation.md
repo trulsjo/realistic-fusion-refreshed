@@ -54,7 +54,9 @@ requires restructuring is not a fallback.
 
   **Discharged 2026-08-18 ([#34](https://github.com/trulsjo/realistic-fusion-refreshed/issues/34)):
   about 2.5 µs per reactor per tick with all four reactions running — around 3.1% of the 16.67 ms
-  budget at 200 reactors, and well under 1% at the 20 to 50 a large ordinary build has.** The figure
+  budget at 200 reactors, and well under 1% at the 20 to 50 a large ordinary build has.**
+  *The number to quote is now about 4.5 µs and 5.4%; this one was measured on reactors with no
+  collector attached. See the #62 paragraph below before quoting anything from this bullet.* The figure
   #34 first recorded was 3 to 4 µs; it was re-measured under
   [#39](https://github.com/trulsjo/realistic-fusion-refreshed/issues/39) on a machine checked to be
   quiet, the original runs having been taken beside an unrelated compile. The remaining spread is
@@ -74,6 +76,37 @@ requires restructuring is not a fallback.
   **Reproduced 2026-08-20** on the renamed mods, the only change to the tick path since: 2.23 µs per
   reactor at 200 reactors, a ratio of 1.1 against the figure above and so the same number. See
   *Reproduced 2026-08-20* in the research note.
+
+  **The figure moved to about 4.5 µs — 5.4% of a tick at 200 reactors — on 2026-09-03
+  ([#62](https://github.com/trulsjo/realistic-fusion-refreshed/issues/62)), and the discharge still
+  stands.** Every reading above was taken on reactors with **no isotope collector bolted to them**,
+  which nothing said at the time. `control.lua` computes the by-products either way and only writes
+  a collector's fluid boxes when one is attached, so `deposit()` had never executed under
+  measurement and neither had `blanket_breed()` — every figure was the cost of a reactor that
+  vents, in a configuration a player does not build. Re-measured with collectors, in one sitting on
+  a machine quiet at every count: the full reaction set costs 4.48 µs against 3.04 vented, and a
+  D-D-only base 4.84 against 3.68. **Nothing about the mod changed; what was measured did.** The
+  1.8× move against the 2.5 µs above is well outside the noise floor, which is why this figure is
+  restated rather than left as a footnote. **The verdict is unchanged**: `UPDATE_INTERVAL` stays at
+  6, and at the ten to fifty reactors an ordinary build has the worst case is 0.3% to 1.6% of a
+  tick.
+
+  **The expectation this ADR carried still holds, and the correction #39 made to #34 stands.** With
+  collectors attached — the configuration that makes breeding cost anything at all — D-D is 4.84
+  against the full set's 4.48, a ratio of 1.08. There is no cheap tier and no expensive one; what
+  #62 changes is not which reaction is dearest but that every configuration costs about half again
+  what was on record. **The worst of the five configurations measured is a blanketed D-D base at
+  5.44 µs, 6.5% of a tick** — the build a D-T player has, since the blanket rides on the D-D tier's
+  collector.
+
+  Three things that measurement does **not** establish. It does not separate `deposit()` from the
+  collector entity's own engine time, because a collector exists only where a reactor does and so
+  does not cancel out of the delta the way the rig's power does. It does not put a sharp number on
+  the premium: six vented-against-collected pairs all land on the same side, and not one of them
+  clears the 1.35× floor alone, so the sign is established and the magnitude is not. And the blanket
+  is a separate switch, off by default, costing at most the 1.12 between 5.44 and 4.84 µs — inside
+  the floor, though it more than doubles the tritium a D-D reactor yields. See *Collectors attached
+  (#62)* in [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md).
 
   What is **not** discharged: the measurement is a rig, not a factory. #34 asked for a real base at
   scale and there is no such save in this project. The per-reactor cost is the mod's own contribution

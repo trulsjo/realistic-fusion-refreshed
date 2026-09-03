@@ -137,6 +137,59 @@
     is the collector lookup and the circuit publish -- both per reactor, both in the shipped path --
     so `write` is a floor on the shipped cost, not a reproduction of it.
 
+.PARAMETER Collectors
+    Bolt an rf-isotope-collector to every reactor, so the by-product path actually runs (#62).
+
+    Off by default, and the default is the older rig -- but the default is NOT the configuration a
+    player builds. control.lua computes result.products every step whether or not a collector
+    exists, and only touches a collector's fluidboxes when one is attached. This rig had never
+    built one, so deposit() had not executed in a single measurement this project has taken: #24's,
+    #27's and #34's figures are all the cost of a reactor that VENTS. That matters most for exactly
+    the reaction the project quotes its cheapest tier from, because D-D is the only one that breeds.
+
+    What it adds to the measured cost is two fluidbox writes per breeding reactor per step, plus the
+    collector entity's own engine time. That second part does NOT cancel the way the rig's power
+    does: power is built for every cell at every count including n = 0, and a collector exists only
+    where a reactor does, so its entityUpdate and fluidFlowUpdate land on the per-reactor delta.
+    That is the right answer to "what does a reactor with a collector cost", and the wrong answer to
+    "what does deposit() cost" -- the two are not separated here.
+
+    Nothing drains the collectors. A box holds 500 units and a run is a few hundred ticks, so they
+    fill rather than saturate; the rig reports how full the WORST tritium box got -- full_pct= --
+    because a saturated tritium box takes a blanket's headroom to zero and stops it. Read it before
+    quoting a blanketed figure.
+
+    NEEDS -Gap ABOVE THE FITTING'S OWN SIZE, which is six for a five-tile fitting and so above
+    the default. Both fittings sit in the GAP-deep band south of the reactor, and entity-management
+    pairs by the tiles touching the reactor with a WHOLE TILE of margin -- so at a tight gap a
+    flush fitting reaches past its own cell and the next row's reactor pairs with it instead, since
+    attach() takes the lowest unit_number and fittings are built in row order. The cost barely
+    moves, which is what makes it dangerous: every reactor still has a collector and deposit()
+    still runs, while one row's fittings serve two reactors and the last row's serve none. The rig
+    checks the pairing against the real bounding boxes at map creation and refuses rather than
+    reasoning about insets.
+
+    Its own report costs something, and unlike the power it does not cancel. Reading the fittings
+    back is a handful of API calls per reactor on a report tick, charged to scriptUpdate, scaling
+    with n and absent from the n = 0 baseline -- the same argument .PARAMETER ReportEvery makes
+    about the reactor walk. At the defaults it is under a hundredth of a microsecond per reactor;
+    at -ReportEvery 1 it would be the same order as the cost being measured.
+
+.PARAMETER Blankets
+    Bolt an rf-lithium-blanket to every reactor as well, loaded with lithium, so blanket_breed()
+    runs too (#62). Requires -Collectors: a blanket on a reactor with no collector is idle by
+    design (control.lua's apply()), so it would measure nothing and the rig would have no way to
+    say so.
+
+    Separate from -Collectors rather than bundled with it, because the two are different questions
+    and #62 asks for the blanket to be decided rather than omitted. A collector is what any D-D
+    player builds; a blanket is a later tier's fitting, and it adds an inventory read, a lithium
+    withdrawal and a second breed() call on top.
+
+    Both fittings go in the clear ground SOUTH of the reactor, side by side -- not one north and
+    one south the way scripts/check-blanket.ps1 places them. A rig is a grid, and a reactor's north
+    band is its neighbour's south band.
+
 .PARAMETER Gap
     Clear tiles between one reactor and the next, and so also the length of the pipe run -Pooled
     lays between them. The cell is the reactor's own footprint plus this, read from the prototype
@@ -178,6 +231,8 @@ Compared against a reading taken just BEFORE
     pwsh -File scripts/bench-reactors.ps1
     pwsh -File scripts/bench-reactors.ps1 -Pooled
     pwsh -File scripts/bench-reactors.ps1 -Mixed
+    pwsh -File scripts/bench-reactors.ps1 -Collectors -Gap 6
+    pwsh -File scripts/bench-reactors.ps1 -Mixed -Collectors -Blankets -Gap 6
 
     A LIST ARGUMENT NEEDS -Command, NOT -File, and this is not a style preference. -File hands each
     argument to the script as a string, and converting a string to [int[]] is culture-aware: where
@@ -199,6 +254,8 @@ param(
     [ValidateRange(1, [int]::MaxValue)] [int] $Runs   = 3,
     [switch] $Pooled,
     [switch] $Mixed,
+    [switch] $Collectors,
+    [switch] $Blankets,
     [ValidateSet('none', 'loop', 'read', 'physics', 'write')] [string] $Ablate = 'none',
     [ValidateRange(5, 100)]             [int] $Gap = 5,
     [ValidateRange(1, [int]::MaxValue)] [int] $ReportEvery = 500,
@@ -213,6 +270,11 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 $ourMods  = Get-RepoMods
 $rigName  = 'rf-bench-rig'
 
+# Lithium per blanket, in items, and one place for it: the rig loads this much and the gate below
+# requires the total to have fallen without reaching zero, so a second copy of the number would let
+# a passing run mean nothing. See the rig's own note for why it is comfortably large.
+$lithiumPerBlanket = 5000
+
 # Columns worth printing. scriptUpdate is the answer; the rest are context, and are here because a
 # cost pushed out of Lua and into the engine is still a cost this mod causes.
 # luaGarbageIncremental is the one that would otherwise hide: the step allocates tables per reactor
@@ -222,6 +284,23 @@ $REPORT = @('wholeUpdate', 'scriptUpdate', 'luaGarbageIncremental', 'fluidFlowUp
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
 $bundled     = Get-BundledMods -FactorioExe $FactorioExe
+
+# A blanket with nowhere to put what it breeds does not merely vent it -- control.lua's apply()
+# never calls blanket_breed() at all, because spending a real item for nothing is a trap rather
+# than a mechanic. So -Blankets alone would place a hundred idle containers and measure the cost of
+# owning them, and the lithium gate below would fail with no way to say which of the two it meant.
+if ($Blankets -and -not $Collectors) {
+    throw ('-Blankets requires -Collectors: a blanket on a reactor with no collector is idle by ' +
+           'design (control.lua apply()), so there would be nothing to measure.')
+}
+# The ablation ladder replaces the shipped step with a cut-down one that never looks a collector up
+# -- .PARAMETER Ablate says so, and that omission is the point of the rungs. Fittings under -Ablate
+# would therefore add engine cost to the delta and no Lua at all, which is a number nothing can be
+# concluded from.
+if ($Ablate -ne 'none' -and ($Collectors -or $Blankets)) {
+    throw ("-Ablate $Ablate does not run the collector path (see .PARAMETER Ablate), so fittings " +
+           'would add engine cost and no Lua. Drop -Collectors/-Blankets or drop -Ablate.')
+}
 
 $Counts = @($Counts | Sort-Object -Unique)
 # .Count, not -not: PowerShell unwraps a single-element array, so "-not @(0)" is true and a
@@ -284,6 +363,15 @@ local GRID   = __GRID__      -- cells per side; the same at every count, so the 
 local POOLED = __POOLED__
 local GAP    = __GAP__       -- clear tiles between one reactor and the next
 local MIXED  = __MIXED__
+-- Fittings (#62). Off, the rig measures a reactor that vents -- which is every figure this project
+-- had on record before #62, and not what a player builds. See .PARAMETER Collectors.
+local COLLECTORS = __COLLECTORS__
+local BLANKETS   = __BLANKETS__
+-- Lithium per blanket, in items. Comfortably more than a run can burn, for the reason
+-- check-blanket.ps1 gives at greater length: an ignited D-T reactor eats about 19 items a second,
+-- so a blanket that runs dry mid-run turns the measurement into the cost of an empty container and
+-- nothing says so. A thousand ticks is under seventeen seconds.
+local LITHIUM_LOADED = __LITHIUM__
 -- Which rung of the ablation ladder to run, and the shipped cadence to run it at. "none" is the
 -- shipped mod doing the whole step; anything else is this rig doing a cut-down one instead. See
 -- the .PARAMETER Ablate block.
@@ -366,8 +454,92 @@ local function centre(v, foot)
   if foot.origin == 0.5 then return math.floor(v) + 0.5 else return math.floor(v + 0.5) end
 end
 
+-- The fittings the rig bolted on, so the report below can read them back. Kept as the rig's own
+-- lists rather than asked of realistic-fusion-refreshed: `storage` is per mod, so requiring
+-- entity-management here would get a second copy of the module bound to THIS mod's storage and
+-- every pairing table would read empty. What proves the pairing is collected= in the report.
+local FITTINGS = {
+  { name = "rf-isotope-collector", key = "collectors", wanted = COLLECTORS },
+  { name = "rf-lithium-blanket",   key = "blankets",   wanted = BLANKETS   },
+}
+-- Which of the collector's boxes carries tritium, read from the prototype rather than written
+-- down -- control.lua's own check_collector_boxes() exists because that mapping is load-bearing and
+-- silent when wrong, and a rig that remembered the index would be the same bug one file over.
+--
+-- Only this box can saturate, which is why it is singled out. D-D breeds tritium and helium-3 one
+-- for one, and the blanket adds tritium on top, so the tritium box fills first and it is the only
+-- one whose fill stops anything: blanket_breed() reads ITS headroom.
+local TRITIUM_BOX
+if COLLECTORS then
+  for index, box in ipairs(prototypes.entity["rf-isotope-collector"].fluidbox_prototypes) do
+    if box.filter and box.filter.name == "rf-tritium" then TRITIUM_BOX = index end
+  end
+  if not TRITIUM_BOX then
+    error("rf-isotope-collector has no box filtered to rf-tritium; the fill report would measure " ..
+      "the wrong box and the saturation warning would never fire.")
+  end
+end
+
+for _, fitting in ipairs(FITTINGS) do
+  if fitting.wanted then
+    fitting.foot = footprint(fitting.name)
+    -- Named here rather than discovered as a nil from create_entity later. Both fittings are five
+    -- tiles square (ADR 0022) and both go in the GAP-deep band south of the reactor, so a gap
+    -- narrower than a fitting would have them overlap the next row's reactor -- which places as
+    -- silence, not as an error, and is #49's failure mode exactly.
+    if fitting.foot.size > GAP then
+      error(string.format("%s is %d tiles and -Gap is %d: it would not fit in the band south of " ..
+        "the reactor and would collide with the next row", fitting.name, fitting.foot.size, GAP))
+    end
+  end
+end
+
+--- Bolt the requested fittings to one reactor, in the clear ground south of it.
+--
+-- SOUTH FOR BOTH, side by side, where scripts/check-blanket.ps1 puts the collector south and the
+-- blanket north. That rig has one reactor and all four bands free; this one is a grid, and a
+-- reactor's north band is the band the row above already put its fittings in.
+--
+-- Flush against the reactor's own south face, computed from the two footprints rather than written
+-- down, so the fittings land inside the one-tile margin entity-management's attach() searches
+-- whatever either size becomes. Read the footprint, do not remember it -- see #49.
+--
+-- raise_built, and after the reactor: pairing happens on the build event, and a fitting bolted on
+-- afterwards is the order a player does it in. Placing it silently would exercise a path nobody
+-- can take.
+local function bolt_on(surface, force, reactor, foot, col, row)
+  for _, fitting in ipairs(FITTINGS) do
+    if fitting.wanted then
+      local ffoot = fitting.foot
+      -- Offset so the two fittings sit either side of the reactor's centre line with a tile
+      -- between them. Both fit: the reactor is fifteen tiles and two fives plus a gap is eleven.
+      local dx = (ffoot.size / 2 + 0.5) * ((fitting.key == "collectors") and -1 or 1)
+      local at = {
+        centre(reactor.position.x + dx, ffoot),
+        centre(reactor.position.y + (foot.size + ffoot.size) / 2, ffoot),
+      }
+      local e = surface.create_entity({
+        name = fitting.name, position = at, force = force, raise_built = true,
+      })
+      if not e then
+        error(string.format("%s refused at cell %d,%d (%g, %g)", fitting.name, col, row, at[1], at[2]))
+      end
+      if fitting.key == "blankets" then
+        local put = e.insert({ name = "rf-lithium", count = LITHIUM_LOADED })
+        if put < LITHIUM_LOADED then
+          error(string.format("blanket at cell %d,%d took only %d of %d lithium: the inventory is " ..
+            "smaller than this rig assumes", col, row, put, LITHIUM_LOADED))
+        end
+      end
+      storage[fitting.key][#storage[fitting.key] + 1] = e
+    end
+  end
+end
+
 script.on_init(function()
-  storage.reactors = {}
+  storage.reactors   = {}
+  storage.collectors = {}
+  storage.blankets   = {}
 
   local surface = game.surfaces[1]
   local force   = game.forces.player
@@ -498,6 +670,10 @@ script.on_init(function()
       storage.reactors[#storage.reactors + 1] = r
       placed = placed + 1
 
+      -- After the feed and before the pipe run, so a fitting that lands somewhere it should not
+      -- errors before the row it would have broken is built.
+      bolt_on(surface, force, r, foot, col, row)
+
       if POOLED and col > 0 then
         -- GAP pipes bridge the gap between this reactor's west connection and its neighbour's
         -- east one, putting the whole row on one fluid segment. The count is the gap by
@@ -517,8 +693,39 @@ script.on_init(function()
     end
   end
 
-  log(string.format("BENCH-RIG grid=%d size=%d spacing=%d requested=%d placed=%d pooled=%s mixed=%s cases=%d",
-    GRID, SIZE, SPACING, COUNT, placed, tostring(POOLED), tostring(MIXED), #CASES))
+  -- EVERY REACTOR MUST SEE EXACTLY ONE OF EACH FITTING, and this is a gate rather than a comment.
+  --
+  -- entity-management pairs by the tiles touching the reactor with a WHOLE TILE of margin, and the
+  -- band a fitting sits in is only GAP deep. At a tight gap a flush fitting therefore reaches past
+  -- its own cell into the next row's reactor, which pairs with it instead: attach() takes the
+  -- lowest unit_number, and fittings are created in row order. Nothing errors and the cost barely
+  -- moves -- every reactor still has a collector and deposit() still runs -- but the rig stops
+  -- being the thing it says it is. One row's fittings serve two reactors while the last row's serve
+  -- none, and the blanket draining at twice the rate runs dry first behind a gate that reads only
+  -- the total. At -Gap 5 with a five-tile fitting the overlap is half a tile, which is why this is
+  -- checked against the real bounding boxes rather than derived from remembered collision insets.
+  for _, fitting in ipairs(FITTINGS) do
+    if fitting.wanted then
+      for _, r in pairs(storage.reactors) do
+        local box = r.bounding_box
+        local seen = r.surface.find_entities_filtered({
+          area = { { box.left_top.x - 1, box.left_top.y - 1 },
+                   { box.right_bottom.x + 1, box.right_bottom.y + 1 } },
+          name = fitting.name,
+        })
+        if #seen ~= 1 then
+          error(string.format("the reactor at (%g, %g) touches %d %s, not 1: at -Gap %d a fitting " ..
+            "reaches into the neighbouring cell, so reactors and fittings do not pair one to one. " ..
+            "Raise -Gap to at least %d.", r.position.x, r.position.y, #seen, fitting.name, GAP,
+            fitting.foot.size + 1))
+        end
+      end
+    end
+  end
+
+  log(string.format("BENCH-RIG grid=%d size=%d spacing=%d requested=%d placed=%d pooled=%s mixed=%s cases=%d collectors=%d blankets=%d",
+    GRID, SIZE, SPACING, COUNT, placed, tostring(POOLED), tostring(MIXED), #CASES,
+    #storage.collectors, #storage.blankets))
 end)
 
 -- ---------------------------------------------------------------- the ablation ladder (#39)
@@ -627,9 +834,59 @@ script.on_nth_tick(__REPORT__, function()
   local mix = {}
   for _, name in ipairs(names) do mix[#mix + 1] = string.format("%s:%d", name, burning[name]) end
 
-  log(string.format("BENCH-RIG tick=%d reactors=%d hot=%d powered=%d temp_c=%.4g plasma=%.4g output=%.4g buffer_j=%.4g burning=%s ablate=%s steps=%d touched=%d",
+  -- The fittings, and the two numbers that prove they were PAIRED rather than merely placed
+  -- (#62). Placement is logged at map creation and says nothing: entity-management pairs by the
+  -- tiles touching the reactor, so a fitting half a tile out of reach still places, still shows up
+  -- in the count, and is never looked at again.
+  --
+  -- collected= is the collector's equivalent of output= above. deposit() is the only thing in the
+  -- game that writes these boxes, so a non-zero total is proof the reactor found its collector.
+  --
+  -- tritium= and full_pct= are separate from it, and the separation is the point. full_pct is the
+  -- WORST tritium box, not an average over every box of every collector: only the tritium box can
+  -- saturate, and only its fill stops anything, so a figure pooled across both boxes and two
+  -- hundred collectors could never reach a threshold set for the box that matters. It also makes
+  -- the blanket's contribution readable -- the blanket adds tritium and nothing else, so tritium=
+  -- is the number to compare between a collected run and a blanketed one, where collected= mixes in
+  -- an unchanged helium-3 half and understates it.
+  --
+  -- bred= and lithium_min= are the blanket's, and they are counted PER BLANKET for the same reason.
+  -- Nothing but blanket_breed() takes items out of these containers, so a blanket whose stock has
+  -- fallen is one that ran -- but a sum over two hundred of them is satisfied by a single one
+  -- running, and cannot see the one that ran dry. bred= is how many actually moved; lithium_min= is
+  -- the least any of those has left, so zero means one ran dry and the rest of that run measured an
+  -- empty container.
+  local collected, tritium, full_pct = 0, 0, 0
+  for _, c in pairs(storage.collectors) do
+    if c.valid then
+      for index = 1, #c.fluidbox do
+        local held = c.fluidbox[index]
+        if held then collected = collected + held.amount end
+      end
+      local held = c.fluidbox[TRITIUM_BOX]
+      local amount = held and held.amount or 0
+      tritium = tritium + amount
+      local pct = 100 * amount / c.fluidbox.get_capacity(TRITIUM_BOX)
+      if pct > full_pct then full_pct = pct end
+    end
+  end
+  local lithium, bred, lithium_min = 0, 0, -1
+  for _, b in pairs(storage.blankets) do
+    if b.valid then
+      local left = b.get_inventory(defines.inventory.chest).get_item_count("rf-lithium")
+      lithium = lithium + left
+      if left < LITHIUM_LOADED then
+        bred = bred + 1
+        if lithium_min < 0 or left < lithium_min then lithium_min = left end
+      end
+    end
+  end
+
+  log(string.format("BENCH-RIG tick=%d reactors=%d hot=%d powered=%d temp_c=%.4g plasma=%.4g output=%.4g buffer_j=%.4g burning=%s ablate=%s steps=%d touched=%d collectors=%d collected=%.4g tritium=%.4g full_pct=%.3g blankets=%d bred=%d lithium=%d lithium_min=%d",
     game.tick, n, hot, powered, temp / d, plasma / d, output / d, energy / d,
-    (#mix > 0) and table.concat(mix, ",") or "none", ABLATE, ablate_steps, ablate_touched))
+    (#mix > 0) and table.concat(mix, ",") or "none", ABLATE, ablate_steps, ablate_touched,
+    #storage.collectors, collected, tritium, full_pct,
+    #storage.blankets, bred, lithium, lithium_min))
 end)
 '@
     # The shipped plasma set carries its own pipe connection category (#26), so a vanilla
@@ -639,6 +896,9 @@ end)
                 Replace('__PLASMAFEED__', (Write-PlasmaFeed -RigDirectory $rigDir)).
                 Replace('__POOLED__', $(if ($Pooled) { 'true' } else { 'false' })).
                 Replace('__MIXED__', $(if ($Mixed) { 'true' } else { 'false' })).
+                Replace('__COLLECTORS__', $(if ($Collectors) { 'true' } else { 'false' })).
+                Replace('__BLANKETS__', $(if ($Blankets) { 'true' } else { 'false' })).
+                Replace('__LITHIUM__', "$lithiumPerBlanket").
                 Replace('__ABLATE__', $Ablate).Replace('__INTERVAL__', "$interval")
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $lua -Encoding utf8
 }
@@ -764,7 +1024,7 @@ try {
     New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
     Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled @() -Mods ($ourMods + $rigName)
 
-    Write-Host "grid $grid x $grid cells, $Ticks ticks x $Runs run(s) per count, pooled: $([bool]$Pooled), ablate: $Ablate (interval $interval)"
+    Write-Host "grid $grid x $grid cells, $Ticks ticks x $Runs run(s) per count, pooled: $([bool]$Pooled), collectors: $([bool]$Collectors), blankets: $([bool]$Blankets), ablate: $Ablate (interval $interval)"
     Write-Host ''
 
     $results = @()
@@ -830,6 +1090,66 @@ try {
             if ($count -gt 0 -and $touched -ne $steps * $count) {
                 throw ("rig at n=$count touched $touched reactors over $steps steps of -Ablate $Ablate, " +
                        "expected $($steps * $count): '$state'")
+            }
+        }
+
+        # The fittings, and the same distinction the output= gate above draws: placed is not
+        # attached (#62). entity-management pairs a collector to a reactor by the tiles touching it,
+        # so one placed half a tile out of reach still exists, still counts, and is never written
+        # to -- which would leave this script reporting the cost of a vented reactor while claiming
+        # it measured a collected one. deposit() is the only thing that writes those boxes.
+        if ($Collectors -and $count -gt 0) {
+            $attached = if ("$state" -match 'collectors=(\d+)') { [int]$Matches[1] } else { -1 }
+            if ($attached -ne $count) {
+                throw "rig at n=$count had $attached collectors, not $count`: '$state'"
+            }
+            $collected = if ("$state" -match 'collected=([0-9.eE+-]+)') { [double]$Matches[1] } else { 0 }
+            if ($collected -le 0) {
+                throw ("rig at n=$count collected nothing, so no reactor found the collector bolted " +
+                       "to it and deposit() never ran: '$state'")
+            }
+            # Not a gate: a saturated tritium box is a legitimate state to measure, and it is also
+            # the state in which a blanket stops (control.lua treats a full collector as a missing
+            # one). Say so rather than refuse. full_pct is the WORST tritium box, so the threshold
+            # means what it reads as -- see the rig for why a pooled figure could never reach it.
+            $full = if ("$state" -match 'full_pct=([0-9.eE+-]+)') { [double]$Matches[1] } else { 0 }
+            if ($full -ge 95) {
+                # The blanket clause only when there are blankets: on a -Collectors run it would be
+                # a claim about a switch that is off.
+                # Parenthesised as one string before -f, for the reason the n = 0 guard below
+                # spells out: -f binds tighter than +.
+                $starved = if ($Blankets) {
+                    ' The blanket path was starved of headroom for part of the run.'
+                } else { '' }
+                Write-Warning ((("n={0}: the fullest tritium box was {1:N0}% full when the rig " +
+                    "last reported, so its by-product writes were being clamped.{2}") -f
+                    $count, $full, $starved))
+            }
+        }
+        if ($Blankets -and $count -gt 0) {
+            $fitted = if ("$state" -match 'blankets=(\d+)') { [int]$Matches[1] } else { -1 }
+            if ($fitted -ne $count) {
+                throw "rig at n=$count had $fitted blankets, not $count`: '$state'"
+            }
+            # PER BLANKET, not the total. Nothing but blanket_breed() takes items out of these
+            # containers, so a blanket whose stock has fallen is one that ran -- but a sum is
+            # satisfied by a single one running, and the run this gate exists to catch is the one
+            # where most of them sat idle. It cannot be read off the collector either: blanket
+            # tritium and D-D by-product tritium arrive in the same box.
+            $bred = if ("$state" -match 'bred=(\d+)') { [int]$Matches[1] } else { -1 }
+            # Every blanket unless the rig is mixed, and then only the neutronic rows: D-He3 and
+            # He3-He3 release no neutrons, so a blanket on an aneutronic reactor is correctly idle
+            # and control.lua is right not to spend its lithium (scripts/reactor-logic.lua).
+            $wanted = if ($Mixed) { 1 } else { $count }
+            if ($bred -lt $wanted) {
+                throw ("rig at n=$count had $bred of $count blankets breed, expected at least " +
+                       "$wanted, so blankets were idle and the figure is not a blanketed " +
+                       "reactor's cost: '$state'")
+            }
+            $lithiumMin = if ("$state" -match 'lithium_min=(-?\d+)') { [int]$Matches[1] } else { -1 }
+            if ($lithiumMin -le 0) {
+                throw ("rig at n=$count ran a blanket dry ($lithiumMin lithium left in the " +
+                       "emptiest one that bred), so part of the run measured an empty container: '$state'")
             }
         }
 
