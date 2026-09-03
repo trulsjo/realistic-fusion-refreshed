@@ -101,12 +101,12 @@ requires restructuring is not a fallback.
 
   Three things that measurement does **not** establish. It does not separate `deposit()` from the
   collector entity's own engine time, because a collector exists only where a reactor does and so
-  does not cancel out of the delta the way the rig's power does. It does not put a sharp number on
-  the premium: six vented-against-collected pairs all land on the same side, and not one of them
-  clears the 1.35× floor alone, so the sign is established and the magnitude is not. And the blanket
-  is a separate switch, off by default, costing at most the 1.12 between 5.44 and 4.84 µs — inside
-  the floor, though it more than doubles the tritium a D-D reactor yields. See *Collectors attached
-  (#62)* in [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md).
+  does not cancel out of the delta the way the rig's power does. It brackets the premium rather than
+  pinning it: the six vented-against-collected pairs all land on the same side and four of the six
+  clear the 1.35× floor, but they span 1.28 to 1.68 — so the effect is real and no second digit of
+  it is. And the blanket is a separate switch, off by default, costing at most the 1.12 between 5.44
+  and 4.84 µs — inside the floor, though it more than doubles the tritium a D-D reactor yields. See
+  *Collectors attached (#62)* in [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md).
 
   What is **not** discharged: the measurement is a rig, not a factory. #34 asked for a real base at
   scale and there is no such save in this project. The per-reactor cost is the mod's own contribution
@@ -122,7 +122,9 @@ requires restructuring is not a fallback.
   crossings at the rest, roughly two to one. That corrects the claim the research note has carried
   since #24 — that crossings outweighed the physics by one to two orders of magnitude — which, had
   it stood, would have made premultiplication pointless. It is not pointless; it is also not the biggest
-  lever, and at 2.5 µs a reactor neither lever is worth pulling yet.
+  lever, and at 2.5 µs a reactor neither lever is worth pulling yet. **At the 4.5 µs #62 measured
+  with collectors attached, that verdict is unchanged** — and the ablation ladder does not reach
+  the part that grew, since its rungs never run the collector path.
 - **Simulation state lives in `storage`**, which enlarges the save and migration surface. This bears on
   [Save migration or clean break?](https://github.com/trulsjo/realistic-fusion-refreshed/issues/7):
   recipe-driven reactors would have had almost no runtime state to migrate; simulated ones do.
