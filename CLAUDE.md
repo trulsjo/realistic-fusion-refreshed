@@ -266,10 +266,19 @@ Single-context — `CONTEXT.md` and `docs/adr/` at the repo root, created lazily
 
 ### Code review
 
-`/code-review`'s 80-point filter gates **what gets posted to the PR**, not what gets reported. Its
-rubric only emits 0/25/50/75/100, so the filter admits 100 alone — a finding can be verified,
-important and dropped. Report every surviving finding with its score; a review that posts nothing
-must still say what it filtered. See `docs/agents/code-review.md`.
+Two rules, both in `docs/agents/code-review.md`.
+
+**The filter gates the comment, not the report.** `/code-review`'s 80-point threshold governs what
+gets posted to the PR. Its rubric only emits 0/25/50/75/100, so the filter admits 100 alone — a
+finding can be verified, important and dropped. Report every surviving finding with its score; a
+review that posts nothing must still say what it filtered.
+
+**Review the prose, not only the code.** Every gate here checks machinery and none of them reads
+English, so a wrong sentence beside a right number survives everything. Check each figure in prose
+against a figure in the diff and do the arithmetic; treat "no", "every" and "the only" as
+instructions to enumerate; and when a change supersedes a number, grep the whole file for the old
+one. Three of the five defects found across two review rounds on #230 were claims rather than code,
+one of them contradicted by a table in the same commit.
 
 ## graphify
 
