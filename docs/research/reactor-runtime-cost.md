@@ -79,6 +79,22 @@ crashes anything. They just quietly produce a smaller number.
 > the deltas. It is a heavier rig than the one below 2026-08-15's figures were taken on:
 > `electricNetworkUpdate` roughly doubled, 49.8 µs against 101 µs by median at *n* = 200.
 
+**Which configuration a figure came from, which this note now has to say
+([#62](https://github.com/trulsjo/realistic-fusion-refreshed/issues/62)).** The rig builds
+reactors, power and a plasma feed; every *fitting* is a switch, and every switch is off by default.
+So every figure in this note above *[Collectors attached](#collectors-attached-62)* at the foot of
+it was taken on reactors with **no isotope collector and no lithium blanket** — reactors that
+compute their by-products and then vent them. `control.lua` computes `result.products` either way
+and only writes a collector's fluid boxes when one is attached, so `deposit()` had not executed in
+a single measurement this project had taken, and `blanket_breed()` had not either. Three
+configurations now exist and figures are labelled by them:
+
+| label | rig | what runs |
+|---|---|---|
+| **vented** | no arguments | the simulation, the by-product table computed and discarded |
+| **collected** | `-Collectors` | the above, plus the collector lookup and `deposit()`'s two fluid-box writes |
+| **blanketed** | `-Collectors -Blankets` | the above, plus the headroom read, `blanket_breed()` and its lithium withdrawal |
+
 **Machine and versions.** Factorio 2.0.77 (win64, steam), base only — no Space Age, no Quality.
 Intel Core i7-9850H (6 cores, 12 threads, 2.6 GHz base), Windows 11. A laptop part from 2019, so
 these are not fast-machine numbers.
@@ -416,6 +432,13 @@ for a D-D-only base.~~ **The number to quote is about 2.5 µs per reactor per ti
 are running** — 2.4 to 2.5 for the full set, 2.4 to 3.2 for D-D alone, and no digit after that is
 real. See #39 below for why the figures this section originally carried were nearly three times too
 high, and why there is no longer a cheap case and an expensive one.
+
+> **Both of those hold for a *vented* reactor, and #62 measured the other configuration.** With a
+> collector bolted on the full set costs about 4.5 µs and a D-D base 4.8 — so the second sentence
+> survives (there is still no cheap tier and no expensive one) and the first does not: the number to
+> quote is about half again what this section says, for a reason that has nothing to do with the
+> arithmetic and that every measurement before 2026-09-03 was blind to. See
+> *[Collectors attached](#collectors-attached-62)* at the foot of this note.
 
 ### Reproduced 2026-08-20, on the renamed mods
 
@@ -886,6 +909,14 @@ benchmark's reactors have **no collector bolted to them**, so `deposit()` never 
 allocation is the whole of what is being measured — a rig with collectors would pay two fluidbox
 writes per reactor on top, and by the lesson above those would cost more than the arithmetic does.
 
+> **Measured 2026-09-03 ([#62](https://github.com/trulsjo/realistic-fusion-refreshed/issues/62)),
+> and the guess was right in direction.** The rig can bolt collectors on now. D-D with them costs
+> 4.84 µs per reactor against 3.68 vented, in one sitting on a quiet machine — a ratio of 1.32,
+> and one of six pairs that all land on the same side while none of them clears the noise floor
+> alone. The allocation stayed unmeasurable and the plumbing it feeds did not quite become
+> measurable either; what is established is the sign. See
+> *[Collectors attached](#collectors-attached-62)*.
+
 The allocation is avoidable: `step()` could fill a caller-owned table instead of returning a fresh
 one. It was left alone, because doing it would put an out-parameter into the one module in this mod
 that is pure and testable outside Factorio (ADR 0005), in exchange for a saving that this
@@ -988,3 +1019,170 @@ on accumulators, and that the declared figure is a floor for everything else mea
 - The trace that raised it: #37 item 4b. What it unblocks: #72.
 - The precedent for measuring rather than reading:
   [ADR 0011](../adr/0011-per-reactor-simulation-fluid-coupled.md) and *Fluid segments* above (#40).
+
+## Collectors attached (#62)
+
+Measured **2026-09-03** on Factorio 2.0.77, the same script and the same statistic as everything
+above. This closes the hole
+[#62](https://github.com/trulsjo/realistic-fusion-refreshed/issues/62) opened: `bench-reactors.ps1`
+built reactors, power and a plasma feed and **nothing else**, so it had never built an
+`rf-isotope-collector`, and `deposit()` had therefore not executed in a single measurement this
+project had taken — not #24's, not #27's, not #34's. `control.lua` computes `result.products`
+either way and only writes a collector's fluid boxes when one is attached, so every figure on
+record was the cost of a reactor that **vents**. `blanket_breed()` had never run under measurement
+either, for the same reason one step further out: it is called only once a collector has been found.
+
+`scripts/bench-reactors.ps1 -Collectors` bolts one to every reactor; `-Blankets` adds a lithium
+blanket loaded with 5,000 items. Both go in the clear ground south of the reactor, side by side —
+not one north and one south the way `check-blanket.ps1` places them, because a rig is a grid and a
+reactor's north band is its neighbour's south band.
+
+**It needs `-Gap 6`, and the reason is worth reading before trusting any rig of this shape.**
+`entity-management` pairs by the tiles touching the reactor with a **whole tile** of margin, and a
+fitting sits in a band only `-Gap` deep. At the default gap of 5 a flush five-tile fitting reaches
+**half a tile** into the next row's pairing area, `attach()` takes the lowest `unit_number`, and
+fittings are built in row order — so every reactor from row 1 on paired with the row *above*'s
+fitting. Row 0's fittings served two reactors and the last row's served none. Nothing errored and
+the cost barely moved: every reactor still had a collector and `deposit()` still ran. What broke was
+the claim, and the blanket gate with it — the doubly-drained blanket in row 0 runs dry first, behind
+a check that reads the total. The rig now verifies the pairing against the real bounding boxes at
+map creation and refuses rather than reasoning about collision insets. **Every figure below is at
+`-Gap 6`, including the vented ones, so the five are comparable to each other and not directly to
+the gap-5 figures higher up this page.**
+
+**Placed is not attached, and three more gates hold the difference.** They are the collector's and
+the blanket's equivalents of the `output=` gate this note already relies on:
+
+- `collected=` and `tritium=` — fluid in the collectors, in total and in the tritium box alone.
+  `deposit()` is the only thing in the game that writes those boxes, so a non-zero total is proof
+  the reactor found its collector. The tritium box is separated out because the blanket adds
+  tritium and nothing else, so it is the only honest way to read the blanket's contribution.
+- `full_pct=` — the **fullest** tritium box, not an average. Only that box can saturate and only
+  its fill stops anything, so a figure pooled over both boxes of two hundred collectors could never
+  reach a threshold set for the box that matters. It never passed **1.8%** below, so nothing here
+  is a saturated collector.
+- `bred=` and `lithium_min=` — how many blankets actually spent lithium, and the least any of them
+  has left. Per blanket, not summed: a total below what was loaded is satisfied by one blanket
+  running, and cannot see the one that ran dry. Both are gates.
+
+### Results
+
+**One sitting, one machine, five sweeps, every count reporting a quiet machine** — no `BUSY` at any
+count of any run, which after #39 is the precondition for quoting anything at all. `-Counts
+0,10,50,200 -Gap 6`, 1000 ticks × 3 runs per count. `scriptUpdate` mean, baseline subtracted, µs per
+reactor.
+
+| reactors | D-D vented | D-D collected | D-D blanketed | mixed vented | mixed collected |
+|---:|---:|---:|---:|---:|---:|
+| 10 | 3.46 | 5.82 | 6.27 | 4.66 | 6.37 |
+| 50 | 3.41 | 4.90 | 5.31 | 3.39 | 4.35 |
+| 200 | **3.68** | **4.84** | **5.44** | **3.04** | **4.48** |
+
+`wholeUpdate` for the same runs at *n* = 200 — 4.73, 5.41, 5.99, 3.40 and 4.94 µs per reactor —
+because part of what a collector costs is charged to the engine and not to us. Unlike the rig's
+power, that part does **not** cancel: power is built for every cell at every count including
+*n* = 0, and a collector exists only where a reactor does, so its `entityUpdate` and
+`fluidFlowUpdate` land on the per-reactor delta. Every figure here is therefore *a reactor with a
+collector*, not *`deposit()`* — the two are not separated, and separating them would want an
+ablation rung.
+
+**The *n* = 10 row of the two mixed columns is not a mix.** Rows are `GRID` wide and reactions are
+assigned by row, so at *n* = 10 on a 15×15 grid every reactor is in row 0 burning D-D — the rig
+logs `burning=rf-d-d-plasma:10` and says as much. *n* = 10 is also this note's noisiest count. Read
+those two cells as a second, poorer D-D pair.
+
+**The vented column reproduces the record, which is what licenses the rest of the table.** 3.68 µs
+against the 2.4 – 3.2 that #39 measured quiet and the 2.23 of the 2026-08-20 reproduction — 1.15×
+the top of that range, inside the floor, and on a slightly larger cell than either. Nothing in the
+tick path has changed and this says so.
+
+### What the collector costs
+
+**About a third to two thirds again, and the direction is the finding rather than the size.**
+`collected` exceeds `vented` in all six pairs measured — D-D by 1.68, 1.44 and 1.32 at *n* = 10, 50
+and 200; the mixed rig by 1.37, 1.28 and 1.47. Not one of those individually clears this note's
+1.35× floor with room to spare, and the D-D figure at *n* = 200 sits just under it. **Six
+comparisons all landing on the same side is the claim; no single ratio here is a number.** Call it
+half again as expensive and expect the next sweep to disagree in the second digit.
+
+The mechanism is visible in the rig's own counters rather than inferred. **Only D-D breeds.** The
+mixed rig at *n* = 200 holds 60 D-D reactors out of 200, and its collectors held 508 units against
+the D-D-only rig's 1,694 — a ratio of 0.30, against a D-D population fraction of exactly 0.30. So
+three quarters of a mixed rig's collectors are ornaments. What that predicts is a *smaller* premium
+on the mixed rig, and the measurement does not show one: 1.47 against 1.32 at *n* = 200, the wrong
+way round and by less than the noise. The dilution argument is sound and the measurement is not
+sharp enough to see it, which is the same sentence #39 had to write about the by-product table.
+
+**So the thing #34 claimed and #39 withdrew stays withdrawn, for a better reason.** #34 said a
+D-D-only base was the expensive case because D-D is the only reaction that breeds; #39 re-measured
+quiet and found every reaction costing the same. With collectors attached — the configuration that
+makes breeding cost anything at all — D-D is 4.84 against a mixed 4.48, a ratio of 1.08. **There is
+still no cheap tier and no expensive one.** What #62 changes is not which reaction is dearest; it is
+that every configuration costs about 1.5× what the project has been quoting.
+
+### The blanket, decided rather than omitted
+
+`-Blankets` is a separate switch from `-Collectors`, and it is **off by default**. That is the
+decision #62 asked for, and the measurement is the reason: blanketed D-D costs 5.44 against
+collected 4.84 µs, a ratio of **1.12** — well inside the floor, and so unmeasurable here. It is
+above the collected figure at every count (6.27/5.82, 5.31/4.90, 5.44/4.84), so the direction is
+consistent; the size is not available.
+
+It is not idle in those runs, and the gates say so rather than the geometry. **All 200 blankets
+bred** (`bred=200`), the emptiest still held 4,995 of its 5,000 items so none ran dry, and the
+tritium box tells the rest: **1,779 units against the collector-only rig's 847 — the blanket more
+than doubles a D-D reactor's tritium.** (`collected=` rose only 1.55×, because it carries an
+unchanged helium-3 half; that is why the tritium box is reported separately.)
+
+**Why it is off by default anyway.** A blanketed reactor is a later tier's build and a collector is
+what every D-D player has, so the default should be the configuration the cheapest tier is quoted
+from. `-Blankets` also refuses to run without `-Collectors`: a blanket on a reactor with no
+collector is idle *by design* — `apply()` never calls `blanket_breed()`, because spending a real
+item to produce nothing is a trap rather than a mechanic — so the rig would be measuring the cost
+of owning a container.
+
+### Verdict
+
+**Acceptable. `UPDATE_INTERVAL` stays at 6, and the number to quote moves.**
+
+The figure to quote for the full reaction set is now **about 4.5 µs per reactor, 5.4% of a 16.67 ms
+tick at 200 reactors**, against the 2.5 µs and 3.1% that
+[ADR 0005](../adr/0005-real-time-fusion-simulation.md) recorded as discharged. That is a 1.8× move
+— well above the floor, so it is a real change and the ADR is updated to match. It is a change in
+what was measured and not in what the mod does: no commit caused it, the rig simply started
+building the configuration a player builds.
+
+**The worst of the five configurations is a blanketed D-D base at 5.44 µs, 6.5% of a tick at 200
+reactors** — and that is the configuration a D-T player runs, since the blanket rides on the D-D
+tier's collector. It is also the case that arrives earliest and on the smallest bases, which is what
+keeps it acceptable: at the ten to fifty reactors a real build has, 5.44 µs is 0.3% to 1.6% of a
+tick. Nothing here is worth spending the physics on, which is the question ADR 0005 pre-authorised a
+coarser cadence for.
+
+### What this does not close
+
+- **`deposit()` is not isolated from the collector entity.** The delta carries both, because the
+  fittings exist only where reactors do. An ablation rung for the write path would separate them;
+  `-Ablate` deliberately excludes the collector lookup, and the rig now refuses `-Collectors`
+  alongside `-Ablate` rather than reporting a number that mixes the two.
+- **No ratio here is sharp.** Six pairs agree on the direction and none is comfortably outside the
+  1.35× floor. What that wants is interleaved repeats — vented and collected alternating within one
+  invocation — which this rig cannot do, since each count is its own Factorio process.
+- **A saturated collector is unmeasured.** Nothing drains these, and a 500-unit box over a
+  seventeen-second run never got past 1.8% full. The state a player reaches with a stopped consumer
+  — full boxes, clamped writes, a blanket held at zero headroom — costs something different, and
+  the rig reports `full_pct=` so the next run can say whether it got there.
+- **The report walk does not cancel either.** Reading the fittings back is a few API calls per
+  reactor on a report tick, charged to `scriptUpdate` and absent from the *n* = 0 baseline. At the
+  defaults it is under a hundredth of a microsecond per reactor; at `-ReportEvery 1` it would be
+  the same order as the cost being measured. The same caveat `ReportEvery` already carries.
+- **Still a rig and not a factory.** Unchanged, and still
+  [#67](https://github.com/trulsjo/realistic-fusion-refreshed/issues/67)'s.
+
+### Sources
+
+- `scripts/bench-reactors.ps1 -Collectors` and `-Blankets`, and the five gates they add — including
+  the pairing check, which was written after review found the gap-5 mis-pairing above and which
+  fires on it.
+- What it corrects: *D-D by-products (#27)* and *The full reaction set (#34)* above, both measured
+  on vented reactors without saying so.
