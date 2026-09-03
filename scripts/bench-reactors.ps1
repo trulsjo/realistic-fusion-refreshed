@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Measures what a simulated reactor costs per tick. Discharges the measurement half of #24.
 
@@ -52,9 +52,16 @@
     biters, one surface. #34 did not close that half either -- it is #67's job, behind #64 and #65.
     This one exists to catch a disaster eleven tickets before #34 would.
 
+    -Save IS THE ANSWER TO "A RIG IS NOT A FACTORY", AND IT COSTS THE SLOPE (#64). Pointed at a save
+    this script did not build, it reports the same categories over the same tick counts with the same
+    statistics -- and it can report no per-reactor figure at all, because there is no n = 0 baseline
+    for somebody else's factory and every per-reactor number here is a subtraction against one. What
+    it delivers instead is the absolute cost of that map and the reactor census behind it. See
+    .PARAMETER Save.
+
     Nor does it resolve small differences. Ten invocations of the same binary on the same map, none
     of them flagged BUSY, spanned 1.34x (docs/research/reactor-runtime-cost.md, #39); treat anything
-    finer than about 1.4x as unmeasured.
+    finer than about 1.4x as unmeasured. That one applies to -Save as much as to the rig.
 
     AND IT CANNOT SUBTRACT THE REST OF THE MACHINE. Every figure it reports is a difference between
     two Factorio processes minutes apart, so work that starts between the baseline and the
@@ -64,6 +71,93 @@
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
+
+.PARAMETER Save
+    Benchmark this save instead of building a rig (#64). Every rig switch is refused alongside it
+    rather than ignored, because a report that named a mix or a fitting the save may not contain
+    would be a claim about the wrong map.
+
+    TWO THINGS DO NOT SURVIVE THE MOVE, and the output says both rather than leaving them to be
+    assumed.
+
+    There is NO n = 0 BASELINE, so no subtraction and no per-reactor figure. The rig can build the
+    same map twice and vary only the reactors; an existing factory cannot be un-built. What comes
+    out is the absolute cost of that map, which is the figure ADR 0005 actually needs and the one
+    the rig can never produce.
+
+    WHAT DOES SURVIVE IS THE OBLIGATION TO PROVE THE SIMULATION RAN, and it is met by a different
+    instrument. The rig gates on reactor energy produced, which works because nothing drains a
+    rig's output box; a factory drains it, so an amount in the box says nothing about who put it
+    there. Instead the census plants a signal of its own in each reactor's companion combinator and
+    looks for it again at the end of the run -- circuit-output.lua assigns that combinator's whole
+    filter list on every reporting tick, so a sentinel that survived means nothing stepped that
+    reactor. Counting reactors proves they exist; this is what proves they are being simulated, and
+    the run refuses rather than reporting the cost of entities nobody is stepping. Both failure
+    branches are poison-tested -- see the survey mod for the figures.
+
+    And A SAVE CARRIES ITS OWN MOD SET, so scriptUpdate is every enabled mod's Lua rather than this
+    repo's. The script knows which mods it enabled and says which of the two the column means: on a
+    save that enables nothing but this repo, scriptUpdate is this repo's Lua and the scenario script
+    the map was started from, which runs as __level__ and is never absent. On any other save it is
+    that plus every other mod, and nothing here can separate them -- Factorio's per-mod time usage is
+    a debug view in the client, not a --benchmark column.
+
+    HOW THE MOD SET IS ESTABLISHED, and why it is read out of the save rather than left to the game.
+    Factorio does not refuse a save whose mods are absent. Measured on 2.0.77, `--benchmark` over a
+    twenty-five-mod Bob's-and-Space-Age save with base alone enabled loaded it, ran, exited 0 and
+    printed no warning of any kind -- so a run that silently measured a map with every mod's entities
+    stripped out of it would look exactly like a good one. The save's own mod list is therefore parsed
+    out of its level-init.dat header and each name resolved against -SaveModDirectory and the game's
+    bundled mods; anything unresolved is named and the run refuses to start. That is acceptance
+    criterion five of #64, and it is a check this script has to do because the engine will not.
+
+    `--sync-mods` is the obvious alternative and is deliberately not used: it downloads from the mod
+    portal, so it needs credentials, reaches the network from a benchmark, and can install a mod
+    nobody asked for. Resolving against what is already on disk cannot do any of the three.
+
+    Version differences are a warning rather than a refusal -- Factorio migrates a save across a mod
+    version, and measuring the WORKING TREE against a save built by an older build of the same mod is
+    a thing somebody will legitimately want to do. This repo's own mods are always junctioned from the
+    working tree and win over any installed copy of the same name, because measuring a released zip
+    while editing the repo is the one outcome nobody wants. The bundled mods -- space-age, quality,
+    elevated-rails -- are matched by name only and never by version: they ship inside the game, so
+    the installed build is the only one there is and a warning on every save older than the current
+    patch would be noise. The header line prints what the save asked for, so the difference is on
+    the record either way.
+
+.PARAMETER SaveModDirectory
+    Where the save's third-party mods are found, for -Save. Defaults to your own Factorio mod
+    directory, which is where the saves next to it were built.
+
+    READ-ONLY, which is why this is allowed to default to it where scripts/dev-launch.ps1 refuses the
+    same directory outright: that one rewrites mod-list.json in place and would lose which mods you
+    have enabled, and nothing here writes to it at all. The mods the save names are copied (zips) or
+    junctioned (unpacked directories) into this run's throwaway mod directory, and only the ones the
+    save names -- so a mod directory holding several overhauls contributes whichever the save asked
+    for and none of the rest.
+
+    Where the exact version is not there and another version of the same mod is, the other one is
+    loaded and named in a warning. Which one, when there are several, is not a choice worth making
+    here: install the version the save wants, or read the warning.
+
+    mod-settings.dat is copied across when present, because startup settings change prototypes and
+    a benchmark of a map with different prototypes is a benchmark of a different map.
+
+.PARAMETER SelfTest
+    Prove the four pieces of -Save's machinery that can fail quietly, and exit. Needs no Factorio
+    and no save. It parses a synthesised save header, including the wide encoding a version
+    component only reaches at 255 and no real mod on hand has; it requires an unresolvable mod to
+    be named rather than skipped; it requires a zip whose name merely BEGINS with the wanted name
+    plus an underscore to be refused rather than taken for it; and it requires a mod differing only
+    in CASE to be refused too, planting one decoy in each of the two forms a mod can take on disk.
+
+    Those four and no more, because every one of them produces a confident wrong answer rather than
+    an error, and all three of the last three produce the SAME wrong answer by different routes: a
+    run that loads the save without the mod the save names, reports a clean pass, and is believed. A
+    mis-parsed header names the wrong mods. A mod list one entry short measures a map with a mod's
+    entities stripped out of it. LTN_Combinator resolving as LTN is that with a bonus mod loaded to
+    disguise it. And Wide resolving as wide is that again, from a mod directory that looks right to
+    anyone reading it, because the only difference is one the file system will not show you.
 
 .PARAMETER Counts
     Reactor counts to measure, ascending. 0 is the baseline and should be kept.
@@ -240,6 +334,8 @@ Compared against a reading taken just BEFORE
     pwsh -File scripts/bench-reactors.ps1 -Mixed
     pwsh -File scripts/bench-reactors.ps1 -Collectors -Gap 6
     pwsh -File scripts/bench-reactors.ps1 -Mixed -Collectors -Blankets -Gap 6
+    pwsh -File scripts/bench-reactors.ps1 -Save "$env:APPDATA\Factorio\saves\my-factory.zip"
+    pwsh -File scripts/bench-reactors.ps1 -SelfTest
 
     A LIST ARGUMENT NEEDS -Command, NOT -File, and this is not a style preference. -File hands each
     argument to the script as a string, and converting a string to [int[]] is culture-aware: where
@@ -256,6 +352,9 @@ Compared against a reading taken just BEFORE
 [CmdletBinding()]
 param(
     [string] $FactorioExe,
+    [string] $Save,
+    [string] $SaveModDirectory,
+    [switch] $SelfTest,
     [ValidateRange(0, 100000)]        [int[]] $Counts = @(0, 1, 10, 50, 200),
     [ValidateRange(1, [int]::MaxValue)] [int] $Ticks  = 1000,
     [ValidateRange(1, [int]::MaxValue)] [int] $Runs   = 3,
@@ -289,6 +388,443 @@ $lithiumPerBlanket = 5000
 $REPORT = @('wholeUpdate', 'scriptUpdate', 'luaGarbageIncremental', 'fluidFlowUpdate',
             'electricNetworkUpdate', 'entityUpdate')
 
+# The name of the mod -Save adds to take its reactor census. Separate from the rig, and never
+# present in the run that produces the numbers -- see Write-Survey.
+$surveyName = 'rf-bench-survey'
+
+# ------------------------------------------------------------------ the save's own mod set (#64)
+#
+# Parsed out of the save rather than left to the game, for the reason .PARAMETER Save gives at
+# length: Factorio loads a save whose mods are absent, runs it, and exits 0 without a warning.
+
+function Read-OptimizedNumber {
+    <#  One of Factorio's space-optimized integers: a single byte, unless that byte is 0xFF, in
+        which case the real value follows it in $WideBytes little-endian bytes.
+
+        It matters here rather than being a curiosity. A mod at version 1.2.300 encodes its third
+        component wide, so an entry is NOT a fixed number of bytes and a parser that assumed one
+        would walk off the end of the first such mod and mis-name every mod after it. $null on
+        running out of buffer, so a caller scanning for the block treats a truncated read as a
+        failed match rather than as data.  #>
+    param(
+        [Parameter(Mandatory)] [byte[]] $Buffer,
+        [Parameter(Mandatory)] [int]    $Length,
+        [Parameter(Mandatory)] [ref]    $Offset,
+        [Parameter(Mandatory)] [int]    $WideBytes
+    )
+
+    if ($Offset.Value -ge $Length) { return $null }
+    $b = $Buffer[$Offset.Value]; $Offset.Value++
+    if ($b -ne 0xFF) { return [int]$b }
+    if ($Offset.Value + $WideBytes -gt $Length) { return $null }
+    $value = 0
+    for ($i = 0; $i -lt $WideBytes; $i++) {
+        $value = $value -bor ([int]$Buffer[$Offset.Value + $i] -shl (8 * $i))
+    }
+    $Offset.Value += $WideBytes
+    return $value
+}
+
+function Read-ModBlock {
+    <#  Try to read a save header's mod list starting at $Start: a count, then that many entries of
+        a length-prefixed name, three optimized version components and a four-byte checksum.
+
+        Returns $null on anything that does not parse, and that is what makes the scan below safe
+        rather than a guess. The bytes between the map version and the mod list are variable-length
+        -- scenario name, map settings -- so the block's offset cannot be computed, only found.
+
+        A candidate offset is accepted only when its count parses, every one of its entries reads
+        as a plausible mod name, the block ends inside the buffer, and the first name is exactly
+        base. The scan runs forward from the start of the header and takes the first offset that
+        satisfies all four, so a save listing base and one mod has two names that must agree at
+        their exact lengths -- and every save worth benchmarking lists more than that.  #>
+    param(
+        [Parameter(Mandatory)] [byte[]] $Buffer,
+        [Parameter(Mandatory)] [int]    $Length,
+        [Parameter(Mandatory)] [int]    $Start
+    )
+
+    $offset = $Start
+    # The count is optimized as a uint32; a version component as a uint16. Different widths, so
+    # they cannot share one reader call.
+    $count = Read-OptimizedNumber -Buffer $Buffer -Length $Length -Offset ([ref]$offset) -WideBytes 4
+    if ($null -eq $count -or $count -lt 1 -or $count -gt 1000) { return $null }
+
+    $mods = @()
+    for ($i = 0; $i -lt $count; $i++) {
+        if ($offset -ge $Length) { return $null }
+        $len = [int]$Buffer[$offset]; $offset++
+        # A mod name is at most 100 characters on the portal, and never zero.
+        if ($len -lt 1 -or $len -gt 100 -or $offset + $len -gt $Length) { return $null }
+        $name = [Text.Encoding]::ASCII.GetString($Buffer, $offset, $len)
+        if ($name -notmatch '^[A-Za-z0-9 _\-\.\+]+$') { return $null }
+        $offset += $len
+
+        $version = @()
+        foreach ($component in 1..3) {
+            $n = Read-OptimizedNumber -Buffer $Buffer -Length $Length -Offset ([ref]$offset) -WideBytes 2
+            if ($null -eq $n) { return $null }
+            $version += $n
+        }
+        if ($offset + 4 -gt $Length) { return $null }   # the entry's checksum
+        $offset += 4
+
+        $mods += [pscustomobject]@{ Name = $name; Version = ($version -join '.') }
+    }
+    return $mods
+}
+
+function Get-SaveModList {
+    <#  Every mod a save was written with, in the order its header lists them, base first.
+
+        The header is at the front of level-init.dat and is NOT compressed, so only the first
+        block of it has to be read -- the level data proper runs to tens of megabytes and none of
+        it is wanted here.  #>
+    param([Parameter(Mandatory)] [string] $Path)
+
+    # Opened in a try of its own, because OpenRead on something that is not a zip throws a raw .NET
+    # exception -- and Factorio accepts an UNCOMPRESSED save, which is a directory, so pointing
+    # -Save at one is an ordinary mistake rather than an exotic one. Without this it arrives as
+    # "Access to the path is denied" and reads like a permissions fault.
+    try { $zip = [IO.Compression.ZipFile]::OpenRead($Path) }
+    catch {
+        throw ("'$Path' could not be read as a Factorio save zip: $($_.Exception.Message). An " +
+               'uncompressed save is a directory and cannot be read here; zip it, or point -Save ' +
+               'at the .zip the game writes.')
+    }
+    try {
+        # By leaf name: the entries are under a directory named after the save, which is not
+        # required to match the file name.
+        $entry = $zip.Entries | Where-Object { $_.Name -eq 'level-init.dat' } | Select-Object -First 1
+        if (-not $entry) {
+            throw ("'$Path' has no level-init.dat in it, so it is not a Factorio save. A scenario " +
+                   'directory and a blueprint string are both the wrong thing to pass here.')
+        }
+        $buffer = [byte[]]::new(65536)
+        $stream = $entry.Open()
+        try {
+            # Read in a loop: a decompressing stream is free to return less than was asked for
+            # long before it reaches the end, and a single Read can leave the mod list half
+            # outside the buffer.
+            $read = 0
+            while ($read -lt $buffer.Length) {
+                $n = $stream.Read($buffer, $read, $buffer.Length - $read)
+                if ($n -le 0) { break }
+                $read += $n
+            }
+        } finally { $stream.Dispose() }
+    } finally { $zip.Dispose() }
+
+    # base is always the first mod in the list, which is what anchors the scan. Bounded at 4 KB
+    # because every save measured put the block inside the first 60 bytes; a header that somehow
+    # pushed it past 4 KB should be a clear refusal rather than a slow one.
+    $limit = [Math]::Min($read, 4096)
+    for ($p = 0; $p -lt $limit; $p++) {
+        $mods = Read-ModBlock -Buffer $buffer -Length $read -Start $p
+        if ($mods -and $mods[0].Name -ceq 'base') { return $mods }
+    }
+    throw ("could not find the mod list in '$Path'. The save header's layout is not part of " +
+           "Factorio's public API, so a game update can move it -- run -SelfTest to tell a broken " +
+           'parser from an unusual save.')
+}
+
+function Resolve-SaveMods {
+    <#  Decide where every mod a save names is going to come from, or refuse and say which is not
+        anywhere.
+
+        Pure: it touches the file system to look, and changes nothing. That is what lets -SelfTest
+        exercise the refusal without a game or a save.
+
+        Returns Bundled (canonical names to enable), Foreign (descriptors with a Source path and an
+        IsZip flag) and Ours (this repo's mods the save asked for, which the junctions supply).  #>
+    param(
+        [Parameter(Mandatory)] [object[]]  $Wanted,
+        [Parameter(Mandatory)] [AllowEmptyString()] [string] $SourceDirectory,
+        [Parameter(Mandatory)] [hashtable] $Bundled,
+        [Parameter(Mandatory)] [string[]]  $Ours
+    )
+
+    $resolvedBundled = @()
+    $foreign         = @()
+    $ourNames        = @()
+    $missing         = @()
+    $mismatched      = @()
+
+    foreach ($mod in $Wanted) {
+        # base and core are not optional and are not in a mod directory.
+        if ($mod.Name -ceq 'base' -or $mod.Name -ceq 'core') { continue }
+
+        # -ccontains, not -contains: mod names are case-sensitive to Factorio and PowerShell's
+        # -contains is not, so a foreign mod whose name differs from one of ours only in case would
+        # be taken for ours and quietly never loaded. Folding the other way is the safe error --
+        # a differently-cased reference to one of ours falls through and gets NAMED as missing.
+        if ($Ours -ccontains $mod.Name) { $ourNames += $mod.Name; continue }
+
+        # Canonicalised through the hashtable's own key rather than trusted as typed, for the
+        # reason factorio-lib.ps1's header gives: -contains folds case and HashSet[string] does
+        # not, so an uncanonicalised name validates here and fails to match where it is written.
+        $bundledName = $Bundled.Keys | Where-Object { $_ -eq $mod.Name } | Select-Object -First 1
+        if ($bundledName) { $resolvedBundled += $bundledName; continue }
+
+        if (-not $SourceDirectory -or -not (Test-Path -LiteralPath $SourceDirectory)) {
+            $missing += $mod; continue
+        }
+
+        # An unpacked directory first, then a zip, and the save's own version ahead of any other.
+        # Both forms are legal to Factorio and a mod directory can hold either.
+        #
+        # BOTH LOOK BY ENUMERATING AND COMPARING CASE-SENSITIVELY, and never by asking the file
+        # system whether a path exists. That is the whole shape of what follows, and it is not a
+        # style preference: NTFS folds case, so `Test-Path .../wide_1.2.300.zip` answers yes for a
+        # file called Wide_1.2.300.zip. Factorio does not fold case -- it reads a mod's name out of
+        # its own info.json -- so resolving `wide` to Wide's file writes a mod-list.json enabling a
+        # `wide` that is nowhere, leaves the save's actual mod absent, and loads anyway with exit 0.
+        # That is the silent wrong-mod-set failure this whole function exists to refuse, arriving by
+        # the one route the function was not checking.
+        #
+        # The -ccontains above is the same rule on the same grounds. Found in review, in the zip
+        # branch; the directory branch had it too, because Test-Path folds case for a directory
+        # exactly as it does for a file. -SelfTest 4/4 holds both shut with one decoy each.
+        $found = $null
+        $wantedDir = "$($mod.Name)_$($mod.Version)"
+        # -LiteralPath because a mod directory's own path may contain brackets, which -Path would
+        # read as a character class.
+        foreach ($dir in @(Get-ChildItem -LiteralPath $SourceDirectory -Directory |
+                           Where-Object { $_.Name -ceq $wantedDir -or $_.Name -ceq $mod.Name } |
+                           Sort-Object { $_.Name -cne $mod.Name })) {
+            $info = Join-Path $dir.FullName 'info.json'
+            if (Test-Path -LiteralPath $info) {
+                # From info.json rather than from the directory name. An unpacked mod is not
+                # required to carry its version in its directory name -- a junction to a working
+                # tree never does -- so inferring one from the name would report a version
+                # mismatch on every such mod, including this repo's own.
+                $onDisk = (Get-Content $info -Raw | ConvertFrom-Json).version
+                $found = [pscustomobject]@{
+                    Name = $mod.Name; Version = $mod.Version; Source = $dir.FullName; IsZip = $false
+                    OnDisk = "$onDisk"; Exact = ("$onDisk" -ceq $mod.Version)
+                }
+                break
+            }
+        }
+        if (-not $found) {
+            # THE TAIL AFTER THE UNDERSCORE MUST BE A VERSION, which is why the glob is filtered
+            # rather than trusted. `-Filter "LTN_*.zip"` matches LTN_Combinator_2.0.1.zip, so a save
+            # wanting LTN on a machine that has only the Combinator would resolve LTN to the
+            # Combinator's zip and be reported RESOLVED -- the same silent failure the case rule
+            # above describes, by a third route. Found in review; -SelfTest 3/4.
+            #
+            # -Filter is the file system's own glob and folds case like the rest of NTFS, so it can
+            # only ever return a superset here. The -cmatch is what narrows it back.
+            $versioned  = "^$([regex]::Escape($mod.Name))_\d+\.\d+\.\d+$"
+            $wantedName = "$($mod.Name)_$($mod.Version)"
+            $zips = @(Get-ChildItem -LiteralPath $SourceDirectory -File -Filter "$($mod.Name)_*.zip" |
+                      Where-Object { $_.BaseName -cmatch $versioned } | Sort-Object Name)
+            # The save's own version ahead of any other, matched case-sensitively like the name.
+            # Which of several WRONG versions gets taken is not a decision this can make well, so
+            # it takes the first by name and warns which it took.
+            $pick = @($zips | Where-Object { $_.BaseName -ceq $wantedName })[0]
+            if (-not $pick) { $pick = $zips[0] }
+            if ($pick) {
+                # A zip's version is in its file name -- Factorio requires name_version.zip -- so
+                # there is nothing to read out of it.
+                $found = [pscustomobject]@{
+                    Name = $mod.Name; Version = $mod.Version; Source = $pick.FullName; IsZip = $true
+                    OnDisk = ($pick.BaseName -creplace "^$([regex]::Escape($mod.Name))_", '')
+                    Exact = ($pick.BaseName -ceq $wantedName)
+                }
+            }
+        }
+
+        if (-not $found) { $missing += $mod; continue }
+        if (-not $found.Exact) { $mismatched += $found }
+        $foreign += $found
+    }
+
+    if ($missing.Count -gt 0) {
+        # EVERY missing name in the message, and on one flowing line rather than one per line:
+        # PowerShell's error view reflows an exception message and swallows the newlines in it, so a
+        # list laid out vertically arrives as a run-on with double spaces where the breaks were.
+        #
+        # Naming them is the whole point. "Resolve the mods" is not an instruction anybody can act
+        # on, and this refusal exists precisely because Factorio's own silence is not either.
+        throw (("the save needs {0} mod(s) that are not installed, and Factorio would load it " +
+                "anyway WITHOUT complaining -- measuring a map with their entities stripped out of " +
+                "it. Missing: {1}. Looked in: {2}. Install them, or pass -SaveModDirectory at a " +
+                'directory that has them.') -f
+               $missing.Count,
+               (($missing | ForEach-Object { "$($_.Name) $($_.Version)" }) -join ', '),
+               ($SourceDirectory ? $SourceDirectory : '(nowhere -- no mod directory given)'))
+    }
+
+    foreach ($m in $mismatched) {
+        Write-Warning ("the save was written with $($m.Name) $($m.Version) and this run will load " +
+                       "$($m.OnDisk) from $($m.Source) instead. Factorio migrates a save across a " +
+                       'mod version, so the map measured is not quite the map saved.')
+    }
+
+    return [pscustomobject]@{
+        Bundled = @($resolvedBundled | Sort-Object -Unique)
+        Foreign = @($foreign)
+        Ours    = @($ourNames)
+    }
+}
+
+# ------------------------------------------------------------------ which mode this run is
+#
+# Before anything is resolved or created, because an argument that cannot be honoured has to be
+# refused rather than discarded. -Save builds nothing, so every switch that describes a rig is a
+# refusal: ignoring them would print a report about a save while the caller believed they had asked
+# for a mixed, collectored or ablated one, and nothing in the output would contradict them. Read off
+# $PSBoundParameters so a default is not mistaken for a request.
+$rigOnly = @('Counts', 'Pooled', 'Mixed', 'Collectors', 'Blankets', 'Ablate', 'Gap', 'ReportEvery')
+# The same rule applied to -SelfTest itself, and it has to come first: -SelfTest returns below,
+# before the rest of the script runs at all, so anything passed with it would be discarded in
+# silence -- which is the fault the paragraph above refuses.
+if ($SelfTest) {
+    # Against the real common-parameter list, not against 'Verbose' alone. [CmdletBinding()] adds
+    # eleven of them and every one arrives in $PSBoundParameters like any other argument, so
+    # `-SelfTest -ErrorAction Continue` refused to run the self-test at all while this named one.
+    $common    = [Management.Automation.PSCmdlet]::CommonParameters
+    $alsoGiven = @($PSBoundParameters.Keys | Where-Object { $_ -ne 'SelfTest' -and $_ -notin $common })
+    if ($alsoGiven.Count -gt 0) {
+        throw ("-SelfTest runs no game and reads no save, so it can honour none of: " +
+               "$($alsoGiven -join ', '). Pass -SelfTest alone.")
+    }
+}
+if ($Save) {
+    $given = @($rigOnly | Where-Object { $PSBoundParameters.ContainsKey($_) })
+    if ($given.Count -gt 0) {
+        throw ("-Save benchmarks a map this script did not build, so it can honour none of: " +
+               "$($given -join ', '). Drop them, or drop -Save to measure a rig.")
+    }
+} elseif ($SaveModDirectory) {
+    throw '-SaveModDirectory has nothing to resolve without -Save.'
+}
+
+if ($SelfTest) {
+    # Four assertions, all pure, all on machinery that would otherwise fail by giving a
+    # confident wrong answer rather than an error. See .PARAMETER SelfTest.
+    Write-Host '-SelfTest: the save-header parser and three ways a wrong mod could resolve.'
+
+    # A synthesised header: the leading bytes a real save has before its mod list -- whose contents
+    # do not matter, only that the scan has to get past them -- then three mods. The third is
+    # version 1.2.300, whose last component does not fit in a byte, so the wide encoding is
+    # exercised here rather than waiting for a mod to reach 255.
+    $bytes = [Collections.Generic.List[byte]]::new()
+    foreach ($b in @(2, 0, 0, 0, 77, 0, 0, 0, 0)) { $bytes.Add([byte]$b) }
+    $bytes.Add([byte]8); $bytes.AddRange([Text.Encoding]::ASCII.GetBytes('freeplay'))
+    $bytes.Add([byte]3)                                       # three mods follow
+    $expected = @(
+        @{ Name = 'base';        Version = @(2, 0, 77) }
+        @{ Name = 'a-third-mod'; Version = @(0, 16, 5) }
+        @{ Name = 'wide';        Version = @(1, 2, 300) }
+    )
+    foreach ($m in $expected) {
+        $bytes.Add([byte]$m.Name.Length); $bytes.AddRange([Text.Encoding]::ASCII.GetBytes($m.Name))
+        foreach ($component in $m.Version) {
+            if ($component -lt 255) { $bytes.Add([byte]$component) }
+            else {
+                $bytes.Add([byte]0xFF)
+                $bytes.AddRange([BitConverter]::GetBytes([uint16]$component))
+            }
+        }
+        $bytes.AddRange([byte[]]@(0xDE, 0xAD, 0xBE, 0xEF))    # the entry's checksum
+    }
+
+    $buffer = $bytes.ToArray()
+    $parsed = $null
+    for ($p = 0; $p -lt $buffer.Length; $p++) {
+        $try = Read-ModBlock -Buffer $buffer -Length $buffer.Length -Start $p
+        if ($try -and $try[0].Name -ceq 'base') { $parsed = $try; break }
+    }
+    if (-not $parsed) { throw '-SelfTest 1/4 FAILED: the parser found no mod list in a synthesised header.' }
+    $got  = ($parsed | ForEach-Object { "$($_.Name) $($_.Version)" }) -join '; '
+    $want = ($expected | ForEach-Object { "$($_.Name) $($_.Version -join '.')" }) -join '; '
+    if ($got -cne $want) { throw "-SelfTest 1/4 FAILED: parsed '$got', expected '$want'." }
+    Write-Host "  1/4 ok: parsed '$got', wide-encoded version included."
+
+    # And the refusal. An empty directory resolves nothing, so every name in the list must come
+    # back named -- a resolver that skipped what it could not find would hand the benchmark a map
+    # with a mod's entities missing and report a clean run over it.
+    $emptyDir = Join-Path ([IO.Path]::GetTempPath()) ('rf-bench-selftest-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    New-Item -ItemType Directory -Path $emptyDir -Force | Out-Null
+    try {
+        $refused = $null
+        try {
+            Resolve-SaveMods -Wanted $parsed -SourceDirectory $emptyDir -Bundled @{} -Ours (Get-RepoMods) |
+                Out-Null
+        } catch { $refused = "$($_.Exception.Message)" }
+        if (-not $refused) { throw '-SelfTest 2/4 FAILED: two unresolvable mods were accepted rather than refused.' }
+        foreach ($name in @('a-third-mod', 'wide')) {
+            if (-not $refused.Contains($name)) {
+                throw "-SelfTest 2/4 FAILED: the refusal does not name '$name': $refused"
+            }
+        }
+        # base is the engine's and is deliberately not a mod anybody installs, so naming it would
+        # send the reader looking for something that cannot be found.
+        if ($refused.Contains('base ')) {
+            throw "-SelfTest 2/4 FAILED: the refusal names base, which is not an installable mod: $refused"
+        }
+        Write-Host '  2/4 ok: both unresolved mods named, base not among them.'
+
+        # And the refusal again, against the near miss rather than the empty directory. A zip
+        # whose name merely STARTS with the wanted name plus an underscore is a different mod:
+        # LTN_Combinator is not LTN. Resolving it would report the save's mod set complete, load
+        # the map with the real mod's entities stripped out, and exit 0 -- so the near miss has to
+        # be refused exactly as loudly as nothing at all.
+        $decoyDir = Join-Path ([IO.Path]::GetTempPath()) ('rf-bench-selftest-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        New-Item -ItemType Directory -Path $decoyDir -Force | Out-Null
+        try {
+            Set-Content -Path (Join-Path $decoyDir 'wide_Combinator_2.0.1.zip') -Value 'not a mod' -Encoding utf8
+            $wanted = @([pscustomobject]@{ Name = 'wide'; Version = '1.2.300' })
+            $refused = $null
+            try {
+                Resolve-SaveMods -Wanted $wanted -SourceDirectory $decoyDir -Bundled @{} -Ours (Get-RepoMods) |
+                    Out-Null
+            } catch { $refused = "$($_.Exception.Message)" }
+            if (-not $refused) {
+                throw ('-SelfTest 3/4 FAILED: wide_Combinator_2.0.1.zip was accepted as the mod ' +
+                       '"wide", so a save could be benchmarked with the wrong mod loaded and ' +
+                       'nothing would say so.')
+            }
+            if (-not $refused.Contains('wide 1.2.300')) {
+                throw "-SelfTest 3/4 FAILED: the refusal does not name 'wide 1.2.300': $refused"
+            }
+            Write-Host '  3/4 ok: a name_suffix_version.zip is not accepted as name.'
+        } finally { Remove-TempDirectory -Path $decoyDir -Label 'bench-reactors -SelfTest' }
+
+        # And the near miss that is only a difference of CASE, which NTFS does not distinguish and
+        # Factorio does. Both decoys are planted at once deliberately: resolution reaching either
+        # one is a failure, so a single assertion catches a regression in the directory branch or
+        # in the zip branch without needing two.
+        $caseDir = Join-Path ([IO.Path]::GetTempPath()) ('rf-bench-selftest-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        New-Item -ItemType Directory -Path (Join-Path $caseDir 'Wide') -Force | Out-Null
+        try {
+            Set-Content -Path (Join-Path $caseDir 'Wide_1.2.300.zip') -Value 'not a mod' -Encoding utf8
+            '{ "name": "Wide", "version": "1.2.300" }' |
+                Set-Content -Path (Join-Path $caseDir 'Wide/info.json') -Encoding utf8
+            $wanted = @([pscustomobject]@{ Name = 'wide'; Version = '1.2.300' })
+            $refused = $null
+            try {
+                Resolve-SaveMods -Wanted $wanted -SourceDirectory $caseDir -Bundled @{} -Ours (Get-RepoMods) |
+                    Out-Null
+            } catch { $refused = "$($_.Exception.Message)" }
+            if (-not $refused) {
+                throw ('-SelfTest 4/4 FAILED: a mod called "Wide" was accepted as the mod "wide". ' +
+                       'Factorio reads a mod name from its own info.json and does not fold case, so ' +
+                       "the save's real mod would have been absent from a run reported as clean.")
+            }
+            if (-not $refused.Contains('wide 1.2.300')) {
+                throw "-SelfTest 4/4 FAILED: the refusal does not name 'wide 1.2.300': $refused"
+            }
+            Write-Host '  4/4 ok: neither Wide/ nor Wide_1.2.300.zip is accepted as wide.'
+        } finally { Remove-TempDirectory -Path $caseDir -Label 'bench-reactors -SelfTest' }
+    } finally { Remove-TempDirectory -Path $emptyDir -Label 'bench-reactors -SelfTest' }
+
+    Write-Host '-SelfTest: PASS'
+    return
+}
+
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
 $bundled     = Get-BundledMods -FactorioExe $FactorioExe
 
@@ -317,7 +853,11 @@ if ($Counts.Count -eq 0) { throw '-Counts is empty.' }
 $temp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-bench-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 $modDir = Join-Path $temp 'mods'
 $rigDir = Join-Path $modDir $rigName
-New-Item -ItemType Directory -Path $rigDir -Force | Out-Null
+# Only the directory the run actually needs. A directory in a mod directory with no info.json in it
+# is a mod Factorio refuses to load, so creating the rig's under -Save would break the very runs
+# that have no rig -- and creating the survey's under a rig run would put a mod in the sweep that
+# #24's reading did not have.
+New-Item -ItemType Directory -Force -Path ($Save ? (Join-Path $modDir $surveyName) : $rigDir) | Out-Null
 
 # A report interval at or past the run length leaves only the tick-0 report, which is taken before
 # the rig has filled and would fail the "every reactor hot" gate on a perfectly good run. Halving
@@ -335,6 +875,19 @@ if ((Get-Content $controlLua -Raw) -match '(?m)^local UPDATE_INTERVAL = (\d+)') 
 } else {
     throw "could not read UPDATE_INTERVAL from $controlLua; the ablation rungs would step at the wrong cadence."
 }
+
+# And the REPORTING cadence, in simulation steps, read the same way and for the same reason. It is
+# what -Save's simulation gate waits for: circuit.publish() runs on this cadence rather than on
+# every step, so the census's window has to be long enough to contain one. Remembering either
+# number would give a gate that passes because it looked too early.
+if ((Get-Content $controlLua -Raw) -match '(?m)^local REPORT_EVERY = (\d+)') {
+    $reportEvery = [int]$Matches[1]
+} else {
+    throw ("could not read REPORT_EVERY from $controlLua; -Save's simulation gate would not know " +
+           'how long to wait for a publish.')
+}
+# Ticks between one circuit publish and the next, which is the two cadences multiplied.
+$publishEvery = $interval * $reportEvery
 
 # on_nth_tick handlers are keyed by PERIOD, so registering the rig's report at the same interval the
 # ablation ladder steps at would not add a handler -- it would silently replace one, and the rig
@@ -1069,6 +1622,631 @@ function Get-Median {
     return ($s[$n / 2 - 1] + $s[$n / 2]) / 2
 }
 
+function New-TimingRow {
+    <#  One result row from a parsed benchmark dump. Shared by the rig sweep and -Save, which is
+        the whole of acceptance criterion one of #64: the two paths do not merely report the same
+        column NAMES, they compute them with the same code.  #>
+    param(
+        [Parameter(Mandatory)] $Columns,
+        [Parameter(Mandatory)] [int] $Reactors,
+        [AllowEmptyString()] [string] $State = '',
+        [double] $Cpu = [double]::NaN,
+        [double] $Load = [double]::NaN
+    )
+
+    $row = [ordered]@{
+        Reactors = $Reactors; Samples = $Columns['scriptUpdate'].Count; State = $State
+        CpuPerf = $Cpu; CpuLoad = $Load
+        # Per run rather than pooled, because that is the axis drift lives on. The median for
+        # wholeUpdate -- the machine's own indicator, and the one a load spike would otherwise
+        # dominate -- and the mean for scriptUpdate, which is the statistic every figure this
+        # script reports is taken from.
+        WholeByRun  = @(Split-Runs $Columns['wholeUpdate']  $Ticks $Runs | ForEach-Object { Get-Median $_ })
+        ScriptByRun = @(Split-Runs $Columns['scriptUpdate'] $Ticks $Runs |
+                        ForEach-Object { ($_ | Measure-Object -Average).Average })
+    }
+    foreach ($c in $REPORT) {
+        $row["$c.median"] = (Get-Median $Columns[$c]) / 1000.0   # ns -> us
+        $row["$c.mean"]   = (($Columns[$c] | Measure-Object -Average).Average) / 1000.0
+    }
+    return [pscustomobject]$row
+}
+
+function Write-StatTables {
+    <#  The absolute per-category tables, in both statistics.
+
+        Both are printed and they answer different questions, which matters as soon as the mod
+        updates on anything but every tick. The mean is the cost: averaged over thousands of ticks
+        it is what UPS actually spends, and a throttled mod that does its work on one tick in six
+        costs exactly what it did before divided by six. The median is what a tick feels like, and
+        it is the honest one for per-tick work because a benchmark run carries spikes an order of
+        magnitude above the typical tick. Under throttling the median collapses towards the
+        baseline -- five ticks in six now do nothing -- so per-reactor cost is taken from the mean.  #>
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [object[]] $Results)
+
+    foreach ($stat in @('median', 'mean')) {
+        Write-Host ''
+        Write-Host "$stat tick, microseconds"
+        Write-Host ('{0,-9}' -f 'reactors') -NoNewline
+        foreach ($c in $REPORT) { Write-Host ('{0,22}' -f $c) -NoNewline }
+        Write-Host ''
+        foreach ($r in $Results) {
+            Write-Host ('{0,-9}' -f $r.Reactors) -NoNewline
+            foreach ($c in $REPORT) { Write-Host ('{0,22:N2}' -f $r."$c.$stat") -NoNewline }
+            Write-Host ''
+        }
+    }
+}
+
+function Write-MachineNote {
+    <#  What the machine was doing when a measurement was launched, and a warning when that was
+        somebody else's work. $Why is the one sentence that differs between the two callers: the
+        rig's figures are differences against a baseline measured minutes earlier, and -Save's are
+        not differences at all, so the reason other work is dangerous is not the same reason.  #>
+    param(
+        [Parameter(Mandatory)] [string] $Label,
+        [Parameter(Mandatory)] [double] $Cpu,
+        [Parameter(Mandatory)] [double] $Load,
+        [Parameter(Mandatory)] [string] $Why
+    )
+
+    Write-Host ("        machine: clock {0:N0}% of base, {1:N0}% of the part in other hands at launch" -f $Cpu, $Load)
+    # An unreadable counter is its own warning and is NOT a quiet machine. `NaN -gt $BusyPercent`
+    # is false in PowerShell, so without this branch a localised Windows -- where these counter
+    # paths are translated and Get-Counter simply throws -- would run a fully contended sweep and
+    # print no BUSY at all, which is the one outcome this guard must never produce.
+    if ([double]::IsNaN($Load)) {
+        Write-Warning ((("{0}: the machine's load counter did not answer, so this run is NOT " +
+            "known to have been quiet. Treat it as unguarded rather than as clean -- the check " +
+            "did not run, which is not the same as passing. The counter names are localised on " +
+            "non-English Windows; 'lodctr /R' repairs a corrupt counter cache.") -f $Label))
+    }
+    # Otherwise a warning rather than a throw, because there is no calibrated threshold here and
+    # refusing to report would be worse than reporting with the caveat attached. BUSY is the word
+    # to grep for before quoting a figure from a run.
+    elseif ($Load -gt $BusyPercent) {
+        # Parenthesised as one string before -f, for the reason the n = 0 guard below spells out:
+        # -f binds tighter than +, so without them the format applies to the last fragment only
+        # and the message prints a literal {0}.
+        Write-Warning ((("{0}: BUSY -- {1:N0}% of the part was already in other hands when this " +
+            "was launched. {2} Re-run on a quiet machine before quoting it.") -f $Label, $Load, $Why))
+    }
+}
+
+function Complete-Run {
+    <#  Tear down what this run built, from either path's finally block. #>
+    if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }
+
+    # Junctions always go, even with -KeepTemp: leaving links to the repo in %TEMP% hands a
+    # delete-through-the-link hazard to whatever cleans it up later.
+    Remove-ModJunctions -ModDirectory $modDir
+
+    if (-not $KeepTemp) { Remove-TempDirectory -Path $temp -Label 'bench-reactors' }
+}
+
+function Write-Survey {
+    <#  Generate the mod that takes -Save's reactor census.
+
+        A SEPARATE FACTORIO RUN FROM THE ONE THAT PRODUCES THE NUMBERS, and that is the point of
+        it being its own mod rather than a report tick bolted onto the measurement. Adding a mod to
+        a save adds its Lua to scriptUpdate, and -Save has no baseline to subtract that back out of
+        -- the rig can charge its own report walk to a delta, this cannot. So the census gets a run
+        of its own with this mod enabled, the measurement runs with it explicitly disabled, and the
+        cost it adds to the reported figures is none.
+
+        What it costs instead is one more load of the save and one more run of it, which is why the
+        walk happens twice in that run rather than every tick. See the census run's own note for
+        why it is a full-length run and not a single tick.
+
+        It also WRITES to the map, which only a discarded run may do -- the sentinel that proves
+        the shipped simulation is stepping these reactors. That is the second reason the census is
+        its own process rather than a tick of the measurement, and the stronger one.
+
+        The reactor names come out of the shipped module rather than from here, for the reason the
+        rig reads its footprints: a third reactor would otherwise be counted by nothing and the
+        census would report a confident short total. It is READ from the file rather than required
+        into the mod, because requiring entity-management installs its build handlers -- which is
+        why circuit-output.lua does not require it either.  #>
+
+    $surveyDir = Join-Path $modDir $surveyName
+    New-Item -ItemType Directory -Path $surveyDir -Force | Out-Null
+
+    $source = Join-Path $repoRoot 'realistic-fusion-refreshed/scripts/entity-management.lua'
+    if ((Get-Content $source -Raw) -notmatch '(?m)^local REACTORS = \{([^}]*)\}') {
+        throw ("could not read REACTORS from $source, so the census would have to guess which " +
+               'prototypes are reactors.')
+    }
+    $names = @([regex]::Matches($Matches[1], '"([^"]+)"') | ForEach-Object { $_.Groups[1].Value })
+    if ($names.Count -eq 0) { throw "read an empty REACTORS list from $source." }
+
+    @{
+        name = $surveyName; version = '0.0.1'; title = 'Reactor census'
+        author = 'bench-reactors.ps1'; factorio_version = '2.0'
+        dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed')
+    } | ConvertTo-Json | Set-Content -Path (Join-Path $surveyDir 'info.json') -Encoding utf8
+
+    $lua = @'
+-- Generated by scripts/bench-reactors.ps1. Nothing here ships.
+
+local REACTORS = { __REACTORS__ }
+
+-- How long the run this census describes is, so the last report lands at the end of a window the
+-- same length as one measured run.
+local TICKS = __TICKS__
+
+-- Ticks between one circuit publish and the next, read out of control.lua by the caller. What the
+-- gate below waits for.
+local PUBLISH_EVERY = __PUBLISH_EVERY__
+
+-- ------------------------------------------------------------------ is anything SIMULATING these?
+--
+-- Counting reactors proves they EXIST. It does not prove realistic-fusion-refreshed has any of them in its
+-- register, and that distinction is the whole of this block. find_entities_filtered reads the map;
+-- entity.fluidbox reads fluid the engine moves. Both answer identically for a reactor the mod has
+-- never heard of -- so a save whose registration silently broke would report a full, convincing
+-- census, and the cost figure beside it would be the cost of dead entities nobody is stepping.
+--
+-- The rig path has gated on this since 5ce645e, using reactor energy produced. That does not
+-- transfer: a rig accumulates its output because nothing drains it, and a factory drains it, so an
+-- amount in the box at one instant says nothing about who put it there.
+--
+-- WHAT DOES TRANSFER IS A SENTINEL. Every reactor has a companion constant combinator named after
+-- it, created on demand by circuit-output.lua, and publish() assigns that combinator's whole filter
+-- list every reporting tick -- deliberately, so that what is on the wire is the reactor's own
+-- account of itself and not something a player typed. So: plant a signal of our own in there on the
+-- first tick, and look for it again at the end. Gone means publish() ran for that reactor, which
+-- only the register can cause. Still there means nothing is stepping it.
+--
+-- It tests REGISTRATION rather than health, which is what makes it usable on somebody else's
+-- factory: control.lua publishes for every registered reactor on a report tick including a starved
+-- one, so a cold, empty, unpowered reactor still clears this gate. That is correct. "Nobody is
+-- simulating it" and "it has no fuel" are different findings and the census reports the second one
+-- separately, under burning=.
+--
+-- IT WRITES TO THE MAP, AND THAT IS SAFE HERE FOR ONE REASON ONLY: this is the census run, whose
+-- numbers are thrown away. --benchmark never saves, and the run that produces the reported figures
+-- is a SEPARATE process opening the untouched file. If this ever moves into the measurement run,
+-- the sentinel has to go.
+--
+-- MEASURED, NOT ASSUMED. Both failure branches were poisoned on a ten-reactor save and both were
+-- caught, with the shipped mod loaded and its reactors present, hot and burning D-D throughout:
+--
+--   registration removed (control.lua's script.on_nth_tick call deleted)   simulated=0 nocomb=10
+--   registration stopped after tick 45, so every combinator exists and
+--     one publish has already happened before the sentinels go in         simulated=0 stale=10
+--   shipped, unmodified                                                   simulated=10 erased=10
+--
+-- The middle row is the one that needed the planting tick moved off tick 1; see PLANT_AT below.
+-- The poison lived in a copy of the mod under %TEMP%, never in the repository.
+local SENTINEL = { type = "virtual", name = "signal-0", quality = "normal" }
+
+local function combinator_of(entity)
+  local name = entity.name .. "-signals"
+  -- Guarded rather than assumed: find_entities_filtered THROWS on a name no loaded prototype has,
+  -- which would kill the census over a mod version that predates the companion combinator.
+  if not prototypes.entity[name] then return nil end
+  -- At the reactor's own position, which is where circuit-output.lua creates it. Filtered by name
+  -- as well, because the reactor's own box contains that point too.
+  return entity.surface.find_entities_filtered({ name = name, position = entity.position })[1]
+end
+
+local function section_of(entity)
+  local combinator = combinator_of(entity)
+  if not combinator then return nil end
+  local behavior = combinator.get_control_behavior()
+  if not behavior or behavior.sections_count < 1 then return nil end
+  return behavior.get_section(1)
+end
+
+local function has_sentinel(section)
+  for _, filter in pairs(section.filters or {}) do
+    if filter.value and filter.value.name == SENTINEL.name then return true end
+  end
+  return false
+end
+
+-- Appended to what is already there rather than replacing it, so the reactor's own two signals are
+-- still on the wire while the sentinel sits beside them. publish() drops the lot on its next run,
+-- which is exactly what is being detected.
+local function plant(entity)
+  local section = section_of(entity)
+  if not section then return "nocomb" end
+  if not has_sentinel(section) then
+    local filters = {}
+    for _, filter in pairs(section.filters or {}) do filters[#filters + 1] = filter end
+    filters[#filters + 1] = { value = SENTINEL, min = 1 }
+    section.filters = filters
+  end
+  return "planted"
+end
+
+-- What each reactor looked like when the sentinels went in, keyed by unit_number. The verdict is a
+-- COMPARISON, not a snapshot, and this table is why.
+--
+-- Without it, "combinator present and no sentinel of ours in it" would be the whole test -- which
+-- a save whose combinators were built in an earlier life passes while nothing steps it, because
+-- nobody checked that a sentinel was ever planted there. Every ok below therefore names its
+-- evidence: a mark that publish() erased, or an absence that publish() filled.
+local before = {}
+
+-- Four outcomes. Both failures are counted apart because they say different things, and both ways
+-- of succeeding are too.
+--
+--   erased  a sentinel went in and is gone. publish() assigns the whole list, so only it can do
+--           that, and only for a reactor in the register.
+--   grew    there was no combinator to mark and there is one now. circuit-output.lua creates them
+--           on demand from publish(), so its existence is the same proof by the other route --
+--           this is the ordinary case on a save written seconds after its reactors were placed.
+--   stale   marked, and the mark survived. It has a combinator from some earlier life and nothing
+--           stepping it now.
+--   nocomb  nothing to mark then, nothing there now. Never published for at all.
+local function verdict(entity)
+  local was = before[entity.unit_number]
+  local section = section_of(entity)
+  if was == "planted" then
+    if not section then return "stale" end          -- the combinator went away; not a publish
+    return has_sentinel(section) and "stale" or "erased"
+  end
+  if was == "nocomb" then
+    return section and "grew" or "nocomb"
+  end
+  -- A reactor nobody saw on the first tick. Impossible in a benchmark -- nothing builds -- so it is
+  -- reported rather than guessed at.
+  return "unseen"
+end
+
+-- TWICE PER RUN -- not once at the start and not every tick -- and every part of that is
+-- deliberate.
+--
+-- Not every tick, because this walks every entity on every surface. On a factory worth measuring
+-- that is the most expensive thing in the run, and a thousand of them would cost more than the
+-- measurement it exists to describe.
+--
+-- Not once, because the verdict below is a COMPARISON between two walks, and because what a
+-- reactor is BURNING on the first tick of a reloaded save is not what it burns over the window
+-- that gets measured: a save written moments after its reactors were placed has empty plasma boxes
+-- until the fluid reaches them, and reporting "(empty)" for a rig that spends the whole benchmark
+-- hot would be true of the instant and wrong about the run.
+--
+-- And the first walk is NOT the first tick. It waits for two publish cycles, so that every
+-- registered reactor already has the companion combinator publish() creates on demand and the
+-- sentinel has somewhere to go. Planting at tick 1 worked, but it left the case that actually
+-- catches a fault -- a mark that gets erased -- unexercised on any save this project can build,
+-- because a freshly created save has no combinators yet and every reactor came back "grew one".
+-- A gate whose interesting branch never runs is a gate nobody has tested.
+--
+-- Counted rather than read off game.tick: a save resumes at whatever tick it was written at, so
+-- there is no arithmetic on game.tick that gives "the last tick of this run" without knowing that.
+local PLANT_AT = 2 * PUBLISH_EVERY
+local seen = 0
+
+script.on_event(defines.events.on_tick, function()
+  seen = seen + 1
+  if seen ~= PLANT_AT and seen < TICKS then return end
+
+  -- Which half of the census this tick is. The first plants the sentinels; the last reads them.
+  -- Ordered this way round so that a run too short to hold both -- where seen reaches TICKS at or
+  -- before PLANT_AT -- takes the verdict half and reports nothing simulated rather than planting
+  -- and never looking. The caller refuses such a run outright; this makes the refusal say so
+  -- instead of the survey reporting a confident zero.
+  local planting = (seen == PLANT_AT) and (seen < TICKS)
+
+  local kinds, burning, total = {}, {}, 0
+  for _, name in ipairs(REACTORS) do kinds[name] = 0 end
+  local counts = { erased = 0, grew = 0, stale = 0, nocomb = 0, unseen = 0 }
+
+  -- Counted here rather than with table_size(game.surfaces): game.surfaces is a LuaCustomTable,
+  -- which is userdata, and table_size rejects it outright ("table expected, got userdata").
+  local surfaces = 0
+
+  -- Every surface. A rig has one; a factory worth measuring may have a dozen, and a reactor on
+  -- Vulcanus costs exactly what a reactor on Nauvis does.
+  for _, surface in pairs(game.surfaces) do
+    surfaces = surfaces + 1
+    for _, entity in pairs(surface.find_entities_filtered({ name = REACTORS })) do
+      kinds[entity.name] = (kinds[entity.name] or 0) + 1
+      total = total + 1
+      -- Box 1 is the plasma inlet, which is what a reactor burns. An empty one is reported as
+      -- such rather than skipped: a factory whose reactors are all idle is a real finding about
+      -- the number this run is about to print, not a rounding error.
+      --
+      -- The length check is not paranoia about an empty box -- fluidbox[1] on an entity with NO
+      -- fluidbox raises "Index out of range" and would kill the census run outright. Latent while
+      -- both reactors have one, and the point of reading REACTORS out of the shipped module is
+      -- that a third reactor arrives here without anyone editing this script.
+      local box = (#entity.fluidbox > 0) and entity.fluidbox[1] or nil
+      local fluid = (box and box.name) or "(empty)"
+      burning[fluid] = (burning[fluid] or 0) + 1
+
+      if planting then
+        -- Recorded, not counted: this walk's counts never reach the log, because the line is
+        -- written on the VERDICT walk where the table is fresh. How many were planted is read
+        -- back out of erased + stale instead.
+        before[entity.unit_number] = plant(entity)
+      else
+        local v = verdict(entity)
+        counts[v] = (counts[v] or 0) + 1
+      end
+    end
+  end
+
+  local byKind = {}
+  for _, name in ipairs(REACTORS) do byKind[#byKind + 1] = string.format("%s:%d", name, kinds[name]) end
+
+  -- Sorted, so two runs over the same save produce the same line and a diff between them means
+  -- something.
+  local fluids = {}
+  for fluid in pairs(burning) do fluids[#fluids + 1] = fluid end
+  table.sort(fluids)
+  local byFluid = {}
+  for _, fluid in ipairs(fluids) do byFluid[#byFluid + 1] = string.format("%s:%d", fluid, burning[fluid]) end
+
+  -- simulated= is erased + grew, because those are the two ways publish() can have proved itself
+  -- and the caller's gate is about the total. The parts stay on the line so a failure can be read
+  -- rather than guessed at, and publish_every= is there so a reader can tell a gate that passed
+  -- from one that was never given long enough to run. See the caller.
+  log(string.format(
+    "BENCH-SURVEY tick=%d surfaces=%d reactors=%d kinds=%s burning=%s simulated=%d erased=%d grew=%d stale=%d nocomb=%d unseen=%d publish_every=%d",
+    seen, surfaces, total,
+    table.concat(byKind, ","), (#byFluid > 0) and table.concat(byFluid, ",") or "none",
+    counts.erased + counts.grew, counts.erased, counts.grew, counts.stale, counts.nocomb,
+    counts.unseen, PUBLISH_EVERY))
+end)
+'@
+    $lua = $lua.Replace('__REACTORS__', (($names | ForEach-Object { '"' + $_ + '"' }) -join ', '))
+    $lua = $lua.Replace('__TICKS__', "$Ticks")
+    $lua = $lua.Replace('__PUBLISH_EVERY__', "$publishEvery")
+    Set-Content -Path (Join-Path $surveyDir 'control.lua') -Value $lua -Encoding utf8
+}
+
+# ------------------------------------------------------------------ -Save: a map we did not build
+#
+# Its own block rather than a branch inside the sweep below, because the two share the measurement
+# and share nothing else: there is no map to create, no rig whose construction can be gated, no
+# baseline to subtract and so no per-reactor table. What it does share is the obligation behind the
+# rig's gates -- refuse a figure the run cannot support -- and it meets that with its own
+# instruments, the mod-set refusal and the simulation gate below. The sweep is left exactly as it
+# was (acceptance criterion four of #64) and the statistics both paths report come from the same
+# New-TimingRow and Write-StatTables.
+if ($Save) {
+    if (-not (Test-Path -LiteralPath $Save)) { throw "-Save not found: $Save" }
+    $Save = (Resolve-Path -LiteralPath $Save).Path
+
+    if (-not $SaveModDirectory) { $SaveModDirectory = Join-Path $env:APPDATA 'Factorio\mods' }
+    if (-not (Test-Path -LiteralPath $SaveModDirectory)) {
+        throw ("-SaveModDirectory not found: $SaveModDirectory. That is where the save's own mods " +
+               'are looked for; pass one explicitly if they live elsewhere.')
+    }
+    # New-ModJunctions refuses a relative target, and a mod directory given relative to the
+    # repository is the obvious thing to type.
+    $SaveModDirectory = (Resolve-Path -LiteralPath $SaveModDirectory).Path
+
+    # Inside the try, not before it: the temp directory exists by this point, and reading the
+    # save's header or refusing an unresolved mod is exactly where this path fails. Left outside,
+    # the refusal this was written for -- which is the one users will actually hit -- would leak
+    # the directory every time.
+    try {
+        $wanted   = Get-SaveModList -Path $Save
+        $resolved = Resolve-SaveMods -Wanted $wanted -SourceDirectory $SaveModDirectory `
+            -Bundled $bundled -Ours $ourMods
+
+        Write-Host "save     : $Save"
+        Write-Host ("mod set  : {0} from the save's own header -- {1}" -f $wanted.Count,
+            (($wanted | ForEach-Object { "$($_.Name) $($_.Version)" }) -join ', '))
+        Write-Host ("resolved : {0} bundled, {1} from $SaveModDirectory, {2} junctioned from this working tree" -f
+            $resolved.Bundled.Count, $resolved.Foreign.Count, $ourMods.Count)
+        if ($resolved.Ours.Count -eq 0) {
+            Write-Warning ("the save was not written with any of this repo's mods, so its reactors " +
+                           'were built by something else or there are none. The census below says which.')
+        }
+        Write-Host "$Ticks ticks x $Runs run(s)"
+
+        # The save's own mods, in whichever form the mod directory holds them. Zips are COPIED
+        # rather than linked -- only the ones the save names, so the cost is that save's mod set
+        # and not the whole directory -- and unpacked directories are junctioned the way the
+        # repo's own are.
+        $toJunction = @()
+        foreach ($mod in $resolved.Foreign) {
+            if ($mod.IsZip) { Copy-Item -LiteralPath $mod.Source -Destination $modDir }
+            else { $toJunction += (Split-Path $mod.Source -Leaf) }
+        }
+        if ($toJunction.Count -gt 0) {
+            New-ModJunctions -ModDirectory $modDir -RepoRoot $SaveModDirectory -Mods $toJunction
+        }
+        # Startup settings change prototypes, and a benchmark of a map with different prototypes is
+        # a benchmark of a different map.
+        $modSettings = Join-Path $SaveModDirectory 'mod-settings.dat'
+        if (Test-Path -LiteralPath $modSettings) { Copy-Item -LiteralPath $modSettings -Destination $modDir }
+
+        # Ours last and from the repository, so the working tree wins over any installed copy of
+        # the same name -- measuring a released zip while editing the repo is the one outcome
+        # nobody wants.
+        New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+        Write-Survey
+
+        $foreignNames = @($resolved.Foreign | ForEach-Object { $_.Name })
+
+        # ---- the census, with the survey mod enabled
+        #
+        # One run of the measured length, so the reading the report quotes describes the end of a
+        # window as long as one measured run rather than the instant the save was loaded. See
+        # Write-Survey for why that distinction is not academic. It costs one extra load of the
+        # save and two walks of it, not one walk per tick.
+        Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $resolved.Bundled `
+            -Mods ($foreignNames + $ourMods + $surveyName)
+        $surveyOut = Invoke-FactorioStep @step -Tag 'survey' -Arguments @(
+            '--benchmark', $Save, '--benchmark-ticks', "$Ticks", '--benchmark-runs', '1', '--disable-audio')
+        $census = Get-Content $surveyOut | Select-String -Pattern 'BENCH-SURVEY' | Select-Object -Last 1
+        if (-not $census) {
+            throw ("the census never reported over '$Save', so nothing is known about what is in " +
+                   "it. $surveyName was enabled and should have logged on its first tick.")
+        }
+        $census = "$census" -replace '^.*BENCH-SURVEY ', ''
+        $reactorCount = if ($census -match 'reactors=(\d+)') { [int]$Matches[1] } else { -1 }
+        if ($reactorCount -lt 0) { throw "could not read a reactor count from the census: '$census'" }
+
+        # WHICH of the survey's two reports this is, gated rather than assumed. It logs on its
+        # first tick and on tick $Ticks, and the tick-1 line is the reading Write-Survey's own note
+        # calls true of the instant and wrong about the run -- a save whose reactors are hot for
+        # the whole benchmark reads "(empty)" there. Taking the last line is only the end-of-window
+        # reading if the run reached the end of the window, and nothing above proves it did.
+        #
+        # The reactor count survives either way, since no reactor is built or destroyed in a
+        # benchmark. The fuel breakdown does not, and a census run that stopped short means the
+        # measurement run has no reason to be trusted either -- so this refuses rather than
+        # caveats. Only above -Ticks 1, where the two reports coincide by construction.
+        if ($Ticks -gt 1 -and $census -notmatch "tick=$Ticks\b") {
+            throw ("the census ran short: its last report is '$census', not tick=$Ticks. The " +
+                   'first-tick reading describes the instant the save was loaded rather than the ' +
+                   'window that gets measured, so what the reactors are burning cannot be read ' +
+                   'off it.')
+        }
+
+        Write-Host "census   : $census"
+
+        # THE GATE THAT PROVES SOMETHING IS SIMULATING THEM, which is not what counting them
+        # proves. The survey plants a sentinel signal in each reactor's companion combinator on its
+        # first tick and looks for it again at the end; circuit.publish() assigns that filter list
+        # wholesale, so a sentinel that survived means nothing stepped that reactor. See the survey
+        # for the whole argument, and for why it is safe to write to the map in this run only.
+        #
+        # A GUARD THAT CANNOT RUN HAS NOT PASSED, so the window is checked before the verdict is.
+        # publish() runs every $publishEvery ticks, and a save resumes with control.lua's own
+        # counter part way through its cycle -- so the first publish can be a whole cycle away and
+        # the window has to hold two. Below that the gate says it did not run, rather than passing.
+        if ($reactorCount -gt 0) {
+            $simulated = if ($census -match 'simulated=(\d+)') { [int]$Matches[1] } else { -1 }
+            $erased    = if ($census -match 'erased=(\d+)')    { [int]$Matches[1] } else { -1 }
+            $grew      = if ($census -match 'grew=(\d+)')      { [int]$Matches[1] } else { -1 }
+            $stale     = if ($census -match 'stale=(\d+)')     { [int]$Matches[1] } else { -1 }
+            $nocomb    = if ($census -match 'nocomb=(\d+)')    { [int]$Matches[1] } else { -1 }
+            $unseen    = if ($census -match 'unseen=(\d+)')    { [int]$Matches[1] } else { -1 }
+            if ($simulated -lt 0) {
+                throw ("the census reported no simulation verdict, so nothing establishes that " +
+                       "these reactors are being stepped: '$census'")
+            }
+
+            # Three publish cycles: two before the sentinels go in, so every registered reactor has
+            # a combinator to plant one in, and at least one more after, so publish() has a chance
+            # to erase it. A save resumes with control.lua's own report counter part way through its
+            # cycle, which is why the first wait is two and not one.
+            if ($Ticks -lt 3 * $publishEvery) {
+                # Parenthesised as one string before -f. This is the third time in this change that
+                # -f binding tighter than + printed a literal {0} instead of a number, and every
+                # one of them was caught by reading the output rather than by any gate.
+                Write-Warning ((("this run is {0} ticks and the mod publishes every {1}, so the " +
+                    "simulation gate DID NOT RUN. Nothing below establishes that the {2} reactor(s) " +
+                    "are being stepped rather than merely present -- use -Ticks {3} or more if that " +
+                    'matters.') -f $Ticks, $publishEvery, $reactorCount, (3 * $publishEvery)))
+            }
+            elseif ($simulated -ne $reactorCount) {
+                throw ((("the save holds {0} reactor(s) and only {1} of them is being simulated. " +
+                    "{2} still carried the sentinel this run planted, {3} had no companion " +
+                    "combinator either before or after, and {4} were not seen on the first tick. " +
+                    "realistic-fusion-refreshed has those reactors on the map and not in its register, so every " +
+                    "figure would be the cost of entities nothing is stepping. Census: '{5}'") -f
+                    $reactorCount, $simulated, $stale, $nocomb, $unseen, $census))
+            }
+            else {
+                Write-Host ((("           simulated: {0}/{1} -- {2} had a planted sentinel erased, " +
+                    '{3} grew a combinator during the run. Both are publishes.') -f
+                    $simulated, $reactorCount, $erased, $grew))
+            }
+        }
+
+        if ($reactorCount -eq 0) {
+            # Not a refusal. The absolute cost of a map with no reactors in it is a real answer to
+            # a real question -- it is just not an answer about reactors, and saying so is the
+            # difference between a measurement and a misunderstanding.
+            Write-Warning ("this save holds no reactors, so the figures below are the cost of the " +
+                           'map with no reactor being simulated in it. control.lua still steps -- ' +
+                           'over an empty register.')
+        }
+
+        # ---- the measurement, with the survey mod explicitly disabled
+        #
+        # Named disabled rather than left out: Factorio AUTO-ENABLES a mod present in the mod
+        # directory but absent from mod-list.json, so omitting it would load it (see Write-ModList),
+        # and the census walk would land on every tick of the run being reported.
+        Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $resolved.Bundled `
+            -Mods ($foreignNames + $ourMods) -Disabled @($surveyName)
+
+        # Read before the launch, while the machine is free of us. See Get-ForeignLoad.
+        $load = Get-ForeignLoad
+        $cpu  = Get-ClockPercent
+        $benchOut = Invoke-FactorioStep @step -Tag 'bench-save' -Arguments @(
+            '--benchmark', $Save, '--benchmark-ticks', "$Ticks", '--benchmark-runs', "$Runs",
+            '--benchmark-verbose', 'all', '--disable-audio')
+
+        $cols     = Get-Timings -Path $benchOut
+        $expected = $Ticks * $Runs
+        if ($cols['scriptUpdate'].Count -ne $expected) {
+            Write-Warning ("{0} tick samples, expected {1}. The mean is over what was parsed." -f
+                $cols['scriptUpdate'].Count, $expected)
+        }
+
+        $row = New-TimingRow -Columns $cols -Reactors $reactorCount -State $census -Cpu $cpu -Load $load
+        Write-Host ''
+        Write-Host ("scriptUpdate median {0,8:N2} us  mean {1,8:N2} us   whole median {2,8:N2} us" -f
+            $row.'scriptUpdate.median', $row.'scriptUpdate.mean', $row.'wholeUpdate.median')
+        if ($row.WholeByRun.Count -gt 1) {
+            Write-Host ("        by run: whole median [{0}] us   script mean [{1}] us" -f
+                (($row.WholeByRun  | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
+                (($row.ScriptByRun | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '))
+        }
+        Write-MachineNote -Label 'save' -Cpu $cpu -Load $load -Why (
+            'Nothing here is a difference against a baseline, so there is no subtraction that ' +
+            'could have cancelled it out -- it is simply added to every figure below.')
+
+        Write-StatTables -Results @($row)
+
+        # ---- what the run cannot say, said rather than left to be inferred
+        Write-Host ''
+        Write-Host 'no per-reactor cost is reported, and none can be from a save:'
+        Write-Host '  Every per-reactor figure this script produces is (cost at n minus cost at n = 0) / n,'
+        Write-Host '  and a factory cannot be un-built. The rig path exists for that number; -Counts 0,...'
+        Write-Host '  builds the same map with and without reactors and subtracts. This measures the map.'
+
+        # And whose Lua scriptUpdate actually is. base ships no control.lua, but the scenario the
+        # save was started from does and it runs as __level__, so even the narrow case is not this
+        # repo alone -- claiming otherwise would be the same overreach as reporting a per-reactor
+        # figure without a baseline.
+        $others = $resolved.Bundled.Count + $resolved.Foreign.Count
+        Write-Host ''
+        if ($others -eq 0) {
+            Write-Host ("  scriptUpdate is this repo's Lua and the save's scenario script; the save " +
+                        'enables no other mod.')
+        } else {
+            # Parenthesised as one string before -f, for the reason the missing-baseline guard in
+            # the sweep spells out: -f binds tighter than +, so without them the format applies to
+            # the last fragment only -- which has no placeholder -- and a literal {0} is printed.
+            # It happened here first, and was caught by reading the output rather than by any gate.
+            # Every mod THIS RUN enables ON TOP OF base, which is neither the count in the save's
+            # header nor the count of enabled mods. This repo's three are added whether the save
+            # had them or not, so the header's count would be short; and base is enabled too but
+            # is not in this figure, because base ships no control.lua and contributes no Lua of
+            # its own -- what it contributes is the scenario script, which the sentence names
+            # separately. Saying "enables" without the qualifier made the number one too low for
+            # its own claim.
+            Write-Host ((("  scriptUpdate is the Lua of the {0} mods this run enables on top of " +
+                        "base, plus the save's scenario script, and not this repo's alone. Nothing " +
+                        "here can separate them -- Factorio's per-mod time usage is a debug view " +
+                        'in the client, not a --benchmark column.') -f ($others + $ourMods.Count)))
+        }
+        if ($row.'wholeUpdate.mean' -gt 0) {
+            Write-Host ((("  Lua is {0:N1}% of the average tick here, and the whole tick is {1:N2}% " +
+                        'of a 16.67 ms budget.') -f
+                        (100.0 * $row.'scriptUpdate.mean' / $row.'wholeUpdate.mean'),
+                        (100.0 * $row.'wholeUpdate.mean' / 16670.0)))
+        }
+
+        Write-Output $row
+    }
+    finally { Complete-Run }
+
+    return
+}
+
 try {
     New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
     Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled @() -Mods ($ourMods + $rigName)
@@ -1079,9 +2257,13 @@ try {
     $results = @()
     foreach ($count in $Counts) {
         Write-Rig -Count $count
-        $save = Join-Path $temp "n$count.zip"
+        # $rigSave, not $save: PowerShell variable names are case-insensitive, so $save IS the
+        # -Save parameter and this loop was silently overwriting it with a rig map path. Harmless
+        # only because the loop cannot run when -Save was given, which is not a property to leave
+        # a live assignment leaning on.
+        $rigSave = Join-Path $temp "n$count.zip"
 
-        $createOut = Invoke-FactorioStep @step -Arguments @('--create', $save) -Tag "create-n$count"
+        $createOut = Invoke-FactorioStep @step -Arguments @('--create', $rigSave) -Tag "create-n$count"
         $rig = Get-Content $createOut | Select-String -Pattern 'BENCH-RIG' | Select-Object -Last 1
         if ($rig -notmatch "placed=$count\b") { throw "rig built the wrong number of reactors: $rig" }
 
@@ -1089,7 +2271,7 @@ try {
         $load = Get-ForeignLoad
         $cpu  = Get-ClockPercent
         $benchOut = Invoke-FactorioStep @step -Tag "bench-n$count" -Arguments @(
-            '--benchmark', $save, '--benchmark-ticks', "$Ticks", '--benchmark-runs', "$Runs",
+            '--benchmark', $rigSave, '--benchmark-ticks', "$Ticks", '--benchmark-runs', "$Runs",
             '--benchmark-verbose', 'all', '--disable-audio')
 
         # The rig's last word on what it was actually doing, and a hard gate rather than a note in
@@ -1238,25 +2420,14 @@ try {
                 $count, $cols['scriptUpdate'].Count, $expected)
         }
 
-        $row = [ordered]@{
-            Reactors = $count; Samples = $cols['scriptUpdate'].Count; State = "$state"
-            CpuPerf = $cpu; CpuLoad = $load
-            # Per run rather than pooled, because that is the axis drift lives on. The median for
-            # wholeUpdate -- the machine's own indicator, and the one a load spike would otherwise
-            # dominate -- and the mean for scriptUpdate, which is the statistic every figure this
-            # script reports is taken from.
-            WholeByRun  = @(Split-Runs $cols['wholeUpdate']  $Ticks $Runs | ForEach-Object { Get-Median $_ })
-            ScriptByRun = @(Split-Runs $cols['scriptUpdate'] $Ticks $Runs |
-                            ForEach-Object { ($_ | Measure-Object -Average).Average })
-        }
-        foreach ($c in $REPORT) {
-            $row["$c.median"] = (Get-Median $cols[$c]) / 1000.0   # ns -> us
-            $row["$c.mean"]   = (($cols[$c] | Measure-Object -Average).Average) / 1000.0
-        }
-        $results += [pscustomobject]$row
+        $row = New-TimingRow -Columns $cols -Reactors $count -State "$state" -Cpu $cpu -Load $load
+        $results += $row
 
         Write-Host ("n={0,-5} scriptUpdate median {1,8:N2} us  mean {2,8:N2} us   whole median {3,8:N2} us   {4}" -f
-            $count, $row['scriptUpdate.median'], $row['scriptUpdate.mean'], $row['wholeUpdate.median'],
+            # Dot-and-quote, not [], because New-TimingRow hands back a pscustomobject: the [] form
+            # worked while the row was still an ordered hashtable here and silently yields nothing
+            # on an object, which printed this line with the numbers blank and no error at all.
+            $count, $row.'scriptUpdate.median', $row.'scriptUpdate.mean', $row.'wholeUpdate.median',
             ("$state" -replace '^.*BENCH-RIG ', ''))
         # Each benchmark run on its own, and the effective clock beside them, so a count that came
         # out slow can be attributed to the machine or cleared of it on the spot. See Split-Runs.
@@ -1265,40 +2436,14 @@ try {
                 (($row.WholeByRun  | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
                 (($row.ScriptByRun | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '))
         }
-        Write-Host ("        machine: clock {0:N0}% of base, {1:N0}% of the part in other hands at launch" -f $cpu, $load)
-        # An unreadable counter is its own warning and is NOT a quiet machine. `NaN -gt $BusyPercent`
-        # is false in PowerShell, so without this branch a localised Windows -- where these counter
-        # paths are translated and Get-Counter simply throws -- would run a fully contended sweep and
-        # print no BUSY at all, which is the one outcome this guard must never produce.
-        if ([double]::IsNaN($load)) {
-            Write-Warning ((("n={0}: the machine's load counter did not answer, so this run is NOT " +
-                "known to have been quiet. Treat it as unguarded rather than as clean -- the check " +
-                "did not run, which is not the same as passing. The counter names are localised on " +
-                "non-English Windows; 'lodctr /R' repairs a corrupt counter cache.") -f $count))
-        }
-        # Otherwise a warning rather than a throw, because there is no calibrated threshold here and
-        # refusing to report would be worse than reporting with the caveat attached. BUSY is the word
-        # to grep for before quoting a figure from a run.
-        elseif ($load -gt $BusyPercent) {
-            # Parenthesised as one string before -f, for the reason the n = 0 guard below spells out:
-            # -f binds tighter than +, so without them the format applies to the last fragment only
-            # and the message prints a literal {0}.
-            Write-Warning ((("n={0}: BUSY -- {1:N0}% of the part was already in other hands when this " +
-                "count was launched. Every figure from it is a difference against an n = 0 baseline " +
-                "measured at a different moment, so other work does not cancel out of it. Re-run on a " +
-                "quiet machine before quoting it.") -f $count, $load))
-        }
+        Write-MachineNote -Label "n=$count" -Cpu $cpu -Load $load -Why (
+            'Every figure from it is a difference against an n = 0 baseline measured at a ' +
+            'different moment, so other work does not cancel out of it.')
     }
 
     # ------------------------------------------------------------------ report
     #
-    # Both statistics are printed and they answer different questions, which matters as soon as
-    # the mod updates on anything but every tick. The mean is the cost: averaged over thousands of
-    # ticks it is what UPS actually spends, and a throttled mod that does its work on one tick in
-    # six costs exactly what it did before divided by six. The median is what a tick feels like,
-    # and it is the honest one for per-tick work because a benchmark run carries spikes an order
-    # of magnitude above the typical tick. Under throttling the median collapses towards the
-    # baseline -- five ticks in six now do nothing -- so per-reactor cost is taken from the mean.
+    # Why both statistics are printed lives in Write-StatTables, which -Save shares.
 
     $base = $results | Where-Object { $_.Reactors -eq 0 } | Select-Object -First 1
 
@@ -1318,18 +2463,7 @@ try {
     # figures are worth having even when no per-reactor figure can be computed from them.
     $missingBaseline = -not $base
 
-    foreach ($stat in @('median', 'mean')) {
-        Write-Host ''
-        Write-Host "$stat tick, microseconds"
-        Write-Host ('{0,-9}' -f 'reactors') -NoNewline
-        foreach ($c in $REPORT) { Write-Host ('{0,22}' -f $c) -NoNewline }
-        Write-Host ''
-        foreach ($r in $results) {
-            Write-Host ('{0,-9}' -f $r.Reactors) -NoNewline
-            foreach ($c in $REPORT) { Write-Host ('{0,22:N2}' -f $r."$c.$stat") -NoNewline }
-            Write-Host ''
-        }
-    }
+    Write-StatTables -Results $results
 
     if ($base) {
         # Both statistics again, so a per-reactor figure quoted anywhere can say which it came
@@ -1380,12 +2514,4 @@ try {
     }
 
 }
-finally {
-    if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }
-
-    # Junctions always go, even with -KeepTemp: leaving links to the repo in %TEMP% hands a
-    # delete-through-the-link hazard to whatever cleans it up later.
-    Remove-ModJunctions -ModDirectory $modDir
-
-    if (-not $KeepTemp) { Remove-TempDirectory -Path $temp -Label 'bench-reactors' }
-}
+finally { Complete-Run }
