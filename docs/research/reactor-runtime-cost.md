@@ -357,6 +357,15 @@ the inconvenient repeat is how a 42% spread turns into a false precision.
 of the 16.67 ms budget** (#39). A large but ordinary build of 20 to 50 reactors pays well under 1%,
 which is the one sentence here that did not need correcting.
 
+> **It needed correcting too, on 2026-09-03
+> ([#62](https://github.com/trulsjo/realistic-fusion-refreshed/issues/62)).** Both figures above are
+> a reactor with **no collector attached**, which is not what a player builds — see
+> *[Collectors attached](#collectors-attached-62)*. Collected, the full set is 4.48 µs and 5.4% of a
+> tick, and a D-D base 4.84 µs. That also takes the 20-to-50-reactor claim with it: at 4.84 µs,
+> fifty reactors is **1.45%** of a tick, not "well under 1%". Twenty is 0.58%. The shape of the
+> conclusion survives — an ordinary build pays low single-digit percentages — but the sentence that
+> boasted of needing no correction was the one figure on this page most in need of it.
+
 ### The surprise: the full set is CHEAPER per reactor than D-D alone — withdrawn
 
 > **Withdrawn 2026-08-18 (#39).** Re-measured on a quiet machine the two are 2.6 and 2.5 µs — a ratio
@@ -910,12 +919,12 @@ allocation is the whole of what is being measured — a rig with collectors woul
 writes per reactor on top, and by the lesson above those would cost more than the arithmetic does.
 
 > **Measured 2026-09-03 ([#62](https://github.com/trulsjo/realistic-fusion-refreshed/issues/62)),
-> and the guess was right in direction.** The rig can bolt collectors on now. D-D with them costs
-> 4.84 µs per reactor against 3.68 vented, in one sitting on a quiet machine — a ratio of 1.32,
-> and one of six pairs that all land on the same side while none of them clears the noise floor
-> alone. The allocation stayed unmeasurable and the plumbing it feeds did not quite become
-> measurable either; what is established is the sign. See
-> *[Collectors attached](#collectors-attached-62)*.
+> and the guess was right.** The rig can bolt collectors on now. D-D with them costs 4.84 µs per
+> reactor against 3.68 vented, in one sitting on a quiet machine — and across the six
+> vented-against-collected pairs the premium runs 1.28 to 1.68, four of them above the 1.35× floor.
+> So the allocation stayed unmeasurable and **the plumbing it feeds is measurable**, which is the
+> guess above confirmed: what was too cheap to see was never the table, it was that nothing had
+> ever run the writes. See *[Collectors attached](#collectors-attached-62)*.
 
 The allocation is avoidable: `step()` could fill a caller-owned table instead of returning a fresh
 one. It was left alone, because doing it would put an out-parameter into the one module in this mod
@@ -1098,17 +1107,19 @@ tick path has changed and this says so.
 
 ### What the collector costs
 
-**About a third to two thirds again, and the direction is the finding rather than the size.**
-`collected` exceeds `vented` in all six pairs measured — D-D by 1.68, 1.44 and 1.32 at *n* = 10, 50
-and 200; the mixed rig by 1.37, 1.28 and 1.47. Not one of those individually clears this note's
-1.35× floor with room to spare, and the D-D figure at *n* = 200 sits just under it. **Six
-comparisons all landing on the same side is the claim; no single ratio here is a number.** Call it
-half again as expensive and expect the next sweep to disagree in the second digit.
+**Between a quarter and two thirds again, and the range is the honest answer rather than any one
+ratio in it.** `collected` exceeds `vented` in all six pairs measured — D-D by 1.68, 1.44 and 1.32
+at *n* = 10, 50 and 200; the mixed rig by 1.37, 1.28 and 1.47. **Four of the six clear this note's
+1.35× floor** (1.68, 1.44, 1.37, 1.47) and two fall just under it (1.32 for D-D at *n* = 200, 1.28
+for the mixed rig at *n* = 50), so the premium is real rather than noise — but the spread between
+counts is as wide as the effect, which is what stops any single figure being *the* number. **Take
+it as about 1.4×, bracketed by 1.3 and 1.7, and expect the next sweep to land somewhere else in
+that bracket.**
 
 The mechanism is visible in the rig's own counters rather than inferred. **Only D-D breeds.** The
 mixed rig at *n* = 200 holds 60 D-D reactors out of 200, and its collectors held 508 units against
 the D-D-only rig's 1,694 — a ratio of 0.30, against a D-D population fraction of exactly 0.30. So
-three quarters of a mixed rig's collectors are ornaments. What that predicts is a *smaller* premium
+seven in ten of a mixed rig's collectors are ornaments. What that predicts is a *smaller* premium
 on the mixed rig, and the measurement does not show one: 1.47 against 1.32 at *n* = 200, the wrong
 way round and by less than the noise. The dilution argument is sound and the measurement is not
 sharp enough to see it, which is the same sentence #39 had to write about the by-product table.
@@ -1118,7 +1129,8 @@ D-D-only base was the expensive case because D-D is the only reaction that breed
 quiet and found every reaction costing the same. With collectors attached — the configuration that
 makes breeding cost anything at all — D-D is 4.84 against a mixed 4.48, a ratio of 1.08. **There is
 still no cheap tier and no expensive one.** What #62 changes is not which reaction is dearest; it is
-that every configuration costs about 1.5× what the project has been quoting.
+that every configuration costs about 1.4× what the same rig costs vented, and about 1.8× the 2.5 µs
+[ADR 0005](../adr/0005-real-time-fusion-simulation.md) has been quoting as discharged.
 
 ### The blanket, decided rather than omitted
 
@@ -1165,9 +1177,11 @@ coarser cadence for.
   fittings exist only where reactors do. An ablation rung for the write path would separate them;
   `-Ablate` deliberately excludes the collector lookup, and the rig now refuses `-Collectors`
   alongside `-Ablate` rather than reporting a number that mixes the two.
-- **No ratio here is sharp.** Six pairs agree on the direction and none is comfortably outside the
-  1.35× floor. What that wants is interleaved repeats — vented and collected alternating within one
-  invocation — which this rig cannot do, since each count is its own Factorio process.
+- **The premium is established; its size is bracketed, not measured.** Six pairs agree on the
+  direction and four of the six clear the 1.35× floor, but they span 1.28 to 1.68 — so the effect
+  is real and the second digit is not. Narrowing it wants interleaved repeats — vented and
+  collected alternating within one invocation — which this rig cannot do, since each count is its
+  own Factorio process.
 - **A saturated collector is unmeasured.** Nothing drains these, and a 500-unit box over a
   seventeen-second run never got past 1.8% full. The state a player reaches with a stopped consumer
   — full boxes, clamped writes, a blanket held at zero headroom — costs something different, and

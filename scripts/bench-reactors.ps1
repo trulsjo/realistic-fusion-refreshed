@@ -186,6 +186,13 @@
     player builds; a blanket is a later tier's fitting, and it adds an inventory read, a lithium
     withdrawal and a second breed() call on top.
 
+    The rig predicts how many blankets OUGHT to breed and requires exactly that many -- expect= in
+    its log, counted as the map is built from reactor-logic's own fuel table, since a blanket
+    breeds from neutrons and D-He3 and He3-He3 release none. On a mixed rig that is the neutronic
+    rows only; on an unmixed one it is every blanket. The gate is exact rather than a lower bound,
+    which matters because "at least one bred" is satisfied by a rig with a hundred and nine idle
+    blankets.
+
     Both fittings go in the clear ground SOUTH of the reactor, side by side -- not one north and
     one south the way scripts/check-blanket.ps1 places them. A rig is a grid, and a reactor's north
     band is its neighbour's south band.
@@ -480,16 +487,44 @@ if COLLECTORS then
   end
 end
 
+-- Which plasmas release a neutron, read from the shipped physics rather than written down. A
+-- blanket breeds from neutrons, so this is exactly which blankets in a mixed rig are EXPECTED to
+-- spend lithium and which are correctly idle -- and predicting it here is what lets the gate below
+-- demand every one of them rather than settling for "at least one bred".
+--
+-- Required from __realistic-fusion-refreshed__ the same way the ablation ladder requires it: this
+-- is the shipped table, not a copy, so a fuel that stops making neutrons moves this gate with it.
+local NEUTRONIC
+if BLANKETS then
+  local fuels = require("__realistic-fusion-refreshed__/scripts/reactor-logic").fuels
+  NEUTRONIC = {}
+  for _, case in ipairs(CASES) do
+    local fuel = fuels[case.plasma]
+    if not fuel then
+      error("reactor-logic declares no fuel row for " .. case.plasma ..
+        ", so the rig cannot say whether a blanket on it should breed.")
+    end
+    NEUTRONIC[case.plasma] = (fuel.neutrons_per_reaction or 0) > 0
+  end
+end
+
 for _, fitting in ipairs(FITTINGS) do
   if fitting.wanted then
     fitting.foot = footprint(fitting.name)
-    -- Named here rather than discovered as a nil from create_entity later. Both fittings are five
-    -- tiles square (ADR 0022) and both go in the GAP-deep band south of the reactor, so a gap
-    -- narrower than a fitting would have them overlap the next row's reactor -- which places as
-    -- silence, not as an error, and is #49's failure mode exactly.
-    if fitting.foot.size > GAP then
-      error(string.format("%s is %d tiles and -Gap is %d: it would not fit in the band south of " ..
-        "the reactor and would collide with the next row", fitting.name, fitting.foot.size, GAP))
+    -- A NECESSARY CONDITION, not the authority, and the distinction matters because the first
+    -- version of this line got it wrong. Both fittings sit in the GAP-deep band south of the
+    -- reactor, so a gap no wider than a fitting leaves it flush against the NEXT row's reactor and
+    -- inside the whole tile of margin entity-management's attach() searches -- and `>` let the
+    -- equal case through, which is the default -Gap 5 against a five-tile fitting, which is the
+    -- exact configuration this rig shipped a wrong measurement from.
+    --
+    -- `>=` is therefore the operator, but it is still arithmetic over remembered collision insets.
+    -- What actually decides the question is the one-to-one pairing check at the end of on_init,
+    -- which asks the real bounding boxes. This one exists only to fail earlier and say why.
+    if fitting.foot.size >= GAP then
+      error(string.format("%s is %d tiles and -Gap is %d: it would sit flush against the next " ..
+        "row's reactor and pair with that instead. Raise -Gap to at least %d.",
+        fitting.name, fitting.foot.size, GAP, fitting.foot.size + 1))
     end
   end
 end
@@ -507,7 +542,8 @@ end
 -- raise_built, and after the reactor: pairing happens on the build event, and a fitting bolted on
 -- afterwards is the order a player does it in. Placing it silently would exercise a path nobody
 -- can take.
-local function bolt_on(surface, force, reactor, foot, col, row)
+local function bolt_on(surface, force, reactor, case, col, row)
+  local foot = case.foot
   for _, fitting in ipairs(FITTINGS) do
     if fitting.wanted then
       local ffoot = fitting.foot
@@ -530,6 +566,12 @@ local function bolt_on(surface, force, reactor, foot, col, row)
           error(string.format("blanket at cell %d,%d took only %d of %d lithium: the inventory is " ..
             "smaller than this rig assumes", col, row, put, LITHIUM_LOADED))
         end
+        -- Counted as the run is built, from the fuel this reactor is actually being fed, so the
+        -- gate can require every blanket that OUGHT to breed rather than one of them. An
+        -- aneutronic row contributes nothing here and is correctly expected to stay idle.
+        if NEUTRONIC[case.plasma] then
+          storage.neutronic_blankets = (storage.neutronic_blankets or 0) + 1
+        end
       end
       storage[fitting.key][#storage[fitting.key] + 1] = e
     end
@@ -540,6 +582,7 @@ script.on_init(function()
   storage.reactors   = {}
   storage.collectors = {}
   storage.blankets   = {}
+  storage.neutronic_blankets = 0
 
   local surface = game.surfaces[1]
   local force   = game.forces.player
@@ -672,7 +715,7 @@ script.on_init(function()
 
       -- After the feed and before the pipe run, so a fitting that lands somewhere it should not
       -- errors before the row it would have broken is built.
-      bolt_on(surface, force, r, foot, col, row)
+      bolt_on(surface, force, r, case, col, row)
 
       if POOLED and col > 0 then
         -- GAP pipes bridge the gap between this reactor's west connection and its neighbour's
@@ -856,6 +899,12 @@ script.on_nth_tick(__REPORT__, function()
   -- running, and cannot see the one that ran dry. bred= is how many actually moved; lithium_min= is
   -- the least any of those has left, so zero means one ran dry and the rest of that run measured an
   -- empty container.
+  --
+  -- expect= is what bred= is checked against, and it is predicted from the shipped fuel table as
+  -- the rig is built rather than assumed. A blanket breeds from neutrons, so a mixed rig's
+  -- aneutronic rows are correctly idle and its neutronic rows must every one of them have run. The
+  -- gate used to accept "at least one bred" on a mixed run, which is a hundred and nine silently
+  -- idle blankets away from what it reads as.
   local collected, tritium, full_pct = 0, 0, 0
   for _, c in pairs(storage.collectors) do
     if c.valid then
@@ -882,11 +931,11 @@ script.on_nth_tick(__REPORT__, function()
     end
   end
 
-  log(string.format("BENCH-RIG tick=%d reactors=%d hot=%d powered=%d temp_c=%.4g plasma=%.4g output=%.4g buffer_j=%.4g burning=%s ablate=%s steps=%d touched=%d collectors=%d collected=%.4g tritium=%.4g full_pct=%.3g blankets=%d bred=%d lithium=%d lithium_min=%d",
+  log(string.format("BENCH-RIG tick=%d reactors=%d hot=%d powered=%d temp_c=%.4g plasma=%.4g output=%.4g buffer_j=%.4g burning=%s ablate=%s steps=%d touched=%d collectors=%d collected=%.4g tritium=%.4g full_pct=%.3g blankets=%d bred=%d expect=%d lithium=%d lithium_min=%d",
     game.tick, n, hot, powered, temp / d, plasma / d, output / d, energy / d,
     (#mix > 0) and table.concat(mix, ",") or "none", ABLATE, ablate_steps, ablate_touched,
     #storage.collectors, collected, tritium, full_pct,
-    #storage.blankets, bred, lithium, lithium_min))
+    #storage.blankets, bred, storage.neutronic_blankets or 0, lithium, lithium_min))
 end)
 '@
     # The shipped plasma set carries its own pipe connection category (#26), so a vanilla
@@ -1137,14 +1186,24 @@ try {
             # where most of them sat idle. It cannot be read off the collector either: blanket
             # tritium and D-D by-product tritium arrive in the same box.
             $bred = if ("$state" -match 'bred=(\d+)') { [int]$Matches[1] } else { -1 }
-            # Every blanket unless the rig is mixed, and then only the neutronic rows: D-He3 and
-            # He3-He3 release no neutrons, so a blanket on an aneutronic reactor is correctly idle
-            # and control.lua is right not to spend its lithium (scripts/reactor-logic.lua).
-            $wanted = if ($Mixed) { 1 } else { $count }
-            if ($bred -lt $wanted) {
-                throw ("rig at n=$count had $bred of $count blankets breed, expected at least " +
-                       "$wanted, so blankets were idle and the figure is not a blanketed " +
-                       "reactor's cost: '$state'")
+            # EXACT, and the expectation comes from the rig rather than from this script. expect=
+            # is how many blankets sit on a reactor whose fuel releases neutrons, predicted at map
+            # creation from reactor-logic's own fuel table -- so an aneutronic row is correctly
+            # excluded and every neutronic one is required.
+            #
+            # This used to read "at least 1" on a mixed run, on the reasoning that only some rows
+            # breed. That is true and it made the gate useless: at n = 200 about 110 blankets ought
+            # to breed, so a regression that idled 109 of them passed as a valid measurement.
+            # Knowing WHICH rows breed is the whole difference, and the rig can compute it.
+            $expect = if ("$state" -match 'expect=(\d+)') { [int]$Matches[1] } else { -1 }
+            if ($expect -le 0) {
+                throw ("rig at n=$count expected no blanket to breed, so -Blankets measured " +
+                       "nothing: '$state'")
+            }
+            if ($bred -ne $expect) {
+                throw ("rig at n=$count had $bred of $count blankets breed, expected exactly " +
+                       "$expect (the reactors on a neutron-releasing fuel), so blankets were idle " +
+                       "and the figure is not a blanketed reactor's cost: '$state'")
             }
             $lithiumMin = if ("$state" -match 'lithium_min=(-?\d+)') { [int]$Matches[1] } else { -1 }
             if ($lithiumMin -le 0) {
