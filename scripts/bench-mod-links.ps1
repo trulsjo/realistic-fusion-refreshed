@@ -155,10 +155,11 @@ local ENERGY = "rf-reactor-energy"
 local ENERGY_FEED = "__ENERGYFEED__"
 
 -- create_entity collision-checks nothing, so every silent overlap in this rig got built rather
--- than refused (#215). can_place_entity is the check, and WHICH check matters: its build_check_type
--- defaults to ghost_revive, which is not what a player placing by hand gets. Named here so the
--- weaker default cannot creep back in, and asserted because an unknown key would read as nil and
--- quietly restore that default.
+-- than refused (#215). can_place_entity is the check, and WHICH check matters: at 2.0.77 its
+-- build_check_type defaults to ghost_revive
+-- (https://lua-api.factorio.com/2.0.77/classes/LuaSurface.html#can_place_entity), which is not
+-- what a player placing by hand gets. Named here so the weaker default cannot creep back in, and
+-- asserted because an unknown key would read as nil and quietly restore that default.
 local BUILD_CHECK = defines.build_check_type.manual
 if not BUILD_CHECK then
   error("defines.build_check_type.manual is gone; this rig's placement guard would silently "
@@ -325,11 +326,17 @@ end
 local function assert_segments(cell)
   local owner = {}
   -- WHOSE segment id, and it is not the machine's own. get_fluid_segment_id on a machine's box
-  -- returns nil far more often than not -- measured on this rig, it answered for the reactor's
-  -- plasma box and for every exchanger's water box, and nil for its energy box, every heater box
-  -- and every steam box. bench-fluid-links.ps1 only ever tostring()s the value into a log line, so
-  -- nothing here had established that. The pipe on the other side of the connection always has one,
-  -- so the segment is read through the connection's target.
+  -- returns nil far more often than not: MEASURED ON THIS RIG AGAINST FACTORIO 2.0.77 (build
+  -- 84539), it answered for the reactor's plasma box and for every exchanger's water box, and
+  -- returned nil for the reactor's energy box, every heater box and every steam box. The version
+  -- is named because the API publishes per version and this is a fact about one of them. The
+  -- manual does not contradict it and does not predict it either:
+  -- https://lua-api.factorio.com/2.0.77/classes/LuaFluidBox.html#get_fluid_segment_id gives
+  -- "does not belong to a fluid segment" as one of its nil cases without saying which boxes fall
+  -- into it, so WHICH ones is the rig's finding rather than the manual's.
+  -- bench-fluid-links.ps1 only ever tostring()s the value into a log line, so nothing here had
+  -- established it. The pipe on the other side of the connection always has one, so the segment
+  -- is read through the connection's target.
   local function claim(entity, index, fluid, what)
     if not index then error(cell.name .. " cell: " .. what .. ": no box carries " .. fluid) end
     local ids = {}
