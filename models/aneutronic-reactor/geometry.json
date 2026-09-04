@@ -1,0 +1,70 @@
+{
+  "name": "rf-aneutronic-reactor",
+  "type": "boiler",
+  "collision_box": [
+    [
+      -7.25,
+      -7.25
+    ],
+    [
+      7.25,
+      7.25
+    ]
+  ],
+  "selection_box": [
+    [
+      -7.5,
+      -7.5
+    ],
+    [
+      7.5,
+      7.5
+    ]
+  ],
+  "tiles": [
+    15,
+    15
+  ],
+  "connections": [
+    {
+      "box": "fluid_box",
+      "production_type": "input-output",
+      "fluid": null,
+      "flow": "input-output",
+      "connection_type": "normal",
+      "connection_category": "rf-plasma",
+      "direction": "west",
+      "position": [
+        -7,
+        0
+      ]
+    },
+    {
+      "box": "fluid_box",
+      "production_type": "input-output",
+      "fluid": null,
+      "flow": "input-output",
+      "connection_type": "normal",
+      "connection_category": "rf-plasma",
+      "direction": "east",
+      "position": [
+        7,
+        0
+      ]
+    },
+    {
+      "box": "output_fluid_box",
+      "production_type": "output",
+      "fluid": "rf-aneutronic-reactor-energy",
+      "flow": "output",
+      "connection_type": "normal",
+      "connection_category": null,
+      "direction": "north",
+      "position": [
+        0,
+        -7
+      ]
+    }
+  ],
+  "source": "--dump-data, Factorio 2.0.77; written by tools/extract-geometry.py"
+}
