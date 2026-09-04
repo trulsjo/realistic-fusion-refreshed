@@ -25,6 +25,37 @@ thing and Power is where that would go.
 Dependencies run **one way only**: Power → Core, and both → Assets. Where a reactor produces a
 Core-owned fluid, the prototype is defined in Core and the recipe lives in Power.
 
+## Art
+
+Words for how a sprite comes to exist, fixed 2026-09-04 while charting the Blender render pipeline.
+They name the *inputs and outputs* of that pipeline; how it works lives in its issues, not here.
+
+**Mockup** — a labelled rectangle at a machine's real footprint with every pipe connection marked,
+drawn by `scripts/make-mockup-art.ps1` into `graphics/mockup/`. A placeholder by declaration: it
+states the geometry and is meant to be replaced. Not "placeholder art" generically, and not
+"rendered".
+
+**Rendered art** — a sprite produced from a stored model by the render pipeline, living under
+`graphics/rendered/`. Original to this mod, so it carries the repository's own licence. The word
+names the provenance, which is why the directory is not called "original": next to "the original
+mod" that would be ambiguous.
+
+**Look note** — the per-machine text, held in a marked comment above the machine's prototype in Lua,
+that says what the machine should look like. Read by the pipeline, never by the game. One per
+machine; it describes *that* machine and nothing shared.
+
+**House style** — the one text, shared by every machine, that fixes what the whole set has in common:
+palette, materials, level of detail, how a connection is shown. Lives in one file in the repository,
+not in Lua, because it is about no machine in particular. A look note is read *under* the house
+style.
+
+**Model** — the stored Blender scene for one machine, plus the script that built it, under
+`models/<machine>/`. The `.blend` is what a person edits by hand; the script is what "regenerate"
+reruns. Neither ships: a model is not a sprite, so ADR 0023 keeps it out of Assets.
+
+**Regenerate** — rebuild a model from its look note, discarding the stored one. An explicit option,
+never the default: the default is to render the model that exists, so that hand edits survive.
+
 ## The fuel chain
 
 **Girdler sulfide process** — the deuterium enrichment method, using hydrogen sulfide as a recirculating
