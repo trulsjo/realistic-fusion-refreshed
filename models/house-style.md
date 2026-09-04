@@ -32,6 +32,15 @@ steel is roughness 0.6, metallic 0. Bare metal is roughness 0.35, metallic 0.8. 
 edge at 0.03 tiles so the key light catches it; a sharp edge reads as a rendering artefact at 64 px
 per tile.
 
+**Nothing is geometrically perfect** (Truls, 2026-09-04). A drum carries rib bands and a weld seam
+and is not a plain cylinder; a pipe between two parts sags or bends a little and may be corrugated;
+a panel has seams and a rivet line. Detail is added in that order until the surface stops reading
+as plastic beside vanilla, and stops before it reads as Krastorio 2's density.
+
+**Walls are optional.** Where a machine has internals worth seeing, the body is an open frame of
+beams with the internals visible through it, not a closed box. Closed panels are used where the
+machine would have them for real: a manifold, a cabinet, a pressure vessel.
+
 ## Proportion and detail
 
 - One Blender unit is one tile. The body sits inside the **collision box**, not the selection box.
@@ -56,11 +65,18 @@ Fixed by #239 and #243, not by taste: orthographic, pitched 45°, looking north;
 the west at about 42° elevation, shadows east; ambient fill from a grey world at low strength so
 the camera-facing wall is not black; render 64 px per tile, shipped at `scale = 0.5`; structure,
 shadow (opaque black) and glow as separate sheets; the frame is the footprint plus a 2-tile margin
-so the shadow and the height fit; `shift` zero. Vertical factor: **construction A** (verticals at
-full height) until the calibration says otherwise.
+so the shadow and the height fit; `shift` zero. Vertical factor: **open**. A first look preferred B (no stretch) on a bare cube and A on the
+building; the vanilla comparison sheet in #246 is where it is judged, and the game is where it is
+settled.
 
 ## Glow
 
 A glowing part is emissive in the model and is rendered to its own sheet with everything else
 black. The game draws that sheet only while the machine works, on a separate core prototype
-(#241). The glow is always the accent colour of the fluid doing the work.
+(#241). The glow is always the accent colour of the fluid doing the work, and it glows where that
+fluid *is*: the reactor-energy manifold and the lines feeding from it, never the steam side.
+
+## Moving parts
+
+Not built yet (#241 research, animation deferred). A look note may still name a part that could
+move later, such as a pressure relief valve, so the model puts it where an animation could reach it.
