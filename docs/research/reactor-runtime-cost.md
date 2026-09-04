@@ -1275,8 +1275,8 @@ at 17:29, both after it, so the collected figures and the vented ones alike were
 the tree that still ships. The runtime code is older still: `control.lua` and `scripts/reactor-logic.lua`
 last had a line of code altered by `fa25da9` on 2026-08-26 — `954338d` that day rewrote comments
 alone — and `scripts/reactivity.lua`'s contents have not changed since it was written. What has
-moved in between is `prototypes/entities.lua`, at load time, in eight commits between 2026-09-01
-and `ca385ca` — all of them before either sweep.
+moved in between is `prototypes/entities.lua`, at load time, in eight commits from `f5487ca` on
+2026-09-01 to `ca385ca` itself inclusive — all eight before either sweep.
 
 Two optimisation candidates were on record. Both are answered below and neither survives.
 
