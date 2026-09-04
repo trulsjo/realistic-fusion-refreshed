@@ -91,6 +91,12 @@ requires restructuring is not a fallback.
   6, and at the ten to fifty reactors an ordinary build has the worst case is 0.3% to 1.6% of a
   tick.
 
+  **No figure here moved on 2026-09-04, and #66 is why that counts as a result.** #66 was opened to
+  cut what a D-D step costs and changed no code, so the 4.5 µs stands and so does the 5.44 µs worst
+  case. Both were measured on the tree that still ships — nothing has touched either mod since
+  `ca385ca` of 2026-09-03 00:40, and both sweeps were recorded after it. See *Nothing to cut* in
+  the research note for what was looked at.
+
   **The expectation this ADR carried still holds, and the correction #39 made to #34 stands.** With
   collectors attached — the configuration that makes breeding cost anything at all — D-D is 4.84
   against the full set's 4.48, a ratio of 1.08. There is no cheap tier and no expensive one; what
@@ -127,18 +133,41 @@ requires restructuring is not a fallback.
   save this project may use but not ship, so this one figure is re-takeable only by someone holding
   that file. Provenance and method:
   [`docs/research/borrowed-base.md`](../research/borrowed-base.md).
-- **The premultiplication the redesign left undone is the obvious first optimisation** if measurement
+- ~~**The premultiplication the redesign left undone is the obvious first optimisation** if measurement
   shows a problem — reactivities multiplied by reaction energies once at load rather than per lookup.
-  Recorded here so it is not rediscovered from scratch.
+  Recorded here so it is not rediscovered from scratch.~~
+
+  **Discharged 2026-09-04 ([#66](https://github.com/trulsjo/realistic-fusion-refreshed/issues/66)):
+  it is not an optimisation of this code, and there is nothing to rediscover.** It is an optimisation
+  of the redesign's shape. That step simulates a network running seven reactions at once and builds
+  two sums over all seven — one against charged reaction energies and one against total — so folding
+  the energy into the dataset removes seven multiplies of fourteen. This mod simulates one reactor
+  burning one plasma (ADR 0011), does one dataset lookup a step, and applies a reaction energy
+  **once**, at `reactor-logic.lua:742`. Premultiplying would make the lookup return joules where four
+  things in the same function need a count — the fuel cap, the fuel burnt, the by-products and the
+  neutrons — so it trades one multiply for one divide, which is not the cheaper of the two. It
+  would also change what the public `reactivity.reactivity()` returns, which
+  `tests/test-further-reactions.lua` weighs against literature ⟨σv⟩ tables for the reactions this
+  mod does not ship. **Deferred, not done, is therefore the wrong description: there is nothing
+  here to do.** See *Nothing to cut* in
+  [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md).
 
   **#39 measured what it would be aiming at, and the answer is "a real share, but not the largest".**
   Ablating the simulation step rung by rung puts the arithmetic at about a third of it and the Lua↔C++
   crossings at the rest, roughly two to one. That corrects the claim the research note has carried
   since #24 — that crossings outweighed the physics by one to two orders of magnitude — which, had
-  it stood, would have made premultiplication pointless. It is not pointless; it is also not the biggest
-  lever, and at 2.5 µs a reactor neither lever is worth pulling yet. **At the 4.5 µs #62 measured
-  with collectors attached, that verdict is unchanged** — and the ablation ladder does not reach
-  the part that grew, since its rungs never run the collector path.
+  it stood, would have made premultiplication pointless. ~~It is not pointless; it is also not the
+  biggest lever, and at 2.5 µs a reactor neither lever is worth pulling yet.~~ The crossings are the
+  biggest lever, and premultiplication is not one here at all. The ablation ladder does not reach
+  the part #62 found had grown either, since its rungs never run the collector path.
+
+  **#66 struck that sentence, for a reason #39 could not have measured**: the arithmetic really is
+  a third of the step, and premultiplication removes none of it here, so "neither lever yet" was
+  never two levers. What #39's finding does still license is the *other* one it named — batching or
+  caching the fluidbox work, which aims at the larger share and is not worth pulling at 4.5 µs
+  either. #66 names the specific crossing (`fluidbox.get_capacity`, a prototype constant asked
+  once a step on a producing vented reactor and four times on a collected D-D one) and declines to
+  pull it, since it is inside the noise floor on its own and there is no cause to pay for it.
 - **Simulation state lives in `storage`**, which enlarges the save and migration surface. This bears on
   [Save migration or clean break?](https://github.com/trulsjo/realistic-fusion-refreshed/issues/7):
   recipe-driven reactors would have had almost no runtime state to migrate; simulated ones do.

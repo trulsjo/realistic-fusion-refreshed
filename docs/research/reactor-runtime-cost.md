@@ -649,6 +649,23 @@ whole of the arithmetic. Batching or caching the fluidbox work aims at the large
 worth doing at 2.5 µs a reactor — this is recorded so that whoever needs it later starts from a
 measurement rather than from this note's old guess.
 
+> **Three of this paragraph's sentences are withdrawn by
+> [#66](https://github.com/trulsjo/realistic-fusion-refreshed/issues/66), and the load-bearing one
+> is the claim that premultiplication removes *part* of the interpolation. It removes none of it**,
+> because the interpolation here has never had an energy term in it, and the word does not occur in
+> either of `reactivity.lua`'s two commits. What it aims at is one multiply outside the
+> interpolation, and it cannot remove even that without adding a divide.
+>
+> Two more sentences fall with it. *Not worthless: they aim at a real third of the step* — the third
+> is real, and premultiplication is not what would take it. And *Neither is worth doing at 2.5 µs a
+> reactor* — there is only one lever left to weigh, and 2.5 µs is not the figure to weigh it at
+> either, per *[Collectors attached](#collectors-attached-62)*.
+>
+> **What stands is the ladder and the other lever** — the arithmetic is a real third, the crossings
+> are the larger share, and batching or caching the fluidbox work is still the thing that aims at
+> the larger share and is still not worth pulling. See
+> *[Nothing to cut](#nothing-to-cut-and-why-the-named-lever-is-not-one-66)* at the foot of this note.
+
 The ladder was re-run once more at the end on the finished script, at three benchmark runs rather
 than five, and lands in the same place: `read` 0.315, `physics` 1.404, `write` 2.059 µs. Different
 numbers to two digits, the same shape.
@@ -1243,3 +1260,124 @@ coarser cadence for.
   fires on it.
 - What it corrects: *D-D by-products (#27)* and *The full reaction set (#34)* above, both measured
   on vented reactors without saying so.
+
+## Nothing to cut, and why the named lever is not one (#66)
+
+Answered **2026-09-04** by reading the code and by a measurement already on this page. **No code
+changed, so there is no before-and-after timing here** — [#66](https://github.com/trulsjo/realistic-fusion-refreshed/issues/66)
+asked for one and that criterion is void rather than met.
+
+#66 existed to cut what a D-D step costs *once [#63](https://github.com/trulsjo/realistic-fusion-refreshed/issues/63)
+named the cause of its doubling*. #63 found no cause: the doubling was a contended machine, the
+tree measures 2.49 – 2.78 µs vented at `-Gap 5`, and **nothing has touched either mod since
+`ca385ca` of 2026-09-03 00:40** — #62's rig landed at 14:05 that day and #63's reading was recorded
+at 17:29, both after it, so the collected figures and the vented ones alike were recorded against
+the tree that still ships. The runtime code is older still: `control.lua` and `scripts/reactor-logic.lua`
+last had a line of code altered by `fa25da9` on 2026-08-26 — `954338d` that day rewrote comments
+alone — and `scripts/reactivity.lua`'s contents have not changed since it was written. What has
+moved in between is `prototypes/entities.lua`, at load time, in eight commits between 2026-09-01
+and `ca385ca` — all of them before either sweep.
+
+Two optimisation candidates were on record. Both are answered below and neither survives.
+
+### Candidate 1 — premultiplied reactivities, and the shape it was an optimisation *of*
+
+[ADR 0005](../adr/0005-real-time-fusion-simulation.md) records this as "the obvious first
+optimisation", from the redesign's own `--TODO premultiply reactivities to reduce runtime cost`.
+Read what that TODO sits in — `RealisticFusionPower/scripts/reactor-logic.lua:11`, commented out
+inside the load-time loop over the datasets, with the line it would have run:
+
+```lua
+--for i, _v in ipairs(v) do --TODO premultiply reactivities to reduce runtime cost
+    --rfp_datasets[k][i][2] = _v[2]*reaction_energies[k]
+```
+
+**In the redesign that is worth doing, because its step spends fourteen multiplies on reaction
+energies.** It simulates a *network* rather than a reactor and runs seven reactions at once — D-D_T,
+D-D_He3, D-T, D-He3, T-T, T-He3, He3-He3 — then builds two sums over all seven, one against
+`charged_reaction_energies` and one against `reaction_energies`. Folding the energy into the
+dataset removes seven of those fourteen. It would also have broken the bare reaction counts the
+same function needs for all four of `deuterium_usage`, `tritium_usage`, `helium_3_usage` and
+`helium_4_usage`, which is the likeliest reason it stayed a comment.
+
+**This mod does not have that shape.** A reactor burns one plasma (ADR 0011: per reactor, not per
+network), so `M.step` performs exactly one dataset lookup; `reactivity.lua` carries no energy term
+at any point, in the interpolation or out of it; and a reaction energy is applied exactly **once**,
+at `reactor-logic.lua:742`:
+
+```lua
+local fusion_j = reactions * fuel.energy_per_reaction_j
+```
+
+`charged_j` is then a *fraction* of `fusion_j`, so the redesign's second sum has no counterpart
+here at all.
+
+**So premultiplication trades one multiply for one divide.** An energy-weighted lookup would make
+`reactions` a joule figure, and four things in the same function need it as a count: the `burnable`
+cap it is compared against, `burnt`, `products`, and `neutrons`. Recovering the count once costs a
+divide, which is not the cheaper of the two operations. That is the whole of the saving, and its
+sign is not obviously positive.
+
+Two further costs, so that nobody reads the above as "it is merely not worth it":
+
+- `reactivity.reactivity()` is a public function returning ⟨σv⟩ in m³/s, and
+  `tests/test-further-reactions.lua` weighs the four shipped reactions against candidates this mod
+  does **not** ship, and for two of the three — T-T and T-He3 — the other side of the comparison is
+  a literature ⟨σv⟩ table. Energy-weighting the return value makes the two sides different
+  quantities.
+- The tables are keyed by reaction and generated by `tools/derive-reactivities.py`; an
+  energy-weighted table is keyed by *fuel row*, since the energy lives there. The four shipped rows
+  happen to be one reaction each, so nothing collides today — but it stops being a table of
+  physical data and becomes a table of this mod's balance numbers.
+
+**It is therefore discharged rather than deferred.** Not "not worth it at 2.5 µs" — the lever is an
+artefact of a step this project does not have.
+
+### Candidate 2 — `result.products` computed for a reactor that vents
+
+#34 found this and it is real: `products` is built every step whether or not a collector exists.
+**It has already been measured on this page, and it is too small to see.** `luaGarbageIncremental`
+is 0.19 µs per reactor for the D-D step against a mixed rig's 0.17 — the D-D rig building the table
+on every reactor and the mixed rig on its D-D rows alone, 60 of 200 — and #39's withdrawal says so
+in words. Gating it would also change behaviour that `control.lua` states in a comment and that #66
+forbids changing: a collector bolted on later starts collecting at once and has no backlog. So it
+stays, for the reason it was written.
+
+### What is uncosted, and where to start if a cause ever appears
+
+**The crossings, which are the larger share.** #39's ladder puts the arithmetic at 0.876 µs against
+about 1.0 µs of crossings, and everything above aims at the arithmetic. The one crossing worth
+naming is `fluidbox.get_capacity`, which asks for a box's **declared volume** — a prototype
+constant. A vented reactor that is producing makes that call once a step (`control.lua:442`, inside
+the `MIN_FLUID` guard); a collected D-D reactor makes it **four** times, adding the blanket headroom
+read (`:482`, on every collected reactor whether or not a blanket exists) and one per by-product box
+inside `deposit()`. Caching them at load is the shape of the change, and `check_confinement_ladder()`
+already reads a box volume out of `prototypes.entity` at load, so the machinery exists.
+
+**It is a candidate and not a plan, for three reasons.** One call is at most about 0.18 µs — a
+quarter of a `write` rung that is itself an upper bound — so alone it is well inside the 1.35×
+floor. It trades a crossing for the assumption that a box's declared volume never varies per entity
+at runtime, and this note has already been wrong once about what `get_capacity` answers (#40).
+And there is no cause to pay for it: at the ten to fifty reactors a build has, the worst measured
+configuration is 0.3% to 1.6% of a tick.
+
+### Verdict
+
+**Nothing is cut and nothing changed. #66 is closed on its own last criterion** — *if the honest
+answer is that the cost is fine and should stay, that is recorded and the ticket closed*.
+
+The figures to quote are unchanged, and the gap each was taken at goes with it: about **4.5 µs**
+per reactor for the full set with collectors and **5.44 µs** for the worst configuration measured
+(blanketed D-D), both `-Gap 6`, against 3.68 µs for the same rig's vented D-D. #63's 2.49 – 2.78 µs
+is the gap-5 vented figure and is not directly comparable to those three — the same caution the
+#62 section states in bold. `UPDATE_INTERVAL` stays at 6. `tests/*.lua` pass — 497 checks across
+five suites, 0 failures — the baseline #66 asked for, unchanged because the code is.
+
+### Sources
+
+- `realistic-fusion-refreshed/scripts/reactivity.lua`, and `scripts/reactor-logic.lua:737` and
+  `:742` — the one lookup and the one energy multiply a step, both inside `M.step` at `:705`.
+- `_reference/realistic-fusion-dev/RealisticFusionPower/scripts/reactor-logic.lua:11` and `:170-210`
+  — the TODO, and the fourteen multiplies it aimed at.
+- *[Where the cost actually goes](#where-the-cost-actually-goes)* (#39) for the ladder and the GC
+  figures; *[Collectors attached](#collectors-attached-62)* (#62) for the figures to quote.
