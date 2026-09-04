@@ -122,6 +122,27 @@ build over one it did not create, because it landfills and clears everything in 
 
 ### What it does not establish
 
+> **Every figure below — the whole-tick range, and the median and mean pair — came off the BUSY
+> proving run, and none of them is quotable.** Added 2026-09-04, after a code review caught that the
+> commit which published them says
+> in its own body that it does not: *"FIGURES ARE DELIBERATELY NOT PUBLISHED. The proving run was
+> BUSY at 60–70% on both the baseline and the top count, so nothing from it is quotable."* They are
+> left in place rather than replaced because they illustrate rules that hold independently of their
+> values, and because this project keeps superseded readings on the record with a note rather than
+> quietly restating them — ADR 0005 does the same for every figure #34 and #39 revised.
+>
+> **There is no single factor to divide them by**, and that is the second reason not to read a value
+> off this section. Against the quiet re-take the whole tick moves by about 1.3× and the per-reactor
+> `scriptUpdate` by about 1.5×, so the inflation is column-dependent. The mean pair does not move in
+> that direction at all: its *baseline* is higher on the quiet machine, because the borrowed base's
+> own Lua spikes in roughly one run in four whatever the load — which is [#235][235], and is why a
+> busy reading here is not simply a quiet one scaled up.
+>
+> What the caveat does reconcile is the contradiction a reader would otherwise hit: "between 12 and
+> 16 ms" below against the **10.7 ms** this note's own premise records. Same map, same statistic; the
+> first was taken while the part was in other hands. The quiet figures belong to [#67][67], which
+> owns the verdict.
+
 - **The absolute figures are not ours.** `wholeUpdate` and `scriptUpdate` on a borrowed base are mostly
   the borrowed base. Only the *difference* is attributable — the reverse of `-Save`, where the absolute
   cost is the answer and no per-reactor figure exists.
