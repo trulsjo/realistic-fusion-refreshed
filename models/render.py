@@ -25,7 +25,22 @@ scene = bpy.context.scene
 view_layer = scene.view_layers[0]
 rig = bpy.data.objects["Rig"]
 if pitch is not None:
-    bpy.data.objects["Camera"].rotation_euler[0] = math.radians(pitch)
+    # Keep the camera aimed at the origin: move it along its own view line.
+    cam = bpy.data.objects["Camera"]
+    cam.rotation_euler[0] = math.radians(pitch)
+    d = 56.0
+    cam.location = (0, -d * math.sin(math.radians(pitch)), d * math.cos(math.radians(pitch)))
+
+# Emissive materials glow only in the glow sheet. Structure and shadow render with them off.
+GLOW = [(m, m.node_tree.nodes["Principled BSDF"].inputs["Emission Strength"])
+        for m in bpy.data.materials if m.use_nodes and "Principled BSDF" in m.node_tree.nodes
+        and m.node_tree.nodes["Principled BSDF"].inputs["Emission Strength"].default_value > 0]
+GLOW_STRENGTH = {m.name: s.default_value for m, s in GLOW}
+
+
+def emission(on):
+    for m, s in GLOW:
+        s.default_value = GLOW_STRENGTH[m.name] if on else 0.0
 
 scene.render.engine = "CYCLES"
 scene.cycles.device = "CPU"
@@ -73,6 +88,17 @@ links.new(rl.outputs["Image"], out.inputs["Image"])
 
 for d in range(directions):
     rig.rotation_euler[2] = math.radians(90 * d)
+    emission(False)
     fo.file_name = f"dir{d}_"
-    bpy.ops.render.render(write_still=False)
+    bpy.ops.render.render(write_still=False)        # structure + shadow (glow output is black here)
+    if GLOW:
+        emission(True)
+        fo.file_name = f"dir{d}_lit_"
+        bpy.ops.render.render(write_still=False)    # only dir<d>_lit_glow.png is wanted from this one
+        for junk in ("structure", "shadow"):
+            try:
+                os.remove(os.path.join(outdir, f"dir{d}_lit_{junk}.png"))
+            except OSError:
+                pass
+        os.replace(os.path.join(outdir, f"dir{d}_lit_glow.png"), os.path.join(outdir, f"dir{d}_glow.png"))
 print("RENDERED", sorted(os.listdir(outdir)), "final_px", list(scene["rf_final_px"]))
