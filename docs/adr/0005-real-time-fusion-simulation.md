@@ -119,7 +119,7 @@ requires restructuring is not a fallback.
   build ([#64](https://github.com/trulsjo/realistic-fusion-refreshed/issues/64), 2026-09-03), and
   `-PlantInto` builds the rig on a surface of its own inside a **borrowed base** —
   [#65](https://github.com/trulsjo/realistic-fusion-refreshed/issues/65), 2026-09-03, TimEv's vanilla
-  megabase, which spends about 14 ms a tick with this mod absent. **The slope survives that move,
+  megabase, which spends about 10.7 ms a tick against a rig's 0.21 ms. **The slope survives that move,
   which is more than #65 was scoped to deliver**: planted reactors were never in the save, so the
   same save swept at count zero is a real baseline and #67 gets a subtraction on a loaded tick rather than an
   absolute figure. What it costs is a reproducibility concession recorded in

@@ -29,8 +29,10 @@ Downloading one means taking a file under whatever terms its author set, and thi
 rules about that ([ADR 0001](0001-liftable-predecessor-material.md), `legal-note.txt`).
 
 The base actually available is TimEv's *Modular 10k SPM Vanilla 2.0 Megabase*, already on the
-development machine. Measured with none of this project's mods loaded, it spends about **14 ms a tick, roughly 84% of the
-16.67 ms budget** — a genuinely loaded engine, which is the premise the whole exercise rests on.
+development machine. It spends about **10.7 ms a tick, roughly 64% of the 16.67 ms budget**, against
+a rig's 0.21 ms at the same reactor count — **an engine 51× busier**, which is the premise the whole
+exercise rests on. (An earlier draft of this ADR said 14 ms and 84%, from a 20-tick probe taken on a
+loaded machine; withdrawn 2026-09-04, see the research note.)
 **Its video, description and forum thread state no licence, permission or terms of any kind.** Full
 provenance is in [`docs/research/borrowed-base.md`](../research/borrowed-base.md).
 
