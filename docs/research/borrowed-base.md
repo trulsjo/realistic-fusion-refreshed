@@ -137,6 +137,14 @@ build over one it did not create, because it landfills and clears everything in 
   the *factory's* typical tick with our cadence hidden inside it, and quoting a per-reactor figure from
   it would understate the cost by roughly the interval. Treat anything finer than the 1.4× floor
   `reactor-runtime-cost.md` records as unmeasured either way.
+
+  **The rule above is about the median of TICKS. A median across RUNS is a separate question and is
+  open** — [#235][235]. The borrowed base's own Lua costs about +500 µs in roughly one run in four,
+  at every count including *n* = 0, on a quiet machine where the rig is tight to 1.09×. So the
+  pooled mean this note tells you to read is the statistic one bad run of five can move by 20%,
+  and whether a borrowed base should be reported as a median across runs instead is #235's to
+  settle. Until it is, **run more repeats rather than fewer**, and do not quote a figure from a
+  count whose per-run spread is wide.
 - **Nothing consumes the energy or the by-products**, exactly as in the rig and for the same reason.
   The steam route is absent on purpose: `control.lua` clamps the energy write to the box and discards
   the overflow, and the whole simulation step runs anyway. A full *collector*, by contrast, idles the
@@ -169,3 +177,5 @@ unavailable.
 [adr1]: ../adr/0001-liftable-predecessor-material.md
 [adr3]: ../adr/0003-space-age-tolerated-not-targeted.md
 [adr29]: ../adr/0029-the-factory-measurement-rests-on-a-borrowed-base.md
+
+[235]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/235
