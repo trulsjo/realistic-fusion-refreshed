@@ -157,17 +157,19 @@ requires restructuring is not a fallback.
   crossings at the rest, roughly two to one. That corrects the claim the research note has carried
   since #24 — that crossings outweighed the physics by one to two orders of magnitude — which, had
   it stood, would have made premultiplication pointless. ~~It is not pointless; it is also not the
-  biggest lever, and at 2.5 µs a reactor neither lever is worth pulling yet.~~ The crossings are the
-  biggest lever, and premultiplication is not one here at all. The ablation ladder does not reach
-  the part #62 found had grown either, since its rungs never run the collector path.
+  biggest lever, and at 2.5 µs a reactor neither lever is worth pulling yet. **At the 4.5 µs #62
+  measured with collectors attached, that verdict is unchanged.**~~ The crossings are the biggest
+  lever, and premultiplication is not one here at all. The ablation ladder does not reach the part
+  #62 found had grown either, since its rungs never run the collector path.
 
-  **#66 struck that sentence, for a reason #39 could not have measured**: the arithmetic really is
-  a third of the step, and premultiplication removes none of it here, so "neither lever yet" was
-  never two levers. What #39's finding does still license is the *other* one it named — batching or
-  caching the fluidbox work, which aims at the larger share and is not worth pulling at 4.5 µs
-  either. #66 names the specific crossing (`fluidbox.get_capacity`, a prototype constant asked
-  once a step on a producing vented reactor and four times on a collected D-D one) and declines to
-  pull it, since it is inside the noise floor on its own and there is no cause to pay for it.
+  **#66 struck those two sentences, for a reason #39 could not have measured**: the arithmetic
+  really is a third of the step, and premultiplication removes none of it here, so "neither lever
+  yet" was never two levers, and there was no second lever for #62's figure to leave unchanged.
+  What #39's finding does still license is the *other* one it named — batching or caching the
+  fluidbox work, which aims at the larger share and is not worth pulling at 4.5 µs either. #66
+  names the specific crossing (`fluidbox.get_capacity`, a prototype constant asked once a step on a
+  producing vented reactor and four times on a collected D-D one) and declines to pull it, since it
+  is inside the noise floor on its own and there is no cause to pay for it.
 - **Simulation state lives in `storage`**, which enlarges the save and migration surface. This bears on
   [Save migration or clean break?](https://github.com/trulsjo/realistic-fusion-refreshed/issues/7):
   recipe-driven reactors would have had almost no runtime state to migrate; simulated ones do.
