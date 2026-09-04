@@ -60,8 +60,14 @@ and roughening; accents stay clean so they read.
 
 Every pipe connection gets a **socket** baked into the structure: a bare-metal stub of radius 0.3
 tiles from the body to the footprint edge on the connection's tile, with one accent band of the
-fluid it carries. Vanilla's `pipe_covers` cap the stub when nothing is joined (#240). Boilers and
-generators bake sockets into every direction sheet; no separate pipe picture.
+fluid it carries. Vanilla's `pipe_covers` cap the stub when nothing is joined (#240, decided #247).
+Boilers and generators bake sockets into every direction sheet; no separate pipe picture. A socket
+on the far side of a tall body may be hidden at this camera; that is accepted, the cover and the
+pipe say where it is.
+
+**Exception: plasma.** `rf-pipe` wears Krastorio 2's steel pipe, so a vanilla cover on a plasma
+socket would not match the pipe that joins it. Plasma-carrying boxes may need K2's steel covers or
+rendered ones; decided when the first plasma machine is rendered (Truls, #247).
 
 ## Camera, light, output
 
