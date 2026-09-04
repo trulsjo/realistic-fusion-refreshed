@@ -38,8 +38,12 @@ a panel has seams and a rivet line. Detail is added in that order until the surf
 as plastic beside vanilla, and stops before it reads as Krastorio 2's density.
 
 **Walls are optional.** Where a machine has internals worth seeing, the body is an open frame of
-beams with the internals visible through it, not a closed box. Closed panels are used where the
-machine would have them for real: a manifold, a cabinet, a pressure vessel.
+**H-beams** with the internals visible through it, not a closed box, and decks are gratings.
+Closed panels are used where the machine would have them for real: a manifold, a cabinet, a
+pressure vessel, an end wall the camera can see.
+
+**Grime is procedural.** Every painted and bare-metal surface carries a noise-driven darkening
+and roughening; accents stay clean so they read.
 
 ## Proportion and detail
 
@@ -61,13 +65,17 @@ generators bake sockets into every direction sheet; no separate pipe picture.
 
 ## Camera, light, output
 
-Fixed by #239 and #243, not by taste: orthographic, pitched 45°, looking north; one hard sun from
-the west at about 42° elevation, shadows east; ambient fill from a grey world at low strength so
+Fixed by #239 and #243 and one look (#246): orthographic, **pitched 54.7° below the horizontal**,
+looking north, with the ground stretched back to square tiles after the render (factor 1/sin,
+1.225), so a wall shows at 0.707 of its height; one hard sun from the west at about 42° elevation,
+shadows east; ambient fill from a grey world at low strength so
 the camera-facing wall is not black; render 64 px per tile, shipped at `scale = 0.5`; structure,
 shadow (opaque black) and glow as separate sheets; the frame is the footprint plus a 2-tile margin
-so the shadow and the height fit; `shift` zero. Vertical factor: **open**. A first look preferred B (no stretch) on a bare cube and A on the
-building; the vanilla comparison sheet in #246 is where it is judged, and the game is where it is
-settled.
+so the shadow and the height fit; `shift` zero. The pitch is Truls's call from the #246 sheets: the
+45° camera with square tiles made walls as tall as the ground is deep and the buildings towered
+over vanilla's; 54.7° gives the proportion of the unstretched 45° render while the footprint
+still fills its tiles. It is close to the 53° the community measured on some vanilla sprites. The
+game is where it is confirmed.
 
 ## Glow
 

@@ -10,7 +10,10 @@ import sys
 
 from PIL import Image, ImageDraw
 
-SQRT2 = math.sqrt(2)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import rf_blender  # noqa: E402  (no bpy at module level)
+
+SQRT2 = rf_blender.STRETCH   # the ground stretch that squares the tiles for the chosen pitch
 
 
 def stretch(d):
@@ -83,7 +86,7 @@ if __name__ == "__main__" and sys.argv[1] != "vanilla":
     {"stretch": stretch, "icons": icons, "compare": compare}[cmd](*rest)
 
 
-def vanilla(out, ours_a, ours_b):
+def vanilla(out, ours_a, ours_b=None):
     """Our render (A stretched, B not) beside vanilla sprites at 64 px/tile on a tile grid.
     Vanilla sprite centre = footprint centre + shift; shifts are util.by_pixel (32 px/tile), so
     doubled here."""
@@ -116,9 +119,10 @@ def vanilla(out, ours_a, ours_b):
     boiler = Image.open(V + "boiler/boiler-N-idle.png").convert("RGBA")   # 3x2, shift (-1.25, 5.25)
 
     ours(ours_a, (6, 11))
-    ours(ours_b, (16, 11))
-    dr.text((6 * T - 40, 20), "ours, A (stretched)", fill="white")
-    dr.text((16 * T - 40, 20), "ours, B (no stretch)", fill="white")
+    dr.text((6 * T - 40, 20), f"ours, pitch {rf_blender.CAMERA_PITCH_DEG} deg, ground squared", fill="white")
+    if ours_b:
+        ours(ours_b, (16, 11))
+        dr.text((16 * T - 40, 20), "ours, raw render (ground foreshortened)", fill="white")
     place(chest_sh, (24, 4), (5, 0.5)); place(chest, (24, 4), (0, -0.5))
     dr.text((23 * T, 2 * T), "steel chest 1x1", fill="white")
     place(hx, (25, 9), (-1.25, 5.25))
@@ -126,7 +130,7 @@ def vanilla(out, ours_a, ours_b):
     place(boiler, (25, 15), (-1.25, 5.25))
     dr.text((23 * T, 13 * T), "vanilla boiler 3x2", fill="white")
     # footprint outlines for the vanilla ones and ours
-    for (cx, cy, w, h) in ((24, 4, 1, 1), (25, 9, 3, 2), (25, 15, 3, 2), (6, 11, 5, 15), (16, 11, 5, 15)):
+    for (cx, cy, w, h) in ((24, 4, 1, 1), (25, 9, 3, 2), (25, 15, 3, 2), (6, 11, 5, 15)) + (((16, 11, 5, 15),) if ours_b else ()):
         dr.rectangle(((cx - w / 2) * T, (cy - h / 2) * T, (cx + w / 2) * T, (cy + h / 2) * T), outline=(255, 230, 80, 160))
     sheet.save(out)
     print("wrote", out)

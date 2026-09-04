@@ -27,9 +27,10 @@ rig = bpy.data.objects["Rig"]
 if pitch is not None:
     # Keep the camera aimed at the origin: move it along its own view line.
     cam = bpy.data.objects["Camera"]
-    cam.rotation_euler[0] = math.radians(pitch)
+    pr = math.radians(pitch)                      # pitch below the horizontal, like rf_blender
+    cam.rotation_euler[0] = math.pi / 2 - pr
     d = 56.0
-    cam.location = (0, -d * math.sin(math.radians(pitch)), d * math.cos(math.radians(pitch)))
+    cam.location = (0, -d * math.cos(pr), d * math.sin(pr))
 
 # Emissive materials glow only in the glow sheet. Structure and shadow render with them off.
 GLOW = [(m, m.node_tree.nodes["Principled BSDF"].inputs["Emission Strength"])

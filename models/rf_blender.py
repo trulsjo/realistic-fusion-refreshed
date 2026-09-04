@@ -12,7 +12,12 @@ import sys
 
 PX_PER_TILE = 64
 MARGIN_TILES = 2.0      # room for the height above the north edge and the shadow to the east
-STRETCH = math.sqrt(2)  # construction A
+# Camera pitch below the horizontal. 45 deg is Wube's stated angle; with the ground stretched
+# back to square tiles (factor 1/sin) a vertical then shows at h/tan(pitch). Truls (2026-09-04,
+# #246) preferred verticals at ~0.707 h beside vanilla, which is pitch 54.7 deg: the same picture
+# as "45 deg, no stretch" for the walls, but the footprint fills its tiles.
+CAMERA_PITCH_DEG = 54.7
+STRETCH = 1.0 / math.sin(math.radians(CAMERA_PITCH_DEG))
 
 
 def script_args():
@@ -48,8 +53,10 @@ def build_rig(scene, tiles_w, tiles_h, sun_elevation_deg=42.0):
     cam = bpy.data.objects.new("Camera", bpy.data.cameras.new("Camera"))
     scene.collection.objects.link(cam)
     cam.parent = rig
-    cam.location = (0, -40, 40)
-    cam.rotation_euler = (math.radians(45), 0, 0)
+    pitch = math.radians(CAMERA_PITCH_DEG)
+    d = 56.0
+    cam.location = (0, -d * math.cos(pitch), d * math.sin(pitch))
+    cam.rotation_euler = (math.pi / 2 - pitch, 0, 0)
     cam.data.type = "ORTHO"
     cam.data.clip_end = 200
     scene.camera = cam

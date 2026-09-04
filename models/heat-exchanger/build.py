@@ -1,4 +1,4 @@
-"""PROTOTYPE (#246, draft 2): build the heat exchanger model from its look note, headless.
+"""PROTOTYPE (#246, draft 3): build the heat exchanger model from its look note, headless.
 
     blender -b --python build.py -- <out.blend> [machine|cube]
 
@@ -6,9 +6,10 @@ Reads geometry.json beside this file for the collision box and the connections, 
 land where the prototype declares them. Everything is a primitive or a curve with a procedural
 material: nothing imported (house style, licence rule). `cube` builds a 1x1x1 calibration cube.
 
-Draft 2 follows Truls's reactions of 2026-09-04: imperfect drums (rib bands, weld seam, relief
-valve), a corrugated header that is not quite straight, an open beam frame instead of walls with
-glowing feed lines visible under it, panel seams and rivet lines on the manifold and cabinet.
+Drafts 2 and 3 follow Truls's reactions of 2026-09-04: imperfect drums (rib bands, weld seam,
+relief valve), a corrugated header that is not quite straight, an open H-beam frame over a grating
+instead of walls with glowing feed lines visible under it, a south end wall, panel seams and rivet
+lines, procedural grime, and the energy channel on top of the manifold where the camera sees it.
 """
 import json
 import math
@@ -59,6 +60,28 @@ def mat(name, glow=False):
     b.inputs["Base Color"].default_value = (*rgb, 1.0)
     b.inputs["Roughness"].default_value = rough
     b.inputs["Metallic"].default_value = metal
+    if not glow and name not in ("energy", "steam", "water"):
+        # grime: a noise texture darkens patches of the base colour and roughens them
+        nt = m.node_tree
+        noise = nt.nodes.new("ShaderNodeTexNoise")
+        noise.inputs["Scale"].default_value = 5.0
+        noise.inputs["Detail"].default_value = 4.0
+        ramp = nt.nodes.new("ShaderNodeValToRGB")
+        ramp.color_ramp.elements[0].position = 0.42
+        ramp.color_ramp.elements[1].position = 0.62
+        mix = nt.nodes.new("ShaderNodeMix")
+        mix.data_type = "RGBA"
+        mix.inputs["A"].default_value = (*rgb, 1.0)
+        mix.inputs["B"].default_value = (rgb[0] * 0.55, rgb[1] * 0.5, rgb[2] * 0.45, 1.0)
+        nt.links.new(noise.outputs["Fac"], ramp.inputs["Fac"])
+        nt.links.new(ramp.outputs["Color"], mix.inputs["Factor"])
+        nt.links.new(mix.outputs["Result"], b.inputs["Base Color"])
+        rmix = nt.nodes.new("ShaderNodeMath")
+        rmix.operation = "MULTIPLY_ADD"
+        rmix.inputs[1].default_value = 0.35
+        rmix.inputs[2].default_value = rough
+        nt.links.new(ramp.outputs["Color"], rmix.inputs[0])
+        nt.links.new(rmix.outputs["Value"], b.inputs["Roughness"])
     if glow:
         b.inputs["Emission Color"].default_value = (*rgb, 1.0)
         b.inputs["Emission Strength"].default_value = 1.5
@@ -136,6 +159,23 @@ def pipe(name, points, radius, material, glow=False, corrugate=0.0):
     return o
 
 
+def hbeam(name, length, loc, axis="Z", depth=0.2, flange=0.16, web=0.03, material="frame"):
+    """An H-profile beam: two flanges and a web, along `axis`."""
+    fl = flange / 2
+    if axis == "Z":
+        box(f"{name}-web", (web, depth - 0.05, length), loc, material, bev=0)
+        for sx in (-1, 1):
+            box(f"{name}-f{sx}", (flange, web, length), (loc[0] + sx * 0, loc[1] + sx * (depth / 2), loc[2]), material, bev=0.01)
+    elif axis == "Y":
+        box(f"{name}-web", (web, length, depth - 0.05), loc, material, bev=0)
+        for sz in (-1, 1):
+            box(f"{name}-f{sz}", (flange, length, web), (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01)
+    else:
+        box(f"{name}-web", (length, web, depth - 0.05), loc, material, bev=0)
+        for sz in (-1, 1):
+            box(f"{name}-f{sz}", (length, flange, web), (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01)
+
+
 def rivets(name, start, end, n, r=0.045, material="dark"):
     for i in range(n):
         t = (i + 0.5) / n
@@ -173,24 +213,36 @@ else:
         seam(f"ManifoldSeam{i}", (MAN_W + 0.02, 0.05, MAN_H - 0.2), (MX, y, SLAB + MAN_H / 2))
     rivets("ManifoldRivetsTop", (MX - MAN_W / 2 + 0.08, -HALF_L + 0.3, SLAB + MAN_H + 0.01),
            (MX - MAN_W / 2 + 0.08, HALF_L - 0.3, SLAB + MAN_H + 0.01), 28)
-    box("ManifoldBand", (MAN_W + 0.04, L - 0.4, 0.22), (MX, 0, SLAB + MAN_H * 0.75), "energy", glow=True)
+    # energy channel along the TOP of the manifold, where the camera sees it; glows when working
+    box("ManifoldBand", (MAN_W * 0.45, L - 0.6, 0.06), (MX + 0.05, 0, SLAB + MAN_H + 0.01), "energy", glow=True)
+    for i in range(14):
+        y = -HALF_L + 0.6 + i * (L - 1.2) / 13
+        box(f"ManifoldGrille{i}", (MAN_W * 0.5, 0.05, 0.05), (MX + 0.05, y, SLAB + MAN_H + 0.04), "dark", bev=0)
 
-    # -- open frame: dark beams, no walls. Posts along the east edge and mid-line, rails on top.
-    FRAME_H = 2.2
-    POST = 0.18
-    EX = HALF_W - POST / 2
-    for i, y in enumerate([-HALF_L + 0.3 + k * (L - 0.6) / 6 for k in range(7)]):
-        box(f"PostE{i}", (POST, POST, FRAME_H), (EX, y, SLAB + FRAME_H / 2), "frame")
-        box(f"PostM{i}", (POST, POST, FRAME_H), (MX + MAN_W / 2 + 0.2, y, SLAB + FRAME_H / 2), "frame")
-        box(f"Rail{i}", (W - MAN_W - 0.3, POST * 0.8, POST * 0.8), ((EX + MX + MAN_W / 2 + 0.2) / 2, y, SLAB + FRAME_H), "frame")
-    box("RailE", (POST, L - 0.4, POST), (EX, 0, SLAB + FRAME_H), "frame")
-    box("RailM", (POST, L - 0.4, POST), (MX + MAN_W / 2 + 0.2, 0, SLAB + FRAME_H), "frame")
-    box("RailE2", (POST * 0.8, L - 0.4, POST * 0.8), (EX, 0, SLAB + FRAME_H * 0.5), "frame")
-    # Deck under the drums, a little narrower than the frame, so the feed lines pass beneath.
-    box("Deck", (W - MAN_W - 0.6, L - 0.8, 0.12), (0.35, 0, SLAB + 0.45), "body")
+    # -- open frame of H-beams, no walls. Posts on the east edge and the mid-line, rails on top.
+    FRAME_H = 2.0
+    EX = HALF_W - 0.12
+    MXE = MX + MAN_W / 2 + 0.2
+    post_ys = [-HALF_L + 0.3 + k * (L - 0.6) / 6 for k in range(7)]
+    for i, y in enumerate(post_ys):
+        hbeam(f"PostE{i}", FRAME_H, (EX, y, SLAB + FRAME_H / 2), axis="Z")
+        hbeam(f"PostM{i}", FRAME_H, (MXE, y, SLAB + FRAME_H / 2), axis="Z")
+        hbeam(f"Rail{i}", EX - MXE, ((EX + MXE) / 2, y, SLAB + FRAME_H), axis="X", depth=0.16, flange=0.14)
+    hbeam("RailE", L - 0.4, (EX, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
+    hbeam("RailM", L - 0.4, (MXE, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
+    hbeam("RailE2", L - 0.4, (EX, 0, SLAB + 0.9), axis="Y", depth=0.12, flange=0.12)
+    # Grating deck under the drums: slats, so the feed lines below stay visible.
+    for i in range(30):
+        y = -HALF_L + 0.5 + i * (L - 1.0) / 29
+        box(f"Slat{i}", (W - MAN_W - 0.7, 0.06, 0.05), (0.35, y, SLAB + 0.5), "dark", bev=0)
+    # South end wall: a closed panel the camera can see, between manifold and cabinet.
+    box("EndWall", (W - MAN_W - 0.3, 0.16, 1.15), (MXE + (EX - MXE) / 2 - 0.05, -HALF_L + 0.12, SLAB + 0.575), "body")
+    seam("EndWallSeam", (0.04, 0.18, 0.95), (MXE + (EX - MXE) / 2 - 0.9, -HALF_L + 0.12, SLAB + 0.575))
+    rivets("EndWallRivets", (MXE + 0.2, -HALF_L + 0.03, SLAB + 1.0), (EX - 0.3, -HALF_L + 0.03, SLAB + 1.0), 9, r=0.04)
+    box("EndWallVent", (0.9, 0.06, 0.4), (MXE + (EX - MXE) / 2 + 0.3, -HALF_L + 0.03, SLAB + 0.55), "dark", bev=0)
 
     # -- three drums: rib bands, weld seam, cap, relief valve. Not identical.
-    DRUM_H = 2.5
+    DRUM_H = 2.3
     DX = 0.35
     drum_ys = (-4.6, 0.0, 4.6)
     for i, y in enumerate(drum_ys):
@@ -199,8 +251,8 @@ else:
         z0 = SLAB + 0.5
         d = cyl(f"Drum{i}", r, h, (DX, y, z0 + h / 2), "metal", verts=64)
         d.scale = (1.0, jitter(1.0, 0.03), 1.0)
-        for k, frac in enumerate((0.25, 0.55, 0.85)):
-            torus(f"Drum{i}Rib{k}", r + 0.02, 0.05, (DX, y, z0 + h * frac), "dark")
+        for k, frac in enumerate((0.3, 0.7)):
+            torus(f"Drum{i}Rib{k}", r + 0.015, 0.035, (DX, y, z0 + h * frac), "dark")
         seam(f"Drum{i}Weld", (0.03, 2 * r + 0.02, 0.04), (DX + r - 0.02, y, z0 + h * 0.4), rot=(0, 0, jitter(0, 0.2)))
         cyl(f"Drum{i}Cap", r * 0.6, 0.18, (DX, y, z0 + h + 0.09), "dark")
         # relief valve: a stub, a body and a little cap, off-centre so rotations differ
@@ -209,9 +261,9 @@ else:
         cyl(f"Drum{i}ValveBody", 0.16, 0.22, (vx, vy, z0 + h + 0.6), "steam", verts=24)
         cyl(f"Drum{i}ValveCap", 0.07, 0.25, (vx + 0.18, vy, z0 + h + 0.6), "metal", axis="X", verts=16)
         # glowing feed line from the manifold to the foot of the drum, under the deck
-        pipe(f"Feed{i}", [(MX + MAN_W / 2, y + jitter(0, 0.3), SLAB + 0.6),
-                          (jitter(-0.6, 0.15), y + jitter(0, 0.2), SLAB + jitter(0.35, 0.05)),
-                          (DX - r * 0.7, y, SLAB + 0.5)], 0.11, "energy", glow=True)
+        pipe(f"Feed{i}", [(MX + MAN_W / 2, y + jitter(0, 0.3), SLAB + 0.42),
+                          (jitter(-0.7, 0.15), y + jitter(0, 0.2), SLAB + jitter(0.4, 0.03)),
+                          (DX - r * 0.7, y, SLAB + 0.45)], 0.1, "energy", glow=True)
 
     # -- corrugated steam header across the drum tops, not quite straight, east to the outlet.
     HZ = SLAB + 0.5 + DRUM_H + 0.05
