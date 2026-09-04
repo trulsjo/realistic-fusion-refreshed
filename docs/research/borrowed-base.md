@@ -29,9 +29,19 @@ save than the thread advertises. Nothing turns on it for the measurement: Factor
 sweep loads the identical file at every count. It does mean the download link cannot be relied on to
 serve the same bytes twice, which is why the reproducibility position below is what it is.
 
-**Measured, not assumed: it is genuinely loaded.** 20 ticks in 279.858 ms, about **14 ms a tick**, or
-roughly 84% of the 16.67 ms budget, with none of this project's mods loaded. That is the premise #65 rests on, and it was
-an assumption until it was checked.
+**Measured, not assumed: it is genuinely loaded.** About **10.7 ms a tick, roughly 64% of the
+16.67 ms budget** — median over 5,000 ticks on a quiet machine, with the benchmark's own power grid
+present and no reactors. That is the premise #65 rests on, and it was an assumption until it was
+checked.
+
+> **Corrected 2026-09-04. This said "about 14 ms a tick, roughly 84%", and that figure is
+> withdrawn.** It came from the 20-tick probe quoted below, which established the mechanism and was
+> never meant to be a measurement: 279.858 ms over 20 ticks, taken while the machine was at 60–70%
+> in other hands. The tick was not that long; the machine was busy. The 10.7 ms above replaces it —
+> 500× the samples, no `BUSY` at any launch, and the rig measured beside it in the same sitting as a
+> control. The conclusion is unchanged and the premise holds — and the comparison that makes it
+> concrete is the rig measured beside it at the same count: **10.73 ms against 0.21 ms, an engine
+> 51× busier.** That is the gap #34 could not measure across and #65 exists to close.
 
 ## What may be done with it
 
@@ -71,6 +81,9 @@ entities it creates are present for the ticked run.
 58.339 Script @__rf-oninit-probe__/control.lua:10: PROBE tick=757640905 surface=true subs=1
 Performed 20 updates in 279.858 ms
 ```
+
+That probe established the **mechanism** and nothing else. Its 20-tick timing is not a measurement of
+anything — see the correction above — and it is quoted here only for the three lines before it.
 
 Three consequences, and the first is the reason the mode exists.
 
