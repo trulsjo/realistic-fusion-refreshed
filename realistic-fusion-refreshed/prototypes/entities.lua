@@ -344,6 +344,21 @@ reactor.output_fluid_box = {
 -- wrong one -- see graphics/mockup/pictures.lua. Do not swap in a Krastorio 2 building to close this
 -- early: the only two that ever fitted this machine's footprint were a spaceship part and a tank,
 -- and a building that lies about what it does is worse than a box that admits what it is.
+--[[ look: rf-heat-exchanger   (read under models/house-style.md; accepted in #246)
+A long, low hall, five wide and fifteen long, that turns reactor energy into steam. Along the
+whole west face runs a closed, riveted manifold trough the full fifteen tiles, with an energy
+channel let into its top under a grille: that face is what butts against the reactor, and it
+should read as one continuous contact, not a socket. The rest of the body is an open frame of
+dark H-beams over a grating deck, so the internals show. Down the centreline stand three tall
+vertical drums, bare metal with two rib bands and a weld seam, each with a pressure relief valve
+on its cap (a part that could move later). From the manifold, glowing feed lines run east under
+the grating to the foot of each drum. Across the drum tops a corrugated steam header, not quite
+straight, runs to the single steam outlet at the middle of the east face. The water sockets sit
+low on both short ends, feeding a header along the base. The south end is closed by a riveted
+wall with a vent, and a control cabinet with a blue panel stands at the south-east corner: those
+two are what break the symmetry. The manifold channel and its feed lines glow with the energy
+accent while the machine is working; the drums are steam and never glow. Nothing on it moves yet.
+]]
 local exchanger = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-heat-exchanger", {
   mining_time = 0.5,
 })
