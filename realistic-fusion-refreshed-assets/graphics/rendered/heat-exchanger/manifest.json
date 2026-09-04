@@ -1,0 +1,162 @@
+{
+  "camera": {
+    "ground_stretch": 1.2252835945245226,
+    "pitch_deg": 54.7,
+    "sun_elevation_deg": 42.0,
+    "sun_from": "west",
+    "view_transform": "AgX"
+  },
+  "directions": [
+    "",
+    "-e",
+    "-s",
+    "-w"
+  ],
+  "files": [
+    "heat-exchanger-e-glow.png",
+    "heat-exchanger-e-shadow.png",
+    "heat-exchanger-e.png",
+    "heat-exchanger-glow.png",
+    "heat-exchanger-icon.png",
+    "heat-exchanger-s-glow.png",
+    "heat-exchanger-s-shadow.png",
+    "heat-exchanger-s.png",
+    "heat-exchanger-shadow.png",
+    "heat-exchanger-w-glow.png",
+    "heat-exchanger-w-shadow.png",
+    "heat-exchanger-w.png",
+    "heat-exchanger.png"
+  ],
+  "frame": {
+    "east": [
+      1344,
+      704
+    ],
+    "margin_tiles": 3.0,
+    "north": [
+      704,
+      1344
+    ],
+    "pixels_per_tile": 64,
+    "scale": 0.5,
+    "shift": [
+      0,
+      0
+    ],
+    "tiles": [
+      5,
+      15
+    ]
+  },
+  "geometry": {
+    "collision_box": [
+      [
+        -2.25,
+        -7.25
+      ],
+      [
+        2.25,
+        7.25
+      ]
+    ],
+    "connections": [
+      {
+        "box": "energy_source.fluid_box",
+        "connection_category": null,
+        "connection_type": "normal",
+        "direction": "west",
+        "flow": "input",
+        "fluid": "rf-reactor-energy",
+        "position": [
+          -2,
+          0
+        ],
+        "production_type": "input"
+      },
+      {
+        "box": "fluid_box",
+        "connection_category": null,
+        "connection_type": "normal",
+        "direction": "north",
+        "flow": "input-output",
+        "fluid": "water",
+        "position": [
+          0,
+          -7
+        ],
+        "production_type": "input"
+      },
+      {
+        "box": "fluid_box",
+        "connection_category": null,
+        "connection_type": "normal",
+        "direction": "south",
+        "flow": "input-output",
+        "fluid": "water",
+        "position": [
+          0,
+          7
+        ],
+        "production_type": "input"
+      },
+      {
+        "box": "output_fluid_box",
+        "connection_category": null,
+        "connection_type": "normal",
+        "direction": "east",
+        "flow": "output",
+        "fluid": "steam",
+        "position": [
+          2,
+          0
+        ],
+        "production_type": "output"
+      }
+    ],
+    "name": "rf-heat-exchanger",
+    "selection_box": [
+      [
+        -2.5,
+        -7.5
+      ],
+      [
+        2.5,
+        7.5
+      ]
+    ],
+    "source": "--dump-data, Factorio 2.0.77; written by tools/extract-geometry.py",
+    "tiles": [
+      5,
+      15
+    ],
+    "type": "boiler"
+  },
+  "geometry_sha256": "abb27b11be3c5dad7e408a6df3d19eeffe6e5a1a1bb814ce0d06b14883688ece",
+  "glow": true,
+  "icon": {
+    "centre": [
+      -0.6,
+      0.0,
+      1.9
+    ],
+    "file": "heat-exchanger-icon.png",
+    "size": [
+      120,
+      64
+    ],
+    "tiles": 4.5
+  },
+  "machine": "heat-exchanger",
+  "model": "models/heat-exchanger/heat-exchanger.blend",
+  "model_sha256": "64f052a51827e02e01491b2d1b71e30bc957ebaa051368a36121ac35ab7fdf7e",
+  "render": {
+    "blender": "5.2.0 LTS",
+    "device": "CPU",
+    "engine": "CYCLES",
+    "glow_emission": 0.3,
+    "glow_samples": 8,
+    "samples": 64,
+    "seed": 0
+  },
+  "source": "written by models/render.py"
+}

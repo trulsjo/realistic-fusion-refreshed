@@ -26,3 +26,6 @@ __pycache__/
 
 # The raw --dump-data tools/extract-geometry.py takes when not handed one; 14 MB, rebuildable
 .dump/
+
+# Blender's save-over backups beside models/<machine>/<machine>.blend; the model is the .blend
+*.blend1
