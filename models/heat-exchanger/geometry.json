@@ -1,0 +1,13 @@
+{
+  "_note": "PROTOTYPE stand-in for #246. Hand-copied from prototypes/entities.lua; the real file is written by the extractor of #248 from --dump-data. Positions are tile centres relative to the entity centre, +x east, +y south, as the prototype declares them.",
+  "name": "rf-heat-exchanger",
+  "type": "boiler",
+  "collision_box": [[-2.25, -7.25], [2.25, 7.25]],
+  "selection_box": [[-2.5, -7.5], [2.5, 7.5]],
+  "connections": [
+    { "fluid": "rf-reactor-energy", "accent": "energy", "flow": "input", "direction": "west", "position": [-2, 0] },
+    { "fluid": "steam", "accent": "steam", "flow": "output", "direction": "east", "position": [2, 0] },
+    { "fluid": "water", "accent": "water", "flow": "input-output", "direction": "north", "position": [0, -7] },
+    { "fluid": "water", "accent": "water", "flow": "input-output", "direction": "south", "position": [0, 7] }
+  ]
+}
