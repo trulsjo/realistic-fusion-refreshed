@@ -21,3 +21,4 @@ dist/
 
 # Rendered tech-tree viewers -- rebuildable from any mod set with scripts/tree-viewer.ps1
 tree-viewer-out/
+__pycache__/
