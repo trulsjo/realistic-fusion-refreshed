@@ -1,0 +1,83 @@
+{
+  "name": "rf-heat-exchanger",
+  "type": "boiler",
+  "collision_box": [
+    [
+      -2.25,
+      -7.25
+    ],
+    [
+      2.25,
+      7.25
+    ]
+  ],
+  "selection_box": [
+    [
+      -2.5,
+      -7.5
+    ],
+    [
+      2.5,
+      7.5
+    ]
+  ],
+  "tiles": [
+    5,
+    15
+  ],
+  "connections": [
+    {
+      "box": "energy_source.fluid_box",
+      "production_type": "input",
+      "fluid": "rf-reactor-energy",
+      "flow": "input",
+      "connection_type": "normal",
+      "connection_category": null,
+      "direction": "west",
+      "position": [
+        -2,
+        0
+      ]
+    },
+    {
+      "box": "fluid_box",
+      "production_type": "input",
+      "fluid": "water",
+      "flow": "input-output",
+      "connection_type": "normal",
+      "connection_category": null,
+      "direction": "north",
+      "position": [
+        0,
+        -7
+      ]
+    },
+    {
+      "box": "fluid_box",
+      "production_type": "input",
+      "fluid": "water",
+      "flow": "input-output",
+      "connection_type": "normal",
+      "connection_category": null,
+      "direction": "south",
+      "position": [
+        0,
+        7
+      ]
+    },
+    {
+      "box": "output_fluid_box",
+      "production_type": "output",
+      "fluid": "steam",
+      "flow": "output",
+      "connection_type": "normal",
+      "connection_category": null,
+      "direction": "east",
+      "position": [
+        2,
+        0
+      ]
+    }
+  ],
+  "source": "--dump-data, Factorio 2.0.77; written by tools/extract-geometry.py"
+}

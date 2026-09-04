@@ -1,0 +1,30 @@
+{
+  "name": "rf-lithium-blanket",
+  "type": "container",
+  "collision_box": [
+    [
+      -2.25,
+      -2.25
+    ],
+    [
+      2.25,
+      2.25
+    ]
+  ],
+  "selection_box": [
+    [
+      -2.5,
+      -2.5
+    ],
+    [
+      2.5,
+      2.5
+    ]
+  ],
+  "tiles": [
+    5,
+    5
+  ],
+  "connections": [],
+  "source": "--dump-data, Factorio 2.0.77; written by tools/extract-geometry.py"
+}

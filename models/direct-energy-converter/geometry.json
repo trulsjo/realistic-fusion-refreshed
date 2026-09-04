@@ -1,0 +1,57 @@
+{
+  "name": "rf-direct-energy-converter",
+  "type": "generator",
+  "collision_box": [
+    [
+      -2.25,
+      -7.25
+    ],
+    [
+      2.25,
+      7.25
+    ]
+  ],
+  "selection_box": [
+    [
+      -2.5,
+      -7.5
+    ],
+    [
+      2.5,
+      7.5
+    ]
+  ],
+  "tiles": [
+    5,
+    15
+  ],
+  "connections": [
+    {
+      "box": "fluid_box",
+      "production_type": "input",
+      "fluid": "rf-aneutronic-reactor-energy",
+      "flow": "input-output",
+      "connection_type": "normal",
+      "connection_category": null,
+      "direction": "west",
+      "position": [
+        -2,
+        0
+      ]
+    },
+    {
+      "box": "fluid_box",
+      "production_type": "input",
+      "fluid": "rf-aneutronic-reactor-energy",
+      "flow": "input-output",
+      "connection_type": "normal",
+      "connection_category": null,
+      "direction": "east",
+      "position": [
+        2,
+        0
+      ]
+    }
+  ],
+  "source": "--dump-data, Factorio 2.0.77; written by tools/extract-geometry.py"
+}
