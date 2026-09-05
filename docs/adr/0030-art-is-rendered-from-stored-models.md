@@ -81,11 +81,13 @@ gives the same bytes, verified over fourteen hashes.
 ## Consequences
 
 - **Binary models live in git, and they churn.** One machine, one day: five commits on 2026-09-05
-  touched `models/heat-exchanger/heat-exchanger.blend`, each storing a fresh copy — 256 KB, 254 KB,
-  255 KB, 723 KB, then 1.45 MB as detail went in — 2.9 MiB of history for a machine whose current
-  model is 1.4 MiB. Git cannot delta a `.blend` usefully, so every look revision costs its full size forever.
-  Five machines at this rate is a repository that grows by art it never ships. No mitigation is
-  built: LFS was not weighed, and `build.py` is not treated as the model.
+  touched `models/heat-exchanger/heat-exchanger.blend`, each storing a fresh copy — 256 097,
+  254 249, 254 550, 723 141, then 1 483 592 bytes as detail went in. The five sum to 2 971 629
+  bytes of history for a machine whose current model is the last of them. Git cannot delta a
+  `.blend` usefully, so every look revision costs its full size forever. Five machines at this rate
+  is a repository that grows by art it never ships. No mitigation is built: LFS was not weighed, and
+  `build.py` is not treated as the model — see the last alternative below, which is the same
+  question from the other end.
 - **A contributor who touches art needs Blender 5.2.0 LTS.** It is not on PATH; `render-machine.py`
   finds it through `--blender`, `$BLENDER_EXE`, a running `blender.exe`, a `Downloads` unzip, then
   Program Files. Generating a model also wants it reachable over MCP, to look at what is being
@@ -124,6 +126,11 @@ gives the same bytes, verified over fourteen hashes.
   defect this decision closes with the manifest gate.
 - **A model built from a script only, with no stored `.blend`.** Would keep the repository text-only
   and delete the churn cost above outright, which is the strongest argument any alternative here
-  has. Rejected because it forbids hand-editing, and hand-editing is how the look was actually
-  settled: the model that shipped is the fifth version of a scene a person opened and changed.
-  Storing the `.blend` and making regenerate explicit is the same choice from the other side.
+  has — and on the record so far it is unanswered. **No hand edit has happened yet.** All five of
+  the heat exchanger's model commits changed `build.py` in the same commit, and `build.py` opens by
+  wiping the scene and rebuilding it procedurally, so every look revision to date went through the
+  script and a regenerate. Truls's four rounds of reactions reached the model as edits to Python.
+  So the `.blend` is stored for a capability rather than for an observed practice: a shape easier to
+  drag than to describe, on some machine that has not been built yet. That is a bet, it is what the
+  churn above buys, and it is the part of this ADR most likely to be revisited. It is recorded as a
+  bet rather than dressed up as a finding.
