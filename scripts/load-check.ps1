@@ -132,6 +132,21 @@
     Get-ContainmentBreaches for what it can and cannot see, and ADR 0007's finding 4 for the rest of
     the blind spot this closes one slice of.
 
+    IT THEN CHECKS THAT EVERY PIECE OF RENDERED ART STILL AGREES WITH ITS MACHINE (#250). A render
+    is drawn from the machine's footprint and pipe connections as `--dump-data` resolved them on the
+    day it was rendered, and models/render.py records that geometry in the `manifest.json` beside
+    the sprites. Nothing else ties the two together afterwards: move a connection in the Lua and the
+    mod loads, the sprite still shows a socket where the pipe used to be, and the game says nothing.
+    So for every `graphics/rendered/<machine>/manifest.json` in the Assets mod this script asks
+    tools/extract-geometry.py -- the same code that wrote the geometry the render used -- for that
+    machine's geometry out of the loaded dump, and fails if the two disagree on anything but the
+    `source` line. The subject is the manifest, not the prototype's sprite paths: a stale render in
+    the shipped Assets mod is wrong whether or not a prototype wears it yet, and "every machine
+    wearing rendered art" was an empty set until #252, which is a pass by finding nothing. It reads
+    the LOADED dump, so a third-party mod that moves one of our connections fails it too -- that is
+    what a player would see. Python 3 on PATH is a requirement of this gate; a missing interpreter
+    is a failure, not a skip.
+
     It does NOT check locale coverage. Factorio's data stage loads a prototype with no locale
     entry without complaint; the omission only shows in game as "Unknown key". ADR 0010 singles
     that failure out, so it has its own check: scripts/locale-check.ps1. A pass here says nothing
@@ -215,13 +230,19 @@
     references cross a mod boundary, so there is now a seam for one to fall through.
 
 .PARAMETER SelfTest
-    Verify the check can fail. FOUR halves, and the run prints each one numbered as it passes, so a
+    Verify the check can fail. FIVE halves, and the run prints each one numbered as it passes, so a
     reader can count them against this list: the repo as it stands must pass; a mod carrying an
-    invalid prototype must fail; a mod naming an icon file that does not exist must be caught; and a
-    mod that reassigns one of our containment categories must be caught. The first is required or
-    the others prove nothing, since Factorio also exits non-zero when the repo is genuinely broken.
-    The third and the fourth are the two Factorio itself exits 0 on. Run this whenever the script
-    changes.
+    invalid prototype must fail; a mod naming an icon file that does not exist must be caught; a
+    mod that reassigns one of our containment categories must be caught; and a mod that moves a
+    pipe connection on a machine with rendered art must be caught. The first is required or the
+    others prove nothing, since Factorio also exits non-zero when the repo is genuinely broken.
+    The last three are the ones Factorio itself exits 0 on. Run this whenever the script changes.
+
+    The fifth is #250's. Its canary's `data-final-fixes` slides the first connection the first
+    manifest records one tile along its own edge -- along, so the prototype stays valid and the
+    extractor's edge check still passes, and the only thing that changed is where the socket is.
+    The assertion requires the disagreement to be reported against that prototype and on
+    `connections`, for the same reason the fourth half compares names: the report is the value.
 
     The fourth is #209's, and it is the same shape the real breach had: a canary whose
     `data-final-fixes` writes a literal over the first connection of ours carrying `rf-plasma` --
@@ -369,6 +390,141 @@ function Test-Assets {
         exit 1
     }
     Write-Host 'assets: every referenced file is present.'
+}
+
+# The mod that holds every sprite, and so every graphics/rendered/<machine>/manifest.json (ADR 0023).
+$ASSETS_MOD = 'realistic-fusion-refreshed-assets'
+
+function ConvertTo-CanonicalTree {
+    <#  The same value with every object's keys sorted, so two JSON documents that differ only in
+        key order serialise to the same text. The manifest's geometry was written with sorted keys
+        and the extractor's --stdout in insertion order; compared as text they would never agree.  #>
+    param($Node)
+    if ($Node -is [System.Management.Automation.PSCustomObject]) {
+        $sorted = [ordered]@{}
+        foreach ($p in ($Node.PSObject.Properties | Sort-Object Name)) {
+            $sorted[$p.Name] = ConvertTo-CanonicalTree $p.Value
+        }
+        return $sorted
+    }
+    if ($Node -is [array]) {
+        $list = [System.Collections.Generic.List[object]]::new()
+        foreach ($e in $Node) { $list.Add((ConvertTo-CanonicalTree $e)) }
+        return , $list.ToArray()
+    }
+    return $Node
+}
+
+function Get-RenderManifests {
+    <#  Every manifest.json the render pipeline has written into the Assets mod, in path order.
+        Each is the subject of one agreement check; the self-test picks its victim from the same
+        list, so the two cannot disagree about what counts as rendered art.  #>
+    param([Parameter(Mandatory)] [string] $AssetsDirectory)
+    return @(Get-ChildItem -Path (Join-Path $AssetsDirectory 'graphics/rendered/*/manifest.json') -File |
+        Sort-Object FullName)
+}
+
+function Get-RenderDisagreements {
+    <#  Where a manifest's recorded geometry and the live prototype disagree. One row per field per
+        manifest; empty means every render still fits its machine.
+
+        THE LIVE SIDE IS THE EXTRACTOR'S, NOT A SECOND WALK. tools/extract-geometry.py wrote the
+        geometry the render was built from, so asking it again against the loaded dump compares like
+        with like: the same normalisation of directions, defaults and connection order, and no second
+        implementation to drift from the first (#209 learned that lesson on the containment walk).
+        `source` is left out of the comparison: it names the engine version the geometry was taken
+        on, and a render does not go stale because the game was patched.
+
+        An extractor that exits non-zero is a row, not an exception: a prototype it cannot read is a
+        prototype no render can be shown to agree with.  #>
+    param(
+        [Parameter(Mandatory)] [string] $DumpPath,
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [System.IO.FileInfo[]] $Manifests
+    )
+
+    $extractor = Join-Path $repoRoot 'tools/extract-geometry.py'
+    $rows = [System.Collections.Generic.List[object]]::new()
+    foreach ($file in $Manifests) {
+        $recorded = (Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json).geometry
+        $name     = $recorded.name
+
+        # 2>&1 so a Python traceback lands in the row rather than on the console; "$_" turns the
+        # error records native stderr arrives as back into lines.
+        $lines = @(& python $extractor $name --dump $DumpPath --stdout 2>&1 | ForEach-Object { "$_" })
+        if ($LASTEXITCODE -ne 0) {
+            $rows.Add([pscustomobject]@{
+                Prototype = $name; Manifest = $file.FullName; Field = '(the live prototype)'
+                Recorded = 'a geometry the extractor wrote'
+                Live     = "extract-geometry.py exited $LASTEXITCODE`: $(($lines | Select-Object -Last 1))" })
+            continue
+        }
+        $live = ($lines -join "`n") | ConvertFrom-Json
+
+        $canon = { param($v) ConvertTo-Json -InputObject (ConvertTo-CanonicalTree $v) -Compress -Depth 20 }
+        foreach ($field in @('name', 'type', 'tiles', 'collision_box', 'selection_box')) {
+            $mine   = & $canon $recorded.$field
+            $theirs = & $canon $live.$field
+            if ($mine -ceq $theirs) { continue }
+            $rows.Add([pscustomobject]@{
+                Prototype = $name; Manifest = $file.FullName; Field = $field
+                Recorded = $mine; Live = $theirs })
+        }
+        # Connections as two sets, reported by their difference: the whole list side by side was a
+        # wall of JSON in which the one moved socket had to be found by eye. Order is not geometry.
+        $mineSet   = @($recorded.connections | ForEach-Object { & $canon $_ })
+        $theirSet  = @($live.connections     | ForEach-Object { & $canon $_ })
+        $onlyMine  = @($mineSet  | Where-Object { $_ -cnotin $theirSet })
+        $onlyTheirs = @($theirSet | Where-Object { $_ -cnotin $mineSet })
+        if ($onlyMine -or $onlyTheirs) {
+            $rows.Add([pscustomobject]@{
+                Prototype = $name; Manifest = $file.FullName; Field = 'connections'
+                Recorded = if ($onlyMine)   { $onlyMine   -join "`n                " } else { '(nothing the live prototype lacks)' }
+                Live     = if ($onlyTheirs) { $onlyTheirs -join "`n                " } else { '(nothing the manifest lacks)' } })
+        }
+    }
+    return $rows
+}
+
+function Test-RenderedArt {
+    <#  The gate half of Get-RenderDisagreements: report, and exit non-zero on a disagreement.
+        Separate for the reason Test-Assets is separate from Find-MissingAssets: the self-test has to
+        ask the question without the answer ending the run.  #>
+    param([Parameter(Mandatory)] [string] $DumpPath)
+
+    if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+        Write-Host ''
+        Write-Host 'FAILED - rendered art: no `python` on PATH, so the agreement gate could not run.'
+        Write-Host '         Treating as a failure rather than reporting a pass it did not earn.'
+        exit 1
+    }
+    # THE FLOOR, because everything below passes by finding nothing. A renamed directory or a
+    # manifest the pipeline stopped writing would each report zero disagreements, which reads
+    # exactly like every render agreeing. An instrument fault, not a finding.
+    $manifests = Get-RenderManifests -AssetsDirectory $ourDirectories[$ASSETS_MOD]
+    if (-not $manifests) {
+        Write-Host ''
+        Write-Host "FAILED - rendered art: no graphics/rendered/*/manifest.json found under $ASSETS_MOD."
+        Write-Host '         The heat exchanger has had one since #249; either the pipeline stopped'
+        Write-Host '         writing it or this check has stopped finding it, and both would otherwise'
+        Write-Host '         report a clean pass over no render at all.'
+        exit 1
+    }
+
+    $rows = @(Get-RenderDisagreements -DumpPath $DumpPath -Manifests $manifests)
+    if ($rows) {
+        Write-Host ''
+        Write-Host "FAILED - rendered art: $($rows.Count) disagreement(s) between a manifest and the live"
+        Write-Host '         prototype. The sprite was rendered from the recorded geometry, so a socket'
+        Write-Host '         or the footprint is now drawn where the machine no longer has it. Re-run'
+        Write-Host '         the extractor and the render, or put the prototype back.'
+        foreach ($r in $rows) {
+            Write-Host "    $($r.Prototype)  $($r.Field)"
+            Write-Host "      recorded: $($r.Recorded)"
+            Write-Host "      live:     $($r.Live)"
+        }
+        exit 1
+    }
+    Write-Host "rendered art: all $($manifests.Count) manifest(s) agree with the live footprint and connections."
 }
 
 function Invoke-DataDump {
@@ -749,7 +905,7 @@ try {
 
     if ($SelfTest) {
         # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
-        Write-Host 'self-test 1/4: the repo as it stands must load.'
+        Write-Host 'self-test 1/5: the repo as it stands must load.'
         $clean = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'clean'
         # Same pass criterion as a real run: exit 0 without a save is a failure there, so it must
         # be a failure here too, or -SelfTest could certify a check a plain run would reject.
@@ -773,7 +929,7 @@ try {
         'data:extend({{ type = "item", name = "rf-loadcheck-canary-item" }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 2/4: an invalid prototype must be rejected.'
+        Write-Host 'self-test 2/5: an invalid prototype must be rejected.'
         $broken = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'canary'
         if ($broken.Code -eq 0) {
             Write-Host ''
@@ -792,7 +948,7 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
   icon = D .. "no-such-icon" .. ".png", icon_size = 64 }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 3/4: a prototype naming a file that is not there must be caught.'
+        Write-Host 'self-test 3/5: a prototype naming a file that is not there must be caught.'
         $withCanary = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'assets'
         if ($withCanary.Code -ne 0) {
             Write-Host ''
@@ -873,7 +1029,7 @@ data.raw.item["rf-loadcheck-canary-item"].order = victim' |
   icon = "__base__/graphics/icons/iron-plate.png", icon_size = 64 }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 4/4: a set reassigning one of our containment categories must be caught.'
+        Write-Host 'self-test 4/5: a set reassigning one of our containment categories must be caught.'
         $reassigned = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'contain'
         if ($reassigned.Code -ne 0) {
             Write-Host ''
@@ -920,10 +1076,78 @@ data.raw.item["rf-loadcheck-canary-item"].order = victim' |
             exit 1
         }
 
+        # Half five: a machine whose rendered art no longer fits it must be caught (#250). The victim
+        # is whatever the first manifest records -- a hard-coded machine would fail this half the day
+        # it was re-rendered under another name -- and the canary slides that machine's first
+        # connection one tile ALONG its edge, towards the centre. Along, because a connection off its
+        # edge is a prototype Factorio refuses, and a canary that cannot load proves nothing about a
+        # gate that runs after the load. Towards the centre, so it stays on the footprint whatever the
+        # machine's size.
+        $renderManifests = Get-RenderManifests -AssetsDirectory (Join-Path $repoRoot $ASSETS_MOD)
+        if (-not $renderManifests) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: no graphics/rendered/*/manifest.json under $ASSETS_MOD, so"
+            Write-Host '         half five has no render to disagree with.'
+            exit 1
+        }
+        $renderVictim = (Get-Content -LiteralPath $renderManifests[0].FullName -Raw | ConvertFrom-Json).geometry
+        $slid = $renderVictim.connections[0]
+        if (-not $slid) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: $($renderVictim.name)'s manifest records no connection to slide."
+            exit 1
+        }
+        # The manifest's box path is dotted with zero-based indices; Lua wants brackets and one-based.
+        $boxLua = ($slid.box -split '\.' | ForEach-Object {
+            if ($_ -match '^\d+$') { "[$([int]$_ + 1)]" } else { "[`"$_`"]" } }) -join ''
+        $axis  = if ($slid.direction -in @('north', 'south')) { 1 } else { 2 }
+        $named = if ($axis -eq 1) { 'x' } else { 'y' }
+        $delta = if ($slid.position[$axis - 1] -le 0) { 1 } else { -1 }
+        @"
+local proto = data.raw["$($renderVictim.type)"]["$($renderVictim.name)"]
+local slid = false
+for _, c in pairs(proto$boxLua.pipe_connections) do
+  local p = c.position
+  if p and (p[1] or p.x) == $($slid.position[0]) and (p[2] or p.y) == $($slid.position[1]) then
+    if p[$axis] then p[$axis] = p[$axis] + ($delta) else p.$named = p.$named + ($delta) end
+    slid = true
+  end
+end
+if not slid then
+  error("load-check canary: no connection at ($($slid.position[0]), $($slid.position[1])) on $($renderVictim.name) to slide, so half five would prove nothing")
+end
+"@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
+
+        Write-Host "self-test 5/5: a machine whose rendered art no longer fits it must be caught."
+        $renderDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-loaded'
+        $disagreements = @(Get-RenderDisagreements -DumpPath $renderDump -Manifests $renderManifests)
+        $onVictim = @($disagreements | Where-Object { $_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connections' })
+        if (-not $onVictim) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the canary slid a connection on $($renderVictim.name) and the"
+            Write-Host '         rendered-art check did NOT report a disagreement on its connections.'
+            Write-Host '         The sprite would keep showing a socket where the pipe no longer is.'
+            if ($disagreements) {
+                Write-Host "         It reported $($disagreements.Count) other row(s):"
+                foreach ($d in $disagreements) { Write-Host "           $($d.Prototype)  $($d.Field)" }
+            }
+            exit 1
+        }
+        # Only the connections may disagree: the canary touched nothing else, so a footprint row here
+        # would mean the comparison is reading something other than the slide it was shown.
+        $stray = @($disagreements | Where-Object { -not ($_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connections') })
+        if ($stray) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the canary slid one connection but the check also reported:"
+            foreach ($d in $stray) { Write-Host "           $($d.Prototype)  $($d.Field)" }
+            exit 1
+        }
+
         Write-Host ''
         Write-Host 'OK - self-test passed: clean repo loads, invalid prototype rejected'
-        Write-Host "     (exit $($broken.Code)), missing asset caught, and a reassigned"
-        Write-Host "     containment category caught by name on $victim."
+        Write-Host "     (exit $($broken.Code)), missing asset caught, a reassigned containment"
+        Write-Host "     category caught by name on $victim, and a slid connection caught on"
+        Write-Host "     $($renderVictim.name)'s rendered art."
         exit 0
     }
 
@@ -969,6 +1193,10 @@ data.raw.item["rf-loadcheck-canary-item"].order = victim' |
         } else { $loadedConnections }
         Test-Containment -Declared $declaredConnections -Loaded $loadedConnections -Against $alsoMods
 
+        # Before the asset check for the same reason containment is: the upstream asset reds must
+        # not hide it. Reads the loaded dump, so a set moving our connection fails it (#250).
+        Test-RenderedArt -DumpPath $loadedDump
+
         Test-Assets -DumpPath $loadedDump
     }
 
@@ -987,8 +1215,8 @@ data.raw.item["rf-loadcheck-canary-item"].order = victim' |
     # docstring above used to make: creating the map ran control.lua's check_prototypes() too.
     $how = if ($FromZips) { 'built zips' } else { 'junctioned repo directories' }
     Write-Host "OK - prototypes valid, every referenced asset present, map created, the"
-    Write-Host "     simulation's twelve load-time invariants hold and containment survived the"
-    Write-Host "     load, loading from $how."
+    Write-Host "     simulation's twelve load-time invariants hold, containment survived the"
+    Write-Host "     load and every render agrees with its machine, loading from $how."
     exit 0
 }
 finally {
