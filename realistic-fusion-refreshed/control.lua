@@ -490,9 +490,9 @@ local function apply(entity, spec, plasma, result)
   --
   -- ALL THREE TERMS ARE THE BOX'S, WHICH IS THE WHOLE OF #69 AND IS MEASURED RATHER THAN ASSUMED.
   -- get_capacity answers a box's own declared volume even when that box is piped into a segment
-  -- fifty times its size (#68: 500 against a 27 000-unit run of twenty pipes and a tank; the cell
-  -- named below is a different rig with a shorter run, so its figure is 25 300 rather than 27 000
-  -- and neither is stale), and fluidbox[i].amount is that same
+  -- fifty-four times its size (#68: 500 against a 27 000-unit run of twenty pipes and a tank; the
+  -- cell named below is a different rig with a shorter run, so its figures are 25 300 and fifty
+  -- times, and neither is stale), and fluidbox[i].amount is that same
   -- box's contents -- so a capacity and a held amount subtract cleanly instead of mixing a segment
   -- with a share. Had it been the segment's, this expression would over-report the room by the
   -- whole downstream volume in the arrangement a player actually builds -- collector piped to a

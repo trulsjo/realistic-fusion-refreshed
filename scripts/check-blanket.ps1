@@ -37,6 +37,12 @@
       orphan     A loaded blanket on a reactor with NO collector. Its lithium must be untouched:
                  a blanket with nowhere to put what it breeds stays idle rather than spending
                  items for nothing.
+      throttled  A blanketed reactor whose collector is drained far more slowly than the blanket
+                 can fill it. Every item spent must be accounted for by a triton still in the
+                 collector or drawn out of it -- a blanket must not buy tritium that is being
+                 discarded. Drained rather than merely unplumbed, because a saturated box has
+                 exactly zero headroom and exercises an early return instead of the cap.
+
       flooded    A blanketed reactor whose collector is piped into a run that has been FILLED, so
                  the room left is 25 units in the box and 300 downstream against a segment that
                  reads 25 300. It is the arrangement #69 is about: a headroom read off the segment
@@ -45,11 +51,6 @@
                  mutation -- with the segment figure in apply() this cell spends 1 887 items for the
                  same 325 units and throws 1 562 away.
 
-      throttled  A blanketed reactor whose collector is drained far more slowly than the blanket
-                 can fill it. Every item spent must be accounted for by a triton still in the
-                 collector or drawn out of it -- a blanket must not buy tritium that is being
-                 discarded. Drained rather than merely unplumbed, because a saturated box has
-                 exactly zero headroom and exercises an early return instead of the cap.
       pulled     A blanketed reactor whose blanket is destroyed halfway through. The reactor has
                  to go on running and go on producing energy.
       d-d        A D-D reactor with a collector and a loaded blanket. It must collect MORE tritium

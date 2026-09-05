@@ -779,11 +779,16 @@ nothing**: an output box on a 27000-unit run reports the same number it reported
 > connection that puts the tank beyond the end of the run, and asserts that every pipe and the tank
 > report one figure.
 
+> **Call sites are named, not numbered.** These three were cited by line and went stale twice in two
+> days — both times because a commit added comment lines above them and nothing grepped for the old
+> numbers. `control.lua` has exactly three `get_capacity` calls and they are one `grep` away, so the
+> function is the durable reference and the line is not.
+
 **Nothing is broken by this and one comment was wrong.** Three call sites clamp against it, and
 every one is an output box a player pipes — which is why #68 measured them piped: `apply()` clamps
-its energy write with `box.get_capacity(2)` (`control.lua:448`), `deposit()` clamps each by-product
-against the collector box it is writing (`:227`), and `apply()` reads the same collector again for a
-blanket's headroom (`:488`). All three wanted the box
+its energy write with `box.get_capacity(2)`, `deposit()` clamps each by-product
+against the collector box it is writing, and `apply()` reads the same collector again for a
+blanket's headroom. All three wanted the box
 figure and all three get it — the write would be clamped to the box regardless. What was wrong was the
 reasoning written beside them, which claimed a segment-wide number and would have justified writing
 more than a box can hold if anyone had ever relied on it.
@@ -1373,9 +1378,9 @@ stays, for the reason it was written.
 **The crossings, which are the larger share.** #39's ladder puts the arithmetic at 0.876 µs against
 about 1.0 µs of crossings, and everything above aims at the arithmetic. The one crossing worth
 naming is `fluidbox.get_capacity`, which asks for a box's **declared volume** — a prototype
-constant. A vented reactor that is producing makes that call once a step (`control.lua:448`, inside
+constant. A vented reactor that is producing makes that call once a step (in `apply()`, inside
 the `MIN_FLUID` guard); a collected D-D reactor makes it **four** times, adding the blanket headroom
-read (`:488`, on every collected reactor whether or not a blanket exists) and one per by-product box
+read (`apply()` again, on every collected reactor whether or not a blanket exists) and one per by-product box
 inside `deposit()`. Caching them at load is the shape of the change, and `check_confinement_ladder()`
 already reads a box volume out of `prototypes.entity` at load, so the machinery exists.
 
