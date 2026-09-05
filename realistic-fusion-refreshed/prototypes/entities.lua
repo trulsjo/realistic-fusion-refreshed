@@ -15,6 +15,10 @@ local logic = require("scripts.reactor-logic")
 -- Drawn placeholders for the machines with no art of their own (#45). Our own work and
 -- our own licence, unlike graphics/krastorio-2/ -- see the module for why that matters.
 local mockup = require("__realistic-fusion-refreshed-assets__.graphics.mockup.pictures")
+-- The real thing, rendered from a Blender model (#238). Also our own work and our own licence. A
+-- machine moves from mockup to rendered when its model exists and the look has been accepted in
+-- game; rf-heat-exchanger is the first (#252).
+local rendered = require("__realistic-fusion-refreshed-assets__.graphics.rendered.pictures")
 
 -- What a reactor's tooltip cannot say for itself. Both reactors are boilers (ADR 0011), so the
 -- engine reports the boiler's energy_consumption as "Max consumption" -- 1 W, seven orders below
@@ -317,7 +321,7 @@ reactor.output_fluid_box = {
 -- energy_consumption sets the burn rate, and everything downstream is ordinary vanilla steam at
 -- 500 C, which vanilla steam turbines already accept.
 --
--- THE SHAPE IS THE ORIGINAL MOD'S, AND THE ART IS A PLACEHOLDER (ADR 0022, which reverses ADR
+-- THE SHAPE IS THE ORIGINAL MOD'S, AND THE ART IS NOW THE REAL THING (ADR 0022, which reverses ADR
 -- 0013's "the heat exchanger stays 3x2" for this machine and inverts its footprint-follows-art
 -- ordering; #45). Truls's decision,
 -- 2026-08-22: five by fifteen, butted flush along one face of the fifteen-tile reactor the way
@@ -339,11 +343,21 @@ reactor.output_fluid_box = {
 -- discarded thread and PreLeyZero for unmarked art without saying which files are whose. CLAUDE.md's
 -- rule is to ask rather than assume, it was asked, and the answer was no.
 --
--- SO: original art, drawn for this mod (Route C), and #108 is where the real thing is tracked. What
--- it wears in the meantime is a drawn mockup at the right size rather than a vanilla sprite at the
--- wrong one -- see graphics/mockup/pictures.lua. Do not swap in a Krastorio 2 building to close this
--- early: the only two that ever fitted this machine's footprint were a spaceship part and a tank,
--- and a building that lies about what it does is worse than a box that admits what it is.
+-- SO IT IS ORIGINAL ART, DRAWN FOR THIS MOD (Route C), AND IT EXISTS. #108 closed on #252: the
+-- machine wears the rendered set in graphics/rendered/heat-exchanger/, built from the Blender model
+-- in models/heat-exchanger/ against the look note below and models/house-style.md. Its icon is
+-- rendered from the same model, so the Krastorio 2 gas-power-station icon it borrowed is gone and
+-- the NOTICE no longer names it. Nothing about this machine comes from Krastorio 2 or from either
+-- predecessor any more.
+--
+-- The mockup it replaced is still in graphics/mockup/ for the four machines that have no model yet.
+-- Do not swap in a Krastorio 2 building for any of them: the only two that ever fitted this
+-- machine's footprint were a spaceship part and a tank, and a building that lies about what it does
+-- is worse than a box that admits what it is.
+--
+-- Change the look by editing the note below and re-rendering (`/render-machine rf-heat-exchanger`),
+-- never by editing a PNG. load-check fails if the manifest beside the sheets stops agreeing with
+-- the footprint and connections this file declares (#250).
 --[[ look: rf-heat-exchanger   (read under models/house-style.md; accepted in #246)
 A long, low hall, five wide and fifteen long, that turns reactor energy into steam. Along the
 whole west face runs a closed, riveted manifold trough the full fifteen tiles, with an energy
@@ -362,6 +376,10 @@ accent while the machine is working; the drums are steam and never glow. Nothing
 local exchanger = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-heat-exchanger", {
   mining_time = 0.5,
 })
+-- Rendered from the same model as the building, so icon and machine are the same object. This is
+-- the one entity here that does NOT take pin's derived graphics/krastorio-2/entities/<name>.png,
+-- and the file it used to take is deleted rather than left lying about (#252).
+exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 exchanger.energy_consumption = "40MW"
 exchanger.energy_source = {
   type = "fluid",
@@ -386,10 +404,10 @@ exchanger.energy_source = {
   },
 }
 
--- FIVE BY FIFTEEN, ON MOCKUP ART (#45, ADR 0022). Truls's decision: this machine takes the original mod's
--- footprint, which Durikkan's 2.0 port still declares, and it gets a drawn placeholder until the
--- real art of #108 exists. What it wore before was vanilla's heat exchanger at 3x2 -- a sprite that
--- looked finished while being the wrong size, which is worse than a box that admits what it is.
+-- FIVE BY FIFTEEN, ON RENDERED ART (#45, ADR 0022, #108). Truls's decision: this machine takes the
+-- original mod's footprint, which Durikkan's 2.0 port still declares. What it wore before was
+-- vanilla's heat exchanger at 3x2 -- a sprite that looked finished while being the wrong size --
+-- and then a drawn mockup that admitted what it was until the model existed.
 --
 -- BOTH LONG FACES CARRY THE BIG FLOWS, which is what the 5x15 shape is for. Reactor energy comes in
 -- along the whole west face and steam leaves along the whole east one, so the machine stands between
@@ -403,7 +421,17 @@ exchanger.energy_source = {
 -- flows that need the length.
 exchanger.collision_box = { { -2.25, -7.25 }, { 2.25, 7.25 } }
 exchanger.selection_box = { { -2.5, -7.5 }, { 2.5, 7.5 } }
-exchanger.pictures = mockup.boiler("heat-exchanger", 5, 15)
+exchanger.pictures = rendered.boiler("heat-exchanger", 5, 15)
+-- WHAT MAKES THE GLOW APPEAR. The rendered set's -glow sheets go in `fire_glow`, which the engine
+-- draws only while the boiler is burning -- and only when burning_cooldown is above 1. Vanilla's
+-- heat exchanger sets no cooldown at all, because it has no fire to hold, so a copy of it needs
+-- one. 20 ticks is vanilla's own boiler: a third of a second of afterglow when the reactor energy
+-- stops, which reads as a machine coasting down rather than one switched off at the wall.
+exchanger.burning_cooldown = 20
+-- Flicker is the energy source's light intensity driving the glow's alpha. A fluid energy source
+-- burning by fuel_value emits no light, so leaving this at its default false is what keeps the
+-- manifold at a steady full-strength glow instead of an invisible one.
+exchanger.fire_glow_flicker_enabled = false
 exchanger.fluid_box.pipe_connections = {
   { flow_direction = "input-output", direction = defines.direction.north, position = { 0, -7 } },
   { flow_direction = "input-output", direction = defines.direction.south, position = { 0, 7 } },
