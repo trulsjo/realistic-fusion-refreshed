@@ -34,14 +34,14 @@ settled, and are named here only so nobody reopens them under this ADR's heading
   **confinement** rather than capture. Bremsstrahlung is a loss of confinement rather than of energy:
   the X-rays land in the first wall, which is the channel `step()` already sells through. Whether the
   term also lands in `captured_j` is #52's decision, not this one's.
-- **The ash's share of thermal energy**, leaving with the burnt fuel. `reactor-logic.lua:423-425`
+- **The ash's share of thermal energy**, leaving with the burnt fuel. `reactor-logic.lua`, in `M.step()`,
   calls it a real gap in the accounting and a rounding error, and it stays one.
 
 The third is different, and is what this ADR is about.
 
 ### The blanket releases nuclear energy and the model throws it away
 
-`reactor-logic.lua:344` already writes the two reactions down:
+`reactor-logic.lua` already writes the two reactions down:
 
     n + Li-6  -> T + He4        + 4.78 MeV   exothermic
     n + Li-7  -> T + He4 + n'   - 2.47 MeV   endothermic, and hands the neutron back

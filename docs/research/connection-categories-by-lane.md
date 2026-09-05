@@ -131,7 +131,7 @@ by eye, and all eight hash the same because all eight report no difference.
 **That is not the same as "Space Age changes nothing", and an earlier draft of this note said the
 stronger thing.** `-With` enables a bundled mod on **both** sides of the comparison: the probe builds
 one `$enabledBundled` list and `Get-OurConnections` passes it to `Write-ModList` on the declared run
-and the loaded run alike (`scripts/probe-connection-categories.ps1:270`). So Space Age is in the
+and the loaded run alike (`scripts/probe-connection-categories.ps1`). So Space Age is in the
 baseline as well as in the subject and **cancels out of the diff**. If Space Age appended a category
 to `rf-heater`'s output box, all four of those lanes would still report zero, and hashing the report
 bodies would not catch it because it only shows that all eight are empty. Whatever Space Age does to

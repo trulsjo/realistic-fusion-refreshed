@@ -99,7 +99,7 @@ not a sketch: `tritium_usage` subtracts `dd_t_reactions` and `helium_3_usage` su
 ### The rates are falsified, and he says so
 
 **Added 2026-08-21, from the local clone.** Every channel but one is multiplied by a hand-tuned
-constant — `reactor-logic.lua:179-185`, with his own comments:
+constant — `reactor-logic.lua`'s D-T fuel entry, with his own comments:
 
 | Channel | Multiplier | His comment |
 |---|---|---|

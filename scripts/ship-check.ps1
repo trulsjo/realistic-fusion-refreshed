@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
     Fails if the claims the shipped mods make about themselves have stopped being true, if the
-    scripts in this directory have stopped answering Get-Help, or if a docs/ note this repo cites
+    scripts in this directory have stopped answering Get-Help, if any prose cites one of our own
+    files by line number, or if a docs/ note this repo cites
     is not there to be read.
 
 .DESCRIPTION
@@ -360,6 +361,65 @@ $dangling = @($cited | Where-Object { -not (Test-Path (Join-Path $repoRoot $_.Pa
 if ($dangling) {
     $shown = ($dangling | ForEach-Object { "$($_.Path) (cited by $($_.From):$($_.Line))" }) -join '; '
     $failures.Add("these docs/ paths are cited but do not exist: $shown")
+}
+
+# ----------------------------------------------------------------------------- our own files, by line
+#
+# NOTHING IN PROSE MAY CITE ONE OF THIS REPOSITORY'S OWN FILES BY LINE NUMBER (#69).
+#
+# Not a style rule. A line number is a claim about a file that no gate reads, and it goes wrong
+# silently the moment anyone adds a comment above the thing it points at -- which is the ordinary
+# way this repository changes. Two pull requests running, #256 and #259, each moved control.lua's
+# three get_capacity call sites and each left the research note pointing at the old lines; an audit
+# then found the same rot in twelve other documents, ten of them stale by more than a hundred lines,
+# some pointing at prose that had never been there. The repair was to name the function instead, and
+# a function name is checkable by grep in a way `:488` is not.
+#
+# WHAT IS LEFT ALONE, and why each is outside the rule:
+#   - the predecessor archives and vanilla -- ORIG/, PORT/, _reference/, RealisticFusion*, base/ --
+#     whose files this repo neither owns nor moves, where a line number is the only pointer there is;
+#   - verbatim game output, which prints `__mod-name__/control.lua:12:` and is a quotation;
+#   - a bare file name that several of our own files share -- `entities.lua`, `d-d.lua` -- because
+#     which one is meant cannot be decided here, and a gate that guesses would cry wolf on the
+#     predecessor citations that fill port-and-original-inspection.md. A citation is ours only when
+#     the path given resolves to exactly ONE tracked file.
+$tracked = @(& git -C $repoRoot ls-files | Where-Object { $_ })
+
+$numbered = [System.Collections.Generic.List[object]]::new()
+$anyCite  = 0
+foreach ($file in $citing) {
+    $n = 0
+    foreach ($line in (Get-Content $file.FullName)) {
+        $n++
+        # Verbatim log output, the predecessor archives and vanilla, per the note above.
+        if ($line -match '__|Script @|ORIG/|PORT/|_reference/|RealisticFusion|(?<![\w-])base/') { continue }
+        foreach ($m in [regex]::Matches($line, '(?<![\w./-])([\w./-]+\.(?:lua|ps1|py|js|json|md)):\d+')) {
+            $anyCite++
+            $path = $m.Groups[1].Value
+            $hits = @($tracked | Where-Object { $_ -eq $path -or $_.EndsWith('/' + $path) })
+            if ($hits.Count -eq 1) {
+                $numbered.Add([pscustomobject]@{ Cite = $m.Value; From = $file.Name; Line = $n })
+            }
+        }
+    }
+}
+
+# The floor, for the same reason section 5 and the docs/ check above carry one: this passes by
+# finding nothing, so a regex that stopped matching would print green while checking nothing. The
+# repo cites files with line numbers constantly -- predecessor and vanilla ones legitimately -- so
+# if the pattern finds none at all, the pattern broke rather than the habit.
+$checks++
+if ($anyCite -lt 10) {
+    $failures.Add("only $anyCite path:line citation(s) found across $($citing.Count) files, which " +
+        'means the pattern above stopped matching rather than that the repo stopped citing')
+}
+
+$checks++
+if ($numbered.Count) {
+    $shown = (($numbered | Sort-Object From, Line |
+        ForEach-Object { "$($_.Cite) (in $($_.From):$($_.Line))" }) -join '; ')
+    $failures.Add('these cite one of our own files by line number, which goes stale silently -- ' +
+        "name the function or the prototype instead: $shown")
 }
 
 if ($failures.Count) {

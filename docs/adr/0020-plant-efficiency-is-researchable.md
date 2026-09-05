@@ -19,7 +19,7 @@ time** — a different lever with a different ceiling.
 ## Context
 
 `capture_efficiency` is 0.85 on `rf-reactor` and 0.95 on `rf-aneutronic-reactor`. It is not a fudge
-factor: `reactor-logic.lua:465-469` and `:312-318` both record that it is the **only** term standing
+factor: `reactor-logic.lua` records against both reactor specs that it is the **only** term standing
 between this mod and perpetual motion, because Factorio's steam turbines lose nothing, so at 1.0 a
 reactor that never fuses sells back exactly the heating it was given and pays for itself for ever.
 The aneutronic tier already runs that margin at 190 MW returned for 200 MW spent.

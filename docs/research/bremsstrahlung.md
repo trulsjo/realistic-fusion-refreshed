@@ -582,7 +582,7 @@ made, and a reader meeting them in an older commit needs to find out here that t
    conclusion — the clamp *should* stay, because the int32 ceiling is a hard constraint and reason 2
    in `d-t-ignition.md` was always the load-bearing one. What has to go is the claim that
    bremsstrahlung justifies it.~~
-   **Done.** The claim is gone and the correction is in its place, now at `reactor-logic.lua:146-158`
+   **Done.** The claim is gone and the correction is in its place, now in `reactor-logic.lua`'s D-D fuel entry
    — "That was reasoning rather than arithmetic and it does not survive being checked", followed by
    the three bullets this note supplied, including that the clamp sheds about 640 MW where
    bremsstrahlung is 169 MW. The clamp stayed, on the int32 argument, exactly as recommended. **The

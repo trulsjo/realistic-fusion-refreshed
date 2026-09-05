@@ -720,7 +720,7 @@ Krastorio 2 graphics directories are GPLv3.
 
 ### The rates are falsified, and that inverts what the precedent says about T-T and T-He3
 
-`reactor-logic.lua:179–185`, with the author's own comments verbatim:
+`reactor-logic.lua`'s D-T fuel entry, with the author's own comments verbatim:
 
 | channel | multiplier | comment |
 |---|---:|---|
