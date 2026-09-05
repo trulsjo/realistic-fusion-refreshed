@@ -37,6 +37,14 @@
       orphan     A loaded blanket on a reactor with NO collector. Its lithium must be untouched:
                  a blanket with nowhere to put what it breeds stays idle rather than spending
                  items for nothing.
+      flooded    A blanketed reactor whose collector is piped into a run that has been FILLED, so
+                 the room left is 25 units in the box and 300 downstream against a segment that
+                 reads 25 300. It is the arrangement #69 is about: a headroom read off the segment
+                 rather than the box would offer this blanket seventy-eight times the room it has,
+                 and it would spend real lithium on tritium that is then discarded. Checked by
+                 mutation -- with the segment figure in apply() this cell spends 1 887 items for the
+                 same 325 units and throws 1 562 away.
+
       throttled  A blanketed reactor whose collector is drained far more slowly than the blanket
                  can fill it. Every item spent must be accounted for by a triton still in the
                  collector or drawn out of it -- a blanket must not buy tritium that is being
@@ -180,6 +188,55 @@ local function pipe_run(surface, force, from, step, count)
         string.format("pipe at (%g, %g)", at[1], at[2]))
     end
   end
+end
+
+--- What a list of entities holds of one fluid, summed.
+local function holds_across(entities, fluid)
+  local total = 0
+  for _, e in ipairs(entities) do
+    if e.valid then total = total + holds(e, fluid) end
+  end
+  return total
+end
+
+--- Fill every pipe and tank around `centre` until the segment they form has no room left.
+---
+--- The `flooded` cell's instrument (#69). A collector whose outlet is piped into a segment with no
+--- room is the arrangement where a segment-wide capacity reading would be wrong by the whole
+--- downstream volume, and it cannot be built by waiting: the rig has to put the fluid there.
+---
+--- IT CANNOT REACH THE DECLARED SUM, and that is a fact about the engine rather than a defect here.
+--- Writing one box on a segment re-splits the whole segment, so writing a 25 000-unit tank discards
+--- what its three 100-unit pipes were just given: the run settles at the tank's 25 000 against a
+--- declared 25 300 and stays there however many passes are made. Measured, not assumed -- eight
+--- passes leave it at 25 000 exactly.
+---
+--- So this returns what it ACHIEVED as well as what the boxes declare, and the caller states the
+--- difference rather than asserting it away. The remaining 300 units of room are 1.2% of the run's
+--- capacity, which is what keeps the cell discriminating: a blanket reading the RUN would be
+--- allowed 25 300.
+---
+--- Volumes come from the prototypes rather than from a number written here, so the cell keeps
+--- meaning the same thing when a pipe or a tank changes size.
+local function flood(surface, centre, radius, fluid)
+  local target, entities = 0, {}
+  for _, e in pairs(surface.find_entities_filtered({
+    area = { { centre.x - radius, centre.y - radius }, { centre.x + radius, centre.y + radius } },
+    name = { "pipe", "storage-tank" },
+  })) do
+    entities[#entities + 1] = e
+    target = target + prototypes.entity[e.name].fluidbox_prototypes[1].volume
+  end
+
+  local held = 0
+  for _ = 1, 8 do
+    for _, e in ipairs(entities) do
+      e.fluidbox[1] = { name = fluid, amount = prototypes.entity[e.name].fluidbox_prototypes[1].volume }
+    end
+    held = holds_across(entities, fluid)
+    if held >= target - 1e-6 then break end
+  end
+  return target, entities, held
 end
 
 --- A reactor on a plasma feed, at `ox`. Geometry read off the prototypes rather than written down.
@@ -337,11 +394,11 @@ script.on_init(function()
   surface.request_to_generate_chunks({ 0, 0 }, 10)
   surface.force_generate_chunk_requests()
   local tiles = {}
-  for x = -260, 200 do
+  for x = -260, 300 do
     for y = -40, 40 do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
   end
   surface.set_tiles(tiles)
-  for _, e in pairs(surface.find_entities_filtered({ area = { { -260, -40 }, { 200, 40 } } })) do
+  for _, e in pairs(surface.find_entities_filtered({ area = { { -260, -40 }, { 300, 40 } } })) do
     if e.type ~= "character" then e.destroy() end
   end
 
@@ -392,6 +449,45 @@ script.on_init(function()
   local throttled_collector, _, throttled_box = collector_on(surface, force, throttled, nil)
   local throttled_blanket = blanket_on(surface, force, throttled, LOADED)
 
+  -- ------------------------------------------------------------------ flooded
+  --
+  -- THE CELL #69 ASKS FOR, and the one the `throttled` cell above cannot stand in for. Throttling
+  -- leaves the collector unplumbed, so its box IS its segment and the two readings of get_capacity
+  -- agree there. This one pipes the outlet into a segment fifty times the box and then fills that
+  -- segment, so the two readings differ by very nearly the whole downstream volume.
+  --
+  -- VERY NEARLY, not entirely: the run settles at 25 000 of its declared 25 300 whatever this rig
+  -- does -- see flood() -- so the collector keeps 300 units of somewhere to drain to. That is the
+  -- cell's real shape and the bound below is sized against it rather than around it: 25 units of
+  -- room in the box and 300 downstream, against a segment that reads 25 300.
+  --
+  -- What it discriminates. apply() computes the blanket's headroom as
+  -- get_capacity(TRITIUM_BOX) - held - already bred. #68 measured that get_capacity answers the
+  -- BOX's declared volume even when the box is on a run, so the blanket buys 326 items here and
+  -- banks all of them. Were it the segment's, headroom would read about 25 300 -- seventy-eight
+  -- times the room that exists -- and the blanket would spend on tritium the collector cannot
+  -- accept: measured by mutation at 1 887 items for the same 325 units, so 1 562 items of lithium a
+  -- player mined, gone, with nothing to show. That is the trap apply()'s comment is written about,
+  -- in the arrangement a player actually builds.
+  --
+  -- The box starts at 95% rather than 100% deliberately: a full box saturates at exactly zero
+  -- headroom, where blanket_breed returns early, which is the state that passes with the cap
+  -- deleted -- the same lesson the throttled cell records. A sliver of room exercises the cap.
+  local flooded = reactor_at(surface, force, 240.5, DT, 1e6)
+  power(surface, force, { 252, 8 })
+  local flooded_collector, flooded_tank, flooded_box = collector_on(surface, force, flooded, { 270.5, 25.5 })
+  local flooded_blanket = blanket_on(surface, force, flooded, LOADED)
+
+  local flooded_capacity = flooded_collector.fluidbox.get_capacity(flooded_box)
+  local flooded_filled, flooded_run, flooded_held = flood(surface, flooded_collector.position, NEARBY, TRITIUM)
+  -- Refused at build time rather than measured around later. The run cannot be filled to the last
+  -- unit -- see flood() -- but a run that is only half full would give the collector somewhere real
+  -- to drain to, and this cell's subject is that it has almost nowhere.
+  if flooded_held < 0.95 * flooded_filled then
+    error(string.format("the flooded run would not fill: %.6g of %.6g", flooded_held, flooded_filled))
+  end
+  flooded_collector.fluidbox[flooded_box] = { name = TRITIUM, amount = 0.95 * flooded_capacity }
+
   -- ------------------------------------------------------------------ pulled
   local pulled = reactor_at(surface, force, -240.5, DT, 1e6)
   power(surface, force, { -228, 8 })
@@ -421,6 +517,11 @@ script.on_init(function()
     orphan = orphan, orphan_blanket = orphan_blanket,
     throttled = throttled, throttled_collector = throttled_collector,
     throttled_box = throttled_box, throttled_blanket = throttled_blanket,
+    flooded = flooded, flooded_collector = flooded_collector, flooded_tank = flooded_tank,
+    flooded_box = flooded_box, flooded_blanket = flooded_blanket, flooded_run = flooded_run,
+    flooded_start_box = holds(flooded_collector, TRITIUM),
+    flooded_start_run = holds_across(flooded_run, TRITIUM),
+    flooded_filled = flooded_filled,
     pulled = pulled, pulled_collector = pulled_collector, pulled_blanket = pulled_blanket,
     dd = dd, dd_collector = dd_collector, dd_blanket = dd_blanket,
     dd_bare = dd_bare, dd_bare_collector = dd_bare_collector,
@@ -545,6 +646,61 @@ script.on_nth_tick(CHECK_AT, function()
     "a blanket buys no more tritium than its collector can take",
     string.format("%d items spent against %.6g held plus %.6g drained",
       throttled_spent, throttled_held, drained))
+
+  -- ------------------------------------------------------------ full, and piped into a full run
+  --
+  -- #69. Conservation again, and for the same reason the throttled cell states it that way: every
+  -- lithium item the blanket spent has to be accounted for by a triton that is either in the
+  -- collector's own box or has moved into the run beyond it. Anything above that was bought and
+  -- thrown away by deposit()'s clamp.
+  do
+    local capacity  = r.flooded_collector.fluidbox.get_capacity(r.flooded_box)
+    local segment   = r.flooded_tank.fluidbox.get_capacity(1)
+    local box_held  = holds(r.flooded_collector, TRITIUM)
+    local run_held  = holds_across(r.flooded_run, TRITIUM)
+    local gained    = (box_held - r.flooded_start_box) + (run_held - r.flooded_start_run)
+    local spent     = LOADED - lithium_in(r.flooded_blanket)
+    local plasma    = r.flooded.fluidbox[1]
+
+    -- That the cell is in the state it claims, before anything is concluded from it. A run that is
+    -- not actually full, or a box that drained, would make the bound below pass for the wrong
+    -- reason.
+    record(segment > 10 * capacity,
+      "flooded: the collector's outlet really is on a segment far larger than its box",
+      string.format("run %.6g against a box of %.6g -- %.0fx", segment, capacity, segment / capacity))
+    -- Measured at the START, which is what sizes the bound below: the room the collector could
+    -- drain into is the run's shortfall, and it has to be small for the cell to mean anything.
+    local run_room = r.flooded_filled - r.flooded_start_run
+    record(run_room < 0.05 * segment and box_held > 0.9 * capacity,
+      "flooded: that segment began all but full, so the collector had almost nowhere to drain",
+      string.format("%.6g of room downstream, %.1f%% of the run's %.6g; box %.6g of %.6g",
+        run_room, 100 * run_room / segment, segment, box_held, capacity))
+
+    -- Not vacuous: a dead reactor breeds nothing and would pass the bound below trivially, and so
+    -- would a blanket that had already run dry.
+    record(plasma ~= nil and plasma.temperature > 1e8 and lithium_in(r.flooded_blanket) > 0,
+      "flooded: the reactor is lit and the blanket still has lithium, so it could have spent it",
+      string.format("%.6g C, %d lithium left",
+        plasma and plasma.temperature or -1, lithium_in(r.flooded_blanket)))
+
+    -- The measurement. Under a segment-wide reading of get_capacity the headroom here would be
+    -- about 25 300 rather than about 25, and this blanket would spend its charge on tritium that
+    -- cannot be banked.
+    record(spent <= gained + 1,
+      "a blanket on a nearly full collector piped into a nearly full run buys nothing it cannot bank",
+      string.format("%d items spent against %.6g units gained (%.6g in the box, %.6g downstream)",
+        spent, gained, box_held - r.flooded_start_box, run_held - r.flooded_start_run))
+
+    -- The same bound stated as what was AVAILABLE rather than what arrived, which is the form that
+    -- says how tight it is. The box had about 25 units of room and the run about 300; a headroom
+    -- read off the SEGMENT would have offered this blanket the run's whole 25 300, and 5 000 items
+    -- of lithium is what it had to spend on that offer.
+    local room = (capacity - r.flooded_start_box) + (r.flooded_filled - r.flooded_start_run)
+    record(spent <= room + 1,
+      "and the room it was allowed is the box's plus the run's, not the segment's capacity",
+      string.format("%d items against %.6g units of room -- %.6g in the box, %.6g downstream -- where the segment reads %.6g",
+        spent, room, capacity - r.flooded_start_box, r.flooded_filled - r.flooded_start_run, segment))
+  end
 
   -- ------------------------------------------------------------ losing the blanket
   record(not r.pulled_blanket.valid, "the pulled reactor's blanket really was destroyed")

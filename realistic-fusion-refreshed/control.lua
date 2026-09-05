@@ -224,6 +224,12 @@ local function deposit(collector, products)
       -- The box's own declared volume, not the segment the player has piped it into -- measured
       -- on a collector with its outlet on a run under #68, which is the arrangement this call
       -- meets in ordinary play. See docs/research/reactor-runtime-cost.md, finding 2.
+      --
+      -- REVIEWED UNDER #69 AND LEFT ALONE. This clamp is benign whichever way get_capacity reads,
+      -- because the engine clamps a Lua write to the box regardless: over-reporting here would
+      -- discard the excess rather than spend anything for it. That is not true one caller up, where
+      -- the same figure decides how much LITHIUM to buy -- which is why that one is the subject of
+      -- #69 and this one is a note.
       local capacity = box.get_capacity(index)
       if amount > capacity then amount = capacity end
       -- The threshold is tested against the box's new total, not against what was just bred, and
@@ -481,6 +487,20 @@ local function apply(entity, spec, plasma, result)
   --
   -- The by-products get first claim on that room because they are free, and what is left is what
   -- the blanket may pay for. Nothing is lost by being held back: unbred lithium stays as lithium.
+  --
+  -- ALL THREE TERMS ARE THE BOX'S, WHICH IS THE WHOLE OF #69 AND IS MEASURED RATHER THAN ASSUMED.
+  -- get_capacity answers a box's own declared volume even when that box is piped into a segment
+  -- fifty times its size (#68: 500 against a 27 000-unit run), and fluidbox[i].amount is that same
+  -- box's contents -- so a capacity and a held amount subtract cleanly instead of mixing a segment
+  -- with a share. Had it been the segment's, this expression would over-report the room by the
+  -- whole downstream volume in the arrangement a player actually builds -- collector piped to a
+  -- tank -- and the blanket would buy tritium the collector cannot take, which is exactly the trap
+  -- the paragraph above is written about.
+  --
+  -- check-blanket.ps1's `flooded` cell holds that: a collector at 95% whose outlet is piped into a
+  -- run that has been filled, so the room is 25 units in the box and 300 downstream against a
+  -- segment that reads 25 300. The blanket buys 326 items. With this line reading the segment it
+  -- buys 1 887 and throws 1 562 of them away, which is what the cell was checked against.
   local collector = entities.collector(entity)
   if collector then
     local products = result.products
