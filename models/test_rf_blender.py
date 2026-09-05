@@ -41,3 +41,14 @@ else:
     raise AssertionError("accent() guessed for an unknown fluid")
 
 print("ok")
+
+# The geometry hash is over canonical JSON, so a CRLF checkout of the same file hashes the same
+# and render.py does not refuse a model whose geometry has not moved (#251).
+import tempfile
+_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "heat-exchanger", "geometry.json")
+with tempfile.NamedTemporaryFile("wb", suffix=".json", delete=False) as _t:
+    _t.write(open(_src, encoding="utf-8").read().replace("\n", "\r\n").encode())
+try:
+    assert rf.geometry_sha256(_src) == rf.geometry_sha256(_t.name)
+finally:
+    os.unlink(_t.name)

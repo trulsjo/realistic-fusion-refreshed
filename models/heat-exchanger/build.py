@@ -14,7 +14,6 @@ relief valve), a corrugated header that is not quite straight, an open H-beam fr
 instead of walls with glowing feed lines visible under it, a south end wall, panel seams and rivet
 lines, procedural grime, and the energy channel on top of the manifold where the camera sees it.
 """
-import hashlib
 import json
 import math
 import os
@@ -31,8 +30,8 @@ out = args[0] if args else os.path.join(HERE, "heat-exchanger.blend")
 variant = args[1] if len(args) > 1 else "machine"
 random.seed(7)  # imperfections are deterministic: same script, same model
 
-geo_bytes = open(os.path.join(HERE, "geometry.json"), "rb").read()
-geo = json.loads(geo_bytes)
+geo_path = os.path.join(HERE, "geometry.json")
+geo = json.load(open(geo_path, encoding="utf-8"))
 (x0, y0), (x1, y1) = geo["collision_box"]
 W, L = x1 - x0, y1 - y0            # 4.5 x 14.5
 HALF_W, HALF_L = W / 2, L / 2
@@ -322,6 +321,6 @@ else:
     tiles_w, tiles_h = geo["tiles"]
     icon_centre, icon_tiles = (-0.6, 0.0, 1.9), 4.5
 rf.build_rig(scene, tiles_w, tiles_h, icon_centre, icon_tiles)
-scene["rf_geometry_sha256"] = hashlib.sha256(geo_bytes).hexdigest()
+scene["rf_geometry_sha256"] = rf.geometry_sha256(geo_path)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(out))
 print("BUILT", variant, os.path.abspath(out), scene.render.resolution_x, scene.render.resolution_y)

@@ -131,7 +131,7 @@
     ],
     "type": "boiler"
   },
-  "geometry_sha256": "abb27b11be3c5dad7e408a6df3d19eeffe6e5a1a1bb814ce0d06b14883688ece",
+  "geometry_sha256": "f2b002533a72bcf958e73d2b5f17b1da46dcbc5d2612986b12dd3f33fec143e3",
   "glow": true,
   "icon": {
     "centre": [
@@ -148,7 +148,7 @@
   },
   "machine": "heat-exchanger",
   "model": "models/heat-exchanger/heat-exchanger.blend",
-  "model_sha256": "64f052a51827e02e01491b2d1b71e30bc957ebaa051368a36121ac35ab7fdf7e",
+  "model_sha256": "7e732787217a15cae86d472413a659c2e9b0a1b1c2d786a2b5e061cf04ec1398",
   "render": {
     "blender": "5.2.0 LTS",
     "device": "CPU",

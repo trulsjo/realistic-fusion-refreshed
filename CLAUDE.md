@@ -267,6 +267,12 @@ The five canonical roles, unchanged: `needs-triage`, `needs-info`, `ready-for-ag
 Single-context — `CONTEXT.md` and `docs/adr/` at the repo root, created lazily. See
 `docs/agents/domain.md`.
 
+### Rendered art
+
+`/render-machine rf-<machine>` renders a machine's sprite set from its Blender model, or
+regenerates the model from its look note. See `.claude/skills/render-machine/SKILL.md`; the
+vocabulary is `CONTEXT.md`'s Art section.
+
 ### Code review
 
 Two rules, both in `docs/agents/code-review.md`.

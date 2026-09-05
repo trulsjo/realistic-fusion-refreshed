@@ -62,13 +62,13 @@ outdir = os.path.abspath(args.out or os.path.join(
     REPO, "realistic-fusion-refreshed-assets", "graphics", "rendered", machine))
 
 scene = bpy.context.scene
-geo_bytes = open(os.path.join(model_dir, "geometry.json"), "rb").read()
-geo_sha = hashlib.sha256(geo_bytes).hexdigest()
+geo_path = os.path.join(model_dir, "geometry.json")
+geo_sha = rf.geometry_sha256(geo_path)
 if geo_sha != scene.get("rf_geometry_sha256"):
     sys.exit(f"{machine}: geometry.json has changed since the model was built "
              f"({geo_sha[:12]} now, {str(scene.get('rf_geometry_sha256'))[:12]} in the model). "
              f"Regenerate the model (blender -b --python {model_dir}/build.py) before rendering.")
-geo = json.loads(geo_bytes)
+geo = json.load(open(geo_path, encoding="utf-8"))
 tiles_w, tiles_h = (int(v) for v in scene["rf_tiles"])
 margin = float(scene["rf_margin_tiles"])
 

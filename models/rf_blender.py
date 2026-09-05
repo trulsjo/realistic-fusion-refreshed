@@ -10,6 +10,8 @@ square tiles IN THE CAMERA, by a pixel aspect of 1/sin(pitch) on x: the render t
 final sheet size, pixel-exact on both axes, with no resize afterwards. A vertical shows at
 h / tan(pitch) = 0.707 h.
 """
+import hashlib
+import json
 import math
 import sys
 
@@ -47,6 +49,14 @@ def accent(fluid):
     if "plasma" in fluid:
         return "plasma"
     sys.exit(f"no house-style accent for fluid {fluid!r}; add it to rf_blender.ACCENT_OF_FLUID")
+
+
+def geometry_sha256(path):
+    """The hash build scripts stamp on a scene and render.py checks it against. Over the canonical
+    JSON text, not the file's bytes: a checkout with autocrlf turns the extractor's LF into CRLF and
+    a byte hash then refuses a model whose geometry has not moved at all (#251 hit it)."""
+    with open(path, encoding="utf-8") as f:
+        return hashlib.sha256(json.dumps(json.load(f), sort_keys=True).encode()).hexdigest()
 
 
 def script_args():
