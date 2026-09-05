@@ -41,11 +41,19 @@ scene = bpy.context.scene
 scene.name = "rf"
 
 # ---- materials (house style palette) -------------------------------------------------------
+#
+# The values dropped on 2026-09-05 (#252). Truls, on the first in-game shots: too pale and flat --
+# beside Krastorio 2's reactor the machine was one value of grey with no dark recesses. Painted body
+# steel went from 0.30 to 0.24 and rougher, so it reads as PAINT beside bare metal rather than as
+# more metal; "frame" to 0.07 and "dark" from 0.35 to 0.26 -- the grating deck, the ribs and the
+# vents -- so the frame has shadows in it. Bare metal is unchanged: the house style fixes it, and
+# what was wrong with the drums was the grime, not the colour. Taking the whole palette darker was
+# tried first and only moved the fault: uniformly muddy is as flat as uniformly pale.
 PALETTE = {
-    "body":   ((0.30, 0.33, 0.38), 0.6, 0.0),
-    "frame":  ((0.10, 0.11, 0.13), 0.55, 0.2),
+    "body":   ((0.24, 0.26, 0.30), 0.72, 0.0),
+    "frame":  ((0.07, 0.08, 0.09), 0.6, 0.2),
     "metal":  ((0.55, 0.55, 0.58), 0.35, 0.8),
-    "dark":   ((0.35, 0.36, 0.38), 0.45, 0.8),
+    "dark":   ((0.26, 0.27, 0.29), 0.5, 0.7),
     "energy": ((1.00, 0.45, 0.10), 0.5, 0.0),
     "steam":  ((0.85, 0.88, 0.90), 0.5, 0.0),
     "water":  ((0.25, 0.55, 1.00), 0.5, 0.0),
@@ -55,37 +63,77 @@ ACCENTS = ("energy", "steam", "water", "plasma")   # stay clean: no grime, so th
 MATS = {}
 
 
-def mat(name, glow=False):
-    key = (name, glow)
+# Corrosion, where a surface is asked for it: the colour grime mixes toward, and how much of the
+# surface it takes. Truls, #252, on the manifold -- the one part that is hot, wet and outdoors.
+RUST = (0.27, 0.14, 0.07)
+
+
+def mat(name, glow=False, corrode=False):
+    key = (name, glow, corrode)
     if key in MATS:
         return MATS[key]
     rgb, rough, metal = PALETTE[name]
-    m = bpy.data.materials.new(f"{name}{'-glow' if glow else ''}")
+    m = bpy.data.materials.new(f"{name}{'-glow' if glow else ''}{'-rust' if corrode else ''}")
     m.use_nodes = True
     b = m.node_tree.nodes["Principled BSDF"]
     b.inputs["Base Color"].default_value = (*rgb, 1.0)
     b.inputs["Roughness"].default_value = rough
     b.inputs["Metallic"].default_value = metal
     if not glow and name not in ACCENTS:
-        # grime: a noise texture darkens patches of the base colour and roughens them
+        # GRIME, and it does more work than it used to. The first version mixed one soft noise at
+        # 0.55 of the base and modulated roughness by 0.35, which at 64 px a tile is invisible: the
+        # drums came out as smooth plastic and the whole machine as one value (Truls, #252). Now two
+        # noises blend -- a broad one for patches and a fine one for streaks -- and roughness swings
+        # by 0.5, which is what stops a big curved bare-metal surface holding one clean highlight.
+        # The dark end stays at about half the base: the fault was the mask, not its depth.
         nt = m.node_tree
         noise = nt.nodes.new("ShaderNodeTexNoise")
-        noise.inputs["Scale"].default_value = 5.0
-        noise.inputs["Detail"].default_value = 4.0
+        noise.inputs["Scale"].default_value = 4.0
+        noise.inputs["Detail"].default_value = 6.0
+        fine = nt.nodes.new("ShaderNodeTexNoise")
+        fine.inputs["Scale"].default_value = 22.0
+        fine.inputs["Detail"].default_value = 4.0
+        # BLENDED, not summed. The first attempt added the fine noise on top of the broad one, which
+        # pushed the mask past the top of the ramp nearly everywhere: every surface came out at the
+        # dark end, evenly, and the machine went from too pale to uniformly muddy without ever being
+        # patchy. A weighted blend keeps the mask centred so the ramp has something to spread.
+        combine = nt.nodes.new("ShaderNodeMix")
+        combine.data_type = "FLOAT"
+        combine.inputs[0].default_value = 0.35         # 0 = broad patches only, 1 = fine streaks only
+        nt.links.new(noise.outputs["Fac"], combine.inputs[2])
+        nt.links.new(fine.outputs["Fac"], combine.inputs[3])
         ramp = nt.nodes.new("ShaderNodeValToRGB")
-        ramp.color_ramp.elements[0].position = 0.42
-        ramp.color_ramp.elements[1].position = 0.62
+        ramp.color_ramp.elements[0].position = 0.40
+        ramp.color_ramp.elements[1].position = 0.72
         mix = nt.nodes.new("ShaderNodeMix")
         mix.data_type = "RGBA"
         mix.inputs["A"].default_value = (*rgb, 1.0)
-        mix.inputs["B"].default_value = (rgb[0] * 0.55, rgb[1] * 0.5, rgb[2] * 0.45, 1.0)
-        nt.links.new(noise.outputs["Fac"], ramp.inputs["Fac"])
+        mix.inputs["B"].default_value = (rgb[0] * 0.5, rgb[1] * 0.45, rgb[2] * 0.4, 1.0)
+        nt.links.new(combine.outputs["Result"], ramp.inputs["Fac"])
         nt.links.new(ramp.outputs["Color"], mix.inputs["Factor"])
-        nt.links.new(mix.outputs["Result"], b.inputs["Base Color"])
+        out = mix.outputs["Result"]
+        if corrode:
+            # A third noise at a different scale, hard-edged, mixing toward rust over about a fifth
+            # of the surface. Separate from the grime ramp on purpose: grime is everywhere and even,
+            # corrosion is in patches, and sharing one mask would have made the whole panel brown.
+            rust_noise = nt.nodes.new("ShaderNodeTexNoise")
+            rust_noise.inputs["Scale"].default_value = 9.0
+            rust_noise.inputs["Detail"].default_value = 8.0
+            rust_ramp = nt.nodes.new("ShaderNodeValToRGB")
+            rust_ramp.color_ramp.elements[0].position = 0.68
+            rust_ramp.color_ramp.elements[1].position = 0.82
+            rust_mix = nt.nodes.new("ShaderNodeMix")
+            rust_mix.data_type = "RGBA"
+            rust_mix.inputs["B"].default_value = (*RUST, 1.0)
+            nt.links.new(rust_noise.outputs["Fac"], rust_ramp.inputs["Fac"])
+            nt.links.new(rust_ramp.outputs["Color"], rust_mix.inputs["Factor"])
+            nt.links.new(out, rust_mix.inputs["A"])
+            out = rust_mix.outputs["Result"]
+        nt.links.new(out, b.inputs["Base Color"])
         rmix = nt.nodes.new("ShaderNodeMath")
         rmix.operation = "MULTIPLY_ADD"
-        rmix.inputs[1].default_value = 0.35
-        rmix.inputs[2].default_value = rough
+        rmix.inputs[1].default_value = 0.5
+        rmix.inputs[2].default_value = rough if not corrode else min(1.0, rough + 0.18)
         nt.links.new(ramp.outputs["Color"], rmix.inputs[0])
         nt.links.new(rmix.outputs["Value"], b.inputs["Roughness"])
     if glow:
@@ -105,25 +153,60 @@ def bevel(obj, width=0.03):
     mod.segments = 2
 
 
-def box(name, size, loc, material, glow=False, rot=(0, 0, 0), bev=0.03):
+def box(name, size, loc, material, glow=False, rot=(0, 0, 0), bev=0.03, corrode=False):
     bpy.ops.mesh.primitive_cube_add(size=1, location=loc, rotation=rot)
     o = bpy.context.object
     o.name = name
     o.scale = size
-    o.data.materials.append(mat(material, glow))
+    o.data.materials.append(mat(material, glow, corrode))
     if bev:
         bevel(o, bev)
     return o
 
 
-def cyl(name, radius, depth, loc, material, axis="Z", glow=False, rot=None, verts=48):
+def cyl(name, radius, depth, loc, material, axis="Z", glow=False, rot=None, verts=48, corrode=False):
     rot = rot or {"Z": (0, 0, 0), "X": (0, math.pi / 2, 0), "Y": (math.pi / 2, 0, 0)}[axis]
     bpy.ops.mesh.primitive_cylinder_add(radius=radius, depth=depth, location=loc, rotation=rot, vertices=verts)
     o = bpy.context.object
     o.name = name
-    o.data.materials.append(mat(material, glow))
+    o.data.materials.append(mat(material, glow, corrode))
     bevel(o, 0.02)
     return o
+
+
+def dent(obj, centre, radius, depth):
+    """Strike a hollow into an object, around a world-space point.
+
+    Truls, #252: one drum should have a significant dent. A primitive cylinder has vertices only at
+    its two ends, so there is nothing in the middle to move -- the mesh is subdivided first, and
+    the push is toward the object's own vertical axis so the hollow follows the curve instead of
+    flattening a facet. Falloff is squared, which reads as struck metal rather than as a bite.
+    """
+    import bmesh
+    from mathutils import Vector
+
+    bpy.context.view_layer.update()                  # obj.scale was set after it was created
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=14, use_grid_fill=True)
+    mw, inv = obj.matrix_world, obj.matrix_world.inverted().to_3x3()
+    c = Vector(centre)
+    for v in bm.verts:
+        world = mw @ v.co
+        d = (world - c).length
+        if d >= radius:
+            continue
+        axis = Vector((mw.translation.x, mw.translation.y, world.z))
+        outward = world - axis
+        if outward.length < 1e-6:
+            continue
+        v.co -= inv @ (outward.normalized() * depth * (1 - d / radius) ** 2)
+    moved = sum(1 for v in bm.verts
+                if (mw @ v.co - c).length < radius)
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    print(f"DENT {obj.name}: {moved} vertices inside the strike")
 
 
 def torus(name, major, minor, loc, material, rot=(0, 0, 0)):
@@ -217,7 +300,9 @@ else:
     # -- west manifold: the reactor contact. Closed panels, seams, rivet line, energy band. Glows.
     MAN_W, MAN_H = 0.8, 1.25
     MX = -HALF_W + MAN_W / 2
-    box("Manifold", (MAN_W, L - 0.2, MAN_H), (MX, 0, SLAB + MAN_H / 2), "body")
+    # Corroded, and it is the only part that is: it is the face the reactor's energy arrives
+    # through, hot and wet and outdoors, and it was the one surface Truls called too polished (#252).
+    box("Manifold", (MAN_W, L - 0.2, MAN_H), (MX, 0, SLAB + MAN_H / 2), "body", corrode=True)
     for i in range(6):
         y = -HALF_L + 0.1 + (i + 1) * (L - 0.2) / 7
         seam(f"ManifoldSeam{i}", (MAN_W + 0.02, 0.05, MAN_H - 0.2), (MX, y, SLAB + MAN_H / 2))
@@ -245,6 +330,21 @@ else:
     for i in range(30):
         y = -HALF_L + 0.5 + i * (L - 1.0) / 29
         box(f"Slat{i}", (W - MAN_W - 0.7, 0.06, 0.05), (0.35, y, SLAB + 0.5), "dark", bev=0)
+    # A conduit run down the east frame with clamps, and diagonal braces in two bays. Both are here
+    # because the frame read as an empty crate (Truls, #252): the bays were identical and had
+    # nothing in them, so fifteen tiles of machine carried three drums and air.
+    pipe("Conduit", [(EX - 0.12, -HALF_L + 0.4, SLAB + FRAME_H - 0.18),
+                     (EX - 0.14, 0, SLAB + FRAME_H - 0.22),
+                     (EX - 0.12, HALF_L - 0.4, SLAB + FRAME_H - 0.18)], 0.07, "dark")
+    for i, y in enumerate(post_ys):
+        torus(f"ConduitClamp{i}", 0.1, 0.03, (EX - 0.13, y, SLAB + FRAME_H - 0.2), "metal",
+              rot=(math.pi / 2, 0, 0))
+    for i, k in enumerate((1, 4)):                    # two bays only: a braced frame, not a lattice
+        dy, dz = post_ys[k + 1] - post_ys[k], (FRAME_H - 0.5) * (1 if i == 0 else -1)
+        box(f"Brace{i}", (0.06, math.hypot(dy, dz), 0.14),
+            (EX, (post_ys[k] + post_ys[k + 1]) / 2, SLAB + FRAME_H / 2), "frame",
+            rot=(math.atan2(dz, dy), 0, 0), bev=0.01)
+
     # South end wall: a closed panel the camera can see, between manifold and cabinet.
     box("EndWall", (W - MAN_W - 0.3, 0.16, 1.15), (MXE + (EX - MXE) / 2 - 0.05, -HALF_L + 0.12, SLAB + 0.575), "body")
     seam("EndWallSeam", (0.04, 0.18, 0.95), (MXE + (EX - MXE) / 2 - 0.9, -HALF_L + 0.12, SLAB + 0.575))
@@ -255,21 +355,54 @@ else:
     DRUM_H = 2.3
     DX = 0.35
     drum_ys = (-4.6, 0.0, 4.6)
+    DENTED = 2                      # the north drum, the one the layout shot leads with
     for i, y in enumerate(drum_ys):
         r = jitter(1.05, 0.04)
         h = jitter(DRUM_H, 0.08)
         z0 = SLAB + 0.5
         d = cyl(f"Drum{i}", r, h, (DX, y, z0 + h / 2), "metal", verts=64)
         d.scale = (1.0, jitter(1.0, 0.03), 1.0)
+        if i == DENTED:
+            # SOUTH FLANK, MID-HEIGHT, AND SMALL. Two things had to be got right. The camera
+            # stands south of the machine looking north, so a drum shows its cap and its SOUTH
+            # side; a hollow struck anywhere else is behind the drum's own top. And the first
+            # attempts were far too wide -- a 1.15-tile strike reshaped the whole upper drum and
+            # swallowed the rib bands, which are separate objects and do not deform with it, so it
+            # read as a differently shaped drum rather than a dented one. 0.45 sits between the
+            # ribs at 0.3 h and 0.7 h and touches neither.
+            dent(d, (DX + 0.25, y - r, z0 + h * 0.5), 0.45, 0.3)
         for k, frac in enumerate((0.3, 0.7)):
             torus(f"Drum{i}Rib{k}", r + 0.015, 0.035, (DX, y, z0 + h * frac), "dark")
         seam(f"Drum{i}Weld", (0.03, 2 * r + 0.02, 0.04), (DX + r - 0.02, y, z0 + h * 0.4), rot=(0, 0, jitter(0, 0.2)))
-        cyl(f"Drum{i}Cap", r * 0.6, 0.18, (DX, y, z0 + h + 0.09), "dark")
-        # relief valve: a stub, a body and a little cap, off-centre so rotations differ
+        cyl(f"Drum{i}Cap", r * 0.6, 0.18, (DX, y, z0 + h + 0.09), "metal")
+        # A bolted flange where the cap meets the drum, and a ring of bolts on it: the drum tops are
+        # what the camera sees most of, and they were bare (#252).
+        torus(f"Drum{i}CapFlange", r * 0.62, 0.05, (DX, y, z0 + h + 0.01), "metal")
+        for k in range(10):
+            a = 2 * math.pi * k / 10
+            bpy.ops.mesh.primitive_cylinder_add(
+                radius=0.035, depth=0.05, vertices=8,
+                location=(DX + r * 0.62 * math.cos(a), y + r * 0.62 * math.sin(a), z0 + h + 0.05))
+            bpy.context.object.name = f"Drum{i}CapBolt{k}"
+            bpy.context.object.data.materials.append(mat("dark"))
+        # relief valve: a stub, a body and a little cap, off-centre so rotations differ.
+        # BARE METAL WITH A STEAM BAND, not a steam-coloured body. The accent is near white, and a
+        # whole valve in it blew out on the drum tops (Truls, #252); the house style already says an
+        # accent is a band and never a body, so this was the model disagreeing with it.
         vx, vy = DX + r * 0.45, y - r * 0.3
         cyl(f"Drum{i}ValveStem", 0.09, 0.35, (vx, vy, z0 + h + 0.35), "metal", verts=24)
-        cyl(f"Drum{i}ValveBody", 0.16, 0.22, (vx, vy, z0 + h + 0.6), "steam", verts=24)
+        cyl(f"Drum{i}ValveBody", 0.16, 0.22, (vx, vy, z0 + h + 0.6), "dark", verts=24)
+        torus(f"Drum{i}ValveBand", 0.17, 0.03, (vx, vy, z0 + h + 0.6), "steam")
         cyl(f"Drum{i}ValveCap", 0.07, 0.25, (vx + 0.18, vy, z0 + h + 0.6), "metal", axis="X", verts=16)
+        # A gauge cluster at the drum's foot on the east side, and a short handwheel valve beside
+        # it: the deck between the drums read as empty.
+        gx, gy = DX + r + 0.32, y + jitter(0.55, 0.15)
+        box(f"Drum{i}Gauges", (0.16, 0.34, 0.26), (gx, gy, SLAB + 0.78), "dark")
+        for k in range(2):
+            cyl(f"Drum{i}Gauge{k}", 0.07, 0.05, (gx + 0.09, gy - 0.1 + k * 0.2, SLAB + 0.82),
+                "steam", axis="X", verts=16)
+        cyl(f"Drum{i}Wheel", 0.15, 0.03, (gx + 0.02, gy - 0.45, SLAB + 0.72), "dark", axis="Y", verts=20)
+        cyl(f"Drum{i}WheelStem", 0.04, 0.22, (gx + 0.02, gy - 0.36, SLAB + 0.72), "metal", axis="Y", verts=12)
         # glowing feed line from the manifold to the foot of the drum, under the deck
         pipe(f"Feed{i}", [(MX + MAN_W / 2, y + jitter(0, 0.3), SLAB + 0.42),
                           (jitter(-0.7, 0.15), y + jitter(0, 0.2), SLAB + jitter(0.4, 0.03)),
@@ -282,7 +415,9 @@ else:
         header_pts.append((DX + jitter(0, 0.1), y, HZ + jitter(0, 0.06)))
     header_pts.append((DX + jitter(0, 0.08), drum_ys[-1] + 0.3, HZ))
     pipe("Header", header_pts, 0.19, "metal", corrugate=0.45)
-    box("HeaderBand", (0.5, 0.5, 0.5), (DX, 0, HZ), "steam")
+    # A BAND, not the half-tile steam-coloured block this used to be: near-white at that size read
+    # as a lamp on the middle drum (Truls, #252).
+    torus("HeaderBand", 0.22, 0.05, (DX, 0, HZ), "steam", rot=(math.pi / 2, 0, 0))
     drop_top = (DX + 0.25, 0.0, HZ)
     pipe("HeaderDrop", [drop_top, (1.2, jitter(0, 0.1), HZ - 0.6), (1.5, 0.0, 1.0), (HALF_W - 0.5, 0.0, 0.7)],
          0.19, "metal", corrugate=0.45)
