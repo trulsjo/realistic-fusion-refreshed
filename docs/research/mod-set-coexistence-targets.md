@@ -155,6 +155,20 @@ Sets that are **impossible** as requested, at any version:
 - **Krastorio 2 + `bobequipment` / `bobvehicleequipment`** — declared `!` by `Krastorio2`, so
   "K2 + the full Bob's set" is not a set that can be enabled; two members must be dropped.
 
+> **Re-read at the ADR 0026 pins on 2026-09-05 ([#61](https://github.com/trulsjo/realistic-fusion-refreshed/issues/61)).**
+> The six above were derived from the portal's then-current `factorio_version` **2.1** releases; this
+> project pins the **2.0** line, and `SeaBlockWanne`'s two lines differ. All six still hold at the
+> pinned releases — `SeaBlockWanne` 1.0.5, `space-exploration` 0.7.57, `Krastorio2` 2.0.19 — read
+> from `info_json.dependencies`. Two corrections to the text above, neither of which changes a
+> verdict:
+>
+> - **`SeaBlockWanne` 1.0.5 declares a third incompatibility this list does not mention: `! bobenemies`.**
+>   `bobenemies` is in none of the pinned sets, so no lane meets it.
+> - **SE 0.7.57's `!` list runs to fifty entries, and fourteen of them are Angel's or Bob's mods, not
+>   thirteen.** The bullet above names thirteen plus `SeaBlock`, which is neither; the name it misses
+>   is **`angelsinfiniteores`**. Of this project's pinned sets that leaves three of the Angel's core
+>   four refused (`angelsbioprocessing` is not named) and eight of the twelve in `bobs`.
+
 ---
 
 ## The families
