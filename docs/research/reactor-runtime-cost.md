@@ -284,7 +284,8 @@ Two things follow, and both outlive the rig:
 
 - **`LuaFluidBox[i].amount` is the box's share, not the segment's contents.** ~~`get_capacity(i)`
   likewise reports the segment.~~ **Half wrong, corrected under #40 below: `get_capacity` reports the
-  segment when asked of a pipe and the box's own volume when asked of a machine.** Anything that reasons about how full a reactor is — the tooltips
+  segment when asked of a pipe and the box's own volume when asked of a machine — whether or not
+  that box is plumbed into a run (#68).** Anything that reasons about how full a reactor is — the tooltips
   and circuit signals of #25, the containment rules of #26 — has to know which of the two it is
   asking for.
 - **A reactor is only at full density when its whole segment is full**, so under-supply shows up
@@ -749,16 +750,38 @@ harness writes every box every tick for a second before it measures anything.
 > Superseded: this page previously stated, and `control.lua` still commented, that
 > *"`get_capacity(i)` likewise reports the segment"*. That is true of a pipe and false of a reactor.
 
-| asked of | on a 4000-unit run | what it returns |
-|---|---:|---|
-| `rf-pipe` | 4000 | the whole segment |
-| `rf-reactor` box 1 (plasma, `input-output`) | 1000 | its own declared volume |
-| `rf-reactor` box 2 (energy, output) | 1000 | its own declared volume |
+**Whether the box was PLUMBED matters, and the first version of this table did not say.** #40 asked
+the question of one shape only: an `input-output` box on a run, and an **output** box with nothing
+attached to it. An unconnected box reporting its own volume is not a measurement of the thing in
+doubt — it is the case where the box and the segment are the **same object** — so the output-box row
+was an extrapolation. #68 re-took it with the box on a run, and added the collector, which is the
+output box `deposit()` actually writes into.
 
-Checked at runs of 2500, 4000, 6000 and 7000 units; the reactor answers 1000 every time.
+| asked of | plumbed into | the run it is on | what it returns |
+|---|---|---:|---:|
+| `rf-pipe` | it *is* the run | 4000 | **4000** — the whole segment |
+| `rf-reactor` box 1 (plasma, `input-output`) | `rf-pipe` and other reactors | 4000 | **1000** — its own declared volume |
+| `rf-reactor` box 2 (energy, `output`) | 20 `pipe` and a `storage-tank` | 27000 | **1000** — its own declared volume |
+| `rf-isotope-collector` box 1 (tritium, `output`) | 20 `pipe` and a `storage-tank` | 27000 | **500** — its own declared volume |
+
+The first two rows are checked at runs of 2500, 4000, 6000 and 7000 units and the reactor answers
+1000 every time. The last two are checked at a run of **27000** — 27 times the reactor's box and 54
+times the collector's — so the two candidate answers cannot be confused. **Connecting the box changes
+nothing**: an output box on a 27000-unit run reports the same number it reported with nothing on it.
+
+> **The rig defect this found is worth knowing before extending it.** A `storage-tank`'s four
+> connections sit at asymmetric offsets from its centre — the first one measured here is (-1,-2) and
+> the one the fixed rig ends up using on the reactor's run is (+2,+1) — so aiming an *arbitrary* one
+> at the last pipe can place the tank's body **back along the run**, over pipes already laid.
+> Factorio accepts that placement and it **splits the segment**: with the tank at (61.5, 875.5) on a
+> run laid north from (60.5, 892.5), the first nineteen pipes read 1900 and the last pipe plus the
+> tank read 25100. Reading either alone passes for a run. `check-pooling.ps1` now picks the
+> connection that puts the tank beyond the end of the run, and asserts that every pipe and the tank
+> report one figure.
 
 **Nothing is broken by this and one comment was wrong.** `apply()` clamps its energy write with
-`box.get_capacity(2)` and `deposit()` computes collector headroom the same way. Both wanted the box
+`box.get_capacity(2)` and `deposit()` computes collector headroom the same way — both on boxes a
+player pipes, which is why #68 measured them piped. Both wanted the box
 figure and both get it — the write would be clamped to the box regardless. What was wrong was the
 reasoning written beside them, which claimed a segment-wide number and would have justified writing
 more than a box can hold if anyone had ever relied on it.
