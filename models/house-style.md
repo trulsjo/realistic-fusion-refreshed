@@ -95,9 +95,9 @@ fluid *is*: the reactor-energy manifold and the lines feeding from it, never the
 **The game draws the sheet, additively, only while the machine works** — through the prototype's
 own while-working layer, not through a script. On a boiler that is `fire_glow`, which the engine
 holds for `burning_cooldown` ticks after the energy stops (#252; #241 read past it and assumed the
-reactor's runtime route). Two fields go with it: `burning_cooldown` above 1, since a boiler copied
-from vanilla's heat exchanger has none and then draws neither layer, and
-`fire_glow_flicker_enabled = false`, since a fluid energy source emits no light and the default
+reactor's runtime route). Two fields go with it, both **pinned rather than inherited**, the way
+every other stat on these machines is: `burning_cooldown` above 1, or neither layer is drawn at
+all, and `fire_glow_flicker_enabled = false`, since a fluid energy source emits no light and the
 flicker would take the alpha to nothing. A machine whose prototype has no such layer — the
 reactors — keeps the separate core prototype drawn from `control.lua`.
 

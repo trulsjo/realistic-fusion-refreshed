@@ -358,20 +358,37 @@ reactor.output_fluid_box = {
 -- Change the look by editing the note below and re-rendering (`/render-machine rf-heat-exchanger`),
 -- never by editing a PNG. load-check fails if the manifest beside the sheets stops agreeing with
 -- the footprint and connections this file declares (#250).
---[[ look: rf-heat-exchanger   (read under models/house-style.md; accepted in #246)
+--[[ look: rf-heat-exchanger   (read under models/house-style.md; accepted in #252, after #246)
 A long, low hall, five wide and fifteen long, that turns reactor energy into steam. Along the
 whole west face runs a closed, riveted manifold trough the full fifteen tiles, with an energy
 channel let into its top under a grille: that face is what butts against the reactor, and it
-should read as one continuous contact, not a socket. The rest of the body is an open frame of
-dark H-beams over a grating deck, so the internals show. Down the centreline stand three tall
-vertical drums, bare metal with two rib bands and a weld seam, each with a pressure relief valve
-on its cap (a part that could move later). From the manifold, glowing feed lines run east under
-the grating to the foot of each drum. Across the drum tops a corrugated steam header, not quite
-straight, runs to the single steam outlet at the middle of the east face. The water sockets sit
-low on both short ends, feeding a header along the base. The south end is closed by a riveted
-wall with a vent, and a control cabinet with a blue panel stands at the south-east corner: those
-two are what break the symmetry. The manifold channel and its feed lines glow with the energy
-accent while the machine is working; the drums are steam and never glow. Nothing on it moves yet.
+should read as one continuous contact, not a socket. The manifold is the one part that has
+CORRODED -- it is hot, wet and outdoors -- in patches and not evenly: rust where water has run,
+a much darker brown pitting inside it, and a little verdigris. Painted access panels break its
+run.
+
+The rest of the body is an open frame of dark H-beams over a grating deck, so the internals show.
+The beams are almost straight and not quite: a rolled beam bolted into a frame is out by a few
+millimetres, and a grid of perfectly parallel ones reads as computer-drawn. Two bays are closed
+with a painted panel and two more carry a diagonal brace, so the bays are not all the same; a
+conduit runs down the east posts on clamps.
+
+Down the centreline stand three tall vertical drums, bare metal with two rib bands and a weld
+seam, each capped by a bolted flange with a ring of bolts and a pressure relief valve (a part
+that could move later). The valve body is dark with a steam band, never a white body. ONE DRUM IS
+DENTED, struck on its south flank between the rib bands, and the bands bend into the hollow with
+it -- a straight band across a dent cancels it. At each drum's foot, clear of the drum on the
+east side, a gauge cluster and a handwheel valve.
+
+From the manifold, glowing feed lines run east under the grating to the foot of each drum. Across
+the drum tops a corrugated steam header, not quite straight, runs to the single steam outlet at
+the middle of the east face. The water sockets sit low on both short ends, feeding a header along
+the base. The south end is closed by a painted wall with a vent, and a control cabinet with a
+blue panel stands at the south-east corner: those two are what break the symmetry.
+
+The manifold channel and its feed lines glow with the energy accent while the machine is working,
+and are DARK when it is not -- they carry the accent as emission, not as their own colour, or a
+stopped machine looks lit. The drums are steam and never glow. Nothing on it moves yet.
 ]]
 local exchanger = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-heat-exchanger", {
   mining_time = 0.5,
@@ -423,10 +440,17 @@ exchanger.collision_box = { { -2.25, -7.25 }, { 2.25, 7.25 } }
 exchanger.selection_box = { { -2.5, -7.5 }, { 2.5, 7.5 } }
 exchanger.pictures = rendered.boiler("heat-exchanger", 5, 15)
 -- WHAT MAKES THE GLOW APPEAR. The rendered set's -glow sheets go in `fire_glow`, which the engine
--- draws only while the boiler is burning -- and only when burning_cooldown is above 1. Vanilla's
--- heat exchanger sets no cooldown at all, because it has no fire to hold, so a copy of it needs
--- one. 20 ticks is vanilla's own boiler: a third of a second of afterglow when the reactor energy
--- stops, which reads as a machine coasting down rather than one switched off at the wall.
+-- draws only while the boiler is burning -- and only while burning_cooldown is above 1.
+--
+-- Vanilla's heat exchanger already sets 20 and this copy inherits it, so the line below changes
+-- nothing today. It is PINNED for the reason every other stat here is pinned: a deep copy taken
+-- at this point picks up whatever a mod sorting earlier has done to the source, and a mod that
+-- zeroes this field turns our glow off with no other symptom. Vanilla declares no fire and no
+-- fire_glow to hold, which is why it can carry the field and never draw anything
+-- (docs/research/entity-animation-2-0.md, measured on 2.0.77).
+--
+-- 20 ticks is a third of a second of afterglow when the reactor energy stops, which reads as a
+-- machine coasting down rather than one switched off at the wall.
 exchanger.burning_cooldown = 20
 -- Flicker is the energy source's light intensity driving the glow's alpha. A fluid energy source
 -- burning by fuel_value emits no light, so leaving this at its default false is what keeps the
