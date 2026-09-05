@@ -135,20 +135,21 @@
   "glow": true,
   "icon": {
     "centre": [
-      -0.6,
       0.0,
-      1.9
+      1.0,
+      0.0
     ],
     "file": "heat-exchanger-icon.png",
     "size": [
       120,
       64
     ],
-    "tiles": 4.5
+    "tiles": 15.5,
+    "yaw_deg": 45.0
   },
   "machine": "heat-exchanger",
   "model": "models/heat-exchanger/heat-exchanger.blend",
-  "model_sha256": "7e732787217a15cae86d472413a659c2e9b0a1b1c2d786a2b5e061cf04ec1398",
+  "model_sha256": "4cbe5337712c4629bed7b86a6d9ee3330f5a0dab880b46cb85272d750f4c5863",
   "render": {
     "blender": "5.2.0 LTS",
     "device": "CPU",

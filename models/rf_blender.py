@@ -32,6 +32,13 @@ MARGIN_TILES = 3.0
 # adds the glow sheet on top of the structure, and adding whitens: 1.5 blew out (#246) and 0.6
 # still came out cream, so the sheet is kept dim and saturated for the sum to read as the accent.
 GLOW_EMISSION = 0.3
+# How far a glowing part's BASE colour is darkened in the structure sheet. A glowing part is the
+# accent in both sheets, and the game adds them, so at 1.0 the sum is accent-over-accent and the
+# channel washed pale cream in daylight -- and, worse, looked lit when the machine was cold, since
+# the structure sheet is all a stopped machine draws. Truls, 2026-09-05 (#252), chose to darken the
+# base rather than dim the emission: the night glow was already right. 0.12 keeps the hue, so the
+# cold channel reads as a dark warm trough rather than a black slot.
+GLOW_BASE_DARKEN = 0.12
 
 # House-style accent per fluid. The geometry file carries the fluid name (#248); the accent is
 # ours. Anything else is an error rather than a guess: an unaccented socket lies about its fluid.
@@ -88,7 +95,7 @@ def set_frame(scene, width_px, height_px, width_tiles):
     scene.camera.data.ortho_scale = width_tiles
 
 
-def build_rig(scene, tiles_w, tiles_h, icon_centre, icon_tiles, margin=MARGIN_TILES):
+def build_rig(scene, tiles_w, tiles_h, icon_centre, icon_tiles, margin=MARGIN_TILES, icon_yaw=0.0):
     """Ground, camera, sun and world, with the camera and sun parented to one empty ("Rig") that
     render.py turns per direction. Records on the scene what render.py needs: the footprint, the
     margin and the icon window (a point the icon camera centres on and the width it frames)."""
@@ -136,4 +143,9 @@ def build_rig(scene, tiles_w, tiles_h, icon_centre, icon_tiles, margin=MARGIN_TI
     scene["rf_margin_tiles"] = margin
     scene["rf_icon_centre"] = list(icon_centre)
     scene["rf_icon_tiles"] = icon_tiles
+    # Degrees the rig turns for the ICON only, so an oblong machine can run corner to corner in a
+    # square instead of as a hairline down the middle. Zero for anything roughly square, which is
+    # then the same view as its north sheet. The sun is on the rig, so it turns too and the icon
+    # stays lit like every sheet.
+    scene["rf_icon_yaw"] = float(icon_yaw)
     return rig
