@@ -49,7 +49,7 @@ solve — #36's steam gap — it would fail to solve for a large part of the mod
 **Underneath all of that sits a structural finding (§2b).** This repo already has a mechanical rule
 governing prerequisites — every unlocked recipe's ingredients must be reachable inside the technology's
 own closure, and the chain must be usable at its far end — enforced by three `check-*` rigs and, as of
-an uncommitted change in the working tree, by `check_steam_sinks()` at `realistic-fusion-refreshed/control.lua:621`.
+an uncommitted change in the working tree, by `check_steam_sinks()` in `realistic-fusion-refreshed/control.lua`.
 **No recipe in either module consumes anything `nuclear-power` unlocks**: the complete set of vanilla
 items the mod's recipes touch is ten, and none of `nuclear-power`'s five unlocks is among them. So a
 `nuclear-power` edge cannot be justified under the existing rule at all — **it would be the first
@@ -140,11 +140,11 @@ Read from `realistic-fusion-refreshed*/prototypes/technology/` on `main` at comm
 
 | Technology | Module | Prerequisites | Cost | Where |
 |---|---|---|---|---|
-| `rf-heavy-water` | Core | `chemical-science-pack`, `fluid-handling` | 100 × three packs | `realistic-fusion-refreshed-core/prototypes/technology/deuterium.lua:10` |
+| `rf-heavy-water` | Core | `chemical-science-pack`, `fluid-handling` | 100 × three packs | `realistic-fusion-refreshed-core/prototypes/technology/deuterium.lua` |
 | `rf-deuterium-extraction` | Core | `rf-heavy-water` | 200 × three | `deuterium.lua:36` |
 | `rf-lithium-extraction` | Core | `chemical-science-pack`, `fluid-handling` | 150 × three | `lithium.lua:10` |
 | `rf-gas-mixing` | Core | `rf-deuterium-extraction` | 200 × three | `mixing.lua:15` |
-| `rf-d-d-fusion` | Power | `rf-deuterium-extraction`, `advanced-circuit`, `concrete` | 500 × three | `realistic-fusion-refreshed/prototypes/technology/d-d.lua:23` |
+| `rf-d-d-fusion` | Power | `rf-deuterium-extraction`, `advanced-circuit`, `concrete` | 500 × three | `realistic-fusion-refreshed/prototypes/technology/d-d.lua` |
 | `rf-tritium-breeding` | Power | `rf-d-d-fusion` | 300 × three | `d-t.lua:21` |
 | `rf-d-t-fusion` | Power | `rf-tritium-breeding`, `rf-gas-mixing` | 600 × three | `d-t.lua:55` |
 | `rf-blanket-breeding` | Power | `rf-d-t-fusion`, `rf-tritium-breeding`, `rf-lithium-extraction` | 900 × three | `blanket.lua:29` |
@@ -161,7 +161,7 @@ shared with vanilla's fission neighbourhood is `steam-turbine`, and that is an *
 ingredient (`d-d.lua:39`).
 
 **The question is already recorded in the code, framed the way this note finds it.**
-`realistic-fusion-refreshed/prototypes/technology/d-d.lua:9–19`, verbatim:
+the head comment of `realistic-fusion-refreshed/prototypes/technology/d-d.lua`, verbatim:
 
 > That invariant has a second half, which this technology failed on review: the chain has to be
 > usable at the far end as well as buildable at the near one. `rf-heat-exchanger` emits 500 C steam
@@ -184,7 +184,7 @@ to make and a larger kind of claim to make.
 
 This is the crux, and it turns the question from a matter of taste into a matter of kind.
 
-`realistic-fusion-refreshed/prototypes/technology/d-d.lua:1–19`, in full:
+the head comment of `realistic-fusion-refreshed/prototypes/technology/d-d.lua`, in full:
 
 ```lua
 -- Power's technologies may depend on Core's; the reverse never happens (ADR 0010). This one takes
@@ -213,17 +213,17 @@ running the game, per this repo's standard.
 
 | Half | What it demands | Enforced where |
 |---|---|---|
-| **Buildable at the near end** | every ingredient of a recipe a technology unlocks is reachable inside that technology's own prerequisite closure | `scripts/check-blanket.ps1:297–305` (for `rf-blanket-breeding`), `scripts/check-hc.ps1:178–186` (for `rf-d-t-fusion`), `scripts/check-aneutronic.ps1:244–258` |
-| **Usable at the far end** | every tier of ours that makes steam has something inside its own closure that drinks it for electricity | `realistic-fusion-refreshed/control.lua:621`, called at `:916`; documented in `scripts/load-check.ps1:73–78` |
+| **Buildable at the near end** | every ingredient of a recipe a technology unlocks is reachable inside that technology's own prerequisite closure | `research_closure()` in `scripts/check-blanket.ps1` (for `rf-blanket-breeding`), in `scripts/check-hc.ps1` (for `rf-d-t-fusion`), and in `scripts/check-aneutronic.ps1` |
+| **Usable at the far end** | every tier of ours that makes steam has something inside its own closure that drinks it for electricity | `check_steam_sinks()` in `realistic-fusion-refreshed/control.lua`, called from the load-time invariant pass; documented in `scripts/load-check.ps1`'s `.DESCRIPTION` |
 
 **Correction to how that was described to me: the buildable half is enforced per-technology by
 individual rigs, not globally.** Three rigs hard-code three roots — `research_closure("rf-blanket-breeding", {})`
-at `check-blanket.ps1:304` and `research_closure("rf-d-t-fusion", {})` at `check-hc.ps1:185`. The rule
+in `check-blanket.ps1` and `research_closure("rf-d-t-fusion", {})` in `check-hc.ps1`. The rule
 is stated as general in the comments and is checked for three of the mod's eleven technologies.
 `rf-d-d-fusion` — the one a `nuclear-power` edge would most likely land on — is **not** among them.
 
 **Second correction, and this one is new since the brief was written: the far-end half is now
-enforced.** `check_steam_sinks()` exists in `realistic-fusion-refreshed/control.lua:621` and is the tenth
+enforced.** `check_steam_sinks()` exists in `realistic-fusion-refreshed/control.lua` and is the tenth
 load-time invariant. **It is an uncommitted working-tree change made by another teammate during this
 session, not committed code** — I read it as the current state per the repo's own guidance, and flag it
 because a reader checking `main` will not find it. Its header comment settles this question's mechanism
@@ -271,7 +271,7 @@ progression-shaped prerequisites in a tree that has so far only had closure-shap
 
 ### And #32 already shipped the third answer's pattern
 
-`rf-hc-turbine` is not a new kind of prototype — `realistic-fusion-refreshed/prototypes/entities.lua:301`:
+`rf-hc-turbine` is not a new kind of prototype — `realistic-fusion-refreshed/prototypes/entities.lua`:
 
 ```lua
 local hc_turbine = pin(table.deepcopy(data.raw["generator"]["steam-turbine"]), "rf-hc-turbine", {
@@ -279,7 +279,7 @@ local hc_turbine = pin(table.deepcopy(data.raw["generator"]["steam-turbine"]), "
 
 with `fluid_usage_per_tick = 10`, `maximum_temperature = 500`, `max_power_output = "58.2MW"`, and
 Krastorio 2's advanced-steam-turbine art rather than a placeholder. Its recipe is 150 steel + 60
-advanced circuits + 50 concrete + 50 pipe (`realistic-fusion-refreshed/prototypes/recipes/hc.lua:38–47`) —
+advanced circuits + 50 concrete + 50 pipe (`realistic-fusion-refreshed/prototypes/recipes/hc.lua`) —
 nothing fissile, and every ingredient already inside `rf-d-t-fusion`'s closure.
 
 **So the mod already ships its own steam turbine.** #36's third option — *"Ship an `rf-turbine`"* — is
@@ -876,7 +876,7 @@ In this repository:
 - `realistic-fusion-refreshed/prototypes/entities.lua` (the six vanilla deepcopies, and `rf-hc-turbine` at :301);
   `realistic-fusion-refreshed/prototypes/recipes/*.lua` (all nine, for the ingredient set in §2b).
 - `scripts/check-blanket.ps1`, `scripts/check-hc.ps1`, `scripts/check-aneutronic.ps1` (the closure
-  rigs); `realistic-fusion-refreshed/control.lua:621` and `scripts/load-check.ps1:73–78` — committed
+  rigs); `check_steam_sinks()` in `realistic-fusion-refreshed/control.lua`, and `scripts/load-check.ps1` — committed
   since this note was written; the caveat above is what was true on the day.
 - `CONTEXT.md`; ADRs [0002](../adr/0002-v1-scope-and-module-split.md),
   [0005](../adr/0005-real-time-fusion-simulation.md),

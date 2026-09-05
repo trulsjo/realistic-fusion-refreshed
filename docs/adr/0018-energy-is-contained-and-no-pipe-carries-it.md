@@ -185,7 +185,7 @@ face.**
    reactor and an exchanger cannot bolt to an aneutronic one: the engine refuses the connection
    outright rather than joining two boxes whose filters disagree and leaving a player to work out why
    nothing flows. `prototypes/fluids.lua:125` calls the separation of the two conversion routes "the
-   tier's whole mechanic rather than bookkeeping", and `CONTEXT.md:62` calls direct energy conversion
+   tier's whole mechanic rather than bookkeeping", and `CONTEXT.md` calls direct energy conversion
    "a different route, not a better one". This puts both statements in the geometry.
 
 4. **`rf-heat-exchanger`'s energy box becomes `input-output` on three connections** — south
@@ -213,7 +213,7 @@ face.**
   no pipe at all.
 - **No vanilla tank or wagon can hold either energy fluid.** The 25 GJ and 50 GJ storage above is
   gone. That is the removal of a capability nobody designed rather than a balance change.
-- **One class of silent mistake disappears.** `bench-mod-links.ps1:326-330` records it: an exchanger
+- **One class of silent mistake disappears.** `bench-mod-links.ps1` records it, in `assert_segments()`: an exchanger
   sat directly on a shared energy header joins its *water* inlet to that header, which fills with
   water, and "it reads as a reactor that produces nothing rather than as a plumbing mistake". Water
   cannot join a categorised energy run.
@@ -234,9 +234,9 @@ face.**
   meaning partial fluid gives partial power rather than a stall. **Whether that suffices is not
   measured.** If it does not, the answer is a contained energy vessel — one entity beyond ADR 0010 —
   and that is a later ADR, not a silent addition.
-- **Two shipped assertions invert.** `check-containment.ps1:338-342` asserts that an ordinary pipe
+- **Two shipped assertions invert.** `check-containment.ps1` asserts that an ordinary pipe
   still joins the reactor's energy output and carries reactor energy. Correct today, wrong after this.
-- **One shipped gate becomes true but meaningless.** `check-aneutronic.ps1:678` asserts the composite
+- **One shipped gate becomes true but meaningless.** `check-aneutronic.ps1` asserts the composite
   tank buffers the tier's energy fluid, but fills it with `insert_fluid` on an unplumbed tank
   (`:463-466`), and Lua insertion ignores connection categories. It would keep passing after the
   capability was gone, which is worse than failing.

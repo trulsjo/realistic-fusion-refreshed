@@ -1333,7 +1333,7 @@ same function needs for all four of `deuterium_usage`, `tritium_usage`, `helium_
 **This mod does not have that shape.** A reactor burns one plasma (ADR 0011: per reactor, not per
 network), so `M.step` performs exactly one dataset lookup; `reactivity.lua` carries no energy term
 at any point, in the interpolation or out of it; and a reaction energy is applied exactly **once**,
-at `reactor-logic.lua:742`:
+in `M.step()`, which reads:
 
 ```lua
 local fusion_j = reactions * fuel.energy_per_reaction_j
@@ -1405,8 +1405,8 @@ five suites, 0 failures — the baseline #66 asked for, unchanged because the co
 
 ### Sources
 
-- `realistic-fusion-refreshed/scripts/reactivity.lua`, and `scripts/reactor-logic.lua:737` and
-  `:742` — the one lookup and the one energy multiply a step, both inside `M.step` at `:705`.
+- `realistic-fusion-refreshed/scripts/reactivity.lua`, and `scripts/reactor-logic.lua` — the one
+  lookup and the one energy multiply a step, both inside `M.step()`.
 - `_reference/realistic-fusion-dev/RealisticFusionPower/scripts/reactor-logic.lua:11` and `:170-210`
   — the TODO, and the fourteen multiplies it aimed at.
 - *[Where the cost actually goes](#where-the-cost-actually-goes)* (#39) for the ladder and the GC

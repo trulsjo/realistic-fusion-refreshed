@@ -425,7 +425,7 @@ way that assumes it sees all of them.
 
 **d) The magnetic-confinement pipes sit on the boundary.** `rfp-pipe`, `rfp-pipe-to-ground` and `rfp-pump`
 (`PORT/prototypes/entities.lua:23-42`) are tinted copies of the vanilla prototypes; they exist because
-plasma cannot go in an iron pipe, and `control.lua:128-157` enforces that at runtime by killing offending
+plasma cannot go in an iron pipe, and `PORT/control.lua:128-157` enforces that at runtime by killing offending
 pipes. Plasma is produced by `rfp-heater` and consumed by the reactors, so the pipes are Power by
 function — but the *runtime enforcement* is the mod's single piece of `control.lua` logic and would have
 to live in whichever mod owns it, while needing the fluid names from the settings the other mod may
@@ -642,7 +642,7 @@ without appeal to engine behaviour.
 Nothing else in `control.lua` changed — the diff is 57 lines and is entirely those three items. Zero
 occurrences of `created_entity` anywhere in the port. The seven remaining `global` matches are all
 `settings.global[...]` (the runtime-setting accessor, which keeps that name in 2.0 —
-`control.lua:78, 114, 131`) plus four in comments and one `setting_type = "runtime-global"`. No
+`PORT/control.lua:78, 114, 131`) plus four in comments and one `setting_type = "runtime-global"`. No
 `defines.events.on_pre_player_mined_item`, no `game.player`.
 
 **Prototype stage is migrated, with cosmetic residue.** Zero `base_area`, zero `base_level`, zero

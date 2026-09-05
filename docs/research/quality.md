@@ -149,10 +149,10 @@ Neither
 single quality-related property at 2.0.77. Their scaling is not declared anywhere; it is behaviour.
 
 **What the docs do give you is a reliable tell, and the repository already found it by accident.**
-`realistic-fusion-refreshed/control.lua:795` records that `max_energy_production` had to become
+`realistic-fusion-refreshed/control.lua` records that `max_energy_production` had to become
 `get_max_energy_production()` because "the quality system made these getters — and reading the field
-throws". `scripts/check-buffer.ps1:300` puts the rule in one line: "The flow limits are methods rather
-than attributes in 2.0 because quality scales them"; `scripts/check-brownout.ps1:727` says the same,
+throws". `scripts/check-buffer.ps1` puts the rule in one line: "The flow limits are methods rather
+than attributes in 2.0 because quality scales them"; `scripts/check-brownout.ps1` says the same,
 and adds the trap — "control.lua reads buffer_capacity off the same class as a field, which is what
 made the wrong one look right". That is the general rule: **in 2.0 a prototype property that quality scales is exposed as a method
 taking an optional `QualityID`, and one it does not scale stays a plain attribute.**
@@ -263,8 +263,8 @@ a docs-plus-base-game inference rather than a measurement.
 Excluding `"quality"` from a machine's `allowed_effects` is a *different* thing and does not do this
 job: it stops quality modules going into that machine, not the machine itself being quality. Both of
 this mod's machine builders currently include it —
-`realistic-fusion-refreshed/prototypes/entities.lua:65` and
-`realistic-fusion-refreshed-core/prototypes/entities.lua:31`.
+`realistic-fusion-refreshed/prototypes/entities.lua` and
+`realistic-fusion-refreshed-core/prototypes/entities.lua`.
 
 ### Defining quality levels
 
@@ -309,8 +309,8 @@ read at all five levels; only the two ends are shown, and "flat" means all five 
 | Entity | Type | Property | normal | legendary | Does the simulation assume it constant? |
 |---|---|---|---|---|---|
 | `rf-reactor` | `boiler` | **fluid box 1 (plasma)** | 1000 | **1000** | **Yes — and it holds.** `volume_m3` and `particles_per_unit` are Lua constants; `control.lua` reads `box.get_capacity` |
-| | | **fluid box 2 (energy)** | 1000 | **1000** | `control.lua:327` reads `get_capacity(2)` to clamp the sale |
-| | | **`buffer_capacity`** | 10 MJ | **10 MJ** | Yes — `control.lua:459-465` checks `heating_power_w × interval` against it at load |
+| | | **fluid box 2 (energy)** | 1000 | **1000** | `apply()` in `control.lua` reads `get_capacity(2)` to clamp the sale |
+| | | **`buffer_capacity`** | 10 MJ | **10 MJ** | Yes — `check_cadence()` in `control.lua` checks `heating_power_w × interval` against it at load |
 | | | `input_flow_limit` | 60 MW | **150 MW** | No. No shipped code reads it; only `check-brownout.ps1`'s rig does |
 | | | `energy_consumption` | 1 W | 2.5 W | No. The neutered boiler conversion |
 | `rf-aneutronic-reactor` | `boiler` | fluid boxes | 3000 / 1000 | **3000 / 1000** | Yes — and it holds. 3×10²⁰ m⁻³ stays 3×10²⁰ |
@@ -332,7 +332,7 @@ read at all five levels; only the two ends are shown, and "flat" means all five 
 | | | **`fluid_usage_per_tick`** | 1.6667 | **4.1667** | No — same factor |
 | | | fluid box | 1000 | flat | — |
 | `rf-isotope-collector` | `boiler` | `energy_consumption` | 1 W | 2.5 W | No. `energy_source` is `void` |
-| | | fluid boxes | 500 each | flat | `control.lua:363` reads the tritium box's capacity as headroom |
+| | | fluid boxes | 500 each | flat | `apply()` in `control.lua` reads the tritium box's capacity as headroom |
 | `rf-aneutronic-composite-tank` | `storage-tank` | — | 50 000 | **50 000** | Nothing scales |
 | `rf-pipe`, `rf-pipe-to-ground` | `pipe` | — | 100 | **100** | Nothing scales |
 | `rf-pump` | `pump` | **`pumping_speed`** | 1200 /s | **3000 /s** | No |
@@ -385,7 +385,7 @@ output — **at every quality level**, not just at normal.
 
 ### The ledger, written out
 
-From `reactor-logic.lua:437-469`, per step, with `η = capture_efficiency`:
+From `M.step()` in `reactor-logic.lua`, per step, with `η = capture_efficiency`:
 
     captured_j = ((fusion_j - charged_j) + left_j) × η
     left_j     = kept_j + heating_j + charged_j - retained_j
@@ -411,7 +411,7 @@ so, per second, with `Q = P_fus / P_heat`:
 
 Two of those cold-reactor figures are already written down elsewhere and are reproduced here from the
 step function rather than quoted, which is the check that this derivation is the same ledger the code
-implements: `reactor-logic.lua:313-318` states the aneutronic 190 MW for 200 MW, and ADR 0020's
+implements: `reactor-logic.lua`'s aneutronic spec states 190 MW for 200 MW, and ADR 0020's
 Consequences states 46.9 MW at level 3. The 42.5 MW for 50 MW at η = 0.85 is derived here.
 
 ### Which of the four terms can quality reach?
@@ -421,7 +421,7 @@ The inequality has exactly four inputs. Taking them one at a time:
 | Term | Where it lives | Quality-reachable? |
 |---|---|---|
 | **η** — `capture_efficiency` | Lua constant in `reactor-logic.lua`, 0.85 / 0.95. After ADR 0020, a per-force research value | **No.** Nothing outside that file assigns it, and no prototype in the chain exposes an efficiency quality could scale even if it did: `BoilerPrototype` and `GeneratorPrototype` have no quality property, and a fluid energy source's `effectivity` is a plain attribute |
-| **P_heat** — `heating_power_w` | Lua constant, 50e6 / 200e6. `control.lua:256` debits `entity.energy` by it directly | **No.** The prototype's own `energy_consumption` *does* scale — and is not what is spent |
+| **P_heat** — `heating_power_w` | Lua constant, 50e6 / 200e6. `control.lua` debits `entity.energy` by it directly | **No.** The prototype's own `energy_consumption` *does* scale — and is not what is spent |
 | **P_fus** | `reactivity.rate(...) × volume_m3`, driven by `density = amount × particles_per_unit / volume_m3` | **No.** `particles_per_unit` and `volume_m3` are Lua constants, and `amount` is bounded by a fluid box capacity **measured flat**. Peak density is 1×10²⁰ m⁻³ at every level, 3×10²⁰ for the aneutronic reactor |
 | **The fluid→electricity factor** | `energy_fluid_j_per_unit = 1e6`, then `rf-heat-exchanger` (fluid energy source, `effectivity = 1`, `burns_fluid`) → steam → turbine; or the DEC directly | **No.** Measured out/in = 1.000000 at all five levels on both generators; both boilers' fluid energy source reports `effectivity = 1`, an attribute with no quality form, and `QualityPrototype` has no energy-source multiplier |
 

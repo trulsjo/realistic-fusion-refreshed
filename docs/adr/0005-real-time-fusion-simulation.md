@@ -143,7 +143,7 @@ requires restructuring is not a fallback.
   two sums over all seven — one against charged reaction energies and one against total — so folding
   the energy into the dataset removes seven multiplies of fourteen. This mod simulates one reactor
   burning one plasma (ADR 0011), does one dataset lookup a step, and applies a reaction energy
-  **once**, at `reactor-logic.lua:742`. Premultiplying would make the lookup return joules where four
+  **once**, in `M.step()` (`reactor-logic.lua`). Premultiplying would make the lookup return joules where four
   things in the same function need a count — the fuel cap, the fuel burnt, the by-products and the
   neutrons — so it trades one multiply for one divide, which is not the cheaper of the two. It
   would also change what the public `reactivity.reactivity()` returns, which
