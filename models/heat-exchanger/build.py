@@ -58,14 +58,24 @@ PALETTE = {
     "steam":  ((0.85, 0.88, 0.90), 0.5, 0.0),
     "water":  ((0.25, 0.55, 1.00), 0.5, 0.0),
     "plasma": ((0.55, 0.20, 1.00), 0.5, 0.0),
+    # PAINT, not steel. Truls, #252: the machine needed some painted panels -- steel-on-steel gave
+    # it no colour of its own beside Krastorio 2's, which is yellow. A matte industrial off-white
+    # is high in value where the frame is low, so a panel reads as a panel rather than as more
+    # body. The hue is my pick and easy to change: it is the one colour here that no fluid owns.
+    "paint":  ((0.58, 0.55, 0.47), 0.8, 0.0),
 }
 ACCENTS = ("energy", "steam", "water", "plasma")   # stay clean: no grime, so they read
 MATS = {}
 
 
-# Corrosion, where a surface is asked for it: the colour grime mixes toward, and how much of the
-# surface it takes. Truls, #252, on the manifold -- the one part that is hot, wet and outdoors.
+# CORROSION IS THREE COLOURS, NOT ONE. A single rust mask over the whole manifold came out even and
+# orange, and Truls read it as copper (#252). Real corrosion is patchy and goes several ways at
+# once, so three masks at three scales run in sequence: rust where water has run, a much darker
+# brown where it has sat and pitted, and a little verdigris. Each has its own noise, because
+# sharing a mask is what made the first version uniform.
 RUST = (0.27, 0.14, 0.07)
+RUST_DARK = (0.09, 0.045, 0.025)
+VERDIGRIS = (0.14, 0.28, 0.20)
 
 
 def mat(name, glow=False, corrode=False):
@@ -73,13 +83,21 @@ def mat(name, glow=False, corrode=False):
     if key in MATS:
         return MATS[key]
     rgb, rough, metal = PALETTE[name]
+    # A GLOWING PART IS DARK IN THE STRUCTURE SHEET AND THE ACCENT IN THE GLOW SHEET. The game adds
+    # the two, so a part left at full accent in both washes pale when working and looks lit when
+    # cold -- see rf_blender.GLOW_BASE_DARKEN. The darkened value is the base for everything below,
+    # grime included, which is the point: the cold channel used to be an ACCENT and accents are
+    # excluded from grime, so it came out as fourteen tiles of dead-flat mid-brown and Truls read
+    # the manifold as copper (#252). It was never the corrosion. A glowing part takes grime like
+    # any other surface now, and only a part that is actually clean stays clean.
+    base = tuple(c * rf.GLOW_BASE_DARKEN for c in rgb) if glow else rgb
     m = bpy.data.materials.new(f"{name}{'-glow' if glow else ''}{'-rust' if corrode else ''}")
     m.use_nodes = True
     b = m.node_tree.nodes["Principled BSDF"]
-    b.inputs["Base Color"].default_value = (*rgb, 1.0)
+    b.inputs["Base Color"].default_value = (*base, 1.0)
     b.inputs["Roughness"].default_value = rough
     b.inputs["Metallic"].default_value = metal
-    if not glow and name not in ACCENTS:
+    if glow or name not in ACCENTS:
         # GRIME, and it does more work than it used to. The first version mixed one soft noise at
         # 0.55 of the base and modulated roughness by 0.35, which at 64 px a tile is invisible: the
         # drums came out as smooth plastic and the whole machine as one value (Truls, #252). Now two
@@ -107,28 +125,34 @@ def mat(name, glow=False, corrode=False):
         ramp.color_ramp.elements[1].position = 0.72
         mix = nt.nodes.new("ShaderNodeMix")
         mix.data_type = "RGBA"
-        mix.inputs["A"].default_value = (*rgb, 1.0)
-        mix.inputs["B"].default_value = (rgb[0] * 0.5, rgb[1] * 0.45, rgb[2] * 0.4, 1.0)
+        mix.inputs["A"].default_value = (*base, 1.0)
+        mix.inputs["B"].default_value = (base[0] * 0.5, base[1] * 0.45, base[2] * 0.4, 1.0)
         nt.links.new(combine.outputs["Result"], ramp.inputs["Fac"])
         nt.links.new(ramp.outputs["Color"], mix.inputs["Factor"])
         out = mix.outputs["Result"]
         if corrode:
-            # A third noise at a different scale, hard-edged, mixing toward rust over about a fifth
-            # of the surface. Separate from the grime ramp on purpose: grime is everywhere and even,
-            # corrosion is in patches, and sharing one mask would have made the whole panel brown.
-            rust_noise = nt.nodes.new("ShaderNodeTexNoise")
-            rust_noise.inputs["Scale"].default_value = 9.0
-            rust_noise.inputs["Detail"].default_value = 8.0
-            rust_ramp = nt.nodes.new("ShaderNodeValToRGB")
-            rust_ramp.color_ramp.elements[0].position = 0.68
-            rust_ramp.color_ramp.elements[1].position = 0.82
-            rust_mix = nt.nodes.new("ShaderNodeMix")
-            rust_mix.data_type = "RGBA"
-            rust_mix.inputs["B"].default_value = (*RUST, 1.0)
-            nt.links.new(rust_noise.outputs["Fac"], rust_ramp.inputs["Fac"])
-            nt.links.new(rust_ramp.outputs["Color"], rust_mix.inputs["Factor"])
-            nt.links.new(out, rust_mix.inputs["A"])
-            out = rust_mix.outputs["Result"]
+            # Three passes, each its own noise at its own scale and its own coverage, applied one
+            # after another. Separate from the grime ramp on purpose -- grime is everywhere and
+            # even, corrosion is in patches -- and separate from each other, which is the fix for
+            # the version that read as copper: one mask meant one colour over the whole panel.
+            for scale, detail, lo, hi, colour in (
+                (9.0, 8.0, 0.62, 0.80, RUST),        # broad rust, where water has run
+                (17.0, 6.0, 0.72, 0.80, RUST_DARK),  # small, hard-edged pits inside it
+                (5.0, 4.0, 0.78, 0.88, VERDIGRIS),   # a little verdigris, rarest of the three
+            ):
+                n = nt.nodes.new("ShaderNodeTexNoise")
+                n.inputs["Scale"].default_value = scale
+                n.inputs["Detail"].default_value = detail
+                r = nt.nodes.new("ShaderNodeValToRGB")
+                r.color_ramp.elements[0].position = lo
+                r.color_ramp.elements[1].position = hi
+                mx = nt.nodes.new("ShaderNodeMix")
+                mx.data_type = "RGBA"
+                mx.inputs["B"].default_value = (*colour, 1.0)
+                nt.links.new(n.outputs["Fac"], r.inputs["Fac"])
+                nt.links.new(r.outputs["Color"], mx.inputs["Factor"])
+                nt.links.new(out, mx.inputs["A"])
+                out = mx.outputs["Result"]
         nt.links.new(out, b.inputs["Base Color"])
         rmix = nt.nodes.new("ShaderNodeMath")
         rmix.operation = "MULTIPLY_ADD"
@@ -137,10 +161,6 @@ def mat(name, glow=False, corrode=False):
         nt.links.new(ramp.outputs["Color"], rmix.inputs[0])
         nt.links.new(rmix.outputs["Value"], b.inputs["Roughness"])
     if glow:
-        # Dark in the structure sheet, the accent in the glow sheet. The game adds the two, so a
-        # glowing part whose base is already the accent both washes pale when working and looks lit
-        # when cold -- see rf_blender.GLOW_BASE_DARKEN for the measurement and the decision.
-        b.inputs["Base Color"].default_value = (*(c * rf.GLOW_BASE_DARKEN for c in rgb), 1.0)
         b.inputs["Emission Color"].default_value = (*rgb, 1.0)
         b.inputs["Emission Strength"].default_value = rf.GLOW_EMISSION
     MATS[key] = m
@@ -148,8 +168,15 @@ def mat(name, glow=False, corrode=False):
 
 
 def bevel(obj, width=0.03):
+    """Round every visible edge so the key light catches it (house style).
+
+    THE WIDTH IS UNEVEN ON PURPOSE (Truls, #252). One bevel width across a whole machine is itself
+    a kind of perfection: every corner catches the sun with the same highlight and the result reads
+    as one extruded object. A spread of 0.75 to 1.6 of the nominal width is invisible as a number
+    and enough that no two corners are the same.
+    """
     mod = obj.modifiers.new("Bevel", "BEVEL")
-    mod.width = width
+    mod.width = width * random.uniform(0.75, 1.6)
     mod.segments = 2
 
 
@@ -174,7 +201,7 @@ def cyl(name, radius, depth, loc, material, axis="Z", glow=False, rot=None, vert
     return o
 
 
-def dent(obj, centre, radius, depth):
+def dent(obj, centre, radius, depth, cuts=14):
     """Strike a hollow into an object, around a world-space point.
 
     Truls, #252: one drum should have a significant dent. A primitive cylinder has vertices only at
@@ -188,7 +215,7 @@ def dent(obj, centre, radius, depth):
     bpy.context.view_layer.update()                  # obj.scale was set after it was created
     bm = bmesh.new()
     bm.from_mesh(obj.data)
-    bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=14, use_grid_fill=True)
+    bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=cuts, use_grid_fill=True)
     mw, inv = obj.matrix_world, obj.matrix_world.inverted().to_3x3()
     c = Vector(centre)
     for v in bm.verts:
@@ -253,20 +280,30 @@ def pipe(name, points, radius, material, glow=False, corrugate=0.0):
 
 
 def hbeam(name, length, loc, axis="Z", depth=0.2, flange=0.16, web=0.03, material="frame"):
-    """An H-profile beam: two flanges and a web, along `axis`."""
-    fl = flange / 2
+    """An H-profile beam: two flanges and a web, along `axis`.
+
+    ALMOST STRAIGHT, NOT STRAIGHT (Truls, #252). A rolled beam bolted into a frame is out by a few
+    millimetres and a fabricated one is out by more; a grid of perfectly parallel beams is the
+    thing that says "computer". The whole beam is shifted by up to 0.02 tiles and tilted by up to
+    0.012 rad -- about 1 px of lean over a two-tile post at 64 px a tile, which is under the
+    detail floor as a feature and over it as an impression. The three sub-boxes take the same
+    rotation about their own centres rather than about the beam's; at this angle the shear between
+    web and flange is under two thousandths of a tile, which is nothing.
+    """
+    loc = (jitter(loc[0], 0.02), jitter(loc[1], 0.02), jitter(loc[2], 0.012))
+    rot = (jitter(0, 0.012), jitter(0, 0.012), jitter(0, 0.012))
     if axis == "Z":
-        box(f"{name}-web", (web, depth - 0.05, length), loc, material, bev=0)
+        box(f"{name}-web", (web, depth - 0.05, length), loc, material, bev=0, rot=rot)
         for sx in (-1, 1):
-            box(f"{name}-f{sx}", (flange, web, length), (loc[0] + sx * 0, loc[1] + sx * (depth / 2), loc[2]), material, bev=0.01)
+            box(f"{name}-f{sx}", (flange, web, length), (loc[0] + sx * 0, loc[1] + sx * (depth / 2), loc[2]), material, bev=0.01, rot=rot)
     elif axis == "Y":
-        box(f"{name}-web", (web, length, depth - 0.05), loc, material, bev=0)
+        box(f"{name}-web", (web, length, depth - 0.05), loc, material, bev=0, rot=rot)
         for sz in (-1, 1):
-            box(f"{name}-f{sz}", (flange, length, web), (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01)
+            box(f"{name}-f{sz}", (flange, length, web), (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01, rot=rot)
     else:
-        box(f"{name}-web", (length, web, depth - 0.05), loc, material, bev=0)
+        box(f"{name}-web", (length, web, depth - 0.05), loc, material, bev=0, rot=rot)
         for sz in (-1, 1):
-            box(f"{name}-f{sz}", (length, flange, web), (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01)
+            box(f"{name}-f{sz}", (length, flange, web), (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01, rot=rot)
 
 
 def rivets(name, start, end, n, r=0.045, material="dark"):
@@ -302,17 +339,32 @@ else:
     MX = -HALF_W + MAN_W / 2
     # Corroded, and it is the only part that is: it is the face the reactor's energy arrives
     # through, hot and wet and outdoors, and it was the one surface Truls called too polished (#252).
-    box("Manifold", (MAN_W, L - 0.2, MAN_H), (MX, 0, SLAB + MAN_H / 2), "body", corrode=True)
+    #
+    # ALMOST STRAIGHT (Truls, #252). Fourteen tiles of dead-straight extrusion is the most
+    # machine-made thing on the model. A yaw of MAN_YAW radians walks the ends about 0.04 tiles --
+    # two or three pixels of lean over the full length, read as a fabrication that is out rather
+    # than as a bend. Everything sitting on the manifold takes the SAME yaw and the x offset that
+    # goes with it (-y * yaw), or the channel and its grille would slide off the panel they sit on.
+    MAN_YAW = jitter(0, 0.006)
+
+    def on_manifold(y):
+        return MX - y * MAN_YAW
+
+    box("Manifold", (MAN_W, L - 0.2, MAN_H), (MX, 0, SLAB + MAN_H / 2), "body", corrode=True,
+        rot=(0, 0, MAN_YAW))
     for i in range(6):
         y = -HALF_L + 0.1 + (i + 1) * (L - 0.2) / 7
-        seam(f"ManifoldSeam{i}", (MAN_W + 0.02, 0.05, MAN_H - 0.2), (MX, y, SLAB + MAN_H / 2))
-    rivets("ManifoldRivetsTop", (MX - MAN_W / 2 + 0.08, -HALF_L + 0.3, SLAB + MAN_H + 0.01),
-           (MX - MAN_W / 2 + 0.08, HALF_L - 0.3, SLAB + MAN_H + 0.01), 28)
+        seam(f"ManifoldSeam{i}", (MAN_W + 0.02, 0.05, MAN_H - 0.2), (on_manifold(y), y, SLAB + MAN_H / 2),
+             rot=(0, 0, MAN_YAW))
+    rivets("ManifoldRivetsTop", (on_manifold(-HALF_L + 0.3) - MAN_W / 2 + 0.08, -HALF_L + 0.3, SLAB + MAN_H + 0.01),
+           (on_manifold(HALF_L - 0.3) - MAN_W / 2 + 0.08, HALF_L - 0.3, SLAB + MAN_H + 0.01), 28)
     # energy channel along the TOP of the manifold, where the camera sees it; glows when working
-    box("ManifoldBand", (MAN_W * 0.45, L - 0.6, 0.06), (MX + 0.05, 0, SLAB + MAN_H + 0.01), "energy", glow=True)
+    box("ManifoldBand", (MAN_W * 0.45, L - 0.6, 0.06), (MX + 0.05, 0, SLAB + MAN_H + 0.01), "energy",
+        glow=True, rot=(0, 0, MAN_YAW))
     for i in range(14):
         y = -HALF_L + 0.6 + i * (L - 1.2) / 13
-        box(f"ManifoldGrille{i}", (MAN_W * 0.5, 0.05, 0.05), (MX + 0.05, y, SLAB + MAN_H + 0.04), "dark", bev=0)
+        box(f"ManifoldGrille{i}", (MAN_W * 0.5, 0.05, 0.05), (on_manifold(y) + 0.05, y, SLAB + MAN_H + 0.04),
+            "dark", bev=0, rot=(0, 0, MAN_YAW))
 
     # -- open frame of H-beams, no walls. Posts on the east edge and the mid-line, rails on top.
     FRAME_H = 2.0
@@ -339,6 +391,14 @@ else:
     for i, y in enumerate(post_ys):
         torus(f"ConduitClamp{i}", 0.1, 0.03, (EX - 0.13, y, SLAB + FRAME_H - 0.2), "metal",
               rot=(math.pi / 2, 0, 0))
+    # Two bays closed with a painted panel instead of left open -- the machine had no colour of its
+    # own next to Krastorio 2's yellow, and these are where there is area to give it some (#252).
+    for i, k in enumerate((2, 5)):
+        y0, y1 = post_ys[k], post_ys[k + 1]
+        box(f"BayPanel{i}", (0.07, (y1 - y0) * 0.86, 1.05), (EX - 0.05, (y0 + y1) / 2, SLAB + 0.95),
+            "paint", rot=(0, 0, jitter(0, 0.008)))
+        rivets(f"BayPanelRivets{i}", (EX - 0.1, y0 + 0.25, SLAB + 1.42), (EX - 0.1, y1 - 0.25, SLAB + 1.42),
+               5, r=0.035)
     for i, k in enumerate((1, 4)):                    # two bays only: a braced frame, not a lattice
         dy, dz = post_ys[k + 1] - post_ys[k], (FRAME_H - 0.5) * (1 if i == 0 else -1)
         box(f"Brace{i}", (0.06, math.hypot(dy, dz), 0.14),
@@ -346,7 +406,7 @@ else:
             rot=(math.atan2(dz, dy), 0, 0), bev=0.01)
 
     # South end wall: a closed panel the camera can see, between manifold and cabinet.
-    box("EndWall", (W - MAN_W - 0.3, 0.16, 1.15), (MXE + (EX - MXE) / 2 - 0.05, -HALF_L + 0.12, SLAB + 0.575), "body")
+    box("EndWall", (W - MAN_W - 0.3, 0.16, 1.15), (MXE + (EX - MXE) / 2 - 0.05, -HALF_L + 0.12, SLAB + 0.575), "paint")
     seam("EndWallSeam", (0.04, 0.18, 0.95), (MXE + (EX - MXE) / 2 - 0.9, -HALF_L + 0.12, SLAB + 0.575))
     rivets("EndWallRivets", (MXE + 0.2, -HALF_L + 0.03, SLAB + 1.0), (EX - 0.3, -HALF_L + 0.03, SLAB + 1.0), 9, r=0.04)
     box("EndWallVent", (0.9, 0.06, 0.4), (MXE + (EX - MXE) / 2 + 0.3, -HALF_L + 0.03, SLAB + 0.55), "dark", bev=0)
@@ -362,17 +422,24 @@ else:
         z0 = SLAB + 0.5
         d = cyl(f"Drum{i}", r, h, (DX, y, z0 + h / 2), "metal", verts=64)
         d.scale = (1.0, jitter(1.0, 0.03), 1.0)
+        ribs = [torus(f"Drum{i}Rib{k}", r + 0.015, 0.035, (DX, y, z0 + h * frac), "dark")
+                for k, frac in enumerate((0.3, 0.7))]
         if i == DENTED:
-            # SOUTH FLANK, MID-HEIGHT, AND SMALL. Two things had to be got right. The camera
-            # stands south of the machine looking north, so a drum shows its cap and its SOUTH
-            # side; a hollow struck anywhere else is behind the drum's own top. And the first
-            # attempts were far too wide -- a 1.15-tile strike reshaped the whole upper drum and
-            # swallowed the rib bands, which are separate objects and do not deform with it, so it
-            # read as a differently shaped drum rather than a dented one. 0.45 sits between the
-            # ribs at 0.3 h and 0.7 h and touches neither.
-            dent(d, (DX + 0.25, y - r, z0 + h * 0.5), 0.45, 0.3)
-        for k, frac in enumerate((0.3, 0.7)):
-            torus(f"Drum{i}Rib{k}", r + 0.015, 0.035, (DX, y, z0 + h * frac), "dark")
+            # SOUTH FLANK, because the camera stands south of the machine looking north: a drum
+            # shows its cap and its south side, and a hollow struck anywhere else hides behind the
+            # drum's own top.
+            #
+            # AND THE RIBS TAKE THE SAME STRIKE. That is what finally made it read (Truls, #252:
+            # "I can see the dent, but it is not very visible"). Denting the shell alone left the
+            # two rib bands running dead straight across the hollow -- they are separate objects
+            # and do not deform with it -- and a straight band over a curved dent cancels it out,
+            # which is why every earlier attempt had to be widened and still went unnoticed. With
+            # the bands bending into it the strike can stay compact and still be obvious: 0.62
+            # across, 0.42 deep, centred between the two.
+            strike = (DX + 0.25, y - r, z0 + h * 0.5)
+            dent(d, strike, 0.62, 0.42)
+            for rib in ribs:                     # already 48x12; a few cuts is plenty
+                dent(rib, strike, 0.62, 0.42, cuts=4)
         seam(f"Drum{i}Weld", (0.03, 2 * r + 0.02, 0.04), (DX + r - 0.02, y, z0 + h * 0.4), rot=(0, 0, jitter(0, 0.2)))
         cyl(f"Drum{i}Cap", r * 0.6, 0.18, (DX, y, z0 + h + 0.09), "metal")
         # A bolted flange where the cap meets the drum, and a ring of bolts on it: the drum tops are
@@ -397,12 +464,14 @@ else:
         # A gauge cluster at the drum's foot on the east side, and a short handwheel valve beside
         # it: the deck between the drums read as empty.
         gx, gy = DX + r + 0.32, y + jitter(0.55, 0.15)
-        box(f"Drum{i}Gauges", (0.16, 0.34, 0.26), (gx, gy, SLAB + 0.78), "dark")
+        box(f"Drum{i}Gauges", (0.26, 0.58, 0.46), (gx, gy, SLAB + 0.9), "paint")
         for k in range(2):
-            cyl(f"Drum{i}Gauge{k}", 0.07, 0.05, (gx + 0.09, gy - 0.1 + k * 0.2, SLAB + 0.82),
-                "steam", axis="X", verts=16)
-        cyl(f"Drum{i}Wheel", 0.15, 0.03, (gx + 0.02, gy - 0.45, SLAB + 0.72), "dark", axis="Y", verts=20)
-        cyl(f"Drum{i}WheelStem", 0.04, 0.22, (gx + 0.02, gy - 0.36, SLAB + 0.72), "metal", axis="Y", verts=12)
+            cyl(f"Drum{i}Gauge{k}", 0.13, 0.06, (gx + 0.15, gy - 0.17 + k * 0.34, SLAB + 0.95),
+                "steam", axis="X", verts=20)
+        cyl(f"Drum{i}Wheel", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "dark", axis="Y", verts=24)
+        cyl(f"Drum{i}WheelStem", 0.07, 0.36, (gx + 0.02, gy - 0.55, SLAB + 0.85), "metal", axis="Y", verts=12)
+        torus(f"Drum{i}WheelRim", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "metal",
+              rot=(math.pi / 2, 0, 0))
         # glowing feed line from the manifold to the foot of the drum, under the deck
         pipe(f"Feed{i}", [(MX + MAN_W / 2, y + jitter(0, 0.3), SLAB + 0.42),
                           (jitter(-0.7, 0.15), y + jitter(0, 0.2), SLAB + jitter(0.4, 0.03)),
@@ -425,7 +494,7 @@ else:
     # -- cabinet, south-east corner: the one asymmetry. Seams and a blue panel.
     CAB = (0.8, 1.3, 1.7)
     cpos = (HALF_W - 0.55, -HALF_L + 0.95, SLAB + CAB[2] / 2)
-    box("Cabinet", CAB, cpos, "body")
+    box("Cabinet", CAB, cpos, "paint")
     seam("CabinetSeam", (CAB[0] + 0.02, 0.04, CAB[2] - 0.3), cpos)
     box("CabinetPanel", (0.06, 0.7, 0.5), (cpos[0] + CAB[0] / 2, cpos[1], cpos[2] + 0.3), "water", bev=0)
     rivets("CabinetRivets", (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] - 0.5, cpos[2] - CAB[2] / 2 + 0.15),

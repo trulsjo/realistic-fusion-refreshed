@@ -37,8 +37,9 @@ GLOW_EMISSION = 0.3
 # channel washed pale cream in daylight -- and, worse, looked lit when the machine was cold, since
 # the structure sheet is all a stopped machine draws. Truls, 2026-09-05 (#252), chose to darken the
 # base rather than dim the emission: the night glow was already right. 0.12 keeps the hue, so the
-# cold channel reads as a dark warm trough rather than a black slot.
-GLOW_BASE_DARKEN = 0.12
+# cold channel reads as a dark warm trough rather than a black slot. Dropped from 0.12 to 0.07
+# on 2026-09-05: at 0.12 the fourteen-tile channel came out mid-brown and read as copper.
+GLOW_BASE_DARKEN = 0.07
 
 # House-style accent per fluid. The geometry file carries the fluid name (#248); the accent is
 # ours. Anything else is an error rather than a guess: an unaccented socket lies about its fluid.
