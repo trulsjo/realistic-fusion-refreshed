@@ -125,6 +125,34 @@ compared, and what was and was not run. Each row links to it.
 [ADR 0027](0027-the-lane-issue-is-the-run-log.md) says why it lives there. What this ADR keeps is the
 verdict and what the lanes have taught.
 
+### Closed by declaration — the combinations that are not lanes (#61)
+
+Six combinations have no row above and never will. One mod in each declares `!` against another, so
+the game refuses the selection outright and a run would produce the refusal and nothing else.
+**No lane exists for any of them and none should be opened.**
+
+| Combination | Refused by, at the pinned release |
+|---|---|
+| SeaBlock NG + Space Age | `SeaBlockWanne` 1.0.5 declares `! space-age` |
+| SeaBlock NG + Krastorio 2 | `SeaBlockWanne` 1.0.5 declares `! Krastorio2` |
+| Space Exploration + Space Age | `space-exploration` 0.7.57 declares `! space-age` |
+| Space Exploration + Angel's or Bob's | `space-exploration` 0.7.57 declares `!` against fourteen Angel's and Bob's mods by name — three of the Angel's core four, and eight of the twelve in the pinned `bobs` set |
+| Krastorio 2 + the full Bob's set | `Krastorio2` 2.0.19 declares `! bobequipment` and `! bobvehicleequipment` |
+| Krastorio 2 + MadClown's Nuclear | `Krastorio2` 2.0.19 declares `! Clowns-Nuclear` |
+
+**Read at the pins on 2026-09-05, not carried over from the survey.** The list was first derived on
+2026-08-18 from the portal's then-current `factorio_version` 2.1 releases, and
+[ADR 0026](0026-third-party-mods-are-pinned-to-their-2-0-line.md) later confined this project to the
+2.0 line — where `SeaBlockWanne`'s dependency array is already known to differ from its 2.1 one.
+All six hold at the pinned releases, read from `info_json.dependencies` on the portal's `/full`
+endpoint. `docs/research/mod-set-coexistence-targets.md` carries the derivation and the two textual
+corrections the re-read produced.
+
+Two consequences the table above depends on. There is **no `+ Space Age` variant of #129 or #130**,
+and one must not be added. And **"K2 + the full Bob's set" is a different set, not a variant** — it
+is enableable only with those two mods dropped, so it would have to be pinned and run as a lane of
+its own rather than folded into an existing row.
+
 ### What the lanes have established
 
 Five findings, and they grow when a lane teaches something new rather than once per lane.
