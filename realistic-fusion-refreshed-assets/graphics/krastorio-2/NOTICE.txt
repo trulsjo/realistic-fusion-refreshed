@@ -389,17 +389,23 @@ Unmodified copies, renamed to the prototype they serve:
     reason.
 
   entities/reactor.png          <- icons/entities/fusion-reactor.png
-  entities/heat-exchanger.png   <- icons/entities/gas-power-station.png
   entities/heater.png           <- icons/entities/fuel-refinery.png
   entities/pipe.png             <- icons/entities/steel-pipe.png
   entities/pipe-to-ground.png   <- icons/entities/steel-pipe-to-ground.png
   fluids/d-d-plasma.png         <- icons/fluids/matter.png
   technologies/d-d.png          <- technologies/fusion-energy.png
 
-The four machines with no Krastorio 2 building, and why
-------------------------------------------------------
+    entities/heat-exchanger.png (<- icons/entities/gas-power-station.png) WAS in this list and is
+    DELETED, 2026-09-05 (#252, closing #108). rf-heat-exchanger now renders its own icon from its
+    own Blender model -- ../rendered/heat-exchanger/ -- so nothing of Krastorio 2's is left on that
+    machine, building or icon. It is deleted rather than kept unused, unlike the aneutronic
+    reactor's building sheets above: those are a starting point for art nobody has drawn yet, and
+    this is art that now exists. Do not take it again; re-render instead.
 
-None of these four takes anything from this directory beyond its icon. They wear drawn placeholders
+The three machines with no Krastorio 2 building, and why
+-------------------------------------------------------
+
+None of these three takes anything from this directory beyond its icon. They wear drawn placeholders
 instead -- see ../mockup/ and the repository's scripts/make-mockup-art.ps1, which are its own work
 under the repository's own licence. This section records why nothing here could serve, so the search
 is not run a third time.
@@ -408,9 +414,13 @@ Searched exhaustively 2026-08-22 against every Krastorio 2 building, by footprin
 applied was same-size-only: take a Krastorio 2 building where one matches the machine's footprint, so
 nothing breaks a save, and otherwise leave it. The search found nothing usable.
 
-  rf-heat-exchanger      3x2 -> 5x15  Decided separately and NOT by this rule: it takes the original
-                                     mod's footprint, which Krastorio 2 cannot supply at all. #108
-                                     tracks the real art.
+  rf-heat-exchanger      3x2 -> 5x15  WAS the fourth machine here and is no longer one of them, as
+                                     of 2026-09-05 (#252). Its footprint was decided separately and
+                                     NOT by the rule above: it takes the original mod's shape, which
+                                     Krastorio 2 cannot supply at all. #108 drew the real art -- a
+                                     rendered building and a rendered icon, ../rendered/
+                                     heat-exchanger/ -- so this machine now takes nothing from this
+                                     directory in either form. The other three are unaffected.
 
   rf-direct-energy-converter 3x5 -> 5x15
                                      The original mod's footprint too, and the pair to the exchanger
