@@ -779,10 +779,12 @@ nothing**: an output box on a 27000-unit run reports the same number it reported
 > connection that puts the tank beyond the end of the run, and asserts that every pipe and the tank
 > report one figure.
 
-**Nothing is broken by this and one comment was wrong.** `apply()` clamps its energy write with
-`box.get_capacity(2)` and `deposit()` computes collector headroom the same way — both on boxes a
-player pipes, which is why #68 measured them piped. Both wanted the box
-figure and both get it — the write would be clamped to the box regardless. What was wrong was the
+**Nothing is broken by this and one comment was wrong.** Three call sites clamp against it, and
+every one is an output box a player pipes — which is why #68 measured them piped: `apply()` clamps
+its energy write with `box.get_capacity(2)` (`control.lua:447`), `deposit()` clamps each by-product
+against the collector box it is writing (`:227`), and `apply()` reads the same collector again for a
+blanket's headroom (`:487`). All three wanted the box
+figure and all three get it — the write would be clamped to the box regardless. What was wrong was the
 reasoning written beside them, which claimed a segment-wide number and would have justified writing
 more than a box can hold if anyone had ever relied on it.
 

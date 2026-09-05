@@ -439,8 +439,9 @@ local function apply(entity, spec, plasma, result)
     -- reactor's box, get_capacity answers the box's declared volume however long the run beyond it
     -- is. #40 measured that with NOTHING plumbed to this box, which is the case where the box and
     -- the segment are the same object; #68 re-took it with the box on a 27000-unit run and the
-    -- answer is unchanged at the declared 1000. Nothing changes here, because the box is what a write is clamped to anyway; the reasoning
-    -- was wrong rather than the code, and it would have justified writing more than a box can hold.
+    -- answer is unchanged at the declared 1000. Nothing changes here, because the box is what a
+    -- write is clamped to anyway; the reasoning was wrong rather than the code, and it would have
+    -- justified writing more than a box can hold.
     --
     -- Overflow is discarded, which is the right behaviour and not an oversight: a reactor whose
     -- heat is not being carried away does not get to bank it. It shows up as output backing up.
