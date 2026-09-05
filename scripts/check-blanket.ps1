@@ -228,6 +228,15 @@ local function flood(surface, centre, radius, fluid)
     target = target + prototypes.entity[e.name].fluidbox_prototypes[1].volume
   end
 
+  -- LARGEST BOX LAST, and that ordering is the whole of whether this works. The last write wins --
+  -- it re-splits the segment -- so writing the 25 000-unit tank last leaves the run at 25 000, and
+  -- writing a 100-unit pipe last would leave it at 100 and no number of passes would recover it.
+  -- find_entities_filtered promises no order, so the order is imposed here rather than relied on.
+  table.sort(entities, function(a, b)
+    return prototypes.entity[a.name].fluidbox_prototypes[1].volume
+         < prototypes.entity[b.name].fluidbox_prototypes[1].volume
+  end)
+
   local held = 0
   for _ = 1, 8 do
     for _, e in ipairs(entities) do
@@ -665,8 +674,20 @@ script.on_nth_tick(CHECK_AT, function()
     -- That the cell is in the state it claims, before anything is concluded from it. A run that is
     -- not actually full, or a box that drained, would make the bound below pass for the wrong
     -- reason.
+    -- CONNECTED FIRST, because the size comparison below cannot see it. The pipes and the tank form
+    -- a segment among themselves whether or not the collector ever joined it, so `segment` reads
+    -- 25 300 either way -- and an unjoined collector degenerates this cell into the `blocked`
+    -- arrangement, where the box saturates at zero headroom and every check here still passes while
+    -- measuring nothing #69 is about. check-pooling.ps1's outlet rows carry the same guard for the
+    -- same reason.
+    local conn = r.flooded_collector.fluidbox.get_pipe_connections(r.flooded_box)[1]
+    record(conn ~= nil and conn.target ~= nil,
+      "flooded: the collector's outlet really is plumbed into the run",
+      conn and (conn.target and "joined" or "NOT joined -- the run is beside it, not on it")
+        or "the box has no connections at all")
+
     record(segment > 10 * capacity,
-      "flooded: the collector's outlet really is on a segment far larger than its box",
+      "flooded: and that run is far larger than the box",
       string.format("run %.6g against a box of %.6g -- %.0fx", segment, capacity, segment / capacity))
     -- Measured at the START, which is what sizes the bound below: the room the collector could
     -- drain into is the run's shortfall, and it has to be small for the cell to mean anything.
@@ -683,6 +704,14 @@ script.on_nth_tick(CHECK_AT, function()
       string.format("%.6g C, %d lithium left",
         plasma and plasma.temperature or -1, lithium_in(r.flooded_blanket)))
 
+    -- And that it DID spend, which the two bounds below cannot say: both are satisfied by a blanket
+    -- that bred nothing at all. A regression stopping blanket_breed whenever the headroom is small
+    -- -- an inverted test, a sign error in the room conversion -- would break the feature this cell
+    -- exists for and leave every other line here green.
+    record(spent > 0 and gained > 0,
+      "flooded: and it did buy, so the bounds below are bounds rather than a blanket that stopped",
+      string.format("%d items spent, %.6g units banked", spent, gained))
+
     -- The measurement. Under a segment-wide reading of get_capacity the headroom here would be
     -- about 25 300 rather than about 25, and this blanket would spend its charge on tritium that
     -- cannot be banked.
@@ -695,6 +724,12 @@ script.on_nth_tick(CHECK_AT, function()
     -- says how tight it is. The box had about 25 units of room and the run about 300; a headroom
     -- read off the SEGMENT would have offered this blanket the run's whole 25 300, and 5 000 items
     -- of lithium is what it had to spend on that offer.
+    --
+    -- THE MEASURED MARGIN IS NIL: 326 items against 325 units of room, so this sits exactly on
+    -- `+ 1`. That is by construction rather than by luck -- take_lithium draws whole items, so the
+    -- blanket can be at most one item ahead of what it has bred, which is the same allowance and
+    -- the same reason the throttled bound above carries. It is NOT widened to absorb a second
+    -- part-item: a second one would mean an item bought and thrown away, which is the defect.
     local room = (capacity - r.flooded_start_box) + (r.flooded_filled - r.flooded_start_run)
     record(spent <= room + 1,
       "and the room it was allowed is the box's plus the run's, not the segment's capacity",
