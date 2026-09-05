@@ -89,9 +89,46 @@ game is where it is confirmed.
 ## Glow
 
 A glowing part is emissive in the model and is rendered to its own sheet with everything else
-black. The game draws that sheet additively only while the machine works, on a separate core
-prototype (#241), so the emission is set low (`rf_blender.GLOW_EMISSION`; 1.5 blew out, #246). The glow is always the accent colour of the fluid doing the work, and it glows where that
+black. The glow is always the accent colour of the fluid doing the work, and it glows where that
 fluid *is*: the reactor-energy manifold and the lines feeding from it, never the steam side.
+
+**The game draws the sheet, additively, only while the machine works** — through the prototype's
+own while-working layer, not through a script. On a boiler that is `fire_glow`, which the engine
+holds for `burning_cooldown` ticks after the energy stops (#252; #241 read past it and assumed the
+reactor's runtime route). Two fields go with it: `burning_cooldown` above 1, since a boiler copied
+from vanilla's heat exchanger has none and then draws neither layer, and
+`fire_glow_flicker_enabled = false`, since a fluid energy source emits no light and the default
+flicker would take the alpha to nothing. A machine whose prototype has no such layer — the
+reactors — keeps the separate core prototype drawn from `control.lua`.
+
+**Two numbers, because the game ADDS the sheets and adding whitens.** The emission is low
+(`rf_blender.GLOW_EMISSION`; 1.5 blew out, #246, and 0.6 came out cream), and the glowing part's
+BASE colour is darkened in the structure sheet (`rf_blender.GLOW_BASE_DARKEN`). The second is what
+makes a stopped machine look stopped: the structure sheet is all it draws, so a part left at full
+accent there reads as lit with the power off. Dark base, accent emission, and the sum is the
+accent (Truls, #252).
+
+## Icon
+
+**The whole machine, in the square, with margin** — not a section of it, which is what #246 first
+settled and #252 reversed after seeing one in the inventory: a crop reads as a fragment of a
+screenshot, with no silhouette and the grating running off all four edges.
+
+A 120×64 mipmap strip (64, 32, 16, 8, top-aligned; #242), rendered at the world camera through the
+same rig as the sheets, so the icon is the machine as the map shows it. Two things differ from a
+sheet and both are set per machine in `build_rig`:
+
+- **The window is sized on the SCREEN extent**, footprint plus the height showing at 0.707 h, plus
+  about half a tile of margin. `icon_centre` rides north by half the height, or the subject sits
+  low with all the margin above it.
+- **An oblong machine turns to the diagonal** (`icon_yaw`), because square-on it fills a fifth of
+  the square and reads as a hairline; on the diagonal the same machine roughly doubles. Zero for
+  anything near square, which is then its north sheet seen closer. The sun rides the rig, so the
+  icon is lit like every sheet.
+
+**The icon is rendered LIT**, unlike every sheet. A sheet leaves the emission out because the game
+adds the glow itself and only while the machine works. Nothing adds anything to an icon, so a cold
+one shows a machine with its accent off — which, after `GLOW_BASE_DARKEN`, is a grey rectangle.
 
 ## Moving parts
 

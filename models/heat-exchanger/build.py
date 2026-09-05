@@ -89,6 +89,10 @@ def mat(name, glow=False):
         nt.links.new(ramp.outputs["Color"], rmix.inputs[0])
         nt.links.new(rmix.outputs["Value"], b.inputs["Roughness"])
     if glow:
+        # Dark in the structure sheet, the accent in the glow sheet. The game adds the two, so a
+        # glowing part whose base is already the accent both washes pale when working and looks lit
+        # when cold -- see rf_blender.GLOW_BASE_DARKEN for the measurement and the decision.
+        b.inputs["Base Color"].default_value = (*(c * rf.GLOW_BASE_DARKEN for c in rgb), 1.0)
         b.inputs["Emission Color"].default_value = (*rgb, 1.0)
         b.inputs["Emission Strength"].default_value = rf.GLOW_EMISSION
     MATS[key] = m
@@ -312,15 +316,27 @@ else:
     # water header along the base between the two end sockets
     pipe("WaterHeader", [(0, -HALF_L + 0.5, 0.55), (jitter(0, 0.1), 0, 0.5), (0, HALF_L - 0.5, 0.55)], 0.13, "metal")
 
-# The icon is a recomposed section (#246): the middle drum with the manifold beside it, framed
-# 4.5 tiles wide at the world camera. The centre is between the two, up the drum far enough that
-# the cap and its valve stay inside the square.
+# THE ICON IS THE WHOLE MACHINE, not a section of it. #246 framed a 4.5-tile crop -- the middle
+# drum with the manifold beside it -- and in the inventory beside Krastorio 2's icons that read as a
+# fragment of a screenshot: no silhouette, the grating running off all four edges. Truls,
+# 2026-09-05 (#252): pull back until the whole machine sits in the square with transparent margin.
+#
+# AND IT RUNS CORNER TO CORNER. Square-on, five by fifteen fills a fifth of a square icon and reads
+# as a hairline -- measured: 829 opaque pixels of 4096. Turned 45 degrees the same machine spans the
+# diagonal, so the window shrinks from 18.5 tiles to 15.5 and the subject roughly doubles. The rig
+# carries the sun, so the icon is lit like every sheet; only the angle differs, which is what
+# vanilla does for its own long machines.
+#
+# The square is sized on the machine's SCREEN extent, not its footprint: turned, the footprint's
+# bounding box is (15 + 5)/sqrt(2) = 14.1 tiles, and the drums' height shows at 0.707 h northward,
+# so 15.5 leaves margin all round. The centre rides north by half that height, or the machine sits
+# low in the square with the margin all above it.
 if variant == "cube":
-    tiles_w, tiles_h, icon_centre, icon_tiles = 1, 1, (0, 0, 0.5), 1.5
+    tiles_w, tiles_h, icon_centre, icon_tiles, icon_yaw = 1, 1, (0, 0, 0.5), 1.5, 0.0
 else:
     tiles_w, tiles_h = geo["tiles"]
-    icon_centre, icon_tiles = (-0.6, 0.0, 1.9), 4.5
-rf.build_rig(scene, tiles_w, tiles_h, icon_centre, icon_tiles)
+    icon_centre, icon_tiles, icon_yaw = (0.0, 1.0, 0.0), 15.5, 45.0
+rf.build_rig(scene, tiles_w, tiles_h, icon_centre, icon_tiles, icon_yaw=icon_yaw)
 scene["rf_geometry_sha256"] = rf.geometry_sha256(geo_path)
 bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(out))
 print("BUILT", variant, os.path.abspath(out), scene.render.resolution_x, scene.render.resolution_y)

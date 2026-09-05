@@ -189,11 +189,15 @@ for d in range(args.directions):
 # ---- the icon: a section at the world camera, as a 120x64 mip strip --------------------------
 # The rig is moved to the icon centre so the camera looks at it, and the frame narrowed to the
 # icon window; the pixel aspect stays, so the icon is the same picture as the sheet, closer.
-rig.rotation_euler[2] = 0.0
+rig.rotation_euler[2] = math.radians(float(scene.get("rf_icon_yaw", 0.0)))
 rig.location = tuple(scene["rf_icon_centre"])
 side = ICON_SIDE - 2 * ICON_MARGIN
 rf.set_frame(scene, side, side, float(scene["rf_icon_tiles"]))
-got = render("icon-", args.samples, lit=False)
+# LIT, unlike every direction sheet. The sheets keep the emission out of the structure because the
+# game adds the glow itself and only while the machine works; an icon is one picture and the game
+# adds nothing to it, so a cold icon is a machine with its accent switched off -- which after
+# GLOW_BASE_DARKEN means no accent at all, and a grey rectangle in the inventory.
+got = render("icon-", args.samples, lit=True)
 
 
 def pixels_top_down(path):
@@ -258,7 +262,8 @@ manifest = {
     "directions": SUFFIX[:args.directions],
     "glow": bool(GLOW),
     "icon": {"file": f"{machine}-icon.png", "size": [120, ICON_SIDE],
-             "centre": list(scene["rf_icon_centre"]), "tiles": float(scene["rf_icon_tiles"])},
+             "centre": list(scene["rf_icon_centre"]), "tiles": float(scene["rf_icon_tiles"]),
+             "yaw_deg": float(scene.get("rf_icon_yaw", 0.0))},
     "files": sorted(files),
     "source": "written by models/render.py",
 }
