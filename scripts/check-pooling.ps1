@@ -100,6 +100,10 @@
     rf-reactor with their output boxes piped into twenty pipes and a tank, a 27000-unit run against
     a 500-unit and a 1000-unit box, and both boxes still answer their own volume.
 
+    THE REACTOR HALF OF THAT ROW DEPENDS ON A REGIME THAT IS DUE TO END. Reactor energy takes a
+    vanilla pipe only because ADR 0018's containment has not shipped; #86 removes it, and the row
+    must then bolt or be retired. The collector half is unaffected -- tritium is ordinary by design.
+
     A BOX THAT IS WRITTEN EVERY STEP SITS PERSISTENTLY HOTTER THAN THE REST OF ITS RUN. In `five`
     the four unpowered reactors agree with each other to two parts in ten thousand, and the powered
     one sits about a tenth above all of them -- steadily, not as a transient, and it does not close
@@ -488,8 +492,22 @@ end
 -- deposit() writes into an rf-isotope-collector, apply() writes into the reactor's ENERGY box, and
 -- apply() computes a lithium blanket's headroom off the collector again.
 --
--- Vanilla pipes and a vanilla tank, because neither fluid here is contained: reactor energy and
--- tritium are ordinary fluids and a player plumbs them with ordinary pipes (ADR 0018, #26).
+-- Vanilla pipes and a vanilla tank, because neither box is contained TODAY -- and that is not the
+-- same statement about the two fluids, which is why it is spelled out rather than asserted in
+-- passing.
+--
+-- TRITIUM IS ORDINARY BY DESIGN (#26). The collector's by-products are cold gases, not plasma, and
+-- nothing plans to contain them.
+--
+-- REACTOR ENERGY IS ORDINARY ONLY BECAUSE ADR 0018 HAS NOT SHIPPED. That ADR decides the opposite --
+-- the energy fluids are contained the way plasma is, and no pipe entity carries either -- and #86
+-- is the ticket that does it. CONTEXT.md's Plumbing section carries the same warning, and
+-- check-containment.ps1 asserts today's behaviour on the same footing.
+--
+-- What that costs this row: the MEASUREMENT is about boxes and segments and survives either regime,
+-- but the ARRANGEMENT it is taken on stops existing when #86 lands, and the row must then bolt an
+-- exchanger to the reactor's face or be retired. #258 asks whether a contained energy pipe exists
+-- to rebuild it with.
 
 local RUN_PIPES = 20   -- 2000 units of pipe, so the run beats a 1000-unit box on pipe alone
 local RUN_TANK  = "storage-tank"
