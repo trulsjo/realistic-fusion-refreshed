@@ -1,0 +1,311 @@
+<#
+.SYNOPSIS
+    Photographs rf-heat-exchanger's rendered art in a real map, so a person can accept or reject
+    the look. Screenshots only -- it asserts nothing.
+
+.DESCRIPTION
+    A PROBE, NOT A CHECK. Exit 0 means it ran and wrote the pictures, never that the art is good.
+    The question it answers is the one no gate can: does the rendered building read correctly in
+    the game, at the game's own camera, beside the machines it stands next to? load-check proves
+    the sheets exist and agree with the prototype's footprint (#250); nothing proves they look
+    right. That is a person looking, and this is what puts the pictures in front of them (#252).
+
+    WHY IT NEEDS THE GRAPHICAL CLIENT, unlike every other probe here. game.take_screenshot renders
+    through the game's own renderer, so --benchmark and --create cannot produce one. This launches
+    the full client against a scratch map, waits for the mod to write a done marker beside the
+    screenshots, and then closes the game. A window opens for a few seconds; that is expected.
+
+    WHAT IT SHOOTS, and why each one:
+
+      layout.png         rf-reactor, then rf-heat-exchanger butted flush along the reactor's
+                         fifteen-tile east face, then rf-hc-exchanger one tile further on. The
+                         flush pair is the arrangement the 5x15 shape exists for (#108, ADR 0022),
+                         and the high-capacity machine is in frame because the tier's whole message
+                         is that the two are told apart at a glance.
+      cold.png           The machine alone, not burning. What it looks like switched off.
+      working-day.png    The machine alone, burning, at noon. The glow sheet is drawn additively
+                         over the structure, so this is where #249's open question is settled:
+                         whether the manifold channel reads as the energy accent or washes pale.
+      working-night.png  The same at midnight, where the glow is all there is.
+      rotations.png      One machine in each of the four directions. The engine turns the
+                         connections and not the picture, so this is where a wrongly ordered sheet
+                         set shows itself: sockets on the wrong edge, cabinet in the wrong corner.
+
+    The machine is fed by writing its fluid boxes directly each tick rather than by plumbing a
+    reactor into it. The picture is the subject; how the energy got there is not, and a real
+    reactor takes minutes of simulation to light. The probe prints each machine's status at the
+    moment it was photographed, so a shot of a machine that was not actually burning cannot be
+    mistaken for one that was.
+
+    Findings belong in docs/research/ or on the ticket. Kept committed so the next machine rendered
+    -- and the next engine version -- can be asked the same question.
+
+.PARAMETER FactorioExe
+    Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
+
+.PARAMETER OutputDirectory
+    Where the PNGs are copied. Defaults to a timestamped directory under the system temp path,
+    which is printed at the end.
+
+.PARAMETER TimeoutSeconds
+    How long to wait for the game to write the done marker before giving up. Default 180.
+
+.PARAMETER KeepTemp
+    Leave the scratch mod directory, the save and the raw script-output in place.
+
+.EXAMPLE
+    pwsh -File scripts/probe-heat-exchanger-art.ps1
+    pwsh -File scripts/probe-heat-exchanger-art.ps1 -OutputDirectory C:\tmp\hx-shots
+#>
+
+#Requires -Version 7
+[CmdletBinding()]
+param(
+    [string] $FactorioExe,
+    [string] $OutputDirectory,
+    [int]    $TimeoutSeconds = 180,
+    [switch] $KeepTemp
+)
+
+$ErrorActionPreference = 'Stop'
+$repoRoot = Split-Path $PSScriptRoot -Parent
+. "$repoRoot/scripts/factorio-lib.ps1"
+
+$ourMods = Get-RepoMods
+$rigName = 'rf-heat-exchanger-art-probe'
+
+$FactorioExe = Resolve-FactorioExe -Path $FactorioExe
+$bundled     = Get-BundledMods -FactorioExe $FactorioExe
+
+$temp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-hx-art-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+$modDir = Join-Path $temp 'mods'
+$rigDir = Join-Path $modDir $rigName
+New-Item -ItemType Directory -Path $rigDir -Force | Out-Null
+
+if (-not $OutputDirectory) {
+    $OutputDirectory = Join-Path ([IO.Path]::GetTempPath()) ('rf-hx-art-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+}
+New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
+
+@{
+    name = $rigName; version = '0.0.1'; title = 'Heat exchanger art probe'
+    author = 'probe-heat-exchanger-art.ps1'; factorio_version = '2.0'
+    dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
+} | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
+
+# ---------------------------------------------------------------------------- the rig's control
+$control = @'
+-- Generated by probe-heat-exchanger-art.ps1. Nothing here ships.
+
+local MACHINE = "rf-heat-exchanger"
+local ENERGY  = "rf-reactor-energy"
+local OUT     = "rf-art/"
+
+-- Tagged so the caller can pick these out of a log that is mostly not ours.
+local function say(line) localised_print('ARTPROBE ' .. line) end
+
+--- An odd-sided building's centre sits at a tile centre, so its edges land on tile boundaries.
+--- Every position below is written that way on purpose: "flush" is only true if it is.
+local function place(surface, name, x, y, direction)
+  local e = surface.create_entity({
+    name = name, position = { x, y }, direction = direction,
+    force = "player", raise_built = true,
+  })
+  if not e then error("could not place " .. name .. " at " .. x .. "," .. y) end
+  return e
+end
+
+--- Which fluidbox index carries a given fluid, asked rather than assumed: the order of a boiler's
+--- boxes is the engine's business, and rf-heat-exchanger's energy source adds one of its own.
+local function box_of(entity, fluid)
+  for i = 1, #entity.fluidbox do
+    local f = entity.fluidbox.get_filter(i)
+    if f and f.name == fluid then return i end
+  end
+end
+
+--- entity.status as its name. There is no status_string in 2.0.77.
+local function status_name(entity)
+  if not (entity and entity.valid) then return "?" end
+  for k, v in pairs(defines.entity_status) do
+    if v == entity.status then return k end
+  end
+  return tostring(entity.status)
+end
+
+--- Flat, dry, uniform ground under a rectangle, so the shot is of the machine and not of the
+--- terrain it happened to land on -- and so nothing is refused for standing in water.
+local function pave(surface, x1, y1, x2, y2)
+  local tiles = {}
+  for x = math.floor(x1), math.ceil(x2) do
+    for y = math.floor(y1), math.ceil(y2) do
+      tiles[#tiles + 1] = { name = "grass-1", position = { x, y } }
+    end
+  end
+  surface.set_tiles(tiles)
+end
+
+script.on_nth_tick(60, function()
+  if storage.stage then return end
+  storage.stage = "built"
+
+  local surface = game.surfaces[1]
+  surface.request_to_generate_chunks({ 0, 0 }, 8)
+  surface.force_generate_chunk_requests()
+  surface.always_day = true
+
+  pave(surface, -20, -12, 70, 112)
+  for _, e in pairs(surface.find_entities_filtered({ area = { { -25, -20 }, { 75, 115 } } })) do
+    if e.type ~= "character" then e.destroy() end
+  end
+
+  -- THE FLUSH PAIR. rf-reactor is 15x15 centred at (0.5, 0.5), so it spans x -7..8. The exchanger
+  -- is 5x15 centred at (10.5, 0.5), spanning x 8..13: its west face IS the reactor's east face,
+  -- along the whole fifteen tiles. rf-hc-exchanger is 7x7 at (17.5, 0.5), one tile clear.
+  place(surface, "rf-reactor", 0.5, 0.5)
+  place(surface, MACHINE, 10.5, 0.5)
+  place(surface, "rf-hc-exchanger", 17.5, 0.5)
+
+  local cold    = place(surface, MACHINE, 40.5, 0.5)
+  local working = place(surface, MACHINE, 60.5, 0.5)
+
+  -- One per direction, far enough north to keep them out of every other frame.
+  place(surface, MACHINE, -14.5, 100.5, defines.direction.north)
+  place(surface, MACHINE,  -4.5, 100.5, defines.direction.south)
+  place(surface, MACHINE,   8.5,  94.5, defines.direction.east)
+  place(surface, MACHINE,   8.5, 104.5, defines.direction.west)
+
+  storage.cold = cold
+  storage.working = working
+  storage.shoot_at = game.tick + 120
+end)
+
+script.on_event(defines.events.on_tick, function()
+  if not storage.shoot_at then return end
+  local w = storage.working
+  if w and w.valid then
+    w.fluidbox[box_of(w, ENERGY)] = { name = ENERGY, amount = 200 }
+    w.fluidbox[box_of(w, "water")] = { name = "water", amount = 200 }
+    w.fluidbox[box_of(w, "steam")] = nil
+  end
+  if game.tick < storage.shoot_at then return end
+  storage.shoot_at = nil
+
+  local surface = game.surfaces[1]
+
+  -- Reported so a picture of a machine that was NOT burning cannot be read as one that was. This
+  -- is the whole difference between cold.png and working-*.png.
+  say("cold machine status    : " .. status_name(storage.cold))
+  say("working machine status : " .. status_name(storage.working))
+
+  -- daytime is passed per shot rather than set on the surface, so one run gives both. 0 is noon
+  -- and 0.5 is midnight; the pictures say which is which and the names are checked against them.
+  local function shot(file, x, y, w_px, h_px, zoom, daytime)
+    game.take_screenshot({
+      surface = surface, position = { x, y }, resolution = { w_px, h_px }, zoom = zoom,
+      path = OUT .. file, daytime = daytime,
+      show_gui = false, show_entity_info = false, anti_alias = true, force_render = true,
+    })
+    say("shot " .. file)
+  end
+
+  shot("layout.png",        7.0,   0.5, 2048, 1216, 2,   0)
+  shot("cold.png",         40.5,   0.5,  864, 1824, 3,   0)
+  shot("working-day.png",  60.5,   0.5,  864, 1824, 3,   0)
+  shot("working-night.png", 60.5,  0.5,  864, 1824, 3,   0.5)
+  shot("rotations.png",    -0.5,  99.5, 2432, 1216, 2,   0)
+
+  game.set_wait_for_screenshots_to_finish()
+  helpers.write_file(OUT .. "done.txt", "done\n")
+  say("done")
+end)
+'@
+Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $control -Encoding utf8
+
+# ---------------------------------------------------------------------------- run it
+$proc = $null
+try {
+    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+    $enabled = Resolve-BundledSelection -Requested @() -Bundled $bundled
+    Write-Host "bundled enabled: $(if ($enabled) { $enabled -join ', ' } else { 'none (base 2.0 only)' })"
+    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabled -Mods ($ourMods + $rigName)
+
+    $save = Join-Path $temp 'art.zip'
+    Invoke-FactorioStep -FactorioExe $FactorioExe -ModDirectory $modDir -OutputDirectory $temp `
+        -Tag 'create' -Arguments @('--create', $save) | Out-Null
+
+    # The same private write-data directory Invoke-Factorio makes, reused: it is where the config
+    # points, so it is also where script-output lands.
+    $configPath = Join-Path $temp 'factorio-config.ini'
+    $shotDir    = Join-Path $temp 'write-data/script-output/rf-art'
+    $doneFile   = Join-Path $shotDir 'done.txt'
+
+    # Launched from a scratch directory holding steam_appid.txt, for the reason dev-launch.ps1
+    # gives: the Steam API reads that file from the WORKING directory and otherwise relaunches the
+    # game through Steam, dropping --mod-directory and --config on the floor.
+    $launchDir = Join-Path $temp 'launch'
+    New-Item -ItemType Directory -Path $launchDir -Force | Out-Null
+    '427520' | Set-Content -Path (Join-Path $launchDir 'steam_appid.txt') -Encoding ascii -NoNewline
+
+    $line = (@('--config', $configPath, '--mod-directory', $modDir, '--load-game', $save,
+               '--disable-audio') | ForEach-Object { ConvertTo-NativeArgument $_ }) -join ' '
+    Write-Host 'launching the graphical client; a window will open and close by itself.'
+    $runOut = Join-Path $temp 'run-stdout.txt'
+    $proc = Start-Process -FilePath $FactorioExe -ArgumentList $line `
+        -WorkingDirectory $launchDir -PassThru -RedirectStandardOutput $runOut
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while (-not (Test-Path -LiteralPath $doneFile) -and (Get-Date) -lt $deadline) {
+        if ($proc.HasExited) { throw "Factorio exited (code $($proc.ExitCode)) before writing the screenshots." }
+        Start-Sleep -Milliseconds 500
+    }
+    if (-not (Test-Path -LiteralPath $doneFile)) {
+        throw "timed out after $TimeoutSeconds s waiting for $doneFile."
+    }
+
+    # THE MARKER IS NOT THE PICTURES. take_screenshot queues; the engine renders and writes on its
+    # own thread, and helpers.write_file lands in the same tick that queued them -- so done.txt
+    # appears while every PNG is still zero bytes. Found the hard way: the first run of this probe
+    # copied five empty files and reported success. Wait until each file has a size that has
+    # stopped changing.
+    $sizes = @{}
+    while ((Get-Date) -lt $deadline) {
+        $now = @{}
+        foreach ($f in (Get-ChildItem -LiteralPath $shotDir -Filter '*.png')) { $now[$f.Name] = $f.Length }
+        $settled = $now.Count -gt 0 -and
+                   -not ($now.Values | Where-Object { $_ -eq 0 }) -and
+                   $now.Count -eq $sizes.Count -and
+                   -not ($now.Keys | Where-Object { $sizes[$_] -ne $now[$_] })
+        $sizes = $now
+        if ($settled) { break }
+        Start-Sleep -Milliseconds 700
+    }
+    $unwritten = @($sizes.Keys | Where-Object { $sizes[$_] -eq 0 })
+    if ($sizes.Count -eq 0 -or $unwritten) {
+        throw "the game wrote no bytes for: $(if ($unwritten) { $unwritten -join ', ' } else { '(no PNG at all)' })"
+    }
+
+    $shots = @(Get-ChildItem -LiteralPath $shotDir -Filter '*.png' | Sort-Object Name)
+    foreach ($s in $shots) { Copy-Item -LiteralPath $s.FullName -Destination $OutputDirectory -Force }
+
+    Write-Host ''
+    Get-Content $runOut | Select-String -Pattern 'ARTPROBE ' |
+        ForEach-Object { Write-Host (($_ -split 'ARTPROBE ', 2)[1].TrimEnd()) }
+    Write-Host ''
+    foreach ($s in $shots) {
+        $img = Join-Path $OutputDirectory $s.Name
+        Write-Host ("  {0,-20} {1,8:N0} KB   {2}" -f $s.Name, ($s.Length / 1KB), $img)
+    }
+    Write-Host ''
+    Write-Host "screenshots: $OutputDirectory"
+}
+finally {
+    if ($proc -and -not $proc.HasExited) { $proc.Kill() ; $proc.WaitForExit(10000) | Out-Null }
+    if (-not $KeepTemp) {
+        Remove-ModJunctions -ModDirectory $modDir
+        Remove-TempDirectory -Path $temp -Label 'probe-heat-exchanger-art'
+    } else { Write-Host "kept: $temp" }
+}
+
+Write-Host ''
+Write-Host 'Probe finished. Exit 0 means the pictures were taken, not that the art is right.'
