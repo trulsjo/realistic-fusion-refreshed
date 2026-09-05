@@ -162,8 +162,12 @@ Sets that are **impossible** as requested, at any version:
 > from `info_json.dependencies`. Two corrections to the text above, neither of which changes a
 > verdict:
 >
-> - **`SeaBlockWanne` 1.0.5 declares a third incompatibility this list does not mention: `! bobenemies`.**
->   `bobenemies` is in none of the pinned sets, so no lane meets it.
+> - **`SeaBlockWanne` 1.0.5 declares THREE incompatibilities, not the four recorded above.** The
+>   verbatim array under "The families" is the 2.1 one; `! cargo-ships-oil-rig` appears first in
+>   **1.1.4**, which is `factorio_version` 2.1. At the pinned **1.0.5** the array is `! space-age`,
+>   `! bobenemies`, `! Krastorio2`. Neither `cargo-ships-oil-rig` nor `bobenemies` is in any pinned
+>   set, so no lane meets either and the two refusals that matter — Space Age and Krastorio 2 — are
+>   declared at both versions.
 > - **SE 0.7.57's `!` list runs to fifty entries, and fourteen of them are Angel's or Bob's mods, not
 >   thirteen.** The bullet above names thirteen plus `SeaBlock`, which is neither; the name it misses
 >   is **`angelsinfiniteores`**. Of this project's pinned sets that leaves three of the Angel's core
@@ -354,7 +358,9 @@ enable-list.
 
 `SeaBlockWanne` declares, verbatim from its dependency array: `! space-age`, `! Krastorio2`,
 `! bobenemies`, `! cargo-ships-oil-rig`. **SeaBlock NG + Space Age is not a set that can exist**, and
-neither is SeaBlock NG + K2.
+neither is SeaBlock NG + K2. (That is the **1.1.4** array, read on the survey date. The 2.0 release
+this project pins, 1.0.5, declares the first three and not `! cargo-ships-oil-rig` — see the re-read
+note under "Viability at a glance".)
 
 The minimal and as-intended readings differ sharply, because `SeaBlockPack` is `+` (recommended, not
 required) — the mod loads without it and is not the intended experience without it. Both lists are

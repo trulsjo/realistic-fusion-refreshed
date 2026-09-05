@@ -148,10 +148,13 @@ All six hold at the pinned releases, read from `info_json.dependencies` on the p
 endpoint. `docs/research/mod-set-coexistence-targets.md` carries the derivation and the two textual
 corrections the re-read produced.
 
-Two consequences the table above depends on. There is **no `+ Space Age` variant of #129 or #130**,
-and one must not be added. And **"K2 + the full Bob's set" is a different set, not a variant** — it
-is enableable only with those two mods dropped, so it would have to be pinned and run as a lane of
-its own rather than folded into an existing row.
+Two consequences the table above depends on. There is **no `+ Space Age` variant of #129, #130 or
+#139** — `space-exploration` and `SeaBlockWanne` each declare `! space-age` — and none must be added.
+And **"K2 + Bob's" would be a lane of its own, not a variant of #133**: the refusal above is against
+the full set, and this project's pinned `bobs` is the twelve mods of Bob's 2.0 line, which already
+contains neither `bobequipment` nor `bobvehicleequipment`. So the combination needs **no new pin** —
+only a set composed from the two families the way `k2-spaceex` is — and it must be recorded as its
+own row rather than folded into an existing one.
 
 ### What the lanes have established
 

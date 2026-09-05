@@ -91,8 +91,10 @@
     A REACTOR'S get_capacity REPORTS ITS OWN BOX, NOT THE RUN. A pipe's reports the run. This repo
     believed and wrote down the opposite, in control.lua's apply() and in the research note.
 
-    AND THAT HOLDS FOR AN OUTPUT BOX THAT IS ON A RUN (#68), which is the shape the two call sites
-    in control.lua that clamp against get_capacity actually have. It used to be asked only of an
+    AND THAT HOLDS FOR AN OUTPUT BOX THAT IS ON A RUN (#68), which is the shape all THREE call
+    sites in control.lua that clamp against get_capacity actually have -- deposit() into a
+    collector box, apply() into the reactor's energy box, and apply()'s blanket headroom off the
+    collector again. It used to be asked only of an
     output box plumbed into NOTHING -- the case where the box and the segment are the same object,
     which cannot tell the two answers apart. The `outlets` row builds an rf-isotope-collector and an
     rf-reactor with their output boxes piped into twenty pipes and a tank, a 27000-unit run against
@@ -481,10 +483,10 @@ end
 -- case where the box and the segment are the same object -- so the answer for a CONNECTED output
 -- box was an extrapolation.
 --
--- It matters because the two call sites in control.lua that clamp against get_capacity are both
--- output boxes with a pipe on them in ordinary play: deposit() writes into an rf-isotope-collector,
--- and apply() computes a lithium blanket's headroom from the same call. Neither is a reactor's
--- plasma box.
+-- It matters because ALL THREE call sites in control.lua that clamp against get_capacity are output
+-- boxes with a pipe on them in ordinary play, and none of them is a reactor's plasma box:
+-- deposit() writes into an rf-isotope-collector, apply() writes into the reactor's ENERGY box, and
+-- apply() computes a lithium blanket's headroom off the collector again.
 --
 -- Vanilla pipes and a vanilla tank, because neither fluid here is contained: reactor energy and
 -- tritium are ordinary fluids and a player plumbs them with ordinary pipes (ADR 0018, #26).
@@ -1054,10 +1056,19 @@ script.on_nth_tick(CHECK_AT, function()
   -- The same question of an OUTPUT box, asked while that box is ON A RUN (#68).
   --
   -- It used to be asked of one reactor's energy box with nothing plumbed to it, which cannot
-  -- separate the two answers: an unconnected box IS its own segment. Both call sites in control.lua
-  -- that clamp against get_capacity are output boxes a player pipes -- deposit() into a collector,
-  -- apply() for a blanket's headroom -- so this is the shape that decides whether those clamps are
-  -- written against the right number.
+  -- separate the two answers: an unconnected box IS its own segment. All three call sites in
+  -- control.lua that clamp against get_capacity are output boxes a player pipes -- deposit() into a
+  -- collector, apply() into the reactor's energy box, apply() again for a blanket's headroom -- so
+  -- this is the shape that decides whether those clamps are written against the right number.
+  -- That they were built AT ALL, before anything is asked of them. `ipairs(nil-or-empty)` is a loop
+  -- that runs zero times and reports nothing, so an on_init edit that dropped this row would delete
+  -- four checks and still print PASS -- the failure this file was already bitten by once, and the
+  -- reason the bookkeeping rows assert their own results are present.
+  record(storage.outlets ~= nil and #storage.outlets == 2,
+    "both output-box runs were built",
+    storage.outlets and string.format("%d built", #storage.outlets)
+      or "storage.outlets is nil -- nothing below this line ran")
+
   for _, run in ipairs(storage.outlets or {}) do
     local entity  = run.entity
     local own     = indexed_volume(entity, run.index)
@@ -1081,6 +1092,17 @@ script.on_nth_tick(CHECK_AT, function()
         run.pipes[#run.pipes].fluidbox.get_capacity(1),
         run.tank.fluidbox.get_capacity(1), run.tank.position.x, run.tank.position.y))
 
+    -- The run is the PIPES AND THE TANK and nothing else, checked against their declared volumes.
+    -- Without this the segment figure is only ever asserted as "bigger than the box", and an engine
+    -- that started folding a machine's output box into the segment it is piped to would move this
+    -- number by exactly that box and no check here would notice which way it went.
+    local expected = RUN_PIPES * prototypes.entity["pipe"].fluidbox_prototypes[1].volume
+      + prototypes.entity[RUN_TANK].fluidbox_prototypes[1].volume
+    record(rel(segment, expected) < 1e-9,
+      string.format("%s: the run is the pipe and the tank, and does NOT include the box", run.label),
+      string.format("%.6g against %d pipe(s) plus a %s declaring %.6g -- the box's %.6g is not in it",
+        segment, RUN_PIPES, RUN_TANK, expected, own))
+
     -- One segment, not several. This is what the check above cannot see on its own: a tank placed
     -- across the run leaves a big number on one side of the break and a small one on the other, and
     -- reading either alone is how a split run passes for a long one.
@@ -1088,11 +1110,21 @@ script.on_nth_tick(CHECK_AT, function()
     for i, pipe in ipairs(run.pipes) do
       if rel(pipe.fluidbox.get_capacity(1), segment) > 1e-9 then split = i break end
     end
-    record(split == nil and rel(run.tank.fluidbox.get_capacity(1), segment) < 1e-9,
-      string.format("%s: every pipe and the tank are on ONE segment", run.label),
-      split and string.format("pipe %d reports %.6g against the run's %.6g",
-          split, run.pipes[split].fluidbox.get_capacity(1), segment)
-        or string.format("%d pipe(s) and the tank all report %.6g", #run.pipes, segment))
+    local tank_says   = run.tank.fluidbox.get_capacity(1)
+    local tank_agrees = rel(tank_says, segment) < 1e-9
+    -- Each of the two ways this fails prints what actually disagreed. Folded into one `and/or` the
+    -- tank half printed the success wording on a FAIL line.
+    local detail
+    if split then
+      detail = string.format("pipe %d reports %.6g against the run's %.6g",
+        split, run.pipes[split].fluidbox.get_capacity(1), segment)
+    elseif not tank_agrees then
+      detail = string.format("the tank reports %.6g against the run's %.6g", tank_says, segment)
+    else
+      detail = string.format("%d pipe(s) and the tank all report %.6g", #run.pipes, segment)
+    end
+    record(split == nil and tank_agrees,
+      string.format("%s: every pipe and the tank are on ONE segment", run.label), detail)
 
     record(rel(report, own) < 1e-9,
       string.format("%s: get_capacity reports the box's own volume, NOT the run it is on", run.label),
