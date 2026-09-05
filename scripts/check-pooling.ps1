@@ -36,6 +36,10 @@
       bare      Three reactors, all powered, bridged and nothing else.
       piped     The same three, plus a tail of rf-pipe.
 
+      outlets   An rf-isotope-collector and an rf-reactor with their OUTPUT boxes piped into a run
+                of vanilla pipe and a tank. Nothing is simulated here and nothing burns down: the
+                row exists to ask get_capacity a question about a box that is on a segment.
+
                 The four the bookkeeping is measured on, and the reason there are four is that a
                 shortfall on a row of three has two candidate causes which predict the same
                 ordering: the engine's mixing losing heat, and reactors overwriting each other
@@ -86,6 +90,13 @@
 
     A REACTOR'S get_capacity REPORTS ITS OWN BOX, NOT THE RUN. A pipe's reports the run. This repo
     believed and wrote down the opposite, in control.lua's apply() and in the research note.
+
+    AND THAT HOLDS FOR AN OUTPUT BOX THAT IS ON A RUN (#68), which is the shape the two call sites
+    in control.lua that clamp against get_capacity actually have. It used to be asked only of an
+    output box plumbed into NOTHING -- the case where the box and the segment are the same object,
+    which cannot tell the two answers apart. The `outlets` row builds an rf-isotope-collector and an
+    rf-reactor with their output boxes piped into twenty pipes and a tank, a 27000-unit run against
+    a 500-unit and a 1000-unit box, and both boxes still answer their own volume.
 
     A BOX THAT IS WRITTEN EVERY STEP SITS PERSISTENTLY HOTTER THAN THE REST OF ITS RUN. In `five`
     the four unpowered reactors agree with each other to two parts in ten thousand, and the powered
@@ -462,6 +473,124 @@ local function top_up(cell, celsius)
   end
 end
 
+-- ---------------------------------------------------------------- output boxes that are ON a run
+--
+-- WHY THIS EXISTS (#68). The capacity checks below used to ask their question of one shape only: an
+-- input-output box on a run of rf-pipe, and an OUTPUT box that was plumbed into nothing. An
+-- unconnected box reporting its own volume is not a measurement of the thing in doubt -- it is the
+-- case where the box and the segment are the same object -- so the answer for a CONNECTED output
+-- box was an extrapolation.
+--
+-- It matters because the two call sites in control.lua that clamp against get_capacity are both
+-- output boxes with a pipe on them in ordinary play: deposit() writes into an rf-isotope-collector,
+-- and apply() computes a lithium blanket's headroom from the same call. Neither is a reactor's
+-- plasma box.
+--
+-- Vanilla pipes and a vanilla tank, because neither fluid here is contained: reactor energy and
+-- tritium are ordinary fluids and a player plumbs them with ordinary pipes (ADR 0018, #26).
+
+local RUN_PIPES = 20   -- 2000 units of pipe, so the run beats a 1000-unit box on pipe alone
+local RUN_TANK  = "storage-tank"
+
+--- The index of the box on `entity` that `pick` accepts, from the PROTOTYPE rather than remembered.
+local function box_index(entity, pick)
+  local boxes = prototypes.entity[entity.name].fluidbox_prototypes
+  for i, box in ipairs(boxes) do
+    if pick(box) then return i end
+  end
+  error(entity.name .. " has no box matching what was asked for")
+end
+
+local function indexed_volume(entity, index)
+  return prototypes.entity[entity.name].fluidbox_prototypes[index].volume
+end
+
+--- Lay a run of vanilla pipe out of `entity`'s box `index`, and put a tank on the end of it.
+---
+--- The direction is read off the connection rather than written down, the same way check-blanket.ps1
+--- does it, so a face moving does not silently leave the pipe one tile clear of the machine.
+local function plumb(surface, force, entity, index)
+  local conns = entity.fluidbox.get_pipe_connections(index)
+  if not conns or #conns == 0 then error(entity.name .. " has no connections on box " .. index) end
+  local at   = conns[1].target_position
+  local step = { at.x - entity.position.x, at.y - entity.position.y }
+  local span = math.max(math.abs(step[1]), math.abs(step[2]))
+  step = { step[1] / span, step[2] / span }
+
+  local pipes = {}
+  for i = 0, RUN_PIPES - 1 do
+    pipes[#pipes + 1] = must(surface.create_entity({
+      name = "pipe", position = { at.x + step[1] * i, at.y + step[2] * i }, force = force,
+    }), string.format("%s: pipe %d", entity.name, i))
+  end
+
+  -- A tank carries four connections at fixed offsets rather than one per edge tile, so where it has
+  -- to stand is computed by probing one and reading where its connections landed -- the trick
+  -- check-blanket.ps1 and check-breeding.ps1 use.
+  --
+  -- WHICH of the four is not a detail, and taking the first one is a bug this rig was caught by
+  -- (#68). A tank's connections sit at asymmetric offsets from its centre -- the first is (-1,-2)
+  -- and the one this ends up using on a northward run is (+2,+1) -- so aiming an ARBITRARY one at
+  -- the last pipe can put the tank's body BACK ALONG the run, over pipes already laid. That
+  -- placement is accepted and it splits the segment in two: nineteen pipes on one side, the last
+  -- pipe and the tank on the other, which reads as a run barely larger than the box. So the
+  -- connection is chosen for the candidate that lands the tank BEYOND the last pipe.
+  local last  = { at.x + step[1] * (RUN_PIPES - 1), at.y + step[2] * (RUN_PIPES - 1) }
+  local seed  = { last[1] + step[1] * 6, last[2] + step[2] * 6 }
+  local probe = must(surface.create_entity({ name = RUN_TANK, position = seed, force = force }),
+    "storage tank probe")
+  local candidates = {}
+  for _, c in ipairs(probe.fluidbox.get_pipe_connections(1)) do
+    -- Where the tank would stand if THIS connection were the one meeting the last pipe.
+    local px, py = seed[1] + (last[1] - c.target_position.x), seed[2] + (last[2] - c.target_position.y)
+    -- Beyond the last pipe, measured along the run rather than by eye.
+    if (px - last[1]) * step[1] + (py - last[2]) * step[2] > 0 then
+      candidates[#candidates + 1] = { px, py }
+    end
+  end
+  probe.destroy()
+  if #candidates == 0 then
+    error("no storage tank connection puts the tank beyond the end of the run")
+  end
+  local tank = must(surface.create_entity({
+    name = RUN_TANK, position = candidates[1], force = force,
+  }), "storage tank")
+
+  return { pipes = pipes, tank = tank, first = pipes[1], index = index, entity = entity }
+end
+
+--- An rf-isotope-collector on its own, with its TRITIUM box piped into a real run.
+---
+--- No reactor and nothing driving it: the question is what the engine REPORTS for a box, and a
+--- collector with a pipe on it is the arrangement check-blanket.ps1 already builds for real.
+local function build_collector_outlet(surface, force, ox, oy)
+  local collector = must(surface.create_entity({
+    name = "rf-isotope-collector", position = { ox, oy }, force = force,
+    direction = defines.direction.south, raise_built = false,
+  }), "rf-isotope-collector")
+  local index = box_index(collector, function(box)
+    return box.filter and box.filter.name == "rf-tritium"
+  end)
+  local run = plumb(surface, force, collector, index)
+  run.label = "collector tritium"
+  return run
+end
+
+--- An rf-reactor whose ENERGY box is on a run, which is the claim that used to rest on an
+--- unconnected reading.
+---
+--- Unregistered, so control.lua never steps it: nothing here is about what a reactor DOES, and a
+--- simulated reactor on this row would only add a writer to a measurement about geometry.
+local function build_energy_outlet(surface, force, ox, oy)
+  local reactor = must(surface.create_entity({
+    name = "rf-reactor", position = { ox, oy }, force = force, raise_built = false,
+  }), "rf-reactor for the energy outlet")
+  local index = box_index(reactor, function(box) return box.production_type == "output" end)
+  local run = plumb(surface, force, reactor, index)
+  run.label = "reactor energy"
+  return run
+end
+
 -- ---------------------------------------------------------------- the three candidate write shapes
 --
 -- WHY THESE EXIST (#73). The bookkeeping below establishes that three writers on a run lose more
@@ -677,6 +806,13 @@ script.on_init(function()
   -- 45% of capacity rather than 100%, which only makes sense if writes interact. Seeded exactly
   -- once, and read later. If it comes back full, the note is describing something else.
   storage.onepass_seed = build_row(surface, force, 840.5, 3, 0, 0, "seedonce", true)
+  -- The two OUTPUT boxes that are actually on a run (#68). Kept out of storage.cells for the same
+  -- reason the shape rows are: every loop over that table is about plasma sharing, and these two
+  -- carry tritium and reactor energy.
+  storage.outlets = {
+    build_collector_outlet(surface, force, 7.5, 900.5),
+    build_energy_outlet(surface, force, 60.5, 900.5),
+  }
   storage.order = { "mix", "pair", "trio", "five", "solo", "solopipe", "bare", "piped" }
   log("POOL-RIG built")
 end)
@@ -915,14 +1051,52 @@ script.on_nth_tick(CHECK_AT, function()
         from_reactor, box_volume(reactor), declared))
   end
 
-  -- The output box, for the record: control.lua's apply() clamps its energy write against
-  -- get_capacity(2) believing that to be a segment figure. It is the box.
-  do
-    local r = cells.bare.reactors[1]
-    local vol = prototypes.entity[r.name].fluidbox_prototypes[2].volume
-    record(rel(r.fluidbox.get_capacity(2), vol) < 1e-9,
-      "and the energy box behaves the same way, which is what apply() clamps against",
-      string.format("%.6g against a declared box of %.6g", r.fluidbox.get_capacity(2), vol))
+  -- The same question of an OUTPUT box, asked while that box is ON A RUN (#68).
+  --
+  -- It used to be asked of one reactor's energy box with nothing plumbed to it, which cannot
+  -- separate the two answers: an unconnected box IS its own segment. Both call sites in control.lua
+  -- that clamp against get_capacity are output boxes a player pipes -- deposit() into a collector,
+  -- apply() for a blanket's headroom -- so this is the shape that decides whether those clamps are
+  -- written against the right number.
+  for _, run in ipairs(storage.outlets or {}) do
+    local entity  = run.entity
+    local own     = indexed_volume(entity, run.index)
+    local report  = entity.fluidbox.get_capacity(run.index)
+    local segment = run.first.fluidbox.get_capacity(1)
+
+    -- Connected, established from the connection itself rather than from the pipes having been
+    -- placed. A run laid one tile clear of the machine would place perfectly and measure nothing.
+    local conn = entity.fluidbox.get_pipe_connections(run.index)[1]
+    record(conn.target ~= nil,
+      string.format("%s: the box is actually plumbed into the run", run.label),
+      string.format("%d pipe(s) and a %s off %s box %d",
+        #run.pipes, RUN_TANK, entity.name, run.index))
+
+    -- And that the run is big enough for the two answers to be told apart, which is the whole
+    -- weakness of the unconnected reading this replaces.
+    record(segment > own * 4,
+      string.format("%s: the run is materially larger than the box", run.label),
+      string.format("run %.6g against a box of %.6g -- %.1fx; last pipe %.6g, tank %.6g at (%g, %g)",
+        segment, own, segment / own,
+        run.pipes[#run.pipes].fluidbox.get_capacity(1),
+        run.tank.fluidbox.get_capacity(1), run.tank.position.x, run.tank.position.y))
+
+    -- One segment, not several. This is what the check above cannot see on its own: a tank placed
+    -- across the run leaves a big number on one side of the break and a small one on the other, and
+    -- reading either alone is how a split run passes for a long one.
+    local split
+    for i, pipe in ipairs(run.pipes) do
+      if rel(pipe.fluidbox.get_capacity(1), segment) > 1e-9 then split = i break end
+    end
+    record(split == nil and rel(run.tank.fluidbox.get_capacity(1), segment) < 1e-9,
+      string.format("%s: every pipe and the tank are on ONE segment", run.label),
+      split and string.format("pipe %d reports %.6g against the run's %.6g",
+          split, run.pipes[split].fluidbox.get_capacity(1), segment)
+        or string.format("%d pipe(s) and the tank all report %.6g", #run.pipes, segment))
+
+    record(rel(report, own) < 1e-9,
+      string.format("%s: get_capacity reports the box's own volume, NOT the run it is on", run.label),
+      string.format("%.6g against a declared box of %.6g and a run of %.6g", report, own, segment))
   end
 
   -- ------------------------------------------------------------ one pool, as a quantity
