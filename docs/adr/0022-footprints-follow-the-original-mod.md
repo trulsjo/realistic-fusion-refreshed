@@ -121,18 +121,23 @@ inverted rule makes necessary. See [Consequences](#consequences).
   `scripts/check-aneutronic.ps1` placed the converter from offsets tied to its old 3x5;
   `scripts/probe-energy-containment.ps1` named the face the exchanger's energy inlet sat on. Both now
   read the prototype. A third breakage in that probe predates this work and is
-  [#111](https://github.com/trulsjo/realistic-fusion-refreshed/issues/111).
+  [#111](https://github.com/trulsjo/realistic-fusion-refreshed/issues/111) — **fixed 2026-09-06**,
+  and it was this change after all: the probe's chain rig still built the 3×2 machine, so its second
+  exchanger stood inside its first and map creation failed.
 
 - **Throughput is not the reason for any of this and does not constrain it.** #47 and #48 measured
   the reactor-to-exchanger link at 31-62x of headroom and found the flush contact buys nothing
   against a single pipe. The shape is a look. Stated because "flush against the reactor" sounds like
   a fluid argument and is not one.
 
-- **The eight-exchangers problem is untouched.** A lit D-T reactor sells about 322 MW and one
-  exchanger takes 40 MW. Whether those eight can feed each other is
-  [#111](https://github.com/trulsjo/realistic-fusion-refreshed/issues/111)'s question, and it is open
-  — `docs/research/exchanger-chaining.md` measures that they cannot while ADR 0018 records that they
-  can.
+- **The eight-exchangers problem is untouched, and the doubt about it is settled.** A lit D-T
+  reactor sells about 322 MW and one exchanger takes 40 MW. Whether those eight can feed each other
+  was [#111](https://github.com/trulsjo/realistic-fusion-refreshed/issues/111)'s question, and it
+  closed on **2026-09-06**: they can, ADR 0018 was right, and
+  `docs/research/exchanger-chaining.md`'s contrary measurement was its own rig. What that leaves is
+  a shape question rather than an engine one — the 5×15 machine in the tree declares one energy
+  connection and cannot chain as it stands, and ADR 0018's Decision item 4 says what it should
+  declare in coordinates this ADR made obsolete.
 
 ## Alternatives considered
 

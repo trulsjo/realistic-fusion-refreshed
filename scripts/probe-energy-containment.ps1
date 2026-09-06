@@ -66,23 +66,26 @@
 
                 MEASURED ON THE CHAIN VARIANT, not on the shipped one-connection shape, because
                 bolt and chain are one rig -- two would mean two reactors to fill and two chances
-                for the fill loop to differ. The connection doing the bolting is south {0, 0.5},
-                the same TILE and FACING the shipped exchanger already declares.
+                for the fill loop to differ. The connection doing the bolting is south {-1, 7}, and
+                it is NEITHER THE TILE NOR THE FACE the shipped machine declares: the shipped
+                exchanger takes its energy on the west long face at {-2, 0}, which cannot meet a
+                north-facing reactor output at all. This row is a claim about a shape that would
+                chain, not about the one in the tree.
 
-                Its FLOW IS NOT THE SAME, and saying otherwise was wrong: the shipped exchanger
-                declares flow_direction "input" on that connection and this variant declares
-                "input-output". So what these rows establish is that a bolt and a chain work on the
-                shape ADR 0018 SHIPS -- which declares input-output on all three connections for
-                exactly this reason -- and not that they would work on the one-connection shape as
-                it stands today. That is the useful direction of the two, but it is a narrower
-                claim and it is the one this rig actually supports.
+                Its FLOW IS NOT THE SAME either: the shipped exchanger declares flow_direction
+                "input" on its one connection and this variant declares "input-output" on three.
+                So what these rows establish is that a bolt and a chain work on the shape ADR 0018
+                DECIDED -- item 4, whose own coordinates are the dead 3x2 ones -- and not that they
+                would work on the one-connection shape as it stands today.
 
-      chain     The bolt row with a second categorised exchanger three tiles east of the first,
-                joined through energy connections on their west and east faces. Whether the SECOND
-                one receives anything is the whole question: a generator's box chains (proven in
-                check-aneutronic.ps1), an energy source's box is unproven, and the answer decides
-                whether eight exchangers hang off one reactor connection in a row or have to ring
-                the reactor's faces -- 5 fit per face against the 8 an ignited D-T reactor needs.
+      chain     The bolt row with a second categorised exchanger fifteen tiles NORTH of the first,
+                joined through energy connections on their south and north short ends. Whether the
+                SECOND one receives anything is the whole question: a generator's box chains (proven
+                in check-aneutronic.ps1), an energy source's box was not, and the answer decides
+                whether eight exchangers hang off one reactor connection in a column or whether
+                reactor energy has to reach each of them through a pipe. Ringing the reactor is not
+                the alternative it was on the 3x2: rf-reactor declares ONE energy output, north
+                {0, -7}, so exactly one machine can bolt to it however small that machine is.
 
       hc        The refuse/accept pair again on rf-hc-exchanger's shape, which has the same energy
                 source on a seven-tile footprint. Bolt and chain are not repeated: the mechanism is
@@ -90,18 +93,29 @@
 
     WHERE THE CHAIN VARIANT'S CONNECTIONS HAD TO GO, AND WHY IT IS NOT A FREE CHOICE
 
-    rf-heat-exchanger is vanilla's 3x2, so its tile centres are x in {-1, 0, 1} and y in {-0.5, 0.5}
-    -- and four of those tiles are already spoken for: water input-output at west {-1, 0.5} and east
-    {1, 0.5}, steam output at north {0, -0.5}, and the energy intake at south {0, 0.5}. Two
-    connections on one tile will not load.
+    THE SHAPE CHANGED UNDER THIS RIG AND THE RIG DID NOT NOTICE (#111). rf-heat-exchanger was
+    vanilla's 3x2 when #82 ran, and #45 made it 5x15. Every coordinate in this section, in the chain
+    variant below, and in ADR 0018's Decision item 4 was written for the 3x2 and is dead. A rig that
+    keeps building the old shape is not measuring the current tree, so the AC 3 rows #82 recorded
+    were taken on a machine this repository no longer ships.
 
-    So a variant that chains SIDEWAYS has exactly one pair of tiles available, west {-1, -0.5} and
-    east {1, -0.5}, and it needs the south one as well to bolt onto a north-facing reactor output.
-    Three energy connections, not two. That is a fact about the shape #44 would ship rather than a
-    detail of the rig, which is why it is written down here.
+    Today's machine is 5x15: tile centres x in {-2..2} and y in {-7..7}. Its own boxes take four of
+    them -- energy in on the west LONG face at {-2, 0}, steam out on the east long face at {2, 0},
+    water input-output on the two short ends at north {0, -7} and south {0, 7}. Two connections on
+    one tile will not load.
 
-    A consequence worth knowing: two exchangers three tiles apart also join through their WATER
-    boxes, east {1, 0.5} against west {-1, 0.5}. One water feed serves the row.
+    So a variant that chains has to chain along the COLUMN, north to south, and the free tiles on
+    the short ends are {-1, -7} and {-1, 7}, beside the water. Those are the tiles
+    probe-exchanger-chaining.ps1 uses for the same question, and the two rigs agree on purpose.
+    The south one also does the bolting: rf-reactor's energy output faces NORTH from {0, -7}, so a
+    machine bolting onto it stands above the reactor and meets it with a south-facing connection.
+    The west long face cannot do that bolt at all -- it points west and the reactor's output does
+    not.
+
+    A consequence worth knowing: two exchangers fifteen tiles apart also join through their WATER
+    boxes, south {0, 7} against north {0, -7}. One water feed serves the column -- which it has to,
+    because the first exchanger's own water box ends up with both faces taken (the reactor below,
+    the second exchanger above) and unbound() correctly attaches nothing to it.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
@@ -207,22 +221,25 @@ local function categorised_hc(name, category)
 end
 
 -- The chain variant. Three energy connections rather than two, and the .DESCRIPTION above says why:
--- on a 3x2 whose water, steam and energy tiles are already taken, west {-1,-0.5} and east
--- {1,-0.5} are the only free tiles facing sideways, and the south one is still needed to bolt onto
--- a reactor's north-facing output.
+-- on today's 5x15 the west long face takes energy and the east one sells steam, so a column chains
+-- through the short ends, and {-1,-7} and {-1,7} are the free tiles there. The south one also bolts
+-- onto the reactor's north-facing output.
 --
 -- input-output on all three. production_type stays "input" -- what the machine DOES with the fluid
 -- is unchanged; flow_direction is what decides whether a connection will join another machine's.
 -- rf-direct-energy-converter's own box makes exactly that distinction and it is the reason a row of
 -- converters connects at all.
+--
+-- These are the same three tiles probe-exchanger-chaining.ps1's categorised variant declares. Two
+-- rigs asking one question have to build one shape, or a disagreement between them says nothing.
 local chain = categorised("rf-probe-exchanger-chain", CATEGORY)
 chain.energy_source.fluid_box.pipe_connections = {
-  { flow_direction = "input-output", direction = defines.direction.south,
-    position = { 0, 0.5 }, connection_category = CATEGORY },
   { flow_direction = "input-output", direction = defines.direction.west,
-    position = { -1, -0.5 }, connection_category = CATEGORY },
-  { flow_direction = "input-output", direction = defines.direction.east,
-    position = { 1, -0.5 }, connection_category = CATEGORY },
+    position = { -2, 0 }, connection_category = CATEGORY },
+  { flow_direction = "input-output", direction = defines.direction.north,
+    position = { -1, -7 }, connection_category = CATEGORY },
+  { flow_direction = "input-output", direction = defines.direction.south,
+    position = { -1, 7 }, connection_category = CATEGORY },
 }
 
 -- The source side of the bolt row: the shipped reactor with its OUTPUT box categorised. Its plasma
@@ -385,11 +402,16 @@ local function place_facing(surface, force, name, fluid, side, target, seed)
     for _, c in pairs(connections) do
       local dx = c.target_position.x - probe.position.x
       local dy = c.target_position.y - probe.position.y
+      -- WHICH WAY THE CONNECTION FACES, by its dominant axis. It used to require dx == 0 for north
+      -- and south, which is only true of a connection in the middle of a short end -- and on the
+      -- 5x15 the middle of both short ends is water, so the chain variant's energy connections sit
+      -- one tile off centre at {-1, -7} and {-1, 7} and matched nothing. A connection points along
+      -- whichever axis it is further out on; that is the test.
       local matches =
-        (side == "south" and dy > 0 and dx == 0) or
-        (side == "north" and dy < 0 and dx == 0) or
-        (side == "west"  and dx < 0) or
-        (side == "east"  and dx > 0)
+        (side == "south" and dy > 0 and math.abs(dy) > math.abs(dx)) or
+        (side == "north" and dy < 0 and math.abs(dy) > math.abs(dx)) or
+        (side == "west"  and dx < 0 and math.abs(dx) > math.abs(dy)) or
+        (side == "east"  and dx > 0 and math.abs(dx) > math.abs(dy))
       if matches then chosen = c.target_position end
     end
   end
@@ -408,7 +430,7 @@ end
 
 --- An infinity pipe on every connection of `index`, so the box under test is neither starved nor
 --- backed up by something the probe is not asking about.
---- ... and never on a tile something already stands on.
+--- ... and never on a tile something already stands on, and never silently on none of them.
 --
 -- create_entity does NOT collision-check, so without the occupancy test this happily buries a pipe
 -- under a machine. It bit the chain row: the first exchanger's east water connection targets the
@@ -419,9 +441,11 @@ end
 --
 -- Skipping is right rather than merely safe: two exchangers three tiles apart join through their
 -- water boxes, so the row is fed along itself from whichever end is free.
-local function unbound(surface, force, entity, index, filter)
+local function unbound(surface, force, entity, index, filter, allow_none)
   local attached = 0
+  local total = 0
   for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
+    total = total + 1
     local occupied = surface.find_entities_filtered({ position = connection.target_position })
     if #occupied == 0 then
       local pipe = surface.create_entity({
@@ -433,12 +457,26 @@ local function unbound(surface, force, entity, index, filter)
       end
     end
   end
-  -- Still an error rather than a note. Every box this is called on has at least one free face in
-  -- this rig, so nothing attached means the layout moved -- and an exchanger with no water is a row
-  -- that reports `no_input_fluid` for a reason that has nothing to do with the category.
+  -- STILL AN ERROR UNLESS THE CALLER SAID OTHERWISE, and the flag is the point (#111). This used
+  -- to error unconditionally, on the stated grounds that "every box this is called on has at least
+  -- one free face in this rig" -- which was never true of the chained pair: the first exchanger's
+  -- water box has the reactor below it and the second exchanger above it, so both faces are taken
+  -- and the probe died during map creation instead of reporting anything.
+  --
+  -- Making it a note for every caller was the wrong fix and is not what this does. All faces taken
+  -- is legitimate for ONE box in this rig and a broken layout everywhere else, and the failure it
+  -- would then hide is one this rig has already had: a control machine placed a tile too close
+  -- covered the last free water face of the column, both chained exchangers dropped to
+  -- no_input_fluid, and AC 3 reported on two machines that were not running. So only the caller
+  -- that owns the legitimate case passes allow_none, and everything else still stops the run.
   if attached == 0 then
-    error(string.format("no free connection to attach an infinity pipe to on %s box %d",
-      entity.name, index))
+    if not allow_none then
+      error(string.format("no free connection to attach an infinity pipe to on %s box %d (%s)",
+        entity.name, index, filter.name))
+    end
+    say("plumbing: %s box %d (%s) has all %d of its faces taken by neighbours, so it is fed along " ..
+      "the column rather than from a pipe of its own",
+      entity.name, index, filter.name, total)
   end
 end
 
@@ -446,11 +484,15 @@ end
 --
 -- Without both, a machine sitting at `working` versus `full_output` versus `no_fuel` says nothing
 -- about whether fuel arrived -- which is the only thing this probe is measuring.
-local function plumb_steam(surface, force, exchanger)
+--- `boxed_in` permits the WATER box to have no free face, and nothing else does. It is true for
+--- exactly one machine here -- the lower exchanger of the chained pair, with the reactor on one
+--- short end and its neighbour on the other -- and that machine is fed along the column instead.
+local function plumb_steam(surface, force, exchanger, boxed_in)
   local water = box_of(exchanger, "water")
   local steam = box_of(exchanger, "steam")
   if water then
-    unbound(surface, force, exchanger, water, { name = "water", percentage = 1, mode = "at-least" })
+    unbound(surface, force, exchanger, water, { name = "water", percentage = 1, mode = "at-least" },
+      boxed_in)
   end
   if steam then
     unbound(surface, force, exchanger, steam, { name = "steam", percentage = 0, mode = "at-most" })
@@ -553,25 +595,55 @@ script.on_init(function()
     error("rf-probe-reactor is on no electric network; move the substation to reach it")
   end
 
+  -- The seed is a scratch position, and place_facing offsets FROM IT rather than from where the
+  -- engine put the scratch entity -- so it has to be a position the engine would not move. A 5x15
+  -- has odd dimensions both ways, which means a tile centre in both axes: X.5, not X.
   local first = place_facing(surface, force, "rf-probe-exchanger-chain", ENERGY, "south",
-    target, { 0.5, 40 })
+    target, { 0.5, 40.5 })
 
-  -- Three tiles east: the exchanger is three wide, so that is the next one along with no gap. Their
-  -- energy connections at east {1,-0.5} and west {-1,-0.5} then point at each other's tile, and
-  -- their water boxes join through east {1,0.5} against west {-1,0.5} at the same time.
+  -- Fifteen tiles NORTH: the exchanger is fifteen tall, so that is the next one up the column with
+  -- no gap. Their energy connections at north {-1,-7} and south {-1,7} then point at each other's
+  -- tile, and their water boxes join through {0,-7} against {0,7} at the same time.
+  --
+  -- North rather than south because south is where the reactor is. It used to be three tiles east,
+  -- which was right for the 3x2 machine #82 measured and buries a 5-wide one inside its neighbour.
   local second = must(surface.create_entity({
     name = "rf-probe-exchanger-chain-b",
-    position = { first.position.x + 3, first.position.y }, force = force,
+    position = { first.position.x, first.position.y - 15 }, force = force,
   }), "the second chained exchanger")
 
   -- BOTH exchangers exist before either is plumbed, and that ordering is the fix rather than a
   -- preference: unbound() skips a connection whose target tile is occupied, and it can only skip
   -- what has already been built. Plumbing `first` while `second` was still a gap buried an infinity
   -- pipe under it.
-  plumb_steam(surface, force, first)
-  plumb_steam(surface, force, second)
+  -- THE CHAIN ROW'S OWN CALIBRATION, and it was missing (#111). A third one, same prototype and
+  -- same plumbing as the second, joined to nothing at all. If it holds fuel anyway, then "the
+  -- second holds fuel" is the rig filling everything it can reach rather than a chain, and every
+  -- AC 3 row is void.
+  --
+  -- The rest of this probe has such a row -- `control` is exactly this for the offered pairs -- and
+  -- the chain row went without one, which is how a disagreement with probe-exchanger-chaining.ps1
+  -- lasted from #82 to #111 with nothing able to break the tie.
+  --
+  -- WELL CLEAR OF THE COLUMN, and that is load-bearing rather than tidy. The first attempt put it
+  -- one tile off the line where the second's neighbour would be: it read the right answer -- not
+  -- joined, no fuel -- and its own footprint then covered the tile the second exchanger's last free
+  -- water face pointed at, so unbound() skipped it, the column lost its only water feed and both
+  -- chained machines dropped to no_input_fluid. A control that changes what it is calibrating is
+  -- not a control.
+  local aloof = must(surface.create_entity({
+    name = "rf-probe-exchanger-chain-b",
+    position = { -40.5, first.position.y }, force = force,
+  }), "the unjoined third exchanger")
 
-  storage.bolt = { reactor = reactor, out = out, first = first, second = second }
+  -- `first` is the one box that is allowed to find no free water face: the reactor is on its south
+  -- end and `second` on its north. Every other call still errors, which is what catches a machine
+  -- standing where a pipe should go.
+  plumb_steam(surface, force, first, true)
+  plumb_steam(surface, force, second)
+  plumb_steam(surface, force, aloof)
+
+  storage.bolt = { reactor = reactor, out = out, first = first, second = second, aloof = aloof }
 
   say("built: %d offered rows, plus the bolt and chain pair", #storage.offers)
 end)
@@ -631,7 +703,7 @@ local function report()
   say("bolt: reactor output joins the exchanger directly, no pipe: %s",
     yesno(joins(b.reactor, b.out, b.first)))
   say("bolt: the exchanger holds %.6g units and reports %s",
-    held(b.first, ENERGY), status_name(b.first.status))
+    storage.first_held or 0, status_name(b.first.status))
   -- Read BEFORE the tick's refill, and that ordering is the whole value of the line. The first
   -- version read it after, inside the same handler that tops the box up, so it printed "1000 of a
   -- 1000" whatever had happened -- including in the failure case it was there to detect -- while
@@ -650,14 +722,17 @@ local function report()
   say("chain: the second exchanger joins the first: %s",
     yesno(joins(b.second, box_of(b.second, ENERGY), b.first)))
   say("chain: it holds %.6g units and reports %s",
-    held(b.second, ENERGY), status_name(b.second.status))
+    storage.second_held or 0, status_name(b.second.status))
   say("chain: against the first one's %.6g units and %s",
-    held(b.first, ENERGY), status_name(b.first.status))
+    storage.first_held or 0, status_name(b.first.status))
   -- Measured rather than reasoned. The write-up claimed this "incidentally", and nothing in the rig
   -- had ever asked it -- the geometry does work out, but an inference dressed as a measurement is
   -- exactly what a probe exists not to produce.
   say("chain: and their WATER boxes join as well, so one feed serves the row: %s",
     yesno(joins(b.second, box_of(b.second, "water"), b.first)))
+  say("chain/control: an unjoined third one off to the side joins the second: %s, and holds %.6g "
+    .. "units -- this row must read no and 0, or the two above mean nothing",
+    yesno(joins(b.aloof, box_of(b.aloof, ENERGY), b.second)), storage.aloof_held or 0)
 
   say("done: %d offered rows and the bolt pair, at tick %d", #storage.offers, SETTLE)
   for _, line in ipairs(storage.notes) do log("ENERGY-PROBE " .. line) end
@@ -671,6 +746,14 @@ script.on_event(defines.events.on_tick, function(event)
     -- Recorded BEFORE the refill on every tick, so the report tick has a reading the refill has not
     -- already overwritten. See the note beside the line that prints it.
     storage.reactor_held = amount_of(b.reactor, b.out)
+    -- AND THE TWO EXCHANGERS, for the reason #111 exists. The reactor's output, the first exchanger
+    -- and the second are all joined, so a reading taken after the refill cannot rule out the write
+    -- having filled the whole run. Read before the write, these two say what the machines held on
+    -- their own -- and the unjoined third machine below says what a box holds when nothing feeds
+    -- it, which is the row that actually discriminates.
+    storage.first_held  = held(b.first, ENERGY)
+    storage.second_held = held(b.second, ENERGY)
+    storage.aloof_held  = held(b.aloof, ENERGY)
     b.reactor.fluidbox[b.out] = {
       name = ENERGY,
       amount = b.reactor.fluidbox.get_capacity(b.out),
