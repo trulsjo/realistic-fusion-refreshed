@@ -176,6 +176,39 @@ remains pre-authorised.
   > isolating it needs a pair differing only in how many reactors write.
   > [#73](https://github.com/trulsjo/realistic-fusion-refreshed/issues/73) was re-scoped around
   > exactly that on 2026-08-19, by Truls, and carries the falsified premise in its history.
+
+  > **It is not a writer-count effect either. Measured and closed 2026-09-06 (#73).**
+  >
+  > Six rows in `check-pooling.ps1`, one geometry, one fill, one starting temperature and one total
+  > of injected heating — each equality asserted at the step rather than assumed — delivered by one,
+  > two and three reactors, and then by a single reactor moved along the run:
+  >
+  > | heating delivered by | arrived |
+  > |---|---:|
+  > | one reactor, west | 72.19% |
+  > | two reactors | 71.92% |
+  > | three reactors | 71.64% |
+  > | one reactor, centre | 71.65% |
+  > | one reactor, east | 71.10% |
+  > | east again, written first | 71.10% |
+  >
+  > The count series is the **arithmetic mean of the positional ramp** over the reactors each row
+  > occupies — 71.92 is (72.19 + 71.65) / 2 and 71.64 is the mean of all three, with nothing fitted.
+  > So **writer count costs nothing**; what costs about a point is *where* on the segment the energy
+  > enters. That is not the write order (the east reactor keeps 71.10% first or last) and it is not
+  > the gradient the writes make (the flat three-writer row and the 73%-uneven centre row agree to a
+  > hundredth of a point).
+  >
+  > **What that settles for this ADR.** The excess this delegation was doubted over is **not ours**
+  > in either of the two shapes it was suspected in -- `update()`'s two-pass write shape (#73's
+  > earlier correction above) and writer count (this one). Roughly a point of it is an asymmetry inside the
+  > engine's handling of a segment, which is the same class of thing as the mixing loss already
+  > accepted here and is accepted with it. The remaining seventeen points between `bare` and
+  > `solopipe` are fill and temperature — the two rows sit at 44.6% and 27.6% full — which is a
+  > property of the plumbing a player builds and not a defect at all.
+  >
+  > **Nothing here is now unattributed**, which is what the sentence above was waiting for. The
+  > delegation stays, for the reasons it was made rather than for want of an alternative.
 - **Failure is local and visible.** A stuck reactor is one building a player can see and mine, not an
   invisible object spanning half a base.
 - **Blueprints, undo, cut-and-paste and robot construction need no special handling.** These are exactly

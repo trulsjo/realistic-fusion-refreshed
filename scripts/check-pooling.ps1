@@ -46,6 +46,16 @@
                 inside one step. One reactor cannot overwrite anyone, so solo and solopipe separate
                 them.
 
+      writers1  Three reactors bridged, unregistered and rig-driven, with the whole of one step's
+      writers2  heating delivered by one, two or three of them. The same segment, the same fill, the
+      writers3  same starting temperature and the same TOTAL heating in every row -- each equality
+                asserted at the moment of the step -- so the only thing that differs is how many
+                machines put the energy in.
+      middle    The same again with a single writer, moved to the centre reactor and then to the
+      east      eastern one. They are what say the first three rows are not measuring writer count.
+      reversed  The eastern reactor once more, written FIRST instead of last, which separates where
+                a reactor sits on the run from when the driver reaches it.
+
     WHAT IS ASSERTED, AND WHY NOT TEMPERATURE ALONE
 
     Temperature converging is necessary and nowhere near sufficient: reactors seeded alike and
@@ -68,8 +78,37 @@
     THE EXCESS IS NOT update()'S WRITE SHAPE, AND THIS SCRIPT USED TO SAY IT WAS. Measured under #73
     by the `probe` row and the three shape rows: a Lua write reaches no other box on the run in the
     same tick, and the shipped two-pass shape, a single-pass shape and a relative write all keep the
-    same 72.18% on identical rows. What the excess IS remains open -- the two cells that would
-    separate the remaining candidates differ in fill and temperature as well as in writer count.
+    same 72.18% on identical rows.
+
+    AND IT IS NOT WRITER COUNT EITHER, which is what the rest of #73 measured and what the six rows
+    below the shape rows exist for. `bare` against `solopipe` differs in fill and temperature as well
+    as in how many reactors write, so the seventeen-point gap was never a measurement of any one of
+    the three. Held alone -- one geometry, one fill, one starting temperature, one total of injected
+    heating -- the rows come out:
+
+      one writer, west reactor       72.19%
+      two writers, western pair      71.92%
+      three writers                  71.64%
+      one writer, MIDDLE reactor     71.65%
+      one writer, EAST reactor       71.10%
+      east reactor, written FIRST    71.10%
+
+    Read down that list rather than across the first three. The first three look exactly like a small
+    writer-count effect and are not one: the last three say that a SINGLE writer moves over the same
+    range depending on which reactor it is, and that the count rows land on the arithmetic mean of
+    the positions they occupy -- 71.92% is (72.19 + 71.65) / 2 and 71.64% is the mean of all three,
+    both to two decimal places, with nothing fitted.
+
+    So the variable is WHERE the energy enters the segment, and writer count enters only through the
+    mean of it. Two things are excluded by controls rather than by argument: it is not the write
+    ORDER, because the east reactor keeps 71.10% whether the driver reaches it first or last; and it
+    is not the gradient the writes create, because the flat three-writer row and the steeply uneven
+    middle row agree to a hundredth of a point.
+
+    WHAT IS STILL OPEN is why the engine treats one end of a run differently from the other. The two
+    reactors that disagree most are both ENDS, so it is not a symmetry of the geometry, and nothing
+    reachable from Lua says what it is. It is about a point across a three-reactor run, against the
+    seventeen the gap above needed, so it is a characterisation rather than a lead.
 
     WHAT THIS FOUND THAT WAS NOT EXPECTED
 
@@ -736,6 +775,33 @@ local function first_only(i)
   return i == 1 and math.huge or 0
 end
 
+-- ONE STEP'S HEATING, SPREAD OVER `count` REACTORS STARTING AT `from` (#73).
+--
+-- first_only above hands the whole of a step's heating to reactor 1 -- math.huge, which step()
+-- clamps to heating_power_w * dt -- and nothing to the other two. This hands an equal share of
+-- exactly that figure to `count` consecutive reactors, so every row driven with it receives the
+-- SAME total energy over the step whatever `count` and `from` are, and the rows differ only in HOW
+-- MANY machines put it in and WHERE on the run they sit.
+--
+-- Those two are separate variables and this rig exists because they were once conflated with a
+-- third. So the writer-count block builds rows for both: 1, 2 and 3 writers from the west end, and
+-- a fourth with one writer in the MIDDLE. A count effect and a position effect predict the same
+-- ordering across the first three and different answers for the fourth.
+--
+-- IT IS EXACT RATHER THAN math.huge EVEN AT count = 1, so that all four rows go through one
+-- expression and none of them depends on step()'s internal clamp to make its total come out right.
+-- The totals are asserted from the step results regardless; this is about the rows being driven by
+-- the same code.
+--
+-- A closure over dt rather than a bare function, because a share is a quantity of joules and only
+-- the caller knows how long a step is. first_only can be a plain function precisely because
+-- math.huge means "whatever it asks for" and needs no interval.
+local function heat_among(count, dt, from)
+  from = from or 1
+  local share = SPEC.heating_power_w * dt / count
+  return function(i) return (i >= from and i < from + count) and share or 0 end
+end
+
 local SHAPES = {
   { name = "twopass",  drive = drive_two_pass, label = "the shipped read-all-then-write-all" },
   { name = "onepass",  drive = drive_one_pass, label = "read and write in one iteration" },
@@ -765,7 +831,9 @@ script.on_init(function()
 
   local size = reactor_footprint()
   local span_x = 6 * (size + GAP) + TAIL + 40
-  local span_y = 15 * 60 + 40
+  -- Twenty-two rows at sixty apart since #73 added the writer-count group, where fifteen covered the
+  -- map before them. A row built on ungenerated ground is a row that silently is not there.
+  local span_y = 22 * 60 + 40
 
   surface.request_to_generate_chunks({ span_x / 2, span_y / 2 },
     math.ceil((math.max(span_x, span_y) / 2 + 96) / 32))
@@ -826,6 +894,69 @@ script.on_init(function()
   -- 45% of capacity rather than 100%, which only makes sense if writes interact. Seeded exactly
   -- once, and read later. If it comes back full, the note is describing something else.
   storage.onepass_seed = build_row(surface, force, 840.5, 3, 0, 0, "seedonce", true)
+  -- THE WRITER-COUNT PAIR (#73). Two rows that differ in ONE variable, which is the thing the
+  -- bookkeeping above has never had.
+  --
+  -- WHAT IT IS FOR. `bare` keeps 57.6% of what its reactors spend and `solopipe` keeps 75.2%, and
+  -- that gap was read as the cost of having three reactors write to one run instead of one. It
+  -- cannot be: those two cells differ in three things at once -- writer count, fill (44.6% against
+  -- 27.6%) and therefore temperature and the gradient the engine has to flatten. Writer count was
+  -- never held alone, so the inference had no support, and this repo believed it anyway. These rows
+  -- hold it alone.
+  --
+  -- HOW THEY ARE THE SAME. One geometry, built by one call with one argument different: three
+  -- rf-reactor bridged, no tail, unregistered so control.lua never steps them and unpowered so the
+  -- rig alone decides what heating each receives. They are seeded by the same pass as every other
+  -- row, so they start at the same capacity, the same fill and the same temperature -- and each of
+  -- those equalities is ASSERTED at the moment of the step rather than assumed from the symmetry.
+  --
+  -- HOW THEY DIFFER. `writers1` gets its whole step's heating through reactor 1 and `writers3`
+  -- splits the identical total three ways. Both rows still WRITE all three boxes: an unheated
+  -- reactor computes its confinement loss and its radiation against whatever it holds and writes
+  -- that back, exactly as it does in the game. What differs is how many machines put energy in,
+  -- which is what "three reactors bridged" versus "one reactor with pipe" actually meant.
+  --
+  -- A NULL RESULT IS THE ANSWER IF THAT IS WHAT IT IS. If the two rows keep the same fraction,
+  -- writer count costs nothing and the whole excess belongs to fill and gradient -- which would
+  -- close #73 and retire the last of #40's unexplained findings. The report states the difference
+  -- as a number either way.
+  --
+  -- AND A FOURTH ROW THAT IS NOT ABOUT COUNT AT ALL. Three rows at one, two and three writers can
+  -- only ever say that something changes as the injection spreads out; they cannot say it is the
+  -- COUNT that did it, because spreading the heating also moves where it lands on the run. `middle`
+  -- has the same single writer as `writers1` and puts it in the centre reactor instead of the west
+  -- one. If the two agree, count is the variable; if they do not, position is, and a count effect
+  -- read off the first three would be this rig repeating the mistake it was built to correct.
+  storage.writers = {
+    { name = "writers1", cell = build_row(surface, force,  960.5, 3, 0, 0, "writers1", true),
+      count = 1, from = 1, label = "one reactor of three, at the west end, delivers all the heating" },
+    { name = "writers2", cell = build_row(surface, force, 1020.5, 3, 0, 0, "writers2", true),
+      count = 2, from = 1, label = "the same total heating, split between the western two" },
+    { name = "writers3", cell = build_row(surface, force, 1080.5, 3, 0, 0, "writers3", true),
+      count = 3, from = 1, label = "the same total heating, split evenly across all three" },
+    { name = "middle",   cell = build_row(surface, force, 1140.5, 3, 0, 0, "middle", true),
+      count = 1, from = 2, label = "one writer again, in the MIDDLE rather than at the end" },
+    { name = "east",     cell = build_row(surface, force, 1200.5, 3, 0, 0, "east", true),
+      count = 1, from = 3, label = "one writer at the FAR end, which the rig reaches last" },
+    -- AND THE ROW THAT SEPARATES *WHERE* FROM *WHEN*. `east` heats the eastmost reactor, which is
+    -- also the LAST one the driver writes, so its position on the run and its place in the write
+    -- order are the same variable wearing two names -- the exact confound #73 exists to stop being
+    -- read as a mechanism. This row heats the eastmost reactor too and reverses the list the driver
+    -- walks, so that reactor is written FIRST while sitting in the same place. It is the same
+    -- geometry, the same heating and the same total; only the order of three writes changes.
+    { name = "reversed", cell = build_row(surface, force, 1260.5, 3, 0, 0, "reversed", true),
+      count = 1, from = 1, reverse = true,
+      label = "the same eastmost reactor heated, but written FIRST instead of last" },
+  }
+  -- In place, and only the reactor list: cell.all is what heat() and pooled() sum over and a sum
+  -- does not care about order, so reversing here changes exactly one thing -- which reactor
+  -- drive_two_pass reaches first.
+  for _, row in ipairs(storage.writers) do
+    if row.reverse then
+      local r = row.cell.reactors
+      for i = 1, math.floor(#r / 2) do r[i], r[#r + 1 - i] = r[#r + 1 - i], r[i] end
+    end
+  end
   -- The two OUTPUT boxes that are actually on a run (#68). Kept out of storage.cells for the same
   -- reason the shape rows are: every loop over that table is about plasma sharing, and these two
   -- carry tritium and reactor energy.
@@ -857,6 +988,12 @@ script.on_event(defines.events.on_tick, function()
       for _, cell in pairs(storage.shapes) do top_up(cell, SEED_C) end
     end
     if storage.probe then top_up(storage.probe, SEED_C) end
+    -- The writer-count pair (#73), seeded exactly as the shape rows are and for the same reason:
+    -- nothing simulates them, so sixty flat passes leave the two in one identical state and the
+    -- only thing that ever separates them is how their heating is delivered.
+    if storage.writers then
+      for _, row in ipairs(storage.writers) do top_up(row.cell, SEED_C) end
+    end
     -- Exactly one pass, on the first seeding tick only, and never touched again. This is the
     -- comparison the seeding note's 45% is a claim about.
     if storage.onepass_seed and tick == 1 then
@@ -934,6 +1071,44 @@ script.on_event(defines.events.on_tick, function()
       -- since flat and the evidence that the writes differed at all is gone.
       local hot, cold, sp = spread(cell.reactors)
       storage.shape_before[shape.name].after_write = { hot = hot, cold = cold, spread = sp }
+    end
+
+    -- The writer-count group (#73), driven in the same window, from the same seeded state, with the
+    -- SHIPPED write shape on all four. The shape is deliberately not a variable here: the rows above
+    -- have already shown all three shapes indistinguishable, so using anything but the shipped one
+    -- would only add a second difference to a comparison that exists to have exactly one.
+    storage.writers_before = {}
+    for _, row in ipairs(storage.writers) do
+      local energy = heat_among(row.count, dt, row.from)
+      local predicted, heating = 0, 0
+      for i, r in ipairs(row.cell.reactors) do
+        local box = r.fluidbox[1]
+        if box then
+          local result = logic.step(SPEC, PLASMA, box.amount, box.temperature, energy(i), dt)
+          if result then
+            predicted = predicted
+              + (box.amount - result.plasma_consumed) * (result.temperature_c + 273.15)
+              - box.amount * (box.temperature + 273.15)
+            -- What step() says it ACTUALLY heated with, not what the policy offered it. The two
+            -- differ by the clamp inside step(), and it is the former that has to match across the
+            -- rows for "same total heating injected" to be a fact rather than an intention.
+            heating = heating + (result.heating_used_j or 0)
+          end
+        end
+      end
+      -- Every equality this comparison rests on, captured where it can be checked rather than
+      -- argued from the symmetry of the two build_row calls.
+      storage.writers_before[row.name] = {
+        heat = heat(row.cell), plasma = pooled(row.cell), capacity = declared_capacity(row.cell),
+        predicted = predicted, heating = heating,
+      }
+      drive_two_pass(row.cell, dt, energy)
+      -- Sampled in the SAME tick as the writes, for the reason the shape rows are: read at report
+      -- time every row is long since flat and the evidence that the two rows were written
+      -- differently at all is gone. This is what says the policy reached the boxes -- writers1 must
+      -- come out uneven and writers3 must not.
+      local hot, cold, sp = spread(row.cell.reactors)
+      storage.writers_before[row.name].after_write = { hot = hot, cold = cold, spread = sp }
     end
 
     -- THE PROBE. One write, and the whole run read either side of it inside one tick.
@@ -1028,6 +1203,10 @@ script.on_event(defines.events.on_tick, function()
     storage.shape_after = {}
     for name, cell in pairs(storage.shapes) do
       storage.shape_after[name] = { heat = heat(cell), plasma = pooled(cell) }
+    end
+    storage.writers_after = {}
+    for _, row in ipairs(storage.writers) do
+      storage.writers_after[row.name] = { heat = heat(row.cell), plasma = pooled(row.cell) }
     end
   elseif tick == MIX_AT then
     local hot, cold, s = spread(cells.mix.reactors)
@@ -1402,6 +1581,167 @@ script.on_nth_tick(CHECK_AT, function()
           aw.hot, aw.cold, aw.spread * 100) or "not sampled")
     end
 
+    -- ------------------------------------------- does writer count cost anything on its own? (#73)
+    --
+    -- IT DOES NOT. That is the finding, and everything below is the control that earns it.
+    --
+    -- THE COMPARISON #40 NEVER MADE, and the one its conclusion was drawn from anyway. The
+    -- bookkeeping cells above read `bare` at 57.6% against `solopipe` at 75.2-75.4% and called the
+    -- difference the price of three reactors writing to one run. Those two cells differ in THREE
+    -- things -- writer count, fill, and therefore temperature and the gradient the engine has to
+    -- flatten -- so the reading was an inference from a gap and not a measurement of a variable.
+    --
+    -- These rows hold the variable alone: one geometry, one seeding, one write shape and one total
+    -- of injected heating, delivered by one, two and three reactors. And then three more rows that
+    -- exist because holding one variable is not enough if the variable has a passenger:
+    --
+    --   middle    one writer, in the CENTRE reactor rather than the west one
+    --   east      one writer, in the EAST reactor
+    --   reversed  the east reactor again, written FIRST instead of last
+    --
+    -- Spreading heating over more reactors also moves where it lands, so `middle` and `east` ask
+    -- whether it was ever the count. And the east reactor is both the furthest along the run AND
+    -- the last one the driver writes, so `reversed` separates those two by turning the write order
+    -- round while leaving the heated reactor where it is.
+    record(storage.writers_before ~= nil and storage.writers_after ~= nil,
+      "the writer-count rows were driven and sampled")
+
+    if storage.writers_before and storage.writers_after then
+      -- EVERY EQUALITY THE COMPARISON RESTS ON, ASSERTED RATHER THAN ASSUMED. Six rows built by the
+      -- same call from the same argument list ought to be identical, and "ought to" is exactly what
+      -- put the claim this block exists to correct into the research note. If any of these fails,
+      -- the arrived fractions below are not comparable and nothing should be read from them.
+      --
+      -- Every row against the FIRST rather than pairwise, which is the same relation and six lines
+      -- instead of thirty.
+      local base = storage.writers_before.writers1
+      for _, row in ipairs(storage.writers) do
+        local w = storage.writers_before[row.name]
+        record(rel(w.capacity, base.capacity) < 1e-9
+           and rel(w.plasma, base.plasma) < 1e-6
+           and rel(w.heat / w.plasma, base.heat / base.plasma) < 1e-6
+           and rel(w.heating, base.heating) < 1e-9,
+          string.format("%s: same segment, same fill, same temperature, same total heating", row.name),
+          string.format("%.6g of %.6g units (%.1f%% full) at %.6g K, given %.6g J by %d reactor(s)",
+            w.plasma, w.capacity, w.plasma / w.capacity * 100, w.heat / w.plasma, w.heating,
+            row.count))
+      end
+
+      -- And the shipped physics predicts the same gain for all six, which is what makes the
+      -- fractions below shares of one number rather than each of its own. They agree for a reason
+      -- worth stating rather than noticing: every loss term in step() is computed against the
+      -- temperature the box STARTED at, which is identical in all six rows, and the heating enters
+      -- linearly -- so moving heating between reactors cannot move the predicted total at all.
+      for _, row in ipairs(storage.writers) do
+        record(rel(storage.writers_before[row.name].predicted, base.predicted) < 0.01,
+          string.format("%s: the shipped physics predicts the same gain as every other row", row.name),
+          string.format("%.6g against %.6g unit-K",
+            storage.writers_before[row.name].predicted, base.predicted))
+      end
+
+      local kept = {}
+      for _, row in ipairs(storage.writers) do
+        local w, after = storage.writers_before[row.name], storage.writers_after[row.name]
+        kept[row.name] = (after.heat - w.heat) / w.predicted
+        record(kept[row.name] > 0.4 and kept[row.name] < 1.02,
+          string.format("%s: %s", row.name, row.label),
+          string.format("%.2f%% of what its reactors spent arrived", kept[row.name] * 100))
+      end
+
+      -- ---- CONTROL ONE: IT IS NOT THE WRITE ORDER.
+      --
+      -- `east` and `reversed` heat the same reactor and differ only in whether the driver reaches
+      -- it first or last. If the loss depended on when a box is written -- which is the family of
+      -- mechanisms the shape rows above were about -- these two would differ. They do not, to two
+      -- decimal places, which is why the ramp below can be called positional at all.
+      local order = (kept.reversed - kept.east) * 100
+      record(math.abs(order) < 0.05,
+        "write order does not matter: the same reactor keeps the same written first or last",
+        string.format("%.2f%% written first against %.2f%% written last, a difference of %.2f points",
+          kept.reversed * 100, kept.east * 100, order))
+
+      -- ---- CONTROL TWO: WHAT DOES MATTER IS WHERE ON THE RUN THE HEAT GOES IN.
+      --
+      -- Three rows, one writer each, differing only in which of the three reactors is heated. They
+      -- come out on a ramp, monotone from the west reactor to the east one, and the ramp is about a
+      -- point across. That is not a symmetry of the geometry -- the west and east reactors are both
+      -- ENDS of the run and they do not agree -- so it is an asymmetry inside the engine's own
+      -- handling of a segment, and nothing observable from Lua says which. Named as what it is
+      -- rather than explained: this rig exists because a gap was once explained instead of measured.
+      local ramp = (kept.writers1 - kept.east) * 100
+      record(ramp > 0.5 and ramp < 2.0
+         and kept.writers1 > kept.middle and kept.middle > kept.east,
+        "where the heat enters DOES matter, and monotonically along the run",
+        string.format("west %.2f%%, middle %.2f%%, east %.2f%% -- %.2f points across, all one writer",
+          kept.writers1 * 100, kept.middle * 100, kept.east * 100, ramp))
+
+      -- ---- THE ANSWER: WRITER COUNT COSTS NOTHING, AND THE APPARENT EFFECT IS THAT RAMP'S MEAN.
+      --
+      -- The one-, two- and three-writer rows do come out different -- 72.19%, 71.92%, 71.64% on the
+      -- run that first measured this -- and read on their own that is exactly the writer-count
+      -- effect #40 inferred, an order of magnitude smaller. It is not one. Each row's heating is
+      -- spread over reactors 1..n, so its mean injection position walks 1, 1.5, 2 -- and the three
+      -- fractions are the arithmetic mean of the positional ramp above at those points, to two
+      -- decimal places.
+      --
+      -- ASSERTED AS THE PREDICTION IT IS, not as a resemblance. The per-position figures are
+      -- measured by the single-writer rows and the count rows are then required to land on their
+      -- mean. Nothing here is fitted: there is no free parameter, and a real per-writer cost of any
+      -- size would push a row off its own prediction.
+      --
+      -- It also settles a second thing on the way past. `writers3` is dead FLAT the instant its
+      -- writes land, where `middle` has a 73% gradient, and the two keep within a hundredth of a
+      -- point of each other. So the loss is linear and additive in the injections and has nothing
+      -- to do with whether they add up to a gradient for the engine to flatten -- which was the
+      -- obvious next explanation and is now excluded too.
+      local by_position = { kept.writers1, kept.middle, kept.east }
+      local function mean_over(n)
+        local total = 0
+        for i = 1, n do total = total + by_position[i] end
+        return total / n
+      end
+      for n = 2, 3 do
+        local name = (n == 2) and "writers2" or "writers3"
+        record(math.abs(kept[name] - mean_over(n)) * 100 < 0.05,
+          string.format("%d writers keep the MEAN of the positions they occupy, not a cost per writer", n),
+          string.format("%.2f%% measured against %.2f%% predicted from the single-writer ramp alone",
+            kept[name] * 100, mean_over(n) * 100))
+      end
+
+      -- ---- WHAT THAT LEAVES THE bare-AGAINST-solopipe GAP AS, which is the question #73 was
+      -- re-scoped around and the line a reader arrives at after the bookkeeping above.
+      --
+      -- Nothing of it is writer count. The whole positional ramp is about a point end to end, and
+      -- the gap it was invoked to explain is seventeen. `bare` is lower than `solopipe` because it
+      -- is fuller and hotter, not because three reactors write to it.
+      local gap = ((results.solopipe or 0) - (results.bare or 0)) * 100
+      record(gap > 8 * ramp,
+        "so the gap #40 attributed to writer count is not writer count and not position either",
+        string.format("a %.2f point positional ramp against a %.1f point gap -- bare %.1f%% at %.1f%% fill, solopipe %.1f%% at %.1f%% fill",
+          ramp, gap,
+          (results.bare or 0) * 100,
+          before.bare and (before.bare.plasma / declared_capacity(cells.bare) * 100) or 0,
+          (results.solopipe or 0) * 100,
+          before.solopipe and (before.solopipe.plasma / declared_capacity(cells.solopipe) * 100) or 0))
+
+      -- ---- EVIDENCE THE EXPERIMENT WAS DISCRIMINATING AT ALL.
+      --
+      -- On the same footing as the shape rows' spread check and load-bearing in a way theirs is
+      -- not. A null result is only worth anything if the rows really were driven differently: a
+      -- single writer puts a whole step's heating into one box and must come out uneven, three
+      -- writers split it and must come out flat. Both flat would mean the policy never reached the
+      -- driver, and the finding would be "identical rows behaved identically".
+      local wa, wb = base.after_write, storage.writers_before.writers3.after_write
+      record(wa and wa.spread > 0.001,
+        "writer count: the one-writer row was uneven the instant its writes landed",
+        wa and string.format("%.4g C against %.4g C end to end, spread %.2f%%",
+          wa.hot, wa.cold, wa.spread * 100) or "not sampled")
+      record(wb and wb.spread < 0.001,
+        "writer count: and the three-writer row was flat, which is what makes them different rows",
+        wb and string.format("%.4g C against %.4g C end to end, spread %.4f%%",
+          wb.hot, wb.cold, wb.spread * 100) or "not sampled")
+    end
+
     -- ------------------------------------------------------------ does a write reach its neighbours?
     --
     -- The premise of the whole excess-loss story, measured directly instead of inferred from arrived
@@ -1471,9 +1811,15 @@ script.on_nth_tick(CHECK_AT, function()
         "solopipe: the SAME single writer loses materially once there is a run to mix across",
         string.format("%.1f%% against %.1f%% -- mixing alone, with no second reactor to blame",
           results.solopipe * 100, results.solo * 100))
+      -- STATED AS A PROPERTY OF THE ROW, NOT OF ITS WRITERS (#73). This line used to end "the
+      -- excess is this mod's, not the engine's", which was the inference #40 drew from an ordering
+      -- and which the writer-count rows above have now falsified: the two cells differ in fill and
+      -- temperature as well, and writer count accounts for none of the gap. The ASSERTION is
+      -- unchanged and still worth making -- the bare row really does keep less -- so only the claim
+      -- attached to it has gone.
       record(results.bare < results.solopipe,
-        "and three reactors on a run lose MORE than mixing alone accounts for",
-        string.format("%.1f%% on three writers against %.1f%% on one -- the excess is this mod's, not the engine's",
+        "and the three-reactor run loses MORE than mixing alone accounts for",
+        string.format("%.1f%% on the bare run against %.1f%% on solopipe -- and see the writer-count rows for what that is NOT",
           results.bare * 100, results.solopipe * 100))
     end
 
