@@ -13,11 +13,20 @@
     WHAT IS ON THE MAP -- one reactor, eight clones of it, and four entities that are not ours
 
       driven        A real rf-reactor: plasma-fed, powered, and simulated by control.lua, which
-                    spends confinement heating straight out of this buffer every sixth tick. This
-                    is the entity #37 traced.
+                    spends confinement heating straight out of this buffer EVERY TICK since #72.
+                    This is the entity #37 traced.
+      dry           Another real rf-reactor, registered and powered exactly like driven, with NO
+                    PLASMA. It must draw nothing. Before #72 that was automatic -- the only energy
+                    write was in apply(), which runs solely for a reactor whose step returned a
+                    result -- and per-tick spending could easily have lost it, putting a permanent
+                    50 MW on every idle reactor in a player's base with a tooltip still reading
+                    1 W. This is the cell that would catch that, and its buffer is required to
+                    match `same`, which nothing of ours touches at all.
       same          A clone of the reactor prototype under a different name, so entity-management
                     never registers it and no Lua of ours ever writes its energy. Identical buffer
-                    and flow limit. The difference between this and `driven` is exactly our writes.
+                    and flow limit. The difference between this and `driven` is exactly our writes,
+                    and since #72 that difference is a measured one tick of heating rather than
+                    nothing at all -- see the `peak` assertion.
       flow-6        10 MJ buffer, input_flow_limit dropped to 6MW.
       flow-600      10 MJ buffer, input_flow_limit raised to 600MW.
       no-limit      10 MJ buffer, no input_flow_limit at all, which means unlimited.
@@ -43,14 +52,30 @@
     engine stages. The last of those is what `min` is for, and why it is only taken after the
     buffers have had time to fill -- a minimum that included the fill would be the starting zero.
 
-    FOUR LINES PER CASE, AND THE TWO THAT MATTER ANSWER DIFFERENT QUESTIONS
+    FIVE LINES PER CASE, AND THE THREE THAT MATTER ANSWER DIFFERENT QUESTIONS
 
     `proto` is what the runtime prototype says, so the declared figure sits beside the observed one.
-    `tail` is the last forty per-tick samples, which is how the driven reactor's sawtooth is read
-    rather than inferred -- it is evidence for a human, and nothing asserts against it.
+    `tail` is the last forty per-tick samples, which is how the shape of the driven reactor's
+    buffer is read rather than inferred -- it is evidence for a human, and nothing asserts against
+    it. It used to show a sawtooth. Since #72 it is flat, and `swing` is the assertion that says so.
 
-    The two that are asserted against are `peak` and `clamp`. `peak` watches the buffer fill and
-    reports the highest, lowest and last energy seen. `clamp` writes 1e15 J and reads back what
+    `swing` IS #72's, and with the `dry` cell's `peak` it is what this rig says about this repo's
+    code rather than about the engine.
+    control.lua used to spend a whole update interval's confinement heating -- 5 MJ -- in one go,
+    of which 1 MJ arrived the same tick, so a satisfied reactor's buffer stepped down 4 MJ on the
+    step tick and climbed back at 1 MJ a tick for five. That is a 0-to-60 MW square wave at 10 Hz
+    on a reactor that consumes 50 MW flat, so a plant had to be sized a fifth above what the
+    reactor really draws. Heating is spent every tick now, so the buffer sits still: what the
+    reactor takes out, the network puts back inside the same tick.
+
+    The line reports the largest one-tick change in each buffer, and the assertion holds `driven`
+    under a single tick of heating. Both sides of that bound are measured rather than argued: the
+    old arrangement reads 4,000,000 J here and this one reads 0, against a bound of 833,333 J.
+    `same`, which no Lua of ours touches, is required to be exactly still, so a small reading on
+    `driven` is smooth spending rather than a blunt instrument.
+
+    The three that are asserted against are `peak`, `clamp` and `swing`. `peak` watches the buffer
+    fill and reports the highest, lowest and last energy seen. `clamp` writes 1e15 J and reads back what
     stuck -- an over-large write is clamped rather than refused, so it asks the engine for its
     ceiling directly instead of inferring one from a fill. The clamp
     is taken last, after every other figure, so nothing above it is measured on a buffer it filled.
@@ -179,6 +204,8 @@ end
 -- What each one is for is in the script's .DESCRIPTION rather than repeated here.
 local CASES = {
   { label = "driven",     name = "rf-reactor",          plasma = true },
+  -- plasma omitted, deliberately: this cell exists to be idle. See .DESCRIPTION.
+  { label = "dry",        name = "rf-reactor"                        },
   { label = "same",       name = "rf-probe-same",       plasma = true },
   { label = "flow-6",     name = "rf-probe-flow-6",     plasma = true },
   { label = "flow-600",   name = "rf-probe-flow-600",   plasma = true },
@@ -197,7 +224,13 @@ local CASES = {
 -- its 10 MJ and buffer-100 needs 100 for its 100 MJ, both from empty.
 local REPORT_AT = 900
 local SETTLED   = 300  -- after this the buffers are full, so a minimum means something
-local SERIES    = 40   -- trailing per-tick samples, so a sawtooth can be read rather than inferred
+local SERIES    = 40   -- trailing per-tick samples, so the steadiness is read rather than inferred
+
+-- One tick of confinement heating, read out of the shipped spec rather than written here, so the
+-- bound the swing assertion is made against moves with heating_power_w and cannot go stale.
+-- reactor-logic touches no Factorio API at all, which is what makes requiring it from a rig legal.
+local HEATING_PER_TICK =
+  require("__realistic-fusion-refreshed__/scripts/reactor-logic").reactor.heating_power_w / 60
 
 script.on_init(function()
   local surface = game.surfaces[1]
@@ -237,8 +270,9 @@ script.on_init(function()
     if not eei then error(case.label .. ": power source refused") end
     eei.power_production = 2e7
 
-    -- Plasma, so every boiler here is a working one and none of them is idle for a reason the
-    -- others are not. Placed where the entity says its connection points (#49).
+    -- Plasma, so a boiler here is a working one rather than idle for a reason the others are not.
+    -- The one exception is `dry`, which is idle ON PURPOSE and is the only cell whose finding is
+    -- about being idle. Placed where the entity says its connection points (#49).
     if case.plasma then
       local connections = entity.fluidbox.get_pipe_connections(1)
       if #connections == 0 then error(case.label .. ": no plasma connection") end
@@ -284,6 +318,16 @@ script.on_event(defines.events.on_tick, function()
       -- The minimum is taken only once the buffers have filled, or every case reports the zero it
       -- started at and the figure says nothing.
       if game.tick > SETTLED and e < w.min then w.min = e end
+      -- The largest one-tick change, which is what #72 is measured on. Same window as the minimum
+      -- and for the same reason: a fill from empty is a legitimate 1 MJ step every tick and would
+      -- swamp the figure. Sampled at a fixed point in the tick -- this handler, after
+      -- control.lua's, since the rig depends on the mod -- so consecutive readings are comparable.
+      if game.tick > SETTLED and w.last then
+        local step = e - w.last
+        if step < 0 then step = -step end
+        if step > (w.swing or 0) then w.swing = step end
+      end
+      w.last = e
       w.series[#w.series + 1] = e
       if #w.series > SERIES then table.remove(w.series, 1) end
     end
@@ -314,6 +358,8 @@ script.on_nth_tick(REPORT_AT, function()
     local parts = {}
     for _, sample in ipairs(w.series) do parts[#parts + 1] = string.format("%.10g", sample) end
     log(string.format("BUF-RIG tail  %-12s %s", w.label, table.concat(parts, " ")))
+    log(string.format("BUF-RIG swing %-12s max_step=%.10g heating_per_tick=%.10g",
+      w.label, w.swing or 0, HEATING_PER_TICK))
 
     -- The ceiling asked of the engine directly, and asked LAST so that nothing above it was
     -- measured on a buffer this had already filled. An over-large write is clamped rather than
@@ -359,6 +405,8 @@ try {
     $ratio       = @{}
     $peak        = @{}
     $consumption = @{}
+    $swing       = @{}
+    $heatingTick = 0
     foreach ($line in $reported) {
         if ($line -match '^clamp\s+(?<label>\S+)\s+wrote=\S+\s+held=(?<held>\S+)\s+ratio=(?<ratio>\S+)$') {
             $held[$Matches.label]  = [double] $Matches.held
@@ -370,6 +418,10 @@ try {
         elseif ($line -match '^proto\s+(?<label>\S+)\s+.*\sdrain_per_tick=(?<drain>\S+)\s+usage_per_tick=(?<usage>\S+)\s') {
             $consumption[$Matches.label] = [double] $Matches.drain + [double] $Matches.usage
         }
+        elseif ($line -match '^swing\s+(?<label>\S+)\s+max_step=(?<step>\S+)\s+heating_per_tick=(?<heat>\S+)$') {
+            $swing[$Matches.label] = [double] $Matches.step
+            $heatingTick = [double] $Matches.heat
+        }
     }
 
     # 16/15 to the ninth decimal, which is where the ratio was measured, rather than "about 6.7%".
@@ -377,7 +429,7 @@ try {
     # merely nearby, and noticing exactly that is what this script is for.
     $expected = 16 / 15
     $failures = @()
-    foreach ($label in @('driven', 'same', 'flow-6', 'flow-600', 'no-limit',
+    foreach ($label in @('driven', 'dry', 'same', 'flow-6', 'flow-600', 'no-limit',
                          'buffer-1', 'buffer-7', 'buffer-100', 'tertiary')) {
         if (-not $ratio.ContainsKey($label)) { $failures += "${label}: no clamp reading"; continue }
         if ([math]::Abs($ratio[$label] - $expected) -gt 1e-9) {
@@ -406,10 +458,75 @@ try {
                 $label, $held[$label], $fromUsage)
         }
     }
-    # The reactor the simulation drives and the clone it never touches reach the same ceiling. If
-    # those two ever part company, the overshoot is ours after all.
-    if ($peak.ContainsKey('driven') -and $peak.ContainsKey('same') -and $peak['driven'] -ne $peak['same']) {
-        $failures += ('driven peaked at {0} J and the untouched clone at {1} J' -f $peak['driven'], $peak['same'])
+    # The reactor the simulation drives and the clone it never touches peak ONE TICK OF HEATING
+    # apart, and that gap is the whole of our writes.
+    #
+    # They used to peak identically, and #72 is what separated them -- control.lua's doing, not the
+    # engine's. Heating is spent every tick now, and spend() runs before this rig samples (the rig
+    # depends on the mod, so its handler is second), so every reading of `driven` is taken just
+    # after a tick's heating came out and just before the network puts it back. The buffer reaches
+    # the same ceiling as `same`; it is simply never OBSERVED there.
+    #
+    # Asserted as an exact difference rather than relaxed to "near enough", because the exact
+    # version is the stronger claim: our spending accounts for the gap and nothing else does. Part
+    # company by anything other than a tick of heating and something else is moving the buffer.
+    if (-not ($peak.ContainsKey('driven') -and $peak.ContainsKey('same'))) {
+        $failures += 'driven or same has no peak reading, so our writes were never separated out'
+    }
+    else {
+        $gap = $peak['same'] - $peak['driven']
+        if ([math]::Abs($gap - $heatingTick) -gt 1e-6 * $heatingTick) {
+            $failures += ('driven peaked at {0} J and the untouched clone at {1} J, a gap of {2} J ' -f
+                $peak['driven'], $peak['same'], $gap) +
+                ('rather than the {0} J one tick of confinement heating costs' -f $heatingTick)
+        }
+    }
+
+    # #72's OTHER assertion, and the one that would catch the change going too far. `dry` is a
+    # registered, powered rf-reactor with no plasma, so control.lua has nothing to simulate for it
+    # and must charge it nothing -- which is what it did before #72, when the only energy write was
+    # in apply() and apply() never ran for such a reactor. Per-tick spending could have lost that
+    # by charging every registered reactor: a flat 50 MW on every idle reactor in a base, for ever,
+    # behind a tooltip that still says 1 W, and a brownout that deepens itself because a stalled
+    # rf-heater empties the reactors and empty reactors would go on drawing.
+    #
+    # Compared against `same` rather than against a figure written here, for the reason the gap
+    # assertion above is: `same` is the same prototype with the same buffer and the same inflow,
+    # which no Lua of ours touches at any point. Equal means untouched.
+    if (-not $peak.ContainsKey('dry')) {
+        $failures += 'dry: no peak reading, so nothing checked that an idle reactor draws nothing'
+    }
+    elseif ($peak.ContainsKey('same') -and $peak['dry'] -ne $peak['same']) {
+        $failures += (('dry: a registered reactor holding NO plasma peaked at {0} J against the ' +
+            'untouched clone''s {1} J, so control.lua is charging it. An idle reactor must draw ' +
+            'nothing -- see the note above this check.') -f $peak['dry'], $peak['same'])
+    }
+
+    # #72's assertion, and the only one here that is about this repo's own code rather than about
+    # the engine. control.lua used to spend a whole interval's heating -- 5 MJ -- in one go, of
+    # which 1 MJ arrived the same tick, so a satisfied reactor's buffer stepped down 4 MJ and
+    # climbed back at 1 MJ a tick for five. That is a 0-to-60 MW square wave at 10 Hz on a reactor
+    # that consumes 50 MW flat. It is spent per tick now, so a satisfied buffer sits still: the
+    # reactor takes a tick of heating out and the network puts the same back inside the same tick.
+    #
+    # The bound is ONE TICK OF HEATING, and both sides of it were measured on this rig rather than
+    # argued: 4,000,000 J before the change and 0 after, against a bound of 833,333 J. It is stated
+    # as a bound rather than as an exact zero because the engine never promised one, and the figure
+    # comes from the rig, which read it out of the shipped spec.
+    if (-not $swing.ContainsKey('driven')) {
+        $failures += 'driven: no swing reading, so the per-tick spending was never observed'
+    }
+    elseif ($swing['driven'] -gt $heatingTick) {
+        $failures += ('driven: its buffer moved {0:N0} J in one tick, more than the {1:N0} J of ' -f
+            $swing['driven'], $heatingTick) +
+            'heating a tick spends -- confinement is being spent in lumps again, so the draw is a square wave'
+    }
+    # The control, and it is what says the bound above is tight rather than merely satisfied: an
+    # entity no Lua of ours touches sits perfectly still on this rig, so a `driven` reading near
+    # zero is the simulation being smooth and not the instrument being blunt.
+    if ($swing.ContainsKey('same') -and $swing['same'] -ne 0) {
+        $failures += ('same: an entity nothing drives moved {0:N0} J in one tick, so the swing ' -f $swing['same']) +
+            'reading measures the rig rather than our spending'
     }
 
     Write-Host ''
@@ -420,6 +537,8 @@ try {
     Write-Host ('OK - every non-accumulator buffer holds 16/15 of its declared capacity ' +
         '({0:N2} MJ against a declared 10 MJ), both accumulators hold exactly theirs, and an ' -f ($held['same'] / 1e6) +
         'assembling machine ignores the figure. See docs/research/reactor-runtime-cost.md.')
+    Write-Host ('     The driven reactor''s buffer moved at most {0:N0} J in a tick, against the {1:N0} J a tick of heating costs, so its draw is steady (#72).' -f
+        $swing['driven'], $heatingTick)
 }
 finally {
     if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }

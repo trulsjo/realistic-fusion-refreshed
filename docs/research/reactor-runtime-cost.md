@@ -258,16 +258,23 @@ spike rather than spread out. Staggering reactors across buckets would fix that 
 done: reactors sharing a fluid segment have to step together, or one reads a pool its neighbour
 has already moved this tick.
 
-**There is a ceiling on the interval that the physics test cannot see**, because it is a fact
-about the prototype rather than about the plasma. A step draws the whole interval's heating out of
-the reactor's electric buffer in one go, so 50 MW against a 10 MJ buffer runs out past twelve ticks
-and the reactor is starved every step — silently, because being underpowered is a state it is
-meant to have.
-
-`control.lua`'s `check_cadence()` enforces it at `on_init`, which is the one place both numbers are
-visible. Raising the interval past 12 without raising `buffer_capacity` now fails the load-check
-rather than shipping a quietly crippled reactor. Verified in both directions: the check passes at
-six ticks and fails at twenty, naming both numbers and the two files that can resolve it.
+> ~~**There is a ceiling on the interval that the physics test cannot see**, because it is a fact
+> about the prototype rather than about the plasma. A step draws the whole interval's heating out of
+> the reactor's electric buffer in one go, so 50 MW against a 10 MJ buffer runs out past twelve ticks
+> and the reactor is starved every step — silently, because being underpowered is a state it is
+> meant to have.~~
+>
+> ~~`control.lua`'s `check_cadence()` enforces it at `on_init`, which is the one place both numbers are
+> visible. Raising the interval past 12 without raising `buffer_capacity` now fails the load-check
+> rather than shipping a quietly crippled reactor. Verified in both directions: the check passes at
+> six ticks and fails at twenty, naming both numbers and the two files that can resolve it.~~
+>
+> **Withdrawn 2026-09-06 by [#72](https://github.com/trulsjo/realistic-fusion-refreshed/issues/72).**
+> A step no longer draws the interval's heating in one go — `control.lua` pays for one tick at a
+> time — so no interval has to fit in the buffer and this ceiling does not exist. `check_cadence()`
+> is gone with it, replaced by `check_input_flow()`, which guards the starvation that IS still
+> reachable: `input_flow_limit` under `heating_power_w`. See *[Per-tick confinement spending
+> (#72)](#per-tick-confinement-spending-72)* below.
 
 ## A finding about fluid boxes, discovered by getting it wrong
 
@@ -1034,8 +1041,10 @@ Measured 2026-08-20 by `scripts/check-buffer.ps1`, against **Factorio 2.0.77**.
 `rf-reactor` declares `buffer_capacity = "10MJ"` and its buffer peaks at **10,666,666.67 J**. That
 figure fell out of #37's trace of the reactor's power draw and nobody could explain it, which put it
 in exactly the position ADR 0011's mixing rule was in before #40 measured it: **a declared prototype
-number this repo believed and had seen violated.** #72 retunes `check_cadence()` against this
-buffer, so it was worth knowing what the buffer really is first.
+number this repo believed and had seen violated.** #72 was about to write a new invariant in the
+place `check_cadence()` held, so it was worth knowing what the buffer really is first. What #72
+actually did with the answer was stop checking the buffer at all — see *[Per-tick confinement
+spending (#72)](#per-tick-confinement-spending-72)*.
 
 ### The rule
 
@@ -1074,11 +1083,15 @@ measured here, floor is the answer.
 
 The trap for mod code is the second half: **`LuaElectricEnergySourcePrototype.buffer_capacity`
 returns the declared figure, not the effective one.** So any check written against the prototype —
-`check_cadence()` in `control.lua` is this repo's — is comparing against a figure the entity has 6.7%
-more than. That is conservative rather than wrong, and at the shipped numbers it changes
+`check_cadence()` in `control.lua` was this repo's — compares against a figure the entity has
+6.7% more than. That was conservative rather than wrong, and at the shipped numbers it changed
 nothing: 10.67 MJ against 50 MW is a ceiling of 12.8 ticks where the declared 10 MJ gives
 12, and `UPDATE_INTERVAL` is a whole number of ticks either way. **#37's guess that "the ceiling may
 be conservative by a little" is confirmed, and the little is 0.8 of a tick.**
+
+**The trap is why this repo no longer has such a check.** #72 replaced `check_cadence()` with
+`check_input_flow()`, which reads `get_input_flow_limit()` — a per-tick figure the engine states
+directly — rather than a declared capacity it holds 16/15 of.
 
 ### The four candidates #71 listed, each answered
 
@@ -1094,7 +1107,12 @@ be conservative by a little" is confirmed, and the little is 0.8 of a tick.**
   above.
 - **"It is our own write."** *Ruled out.* `same` is the reactor prototype under a name
   `entity-management` does not register, so no Lua of ours ever touches its energy, and it holds the
-  identical figure. The reactor the simulation drives peaks at exactly the same value.
+  identical figure. The reactor the simulation drives peaked at exactly the same value when this was
+  measured. **Since #72 it peaks one tick of heating lower** — 9,833,333.33 J against 10,666,666.67 —
+  because heating is now spent every tick and `spend()` runs before the rig samples, so the buffer
+  is never *observed* at a ceiling it still reaches. The `clamp` reading, which asks the engine
+  directly, is unchanged at 16/15 for both. `check-buffer.ps1` asserts the gap as exactly one tick
+  of heating rather than asserting the two are equal.
 
 ### What the ratio does **not** apply to, which is why this note claims a rule and not a law
 
@@ -1674,3 +1692,155 @@ it costs on flat ground.
 - What it closes: item 1 of *[What this does not close](#what-this-does-not-close)* above, the last
   bullet of *[Collectors attached](#collectors-attached-62)*, and ADR 0005's residue.
 - **TimEv**, for the base every figure in this section stands on.
+
+## Per-tick confinement spending (#72)
+
+Measured **2026-09-06** on Factorio 2.0.77, on the machine *[Method](#method)* describes — the same
+one every figure on this page was taken on.
+
+[#72](https://github.com/trulsjo/realistic-fusion-refreshed/issues/72) moved confinement heating out
+of the simulation step and into a per-tick handler. The fluid box work stays on `UPDATE_INTERVAL`;
+only the electric spending moved. This section is the two measurements it owed: that the draw is
+steady, and what the change costs.
+
+### The shape it fixed, measured rather than argued
+
+`scripts/check-buffer.ps1` reports the largest one-tick change in each probe's electric buffer as
+its `swing` line, over the 600 settled ticks of a 900-tick run. The `driven` cell is a real
+`rf-reactor`, plasma-fed, powered and simulated. Taken twice on the same rig, with nothing changed
+but `control.lua` and `scripts/reactor-logic.lua`:
+
+| | largest one-tick change | buffer max | buffer min |
+|---|---:|---:|---:|
+| a step spends the interval's heating in one go | **4,000,000 J** | 10,666,666.67 J | 6,666,666.67 J |
+| a tick spends a tick's heating (#72) | **0 J** | 9,833,333.33 J | 9,833,333.33 J |
+
+**The old shape is exactly what #37 described.** The reactor spent 5 MJ on the step tick, of which
+1 MJ arrived the same tick, so the buffer stepped down 4 MJ and climbed back at
+`input_flow_limit` — 1 MJ a tick — for the next five. Five ticks in six the network delivered 60 MW
+and the sixth it delivered nothing: a correct 50 MW average behind a 60 MW peak, so a plant had to
+be sized a fifth above what the reactor consumes, and the tooltip flickered at 10 Hz.
+
+**The new shape has no shape.** The highest reading over all 901 samples, the lowest over the 600
+settled ones and the last are one number, and the largest one-tick change is zero: what the reactor
+takes out, the network puts back inside the same tick. The draw is a flat 50 MW.
+
+The `same` probe — the reactor prototype under a name `entity-management` never registers, so no Lua
+of ours touches it — swings zero in both runs. That is what says the instrument is sharp rather than
+blunt: a `driven` reading of zero is smooth spending and not a blind rig. `check-buffer.ps1` asserts
+on it for that reason.
+
+**An idle reactor still draws nothing, and that is preserved rather than new.** Before #72 the only
+energy write was in `apply()`, which runs solely for reactors whose step returned a result — so a
+reactor built and not yet piped, or one that has run dry, drew nothing at all. `spend()` charges only
+reactors `update()` stepped, and the accumulator's own presence is what records that: a zero written
+for every reactor stepped, the entry removed for every one that was not. Charging unconditionally
+would have put a flat 50 MW on every idle reactor for ever, invisibly, and turned a brownout into a
+spiral — a shortage stalls `rf-heater`, the reactors run dry, and dry reactors would go on pulling
+full confinement power instead of shedding it. **The cost is a lag of at most one interval in each
+direction**, a tenth of a second: a reactor freshly given plasma is stepped once before it starts
+paying, and one that has just run dry pays out the interval it emptied in. Reading
+`entity.fluidbox[1]` every tick would be exact and would put back the allocating crossing the whole
+change exists to avoid.
+
+**An existing save needs no migration, and that was checked in the game rather than argued.** The
+change adds one table to `storage`, created lazily by `spend()` before anything reads it. A save
+built by `check-buffer.ps1` under the pre-#72 code — so it carries a registered, plasma-fed, powered
+`rf-reactor` and no `heating_spent` — was then run for 600 ticks under the post-#72 code: exit 0,
+no error line in the log. A bare `--create` save was run the same way with the same result.
+
+**Two figures moved with the shape and neither is a regression.** `driven` now peaks one tick of
+heating *below* the untouched clone, because `spend()` runs before the rig samples and the buffer is
+never observed at a ceiling it still reaches; the `clamp` reading, which asks the engine directly, is
+16/15 for both as before. And the assertion that used to require the two peaks to be equal now
+requires them to differ by exactly one tick of heating, which is the stronger statement: our spending
+accounts for the gap and nothing else does.
+
+### What it costs: about +0.9 µs per reactor, and the ratio is under this page's own floor
+
+`scripts/bench-reactors.ps1 -Counts 0,200`, D-D, the shipped path with no ablation. **Ten
+invocations, alternating between the two arms in one sitting, none of them flagged `BUSY`:**
+
+| arm | µs per reactor, five invocations | median |
+|---|---|---:|
+| a step spends the interval's heating | 3.110  3.200  3.697  3.106  3.112 | **3.112** |
+| a tick spends a tick's heating (#72) | 3.923  4.045  4.085  3.984  3.989 | **3.989** |
+
+**The delta is +0.88 µs per reactor and it is the finding.**
+[#37](https://github.com/trulsjo/realistic-fusion-refreshed/issues/37) predicted +0.9 µs, from the
+extra `entity.energy` crossings the change adds, and that is what came out. At 200 reactors it is
+0.18 ms a tick, taking the fleet from 3.7% of a 16.67 ms tick to 4.8%.
+
+**An earlier sitting agrees, on an earlier form of the change.** Before the idle-reactor gate above
+existed, the same ten-invocation design gave 3.075 against 4.000 — a delta of +0.93. Two paired
+sittings, two deltas 0.05 µs apart, is more than either alone; it is recorded rather than merged,
+because only the second measured the code that ships.
+
+**The RATIO is 1.28×, which is under this page's own 1.35× noise floor, and that is a claim this
+page has to be careful with.** Two things are true at once and neither cancels the other:
+
+- **By the standing rule, a 1.28× difference is unmeasured.** That rule was set by *[What remains
+  once the machine is quiet](#what-remains-once-the-machine-is-quiet)* and it applies to figures
+  compared across sittings, which is how this page's figures usually meet.
+- **These two did not meet that way.** They are a paired alternating design in one sitting: the arms
+  swap between consecutive invocations, so drift lands on both. The two bands do not touch — the
+  slowest old invocation is 3.70 and the fastest new one is 3.92 — and the new arm's own spread is
+  1.04×. The old arm's is 1.19×, on the strength of a single 3.697 against four readings inside
+  0.10 of each other, which is what an outlier looks like and is why the median is the statistic.
+
+So: **quote +0.9 µs, not 1.28×.** The absolute delta is what the design supports; the ratio is a
+number two arms of a paired run happen to stand in, and it depends on a baseline that itself moved.
+
+**That baseline moved, and it was re-measured rather than taken off this page.** #39 recorded 2.6 µs
+for the shipped D-D step at *n* = 200 and #72's costing was written against it. The same measurement
+today reads **3.11 µs** — 1.20× higher, inside the noise floor and so not necessarily a real change,
+but three weeks and several tickets of work sit between the two and there was no reason to assume it
+had not moved.
+
+**Which is why the control was taken fresh rather than read off this page.** Against the recorded
+2.6 the change would have measured 1.53×, and the 0.51 µs of drift or difference between the two
+sittings would have been charged to per-tick spending. That is the mistake the alternating design
+exists to prevent, and it is a general one: **a figure on this page is a record of a sitting, not a
+baseline to subtract a later sitting from.**
+
+### What this does not say
+
+- **It is not attributed by ablation.** The paired design puts the delta on `control.lua` and
+  `scripts/reactor-logic.lua`, which are the only two files that differ between the arms, and inside
+  those the only change with a runtime cost is `spend()`. That is an argument, not a measurement.
+- **The `write` rung of the ladder above has moved and its recorded row has not been re-measured.**
+  The 0.725 µs in *[Where the cost actually goes](#where-the-cost-actually-goes)* is the pre-#72
+  rung — the pending table and four crossings at the interval. `bench-reactors.ps1` now runs the
+  per-tick confinement pair on that rung as well, mirroring `control.lua`, so `-Ablate write`
+  measures a different thing today. Invocations were taken only to prove the edited ladder still
+  runs: `physics` 1.724 then 1.734 µs, and `write` **4.127 then 3.328 µs on the same rung**. Those
+  two `write` readings are 1.24× apart, which is inside this page's noise floor and is exactly why a
+  single invocation is not a row. The table is left as the 2026-08-18 measurement it is rather than
+  half-replaced with something weaker. Read all four numbers as a smoke test.
+- **The ladder is still described as a floor on the shipped step and neither smoke reading settles
+  that.** The first `write` invocation came out above it (4.127 against 3.989) and the second below
+  (3.328). One invocation each way, 1.24× apart, is the noise floor talking. Recorded because a
+  reader re-running the ladder will see one of the two and should not read either as a finding.
+- **It says nothing about a busy tick.** Every figure here is from the rig. *[On a loaded tick, not a
+  rig (#67)](#on-a-loaded-tick-not-a-rig-67--adr-0005s-last-residue)* is the sweep that answers that
+  question and it predates this change.
+- **The tooltip is still wrong.** `energy_consumption = "1W"` is untouched, so "Max consumption: 1 W"
+  is seven orders out and [#46](https://github.com/trulsjo/realistic-fusion-refreshed/issues/46)
+  stays open in full. What #72 fixed is the draw, not what the entity says about it.
+
+### Sources
+
+- `scripts/check-buffer.ps1` — the `swing` line and its assertion; the shape measurement above is
+  its `driven` and `same` rows. The pre-#72 row was taken by running the same script against the
+  previous `control.lua`.
+- `scripts/bench-reactors.ps1 -Counts 0,200` — ten invocations, alternating arms, one sitting; and
+  `-Ablate physics` / `-Ablate write` once each, as a smoke test of the edited ladder.
+- `scripts/check-brownout.ps1` — 24 checks, 0 failures after the change, which is where the claim
+  that a brownout still de-rates the plasma comes from. Its `full` cell draws 55.17 MW against
+  `half`'s 27.6 and a blackout's 0, and `half` is still fusing at 2.66 × 10⁹ °C at the end of the
+  shortfall.
+- The cross-version run above was taken by hand and is not a committed script. It is two Factorio
+  invocations over one save with `control.lua` swapped between them; anyone repeating it can do the
+  same, and there is nothing here worth a rig.
+- `scripts/load-check.ps1 -SelfTest` — half eight is `check_input_flow()`'s negative test.
+- What it discharges: item 4b of #37, and the whole of #72.

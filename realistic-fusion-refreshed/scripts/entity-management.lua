@@ -78,6 +78,10 @@ function M.forget(unit_number)
   -- is the reactor's entry rather than the blanket's (see control.lua), so a reactor leaving the
   -- map takes it with it.
   if storage.blanket_charge then storage.blanket_charge[unit_number] = nil end
+  -- And the heating this reactor had been paid for but not yet simulated with (#72), for exactly
+  -- the same reason: a joule figure left behind would be credited to whatever the game next hands
+  -- that unit_number to. At most one interval's worth either way.
+  if storage.heating_spent then storage.heating_spent[unit_number] = nil end
 end
 
 -- ---------------------------------------------------------------- reactor -> fittings

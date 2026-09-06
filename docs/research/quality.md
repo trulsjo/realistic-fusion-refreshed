@@ -310,12 +310,12 @@ read at all five levels; only the two ends are shown, and "flat" means all five 
 |---|---|---|---|---|---|
 | `rf-reactor` | `boiler` | **fluid box 1 (plasma)** | 1000 | **1000** | **Yes — and it holds.** `volume_m3` and `particles_per_unit` are Lua constants; `control.lua` reads `box.get_capacity` |
 | | | **fluid box 2 (energy)** | 1000 | **1000** | `apply()` in `control.lua` reads `get_capacity(2)` to clamp the sale |
-| | | **`buffer_capacity`** | 10 MJ | **10 MJ** | Yes — `check_cadence()` in `control.lua` checks `heating_power_w × interval` against it at load |
-| | | `input_flow_limit` | 60 MW | **150 MW** | No. No shipped code reads it; only `check-brownout.ps1`'s rig does |
+| | | `buffer_capacity` | 10 MJ | **10 MJ** | No, since #72. Stated reserve; `check_cadence()` used to check `heating_power_w × interval` against it and is gone |
+| | | **`input_flow_limit`** | 60 MW | **150 MW** | **Yes, since #72 — and it holds.** `check_input_flow()` in `control.lua` requires it to cover `heating_power_w` at load. Legendary raises it, which is the safe direction |
 | | | `energy_consumption` | 1 W | 2.5 W | No. The neutered boiler conversion |
 | `rf-aneutronic-reactor` | `boiler` | fluid boxes | 3000 / 1000 | **3000 / 1000** | Yes — and it holds. 3×10²⁰ m⁻³ stays 3×10²⁰ |
-| | | `buffer_capacity` | 40 MJ | **40 MJ** | Yes, same load check |
-| | | `input_flow_limit` | 240 MW | **600 MW** | No |
+| | | `buffer_capacity` | 40 MJ | **40 MJ** | No, since #72. Same reasoning as `rf-reactor`'s |
+| | | `input_flow_limit` | 240 MW | **600 MW** | **Yes, since #72** — same load check, over every reactor in `SPECS` |
 | | | `energy_consumption` | 1 W | 2.5 W | No |
 | `rf-lithium-blanket` | `container` | **`inventory_size`** | 100 | **250** | No. Buffer only — `blanket_breed` is bounded by neutrons and collector headroom |
 | `rf-heater` | `assembling-machine` | **`crafting_speed`** | 1 | **2.5** | No. Plasma supply, which ADR 0016 makes a player lever anyway |

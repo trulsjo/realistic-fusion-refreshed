@@ -258,12 +258,23 @@ reactor.energy_source = {
   type = "electric",
   usage_priority = "secondary-input",
   -- Confinement heating is spent straight out of this buffer by control.lua rather than declared
-  -- as a fixed consumption, which is what makes the reactor's draw follow the simulation. A few
-  -- seconds of reserve so one slow tick does not read as a brownout; the network refills it at up
-  -- to input_flow_limit.
+  -- as a fixed consumption, so a brownout shows up as a plasma that cannot hold its temperature
+  -- rather than as a machine the engine switches off.
   --
-  -- It also sets a ceiling on control.lua's UPDATE_INTERVAL: one step spends the whole interval's
-  -- heating at once, so this buffer has to cover 50 MW for that long. 10 MJ buys twelve ticks.
+  -- BUFFER AND LIMIT NOW MEAN DIFFERENT THINGS, and #72 is what separated them.
+  --
+  -- buffer_capacity is STATED RESERVE and nothing else: a few seconds of it so one slow tick does
+  -- not read as a brownout. It used to set a ceiling on control.lua's UPDATE_INTERVAL, because a
+  -- step spent the whole interval's heating at once and 10 MJ covers 50 MW for twelve ticks.
+  -- control.lua pays per tick now, so no interval has to fit in here and that coupling is gone.
+  -- The value is kept, deliberately, because reserve is what it was always worth.
+  --
+  -- input_flow_limit is the one that is LOAD-BEARING. 60 MW against 50 MW of heating is the margin
+  -- that lets the network refill the reserve after a shortfall instead of merely keeping up with
+  -- it; drop it under 50 MW and the reactor can never be paid in full, which is starvation for
+  -- ever and looks like a balance problem. control.lua's check_input_flow() refuses to load over
+  -- that, for every reactor rather than for this one alone, so the two numbers cannot drift apart
+  -- in silence.
   buffer_capacity = "10MJ",
   input_flow_limit = "60MW",
   drain = "0W",
@@ -794,10 +805,12 @@ aneutronic.localised_description =
 aneutronic.energy_source = {
   type = "electric",
   usage_priority = "secondary-input",
-  -- Four times rf-reactor's buffer, because the confinement heating is four times as large and
-  -- control.lua spends a whole update interval's worth in one step. control.lua's check_cadence
-  -- checks this against the interval for every reactor rather than for rf-reactor alone -- so this
-  -- number and UPDATE_INTERVAL cannot drift apart in silence.
+  -- Four times rf-reactor's on both lines, because the confinement heating is four times as large,
+  -- and both keep their meaning from there: 40 MJ is stated reserve, 240 MW is the limit that has
+  -- to stay above the 200 MW this reactor actually draws. control.lua's check_input_flow() checks
+  -- the second for every reactor rather than for rf-reactor alone -- so this number and
+  -- heating_power_w cannot drift apart in silence. See rf-reactor's block above for why the two
+  -- fields stopped meaning the same kind of thing (#72).
   buffer_capacity = "40MJ",
   input_flow_limit = "240MW",
   drain = "0W",
