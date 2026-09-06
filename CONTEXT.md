@@ -252,14 +252,16 @@ what to build on, and calling it a bug invites a fix that breaks what it is a co
 ## Measurement words
 
 Two maps a figure can come off, and they are not interchangeable. Say which one a quoted number was
-taken on; the whole of [ADR 0005](docs/adr/0005-real-time-fusion-simulation.md)'s open residue was the
-difference between them.
+taken on; the whole of [ADR 0005](docs/adr/0005-real-time-fusion-simulation.md)'s last open residue
+was the difference between them, until #67 measured both and found they agree.
 
 **Rig** — a map this repository builds itself, to make one question answerable: flat ground, power,
 the entities under test, and deliberately nothing else. Every `scripts/check-*.ps1` builds one, and so
 does `bench-reactors.ps1`'s own sweep. A rig can be built twice and varied in one respect, which is
 what makes a subtraction possible; what it cannot do is load the engine, because there are no belts,
-no trains, no biters and one surface. "A rig is not a factory" is the sentence #34 left unresolved.
+no trains, no biters and one surface. "A rig is not a factory" is the sentence #34 left unresolved
+and #67 resolved on 2026-09-06 — by measuring both maps in one sitting and finding they agree, which
+retires the worry rather than the distinction.
 
 **Borrowed base** — somebody else's factory, used as the ground a measurement stands on. Named for
 the licensing position rather than for the size, because that is the part nobody may re-derive: it is

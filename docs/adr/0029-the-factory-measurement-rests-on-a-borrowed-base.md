@@ -79,11 +79,17 @@ so the repository is not an option regardless of terms.
   borrowed base are mostly the borrowed base. Only the difference is attributable, and the script says
   so in its own output rather than leaving it to be inferred. This is the exact reverse of `-Save`,
   where the absolute cost is the answer and no per-reactor figure exists.
-- **The engine columns will not resolve a small fleet.** The whole tick is about 13 ms and varies by a
+- **The engine columns will not resolve a small fleet.** The whole tick is about 11 ms and varies by a
   few percent between runs, so `wholeUpdate` and `entityUpdate` can come out *lower* with reactors than
   without. `scriptUpdate` is the column that isolates. The 1.4× resolution floor
   [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md) records applies here as
-  much as to the rig, and matters more.
+  much as to the rig, and matters more. **#67's measurement bears out the `entityUpdate` half with a
+  number**: that column's delta reads 0.53 µs per reactor at *n* = 200 and 2.36 at *n* = 50, the
+  same entities four times apart, because the delta is under 2% of a column the factory itself
+  fills — and its absolute mean is *higher* at 50 reactors than at 200. `wholeUpdate` did not come
+  out lower with reactors in that sweep; it rose with every count. (This bullet said "about 13 ms"
+  until 2026-09-06; that came from the withdrawn 20-tick probe, and the measured figure is 10.8 ms
+  empty and 11.5 ms at 200 reactors.)
 - **`_reference/` still documents the provenance of nothing else in it** — the predecessor mods, the
   three `ultimateCore` packs, the Krastorio 2 checkouts and a screen recording. Out of scope for #65
   and filed as [#234](https://github.com/trulsjo/realistic-fusion-refreshed/issues/234); this ADR

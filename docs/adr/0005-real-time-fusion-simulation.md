@@ -101,9 +101,9 @@ requires restructuring is not a fallback.
   collectors attached — the configuration that makes breeding cost anything at all — D-D is 4.84
   against the full set's 4.48, a ratio of 1.08. There is no cheap tier and no expensive one; what
   #62 changes is not which reaction is dearest but that every configuration costs about half again
-  what was on record. **The worst of the five configurations measured is a blanketed D-D base at
-  5.44 µs, 6.5% of a tick** — the build a D-T player has, since the blanket rides on the D-D tier's
-  collector.
+  what was on record. **The worst of the five configurations measured, at 200 reactors, is a blanketed
+  D-D base at 5.44 µs, 6.5% of a tick** — the build a D-T player has, since the blanket rides on the
+  D-D tier's collector.
 
   Three things that measurement does **not** establish. It does not separate `deposit()` from the
   collector entity's own engine time, because a collector exists only where a reactor does and so
@@ -114,25 +114,43 @@ requires restructuring is not a fallback.
   and 4.84 µs — inside the floor, though it more than doubles the tritium a D-D reactor yields. See
   *Collectors attached (#62)* in [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md).
 
-  What is **not** discharged: the measurement is a rig, not a factory. The per-reactor cost is the
-  mod's own contribution and stands; how it behaves beside a loaded engine is still unmeasured, and
-  that residue is [#67](https://github.com/trulsjo/realistic-fusion-refreshed/issues/67)'s — #34
-  carries the rig measurement and nothing more.
+  ~~What is **not** discharged: the measurement is a rig, not a factory.~~ **That residue is
+  discharged too, 2026-09-06 ([#67](https://github.com/trulsjo/realistic-fusion-refreshed/issues/67)),
+  and this consequence is now closed in full.** The per-reactor cost was re-measured on a **borrowed
+  base** — TimEv's vanilla 10k SPM megabase, spending 10.8 ms of its 16.67 ms tick before any reactor
+  arrived — with a rig control taken in the same sitting so the two differ in the ground and in
+  nothing else. **A loaded engine does not change what a reactor costs**: 7.01 µs per reactor against
+  the control's 6.33, a ratio of 1.11 and so the same number under this project's 1.35× floor, with
+  `wholeUpdate` corroborating at 1.17. **The verdict is unchanged and no throttling is taken**:
+  `UPDATE_INTERVAL` stays at 6. 200 blanketed D-D reactors — the worst of the five configurations
+  #62 measured at 200 reactors, and the top count this project sweeps to — cost 8.41% of a tick on
+  that megabase as a mean over every tick, and 0.4% to 2.1% at the ten to fifty an ordinary build
+  has. The megabase's *median* tick moved less, 64.8% of the budget to 69.0%, because the simulation
+  steps one tick in six. **Only that one configuration was re-run**,
+  so the 4.5 µs above stays #62's figure on #62's evidence; what #67 establishes is that the ground a
+  figure is taken on does not change it. See *On a loaded tick, not a rig* in
+  [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md).
 
-  **Both things #67 was waiting on now exist, so the residue is the measurement itself and no longer
-  the means of taking it.** This note used to say there was no such save in this project, which was
-  true and is the narrower claim now. `bench-reactors.ps1 -Save` benchmarks a save the script did not
-  build ([#64](https://github.com/trulsjo/realistic-fusion-refreshed/issues/64), 2026-09-03), and
-  `-PlantInto` builds the rig on a surface of its own inside a **borrowed base** —
-  [#65](https://github.com/trulsjo/realistic-fusion-refreshed/issues/65), 2026-09-03, TimEv's vanilla
-  megabase, which spends about 10.7 ms a tick against a rig's 0.21 ms. **The slope survives that move,
-  which is more than #65 was scoped to deliver**: planted reactors were never in the save, so the
-  same save swept at count zero is a real baseline and #67 gets a subtraction on a loaded tick rather than an
-  absolute figure. What it costs is a reproducibility concession recorded in
+  **What #67 rested on, and what it cost.** `bench-reactors.ps1 -Save` benchmarks a save the script
+  did not build ([#64](https://github.com/trulsjo/realistic-fusion-refreshed/issues/64), 2026-09-03),
+  and `-PlantInto` builds the rig on a surface of its own inside the borrowed base
+  ([#65](https://github.com/trulsjo/realistic-fusion-refreshed/issues/65), 2026-09-03). **The slope
+  survived that move, which is more than #65 was scoped to deliver**: planted reactors were never in
+  the save, so the same save swept at count zero is a real baseline and #67 got a subtraction on a
+  loaded tick rather than an absolute figure. The price is a reproducibility concession recorded in
   [ADR 0029](0029-the-factory-measurement-rests-on-a-borrowed-base.md) — the input is a third-party
   save this project may use but not ship, so this one figure is re-takeable only by someone holding
   that file. Provenance and method:
   [`docs/research/borrowed-base.md`](../research/borrowed-base.md).
+
+  Three things the factory measurement does **not** establish, and none of them reopens the decision.
+  It measured **one** borrowed base — vanilla, modular, 10k SPM, which is
+  [ADR 0003](0003-space-age-tolerated-not-targeted.md)'s v1 target and not every base a player has.
+  The reactors sit **beside** the factory on a planted surface with their own power, because 200 of
+  them draw about 10 GW and wiring them into the borrowed grid would brown out the base and make the
+  report look fine. And on a borrowed base only `scriptUpdate` isolates: the engine columns' deltas
+  are a fraction of a percent of what the factory itself spends in them, so those are read off the
+  rig.
 - ~~**The premultiplication the redesign left undone is the obvious first optimisation** if measurement
   shows a problem — reactivities multiplied by reaction energies once at load rather than per lookup.
   Recorded here so it is not rediscovered from scratch.~~
