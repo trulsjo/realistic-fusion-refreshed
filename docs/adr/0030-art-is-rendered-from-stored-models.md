@@ -64,6 +64,24 @@ parts, in the words `CONTEXT.md` fixes:
   enforcement the mockup's hand-copied list never had, and it is the half of this decision that is
   about correctness rather than about pictures.
 
+  **Geometry is compared for equality; the connection categories are compared as a subset.** Added
+  2026-09-06. A category cannot move a socket, so no change to one can put a drawn pipe stub in the
+  wrong place — and a coexisting mod writes on it as a matter of course, Krastorio 2 putting
+  `kr-steel-pipe` on the fluid boxes of machines it never heard of. Comparing the whole connection
+  object made `load-check.ps1 -AlsoModDirectory .mod-cache/krastorio2` fail on `rf-heat-exchanger`,
+  reporting [ADR 0007](0007-coexistence-without-integration.md)'s coexistence as this decision's art
+  coming loose, and made story 35 of the v1 spec false.
+
+  **The field is not simply dropped, because on these connections nothing else would check it.**
+  The containment floor of [ADR 0018](0018-energy-is-contained-and-no-pipe-carries-it.md) skips any
+  connection left `default` — its own predicate is false for exactly that set — and all four of
+  `rf-heat-exchanger`'s are that shape. So an addition passes and a **replacement** is reported: a
+  set that writes its own category and drops `default` cuts the machine off from every ordinary pipe
+  in the game, which is a functional break rather than a cosmetic one, and this is the only **gate**
+  that would catch it — `probe-connection-categories.ps1` reports the same shape under its `REPLACED`
+  verdict, but a probe asserts nothing and exits 0 either way. Halves six and seven of `-SelfTest`
+  are the canaries, one for each direction; a gate that tolerated everything would pass six alone.
+
 `/render-machine rf-<machine>` runs it. **Render is the default and regenerate is explicit**, so a
 hand edit to a stored model survives an ordinary render; git is the only guard against a
 `--regenerate` over one, and that is accepted rather than engineered around.

@@ -230,13 +230,37 @@
     references cross a mod boundary, so there is now a seam for one to fall through.
 
 .PARAMETER SelfTest
-    Verify the check can fail. FIVE halves, and the run prints each one numbered as it passes, so a
+    Verify the check can fail. SEVEN halves, and the run prints each one numbered as it passes, so a
     reader can count them against this list: the repo as it stands must pass; a mod carrying an
     invalid prototype must fail; a mod naming an icon file that does not exist must be caught; a
-    mod that reassigns one of our containment categories must be caught; and a mod that moves a
-    pipe connection on a machine with rendered art must be caught. The first is required or the
-    others prove nothing, since Factorio also exits non-zero when the repo is genuinely broken.
-    The last three are the ones Factorio itself exits 0 on. Run this whenever the script changes.
+    mod that reassigns one of our containment categories must be caught; a mod that moves a
+    pipe connection on a machine with rendered art must be caught; a mod that merely ADDS a
+    connection category to one must NOT be; and a mod that REPLACES one must be. The first is
+    required or the others prove nothing, since Factorio also exits non-zero when the repo is
+    genuinely broken. Halves three through seven are the ones Factorio exits 0 on, where the check
+    has to decide alone. Run this whenever the script changes.
+
+    SIX AND SEVEN ARE ONE PAIR and neither is worth much without the other. Krastorio 2 writes
+    `kr-steel-pipe` onto the fluid boxes of machines it never heard of, which is ADR 0007's
+    coexistence working, not our art coming loose -- and until the categories were held out of the
+    geometry comparison the gate reported it as the latter, so `-AlsoModDirectory
+    .mod-cache/krastorio2` failed on rf-heat-exchanger with four connections whose position,
+    direction, flow and fluid all agreed.
+    Six requires that tolerance. Seven requires the gate to still catch a category being REPLACED
+    rather than added -- dropping `default` cuts a machine off from every ordinary pipe in the game
+    -- because a gate that tolerated everything would pass six just as happily.
+
+    NO OTHER GATE WATCHES THOSE CONNECTIONS, which is why the pair is here rather than left to the
+    containment floor. Get-ContainmentBreaches skips any connection we left `default`, by design and
+    by its own predicate, and all four of rf-heat-exchanger's are that shape. A gate, not a watcher:
+    probe-connection-categories.ps1 reports on exactly this shape -- its REPLACED verdict is for it --
+    but a probe asserts nothing and exits 0 either way.
+
+    Half six is the only half that asserts a check STAYS QUIET, and there are two ways to pass it
+    dishonestly. It rules out the first itself, by asking the extractor whether the added category
+    reached the live geometry at all -- a canary that missed and a gate that tolerated look identical
+    otherwise. The second, a gutted Get-RenderDisagreements, is ruled out by HALF FIVE, which runs
+    the same function first and requires a row. Do not delete five believing six covers it.
 
     The fifth is #250's. Its canary's `data-final-fixes` slides the first connection the first
     manifest records one tile along its own edge -- along, so the prototype stays valid and the
@@ -471,8 +495,18 @@ function Get-RenderDisagreements {
         }
         # Connections as two sets, reported by their difference: the whole list side by side was a
         # wall of JSON in which the one moved socket had to be found by eye. Order is not geometry.
-        $mineSet   = @($recorded.connections | ForEach-Object { & $canon $_ })
-        $theirSet  = @($live.connections     | ForEach-Object { & $canon $_ })
+        #
+        # connection_category is held out of THIS comparison and checked separately below, because it
+        # is the one field here that is not geometry: a category says what may connect to a socket,
+        # never where the socket is, so no change to one can put a drawn pipe stub in the wrong place.
+        # Compared as part of the whole object it made a coexisting mod look like art coming loose --
+        # Krastorio 2 puts `kr-steel-pipe` on the fluid boxes of machines it never heard of, which had
+        # this gate failing on rf-heat-exchanger with four connections agreeing on position,
+        # direction, flow and fluid. That is ADR 0007's coexistence reported as ADR 0030's art being
+        # wrong. Half six is the canary for the tolerance.
+        $geometryOnly = { param($c) & $canon ($c | Select-Object -Property * -ExcludeProperty connection_category) }
+        $mineSet   = @($recorded.connections | ForEach-Object { & $geometryOnly $_ })
+        $theirSet  = @($live.connections     | ForEach-Object { & $geometryOnly $_ })
         $onlyMine  = @($mineSet  | Where-Object { $_ -cnotin $theirSet })
         $onlyTheirs = @($theirSet | Where-Object { $_ -cnotin $mineSet })
         if ($onlyMine -or $onlyTheirs) {
@@ -480,6 +514,39 @@ function Get-RenderDisagreements {
                 Prototype = $name; Manifest = $file.FullName; Field = 'connections'
                 Recorded = if ($onlyMine)   { $onlyMine   -join "`n                " } else { '(nothing the live prototype lacks)' }
                 Live     = if ($onlyTheirs) { $onlyTheirs -join "`n                " } else { '(nothing the manifest lacks)' } })
+        }
+
+        # The categories, as a SUBSET rather than as equality, and this is the only GATE that checks
+        # them on a connection like these. Get-ContainmentBreaches deliberately skips anything
+        # we left `default` -- its own $contained predicate is false for exactly that set -- and all
+        # four of rf-heat-exchanger's connections are that shape, so "the containment floor covers it"
+        # is not available here and the field cannot simply be dropped. What a coexisting mod does is
+        # ADD; what would break the machine is REPLACE, dropping `default` and cutting it off from
+        # every ordinary pipe in the game. Subset admits the first and reports the second.
+        #
+        # Get-MissingCategories rather than a comparison written here, for the reason its own header
+        # gives at length: ordinally, and as sets, because `contain()` writes a bare string where a
+        # set that merely inspects a connection writes the same category back as a one-element list.
+        # Matched by box AND position, because a position alone is not a key -- two boxes may put a
+        # connection on the same tile. A recorded connection with NO live match is the geometry
+        # difference above, already reported, so it is passed over rather than counted twice. Where
+        # the match is AMBIGUOUS -- two live connections on the same box and tile -- it is passed over
+        # and nothing reports it: the geometry comparison is a set difference, so a duplicated live
+        # connection is not "only theirs" and is silent there too. Knowingly unwatched, and the
+        # narrower of the two claims this comment used to make.
+        foreach ($mineConn in $recorded.connections) {
+            $theirConn = @($live.connections | Where-Object {
+                $_.box -ceq $mineConn.box -and
+                $_.position[0] -eq $mineConn.position[0] -and $_.position[1] -eq $mineConn.position[1] })
+            if ($theirConn.Count -ne 1) { continue }
+            $lost = @(Get-MissingCategories `
+                -Declared (Expand-Category $mineConn.connection_category) `
+                -Loaded   (Expand-Category $theirConn[0].connection_category))
+            if (-not $lost) { continue }
+            $rows.Add([pscustomobject]@{
+                Prototype = $name; Manifest = $file.FullName; Field = 'connection categories'
+                Recorded = "$($mineConn.box) at ($($mineConn.position[0]), $($mineConn.position[1])): $((Expand-Category $mineConn.connection_category) -join ', ')"
+                Live     = "$((Expand-Category $theirConn[0].connection_category) -join ', ') -- lost $($lost -join ', ')" })
         }
     }
     return $rows
@@ -512,11 +579,26 @@ function Test-RenderedArt {
 
     $rows = @(Get-RenderDisagreements -DumpPath $DumpPath -Manifests $manifests)
     if ($rows) {
+        # TWO KINDS OF ROW AND TWO REMEDIES, and giving the geometry one for a lost category would be
+        # worse than saying nothing: re-rendering is the fix when a socket moved, and it is exactly
+        # wrong when another mod took a category away, since it would bake that mod's change into our
+        # manifest and call it ours.
+        $geometry   = @($rows | Where-Object { $_.Field -ne 'connection categories' })
+        $categories = @($rows | Where-Object { $_.Field -eq 'connection categories' })
         Write-Host ''
         Write-Host "FAILED - rendered art: $($rows.Count) disagreement(s) between a manifest and the live"
-        Write-Host '         prototype. The sprite was rendered from the recorded geometry, so a socket'
-        Write-Host '         or the footprint is now drawn where the machine no longer has it. Re-run'
-        Write-Host '         the extractor and the render, or put the prototype back.'
+        Write-Host '         prototype.'
+        if ($geometry) {
+            Write-Host '         The sprite was rendered from the recorded geometry, so a socket'
+            Write-Host '         or the footprint is now drawn where the machine no longer has it. Re-run'
+            Write-Host '         the extractor and the render, or put the prototype back.'
+        }
+        if ($categories) {
+            Write-Host '         A connection has LOST a category it was recorded with. Nothing moved and'
+            Write-Host '         re-rendering would fix nothing -- it would write the loss into the'
+            Write-Host '         manifest as ours. A machine that no longer holds `default` accepts no'
+            Write-Host '         ordinary pipe in the game. Find the mod that took it.'
+        }
         foreach ($r in $rows) {
             Write-Host "    $($r.Prototype)  $($r.Field)"
             Write-Host "      recorded: $($r.Recorded)"
@@ -524,7 +606,7 @@ function Test-RenderedArt {
         }
         exit 1
     }
-    Write-Host "rendered art: all $($manifests.Count) manifest(s) agree with the live footprint and connections."
+    Write-Host "rendered art: all $($manifests.Count) manifest(s) agree with the live footprint, connections and recorded categories."
 }
 
 function Invoke-DataDump {
@@ -905,7 +987,7 @@ try {
 
     if ($SelfTest) {
         # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
-        Write-Host 'self-test 1/5: the repo as it stands must load.'
+        Write-Host 'self-test 1/7: the repo as it stands must load.'
         $clean = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'clean'
         # Same pass criterion as a real run: exit 0 without a save is a failure there, so it must
         # be a failure here too, or -SelfTest could certify a check a plain run would reject.
@@ -929,7 +1011,7 @@ try {
         'data:extend({{ type = "item", name = "rf-loadcheck-canary-item" }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 2/5: an invalid prototype must be rejected.'
+        Write-Host 'self-test 2/7: an invalid prototype must be rejected.'
         $broken = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'canary'
         if ($broken.Code -eq 0) {
             Write-Host ''
@@ -938,8 +1020,8 @@ try {
             exit 1
         }
 
-        # Half three: a prototype naming a file that is not there must be caught. This is the one
-        # Factorio itself exits 0 on, so it is the half that matters most -- and it is checked by
+        # Half three: a prototype naming a file that is not there must be caught. The first of the
+        # halves Factorio exits 0 on, where this check has to decide alone -- and it is checked by
         # calling Find-MissingAssets directly rather than by running Test-Assets, which exits.
         # The canary names its icon by concatenation, because that is the shape the source-text
         # scan this replaced could not see.
@@ -948,7 +1030,7 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
   icon = D .. "no-such-icon" .. ".png", icon_size = 64 }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 3/5: a prototype naming a file that is not there must be caught.'
+        Write-Host 'self-test 3/7: a prototype naming a file that is not there must be caught.'
         $withCanary = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'assets'
         if ($withCanary.Code -ne 0) {
             Write-Host ''
@@ -1029,7 +1111,7 @@ data.raw.item["rf-loadcheck-canary-item"].order = victim' |
   icon = "__base__/graphics/icons/iron-plate.png", icon_size = 64 }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 4/5: a set reassigning one of our containment categories must be caught.'
+        Write-Host 'self-test 4/7: a set reassigning one of our containment categories must be caught.'
         $reassigned = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'contain'
         if ($reassigned.Code -ne 0) {
             Write-Host ''
@@ -1118,7 +1200,7 @@ if not slid then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 5/5: a machine whose rendered art no longer fits it must be caught."
+        Write-Host "self-test 5/7: a machine whose rendered art no longer fits it must be caught."
         $renderDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-loaded'
         $disagreements = @(Get-RenderDisagreements -DumpPath $renderDump -Manifests $renderManifests)
         $onVictim = @($disagreements | Where-Object { $_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connections' })
@@ -1143,11 +1225,160 @@ end
             exit 1
         }
 
+        # Half six: another mod ADDING a connection category must NOT be reported as the art having
+        # come loose. This is the coexistence half, and it is the inverse of half five: five requires
+        # a moved socket to be caught, six requires an untouched one to stay quiet while a third-party
+        # mod writes on it. Krastorio 2 does exactly this -- it puts `kr-steel-pipe` on the fluid
+        # boxes of machines it never heard of -- so before this half existed, `load-check.ps1
+        # -AlsoModDirectory .mod-cache/krastorio2` failed on rf-heat-exchanger with four connections
+        # whose position, direction, flow and fluid all matched and whose category did not. That is
+        # ADR 0007's coexistence reported as ADR 0030's art being wrong, and it made #18's story 35 --
+        # the same load-check runnable with Krastorio 2 present -- false.
+        #
+        # THE VICTIM IS AN UNCONTAINED CONNECTION, chosen rather than taken, and for a sharper reason
+        # than "that is what Krastorio 2 writes on". Uncontained is exactly the class
+        # Get-ContainmentBreaches does not cover -- its $contained predicate is false for a set that
+        # is only `default` -- so this is precisely where the rendered-art gate is the only one
+        # asserting anything, and precisely where a tolerance has to be demonstrated rather than
+        # assumed.
+        #
+        # It self-heals as the repo changes: $addable filters on the RECORDED category, so when
+        # ADR 0018's containment reaches this box (#86, #258) the half moves itself to a water
+        # connection, and bails loudly only when every recorded connection is contained. Do not
+        # replace the filter with a hard-coded box.
+        $addable = @($renderVictim.connections | Where-Object { -not $_.connection_category })
+        if (-not $addable) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: every connection $($renderVictim.name)'s manifest records is"
+            Write-Host '         already contained, so half six has no uncontained one to write a'
+            Write-Host '         category onto and would prove nothing.'
+            exit 1
+        }
+        $added    = $addable[0]
+        $addedCat = 'rf-loadcheck-coexist'
+        $addBoxLua = ($added.box -split '\.' | ForEach-Object {
+            if ($_ -match '^\d+$') { "[$([int]$_ + 1)]" } else { "[`"$_`"]" } }) -join ''
+        @"
+local proto = data.raw["$($renderVictim.type)"]["$($renderVictim.name)"]
+local touched = false
+for _, c in pairs(proto$addBoxLua.pipe_connections) do
+  local p = c.position
+  if p and (p[1] or p.x) == $($added.position[0]) and (p[2] or p.y) == $($added.position[1]) then
+    c.connection_category = { "default", "$addedCat" }
+    touched = true
+  end
+end
+if not touched then
+  error("load-check canary: no connection at ($($added.position[0]), $($added.position[1])) on $($renderVictim.name) to add a category to, so half six would prove nothing")
+end
+"@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
+
+        Write-Host "self-test 6/7: another mod adding a connection category must NOT be reported."
+        $coexistDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-coexist'
+
+        # The canary reaching the GEOMETRY, proved rather than assumed. This half passes by finding
+        # nothing, and there are two ways to pass it dishonestly. This pre-check rules out the first:
+        # a canary that missed, leaving nothing for the gate to report. It does NOT rule out the
+        # second -- it calls the extractor directly and never touches Get-RenderDisagreements, so
+        # gutting that function to `return @()` would sail through here. **Half five is what stops
+        # that**, because it runs the same function first and requires a row. The two halves are load
+        # bearing for each other: do not delete five believing six covers a dead gate.
+        $coexistLines = @(& python (Join-Path $repoRoot 'tools/extract-geometry.py') $renderVictim.name `
+            --dump $coexistDump --stdout 2>&1 | ForEach-Object { "$_" })
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the extractor exited $LASTEXITCODE on $($renderVictim.name) under the"
+            Write-Host '         coexistence canary, so half six never saw the geometry it is about.'
+            Write-Host "         $($coexistLines | Select-Object -Last 1)"
+            exit 1
+        }
+        $coexistLive = ($coexistLines -join "`n") | ConvertFrom-Json
+        $carrying = @($coexistLive.connections | Where-Object {
+            $_.box -ceq $added.box -and
+            $_.position[0] -eq $added.position[0] -and $_.position[1] -eq $added.position[1] -and
+            $_.connection_category -ccontains $addedCat })
+        if (-not $carrying) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the canary's category '$addedCat' is not on the live"
+            Write-Host "         geometry of $($renderVictim.name) at ($($added.position[0]), $($added.position[1])), so a quiet"
+            Write-Host '         gate below would mean the canary missed rather than that the gate tolerated it.'
+            exit 1
+        }
+
+        $coexistRows = @(Get-RenderDisagreements -DumpPath $coexistDump -Manifests $renderManifests)
+        if ($coexistRows) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: a third-party mod added a connection category to"
+            Write-Host "         $($renderVictim.name) and the rendered-art check reported it as a"
+            Write-Host '         disagreement. Nothing moved: a category says what may connect, not where'
+            Write-Host '         the socket is, so an addition is a coexisting mod working as intended.'
+            foreach ($d in $coexistRows) {
+                Write-Host "           $($d.Prototype)  $($d.Field)"
+                Write-Host "             recorded: $($d.Recorded)"
+                Write-Host "             live:     $($d.Live)"
+            }
+            exit 1
+        }
+
+        # Half seven: another mod REPLACING a connection category must be caught. Six and seven are
+        # one pair and neither is worth much alone -- six alone is a gate that could tolerate
+        # everything, including a category being taken away, which is the change that would cut a
+        # machine off from every ordinary pipe in the game. Seven is what makes the subset semantics
+        # a check rather than a decoration, and it is their only canary: the containment floor does
+        # not reach these connections at all, and probe-connection-categories.ps1 reports on them
+        # without asserting anything.
+        #
+        # The same victim as half six, and deliberately so. `default` is what the engine reads an
+        # absent category as, so a set that writes a category of its own and drops `default` has
+        # removed something that was there without the manifest ever having recorded a word.
+        @"
+local proto = data.raw["$($renderVictim.type)"]["$($renderVictim.name)"]
+local touched = false
+for _, c in pairs(proto$addBoxLua.pipe_connections) do
+  local p = c.position
+  if p and (p[1] or p.x) == $($added.position[0]) and (p[2] or p.y) == $($added.position[1]) then
+    c.connection_category = { "$addedCat" }
+    touched = true
+  end
+end
+if not touched then
+  error("load-check canary: no connection at ($($added.position[0]), $($added.position[1])) on $($renderVictim.name) to replace the category of, so half seven would prove nothing")
+end
+"@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
+
+        Write-Host "self-test 7/7: another mod replacing a connection category must be caught."
+        $replacedDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-replaced'
+        $replacedRows = @(Get-RenderDisagreements -DumpPath $replacedDump -Manifests $renderManifests)
+        $onCategories = @($replacedRows | Where-Object {
+            $_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connection categories' })
+        if (-not $onCategories) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the canary took 'default' off a connection of"
+            Write-Host "         $($renderVictim.name) and the rendered-art check did NOT report it. Nothing"
+            Write-Host '         else GATES that connection -- the containment floor skips anything we'
+            Write-Host '         left `default` -- so the machine would quietly stop accepting every'
+            Write-Host '         ordinary pipe in the game.'
+            if ($replacedRows) {
+                Write-Host "         It reported $($replacedRows.Count) other row(s):"
+                foreach ($d in $replacedRows) { Write-Host "           $($d.Prototype)  $($d.Field)" }
+            }
+            exit 1
+        }
+        # Named, not merely counted, for the reason half four compares names: the row is the value.
+        if (-not @($onCategories | Where-Object { $_.Live -match 'lost .*\bdefault\b' })) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the row reported on $($renderVictim.name) does not name 'default'"
+            Write-Host '         as the category lost, so it would not tell a reader what was taken.'
+            foreach ($d in $onCategories) { Write-Host "           $($d.Recorded) -> $($d.Live)" }
+            exit 1
+        }
+
         Write-Host ''
         Write-Host 'OK - self-test passed: clean repo loads, invalid prototype rejected'
         Write-Host "     (exit $($broken.Code)), missing asset caught, a reassigned containment"
-        Write-Host "     category caught by name on $victim, and a slid connection caught on"
-        Write-Host "     $($renderVictim.name)'s rendered art."
+        Write-Host "     category caught by name on $victim, a slid connection caught on"
+        Write-Host "     $($renderVictim.name)'s rendered art, an added category tolerated on it,"
+        Write-Host '     and a replaced one caught by name.'
         exit 0
     }
 

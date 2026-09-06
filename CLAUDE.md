@@ -20,7 +20,13 @@ outside Factorio; `scripts/check-*.ps1` and `scripts/load-check.ps1` create real
 them, and `load-check.ps1` is where the invariants tying the simulation to the prototypes are enforced.
 Since #250 it also fails when a `graphics/rendered/<machine>/manifest.json` disagrees with the live
 prototype's footprint or connections, by asking `tools/extract-geometry.py` again, so it needs Python
-on PATH.
+on PATH. **The categories on those connections are compared as a subset, not for equality**, and this
+is the only gate that looks at them: an addition is allowed because a coexisting mod writes one
+legitimately — Krastorio 2 puts `kr-steel-pipe` on machines it never heard of — while a category being
+taken away is reported. The containment floor does **not** cover them; it skips any connection left
+`default`, which is all four of the heat exchanger's. (`probe-connection-categories.ps1` reports on
+the same shape, but a probe asserts nothing.) Halves six and seven of `-SelfTest` are the
+canaries, one for each direction.
 `scripts/locale-check.ps1` and `scripts/name-check.ps1` only dump prototypes and create no map, so a
 pass there says nothing about runtime. `scripts/ship-check.ps1` runs no game at all — it is the
 check about the claims the mods make about themselves: the two statements ADR 0003 and ADR 0006
