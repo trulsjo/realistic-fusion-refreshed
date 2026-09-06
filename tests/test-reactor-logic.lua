@@ -46,8 +46,8 @@ local SETTLE_S = 1200
 -- second copy. control.lua's confinement guard has to settle a reactor at load, and #51 is the
 -- record of what it costs to have one piece of arithmetic implemented twice. What stayed here is
 -- the argument order and the defaults, which every call below is written against.
-local function settle(spec, seconds, available_j, dt, fluid, amount)
-  return L.settle(spec, fluid or "rf-d-d-plasma", amount or FULL, seconds, available_j, dt or TICK)
+local function settle(spec, seconds, paid_j, dt, fluid, amount)
+  return L.settle(spec, fluid or "rf-d-d-plasma", amount or FULL, seconds, paid_j, dt or TICK)
 end
 
 -- ---------------------------------------------------------------- nothing to do
@@ -230,9 +230,29 @@ check(held_dt > 3e9 and held_dt < SPEC.max_temperature_c,
 check(held_dd < held_dt / 1000, "and take the D-D plasma out of the fusing range entirely",
   string.format("%.6g C against %.6g C", held_dd, held_dt))
 
--- A partly powered reactor spends what it has, not what it wants.
+-- A partly powered reactor is heated by what it was paid, not by what it wants.
+--
+-- THE FIFTH ARGUMENT IS A PAYMENT SINCE #72, not a buffer reading. control.lua pays for the
+-- heating every tick and accumulates what it actually got, so a brownout reaches step() as a
+-- smaller number of joules rather than as a shortfall for step() to discover. The arithmetic is
+-- unchanged by that -- it always clamped to this argument -- but what a caller is saying by
+-- passing 1000 is different, and this file is where it is written down.
 local starved = L.step(SPEC, "rf-d-d-plasma", FULL, 1.0e7, 1000, TICK)
-near(starved.heating_used_j, 1000, 1e-12, "a starved reactor spends only what is available")
+near(starved.heating_used_j, 1000, 1e-12, "a starved reactor is heated only by what it was paid")
+
+-- And the other direction, which is the one per-tick spending made reachable: a caller may hand
+-- over MORE than the interval's heating, and the plasma is still heated at heating_power_w.
+--
+-- It is not a hypothetical. math.huge is exactly that overpayment, it is what every settle() in
+-- this file and in reactor-logic's own confinement guard passes for "never starved", and without
+-- the clamp it would heat the plasma by an infinity of joules. This is the line that keeps that
+-- meaning.
+local overpaid = L.step(SPEC, "rf-d-d-plasma", FULL, SPEC.min_temperature_c,
+  SPEC.heating_power_w * TICK * 100, TICK)
+near(overpaid.heating_used_j, SPEC.heating_power_w * TICK, 1e-12,
+  "a reactor paid a hundred times over is still heated at heating_power_w")
+near(overpaid.temperature_c, warm.temperature_c, 1e-12,
+  "so it reaches the same temperature as one paid exactly")
 
 -- Cooling is asymptotic, never inverted: one confinement time of loss cannot take the plasma
 -- below ambient however long the step is.

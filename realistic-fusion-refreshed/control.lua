@@ -15,7 +15,7 @@ local circuit  = require("scripts.circuit-output")
 -- migrated, kept in step with a rename, and could go stale against a spec edit. The lookup cannot.
 --
 -- check_reactor_specs() below refuses to load if entity-management registers a reactor this table
--- has no entry for, because the failure is otherwise a nil index inside on_nth_tick on a live save.
+-- has no entry for, because the failure is otherwise a nil index inside the tick loop on a live save.
 local SPECS = {
   ["rf-reactor"]            = logic.reactor,
   ["rf-aneutronic-reactor"] = logic.aneutronic_reactor,
@@ -145,12 +145,15 @@ end
 -- across buckets: reactors sharing a fluid segment have to step together, for the reason
 -- update() gives below.
 --
--- There is a ceiling on this number that the physics test cannot see, because it is a fact about
--- the prototype and not about the plasma: a step draws heating_power_w * interval / 60 joules out
--- of the reactor's buffer in one go, so at 50 MW against a 10 MJ buffer anything past twelve ticks
--- is starved every step. check_cadence() below enforces it, so the test's range and this line
--- cannot drift apart in silence -- raising this past 12 means raising buffer_capacity in
--- prototypes/entities.lua with it, and the mod refuses to load until one of the two moves.
+-- THERE USED TO BE A CEILING ON THIS NUMBER, and #72 dissolved it. While a step spent the whole
+-- interval's heating in one go, the buffer had to cover a whole interval -- 50 MW against a 10 MJ
+-- buffer is twelve ticks -- and check_cadence() refused anything longer. spend() below now pays
+-- for one tick at a time, so no interval ever has to fit in the buffer and the coupling that
+-- ceiling guarded stopped existing. buffer_capacity is stated reserve now and nothing else.
+--
+-- What replaced that check is check_input_flow() below, because the same starvation failure is
+-- still reachable by the route that is still open: a reactor whose input_flow_limit is under
+-- heating_power_w can never be paid in full, whatever this line says.
 --
 -- See docs/research/reactor-runtime-cost.md; scripts/bench-reactors.ps1 takes the measurement.
 local UPDATE_INTERVAL = 6
@@ -359,17 +362,9 @@ end
 
 --- Apply one reactor's step to the world.
 local function apply(entity, spec, plasma, result)
-  -- Spending straight out of the buffer rather than declaring a fixed prototype consumption: the
-  -- network refills what was spent, so a brownout shows up as a plasma that cannot hold its
-  -- temperature. Measured on a reactor given 10 kW instead of the 50 MW it wants: the buffer sits
-  -- empty and the plasma never leaves six figures.
-  --
-  -- This used to claim the mechanism makes the draw "follow the simulation". It does not, and #37
-  -- recorded as much when it closed: heating_power_w is a CONSTANT, so a supplied reactor draws
-  -- the same 50 MW whether it is barely fusing or sitting at the clamp. Only the SHORTFALL follows
-  -- anything. #46 rested part of its case on the retired claim.
-  entity.energy = entity.energy - result.heating_used_j
-
+  -- NO ENERGY WRITE HERE, and that is #72 rather than an omission. spend() below has already paid
+  -- for this step's heating, one tick at a time, and result.heating_used_j is the record of what
+  -- it paid rather than a bill to settle now -- deducting it again would charge the reactor twice.
   local box = entity.fluidbox
 
   -- Writing the plasma back is also how it is shared. Box 1 is the reactor's input-output box, so
@@ -521,6 +516,96 @@ local function apply(entity, spec, plasma, result)
   end
 end
 
+--- Pay one tick of confinement heating, on every reactor on the map (#72).
+--
+-- WHY THIS IS NOT PART OF THE STEP. A step used to spend the whole interval's heating in one go,
+-- and a lump taken out of a buffer the network refills at a fixed rate is a square wave: no power
+-- arrives on the step tick itself, so five ticks in six the network delivered 60 MW and the sixth
+-- it delivered nothing. The average was a correct 50 MW and the peak was 60, so a plant had to be
+-- sized a fifth above what the reactor really consumes and the tooltip flickered at 10 Hz.
+--
+-- That could not be tuned away in the prototype. input_flow_limit = "60MW" is the STRUCTURAL
+-- MINIMUM for five delivering ticks to cover six ticks of heating -- 50 MW there gives 4.17 MJ
+-- against the 5 MJ wanted and starves the reactor for ever at 83% -- and anything above 60 flickers
+-- harder. Spending per tick is the only thing that removes the shape rather than moving it.
+--
+-- WHAT IT COSTS is one energy read and one energy write per reactor per tick, against the nine
+-- boundary crossings a full step makes. The expensive fluidbox work stays on UPDATE_INTERVAL, so
+-- essentially all of #24's saving survives: MEASURED at +0.88 microseconds per reactor, taking the
+-- shipped D-D step from 3.11 to 3.99 over ten invocations alternating between the two arms in one
+-- sitting, none of them busy. #37 predicted +0.9 and that is what came out. Read the RATIO with
+-- care: 1.28x is under the 1.35x noise floor bench-reactors.ps1 has for figures compared across
+-- sittings, and the absolute delta is what a paired design supports. See
+-- docs/research/reactor-runtime-cost.md.
+--
+-- SPECS rather than spec_for(): heating_power_w is the same for every force, because the
+-- confinement ladder moves confinement_time_s and nothing else, so this path never touches the
+-- per-force cache at all.
+--
+-- SPENT OUT OF THE BUFFER RATHER THAN DECLARED AS A FIXED CONSUMPTION, which is the older decision
+-- this inherits and does not change: the network refills what was spent, so a brownout shows up as
+-- a plasma that cannot hold its temperature rather than as a machine the engine switches off.
+-- scripts/check-brownout.ps1 measures that across the whole range from half supply to a blackout.
+--
+-- It does NOT make the draw "follow the simulation", and #37 recorded as much when it closed:
+-- heating_power_w is a CONSTANT, so a supplied reactor draws the same 50 MW whether it is barely
+-- fusing or sitting at the clamp. Only the SHORTFALL follows anything. #46 rested part of its case
+-- on that retired claim, and this note is where it stays retired.
+--
+-- The joules actually paid are accumulated per reactor and handed to step() by update() below.
+-- Under this arrangement the buffer level is no longer the physically meaningful quantity: a
+-- brownout arrives as smaller payments rather than as an empty buffer at read time.
+--
+-- ONLY REACTORS WITH SOMETHING TO SIMULATE ARE CHARGED, and that is not a refinement -- it is the
+-- behaviour this had before #72, preserved. The only energy write used to be in apply(), which
+-- runs solely for reactors whose step returned a result, so a reactor built and not yet piped, or
+-- one that has run dry, drew nothing at all. Charging every registered reactor instead would put a
+-- flat 50 MW -- 200 on the aneutronic tier -- on every idle one for ever, invisibly, since the
+-- tooltip still says 1 W; and it would turn a brownout into a spiral, because a shortage stalls
+-- rf-heater, the reactors run dry, and dry reactors would then go on pulling full confinement
+-- power instead of shedding it. That is a balance change nobody asked for.
+--
+-- WHAT SAYS SO IS THE ACCUMULATOR'S OWN PRESENCE, so there is no second table and no fluidbox read
+-- here. update() writes a zero for every reactor it stepped and removes the entry for every one it
+-- did not; this loop pays whatever has an entry. A key present means "being simulated, keep
+-- paying", an absent one means "nothing to pay for".
+--
+-- The price is a lag of at most one interval in each direction, a tenth of a second: a reactor
+-- freshly given plasma is stepped once before it starts paying, and one that has just run dry pays
+-- out the interval it emptied in. Both are transients. Reading entity.fluidbox[1] here instead
+-- would be exact and would put the allocating crossing this whole change exists to avoid back on
+-- every tick.
+--
+-- Invalid entities are skipped and not pruned. update() below owns the pruning, for the reason its
+-- own comment gives, and doing it in both places would be two answers to one question.
+local function spend()
+  -- Lazily, like storage.blanket_charge above and for the same reason: on_load runs neither
+  -- on_init nor on_configuration_changed, and this is the only line the change needs by way of a
+  -- migration. It is in `storage` rather than a module local because a client joining a running
+  -- game rebuilds its Lua state from the save and a module local would start empty on that peer
+  -- alone, which is a desync.
+  storage.heating_spent = storage.heating_spent or {}
+  local spent = storage.heating_spent
+
+  for unit_number, entity in pairs(entities.registry()) do
+    -- Zero is a legitimate value here and Lua reads it as true, so this tests for the KEY rather
+    -- than for what it holds: an entry means update() stepped this reactor.
+    local paid = spent[unit_number]
+    if paid and entity.valid then
+      local want = SPECS[entity.name].heating_power_w / 60
+      local energy = entity.energy
+      -- Clamped to what is there, so the write can never take the buffer negative. This is where
+      -- a brownout becomes a smaller payment: the engine hands the reactor its share of a short
+      -- network and the reactor spends exactly that.
+      if want > energy then want = energy end
+      if want > 0 then
+        entity.energy = energy - want
+        spent[unit_number] = paid + want
+      end
+    end
+  end
+end
+
 --- Read every reactor, then write every reactor.
 --
 -- Split in two on purpose. Reactors on one run of rf-pipe share a fluid segment, so if the steps
@@ -531,6 +616,10 @@ end
 local function update()
   local dt = UPDATE_INTERVAL / 60
   local pending = {}
+  -- spend() has already run this tick -- the two share one on_tick handler, in that order -- so
+  -- the accumulator exists and holds a whole interval's payments. No fallback for that reason: an
+  -- unreachable one would read as a case that can happen.
+  local spent = storage.heating_spent
 
   -- Counted rather than derived from game.tick, so the reporting cadence stays a multiple of the
   -- simulation's however UPDATE_INTERVAL is set.
@@ -546,8 +635,18 @@ local function update()
       -- reactor as a neutronic one, which looks like a balance problem rather than a missing entry.
       local spec = spec_for(entity)
       local plasma = entity.fluidbox[1]
+      -- What this reactor was HEATED BY over the interval, not what its buffer happens to hold
+      -- (#72). Read before the reset below, so a step that returns nil still consumes the payments
+      -- made for it -- the plasma was heated either way and the joules are gone.
+      local paid_j = spent[unit_number] or 0
       local result = logic.step(spec, plasma and plasma.name, plasma and plasma.amount,
-        plasma and plasma.temperature, entity.energy, dt)
+        plasma and plasma.temperature, paid_j, dt)
+
+      -- And whether it goes on being paid at all, which is the same write. A zero starts the next
+      -- interval's accumulation from nothing; removing the entry stops spend() charging a reactor
+      -- with nothing to simulate, which is what apply() used to do by simply never running for
+      -- one. See spend() above for why that is preserved rather than simplified away.
+      spent[unit_number] = result and 0 or nil
 
       -- Reported from the read pass, on the state the step was computed against, so a reactor
       -- describes the tick it just simulated rather than one it is part way through. It happens
@@ -561,7 +660,8 @@ local function update()
       end
     else
       -- Dropped here rather than on a mined or died event, which is why entity-management wires
-      -- no destruction handlers. One validity check covers every way an entity can leave --
+      -- no destruction handlers. entities.forget() takes the accumulator entry with it, so an
+      -- invalid reactor stops being charged by the same call that stops it being stepped. One validity check covers every way an entity can leave --
       -- mined, destroyed, scripted away, surface deleted -- where a set of destruction handlers
       -- covers only the ways someone remembered. Removing the current key during pairs is
       -- defined behaviour in Lua; adding one would not be.
@@ -577,39 +677,47 @@ local function update()
   end
 end
 
---- Refuse to run a cadence the reactor cannot be powered through.
+--- Refuse to run a reactor the network can never pay in full.
 --
--- A step spends the whole interval's heating in one go, so the buffer has to hold it. Past twelve
--- ticks at the shipped 50 MW and 10 MJ it cannot, and the reactor is starved every step for ever
--- -- silently, because underpowered is a legitimate state it is meant to have. That trap is not
--- something the Lua tests can see: they know the physics but not the prototype, and the physics is
--- happily insensitive to cadence well past the point the buffer gives out.
+-- THIS REPLACES check_cadence(), which #72 dissolved along with the invariant it guarded. While a
+-- step spent a whole interval's heating in one go the buffer had to cover the interval, and past
+-- twelve ticks at the shipped 50 MW and 10 MJ it could not. spend() pays per tick now, so no
+-- interval has to fit in the buffer and that coupling is gone.
 --
--- Here is the one place both numbers are visible, so here is where it is checked rather than
--- described. It can only fire on a developer edit -- to this file's interval or to entities.lua's
--- buffer -- and it fires during scripts/load-check.ps1, which creates a map and therefore runs
--- this.
+-- What is NOT gone is the failure it existed to catch. A reactor whose network cannot deliver
+-- heating_power_w continuously is starved for ever -- silently, because underpowered is a
+-- legitimate state a reactor is meant to have -- and under per-tick spending the thing that has to
+-- hold is input_flow_limit >= heating_power_w. It is the same trap by a new route, so it belongs
+-- in the same place for the same reasons: the Lua tests know the physics but not the prototype, it
+-- can only fire on a developer edit, and it fires during scripts/load-check.ps1, which creates a
+-- map and therefore runs this.
+--
 -- Over every reactor rather than rf-reactor alone (#31). The aneutronic one draws four times the
--- heating against four times the buffer, so it passes at the same interval -- but the two numbers
--- are on different prototypes now and nothing else would notice one moving without the other.
+-- heating against four times the inflow, so it passes on the same margin -- but the two numbers
+-- are on different prototypes and nothing else would notice one moving without the other.
 --
--- IT CHECKS AGAINST A BUFFER 6.7% SMALLER THAN THE ONE THE ENTITY HAS, and deliberately so. The
--- engine holds 16/15 of the declared buffer_capacity -- exactly, measured at four capacities and
--- four inflow limits by scripts/check-buffer.ps1 (#71) -- while buffer_capacity here reports the
--- declared figure. So the real ceiling at 50 MW is 12.8 ticks where this allows 12. Left
--- conservative rather than corrected by a ratio: an interval is a whole number of ticks, so the
--- 0.8 buys nothing, and a hardcoded 16/15 would be this file believing an engine constant no
--- prototype states. See docs/research/reactor-runtime-cost.md.
-local function check_cadence()
+-- PER TICK ON BOTH SIDES. get_input_flow_limit() is a method rather than an attribute in 2.0
+-- because quality scales it, and what it returns is joules per tick, not watts -- which is why
+-- heating_power_w is divided by 60 here rather than the limit multiplied by it. Asked at normal
+-- quality, which is the worst case: quality only ever raises the limit.
+--
+-- buffer_capacity is deliberately NOT checked any more. It is stated reserve now: a few seconds
+-- of it so a slow tick does not read as a brownout, coupled to nothing this file does. It is also
+-- a figure this file could not check honestly -- the engine holds 16/15 of the declared value,
+-- exactly, measured at four capacities and four inflow limits by scripts/check-buffer.ps1 (#71),
+-- while the prototype reports the declared one. See docs/research/reactor-runtime-cost.md.
+local function check_input_flow()
   for name, spec in pairs(SPECS) do
     local source = prototypes.entity[name].electric_energy_source_prototype
-    local needed = spec.heating_power_w * UPDATE_INTERVAL / 60
-    if needed > source.buffer_capacity then
+    local needed = spec.heating_power_w / 60
+    local limit = source.get_input_flow_limit()
+    if needed > limit then
       error(string.format(
-        "%s: UPDATE_INTERVAL of %d ticks needs %.3g J of buffer per step but the prototype " ..
-        "has %.3g J, so the reactor would be starved every step. Lower the interval in control.lua " ..
-        "or raise buffer_capacity in prototypes/entities.lua.",
-        name, UPDATE_INTERVAL, needed, source.buffer_capacity))
+        "%s: control.lua spends %.3g J of confinement heating per tick but the prototype's " ..
+        "input_flow_limit admits only %.3g J per tick, so the reactor could never be paid in " ..
+        "full and would be starved for ever. Raise input_flow_limit in prototypes/entities.lua " ..
+        "to at least %.3g W, or lower heating_power_w in scripts/reactor-logic.lua.",
+        name, needed, limit, spec.heating_power_w))
     end
   end
 end
@@ -622,7 +730,7 @@ end
 -- that makes the separation safe.
 --
 -- Without it, adding a third reactor prototype to entity-management and forgetting the spec here
--- gives a mod that loads, builds and runs, and throws on a nil index inside on_nth_tick the first
+-- gives a mod that loads, builds and runs, and throws on a nil index inside the tick loop the first
 -- moment a player puts plasma in one. With it, the mod refuses to load and says which name is
 -- missing.
 local function check_reactor_specs()
@@ -641,7 +749,7 @@ local function check_reactor_specs()
   end
 
   -- And the other direction, which is the one that bites on a RENAME rather than on an addition.
-  -- check_cadence and check_energy_outlets both walk SPECS and index the entity prototype straight
+  -- check_input_flow and check_energy_outlets both walk SPECS and index the entity prototype straight
   -- through, so a key left behind after a prototype was renamed or dropped is "attempt to index a
   -- nil value" pointing into one of those functions -- not the named diagnostic the comments around
   -- them promise. The loop above cannot see it, because it starts from the other list.
@@ -657,7 +765,7 @@ local function check_reactor_specs()
     end
     -- And the case that is not a crash at all, which is why it needs saying. A reactor with a
     -- prototype and a spec but no entry in entity-management's REACTORS passes every other guard
-    -- here: this loop finds it, check_cadence and check_energy_outlets and check_plasma_bounds all
+    -- here: this loop finds it, check_input_flow and check_energy_outlets and check_plasma_bounds all
     -- walk SPECS and are satisfied, and the two loops that walk REACTORS simply never see it. What
     -- a player gets is a reactor that builds, accepts plasma, and is never registered or stepped --
     -- the "looks like a balance problem" failure this whole function exists to prevent, arriving
@@ -1012,7 +1120,7 @@ end
 
 --- Refuse to run a simulation that can compute a temperature the fluid cannot hold.
 --
--- The same shape of trap as check_cadence, one file further out. apply() writes the simulated
+-- The same shape of trap as check_input_flow, one file further out. apply() writes the simulated
 -- temperature straight into the fluidbox, and Factorio rejects a temperature outside the fluid's
 -- declared range -- so reactor-logic's clamps and every plasma's prototype have to agree, and
 -- nothing but this ties them together. Edit max_temperature alone to make room for a later tier
@@ -1249,7 +1357,7 @@ end
 --
 -- M.fuels is documented as the place a tier is added -- "a row here plus prototypes; the code
 -- below does not change" -- so a row is written by someone reading the neighbouring rows rather
--- than the function that consumes them. Miss a field and the arithmetic throws inside on_nth_tick:
+-- than the function that consumes them. Miss a field and the arithmetic throws in the tick loop:
 -- a crash on a live save, at whatever moment the first reactor of that tier gets plasma, rather
 -- than a refusal to load.
 --
@@ -1359,7 +1467,7 @@ end
 local function check_prototypes()
   check_fuel_rows()
   check_reactor_specs()
-  check_cadence()
+  check_input_flow()
   check_confinement_ladder()
   check_plasma_bounds()
   check_signal_ceiling()
@@ -1392,7 +1500,18 @@ script.on_configuration_changed(function()
   circuit.rescan(entities.registry())
 end)
 
-script.on_nth_tick(UPDATE_INTERVAL, update)
+-- One handler rather than an on_tick beside an on_nth_tick, because the two have to run in a known
+-- order: update() consumes the accumulator spend() fills, and a step that read it before this tick's
+-- payment was made would short every reactor by a tick's heating for ever. Nothing documents which
+-- of the two registries the engine drains first, and this way nothing has to.
+--
+-- The condition is what on_nth_tick(UPDATE_INTERVAL) already did -- it fires when the tick is a
+-- multiple of the interval, tick 0 included -- so the simulation still steps on exactly the ticks
+-- it stepped on before, and UPDATE_INTERVAL is still the only place the cadence is written down.
+script.on_event(defines.events.on_tick, function(event)
+  spend()
+  if event.tick % UPDATE_INTERVAL == 0 then update() end
+end)
 
 -- What makes a force's confinement time change (#53). Each of these drops the derived spec cache;
 -- the next reactor to be stepped rebuilds it from force.technologies, which is the only place the

@@ -717,8 +717,10 @@ script.on_init(function()
   --
   -- get_input_flow_limit() and not an input_flow_limit attribute: the flow limits are the two
   -- MEMBERS of LuaElectricEnergySourcePrototype that are methods rather than fields, because they
-  -- take a quality. control.lua reads buffer_capacity off the same class as a field, which is what
-  -- made the wrong one look right.
+  -- take a quality. Most of that class IS fields -- buffer_capacity and drain among them -- which
+  -- is what made the wrong one look right. control.lua's check_input_flow() calls the same method
+  -- for the same reason (#72); it used to read buffer_capacity as a field and no longer reads it
+  -- at all.
   storage.appetite_w =
     prototypes.entity["rf-reactor"].electric_energy_source_prototype.get_input_flow_limit() * 60
   log("BROWNOUT-RIG built")

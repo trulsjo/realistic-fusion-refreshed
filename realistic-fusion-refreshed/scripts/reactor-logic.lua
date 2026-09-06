@@ -691,7 +691,8 @@ M.blanket = {
 -- @param fluid_name     the plasma the reactor holds, or nil when it holds nothing
 -- @param amount         plasma, in fluid units
 -- @param temperature_c  plasma temperature in degrees celsius, as the fluidbox reports it
--- @param available_j    electrical energy the reactor may spend this step
+-- @param paid_j         electrical energy ALREADY SPENT on confinement heating over this step's
+--                       interval, or math.huge for a reactor that is never starved
 -- @param dt             seconds since the last step
 -- @return nil when there is nothing to simulate, otherwise a table of what happened
 -- Returning nil leaves the reactor untouched, which for a fluid with no entry above means the
@@ -702,7 +703,7 @@ M.blanket = {
 -- instead is control.lua's check_every_plasma_burns, which refuses to load when a plasma-heating
 -- recipe makes a fluid with no row above -- at load, in front of whoever added it, rather than in
 -- front of a player wondering why their reactor is idle.
-function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
+function M.step(spec, fluid_name, amount, temperature_c, paid_j, dt)
   local fuel = fluid_name and M.fuels[fluid_name]
   if not fuel or not amount or amount <= 0 or not dt or dt <= 0 then return nil end
 
@@ -742,8 +743,19 @@ function M.step(spec, fluid_name, amount, temperature_c, available_j, dt)
   local fusion_j = reactions * fuel.energy_per_reaction_j
   local charged_j = fusion_j * fuel.charged_fraction
 
+  -- What the reactor was actually heated by, which is a PAYMENT and no longer a buffer reading
+  -- (#72). The caller pays for the heating as it goes and hands over what it managed to pay, so a
+  -- brownout arrives here as fewer joules rather than as an empty buffer for this function to
+  -- notice. How often the caller pays is the caller's business and this file still does not know
+  -- it -- what changed is the meaning of the argument, not the arithmetic below.
+  --
+  -- Clamped rather than trusted, in the one direction that is not a brownout: a caller may hand
+  -- over more than the interval's heating -- math.huge is exactly that, and is what the tests and
+  -- M.settle use for a reactor that is never starved -- and the plasma is heated at
+  -- heating_power_w and not at whatever it was given. Nothing pays a reactor more than it asks for
+  -- in the game, so this clamp only ever bites on a caller that means "all the power it wants".
   local heating_j = spec.heating_power_w * dt
-  if available_j and available_j < heating_j then heating_j = available_j end
+  if paid_j and paid_j < heating_j then heating_j = paid_j end
   if heating_j < 0 then heating_j = 0 end
 
   local burnt = reactions * fuel.fuel_per_reaction
@@ -981,17 +993,18 @@ end
 -- @param amount       plasma held, in fluid units -- a full input box, for the shipped reactor 1000
 -- @param seconds      how long to run. 1200 is converged for every shipped spec: the same answer
 --                     to five figures at 7200, verified over the whole ladder and past it.
--- @param available_j  electrical energy per step, or math.huge for a reactor that is never starved
+-- @param paid_j       electrical energy spent on heating per step, or math.huge for a reactor
+--                     that is never starved
 -- @param dt           step size in seconds
 -- @return the settled temperature in celsius, and the last step's result table
 --
 -- A COARSER dt SETTLES HOTTER, by about 2% at dt = 1 s against a tick. That is the safe direction
 -- for the guard and the wrong one for a published figure, which is why the tests below run this at
 -- a tick and control.lua runs it at the cadence the game actually steps.
-function M.settle(spec, fluid_name, amount, seconds, available_j, dt)
+function M.settle(spec, fluid_name, amount, seconds, paid_j, dt)
   local t_c, last = spec.min_temperature_c, nil
   for _ = 1, math.floor(seconds / dt) do
-    local result = M.step(spec, fluid_name, amount, t_c, available_j, dt)
+    local result = M.step(spec, fluid_name, amount, t_c, paid_j, dt)
     if not result then break end
     last = result
     t_c = result.temperature_c

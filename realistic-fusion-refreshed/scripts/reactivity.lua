@@ -3,7 +3,7 @@
 -- Pure Lua. It touches no Factorio API -- no data, no game, no storage, no settings, and none of
 -- table_size, serpent, log or localised_print -- which is what makes it testable outside the game
 -- (tests/test-reactivity.lua) and what ADR 0005 requires: the rate computation is isolated from
--- the tick cadence, so throttling to on_nth_tick is a change in control.lua alone.
+-- the tick cadence, so throttling the simulation is a change in control.lua alone.
 --
 -- Written to Lua 5.2.1, which is what Factorio 2.0.77 runs, and verified on standalone 5.4.6:
 -- no "//", no math.type, no reliance on integer subtypes.

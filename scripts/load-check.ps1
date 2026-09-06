@@ -25,22 +25,23 @@
                                   step() indexes without asking. M.fuels is the documented place
                                   to add a tier, so a row gets written from its neighbours rather
                                   than from the function that reads it -- and a missing field
-                                  throws inside on_nth_tick, on a live save, the moment a reactor
-                                  of that tier first holds plasma.
+                                  throws inside the tick loop, on a live save, the moment a
+                                  reactor of that tier first holds plasma.
       check_reactor_specs()       Every prototype entity-management registers as a reactor has
                                   constants in control.lua's SPECS and an entity prototype to
                                   match. The two lists are written separately on purpose -- one
                                   file decides what a reactor IS, the other what one DOES -- and
-                                  a missing spec is a nil index inside on_nth_tick rather than a
-                                  refusal to load.
-      check_cadence()             UPDATE_INTERVAL against each reactor's electric buffer. A step
-                                  spends the whole interval's heating at once, so past twelve
-                                  ticks at the shipped 50 MW and 10 MJ the reactor is starved
-                                  every step -- silently, since underpowered is a legitimate
-                                  state it is meant to have. Over both reactors since #31: the
-                                  aneutronic one draws four times as much against four times the
-                                  buffer, and nothing else would notice one moving without the
-                                  other.
+                                  a missing spec is a nil index inside the tick loop rather than
+                                  a refusal to load.
+      check_input_flow()          Each reactor's input_flow_limit against the confinement heating
+                                  control.lua spends per tick. A network that cannot deliver
+                                  heating_power_w continuously starves the reactor for ever --
+                                  silently, since underpowered is a legitimate state it is meant
+                                  to have. Over both reactors since #31: the aneutronic one draws
+                                  four times as much against four times the limit, and nothing
+                                  else would notice one moving without the other. It replaced
+                                  check_cadence() in #72, when per-tick spending dissolved the
+                                  coupling between UPDATE_INTERVAL and buffer_capacity.
       check_confinement_ladder()  The confinement ladder against the simulation's own temperature
                                   clamp, and against the technology prototypes it names. Research
                                   raises confinement time (#53), and a rung raised far enough
@@ -98,11 +99,24 @@
                                   this holds in place. Indifferent to which answer: it wants a
                                   reachable sink, not a particular one.
 
-    The Lua tests cannot see any of these: they know the physics but not the prototypes, and the
-    physics is happily insensitive to cadence well past the point the reactor's buffer gives out.
-    So editing UPDATE_INTERVAL, buffer_capacity, a plasma's max_temperature, reactor-logic's fuel
-    table, the collector's box order or the blanket's inventory is guarded by running the game,
-    not by the suite.
+    The Lua tests cannot see any of these: they know the physics but not the prototypes. So
+    editing input_flow_limit, a plasma's max_temperature, reactor-logic's fuel table, the
+    collector's box order or the blanket's inventory is guarded by running the game, not by the
+    suite.
+
+    TWO NUMBERS DROPPED OFF THAT LIST IN #72 AND NOTHING GUARDS THEM NOW -- said here rather than
+    left to be discovered, because this paragraph is where the next editor looks. While a
+    simulation step spent a whole update interval's confinement heating in one go, check_cadence()
+    tied UPDATE_INTERVAL to buffer_capacity and caught either one moving without the other. Heating
+    is spent per tick now, so that coupling does not exist and the check went with it.
+    check_input_flow() reads neither number.
+
+    What that leaves: buffer_capacity is stated reserve, coupled to nothing, and lowering it to a
+    joule would pass every gate here. UPDATE_INTERVAL is bounded only by
+    tests/test-reactor-logic.lua, which asserts the physics is insensitive to it from one tick to
+    thirty -- so raising it past thirty is unguarded in both places at once. Neither is a
+    correctness trap any more, which is why no new check was written for them; both are still edits
+    to make deliberately.
 
     The check-* rigs create maps too, so they run these as a side effect -- and each takes minutes.
     locale-check.ps1 does NOT: it only dumps, never creates, so a pass there says nothing about any
@@ -230,15 +244,26 @@
     references cross a mod boundary, so there is now a seam for one to fall through.
 
 .PARAMETER SelfTest
-    Verify the check can fail. SEVEN halves, and the run prints each one numbered as it passes, so a
+    Verify the check can fail. EIGHT halves, and the run prints each one numbered as it passes, so a
     reader can count them against this list: the repo as it stands must pass; a mod carrying an
     invalid prototype must fail; a mod naming an icon file that does not exist must be caught; a
     mod that reassigns one of our containment categories must be caught; a mod that moves a
     pipe connection on a machine with rendered art must be caught; a mod that merely ADDS a
-    connection category to one must NOT be; and a mod that REPLACES one must be. The first is
+    connection category to one must NOT be; a mod that REPLACES one must be; and a reactor whose
+    input_flow_limit cannot cover its confinement heating must be refused. The first is
     required or the others prove nothing, since Factorio also exits non-zero when the repo is
     genuinely broken. Halves three through seven are the ones Factorio exits 0 on, where the check
     has to decide alone. Run this whenever the script changes.
+
+    THE EIGHTH IS #72's, and it is the odd one out: every other half is about another mod breaking
+    our prototypes, where this is about a developer edit to our own. check_input_flow() replaced
+    check_cadence() when per-tick confinement spending dissolved the coupling between
+    UPDATE_INTERVAL and buffer_capacity, and what became load-bearing in its place is
+    input_flow_limit >= heating_power_w. The canary cuts rf-reactor's limit to 1 W from outside,
+    because that is the only way to make the edit without editing the repo, and the assertion
+    requires the run to fail BY check_input_flow's own message -- every other refusal in
+    control.lua also fires from on_init while --create builds the map, so "it failed" alone would
+    not say which check did it.
 
     SIX AND SEVEN ARE ONE PAIR and neither is worth much without the other. Krastorio 2 writes
     `kr-steel-pipe` onto the fluid boxes of machines it never heard of, which is ADR 0007's
@@ -987,7 +1012,7 @@ try {
 
     if ($SelfTest) {
         # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
-        Write-Host 'self-test 1/7: the repo as it stands must load.'
+        Write-Host 'self-test 1/8: the repo as it stands must load.'
         $clean = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'clean'
         # Same pass criterion as a real run: exit 0 without a save is a failure there, so it must
         # be a failure here too, or -SelfTest could certify a check a plain run would reject.
@@ -1011,7 +1036,7 @@ try {
         'data:extend({{ type = "item", name = "rf-loadcheck-canary-item" }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 2/7: an invalid prototype must be rejected.'
+        Write-Host 'self-test 2/8: an invalid prototype must be rejected.'
         $broken = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'canary'
         if ($broken.Code -eq 0) {
             Write-Host ''
@@ -1030,7 +1055,7 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
   icon = D .. "no-such-icon" .. ".png", icon_size = 64 }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 3/7: a prototype naming a file that is not there must be caught.'
+        Write-Host 'self-test 3/8: a prototype naming a file that is not there must be caught.'
         $withCanary = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'assets'
         if ($withCanary.Code -ne 0) {
             Write-Host ''
@@ -1111,7 +1136,7 @@ data.raw.item["rf-loadcheck-canary-item"].order = victim' |
   icon = "__base__/graphics/icons/iron-plate.png", icon_size = 64 }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 4/7: a set reassigning one of our containment categories must be caught.'
+        Write-Host 'self-test 4/8: a set reassigning one of our containment categories must be caught.'
         $reassigned = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'contain'
         if ($reassigned.Code -ne 0) {
             Write-Host ''
@@ -1200,7 +1225,7 @@ if not slid then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 5/7: a machine whose rendered art no longer fits it must be caught."
+        Write-Host "self-test 5/8: a machine whose rendered art no longer fits it must be caught."
         $renderDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-loaded'
         $disagreements = @(Get-RenderDisagreements -DumpPath $renderDump -Manifests $renderManifests)
         $onVictim = @($disagreements | Where-Object { $_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connections' })
@@ -1273,7 +1298,7 @@ if not touched then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 6/7: another mod adding a connection category must NOT be reported."
+        Write-Host "self-test 6/8: another mod adding a connection category must NOT be reported."
         $coexistDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-coexist'
 
         # The canary reaching the GEOMETRY, proved rather than assumed. This half passes by finding
@@ -1346,7 +1371,7 @@ if not touched then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 7/7: another mod replacing a connection category must be caught."
+        Write-Host "self-test 7/8: another mod replacing a connection category must be caught."
         $replacedDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-replaced'
         $replacedRows = @(Get-RenderDisagreements -DumpPath $replacedDump -Manifests $renderManifests)
         $onCategories = @($replacedRows | Where-Object {
@@ -1373,12 +1398,56 @@ end
             exit 1
         }
 
+        # Half eight: a reactor whose network can never pay for its heating must be refused (#72).
+        #
+        # UNLIKE EVERY HALF ABOVE IT, this one is not about a mod breaking our prototypes from
+        # outside -- it is about a developer edit to our own. check_input_flow() replaced
+        # check_cadence() when per-tick spending dissolved the coupling between UPDATE_INTERVAL and
+        # buffer_capacity, and the invariant that became load-bearing is
+        # input_flow_limit >= heating_power_w. Break that and the reactor is starved for ever,
+        # silently, because underpowered is a legitimate state a reactor is meant to have. The
+        # canary makes the edit from outside because that is the only way to make it without
+        # editing the repo.
+        #
+        # IT MUST FAIL BY THE CHECK'S OWN WORDS, not merely fail. check_input_flow() runs from
+        # on_init, so it fires while --create builds the map -- but so does every other refusal in
+        # control.lua, and a canary that happened to break something else would look identical.
+        # The assertion therefore reads the captured output for the message this check alone emits.
+        '(function()
+  local source = data.raw.boiler["rf-reactor"].energy_source
+  if not source.input_flow_limit then
+    error("load-check canary: rf-reactor declares no input_flow_limit, so half eight would prove nothing")
+  end
+  source.input_flow_limit = "1W"
+end)()' | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
+
+        Write-Host 'self-test 8/8: a reactor that can never be paid its heating must be refused.'
+        $starved = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'flow'
+        if ($starved.Code -eq 0) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: rf-reactor's input_flow_limit was cut to 1 W and the mod loaded"
+            Write-Host '         anyway. check_input_flow() is not proving anything, so a reactor that can'
+            Write-Host '         never be paid its confinement heating would ship as a balance problem.'
+            exit 1
+        }
+        $starvedSaid = (Test-Path $starved.OutFile) -and
+            (Select-String -Path $starved.OutFile -SimpleMatch 'input_flow_limit admits only' -Quiet)
+        if (-not $starvedSaid) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the starved-reactor canary failed the load (exit $($starved.Code)) but"
+            Write-Host '         check_input_flow() did not say so, so the failure was something else and'
+            Write-Host '         this half proves nothing about the invariant it is named for.'
+            Write-FactorioTail $starved
+            exit 1
+        }
+
         Write-Host ''
         Write-Host 'OK - self-test passed: clean repo loads, invalid prototype rejected'
         Write-Host "     (exit $($broken.Code)), missing asset caught, a reassigned containment"
         Write-Host "     category caught by name on $victim, a slid connection caught on"
         Write-Host "     $($renderVictim.name)'s rendered art, an added category tolerated on it,"
-        Write-Host '     and a replaced one caught by name.'
+        Write-Host '     a replaced one caught by name, and a reactor whose input_flow_limit'
+        Write-Host '     cannot cover its heating refused by check_input_flow().'
         exit 0
     }
 

@@ -223,7 +223,11 @@ plasma, exposed as a third circuit signal and expressed as a percentage of the *
 `share / (1 - share)` and is deliberately not what the signal carries.
 
 **Tick cadence** — how often the simulation steps. Deliberately separate from the rate computation, so
-throttling is a configuration change. See ADR 0005.
+throttling is a configuration change. See ADR 0005. **It governs the simulation and not the
+electricity**: since #72 a reactor that is being simulated pays for its confinement heating every
+tick whatever the cadence is, so that the draw is steady instead of a square wave, and only the
+fluid box work runs on the cadence. A reactor with nothing to simulate — not yet piped, or run dry —
+pays nothing, as it always did.
 
 **Per reactor** — the unit of simulation. One reactor entity is one simulated object, with its own state
 in `storage` and its own circuit signals. Not "per network": v1 has no network concept and no

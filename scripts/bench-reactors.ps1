@@ -286,8 +286,23 @@
         physics  + reactor-logic.step(). The arithmetic, and nothing else -- the module is required
                  straight out of __realistic-fusion-refreshed__, so this is the shipped physics rather than a
                  copy of it.
-        write    + the per-reactor pending table, then entity.energy, box[1], get_capacity(2) and
-                 box[2]. The rest of the crossings, and one allocation bundled in with them.
+        write    + the per-reactor pending table, then box[1], get_capacity(2) and box[2] at the
+                 interval, AND one energy read and one energy write per reactor per TICK. The rest
+                 of the crossings, and one allocation bundled in with them.
+
+                 The per-tick pair is #72's confinement spending, mirrored from control.lua's
+                 spend(). It is on this rung because it is a write, and it is the only thing in the
+                 ladder that does not run at the interval -- so `write` minus `physics` is the
+                 interval's remaining crossings PLUS the per-tick pair, not the interval's crossings
+                 alone. It reports its own paid= counter for the same reason steps= and touched=
+                 exist: it runs on a handler of its own and leaves no mark the output= gate reads,
+                 so a registration silently lost would make the rung look cheaper rather than
+                 broken.
+
+                 What is NOT mirrored is the shipped gate on having something to simulate. Every
+                 reactor on this rig is held full and hot for the whole run, so that gate would
+                 never once decline to pay and mirroring it would add a branch and measure
+                 nothing.
 
     A rung is measured the same way everything else here is -- as a slope against the n = 0 baseline
     -- so `write` minus `physics` is what the write crossings cost, and `physics` minus `read` is
@@ -1471,7 +1486,7 @@ end)
 -- steps/touched are logged and gated on, because a rung below `write` writes nothing to the world
 -- and so leaves no trace the output= gate could check. A handler that silently failed to register
 -- would report a per-reactor cost of nothing at all, which is indistinguishable from the finding.
-local ablate_steps, ablate_touched = 0, 0
+local ablate_steps, ablate_touched, ablate_paid = 0, 0, 0
 if ABLATE ~= "none" then
   local logic = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
   local SPECS = {
@@ -1493,11 +1508,16 @@ if ABLATE ~= "none" then
         n = n + 1
         if RUNG >= 2 then
           local plasma = entity.fluidbox[1]
+          -- Read and discarded on the `read` rung, which is what that rung is for: the crossing is
+          -- the cost being measured, and control.lua makes it too -- in spend() now rather than
+          -- here (#72). What step() is handed below is the payment, not this.
           local energy = entity.energy
           if RUNG >= 3 then
             local spec = SPECS[entity.name]
+            local paid = spec.heating_power_w * DT
+            if paid > energy then paid = energy end
             local result = logic.step(spec, plasma and plasma.name, plasma and plasma.amount,
-              plasma and plasma.temperature, energy, DT)
+              plasma and plasma.temperature, paid, DT)
             if pending and result then
               pending[#pending + 1] = { entity = entity, spec = spec, plasma = plasma, result = result }
             end
@@ -1511,10 +1531,14 @@ if ABLATE ~= "none" then
     -- The write half of control.lua's apply(), minus the collector lookup and the circuit publish:
     -- both are per reactor and both are in the shipped path, so this rung is a floor on the shipped
     -- cost rather than a reproduction of it.
+    --
+    -- The energy write is NOT here any more, because apply() no longer makes one: #72 moved
+    -- confinement spending to a per-tick handler, mirrored below. Left here it would have charged
+    -- the ablated reactor twice and measured a crossing the shipped mod stopped making at this
+    -- cadence.
     if pending then
       for _, s in ipairs(pending) do
         local entity, result = s.entity, s.result
-        entity.energy = entity.energy - result.heating_used_j
         local box = entity.fluidbox
         local remaining = s.plasma.amount - result.plasma_consumed
         if remaining > 0 then
@@ -1532,6 +1556,38 @@ if ABLATE ~= "none" then
       end
     end
   end)
+
+  -- control.lua's spend(), mirrored on the write rung (#72). One energy read and one energy write
+  -- per reactor per TICK, where every rung above runs at INTERVAL -- so this is the whole of what
+  -- per-tick confinement spending costs, and `write` minus `physics` is what it costs on top of
+  -- the interval's crossings.
+  --
+  -- On the write rung alone, because it is a write and the rungs are cumulative. The accumulator
+  -- the shipped one keeps is deliberately absent: the ablated step computes its own payment from
+  -- the buffer above rather than being handed one, so a table here would be measured and never
+  -- read. Nor is the shipped gate on "has something to simulate" mirrored -- every reactor on this
+  -- rig is held full and hot for the whole run, so it would never once decline to pay.
+  --
+  -- ablate_paid is counted for the reason steps/touched are counted above, and it is a separate
+  -- counter rather than an addition to touched= so the existing touched == steps * n gate keeps
+  -- meaning what it means. If this registration is ever lost -- a RUNG remap, an edit that moves
+  -- it out of this block -- `-Ablate write` would silently stop measuring precisely the thing #72
+  -- added, and would report the loss as a cheaper rung.
+  if RUNG >= 4 then
+    script.on_event(defines.events.on_tick, function()
+      for _, entity in pairs(storage.reactors) do
+        if entity.valid then
+          local want = SPECS[entity.name].heating_power_w / 60
+          local energy = entity.energy
+          if want > energy then want = energy end
+          if want > 0 then
+            entity.energy = energy - want
+            ablate_paid = ablate_paid + 1
+          end
+        end
+      end
+    end)
+  end
 end
 
 -- Proof that what was benchmarked was a running reactor and not a cold one. One tick in a hundred
@@ -1621,9 +1677,9 @@ script.on_nth_tick(__REPORT__, function()
     end
   end
 
-  log(string.format("BENCH-RIG tick=%d reactors=%d hot=%d powered=%d temp_c=%.4g plasma=%.4g output=%.4g buffer_j=%.4g burning=%s ablate=%s steps=%d touched=%d collectors=%d collected=%.4g tritium=%.4g full_pct=%.3g blankets=%d bred=%d expect=%d lithium=%d lithium_min=%d",
+  log(string.format("BENCH-RIG tick=%d reactors=%d hot=%d powered=%d temp_c=%.4g plasma=%.4g output=%.4g buffer_j=%.4g burning=%s ablate=%s steps=%d touched=%d paid=%d collectors=%d collected=%.4g tritium=%.4g full_pct=%.3g blankets=%d bred=%d expect=%d lithium=%d lithium_min=%d",
     game.tick, n, hot, powered, temp / d, plasma / d, output / d, energy / d,
-    (#mix > 0) and table.concat(mix, ",") or "none", ABLATE, ablate_steps, ablate_touched,
+    (#mix > 0) and table.concat(mix, ",") or "none", ABLATE, ablate_steps, ablate_touched, ablate_paid,
     #storage.collectors, collected, tritium, full_pct,
     #storage.blankets, bred, storage.neutronic_blankets or 0, lithium, lithium_min))
 end)
@@ -2527,6 +2583,19 @@ try {
             if ($count -gt 0 -and $touched -ne $steps * $count) {
                 throw ("rig at n=$count touched $touched reactors over $steps steps of -Ablate $Ablate, " +
                        "expected $($steps * $count): '$state'")
+            }
+            # And the per-tick confinement spending the `write` rung adds (#72), which the two
+            # counters above cannot see: it runs on its own handler, at its own cadence, and the
+            # world mark it leaves -- a lower energy buffer -- is not one the output= gate reads.
+            # Counted rather than compared against a tick count, because the rig's own report tick
+            # is not the last tick of the run and there is no arithmetic here that gives one.
+            if ($Ablate -eq 'write' -and $count -gt 0) {
+                $paid = if ("$state" -match 'paid=(\d+)') { [int]$Matches[1] } else { -1 }
+                if ($paid -lt $steps * $count) {
+                    throw ("rig at n=$count paid confinement heating $paid times against at least " +
+                           "$($steps * $count) expected from $steps steps, so the per-tick spending " +
+                           "the write rung is supposed to include did not run: '$state'")
+                }
             }
         }
 

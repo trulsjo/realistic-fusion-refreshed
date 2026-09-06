@@ -62,9 +62,11 @@ question:
 about 62 vanilla steam engines. Vanilla nuclear, the comparable tier, needs no startup power at all.
 
 **And the draw never stops.** Plasma leaves the heater at 10⁶ °C, which fuses essentially not at all;
-confinement heating is what climbs it to a fusing temperature. `heating_j` is clamped to `available_j`
-in `scripts/reactor-logic.lua`, so a brownout cools the plasma and the climb back is minutes. Nothing
-in the mod arrests that.
+confinement heating is what climbs it to a fusing temperature. A reactor is heated by what it was
+actually paid — `control.lua` spends per tick and hands `scripts/reactor-logic.lua` the joules that
+went in — so a brownout cools the plasma and the climb back is minutes. Nothing in the mod arrests
+that. (The argument's parameter was called `available_j` and read the electric buffer until #72; the
+clamp and the conclusion are unchanged.)
 
 > **True of this tier, and only of this tier.** Read as a statement about the reactor it is not: at
 > D-T's density and confinement time the plasma is *ignited*, so confinement heating is what gets it
