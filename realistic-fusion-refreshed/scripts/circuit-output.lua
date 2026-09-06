@@ -25,8 +25,9 @@
 
 -- reactor-animation.lua is required rather than called from control.lua because publish() already
 -- works out which state a reactor is in, and the moving core answers a coarser version of the same
--- question -- is it fusing at all, which is three of the five. Requiring it here is safe for tests/test-circuit-output.lua, which loads this file
--- outside Factorio: that module touches nothing at load either.
+-- question -- is it fusing at all, which is three of the five. Requiring it here is safe for
+-- tests/test-circuit-output.lua, which loads this file outside Factorio: that module touches
+-- nothing at load either.
 local animation = require("scripts.reactor-animation")
 
 local M = {}
@@ -141,6 +142,7 @@ end
 -- @param fill    how full the reactor's plasma box is, 0 to 1, or nil
 -- @param spec    the reactor's constants, as its own force runs them
 -- @param curve   reactor-logic.density_curve for that spec and plasma, or nil when unknown
+-- @param was      the key this reactor reported last time, or nil
 -- @return { key = string, diode = "green"|"yellow"|"red" }
 --
 -- The diode is a name rather than a defines value so this function runs outside Factorio;
@@ -169,11 +171,26 @@ end
 -- unambiguously meant less power. It does not (ADR 0016), and CONTEXT.md now separates the two
 -- words: under-supplied is held below full deliberately and may be the best state a reactor can be
 -- in; starved is held below the density at which it is worth running. That line is
--- reactor-logic.density_curve's `floor`, and it is MEASURED per force and per confinement rung
--- rather than written down, because the whole curve walks up the fill axis as research raises tau.
+-- reactor-logic.density_curve's `floor`, and it is MEASURED per confinement rung rather than
+-- written down, because the whole curve walks up the fill axis as research raises tau.
 --
 -- Asked BEFORE the fusion test on purpose. A reactor below the floor is in that fault whether it
 -- happens to be hot or cold, where "idle" would report a cold start it will never come out of.
+--
+-- AND IT LATCHES, which the optimum's band does not need to and this does. The floor is the one
+-- line here that changes the DIODE and stops the moving core, and it is a line a player is invited
+-- to sit near: "lean" tells them to add plasma, so a run tuned just above the floor is the expected
+-- outcome rather than a corner. Heaters deliver in batches, so the segment's fill crosses back and
+-- forth over a bare threshold, and every report would flip the building between a green "more
+-- plasma would raise output" and a red "starved" with the core starting and stopping under it.
+--
+-- So the reactor has to climb a whole grid step clear of the floor to stop being starved, where it
+-- only has to fall below the floor to become starved. One step, because that is what the sweep
+-- resolves and what the optimum's band is already worth -- not a second constant.
+--
+-- It is the one piece of state this function has, and it is an ARGUMENT rather than a lookup, so
+-- the pure half stays pure and tests/test-circuit-output.lua can drive the latch directly. publish()
+-- is what remembers it.
 --
 -- The line between idle and the fusing states is fusion power against what the reactor is RATED to
 -- draw, not against what it actually drew, and not the Q signal. Both of the wrong answers were
@@ -201,12 +218,14 @@ end
 -- WITHOUT A CURVE the three density states collapse back to "running", which is the safe direction
 -- and the one a reactor holding a plasma nobody has swept is in. Nothing is claimed rather than
 -- something being guessed.
-function M.status(result, fill, spec, curve)
+function M.status(result, fill, spec, curve, was)
   if not result or not fill or fill <= 0 then
     return { key = "starved", diode = "red" }
   end
-  if curve and fill < curve.floor then
-    return { key = "starved", diode = "red" }
+  if curve then
+    local floor = curve.floor
+    if was == "starved" then floor = floor + curve.step end
+    if fill < floor then return { key = "starved", diode = "red" } end
   end
   local rated_w = spec and spec.heating_power_w or 0
   if not (rated_w > 0 and (result.fusion_power_w or 0) >= rated_w * 0.005) then
@@ -284,8 +303,15 @@ end
 --
 -- Called on the reporting cadence, not the simulation one. control.lua owns both; see the note on
 -- REPORT_EVERY there for why they are different numbers.
+--
+-- WHAT THE REACTOR SAID LAST TIME IS KEPT HERE, not passed in, because it is this function's own
+-- bookkeeping and no caller has a reason to know about it. status() needs it for the starved
+-- latch -- see the note there -- and nothing else does. Stored per unit_number beside the
+-- combinator register and dropped by the same forget(), so it cannot outlive its reactor.
 function M.publish(entity, result, fill, spec, curve)
-  local status = M.status(result, fill, spec, curve)
+  storage.reactor_status = storage.reactor_status or {}
+  local status = M.status(result, fill, spec, curve, storage.reactor_status[entity.unit_number])
+  storage.reactor_status[entity.unit_number] = status.key
   entity.custom_status = {
     diode = defines.entity_status_diode[status.diode],
     label = { M.LOCALE_PREFIX .. status.key },
@@ -319,6 +345,7 @@ end
 -- behind would be invisible, unminable and still on the wire, which is the worst of all outcomes.
 function M.forget(unit_number)
   animation.forget(unit_number)
+  if storage.reactor_status then storage.reactor_status[unit_number] = nil end
   local registry = storage.reactor_signals
   if not registry then return end
   local combinator = registry[unit_number]
@@ -466,6 +493,16 @@ function M.rescan(registry)
   end
 
   storage.reactor_signals = by_unit
+
+  -- The remembered status keys go the same way, and for the same reason the combinators do: a
+  -- reactor that left while this mod was disabled is never in forget()'s path, so its entry would
+  -- sit in the save for ever. One string per dead reactor is a small leak next to a live
+  -- combinator on a wire, but it is the same leak and this is the one place that can close it.
+  if storage.reactor_status then
+    local kept = {}
+    for unit_number in pairs(by_unit) do kept[unit_number] = storage.reactor_status[unit_number] end
+    storage.reactor_status = kept
+  end
 end
 
 return M

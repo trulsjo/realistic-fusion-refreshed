@@ -193,7 +193,8 @@ remains pre-authorised.
   > | east again, written first | 71.10% |
   >
   > The count series is the **arithmetic mean of the positional ramp** over the reactors each row
-  > occupies — 71.92 is (72.19 + 71.65) / 2 and 71.64 is the mean of all three, with nothing fitted.
+  > occupies — 71.92 is (72.19 + 71.65) / 2, and the mean of all three is 71.65 against a measured
+  > 71.64, with nothing fitted.
   > So **writer count costs nothing**; what costs about a point is *where* on the segment the energy
   > enters. That is not the write order (the east reactor keeps 71.10% first or last) and it is not
   > the gradient the writes make (the flat three-writer row and the 73%-uneven centre row agree to a

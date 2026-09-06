@@ -5,7 +5,7 @@
 
 .DESCRIPTION
     tests/test-circuit-output.lua covers everything above publish(): what the two signal values
-    should be, which of the three states a result means, that every status key is in the locale
+    should be, which of the five states a result means, that every status key is in the locale
     file. It is pure arithmetic and it runs outside Factorio, which is the whole reason
     circuit-output.lua is split where it is.
 
@@ -17,8 +17,8 @@
     whole thing can work while being impossible to attach a wire to, because the reactor wins the
     cursor over the entity that carries the connector (ADR 0012).
 
-    So this builds five reactors, wires each one's combinator to a second combinator ten tiles away,
-    and reads the values back off the far end of that wire. Reading at the far end is the point: it
+    So this builds seven reactors, wires each one's combinator to a second combinator ten tiles
+    away, and reads the values back off the far end of that wire. Reading at the far end is the point: it
     is the difference between "the mod set some filters" and "a player can act on this".
 
     WHAT EACH REACTOR IS FOR
@@ -37,9 +37,9 @@
                 electric network, so it cannot climb. Holding plasma, not fusing.
       starved   No plasma line at all.
 
-    Three arrangements, one save -- which is also what makes the aggregate check possible: running
-    and idle report different figures, so if either one's wire carried a value for "the reactors"
-    rather than for itself, they could not both be right.
+    Those three are one save with the two below and the ignited pair, and they are also what makes
+    the aggregate check possible: running and idle report different figures, so if either one's wire
+    carried a value for "the reactors" rather than for itself, they could not both be right.
 
       tuned     D-D held at 65% of its box, powered. THE STATE #74 EXISTS FOR: a deliberately
                 under-supplied reactor sitting at its best density, which the status line has to
@@ -68,7 +68,9 @@
     ~~They are both "running".~~ **NOT SINCE #74**: D-T sits far past its optimum rather than below
     it (ADR 0016), so full supply is its best density and the thin one is "lean" -- more plasma
     would raise its output. That is a change in what the pair REPORT and not in what they are for;
-    the temperature comparison below is untouched by it. Their real equilibria differ -- a thinner plasma settles hotter -- and
+    the temperature comparison below is untouched by it.
+
+    Their real equilibria differ -- a thinner plasma settles hotter -- and
     ~~both are far above the simulation's 2e9 ceiling, so both are clamped to it and both report the
     same number.~~ **NOT SINCE #58**, and this is the rig that recorded it changing. The ceiling
     moved to 5e9, above where D-T settles, so the pair now report their own equilibria and differ --
@@ -165,10 +167,15 @@ local SCALE = circuit.TEMPERATURE_SCALE
 -- touch the next one. powered = false is how the idle case is held idle: with no network the
 -- reactor cannot heat, so plasma injected at a heater's temperature stays there.
 --
--- `status` is the status line the case should show and `distinct` marks the three whose lines have
--- to differ from each other. Both exist because #55 added two cases that are deliberately NOT a
--- fourth and fifth state: the ignited pair are both "running", and they are here to be compared
--- with each other rather than with anything else.
+-- `status` is the status line the case should show and `distinct` marks the cases whose lines have
+-- to differ from each other -- four of the seven since #74. Both exist because some cases are
+-- deliberately NOT one more state: the ignited pair are here to be compared with each other rather
+-- than with anything else, and `too-thin` reaches the same "starved" the `starved` case does by a
+-- different route, which is the point of it rather than a clash.
+--
+-- ~~The ignited pair are both "running".~~ Not since #74 -- D-T sits far past its optimum rather
+-- than below it (ADR 0016), so the full one is "running" and the thin one is "lean". That changes
+-- what they report and not what they are for.
 --
 -- THE IGNITED PAIR (#55, for #54). Two D-T reactors, both powered, SEEDED RATHER THAN FED -- see
 -- the note where they are built -- and differing only in how full they are held. Their real
@@ -296,8 +303,9 @@ script.on_init(function()
 
     -- THE SEEDED CASES ARE NOT FED (#55, and the two #74 added). An infinity pipe holds a box at a
     -- fill by replacing what the reactor burns, and it replaces it AT THE FEED'S TEMPERATURE --
-    -- which on a reactor burning 34 units a second is a large cooling flow, not a top-up. Fed that way the thin one never left
-    -- 6.28e8: it was pinned by its feed rather than by the ceiling, and the pair then differed for
+    -- which on a reactor burning 34 units a second is a large cooling flow, not a top-up. Fed that
+    -- way the thin one never left 6.28e8: it was pinned by its feed rather than by the ceiling, and
+    -- the pair then differed for
     -- the one reason this measurement must exclude. So they get plasma written straight into the
     -- box and topped back up below, temperature preserved, which is the same instrument
     -- scripts/check-confinement.ps1 uses and for the same reason.
@@ -371,8 +379,11 @@ local function verify()
     local reactor = entry.reactor
 
     -- The status line, read back off the entity rather than recomputed.
-    -- The expected line is the case's `status`, which is its own name for the original three and
-    -- "running" for the ignited pair -- they are two reactors in one state, not two more states.
+    --
+    -- The expected line is the case's `status` where it declares one and its own name otherwise,
+    -- which since #74 is most of them: `running` is an arrangement rather than an answer and reports
+    -- "rich", `tuned` reports "running", `too-thin` reports "starved", and the ignited pair report
+    -- "running" and "lean". Only `idle` and `starved` still answer to their own names.
     local expected = entry.case.status or name
     local status = reactor.custom_status
     local label = status and status.label and status.label[1]

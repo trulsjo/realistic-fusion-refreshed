@@ -100,8 +100,8 @@ on building properly.
   **Both closed by [#74](https://github.com/trulsjo/realistic-fusion-refreshed/issues/74),
   2026-09-06**, and by one mechanism rather than two. `reactor-logic.density_curve` settles the
   reactor at twenty fills and reports where the peak is and where under-supplying stops paying;
-  `control.lua` caches that per force beside the confinement spec and throws it away on the same
-  research events, and `circuit-output.status` turns it into five states instead of three:
+  `control.lua` caches that answer under the confinement time it was swept at, and
+  `circuit-output.status` turns it into five states instead of three:
 
   | state | when | diode |
   |---|---|---|
