@@ -176,43 +176,124 @@ equal(C.unrepresentable(6.9e9), nil,
 
 -- ---------------------------------------------------------------- status
 
--- Three states, which is what a player needs to tell apart: it is working, it is sitting there, or
--- it has nothing to work with. The diode is a name here rather than a defines value so that this
--- file runs outside Factorio; publish() maps it.
+-- Five states since #74. Three of them are the same question a player always had -- it is working,
+-- it is sitting there, or it has nothing to work with -- and the other two are the density lever
+-- ADR 0016 accepted and nothing told a player about: lean and rich say which way to move the
+-- throttle.
 --
--- The threshold is half a percent of the reactor's RATED heating, so the spec goes in too.
-local function status_of(result, plasma_amount)
-  return C.status(result, plasma_amount, SPEC)
+-- The threshold between idle and fusing is half a percent of the reactor's RATED heating, so the
+-- spec goes in. The three density states need the curve as well; without one they collapse back to
+-- "running", which is the case asserted at the bottom of this block.
+local CURVE = L.density_curve(SPEC, "rf-d-d-plasma", 1000)
+check(CURVE ~= nil, "the shipped reactor has a density curve to judge fills against")
+
+local function status_of(result, fill)
+  return C.status(result, fill, SPEC, CURVE)
 end
 
 local RATED = SPEC.heating_power_w
 local running = { temperature_c = 6e8, q_factor = 1.4, fusion_power_w = 7e7 }
 local cold    = { temperature_c = 15,  q_factor = 0,   fusion_power_w = 0 }
 
-equal(status_of(running, 1000).key, "running", "a fusing reactor reports running")
-equal(status_of(running, 1000).diode, "green", "running shows a green diode")
+-- THE CURVE IS ADR 0016'S TABLE, checked here from the other side of the module boundary before
+-- anything is judged against it. That ADR measures the shipped tier's optimum at about 65% fill and
+-- says the n-squared term wins again "below about 35% fill", where a thinned reactor is worse off
+-- than a full one. Those are the two numbers every case below turns on, so a curve that had drifted
+-- off them would make the rest of this block assert the wrong thing while still passing.
+equal(CURVE.optimum, 0.65, "the shipped reactor's best density is ADR 0016's ~65% fill")
+equal(CURVE.floor, 0.35, "and it stops being worth thinning at ADR 0016's ~35%")
+check(CURVE.step > 0, "the curve carries the grid step its answers are resolved to")
 
-equal(status_of(cold, 1000).key, "idle", "a reactor holding plasma but not fusing reports idle")
-equal(status_of(cold, 1000).diode, "yellow", "idle shows a yellow diode")
+equal(status_of(running, CURVE.optimum).key, "running",
+  "a reactor fusing at its best density reports running")
+equal(status_of(running, CURVE.optimum).diode, "green", "running shows a green diode")
+
+equal(status_of(cold, 1.0).key, "idle", "a reactor holding plasma but not fusing reports idle")
+equal(status_of(cold, 1.0).diode, "yellow", "idle shows a yellow diode")
 
 equal(status_of(nil, 0).key, "starved", "a reactor with no plasma reports starved")
 equal(status_of(nil, 0).diode, "red", "starved shows a red diode")
 equal(status_of(nil, nil).key, "starved", "no plasma at all is starved, not an error")
 
+-- ---------------------------------------------------------------- the density states (#74)
+--
+-- THE WHOLE POINT OF THE TICKET, in three assertions: a reactor held at its best density is not a
+-- fault, a full one is told it could do better by thinning, and a thin one is told to add plasma.
+-- Before this, all three said "Fusing" and the mechanic was discoverable only by wiring a
+-- combinator and experimenting.
+equal(status_of(running, 1.0).key, "rich",
+  "a FULL reactor at the shipped tier is rich -- less plasma would raise its output")
+equal(status_of(running, 1.0).diode, "green", "rich is not a fault, so its diode stays green")
+equal(status_of(running, CURVE.floor + CURVE.step).key, "lean",
+  "a reactor thinner than its optimum but above the floor is lean")
+equal(status_of(running, CURVE.floor + CURVE.step).diode, "green", "and lean is not a fault either")
+
+-- The band that counts as "at the optimum" is one step of the sweep's own grid, so it is the
+-- resolution of the answer rather than a tolerance invented here.
+equal(status_of(running, CURVE.optimum - CURVE.step).key, "running",
+  "one grid step under the optimum still counts as at it")
+equal(status_of(running, CURVE.optimum + CURVE.step).key, "running", "and one step over")
+equal(status_of(running, CURVE.optimum - CURVE.step * 1.5).key, "lean",
+  "a step and a half under is lean")
+equal(status_of(running, CURVE.optimum + CURVE.step * 1.5).key, "rich", "and over is rich")
+
+-- ---------------------------------------------------------------- what "starved" means now (#74)
+--
+-- CONTEXT.md separates two words that used to be one: under-supplied is held below full on purpose
+-- and may be the BEST state a reactor can be in; starved is held below the density at which it is
+-- worth running at all. The line is the curve's floor -- the thinnest fill still worth as much as
+-- a full reactor -- so it is measured per confinement rung rather than written down.
+check(status_of(running, CURVE.floor).key ~= "starved",
+  "a reactor exactly on the floor is not starved -- it is still worth as much as a full one",
+  status_of(running, CURVE.floor).key)
+equal(status_of(running, CURVE.floor / 2).key, "starved",
+  "half the floor is starved: thinned past where the reactor would be better off simply filled")
+equal(status_of(running, CURVE.floor / 2).diode, "red", "and that is a fault, so the diode is red")
+
+-- Asked BEFORE the fusion threshold, which is the ordering that makes the state mean anything: a
+-- reactor below the floor is in that fault whether it is hot or cold, and "idle" would report a
+-- cold start it is never going to come out of.
+equal(status_of(cold, CURVE.floor / 2).key, "starved",
+  "a COLD reactor below the floor is starved, not idle -- the fault is the density, not the heat")
+
+-- THE LEVER CLOSES AS RESEARCH RAISES CONFINEMENT TIME, which is the property #74 asks the status
+-- line to keep. ADR 0016 measures the optimum walking up the fill axis and leaving the range by
+-- tau 70 s, at which point full supply is simply best -- so the SAME full reactor that reads "rich"
+-- at the shipped 30 s must read "running" once a player has researched their way up.
+local RESEARCHED = {}
+for k, v in pairs(SPEC) do RESEARCHED[k] = v end
+RESEARCHED.confinement_time_s = 70
+local TOP_CURVE = L.density_curve(RESEARCHED, "rf-d-d-plasma", 1000)
+equal(TOP_CURVE.optimum, 1.0, "by tau 70 s the best density is full supply, as ADR 0016 measured")
+equal(C.status(running, 1.0, RESEARCHED, TOP_CURVE).key, "running",
+  "so a full reactor there is at its optimum rather than rich")
+equal(C.status(running, CURVE.optimum, RESEARCHED, TOP_CURVE).key, "lean",
+  "and the 65% a player tuned to at 30 s is now merely lean")
+
+-- AND WITH NO INTERIOR PEAK THERE IS NO FLOOR. Every fill under full is worth less than a full one
+-- there, so "worse than full" would condemn a reactor at 95% as starved. It is not a trap -- adding
+-- plasma helps all the way up, which is what "lean" says -- so the floor drops out and starved goes
+-- back to meaning no plasma at all.
+equal(TOP_CURVE.floor, 0, "with the optimum at full supply there is no starved band")
+equal(C.status(running, 0.05, RESEARCHED, TOP_CURVE).key, "lean",
+  "a nearly-empty reactor at the top rung is lean, not starved: filling it helps monotonically")
+
+-- ---------------------------------------------------------------- the idle boundary
+
 -- The boundary is fusion actually happening, not temperature. A reactor can be hot and not fusing
 -- on the way down, and calling that "running" would be a lie the player would act on.
-equal(status_of({ temperature_c = 6e8, q_factor = 0, fusion_power_w = 0 }, 1000).key, "idle",
+equal(status_of({ temperature_c = 6e8, q_factor = 0, fusion_power_w = 0 }, 1.0).key, "idle",
   "hot but not fusing is idle, not running")
 
 -- Why the threshold is not "any fusion at all". Fusion power is never exactly zero: the reactivity
 -- at 15 C is about 1e-70 and there are 1e23 particles, so a "> 0" test called a stone-cold reactor
 -- "Fusing". This suite originally missed it by feeding status() a clean 0, which never happens.
-equal(status_of({ temperature_c = 15, q_factor = 1e-60, fusion_power_w = 1e-55 }, 1000).key, "idle",
+equal(status_of({ temperature_c = 15, q_factor = 1e-60, fusion_power_w = 1e-55 }, 1.0).key, "idle",
   "a stone-cold reactor with denormal fusion is idle, not running")
-equal(status_of({ temperature_c = 6.3e6, q_factor = 0.004, fusion_power_w = RATED * 0.004 }, 1000).key,
+equal(status_of({ temperature_c = 6.3e6, q_factor = 0.004, fusion_power_w = RATED * 0.004 }, 1.0).key,
   "idle", "fusion below half a percent of rated heating is still idle")
-equal(status_of({ temperature_c = 3e7, q_factor = 0.005, fusion_power_w = RATED * 0.005 }, 1000).key,
-  "running", "half a percent of rated heating is where running starts")
+equal(status_of({ temperature_c = 3e7, q_factor = 0.005, fusion_power_w = RATED * 0.005 }, 1.0).key,
+  "rich", "half a percent of rated heating is where fusing starts -- rich, because the box is full")
 
 -- And why the threshold is not the Q signal either, which was the second wrong answer. q_factor is
 -- 0 whenever heating power is 0 -- deliberately, since a reactor that is off is not infinitely
@@ -220,17 +301,27 @@ equal(status_of({ temperature_c = 3e7, q_factor = 0.005, fusion_power_w = RATED 
 -- pipe while its Q reads zero. Reporting that as "not fusing" is wrong at exactly the moment a
 -- player is trying to diagnose it.
 local browned_out = { temperature_c = 8e8, q_factor = 0, fusion_power_w = 1.3e8 }
-equal(status_of(browned_out, 1000).key, "running",
-  "a fusing reactor that has lost power still reports running")
+check(C.FUSING[status_of(browned_out, CURVE.optimum).key] == true,
+  "a fusing reactor that has lost power is still in a fusing state",
+  status_of(browned_out, CURVE.optimum).key)
 equal(C.signals(browned_out).q, 0, "its Q signal is nonetheless zero, because Q has no denominator")
 
--- Without a spec there is no scale to judge against, so nothing is claimed to be running. That is
+-- Without a spec there is no scale to judge against, so nothing is claimed to be fusing. That is
 -- the safe direction: silence rather than a false positive.
-equal(C.status(running, 1000, nil).key, "idle", "with no spec, running is never claimed")
+equal(C.status(running, 1.0, nil, CURVE).key, "idle", "with no spec, fusing is never claimed")
 
--- A reactor that is fusing while its plasma runs out is still running: it is doing the thing.
--- Starved is about having nothing, not about having little.
-equal(status_of(running, 0.5).key, "running", "a nearly-empty but fusing reactor is running")
+-- AND WITHOUT A CURVE the three density states collapse to "running" rather than being guessed at.
+-- That is the state a reactor holding a plasma nobody has swept is in.
+equal(C.status(running, 1.0, SPEC, nil).key, "running", "with no curve, no density claim is made")
+equal(C.status(running, 0.01, SPEC, nil).key, "running",
+  "not even about a nearly-empty one -- starved needs a floor to be measured against")
+equal(C.status(nil, 0, SPEC, nil).key, "starved", "but no plasma at all is still starved")
+
+-- A reactor that is fusing while its plasma runs out is doing the thing, and this is the case #74
+-- changed the answer to: it used to be "running", because starved meant an empty box. It now means
+-- a density not worth running, and a hair of plasma is exactly that.
+equal(status_of(running, 0.0005).key, "starved",
+  "a nearly-empty reactor is starved even while it fuses -- there is no operating point down there")
 
 -- ---------------------------------------------------------------- locale keys
 --
@@ -259,7 +350,10 @@ do
 end
 
 local seen_states = {}
-for _, case in ipairs({ { running, 1000 }, { cold, 1000 }, { nil, 0 } }) do
+for _, case in ipairs({
+  { running, CURVE.optimum }, { running, 1.0 }, { running, CURVE.floor + CURVE.step },
+  { cold, 1.0 }, { nil, 0 },
+}) do
   local status = status_of(case[1], case[2])
   seen_states[status.key] = true
   check(locale[C.LOCALE_PREFIX .. status.key] == true,
@@ -267,8 +361,8 @@ for _, case in ipairs({ { running, 1000 }, { cold, 1000 }, { nil, 0 } }) do
     C.LOCALE_PREFIX .. status.key)
 end
 
--- All three, not just the ones these three cases happen to hit.
-for _, key in ipairs({ "running", "idle", "starved" }) do
+-- All five, not just the ones these cases happen to hit.
+for _, key in ipairs({ "running", "lean", "rich", "idle", "starved" }) do
   check(locale[C.LOCALE_PREFIX .. key] == true, "every status key is in the locale file", key)
   check(seen_states[key] == true, "every status key is actually reachable", key)
 end
@@ -297,7 +391,8 @@ check(signals.q > 0 and signals.q <= INT32_MAX,
 check(signals.temperature == math.floor(signals.temperature),
   "a real reactor's temperature is an integer", tostring(signals.temperature))
 check(signals.q == math.floor(signals.q), "a real reactor's Q is an integer", tostring(signals.q))
-equal(status_of(result, 1000).key, "running", "a settled reactor reports running")
+check(C.FUSING[status_of(result, 1.0).key] == true,
+  "a settled reactor is in a fusing state", status_of(result, 1.0).key)
 
 -- ----------------------------------------------------------------
 

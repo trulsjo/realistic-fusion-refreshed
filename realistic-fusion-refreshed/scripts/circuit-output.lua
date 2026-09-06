@@ -24,8 +24,8 @@
 -- combinator sitting at the reactor's own position, created on demand and destroyed with it.
 
 -- reactor-animation.lua is required rather than called from control.lua because publish() already
--- works out which of the three states a reactor is in, and the moving core answers the same
--- question. Requiring it here is safe for tests/test-circuit-output.lua, which loads this file
+-- works out which state a reactor is in, and the moving core answers a coarser version of the same
+-- question -- is it fusing at all, which is three of the five. Requiring it here is safe for tests/test-circuit-output.lua, which loads this file
 -- outside Factorio: that module touches nothing at load either.
 local animation = require("scripts.reactor-animation")
 
@@ -135,22 +135,49 @@ function M.signals(result)
   }
 end
 
---- Which of the three states a reactor is in.
+--- Which of the five states a reactor is in.
 --
--- @param result         what reactor-logic.step returned, or nil when it had nothing to simulate
--- @param plasma_amount  fluid units in the reactor's input box, or nil
+-- @param result  what reactor-logic.step returned, or nil when it had nothing to simulate
+-- @param fill    how full the reactor's plasma box is, 0 to 1, or nil
+-- @param spec    the reactor's constants, as its own force runs them
+-- @param curve   reactor-logic.density_curve for that spec and plasma, or nil when unknown
 -- @return { key = string, diode = "green"|"yellow"|"red" }
 --
 -- The diode is a name rather than a defines value so this function runs outside Factorio;
--- publish() maps it. Three states and no more, which is what the ticket asks for and what a player
--- can act on:
+-- publish() maps it. Five states, and they answer two different questions:
 --
---   starved  nothing to work with. step() returns nil for this, so it is the absence of a result.
+--   starved  the reactor has nothing to work with, or so little that it is worse off than a full
+--            one would be. A genuine fault, and the only one here.
 --   idle     holding plasma and not fusing usefully -- a cold start, or a reactor on the way down.
---   running  fusing.
+--   lean     fusing, and thinner than its best density: more plasma would raise its output.
+--   running  fusing at its best density.
+--   rich     fusing, and thicker than its best density: LESS plasma would raise its output.
 --
--- The line between idle and running is fusion power against what the reactor is RATED to draw,
--- not against what it actually drew, and not the Q signal. Both of the wrong answers were tried:
+-- FILL RATHER THAN AN AMOUNT SINCE #74. The three density states are about how full the reactor is
+-- and not how much it holds, and a second reactor with a different box would otherwise be judged
+-- against the first one's volume. control.lua divides by the box's own capacity, which per #40 is
+-- also the fill of the whole segment: a box holds its share of its run in proportion to capacity,
+-- so every reactor on a run sits at the same fill and tunes together.
+--
+-- WHY THERE ARE THREE FUSING STATES AND NOT ONE (#74, ADR 0016). A reactor makes more power
+-- under-supplied than full at the entry tier -- 40% more fusion power for 35% less fuel at the
+-- shipped confinement time -- so the density is a lever a player tunes. Nothing told them it
+-- existed. lean and rich are that: they say which way to move the heater's throttle, and they are
+-- both GREEN, because neither is a fault. A reactor that is merely off its best density is working.
+--
+-- AND WHY "STARVED" IS NO LONGER "NO PLASMA". It used to be, which was safe only while less plasma
+-- unambiguously meant less power. It does not (ADR 0016), and CONTEXT.md now separates the two
+-- words: under-supplied is held below full deliberately and may be the best state a reactor can be
+-- in; starved is held below the density at which it is worth running. That line is
+-- reactor-logic.density_curve's `floor`, and it is MEASURED per force and per confinement rung
+-- rather than written down, because the whole curve walks up the fill axis as research raises tau.
+--
+-- Asked BEFORE the fusion test on purpose. A reactor below the floor is in that fault whether it
+-- happens to be hot or cold, where "idle" would report a cold start it will never come out of.
+--
+-- The line between idle and the fusing states is fusion power against what the reactor is RATED to
+-- draw, not against what it actually drew, and not the Q signal. Both of the wrong answers were
+-- tried:
 --
 --   "any fusion at all" -- fusion power is never exactly zero. The reactivity at 15 C is around
 --   1e-70, and against 1e23 particles that is a tiny positive number rather than a zero, so a
@@ -170,16 +197,34 @@ end
 -- The cost is that status and the Q signal can disagree in one case -- fusing with no power reads
 -- "Fusing" beside a Q of 0 -- and that is the right way round. The status describes the plasma;
 -- the Q describes a ratio that is genuinely undefined when the denominator is zero.
-function M.status(result, plasma_amount, spec)
-  if not result or not plasma_amount or plasma_amount <= 0 then
+--
+-- WITHOUT A CURVE the three density states collapse back to "running", which is the safe direction
+-- and the one a reactor holding a plasma nobody has swept is in. Nothing is claimed rather than
+-- something being guessed.
+function M.status(result, fill, spec, curve)
+  if not result or not fill or fill <= 0 then
+    return { key = "starved", diode = "red" }
+  end
+  if curve and fill < curve.floor then
     return { key = "starved", diode = "red" }
   end
   local rated_w = spec and spec.heating_power_w or 0
-  if rated_w > 0 and (result.fusion_power_w or 0) >= rated_w * 0.005 then
-    return { key = "running", diode = "green" }
+  if not (rated_w > 0 and (result.fusion_power_w or 0) >= rated_w * 0.005) then
+    return { key = "idle", diode = "yellow" }
   end
-  return { key = "idle", diode = "yellow" }
+  if curve then
+    -- The band that counts as "at the optimum" is one step of the sweep's own grid, so the width
+    -- of it is the resolution of the answer rather than a second number to keep in step with it.
+    if fill < curve.optimum - curve.step then return { key = "lean", diode = "green" } end
+    if fill > curve.optimum + curve.step then return { key = "rich", diode = "green" } end
+  end
+  return { key = "running", diode = "green" }
 end
+
+-- The three status keys that mean the reactor is fusing. Named once, here, because publish() and
+-- the tests both have to agree about which of the five they are.
+local FUSING = { lean = true, running = true, rich = true }
+M.FUSING = FUSING
 
 -- ---------------------------------------------------------------- the game half
 --
@@ -231,21 +276,28 @@ end
 
 --- Put one reactor's state where a player can see it and wire it.
 --
--- @param entity         the reactor
--- @param result         what reactor-logic.step returned, or nil
--- @param plasma_amount  fluid units in its input box, or nil
+-- @param entity  the reactor
+-- @param result  what reactor-logic.step returned, or nil
+-- @param fill    how full its input box is, 0 to 1, or nil
+-- @param spec    the reactor's constants, as its own force runs them
+-- @param curve   that spec and plasma's density curve, or nil
 --
 -- Called on the reporting cadence, not the simulation one. control.lua owns both; see the note on
 -- REPORT_EVERY there for why they are different numbers.
-function M.publish(entity, result, plasma_amount, spec)
-  local status = M.status(result, plasma_amount, spec)
+function M.publish(entity, result, fill, spec, curve)
+  local status = M.status(result, fill, spec, curve)
   entity.custom_status = {
     diode = defines.entity_status_diode[status.diode],
     label = { M.LOCALE_PREFIX .. status.key },
   }
   -- The building says the same thing the status line does, rather than the boiler's own idea of
   -- whether it is busy -- which is 1 W of neutered fluid conversion and means nothing.
-  animation.set(entity, status.key == "running")
+  --
+  -- COARSER THAN THE STATUS LINE SINCE #74, and deliberately: lean, running and rich are one
+  -- question to a moving core -- the reactor is fusing -- and three answers to a player deciding
+  -- where to set the throttle. A core that stopped turning because the plasma was a little thick
+  -- would say "broken" about a reactor doing its job.
+  animation.set(entity, FUSING[status.key] == true)
 
   local section = section_for(entity)
   if not section then return end
