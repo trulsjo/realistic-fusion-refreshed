@@ -103,6 +103,12 @@ None of this reaches the releases players run today.
 whole set loaded, and the load-time invariants hold. It is not a balance claim and it is not a
 playthrough.** A red lane is not automatically a defect here — see the second finding below.
 
+**Since [#250](https://github.com/trulsjo/realistic-fusion-refreshed/issues/250) the exit code covers
+a fifth thing, and it is not a claim about the mod set at all**: every stored render's manifest must
+agree with its live prototype. That is a repo-internal assertion riding on the same command, so a
+lane can fail `load-check` while every clause above still holds of it. The sixth finding is what
+happened the first time it did.
+
 | Lane | Set | `load-check` | `name-check` | Cause |
 |---|---|---|---|---|
 | Krastorio 2 ([#33](https://github.com/trulsjo/realistic-fusion-refreshed/issues/33)) | `krastorio2`, 5 mods | green | green | discharges this ADR's minimum. It also generates 47 recipes from ours and wires them into one technology of its own — two different shapes, both counted; measured on the set re-run in [#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130), not in #33 |
@@ -124,6 +130,9 @@ playthrough.** A red lane is not automatically a defect here — see the second 
 compared, and what was and was not run. Each row links to it.
 [ADR 0027](0027-the-lane-issue-is-the-run-log.md) says why it lives there. What this ADR keeps is the
 verdict and what the lanes have taught.
+
+**The `load-check` column was re-run on every lane on 2026-09-06.** The sixth finding carries the
+result, why it was re-run, and what it taught.
 
 ### Closed by declaration — the combinations that are not lanes (#61)
 
@@ -158,7 +167,7 @@ own row rather than folded into an existing one.
 
 ### What the lanes have established
 
-Five findings, and they grow when a lane teaches something new rather than once per lane.
+Six findings, and they grow when a lane teaches something new rather than once per lane.
 
 **1. The `rf-` prefix has held, and against the predecessors it cannot fail by construction.** No
 `collision:` and nothing `unprefixed:` in any of the fourteen lanes, at **11 to 7,146** candidate
@@ -175,7 +184,9 @@ here can rename and which still embeds the prefix; and exactly one shared protot
 `technology/fluid-handling`, which the game's own barrel generation appends our barrel recipes to.
 
 **2. A red lane is usually upstream's, and three shapes of red have been seen rather than one — of
-which only two are red today, the second having been taught to the classifier.** **The
+which only two are red today, the second having been taught to the classifier.** (Three *upstream*
+shapes. The sixth finding records a fourth that is ours, where a lane fails for a reason that is not
+about the mod set at all.) **The
 asset shape** is the `load-check` half: `spaceex` and `k2-spaceex` in the table above, plus `riteg`
 and `seablock`, every one on a 1.1-era `__base__` path Factorio 2.0 removed —
 `sound/car-metal-impact.ogg`, named by RITEG and by `KS_Power`, and the four
@@ -385,6 +396,31 @@ unprecedented among mods that have never met.
 prototypes but for one, and no object is changed only in combination — yet on `rf-heater` the two
 edits compose into an `allowed_module_categories` value neither produces alone. **A clean object-level
 union is not value-level independence**, and only the second is what a player experiences.
+
+**6. A lane can go red without anybody touching a mod, and the table cannot show it.** The rendered-art
+gate [#250](https://github.com/trulsjo/realistic-fusion-refreshed/issues/250) added on 2026-09-05
+compared whole pipe connections between a stored manifest and the live prototype — `connection_category`
+included. Krastorio 2 writes `kr-steel-pipe` onto the fluid boxes of machines it never heard of, which
+is this ADR's coexistence working exactly as intended, so from that commit until
+[#267](https://github.com/trulsjo/realistic-fusion-refreshed/pull/267) fixed it on 2026-09-06 the
+Krastorio 2 lane **would have failed** `load-check` on `rf-heat-exchanger`, whose four connections
+agreed on position, direction, flow and fluid and differed only in category. The k2-spaceex lane was
+in the same state, and only the Krastorio 2 row would have misread — the other was already red on its
+own assets.
+
+**Nothing said so for about thirty-six hours, and the table is why.** A row records what a lane was
+measured at, not what it would do today, so a change to a gate every lane runs is invisible in it.
+**That is the case where the whole column has to be re-run**: not when a mod moves, which the pins
+control, but when our own shared machinery does. Done on 2026-09-06 — all fourteen `load-check` cells
+still read as the table says, and the art gate is quiet on every one of them, the four reds included.
+It covers one machine today, so "quiet on all fourteen" is fourteen lanes against a single manifest.
+
+The `name-check` column was not re-run in full, and did not need to be: #267 touched three files and
+none of them is `name-check.ps1`, which reads no geometry at all. Base, Krastorio 2 and the 21-mod
+Angel's + Bob's + MadClown's set were spot-checked green on the same day. The reds' causes were
+confirmed by count and by name for SeaBlock and RITEG, which both name
+`__base__/sound/car-metal-impact.ogg`; for the Space Exploration pair the run reported five missing
+assets against the five this table records, matching in number rather than enumerated again.
 
 ## Alternatives considered
 
