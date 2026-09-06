@@ -866,8 +866,10 @@ between them is whether there is a run to mix across. One writer both times, so 
 overwrite another. **Mixing alone costs about twenty points**, which is the same finding as §4 arrived
 at from the other direction, on a rig where the simulation is running.
 
-**And three reactors lose more than mixing alone accounts for.** 57.6% on three writers against 75.2%
-on one. ~~That excess is **in this mod, not the engine**, and the mechanism is visible in `update()`:
+~~**And three reactors lose more than mixing alone accounts for.** 57.6% on three writers against
+75.2% on one.~~ **The sentence is true and the emphasis is wrong, and that wrong emphasis is what
+this section spent two corrections walking back.** The two rows differ in fill and temperature as
+well as in writer count; writer count itself accounts for none of the gap (#73, below). ~~That excess is **in this mod, not the engine**, and the mechanism is visible in `update()`:
 it reads every reactor and then writes every reactor, and each write *replaces* its box with an
 amount and a temperature computed against the start-of-step pool. The engine re-splits between those
 writes — §1 shows it doing exactly that during seeding — so a reactor writing second can overwrite
@@ -902,6 +904,64 @@ excess exists; it does not isolate that mechanism, and no fix is attempted here.
 > constant — which means the "excess" may not be a writer-count effect at all. Isolating it needs a
 > pair that differs *only* in how many reactors write.
 
+> **It was not a writer-count effect. Measured 2026-09-06 (#73), and this is the null result that
+> ticket said would close it properly.**
+>
+> Six more rows in `check-pooling.ps1`, all unregistered and rig-driven so `control.lua` never
+> touches them. Every one is three `rf-reactor` bridged with no tail, seeded by the same pass, driven
+> with the shipped write shape, and given **the same total heating over one step** — and the segment,
+> the fill, the starting temperature and that total are each *asserted* at the moment of the step
+> rather than argued from the symmetry of the six build calls. The shipped physics predicts the same
+> gain for all six to six figures, which it must: every loss term in `step()` is computed against the
+> temperature the box started at, and the heating enters linearly, so moving heating between reactors
+> cannot move the prediction.
+>
+> | row | heating delivered by | arrived |
+> |---|---|---:|
+> | `writers1` | one reactor, the **west** one | **72.19%** |
+> | `writers2` | two, split evenly | **71.92%** |
+> | `writers3` | three, split evenly | **71.64%** |
+> | `middle` | one reactor, the **centre** one | **71.65%** |
+> | `east` | one reactor, the **east** one | **71.10%** |
+> | `reversed` | the east one again, written **first** instead of last | **71.10%** |
+>
+> **Read down that table, not across the first three rows.** On their own those three are exactly the
+> writer-count effect #40 inferred, an order of magnitude smaller — and they are not one. A *single*
+> writer moves over the same range depending on which reactor it is, and the count rows land on the
+> arithmetic mean of the positions they occupy:
+>
+> - `writers2` heats reactors 1 and 2. (72.19 + 71.65) / 2 = **71.92**. Measured 71.92.
+> - `writers3` heats all three. (72.19 + 71.65 + 71.10) / 3 = **71.65**. Measured 71.64.
+>
+> Nothing is fitted there: the per-position figures come from the single-writer rows and the count
+> rows are then required to hit their mean, with no free parameter. **Writer count costs nothing. What
+> costs anything is where on the segment the energy enters, and writer count enters only through the
+> mean of that.**
+>
+> Two candidate readings of *that* are excluded by controls rather than by argument:
+>
+> - **It is not the write order.** `east` and `reversed` heat the same reactor and differ only in
+>   whether the driver reaches it first or last. Both keep 71.10%.
+> - **It is not the gradient the writes create.** `writers3` is dead flat the instant its writes land
+>   — 0.0000% end to end — where `middle` is 73% apart, and the two agree to a hundredth of a point.
+>   So the loss is linear and additive in the injections and does not care whether they add up to
+>   something for the engine to flatten. That had been the obvious next explanation, and it also has
+>   the sign wrong: the uneven rows keep *more*.
+>
+> **What is still open, and it is small.** Why the engine treats one end of a run differently from the
+> other. The two reactors that disagree most are *both ends* of the run, so it is not a symmetry of
+> the geometry, and nothing reachable from Lua says what it is. The whole ramp is about **1.1 points**
+> across a three-reactor run, against the **~17.6** the gap above needed — so it is a
+> characterisation to have written down, not a lead worth chasing. (That gap is 17.6 points on the
+> table above and 17.8 on the run these six rows came off; `solopipe` reads 75.2% or 75.4% depending
+> on the run, which is the size of the run-to-run movement here and the reason nothing below is
+> quoted to a tenth.)
+>
+> **And the gap itself is therefore fill and temperature.** `bare` sits at 44.6% fill and `solopipe`
+> at 27.6%; neither writer count nor position accounts for more than a point of the seventeen between
+> them. `bare` is lower than `solopipe` because it is fuller and hotter, not because three reactors
+> write to it.
+
 **So `apply()`'s comment is right about the arithmetic and wrong about the outcome.** It reads *"the
 two errors cancel exactly … so the energy the pool gains is the energy the reactor spent whatever
 else is on the run"*, and closes with *"measured at 20 pipes against none: same plasma, same heating,
@@ -917,8 +977,9 @@ temperature, that is a balance effect rather than a rounding one.
 
 **Nothing is settled here about what to do**, and nothing should be. The engine's share may be
 something to accept and design around; ~~the mod's share looks more like a defect in the two-pass
-update and is worth its own ticket~~ — **it is not the two-pass update, see the correction above; what
-the remaining share is has not been identified** — and reopening
+update and is worth its own ticket~~ — **it is not the two-pass update, and it is not writer count
+either; both were measured and both are false. What is left is fill and temperature, plus a ~1.1
+point positional ramp inside the engine that nothing reachable from Lua explains** — and reopening
 [ADR 0011](../adr/0011-per-reactor-simulation-fluid-coupled.md)'s delegation of sharing is an
 architectural decision either way. What is settled is the measurement.
 
