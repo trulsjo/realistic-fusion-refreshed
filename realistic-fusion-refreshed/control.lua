@@ -94,24 +94,37 @@ local function spec_for(entity)
   return spec
 end
 
---- WHERE THIS FORCE'S REACTORS WANT THEIR PLASMA HELD (#74, ADR 0016).
+--- WHERE A REACTOR WANTS ITS PLASMA HELD (#74, ADR 0016).
 --
--- [force_index][prototype name][fluid name] -> reactor-logic.density_curve's answer, or false when
--- that plasma has no curve. Beside force_specs above and invalidated by the same call, because it
--- is a function OF a force's spec: the optimum fill walks up as confinement research raises tau,
--- and a curve kept across a rung would tell a player to throttle to a density research has moved.
+-- [prototype name][confinement_time_s][fluid name] -> reactor-logic.density_curve's answer, or
+-- false when that plasma has no curve.
 --
 -- CACHED BECAUSE IT IS SWEPT, NOT COMPUTED. density_curve settles the reactor at twenty fills, so
--- it is tens of milliseconds -- nothing once per force per rung, and out of the question on the
--- reporting cadence. That is the whole reason this table exists rather than a call in publish().
+-- one answer is about fifty milliseconds -- out of the question on the reporting cadence, and the
+-- whole reason this table exists rather than a call in publish().
 --
--- Keyed by fluid as well as by reactor, because #28 removed the input box's filter: one rf-reactor
--- burns D-D or D-T, and they have different curves. A plasma with no row in M.fuels stores `false`
--- rather than nil, so a reactor holding one sweeps once and not on every report.
+-- KEYED ON TAU RATHER THAN ON A FORCE, AND NOT INVALIDATED AT ALL. It was keyed by force_index and
+-- dropped alongside force_specs, which read as the obvious thing and was a performance defect:
+-- forget_force_specs() is wired to on_research_finished, which fires for EVERY technology a force
+-- completes rather than for the four confinement rungs. Rebuilding a spec is two table lookups;
+-- rebuilding every curve is four sweeps and about two hundred milliseconds, inside update(), on the
+-- first reporting tick after a player finishes anything -- including each level of an infinite
+-- technology, for ever.
+--
+-- The fix is to key on what the answer actually depends on. A curve is a function of the prototype,
+-- the plasma and confinement time, and confinement time is the ONLY field derive() moves; nothing
+-- about a force enters it. So research does not invalidate anything -- it looks up a different tau
+-- -- and the table simply holds one entry per rung a force has passed through. Bounded by the
+-- ladder's length times the reactors times the plasmas, which is a couple of dozen sweeps at the
+-- absolute worst and in practice one per rung per tier.
+--
+-- Keyed by fluid as well, because #28 removed the input box's filter: one rf-reactor burns D-D or
+-- D-T, and they have different curves. A plasma with no row in M.fuels stores `false` rather than
+-- nil, so a reactor holding one sweeps once and not on every report.
 --
 -- NOT IN `storage`, for the reason force_specs is not: the Lua state is rebuilt on every load, so
 -- there is no stored number to go stale and no migration to write.
-local force_curves = {}
+local curves = {}
 
 --- A reactor's plasma box volume, from the prototype. Memoised per prototype name.
 --
@@ -129,19 +142,18 @@ local function plasma_capacity(name)
   return capacity
 end
 
---- The density curve for this reactor, this plasma, and this reactor's owner.
+--- The density curve for this reactor, this plasma and the confinement time it is being run at.
 local function curve_for(entity, spec, fluid_name)
   if not fluid_name then return nil end
-  local index = entity.force_index
-  local by_force = force_curves[index]
-  if not by_force then
-    by_force = {}
-    force_curves[index] = by_force
+  local by_tau = curves[entity.name]
+  if not by_tau then
+    by_tau = {}
+    curves[entity.name] = by_tau
   end
-  local by_fluid = by_force[entity.name]
+  local by_fluid = by_tau[spec.confinement_time_s]
   if not by_fluid then
     by_fluid = {}
-    by_force[entity.name] = by_fluid
+    by_tau[spec.confinement_time_s] = by_fluid
   end
   local curve = by_fluid[fluid_name]
   if curve == nil then
@@ -157,12 +169,12 @@ end
 -- name one -- and because a force's entry is two table lookups to rebuild. There is no cost here
 -- worth being clever about.
 --
--- THE DENSITY CURVES GO WITH THEM (#74) and that is not tidiness: research is exactly what moves
--- the optimum fill, so a curve that outlived a rung would go on telling a player to throttle to a
--- density that has stopped being the best one.
+-- THE DENSITY CURVES DELIBERATELY DO NOT GO WITH THEM (#74). They are keyed on confinement time
+-- rather than on a force, so research moves the lookup instead of invalidating it -- see the note
+-- on `curves` above for why dropping them here was a two-hundred-millisecond stall on every
+-- technology a player finished.
 local function forget_force_specs()
   force_specs = {}
-  force_curves = {}
 end
 
 -- The temperature apply() stamps on the reactor energy it writes, memoised per reactor by
@@ -477,7 +489,8 @@ local function apply(entity, spec, plasma, result)
   --   one writer, centre 71.65%   one writer, east 71.10%   east written FIRST 71.10%
   --
   -- The count series is the arithmetic MEAN of the positional ramp over the reactors each row
-  -- occupies -- 71.92 is (72.19 + 71.65) / 2 and 71.64 is the mean of all three, nothing fitted. So
+  -- occupies -- 71.92 is (72.19 + 71.65) / 2, and the mean of all three is 71.65 against a measured
+  -- 71.64. Nothing is fitted. So
   -- writer count costs nothing. What costs about a point is where on the segment the energy enters,
   -- and that is neither the write order (east keeps 71.10% first or last) nor the gradient the
   -- writes make (the flat three-writer row and the 73%-uneven centre row agree to a hundredth).
@@ -737,8 +750,9 @@ local function update()
       -- worth showing.
       -- Fill rather than an amount since #74: the status line's three density states are about how
       -- full the reactor is held and not how much it holds, and a reactor with a different box
-      -- would otherwise be judged against another one's volume. The curve is swept once per force
-      -- per confinement rung; on the reporting cadence it is three table lookups.
+      -- would otherwise be judged against another one's volume. The curve is swept once per
+      -- confinement rung per reactor and plasma, never per force; on the reporting cadence it is
+      -- three table lookups.
       if reporting then
         circuit.publish(entity, result, plasma and (plasma.amount / plasma_capacity(entity.name)),
           spec, curve_for(entity, spec, plasma and plasma.name))

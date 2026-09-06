@@ -256,6 +256,38 @@ equal(status_of(running, CURVE.floor / 2).diode, "red", "and that is a fault, so
 equal(status_of(cold, CURVE.floor / 2).key, "starved",
   "a COLD reactor below the floor is starved, not idle -- the fault is the density, not the heat")
 
+-- ---------------------------------------------------------------- the starved latch
+--
+-- THE FLOOR IS THE ONE LINE HERE THAT CHANGES THE DIODE AND STOPS THE MOVING CORE, and it is a line
+-- a player is invited to sit near: "lean" tells them to add plasma, so a run tuned just above the
+-- floor is the expected outcome and not a corner. Heaters deliver in batches, so a bare threshold
+-- would have the segment cross it back and forth and every report would flip the building between a
+-- green "more plasma would raise output" and a red "starved", with the core starting and stopping.
+--
+-- So the reactor climbs a whole grid step clear of the floor to STOP being starved, where it only
+-- falls below the floor to BECOME starved. Driven here through the argument rather than through
+-- storage, which is what keeps the decision testable outside Factorio at all.
+local JUST_OVER = CURVE.floor + CURVE.step / 2
+
+equal(C.status(running, JUST_OVER, SPEC, CURVE, "lean").key, "lean",
+  "a reactor a half-step above the floor and not previously starved is lean")
+equal(C.status(running, JUST_OVER, SPEC, CURVE, "starved").key, "starved",
+  "the SAME fill reads starved if it was starved a moment ago -- the latch is what stops the flicker")
+equal(C.status(running, CURVE.floor + CURVE.step, SPEC, CURVE, "starved").key, "lean",
+  "and a whole grid step clear of the floor releases it")
+equal(C.status(running, CURVE.floor - 1e-9, SPEC, CURVE, "lean").key, "starved",
+  "falling below the floor still takes only the floor, so the fault is never slow to appear")
+
+-- The latch reaches no state but this one. A reactor at its optimum does not become starved because
+-- it once was, which is the failure mode a latch invites.
+equal(C.status(running, CURVE.optimum, SPEC, CURVE, "starved").key, "running",
+  "the latch does not follow a reactor back up to its optimum")
+equal(C.status(running, 1.0, SPEC, CURVE, "starved").key, "rich", "nor to a full one")
+
+-- And it needs a curve, like every other density claim: with none, nothing latches either.
+equal(C.status(running, 0.01, SPEC, nil, "starved").key, "running",
+  "with no curve there is no floor to latch against")
+
 -- THE LEVER CLOSES AS RESEARCH RAISES CONFINEMENT TIME, which is the property #74 asks the status
 -- line to keep. ADR 0016 measures the optimum walking up the fill axis and leaving the range by
 -- tau 70 s, at which point full supply is simply best -- so the SAME full reactor that reads "rich"

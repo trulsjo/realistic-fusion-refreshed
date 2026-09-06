@@ -785,10 +785,10 @@ end
 --
 -- Those two are separate variables and this rig exists because they were once conflated with a
 -- third. So the writer-count block builds rows for both: 1, 2 and 3 writers from the west end, and
--- a fourth with one writer in the MIDDLE. A count effect and a position effect predict the same
--- ordering across the first three and different answers for the fourth.
+-- then single writers in the MIDDLE and EAST reactors. A count effect and a position effect predict
+-- the same ordering across the first three and different answers for the rest.
 --
--- IT IS EXACT RATHER THAN math.huge EVEN AT count = 1, so that all four rows go through one
+-- IT IS EXACT RATHER THAN math.huge EVEN AT count = 1, so that all six rows go through one
 -- expression and none of them depends on step()'s internal clamp to make its total come out right.
 -- The totals are asserted from the step results regardless; this is about the rows being driven by
 -- the same code.
@@ -894,8 +894,8 @@ script.on_init(function()
   -- 45% of capacity rather than 100%, which only makes sense if writes interact. Seeded exactly
   -- once, and read later. If it comes back full, the note is describing something else.
   storage.onepass_seed = build_row(surface, force, 840.5, 3, 0, 0, "seedonce", true)
-  -- THE WRITER-COUNT PAIR (#73). Two rows that differ in ONE variable, which is the thing the
-  -- bookkeeping above has never had.
+  -- THE WRITER-COUNT ROWS (#73). Six rows that differ in ONE variable at a time, which is the thing
+  -- the bookkeeping above has never had.
   --
   -- WHAT IT IS FOR. `bare` keeps 57.6% of what its reactors spend and `solopipe` keeps 75.2%, and
   -- that gap was read as the cost of having three reactors write to one run instead of one. It
@@ -916,10 +916,10 @@ script.on_init(function()
   -- that back, exactly as it does in the game. What differs is how many machines put energy in,
   -- which is what "three reactors bridged" versus "one reactor with pipe" actually meant.
   --
-  -- A NULL RESULT IS THE ANSWER IF THAT IS WHAT IT IS. If the two rows keep the same fraction,
-  -- writer count costs nothing and the whole excess belongs to fill and gradient -- which would
-  -- close #73 and retire the last of #40's unexplained findings. The report states the difference
-  -- as a number either way.
+  -- A NULL RESULT IS THE ANSWER IF THAT IS WHAT IT IS, and it is: the count rows come out on the
+  -- MEAN of the positional rows below, so writer count costs nothing and the excess belongs to fill
+  -- and gradient. That closes #73 and retires the last of #40's unexplained findings. The report
+  -- states every difference as a number either way.
   --
   -- AND A FOURTH ROW THAT IS NOT ABOUT COUNT AT ALL. Three rows at one, two and three writers can
   -- only ever say that something changes as the injection spreads out; they cannot say it is the
@@ -1074,7 +1074,7 @@ script.on_event(defines.events.on_tick, function()
     end
 
     -- The writer-count group (#73), driven in the same window, from the same seeded state, with the
-    -- SHIPPED write shape on all four. The shape is deliberately not a variable here: the rows above
+    -- SHIPPED write shape on all six. The shape is deliberately not a variable here: the rows above
     -- have already shown all three shapes indistinguishable, so using anything but the shipped one
     -- would only add a second difference to a comparison that exists to have exactly one.
     storage.writers_before = {}
