@@ -49,10 +49,16 @@
     of the deltas -- but it does inflate wholeUpdate everywhere, and it is not small: a substation
     reaches 18 tiles and a cell is wider than that, so every cell needs its own substation and
     interface rather than sharing one grid. And a rig is not a factory: no belts, no trains, no
-    biters, one surface. #34 did not close that half either -- it is #67's job, behind #64 and #65.
+    biters, one surface. #34 did not close that half either; #67 did, on 2026-09-06, by running
+    -PlantInto against a borrowed megabase with a bare rig sweep beside it as the control. The two
+    agree to 1.11x, so a loaded engine does not change what a reactor costs -- which is a result
+    about the mod and not about this switch: the rig is still a rig, and a figure taken on one still
+    says nothing about a busy tick until something like -PlantInto puts it beside one.
     This one exists to catch a disaster eleven tickets before #34 would.
 
-    -Save IS THE ANSWER TO "A RIG IS NOT A FACTORY", AND IT COSTS THE SLOPE (#64). Pointed at a save
+    -Save IS THE SHAPE OF AN ANSWER TO "A RIG IS NOT A FACTORY", AND IT COSTS THE SLOPE (#64). It is
+    not the switch that answered it -- -PlantInto below took #67's figure, and -Save structurally
+    could not have, for the reason this paragraph gives. Pointed at a save
     this script did not build, it reports the same categories over the same tick counts with the same
     statistics -- and it can report no per-reactor figure at all, because there is no n = 0 baseline
     for somebody else's factory and every per-reactor number here is a subtraction against one. What
@@ -63,7 +69,7 @@
     rig on a surface of ITS OWN inside somebody else's save, so those reactors were never in that
     save and the same save with this mod switched off is the n = 0 baseline -- the identical map,
     the identical factory, no reactors. That is a real subtraction on a tick the rig cannot produce,
-    and it is what ADR 0005 has been waiting for since #34. See .PARAMETER PlantInto.
+    and it is what took ADR 0005's last residue, in #67 on 2026-09-06. See .PARAMETER PlantInto.
 
     Nor does it resolve small differences. Ten invocations of the same binary on the same map, none
     of them flagged BUSY, spanned 1.34x (docs/research/reactor-runtime-cost.md, #39); treat anything

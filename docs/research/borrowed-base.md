@@ -32,7 +32,11 @@ serve the same bytes twice, which is why the reproducibility position below is w
 **Measured, not assumed: it is genuinely loaded.** About **10.7 ms a tick, roughly 64% of the
 16.67 ms budget** — median over 5,000 ticks on a quiet machine, with the benchmark's own power grid
 present and no reactors. That is the premise #65 rests on, and it was an assumption until it was
-checked.
+checked. **Confirmed again 2026-09-06** by [#67][67]'s own sweep: 10.81 ms, median over 9,000 ticks
+across nine quiet runs, against a rig control's 0.27 ms in the same sitting — an engine **40×**
+busier. That is the same claim as the 51× below and not a second one: the borrowed base agrees to
+1.01×, and the whole of the difference is the rig's own empty tick moving 0.21 ms to 0.27, which is
+inside the 1.35× floor. **The ratio is not the figure to quote; the two tick lengths are.**
 
 > **Corrected 2026-09-04. This said "about 14 ms a tick, roughly 84%", and that figure is
 > withdrawn.** It came from the 20-tick probe quoted below, which established the mechanism and was
@@ -141,7 +145,8 @@ build over one it did not create, because it landfills and clears everything in 
 > What the caveat does reconcile is the contradiction a reader would otherwise hit: "between 12 and
 > 16 ms" below against the **10.7 ms** this note's own premise records. Same map, same statistic; the
 > first was taken while the part was in other hands. The quiet figures belong to [#67][67], which
-> owns the verdict.
+> owns the verdict — **taken 2026-09-06 and recorded in
+> [`reactor-runtime-cost.md`](reactor-runtime-cost.md)**, along with the verdict itself.
 
 - **The absolute figures are not ours.** `wholeUpdate` and `scriptUpdate` on a borrowed base are mostly
   the borrowed base. Only the *difference* is attributable — the reverse of `-Save`, where the absolute

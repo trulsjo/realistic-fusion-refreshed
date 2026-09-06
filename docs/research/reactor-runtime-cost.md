@@ -485,7 +485,7 @@ high, and why there is no longer a cheap case and an expensive one.
 > survives (there is still no cheap tier and no expensive one) and the first does not: the number to
 > quote is about half again what this section says, for a reason that has nothing to do with the
 > arithmetic and that every measurement before 2026-09-03 was blind to. See
-> *[Collectors attached](#collectors-attached-62)* at the foot of this note.
+> *[Collectors attached](#collectors-attached-62)* below.
 
 ### Reproduced 2026-08-20, on the renamed mods
 
@@ -665,7 +665,7 @@ measurement rather than from this note's old guess.
 > **What stands is the ladder and the other lever** — the arithmetic is a real third, the crossings
 > are the larger share, and batching or caching the fluidbox work is still the thing that aims at
 > the larger share and is still not worth pulling. See
-> *[Nothing to cut](#nothing-to-cut-and-why-the-named-lever-is-not-one-66)* at the foot of this note.
+> *[Nothing to cut](#nothing-to-cut-and-why-the-named-lever-is-not-one-66)* below.
 
 The ladder was re-run once more at the end on the finished script, at three benchmark runs rather
 than five, and lands in the same place: `read` 0.315, `physics` 1.404, `write` 2.059 µs. Different
@@ -924,13 +924,19 @@ owns it, and observing it is a different ticket.
 ## What this does not close
 
 1. ~~**ADR 0005's obligation stands.**~~ **Discharged 2026-08-18** — see *The full reaction set*
-   above. **But it is still a rig, and that half of #34 was not done.** No belts, no trains, no
+   above. ~~**But it is still a rig, and that half of #34 was not done.** No belts, no trains, no
    biters, one surface. The ticket asked for "a real factory at scale"; what was measured is 200
    reactors on flat ground with power and nothing else. A factory's own UPS cost is not this mod's,
    but it competes for the same 16.67 ms, and a reactor's cost could interact with a loaded engine
    in ways a bare rig cannot show. The per-reactor figure is the mod's contribution and is sound;
    "what the game feels like on a real base with this mod" is not answered here and needs a real
-   save, which this project does not have.
+   save, which this project does not have.~~ **The rig half is closed too, 2026-09-06 (#67)** —
+   measured on a borrowed 10k SPM megabase spending 10.8 ms a tick, against a rig control taken in
+   the same sitting. **The interaction this item feared is not there**: 7.01 µs per reactor on a
+   loaded tick against the control's 6.33, a ratio of 1.11 and so the same number. The save this
+   item says the project does not have is a save it borrows and does not own — see *[On a loaded
+   tick, not a rig](#on-a-loaded-tick-not-a-rig-67--adr-0005s-last-residue)* at the foot of this
+   note.
 2. ~~**Only one reaction exists.**~~ **All four now do, and they were measured together.** The
    expectation recorded here — that per-reactor cost would not grow as reactions were added — held.
    It held plainly, in the end: measured on a quiet machine (#39) every reaction costs about the
@@ -1280,8 +1286,11 @@ coarser cadence for.
   reactor on a report tick, charged to `scriptUpdate` and absent from the *n* = 0 baseline. At the
   defaults it is under a hundredth of a microsecond per reactor; at `-ReportEvery 1` it would be
   the same order as the cost being measured. The same caveat `ReportEvery` already carries.
-- **Still a rig and not a factory.** Unchanged, and still
-  [#67](https://github.com/trulsjo/realistic-fusion-refreshed/issues/67)'s.
+- ~~**Still a rig and not a factory.** Unchanged, and still
+  [#67](https://github.com/trulsjo/realistic-fusion-refreshed/issues/67)'s.~~ **Closed 2026-09-06.**
+  This same configuration — blanketed D-D, `-Gap 6` — was re-measured on a borrowed megabase and on
+  a rig control beside it, and the two agree to 1.11×. See *[On a loaded tick, not a
+  rig](#on-a-loaded-tick-not-a-rig-67--adr-0005s-last-residue)* below.
 
 ### Sources
 
@@ -1411,3 +1420,257 @@ five suites, 0 failures — the baseline #66 asked for, unchanged because the co
   — the TODO, and the fourteen multiplies it aimed at.
 - *[Where the cost actually goes](#where-the-cost-actually-goes)* (#39) for the ladder and the GC
   figures; *[Collectors attached](#collectors-attached-62)* (#62) for the figures to quote.
+
+## On a loaded tick, not a rig (#67) — ADR 0005's last residue
+
+Measured **2026-09-06** on Factorio 2.0.77, and this is the half of
+[#34](https://github.com/trulsjo/realistic-fusion-refreshed/issues/34) that was never done. Every
+sweep on this page before this one was taken on a **rig**: flat ground, power, reactors, no belts,
+no trains, no biters, one surface. (Some paragraphs above now quote figures from *this* sweep, in
+back-references added when it landed. Those are the only exceptions, and they point here.)
+[#67](https://github.com/trulsjo/realistic-fusion-refreshed/issues/67) asks
+what the simulation costs when the engine is already spending its tick on somebody's factory, which
+a rig cannot answer by construction.
+
+**Measured on TimEv's *Modular 10k SPM Vanilla 2.0 Megabase***, the **borrowed base** — used
+locally, never redistributed, and attributed here as a community norm rather than a licence
+obligation. Provenance and terms are in [`borrowed-base.md`](borrowed-base.md); the concession this
+figure rests on is [ADR 0029](../adr/0029-the-factory-measurement-rests-on-a-borrowed-base.md).
+
+### Method
+
+Two sweeps, one sitting, one machine, the same switches, nine benchmark runs per count:
+
+```
+scripts/bench-reactors.ps1 -PlantInto "<the borrowed base>" -Counts 0,50,200 -Collectors -Blankets -Gap 6 -Ticks 1000 -Runs 9
+scripts/bench-reactors.ps1                                  -Counts 0,50,200 -Collectors -Blankets -Gap 6 -Ticks 1000 -Runs 9
+```
+
+The second is the **rig control**, and it is what makes the first mean anything: the same
+configuration on flat ground, so the two figures differ in the ground and in nothing else.
+Blanketed D-D because [#62](https://github.com/trulsjo/realistic-fusion-refreshed/issues/62)
+measured it as the worst of the five configurations at 200 reactors, and `-Gap 6` for the reason
+that section gives at length.
+
+**The second acceptance criterion is met by subtraction rather than by argument.** `-PlantInto`
+builds the fleet on a surface of its own as this mod's `on_init` runs, so the planted reactors were
+**never in the save** — and the same save swept at count zero is a real *n* = 0 baseline, with the
+same factory, the same tick, the same mods and the same planted surface generated and powered.
+Reactors absent and reactors present are one argument apart, and the argument is `-Counts`.
+
+**Nine runs a count, three times the script's default, and that is #235's doing.** The borrowed
+base's own Lua has been seen to spike about +500 µs in roughly one run in four, which at *n* = 50 is
+a large fraction of the signal, and the standing advice is to run more repeats. See *What #235 did
+here* below, because this sitting did not reproduce it.
+
+**Every launch was quiet** — 43%, 28% and 15% of the part in other hands on the borrowed base, 17%,
+11% and 10% on the rig, with no `BUSY` at any count of either sweep. After #39 that is the
+precondition for quoting anything at all.
+
+**43% is the widest of those six and it is the load-bearing one**, since the *n* = 0 launch is the
+subtrahend under every per-reactor figure in the borrowed column — so it gets a check rather than
+the word "quiet". Its measured baseline is **86.87 µs**, and the six unelevated *n* = 0 runs #235
+records across three earlier sittings are 82.8, 83.4, 84.5, 86.1, 86.3 and 88.2 µs. This baseline
+lands inside that range. Whatever the 43% counter was reading, it did not reach the column being
+subtracted.
+
+Both sweeps passed every gate: 200 of 200 reactors hot,
+powered and burning `rf-d-d-plasma`, 200 collectors holding fluid, all 200 blankets breeding, and
+the fullest tritium box at 3.3%, so nothing saturated.
+
+### Results
+
+`scriptUpdate` mean, baseline subtracted, µs per reactor.
+
+| reactors | borrowed base | rig control | ratio |
+|---:|---:|---:|---:|
+| 50 | 7.45 | 6.28 | 1.19 |
+| 200 | **7.01** | **6.33** | **1.11** |
+
+**The *n* = 50 row is quoted here, and #235 says not to quote it.** That embargo is named rather
+than stepped around: it was imposed because a spiking baseline had put the borrowed base *below* the
+rig, which is not physical. This sweep lifts it for these two runs and for no others, on one piece
+of evidence — the baseline behind them is clean, at 86.87 µs against the 82.8 – 88.2 µs of #235's
+own unelevated runs, with no run of the nine showing the +500 µs step. (One reads 96.5 against the
+other eight's 84.5 – 86.8. That is 1.14×, not a spike by any reading of #235, and the pooled
+baseline is 86.87 with it left in.) **The verdict below is taken from *n* = 200 regardless**, so
+nothing the verdict concludes rests on the row. One paragraph does — *What #235 did here* — and it
+is about the row rather than about the mod.
+
+Per-reactor cost by category, both maps and both counts, means with the baseline subtracted:
+
+| category | borrowed, *n* = 50 | borrowed, *n* = 200 | rig, *n* = 50 | rig, *n* = 200 |
+|---|---:|---:|---:|---:|
+| `wholeUpdate` | 11.87 | 8.23 | 6.84 | 7.01 |
+| **`scriptUpdate`** | **7.45** | **7.01** | **6.28** | **6.33** |
+| `luaGarbageIncremental` | 0.62 | 0.29 | 0.45 | 0.33 |
+| `fluidFlowUpdate` | 0.24 | 0.24 | 0.12 | 0.12 |
+| `electricNetworkUpdate` | 0.78 | 0.37 | 0.21 | 0.20 |
+| `entityUpdate` | **2.36** | **0.53** | 0.11 | 0.09 |
+
+The absolute means those deltas are taken from, for the two columns the next section argues about:
+
+| map, column | *n* = 0 | *n* = 50 | *n* = 200 |
+|---|---:|---:|---:|
+| borrowed `entityUpdate` | 5,893.78 µs | 6,011.77 µs | 6,000.45 µs |
+| rig `entityUpdate` | 10.22 µs | 15.70 µs | 27.48 µs |
+
+And the tick each map spends, as a median over 9,000 sampled ticks per count:
+
+| reactors | borrowed base | rig control |
+|---:|---:|---:|
+| 0 | 10.81 ms | 0.27 ms |
+| 50 | 11.29 ms | 0.30 ms |
+| 200 | 11.51 ms | 0.37 ms |
+
+### The answer, and it is the dull one
+
+**There is no factory penalty.** 7.01 µs against the rig control's 6.33 is a ratio of **1.11**, well
+inside the 1.35× floor this note has recorded since #39 — which is to say the same number.
+`wholeUpdate` corroborates independently at 8.23 against 7.01, a ratio of 1.17, also inside it. A
+reactor costs what a reactor costs, and an engine already spending 10.8 ms of its tick does not make
+it cost more.
+
+**The rig control reproduces the record, which is what licenses the comparison.** 6.33 µs against
+#62's 5.44 for the same blanketed D-D configuration at the same gap is 1.16× — inside the floor, on
+a sweep taken three days later with nine runs instead of three. The method reproduces, so the two
+columns above are apples to apples.
+
+**What #67 expected, and wrote down in order to stop expecting, held on both halves.** The mod's
+share of a *busy* tick falls, and its absolute cost does not move:
+
+| | rig control | borrowed base |
+|---|---:|---:|
+| this mod's Lua at *n* = 200 | 1,265 µs | 1,402 µs |
+| as a share of that map's own mean tick | 74.3% | 10.9% |
+| as a share of the 16.67 ms budget | 7.59% | 8.41% |
+
+**Adding 200 blanketed D-D reactors costs that megabase about 0.7 ms of median tick** — 10.81 ms to
+11.51 ms, or 64.8% to 69.0% of the budget. The separation is clean rather than argued: every one of
+the nine runs at *n* = 200 had a higher median tick than every one of the nine at *n* = 0, the two
+bands being 11.30 – 11.84 ms and 10.60 – 10.92 ms.
+
+**The engine is about 40× busier on the borrowed base** — 10.81 ms against the rig control's
+0.27 ms at the same count. That is the gap #34 could not measure across, and it is the whole reason
+this ticket existed. [ADR 0029](../adr/0029-the-factory-measurement-rests-on-a-borrowed-base.md)
+records the same premise as **51×**, from about 10.7 ms against 0.21 — the precise 10.73 is in
+[`borrowed-base.md`](borrowed-base.md). The borrowed base agrees to 1.01×, and the whole of the
+difference is the rig's own empty tick moving 0.21 ms to 0.27, which is inside the floor. The two
+tick lengths are the figures to quote, not the ratio between them.
+
+### What the engine columns do not say
+
+**Only `scriptUpdate` isolates on a borrowed base, and this sweep demonstrates it rather than
+asserting it.** The `entityUpdate` row above reads 0.53 µs per reactor at *n* = 200 and **2.36** at
+*n* = 50 — the same entities, a figure four times apart. The reason is arithmetic: the borrowed
+base's own `entityUpdate` is about 5.9 ms, so a 200-reactor delta of 107 µs is under 2% of it, and
+the column's own drift already swallows that. The absolutes table above is the demonstration:
+`entityUpdate` reads **6,011.77 µs at *n* = 50 and 6,000.45 µs at *n* = 200**, which is *higher*
+with 150 fewer reactors in the world. The rig's engine columns are trustworthy for the opposite
+reason: its baseline is 10 µs, so the delta *is* the column, and it rises with the count as it
+should.
+
+So the four engine rows of the borrowed-base table are **not** measurements of what a reactor costs
+the engine. Read those off the rig, and read the borrowed base's `scriptUpdate` alone. That is the
+rule [`borrowed-base.md`](borrowed-base.md) already states; this is the sweep that puts a number on
+why.
+
+### What #235 did here
+
+**It did not happen.** Nine runs at *n* = 0 gave per-run `scriptUpdate` means of 86.8, 84.5, 86.8,
+85.6, 86.8, 85.6, 84.7, 96.5 and 84.7 µs — a spread of 1.14×, with nothing resembling the +500 µs
+step [#235](https://github.com/trulsjo/realistic-fusion-refreshed/issues/235) recorded across three
+earlier sittings. *n* = 200 was tighter still, at 1.05×.
+
+One run of the nine at *n* = 50 was elevated, 526.8 µs against the other eight's average of 450.7.
+**That is not #235, and the magnitudes say so.** Its Lua is **+76 µs** over the other eight; its
+whole tick is **+1,634 µs** over theirs, 12.84 ms against 11.21. So all but about a twentieth of
+what that run spent extra was spent outside `scriptUpdate`, which is contention. #235's excess is
+*inside* `scriptUpdate` and about +500 µs, so a run carrying it would show the Lua column moving by
+roughly what the tick moved, and this one shows the opposite. It is left in the pooled mean rather
+than dropped. (The Lua figure is a per-run mean and the tick figure a per-run median, as the script
+reports them; the gap between them is an order of magnitude, which no difference of statistic
+accounts for.)
+
+**Nothing here settles #235 and nothing here reopens it.** Three sittings saw the spike and one did
+not; that is a fourth data point, not an explanation. What it does settle is this ticket's *n* = 50
+row. The earlier attempt put the borrowed base *below* the rig, which is not physical, and the cause
+is visible now that the baseline is clean: a baseline inflated by the spike is a larger subtrahend,
+so it understates the per-reactor cost, and it does so worst at the count where the signal is
+smallest. At 7.45 against the rig's 6.28, *n* = 50 is now the right way round and inside the floor.
+
+**It also makes #235's third question cheap to answer for this sweep.** With a clean baseline the
+statistic does not matter: a median across runs gives 6.99 µs per reactor at *n* = 200 and 7.34 at
+*n* = 50, against the pooled mean's 7.01 and 7.45. That is 0.3% apart at the top count — a third
+digit, not a second. The choice of statistic bites only when a run is spiking, which is #235's point
+rather than a contradiction of it.
+
+### Verdict
+
+**Acceptable on a real factory. `UPDATE_INTERVAL` stays at 6, and no throttling is taken.**
+
+[ADR 0005](../adr/0005-real-time-fusion-simulation.md) pre-authorises a coarser cadence if
+measurement showed the cost was too high. On the busiest map this project can measure, 200 blanketed
+D-D reactors — the worst of #62's five configurations at 200 reactors, and the top count this note
+sweeps to — cost **8.41% of a 16.67 ms tick**. Scaling the same per-reactor figure down to the ten
+to fifty reactors an ordinary build has gives **0.4% to 2.1%**. That is not a budget worth spending
+the physics on, which is the question the ADR pre-authorised a coarser cadence for.
+
+That range is the loaded-tick figure's, and ADR 0005 records **0.3% to 1.6%** for the same ten to
+fifty reactors. **The two are one claim, not two.** The first comes from this sweep's 7.01 µs and the
+second from #62's 5.44; the ratio between them is 1.29, inside the floor, so they are the same number
+scaled the same way. Quote whichever, and expect the other.
+
+**Two shares, two statistics, and they are not one claim.** The 8.41% is this mod's Lua as a *mean*
+over every tick, which is what UPS spends. What the megabase's *median* tick did is smaller: 64.8%
+of the budget before the reactors arrived and 69.0% after, a move of 0.70 ms against the 1.40 ms of
+Lua added. The simulation steps one tick in six, so a typical tick carries less of it than an
+average tick does. Neither share may be added to the other.
+
+**The number to quote does not move.** 7.01 µs on a loaded tick, 6.33 on the rig control beside it
+and 5.44 on #62's rig are all inside one 1.35× band of each other, so **about 5.4 µs for the worst
+configuration** stands as the figure on record. Nothing in the tick path changed, and nothing here
+says the record should.
+
+**This sweep measured one configuration and not five, so it moves nothing about the other four.**
+Blanketed D-D was chosen because #62 measured it as the dearest; the mixed reaction set, the vented
+cases and the collected-without-blanket case were **not** re-run here, and the 4.5 µs ADR 0005
+quotes for the full set with collectors is #62's figure, still on #62's evidence. What this section
+licenses about them is one thing only, and it is the thing #67 asked: the ground a figure is taken
+on does not change it.
+
+**The rig caveat is discharged, not narrowed.** "A rig is not a factory" is the sentence #34 left
+open, ADR 0005 carried as its last residue, and
+[ADR 0029](../adr/0029-the-factory-measurement-rests-on-a-borrowed-base.md) bought the means to
+close. It is closed: the mod was measured beside a working 10k SPM megabase, and it costs there what
+it costs on flat ground.
+
+### What this does not close
+
+- **One figure in this project is not reproducible by a stranger, and it is this one.** The input is
+  a third-party save this project may use but not ship. Accepted deliberately in ADR 0029, not
+  overlooked here.
+- **One borrowed base is not "a real factory" in general.** It is vanilla, 10k SPM and modular, which
+  is [ADR 0003](../adr/0003-space-age-tolerated-not-targeted.md)'s v1 target. A Space Age base, a
+  spaghetti base or a heavily modded one could behave differently, and none of them was measured.
+- **The reactors sit beside the factory, not plumbed into it.** They are on a planted surface with
+  their own power, because 200 of them draw about 10 GW and wiring them into TimEv's grid would
+  brown out the base and make the report look fine. What is measured is the simulation's cost on a
+  busy tick, which is the question; what a fusion plant is worth inside a working factory is not.
+- **#235 is open and this sweep did not close it.** The borrowed base still needs more runs than a
+  rig for the same confidence, and whether a pooled mean is the right statistic for one is still
+  that ticket's to settle.
+- **Nothing was measured with a player watching.** Item 3 of *[What this does not
+  close](#what-this-does-not-close)* above is untouched: rendering and GUI are absent from every
+  figure on this page, this one included.
+
+### Sources
+
+- `scripts/bench-reactors.ps1 -PlantInto` for the borrowed-base sweep, and the same script without
+  it for the rig control — one sitting, the same switches.
+- [`borrowed-base.md`](borrowed-base.md) for what the base is, where it came from and what may be
+  done with it; [ADR 0029](../adr/0029-the-factory-measurement-rests-on-a-borrowed-base.md) for the
+  reproducibility concession.
+- What it closes: item 1 of *[What this does not close](#what-this-does-not-close)* above, the last
+  bullet of *[Collectors attached](#collectors-attached-62)*, and ADR 0005's residue.
+- **TimEv**, for the base every figure in this section stands on.
