@@ -1254,6 +1254,109 @@ check(select(1, pcall(L.confinement_ladder_overruns,
 
 -- ----------------------------------------------------------------
 
+-- ---------------------------------------------------------------- the density curve (#74)
+--
+-- ADR 0016 accepts that a reactor makes more power under-supplied than full, and #74 is what tells
+-- a reactor where its own best density is so the status line can stop calling that state a fault.
+-- density_curve is the sweep behind it: settle the reactor at twenty fills, rank them by the fusion
+-- power they reach, and report where the peak is and where under-supplying stops paying.
+--
+-- WHAT MAKES THIS A TEST AND NOT A TAUTOLOGY. The whole table below is published in ADR 0016 and
+-- reproduced in tests/test-bremsstrahlung.lua by a bisection solver that shares no code with
+-- step(). This suite drives the SHIPPED step() instead, so agreeing with those figures is two
+-- independent routes to one answer -- which is the shape #51 was opened about and the reason the
+-- other suite exists.
+
+local function curve_at(tau, fuel)
+  local spec = {}
+  for k, v in pairs(SPEC) do spec[k] = v end
+  spec.confinement_time_s = tau
+  return L.density_curve(spec, fuel or "rf-d-d-plasma", FULL)
+end
+
+local SHIPPED_CURVE = L.density_curve(SPEC, "rf-d-d-plasma", FULL)
+check(SHIPPED_CURVE ~= nil, "the shipped reactor has a density curve")
+
+-- ADR 0016's headline: 65% fill at the shipped confinement time, where Q reaches 0.450 against a
+-- full reactor's 0.320.
+near(SHIPPED_CURVE.optimum, 0.65, 1e-9,
+  "the shipped tier's best density is ADR 0016's 65% fill")
+
+-- And its floor: "below about 35% fill the n-squared term wins again and a starved reactor is worse
+-- off than a full one". That sentence is the whole of what "starved" now means, so the number it
+-- names is worth pinning rather than trusting.
+near(SHIPPED_CURVE.floor, 0.35, 1e-9,
+  "and under-supplying stops paying at ADR 0016's 35%")
+
+-- THE OPTIMUM WALKS UP THE FILL AXIS AS CONFINEMENT RESEARCH RAISES TAU, and leaves the range
+-- entirely. This is the property #74's acceptance criterion turns on -- whatever a reactor shows a
+-- player has to stay correct as research moves the optimum -- so it is asserted as a monotone walk
+-- rather than as one number, which a single rung would not distinguish from a hardcoded fraction.
+local walked = {}
+for _, tau in ipairs({ 30, 40, 50, 60, 70 }) do
+  walked[#walked + 1] = { tau = tau, curve = curve_at(tau) }
+end
+for i = 2, #walked do
+  check(walked[i].curve.optimum >= walked[i - 1].curve.optimum,
+    string.format("the best density at tau %g s is no thinner than at tau %g s",
+      walked[i].tau, walked[i - 1].tau),
+    string.format("%.2f against %.2f", walked[i].curve.optimum, walked[i - 1].curve.optimum))
+end
+check(walked[#walked].curve.optimum > walked[1].curve.optimum,
+  "and it has actually moved over the ladder, rather than being a constant that never walks",
+  string.format("%.2f at tau 70 s against %.2f at tau 30 s",
+    walked[#walked].curve.optimum, walked[1].curve.optimum))
+
+-- ADR 0016's third row: by tau 70 s full supply is simply best, and the lever is closed.
+local TOP = walked[#walked].curve
+near(TOP.optimum, 1.0, 1e-9, "by tau 70 s the best density is full supply")
+
+-- AND THE FLOOR GOES WITH IT, which is not a rounding case but the regime the ladder ends in. With
+-- the peak at full supply every thinner fill is worth less than a full one, so a floor read as
+-- "worse than full" would condemn a reactor at 95% as starved. There is no trap to warn about --
+-- adding plasma helps all the way up -- so the floor is zero and nothing is called starved for its
+-- density at all.
+near(TOP.floor, 0, 1e-9, "with no interior peak there is no starved band")
+check(SHIPPED_CURVE.floor > 0, "where the peak IS interior there is one",
+  tostring(SHIPPED_CURVE.floor))
+
+-- The floor is below the optimum by construction: it is the thinnest fill still worth as much as a
+-- full reactor, and a peak sits above every point that merely matches full supply.
+for _, row in ipairs(walked) do
+  check(row.curve.floor < row.curve.optimum,
+    string.format("at tau %g s the starved floor is below the best density", row.tau),
+    string.format("%.2f against %.2f", row.curve.floor, row.curve.optimum))
+end
+
+-- The band a caller treats as "at the optimum" comes off the curve rather than being invented by
+-- the caller, so the resolution of the answer and the width of the band cannot drift apart.
+check(SHIPPED_CURVE.step > 0 and SHIPPED_CURVE.step <= 0.1,
+  "the curve reports the grid step its fills are resolved to", tostring(SHIPPED_CURVE.step))
+local on_grid = SHIPPED_CURVE.optimum / SHIPPED_CURVE.step
+near(on_grid, math.floor(on_grid + 0.5), 1e-9,
+  "and the optimum is one of the grid's own fills")
+
+-- D-T IS NOT D-D, and ADR 0016 is explicit about why: D-T sits far PAST its optimum rather than
+-- below it, so it de-rates almost exactly as n-squared and full supply is its best density. A curve
+-- that gave both fuels the same answer would be reporting the sweep's shape rather than the fuel's.
+near(curve_at(30, "rf-d-t-plasma").optimum, 1.0, 1e-9,
+  "D-T's best density is full supply at the shipped confinement time")
+
+-- The aneutronic tier has its own reactor, its own volume and no confinement ladder, and it gets
+-- its own curve for the same reason it gets its own spec.
+local ANEUTRONIC_CURVE = L.density_curve(L.aneutronic_reactor, "rf-d-he3-plasma", 3000)
+check(ANEUTRONIC_CURVE ~= nil, "the aneutronic reactor has a curve of its own")
+check(ANEUTRONIC_CURVE.optimum > 0 and ANEUTRONIC_CURVE.optimum <= 1.0,
+  "and its best density is a fill", tostring(ANEUTRONIC_CURVE.optimum))
+
+-- Nothing to sweep is nil rather than a fabricated curve, which is what control.lua caches as
+-- "this plasma has none" and what circuit-output falls back to "running" on. A guessed curve would
+-- put a reactor in a density state nobody measured.
+check(L.density_curve(SPEC, "water", FULL) == nil, "a fluid with no fuel row has no curve")
+check(L.density_curve(SPEC, nil, FULL) == nil, "and neither does no fluid at all")
+check(L.density_curve(SPEC, "rf-d-d-plasma", 0) == nil, "nor a box with no volume")
+
+
 -- ---------------------------------------------------------------- float32 representability (#119)
 --
 -- A prototype hands its numbers back at SINGLE precision. So a ceiling declared as a Lua double in

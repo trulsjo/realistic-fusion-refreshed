@@ -24,13 +24,35 @@
     WHAT EACH REACTOR IS FOR
 
       running   Plasma pinned hot by an infinity pipe, and powered. Should fuse.
+
+                ITS STATUS LINE IS "rich" SINCE #74, not "running", and the case name describes
+                what the rig BUILDS rather than what the reactor answers. A full box at the shipped
+                confinement time is past the density that suits D-D -- ADR 0016 puts the optimum at
+                about 65% fill -- so a reactor held full is correctly told that less plasma would
+                raise its output. The case is left named for its arrangement because everything
+                else here keys off that name, and because "a full, hot, powered reactor reports
+                rich" is exactly the sentence worth reading.
+
       idle      Plasma pinned at the temperature a heater injects at, and deliberately on no
                 electric network, so it cannot climb. Holding plasma, not fusing.
       starved   No plasma line at all.
 
-    Three states, one save -- which is also what makes the aggregate check possible: running and
-    idle report different figures, so if either one's wire carried a value for "the reactors"
+    Three arrangements, one save -- which is also what makes the aggregate check possible: running
+    and idle report different figures, so if either one's wire carried a value for "the reactors"
     rather than for itself, they could not both be right.
+
+      tuned     D-D held at 65% of its box, powered. THE STATE #74 EXISTS FOR: a deliberately
+                under-supplied reactor sitting at its best density, which the status line has to
+                call "running" and not a fault. Held by seeding and topping up rather than by a
+                feed, for the reason the ignited pair are.
+      too-thin  D-D held at 15%, powered. The other side of that line: thinned past the point where
+                the n-squared term wins again, where a player would be better off simply filling
+                the reactor. That is what "starved" now means, and it is measured per confinement
+                rung by reactor-logic.density_curve rather than written down as a fill fraction.
+
+    Those two are the whole of #74 in the game rather than in a unit test: the same reactor, the
+    same plasma and the same power, differing only in how full it is held, and reporting three
+    different things across the three fills.
 
     THAT USED TO READ "three orders of magnitude apart", AND #57 BROKE THE ARITHMETIC BEHIND IT.
     Idle's plasma sits at the 15 C floor, which a kilodegree wire reports as 0, so the ratio the
@@ -40,8 +62,13 @@
       ignited-full   D-T plasma, a full box, powered.
       ignited-thin   D-T plasma, 35% of a box, powered.
 
-    THOSE TWO ARE NOT A FOURTH AND FIFTH STATE (#55). They are both "running", and they exist to be
-    compared with EACH OTHER. Their real equilibria differ -- a thinner plasma settles hotter -- and
+    THOSE TWO ARE NOT TWO MORE ARRANGEMENTS TO COMPARE WITH THE REST (#55). They exist to be
+    compared with EACH OTHER.
+
+    ~~They are both "running".~~ **NOT SINCE #74**: D-T sits far past its optimum rather than below
+    it (ADR 0016), so full supply is its best density and the thin one is "lean" -- more plasma
+    would raise its output. That is a change in what the pair REPORT and not in what they are for;
+    the temperature comparison below is untouched by it. Their real equilibria differ -- a thinner plasma settles hotter -- and
     ~~both are far above the simulation's 2e9 ceiling, so both are clamped to it and both report the
     same number.~~ **NOT SINCE #58**, and this is the rig that recorded it changing. The ceiling
     moved to 5e9, above where D-T settles, so the pair now report their own equilibria and differ --
@@ -134,9 +161,9 @@ local RED = defines.wire_connector_id.circuit_red
 local circuit = require("__realistic-fusion-refreshed__/scripts/circuit-output")
 local SCALE = circuit.TEMPERATURE_SCALE
 
--- Five reactors, twenty-five tiles apart so a fifteen-tile building and its wiring never touch the
--- next one. powered = false is how the idle case is held idle: with no network the reactor cannot
--- heat, so plasma injected at a heater's temperature stays there.
+-- Seven reactors since #74, twenty-five tiles apart so a fifteen-tile building and its wiring never
+-- touch the next one. powered = false is how the idle case is held idle: with no network the
+-- reactor cannot heat, so plasma injected at a heater's temperature stays there.
 --
 -- `status` is the status line the case should show and `distinct` marks the three whose lines have
 -- to differ from each other. Both exist because #55 added two cases that are deliberately NOT a
@@ -150,13 +177,28 @@ local SCALE = circuit.TEMPERATURE_SCALE
 -- number.~~ That was the defect #54 is
 -- about, and this rig's job here is to MEASURE whether it is still true rather than to assert it
 -- either way -- see the two notes at the end of verify().
+-- THE DENSITY CASES (#74, ADR 0016). One reactor prototype, one plasma and one power supply, held
+-- at three fills and reporting three different things. It is the only place in this repo where the
+-- density lever is exercised in a running game rather than in a unit test.
+--
+-- The fills are NOT written as fractions of what density_curve happens to answer, and that is
+-- deliberate: a rig that computed its own expectation from the thing under test would agree with
+-- itself whatever the sweep did. They are the figures ADR 0016 publishes -- an optimum near 65%
+-- fill and an n-squared crossing near 35% -- so this fails if the shipped curve ever stops
+-- reproducing them. tests/test-reactor-logic.lua pins the same two numbers from the other side.
 local CASES = {
-  { name = "running", plasma = 6e8, powered = true,  distinct = true },
+  -- Named for its arrangement, not for its answer: a full, hot, powered D-D reactor is PAST its
+  -- best density and correctly reports "rich". See the note in .SYNOPSIS.
+  { name = "running", plasma = 6e8, powered = true,  distinct = true, status = "rich" },
   { name = "idle",    plasma = 1e6, powered = false, distinct = true },
   { name = "starved", plasma = nil, powered = true,  distinct = true },
+  { name = "tuned",    powered = true, status = "running", distinct = true,
+    fuel = "rf-d-d-plasma", seed = 6e8, units = 650 },
+  { name = "too-thin", powered = true, status = "starved",
+    fuel = "rf-d-d-plasma", seed = 6e8, units = 150 },
   { name = "ignited-full", powered = true, status = "running",
     fuel = "rf-d-t-plasma", seed = 6e8, units = 1000 },
-  { name = "ignited-thin", powered = true, status = "running",
+  { name = "ignited-thin", powered = true, status = "lean",
     fuel = "rf-d-t-plasma", seed = 6e8, units = 350 },
 }
 
@@ -190,18 +232,22 @@ script.on_init(function()
   local surface = game.surfaces[1]
   local force   = game.forces.player
 
-  -- Five cases at 25 tiles apart since #55, not three: the far reactor sits at x=100 and its probe
-  -- at 110, so the generated area and the landfill below both had to grow with them. A probe on
-  -- ungenerated ground is a wire that reaches nothing, which reads exactly like a mod that never
-  -- published.
-  surface.request_to_generate_chunks({ 70, 0 }, 7)
+  -- Seven cases at 25 tiles apart since #74, where #55 made it five: the far reactor sits at x=150
+  -- and its probe at 160, so the generated area and the landfill below both had to grow with them
+  -- again. A probe on ungenerated ground is a wire that reaches nothing, which reads exactly like a
+  -- mod that never published.
+  --
+  -- DERIVED FROM #CASES RATHER THAN WRITTEN DOWN, because it has now been widened twice by hand and
+  -- the failure mode of forgetting is a case that silently reports nothing.
+  local span_x = #CASES * 25 + 20
+  surface.request_to_generate_chunks({ span_x / 2, 0 }, math.ceil((span_x / 2 + 96) / 32))
   surface.force_generate_chunk_requests()
   local tiles = {}
-  for x = -20, 170 do
+  for x = -20, span_x do
     for y = -20, 20 do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
   end
   surface.set_tiles(tiles)
-  for _, e in pairs(surface.find_entities_filtered({ area = { { -20, -20 }, { 170, 20 } } })) do
+  for _, e in pairs(surface.find_entities_filtered({ area = { { -20, -20 }, { span_x, 20 } } })) do
     if e.type ~= "character" then e.destroy() end
   end
 
@@ -248,9 +294,9 @@ script.on_init(function()
       if not joined then error("the plasma feed for " .. case.name .. " reaches nothing") end
     end
 
-    -- THE IGNITED PAIR ARE NOT FED (#55). An infinity pipe holds a box at a fill by replacing what
-    -- the reactor burns, and it replaces it AT THE FEED'S TEMPERATURE -- which on a reactor burning
-    -- 34 units a second is a large cooling flow, not a top-up. Fed that way the thin one never left
+    -- THE SEEDED CASES ARE NOT FED (#55, and the two #74 added). An infinity pipe holds a box at a
+    -- fill by replacing what the reactor burns, and it replaces it AT THE FEED'S TEMPERATURE --
+    -- which on a reactor burning 34 units a second is a large cooling flow, not a top-up. Fed that way the thin one never left
     -- 6.28e8: it was pinned by its feed rather than by the ceiling, and the pair then differed for
     -- the one reason this measurement must exclude. So they get plasma written straight into the
     -- box and topped back up below, temperature preserved, which is the same instrument
@@ -332,10 +378,12 @@ local function verify()
     local label = status and status.label and status.label[1]
     record(label == "rf-reactor-status." .. expected,
       name .. ": the status line says " .. expected, tostring(label))
-    -- Uniqueness binds only the three that are meant to be distinct. Asking it of all five would
-    -- demand the ignited pair differ from each other, which is the opposite of what they are for.
+    -- Uniqueness binds only the cases that are meant to be distinct. Asking it of all seven would
+    -- demand the ignited pair differ from each other, which is the opposite of what they are for,
+    -- and would demand too-thin differ from starved when the two are deliberately one state
+    -- reached two ways -- an empty box and a box too thin to be worth running.
     if label and entry.case.distinct then
-      record(seen_labels[label] == nil, name .. ": the three states are three different lines", label)
+      record(seen_labels[label] == nil, name .. ": each marked state is a different line", label)
       seen_labels[label] = true
     end
 
@@ -418,6 +466,29 @@ local function verify()
       end
     end
   end
+
+  -- ------------------------------------------------------------------ the density lever (#74)
+  --
+  -- The three status lines above are asserted case by case, which is necessary and not sufficient:
+  -- three reactors each reporting the right thing could still be three reactors reporting a
+  -- constant. What makes it a measurement is that ONE arrangement -- rf-reactor, D-D plasma, a
+  -- powered network, a hot seed -- gives three DIFFERENT answers as the only variable moved is how
+  -- full the box is held. That is the mechanic ADR 0016 accepted, in a running game.
+  local density_labels = {}
+  for _, name in ipairs({ "too-thin", "tuned", "running" }) do
+    for _, entry in ipairs(storage.cases) do
+      if entry.case.name == name then
+        local status = entry.reactor.custom_status
+        density_labels[name] = status and status.label and status.label[1] or "none"
+      end
+    end
+  end
+  record(density_labels["too-thin"] ~= density_labels["tuned"]
+     and density_labels["tuned"] ~= density_labels["running"]
+     and density_labels["too-thin"] ~= density_labels["running"],
+    "one reactor at three fills reports three different states",
+    string.format("15%% %s, 65%% %s, full %s", tostring(density_labels["too-thin"]),
+      tostring(density_labels["tuned"]), tostring(density_labels["running"])))
 
   -- The aggregate check. If one number described both reactors, these two would be equal.
   --

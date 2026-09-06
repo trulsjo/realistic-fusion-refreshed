@@ -94,13 +94,75 @@ local function spec_for(entity)
   return spec
 end
 
+--- WHERE THIS FORCE'S REACTORS WANT THEIR PLASMA HELD (#74, ADR 0016).
+--
+-- [force_index][prototype name][fluid name] -> reactor-logic.density_curve's answer, or false when
+-- that plasma has no curve. Beside force_specs above and invalidated by the same call, because it
+-- is a function OF a force's spec: the optimum fill walks up as confinement research raises tau,
+-- and a curve kept across a rung would tell a player to throttle to a density research has moved.
+--
+-- CACHED BECAUSE IT IS SWEPT, NOT COMPUTED. density_curve settles the reactor at twenty fills, so
+-- it is tens of milliseconds -- nothing once per force per rung, and out of the question on the
+-- reporting cadence. That is the whole reason this table exists rather than a call in publish().
+--
+-- Keyed by fluid as well as by reactor, because #28 removed the input box's filter: one rf-reactor
+-- burns D-D or D-T, and they have different curves. A plasma with no row in M.fuels stores `false`
+-- rather than nil, so a reactor holding one sweeps once and not on every report.
+--
+-- NOT IN `storage`, for the reason force_specs is not: the Lua state is rebuilt on every load, so
+-- there is no stored number to go stale and no migration to write.
+local force_curves = {}
+
+--- A reactor's plasma box volume, from the prototype. Memoised per prototype name.
+--
+-- The denominator of the fill the status line is judged on. A reactor's own box, not the run's,
+-- which is what #40 measured get_capacity to answer -- and per ADR 0016 the two are the same
+-- number anyway: a box holds its share of its segment in proportion to capacity, so every reactor
+-- on a run sits at the same fill.
+local PLASMA_CAPACITY = {}
+local function plasma_capacity(name)
+  local capacity = PLASMA_CAPACITY[name]
+  if not capacity then
+    capacity = prototypes.entity[name].fluidbox_prototypes[1].volume
+    PLASMA_CAPACITY[name] = capacity
+  end
+  return capacity
+end
+
+--- The density curve for this reactor, this plasma, and this reactor's owner.
+local function curve_for(entity, spec, fluid_name)
+  if not fluid_name then return nil end
+  local index = entity.force_index
+  local by_force = force_curves[index]
+  if not by_force then
+    by_force = {}
+    force_curves[index] = by_force
+  end
+  local by_fluid = by_force[entity.name]
+  if not by_fluid then
+    by_fluid = {}
+    by_force[entity.name] = by_fluid
+  end
+  local curve = by_fluid[fluid_name]
+  if curve == nil then
+    curve = logic.density_curve(spec, fluid_name, plasma_capacity(entity.name)) or false
+    by_fluid[fluid_name] = curve
+  end
+  return curve or nil
+end
+
 --- Drop everything, so the next reactor to be stepped rebuilds it.
 --
 -- The whole cache rather than the one force the event names, because the events below do not all
 -- name one -- and because a force's entry is two table lookups to rebuild. There is no cost here
 -- worth being clever about.
+--
+-- THE DENSITY CURVES GO WITH THEM (#74) and that is not tidiness: research is exactly what moves
+-- the optimum fill, so a curve that outlived a rung would go on telling a player to throttle to a
+-- density that has stopped being the best one.
 local function forget_force_specs()
   force_specs = {}
+  force_curves = {}
 end
 
 -- The temperature apply() stamps on the reactor energy it writes, memoised per reactor by
@@ -384,8 +446,11 @@ local function apply(entity, spec, plasma, result)
   --   * The engine's mixing is LOSSY. Flattening a temperature difference across a segment destroys
   --     about a fifth of the difference -- measured on reactors the simulation never touched at all,
   --     and confirmed by the one-reactor pair above, where nothing else can be to blame.
-  --   * AND THE REST IS NOT MIXING. Three writers lose more than mixing alone accounts for. This
-  --     comment used to name the shape of update() as the candidate -- two passes, each write
+  --   * AND THE REST IS NOT MIXING. The three-reactor row loses more than mixing alone accounts
+  --     for. It is stated as a property of THAT ROW rather than of "three writers", which is the
+  --     phrasing this comment used and the phrasing that made two wrong mechanisms plausible: the
+  --     row is also fuller and hotter, and writer count turns out to account for none of it (below).
+  --     The candidate named here used to be the shape of update() -- two passes, each write
   --     replacing a box from the start-of-step pool, with the engine re-splitting between the Lua
   --     writes so that a reactor writing second overwrites the share of its neighbour's rise it had
   --     just been handed.
@@ -403,10 +468,27 @@ local function apply(entity, spec, plasma, result)
   -- 72.18% -- the same number to four figures. There is nothing to choose between them because the
   -- engine cannot tell them apart.
   --
-  -- So NOTHING IN THIS FILE IS CHANGED, and now for a reason rather than for a deferral: the
-  -- read-then-write shape is not what costs the excess. What does is not known. It is not the
-  -- engine's mixing alone either, and the two cells that would separate the remaining candidates
-  -- differ in fill and temperature as well as in writer count, so #40's comparison cannot settle it.
+  -- AND IT IS NOT WRITER COUNT EITHER (#73, 2026-09-06), which is the last candidate this comment
+  -- carried and the one the bullet above states in the way that made it stick. Six rows on one
+  -- geometry, one fill, one starting temperature and one total of injected heating, delivered by
+  -- one, two and three reactors and then by a single reactor moved along the run:
+  --
+  --   one writer, west 72.19%   two writers 71.92%   three writers 71.64%
+  --   one writer, centre 71.65%   one writer, east 71.10%   east written FIRST 71.10%
+  --
+  -- The count series is the arithmetic MEAN of the positional ramp over the reactors each row
+  -- occupies -- 71.92 is (72.19 + 71.65) / 2 and 71.64 is the mean of all three, nothing fitted. So
+  -- writer count costs nothing. What costs about a point is where on the segment the energy enters,
+  -- and that is neither the write order (east keeps 71.10% first or last) nor the gradient the
+  -- writes make (the flat three-writer row and the 73%-uneven centre row agree to a hundredth).
+  --
+  -- So NOTHING IN THIS FILE IS CHANGED, and now for a reason rather than for a deferral: BOTH of
+  -- the mechanisms this comment ever named as OURS -- the two-pass write shape and writer count --
+  -- have been measured and neither exists. The engine's mixing loss in the first bullet is real and
+  -- is not ours. What is left of the ~17.6-point gap is
+  -- FILL AND TEMPERATURE -- `bare` sits at 44.6% full and `solopipe` at 27.6% -- which is a property
+  -- of the plumbing a player builds rather than a defect, plus about a point of engine asymmetry
+  -- accepted alongside the mixing loss above.
   -- docs/research/reactor-runtime-cost.md carries the numbers and scripts/check-pooling.ps1 the rig.
   local remaining = plasma.amount - result.plasma_consumed
   if remaining > 0 then
@@ -653,7 +735,14 @@ local function update()
       -- here and not in the write pass because a reactor with nothing to simulate has no entry
       -- there at all, and "starved of plasma" is exactly the state that reactor is in and the one
       -- worth showing.
-      if reporting then circuit.publish(entity, result, plasma and plasma.amount, spec) end
+      -- Fill rather than an amount since #74: the status line's three density states are about how
+      -- full the reactor is held and not how much it holds, and a reactor with a different box
+      -- would otherwise be judged against another one's volume. The curve is swept once per force
+      -- per confinement rung; on the reporting cadence it is three table lookups.
+      if reporting then
+        circuit.publish(entity, result, plasma and (plasma.amount / plasma_capacity(entity.name)),
+          spec, curve_for(entity, spec, plasma and plasma.name))
+      end
 
       if result then
         pending[#pending + 1] = { entity = entity, spec = spec, plasma = plasma, result = result }

@@ -149,6 +149,19 @@ Two words that are **not** synonyms and are easy to swap by accident:
 
 Reserve "starved" for the fault. A reactor at its operating density is under-supplied and working.
 
+**Where that line sits is measured, not written down** (#74). "Worth running" is *worth as much as a
+full reactor*: `reactor-logic.density_curve` settles the reactor at twenty fills and reports the
+thinnest one whose fusion power still matches full supply. Below it a player has thinned past the
+point where the n² term wins again and would be better off simply filling the machine. The line moves
+with confinement research — ~35% fill at the shipped τ 30 s — and **disappears entirely** once the
+optimum reaches full supply, because with no interior peak there is no trap to warn about, only a
+smooth de-rate.
+
+**Lean** and **rich** are what a reactor calls the two sides of its optimum: lean is thinner than
+best and would gain from more plasma, rich is thicker and would gain from less. Both are working
+states and neither is a fault — the words are about *which way to move the throttle*, and they are
+the only thing that tells a player the density lever exists.
+
 **Ignited** — a plasma whose own fusion self-heating carries it without external confinement heating.
 Confinement heating gets an ignited plasma **to** a fusing temperature; it is not what keeps it at one.
 **D-T at this reactor's density and confinement time is ignited and D-D is not**, which is the tiers'

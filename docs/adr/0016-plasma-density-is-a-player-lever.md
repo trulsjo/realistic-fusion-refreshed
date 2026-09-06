@@ -92,12 +92,39 @@ on building properly.
 
 ## Consequences
 
-- **[#25](https://github.com/trulsjo/realistic-fusion-refreshed/issues/25)'s status text is now wrong
-  in a new way.** "Starved of plasma" will fire on a reactor running at its best. #25 is closed, so
-  this is tracked as its own ticket under this ADR rather than left as a loose bug.
-- **The mechanic is currently undiscoverable except through the circuit signals.** Nothing tells a
-  player that density is a lever, and nothing shows them where the optimum is. That is a real gap and
-  it belongs with the status-text work above, not to #46.
+- ~~**[#25](https://github.com/trulsjo/realistic-fusion-refreshed/issues/25)'s status text is now
+  wrong in a new way.** "Starved of plasma" will fire on a reactor running at its best.~~
+  ~~**The mechanic is currently undiscoverable except through the circuit signals.** Nothing tells a
+  player that density is a lever, and nothing shows them where the optimum is.~~
+
+  **Both closed by [#74](https://github.com/trulsjo/realistic-fusion-refreshed/issues/74),
+  2026-09-06**, and by one mechanism rather than two. `reactor-logic.density_curve` settles the
+  reactor at twenty fills and reports where the peak is and where under-supplying stops paying;
+  `control.lua` caches that per force beside the confinement spec and throws it away on the same
+  research events, and `circuit-output.status` turns it into five states instead of three:
+
+  | state | when | diode |
+  |---|---|---|
+  | `starved` | no plasma, or thinner than the floor below | red |
+  | `idle` | holding plasma, not fusing usefully | yellow |
+  | `lean` | fusing, thinner than the optimum — more plasma would raise output | green |
+  | `running` | fusing at the optimum | green |
+  | `rich` | fusing, thicker than the optimum — less plasma would raise output | green |
+
+  Three things about that are worth reading rather than inferring:
+
+  - **`lean` and `rich` are the discoverability fix**, and they name a direction rather than a
+    figure. A tooltip saying "65%" would be wrong at every rung above the first, which is the
+    constraint this ADR's own table imposes.
+  - **"Starved" is now the lower crossing of full supply**, the thinnest fill still worth as much as
+    a full reactor — the ~35% this ADR measures at τ 30 s. It is swept per rung and never written
+    down.
+  - **The floor is zero once the optimum reaches full supply**, which by this ADR's table is τ 70 s.
+    With no interior peak every thinner fill is worth less than a full one, so "worse than full"
+    would condemn a reactor at 95%; there is no trap there, only a de-rate, and `lean` says so.
+
+  A full D-D reactor at the shipped rung therefore reads **`rich`**, which is this ADR's headline
+  stated by the building itself: the shipped operating point is not the best one.
 - **[ADR 0014](0014-realistic-means-theoretically-possible.md)'s confinement ladder is a *full-supply*
   table**, and is annotated as such. Break-even depends on supply: at τ 50 s a tuned reactor is above
   it (Q 1.085) and a full one is not (Q 0.950), so a player who tunes crosses a rung earlier than the

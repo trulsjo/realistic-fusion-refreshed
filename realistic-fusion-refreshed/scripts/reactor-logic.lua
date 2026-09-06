@@ -1012,6 +1012,110 @@ function M.settle(spec, fluid_name, amount, seconds, paid_j, dt)
   return t_c, last
 end
 
+-- ---------------------------------------------------------------------------------------------
+-- The density curve (#74, ADR 0016).
+--
+-- ADR 0016 accepts that a reactor can make more power under-supplied than full, and that the
+-- operating density is therefore a lever a player tunes rather than a supply problem to eliminate.
+-- What it does not do is tell a reactor where its own lever sits, and that is what this answers:
+-- the fill that makes the most fusion power, and the fill below which under-supplying has stopped
+-- paying at all.
+--
+-- IT IS MEASURED RATHER THAN STATED, which is the whole point. The optimum walks up the fill axis
+-- as confinement research raises tau -- ~65% at the shipped 30 s, ~85% at 50 s, and off the top of
+-- the range by 70 s -- so any fill fraction written down here would be right at one rung and wrong
+-- at every other. #74's acceptance criterion is exactly that: whatever a reactor shows a player has
+-- to stay correct as research moves the optimum.
+
+--- The grid the sweep below walks, and therefore the resolution of every answer it gives.
+--
+-- Twenty points at 5%. It is not precision for its own sake: the band that counts as "at the
+-- optimum" is one grid step wide, so this number IS the width of that band, and a finer grid would
+-- claim a precision the settling below does not have.
+--
+-- A COUNT RATHER THAN A STEP, and the fills are i/FILL_STEPS rather than an accumulating sum. Twenty
+-- additions of 0.05 do not land on 1.0 in binary floating point, and the top of the grid IS full
+-- supply -- the value the floor below is measured against and the one that says whether the optimum
+-- is interior at all. A grid whose last point was 0.9999999999999999 would leave a caller comparing
+-- it against 1.0 and getting the wrong answer for reasons nothing in this file mentions.
+local FILL_STEPS = 20
+local FILL_STEP  = 1 / FILL_STEPS
+
+--- How long each fill is settled for, and how coarsely.
+--
+-- ONE SECOND PER STEP, not the tick M.settle's own note prefers. A coarser dt settles about 2%
+-- hotter, and that is acceptable here in a way it is not for a published figure or for a load
+-- guard: every fill on the grid is settled the same way, so the bias is common to all twenty and
+-- cancels out of the comparison the sweep actually makes. What it buys is the sweep costing about
+-- 24 000 steps instead of 240 000 -- tens of milliseconds, once per force per confinement rung,
+-- rather than a visible hitch.
+local CURVE_SECONDS = 1200
+local CURVE_DT      = 1.0
+
+-- WHERE THIS DIFFERS FROM ADR 0016, AND WHY IT IS NOT A DISAGREEMENT. That ADR's table comes from
+-- tests/test-bremsstrahlung.lua's bisection solver, which finds each equilibrium directly; this
+-- reaches the same equilibria by stepping the shipped step() to them. At the shipped confinement
+-- time they agree outright -- 65%, and the ~35% crossing, both asserted in
+-- tests/test-reactor-logic.lua.
+--
+-- At tau 50 s the ADR says "near 85% fill" and this reports 80%. Both are on the grid, so it is not
+-- the resolution; the peak is simply FLAT. Measured at a tick: Q 1.0878 at 80% against 1.0852 at
+-- 85%, a quarter of a percent apart, with the ADR's own 1.085 reproduced exactly at the fill it
+-- quotes. An argmax over a flat top lands on whichever side is a hair higher, and which side that is
+-- carries no meaning a player could act on -- which is the honest reason the band around the optimum
+-- below is a whole grid step wide rather than a point.
+
+--- Where under-supply pays best, and where it stops paying at all.
+--
+-- @param spec        reactor constants, as the force running this reactor has them
+-- @param fluid_name  the plasma in its box
+-- @param capacity    that box's own volume in fluid units -- fill is measured against it
+-- @return nil when the fuel has no row above, otherwise
+--         { optimum = fill, floor = fill, step = FILL_STEP }
+--
+-- Q is fusion power over heating power and the heating is held at the rated figure throughout, so
+-- ranking the fills by settled FUSION POWER ranks them by Q. That is why nothing here divides:
+-- a ratio against a constant is the constant's own ordering.
+--
+-- THE FLOOR IS "WORSE THAN A FULL ONE", which is the line ADR 0016 draws and the one CONTEXT.md's
+-- "starved" needs: below it a player has thinned the plasma past the point where the n^2 term wins
+-- again and would be better off simply filling the reactor. It is the LOWEST fill still worth as
+-- much as a full one, so a reactor under it is in a genuine fault and not merely under-supplied.
+--
+-- AND IT IS ZERO WHENEVER THE OPTIMUM IS AT FULL SUPPLY, which is not an edge case to tidy away
+-- but the regime the confinement ladder ends in. With no interior peak the curve rises all the way
+-- to full, every fill under it is worth less than a full one, and "worse than full" would condemn
+-- a reactor at 95% as starved. There is no trap to warn about there -- adding plasma helps
+-- monotonically, which is what a reactor reports as "lean" -- so the floor drops out and "starved"
+-- goes back to meaning no plasma at all.
+function M.density_curve(spec, fluid_name, capacity)
+  if not M.fuels[fluid_name] or not capacity or capacity <= 0 then return nil end
+
+  local fills, powers = {}, {}
+  for i = 1, FILL_STEPS do
+    local fill = i / FILL_STEPS
+    local _, last = M.settle(spec, fluid_name, capacity * fill, CURVE_SECONDS, math.huge, CURVE_DT)
+    fills[i]  = fill
+    powers[i] = last and last.fusion_power_w or 0
+  end
+
+  local best = 1
+  for i = 2, #powers do
+    if powers[i] > powers[best] then best = i end
+  end
+
+  -- The top of the grid is full supply, so an argmax there is the "no interior peak" case above.
+  local floor_fill = 0
+  if best < #fills then
+    local full = powers[#powers]
+    for i = 1, best do
+      if powers[i] >= full then floor_fill = fills[i] break end
+    end
+  end
+
+  return { optimum = fills[best], floor = floor_fill, step = FILL_STEP }
+end
+
 --- Does the top of this spec's ladder park the plasma against max_temperature_c?
 --
 -- @return nil when the ladder is safe, otherwise the temperature its top rung settles at
