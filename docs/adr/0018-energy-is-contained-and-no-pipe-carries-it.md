@@ -168,6 +168,20 @@ with no pipe between them, and two of them chain with fuel crossing to the secon
 answers the same. Bare-string and one-element-list forms behave identically, so `contain()`'s bare
 string stands.
 
+**Challenged and re-confirmed, 2026-09-06
+([#111](https://github.com/trulsjo/realistic-fusion-refreshed/issues/111)).** A second rig,
+`scripts/probe-exchanger-chaining.ps1`, measured five ways that exchangers do *not* chain, and
+`docs/research/exchanger-chaining.md` recorded that against this paragraph. Both probes were rebuilt
+and re-run on the current tree and they now agree: **exchangers chain.** The "no" was that rig's own
+faults — it injected fuel into a box with `fluidbox[i] = {...}`, which never travels, and its one row
+that fed through a pipe used a variant declaring one connection `"input"`. #82's probe had in turn
+stopped running altogether, because it still built the 3×2 machine (see item 4 below), and its chain
+row had no control. Both now have one.
+
+Two conditions came out of it that this ADR did not state, and item 4 depends on the second:
+**fuel has to arrive through a connection**, and **every connection on that energy box has to be
+`input-output`** — one connection declared `"input"` stops fuel leaving by the others.
+
 ## Decision
 
 **The two energy fluids are contained the way plasma is, and nothing carries them but a bolted
@@ -200,6 +214,24 @@ face.**
    tiles facing sideways, and south is still needed to meet a north-facing reactor output.
    `rf-hc-exchanger` has a seven-tile face and more room, but the same reasoning governs it.
 
+   > **Those three coordinates are dead, and this item is unimplemented (#111, 2026-09-06.)**
+   > [ADR 0022](0022-footprints-follow-the-original-mod.md) made the machine **5×15**, so the tile
+   > centres are x ∈ {−2 … 2} and y ∈ {−7 … 7} and the reasoning above no longer describes anything.
+   > On today's shape the energy intake is the west **long** face `{-2, 0}`, steam is the east long
+   > face `{2, 0}`, and water takes both short ends `{0, ±7}`; the free tiles a column would chain
+   > through are `{-1, -7}` and `{-1, 7}`. Both probes build that shape and both confirm it chains.
+   >
+   > The machine in the tree still declares **one** energy connection, `flow_direction = "input"`,
+   > west `{-2, 0}` (`prototypes/entities.lua:428-430`), so it neither bolts onto `rf-reactor`'s
+   > north-facing output nor chains. **What the intent above should become on a 5×15 is a decision
+   > and it is Truls's** — #111 only records that the gap exists.
+   >
+   > **Item 2 waits on it.** "No pipe entity carries either, and none is added" rests on exchangers
+   > bolting onto a reactor face and chaining, and item 4 is how the neutronic tier does that. Until
+   > item 4 is closed on the current shape, applying item 1 to these boxes would leave reactor
+   > energy no way at all to reach an exchanger — categorised at both ends, with no pipe and no
+   > geometry that meets. Items 1, 3, 5 and 6 are about categories and vessels and are unaffected.
+
 5. **`rf-aneutronic-composite-tank` becomes a helium-3 vessel only.** Its energy-buffering role goes,
    because a categorised energy fluid cannot enter it.
 
@@ -222,6 +254,13 @@ face.**
   face against the eight an ignited D-T reactor needs — and `rf-hc-exchanger` would have become close
   to mandatory at the D-T tier rather than a way to avoid a blueprint chore
   ([#32](https://github.com/trulsjo/realistic-fusion-refreshed/issues/32)).
+
+  **The escape hatch this names is gone, and the conclusion survives anyway (#111).** Ringing was a
+  3×2 machine's option. `rf-reactor` declares one energy output, north `{0, -7}`, so exactly one
+  machine can bolt to it whatever size it is — if chaining had failed, the alternative would have
+  been a pipe carrying reactor energy, which is what
+  [#258](https://github.com/trulsjo/realistic-fusion-refreshed/issues/258) asks about. Chaining does
+  not fail, so that question stays hypothetical.
 - **The composite tank's volume needs re-justifying.** 50 000 was sized against the converter's
   hundred units a second — about eight minutes of *energy* supply (`entities.lua:618-620`). Against
   helium-3 that number means something else and has not been examined. The entity's own "composite"
