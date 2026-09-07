@@ -17,6 +17,11 @@ same courtesy paid back.
 Closes the sizing half of [#45](https://github.com/trulsjo/realistic-fusion-refreshed/issues/45).
 The art it implies is [#108](https://github.com/trulsjo/realistic-fusion-refreshed/issues/108).
 
+**Amended by [ADR 0031](0031-energy-bolts-along-a-long-face.md), 2026-09-07**, in the footprint
+table and the paragraph after it: the two five-by-fifteen machines are declared with the long axis
+east–west rather than north–south, and `rf-hc-exchanger` joins the table at the same size. The rule
+itself — footprint first, from the original mod, art redrawn to fit — is applied there, not changed.
+
 ## Context
 
 ADR 0013 set an ordering: **the footprint follows the art.** `rf-reactor` became 15x15 because
@@ -54,20 +59,29 @@ has an opinion and deliberately where it does not, and art is then found or made
 
 | machine | was | is | from |
 |---|---|---|---|
-| `rf-heat-exchanger` | 3x2 | **5x15** | the original mod |
-| `rf-direct-energy-converter` | 3x5 | **5x15** | the original mod |
+| `rf-heat-exchanger` | 3x2 | **15x5** | the original mod's 5x15, turned by ADR 0031 (#275) |
+| `rf-direct-energy-converter` | 3x5 | **15x5** | the original mod's 5x15, turned by ADR 0031 (#87 implements) |
+| `rf-hc-exchanger` | 7x7 | **15x5** | ADR 0031: the ordinary exchanger at a different scale (#276 implements) |
 | `rf-aneutronic-reactor` | 10x10 | **15x15** | the original mod |
 | `rf-isotope-collector` | 3x2 | **5x5** | chosen; no counterpart exists |
 | `rf-lithium-blanket` | 1x1 | **5x5** | chosen; no counterpart exists |
+
+The first three rows read *width x height* in the machine's default orientation. As first written,
+2026-08-24, the two five-by-fifteen machines were declared **5x15** — long axis north–south — and
+`rf-hc-exchanger` was not in the table at all, because its 7x7 was not this decision's. ADR 0031
+turned the two on 2026-09-07 so that the energy face is north, and made the high-capacity exchanger
+the same machine at the same size. The area is the original mod's in every case; only the axis moved.
 
 **`rf-reactor` stays 15x15.** ADR 0013's figure and the original's agree, so nothing moves and
 nothing about that part of ADR 0013 is disturbed.
 
 **The two 5x15 machines take their reactor connection on a LONG face.** That is the point of the
 shape: butted against a fifteen-tile reactor, a long side touches along its whole length where a
-short end touches at one tile. The heat exchanger takes reactor energy along its west face and vents
-steam along its east, with water on both short ends; the converter takes both long faces, one for
-the reactor and one to pass fluid along a row.
+short end touches at one tile. The heat exchanger takes reactor energy along one long face and vents
+steam along the other, with water on both short ends; the converter takes both long faces, one for
+the reactor and one to pass fluid along a row. (As first written: energy west, steam east, water at
+the short-end centres. Since ADR 0031: energy north, steam south, and each short end carries an
+energy tile at `y = -1` for chaining beside its water tile at `y = 1`.)
 
 **The collector and the blanket are square, and chosen rather than inherited.** Neither exists in the
 original — they are this repository's, from

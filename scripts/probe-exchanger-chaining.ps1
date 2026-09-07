@@ -139,13 +139,13 @@ local VARIANTS = {
       { flow_direction = "input-output", direction = defines.direction.south, position = { -1, 7 } },
   } },
 
-  -- THE SHAPE #275 DECIDES, used by the row-of-eight section rather than by the pair table above.
+  -- THE SHAPE #275 DECIDED, used by the row-of-eight section rather than by the pair table above.
   --
-  -- Declared in THIS machine's current frame on purpose. #275 flips the default orientation to
-  -- fifteen wide by five tall with energy on the north long face; that is a presentation change and
-  -- the topology is identical, so the shipped 5x15 frame measures the same machine with no
-  -- collision box to rotate. Read the pair off against each other: energy on the long face plus
-  -- both short ends, all input-output, and water moved OFF the short-end centre to Truls's
+  -- Declared in the pre-#275 frame like every other row here (see pre_275_frame below). #275 then
+  -- shipped the machine fifteen wide by five tall with energy on the north long face; that is a
+  -- presentation change and the topology is identical, so this frame measures the same machine with
+  -- no collision box to rotate. Read the pair off against each other: energy on the long face plus
+  -- both short-end tiles, all input-output, and water moved OFF the short-end centre to Truls's
   -- `_ e _ w _` so an energy tile has a place there.
   --
   -- It differs from chainprobe-all-io by the WATER positions and nothing else, which is what makes
@@ -163,13 +163,43 @@ local VARIANTS = {
     } },
 }
 
-local made = {}
-for _, v in ipairs(VARIANTS) do
-  local e = table.deepcopy(data.raw["boiler"]["rf-heat-exchanger"])
-  e.name = v.name
-  e.minable = { mining_time = 0.5, result = nil }
+
+-- THE FRAME EVERY COORDINATE IN THIS FILE IS DECLARED IN IS THE ONE #275 REPLACED. Every position
+-- here is a five-wide-by-fifteen-tall tile centre with the energy face WEST, which is what the
+-- shipped machine was when these rows were written and their findings recorded. ADR 0031 turned the
+-- shipped rf-heat-exchanger fifteen wide by five tall with the energy face north, so a plain copy of
+-- it no longer fits these coordinates -- a connection outside the collision box is a prototype the
+-- engine refuses, and a probe that cannot load answers nothing. The frame is therefore pinned back
+-- onto the copy here, boxes and all three fluid boxes, so the probe still measures the shape its
+-- research note describes. IT MEASURES THAT SHAPE, NOT THE SHIPPED ONE: rebuilding the rows on the
+-- shipped frame is a consequence ADR 0031 lists, and scripts/check-hc.ps1's plant section is the
+-- gate on the shipped geometry. The rendered 15x5 sheets are left on it and draw wrong; a probe
+-- does not look.
+local function pre_275_frame(e)
+  e.collision_box = { { -2.25, -7.25 }, { 2.25, 7.25 } }
+  e.selection_box = { { -2.5, -7.5 }, { 2.5, 7.5 } }
+  e.fluid_box = table.deepcopy(e.fluid_box)
+  e.fluid_box.pipe_connections = {
+    { flow_direction = "input-output", direction = defines.direction.north, position = { 0, -7 } },
+    { flow_direction = "input-output", direction = defines.direction.south, position = { 0, 7 } },
+  }
+  e.output_fluid_box = table.deepcopy(e.output_fluid_box)
+  e.output_fluid_box.pipe_connections = {
+    { flow_direction = "output", direction = defines.direction.east, position = { 2, 0 } },
+  }
   e.energy_source = table.deepcopy(e.energy_source)
   e.energy_source.fluid_box = table.deepcopy(e.energy_source.fluid_box)
+  e.energy_source.fluid_box.pipe_connections = {
+    { flow_direction = "input", direction = defines.direction.west, position = { -2, 0 } },
+  }
+  return e
+end
+
+local made = {}
+for _, v in ipairs(VARIANTS) do
+  local e = pre_275_frame(table.deepcopy(data.raw["boiler"]["rf-heat-exchanger"]))
+  e.name = v.name
+  e.minable = { mining_time = 0.5, result = nil }
   e.energy_source.fluid_box.pipe_connections = v.conns
   if v.water then
     e.fluid_box = table.deepcopy(e.fluid_box)

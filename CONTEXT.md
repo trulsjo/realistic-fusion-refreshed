@@ -308,11 +308,13 @@ can produce no such figure — a factory cannot be un-built.
 > because a decision fixes vocabulary, which is all this file does; the behaviour arrives with the
 > implementation. Remove this note when the energy categories ship.
 >
-> **The geometry it needs is decided too, as of 2026-09-07.**
+> **The geometry it needs is decided, and the neutronic side builds it (2026-09-07).**
 > [ADR 0031](docs/adr/0031-energy-bolts-along-a-long-face.md) settles which face bolts to what, which
 > ADR 0018's own item 4 could not — its coordinates were written for a machine three tiles by two.
-> Neither reactor sells energy on a face an exchanger can meet yet, so **bolted** and **chained**
-> below name a shape nothing in the tree builds. #275 and #87 are where it arrives.
+> Since #275 `rf-reactor` sells energy north and south, `rf-heat-exchanger` bolts along its north
+> long face and chains through its short ends, and `scripts/check-hc.ps1`'s plant section asserts
+> the shape. So **bolted** and **chained** below name something the tree builds — with no category
+> on it yet. The aneutronic side is #87, and `rf-hc-exchanger` is #276.
 
 **Contained** — of a fluid: its boxes carry a connection category of their own, so nothing a player
 can build joins them but plumbing that shares it. Three fluids take a category of their own —
