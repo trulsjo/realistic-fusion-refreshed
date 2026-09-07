@@ -29,13 +29,13 @@
   ],
   "frame": {
     "east": [
-      1344,
-      704
+      704,
+      1344
     ],
     "margin_tiles": 3.0,
     "north": [
-      704,
-      1344
+      1344,
+      704
     ],
     "pixels_per_tile": 64,
     "scale": 0.5,
@@ -44,19 +44,19 @@
       0
     ],
     "tiles": [
-      5,
-      15
+      15,
+      5
     ]
   },
   "geometry": {
     "collision_box": [
       [
-        -2.25,
-        -7.25
+        -7.25,
+        -2.25
       ],
       [
-        2.25,
-        7.25
+        7.25,
+        2.25
       ]
     ],
     "connections": [
@@ -65,24 +65,37 @@
         "connection_category": null,
         "connection_type": "normal",
         "direction": "west",
-        "flow": "input",
+        "flow": "input-output",
         "fluid": "rf-reactor-energy",
         "position": [
-          -2,
-          0
+          -7,
+          -1
         ],
         "production_type": "input"
       },
       {
-        "box": "fluid_box",
+        "box": "energy_source.fluid_box",
         "connection_category": null,
         "connection_type": "normal",
         "direction": "north",
         "flow": "input-output",
-        "fluid": "water",
+        "fluid": "rf-reactor-energy",
         "position": [
           0,
-          -7
+          -2
+        ],
+        "production_type": "input"
+      },
+      {
+        "box": "energy_source.fluid_box",
+        "connection_category": null,
+        "connection_type": "normal",
+        "direction": "east",
+        "flow": "input-output",
+        "fluid": "rf-reactor-energy",
+        "position": [
+          7,
+          -1
         ],
         "production_type": "input"
       },
@@ -90,12 +103,25 @@
         "box": "fluid_box",
         "connection_category": null,
         "connection_type": "normal",
-        "direction": "south",
+        "direction": "west",
         "flow": "input-output",
         "fluid": "water",
         "position": [
-          0,
-          7
+          -7,
+          1
+        ],
+        "production_type": "input"
+      },
+      {
+        "box": "fluid_box",
+        "connection_category": null,
+        "connection_type": "normal",
+        "direction": "east",
+        "flow": "input-output",
+        "fluid": "water",
+        "position": [
+          7,
+          1
         ],
         "production_type": "input"
       },
@@ -103,12 +129,12 @@
         "box": "output_fluid_box",
         "connection_category": null,
         "connection_type": "normal",
-        "direction": "east",
+        "direction": "south",
         "flow": "output",
         "fluid": "steam",
         "position": [
-          2,
-          0
+          0,
+          2
         ],
         "production_type": "output"
       }
@@ -116,22 +142,22 @@
     "name": "rf-heat-exchanger",
     "selection_box": [
       [
-        -2.5,
-        -7.5
+        -7.5,
+        -2.5
       ],
       [
-        2.5,
-        7.5
+        7.5,
+        2.5
       ]
     ],
     "source": "--dump-data, Factorio 2.0.77; written by tools/extract-geometry.py",
     "tiles": [
-      5,
-      15
+      15,
+      5
     ],
     "type": "boiler"
   },
-  "geometry_sha256": "f2b002533a72bcf958e73d2b5f17b1da46dcbc5d2612986b12dd3f33fec143e3",
+  "geometry_sha256": "10698d3f1f97968e493f891c61c2cacc12d1bc560e3399709091f3cf71e8c937",
   "glow": true,
   "icon": {
     "centre": [
@@ -149,7 +175,7 @@
   },
   "machine": "heat-exchanger",
   "model": "models/heat-exchanger/heat-exchanger.blend",
-  "model_sha256": "3a0896b129fdcbe68c9e0d2722e050d02c7c976ac7d709ea02e818370eb00807",
+  "model_sha256": "35c18bc9d68006b2faf462abdde2d10a855448a613a01e3b214bc979fcbdd97f",
   "render": {
     "blender": "5.2.0 LTS",
     "device": "CPU",

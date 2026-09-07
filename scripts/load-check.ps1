@@ -161,6 +161,12 @@
     what a player would see. Python 3 on PATH is a requirement of this gate; a missing interpreter
     is a failure, not a skip.
 
+    AND THE SAME FOR EVERY MOCKUP (#275). The four machines without a model wear sheets drawn by
+    scripts/make-mockup-art.ps1 from a table of footprints and connection tiles in
+    scripts/mockup-machines.psd1, hand-copied from entities.lua. Every row of that table is held
+    against the loaded dump the same way: footprint in tiles, and the set of tiles its connections
+    stand on. Kind and label are not geometry and are not compared.
+
     It does NOT check locale coverage. Factorio's data stage loads a prototype with no locale
     entry without complaint; the omission only shows in game as "Unknown key". ADR 0010 singles
     that failure out, so it has its own check: scripts/locale-check.ps1. A pass here says nothing
@@ -244,16 +250,23 @@
     references cross a mod boundary, so there is now a seam for one to fall through.
 
 .PARAMETER SelfTest
-    Verify the check can fail. EIGHT halves, and the run prints each one numbered as it passes, so a
+    Verify the check can fail. NINE halves, and the run prints each one numbered as it passes, so a
     reader can count them against this list: the repo as it stands must pass; a mod carrying an
     invalid prototype must fail; a mod naming an icon file that does not exist must be caught; a
     mod that reassigns one of our containment categories must be caught; a mod that moves a
     pipe connection on a machine with rendered art must be caught; a mod that merely ADDS a
-    connection category to one must NOT be; a mod that REPLACES one must be; and a reactor whose
-    input_flow_limit cannot cover its confinement heating must be refused. The first is
+    connection category to one must NOT be; a mod that REPLACES one must be; a reactor whose
+    input_flow_limit cannot cover its confinement heating must be refused; and a mod that moves a
+    pipe connection on a machine wearing a MOCKUP must be caught. The first is
     required or the others prove nothing, since Factorio also exits non-zero when the repo is
-    genuinely broken. Halves three through seven are the ones Factorio exits 0 on, where the check
-    has to decide alone. Run this whenever the script changes.
+    genuinely broken. Halves three through seven and nine are the ones Factorio exits 0 on, where
+    the check has to decide alone. Run this whenever the script changes.
+
+    THE NINTH IS #275's, and it is the fifth again for the other kind of art. make-mockup-art.ps1
+    draws every mockup from a hand-copied table of footprints and connection tiles that, by its
+    own header, nothing checked against entities.lua. The table now lives in mockup-machines.psd1
+    and Test-MockupArt holds every row against the loaded dump; the canary slides the first
+    connection of the first machine in that table one tile along its edge and requires the row.
 
     THE EIGHTH IS #72's, and it is the odd one out: every other half is about another mod breaking
     our prototypes, where this is about a developer edit to our own. check_input_flow() replaced
@@ -634,6 +647,105 @@ function Test-RenderedArt {
     Write-Host "rendered art: all $($manifests.Count) manifest(s) agree with the live footprint, connections and recorded categories."
 }
 
+# The hand-copied table every mockup is drawn from, shared with make-mockup-art.ps1 (#275).
+$MOCKUP_TABLE = Join-Path $PSScriptRoot 'mockup-machines.psd1'
+
+function Get-MockupMachines {
+    <#  Every row of mockup-machines.psd1, in file order. The same list make-mockup-art.ps1 draws
+        from, read from the same file, so the gate and the picture cannot disagree about what a
+        mockup claims.  #>
+    return @((Import-PowerShellDataFile -Path $MOCKUP_TABLE).Machines)
+}
+
+function Get-MockupDisagreements {
+    <#  Where a mockup's row in the table and the live prototype disagree on the footprint or on the
+        tiles its connections stand on. One row per field per machine; empty means every mockup is
+        drawn where its pipes are.
+
+        THE SAME SHAPE AS Get-RenderDisagreements, AND THE SAME LIVE SIDE: the extractor, asked
+        against the loaded dump, so there is no second walk of the prototype to drift from the first.
+        What differs is the recorded side. A manifest records the geometry a render was built from, in
+        the extractor's own words; the mockup table is a hand-written list of X, Y, Width and Height
+        that the mockup script draws from and that nothing checked until #275 -- its own header said
+        so. Kind and Text are colour and lettering, not geometry, and are not compared.
+
+        Compared as tile SETS, not as lists: a mockup marks a square on a tile, so what it claims is
+        "a pipe goes here", and two connections on one tile would be one mark.  #>
+    param(
+        [Parameter(Mandatory)] [string] $DumpPath,
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [array] $Machines
+    )
+
+    $extractor = Join-Path $repoRoot 'tools/extract-geometry.py'
+    $rows = [System.Collections.Generic.List[object]]::new()
+    foreach ($m in $Machines) {
+        $name = "rf-$($m.Name)"
+        $lines = @(& python $extractor $name --dump $DumpPath --stdout 2>&1 | ForEach-Object { "$_" })
+        if ($LASTEXITCODE -ne 0) {
+            $rows.Add([pscustomobject]@{
+                Prototype = $name; Field = '(the live prototype)'
+                Recorded = "a row in $(Split-Path $MOCKUP_TABLE -Leaf)"
+                Live     = "extract-geometry.py exited $LASTEXITCODE`: $(($lines | Select-Object -Last 1))" })
+            continue
+        }
+        $live = ($lines -join "`n") | ConvertFrom-Json
+
+        $mineTiles  = "$($m.Width) x $($m.Height)"
+        $theirTiles = "$($live.tiles[0]) x $($live.tiles[1])"
+        if ($mineTiles -cne $theirTiles) {
+            $rows.Add([pscustomobject]@{
+                Prototype = $name; Field = 'tiles'; Recorded = $mineTiles; Live = $theirTiles })
+        }
+
+        $mineSet    = @($m.Connections    | ForEach-Object { "($($_.X), $($_.Y))" } | Sort-Object -Unique)
+        $theirSet   = @($live.connections | ForEach-Object { "($($_.position[0]), $($_.position[1]))" } | Sort-Object -Unique)
+        $onlyMine   = @($mineSet  | Where-Object { $_ -cnotin $theirSet })
+        $onlyTheirs = @($theirSet | Where-Object { $_ -cnotin $mineSet })
+        if ($onlyMine -or $onlyTheirs) {
+            $rows.Add([pscustomobject]@{
+                Prototype = $name; Field = 'connections'
+                Recorded = if ($onlyMine)   { $onlyMine   -join ', ' } else { '(nothing the live prototype lacks)' }
+                Live     = if ($onlyTheirs) { $onlyTheirs -join ', ' } else { '(nothing the mockup lacks)' } })
+        }
+    }
+    return $rows
+}
+
+function Test-MockupArt {
+    <#  The gate half of Get-MockupDisagreements: report, and exit non-zero on a disagreement.  #>
+    param([Parameter(Mandatory)] [string] $DumpPath)
+
+    # THE FLOOR, for the reason Test-RenderedArt has one: everything below passes by finding nothing,
+    # and a table that failed to import or lost its rows would read exactly like every mockup
+    # agreeing. Four machines wear one today; zero is an instrument fault, not a finding.
+    $machines = Get-MockupMachines
+    if (-not $machines) {
+        Write-Host ''
+        Write-Host "FAILED - mockup art: no machines in $MOCKUP_TABLE."
+        Write-Host '         Four machines have worn a mockup since ADR 0022; either the table moved or'
+        Write-Host '         this check has stopped reading it, and both would otherwise report a clean'
+        Write-Host '         pass over no mockup at all.'
+        exit 1
+    }
+
+    $rows = @(Get-MockupDisagreements -DumpPath $DumpPath -Machines $machines)
+    if ($rows) {
+        Write-Host ''
+        Write-Host "FAILED - mockup art: $($rows.Count) disagreement(s) between $(Split-Path $MOCKUP_TABLE -Leaf)"
+        Write-Host '         and the live prototype. The mockup is drawn from that table, so a socket or'
+        Write-Host '         the footprint is marked where the machine no longer has it and a player is'
+        Write-Host '         told a pipe goes somewhere it does not. Fix the table and rerun'
+        Write-Host '         scripts/make-mockup-art.ps1, or put the prototype back.'
+        foreach ($r in $rows) {
+            Write-Host "    $($r.Prototype)  $($r.Field)"
+            Write-Host "      table: $($r.Recorded)"
+            Write-Host "      live:  $($r.Live)"
+        }
+        exit 1
+    }
+    Write-Host "mockup art: all $($machines.Count) mockup(s) agree with the live footprint and connection tiles."
+}
+
 function Invoke-DataDump {
     <#  Dump the game with exactly $Mods enabled, and return the path of the dump kept aside for it.
 
@@ -1012,7 +1124,7 @@ try {
 
     if ($SelfTest) {
         # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
-        Write-Host 'self-test 1/8: the repo as it stands must load.'
+        Write-Host 'self-test 1/9: the repo as it stands must load.'
         $clean = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'clean'
         # Same pass criterion as a real run: exit 0 without a save is a failure there, so it must
         # be a failure here too, or -SelfTest could certify a check a plain run would reject.
@@ -1036,7 +1148,7 @@ try {
         'data:extend({{ type = "item", name = "rf-loadcheck-canary-item" }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 2/8: an invalid prototype must be rejected.'
+        Write-Host 'self-test 2/9: an invalid prototype must be rejected.'
         $broken = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'canary'
         if ($broken.Code -eq 0) {
             Write-Host ''
@@ -1055,7 +1167,7 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
   icon = D .. "no-such-icon" .. ".png", icon_size = 64 }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 3/8: a prototype naming a file that is not there must be caught.'
+        Write-Host 'self-test 3/9: a prototype naming a file that is not there must be caught.'
         $withCanary = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'assets'
         if ($withCanary.Code -ne 0) {
             Write-Host ''
@@ -1136,7 +1248,7 @@ data.raw.item["rf-loadcheck-canary-item"].order = victim' |
   icon = "__base__/graphics/icons/iron-plate.png", icon_size = 64 }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 4/8: a set reassigning one of our containment categories must be caught.'
+        Write-Host 'self-test 4/9: a set reassigning one of our containment categories must be caught.'
         $reassigned = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'contain'
         if ($reassigned.Code -ne 0) {
             Write-Host ''
@@ -1225,7 +1337,7 @@ if not slid then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 5/8: a machine whose rendered art no longer fits it must be caught."
+        Write-Host "self-test 5/9: a machine whose rendered art no longer fits it must be caught."
         $renderDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-loaded'
         $disagreements = @(Get-RenderDisagreements -DumpPath $renderDump -Manifests $renderManifests)
         $onVictim = @($disagreements | Where-Object { $_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connections' })
@@ -1298,7 +1410,7 @@ if not touched then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 6/8: another mod adding a connection category must NOT be reported."
+        Write-Host "self-test 6/9: another mod adding a connection category must NOT be reported."
         $coexistDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-coexist'
 
         # The canary reaching the GEOMETRY, proved rather than assumed. This half passes by finding
@@ -1371,7 +1483,7 @@ if not touched then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 7/8: another mod replacing a connection category must be caught."
+        Write-Host "self-test 7/9: another mod replacing a connection category must be caught."
         $replacedDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-replaced'
         $replacedRows = @(Get-RenderDisagreements -DumpPath $replacedDump -Manifests $renderManifests)
         $onCategories = @($replacedRows | Where-Object {
@@ -1421,7 +1533,7 @@ end
   source.input_flow_limit = "1W"
 end)()' | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host 'self-test 8/8: a reactor that can never be paid its heating must be refused.'
+        Write-Host 'self-test 8/9: a reactor that can never be paid its heating must be refused.'
         $starved = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'flow'
         if ($starved.Code -eq 0) {
             Write-Host ''
@@ -1441,13 +1553,87 @@ end)()' | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding
             exit 1
         }
 
+        # Half nine: a machine whose MOCKUP no longer fits it must be caught (#275). The render gate's
+        # twin for the other kind of art. The victim is the first machine in mockup-machines.psd1
+        # that has a connection -- read from the table, so it follows whatever wears a mockup -- and
+        # the canary slides that connection one tile along its edge towards the centre, for the same
+        # two reasons half five does: along keeps the prototype loadable, towards the centre keeps it
+        # on the footprint.
+        #
+        # The table records neither the box a connection belongs to nor its direction, so the canary
+        # walks every pipe_connections list in the prototype for the tile, and the edge is read off
+        # the table: a connection at x = +-(Width - 1) / 2 stands on a west or east edge and slides in
+        # y, anything else stands north or south and slides in x.
+        $mockupMachines = Get-MockupMachines
+        $mockupVictim = $mockupMachines | Where-Object { $_.Connections.Count -gt 0 } | Select-Object -First 1
+        if (-not $mockupVictim) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: no machine in $MOCKUP_TABLE has a connection to slide, so"
+            Write-Host '         half nine has no mockup to disagree with.'
+            exit 1
+        }
+        $mockupSlid = $mockupVictim.Connections[0]
+        $mockupName = "rf-$($mockupVictim.Name)"
+        $onSide     = [Math]::Abs($mockupSlid.X) -eq ($mockupVictim.Width - 1) / 2
+        $mAxis      = if ($onSide) { 2 } else { 1 }
+        $mNamed     = if ($mAxis -eq 1) { 'x' } else { 'y' }
+        $mCoord     = if ($mAxis -eq 1) { $mockupSlid.X } else { $mockupSlid.Y }
+        $mDelta     = if ($mCoord -le 0) { 1 } else { -1 }
+        @"
+local proto = data.raw["$($mockupVictim.Prototype)"]["$mockupName"]
+local function walk(node, seen)
+  if type(node) ~= "table" or seen[node] then return false end
+  seen[node] = true
+  local slid = false
+  if node.pipe_connections then
+    for _, c in pairs(node.pipe_connections) do
+      local p = c.position
+      if p and (p[1] or p.x) == $($mockupSlid.X) and (p[2] or p.y) == $($mockupSlid.Y) then
+        if p[$mAxis] then p[$mAxis] = p[$mAxis] + ($mDelta) else p.$mNamed = p.$mNamed + ($mDelta) end
+        slid = true
+      end
+    end
+  end
+  for _, v in pairs(node) do slid = walk(v, seen) or slid end
+  return slid
+end
+if not walk(proto, {}) then
+  error("load-check canary: no connection at ($($mockupSlid.X), $($mockupSlid.Y)) on $mockupName to slide, so half nine would prove nothing")
+end
+"@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
+
+        Write-Host 'self-test 9/9: a machine whose mockup no longer fits it must be caught.'
+        $mockupDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'mockup-loaded'
+        $mockupRows = @(Get-MockupDisagreements -DumpPath $mockupDump -Machines $mockupMachines)
+        $onMockup = @($mockupRows | Where-Object { $_.Prototype -eq $mockupName -and $_.Field -eq 'connections' })
+        if (-not $onMockup) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the canary slid a connection on $mockupName and the mockup"
+            Write-Host '         check did NOT report a disagreement on its connections. The mockup would'
+            Write-Host '         keep marking a pipe on a tile the machine no longer has one on.'
+            if ($mockupRows) {
+                Write-Host "         It reported $($mockupRows.Count) other row(s):"
+                foreach ($d in $mockupRows) { Write-Host "           $($d.Prototype)  $($d.Field)" }
+            }
+            exit 1
+        }
+        # Only that machine's connections may disagree: the canary touched nothing else.
+        $mockupStray = @($mockupRows | Where-Object { -not ($_.Prototype -eq $mockupName -and $_.Field -eq 'connections') })
+        if ($mockupStray) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the canary slid one connection but the mockup check also reported:"
+            foreach ($d in $mockupStray) { Write-Host "           $($d.Prototype)  $($d.Field)" }
+            exit 1
+        }
+
         Write-Host ''
         Write-Host 'OK - self-test passed: clean repo loads, invalid prototype rejected'
         Write-Host "     (exit $($broken.Code)), missing asset caught, a reassigned containment"
         Write-Host "     category caught by name on $victim, a slid connection caught on"
         Write-Host "     $($renderVictim.name)'s rendered art, an added category tolerated on it,"
-        Write-Host '     a replaced one caught by name, and a reactor whose input_flow_limit'
-        Write-Host '     cannot cover its heating refused by check_input_flow().'
+        Write-Host '     a replaced one caught by name, a reactor whose input_flow_limit'
+        Write-Host '     cannot cover its heating refused by check_input_flow(), and a slid'
+        Write-Host "     connection caught on $mockupName's mockup."
         exit 0
     }
 
@@ -1497,6 +1683,11 @@ end)()' | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding
         # not hide it. Reads the loaded dump, so a set moving our connection fails it (#250).
         Test-RenderedArt -DumpPath $loadedDump
 
+        # The mockups' hand-copied table, held against the same dump (#275). Beside the render gate
+        # because it is the same question asked of the other kind of art: is the picture drawn where
+        # the pipes are.
+        Test-MockupArt -DumpPath $loadedDump
+
         Test-Assets -DumpPath $loadedDump
     }
 
@@ -1516,7 +1707,7 @@ end)()' | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding
     $how = if ($FromZips) { 'built zips' } else { 'junctioned repo directories' }
     Write-Host "OK - prototypes valid, every referenced asset present, map created, the"
     Write-Host "     simulation's twelve load-time invariants hold, containment survived the"
-    Write-Host "     load and every render agrees with its machine, loading from $how."
+    Write-Host "     load and every render and mockup agrees with its machine, loading from $how."
     exit 0
 }
 finally {

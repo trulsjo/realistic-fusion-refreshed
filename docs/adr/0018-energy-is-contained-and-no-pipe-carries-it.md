@@ -202,35 +202,31 @@ face.**
    tier's whole mechanic rather than bookkeeping", and `CONTEXT.md` calls direct energy conversion
    "a different route, not a better one". This puts both statements in the geometry.
 
-4. **`rf-heat-exchanger`'s energy box becomes `input-output` on three connections** — south
-   `{0, 0.5}` plus west `{-1, -0.5}` and east `{1, -0.5}` — so an exchanger bolts onto a reactor and
-   chains along a row. `production_type` stays `"input"`: what the machine *does* with the fluid is
-   unchanged, and `flow_direction` is what decides whether a connection will join another machine's.
+4. **`rf-heat-exchanger`'s energy box becomes `input-output` on three connections** — north
+   `{0, -2}` plus west `{-7, -1}` and east `{7, -1}`, on a machine declared fifteen wide by five
+   tall — so an exchanger bolts onto a reactor's south face and chains along a row through its short
+   ends. `production_type` stays `"input"`: what the machine *does* with the fluid is unchanged, and
+   `flow_direction` is what decides whether a connection will join another machine's.
 
-   **Three connections rather than two is forced, not chosen.** On a 3×2 entity the tile centres are
-   x ∈ {−1, 0, 1} and y ∈ {−0.5, 0.5}, and four of those tiles are already taken — water at west
-   `{-1, 0.5}` and east `{1, 0.5}`, steam at north `{0, -0.5}`, the intake at south `{0, 0.5}`. Two
-   connections on one tile will not load. So west `{-1, -0.5}` and east `{1, -0.5}` are the only free
-   tiles facing sideways, and south is still needed to meet a north-facing reactor output.
-   `rf-hc-exchanger` has a seven-tile face and more room, but the same reasoning governs it.
+   **Amended by [ADR 0031](0031-energy-bolts-along-a-long-face.md), 2026-09-07, and implemented by
+   [#275](https://github.com/trulsjo/realistic-fusion-refreshed/issues/275).** As first written this
+   item gave south `{0, 0.5}`, west `{-1, -0.5}` and east `{1, -0.5}`, and argued that three
+   connections were *forced* because four of a 3×2's six tiles were already taken. Both were true of
+   the 3×2 machine and of nothing since: [ADR 0022](0022-footprints-follow-the-original-mod.md) made
+   it 5×15 on 2026-08-24, and
+   [#111](https://github.com/trulsjo/realistic-fusion-refreshed/issues/111) recorded on 2026-09-06
+   that the item was unimplemented and its coordinates dead. ADR 0031 decided the geometry on the
+   shipped footprint — energy bolts along a long face, both reactors sell it north **and south**,
+   exchangers chain through their short ends — and the coordinates above are its. Three connections
+   is still the count, now by choice rather than by tile arithmetic: one to meet the reactor, and
+   one on each short end for the row. `rf-hc-exchanger` follows in
+   [#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276).
 
-   > **Those three coordinates are dead, and this item is unimplemented (#111, 2026-09-06.)**
-   > [ADR 0022](0022-footprints-follow-the-original-mod.md) made the machine **5×15**, so the tile
-   > centres are x ∈ {−2 … 2} and y ∈ {−7 … 7} and the reasoning above no longer describes anything.
-   > On today's shape the energy intake is the west **long** face `{-2, 0}`, steam is the east long
-   > face `{2, 0}`, and water takes both short ends `{0, ±7}`; the free tiles a column would chain
-   > through are `{-1, -7}` and `{-1, 7}`. Both probes build that shape and both confirm it chains.
-   >
-   > The machine in the tree still declares **one** energy connection, `flow_direction = "input"`,
-   > west `{-2, 0}` (`rf-heat-exchanger`'s `energy_source.fluid_box` in `prototypes/entities.lua`), so it neither bolts onto `rf-reactor`'s
-   > north-facing output nor chains. **What the intent above should become on a 5×15 is a decision
-   > and it is Truls's** — #111 only records that the gap exists.
-   >
-   > **Item 2 waits on it.** "No pipe entity carries either, and none is added" rests on exchangers
-   > bolting onto a reactor face and chaining, and item 4 is how the neutronic tier does that. Until
-   > item 4 is closed on the current shape, applying item 1 to these boxes would leave reactor
-   > energy no way at all to reach an exchanger — categorised at both ends, with no pipe and no
-   > geometry that meets. Items 1, 3, 5 and 6 are about categories and vessels and are unaffected.
+   **Item 2 no longer waits on this.** A reactor, an exchanger bolted to its south face and a second
+   chained off the first's east end are built and asserted by `scripts/check-hc.ps1`'s plant
+   section, with no pipe carrying reactor energy anywhere in it. What still waits is item 1 itself:
+   no energy box carries a category yet, and that is
+   [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86).
 
 5. **`rf-aneutronic-composite-tank` becomes a helium-3 vessel only.** Its energy-buffering role goes,
    because a categorised energy fluid cannot enter it.
@@ -256,8 +252,8 @@ face.**
   ([#32](https://github.com/trulsjo/realistic-fusion-refreshed/issues/32)).
 
   **The escape hatch this names is gone, and the conclusion survives anyway (#111).** Ringing was a
-  3×2 machine's option. `rf-reactor` declares one energy output, north `{0, -7}`, so exactly one
-  machine can bolt to it whatever size it is — if chaining had failed, the alternative would have
+  3×2 machine's option. `rf-reactor` declared one energy output, north `{0, -7}` (two since #275,
+  north and south), so one machine can bolt to each whatever size it is — if chaining had failed, the alternative would have
   been a pipe carrying reactor energy, which is what
   [#258](https://github.com/trulsjo/realistic-fusion-refreshed/issues/258) asks about. Chaining does
   not fail, so that question stays hypothetical.

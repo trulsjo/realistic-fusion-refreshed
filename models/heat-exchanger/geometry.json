@@ -3,53 +3,66 @@
   "type": "boiler",
   "collision_box": [
     [
-      -2.25,
-      -7.25
+      -7.25,
+      -2.25
     ],
     [
-      2.25,
-      7.25
+      7.25,
+      2.25
     ]
   ],
   "selection_box": [
     [
-      -2.5,
-      -7.5
+      -7.5,
+      -2.5
     ],
     [
-      2.5,
-      7.5
+      7.5,
+      2.5
     ]
   ],
   "tiles": [
-    5,
-    15
+    15,
+    5
   ],
   "connections": [
     {
       "box": "energy_source.fluid_box",
       "production_type": "input",
       "fluid": "rf-reactor-energy",
-      "flow": "input",
+      "flow": "input-output",
       "connection_type": "normal",
       "connection_category": null,
       "direction": "west",
       "position": [
-        -2,
-        0
+        -7,
+        -1
       ]
     },
     {
-      "box": "fluid_box",
+      "box": "energy_source.fluid_box",
       "production_type": "input",
-      "fluid": "water",
+      "fluid": "rf-reactor-energy",
       "flow": "input-output",
       "connection_type": "normal",
       "connection_category": null,
       "direction": "north",
       "position": [
         0,
-        -7
+        -2
+      ]
+    },
+    {
+      "box": "energy_source.fluid_box",
+      "production_type": "input",
+      "fluid": "rf-reactor-energy",
+      "flow": "input-output",
+      "connection_type": "normal",
+      "connection_category": null,
+      "direction": "east",
+      "position": [
+        7,
+        -1
       ]
     },
     {
@@ -59,10 +72,23 @@
       "flow": "input-output",
       "connection_type": "normal",
       "connection_category": null,
-      "direction": "south",
+      "direction": "west",
       "position": [
-        0,
-        7
+        -7,
+        1
+      ]
+    },
+    {
+      "box": "fluid_box",
+      "production_type": "input",
+      "fluid": "water",
+      "flow": "input-output",
+      "connection_type": "normal",
+      "connection_category": null,
+      "direction": "east",
+      "position": [
+        7,
+        1
       ]
     },
     {
@@ -72,10 +98,10 @@
       "flow": "output",
       "connection_type": "normal",
       "connection_category": null,
-      "direction": "east",
+      "direction": "south",
       "position": [
-        2,
-        0
+        0,
+        2
       ]
     }
   ],

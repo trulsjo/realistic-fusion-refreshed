@@ -217,8 +217,40 @@ end
 --- `category` is passed in rather than fixed so the bare-string and one-element-list forms can be
 --- built from one function. If the engine honours one form and not the other, that difference is
 --- the finding, and a rig that hard-coded either would have reported the wrong negative.
+
+-- THE FRAME EVERY COORDINATE IN THIS FILE IS DECLARED IN IS THE ONE #275 REPLACED. Every position
+-- here is a five-wide-by-fifteen-tall tile centre with the energy face WEST, which is what the
+-- shipped machine was when these rows were written and their findings recorded. ADR 0031 turned the
+-- shipped rf-heat-exchanger fifteen wide by five tall with the energy face north, so a plain copy of
+-- it no longer fits these coordinates -- a connection outside the collision box is a prototype the
+-- engine refuses, and a probe that cannot load answers nothing. The frame is therefore pinned back
+-- onto the copy here, boxes and all three fluid boxes, so the probe still measures the shape its
+-- research note describes. IT MEASURES THAT SHAPE, NOT THE SHIPPED ONE: rebuilding the rows on the
+-- shipped frame is a consequence ADR 0031 lists, and scripts/check-hc.ps1's plant section is the
+-- gate on the shipped geometry. The rendered 15x5 sheets are left on it and draw wrong; a probe
+-- does not look.
+local function pre_275_frame(e)
+  e.collision_box = { { -2.25, -7.25 }, { 2.25, 7.25 } }
+  e.selection_box = { { -2.5, -7.5 }, { 2.5, 7.5 } }
+  e.fluid_box = table.deepcopy(e.fluid_box)
+  e.fluid_box.pipe_connections = {
+    { flow_direction = "input-output", direction = defines.direction.north, position = { 0, -7 } },
+    { flow_direction = "input-output", direction = defines.direction.south, position = { 0, 7 } },
+  }
+  e.output_fluid_box = table.deepcopy(e.output_fluid_box)
+  e.output_fluid_box.pipe_connections = {
+    { flow_direction = "output", direction = defines.direction.east, position = { 2, 0 } },
+  }
+  e.energy_source = table.deepcopy(e.energy_source)
+  e.energy_source.fluid_box = table.deepcopy(e.energy_source.fluid_box)
+  e.energy_source.fluid_box.pipe_connections = {
+    { flow_direction = "input", direction = defines.direction.west, position = { -2, 0 } },
+  }
+  return e
+end
+
 local function categorised(name, category)
-  local e = bare(table.deepcopy(exchanger), name)
+  local e = bare(pre_275_frame(table.deepcopy(exchanger)), name)
   for _, c in ipairs(e.energy_source.fluid_box.pipe_connections) do
     c.connection_category = category
   end
@@ -546,9 +578,11 @@ end
 
 --- One refuse-or-accept row: an exchanger with a single pipe on the tile its energy intake points
 --- at, and nothing else touching that box.
-local function offer(surface, force, label, exchanger_name, pipe_name, at)
-  -- nil rather than "south": whichever face the shipped machine takes its energy on. See above.
-  local e = place_facing(surface, force, exchanger_name, ENERGY, nil,
+local function offer(surface, force, label, exchanger_name, pipe_name, at, side)
+  -- nil for the variants: whichever face the one-connection frame takes its energy on. See above.
+  -- The SHIPPED rf-heat-exchanger has had three energy connections since #275, so its row has to
+  -- name the face, or place_facing rightly refuses to guess.
+  local e = place_facing(surface, force, exchanger_name, ENERGY, side,
     { x = at[1], y = at[2] }, { at[1], at[2] - 20 })
   local pipe = must(surface.create_entity({ name = pipe_name, position = at, force = force }),
     pipe_name .. " for " .. label)
@@ -565,6 +599,15 @@ script.on_init(function()
   surface.request_to_generate_chunks({ 0, 0 }, 12)
   surface.force_generate_chunk_requests()
 
+  -- AND CLEAR WHAT STANDS ON THE GROUND, for the reason probe-exchanger-chaining.ps1's row section
+  -- gives: a --create map is seeded afresh every run, and unbound() skips a target tile something
+  -- stands on -- so a tree on one row's steam target reads as "all faces taken" and the rig dies
+  -- during map creation, on a row that changed nothing. Seen twice in three runs on 2026-09-07,
+  -- on the list/refuse row both times. The area covers every row this file places, with margin.
+  for _, e in pairs(surface.find_entities_filtered({ area = { { -70, -50 }, { 160, 90 } } })) do
+    if e.type ~= "character" then e.destroy() end
+  end
+
   -- Beside the bolt row rather than off in a corner. The reactor spans x [-7, 8] and y [53, 68], so
   -- a substation at (14, 60) supplies x [5, 23] and y [51, 69] -- overlapping the reactor's eastern
   -- columns without colliding with it. The offered rows need nothing: a boiler with a FLUID energy
@@ -579,14 +622,16 @@ script.on_init(function()
   power(surface, force, { 75, 60 })
 
   storage.offers = {}
-  local function add(label, exchanger_name, pipe_name, at)
-    storage.offers[#storage.offers + 1] = offer(surface, force, label, exchanger_name, pipe_name, at)
+  local function add(label, exchanger_name, pipe_name, at, side)
+    storage.offers[#storage.offers + 1] = offer(surface, force, label, exchanger_name, pipe_name, at, side)
   end
 
   -- The calibration row first, and deliberately so: it uses the SHIPPED exchanger and an ordinary
   -- pipe, which is what the mod does today, so it must read "joins" and "carries". Everything below
   -- is only meaningful relative to it.
-  add("control",      "rf-heat-exchanger",        ORDINARY,    { 0.5, 0.5 })
+  -- "north": the shipped machine's reactor-facing energy connection (ADR 0031). Its two short-end
+  -- connections would answer the same question; one face is enough for a pipe to be offered to.
+  add("control",      "rf-heat-exchanger",        ORDINARY,    { 0.5, 0.5 }, "north")
   add("str/refuse",   "rf-probe-exchanger-str",   ORDINARY,    { 20.5, 0.5 })
   add("str/accept",   "rf-probe-exchanger-str",   CATEGORISED, { 40.5, 0.5 })
   add("list/refuse",  "rf-probe-exchanger-list",  ORDINARY,    { 60.5, 0.5 })

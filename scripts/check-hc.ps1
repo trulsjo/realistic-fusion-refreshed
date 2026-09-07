@@ -1,7 +1,9 @@
 <#
 .SYNOPSIS
     Checks that the high-capacity steam pair delivers what it declares, and that it is ten times the
-    ordinary pair measured rather than asserted. Discharges #32.
+    ordinary pair measured rather than asserted. Discharges #32. Since #275 it also builds the
+    neutronic plant the way a player does -- exchangers BOLTED to a reactor and CHAINED to each other,
+    no pipe carrying reactor energy -- and asserts that energy, water and steam all arrive.
 
 .DESCRIPTION
     THE FAILURE THIS RIG EXISTS FOR is silent and is one field wide.
@@ -30,6 +32,17 @@
       chain       An rf-hc-exchanger with an rf-hc-turbine directly on its steam outlet and nothing
                   between them, which is the pair as a player builds it. It must produce power from
                   real exchanger steam rather than from an infinity pipe.
+      plant       The neutronic side as ADR 0031 says a player builds it (#275): an rf-reactor, an
+                  rf-heat-exchanger BOLTED flush onto its south face with no pipe between them, a
+                  second exchanger CHAINED off the first's short end, an rf-hc-turbine on each
+                  exchanger's steam outlet, and ONE water feed at the row's free end. Energy has to
+                  reach the second machine through two bolted joints and water through one. Every
+                  position is computed from the prototypes' own connection geometry, so a moved
+                  connection fails this rather than silently building a different plant. The
+                  reactor is not lit -- its output box is refilled by script every tick, the way
+                  probe-energy-containment.ps1's bolt rows do -- because this asks about the joints
+                  and check-d-t.ps1 owns ignition. A control exchanger joined to nothing must hold
+                  no energy.
 
     The technology gate and the prerequisite closure are checked off the force's own tables before
     anything is researched.
@@ -153,6 +166,11 @@ local function feed(surface, force, entity, fluid, temperature)
   return index
 end
 
+--- Every infinity pipe standing in `area`.
+local function surface_pipes(area)
+  return game.surfaces[1].find_entities_filtered({ name = "infinity-pipe", area = area })
+end
+
 --- A substation and a load. The load matters: a generator with nothing drawing from it throttles
 --- itself back, so measuring output against an idle network measures the network.
 local function power(surface, force, at, draw)
@@ -165,6 +183,47 @@ local function power(surface, force, at, draw)
   eei.power_production = 0
   eei.power_usage = draw
   return pole
+end
+
+--- Which way a runtime connection faces, read off the tile it targets rather than remembered.
+local function facing(connection)
+  local dx = connection.target_position.x - connection.position.x
+  local dy = connection.target_position.y - connection.position.y
+  if dy < 0 then return "north" elseif dy > 0 then return "south" elseif dx < 0 then return "west" end
+  return "east"
+end
+
+--- Place `name` so that its connection on the box filtered to `fluid`, facing `side`, STANDS ON
+--- `tile` -- which is the other machine's target_position. That is the bolt arithmetic ADR 0018's
+--- Consequences call a trap: a pipe run aligns a connection's target onto the pipe's tile, a bolt
+--- aligns one machine's connection TILE onto the other's target. Align target against target and
+--- the two sit one tile clear pointing at the same empty ground, indistinguishable from a refusal.
+---
+--- The machine is placed once as a probe at `seed`, asked where that connection is relative to
+--- itself, destroyed, and placed again by the difference -- bench-mod-links.ps1's place_facing,
+--- for the same reason (#49): a remembered offset is a hostage to the next prototype edit.
+local function bolt(surface, force, name, fluid, side, tile, seed)
+  local probe = must(surface.create_entity({ name = name, position = seed, force = force }), "probe " .. name)
+  local index = box_of(probe, fluid)
+  if not index then error(name .. " has no box filtered to " .. fluid) end
+  local found
+  for _, c in pairs(probe.fluidbox.get_pipe_connections(index)) do
+    if facing(c) == side then found = c end
+  end
+  if not found then error(name .. " has no " .. side .. "-facing " .. fluid .. " connection") end
+  local off = { x = found.position.x - probe.position.x, y = found.position.y - probe.position.y }
+  probe.destroy()
+  return must(surface.create_entity({
+    name = name, position = { tile.x - off.x, tile.y - off.y }, force = force,
+  }), name .. " bolted at " .. (tile.x - off.x) .. "," .. (tile.y - off.y))
+end
+
+--- The connection of `entity`'s box on `fluid` that faces `side`, or nil.
+local function connection_facing(entity, fluid, side)
+  for _, c in pairs(entity.fluidbox.get_pipe_connections(box_of(entity, fluid))) do
+    if facing(c) == side then return c end
+  end
+  return nil
 end
 
 script.on_init(function()
@@ -215,11 +274,11 @@ script.on_init(function()
   surface.request_to_generate_chunks({ 0, 0 }, 10)
   surface.force_generate_chunk_requests()
   local tiles = {}
-  for x = -40, 90 do
+  for x = -40, 150 do
     for y = -30, 70 do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
   end
   surface.set_tiles(tiles)
-  for _, e in pairs(surface.find_entities_filtered({ area = { { -40, -30 }, { 90, 70 } } })) do
+  for _, e in pairs(surface.find_entities_filtered({ area = { { -40, -30 }, { 150, 70 } } })) do
     if e.type ~= "character" then e.destroy() end
   end
 
@@ -280,6 +339,64 @@ script.on_init(function()
   }), HC_TURBINE)
   local chain_pole = power(surface, force, { 78, 40 }, 500e6)
 
+  -- ------------------------------------------------------------------ the plant, bolted and chained
+  --
+  -- THE SHAPE A PLAYER BUILDS ON THE NEUTRONIC SIDE (ADR 0031, #275). Reactor energy sells north and
+  -- south; an rf-heat-exchanger stands south of the reactor with its north energy face flush against
+  -- it, a second one chains off the first's east short end, and each vents steam south into a
+  -- turbine. No pipe carries reactor energy anywhere in this section, and that is asserted by
+  -- counting pipes rather than claimed. The row is fed water at ONE end only: the first machine's
+  -- west water connection. Its east one is consumed by the joint with the second machine, whose own
+  -- west water connection stands on the same tile, so water for the second machine has to cross the
+  -- row the same way energy does. That is what "reachable" means in CONTEXT.md.
+  --
+  -- rf-hc-turbine rather than a vanilla one, so the exchanger is drained flat out: 40 MW of steam
+  -- into a 58 MW turbine leaves the boiler `working`, where one 5.8 MW vanilla turbine would leave
+  -- it `full_output` most ticks and the status assertion would flicker.
+  --
+  -- The reactor is a shipped rf-reactor, unlit. control.lua never hears of it (script-built, no
+  -- event raised), so nothing drains or fills its boxes but the on_tick below, which refills the
+  -- output box to its full 1000 every tick. That is the same instrument probe-energy-containment.ps1
+  -- uses for its bolt rows, and it is deliberate: this section asks whether the JOINTS carry, not
+  -- whether the reactor can be lit, which check-d-t.ps1 owns.
+  local reactor = must(surface.create_entity({
+    name = "rf-reactor", position = { 110.5, 20.5 }, force = force,
+  }), "rf-reactor")
+  local reactor_south = connection_facing(reactor, ENERGY, "south")
+  if not reactor_south then error("rf-reactor has no south-facing energy output; ADR 0031 says it must") end
+
+  local first = bolt(surface, force, EXCHANGER, ENERGY, "north", reactor_south.target_position, { 110.5, 60.5 })
+  local first_east = connection_facing(first, ENERGY, "east")
+  if not first_east then error(EXCHANGER .. " has no east-facing energy connection to chain through") end
+  local second = bolt(surface, force, EXCHANGER, ENERGY, "west", first_east.target_position, { 110.5, 60.5 })
+
+  -- One water feed, on the row's free west end. Nothing on the east end: the row has to serve it.
+  local first_water = connection_facing(first, "water", "west")
+  local water_feed = must(surface.create_entity({
+    name = "infinity-pipe", position = first_water.target_position, force = force,
+  }), "the row's one water feed")
+  water_feed.set_infinity_pipe_filter({ name = "water", percentage = 1, mode = "at-least" })
+
+  local first_turbine = bolt(surface, force, HC_TURBINE, "steam", "north",
+    connection_facing(first, "steam", "south").target_position, { 110.5, 60.5 })
+  local second_turbine = bolt(surface, force, HC_TURBINE, "steam", "north",
+    connection_facing(second, "steam", "south").target_position, { 110.5, 60.5 })
+  local plant_pole = power(surface, force, { 118, 40 }, 500e6)
+
+  -- THE CONTROL, and the row is worth nothing without it (#111): the same prototype, fed water the
+  -- same way, joined to no neighbour and given no energy. It must hold none and must not be working.
+  local aloof = must(surface.create_entity({
+    name = EXCHANGER, position = { 110.5, 60.5 }, force = force,
+  }), "control " .. EXCHANGER)
+  feed(surface, force, aloof, "water", nil)
+
+  storage.plant = {
+    reactor = reactor, first = first, second = second, aloof = aloof,
+    first_turbine = first_turbine, second_turbine = second_turbine, pole = plant_pole,
+    energy_box = box_of(reactor, ENERGY),
+    area = { { 100, 10 }, { 140, 68 } },
+  }
+
   storage.rig = {
     hc_turbine = hc_turbine, turbine = turbine,
     hc_exchanger = hc_exchanger, exchanger = exchanger,
@@ -294,6 +411,12 @@ end)
 script.on_event(defines.events.on_tick, function()
   local r = storage.rig
   if not r then return end
+  -- The plant's reactor is unlit; its output box is the instrument. Full every tick, so what the
+  -- row holds is bounded by the joints and never by the supply.
+  local p = storage.plant
+  if p and p.reactor.valid then
+    p.reactor.fluidbox[p.energy_box] = { name = ENERGY, amount = 1000 }
+  end
   for key, exchanger in pairs({ hc = r.hc_exchanger, ordinary = r.exchanger }) do
     local index = box_of(exchanger, "steam")
     local produced = index and exchanger.fluidbox[index]
@@ -399,6 +522,70 @@ script.on_nth_tick(CHECK_AT, function()
     "a turbine plumbed straight onto an exchanger runs on its steam",
     string.format("flow %.4g, status %s", chained, status))
 
+  -- ------------------------------------------------------------ the plant, bolted and chained
+  local p = storage.plant
+  local function status_of(entity)
+    for name, value in pairs(defines.entity_status) do
+      if value == entity.status then return name end
+    end
+    return tostring(entity.status)
+  end
+  local function held(entity, fluid)
+    local index = box_of(entity, fluid)
+    local contents = index and entity.fluidbox[index]
+    return contents and contents.amount or 0
+  end
+
+  -- BOLTED, in the runtime's own words: the reactor's south output connection has a target, and the
+  -- target's owner is the first exchanger. Two adjacent machines whose boxes do not meet have no
+  -- target at all, which is the false negative ADR 0018 warns about.
+  local south = connection_facing(p.reactor, ENERGY, "south")
+  local bolted = south and south.target and south.target.owner == p.first
+  record(bolted or false, "bolted: the reactor's south output joins the first exchanger's energy box, no pipe",
+    south and (south.target and ("target " .. south.target.owner.name) or "no target") or "no south connection")
+  local east = connection_facing(p.first, ENERGY, "east")
+  local chained = east and east.target and east.target.owner == p.second
+  record(chained or false, "chained: the first exchanger's east energy connection joins the second's west",
+    east and (east.target and ("target " .. east.target.owner.name) or "no target") or "no east connection")
+
+  record(p.first.status == defines.entity_status.working and p.second.status == defines.entity_status.working,
+    "both exchangers in the row are working",
+    string.format("first %s, second %s", status_of(p.first), status_of(p.second)))
+  record(held(p.second, ENERGY) > 0, "energy reaches the second exchanger through the joint",
+    string.format("first holds %.1f, second holds %.1f", held(p.first, ENERGY), held(p.second, ENERGY)))
+  record(held(p.second, "water") > 0, "and water reaches it from the row's one feed",
+    string.format("first holds %.1f, second holds %.1f", held(p.first, "water"), held(p.second, "water")))
+
+  -- Counted rather than reasoned, the way probe-exchanger-chaining.ps1 tallies its row: the plant's
+  -- area holds exactly one water pipe (the feed), the control's water pipes, and no pipe of any kind
+  -- carrying reactor energy.
+  local tally = { water = 0, energy = 0, other = 0 }
+  for _, pipe in pairs(surface_pipes(p.area)) do
+    local f = pipe.get_infinity_pipe_filter()
+    if f and f.name == "water" then tally.water = tally.water + 1
+    elseif f and f.name == ENERGY then tally.energy = tally.energy + 1
+    else tally.other = tally.other + 1 end
+  end
+  local control_water = #p.aloof.fluidbox.get_pipe_connections(box_of(p.aloof, "water"))
+  record(tally.energy == 0 and tally.other == 0 and tally.water == 1 + control_water,
+    "one water feed serves the row, and no pipe carries reactor energy",
+    string.format("water %d (row 1 + control %d), energy %d, other %d", tally.water, control_water, tally.energy, tally.other))
+
+  local plant_statistics = p.pole.electric_network_statistics
+  local plant_power = plant_statistics and plant_statistics.get_flow_count({
+    name = HC_TURBINE, category = "output",
+    precision_index = defines.flow_precision_index.one_minute,
+  }) or 0
+  record(plant_power > 0
+      and p.first_turbine.status == defines.entity_status.working
+      and p.second_turbine.status == defines.entity_status.working,
+    "a turbine on each exchanger runs on its steam",
+    string.format("flow %.4g, first %s, second %s", plant_power, status_of(p.first_turbine), status_of(p.second_turbine)))
+
+  record(held(p.aloof, ENERGY) == 0 and p.aloof.status ~= defines.entity_status.working,
+    "control: an exchanger joined to nothing holds no energy and is not working",
+    string.format("holds %.1f, status %s", held(p.aloof, ENERGY), status_of(p.aloof)))
+
   -- ------------------------------------------------------------ quality
   --
   -- The predecessor's author warned that "certain buildings in this mod get insanely overpowered
@@ -455,11 +642,12 @@ try {
 
     $verdict = $reported | Where-Object { $_ -match '^(PASS|FAIL): ' } | Select-Object -Last 1
     if (-not $verdict)              { throw 'the rig produced no verdict line.' }
-    if ($verdict -notmatch '^PASS') { throw "the high-capacity pair is broken: $verdict" }
+    if ($verdict -notmatch '^PASS') { throw "the high-capacity pair or the bolted plant is broken: $verdict" }
 
     Write-Host ''
-    Write-Host 'OK - both machines deliver what they declare, and each is ten times its ordinary'
-    Write-Host '     counterpart measured rather than asserted.'
+    Write-Host 'OK - both machines deliver what they declare, each is ten times its ordinary'
+    Write-Host '     counterpart measured rather than asserted, and the neutronic plant bolts and'
+    Write-Host '     chains with no pipe carrying reactor energy.'
 }
 finally {
     if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }

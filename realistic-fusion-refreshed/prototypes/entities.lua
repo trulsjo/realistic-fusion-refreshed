@@ -216,8 +216,10 @@ reactor.mode = "output-to-separate-pipe"
 -- building shaped 3x2 to repoint to, and cropping a nine-tile reactor down to three reads as
 -- exactly that. Both boxes are K2's own, so the sprite lands where it was drawn to land.
 --
--- The heat exchanger below keeps the vanilla 3x2 shape it always had. That is the point: the two
--- were the same sprite in two tints and could not be told apart on the ground.
+-- The heat exchanger below kept the vanilla 3x2 shape when this was written, and that was the
+-- point: the two were the same sprite in two tints and could not be told apart on the ground. It is
+-- fifteen by five on its own rendered art now (ADR 0022, ADR 0031), and the pair is told apart by
+-- the drawing rather than by the size.
 reactor.collision_box = { { -7.25, -7.25 }, { 7.25, 7.25 } }
 reactor.selection_box = { { -7.5, -7.5 }, { 7.5, 7.5 } }
 -- Derived from K2's own prototype and LGPLv3, which is why it lives in the graphics directory and
@@ -285,7 +287,7 @@ local covers = table.deepcopy(reactor.fluid_box.pipe_covers)
 -- Both boxes connect at the edge of the new footprint rather than the old one. Whole numbers
 -- because fifteen is odd: the tile centres of a 15x15 entity sit on integers, where the 3x2 it
 -- replaced had them on halves. West and east still both take plasma, which is what lets a run of
--- rf-pipe feed a row of reactors from one pool (ADR 0011), and the energy still leaves north.
+-- rf-pipe feed a row of reactors from one pool (ADR 0011), and the energy leaves north AND south.
 reactor.fluid_box = {
   production_type = "input-output",
   volume = 1000,
@@ -315,12 +317,25 @@ reactor.fluid_box = {
 -- below is deliberately not: reactor energy is an ordinary fluid and a player plumbs it with
 -- ordinary pipes.
 contain(reactor.fluid_box, PLASMA_CATEGORY)
+-- ENERGY SELLS NORTH AND SOUTH, ONE CONNECTION PER FACE (ADR 0031, #275). A heat exchanger bolts
+-- its energy face flush onto one of these with no pipe between them, and a row chains off it
+-- along the reactor's face -- which is what "no pipe carries reactor energy" (ADR 0018 item 2)
+-- needs to be buildable at all. Two faces rather than one so a lit D-T reactor's eight exchangers
+-- make two rows of four, sixty tiles each, instead of one row of eight at a hundred and twenty.
+--
+-- Not east or west: those are plasma, and freeing one would spend ADR 0011's shared pool. The
+-- south socket is drawn by pipe_covers, the same as the north one has always been.
+--
+-- One connection per face on purpose. More inlets down a face is a throughput change -- #47
+-- measured throughput as near linear in connection count -- and #227 still owns how much one
+-- exchanger should drain. Deferred, not rejected (ADR 0031 item 6).
 reactor.output_fluid_box = {
   production_type = "output",
   volume = 1000,
   pipe_covers = covers,
   pipe_connections = {
     { flow_direction = "output", direction = defines.direction.north, position = { 0, -7 } },
+    { flow_direction = "output", direction = defines.direction.south, position = { 0, 7 } },
   },
   filter = "rf-reactor-energy",
 }
@@ -369,6 +384,12 @@ reactor.output_fluid_box = {
 -- Change the look by editing the note below and re-rendering (`/render-machine rf-heat-exchanger`),
 -- never by editing a PNG. load-check fails if the manifest beside the sheets stops agreeing with
 -- the footprint and connections this file declares (#250).
+--
+-- THE NOTE'S COMPASS IS THE FRAME IT WAS ACCEPTED IN. It was written when the machine stood five
+-- wide by fifteen tall with its energy face WEST; ADR 0031 (#275) declares the same object fifteen
+-- wide by five tall with the energy face NORTH, and the model turns with it (models/heat-exchanger/
+-- build.py). So read the note's west as north, east as south, and its south end as the west end.
+-- The prose is left as accepted: it describes the object, and the object has not changed.
 --[[ look: rf-heat-exchanger   (read under models/house-style.md; accepted in #252, after #246)
 A long, low hall, five wide and fifteen long, that turns reactor energy into steam. Along the
 whole west face runs a closed, riveted manifold trough the full fifteen tiles, with an energy
@@ -422,34 +443,51 @@ exchanger.energy_source = {
     production_type = "input",
     volume = 200,
     pipe_covers = table.deepcopy(exchanger.fluid_box.pipe_covers),
-    -- A LONG SIDE, which is the whole reason for the 5x15 shape: butted against a fifteen-tile
-    -- reactor this face touches along its entire length, the way Realistic Fusion Power laid the
-    -- pair out. On a short end only one tile would meet the reactor and the shape would buy nothing.
+    -- THE LONG FACE BOLTS, THE SHORT ENDS CHAIN (ADR 0031, #275). North is the reactor contact:
+    -- butted against a fifteen-tile reactor this face touches along its entire length, the way
+    -- Realistic Fusion Power laid the pair out, and its one connection at {0, -2} lands on the
+    -- reactor's south output. West and east at {-7, -1} and {7, -1} are what a row chains through
+    -- -- the next exchanger's west energy tile lands on this one's east target -- so a row grows
+    -- sideways along the reactor's face and the steam face stays free for the turbine hall.
+    --
+    -- ALL THREE ARE input-output, AND THAT IS LOAD-BEARING. Measured in #111 and recorded in
+    -- docs/research/exchanger-chaining.md: one connection on this box declared plain "input" stops
+    -- fuel leaving by the others, even though the boxes still join and this machine still burns
+    -- what it is given. production_type stays "input" -- what the machine DOES with the fluid is
+    -- unchanged; flow_direction is what decides whether a connection will join another machine's.
+    --
+    -- The default orientation puts the energy face north, so the machine stands SOUTH of a reactor.
+    -- A row on the reactor's north face is the same machine rotated 180 degrees.
     pipe_connections = {
-      { flow_direction = "input", direction = defines.direction.west, position = { -2, 0 } },
+      { flow_direction = "input-output", direction = defines.direction.north, position = { 0, -2 } },
+      { flow_direction = "input-output", direction = defines.direction.west, position = { -7, -1 } },
+      { flow_direction = "input-output", direction = defines.direction.east, position = { 7, -1 } },
     },
     filter = "rf-reactor-energy",
   },
 }
 
--- FIVE BY FIFTEEN, ON RENDERED ART (#45, ADR 0022, #108). Truls's decision: this machine takes the
--- original mod's footprint, which Durikkan's 2.0 port still declares. What it wore before was
--- vanilla's heat exchanger at 3x2 -- a sprite that looked finished while being the wrong size --
--- and then a drawn mockup that admitted what it was until the model existed.
+-- FIFTEEN WIDE BY FIVE TALL, ON RENDERED ART (#45, ADR 0022, #108; turned by ADR 0031, #275).
+-- Truls's decision: this machine takes the original mod's five-by-fifteen area, which Durikkan's
+-- 2.0 port still declares, with the long axis now east-west so the energy face is north. What it
+-- wore before was vanilla's heat exchanger at 3x2 -- a sprite that looked finished while being the
+-- wrong size -- and then a drawn mockup that admitted what it was until the model existed.
 --
--- BOTH LONG FACES CARRY THE BIG FLOWS, which is what the 5x15 shape is for. Reactor energy comes in
--- along the whole west face and steam leaves along the whole east one, so the machine stands between
--- the reactor and the turbine hall with a full-length contact on either side rather than a pipe
--- stub at a corner. That is the arrangement the original mod had and the reason it drew the machine
--- this shape.
+-- BOTH LONG FACES CARRY THE BIG FLOWS, which is what the shape is for. Reactor energy comes in along
+-- the whole north face and steam leaves along the whole south one, so the machine stands between the
+-- reactor and the turbine hall with a full-length contact on either side rather than a pipe stub at
+-- a corner. That is the arrangement the original mod had and the reason it drew the machine this
+-- shape.
 --
--- Water goes on the short ends, both of them. It is the small flow of the three -- a unit of water
--- against a unit of reactor energy carrying a megajoule -- and putting it on the ends means one pipe
--- run can thread a column of exchangers end to end while their long faces stay clear for the
--- flows that need the length.
-exchanger.collision_box = { { -2.25, -7.25 }, { 2.25, 7.25 } }
-exchanger.selection_box = { { -2.5, -7.5 }, { 2.5, 7.5 } }
-exchanger.pictures = rendered.boiler("heat-exchanger", 5, 15)
+-- EACH SHORT END READS `_ e _ w _` FROM NORTH TO SOUTH: energy at y = -1, water at y = 1. Both
+-- long faces are spent, so the short ends are where a row chains, and each end has to carry an
+-- energy tile at the same offset as the other or the row will not join. Water LEAVES the short-end
+-- centre to make room for it -- Truls's layout (2026-09-07), not a derived one. A chained row's
+-- interior water connections are consumed by the joints, so a row takes water at its two ends
+-- only; probe-exchanger-chaining.ps1 measured eight machines fed that way and none starved.
+exchanger.collision_box = { { -7.25, -2.25 }, { 7.25, 2.25 } }
+exchanger.selection_box = { { -7.5, -2.5 }, { 7.5, 2.5 } }
+exchanger.pictures = rendered.boiler("heat-exchanger", 15, 5)
 -- WHAT MAKES THE GLOW APPEAR. The rendered set's -glow sheets go in `fire_glow`, which the engine
 -- draws only while the boiler is burning -- and only while burning_cooldown is above 1.
 --
@@ -468,11 +506,11 @@ exchanger.burning_cooldown = 20
 -- manifold at a steady full-strength glow instead of an invisible one.
 exchanger.fire_glow_flicker_enabled = false
 exchanger.fluid_box.pipe_connections = {
-  { flow_direction = "input-output", direction = defines.direction.north, position = { 0, -7 } },
-  { flow_direction = "input-output", direction = defines.direction.south, position = { 0, 7 } },
+  { flow_direction = "input-output", direction = defines.direction.west, position = { -7, 1 } },
+  { flow_direction = "input-output", direction = defines.direction.east, position = { 7, 1 } },
 }
 exchanger.output_fluid_box.pipe_connections = {
-  { flow_direction = "output", direction = defines.direction.east, position = { 2, 0 } },
+  { flow_direction = "output", direction = defines.direction.south, position = { 0, 2 } },
 }
 
 -- ---------------------------------------------------------------- high-capacity steam pair

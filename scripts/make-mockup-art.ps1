@@ -21,9 +21,11 @@
     Regenerate rather than edit the PNGs. Sizes are still being settled and this is the cheap way
     to try one -- change Width/Height below, run this, run scripts/load-check.ps1.
 
-    THE CONNECTION LIST HERE MUST AGREE WITH prototypes/entities.lua. Nothing enforces it: this
-    script never loads the game. If they disagree the picture is wrong rather than the game, and a
-    player is told a pipe goes somewhere it does not.
+    THE CONNECTION LIST MUST AGREE WITH prototypes/entities.lua, AND SINCE #275 A GATE ENFORCES IT.
+    This script never loads the game, so if the two disagreed the picture would be wrong rather than
+    the game, and a player would be told a pipe goes somewhere it does not. The table therefore lives
+    in mockup-machines.psd1, and scripts/load-check.ps1 reads the same file and fails when a row's
+    footprint or connection tiles differ from the prototype the game actually loaded.
 
 .PARAMETER OutputRoot
     Where the mod directories live. Defaults to the repository root.
@@ -52,65 +54,10 @@ $KIND_COLOUR = @{
     energy = [System.Drawing.Color]::FromArgb(255, 255, 215,  70)
 }
 
-# Positions are TILE CENTRES relative to the entity centre, exactly as pipe_connections declares
-# them. Widths and heights are the selection box in tiles.
-$MACHINES = @(
-    @{
-        # BOTH LONG SIDES CARRY THE BIG FLOWS, which is what the 5x15 shape is for: reactor energy in
-        # along one whole fifteen-tile face and steam out along the other, so the machine sits
-        # between the reactor and the turbine hall with a full-length contact on each side. Water is
-        # the small flow and goes on the short ends, where a single pipe run can thread a column of
-        # exchangers end to end.
-        Mod = 'realistic-fusion-refreshed-assets'; Name = 'heat-exchanger'; Label = "HEAT`nEXCHANGER"
-        Prototype = 'boiler'
-        Width = 5; Height = 15; Core = $false
-        Connections = @(
-            @{ X = -2; Y =  0; Kind = 'energy'; Text = 'energy' },
-            @{ X =  2; Y =  0; Kind = 'output'; Text = 'steam' },
-            @{ X =  0; Y = -7; Kind = 'input';  Text = 'water' },
-            @{ X =  0; Y =  7; Kind = 'input';  Text = 'water' }
-        )
-    },
-    @{
-        # Both long sides, so one butts the reactor and the other passes fluid to the next converter
-        # in the row -- the chaining rf-hc-turbine and vanilla's steam turbine also do.
-        Mod = 'realistic-fusion-refreshed-assets'; Name = 'direct-energy-converter'; Label = "DIRECT`nENERGY`nCONVERTER"
-        Prototype = 'generator'
-        Width = 5; Height = 15; Core = $false
-        Connections = @(
-            @{ X = -2; Y = 0; Kind = 'energy'; Text = 'energy' },
-            @{ X =  2; Y = 0; Kind = 'energy'; Text = 'energy' }
-        )
-    },
-    @{
-        Mod = 'realistic-fusion-refreshed-assets'; Name = 'aneutronic-reactor'; Label = "ANEUTRONIC`nREACTOR"
-        Prototype = 'boiler'
-        Width = 15; Height = 15; Core = $true
-        Connections = @(
-            @{ X = -7; Y =  0; Kind = 'input';  Text = 'plasma' },
-            @{ X =  7; Y =  0; Kind = 'input';  Text = 'plasma' },
-            @{ X =  0; Y = -7; Kind = 'output'; Text = 'energy' }
-        )
-    },
-    @{
-        Mod = 'realistic-fusion-refreshed-assets'; Name = 'isotope-collector'; Label = "ISOTOPE`nCOLLECTOR"
-        Prototype = 'boiler'
-        Width = 5; Height = 5; Core = $false
-        Connections = @(
-            @{ X = -2; Y =  0; Kind = 'output'; Text = 'tritium' },
-            @{ X =  2; Y =  0; Kind = 'output'; Text = 'tritium' },
-            @{ X =  0; Y = -2; Kind = 'output'; Text = 'He3' }
-        )
-    },
-    @{
-        # A container: lithium arrives by inserter and the tritium it breeds leaves through the
-        # reactor's own pipe, so it has no connections of its own to mark. See entities.lua.
-        Mod = 'realistic-fusion-refreshed-assets'; Name = 'lithium-blanket'; Label = "LITHIUM`nBLANKET"
-        Prototype = 'still'
-        Width = 5; Height = 5; Core = $false
-        Connections = @()
-    }
-)
+# The table of machines, footprints and connections lives in mockup-machines.psd1 beside this
+# script, because load-check.ps1 reads the same file and holds every row against the live prototype
+# (#275). Edit it there; this script only draws what it says.
+$MACHINES = (Import-PowerShellDataFile -Path (Join-Path $PSScriptRoot 'mockup-machines.psd1')).Machines
 
 function New-MockupFont {
     param([single] $Size)

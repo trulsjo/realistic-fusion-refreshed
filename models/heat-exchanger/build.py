@@ -33,8 +33,18 @@ random.seed(7)  # imperfections are deterministic: same script, same model
 geo_path = os.path.join(HERE, "geometry.json")
 geo = json.load(open(geo_path, encoding="utf-8"))
 (x0, y0), (x1, y1) = geo["collision_box"]
-W, L = x1 - x0, y1 - y0            # 4.5 x 14.5
+# THE BODY IS BUILT LONG AXIS NORTH-SOUTH AND TURNED AFTERWARDS. Every part below is placed in the
+# frame the look note was accepted in (#252): five wide along X, fifteen long along Y, the
+# manifold on the west face. ADR 0031 (#275) then declared the same machine fifteen wide by five
+# tall with the energy face north -- the same object seen along a different axis, and the note is
+# left as written. So W and L are the short and long extents whichever way the box is declared,
+# and when the declared box is wider than it is tall the finished body is turned a quarter turn so
+# the manifold faces north. The sockets are placed AFTER the turn, in the declared frame, so they
+# land where the prototype says regardless.
+TX, TY = (x1 - x0) / 2, (y1 - y0) / 2      # declared half extents: 7.25 x 2.25 since #275
+W, L = sorted((x1 - x0, y1 - y0))          # 4.5 x 14.5, the body's own frame
 HALF_W, HALF_L = W / 2, L / 2
+TURNED = (x1 - x0) > (y1 - y0)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
@@ -415,7 +425,7 @@ else:
     DRUM_H = 2.3
     DX = 0.35
     drum_ys = (-4.6, 0.0, 4.6)
-    DENTED = 2                      # the north drum, the one the layout shot leads with
+    DENTED = 2                      # the north drum in the body's frame; the east one once turned
     for i, y in enumerate(drum_ys):
         r = jitter(1.05, 0.04)
         h = jitter(DRUM_H, 0.08)
@@ -436,7 +446,12 @@ else:
             # which is why every earlier attempt had to be widened and still went unnoticed. With
             # the bands bending into it the strike can stay compact and still be obvious: 0.62
             # across, 0.42 deep, centred between the two.
-            strike = (DX + 0.25, y - r, z0 + h * 0.5)
+            #
+            # STRUCK IN THE FRAME THE CAMERA WILL SEE. The body is turned a quarter turn after it
+            # is built (TURNED, above), and a hollow on the body's south flank would end up facing
+            # west and hide. The turn maps the body's east onto the declared south, so when the body
+            # is going to be turned the strike goes on the east flank instead.
+            strike = (DX + r, y - 0.25, z0 + h * 0.5) if TURNED else (DX + 0.25, y - r, z0 + h * 0.5)
             dent(d, strike, 0.62, 0.42)
             for rib in ribs:                     # already 48x12; a few cuts is plenty
                 dent(rib, strike, 0.62, 0.42, cuts=4)
@@ -500,7 +515,21 @@ else:
     rivets("CabinetRivets", (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] - 0.5, cpos[2] - CAB[2] / 2 + 0.15),
            (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] + 0.5, cpos[2] - CAB[2] / 2 + 0.15), 6)
 
-    # -- sockets: one per declared connection, body to footprint edge, accent band.
+    # -- the turn (see TURNED, at the top): the whole body so far, about Z, so the body's west --
+    # the manifold, the reactor contact -- becomes the declared north. -90 degrees maps (x, y) to
+    # (y, -x): west to north, east to south, north to east, south to west. matrix_world rather than
+    # location and rotation separately, so a part with its own rotation and scale (the drums, the
+    # braces, every torus) turns as one thing. The rig is not built yet, so nothing here turns it.
+    if TURNED:
+        from mathutils import Matrix
+        bpy.context.view_layer.update()            # freshly added objects have no world matrix yet
+        turn = Matrix.Rotation(-math.pi / 2, 4, "Z")
+        for o in list(scene.collection.objects):
+            o.matrix_world = turn @ o.matrix_world
+        bpy.context.view_layer.update()
+
+    # -- sockets: one per declared connection, body to footprint edge, accent band. Placed in the
+    # DECLARED frame, after the turn, so TX and TY here and never HALF_W / HALF_L.
     (sx0, sy0), (sx1, sy1) = geo["selection_box"]
     for c in geo["connections"]:
         px, py = c["position"]
@@ -509,16 +538,27 @@ else:
         z = 0.55
         if d in ("west", "east"):
             edge = sx0 if d == "west" else sx1
-            inner = (HALF_W - 0.5) * (1 if d == "east" else -1)
-            cyl(f"Socket-{d}", 0.3, abs(edge - inner), ((edge + inner) / 2, py, z), "metal", axis="X")
-            cyl(f"Band-{d}", 0.34, 0.22, (edge - 0.28 * (1 if d == "east" else -1), py, z), rf.accent(c["fluid"]), axis="X")
+            inner = (TX - 0.5) * (1 if d == "east" else -1)
+            cyl(f"Socket-{d}-{c['fluid']}", 0.3, abs(edge - inner), ((edge + inner) / 2, py, z), "metal", axis="X")
+            cyl(f"Band-{d}-{c['fluid']}", 0.34, 0.22, (edge - 0.28 * (1 if d == "east" else -1), py, z), rf.accent(c["fluid"]), axis="X")
         else:
             edge = -sy0 if d == "north" else -sy1  # flipped: north is +Y
-            inner = (HALF_L - 0.5) * (1 if d == "north" else -1)
-            cyl(f"Socket-{d}", 0.3, abs(edge - inner), (px, (edge + inner) / 2, z), "metal", axis="Y")
-            cyl(f"Band-{d}", 0.34, 0.22, (px, edge - 0.28 * (1 if d == "north" else -1), z), rf.accent(c["fluid"]), axis="Y")
-    # water header along the base between the two end sockets
-    pipe("WaterHeader", [(0, -HALF_L + 0.5, 0.55), (jitter(0, 0.1), 0, 0.5), (0, HALF_L - 0.5, 0.55)], 0.13, "metal")
+            inner = (TY - 0.5) * (1 if d == "north" else -1)
+            cyl(f"Socket-{d}-{c['fluid']}", 0.3, abs(edge - inner), (px, (edge + inner) / 2, z), "metal", axis="Y")
+            cyl(f"Band-{d}-{c['fluid']}", 0.34, 0.22, (px, edge - 0.28 * (1 if d == "north" else -1), z), rf.accent(c["fluid"]), axis="Y")
+    # water header along the base between the two end sockets, wherever the prototype puts them:
+    # since #275 they sit off the short-end centre (`_ e _ w _`), so the header is read off the
+    # geometry rather than drawn down the middle.
+    UNIT = {"north": (0, -1), "east": (1, 0), "south": (0, 1), "west": (-1, 0)}   # Factorio frame
+    water = [c for c in geo["connections"] if c["fluid"] == "water"]
+    if len(water) == 2:
+        def inboard(c):
+            ux, uy = UNIT[c["direction"]]
+            px, py = c["position"]
+            return (px - 0.5 * ux, -(py - 0.5 * uy), 0.55)
+        a, b = inboard(water[0]), inboard(water[1])
+        mid = ((a[0] + b[0]) / 2 + jitter(0, 0.1), (a[1] + b[1]) / 2 + jitter(0, 0.1), 0.5)
+        pipe("WaterHeader", [a, mid, b], 0.13, "metal")
 
 # THE ICON IS THE WHOLE MACHINE, not a section of it. #246 framed a 4.5-tile crop -- the middle
 # drum with the manifold beside it -- and in the inventory beside Krastorio 2's icons that read as a
