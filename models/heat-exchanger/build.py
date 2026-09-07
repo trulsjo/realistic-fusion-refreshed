@@ -255,9 +255,34 @@ def torus(name, major, minor, loc, material, rot=(0, 0, 0)):
     return o
 
 
-def pipe(name, points, radius, material, glow=False, corrugate=0.0):
+def _centreline(curve_obj):
+    """The evaluated centreline of a curve object, in world space, in order along the curve.
+
+    The bevel is what turns a curve into a tube, so it is switched off for the evaluation and put
+    back: with a bevel the mesh is the tube's skin, and its vertices are no use for finding where
+    the tube's axis runs.
+    """
+    depth = curve_obj.data.bevel_depth
+    curve_obj.data.bevel_depth = 0.0
+    bpy.context.view_layer.update()
+    evaluated = curve_obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
+    mesh = evaluated.to_mesh()
+    points = [tuple(curve_obj.matrix_world @ v.co) for v in mesh.vertices]
+    evaluated.to_mesh_clear()
+    curve_obj.data.bevel_depth = depth
+    if len(points) < 2:
+        raise RuntimeError(f"{curve_obj.name}: evaluated centreline has {len(points)} point(s)")
+    return points
+
+
+def pipe(name, points, radius, material, glow=False, corrugate=0.0, band=(1.15, 0.22)):
     """A pipe along a Bezier curve through `points` (slightly wobbly by construction), with
-    optional corrugation rings every `corrugate` tiles."""
+    optional corrugation rings every `corrugate` tiles.
+
+    `band` scales a ring against the pipe's radius: (major, minor). The default is the subtle
+    collar every pipe here has always had; the steam header passes a heavier one, because on that
+    pipe the corrugation is the thing being drawn rather than a detail on it.
+    """
     cd = bpy.data.curves.new(name, "CURVE")
     cd.dimensions = "3D"
     cd.bevel_depth = radius
@@ -272,20 +297,34 @@ def pipe(name, points, radius, material, glow=False, corrugate=0.0):
     scene.collection.objects.link(o)
     o.data.materials.append(mat(material, glow))
     if corrugate:
-        # rings along the polyline between consecutive points
-        k = 0
-        for a, b in zip(points, points[1:]):
+        # RINGS ON THE TUBE, NOT ON THE CONTROL POLYLINE, and that is the fix rather than a
+        # refinement (Truls, #275). They used to be spaced along the straight lines BETWEEN the
+        # control points, while the tube itself is a Bezier that bows away from those lines. On a
+        # nearly straight pipe the error is a pixel and nobody saw it; on the steam header, once it
+        # was given a real bend, the rings left the tube and the whole thing read as a spring lying
+        # beside a thin wire instead of a corrugated hose.
+        #
+        # So the centreline is asked for rather than assumed: the curve is evaluated with its bevel
+        # switched off, which yields the tessellated centreline, and the rings are walked along that
+        # by arc length. Deterministic, and it costs one evaluation per corrugated pipe.
+        spine = _centreline(o)
+        travelled, next_ring, k = 0.0, corrugate / 2, 0
+        for a, b in zip(spine, spine[1:]):
             seg = math.dist(a, b)
-            n = max(1, int(seg / corrugate))
-            for i in range(n):
-                t = (i + 0.5) / n
+            if seg < 1e-9:
+                continue
+            while next_ring <= travelled + seg:
+                t = (next_ring - travelled) / seg
                 c = tuple(a[j] + (b[j] - a[j]) * t for j in range(3))
                 d = tuple(b[j] - a[j] for j in range(3))
                 yaw = math.atan2(d[1], d[0])
                 pitch = math.atan2(d[2], math.hypot(d[0], d[1]))
-                torus(f"{name}-ring{k}", radius * 1.15, radius * 0.22, c, material,
+                torus(f"{name}-ring{k}", radius * band[0], radius * band[1], c, material,
                       rot=(0, math.pi / 2 - pitch, yaw))
                 k += 1
+                next_ring += corrugate
+            travelled += seg
+        print(f"CORRUGATE {name}: {k} rings over {travelled:.2f} tiles of tube")
     return o
 
 
@@ -389,8 +428,18 @@ else:
     hbeam("RailM", L - 0.4, (MXE, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
     hbeam("RailE2", L - 0.4, (EX, 0, SLAB + 0.9), axis="Y", depth=0.12, flange=0.12)
     # Grating deck under the drums: slats, so the feed lines below stay visible.
+    #
+    # WITH AN OPENING WHERE THE STEAM OUTLET RUN COMES DOWN (Truls, #275). That run has to get from
+    # a drum cap to a socket that lives UNDER this deck, so it crosses the deck's plane somewhere.
+    # The only descent that clears the frame's own beams -- RailE2 along the east posts, and the
+    # cross rails at the post lines -- is at OUTLET_X, which is inside the deck. So the deck gives
+    # it a floor opening, which is what a deck has where a pipe drops through it; the alternative
+    # was a hose visibly cutting a slat.
+    OUTLET_X, OUTLET_Y = 1.80, 1.45
     for i in range(30):
         y = -HALF_L + 0.5 + i * (L - 1.0) / 29
+        if abs(y - OUTLET_Y) < 0.30:
+            continue
         box(f"Slat{i}", (W - MAN_W - 0.7, 0.06, 0.05), (0.35, y, SLAB + 0.5), "dark", bev=0)
     # A conduit run down the east frame with clamps, and diagonal braces in two bays. Both are here
     # because the frame read as an empty crate (Truls, #252): the bays were identical and had
@@ -426,10 +475,12 @@ else:
     DX = 0.35
     drum_ys = (-4.6, 0.0, 4.6)
     DENTED = 2                      # the north drum in the body's frame; the east one once turned
+    cap_tops = []                   # (y, z) of each drum's cap, for the header to clear and collect
     for i, y in enumerate(drum_ys):
         r = jitter(1.05, 0.04)
         h = jitter(DRUM_H, 0.08)
         z0 = SLAB + 0.5
+        cap_tops.append((y, z0 + h + 0.18))
         d = cyl(f"Drum{i}", r, h, (DX, y, z0 + h / 2), "metal", verts=64)
         d.scale = (1.0, jitter(1.0, 0.03), 1.0)
         ribs = [torus(f"Drum{i}Rib{k}", r + 0.015, 0.035, (DX, y, z0 + h * frac), "dark")
@@ -492,19 +543,79 @@ else:
                           (jitter(-0.7, 0.15), y + jitter(0, 0.2), SLAB + jitter(0.4, 0.03)),
                           (DX - r * 0.7, y, SLAB + 0.45)], 0.1, "energy", glow=True)
 
-    # -- corrugated steam header across the drum tops, not quite straight, east to the outlet.
-    HZ = SLAB + 0.5 + DRUM_H + 0.05
-    header_pts = [(DX + jitter(0, 0.08), drum_ys[0] - 0.3, HZ)]
-    for y in drum_ys:
-        header_pts.append((DX + jitter(0, 0.1), y, HZ + jitter(0, 0.06)))
-    header_pts.append((DX + jitter(0, 0.08), drum_ys[-1] + 0.3, HZ))
-    pipe("Header", header_pts, 0.19, "metal", corrugate=0.45)
+    # -- steam: three corrugated hose runs, each one BENDING DOWN ONTO A DRUM CAP (Truls, #275).
+    #
+    # THE HEADER USED TO COLLECT NOTHING. It was a single hose that passed over all three drums and
+    # carried on to the outlet, touching no drum on the way -- and the outlet leg then went straight
+    # through the middle drum and through a cross rail on its way down. A header on three drums is
+    # three runs: each end drum sends its steam to the middle drum, and the middle drum sends the
+    # lot out. So the middle drum carries THREE cap connections and each end drum one.
+    #
+    # EVERY RUN LEAVES AND LANDS VERTICALLY. The first two control points of a run are stacked in z,
+    # which makes the Bezier's tangent at the cap straight down, so the hose stands on the cap
+    # instead of ending in mid-air beside it.
+    #
+    # A HOSE, BANDED AND BENT LIKE KRASTORIO 2'S. The old one was "not quite straight" with a ring
+    # every 0.45 tiles, which at 64 px a tile is a collar every 29 px on a 24 px pipe: read as a
+    # smooth tube with a few rings on it. The big hose on K2's reactor sheet -- the one crossing its
+    # lower half -- bands at roughly its own radius, stands its ribs well proud, and swings clear of
+    # its own line between supports. So 0.26 between rings on a 0.38-tile tube, each rib standing a
+    # quarter of the radius proud, and a real sag in the unsupported span. Close enough together to
+    # be the pipe's character, far enough apart that the tube shows between them, which is what
+    # tells a corrugated hose from a spring. The material is unchanged; bare metal was never the
+    # complaint.
+    HEADER_R = 0.19
+    HEADER_CORRUGATE, HEADER_BAND = 0.26, (1.24, 0.26)
+    CAP_ENTRY = 0.34               # how far off a cap's centre a run lands: inside its ring of bolts
+    mid_y, mid_cap = cap_tops[1]
+    # THE GOOSENECK NEEDS ROOM, and the first attempt did not give it any: a run rose 0.22 off the
+    # cap and then had to turn through ninety degrees, so the Bezier's own handles overshot and the
+    # hose curled back over itself like a candy cane. Half a tile of straight rise turns the same
+    # corner smoothly.
+    #
+    # The two drum-to-drum runs are kept LOW -- a third of a tile of rise and a shallow hang -- so
+    # they read as hoses running between the drums rather than as three loops arching over the
+    # machine. The outlet run is the one that needs height: it has to cross the middle drum's own
+    # shoulder, so it rises further and keeps its gooseneck.
+    RUN_Z = max(z for _, z in cap_tops) + 0.35
+    SAG_Z = max(z for _, z in cap_tops) - 0.25     # clears the frame's top rails by about 0.65
+    OUT_Z = max(z for _, z in cap_tops) + 0.55
+
+    # The middle drum's cap carries THREE runs, so their landings are spread around it rather than
+    # stacked on one line: the two neighbours land west of the cap's centre, north and south of each
+    # other, and the outlet leaves due east. Any closer together and the three tangle on the cap.
+    for i in (0, 2):
+        y, cap = cap_tops[i]
+        toward = 1 if y < mid_y else -1
+        start = (DX, y + toward * CAP_ENTRY, cap)
+        land = (DX - 0.29, mid_y - toward * 0.17)
+        # A hose slung between two nozzles hangs below them, and there is nothing under this span
+        # but open frame.
+        sag = (DX + jitter(0.3 * toward, 0.06), (y + mid_y) / 2 + jitter(0, 0.15), SAG_Z)
+        pipe(f"Header{i}", [start, (start[0], start[1], RUN_Z), sag,
+                            (land[0], land[1], RUN_Z), (land[0], land[1], mid_cap)],
+             HEADER_R, "metal", corrugate=HEADER_CORRUGATE, band=HEADER_BAND)
+
+    # THE OUTLET RUN, AND ITS ROUTE IS THE POINT: down off the middle cap, north around the drum,
+    # down outside it at OUTLET_X -- which clears RailE2 along the east posts by a tenth of a tile,
+    # and sits at a y with no cross rail on it -- then west under the deck to the steam socket,
+    # which lives below the grating. It passes through nothing but the deck opening left for it.
+    # NOT `out`: that is this script's output path, and shadowing it made Blender try to save the
+    # model to a tuple after the whole machine had been built.
+    out_top = (DX + CAP_ENTRY, mid_y, mid_cap)
+    pipe("HeaderOut", [
+        out_top,
+        (out_top[0], out_top[1], OUT_Z),                  # straight up off the cap, then over
+        (0.95, mid_y + 0.95, OUT_Z - 0.25),               # across the drum's shoulder, above its cap
+        (OUTLET_X, OUTLET_Y, SLAB + 2.10),
+        (OUTLET_X, OUTLET_Y, SLAB + 0.37),
+        (OUTLET_X - 0.05, mid_y + 0.55, SLAB + 0.32),
+        (HALF_W - 0.5, mid_y, SLAB + 0.30),
+    ], HEADER_R, "metal", corrugate=HEADER_CORRUGATE, band=HEADER_BAND)
     # A BAND, not the half-tile steam-coloured block this used to be: near-white at that size read
-    # as a lamp on the middle drum (Truls, #252).
-    torus("HeaderBand", 0.22, 0.05, (DX, 0, HZ), "steam", rot=(math.pi / 2, 0, 0))
-    drop_top = (DX + 0.25, 0.0, HZ)
-    pipe("HeaderDrop", [drop_top, (1.2, jitter(0, 0.1), HZ - 0.6), (1.5, 0.0, 1.0), (HALF_W - 0.5, 0.0, 0.7)],
-         0.19, "metal", corrugate=0.45)
+    # as a lamp on the middle drum (Truls, #252). On the descent, which is the one stretch of the
+    # steam route standing in the open where a band can be seen.
+    torus("HeaderBand", 0.22, 0.05, (OUTLET_X, OUTLET_Y, SLAB + 1.45), "steam")
 
     # -- cabinet, south-east corner: the one asymmetry. Seams and a blue panel.
     CAB = (0.8, 1.3, 1.7)
@@ -550,15 +661,50 @@ else:
     # since #275 they sit off the short-end centre (`_ e _ w _`), so the header is read off the
     # geometry rather than drawn down the middle.
     UNIT = {"north": (0, -1), "east": (1, 0), "south": (0, 1), "west": (-1, 0)}   # Factorio frame
+
+    def inboard(c, back=0.5, z=0.55):
+        """The inner end of a connection's socket: half a tile in from the tile it stands on."""
+        ux, uy = UNIT[c["direction"]]
+        px, py = c["position"]
+        return (px - back * ux, -(py - back * uy), z)
+
     water = [c for c in geo["connections"] if c["fluid"] == "water"]
     if len(water) == 2:
-        def inboard(c):
-            ux, uy = UNIT[c["direction"]]
-            px, py = c["position"]
-            return (px - 0.5 * ux, -(py - 0.5 * uy), 0.55)
         a, b = inboard(water[0]), inboard(water[1])
         mid = ((a[0] + b[0]) / 2 + jitter(0, 0.1), (a[1] + b[1]) / 2 + jitter(0, 0.1), 0.5)
         pipe("WaterHeader", [a, mid, b], 0.13, "metal")
+
+    # -- glowing feeds from the SHORT-END energy sockets into the manifold (Truls, #275).
+    #
+    # Without them those two sockets read as bare stubs bolted to the ends, carrying nothing: the
+    # water pair is visibly joined by the header above, and the reactor-facing socket IS the
+    # manifold -- it stands inside it -- so the two chaining sockets were the only connections on
+    # the machine with no run behind them. Same material and same glow as the drum feeds, because
+    # it is the same fluid arriving the same way, and they run under the grating at the drum feeds'
+    # own height so all five read as one system.
+    #
+    # The manifold's inner face, in whichever frame the body ended up in: it was built along the
+    # body's west face, and the quarter turn maps west to declared north (see TURNED).
+    MANIFOLD_FACE = "north" if TURNED else "west"
+    MANIFOLD_INNER = MX + MAN_W / 2
+    FEED_Z = SLAB + 0.42
+
+    def into_manifold(x, y, back=0.6):
+        """A point on the manifold's inner face, `back` tiles in from (x, y) along the face."""
+        step = math.copysign(back, -x if TURNED else -y)
+        if TURNED:
+            return (x + step, -MANIFOLD_INNER, FEED_Z)
+        return (MANIFOLD_INNER, y + step, FEED_Z)
+
+    for c in geo["connections"]:
+        if rf.accent(c["fluid"]) != "energy" or c["direction"] == MANIFOLD_FACE:
+            continue
+        start = inboard(c, back=0.45)
+        end = into_manifold(start[0], start[1])
+        mid = ((start[0] + end[0]) / 2 + jitter(0, 0.08),
+               (start[1] + end[1]) / 2 + jitter(0, 0.08),
+               (start[2] + end[2]) / 2)
+        pipe(f"EnergyFeed-{c['direction']}", [start, mid, end], 0.13, "energy", glow=True)
 
 # THE ICON IS THE WHOLE MACHINE, not a section of it. #246 framed a 4.5-tile crop -- the middle
 # drum with the manifold beside it -- and in the inventory beside Krastorio 2's icons that read as a
