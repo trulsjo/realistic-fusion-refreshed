@@ -119,8 +119,21 @@ $SITUATIONAL = @('🎉', '🚚', '🔥', '🌐', '💄', '🚧', '🔀')
 # with it stripped accepts both spellings and is why this is a function rather than an -eq.
 function Normalise([string] $s) { $s -replace "`u{FE0F}", '' }
 
-# Characters as a reader counts them, not as .NET stores them. 🐛 is one character and two UTF-16
-# code units, so `.Length` would charge two for it and make a legal subject look four over.
+# CHARACTERS, NOT BYTES AND NOT UTF-16 CODE UNITS. The unit is what a reader sees on the line --
+# one grapheme, one character -- because that is what "72 characters" means to the person wrapping
+# a paragraph, and because a rule about width should not charge more for an emoji than for a word.
+#
+# Every other candidate is wrong here, and by a lot:
+#
+#            bytes (UTF-8)   UTF-16 units   characters
+#     🐛                 4              2            1
+#     ♻️                 6              2            1
+#     🇳🇴                 8              4            1
+#
+# So `.Length` -- PowerShell's default and the obvious thing to reach for -- charges two for every
+# gitmoji, and a byte count charges four to eight. A legal 72-character subject would read as 73
+# under the first and about 250 under the second. The self-test pins this with a subject that is
+# exactly 72 characters and 252 bytes.
 function Width([string] $s) {
     [System.Globalization.StringInfo]::new((Normalise $s)).LengthInTextElements
 }
@@ -249,6 +262,14 @@ function Test-CommitMessage([string[]] $raw) {
 if ($SelfTest) {
     $trailer = "Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
     $long    = 'x' * 80
+
+    # THE UNIT, pinned on both sides of the boundary. '🐛 fix(repo): ' is 13 characters, so these
+    # are exactly 72 and exactly 73 -- while being 252 and 256 BYTES, and 132 and 134 UTF-16 code
+    # units. Anything that measured bytes or `.Length` would reject the legal one out of hand.
+    $head  = '🐛 fix(repo): '
+    $exact = $head + ('🐛' * 59)
+    $over  = $head + ('🐛' * 60)
+
     $url     = 'https://example.invalid/' + ('y' * 70)
 
     $mustFail = @(
@@ -259,6 +280,7 @@ if ($SelfTest) {
         @{ why = 'lowercase after the colon'; msg = @('🐛 fix(repo): Capital letter') }
         @{ why = 'no trailing period'; msg = @('🐛 fix(repo): a trailing period.') }
         @{ why = 'the subject is';   msg = @("🐛 fix(repo): $('word ' * 15)") }
+        @{ why = 'the subject is 73'; msg = @($over) }
         @{ why = 'BREAKING CHANGE';  msg = @('✨ feat(power)!: break a save', '', 'No footer here.') }
         @{ why = 'blank line';       msg = @('🐛 fix(repo): a subject', 'body with no blank line') }
         # Built from short words on purpose: a line made of ONE 80-character token is exempt by
@@ -270,6 +292,8 @@ if ($SelfTest) {
 
     $mustPass = @(
         @{ msg = @('🐛 fix(repo): the plainest legal subject') }
+        @{ msg = @($exact) }
+        @{ msg = @('🐛 fix(repo): a body line of 72 characters is legal', '', ('🐛' * 72)) }
         @{ msg = @('♻️ refactor(repo): a variation selector on the emoji') }
         @{ msg = @('⚡️ perf(power): and another one') }
         @{ msg = @('💄 feat(graphics): a situational emoji takes any type') }
@@ -310,7 +334,7 @@ if ($SelfTest) {
     # The floor, for the same reason ship-check carries one: this passes by finding nothing, so a
     # table that stopped being read would print green while checking nothing at all.
     $checks++
-    if ($mustFail.Count -lt 10 -or $mustPass.Count -lt 10) {
+    if ($mustFail.Count -lt 13 -or $mustPass.Count -lt 14) {
         $failures.Add('the self-test tables shrank, so this proves much less than it claims')
     }
 
