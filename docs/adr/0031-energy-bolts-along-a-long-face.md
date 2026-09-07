@@ -91,10 +91,19 @@ inputs on the matching west face (#47), which is where the five-by-fifteen shape
 Reproducing that exactly would mean freeing the east face, which means moving plasma, which means
 spending ADR 0011's premise. The south face costs nothing.
 
-**And the flush contact buys no throughput.** ADR 0022 records that
+**And the flush contact buys nothing against a single pipe.** ADR 0022 records that
+[#47](https://github.com/trulsjo/realistic-fusion-refreshed/issues/47) and
 [#48](https://github.com/trulsjo/realistic-fusion-refreshed/issues/48) measured the
-reactor-to-exchanger link at 31–62× of headroom and *"found the flush contact buys nothing"*. This is
-a decision about how a plant reads, which is what ADR 0022 says a footprint is.
+reactor-to-exchanger link at 31–62× of headroom and *"found the flush contact buys nothing against a
+single pipe"*. **The qualifier is part of the finding and is kept**: what was measured is a bolt
+against **one** pipe, not against any arrangement of them, so this paragraph is not licence to say
+the geometry cannot matter to throughput anywhere. It says the reason for this shape is not a fluid
+argument — which is a decision about how a plant reads, and what ADR 0022 says a footprint is.
+
+> `entities.lua`'s comment on the same pair splits the credit the other way — #48 for the
+> measurement, #47 for the conclusion — where ADR 0022 credits both jointly. The ADR is the
+> citation used here. The disagreement is noted so a reader who meets both does not take one for a
+> typo, and neither is this ADR's to settle.
 
 ## Decision
 
