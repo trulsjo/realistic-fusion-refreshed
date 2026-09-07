@@ -112,7 +112,16 @@
     keeps building the old shape is not measuring the current tree, so the AC 3 rows #82 recorded
     were taken on a machine this repository no longer ships.
 
-    Today's machine is 5x15: tile centres x in {-2..2} and y in {-7..7}. Its own boxes take four of
+    AND IT CHANGED AGAIN, SO EVERY COORDINATE BELOW IS A FRAME THIS RIG PINS RATHER THAN THE TREE'S
+    (#275). ADR 0031 ships rf-heat-exchanger fifteen wide by five tall with energy `input-output` on
+    north {0, -2} plus both short ends {-7, -1} and {7, -1}, water on {-7, 1} and {7, 1}, steam
+    south {0, 2}; and rf-reactor now sells energy from TWO connections, north {0, -7} and south
+    {0, 7}. The rows here are not rebuilt onto that -- ADR 0031 lists rebuilding them as a
+    consequence, and scripts/check-hc.ps1's plant section is the gate on the shipped geometry -- so
+    pre_275_frame() below pins the five-by-fifteen frame onto the copies this rig declares, and the
+    paragraphs from here to the end of this section describe that pinned frame.
+
+    THE PINNED FRAME. 5x15: tile centres x in {-2..2} and y in {-7..7}. Its own boxes take four of
     them -- energy in on the west LONG face at {-2, 0}, steam out on the east long face at {2, 0},
     water input-output on the two short ends at north {0, -7} and south {0, 7}. Two connections on
     one tile will not load.
@@ -120,8 +129,8 @@
     So a variant that chains has to chain along the COLUMN, north to south, and the free tiles on
     the short ends are {-1, -7} and {-1, 7}, beside the water. Those are the tiles
     probe-exchanger-chaining.ps1 uses for the same question, and the two rigs agree on purpose.
-    The south one also does the bolting: rf-reactor's energy output faces NORTH from {0, -7}, so a
-    machine bolting onto it stands above the reactor and meets it with a south-facing connection.
+    The south one also does the bolting: the reactor's north energy output faces out from {0, -7}, so
+    a machine bolting onto it stands above the reactor and meets it with a south-facing connection.
     The west long face cannot do that bolt at all -- it points west and the reactor's output does
     not.
 
@@ -423,8 +432,11 @@ end
 -- south face". A rig that names a face is asserting a layout it does not own.
 --
 -- So a caller that just wants the one connection asks for it that way, and only a box with several
--- has to say which. The chain variant below is the one with several, and it is rig-defined, so the
--- face it names is a face it declares itself.
+-- has to say which. TWO callers now say which, and only one of them declares the face it names:
+-- the chain variant below is rig-defined, but the `control` row names "north" on the SHIPPED
+-- exchanger, which since #275 has three energy connections and no single one to guess. That is the
+-- layout-it-does-not-own case this comment warns about, taken knowingly: it fails loudly, with
+-- "has no connection on its north face", rather than measuring the wrong tile in silence.
 local function place_facing(surface, force, name, fluid, side, target, seed)
   local probe = must(surface.create_entity({ name = name, position = seed, force = force }),
     "a probe " .. name)

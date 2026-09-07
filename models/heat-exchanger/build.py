@@ -596,10 +596,12 @@ else:
                             (land[0], land[1], RUN_Z), (land[0], land[1], mid_cap)],
              HEADER_R, "metal", corrugate=HEADER_CORRUGATE, band=HEADER_BAND)
 
-    # THE OUTLET RUN, AND ITS ROUTE IS THE POINT: down off the middle cap, north around the drum,
-    # down outside it at OUTLET_X -- which clears RailE2 along the east posts by a tenth of a tile,
-    # and sits at a y with no cross rail on it -- then west under the deck to the steam socket,
-    # which lives below the grating. It passes through nothing but the deck opening left for it.
+    # THE OUTLET RUN, AND ITS ROUTE IS THE POINT. In this file's frame, which is the body's own and
+    # not the declared one: down off the middle cap, north around the drum, down outside it at
+    # OUTLET_X -- which clears RailE2 along the east posts by a tenth of a tile, and sits at a y
+    # with no cross rail on it -- then back SOUTH under the deck to the steam socket on the east
+    # edge, which lives below the grating. (The quarter turn shows that last leg running west, and
+    # RailE2 lying along the declared south edge.) It passes through nothing but the deck opening.
     # NOT `out`: that is this script's output path, and shadowing it made Blender try to save the
     # model to a tuple after the whole machine had been built.
     out_top = (DX + CAP_ENTRY, mid_y, mid_cap)

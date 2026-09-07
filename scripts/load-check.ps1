@@ -161,7 +161,7 @@
     what a player would see. Python 3 on PATH is a requirement of this gate; a missing interpreter
     is a failure, not a skip.
 
-    AND THE SAME FOR EVERY MOCKUP (#275). The four machines without a model wear sheets drawn by
+    AND THE SAME FOR EVERY MOCKUP (#275). The four machines that wear a mockup take sheets drawn by
     scripts/make-mockup-art.ps1 from a table of footprints and connection tiles in
     scripts/mockup-machines.psd1, hand-copied from entities.lua. Every row of that table is held
     against the loaded dump the same way: footprint in tiles, and the set of tiles its connections
@@ -722,9 +722,9 @@ function Test-MockupArt {
     if (-not $machines) {
         Write-Host ''
         Write-Host "FAILED - mockup art: no machines in $MOCKUP_TABLE."
-        Write-Host '         Four machines have worn a mockup since ADR 0022; either the table moved or'
-        Write-Host '         this check has stopped reading it, and both would otherwise report a clean'
-        Write-Host '         pass over no mockup at all.'
+        Write-Host '         Four machines wear one, and the heat exchanger wore one until #252, so'
+        Write-Host '         either the table moved or this check has stopped reading it -- and both'
+        Write-Host '         would otherwise report a clean pass over no mockup at all.'
         exit 1
     }
 

@@ -166,9 +166,16 @@ local function feed(surface, force, entity, fluid, temperature)
   return index
 end
 
---- Every infinity pipe standing in `area`.
+--- Every infinity pipe standing in `area`, WHATEVER PROTOTYPE IT IS.
+---
+--- BY TYPE AND NOT BY NAME, and the difference is whether the tally below can fail at all. Energy
+--- is fed in this repository by Write-EnergyFeed's own prototype, `rf-rig-energy-infinity-pipe`
+--- (factorio-lib.ps1), which is a deepcopy of the vanilla pipe under a name of its own -- so a
+--- filter on the NAME `infinity-pipe` cannot see an energy feed, and "no pipe carries reactor
+--- energy" would have been true by construction rather than measured. The plant section has no
+--- self-test half of its own, so a check that cannot fail there is a check that says nothing.
 local function surface_pipes(area)
-  return game.surfaces[1].find_entities_filtered({ name = "infinity-pipe", area = area })
+  return game.surfaces[1].find_entities_filtered({ type = "infinity-pipe", area = area })
 end
 
 --- A substation and a load. The load matters: a generator with nothing drawing from it throttles
