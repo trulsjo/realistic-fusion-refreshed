@@ -4,6 +4,18 @@ Date: 2026-08-20
 
 ## Status
 
+**Accepted, and implemented in full on 2026-09-07.** Item 1 shipped in
+[#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) (the neutronic fluid) and
+[#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87) (the aneutronic one), which
+carry items 2, 3 and 5 with them. Twenty-four connections now declare a category, up from fourteen;
+`scripts/check-containment.ps1` asserts that an ordinary pipe, a vanilla storage tank and a vanilla
+pump are all refused by a live reactor-energy box, that a fluid wagon has no fluid box for a pump to
+be its only route into, and that a converter and a neutronic reactor refuse each other. Item 4's
+geometry came first, from [ADR 0031](0031-energy-bolts-along-a-long-face.md); item 6 was never
+touched. `rf-hc-exchanger` is contained on the declaration it already had, so
+[#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276) is about its footprint and
+not about this ADR.
+
 Accepted. Resolves
 [#44](https://github.com/trulsjo/realistic-fusion-refreshed/issues/44) — whether the reactor should
 deliver heat instead of a fluid.
@@ -95,7 +107,9 @@ Checked against the installed 2.0.77 Space Age data
   literal `pipe-to-ground`, and appends twelve categories to its surface one — a category is a
   whitelist, so both open a prototype a player builds. **One lane of fourteen does it**, and
   `no-pipe-touching` 1.1.28 is in no other lane's pin; containment holds on the other twelve of the
-  fourteen contained connections. See
+  fourteen contained connections *as they stood that day* -- containment was plasma-only then, and
+  #86 and #87 took the count to twenty-four. The breaching pass is a `pipe-to-ground` pass and
+  reaches no energy box, so only the denominator moved. See
   [`connection-category-reassignment.md`](../research/connection-category-reassignment.md) for the
   mechanism and
   [`connection-categories-by-lane.md`](../research/connection-categories-by-lane.md) for the sweep.
@@ -222,11 +236,13 @@ face.**
    one on each short end for the row. `rf-hc-exchanger` follows in
    [#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276).
 
-   **Item 2 no longer waits on this.** A reactor, an exchanger bolted to its south face and a second
-   chained off the first's east end are built and asserted by `scripts/check-hc.ps1`'s plant
-   section, with no pipe carrying reactor energy anywhere in it. What still waits is item 1 itself:
-   no energy box carries a category yet, and that is
-   [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86).
+   **Item 2 no longer waits on this, and neither does item 1.** A reactor, an exchanger bolted to
+   its south face and a second chained off the first's east end are built and asserted by
+   `scripts/check-hc.ps1`'s plant section, with no pipe carrying reactor energy anywhere in it.
+   Item 1 shipped on 2026-09-07 in
+   [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) and
+   [#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87), so every energy box now
+   carries a category and that plant is the only way the fluid can travel.
 
 5. **`rf-aneutronic-composite-tank` becomes a helium-3 vessel only.** Its energy-buffering role goes,
    because a categorised energy fluid cannot enter it.
@@ -291,16 +307,29 @@ face.**
   still a decision, still Truls's, and still one entity beyond ADR 0010 and a later ADR rather than a
   silent addition. [`converter-buffering.md`](../research/converter-buffering.md) carries the
   numbers, including what they do not settle.
-- **Two shipped assertions invert.** `check-containment.ps1` asserts that an ordinary pipe
-  still joins the reactor's energy output and carries reactor energy. Correct today, wrong after this.
-- **One shipped gate becomes true but meaningless.** `check-aneutronic.ps1` asserts the composite
-  tank buffers the tier's energy fluid, but fills it with `insert_fluid` on an unplumbed tank
-  (`:463-466`), and Lua insertion ignores connection categories. It would keep passing after the
-  capability was gone, which is worse than failing.
-- **Rigs that plumb this leg with vanilla pipes need rebuilding:** `check-d-t.ps1`, `check-hc.ps1`,
-  `check-brownout.ps1`, `bench-mod-links.ps1`, `bench-reactors.ps1`. And
+- ~~**Two shipped assertions invert.**~~ **DONE (#86).** `check-containment.ps1` asserted that an
+  ordinary pipe still joined the reactor's energy output and carried reactor energy. Both rows now
+  assert the opposite, with the rigs' categorised feed on the box's other face as the control that
+  tells a refusal apart from a mis-aligned pipe.
+- ~~**One shipped gate becomes true but meaningless.**~~ **REWRITTEN (#87).**
+  `check-aneutronic.ps1` asserted the composite tank buffered the tier's energy fluid, but filled it
+  with `insert_fluid` on an unplumbed tank, and Lua insertion ignores connection categories — so it
+  would have kept passing after the capability was gone. It now builds the tank twice and plumbs
+  both: on a helium-3 line it joins and fills, which is the role item 5 leaves it, and against a
+  live categorised energy feed it joins nothing and holds nothing.
+- ~~**Rigs that plumb this leg with vanilla pipes need rebuilding**~~ **DONE (#86, #87), and the
+  list this bullet named was wrong in both directions.** What actually plumbed the leg with vanilla
+  pipe was `bench-mod-links.ps1` (rebuilt: the first exchanger bolts to the reactor's south face and
+  the rest chain off its east end, so its `-Pipes` now counts the plasma link only) and
+  `check-pooling.ps1`'s `outlets` row (rebuilt: the reactor's energy box gets a bolted exchanger
+  instead of twenty pipes and a tank, keeping the `get_capacity` assertion and losing the two that
+  compare a box against a run). `check-d-t.ps1` drains through Lua, `check-brownout.ps1` already
+  bolted, and `bench-reactors.ps1` never touched the leg. `check-aneutronic.ps1` and
+  `probe-converter-buffer.ps1` needed the converter's new footprint rather than its plumbing, and
+  the probe's two tanked cells are retired because a tank can no longer join the row at all.
   [`fluid-link-throughput.md`](../research/fluid-link-throughput.md) and
-  [`reactor-runtime-cost.md`](../research/reactor-runtime-cost.md) measure a leg that stops existing.
+  [`reactor-runtime-cost.md`](../research/reactor-runtime-cost.md) measure a leg that no longer
+  exists, and say so at the top.
 - **Breaking change.** Existing saves and blueprints break silently: the pipes stay and the
   connections do not. Both mods are at 0.1.0 and unpublished, so no released-save migration is owed
   and [ADR 0006](0006-clean-break-from-predecessor-saves.md)'s clean-break culture covers the rest.
@@ -308,6 +337,16 @@ face.**
 - **Throughput is unmeasured.** #82 asked whether connections form and whether fuel crosses them, not
   what a bolted joint carries against a run of pipe. A row of eight chained exchangers off one
   reactor connection is the shape this ships and its rate is not known.
+
+  **Still true after #86, and the bench now says so on its face.** `bench-mod-links.ps1` prints its
+  energy figure against #47's band of 100 units/tick flush down to a floor of 50 through a long run
+  of pipe. A bolted joint is the flush case and there is no long run any more, so the band's lower
+  end describes nothing buildable; the range is printed as it stands rather than narrowed, because
+  re-deriving a ceiling for a bolt is
+  [#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227)'s question. What the bench
+  did measure on 2026-09-07 is that four 40 MW exchangers bolted to one reactor return the same
+  78.3 MW to six digits as the drain cell that removes everything: the row is not demand-limited, so
+  the two cells are now one experiment.
 - **UPS is unmeasured**, and ADR 0005's outstanding obligation to measure it is unaffected either way.
 - **The alignment arithmetic is a trap, and it is written down.** A pipe run aligns a connection's
   `target_position` onto the tile the pipe occupies; a **direct bolt** aligns one machine's connection

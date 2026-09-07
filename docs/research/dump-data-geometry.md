@@ -35,6 +35,13 @@ so a geometry extractor must select by *entity* type, not by name alone. Observe
 | `rf-isotope-collector` | `boiler` | `[[-2.25,-2.25],[2.25,2.25]]` | `[[-2.5,-2.5],[2.5,2.5]]` |
 | `rf-lithium-blanket` | `container` | `[[-2.25,-2.25],[2.25,2.25]]` | `[[-2.5,-2.5],[2.5,2.5]]` |
 
+**Two of those boxes have since been turned, and the shape of the observation has not.** ADR 0031
+declared `rf-heat-exchanger` and `rf-direct-energy-converter` fifteen wide by five tall, so both now
+read `[[-7.25,-2.25],[7.25,2.25]]` and `[[-7.5,-2.5],[7.5,2.5]]` — #275 on 2026-09-07 and #87 the
+same day. Nothing about where the fields live or how to select them changed; the numbers above are
+the dump as observed on the day this note was written, and `tools/extract-geometry.py` reads the
+live ones.
+
 Two things worth knowing before writing the selector:
 
 - **`rf-reactor` is a `boiler` too**, not a `reactor` — the dump has no `reactor/rf-reactor`, and a

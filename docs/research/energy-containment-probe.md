@@ -11,6 +11,17 @@ committed rather than the numbers alone, because these are facts about a version
 the next version is entitled to different ones. Re-run it before quoting any figure here against a
 newer build.
 
+> **THE DECISION THIS UNBLOCKED IS NOW IN THE TREE (2026-09-07).**
+> [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) and
+> [#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87) shipped ADR 0018's item 1,
+> so the field this probe asked about is set on the real machines rather than on rig copies of them:
+> twenty-four connections carry a category and `scripts/check-containment.ps1` is the gate. The
+> probe still runs and still measures its own variants -- that is what a probe is for, and its
+> "prototype read" line now prints the shipped categories beside them -- but the load-bearing
+> question it existed to answer is closed and asserted elsewhere. **AC 5 is what took the ordinary
+> exchanger's geometry off #86's critical path**, and #86 shipped `rf-hc-exchanger` contained on the
+> one plain-`"input"` connection it already had, exactly as that row predicted.
+
 **Re-measured 2026-09-06 for [#111](https://github.com/trulsjo/realistic-fusion-refreshed/issues/111).**
 The rig had stopped running: [#45](https://github.com/trulsjo/realistic-fusion-refreshed/issues/45)
 changed `rf-heat-exchanger` from 3×2 to 5×15 and the chain row still built the 3×2, so its second

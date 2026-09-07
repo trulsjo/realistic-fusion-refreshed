@@ -48,6 +48,13 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 
 -- Plasma must not travel through vanilla pipes (CONTEXT.md, ADR 0010). This is what enforces it.
 --
+-- SINCE #86 AND #87 THE SAME SENTENCE IS TRUE OF THE TWO ENERGY FLUIDS, which ADR 0010 could not
+-- have said: at the time they were meant to travel on ordinary pipes. ADR 0018 gives each of them a
+-- category of its own and ships no pipe that carries either, so an exchanger or a converter bolts
+-- onto a reactor face and chains to its neighbours, and there is no pipe, no tank and no wagon on
+-- that leg at all. Everything below about what a coexisting set can do to a category applies to all
+-- three families equally.
+--
 -- 2.0 gives a pipe connection a connection_category, and two connections join only when theirs
 -- match. Naming a category of our own therefore makes a vanilla pipe beside a plasma line simply
 -- not connect -- the same way it already refuses to join a heat pipe. The plasma never enters,
@@ -84,6 +91,11 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 -- merely inspects. Same category to the engine, nothing changed about what connects, and worth
 -- knowing anyway: it is not leaving our contained boxes alone, it is making twelve equivalent edits.
 --
+-- FOURTEEN WAS THE COUNT ON 2026-09-01 AND THE TREE HAS MOVED. Containment was plasma-only then;
+-- #86 and #87 took it to twenty-four by categorising the ten energy connections. The finding does
+-- not change -- the pass that breached is a pipe-to-ground pass and reaches no energy box -- but
+-- twelve of fourteen is that day's dump rather than today's, and load-check counts today's.
+--
 -- load-check FAILS on it since #209 (2026-09-02): it dumps the game twice on every lane, once with
 -- our mods alone for what this file declared and once with the set, and a category written here that
 -- is gone from the second ends the run. What it does not fail on is an ADDITION to a connection we
@@ -109,17 +121,28 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 -- a race with whatever put the plasma there. None of it is needed against 2.0, so none of it is
 -- here: this file is the whole of the enforcement and control.lua gains nothing.
 --
--- Applied per box rather than per entity, because the reactor's other box carries reactor energy
--- through ordinary pipes today, and the heater is fed deuterium through them.
+-- Applied per box rather than per entity, because the reactor's plasma box and its energy box are
+-- contained under DIFFERENT categories, and the heater is still fed deuterium through ordinary pipes.
 local PLASMA_CATEGORY = "rf-plasma"
+
+-- THREE CATEGORIES, ONE PER CONTAINED FLUID FAMILY (ADR 0018 items 1 and 3, #86 and #87). Named
+-- after the fluid each carries, the way PLASMA_CATEGORY is named after the plasma family, and
+-- SEPARATE ON PURPOSE: sharing one between the two energies would let a converter bolt onto a
+-- neutronic reactor and then sit dry, which is the silent failure the separation exists to make
+-- impossible. The engine refuses the connection instead.
+--
+-- Nothing a player can build carries either, and nothing is added -- item 2. An exchanger bolts to
+-- a reactor face and chains to its neighbours; a converter does the same on its own tier. What that
+-- removes is a capability nobody designed: a vanilla storage tank held 25 GJ of reactor energy and a
+-- fluid wagon 50 GJ, against a vanilla accumulator's 5 MJ.
+local REACTOR_ENERGY_CATEGORY    = "rf-reactor-energy"
+local ANEUTRONIC_ENERGY_CATEGORY = "rf-aneutronic-reactor-energy"
 
 -- THE CATEGORY IS AN ARGUMENT, not this function's own constant, and that is the whole of #84's
 -- share of it. ADR 0018 gives rf-reactor-energy and rf-aneutronic-reactor-energy a category each,
 -- so containment needs three rather than one; a helper that names plasma internally would have to
 -- be rewritten by the ticket that can least afford a wide diff. Passing it costs one word per call
--- and leaves #86 changing call sites rather than this.
---
--- Nothing but plasma passes one yet. That is deliberate: #84 contains nothing new.
+-- and left #86 changing call sites rather than this, which is what happened.
 local function contain(box, category)
   if not category then error("contain() needs a connection category; see ADR 0018") end
   for _, connection in ipairs(box.pipe_connections or {}) do
@@ -339,6 +362,10 @@ reactor.output_fluid_box = {
   },
   filter = "rf-reactor-energy",
 }
+-- CONTAINED, so nothing a player can build joins this box (ADR 0018 item 1, #86). An exchanger
+-- bolts onto one of these two faces and the row chains off it; there is no pipe for this fluid, and
+-- no tank and no wagon either.
+contain(reactor.output_fluid_box, REACTOR_ENERGY_CATEGORY)
 
 -- ---------------------------------------------------------------- heat exchanger
 
@@ -482,6 +509,11 @@ exchanger.energy_source = {
     filter = "rf-reactor-energy",
   },
 }
+-- CONTAINED, and this is the box #82 existed to ask about: the field is set on a fluid box NESTED
+-- INSIDE a fluid energy source, and nothing established that the engine reads it there. It does --
+-- docs/research/energy-containment-probe.md. A negative would have voided ADR 0018 outright, because
+-- the reactor's output categorised and this box left `default` means nothing connects at all.
+contain(exchanger.energy_source.fluid_box, REACTOR_ENERGY_CATEGORY)
 
 -- FIFTEEN WIDE BY FIVE TALL, ON RENDERED ART (#45, ADR 0022, #108; turned by ADR 0031, #275).
 -- Truls's decision: this machine takes the original mod's five-by-fifteen area, which Durikkan's
@@ -611,6 +643,14 @@ hc_exchanger.energy_source = {
     filter = "rf-reactor-energy",
   },
 }
+-- CONTAINED, on the declaration it already had, and that is a measurement rather than luck (#275,
+-- ADR 0031). This machine's one energy connection is plain `"input"`, and exchanger-chaining.md had
+-- established that such a connection stops fuel LEAVING a box -- whether it also stops fuel
+-- ARRIVING through a bolt had no answer anywhere. It does not: probe-energy-containment.ps1's AC 5
+-- row bolts this machine to a reactor's output and measures it drinking its full 400 MW.
+-- flow_direction governs forwarding, not joining. So #276 gives it the ordinary exchanger's
+-- footprint for consistency, not because containment waits on it.
+contain(hc_exchanger.energy_source.fluid_box, REACTOR_ENERGY_CATEGORY)
 
 -- Ten units of steam a tick against vanilla's one.
 local hc_turbine = pin(table.deepcopy(data.raw["generator"]["steam-turbine"]), "rf-hc-turbine", {
@@ -901,17 +941,29 @@ aneutronic.fluid_box = {
   -- same freedom the D-D and D-T tiers already share, one machine further along.
 }
 contain(aneutronic.fluid_box, PLASMA_CATEGORY)
+-- NORTH AND SOUTH, one connection per face (ADR 0031 item 1, #87). The same addition rf-reactor
+-- took in #275, and for the same reason: a converter hangs off either face, so one reactor drives
+-- two stacks of them instead of one. West and east stay plasma, so ADR 0011's shared pool is
+-- untouched here as well. The south socket is drawn by pipe_covers, the same as the north one.
+--
+-- One connection per face on purpose -- intake width is #227's and ADR 0031 item 6 defers it.
 aneutronic.output_fluid_box = {
   production_type = "output",
   volume = 1000,
   pipe_covers = aneutronic_covers,
   pipe_connections = {
     { flow_direction = "output", direction = defines.direction.north, position = { 0, -7 } },
+    { flow_direction = "output", direction = defines.direction.south, position = { 0, 7 } },
   },
   -- The tier's own energy fluid, which is what keeps the two conversion routes from being
   -- interchangeable. See prototypes/fluids.lua for why there are two.
   filter = "rf-aneutronic-reactor-energy",
 }
+-- CONTAINED under a category of ITS OWN, not the neutronic one (ADR 0018 items 1 and 3, #87). A
+-- converter therefore cannot be bolted to an rf-reactor and an exchanger cannot be bolted to this
+-- machine: the engine refuses the connection outright rather than joining two boxes whose filters
+-- disagree and leaving a player to work out why nothing flows.
+contain(aneutronic.output_fluid_box, ANEUTRONIC_ENERGY_CATEGORY)
 
 -- ---------------------------------------------------------------- direct energy converter
 
@@ -963,33 +1015,59 @@ converter.fluid_box = {
   -- back simply do not connect, so every one after the first sits dry with nothing to look at. The
   -- layout works for the whole neutronic tier and silently would not have here.
   --
-  -- BOTH LONG FACES, at ±2 -- the outermost tile centres across the 5-wide axis. One butts the
-  -- reactor along its whole length, which is what the 5x15 shape is for; the other passes fluid to
-  -- the next converter in the row, which is the chaining the comment above records as easy to lose.
+  -- BOTH LONG FACES, at ±2 -- the outermost tile centres across the 5-tall axis. One butts the
+  -- reactor along its whole length, which is what the 15x5 shape is for; the other passes fluid to
+  -- the next converter in the stack, which is the chaining the comment above records as easy to lose.
   -- They were on the short ends and that put one tile against the reactor.
+  --
+  -- NORTH AND SOUTH SINCE ADR 0031 ITEM 4 (#87), where they were west and east. The machine is
+  -- declared fifteen wide by five tall now, so the long faces are the horizontal ones: a converter
+  -- placed unrotated below a reactor bolts on immediately, the way an exchanger does since #275.
+  -- No connection is added or removed -- this is the same machine relabelled.
   pipe_connections = {
-    { flow_direction = "input-output", direction = defines.direction.west, position = { -2, 0 } },
-    { flow_direction = "input-output", direction = defines.direction.east, position = { 2, 0 } },
+    { flow_direction = "input-output", direction = defines.direction.north, position = { 0, -2 } },
+    { flow_direction = "input-output", direction = defines.direction.south, position = { 0, 2 } },
   },
   filter = "rf-aneutronic-reactor-energy",
 }
+-- CONTAINED under the aneutronic category, so this machine drinks from an aneutronic reactor and
+-- from another converter and from nothing else (ADR 0018 items 1 and 3, #87).
+--
+-- The energy that used to be buffered here is not buffered anywhere now, and that is measured
+-- rather than hoped: #85 ran a heater-fed reactor into a chained row of these with no tank in it
+-- for an hour and got a smooth 485 MW with no stall and no cycle, every box in the row sitting at 0
+-- or 1 unit of the 1000 it can hold. scale_fluid_usage is what makes that work; see the composite
+-- tank below and docs/research/converter-buffering.md.
+contain(converter.fluid_box, ANEUTRONIC_ENERGY_CATEGORY)
 converter.energy_source = {
   type = "electric",
   usage_priority = "secondary-output",
 }
 
--- FIVE BY FIFTEEN, ON MOCKUP ART (#45, ADR 0022). The original mod's footprint for this machine, which
--- Durikkan's 2.0 port still declares, and the same size its heat exchanger takes -- the two are a
--- pair in that layout, one per route. It was vanilla's 3x5 steam turbine, which is the machine this
--- tier exists to REMOVE: a direct energy converter decelerates charged particles against collector
--- plates and never raises steam at all (ADR 0018), so wearing a turbine was the plainest lie in the
--- mod.
+-- FIFTEEN WIDE BY FIVE TALL, ON MOCKUP ART (#45, ADR 0022; turned by ADR 0031 item 4, #87). The
+-- original mod's five-by-fifteen area for this machine, which Durikkan's 2.0 port still declares,
+-- and the same area its heat exchanger takes -- the two are a pair in that layout, one per route.
+-- It was vanilla's 3x5 steam turbine, which is the machine this tier exists to REMOVE: a direct
+-- energy converter decelerates charged particles against collector plates and never raises steam at
+-- all (ADR 0018), so wearing a turbine was the plainest lie in the mod.
 --
--- Both connections sit on the long faces, so a row of these joins side by side rather than end to
--- end -- the same chaining, turned ninety degrees with the machine.
-converter.collision_box = { { -2.25, -7.25 }, { 2.25, 7.25 } }
-converter.selection_box = { { -2.5, -7.5 }, { 2.5, 7.5 } }
-local converter_art = mockup.generator("direct-energy-converter", 5, 15)
+-- THE LONG AXIS IS EAST-WEST NOW, so the energy faces are north and south and a converter placed
+-- unrotated under a reactor bolts on. It was declared five wide by fifteen tall, which meant
+-- check-aneutronic.ps1 had to rotate one to make a face meet the reactor at all.
+--
+-- Both connections sit on the long faces, so a stack of these joins face to face and grows OUTWARD
+-- from the reactor -- where an exchanger chains through its short ends and grows sideways along the
+-- reactor's face. Two rules rather than one, and deliberate: an exchanger spends both long faces on
+-- energy in and steam out, and a converter has neither to spend. Truls, 2026-09-07: "the exchanger
+-- and the converter are different beasts, exchanger needs its array of turbines, while the converter
+-- needs nothing more."
+converter.collision_box = { { -7.25, -2.25 }, { 7.25, 2.25 } }
+converter.selection_box = { { -7.5, -2.5 }, { 7.5, 2.5 } }
+-- FIFTEEN WIDE GOES IN `vertical_animation`, AND GETTING IT ROUND THE OTHER WAY LOADS CLEAN.
+-- mockup.generator returns .vertical and .horizontal and the engine picks by direction, so the
+-- sheet drawn for direction north has to be the one at the north footprint. Swap them and every
+-- gate here still passes while the machine draws sideways.
+local converter_art = mockup.generator("direct-energy-converter", 15, 5)
 converter.vertical_animation = converter_art.vertical
 converter.horizontal_animation = converter_art.horizontal
 
@@ -1028,6 +1106,17 @@ converter.horizontal_animation = converter_art.horizontal
 -- omission (#26): its connections carry no plasma category, so no plasma line can join it, and a
 -- player cannot tank fusion-temperature plasma at all. That is the same statement rf-pipe makes
 -- about a vanilla pipe, made from the other end.
+--
+-- SINCE #86 AND #87 THE SAME SENTENCE CLOSES BOTH ENERGY FLUIDS, and that is what took this
+-- entity's second job away. Its connections are `default`, and the two energy boxes now carry
+-- categories of their own, so nothing that carries reactor energy or aneutronic reactor energy can
+-- reach this vessel through plumbing -- no more than a vanilla tank or a fluid wagon can. A vanilla
+-- tank held 25 GJ of it and a wagon 50 GJ, against a vanilla accumulator's 5 MJ; that was a
+-- capability nobody designed, and it is gone.
+--
+-- Lua insertion still ignores categories, which is exactly why check-aneutronic.ps1 no longer
+-- asserts this tank's energy role by calling insert_fluid on it: that assertion would have gone on
+-- passing after the capability was gone, which is worse than failing.
 local tank = pin(table.deepcopy(data.raw["storage-tank"]["storage-tank"]), "rf-aneutronic-composite-tank", {
   mining_time = 0.5,
 })

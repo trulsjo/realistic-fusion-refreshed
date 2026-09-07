@@ -100,7 +100,15 @@
     a prefix that changed, a dump written somewhere else: each of those reports zero differences,
     which reads exactly like containment surviving. So the `declared` side must hold at least one
     connection carrying `rf-plasma` or the run throws. That is an instrument fault rather than a
-    finding, and it is the only non-zero exit that comes from anything this probe MEASURED. The
+    finding, and it is the only non-zero exit that comes from anything this probe MEASURED.
+
+    THREE CATEGORIES ARE CONTAINED SINCE #86 AND #87, NOT ONE, and this floor still keys on
+    `rf-plasma` alone. That is deliberate and it is enough for what the floor is for: it exists to
+    catch the walk having stopped matching or the dump having been written somewhere else, and a
+    plasma connection missing says that as well as an energy one would. What this probe REPORTS is
+    every non-default connection whatever its category, so the ten energy ones are compared and
+    listed like the rest. load-check.ps1's own floor requires all three, because there a lost
+    category is a gate failure rather than a row in a report. The
     others are the run refusing to happen at all rather than reporting on it: a missing or empty
     -AlsoModDirectory, an unknown -With name, a Factorio run that exits non-zero (Invoke-FactorioStep
     throws), or a dump that is not where it should be (Get-OurConnections throws, on either run).

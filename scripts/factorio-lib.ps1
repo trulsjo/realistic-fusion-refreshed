@@ -203,8 +203,7 @@ write-data=$writeData
 # Write-PlasmaFeed cannot drift apart.
 $script:PlasmaFeedName = 'rf-rig-plasma-infinity-pipe'
 
-# The same, for reactor energy. See Write-EnergyFeed below for why it exists while nothing is
-# contained yet.
+# The same, for the two energy fluids. One prototype for both tiers -- see Write-EnergyFeed below.
 $script:EnergyFeedName = 'rf-rig-energy-infinity-pipe'
 
 function Add-RigData {
@@ -230,30 +229,45 @@ function Add-RigData {
 }
 
 function Write-EnergyFeed {
-    <#  Write a rig mod's data.lua declaring an infinity pipe that feeds or drains reactor energy.
+    <#  Write a rig mod's data.lua declaring an infinity pipe that feeds or drains either energy fluid.
 
-        IT IS A PLAIN VANILLA INFINITY PIPE TODAY, AND THAT IS THE POINT (#84). Nothing is
-        contained by this function and no rig changes behaviour by calling it.
+        IT CARRIES BOTH ENERGY CATEGORIES, AND THAT IS WHY IT EXISTS (#84, #86, #87). ADR 0018 gives
+        rf-reactor-energy and rf-aneutronic-reactor-energy a connection_category each and ships no
+        pipe that carries either, so a vanilla infinity-pipe is a vanilla pipe: it stopped being able
+        to reach an energy box the instant containment landed, and every rig here fed or drained
+        energy with one. The symptom would have been a reactor reporting itself starved, or an
+        exchanger at no_input_fluid, on a perfectly good rig -- the same failure Write-PlasmaFeed
+        already absorbed for plasma.
 
-        ADR 0018 gives rf-reactor-energy a connection_category of its own, and on the day it does,
-        every rig that feeds or drains energy with a vanilla infinity pipe stops connecting at the
-        same instant -- the same failure Write-PlasmaFeed exists to have already absorbed for
-        plasma, where the symptom was a reactor reporting "starved" on a perfectly good rig.
+        #84 routed the rigs through this function first so that #86 was an edit HERE and not an edit
+        to the two places that named a pipe for energy: check-hc.ps1's feed(), which its three ENERGY
+        callers share, and bench-mod-links.ps1's drain. That is what "make the change easy, then make
+        the easy change" bought, and it is what happened.
 
-        Routing them through one helper first makes #86 an edit to this function rather than an
-        edit to the TWO places that name a pipe for energy: check-hc.ps1's feed(), which its three
-        ENERGY callers share, and bench-mod-links.ps1's drain. That is what "make the change easy,
-        then make the easy change" buys here. #84 says seven gates; that was the count on
-        2026-08-20 and the tree has moved.
+        ONE PROTOTYPE FOR BOTH TIERS. A connection_category may be a list, which is what Wube do to
+        their own infinity pipe for exactly this reason -- space-age/base-data-updates.lua gives it
+        {"default", "fusion-plasma"} so that an instrument can feed what nothing buildable carries.
+        Two feed prototypes would be two names for rigs to choose between with nothing gained.
 
-        probe-energy-containment.ps1 is deliberately NOT one of them. It places an ordinary pipe
-        against a categorised one and measures which the machine accepts: there, the pipe's name is
-        the experiment rather than incidental supply, and routing it through here would delete the
+        `default` is deliberately NOT in the list. This pipe is an instrument for the contained
+        fluids and nothing else, and a feed that also joined ordinary plumbing would quietly bridge a
+        rig's water or steam run into its energy run.
+
+        THE CATEGORIES ARE READ OFF THE SHIPPED PROTOTYPES rather than named again here, the way
+        Write-PlasmaFeed reads rf-pipe's, so a rename follows the mod instead of leaving the rigs
+        pointing at a category nothing declares. Read from the two REACTORS' output boxes, which is
+        the one box on each tier whose category cannot be moved without the tier stopping working.
+
+        A CATEGORISED FEED IS AN INSTRUMENT AND NOT SOMETHING A PLAYER HAS -- there is no pipe for
+        either fluid. So a rig that merely needs to SUPPLY energy may use one, while a rig whose
+        subject IS the reactor-to-exchanger link has to bolt the real machines together or be
+        retired. check-hc.ps1 holds both shapes: its measured rows are fed, and its plant section
+        bolts.
+
+        probe-energy-containment.ps1 is deliberately NOT one of the callers. It places an ordinary
+        pipe against a categorised one and measures which the machine accepts: there, the pipe's name
+        is the experiment rather than incidental supply, and routing it through here would delete the
         thing it measures.
-
-        Deliberately does NOT read a category off a shipped prototype the way Write-PlasmaFeed
-        does: there is no contained energy pipe to read one from, and inventing the name here would
-        be #86's decision taken early.
 
         Returns the prototype name to place.  #>
     param([Parameter(Mandatory)] [string] $RigDirectory)
@@ -261,13 +275,25 @@ function Write-EnergyFeed {
     Add-RigData -RigDirectory $RigDirectory -Lua @"
 -- Appended by scripts/factorio-lib.ps1 (Write-EnergyFeed).
 --
--- An ordinary infinity pipe under a name of our own. When ADR 0018 lands, the category goes on
--- here and every rig that calls this follows without being edited.
+-- An infinity pipe carrying BOTH energy categories under a name of our own, so one instrument feeds
+-- or drains either tier. Nothing a player can build carries either (ADR 0018 item 2).
+
+local categories = {}
+for _, source in ipairs({ "rf-reactor", "rf-aneutronic-reactor" }) do
+  local reactor = data.raw["boiler"][source]
+  if not reactor then error(source .. " is missing; the rig cannot work out the energy connection category") end
+  local category = reactor.output_fluid_box.pipe_connections[1].connection_category
+  if not category then error(source .. "'s energy output carries no connection category; see ADR 0018") end
+  categories[#categories + 1] = category
+end
 
 local feed = table.deepcopy(data.raw["infinity-pipe"]["infinity-pipe"])
 feed.name = "$script:EnergyFeedName"
 feed.minable = nil
 feed.fast_replaceable_group = nil
+for _, connection in ipairs(feed.fluid_box.pipe_connections) do
+  connection.connection_category = categories
+end
 data:extend({ feed })
 "@
     return $script:EnergyFeedName

@@ -301,20 +301,26 @@ can produce no such figure — a factory cannot be un-built.
 
 ## Plumbing
 
-> **Plasma containment is built and gated. The energy half of this section is decided but not yet
-> built.** ADR 0018 was accepted on 2026-08-20; no prototype carries an energy category yet, so today
-> an ordinary pipe still joins a reactor's energy output and still carries the fluid —
-> `scripts/check-containment.ps1` asserts exactly that, and passes. The terms below are fixed now
-> because a decision fixes vocabulary, which is all this file does; the behaviour arrives with the
-> implementation. Remove this note when the energy categories ship.
+> **All three fluids are contained, built and gated (2026-09-07).** ADR 0018 was accepted on
+> 2026-08-20 and item 1 shipped in
+> [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) and
+> [#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87). Every term below now names
+> something the tree builds: twenty-four connections carry a category, an ordinary pipe on a
+> reactor's energy output does not join and stays empty, no vanilla tank or pump joins one either,
+> and a converter and a neutronic reactor refuse each other outright.
+> `scripts/check-containment.ps1` asserts all of that — five bolted pairs, three that must join and
+> two that must be refused — and `scripts/check-hc.ps1`'s plant section and
+> `scripts/check-aneutronic.ps1` build the bolted, chained shapes a player builds.
+> [ADR 0031](docs/adr/0031-energy-bolts-along-a-long-face.md) is which face bolts to what.
+> `rf-hc-exchanger` is contained on the declaration it already had and is one of those three pairs;
+> #276 gives it the ordinary exchanger's footprint for consistency and not because containment
+> waits on it.
 >
-> **The geometry it needs is decided, and the neutronic side builds it (2026-09-07).**
-> [ADR 0031](docs/adr/0031-energy-bolts-along-a-long-face.md) settles which face bolts to what, which
-> ADR 0018's own item 4 could not — its coordinates were written for a machine three tiles by two.
-> Since #275 `rf-reactor` sells energy north and south, `rf-heat-exchanger` bolts along its north
-> long face and chains through its short ends, and `scripts/check-hc.ps1`'s plant section asserts
-> the shape. So **bolted** and **chained** below name something the tree builds — with no category
-> on it yet. The aneutronic side is #87, and `rf-hc-exchanger` is #276.
+> **And the items say so in words now.** Both energy fluids, both reactors, both exchangers and the
+> converter carry descriptions naming the bolt and saying no pipe, tank or wagon holds the fluid —
+> the plasma set has had that text since #26, and the energy half had none, which for a silent
+> breaking change is what a player has to read. The composite tank's description no longer claims to
+> buffer the tier: ADR 0018 item 5 took that role and #85 measured it as unneeded.
 
 **Contained** — of a fluid: its boxes carry a connection category of their own, so nothing a player
 can build joins them but plumbing that shares it. Three fluids take a category of their own —
@@ -339,7 +345,10 @@ Containment is a declaration, so it lasts exactly as long as the declaration doe
 overwrote `rf-pipe-to-ground`'s underground connection with the literal `pipe-to-ground` and appended
 twelve categories to its surface one, and a category is a whitelist, so both opened the box. Containment holds
 on the other twelve contained connections, so this is one pass over one prototype type rather than
-the guarantee failing in general. `scripts/probe-connection-categories.ps1` is what measured it, and
+the guarantee failing in general. (Twelve of fourteen is that day's dump: containment was plasma-only
+then, and #86 and #87 took the count to twenty-four. The breaching pass is a `pipe-to-ground` pass
+and reaches no energy box, so the finding is unchanged and only the denominator moved.)
+`scripts/probe-connection-categories.ps1` is what measured it, and
 **since [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209) `load-check` fails
 on it**: on every lane it dumps the game twice, once with our mods alone for what our data stage
 declared and once with the set, and a category we wrote that is gone from the second is a failure.
@@ -364,7 +373,7 @@ it survives such a mod, it survives by that mod's leave rather than by our enfor
 notice a second one.
 
 **Bolted** — of a connection: made by two machines' faces meeting, with no pipe between them. This is
-how reactor energy is *to* travel, because no pipe is to carry it. Reserve the word for a connection
+how reactor energy travels, because no pipe carries it. Reserve the word for a connection
 that actually carries fluid: two buildings can be adjacent, or touching, without their boxes facing
 each other, and that is neither bolted nor connected.
 
@@ -391,9 +400,11 @@ megajoule throughout the mod, so the tiers' outputs compare without a conversion
 "power" or "heat" when the fluid is meant.
 
 There are **two** of them, one per conversion route, and the pair is the tier's mechanic rather than
-bookkeeping. Containing them separately is what keeps the routes apart: a heat exchanger is not to be
-bolted to an aneutronic reactor nor a direct energy converter to a neutronic one, and the engine is to
-refuse the connection rather than let a player build something that would sit dry.
+bookkeeping. Containing them separately is what keeps the routes apart: a heat exchanger cannot be
+bolted to an aneutronic reactor nor a direct energy converter to a neutronic one, and the engine
+refuses the connection rather than letting a player build something that would sit dry. Measured both
+ways in `scripts/check-containment.ps1`: the two matching pairs join and the two crossed pairs do
+not.
 
 See [ADR 0018](docs/adr/0018-energy-is-contained-and-no-pipe-carries-it.md) for why energy is plumbed
 this way rather than piped, and what was rejected.

@@ -62,7 +62,7 @@
     "connections": [
       {
         "box": "energy_source.fluid_box",
-        "connection_category": null,
+        "connection_category": "rf-reactor-energy",
         "connection_type": "normal",
         "direction": "west",
         "flow": "input-output",
@@ -75,7 +75,7 @@
       },
       {
         "box": "energy_source.fluid_box",
-        "connection_category": null,
+        "connection_category": "rf-reactor-energy",
         "connection_type": "normal",
         "direction": "north",
         "flow": "input-output",
@@ -88,7 +88,7 @@
       },
       {
         "box": "energy_source.fluid_box",
-        "connection_category": null,
+        "connection_category": "rf-reactor-energy",
         "connection_type": "normal",
         "direction": "east",
         "flow": "input-output",
@@ -157,7 +157,7 @@
     ],
     "type": "boiler"
   },
-  "geometry_sha256": "10698d3f1f97968e493f891c61c2cacc12d1bc560e3399709091f3cf71e8c937",
+  "geometry_sha256": "a2f6f713b79b2469e2122b09541c32455f19fe95306a239aa53e5bc2e41500eb",
   "glow": true,
   "icon": {
     "centre": [
@@ -175,7 +175,7 @@
   },
   "machine": "heat-exchanger",
   "model": "models/heat-exchanger/heat-exchanger.blend",
-  "model_sha256": "4ccd7c2efedeb508834c0355974d97a6ae46fec0e7a7d4b5d423305fd546de47",
+  "model_sha256": "3abd88b8b7b41e2de68a84306297e5a86112e15f623d4805906e56ccefd979a3",
   "render": {
     "blender": "5.2.0 LTS",
     "device": "CPU",

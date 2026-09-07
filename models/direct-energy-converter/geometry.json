@@ -3,27 +3,27 @@
   "type": "generator",
   "collision_box": [
     [
-      -2.25,
-      -7.25
+      -7.25,
+      -2.25
     ],
     [
-      2.25,
-      7.25
+      7.25,
+      2.25
     ]
   ],
   "selection_box": [
     [
-      -2.5,
-      -7.5
+      -7.5,
+      -2.5
     ],
     [
-      2.5,
-      7.5
+      7.5,
+      2.5
     ]
   ],
   "tiles": [
-    5,
-    15
+    15,
+    5
   ],
   "connections": [
     {
@@ -32,11 +32,11 @@
       "fluid": "rf-aneutronic-reactor-energy",
       "flow": "input-output",
       "connection_type": "normal",
-      "connection_category": null,
-      "direction": "west",
+      "connection_category": "rf-aneutronic-reactor-energy",
+      "direction": "north",
       "position": [
-        -2,
-        0
+        0,
+        -2
       ]
     },
     {
@@ -45,11 +45,11 @@
       "fluid": "rf-aneutronic-reactor-energy",
       "flow": "input-output",
       "connection_type": "normal",
-      "connection_category": null,
-      "direction": "east",
+      "connection_category": "rf-aneutronic-reactor-energy",
+      "direction": "south",
       "position": [
-        2,
-        0
+        0,
+        2
       ]
     }
   ],

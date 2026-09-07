@@ -13,23 +13,30 @@
     Machines = @(
         @{
             # Both long sides, so one butts the reactor and the other passes fluid to the next converter
-            # in the row -- the chaining rf-hc-turbine and vanilla's steam turbine also do.
+            # in the stack -- the chaining rf-hc-turbine and vanilla's steam turbine also do.
+            #
+            # FIFTEEN WIDE BY FIVE TALL since ADR 0031 item 4 (#87), where it was five by fifteen with
+            # the sockets on west and east. Same machine, turned, so that a converter placed unrotated
+            # under a reactor bolts on.
             Mod = 'realistic-fusion-refreshed-assets'; Name = 'direct-energy-converter'; Label = "DIRECT`nENERGY`nCONVERTER"
             Prototype = 'generator'
-            Width = 5; Height = 15; Core = $false
+            Width = 15; Height = 5; Core = $false
             Connections = @(
-                @{ X = -2; Y = 0; Kind = 'energy'; Text = 'energy' },
-                @{ X =  2; Y = 0; Kind = 'energy'; Text = 'energy' }
+                @{ X = 0; Y = -2; Kind = 'energy'; Text = 'energy' },
+                @{ X = 0; Y =  2; Kind = 'energy'; Text = 'energy' }
             )
         },
         @{
+            # Energy sells NORTH AND SOUTH since ADR 0031 item 1 (#87), so a converter hangs off
+            # either face. Plasma keeps both west and east -- ADR 0011's shared pool uses them.
             Mod = 'realistic-fusion-refreshed-assets'; Name = 'aneutronic-reactor'; Label = "ANEUTRONIC`nREACTOR"
             Prototype = 'boiler'
             Width = 15; Height = 15; Core = $true
             Connections = @(
                 @{ X = -7; Y =  0; Kind = 'input';  Text = 'plasma' },
                 @{ X =  7; Y =  0; Kind = 'input';  Text = 'plasma' },
-                @{ X =  0; Y = -7; Kind = 'output'; Text = 'energy' }
+                @{ X =  0; Y = -7; Kind = 'output'; Text = 'energy' },
+                @{ X =  0; Y =  7; Kind = 'output'; Text = 'energy' }
             )
         },
         @{

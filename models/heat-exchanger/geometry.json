@@ -32,7 +32,7 @@
       "fluid": "rf-reactor-energy",
       "flow": "input-output",
       "connection_type": "normal",
-      "connection_category": null,
+      "connection_category": "rf-reactor-energy",
       "direction": "west",
       "position": [
         -7,
@@ -45,7 +45,7 @@
       "fluid": "rf-reactor-energy",
       "flow": "input-output",
       "connection_type": "normal",
-      "connection_category": null,
+      "connection_category": "rf-reactor-energy",
       "direction": "north",
       "position": [
         0,
@@ -58,7 +58,7 @@
       "fluid": "rf-reactor-energy",
       "flow": "input-output",
       "connection_type": "normal",
-      "connection_category": null,
+      "connection_category": "rf-reactor-energy",
       "direction": "east",
       "position": [
         7,

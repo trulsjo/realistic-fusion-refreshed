@@ -12,7 +12,11 @@ water-to-deuterium extraction chain, D-D reactors that breed their own tritium a
 fusion burning it, lithium blankets breeding more, and an aneutronic tier running D-He3 and He3-He3
 in a second reactor through a direct energy converter.
 **Every prototype ADR 0010 names for Power now exists** — thirteen entities and seven technologies,
-high-capacity steam equipment included. **Every balance number is still provisional**, and coverage
+high-capacity steam equipment included. **All three fluid families are contained** as of 2026-09-07
+(#86, #87): plasma and the two reactor energies each carry a `connection_category` of their own, so
+no pipe, tank, wagon or pump a player can build touches any of them, and an exchanger or a converter
+bolts straight onto a reactor face and chains to its neighbours (ADR 0018, ADR 0031).
+**Every balance number is still provisional**, and coverage
 is not the same as being finished: nothing here has been played for longer than a rig runs.
 
 Verification here is by running the game, not by reading. `tests/*.lua` cover the pure simulation
@@ -23,10 +27,12 @@ prototype's footprint or connections, by asking `tools/extract-geometry.py` agai
 on PATH. **The categories on those connections are compared as a subset, not for equality**, and this
 is the only gate that looks at them: an addition is allowed because a coexisting mod writes one
 legitimately — Krastorio 2 puts `kr-steel-pipe` on machines it never heard of — while a category being
-taken away is reported. The containment floor does **not** cover them; it skips any connection left
-`default`, which is all six of the heat exchanger's. (`probe-connection-categories.ps1` reports on
+taken away is reported. The containment floor covers only what carries a category; it skips any
+connection left `default`, which since #86 is three of the heat exchanger's six — its water pair and
+its steam outlet — where before it was all six. (`probe-connection-categories.ps1` reports on
 the same shape, but a probe asserts nothing.) Halves six and seven of `-SelfTest` are the
-canaries, one for each direction.
+canaries, one for each direction, and half six's victim is chosen as an UNCONTAINED connection for
+exactly that reason.
 `scripts/locale-check.ps1` and `scripts/name-check.ps1` only dump prototypes and create no map, so a
 pass there says nothing about runtime. `scripts/ship-check.ps1` runs no game at all — it is the
 check about the claims the mods make about themselves: the two statements ADR 0003 and ADR 0006
