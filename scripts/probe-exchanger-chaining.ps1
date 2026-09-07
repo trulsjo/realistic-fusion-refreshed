@@ -216,15 +216,32 @@ local function energy_index(entity) return index_of(entity, ENERGY) end
 -- create_entity does not collision-check, so without the occupancy test this buries a pipe under a
 -- machine. Skipping is right rather than merely safe: two exchangers fifteen tiles apart join
 -- through their water boxes, so a column is fed along itself from whichever end is free.
+-- A NIL RETURN FROM create_entity USED TO BE SWALLOWED HERE, AND IT COST A RUN. The function
+-- returns nil on ground it cannot build on, and the row-of-eight section reaches 105 tiles north,
+-- outside the starting area, on a benchmark map whose terrain comes from a fresh seed every run. So
+-- a lake under one machine's steam target refused that pipe, the machine backed up and reported
+-- full_output, and the run looked like a chaining result rather than a puddle. Two runs of the same
+-- rig disagreed and only the pipe tally noticed.
+--
+-- The refusal count is returned rather than raised: whether a missing pipe matters is the caller's
+-- business -- a pair row and a chained row want different things -- but no caller may be unable to
+-- find out.
 local function unbound(surface, force, entity, index, filter)
+  local made, refused = 0, 0
   for _, connection in ipairs(entity.fluidbox.get_pipe_connections(index)) do
     if #surface.find_entities_filtered({ position = connection.target_position }) == 0 then
       local pipe = surface.create_entity({
         name = "infinity-pipe", position = connection.target_position, force = force,
       })
-      if pipe then pipe.set_infinity_pipe_filter(filter) end
+      if pipe then
+        pipe.set_infinity_pipe_filter(filter)
+        made = made + 1
+      else
+        refused = refused + 1
+      end
     end
   end
+  return made, refused
 end
 
 --- An infinity pipe on ONE connection of `index`, chosen geometrically rather than by array order.
@@ -274,15 +291,24 @@ end
 --
 -- BOTH MACHINES OF A PAIR MUST EXIST before either is plumbed, or the skip above has nothing to
 -- skip and a pipe ends up buried under the neighbour.
+-- Returns how many pipes the ground refused, so a caller that cares can say so. Nothing above the
+-- row section reads it, deliberately: those rows sit inside the starting area and have never lost a
+-- pipe. The row of eight does not, and it has.
 local function plumb(surface, force, entity)
   local water = index_of(entity, "water")
   local steam = index_of(entity, "steam")
+  local refused = 0
   if water then
-    unbound(surface, force, entity, water, { name = "water", percentage = 1, mode = "at-least" })
+    local _, r = unbound(surface, force, entity, water,
+      { name = "water", percentage = 1, mode = "at-least" })
+    refused = refused + r
   end
   if steam then
-    unbound(surface, force, entity, steam, { name = "steam", percentage = 0, mode = "at-most" })
+    local _, r = unbound(surface, force, entity, steam,
+      { name = "steam", percentage = 0, mode = "at-most" })
+    refused = refused + r
   end
+  return refused
 end
 
 --- entity.status is a number; this is its name. There is no status_string in 2.0.77.
@@ -454,6 +480,40 @@ script.on_nth_tick(30, function()
     surface.request_to_generate_chunks({ X, -(N * PITCH) / 2 }, 12)
     surface.force_generate_chunk_requests()
 
+    -- LAND UNDER THE WHOLE SECTION, AND IT IS A FIX RATHER THAN A PRECAUTION. Found on this
+    -- section's second run: a benchmark map is created with a fresh seed every time, this column
+    -- sits outside the starting area where lakes are, and generated terrain is therefore an
+    -- uncontrolled variable in a rig whose only job is to control variables. One run placed all
+    -- eight steam pipes and the next placed seven, so the same rig reported two different answers
+    -- for the eighth machine.
+    --
+    -- Paving it removes the variable instead of detecting it. The refusal count out of plumb()
+    -- below is the detector, and after this it should always read zero -- a rig that both paves and
+    -- counts says so when the paving stops being enough.
+    local tiles = {}
+    for x = X - 8, X + 48 do
+      for y = -(N - 1) * PITCH - 14, 14 do
+        tiles[#tiles + 1] = { name = "grass-1", position = { x, y } }
+      end
+    end
+    surface.set_tiles(tiles)
+
+    -- AND CLEAR WHAT STANDS ON IT, which paving does not. set_tiles removes only entities that
+    -- COLLIDE with the new tile, so a lake's fish go and a forest's trees stay. unbound() then does
+    -- exactly what it promises -- skips a target tile something stands on -- and a tree in the steam
+    -- column silently costs one machine its steam outlet, after which it backs up to full_output
+    -- and reads as a chaining result.
+    --
+    -- MEASURED, not guessed: with paving alone the refusal count read 0 while the steam tally read
+    -- 7, which is the pair of numbers that says "not refused by the ground, already occupied". Two
+    -- consecutive runs lost a different machine each time -- row 8, then row 2.
+    --
+    -- The rig's opening sweep clears {-80,-80} to {80,80}, and this section sits outside it.
+    for _, e in pairs(surface.find_entities_filtered({
+        area = { { X - 8, -(N - 1) * PITCH - 14 }, { X + 48, 14 } } })) do
+      if e.type ~= "character" then e.destroy() end
+    end
+
     local row = {}
     for i = 1, N do row[i] = place(surface, force, "chainprobe-row", X, -(i - 1) * PITCH) end
 
@@ -465,8 +525,9 @@ script.on_nth_tick(30, function()
 
     -- EVERY MACHINE BEFORE ANY PLUMBING, or unbound() has nothing to skip and buries a pipe under
     -- the neighbour -- the same ordering rule plumb() carries above.
-    for _, e in ipairs(row) do plumb(surface, force, e) end
-    plumb(surface, force, aloof)
+    local refused = 0
+    for _, e in ipairs(row) do refused = refused + plumb(surface, force, e) end
+    refused = refused + plumb(surface, force, aloof)
 
     local energy = feed_one(surface, force, row[1], energy_index(row[1]), "west",
       { name = ENERGY, percentage = 1, mode = "at-least" })
@@ -485,7 +546,17 @@ script.on_nth_tick(30, function()
       if f and f.name == ENERGY   then tally.energy = tally.energy + 1 end
     end
 
-    storage.row = { machines = row, aloof = aloof, fed = energy ~= nil, tally = tally, n = N }
+    -- FLUIDBOX INDICES RESOLVED HERE, not at report time, which is the convention every other
+    -- report path in this file already follows -- the pair rows keep i1 and i2 from build time.
+    -- It is not tidiness: index_of() walks entity.fluidbox with no validity guard of its own, so
+    -- calling it on a destroyed entity throws and takes the WHOLE report down, every other row's
+    -- output with it, rather than losing the one row that went missing.
+    local ei, wi = {}, {}
+    for i, e in ipairs(row) do ei[i], wi[i] = energy_index(e), index_of(e, "water") end
+
+    storage.row = { machines = row, aloof = aloof, fed = energy ~= nil, tally = tally, n = N,
+      refused = refused, ei = ei, wi = wi,
+      aloof_ei = energy_index(aloof), aloof_wi = index_of(aloof, "water") }
   end
 
   storage.report_at = game.tick + 300
@@ -565,18 +636,18 @@ script.on_event(defines.events.on_tick, function()
     say("")
     say("--- a row of EIGHT, energy arriving on the first one's long face only ---")
     say(string.format("%-26s %-12s %-12s %s", "machine", "energy held", "water held", "status"))
+    -- Validity FIRST, then the index, then the box. status_name() already answers "?" for an
+    -- invalid entity, so a missing machine reports as one row rather than as no report at all.
     for i, e in ipairs(r.machines) do
-      local ei, wi = energy_index(e), index_of(e, "water")
-      local eb = (ei and e.valid) and e.fluidbox[ei] or nil
-      local wb = (wi and e.valid) and e.fluidbox[wi] or nil
+      local eb = (e.valid and r.ei[i]) and e.fluidbox[r.ei[i]] or nil
+      local wb = (e.valid and r.wi[i]) and e.fluidbox[r.wi[i]] or nil
       say(string.format("%-26s %-12.4g %-12.4g %s",
         string.format("row %d of %d", i, #r.machines),
         eb and eb.amount or 0, wb and wb.amount or 0, status_name(e)))
     end
 
-    local ai, aw = energy_index(r.aloof), index_of(r.aloof, "water")
-    local ab = ai and r.aloof.fluidbox[ai] or nil
-    local awb = aw and r.aloof.fluidbox[aw] or nil
+    local ab = (r.aloof.valid and r.aloof_ei) and r.aloof.fluidbox[r.aloof_ei] or nil
+    local awb = (r.aloof.valid and r.aloof_wi) and r.aloof.fluidbox[r.aloof_wi] or nil
     say(string.format("%-26s %-12.4g %-12.4g %s", "control, joined to none",
       ab and ab.amount or 0, awb and awb.amount or 0, status_name(r.aloof)))
 
@@ -586,6 +657,9 @@ script.on_event(defines.events.on_tick, function()
     say(string.format("row: pipes the rig left -- water %d (must be 2, the row's two ends), "
       .. "energy %d (must be 1), steam %d (must be %d)",
       r.tally.water, r.tally.energy, r.tally.steam, r.n))
+    say(string.format("row: pipes the GROUND refused: %d -- must be 0, and a nonzero reading voids "
+      .. "any machine below that reads full_output, because its steam had nowhere to go",
+      r.refused))
     say("row: two water pipes for eight machines IS the constraint, not a shortcut -- every")
     say("row: interior water connection is consumed by a joint and cannot be reached")
   end

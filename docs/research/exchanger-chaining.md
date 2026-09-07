@@ -100,6 +100,39 @@ skipping works:
 row: pipes the rig left -- water 2 (must be 2, the row's two ends), energy 1 (must be 1), steam 8 (must be 8)
 ```
 
+### This section was flaky for its first three runs, and the tally is what caught it
+
+Recorded because the table above is only worth reading if the rig that produced it is repeatable,
+and for two runs it was not. The row is now identical across three consecutive runs.
+
+**What happened.** The column reaches 105 tiles north, outside the starting area, and a `--benchmark`
+map is created with a fresh seed every run. `unbound()` places an infinity pipe on every **free**
+target tile and skips an occupied one — which is correct, and it also means **a tree standing on a
+machine's steam target silently costs that machine its steam outlet**. It then backs up, reports
+`full_output`, and reads as a result about chaining. One run lost row 8; the next lost row 2.
+
+**Two counters separated the two possible causes**, and that is the only reason the fix was not a
+guess:
+
+- `create_entity` returns **nil** on ground it cannot build on, and that nil used to be swallowed.
+  Now counted: *"pipes the GROUND refused"*.
+- An occupied tile is skipped rather than refused, and shows up as the steam tally falling short of
+  the machine count.
+
+The reading was **refused 0, steam 7** — so nothing was refused by terrain, and something was
+already standing on the tile. Paving alone would not have fixed it: `set_tiles` removes only
+entities that *collide* with the new tile, so a lake's fish go and a forest's trees stay.
+
+**The fix is both.** The section paves its footprint and then clears everything standing on it — the
+rig's opening sweep covers `{-80,-80}` to `{80,80}` and this section sits outside it — and it still
+reports both counters, so a rig that stops being enough says so instead of reporting a puddle as
+physics.
+
+**What it did not change.** No energy or water figure moved. Even on the two bad runs the affected
+machine held a **full** 200 of each, which is the load-bearing result: energy and water reached the
+eighth machine. What the bad runs got wrong was its `status`, and only because its steam had nowhere
+to go.
+
 ### What the source is, and why it is not a reactor
 
 An infinity pipe, deliberately. A real reactor sells about 322 MW against eight machines wanting
