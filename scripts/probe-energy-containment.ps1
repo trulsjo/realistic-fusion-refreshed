@@ -88,8 +88,21 @@
                 {0, -7}, so exactly one machine can bolt to it however small that machine is.
 
       hc        The refuse/accept pair again on rf-hc-exchanger's shape, which has the same energy
-                source on a seven-tile footprint. Bolt and chain are not repeated: the mechanism is
+                source on a seven-tile footprint. Chaining is not repeated for it: the mechanism is
                 the same one, and #82 allows establishing that one answer covers both.
+
+      input-    THE BOLT IS repeated for it, and that is #275's doing rather than #82's. Everything
+      bolt      above bolts with an "input-output" connection, and rf-hc-exchanger declares ONE
+                connection and declares it plain "input" -- south {0, 3} on its seven-tile face,
+                which unlike the ordinary exchanger's west long face CAN meet a north-facing reactor
+                output. So the one machine in the tree whose declaration could already bolt is the
+                one whose bolt had never been measured, and exchanger-chaining.md establishes only
+                that a plain "input" connection stops fuel LEAVING a box.
+
+                It decides something concrete: whether #86 can contain that machine before #276
+                changes its geometry, which is what would take a Blender model off #86's critical
+                path. Its own reactor, because rf-reactor declares one energy output and the chain
+                row has already taken the one on that machine.
 
     WHERE THE CHAIN VARIANT'S CONNECTIONS HAD TO GO, AND WHY IT IS NOT A FREE CHOICE
 
@@ -558,6 +571,13 @@ script.on_init(function()
   -- source draws no electricity at all.
   power(surface, force, { 14, 60 })
 
+  -- The one-connection bolt row has a reactor of its own, spanning x [53, 68] and y [53, 68], and a
+  -- substation reaches eighteen tiles -- so the one above supplies nothing there. At (75, 60) this
+  -- covers x [66, 84] and y [51, 69], overlapping that reactor's eastern columns without colliding
+  -- with it. The row's exchanger needs nothing: a boiler with a FLUID energy source draws no
+  -- electricity at all.
+  power(surface, force, { 75, 60 })
+
   storage.offers = {}
   local function add(label, exchanger_name, pipe_name, at)
     storage.offers[#storage.offers + 1] = offer(surface, force, label, exchanger_name, pipe_name, at)
@@ -649,7 +669,54 @@ script.on_init(function()
 
   storage.bolt = { reactor = reactor, out = out, first = first, second = second, aloof = aloof }
 
-  say("built: %d offered rows, plus the bolt and chain pair", #storage.offers)
+  -- ------------------------------------------------ the ONE-CONNECTION, plain-"input" bolt (#275)
+  --
+  -- rf-probe-hc-str is the shipped rf-hc-exchanger with its energy box categorised and nothing else
+  -- touched, so what it declares is the real declaration: ONE connection, flow_direction "input",
+  -- on the face that has to meet a reactor.
+  --
+  -- NOTHING HAS EVER MEASURED WHETHER THE ENGINE FORMS THAT BOLT. The bolt row above measures it on
+  -- the chain variant, whose bolting connection is "input-output" -- CONTEXT.md says so out loud --
+  -- and docs/research/exchanger-chaining.md establishes that a plain "input" connection stops fuel
+  -- LEAVING a box. Whether it also stops fuel ARRIVING through a direct bolt is a different
+  -- question and it has no answer on this page.
+  --
+  -- Which way it reads decides whether rf-hc-exchanger can be contained (#86) before its own
+  -- geometry changes (#276), which is the one thing that could take a Blender model off #86's
+  -- critical path.
+  --
+  -- ITS OWN REACTOR, because rf-reactor declares a single energy output and the chain row above has
+  -- already taken the one on that machine.
+  local hc_reactor = must(surface.create_entity({
+    name = "rf-probe-reactor", position = { 60.5, 60.5 }, force = force,
+  }), "the hc row's rf-probe-reactor")
+  local hc_out = box_of(hc_reactor, ENERGY)
+  if not hc_out then error("the hc row's rf-probe-reactor has no box filtered to " .. ENERGY) end
+  if not hc_reactor.electric_network_id then
+    error("the hc row's rf-probe-reactor is on no electric network; move or add a substation")
+  end
+  local hc_conn   = hc_reactor.fluidbox.get_pipe_connections(hc_out)[1]
+  local hc_target = connection_tile(hc_reactor, hc_conn)
+
+  -- side = nil on purpose: rf-hc-exchanger's energy box has exactly ONE connection, and asking for
+  -- it that way makes place_facing error rather than guess if that ever stops being true. Naming a
+  -- face here would assert a layout this rig does not own -- the mistake #45 already caused once.
+  local hc_bolt = place_facing(surface, force, "rf-probe-hc-str", ENERGY, nil,
+    hc_target, { 60.5, 40.5 })
+  plumb_steam(surface, force, hc_bolt)
+
+  -- Its calibration: a second one joined to nothing, plumbed the same way. Without it, "the bolted
+  -- one holds fuel" cannot be told from the fill loop reaching everything, which is the exact
+  -- failure #111 was opened for.
+  local hc_aloof = must(surface.create_entity({
+    name = "rf-probe-hc-str", position = { 100.5, hc_bolt.position.y }, force = force,
+  }), "the unjoined hc exchanger")
+  plumb_steam(surface, force, hc_aloof)
+
+  storage.hc = { reactor = hc_reactor, out = hc_out, machine = hc_bolt, aloof = hc_aloof }
+
+  say("built: %d offered rows, the bolt and chain pair, and the one-connection bolt row",
+    #storage.offers)
 end)
 
 local function report()
@@ -738,7 +805,27 @@ local function report()
     .. "units -- this row must read no and 0, or the two above mean nothing",
     yesno(joins(b.aloof, box_of(b.aloof, ENERGY), b.second)), storage.aloof_held or 0)
 
-  say("done: %d offered rows and the bolt pair, at tick %d", #storage.offers, SETTLE)
+  -- AC 5 (#275). The chain rows above bolt with an "input-output" connection. rf-hc-exchanger
+  -- declares ONE connection and declares it plain "input", and no row anywhere had asked whether
+  -- that still bolts. If it does, containment (#86) does not have to wait for that machine's new
+  -- geometry (#276) or for its art.
+  local h = storage.hc
+  if h then
+    say("== AC 5: does a single plain-\"input\" connection accept a bolt from a reactor's output ==")
+    say("input-bolt: the subject is rf-probe-hc-str -- the shipped rf-hc-exchanger, categorised,")
+    say("input-bolt: one energy connection, flow_direction \"input\", nothing else changed")
+    say("input-bolt: its box joins the reactor's output directly, no pipe: %s",
+      yesno(joins(h.machine, box_of(h.machine, ENERGY), h.reactor)))
+    say("input-bolt: it holds %.6g units and reports %s",
+      storage.hc_held or 0, status_name(h.machine.status))
+    say("input-bolt: the reactor's output box held %.6g of a %.6g capacity going into this tick",
+      storage.hc_reactor_held or 0, h.reactor.fluidbox.get_capacity(h.out))
+    say("input-bolt/control: an unjoined one off to the side holds %.6g units -- this must read 0, "
+      .. "or the row above is the fill loop reaching everything", storage.hc_aloof_held or 0)
+  end
+
+  say("done: %d offered rows, the bolt pair and the one-connection bolt, at tick %d",
+    #storage.offers, SETTLE)
   for _, line in ipairs(storage.notes) do log("ENERGY-PROBE " .. line) end
 end
 
@@ -761,6 +848,20 @@ script.on_event(defines.events.on_tick, function(event)
     b.reactor.fluidbox[b.out] = {
       name = ENERGY,
       amount = b.reactor.fluidbox.get_capacity(b.out),
+      temperature = 15,
+    }
+  end
+
+  -- The one-connection bolt row, read before its own refill for the same reason as the block above:
+  -- a reading taken after the write cannot rule out the write having filled the joined run.
+  local h = storage.hc
+  if h then
+    storage.hc_reactor_held = amount_of(h.reactor, h.out)
+    storage.hc_held         = held(h.machine, ENERGY)
+    storage.hc_aloof_held   = held(h.aloof, ENERGY)
+    h.reactor.fluidbox[h.out] = {
+      name = ENERGY,
+      amount = h.reactor.fluidbox.get_capacity(h.out),
       temperature = 15,
     }
   end

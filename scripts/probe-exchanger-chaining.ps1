@@ -41,6 +41,16 @@
     reported five ways that exchangers cannot chain, contradicting #82 and ADR 0018. They were
     wrong and the ADR was right.
 
+    AND A ROW OF EIGHT (#275). Everything above measures TWO machines. Eight is the shape a lit D-T
+    reactor needs and the shape ADR 0018 describes, and its rate has never been measured. The last
+    section lays eight of the machine #275 decides on, feeds energy into the first one's long face
+    through a single connection the way a reactor bolts, and reports what each of the eight holds.
+
+    It asks water as well, and that constraint is NEW rather than merely unmeasured: once the
+    machines bolt short end to short end, every interior water connection is consumed by a joint,
+    so a row is fed water at its two ends and nowhere else. Eight machines at 40 MW want about
+    3,300 units of water a second through those two connections.
+
     Findings belong in docs/research/. Kept committed so the next engine version can be asked the
     same question.
 #>
@@ -128,6 +138,29 @@ local VARIANTS = {
       { flow_direction = "input-output", direction = defines.direction.north, position = { -1, -7 } },
       { flow_direction = "input-output", direction = defines.direction.south, position = { -1, 7 } },
   } },
+
+  -- THE SHAPE #275 DECIDES, used by the row-of-eight section rather than by the pair table above.
+  --
+  -- Declared in THIS machine's current frame on purpose. #275 flips the default orientation to
+  -- fifteen wide by five tall with energy on the north long face; that is a presentation change and
+  -- the topology is identical, so the shipped 5x15 frame measures the same machine with no
+  -- collision box to rotate. Read the pair off against each other: energy on the long face plus
+  -- both short ends, all input-output, and water moved OFF the short-end centre to Truls's
+  -- `_ e _ w _` so an energy tile has a place there.
+  --
+  -- It differs from chainprobe-all-io by the WATER positions and nothing else, which is what makes
+  -- the two comparable: if a row starves where a pair did not, the joints are the reason and not
+  -- the declaration.
+  { name = "chainprobe-row",
+    conns = {
+      { flow_direction = "input-output", direction = defines.direction.west,  position = { -2, 0 } },
+      { flow_direction = "input-output", direction = defines.direction.north, position = { -1, -7 } },
+      { flow_direction = "input-output", direction = defines.direction.south, position = { -1, 7 } },
+    },
+    water = {
+      { flow_direction = "input-output", direction = defines.direction.north, position = { 1, -7 } },
+      { flow_direction = "input-output", direction = defines.direction.south, position = { 1, 7 } },
+    } },
 }
 
 local made = {}
@@ -138,6 +171,10 @@ for _, v in ipairs(VARIANTS) do
   e.energy_source = table.deepcopy(e.energy_source)
   e.energy_source.fluid_box = table.deepcopy(e.energy_source.fluid_box)
   e.energy_source.fluid_box.pipe_connections = v.conns
+  if v.water then
+    e.fluid_box = table.deepcopy(e.fluid_box)
+    e.fluid_box.pipe_connections = v.water
+  end
   if v.category then
     for _, c in ipairs(e.energy_source.fluid_box.pipe_connections) do
       c.connection_category = v.category
@@ -188,6 +225,35 @@ local function unbound(surface, force, entity, index, filter)
       if pipe then pipe.set_infinity_pipe_filter(filter) end
     end
   end
+end
+
+--- An infinity pipe on ONE connection of `index`, chosen geometrically rather than by array order.
+--
+-- The row section needs energy to arrive on the LONG face and nowhere else, because that is the
+-- face a reactor bolts to and the whole question is whether the short-end joints carry it onward.
+-- unbound() would also feed the row's free short end, which answers a different question.
+--
+-- `side` is derived from where the connection POINTS rather than from a declared direction:
+-- pipe_connections.direction is a data-stage field and get_pipe_connections does not return it.
+-- Deriving it is also what stops this rig doing tile arithmetic of its own, which is the mistake
+-- ADR 0018 records as producing a false negative on the question that decided it.
+local function feed_one(surface, force, entity, index, side, filter)
+  if not index then return nil end
+  for _, connection in ipairs(entity.fluidbox.get_pipe_connections(index)) do
+    local dx = connection.target_position.x - entity.position.x
+    local dy = connection.target_position.y - entity.position.y
+    local sideways = math.abs(dx) > math.abs(dy)
+    local matches = (side == "west" and sideways and dx < 0)
+                 or (side == "east" and sideways and dx > 0)
+    if matches and #surface.find_entities_filtered({ position = connection.target_position }) == 0 then
+      local pipe = surface.create_entity({
+        name = "infinity-pipe", position = connection.target_position, force = force,
+      })
+      if pipe then pipe.set_infinity_pipe_filter(filter) end
+      return pipe
+    end
+  end
+  return nil
 end
 
 --- Water in and steam out, so the machine can actually RUN.
@@ -355,6 +421,73 @@ script.on_nth_tick(30, function()
     storage.control = { a = a, b = b, ia = ia, ib = ib, pipes = pipes }
   end
 
+  -- ------------------------------------------------------------------------- a row of EIGHT
+  --
+  -- WHY EIGHT, AND WHY IT IS A DIFFERENT QUESTION FROM THE PAIRS ABOVE. A lit D-T reactor sells
+  -- about 322 MW (check-brownout.ps1) and one exchanger takes 40 MW, so eight is the shape ADR 0018
+  -- describes and the one #275 ships. Every measurement in this file and in
+  -- probe-energy-containment.ps1 has used TWO machines. Both ADR 0018's Consequences and
+  -- docs/research/exchanger-chaining.md record the row of eight as unmeasured.
+  --
+  -- TWO THINGS ARE ASKED AND ONE OF THEM IS NEW.
+  --
+  -- Energy arrives on the FIRST machine's long face only -- one connection, the way a reactor bolts
+  -- -- and has to reach the eighth through seven short-end joints.
+  --
+  -- Water is the new constraint, and chaining is what creates it. Once the machines bolt short end
+  -- to short end, every interior water connection is consumed by a joint, so the row can be fed
+  -- water at its two ends and nowhere else. That is not arranged here; it is what unbound() does on
+  -- its own, because it skips occupied tiles. Calling it on all eight water boxes leaves pipes
+  -- exactly where a player could reach one. Arithmetic off this repo's own figure --
+  -- rf-hc-turbine's 600 units/s of 500 C steam is 58.2 MW, so 40 MW is 412 units/s -- puts eight
+  -- machines at about 3,300 units/s arriving through those two connections.
+  --
+  -- THE ENERGY SOURCE IS DELIBERATELY UNLIMITED: an infinity pipe rather than a reactor, because a
+  -- real one sells 322 MW against eight machines wanting 320 and would confound "the joints cannot
+  -- carry it" with "the reactor cannot supply it". This section asks the joints.
+  do
+    local X, N, PITCH = 120, 8, 15
+
+    -- Chunks are generated lazily and this column reaches y = -105, well past anything else in the
+    -- rig. create_entity does not generate terrain, so a machine on an ungenerated chunk fails in a
+    -- way that reads as a placement error rather than as a missing map.
+    surface.request_to_generate_chunks({ X, -(N * PITCH) / 2 }, 12)
+    surface.force_generate_chunk_requests()
+
+    local row = {}
+    for i = 1, N do row[i] = place(surface, force, "chainprobe-row", X, -(i - 1) * PITCH) end
+
+    -- THE CONTROL, and the row is worth nothing without it: the same prototype, the same water and
+    -- steam plumbing, joined to no neighbour and given no energy feed. It must read zero. #111 was
+    -- caused by rigs whose controls could not fail, and the sibling probe's chain row had none at
+    -- all until that ticket added one.
+    local aloof = place(surface, force, "chainprobe-row", X + 40, 0)
+
+    -- EVERY MACHINE BEFORE ANY PLUMBING, or unbound() has nothing to skip and buries a pipe under
+    -- the neighbour -- the same ordering rule plumb() carries above.
+    for _, e in ipairs(row) do plumb(surface, force, e) end
+    plumb(surface, force, aloof)
+
+    local energy = feed_one(surface, force, row[1], energy_index(row[1]), "west",
+      { name = ENERGY, percentage = 1, mode = "at-least" })
+
+    -- COUNTED RATHER THAN REASONED, and this is the whole of the water question. "A chained row is
+    -- fed water at its two ends" rests on unbound() skipping occupied tiles, which rests in turn on
+    -- one machine's water target being the tile its neighbour's water connection stands on. Count
+    -- the pipes it actually left instead of trusting that: two water, one energy, and one steam per
+    -- machine. Any other tally and the rows below are measuring a differently plumbed row.
+    local tally = { water = 0, energy = 0, steam = 0 }
+    for _, p in ipairs(surface.find_entities_filtered({ name = "infinity-pipe",
+        area = { { X - 6, -(N - 1) * PITCH - 12 }, { X + 6, 12 } } })) do
+      local f = p.get_infinity_pipe_filter()
+      if f and f.name == "water"  then tally.water  = tally.water + 1  end
+      if f and f.name == "steam"  then tally.steam  = tally.steam + 1  end
+      if f and f.name == ENERGY   then tally.energy = tally.energy + 1 end
+    end
+
+    storage.row = { machines = row, aloof = aloof, fed = energy ~= nil, tally = tally, n = N }
+  end
+
   storage.report_at = game.tick + 300
 end)
 
@@ -425,6 +558,36 @@ script.on_event(defines.events.on_tick, function()
         held and held.amount or 0, status_name(f.second), src and src.amount or 0,
         ((held and held.amount or 0) > 0) and "energy travelled" or "nothing arrived"))
     end
+  end
+
+  local r = storage.row
+  if r then
+    say("")
+    say("--- a row of EIGHT, energy arriving on the first one's long face only ---")
+    say(string.format("%-26s %-12s %-12s %s", "machine", "energy held", "water held", "status"))
+    for i, e in ipairs(r.machines) do
+      local ei, wi = energy_index(e), index_of(e, "water")
+      local eb = (ei and e.valid) and e.fluidbox[ei] or nil
+      local wb = (wi and e.valid) and e.fluidbox[wi] or nil
+      say(string.format("%-26s %-12.4g %-12.4g %s",
+        string.format("row %d of %d", i, #r.machines),
+        eb and eb.amount or 0, wb and wb.amount or 0, status_name(e)))
+    end
+
+    local ai, aw = energy_index(r.aloof), index_of(r.aloof, "water")
+    local ab = ai and r.aloof.fluidbox[ai] or nil
+    local awb = aw and r.aloof.fluidbox[aw] or nil
+    say(string.format("%-26s %-12.4g %-12.4g %s", "control, joined to none",
+      ab and ab.amount or 0, awb and awb.amount or 0, status_name(r.aloof)))
+
+    say(string.format("row: the energy feed landed on the first machine's long face: %s",
+      r.fed and "yes" or "NO -- every figure above is void"))
+    say("row: the control must read 0 energy, or the eight above are the rig filling what it can")
+    say(string.format("row: pipes the rig left -- water %d (must be 2, the row's two ends), "
+      .. "energy %d (must be 1), steam %d (must be %d)",
+      r.tally.water, r.tally.energy, r.tally.steam, r.n))
+    say("row: two water pipes for eight machines IS the constraint, not a shortcut -- every")
+    say("row: interior water connection is consumed by a joint and cannot be reached")
   end
 
   say("")
