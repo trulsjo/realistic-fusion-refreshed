@@ -386,10 +386,20 @@ local function interface(surface, force, poles, at, production_w, usage_w, label
   -- THE BUFFER HAS TO GO. Vanilla's electric-energy-interface ships an enormous electric buffer --
   -- it is the editor's infinite power source, and the buffer is how it also works as an infinite
   -- sink. check-brownout.ps1 lost a whole run to it, and every cut cell read identical to the uncut
-  -- one. Ten megajoules here, which against this rig's cells is four to fourteen MILLISECONDS of
-  -- their draw. check-brownout.ps1 calls the same number a fifth of a second, correctly, because its
-  -- cells are a fraction of the size; the figure does not carry across and the reason does -- a
-  -- buffer this small cannot stand in for a supply.
+  -- one. Ten megajoules here, which against this rig's cells is five to fifty MILLISECONDS of their
+  -- draw: a cell draws the reactor's 200 MW of confinement heating plus the heater's 5 MW plus the
+  -- load bank's load_w, so 10 MJ buys 4.7 ms in a sixteen-converter cell, 22.5 ms in a
+  -- two-converter one and 48.8 ms in `open`, which has no load bank at all.
+  --
+  -- IT SAID "FOUR TO FOURTEEN" AND THAT WAS WRONG, caught in review on #284 after the merge. The
+  -- upper bound had been divided into what the SOURCE interface produces -- load_w + 500e6 -- rather
+  -- than into the draw the sentence names. Recorded rather than quietly corrected, because a figure
+  -- beside a constant is the justification for the constant, and this repository has been bitten by
+  -- exactly that before.
+  --
+  -- check-brownout.ps1 calls the same 10e6 a fifth of a second, correctly, because its cells are a
+  -- fraction of the size; the figure does not carry across and the reason does -- a buffer this small
+  -- cannot stand in for a supply.
   eei.electric_buffer_size = 10e6
   eei.power_production     = watts(production_w or 0)
   eei.power_usage          = watts(usage_w or 0)
