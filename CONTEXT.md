@@ -307,6 +307,12 @@ can produce no such figure — a factory cannot be un-built.
 > `scripts/check-containment.ps1` asserts exactly that, and passes. The terms below are fixed now
 > because a decision fixes vocabulary, which is all this file does; the behaviour arrives with the
 > implementation. Remove this note when the energy categories ship.
+>
+> **The geometry it needs is decided too, as of 2026-09-07.**
+> [ADR 0031](docs/adr/0031-energy-bolts-along-a-long-face.md) settles which face bolts to what, which
+> ADR 0018's own item 4 could not — its coordinates were written for a machine three tiles by two.
+> Neither reactor sells energy on a face an exchanger can meet yet, so **bolted** and **chained**
+> below name a shape nothing in the tree builds. #275 and #87 are where it arrives.
 
 **Contained** — of a fluid: its boxes carry a connection category of their own, so nothing a player
 can build joins them but plumbing that shares it. Three fluids take a category of their own —
@@ -359,6 +365,24 @@ notice a second one.
 how reactor energy is *to* travel, because no pipe is to carry it. Reserve the word for a connection
 that actually carries fluid: two buildings can be adjacent, or touching, without their boxes facing
 each other, and that is neither bolted nor connected.
+
+**Chained** — of a run of machines: each one bolted to the next, so energy entering the first reaches
+the last without a pipe anywhere. A bolt is one joint; a chain is what a row of them makes. The word
+belongs to the run, not to a machine — a machine is *chainable*, and only a row is chained.
+
+A chain has one **feed** and one **direction of growth**, and the two tiers grow along different
+axes. Heat exchangers chain **end to end**, so a row spreads sideways along a reactor's face. Direct
+energy converters chain **face to face** on their long sides, so a stack grows outward from the
+reactor. That is not an accident of shape: an exchanger spends both its long faces on energy in and
+steam out, and a converter has nothing to put on a second face at all.
+
+**Reachable** — of a connection on a chained run: still free for a player to plumb. Bolting consumes
+connections, so a chained row's interior water connections are not reachable and the row takes its
+water at the two ends. Worth a word of its own because "the machine has a water connection" and
+"a player can put a pipe on it" stop being the same statement once machines bolt to each other.
+
+See [ADR 0031](docs/adr/0031-energy-bolts-along-a-long-face.md) for which face bolts to what, and why
+the two tiers differ.
 
 **Reactor energy** — what a reactor sells, as a fluid whose amount is joules: one unit is one
 megajoule throughout the mod, so the tiers' outputs compare without a conversion. Not "output",
