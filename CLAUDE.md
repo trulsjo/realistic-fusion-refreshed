@@ -24,7 +24,7 @@ on PATH. **The categories on those connections are compared as a subset, not for
 is the only gate that looks at them: an addition is allowed because a coexisting mod writes one
 legitimately — Krastorio 2 puts `kr-steel-pipe` on machines it never heard of — while a category being
 taken away is reported. The containment floor does **not** cover them; it skips any connection left
-`default`, which is all four of the heat exchanger's. (`probe-connection-categories.ps1` reports on
+`default`, which is all six of the heat exchanger's. (`probe-connection-categories.ps1` reports on
 the same shape, but a probe asserts nothing.) Halves six and seven of `-SelfTest` are the
 canaries, one for each direction.
 `scripts/locale-check.ps1` and `scripts/name-check.ps1` only dump prototypes and create no map, so a

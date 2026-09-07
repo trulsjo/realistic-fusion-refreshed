@@ -68,8 +68,11 @@ local M = {}
 --
 --     north  (x,  y)      east  (-y,  x)      south  (-x, -y)      west  (y, -x)
 --
--- So a south-facing rf-heat-exchanger really takes energy on its east side and vents steam to the
--- west, and the shared sheet drew the reverse. On the square machines it was worse: their single
+-- So a south-facing rf-heat-exchanger really takes energy on its south side and vents steam to the
+-- north, and the shared sheet drew the reverse. (East and west when this was written, which is the
+-- same point on the footprint #275 turned; that machine has worn rendered art since #252 and no
+-- longer takes its sheets from here, but it is still the clearest case of a rotation swapping two
+-- connections that are not alike.) On the square machines it was worse: their single
 -- output connection lands on a different edge every quarter turn, and one sheet for all four drew it
 -- on the north edge in every orientation. Art whose whole job is to say where the pipes go was
 -- wrong in three orientations out of four.

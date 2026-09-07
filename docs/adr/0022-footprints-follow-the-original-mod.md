@@ -18,9 +18,17 @@ Closes the sizing half of [#45](https://github.com/trulsjo/realistic-fusion-refr
 The art it implies is [#108](https://github.com/trulsjo/realistic-fusion-refreshed/issues/108).
 
 **Amended by [ADR 0031](0031-energy-bolts-along-a-long-face.md), 2026-09-07**, in the footprint
-table and the paragraph after it: the two five-by-fifteen machines are declared with the long axis
-east–west rather than north–south, and `rf-hc-exchanger` joins the table at the same size. The rule
-itself — footprint first, from the original mod, art redrawn to fit — is applied there, not changed.
+table and the paragraph after it: the two five-by-fifteen machines take the long axis east–west
+rather than north–south, and `rf-hc-exchanger` joins the table at the same size. The rule itself —
+footprint first, from the original mod, art redrawn to fit — is applied there, not changed.
+
+**Declared so far by one of them.** `rf-heat-exchanger` is 15x5 in the tree since
+[#275](https://github.com/trulsjo/realistic-fusion-refreshed/issues/275).
+`rf-direct-energy-converter` still declares 5x15 and is
+[#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87)'s;
+`rf-hc-exchanger` still declares 7x7 and is
+[#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276)'s. The table below is the
+decision, not a report of the tree.
 
 ## Context
 
@@ -75,7 +83,7 @@ the same machine at the same size. The area is the original mod's in every case;
 **`rf-reactor` stays 15x15.** ADR 0013's figure and the original's agree, so nothing moves and
 nothing about that part of ADR 0013 is disturbed.
 
-**The two 5x15 machines take their reactor connection on a LONG face.** That is the point of the
+**The two five-by-fifteen machines take their reactor connection on a LONG face.** That is the point of the
 shape: butted against a fifteen-tile reactor, a long side touches along its whole length where a
 short end touches at one tile. The heat exchanger takes reactor energy along one long face and vents
 steam along the other, with water on both short ends; the converter takes both long faces, one for

@@ -103,7 +103,7 @@ local VARIANTS = {
   } },
 
   -- Energy in on the west face AND in/out on both short ends, which is the arrangement being asked
-  -- about: the first takes energy from the reactor along its long face, and passes it up the column
+  -- about (of the pinned pre-#275 frame; see pre_275_frame below): the first takes energy from the reactor along its long face, and passes it up the column
   -- through the ends.
   { name = "chainprobe-ends", conns = {
       { flow_direction = "input",        direction = defines.direction.west,  position = { -2, 0 } },

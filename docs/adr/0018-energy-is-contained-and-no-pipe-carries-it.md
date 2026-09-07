@@ -253,8 +253,8 @@ face.**
 
   **The escape hatch this names is gone, and the conclusion survives anyway (#111).** Ringing was a
   3×2 machine's option. `rf-reactor` declared one energy output, north `{0, -7}` (two since #275,
-  north and south), so one machine can bolt to each whatever size it is — if chaining had failed, the alternative would have
-  been a pipe carrying reactor energy, which is what
+  north and south), so one machine can bolt to each whatever size it is — if chaining had failed,
+  the alternative would have been a pipe carrying reactor energy, which is what
   [#258](https://github.com/trulsjo/realistic-fusion-refreshed/issues/258) asks about. Chaining does
   not fail, so that question stays hypothetical.
 - **The composite tank's volume needs re-justifying.** 50 000 was sized against the converter's

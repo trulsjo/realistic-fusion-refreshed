@@ -9,8 +9,9 @@
     plain box, because it looks finished and it lies about where the pipes go.
 
     So these are mockups on purpose. They state the footprint, they mark every connection, and they
-    carry the machine's name, and they are meant to be replaced -- #108 for the heat exchanger, and
-    whatever follows it for the rest.
+    carry the machine's name, and they are meant to be replaced. The heat exchanger already was:
+    #108 took it to rendered art in #252, and #275 removed its row and its sheets from here. What
+    replaces the remaining four is whatever follows #252.
 
     THE ART IS ORIGINAL AND THAT IS THE POINT. Rectangles drawn by this script are nobody else's
     work, so they carry the repository's own licence and raise no provenance question at all. That
@@ -176,10 +177,12 @@ function Write-MockupSprite {
 #
 #     north  (x,  y)      east  (-y,  x)      south  (-x, -y)      west  (y, -x)
 #
-# Sharing is only safe when the connections a rotation swaps are identical in kind. It is not for
-# rf-heat-exchanger, where 180 degrees exchanges the energy inlet with the steam outlet, nor for the
-# square machines, whose single output connection lands on a different edge every quarter turn --
-# so a rotated one drew its outlet on the wrong side of the building.
+# Sharing is only safe when the connections a rotation swaps are identical in kind. It was not for
+# rf-heat-exchanger, which this script no longer draws but is still the clearest case -- 180 degrees
+# exchanges its energy inlet with its steam outlet, north {0, -2} against south {0, 2}, and that is
+# as true of today's footprint as of the one this was written for. Nor is it safe for the square
+# machines here, whose single output connection lands on a different edge every quarter turn -- so a
+# rotated one drew its outlet on the wrong side of the building.
 #
 # A generator is the exception, and only by luck: it has just two pictures, one per axis, and
 # rf-direct-energy-converter's two connections are the same kind, so every rotation produces the same

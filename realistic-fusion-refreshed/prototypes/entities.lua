@@ -389,7 +389,17 @@ reactor.output_fluid_box = {
 -- wide by fifteen tall with its energy face WEST; ADR 0031 (#275) declares the same object fifteen
 -- wide by five tall with the energy face NORTH, and the model turns with it (models/heat-exchanger/
 -- build.py). So read the note's west as north, east as south, and its south end as the west end.
--- The prose is left as accepted: it describes the object, and the object has not changed.
+--
+-- ONE THING IN THE NOTE FOLLOWS THE CAMERA RATHER THAN THAT MAPPING, and it is the dent. The note
+-- puts it on a drum's "south flank" for a stated reason -- the camera stands south looking north,
+-- so a hollow struck anywhere else hides behind the drum's own top -- and the reason is about the
+-- camera, not the compass. Turning the body would carry note-south onto declared west and hide the
+-- dent, so build.py strikes the flank the camera sees instead. The letter of that clause moves; its
+-- reason is kept.
+--
+-- The prose below is the note as accepted in #252 except where a later round of Truls's changed
+-- what the machine has: #275 added the short-end energy feeds and rebuilt the steam header, and
+-- those sentences are his.
 --[[ look: rf-heat-exchanger   (read under models/house-style.md; accepted in #252, after #246)
 A long, low hall, five wide and fifteen long, that turns reactor energy into steam. Along the
 whole west face runs a closed, riveted manifold trough the full fifteen tiles, with an energy
@@ -416,11 +426,13 @@ From the manifold, glowing feed lines run east under the grating to the foot of 
 short end a glowing feed runs from the socket into the manifold, so every energy connection has a
 run behind it. The steam header is a deeply banded corrugated hose, and it is three runs rather
 than one pipe passing overhead: each end drum sends its steam to the middle drum, and the middle
-drum sends the lot to the single steam outlet at the middle of the east face. Every run bends down
-and ends on a drum's cap, so the middle drum carries three of them. The outlet run bends around
-the drum and the frame rather than through them, and drops through an opening in the grating. The
-water sockets sit low on both short ends, feeding a header along the base. The south end is closed by a painted wall with a vent, and a control cabinet with a
-blue panel stands at the south-east corner: those two are what break the symmetry.
+drum sends the lot to the single steam outlet at the middle of the east face. Every run meets a
+drum by bending down onto its cap -- the two between drums at both ends, the outlet run at its
+start -- so the middle drum carries three. The outlet run bends around the drum and the frame
+rather than through them, and drops through an opening in the grating. The water sockets sit low
+on both short ends, feeding a header along the base. The south end is closed by a painted wall
+with a vent, and a control cabinet with a blue panel stands at the south-east corner: those two
+are what break the symmetry.
 
 The manifold channel and its feed lines glow with the energy accent while the machine is working,
 and are DARK when it is not -- they carry the accent as emission, not as their own colour, or a
