@@ -256,6 +256,26 @@ input to consume. Recipe balance is provisional and not yet checked against the
 1.1 original's numbers.
 ```
 
+**A hook checks all of this, and it is not installed by default.** `.githooks/commit-msg` runs
+`scripts/commit-check.ps1` on the message before the commit is written, and git does not track
+`.git/hooks`, so every clone has to opt in once:
+
+```
+git config core.hooksPath .githooks
+```
+
+It checks the emoji-and-type pairing, the case after the colon, the trailing period, both 72-character
+limits, the blank line, and that a `!` carries a `BREAKING CHANGE:` footer. Imperative mood is not
+checkable and is not checked. Trailers like `Co-Authored-By:` are exempt, and so is a line whose
+longest word is itself over 72 — a bare URL cannot be wrapped, and failing it would only teach
+people to ignore the gate.
+
+**It exists because the wrap rule had rotted.** Measured on 2026-09-06 by
+`commit-check.ps1 -Range '-50 main'`: 21 of the last 50 commits fail, on 183 body lines and 5 subject
+lines over 72, the longest subject being 82. History is left alone; the hook stops it growing.
+`-Range origin/main..HEAD` checks a branch before a pull request, and `-SelfTest` proves the checker
+can still fail.
+
 ## Agent skills
 
 ### Issue tracker
