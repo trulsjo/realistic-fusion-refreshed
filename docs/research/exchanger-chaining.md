@@ -10,6 +10,10 @@ is right and [#82](https://github.com/trulsjo/realistic-fusion-refreshed/issues/
 Everything below the first table is why an earlier version of this page said the opposite for two
 weeks.
 
+**And eight chain, not merely two** — measured 2026-09-07 for
+[#275](https://github.com/trulsjo/realistic-fusion-refreshed/issues/275), along with the water
+question that chaining creates. See [A row of eight](#a-row-of-eight).
+
 ## The two conditions
 
 1. **The fuel has to ARRIVE through a connection.** Fuel written into a fluid energy source's box
@@ -49,6 +53,59 @@ nothing on; the one that declares it `"input-output"` fills the second machine a
 
 199.3 is a full 200-unit box being drawn down by a running 40 MW machine, which is the same reading
 [`energy-containment-probe.md`](energy-containment-probe.md) gets everywhere fuel arrives.
+
+## A row of eight
+
+Measured 2026-09-07 for [#275](https://github.com/trulsjo/realistic-fusion-refreshed/issues/275).
+**Eight chain, and water serves the row from its two ends.**
+
+Everything above and in [`energy-containment-probe.md`](energy-containment-probe.md) measures **two**
+machines. Eight is what a lit D-T reactor needs — about 322 MW against 40 MW each — and it is the
+shape ADR 0018 describes. The subject is the machine #275 decides on: energy `input-output` on the
+long face plus both short-end tiles, and water moved off the short-end centre to `_ e _ w _`.
+
+Energy arrives on the **first** machine's long face through **one** connection, the way a reactor
+bolts. Every other machine has to be reached through the short-end joints.
+
+| machine | energy held | water held | status |
+|---|---:|---:|---|
+| row 1 of 8 | 199.3 | 199.3 | `working` |
+| row 2 of 8 | 199.3 | 199.3 | `working` |
+| row 3 of 8 | 199.3 | 199.3 | `working` |
+| row 4 of 8 | 199.3 | 199.3 | `working` |
+| row 5 of 8 | 199.3 | 199.3 | `working` |
+| row 6 of 8 | 199.3 | 199.3 | `working` |
+| row 7 of 8 | 199.3 | 199.3 | `working` |
+| row 8 of 8 | 199.3 | 199.3 | `working` |
+| **control**, joined to none | **0** | 200 | `no_input_fluid` |
+
+The control is the same prototype with the same water and steam plumbing, joined to no neighbour and
+given no energy feed. It reads zero, which is what makes the eight above worth reading. Its water
+sits at a full 200 where the row sits at 199.3, because the row is running and drawing water down
+while the control is stopped.
+
+### The water constraint is created by chaining, and the rig counts it rather than claiming it
+
+Once the machines bolt short end to short end, **every interior water connection is consumed by a
+joint**, so a row is reachable at its two ends and nowhere else. Off this repo's own figure —
+`rf-hc-turbine`'s 600 units/s of 500 °C steam is 58.2 MW, so 40 MW is **412 units/s** — eight
+machines want about **3,300 units/s** through those two connections. They get it.
+
+That "two ends" is not arranged by the rig. `unbound()` puts an infinity pipe on every **free**
+target tile and skips occupied ones, so calling it on all eight water boxes leaves pipes exactly
+where a player could reach one. And the rig now **counts what it left** instead of arguing that the
+skipping works:
+
+```
+row: pipes the rig left -- water 2 (must be 2, the row's two ends), energy 1 (must be 1), steam 8 (must be 8)
+```
+
+### What the source is, and why it is not a reactor
+
+An infinity pipe, deliberately. A real reactor sells about 322 MW against eight machines wanting
+320, so feeding the row from one would confound *"the joints cannot carry it"* with *"the reactor
+cannot supply it"*. This section asks the joints. What a real reactor sustains against a real row is
+a separate measurement and is not on this page.
 
 ## The corroborating rig
 
@@ -124,23 +181,34 @@ is added", and `CONTEXT.md` records that no prototype carries an energy category
 control that fails when it should, and the two conditions above say what a chaining shape has to
 declare.
 
-**Not settled, and it is a decision rather than a measurement: the shipped machine does not declare
-that shape.** `rf-heat-exchanger`'s energy box has **one** connection today —
-`flow_direction = "input"`, west `{-2, 0}` (`rf-heat-exchanger`'s `energy_source.fluid_box` in `prototypes/entities.lua`). By condition 2 that
-machine cannot chain, and there is no second energy face for a neighbour to meet in any case. ADR
-0018's Decision item 4 says it should be `input-output` on three connections and gives 3×2
-coordinates that #45 made obsolete. **Closing that gap is Truls's**, and #111 only has to point at
-it.
+**Settled: eight chain, not merely two, and water reaches all eight.** See the row of eight above.
+Both were open when this page was written; #275 measured them.
 
-**Not measured: throughput.** Both probes ask whether a connection forms and whether fuel crosses it.
-What a chained joint carries against a run of pipe is unknown, and
-[`fluid-link-throughput.md`](fluid-link-throughput.md) measured the pipe case only. A column of eight
-exchangers off one reactor connection is the shape ADR 0018 describes and its rate is not known.
+**Settled, and it was a decision rather than a measurement: what the shipped machine should
+declare.** This section used to end *"Closing that gap is Truls's, and #111 only has to point at
+it."* Truls closed it on **2026-09-07** — see
+[#275](https://github.com/trulsjo/realistic-fusion-refreshed/issues/275) and the ADR it lands.
+Reactor energy bolts along a **long face**, both reactors sell it north **and** south, the exchanger's
+default orientation flips to fifteen wide by five tall with the energy face north, and water moves
+off the short-end centre to `_ e _ w _` so an energy tile has a place there.
 
-**Not measured: whether water chains end to end.** Both probes now observe that the two machines'
-water boxes join — the containment rig asks it directly and reports `YES` — but neither measures how
-much water crosses, and the containment rig's own plumbing depends on it working.
+For the record of what the gap was: `rf-heat-exchanger`'s energy box has **one** connection in the
+tree today — `flow_direction = "input"`, west `{-2, 0}`. By condition 2 that machine cannot chain,
+and there is no second energy face for a neighbour to meet in any case.
 
-**Not decided here: the layout.** `rf-hc-exchanger` at one-per-reactor sidesteps the eight-machine
-question entirely, and it already exists. Whether the ordinary machine should chain, or stay a
-manifold machine, is ADR 0018's item 4 and Truls's.
+**Not measured: the rate.** Every figure on this page is a box reading at steady state, not units per
+second. What a chained joint carries against a run of pipe is still unknown, and
+[`fluid-link-throughput.md`](fluid-link-throughput.md) measured the pipe case only. The row of eight
+says the joints carry *enough* for eight machines to run with full boxes; it does not say how much
+they could carry.
+
+**Not measured: what a real reactor sustains against a real row.** The row above is fed from an
+infinity pipe on purpose, because a reactor's ~322 MW against eight machines' 320 MW would confound
+supply with transport.
+
+**Also settled, in [`energy-containment-probe.md`](energy-containment-probe.md) rather than here: a
+plain `"input"` connection still accepts a bolt.** So `flow_direction` governs **forwarding**, not
+joining. Condition 2 above says what an `"input"` connection stops — fuel leaving by the other
+connections on the same box — and it stops nothing about fuel arriving. That is why
+`rf-hc-exchanger`, which declares one `"input"` connection on a face that can meet a reactor, can be
+contained without changing its geometry at all.

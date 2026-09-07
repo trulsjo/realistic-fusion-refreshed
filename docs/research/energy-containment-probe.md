@@ -266,15 +266,64 @@ hc/accept  rf-probe-hc-str + rf-probe-energy-feed joins=YES carries=473.333 stat
 ```
 
 473.333 against its declared energy box volume of 500 — a full box being drawn down, the same
-picture as the ordinary exchanger's 199.333 of 200. Bolt and chain were not repeated for it: the
-mechanism is the same one, and the ordinary exchanger's rows establish it.
+picture as the ordinary exchanger's 199.333 of 200. **Chaining** was not repeated for it: the
+mechanism is the same one, and the ordinary exchanger's rows establish it. **The bolt now is**, for a
+reason #82 could not have had — see AC 5.
+
+## AC 5 — does a single plain `"input"` connection accept a bolt?
+
+Added 2026-09-07 for
+[#275](https://github.com/trulsjo/realistic-fusion-refreshed/issues/275). **Yes.**
+
+```
+input-bolt: its box joins the reactor's output directly, no pipe: YES
+input-bolt: it holds 473.333 units and reports working
+input-bolt: the reactor's output box held 993.333 of a 1000 capacity going into this tick
+input-bolt/control: an unjoined one off to the side holds 0 units
+```
+
+**Why this needed asking after AC 2 and AC 3 had passed.** Both of those bolt with an
+`input-output` connection, and this page's own "What is built" section says so out loud — the chain
+variant declares three `input-output` connections where the shipped machines declare one `"input"`.
+[`exchanger-chaining.md`](exchanger-chaining.md) then established that a plain `"input"` connection
+stops fuel **leaving** a box. Whether it also stops fuel **arriving** through a direct bolt was a
+different question with no answer anywhere.
+
+**The subject is the real declaration.** `rf-probe-hc-str` is the shipped `rf-hc-exchanger` with its
+energy box categorised and nothing else changed: one connection, `flow_direction = "input"`, south
+`{0, 3}`. That face matters — it is the one shipped energy connection in the tree that **can** meet
+`rf-reactor`'s north-facing output `{0, -7}`. The ordinary exchanger's west long face cannot meet it
+at all, which is a geometry problem and not a flow one.
+
+**The arithmetic corroborates it independently.** The reactor's output box is refilled to 1000 every
+tick and reads **993.333** going into the report tick — a shortfall of **6.667 units**, which at
+1 MJ a unit is **400 MW**, which is exactly this machine's `energy_consumption`. It is not merely
+joined; it is drinking at its rated rate.
+
+**What it decides.** `rf-hc-exchanger` can be contained **as it stands**, so
+[#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) does not have to wait for
+[#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276) to change that machine's
+footprint, nor for the Blender model in
+[#277](https://github.com/trulsjo/realistic-fusion-refreshed/issues/277). #86 still waits on #275,
+because the **ordinary** exchanger's one energy connection is on a long face that cannot meet the
+reactor at all.
+
+**So `flow_direction` governs forwarding, not joining.** A plain `"input"` connection joins another
+machine's and accepts what arrives; what it will not do is pass fuel on to a third machine. That is
+one sentence neither this page nor `exchanger-chaining.md` could state before.
 
 ## What these numbers are not
 
 - **Nothing here is a throughput measurement.** Every row asks whether a connection forms and
   whether fuel crosses it. What a bolted joint carries against a run of pipe is unmeasured, and
-  `docs/research/fluid-link-throughput.md` measured the pipe case only. A row of eight chained
-  exchangers drawing from one reactor connection is the shape #44 ships and its rate is not known.
+  `docs/research/fluid-link-throughput.md` measured the pipe case only.
+
+  **The row of eight is no longer unmeasured, and it was measured elsewhere.** This bullet used to
+  end *"a row of eight chained exchangers drawing from one reactor connection is the shape #44 ships
+  and its rate is not known"*. [`exchanger-chaining.md`](exchanger-chaining.md) laid that row on
+  2026-09-07 for #275: all eight run, and water reaches all eight through the two connections a
+  chained row leaves reachable. What is still unmeasured is the **rate** — every figure there is a
+  box reading at steady state, not units per second.
 - **The reactor is not running.** Its output box is written by Lua every tick. The simulation's own
   output rate against a bolted row is a separate question.
 - **Nothing about UPS.** ADR 0005's budget has not been asked about a segment shaped like this.
@@ -287,9 +336,14 @@ mechanism is the same one, and the ordinary exchanger's rows establish it.
 
 - **Build it.** Every mechanism #44 depends on is confirmed, and none of it needs an entity beyond
   ADR 0010's set.
-- **`rf-heat-exchanger` needs three energy connections**, south plus west and east, all
-  `input-output`, at the tiles named above. `rf-hc-exchanger` has a seven-tile face and more room,
-  but the same reasoning applies to it.
+- **`rf-heat-exchanger` needs three energy connections**, all `input-output`. *This bullet named
+  "south plus west and east" on 3x2 tile centres, and #45 made the machine 5x15.* The live tiles are
+  the west long face `{-2, 0}` plus the two free short-end tiles `{-1, -7}` and `{-1, 7}`, which are
+  what both probes build. **Truls settled the shipped shape on 2026-09-07** — #275, which also flips
+  the machine's default orientation and moves water off the short-end centre — so read that ticket
+  and the ADR it lands rather than this line.
+- **`rf-hc-exchanger` needs no change to be contained**, which is AC 5 above and is new. #276 gives
+  it the exchanger's footprint and connections for consistency, not because containment requires it.
 - **Two shipped assertions invert.** `scripts/check-containment.ps1` asserts that an ordinary
   pipe still joins the reactor's energy output and carries reactor energy. Both are correct today and
   wrong afterwards.
