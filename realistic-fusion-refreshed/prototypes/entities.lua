@@ -412,10 +412,14 @@ DENTED, struck on its south flank between the rib bands, and the bands bend into
 it -- a straight band across a dent cancels it. At each drum's foot, clear of the drum on the
 east side, a gauge cluster and a handwheel valve.
 
-From the manifold, glowing feed lines run east under the grating to the foot of each drum. Across
-the drum tops a corrugated steam header, not quite straight, runs to the single steam outlet at
-the middle of the east face. The water sockets sit low on both short ends, feeding a header along
-the base. The south end is closed by a painted wall with a vent, and a control cabinet with a
+From the manifold, glowing feed lines run east under the grating to the foot of each drum. At each
+short end a glowing feed runs from the socket into the manifold, so every energy connection has a
+run behind it. The steam header is a deeply banded corrugated hose, and it is three runs rather
+than one pipe passing overhead: each end drum sends its steam to the middle drum, and the middle
+drum sends the lot to the single steam outlet at the middle of the east face. Every run bends down
+and ends on a drum's cap, so the middle drum carries three of them. The outlet run bends around
+the drum and the frame rather than through them, and drops through an opening in the grating. The
+water sockets sit low on both short ends, feeding a header along the base. The south end is closed by a painted wall with a vent, and a control cabinet with a
 blue panel stands at the south-east corner: those two are what break the symmetry.
 
 The manifold channel and its feed lines glow with the energy accent while the machine is working,
