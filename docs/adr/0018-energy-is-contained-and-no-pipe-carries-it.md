@@ -222,7 +222,7 @@ face.**
    > through are `{-1, -7}` and `{-1, 7}`. Both probes build that shape and both confirm it chains.
    >
    > The machine in the tree still declares **one** energy connection, `flow_direction = "input"`,
-   > west `{-2, 0}` (`prototypes/entities.lua:428-430`), so it neither bolts onto `rf-reactor`'s
+   > west `{-2, 0}` (`rf-heat-exchanger`'s `energy_source.fluid_box` in `prototypes/entities.lua`), so it neither bolts onto `rf-reactor`'s
    > north-facing output nor chains. **What the intent above should become on a 5×15 is a decision
    > and it is Truls's** — #111 only records that the gap exists.
    >

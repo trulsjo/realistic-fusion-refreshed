@@ -126,7 +126,7 @@ declare.
 
 **Not settled, and it is a decision rather than a measurement: the shipped machine does not declare
 that shape.** `rf-heat-exchanger`'s energy box has **one** connection today —
-`flow_direction = "input"`, west `{-2, 0}` (`prototypes/entities.lua:428-430`). By condition 2 that
+`flow_direction = "input"`, west `{-2, 0}` (`rf-heat-exchanger`'s `energy_source.fluid_box` in `prototypes/entities.lua`). By condition 2 that
 machine cannot chain, and there is no second energy face for a neighbour to meet in any case. ADR
 0018's Decision item 4 says it should be `input-output` on three connections and gives 3×2
 coordinates that #45 made obsolete. **Closing that gap is Truls's**, and #111 only has to point at

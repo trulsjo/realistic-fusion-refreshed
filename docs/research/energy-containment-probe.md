@@ -156,7 +156,7 @@ doing the bolting is south `{-1, 7}`.
 
 **That is neither the tile nor the face the shipped machine declares**, and the gap has widened since
 this note was written. The shipped exchanger takes its energy on the west **long** face at `{-2, 0}`
-with `flow_direction = "input"` (`prototypes/entities.lua:428-430`), and a west-facing connection
+with `flow_direction = "input"` (`rf-heat-exchanger`'s `energy_source.fluid_box` in `prototypes/entities.lua`), and a west-facing connection
 cannot meet `rf-reactor`'s north-facing output at all. This variant declares `"input-output"` on
 three connections. So what AC 2 and AC 3 establish is that a bolt and a chain work on **the shape ADR
 0018 decided** — its Decision item 4 — and not that they work on the shape in the tree today. That

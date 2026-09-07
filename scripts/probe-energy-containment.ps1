@@ -433,14 +433,18 @@ end
 --- ... and never on a tile something already stands on, and never silently on none of them.
 --
 -- create_entity does NOT collision-check, so without the occupancy test this happily buries a pipe
--- under a machine. It bit the chain row: the first exchanger's east water connection targets the
--- tile the SECOND exchanger then occupies, and its own west water target lands inside the first.
--- The energy reading survived it -- the strays are water-filtered and sit a row away from the energy
+-- under a machine. It bit the chain row: the first exchanger's north water connection targets the
+-- tile the SECOND exchanger then occupies, and its south one targets a tile inside the reactor.
+-- The energy reading survived it -- the strays are water-filtered and sit clear of the energy
 -- connections -- but a rig whose entire value is that its geometry is trustworthy cannot carry two
 -- boilers overlapping two pipes.
 --
--- Skipping is right rather than merely safe: two exchangers three tiles apart join through their
--- water boxes, so the row is fed along itself from whichever end is free.
+-- (It bit it on the 3x2 machine, where the pair chained sideways and the clash was east against
+-- west. The clash moved with the shape and did not go away, which is the point: this test is about
+-- a neighbour standing on a target tile, not about which face that neighbour is on.)
+--
+-- Skipping is right rather than merely safe: two exchangers fifteen tiles apart join through their
+-- water boxes, so the column is fed along itself from whichever end is free.
 local function unbound(surface, force, entity, index, filter, allow_none)
   local attached = 0
   local total = 0
