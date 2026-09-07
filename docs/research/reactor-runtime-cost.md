@@ -770,11 +770,26 @@ output box `deposit()` actually writes into.
 | `rf-reactor` box 1 (plasma, `input-output`) | `rf-pipe` and other reactors | 4000 | **1000** — its own declared volume |
 | `rf-reactor` box 2 (energy, `output`) | 20 `pipe` and a `storage-tank` | 27000 | **1000** — its own declared volume |
 | `rf-isotope-collector` box 1 (tritium, `output`) | 20 `pipe` and a `storage-tank` | 27000 | **500** — its own declared volume |
+| `rf-reactor` box 2 (energy, `output`) *since #86* | a bolted `rf-heat-exchanger`, no pipe | — | **1000** — its own volume, not 1200 |
+
+**The energy row's arrangement stopped existing on 2026-09-07 and the row was rebuilt rather than
+retired.** [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) shipped
+[ADR 0018](../adr/0018-energy-is-contained-and-no-pipe-carries-it.md)'s item 1, so
+`rf-reactor-energy` carries a connection category of its own and no pipe in the game carries it —
+`check-pooling.ps1` cannot lay twenty pipes for it any more. What a player can give that box instead
+is a machine bolted flat to its face, so the rig bolts a 200-unit `rf-heat-exchanger` to it and asks
+the same question: `get_capacity` answers the box's own 1000 and not the box plus its neighbour,
+which is what `apply()`'s clamp is written against. What the bolt cannot carry over is the pair of
+assertions comparing a box against a much larger run; those stay with the collector row, whose fluid
+is ordinary by design. The 27000-unit reading above is history and is not retakeable.
 
 The first two rows are checked at runs of 2500, 4000, 6000 and 7000 units and the reactor answers
-1000 every time. The last two are checked at a run of **27000** — 27 times the reactor's box and 54
-times the collector's — so the two candidate answers cannot be confused. **Connecting the box changes
-nothing**: an output box on a 27000-unit run reports the same number it reported with nothing on it.
+1000 every time. The two piped output rows were checked at a run of **27000** — 27 times the
+reactor's box and 54 times the collector's — so the two candidate answers cannot be confused.
+**Connecting the box changes nothing**: an output box on a 27000-unit run reports the same number it
+reported with nothing on it. The bolted row has no run at all and is not a length comparison: what
+it adds is that a *neighbouring machine's box* is not folded into the reading either, which is the
+only shape the reactor's energy box can be in since #86.
 
 > **The rig defect this found is worth knowing before extending it.** A `storage-tank`'s four
 > connections sit at asymmetric offsets from its centre — the first one measured here is (-1,-2) and

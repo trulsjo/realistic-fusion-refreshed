@@ -36,9 +36,16 @@
       bare      Three reactors, all powered, bridged and nothing else.
       piped     The same three, plus a tail of rf-pipe.
 
-      outlets   An rf-isotope-collector and an rf-reactor with their OUTPUT boxes piped into a run
-                of vanilla pipe and a tank. Nothing is simulated here and nothing burns down: the
-                row exists to ask get_capacity a question about a box that is on a segment.
+      outlets   An rf-isotope-collector with its TRITIUM output box piped into a run of vanilla
+                pipe and a tank, and -- since #86 -- an rf-reactor with an rf-heat-exchanger BOLTED
+                to its energy face. Nothing is simulated here and nothing burns down: the row exists
+                to ask get_capacity a question about an output box that has a neighbour.
+
+                THE REACTOR HALF WAS A PIPE RUN AND IS A BOLT, because the arrangement it measured
+                stopped existing. Reactor energy carried on vanilla pipe only while ADR 0018's
+                containment had not shipped; #86 shipped it, and the run cannot be built at all now.
+                The bolt is the shape that IS real, so the two "run bigger than the box" assertions
+                go with the run and the get_capacity one stays.
 
                 The four the bookkeeping is measured on, and the reason there are four is that a
                 shortfall on a row of three has two candidate causes which predict the same
@@ -130,18 +137,24 @@
     A REACTOR'S get_capacity REPORTS ITS OWN BOX, NOT THE RUN. A pipe's reports the run. This repo
     believed and wrote down the opposite, in control.lua's apply() and in the research note.
 
-    AND THAT HOLDS FOR AN OUTPUT BOX THAT IS ON A RUN (#68), which is the shape all THREE call
+    AND THAT HOLDS FOR AN OUTPUT BOX WITH A NEIGHBOUR (#68), which is the shape all THREE call
     sites in control.lua that clamp against get_capacity actually have -- deposit() into a
     collector box, apply() into the reactor's energy box, and apply()'s blanket headroom off the
     collector again. It used to be asked only of an
     output box plumbed into NOTHING -- the case where the box and the segment are the same object,
-    which cannot tell the two answers apart. The `outlets` row builds an rf-isotope-collector and an
-    rf-reactor with their output boxes piped into twenty pipes and a tank, a 27000-unit run against
-    a 500-unit and a 1000-unit box, and both boxes still answer their own volume.
+    which cannot tell the two answers apart. The `outlets` row pipes an rf-isotope-collector's
+    tritium box into twenty pipes and a tank, a 27000-unit run against a 500-unit box, and the box
+    still answers its own volume.
 
-    THE REACTOR HALF OF THAT ROW DEPENDS ON A REGIME THAT IS DUE TO END. Reactor energy takes a
-    vanilla pipe only because ADR 0018's containment has not shipped; #86 removes it, and the row
-    must then bolt or be retired. The collector half is unaffected -- tritium is ordinary by design.
+    THE REACTOR HALF OF THAT ROW BOLTS RATHER THAN PIPES SINCE #86, and it had to change or go.
+    Reactor energy took a vanilla pipe only while ADR 0018's containment had not shipped; it has
+    shipped, no pipe in the game carries the fluid, and the twenty-pipe run simply cannot be built.
+    What a player builds instead is an rf-heat-exchanger bolted flat to the reactor's energy face,
+    so that is what the row builds, and apply()'s clamp is asked the same question against it: the
+    reactor's 1000-unit output box must still report 1000 with a 200-unit exchanger box joined to it.
+    What the bolt cannot carry over is "the run is materially larger than the box" -- a bolt has no
+    run -- so those assertions stay with the collector, which is the shape they were written for.
+    The collector half is otherwise unaffected: tritium is ordinary by design.
 
     A BOX THAT IS WRITTEN EVERY STEP SITS PERSISTENTLY HOTTER THAN THE REST OF ITS RUN. In `five`
     the four unpowered reactors agree with each other to two parts in ten thousand, and the powered
@@ -518,7 +531,7 @@ local function top_up(cell, celsius)
   end
 end
 
--- ---------------------------------------------------------------- output boxes that are ON a run
+-- ---------------------------------------------------------------- output boxes that have a neighbour
 --
 -- WHY THIS EXISTS (#68). The capacity checks below used to ask their question of one shape only: an
 -- input-output box on a run of rf-pipe, and an OUTPUT box that was plumbed into nothing. An
@@ -527,29 +540,44 @@ end
 -- box was an extrapolation.
 --
 -- It matters because ALL THREE call sites in control.lua that clamp against get_capacity are output
--- boxes with a pipe on them in ordinary play, and none of them is a reactor's plasma box:
--- deposit() writes into an rf-isotope-collector, apply() writes into the reactor's ENERGY box, and
--- apply() computes a lithium blanket's headroom off the collector again.
+-- boxes with a neighbour in ordinary play, and none of them is a reactor's plasma box: deposit()
+-- writes into an rf-isotope-collector, apply() writes into the reactor's ENERGY box, and apply()
+-- computes a lithium blanket's headroom off the collector again.
 --
--- Vanilla pipes and a vanilla tank, because neither box is contained TODAY -- and that is not the
--- same statement about the two fluids, which is why it is spelled out rather than asserted in
--- passing.
+-- TWO SHAPES NOW, ONE PER FLUID, AND #86 IS WHY. The collector's tritium is ordinary by design
+-- (#26) -- its by-products are cold gases, not plasma, and nothing plans to contain them -- so that
+-- box goes on twenty vanilla pipes and a vanilla tank, and the run is what its capacity is compared
+-- against. Reactor energy is CONTAINED since #86: ADR 0018 gives it a category of its own and ships
+-- no pipe that carries it, so plumb() has nothing to lay for it and the run this row used to build
+-- cannot exist. The reactor's energy box gets the neighbour a player can actually give it, an
+-- rf-heat-exchanger bolted flat to its face, and build_energy_bolt() below is that row.
 --
--- TRITIUM IS ORDINARY BY DESIGN (#26). The collector's by-products are cold gases, not plasma, and
--- nothing plans to contain them.
---
--- REACTOR ENERGY IS ORDINARY ONLY BECAUSE ADR 0018 HAS NOT SHIPPED. That ADR decides the opposite --
--- the energy fluids are contained the way plasma is, and no pipe entity carries either -- and #86
--- is the ticket that does it. CONTEXT.md's Plumbing section carries the same warning, and
--- check-containment.ps1 asserts today's behaviour on the same footing.
---
--- What that costs this row: the MEASUREMENT is about boxes and segments and survives either regime,
--- but the ARRANGEMENT it is taken on stops existing when #86 lands, and the row must then bolt an
--- exchanger to the reactor's face or be retired. #258 asks whether a contained energy pipe exists
--- to rebuild it with.
+-- What the bolt cannot carry over is the pair of assertions about the run being materially larger
+-- than the box: a bolt has no run. It keeps the one that decides whether apply()'s clamp is written
+-- against the right number, which is the reason the row exists. #258 asks whether a contained energy
+-- pipe should exist; while it does not, a bolt is the only neighbour that box can have.
 
-local RUN_PIPES = 20   -- 2000 units of pipe, so the run beats a 1000-unit box on pipe alone
+-- 2000 units of pipe, so the run beats the collector's 500-unit box on pipe alone -- and it beat a
+-- reactor's 1000-unit energy box too, while that box was on a run (#86 took it off one).
+local RUN_PIPES = 20
 local RUN_TANK  = "storage-tank"
+
+--- The RUNTIME index of the box on `entity` filtered to `fluid`, or nil.
+---
+--- NOT box_index() BELOW, AND THE DIFFERENCE IS MEASURED. A boiler with a fluid ENERGY SOURCE does
+--- not present its boxes in the same order twice: `prototypes.entity[...].fluidbox_prototypes` and
+--- `entity.fluidbox` disagree for rf-heat-exchanger, so asking the prototype for the index of the
+--- reactor-energy box and then handing that index to entity.fluidbox returns the WATER box's
+--- connections. It cost this rig one run, failing with "rf-heat-exchanger has no north-facing energy
+--- connection" on a machine that has one. box_index() is still right for rf-reactor and
+--- rf-isotope-collector, which have no energy-source box and so cannot disagree with themselves.
+local function box_of(entity, fluid)
+  for index = 1, #entity.fluidbox do
+    local filter = entity.fluidbox.get_filter(index)
+    if filter and filter.name == fluid then return index end
+  end
+  return nil
+end
 
 --- The index of the box on `entity` that `pick` accepts, from the PROTOTYPE rather than remembered.
 local function box_index(entity, pick)
@@ -635,19 +663,63 @@ local function build_collector_outlet(surface, force, ox, oy)
   return run
 end
 
---- An rf-reactor whose ENERGY box is on a run, which is the claim that used to rest on an
---- unconnected reading.
+--- An rf-reactor with an rf-heat-exchanger BOLTED to its energy face, which is what apply()'s
+--- clamp is actually written against since #86.
+---
+--- IT WAS A TWENTY-PIPE RUN AND IT CANNOT BE ONE ANY MORE. ADR 0018 gives rf-reactor-energy a
+--- connection category of its own and ships no pipe that carries it, so plumb() has nothing to lay:
+--- the row either bolts or is retired, and bolting keeps the question being asked on the shape a
+--- player builds. #258 asks whether a contained energy pipe should exist; while it does not, this is
+--- the only neighbour that box can have.
 ---
 --- Unregistered, so control.lua never steps it: nothing here is about what a reactor DOES, and a
---- simulated reactor on this row would only add a writer to a measurement about geometry.
-local function build_energy_outlet(surface, force, ox, oy)
+--- simulated reactor on this row would only add a writer to a measurement about geometry. The
+--- exchanger is unpowered and unwatered for the same reason -- what is being asked is what
+--- get_capacity reports, not whether anything burns.
+---
+--- The exchanger's own position comes off the two prototypes: it is placed once as a probe, asked
+--- where its north energy connection sits relative to itself, and placed again so that connection
+--- stands on the tile the reactor's south output points at. That is the BOLT alignment and not the
+--- pipe-run one; ADR 0018's Consequences call the difference a trap, and aligning target against
+--- target leaves the two machines a tile apart looking exactly like a refusal.
+local function build_energy_bolt(surface, force, ox, oy)
   local reactor = must(surface.create_entity({
     name = "rf-reactor", position = { ox, oy }, force = force, raise_built = false,
-  }), "rf-reactor for the energy outlet")
+  }), "rf-reactor for the energy bolt")
   local index = box_index(reactor, function(box) return box.production_type == "output" end)
-  local run = plumb(surface, force, reactor, index)
-  run.label = "reactor energy"
-  return run
+
+  local south
+  for _, c in pairs(reactor.fluidbox.get_pipe_connections(index)) do
+    if c.target_position.y > c.position.y then south = c end
+  end
+  if not south then error("rf-reactor has no south-facing energy output; ADR 0031 says it must") end
+
+  local probe = must(surface.create_entity({
+    name = "rf-heat-exchanger", position = { ox, oy + 40 }, force = force,
+  }), "probe rf-heat-exchanger")
+  local fuel = box_of(probe, "rf-reactor-energy")
+  if not fuel then
+    probe.destroy()
+    error("rf-heat-exchanger has no box filtered to rf-reactor-energy")
+  end
+  local intake
+  for _, c in pairs(probe.fluidbox.get_pipe_connections(fuel)) do
+    if c.target_position.y < c.position.y then intake = c end
+  end
+  if not intake then
+    probe.destroy()
+    error("rf-heat-exchanger has no north-facing energy connection")
+  end
+  local off = { intake.position.x - probe.position.x, intake.position.y - probe.position.y }
+  probe.destroy()
+
+  local exchanger = must(surface.create_entity({
+    name = "rf-heat-exchanger",
+    position = { south.target_position.x - off[1], south.target_position.y - off[2] },
+    force = force,
+  }), "rf-heat-exchanger bolted to the reactor's energy face")
+
+  return { entity = reactor, index = index, neighbour = exchanger, label = "reactor energy" }
 end
 
 -- ---------------------------------------------------------------- the three candidate write shapes
@@ -957,13 +1029,11 @@ script.on_init(function()
       for i = 1, math.floor(#r / 2) do r[i], r[#r + 1 - i] = r[#r + 1 - i], r[i] end
     end
   end
-  -- The two OUTPUT boxes that are actually on a run (#68). Kept out of storage.cells for the same
-  -- reason the shape rows are: every loop over that table is about plasma sharing, and these two
-  -- carry tritium and reactor energy.
-  storage.outlets = {
-    build_collector_outlet(surface, force, 7.5, 900.5),
-    build_energy_outlet(surface, force, 60.5, 900.5),
-  }
+  -- The OUTPUT box that is actually on a run (#68), and the one that has a bolted neighbour instead
+  -- (#86). Kept out of storage.cells for the same reason the shape rows are: every loop over that
+  -- table is about plasma sharing, and these carry tritium and reactor energy.
+  storage.outlets = { build_collector_outlet(surface, force, 7.5, 900.5) }
+  storage.energy_bolt = build_energy_bolt(surface, force, 60.5, 900.5)
   storage.order = { "mix", "pair", "trio", "five", "solo", "solopipe", "bare", "piped" }
   log("POOL-RIG built")
 end)
@@ -1261,8 +1331,8 @@ script.on_nth_tick(CHECK_AT, function()
   -- that runs zero times and reports nothing, so an on_init edit that dropped this row would delete
   -- four checks and still print PASS -- the failure this file was already bitten by once, and the
   -- reason the bookkeeping rows assert their own results are present.
-  record(storage.outlets ~= nil and #storage.outlets == 2,
-    "both output-box runs were built",
+  record(storage.outlets ~= nil and #storage.outlets == 1,
+    "the output-box run was built",
     storage.outlets and string.format("%d built", #storage.outlets)
       or "storage.outlets is nil -- nothing below this line ran")
 
@@ -1326,6 +1396,39 @@ script.on_nth_tick(CHECK_AT, function()
     record(rel(report, own) < 1e-9,
       string.format("%s: get_capacity reports the box's own volume, NOT the run it is on", run.label),
       string.format("%.6g against a declared box of %.6g and a run of %.6g", report, own, segment))
+  end
+
+  -- ------------------------------------------------- and the same question of a BOLTED neighbour
+  --
+  -- apply() clamps what it writes into the reactor's energy box against get_capacity on that box,
+  -- and since #86 that box's only possible neighbour is a machine bolted flat to it. So the claim
+  -- has to be asked in that shape rather than inherited from the pipe run above: if the engine
+  -- folded a bolted neighbour's box into the reading, apply() would clamp against 1200 where the
+  -- box takes 1000 and the surplus would be discarded with nothing saying so.
+  local bolt = storage.energy_bolt
+  record(bolt ~= nil, "the bolted energy row was built",
+    bolt and string.format("%s and %s", bolt.entity.name, bolt.neighbour.name)
+      or "storage.energy_bolt is nil -- nothing below this line ran")
+  if bolt then
+    -- Joined, from the connection itself. A bolt placed one tile out builds perfectly and measures
+    -- nothing, which is indistinguishable from a refused connection (ADR 0018's Consequences).
+    local joined
+    for _, c in pairs(bolt.entity.fluidbox.get_pipe_connections(bolt.index)) do
+      if c.target and c.target.owner == bolt.neighbour then joined = c end
+    end
+    record(joined ~= nil,
+      "reactor energy: the exchanger really is bolted to the reactor's energy face, with no pipe",
+      joined and string.format("joined at (%g, %g)", joined.position.x, joined.position.y)
+        or "no connection on the energy box reaches the exchanger")
+
+    local own      = indexed_volume(bolt.entity, bolt.index)
+    local report   = bolt.entity.fluidbox.get_capacity(bolt.index)
+    local their    = bolt.neighbour.fluidbox.get_capacity(
+      box_of(bolt.neighbour, "rf-reactor-energy"))
+    record(rel(report, own) < 1e-9,
+      "reactor energy: get_capacity reports the box's own volume, NOT the box plus what is bolted to it",
+      string.format("%.6g against a declared box of %.6g, with a %.6g-unit exchanger box joined to it",
+        report, own, their))
   end
 
   -- ------------------------------------------------------------ one pool, as a quantity

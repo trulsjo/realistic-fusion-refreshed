@@ -9,8 +9,10 @@
 
     Two links are candidates, both because a predecessor built them flush and multi-connected:
 
-      plasma   rf-heater's output box into the reactor's input-output plasma box.
-      energy   The reactor's rf-reactor-energy output box into rf-heat-exchanger's input.
+      plasma   rf-heater's output box into the reactor's input-output plasma box, through pipe.
+      energy   The reactor's rf-reactor-energy output box into rf-heat-exchanger's input, BOLTED
+               face to face with no pipe at all -- since #86 there is no pipe in the game that
+               carries the fluid.
 
     MEASURED, NOT DERIVED
 
@@ -45,13 +47,23 @@
     Two independent cells, because the honest answer needs both.
 
       chain   A reactor fed by a heater and drained by heat exchangers -- what a player builds, and
-              what the energy link actually carries.
-      drain   The same reactor with the exchangers replaced by an infinity pipe that removes
-              reactor energy as fast as it arrives. Nothing throttles the link, so this is the most
-              this mod will ever ask of it, whatever anyone plumbs downstream.
+              what the energy link actually carries. The first exchanger is BOLTED to the reactor's
+              south energy face and each one after it CHAINS off its neighbour's east short end,
+              which is the shape ADR 0031 settles and the only shape available: reactor energy
+              carries a connection category of its own and no pipe joins it.
+
+              A CHAINED ROW TAKES WATER AT ITS TWO ENDS ONLY, and that is a property of the shape
+              rather than a shortcut here. Every interior water connection is consumed by a joint,
+              so the row is fed at the first machine's west end and the last one's east end and has
+              to serve the middle itself. ADR 0031 measured eight machines fed that way and none
+              starved.
+      drain   The same reactor with the exchangers replaced by the rigs' categorised energy feed,
+              which removes reactor energy as fast as it arrives. Nothing throttles the link, so
+              this is the most this mod will ever ask of it, whatever anyone builds downstream.
 
     Everything around the links is unbounded on purpose -- deuterium in, water in, steam out, all
-    infinity pipes -- so that the only thing being measured is the two links themselves.
+    infinity pipes -- so that the only thing being measured is the two links themselves. The energy
+    link is the exception and cannot be otherwise: nothing but another machine can be put on it.
 
     THE MAP IS QUIETED, AND A DAMAGED RIG FAILS LOUDLY (#190)
 
@@ -90,8 +102,10 @@
     exchangers rather than the reactor.
 
 .PARAMETER Pipes
-    Pipes between each pair, on both links and in both cells. Reported beside the result, because
-    #47's ceiling depends on it.
+    Pipes between the heater bank and the reactor, on the PLASMA link only. It used to set the
+    distance on both links; since #86 the energy link has no pipes to count, so a run's two rates
+    are no longer taken at the same separation and the report says so. Reported beside the result,
+    because #47's ceiling depends on it.
 
 .PARAMETER KeepTemp
     Keep the save, the rig mod and the captured output.
@@ -150,8 +164,10 @@ local HEATERS    = __HEATERS__
 
 local PLASMA = "rf-d-d-plasma"
 local ENERGY = "rf-reactor-energy"
--- Write-EnergyFeed's prototype: a plain vanilla infinity pipe today, and the single place a
--- connection category lands when ADR 0018 does (#84).
+-- Write-EnergyFeed's prototype. It carries BOTH energy categories since #86 -- read off the two
+-- shipped reactors' output boxes -- because a vanilla infinity pipe stopped being able to reach an
+-- energy box the moment ADR 0018 landed. #84 routed every rig through that one function so this
+-- would be an edit there rather than here.
 local ENERGY_FEED = "__ENERGYFEED__"
 
 -- create_entity collision-checks nothing, so every silent overlap in this rig got built rather
@@ -285,15 +301,16 @@ local function place_facing(surface, force, name, fluid, target, seed)
   return entity
 end
 
--- The pipe is named by the caller because the two links do not take the same one. #26 gives the
--- plasma set a connection_category of its own, so rf-pipe joins the reactor's plasma box and
--- nothing else; the reactor-energy box is deliberately left on the default category -- energy is an
--- ordinary fluid and a player plumbs it with ordinary pipes -- so the energy line is vanilla pipe.
--- Getting this wrong does not misreport, it fails to connect, and assert_joined below says so.
+-- The pipe is named by the caller, and since #86 exactly one caller is left. #26 gives the plasma
+-- set a connection_category of its own, so rf-pipe joins the reactor's plasma box and nothing else;
+-- ADR 0018 then gave the energy boxes a category of their own too, and shipped NO pipe that carries
+-- it. So the plasma line is rf-pipe and the energy line is no line at all -- machines bolted face to
+-- face. Getting the plasma one wrong does not misreport, it fails to connect, and assert_joined
+-- below says so.
 --
--- Idempotent: the energy line's vertical run and its horizontal header share the tile they meet
--- at, and create_entity does not collision-check, so without this the corner would quietly end up
--- holding two pipes.
+-- Idempotent, which the energy line's corner needed while it had one. Kept because create_entity
+-- does not collision-check and a caller that walks two runs into the same tile would otherwise get
+-- two pipes in it silently.
 local function pipe_run(surface, force, name, from, step, count)
   for i = 0, count - 1 do
     local at = { from[1] + step[1] * i, from[2] + step[2] * i }
@@ -301,6 +318,54 @@ local function pipe_run(surface, force, name, from, step, count)
       place_or_die(surface, { name = name, position = at, force = force }, name)
     end
   end
+end
+
+-- Which way a runtime connection faces, read off the tile it targets rather than remembered.
+local function facing(connection)
+  local dx = connection.target_position.x - connection.position.x
+  local dy = connection.target_position.y - connection.position.y
+  if dy < 0 then return "north" elseif dy > 0 then return "south" elseif dx < 0 then return "west" end
+  return "east"
+end
+
+-- The connection of `entity`'s box on `fluid` that faces `side`, or nil.
+local function connection_facing(entity, fluid, side)
+  local index = box_of(entity, fluid)
+  if not index then error(entity.name .. " has no box filtered to " .. fluid) end
+  for _, c in pairs(entity.fluidbox.get_pipe_connections(index)) do
+    if facing(c) == side then return c end
+  end
+  return nil
+end
+
+-- Place `name` so that its `fluid` connection facing `side` STANDS ON `tile`, which is the other
+-- machine's target_position.
+--
+-- NOT place_facing BELOW, AND THE DIFFERENCE IS THE WHOLE OF #86's ARITHMETIC. place_facing aligns
+-- a connection's TARGET onto a chosen tile, which is what a pipe run wants: the pipe occupies that
+-- tile. A BOLT aligns one machine's connection TILE onto the other machine's target. Align target
+-- against target and the two machines sit one tile clear of each other, both pointing at the same
+-- empty ground -- which is indistinguishable from a refused connection. ADR 0018's Consequences
+-- call it a trap and #82's rig reported a false negative from it on the question deciding that ADR.
+--
+-- Which connection is chosen geometrically rather than by index, because rf-heat-exchanger's energy
+-- box has three and pairs() promises no order -- so an index would bolt the row together by a
+-- different face from one run to the next.
+local function bolt(surface, force, name, fluid, side, tile, seed)
+  -- Not place_or_die: this one is thrown away and only ever asked where its connections are,
+  -- relative to itself, so an overlap here changes nothing it is asked for.
+  local probe = surface.create_entity({ name = name, position = seed, force = force })
+  if not probe then error("could not place a probe " .. name) end
+  local found = connection_facing(probe, fluid, side)
+  if not found then
+    probe.destroy()
+    error(name .. " has no " .. side .. "-facing " .. fluid .. " connection to bolt with")
+  end
+  local off = { found.position.x - probe.position.x, found.position.y - probe.position.y }
+  probe.destroy()
+  return place_or_die(surface, {
+    name = name, position = { tile.x - off[1], tile.y - off[2] }, force = force,
+  }, string.format("%s bolted onto (%g, %g)", name, tile.x, tile.y))
 end
 
 -- Every link in this rig has to actually be plumbed, and a fluid connection that lines up with
@@ -422,8 +487,9 @@ end
 -- ------------------------------------------------------------------ one cell
 --
 -- ox is the cell's origin. The reactor sits there; the plasma line runs west out of its west
--- connection to a heater, and the energy line runs north out of its north connection to either a
--- bank of heat exchangers or an infinity pipe that swallows whatever arrives.
+-- connection to a heater, and the energy leg leaves its SOUTH connection with no pipe on it at all
+-- -- either a bolted, chained row of heat exchangers or the categorised feed that swallows whatever
+-- arrives (#86).
 --
 -- power is this cell's substations and energy interfaces, already placed. The cell keeps them so
 -- assert_intact() can see the supply path; nothing here reads them for a measurement.
@@ -473,45 +539,67 @@ local function build(surface, force, ox, drain, power)
     heaters[#heaters + 1] = built
   end
 
-  -- Energy: the reactor's north connection -> PIPES pipes -> a header -> the exchangers.
-  local north = { ox + 0.5, 0.5 - 8 }
-  pipe_run(surface, force, "pipe", north, { 0, -1 }, PIPES)
-  local header_y = north[2] - (PIPES - 1)
+  -- Energy: the reactor's SOUTH connection, bolted, with NO PIPE ANYWHERE ON THIS LEG (#86).
+  --
+  -- IT WAS A PIPE RUN NORTH INTO A HEADER, AND THAT LAYOUT HAD BEEN STALE SINCE c3abb81 (#215). The
+  -- header pitched the exchangers six tiles apart, which described rf-heat-exchanger when it was
+  -- vanilla's 3x2; at 5x15 exchanger i's steam outlet targeted exchanger i+1's stub, so steam and
+  -- reactor energy fought over the same tile and place_or_die() refused to build it at all.
+  --
+  -- #86 settles it by removing the choice. ADR 0018 gives the fluid a connection category of its
+  -- own and ships no pipe that carries it, so there is no header to pitch: the first exchanger
+  -- bolts flat to the reactor's south face and each one after it chains off its neighbour's east
+  -- short end (ADR 0031 item 2). Every offset comes off the two prototypes through bolt(), so the
+  -- pitch cannot go stale against a footprint again.
+  local reactor_out = connection_facing(reactor, ENERGY, "south")
+  if not reactor_out then
+    error("rf-reactor has no south-facing energy output; ADR 0031 item 1 says it must")
+  end
 
   local exchangers = {}
   if drain then
-    -- Nothing downstream to throttle the link: whatever crosses is removed the same tick.
-    local at = { north[1], header_y - 1 }
+    -- Nothing downstream to throttle the link: whatever crosses is removed the same tick. The
+    -- rigs' categorised feed rather than a vanilla infinity pipe, because a vanilla one cannot
+    -- reach this box at all any more -- which is the whole of what Write-EnergyFeed exists for.
     local pipe = place_or_die(surface,
-      { name = ENERGY_FEED, position = at, force = force }, "the drain's infinity pipe")
+      { name = ENERGY_FEED, position = reactor_out.target_position, force = force },
+      "the drain's energy feed")
     pipe.set_infinity_pipe_filter({ name = ENERGY, percentage = 0, mode = "at-most" })
   else
-    -- SIX TILES APART, AND STALE SINCE c3abb81 (#215). This said "the exchanger is three wide and
-    -- wants an infinity pipe on each end, so four would have neighbouring cells fighting over the
-    -- same tile", which described rf-heat-exchanger when it was vanilla's 3x2. It is 5x15, and at
-    -- this pitch exchanger i's steam outlet targets exchanger i+1's stub -- so the fight the
-    -- comment set out to avoid is exactly what happens, between steam and reactor energy.
-    --
-    -- The numbers are left as they are ON PURPOSE. Deriving them needs a target distance to derive
-    -- them AGAINST, and the distances this rig has always used cannot be met by a 5x15 body: see
-    -- the issue. place_or_die() above now refuses the layout rather than building it.
-    local first = north[1] - 3 * (EXCHANGERS - 1)
-    pipe_run(surface, force, "pipe", { first, header_y }, { 1, 0 }, 6 * (EXCHANGERS - 1) + 1)
-    for i = 0, EXCHANGERS - 1 do
-      -- A one-pipe stub between the header and each exchanger, and it is load-bearing. Sat
-      -- directly on the header, the exchanger's water inlet lands one tile from it -- orthogonally
-      -- adjacent, so the engine joins them into a single segment, the header fills with water and
-      -- the reactor has nowhere to put reactor energy. It reads as a reactor that produces nothing
-      -- rather than as a plumbing mistake. The stub moves the exchanger two tiles clear.
-      local stub = { first + 6 * i, header_y - 1 }
-      pipe_run(surface, force, "pipe", stub, { 0, -1 }, 1)
-      local exchanger = place_facing(surface, force, "rf-heat-exchanger", ENERGY,
-        stub, { ox - 40.5 + 8 * i, -30 })
-      unbound(surface, force, exchanger, box_of(exchanger, "water"),
-        { name = "water", percentage = 1, mode = "at-least" })
+    local tile, side = reactor_out.target_position, "north"
+    for i = 1, EXCHANGERS do
+      local exchanger = bolt(surface, force, "rf-heat-exchanger", ENERGY, side, tile,
+        { ox - 40.5, -30.5 })
+      exchangers[i] = exchanger
+      -- The next machine bolts onto this one's EAST short end with its own west one, so the row
+      -- grows sideways along the reactor's face and both long faces stay free for energy and steam.
+      local east = connection_facing(exchanger, ENERGY, "east")
+      if not east then
+        error("rf-heat-exchanger has no east-facing energy connection to chain through")
+      end
+      tile, side = east.target_position, "west"
+    end
+
+    -- WATER AT THE ROW'S TWO ENDS ONLY, which is not a shortcut but the shape's own constraint: a
+    -- chained row consumes every interior water connection in a joint, so the middle of the row has
+    -- to be served across the row the same way energy is. ADR 0031 measured eight machines fed this
+    -- way and none starved; this rig runs four.
+    for _, spec in ipairs({ { exchangers[1], "west" }, { exchangers[EXCHANGERS], "east" } }) do
+      local water = connection_facing(spec[1], "water", spec[2])
+      if not water then
+        error("rf-heat-exchanger has no " .. spec[2] .. "-facing water connection")
+      end
+      local pipe = place_or_die(surface,
+        { name = "infinity-pipe", position = water.target_position, force = force },
+        "the row's " .. spec[2] .. " water feed")
+      pipe.set_infinity_pipe_filter({ name = "water", percentage = 1, mode = "at-least" })
+    end
+
+    -- Steam out of every machine. Its one steam connection is on the free long face, so nothing
+    -- here has to be skipped.
+    for _, exchanger in ipairs(exchangers) do
       unbound(surface, force, exchanger, box_of(exchanger, "steam"),
         { name = "steam", percentage = 0, mode = "at-most" })
-      exchangers[#exchangers + 1] = exchanger
     end
   end
 
@@ -564,12 +652,17 @@ script.on_init(function()
   -- expansion switched on, which is what brings the attention over the next thirty-five minutes.
   storage.quieted = __QUIETFN__(surface)
 
+  -- THE CLEARED BOX RUNS FURTHER EAST AND FURTHER SOUTH THAN IT DID, because the chain cell's row
+  -- is now four fifteen-tile machines laid side by side along the reactor's south face rather than
+  -- a bank hung off a header. Sixty tiles of exchanger plus a water feed at each end is why the two
+  -- cells are a hundred apart below instead of sixty.
+  local CLEAR = { { -120, -60 }, { 200, 40 } }
   local tiles = {}
-  for x = -120, 120 do
-    for y = -60, 40 do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
+  for x = CLEAR[1][1], CLEAR[2][1] do
+    for y = CLEAR[1][2], CLEAR[2][2] do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
   end
   surface.set_tiles(tiles)
-  for _, e in pairs(surface.find_entities_filtered({ area = { { -120, -60 }, { 120, 40 } } })) do
+  for _, e in pairs(surface.find_entities_filtered({ area = CLEAR })) do
     if e.type ~= "character" then e.destroy() end
   end
 
@@ -582,7 +675,7 @@ script.on_init(function()
   -- Kept per cell, so assert_intact() can see the supply path: losing either half takes a cell's
   -- heater dark without invalidating anything the meter touches.
   local power = {}
-  for _, ox in ipairs({ 0, 60 }) do
+  for _, ox in ipairs({ 0, 100 }) do
     power[ox] = {}
     for _, dx in ipairs({ 9, -9 }) do
       local sub = place_or_die(surface,
@@ -598,13 +691,14 @@ script.on_init(function()
     end
   end
 
-  storage.cells = { build(surface, force, 0, false, power[0]), build(surface, force, 60, true, power[60]) }
+  storage.cells = { build(surface, force, 0, false, power[0]), build(surface, force, 100, true, power[100]) }
   for _, cell in ipairs(storage.cells) do
     cell.last_plasma = amount_in(cell.heater, cell.heater_box)
     cell.last_energy = amount_in(cell.reactor, cell.energy_box)
   end
 
-  log(string.format("LINKRIG built cells=%d pipes=%d exchangers=%d heaters=%d quieted=%d",
+  -- pipes= is the PLASMA link's count. The energy leg has none and cannot have any (#86).
+  log(string.format("LINKRIG built cells=%d plasma_pipes=%d exchangers=%d heaters=%d quieted=%d",
     #storage.cells, PIPES, EXCHANGERS, HEATERS, storage.quieted))
 end)
 
@@ -783,7 +877,8 @@ try {
     }
 
     Write-Host ''
-    Write-Host "Factorio $version -- $Ticks ticks, $Window per window, $Pipes pipes per link, $Exchangers exchangers"
+    Write-Host ("Factorio $version -- $Ticks ticks, $Window per window, $Pipes pipes on the plasma " +
+                "link and none on the energy leg, $Exchangers exchangers")
     Write-Host ("map quieted: pollution and enemy expansion off, peaceful mode, {0} enemy entities removed" -f $quieted)
     Write-Host ''
     Write-Host ('{0,-8}{1,16}{2,16}{3,14}{4,14}{5,16}{6,12}' -f
@@ -806,6 +901,11 @@ try {
     # energy is the reactor's output-only box into the exchanger's input-only one, which is the row
     # #47's matrix sweeps: 100 units/tick per connection flush, falling to a floor of 50 through a
     # long run of pipe.
+    #
+    # SINCE #86 THAT LEG IS ALWAYS FLUSH, so the band's lower end no longer describes anything this
+    # rig can build -- there is no pipe for the fluid, and a bolted joint is the flush case. The
+    # range is printed as it stands rather than narrowed, because #47's own numbers are what the
+    # band is quoted from and re-deriving a single-ratio ceiling for a bolt is #227's question.
     #
     # plasma is the heater's output-only box into the reactor's *input-output* one, which is
     # neither row #47 published. Measured since, by this repo's own rig

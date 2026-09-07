@@ -327,7 +327,8 @@ Three properties of that gate belong here rather than only in the script:
   cancels out of the comparison exactly as it cancels out of every other `-With` lane's difference.
 
 **Measured across all fourteen lanes on 2026-09-02 against 2.0.77: every one green, 14 contained
-connections each**, the four asset-red lanes included — which is the result
+connections each** — 24 since #86 and #87 categorised the two energy fluids on 2026-09-07, which has
+not been re-swept — the four asset-red lanes included — which is the result
 [#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207)'s sweep predicted and
 [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208)'s opt-out earned on
 `seablock`. **Green is the claim**: the gate exists to notice the fifteenth lane, and it is what #208

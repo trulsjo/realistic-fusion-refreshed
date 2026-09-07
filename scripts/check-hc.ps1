@@ -110,8 +110,10 @@ local HC_TURBINE   = "rf-hc-turbine"
 local EXCHANGER    = "rf-heat-exchanger"
 local TURBINE      = "steam-turbine"
 local ENERGY       = "rf-reactor-energy"
--- Write-EnergyFeed's prototype. A plain vanilla infinity pipe today; the one place a category
--- lands when ADR 0018 does (#84).
+-- Write-EnergyFeed's prototype. It carries BOTH energy categories since #86 -- read off the two
+-- shipped reactors' output boxes -- because a vanilla infinity pipe stopped being able to reach an
+-- energy box the moment ADR 0018 landed. #84 routed every rig through that one function so this
+-- would be an edit there rather than here.
 local ENERGY_FEED  = "__ENERGYFEED__"
 
 local function record(ok, name, detail)
@@ -154,8 +156,8 @@ local function feed(surface, force, entity, fluid, temperature)
   if not index then error(entity.name .. " has no box that takes " .. fluid) end
   for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
     local supply = must(surface.create_entity({
-      -- Energy comes from the shared feed, water and steam from a vanilla pipe. The two are the
-      -- same entity today and will not be once reactor energy is contained (#84, ADR 0018).
+      -- Energy comes from the shared feed, water and steam from a vanilla pipe. They were the same
+      -- entity until #86 contained reactor energy; a vanilla one cannot reach an energy box now.
       name = (fluid == ENERGY) and ENERGY_FEED or "infinity-pipe",
       position = connection.target_position, force = force,
     }), "supply of " .. fluid .. " for " .. entity.name)

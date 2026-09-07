@@ -58,11 +58,24 @@
       "fluid": "rf-aneutronic-reactor-energy",
       "flow": "output",
       "connection_type": "normal",
-      "connection_category": null,
+      "connection_category": "rf-aneutronic-reactor-energy",
       "direction": "north",
       "position": [
         0,
         -7
+      ]
+    },
+    {
+      "box": "output_fluid_box",
+      "production_type": "output",
+      "fluid": "rf-aneutronic-reactor-energy",
+      "flow": "output",
+      "connection_type": "normal",
+      "connection_category": "rf-aneutronic-reactor-energy",
+      "direction": "south",
+      "position": [
+        0,
+        7
       ]
     }
   ],

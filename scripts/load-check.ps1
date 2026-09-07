@@ -351,13 +351,22 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $ourMods  = Get-RepoMods
 
-# The category contain() writes, which the containment floor below looks for.
+# The categories contain() writes, which the containment floor below looks for.
+#
+# THREE OF THEM SINCE #86 AND #87, one per contained fluid family: plasma, and ADR 0018's two
+# reactor energies. The floor requires EACH of them to be present in the declared dump rather than
+# merely one, because "at least one connection carries a category" was satisfiable by plasma alone --
+# so contain() could have stopped writing either energy category and this gate would have reported a
+# clean pass over it. Every one is listed rather than derived from a prefix: what the floor exists to
+# catch is a category disappearing, and a prefix scan finds nothing to miss.
 #
 # Named PLASMA_CATEGORY and not CONTAINED, because PowerShell variable names are case-INSENSITIVE:
 # `$contained` for the connections holding it would be the SAME VARIABLE, and the constant would be
 # gone by the time a message quoted it. probe-connection-categories.ps1 carries the same note for
 # the same reason, and name-check.ps1's $REFERENCE_MODS is where this file's family first met it.
 $PLASMA_CATEGORY = 'rf-plasma'
+$ENERGY_CATEGORIES = @('rf-reactor-energy', 'rf-aneutronic-reactor-energy')
+$DECLARED_CATEGORIES = @($PLASMA_CATEGORY) + $ENERGY_CATEGORIES
 # Refused rather than combined. The self-test's canary halves reason about what a broken mod does to
 # a clean load, and a third-party overhaul in the same run makes a failure ambiguous -- worse, mods
 # present in the directory but absent from mod-list.json are auto-enabled by Factorio, so "not
@@ -931,18 +940,29 @@ function Test-Containment {
 
     # THE FLOOR, BECAUSE EVERYTHING BELOW PASSES BY FINDING NOTHING. A walk that stopped matching, a
     # prefix that changed, a dump written somewhere else: each reports zero breaches, which reads
-    # exactly like containment surviving. So the declared side must hold at least one connection
-    # carrying the category before any comparison is believed. An instrument fault, not a finding.
-    $carrying = @($Declared.Values | ForEach-Object { $_.Values } |
-        Where-Object { $_.Set -ccontains $PLASMA_CATEGORY })
-    if (-not $carrying) {
+    # exactly like containment surviving. So the declared side must hold a connection carrying EVERY
+    # category contain() writes before any comparison is believed. An instrument fault, not a finding.
+    #
+    # EVERY category and not merely one, which is what #86 and #87 changed here. While plasma was the
+    # only contained family the two were the same test; with three, "at least one" is satisfied by
+    # plasma alone, and contain() dropping an energy category would have come out as a clean pass.
+    $declaredConnections = @($Declared.Values | ForEach-Object { $_.Values })
+    $absent = @($DECLARED_CATEGORIES | Where-Object {
+        $category = $_
+        -not @($declaredConnections | Where-Object { $_.Set -ccontains $category })
+    })
+    if ($absent) {
         Write-Host ''
-        Write-Host "FAILED - containment: the declared dump holds no connection carrying '$PLASMA_CATEGORY'."
+        Write-Host "FAILED - containment: the declared dump holds no connection carrying $($absent -join ', ')."
         Write-Host '         Either contain() has stopped writing it or this check has stopped'
         Write-Host '         reading it -- and both would otherwise report a clean pass against any'
         Write-Host '         set at all.'
         exit 1
     }
+    $carrying = @($declaredConnections | Where-Object {
+        $set = $_.Set
+        @($DECLARED_CATEGORIES | Where-Object { $set -ccontains $_ })
+    })
 
     $breaches = @(Get-ContainmentBreaches -Declared $Declared -Loaded $Loaded)
     if ($breaches) {
@@ -1207,14 +1227,40 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
         #
         # THE VICTIM IS WHATEVER IS CONTAINED, not a prototype named here. A hard-coded victim would
         # make this half fail on the day a pipe is renamed, which is the day it is least welcome.
-        'local function break_one(node, seen)
+        #
+        # AND IT IS ANY OF THE THREE CATEGORIES, not rf-plasma alone (#86, #87). While plasma was the
+        # only contained family the two were the same thing; with three, a canary that hunts for
+        # rf-plasma proves the gate catches a lost plasma category and says nothing about the two
+        # energy ones -- and the sentence above would have been quietly false. The list is written in
+        # from $DECLARED_CATEGORIES so it cannot drift from what the floor requires, and the canary
+        # records WHICH category it took as well as from which prototype, because the assertion below
+        # compares both.
+        (@'
+local CATEGORIES = { __CATEGORIES__ }
+
+local function contained_as(cat)
+  for _, wanted in ipairs(CATEGORIES) do
+    if cat == wanted then return wanted end
+    if type(cat) == "table" then
+      for _, one in pairs(cat) do
+        if one == wanted then return wanted end
+      end
+    end
+  end
+  return nil
+end
+
+local taken = nil
+
+local function break_one(node, seen)
   if type(node) ~= "table" or seen[node] then return nil end
   seen[node] = true
   if node.pipe_connections then
     for _, c in pairs(node.pipe_connections) do
-      local cat = c.connection_category
-      if cat == "rf-plasma" or (type(cat) == "table" and cat[1] == "rf-plasma") then
+      local was = contained_as(c.connection_category)
+      if was then
         c.connection_category = "pipe-to-ground"
+        taken = was
         return true
       end
     end
@@ -1238,9 +1284,14 @@ end
 
 local victim = first_contained()
 if not victim then
-  error("load-check canary: no connection carrying rf-plasma to reassign, so half four would prove nothing")
+  error("load-check canary: no connection carrying any of " .. table.concat(CATEGORIES, ", ")
+    .. " to reassign, so half four would prove nothing")
 end
-data.raw.item["rf-loadcheck-canary-item"].order = victim' |
+-- Both halves of what it did, in one field, because an item has no second free string field and a
+-- second prototype would be a second thing for half three's asset walk to trip over.
+data.raw.item["rf-loadcheck-canary-item"].order = victim .. "|" .. taken
+'@).Replace('__CATEGORIES__',
+                (($DECLARED_CATEGORIES | ForEach-Object { "'$_'" }) -join ', ')) |
             Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
         # Valid, and with an icon that exists this time: half three's missing icon would fail the
         # asset check rather than reaching this one.
@@ -1264,14 +1315,15 @@ data.raw.item["rf-loadcheck-canary-item"].order = victim' |
         $declaredContainment = Get-ConnectionsFromDump -DumpPath (
             Invoke-DataDump -Mods $ourMods -Tag 'contain-declared' -Disabled @('rf-loadcheck-canary'))
 
-        $victim = (Get-Content -LiteralPath $loadedDumpPath -Raw |
+        $recorded = (Get-Content -LiteralPath $loadedDumpPath -Raw |
             ConvertFrom-Json).item.'rf-loadcheck-canary-item'.order
-        if (-not $victim) {
+        if (-not $recorded -or $recorded -notmatch '^(.+)\|(.+)$') {
             Write-Host ''
             Write-Host 'FAILED - self-test: the containment canary recorded no victim, so it never found'
             Write-Host '         a contained connection to reassign and this half proves nothing.'
             exit 1
         }
+        $victim, $takenCategory = $Matches[1], $Matches[2]
 
         $breaches = @(Get-ContainmentBreaches -Declared $declaredContainment -Loaded $loadedContainment)
         $named    = @($breaches | Where-Object { $_.Prototype -eq $victim })
@@ -1287,9 +1339,9 @@ data.raw.item["rf-loadcheck-canary-item"].order = victim' |
             }
             exit 1
         }
-        if (-not @($named | Where-Object { $_.Missing -ccontains $PLASMA_CATEGORY })) {
+        if (-not @($named | Where-Object { $_.Missing -ccontains $takenCategory })) {
             Write-Host ''
-            Write-Host "FAILED - self-test: the breach reported on $victim does not name $PLASMA_CATEGORY as"
+            Write-Host "FAILED - self-test: the breach reported on $victim does not name $takenCategory as"
             Write-Host '         the category lost, so the row would not tell a reader what was taken.'
             foreach ($b in $named) { Write-Host "           $($b.Connection): lost $($b.Missing -join ', ')" }
             exit 1

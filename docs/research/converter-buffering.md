@@ -12,6 +12,16 @@ predicted did not happen in any cell at any row length. What a short row does do
 saturate and throw the reactor's surplus away — and a tank does not fix that either: it fills once,
 to 48 333 of its 50 000 units, and contributes exactly nothing afterwards.
 
+> **READ THIS FIRST: the two tanked cells cannot be built any more, so these numbers cannot be
+> retaken (2026-09-07).** [#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87)
+> shipped ADR 0018's item 1 on the aneutronic fluid, so `rf-aneutronic-reactor-energy` carries a
+> connection category of its own and `rf-aneutronic-composite-tank`'s connections do not — the
+> engine refuses that joint outright. `probe-converter-buffer.ps1`'s `longtank` and `tighttank`
+> cells are retired and the probe now builds three rather than five. The untanked cells survive and
+> were re-placed for the converter's turned footprint (ADR 0031 item 4), so the question this note
+> answers can still be asked of a later engine version; the tank comparison cannot. That is the
+> price ADR 0018 item 5 charges, and this note is the record of what was measured before it fell due.
+
 ## The claim under test
 
 `prototypes/entities.lua`, beside the composite tank, argued its place this way:

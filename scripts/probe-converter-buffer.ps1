@@ -21,11 +21,26 @@
     scale_fluid_usage meaning partial fluid gives partial power rather than a stall. Whether that
     suffices had never been measured. This measures it.
 
-    IT RUNS BEFORE #86 RATHER THAN AFTER, AND THAT IS THE ONLY WINDOW IT HAS. ADR 0018 item 1 gives
-    the two energy fluids a connection_category each; on the day that lands, no tank can hold either
-    fluid and both tanked cells below stop being buildable at all. The untanked cells survive #86
-    unchanged -- it is bolted faces and nothing else -- so what expires is the control, not the
-    answer.
+    THAT WINDOW HAS CLOSED, AND THE TANKED CELLS ARE GONE WITH IT (#86, #87, 2026-09-07). This
+    probe was written to run BEFORE ADR 0018 item 1: it warned that on the day the energy fluids
+    took a connection_category each, no tank could hold either and both tanked cells would stop
+    being buildable at all. That day has come. rf-aneutronic-composite-tank's connections are
+    `default` and the converter's box carries `rf-aneutronic-reactor-energy`, so the engine refuses
+    the joint outright -- and the rig's own guard, "the tank was placed but joined nothing", would
+    abort the run rather than measure anything.
+
+    So `longtank` and `tighttank` are removed rather than left to fail. WHAT THEY MEASURED IS NOT
+    LOST: their numbers are recorded in docs/research/converter-buffering.md and quoted in ADR
+    0018's Consequences -- a tank never filled on the long row and both cells delivered the same
+    power, it filled once on the two-converter row and both then lost the same 58.76%, and what it
+    measurably bought was ripple, 4.7% peak-to-peak down to 1.17%. What is gone is the ability to
+    take those numbers again, which is the price ADR 0018 item 5 charges and not a fault here.
+
+    The untanked cells survive #86 unchanged in substance -- bolted faces and nothing else -- so the
+    question this probe exists to ask can still be asked of a later engine version. Their GEOMETRY
+    moved with ADR 0031 item 4: the converter is declared fifteen wide by five tall now, so the row
+    is placed unrotated and stacks by the machine's five-tile depth where it used to be turned west
+    and stacked by fifteen.
 
     THE FUEL LINE IS A HEATER, NOT AN INFINITY PIPE, AND THAT IS THE WHOLE RIG
 
@@ -39,27 +54,19 @@
     So every cell carries its own rf-heater on its own network, its own feedstock supply and its own
     plasma manifold, and the reactor is fed the way a player feeds one.
 
-    WHAT IS BUILT -- five cells, each on its own electric network and its own plasma segment
+    WHAT IS BUILT -- three cells, each on its own electric network and its own plasma segment
 
       long      An rf-aneutronic-reactor, heater-fed, with a row of -Converters
                 rf-direct-energy-converters bolted onto its north energy face and chained to one
                 another. NO TANK ANYWHERE.
 
-      longtank  The same build with one rf-aneutronic-composite-tank bolted onto the far end of the
-                row, so the tank's contribution is the difference between two measured cells rather
-                than an argument. It is bolted rather than piped: a run of pipe would add its own
-                hundred units a tile to the buffer being measured, which is the confounder that
-                would make the comparison worthless at exactly the point it mattered.
-
       tight     The same, with -Tight converters instead. THE ROW LENGTH IS THE VARIABLE, AND BOTH
                 ENDS OF IT ARE NEEDED, because the chain's buffer IS the row: a boxful per converter
-                means -Converters 16 carries 16 000 units of buffer against the tank's 50 000, while
-                a two-converter row carries 2 000. A probe that measured only the long row would
-                answer the question with a buffer no player building for this reactor would ever
-                have, and would answer it far too kindly.
-
-      tighttank The tight row with the tank on it. This is the cell the tank's case is strongest in,
-                and therefore the one that decides whether it has one.
+                means -Converters 16 carries 16 000 units of buffer while a two-converter row carries
+                2 000. A probe that measured only the long row would answer the question with a
+                buffer no player building for this reactor would ever have, and would answer it far
+                too kindly. (The comparison used to be against the retired tank's 50 000; the row
+                lengths are still the two ends a player actually builds.)
 
       open      The same reactor and heater with NO converters at all, its output box emptied by the
                 rig every tick. This is the denominator: what the reactor sells when nothing can
@@ -142,13 +149,13 @@
     this only decides how often it is summarised.
 
 .PARAMETER Converters
-    Converters in the `long` and `longtank` rows. Deliberately well past what one heater can keep
-    busy -- see the DESCRIPTION.
+    Converters in the `long` row. Deliberately well past what one heater can keep busy -- see the
+    DESCRIPTION.
 
 .PARAMETER Tight
-    Converters in the `tight` and `tighttank` rows. The other end of the bracket: the shape a player
-    builds for a fuel-limited reactor, and the row whose own buffer is small enough for a tank to
-    matter.
+    Converters in the `tight` row. The other end of the bracket: the shape a player builds for a
+    fuel-limited reactor, and the row whose own buffer was small enough for a tank to matter while
+    a tank could still be put on one.
 
 .PARAMETER Heaters
     rf-heaters feeding each reactor. More heaters is a bigger reactor output and a shorter effective
@@ -277,16 +284,17 @@ local function holds(entity, fluid)
 end
 
 --- Energy fluid sitting still anywhere in a cell's chain: the reactor's output box, every
---- converter's box, and the tank if there is one.
+--- converter's box. There is no tank term any more: #87 contained the fluid, so a tank cannot join
+--- the row and both tanked cells are retired -- see the header.
 ---
 --- It is not loss and must never be counted as such -- fluid in a box at the horizon is fluid the
---- chain BUFFERED, which is the very thing under measurement. It is also why the tank's cell reads
---- kindly while the tank is still filling, and why the report prints a last-quarter figure beside
---- the whole-run one.
+--- chain BUFFERED, which is the very thing under measurement. That is also why the report prints a
+--- last-quarter figure beside the whole-run one: a buffer that is still filling flatters the run it
+--- fills during, which is how the retired tank cells read kindly for their first fifty thousand
+--- units.
 local function stored_of(cell)
   local total = holds(cell.reactor, ENERGY)
   for _, converter in ipairs(cell.converters) do total = total + holds(converter, ENERGY) end
-  if cell.tank then total = total + holds(cell.tank, ENERGY) end
   return total
 end
 
@@ -307,8 +315,9 @@ local function edge_connection(entity, index, pick)
   return best
 end
 
+-- SOUTHMOST went with the tank-bolt block (#87): a scratch tank's south-facing connection was its
+-- only caller, and a tank cannot join the row any more.
 local NORTHMOST = function(a, b) return a.y < b.y end
-local SOUTHMOST = function(a, b) return a.y > b.y end
 local WESTMOST  = function(a, b) return a.x < b.x end
 
 --- A run of pipe along axis-aligned legs through `points`, laid inclusively.
@@ -445,12 +454,16 @@ local function build_cell(surface, force, o)
 
   -- ------------------------------------------------------------------ the converter row
   --
-  -- ROTATED, AND THAT IS THE POINT OF THE SHAPE. #45 put this machine's connections on its long
-  -- faces, so butted against a reactor it touches along its whole fifteen tiles. The reactor sells
-  -- through its north face, so the converter has to lie sideways for a long face to meet it. Turned
-  -- WEST: a quarter turn anticlockwise sends the west-facing connection to (0, +reach) pointing
-  -- south, which is the one that can meet a north-facing output. Turning it the other way puts that
-  -- connection on the far side and it meets nothing. check-aneutronic.ps1 carries the same note.
+  -- UNROTATED, WHICH IS WHAT ADR 0031 ITEM 4 CHANGED (#87). The machine is declared fifteen wide by
+  -- five tall with its energy connections on the long faces, so a converter standing north of the
+  -- reactor meets that reactor's north output with its own south face exactly as it comes. It used
+  -- to be declared five by fifteen with the connections east and west, and this rig had to turn it a
+  -- quarter anticlockwise for any face to meet the reactor at all -- so both the direction and the
+  -- pitch below are the ones that moved.
+  --
+  -- THE PITCH IS THE MACHINE'S DEPTH AND NOT ITS WIDTH, which is the trap in the flip. footprint()
+  -- returns width first, and taking that gave the right number while the machine was five wide;
+  -- with fifteen it would stack the row three machines apart with gaps the chain cannot cross.
   --
   -- THE ALIGNMENT ARITHMETIC IS A TRAP AND ADR 0018 WROTE IT DOWN: a pipe run aligns a connection's
   -- target_position onto the tile the pipe occupies, but a DIRECT BOLT aligns one machine's
@@ -458,48 +471,23 @@ local function build_cell(surface, force, o)
   -- one tile clear of each other pointing at the same empty ground, which is indistinguishable from
   -- a refused connection. Every join in this cell is asserted below for exactly that reason.
   local out_target = reactor.fluidbox.get_pipe_connections(cell.energy_index)[1].target_position
-  local short      = footprint(CONVERTER)
-  local reach      = short / 2 - 0.5
+  local _, tall    = footprint(CONVERTER)
+  local reach      = tall / 2 - 0.5
   for i = 0, (o.converters or 0) - 1 do
     cell.converters[#cell.converters + 1] = must(surface.create_entity({
-      name = CONVERTER, direction = defines.direction.west,
-      position = { out_target.x, out_target.y - reach - i * short },
+      name = CONVERTER,
+      position = { out_target.x, out_target.y - reach - i * tall },
       force = force, raise_built = true,
     }), string.format("%s: %s %d", label, CONVERTER, i))
   end
 
-  -- ------------------------------------------------------------------ the tank, bolted
-  --
-  -- Onto the far end of the row, with no pipe. The offset is measured off a scratch tank rather
-  -- than written down: a storage tank's connections sit off its centre by a vector this rig has no
-  -- business remembering, and the bolt arithmetic above needs the connection TILE, which is the
-  -- target one tile back towards the machine.
-  if o.tank and #cell.converters > 0 then
-    local last  = cell.converters[#cell.converters]
-    local north = edge_connection(last, 1, NORTHMOST)
-
-    -- INSIDE THE CLEARED RECTANGLE, and this was a real bug rather than a tidy-up. The scratch
-    -- used to go to y = -400, which is outside both the chunks on_init generates and the ground it
-    -- landfills and clears -- so it landed on raw terrain, and one tree or rock on that tile makes
-    -- create_entity answer nil and aborts the whole run. The map has no fixed seed, so it would have
-    -- failed on some runs and not others. y + 34 is south of everything this cell builds -- the pole
-    -- row is at y + 21 and the heaters' feedstock pipes at y + 18.5 -- and well inside the rectangle.
-    local scratch = must(surface.create_entity({
-      name = TANK, force = force,
-      position = { centre(o.ox, origin_of(TANK)), centre(34, origin_of(TANK)) },
-    }), label .. ": scratch " .. TANK)
-    local south = edge_connection(scratch, 1, SOUTHMOST)
-    local dx, dy = south.x - scratch.position.x, south.y - scratch.position.y
-    scratch.destroy()
-    if dy <= 0 then error(label .. ": the tank has no south-facing connection to bolt with") end
-
-    cell.tank = must(surface.create_entity({
-      name = TANK, position = { north.x - dx, north.y - (dy - 1) }, force = force,
-    }), label .. ": " .. TANK)
-    if #cell.tank.fluidbox.get_connections(1) == 0 then
-      error(label .. ": the tank was placed but joined nothing -- the bolt arithmetic is wrong")
-    end
-  end
+  -- THE TANK IS GONE, AND #86 IS WHY (ADR 0018 item 5). A tank bolted onto the far end of the row
+  -- was how `longtank` and `tighttank` measured the tank's contribution as the difference between
+  -- two cells rather than as an argument. rf-aneutronic-composite-tank's connections are `default`
+  -- and the converter's box now carries a connection category of its own, so the engine refuses that
+  -- joint -- and this rig's own guard, "the tank was placed but joined nothing", would have aborted
+  -- the run rather than measure anything. The numbers those two cells took are in
+  -- docs/research/converter-buffering.md and are not retakeable; see the header.
 
   -- ------------------------------------------------------------------ power
   --
@@ -516,7 +504,7 @@ local function build_cell(surface, force, o)
   local rw, rh = footprint(ANEUTRONIC)
   local px     = math.floor(o.ox) + math.floor(rw / 2) + 4
   local top    = (#cell.converters > 0)
-    and (cell.converters[#cell.converters].position.y - short) or (ry - rh)
+    and (cell.converters[#cell.converters].position.y - tall) or (ry - rh)
 
   -- The column runs north from y+9 -- clear of the reactor's south edge at 7.75 and of the plasma
   -- manifold two rows further south -- and every gap is fourteen, which both chains and covers.
@@ -628,8 +616,8 @@ local function build_cell(surface, force, o)
   end
 
   say(string.format(
-    "build  cell=%-9s converters=%d tank=%s heaters=%d poles=%d manifold=%d rowMW=%.5g loadMW=%.5g",
-    label, #cell.converters, cell.tank and "yes" or "no", #cell.heaters, #cell.poles, cell.pipes,
+    "build  cell=%-9s converters=%d heaters=%d poles=%d manifold=%d rowMW=%.5g loadMW=%.5g",
+    label, #cell.converters, #cell.heaters, #cell.poles, cell.pipes,
     row_w / 1e6, load_w / 1e6))
   return cell
 end
@@ -663,11 +651,12 @@ script.on_init(function()
     if e.type ~= "character" then e.destroy() end
   end
 
+  -- The cells keep their old pitch positions rather than closing up where the two tanked ones were.
+  -- Nothing reads a cell's ox for a measurement, and moving them would make every window trace in
+  -- docs/research/converter-buffering.md a trace of a differently placed rig for no gain.
   storage.cells = {
     build_cell(surface, force, { label = "long",     ox = 0,         converters = CONVERTERS }),
-    build_cell(surface, force, { label = "longtank", ox = PITCH,     converters = CONVERTERS, tank = true }),
     build_cell(surface, force, { label = "tight",    ox = PITCH * 2, converters = TIGHT }),
-    build_cell(surface, force, { label = "tighttank", ox = PITCH * 3, converters = TIGHT, tank = true }),
     -- No converters at all, and its output box emptied every tick by on_tick. The denominator.
     build_cell(surface, force, { label = "open",     ox = PITCH * 4, converters = 0, drain = true }),
   }
@@ -699,10 +688,13 @@ script.on_init(function()
     .electric_energy_source_prototype.usage_priority
   say(string.format("setup  ticks=%d sample=%d quieted=%d interface_priority=%s",
     RUN_TICKS, SAMPLE_TICKS, quieted, tostring(priority)))
-  -- The three buffers the answer is a comparison between, printed rather than left to a reader's
-  -- arithmetic: a converter's box volume off the prototype, times the row, against the tank's.
+  -- The buffers the answer is a comparison between, printed rather than left to a reader's
+  -- arithmetic: a converter's box volume off the prototype, times the row. The tank's volume is
+  -- printed beside them still, as the figure the two retired cells were measured against -- it is
+  -- what a reader of converter-buffering.md needs to make sense of those numbers, and it is no
+  -- longer a buffer this rig can put in a chain.
   local box_u = prototypes.entity[CONVERTER].fluidbox_prototypes[1].volume or -1
-  say(string.format("buffer converter_box=%.6gu long_row=%.6gu tight_row=%.6gu reactor_box=%.6gu tank=%.6gu",
+  say(string.format("buffer converter_box=%.6gu long_row=%.6gu tight_row=%.6gu reactor_box=%.6gu retired_tank=%.6gu",
     box_u, box_u * CONVERTERS, box_u * TIGHT,
     prototypes.entity[ANEUTRONIC].fluidbox_prototypes[2].volume or -1,
     prototypes.entity[TANK].fluidbox_prototypes[1].volume or -1))
@@ -793,7 +785,7 @@ script.on_event(defines.events.on_tick, function()
       local n      = math.max(cell.interval_ticks, 1)
       say(string.format(
         "sample cell=%-9s t=%d rowMW=%.5g tickMWmin=%.5g tickMWmax=%.5g allworking=%d/%d dead=%d " ..
-        "plasma=%.4gC/%.5gu outbox=%.7gu/%.6gu tank=%.6gu reactor=%s soldu=%.6g",
+        "plasma=%.4gC/%.5gu outbox=%.7gu/%.6gu reactor=%s soldu=%.6g",
         cell.label, tick,
         cell.interval_j / n * 60 / 1e6,
         (cell.interval_min or 0) * 60 / 1e6,
@@ -801,7 +793,6 @@ script.on_event(defines.events.on_tick, function()
         cell.interval_working, n, cell.interval_dead,
         plasma and plasma.temperature or 0, plasma and plasma.amount or 0,
         out and out.amount or 0, cell.capacity,
-        cell.tank and holds(cell.tank, ENERGY) or 0,
         status_name(cell.reactor.status), cell.sold))
       cell.interval_j, cell.interval_ticks = 0, 0
       cell.interval_min, cell.interval_max = nil, nil

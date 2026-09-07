@@ -9,6 +9,18 @@ committed rather than the numbers alone, because this is a fact about a version 
 the next version is entitled to a different one. Re-run it before quoting any figure here against a
 newer build.
 
+> **READ THIS FIRST: the energy link this note measures no longer exists (2026-09-07).**
+> [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) shipped
+> [ADR 0018](../adr/0018-energy-is-contained-and-no-pipe-carries-it.md)'s item 1, so
+> `rf-reactor-energy` carries a connection category of its own and no pipe in the game carries it.
+> Every reactor-to-exchanger figure below was taken with vanilla pipe in between; that arrangement
+> cannot be built any more. The machines bolt face to face instead, which is the **flush** end of
+> the band this note quotes, so the numbers for zero pipes still describe the shipped shape and the
+> ones for a run of pipe describe nothing buildable. `bench-mod-links.ps1` was rebuilt for the bolt
+> and now counts pipes on the plasma link only. What a bolted joint carries per second is still
+> unmeasured; [#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227) owns it.
+> The plasma figures are untouched -- that link is still a pipe run.
+
 ## Why the question exists
 
 Realistic Fusion Power's 1.1 geometry butts a 15×15 reactor flush against a 5×15 heat exchanger, so

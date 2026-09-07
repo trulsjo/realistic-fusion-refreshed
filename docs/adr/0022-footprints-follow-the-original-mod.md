@@ -22,10 +22,10 @@ table and the paragraph after it: the two five-by-fifteen machines take the long
 rather than north–south, and `rf-hc-exchanger` joins the table at the same size. The rule itself —
 footprint first, from the original mod, art redrawn to fit — is applied there, not changed.
 
-**Declared so far by one of them.** `rf-heat-exchanger` is 15x5 in the tree since
-[#275](https://github.com/trulsjo/realistic-fusion-refreshed/issues/275).
-`rf-direct-energy-converter` still declares 5x15 and is
-[#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87)'s;
+**Declared so far by two of them.** `rf-heat-exchanger` is 15x5 in the tree since
+[#275](https://github.com/trulsjo/realistic-fusion-refreshed/issues/275) and
+`rf-direct-energy-converter` since
+[#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87), both on 2026-09-07.
 `rf-hc-exchanger` still declares 7x7 and is
 [#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276)'s. The table below is the
 decision, not a report of the tree.
@@ -157,9 +157,10 @@ inverted rule makes necessary. See [Consequences](#consequences).
   was [#111](https://github.com/trulsjo/realistic-fusion-refreshed/issues/111)'s question, and it
   closed on **2026-09-06**: they can, ADR 0018 was right, and
   `docs/research/exchanger-chaining.md`'s contrary measurement was its own rig. What that leaves is
-  a shape question rather than an engine one — the 5×15 machine in the tree declares one energy
-  connection and cannot chain as it stands, and ADR 0018's Decision item 4 says what it should
-  declare in coordinates this ADR made obsolete.
+  a shape question rather than an engine one, and it is answered: ADR 0031 gave the machine three
+  `input-output` energy connections on the shipped footprint and #275 declared them, where ADR 0018's
+  own Decision item 4 had said what it should declare in coordinates this ADR made obsolete. Eight
+  chain, measured.
 
 ## Alternatives considered
 
