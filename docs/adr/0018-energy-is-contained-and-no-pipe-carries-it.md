@@ -258,17 +258,39 @@ face.**
   [#258](https://github.com/trulsjo/realistic-fusion-refreshed/issues/258) asks about. Chaining does
   not fail, so that question stays hypothetical.
 - **The composite tank's volume needs re-justifying.** 50 000 was sized against the converter's
-  hundred units a second — about eight minutes of *energy* supply (`entities.lua:618-620`). Against
+  hundred units a second — about eight minutes of *energy* supply (`entities.lua:1034-1037`). Against
   helium-3 that number means something else and has not been examined. The entity's own "composite"
   material story already pointed at helium-3, so its name and its physics are unaffected.
-- **The converter's burstiness argument is now unanswered, and this is the loose end.**
-  `entities.lua:601-604` argued that an ignited reactor's output follows its fuel line and arrives in
+- ~~**The converter's burstiness argument is now unanswered, and this is the loose end.**~~
+  **MEASURED 2026-09-07 ([#85](https://github.com/trulsjo/realistic-fusion-refreshed/issues/85)):
+  the chain buffers enough, and the argument does not buy a vessel.**
+  `entities.lua:1000-1004` argued that an ignited reactor's output follows its fuel line and arrives in
   bursts, against a converter drinking at a fixed rate, and that a buffer between them is what turns
   that into steady output. With no tank in the chain the buffering is whatever the boxes hold: the
   reactor's 1000-unit output box plus 1000 in every chained converter, with `scale_fluid_usage`
-  meaning partial fluid gives partial power rather than a stall. **Whether that suffices is not
-  measured.** If it does not, the answer is a contained energy vessel — one entity beyond ADR 0010 —
-  and that is a later ADR, not a silent addition.
+  meaning partial fluid gives partial power rather than a stall.
+
+  `scripts/probe-converter-buffer.ps1` built a heater-fed aneutronic reactor driving a chained row of
+  converters with no tank anywhere, at two row lengths, and ran it for half an hour and again for an
+  hour. **No cell stalled and no cell cycled**, at either length — every stall episode and every
+  idle tick is in the first two minutes, before the reactor lights. A sixteen-converter row holds a
+  smooth 485 MW and loses **0.00%** of the reactor's output, with its own boxes at 0 or 1 unit of the
+  1000 they can take: the row's nominal buffer is never used, and the steadiness comes from
+  `scale_fluid_usage` rather than from storage. **A tank adds nothing to what the chain delivers** —
+  on the long row it never fills (247 units of 50 000) and both cells deliver the same power; on a
+  two-converter row it fills once, to 48 333 units, after which the tanked and untanked cells lose
+  the same 58.76%. What it measurably does buy is ripple: it cuts the long row's single-tick band
+  from 4.7% peak-to-peak to 1.17%.
+
+  A short row's failure mode is real but is not the predicted one: it **saturates**, the reactor
+  reports `full_output`, and the surplus is discarded. That is answered by more converters and not by
+  a vessel — a vessel delays it by its own volume and then stops helping.
+
+  **So a contained energy vessel is not bought by this argument.** Whether one should exist on other
+  grounds — ride-through of a supply cut is the obvious one, and is deliberately not measured — is
+  still a decision, still Truls's, and still one entity beyond ADR 0010 and a later ADR rather than a
+  silent addition. [`converter-buffering.md`](../research/converter-buffering.md) carries the
+  numbers, including what they do not settle.
 - **Two shipped assertions invert.** `check-containment.ps1` asserts that an ordinary pipe
   still joins the reactor's energy output and carries reactor energy. Correct today, wrong after this.
 - **One shipped gate becomes true but meaningless.** `check-aneutronic.ps1` asserts the composite
@@ -340,4 +362,7 @@ which is the same shape of silent failure as the water-in-the-header footgun thi
 **Keep the composite tank as a contained energy vessel.** *Deferred rather than rejected.* It needs
 the category on the tank, and a tank that also takes helium-3 through an uncategorised connection
 reopens the leak the category closes — so it means a separate energy-only vessel, one entity beyond
-ADR 0010. Not bought until the burstiness in Consequences is measured and shown to need it.
+ADR 0010. ~~Not bought until the burstiness in Consequences is measured and shown to need it.~~
+**The burstiness was measured on 2026-09-07 (#85) and does not need it**, so the one condition this
+alternative was left open against is discharged and negative. It stays deferred rather than rejected
+because ride-through of a supply cut is a separate case for it that nothing has measured either way.

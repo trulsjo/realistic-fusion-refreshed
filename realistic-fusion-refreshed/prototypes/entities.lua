@@ -1000,8 +1000,25 @@ converter.horizontal_animation = converter_art.horizontal
 -- It earns its place on this tier rather than being storage for its own sake. Both aneutronic
 -- reactions ignite, and an ignited reactor's output follows its fuel line rather than a set rate --
 -- so the tier's flows arrive in bursts as heaters catch up and fall behind, against a converter
--- that drinks at a fixed hundred units a second. A buffer between them is what turns that into a
--- steady hundred megawatts instead of a converter that stalls and restarts.
+-- that drinks at a fixed hundred units a second. ~~A buffer between them is what turns that into a
+-- steady hundred megawatts instead of a converter that stalls and restarts.~~
+--
+-- THAT LAST SENTENCE IS MEASURED FALSE, and it is left standing struck through because it is the
+-- argument ADR 0018 item 5 took this role away over. #85 built a heater-fed aneutronic reactor
+-- driving a chained row of converters with no tank anywhere, ran it for half an hour and again for
+-- an hour, and got a smooth 485 MW with no stall and no cycle at either length -- while every
+-- converter box in the row sat at 0 or 1 unit of the 1000 it can hold. The steadiness is
+-- scale_fluid_usage doing what it says, not storage: nothing is ever buffered, so there is nothing
+-- for a vessel to do. A tank on the end of that row delivered the same power and never filled.
+--
+-- What the tank measurably buys is ripple -- the row's single-tick band falls from 4.7% peak to peak
+-- to 1.17% -- and what it does NOT buy is a short row's real failure, which is saturation rather
+-- than stalling: two converters against this reactor pin at 200 MW and discard 58.8% of its output,
+-- and a vessel delays that by its own volume and then stops helping. See
+-- docs/research/converter-buffering.md.
+--
+-- This tank is a helium-3 vessel (ADR 0018 item 5) and the volume below is unre-justified against
+-- that fluid, which is a separate loose end and still open.
 --
 -- "Composite" is what a vessel for a light gas is actually made of -- a metal liner overwrapped in
 -- fibre, because helium leaks through steel joints and pressure is how you store useful amounts of
