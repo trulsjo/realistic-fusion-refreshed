@@ -472,10 +472,15 @@ reads as jargon. **The neutronic route only** — direct energy conversion is no
 two routes converging is what makes this file's claim about direct energy conversion literally rather
 than approximately true.
 
-> **Both of the terms above ADR 0019 and ADR 0020 introduce are decided and not yet built.** No
-> `rf-signal-blanket-share` and no `rf-plant-efficiency` technology exists yet, the blanket sells no
-> heat, and capture efficiency is still a constant no research touches. The terms are fixed now
-> because a decision fixes vocabulary, which is all this file does. Remove this note when both ship.
+> **What of ADR 0019 and ADR 0020 has been built, as of 2026-09-08.** **Blanket breeding's second
+> product is shipped** (#93): a blanketed D-T reactor sells **+28.0%** more energy than the same
+> reactor without one, measured by `scripts/check-blanket.ps1`, and the heat follows the breeding —
+> a full collector sells none. **Blanket share is not.** No `rf-signal-blanket-share` exists, so the
+> figure above is a rig measurement rather than something a player can read off a wire.
+>
+> **Plant efficiency is a term and not yet a technology.** No `rf-plant-efficiency` exists and
+> capture efficiency is still a constant no research touches. Remove this note when the signal and
+> the technologies ship.
 
 ## Predecessors
 

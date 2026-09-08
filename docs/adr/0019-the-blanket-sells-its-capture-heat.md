@@ -46,9 +46,12 @@ The third is different, and is what this ADR is about.
     n + Li-6  -> T + He4        + 4.78 MeV   exothermic
     n + Li-7  -> T + He4 + n'   - 2.47 MeV   endothermic, and hands the neutron back
 
-`breed()` returns `tritium_units` and `nuclei_used`. It returns no joules. So a machine that already
-exists, is already fitted to reactors, and already consumes lithium a player mined, concentrated and
-belted, releases real energy that the model discards.
+~~`breed()` returns `tritium_units` and `nuclei_used`. It returns no joules.~~ So a machine that
+already exists, is already fitted to reactors, and already consumes lithium a player mined,
+concentrated and belted, releases real energy that the model discards.
+*(Fixed by [#93](https://github.com/trulsjo/realistic-fusion-refreshed/issues/93) on 2026-09-08:
+`breed()` returns `joules` as a third field, computed from the figure the note below pins. The rest
+of this section is the state of the world when the decision was taken and is left standing.)*
 
 **Approximate sizes, pending the figure the research ticket pins.** Per neutron the ceiling is
 4.78 MeV, less whatever share of captures runs on Li-7, and the relative gain is lopsided because it
@@ -64,6 +67,28 @@ literature quotes an *energy multiplication factor* that already includes the ne
 energy, which this mod sells separately — so importing one would double-count. Pinning the net figure
 without that error is its own ticket and gates the implementation, the same way
 [#51](https://github.com/trulsjo/realistic-fusion-refreshed/issues/51) gated #52.
+
+> **The figure was pinned by [#91](https://github.com/trulsjo/realistic-fusion-refreshed/issues/91) on
+> 2026-09-08, and the table above is superseded.**
+> `docs/research/blanket-capture-energy.md` derives **4.537 MeV per neutron** entering the blanket —
+> or **4.124 MeV per triton bred**, which is the form the implementation uses — from AME2020 mass
+> excesses and the shipped breeding ratio. 4.78 MeV is the Li-6 **ceiling**, not the net: the
+> endothermic Li-7 branch costs 5.2% of it at a ratio of 1.1, and costs exactly that much because the
+> ratio is 1.1 and for no other reason. Every relative figure in the table therefore moves down:
+>
+> | Tier | Own release | Neutrons per reaction | Blanket adds | Relative |
+> |---|---|---|---|---|
+> | D-T | 17.59 MeV | 1 | 4.537 MeV | **+25.8%** |
+> | D-D | 3.65 MeV | 0.5 | 2.268 MeV | **+62.1%** |
+>
+> **And neither column is what a player reads.** A reactor does not sell its total release — it sells
+> `((fusion_j - charged_j) + left_j) x capture_efficiency`, and `left_j` is an equilibrium quantity
+> that grows as the plasma approaches its clamp. **Measured** once
+> [#93](https://github.com/trulsjo/realistic-fusion-refreshed/issues/93) shipped, by
+> `scripts/check-blanket.ps1`: a blanketed D-T reactor sells **+28.0%** more than the same reactor
+> without one, against the model's +31.4% at 6×10⁸ °C and +27.5% at the 2.548×10⁹ °C it actually
+> settles at. The D-D figures in both tables remain anchored to the **pre-#52** equilibrium and no
+> balance number may rest on them.
 
 ### Two constraints the shape had to fit
 
@@ -155,6 +180,13 @@ output.**
 - **The rig already exists.** `check-blanket.ps1` builds a `fitted` and a `bare` reactor and already
   asserts one "goes on producing reactor energy" by reading `fluidbox[2].amount` directly. It needs no
   exchanger and no pipe on the energy leg, so this work is insulated from #86 and #87.
+  *(What #93 had to add anyway: the energy box holds 1000 units and `apply()` discards the overflow,
+  so reading a level compares two saturated boxes. The three metered cells are drained every tick and
+  the totals accumulated. A `sated` cell — a lit reactor, a loaded blanket and a **full** collector —
+  is the negative test for decision 2, and it is the only arm that can be one: `orphan` has no
+  collector to gate on and `empty` no lithium to breed from. Measured by mutation, it is what catches
+  heat following neutron capture instead of breeding — that alternative sells +28.0% while spending
+  no lithium at all, and leaves every other line in the rig green.)*
 - **#52 will move the D-D figures this ADR quotes.** The comparative assertion — fitted beats bare —
   survives it. The absolute D-D numbers above do not, and are anchored to the pre-#52 equilibrium.
 

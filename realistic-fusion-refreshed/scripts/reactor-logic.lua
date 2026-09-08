@@ -671,6 +671,26 @@ M.blanket = {
   -- it is left out here because the tier the blanket exists for is D-T, and because inventing two
   -- numbers where the field's own figures are quoted for one is a worse lie than quoting the one.
   tritium_per_neutron = 1.1,
+  -- THE NUCLEAR Q OF THE TWO REACTIONS ABOVE, in electronvolts, and the whole of what a blanket
+  -- sells (#93, ADR 0019). Differences of AME2020 ground-state mass excesses rather than quoted
+  -- figures -- M. Wang et al., Chinese Physics C 45 (2021) 030003, and no electron correction is
+  -- needed because lithium's three electrons are exactly tritium's one plus helium's two.
+  -- docs/research/blanket-capture-energy.md carries the arithmetic and
+  -- tests/test-blanket-energy.lua recomputes both Q values from those mass excesses and checks
+  -- these two fields against the result.
+  --
+  -- MEASURED PHYSICAL CONSTANTS, NOT BALANCE NUMBERS, which is why they are here and the net
+  -- figure is not. capture_energy_j() below blends them with tritium_per_neutron, and the blend is
+  -- DERIVED for the reason M.electrons is: storing 4.537 MeV beside a ratio would let a balance
+  -- pass move the ratio and leave the energy contradicting it, silently, in the direction that
+  -- pays the player.
+  --
+  -- To the keV the note computes them to -- +4783.472 and -2467.622 -- rather than to the two
+  -- decimals the reactions above are written out at. The extra digits are free, and they are what
+  -- lets tests/test-blanket-energy.lua check these two against the mass excesses to 1e-6 rather
+  -- than to a tolerance wide enough to hide a transposed digit.
+  li6_capture_ev  =  4.783472e6,
+  li7_breeding_ev = -2.467622e6,
   -- Lithium nuclei in one rf-lithium item, which is what makes an item count and a fluid unit
   -- commensurable. The same 1e20 as M.reactor.particles_per_unit, and equal to it on purpose:
   -- one lithium nucleus is spent per triton bred, so one item in is one unit of tritium out and
@@ -918,6 +938,39 @@ function M.lithium_for(blanket, neutrons)
   return neutrons * blanket.tritium_per_neutron
 end
 
+--- The nuclear energy a blanket releases per triton bred, in joules (#93, ADR 0019).
+--
+-- Per TRITON rather than per neutron, because breeding is what gets throttled and heat follows
+-- breeding: a blanket held back by a collector with little room left, or by an inventory down to
+-- its last item, bred fewer tritons and must sell proportionally less heat -- with no rule written
+-- to make that so, and none needed for the arms where it bred nothing at all.
+--
+-- DERIVED FROM THE RATIO, WHICH IS THE WHOLE REASON THIS IS A FUNCTION. A Li-6 capture destroys
+-- the neutron and a Li-7 reaction hands it back, so in a shell that leaks nothing and holds
+-- nothing but lithium every neutron ends its life in exactly one Li-6 capture. That fixes the
+-- Li-6 term at 1 whatever the ratio is and leaves the Li-7 reactions to account for the remaining
+-- tritons -- tritium_per_neutron - 1 of them, each costing |Q7|:
+--
+--     per neutron = Q6 + (TBR - 1) * Q7   =  4.53671 MeV at the shipped 1.1
+--     per triton  = that / TBR            =  4.12428 MeV at the shipped 1.1
+--
+-- So moving tritium_per_neutron moves this figure with it, correctly and by itself, and the two
+-- can never contradict each other. docs/research/blanket-capture-energy.md derives it and
+-- tests/test-blanket-energy.lua checks its own derivation against this function.
+--
+-- WHAT IS DELIBERATELY NOT IN IT: the neutron's own kinetic energy, 14.06 MeV of it on D-T and
+-- 2.45 on D-D. step() already sells that, at (fusion_j - charged_j), so a published M factor here
+-- would sell the neutron twice -- 3.7x the figure above at M = 1.2, which is the inflation #91 was
+-- opened to prevent. This is the capture reactions' nuclear Q and nothing else.
+--
+-- It is a ceiling rather than a plant figure: a real blanket has steel and coolant to absorb
+-- neutrons into that breed nothing, and buys a ratio above one with beryllium or lead rather than
+-- with Li-7, both of which cut it. The model has no structure, so the ceiling is its figure.
+function M.capture_energy_j(blanket)
+  local tbr = blanket.tritium_per_neutron
+  return (blanket.li6_capture_ev + (tbr - 1) * blanket.li7_breeding_ev) / tbr * 1.602176634e-19
+end
+
 --- What a lithium blanket makes of one step's neutrons (#30).
 --
 -- Separate from step() rather than folded into it, and the seam is deliberate: step() is the
@@ -930,7 +983,7 @@ end
 -- @param blanket  M.blanket, or another one
 -- @param neutrons escaping neutrons this step, as step() returns them
 -- @param charge   lithium nuclei the blanket has left to breed from
--- @return nil when nothing happens, otherwise what was bred and what it cost
+-- @return nil when nothing happens, otherwise what was bred, what it cost, and what it released
 --
 -- Returning nil for an empty blanket rather than a table of zeroes is what lets control.lua leave
 -- the entity alone entirely, which matters because writing a fluid amount too small for the engine
@@ -952,6 +1005,16 @@ function M.breed(spec, blanket, neutrons, charge)
   return {
     tritium_units = bred / spec.particles_per_unit,
     nuclei_used   = bred,
+    -- The capture heat, in joules, which control.lua adds to the reactor's own sold energy
+    -- (#93, ADR 0019). BEFORE capture_efficiency: the blanket crosses the reactor's own constant
+    -- at the caller, because it is the same steam stage and ADR 0019 refused it a second one.
+    --
+    -- Off `bred` rather than off `neutrons`, so every cap carries into the heat for free -- a
+    -- blanket running short sells exactly the share it bred, and one that bred nothing never
+    -- reaches this line at all: the guards at the top of this function turn an empty blanket back,
+    -- and control.lua's blanket_breed turns back one whose collector has no room, before either
+    -- calls it. That is ADR 0019's decision 2, as arithmetic rather than as a rule.
+    joules        = bred * M.capture_energy_j(blanket),
   }
 end
 

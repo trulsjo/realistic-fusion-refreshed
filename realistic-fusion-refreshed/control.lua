@@ -370,6 +370,10 @@ end
 -- one pipe rather than two. See prototypes/entities.lua for why the blanket has no pipe of its
 -- own and what that costs.
 --
+-- AND, SECOND, THE JOULES THOSE CAPTURES RELEASED (#93, ADR 0019), before capture_efficiency.
+-- They leave through the reactor's ENERGY box for the same prototype reason the tritium leaves
+-- through the collector: a container cannot have a fluid box of its own.
+--
 -- THE CHARGE, which is the only piece of state this adds.
 --
 -- Lithium is an item and tritium is a fluid, and a step breeds a fraction of an item's worth --
@@ -436,7 +440,10 @@ local function blanket_breed(entity, spec, neutrons, headroom)
   if not bred then return nil end
 
   storage.blanket_charge[entity.unit_number] = charge - bred.nuclei_used
-  return bred.tritium_units
+  -- Two returns rather than the table breed() built, so the caller's `if bred and bred > 0` test
+  -- stays the one gate both products pass through: tritium and heat are the same event counted
+  -- twice, and a caller free to take one without the other is a caller free to drop one.
+  return bred.tritium_units, bred.joules
 end
 
 --- Apply one reactor's step to the world.
@@ -516,9 +523,8 @@ local function apply(entity, spec, plasma, result)
   end
 
   -- What this step sells into the reactor's energy box, summed here and written at the bottom of
-  -- this function rather than now (#92). The sum has one term today, so nothing moves; ADR 0019
-  -- adds the blanket's capture heat, which is bred below and could not reach this box at all while
-  -- the write came first.
+  -- this function rather than now (#92). The second term arrived with #93: the blanket's capture
+  -- heat is bred below and could not reach this box at all while the write came first.
   local sold = result.energy_units
 
   -- What the reaction bred, if there is anywhere to put it. A reactor with no collector simply
@@ -565,12 +571,32 @@ local function apply(entity, spec, plasma, result)
     local headroom = collector.fluidbox.get_capacity(TRITIUM_BOX)
       - (held and held.amount or 0)
       - ((products and products[TRITIUM]) or 0)
-    local bred = blanket_breed(entity, spec, result.neutrons, headroom)
+    local bred, bred_j = blanket_breed(entity, spec, result.neutrons, headroom)
     if bred and bred > 0 then
       -- A fresh table every step, so adding to it is safe; and a copy when the fuel breeds nothing
       -- of its own, which is the D-T case the blanket exists for.
       products = products or {}
       products[TRITIUM] = (products[TRITIUM] or 0) + bred
+      -- THE BLANKET'S CAPTURE HEAT, SOLD THROUGH THE REACTOR'S OWN BOX (#93, ADR 0019). The
+      -- blanket is a container and 2.0.77 has no prototype that is both an inventory and a fluid
+      -- box, so the joules ride the reactor's output exactly as blanket tritium rides its
+      -- collector -- see prototypes/entities.lua. It crosses the reactor's OWN
+      -- capture_efficiency, not a second one of its own: ADR 0019 decision 4 refused the blanket
+      -- a higher figure, because that constant is the only term standing between this mod and a
+      -- free loop and every additional instance of it is another number a balance pass can drift.
+      --
+      -- INSIDE the `if bred` arm, which is the whole of "heat follows breeding": every gate above
+      -- -- no collector, no headroom, no lithium -- already stopped the tritium, so it stops the
+      -- heat too and no rule was written to make it. A backed-up collector therefore costs a
+      -- player power, which ADR 0019 decision 2 chose deliberately over spending lithium for
+      -- nothing or making heat from no material at all.
+      --
+      -- The neutron is NOT sold twice. bred_j is the capture reactions' nuclear Q alone -- 4.537
+      -- MeV per neutron -- while the neutron's own kinetic energy, 14.06 MeV of it on D-T, is
+      -- already in result.energy_units at step()'s (fusion_j - charged_j). reactor-logic's
+      -- capture_energy_j says what importing a published energy multiplication factor here would
+      -- have cost instead, and docs/research/blanket-capture-energy.md derives the figure.
+      sold = sold + bred_j * spec.capture_efficiency / spec.energy_fluid_j_per_unit
     end
     if products then deposit(collector, products) end
   end

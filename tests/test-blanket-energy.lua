@@ -13,9 +13,11 @@
 -- that sentence is only true of somebody who types the command above. Stated rather than glossed,
 -- the same way tests/test-bremsstrahlung.lua states it.
 --
--- WHAT IT DOES NOT COVER: breed(). It returns no joules yet -- that is #93 -- so there is nothing
--- shipped here to check against. This suite is the arithmetic #93's implementation gets checked
--- against, which is the order #51 and #52 used.
+-- WHAT IT COVERS OF THE SHIPPED CODE: capture_energy_j(), and only as a CROSS-CHECK. This file's
+-- own net_mev_per_neutron() below is a second implementation of the blend, which is exactly the
+-- mistake #51 was opened about -- so the two are driven against each other rather than left to
+-- agree by inspection. What breed() then does with the figure, and where the joules end up, is
+-- asserted in tests/test-reactor-logic.lua where the rest of breed() is.
 --
 -- Like the other tests here it runs outside Factorio (ADR 0005), written to Lua 5.2 semantics and
 -- verified on 5.4.
@@ -109,13 +111,45 @@ local net_per_neutron = net_mev_per_neutron(TBR)
 local net_per_triton  = net_per_neutron / TBR
 near(net_per_neutron, 4.53671, 1e-5, "net MeV per neutron entering the blanket, at the shipped TBR")
 near(net_per_triton,  4.12428, 1e-5, "net MeV per triton bred, which is the form breed() wants")
+
+-- AND AGAINST THE SHIPPED FUNCTION, which is the one assertion here that is not arithmetic (#93).
+-- net_mev_per_neutron() above is a second implementation of a blend the mod now also computes, and
+-- two implementations of one formula is the defect #51 was opened about -- so they are driven
+-- against each other. Q6 and Q7 are recomputed here from the mass excesses while the module stores
+-- them as electronvolts, so this also checks the two constants in M.blanket against their source.
+--
+-- 1e-6, not tighter: the module stores the two Q values to the keV the arithmetic above computes
+-- them to, which is one digit short of exact. Not looser either -- a tolerance that would survive
+-- a transposed digit in either constant would be no check at all.
+local EV = 1.602176634e-19
+near(L.capture_energy_j(L.blanket) / EV / 1e6, net_per_triton, 1e-6,
+  "and reactor-logic's capture_energy_j agrees with this file's own derivation of it")
+near(L.blanket.li6_capture_ev / 1e6, Q6, 1e-6,
+  "M.blanket.li6_capture_ev is the Q computed above, in electronvolts")
+near(L.blanket.li7_breeding_ev / 1e6, Q7, 1e-6,
+  "and li7_breeding_ev is the other one, negative because the branch is endothermic")
 check(net_per_neutron < Q6,
   "the endothermic branch costs something, so the net is BELOW the 4.783 MeV ceiling")
 near((Q6 - net_per_neutron) / Q6, 0.0516, 1e-2, "and what it costs is 5.2% of the ceiling")
 
 print("the formula, against the note's table")
 
+--- The same question asked of the SHIPPED function, so the table below checks both at once.
+--
+-- A blanket table built here rather than a copy of M.blanket with one field moved: what is being
+-- checked is that the module derives the blend from the ratio, and a mutated copy of the shipped
+-- table would check that too while making it easy to miss which fields the answer depends on.
+local function shipped_mev_per_neutron(tbr)
+  return L.capture_energy_j({
+    tritium_per_neutron = tbr,
+    li6_capture_ev  = L.blanket.li6_capture_ev,
+    li7_breeding_ev = L.blanket.li7_breeding_ev,
+  }) / EV / 1e6 * tbr
+end
+
 near(net_mev_per_neutron(1.00), 4.7835, 1e-4, "TBR 1.00 gives the pure Li-6 ceiling")
+near(shipped_mev_per_neutron(1.00), 4.7835, 1e-4, "and so does the shipped function")
+near(shipped_mev_per_neutron(1.30), 4.0432, 1e-4, "as it does at the far end of the band")
 near(net_mev_per_neutron(1.10), 4.5367, 1e-4, "TBR 1.10, the shipped ratio")
 near(net_mev_per_neutron(1.15), 4.4133, 1e-4, "TBR 1.15, the top of the design band")
 near(net_mev_per_neutron(1.30), 4.0432, 1e-4, "TBR 1.30, a multiplier-assisted design")
