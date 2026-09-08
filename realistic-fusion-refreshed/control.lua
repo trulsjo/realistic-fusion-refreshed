@@ -1343,7 +1343,14 @@ local function check_steam_sinks()
   end
 end
 
---- Refuse to run a simulation that can compute a temperature the fluid cannot hold.
+--- Refuse to run a simulation and a plasma whose temperature ranges do not line up.
+--
+-- TWO FAILURES, NOT ONE, AND THE SECOND ARRIVED WITH #107. This used to be titled for the first
+-- alone -- a simulation that can compute a temperature the fluid cannot hold -- and it permitted
+-- the mirror case: a simulation FLOOR above what the fluid can hold, which loads perfectly and
+-- makes every cold reactor conjure energy. See the "min-above-fluid" arm below and
+-- reactor-logic's M.plasma_bounds_fault, which is where the decision now lives. The upshot is that
+-- a spec's min_temperature_c and its plasma's default_temperature have to be EQUAL.
 --
 -- The same shape of trap as check_input_flow, one file further out. apply() writes the simulated
 -- temperature straight into the fluidbox, and Factorio rejects a temperature outside the fluid's
@@ -1413,8 +1420,34 @@ local function check_plasma_bounds()
         "prototypes/fluids.lua or drop the row.", name))
     end
     for reactor, spec in pairs(SPECS) do
-      if spec.min_temperature_c < fluid.default_temperature
-        or spec.max_temperature_c > fluid.max_temperature then
+      -- THE DECISION IS reactor-logic's, THE WORDING IS THIS FILE'S (#107), which is the same seam
+      -- check_confinement_ladder works over. Two faults share a message and one does not, because
+      -- the third is a different failure with a different cause -- see below.
+      local fault = logic.plasma_bounds_fault(spec, fluid.default_temperature, fluid.max_temperature)
+      if fault == "min-above-fluid" then
+        -- THE ONE THAT LOADS PERFECTLY AND CONJURES ENERGY (#107). A Factorio fluid cannot hold a
+        -- temperature below its default_temperature, so a simulation floor above it is a floor the
+        -- engine can never deliver: every cold reactor hands step() a below-floor temperature, on
+        -- every step, permanently. There step()'s drain cap has nothing to cap, the low clamp
+        -- fires, and the step creates energy from nothing -- 248 W on a full D-D box at 14 C.
+        --
+        -- Nothing shipped is affected; both specs sit at 15 and so does every plasma. This exists
+        -- because ADR 0021 made the floor MEAN something and therefore made someone want to move
+        -- it, and moving it up alone is what arms the trap. It is refused rather than tolerated for
+        -- the reason the float32 check above is: a refusal names the fix, and this failure is
+        -- otherwise invisible -- the mod loads, the reactor runs, and the plant is a little more
+        -- efficient than physics allows.
+        error(string.format(
+          "%s: the simulation's floor is %.6g C but %s cannot be colder than %.6g C, so the engine " ..
+          "would hand every cold reactor a temperature below the floor and each step would create " ..
+          "energy from nothing (ADR 0021). Raise %s's default_temperature in prototypes/fluids.lua " ..
+          "to %.6g C, or lower min_temperature_c in scripts/reactor-logic.lua to %.6g C. The two " ..
+          "have to be equal.",
+          reactor, spec.min_temperature_c, name, fluid.default_temperature,
+          name, spec.min_temperature_c, fluid.default_temperature))
+      elseif fault then
+        -- The other two ends, which are one failure: apply() writes the simulated temperature
+        -- straight into the fluidbox and the engine rejects anything outside the fluid's range.
         error(string.format(
           "%s: the simulation clamps temperature to [%.6g, %.6g] C but %s accepts " ..
           "[%.6g, %.6g], so a reactor would write a temperature the fluid cannot hold. Reconcile " ..

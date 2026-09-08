@@ -66,6 +66,17 @@ nor leaks, because the model has nothing valid to say about it.
 down together to land the plasma exactly on the floor rather than under it, so the low temperature
 clamp never bites and there is nothing to hand back. Conjured energy is zero *by construction*.
 
+**Enforced at load time rather than held by the arithmetic alone** (added 2026-09-09,
+[#107](https://github.com/trulsjo/realistic-fusion-refreshed/issues/107)). "Zero by construction" is
+true for every input at or above the floor and false below it — the cap's algebra closes only from
+the floor upward, and a below-floor input conjures 248 W at 14 °C and 71.6 kW at −273 °C on a full
+D-D box. Nothing shipped reaches that, but *this ADR is what makes someone want to move the floor*,
+and moving it up alone is exactly what arms it: a Factorio fluid cannot be colder than its
+`default_temperature`, so a simulation floor above that one is a floor the engine can never deliver.
+`control.lua`'s `check_plasma_bounds()` therefore refuses to load unless a spec's `min_temperature_c`
+**equals** its plasma's `default_temperature`; `reactor-logic.lua`'s `M.plasma_bounds_fault()` is the
+decision and `tests/test-reactor-logic.lua` drives both directions.
+
 ### Why the drain cap, and not the three repairs #103 listed
 
 | considered | conjured after | why not |

@@ -1169,6 +1169,62 @@ check(floor_dd.neutrons > 0 and floor_dd.neutrons < 1e4,
   string.format("%.6g per step", floor_dd.neutrons))
 near(floor_he3.neutrons, 0, 0, "and the aneutronic tier breeds none at all, floor or not")
 
+-- ------------------------------------------------- and BELOW the floor it does not hold (#107)
+--
+-- THE INVARIANT ABOVE IS CONDITIONAL AND THIS IS THE CONDITION. Everything from here up feeds
+-- step() a temperature at or above spec.min_temperature_c, which is every temperature the engine
+-- can currently produce -- so "conjures nothing" was true of the shipped game and was written down
+-- as though it were true in general. It is not: the drain cap's algebra closes only from the floor
+-- upward, because kept_j - floor_thermal_j is remaining * heat_per_particle * (t_k - floor_k) and
+-- that is non-negative only there. Below it, drainable_j clamps to zero, the plasma still lands
+-- under floor_thermal_j, the LOW clamp fires, and retained_j exceeds new_thermal_j.
+--
+-- ASSERTED AS PRESENT RATHER THAN FIXED, deliberately. #107 closes this by refusing to load the
+-- configuration that reaches it -- see M.plasma_bounds_fault below and control.lua's
+-- check_plasma_bounds -- rather than by teaching step() a physics it has none for: below the floor
+-- the model is outside its own domain by ADR 0021's own statement, and there is no right answer
+-- to give. So these numbers are what the load guard is worth, and a fix that made them zero would
+-- delete the reason the guard exists.
+local below_floor = L.step(SPEC, "rf-d-d-plasma", FULL, SPEC.min_temperature_c - 1, 0, TICK)
+near(below_floor.conjured_power_w, 248.517, 0.001,
+  "one degree below the floor a full D-D reactor conjures 248 W, which is why #107 refuses to load it")
+local absolute_zero = L.step(SPEC, "rf-d-d-plasma", FULL, -273, 0, TICK)
+near(absolute_zero.conjured_power_w, 71572.8, 0.001,
+  "and 71.6 kW at -273 C, so it goes as how far under the floor the input is")
+check(below_floor.conjured_power_w > 0 and absolute_zero.conjured_power_w > below_floor.conjured_power_w,
+  "which is a positive, monotone quantity rather than the zero the step above reports")
+near(below_floor.temperature_c, SPEC.min_temperature_c, 0,
+  "and the plasma is put back up to the floor, which is where the joules come from")
+
+-- THE GUARD THAT MAKES THE ZERO ABOVE UNCONDITIONAL. A Factorio fluid cannot hold a temperature
+-- below its default_temperature, so a spec floor ABOVE it is the configuration in which the engine
+-- hands step() the input just measured, on every cold reactor, permanently. It loads perfectly and
+-- nothing else here would catch it -- the fluid accepts every write, the reactor runs, and the
+-- plant is quietly a little more efficient than the physics allows.
+--
+-- Driven here rather than in a game because a load guard that fires refuses to load, so a rig that
+-- loads cannot exercise it -- the same reason the confinement ladder's guard is negative-tested
+-- here. control.lua supplies the prototypes and the wording; this is the decision.
+local SHIPPED_MIN, SHIPPED_MAX = SPEC.min_temperature_c, SPEC.max_temperature_c
+check(L.plasma_bounds_fault(SPEC, SHIPPED_MIN, SHIPPED_MAX) == nil,
+  "the shipped pair passes, so load-check.ps1 is not being asked to load a mod this refuses")
+check(L.plasma_bounds_fault(ANEUTRONIC, ANEUTRONIC.min_temperature_c, ANEUTRONIC.max_temperature_c) == nil,
+  "and so does the aneutronic pair")
+-- The direction #107 opened over: raise the simulation's floor and leave the fluid where it is.
+check(L.plasma_bounds_fault({ min_temperature_c = SHIPPED_MIN + 1, max_temperature_c = SHIPPED_MAX },
+    SHIPPED_MIN, SHIPPED_MAX) == "min-above-fluid",
+  "a floor one degree above the fluid's is refused, which is the case that used to load and conjure")
+check(L.plasma_bounds_fault({ min_temperature_c = 34540, max_temperature_c = SHIPPED_MAX },
+    SHIPPED_MIN, SHIPPED_MAX) == "min-above-fluid",
+  "and so is the 3 eV floor #46 wanted, which is the edit that would actually be made")
+-- The direction that already errored, kept so a fix in one direction cannot lose the other.
+check(L.plasma_bounds_fault({ min_temperature_c = SHIPPED_MIN - 1, max_temperature_c = SHIPPED_MAX },
+    SHIPPED_MIN, SHIPPED_MAX) == "min-below-fluid",
+  "a floor below the fluid's still fails, in the direction that was already checked")
+check(L.plasma_bounds_fault({ min_temperature_c = SHIPPED_MIN, max_temperature_c = SHIPPED_MAX * 2 },
+    SHIPPED_MIN, SHIPPED_MAX) == "max-above-fluid",
+  "and so does a ceiling above the fluid's")
+
 -- ---------------------------------------------------------------- the confinement ladder (#53)
 --
 -- What research does, what each rung's tooltip claims, and the guard that stops the ladder growing
