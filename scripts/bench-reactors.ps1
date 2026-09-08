@@ -1516,8 +1516,11 @@ if ABLATE ~= "none" then
             local spec = SPECS[entity.name]
             local paid = spec.heating_power_w * DT
             if paid > energy then paid = energy end
+            -- capture_efficiency passed explicitly (#94), because the shipped loop passes it:
+            -- SPECS here is the module table rather than a per-force copy -- this harness has no
+            -- forces to differ -- so the value is the same, and what is measured is the same call.
             local result = logic.step(spec, plasma and plasma.name, plasma and plasma.amount,
-              plasma and plasma.temperature, paid, DT)
+              plasma and plasma.temperature, paid, DT, spec.capture_efficiency)
             if pending and result then
               pending[#pending + 1] = { entity = entity, spec = spec, plasma = plasma, result = result }
             end

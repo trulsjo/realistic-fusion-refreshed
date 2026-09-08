@@ -714,6 +714,14 @@ M.blanket = {
 -- @param paid_j         electrical energy ALREADY SPENT on confinement heating over this step's
 --                       interval, or math.huge for a reactor that is never starved
 -- @param dt             seconds since the last step
+-- @param capture        what this reactor's OWNER recovers of everything leaving the plasma, or
+--                       nil for the spec's own unresearched constant (#94, ADR 0020). An argument
+--                       rather than a field on `spec` because capture efficiency is researchable
+--                       and research is per force: SPECS in control.lua is one table every reactor
+--                       of a name shares, so two forces on one map cannot both read their own
+--                       answer off it. Defaulted rather than required so the spec stays the single
+--                       place the unresearched value is written down, and so every pure-logic
+--                       caller here and in tests/ drives the shipped constant by saying nothing.
 -- @return nil when there is nothing to simulate, otherwise a table of what happened
 -- Returning nil leaves the reactor untouched, which for a fluid with no entry above means the
 -- reactor holds it and does nothing with it forever, reporting itself starved the whole time.
@@ -723,7 +731,7 @@ M.blanket = {
 -- instead is control.lua's check_every_plasma_burns, which refuses to load when a plasma-heating
 -- recipe makes a fluid with no row above -- at load, in front of whoever added it, rather than in
 -- front of a player wondering why their reactor is idle.
-function M.step(spec, fluid_name, amount, temperature_c, paid_j, dt)
+function M.step(spec, fluid_name, amount, temperature_c, paid_j, dt, capture)
   local fuel = fluid_name and M.fuels[fluid_name]
   if not fuel or not amount or amount <= 0 or not dt or dt <= 0 then return nil end
 
@@ -892,7 +900,12 @@ function M.step(spec, fluid_name, amount, temperature_c, paid_j, dt)
   -- to thermal to electric loop: Factorio's steam turbines lose nothing, so without a loss here a
   -- cold reactor would exactly pay for its own heating forever. It also stands in for everything
   -- v1 does not model -- divertor, cryoplant, magnet power.
-  local captured_j = ((fusion_j - charged_j) + left_j) * spec.capture_efficiency
+  --
+  -- Taken from the ARGUMENT when there is one (#94, ADR 0020), so a force that has researched
+  -- plant efficiency recovers more without this module learning what a force is. The fallback is
+  -- the spec's own constant and not a literal, so there is still exactly one place the
+  -- unresearched value is written down.
+  local captured_j = ((fusion_j - charged_j) + left_j) * (capture or spec.capture_efficiency)
 
   -- What the reaction leaves behind, in fluid units. Computed from the same (capped) reaction
   -- count as the energy above, so a reactor that burns dry mid-step breeds against the fuel that

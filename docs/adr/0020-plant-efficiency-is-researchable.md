@@ -130,11 +130,23 @@ the remaining gap to a ceiling of 0.95.**
   features do not interact, which is why they are sequenced independently.
 - **Q is unaffected.** Q is fusion power over heating power, both plasma-side; capture efficiency does
   not enter it. A player will see output rise with no movement in either signal.
-- **It carries runtime state the rest of the simulation does not.** A per-force cache and an
-  `on_research_finished` handler are both new, and both are things a save has to survive.
+- ~~**It carries runtime state the rest of the simulation does not.** A per-force cache and an
+  `on_research_finished` handler are both new, and both are things a save has to survive.~~
+  *(Wrong on both halves, corrected 2026-09-08 when #94 built it.* **Neither was new:**
+  [#53](https://github.com/trulsjo/realistic-fusion-refreshed/issues/53) had already shipped a
+  per-force cache and the handler that drops it, for confinement time, so #94 added a second cache
+  beside an existing one and wired no new event. **And a save has nothing to survive:** Factorio
+  rebuilds the Lua state on every load, so neither cache is in `storage` — they refill themselves
+  from `force.technologies`, which the save already carries, and there is no stored number to go
+  stale when a rung is added, removed or renamed. A migration would have had to migrate precisely
+  that, and could only have got it wrong. `control.lua` states this against both caches. Do not
+  write one.)*
 - **The work is larger than the reward.** Three technologies, locale, a force cache, an event handler, a
-  `step()` signature change reaching every caller and test, plus a gate. Against ADR 0019's +27% for
-  less code, which is why the blanket goes first.
+  `step()` signature change reaching every caller and test, plus a gate. Against ADR 0019's uplift
+  for less code, which is why the blanket goes first. *(That uplift was quoted here as +27% from
+  ADR 0019's provisional table; #91 pinned it at +25.8% of a D-T reaction's own release and #93
+  measured **+28.0%** of what a reactor actually sells. The comparison is unaffected — both figures
+  are more than double this line's +11.8% total.)*
 
 ## Alternatives considered
 

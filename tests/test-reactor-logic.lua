@@ -1048,6 +1048,34 @@ check(out_w > SPEC.heating_power_w,
 near((1 - SPEC.capture_efficiency) / SPEC.capture_efficiency, 0.1765, 0.01,
   "engineering break-even is Q 0.1765 here, which is the number that decides the sentence above")
 
+-- ------------------------------------------------- capture efficiency is an argument (#94)
+--
+-- ADR 0020 makes plant efficiency researchable, and research is per force. control.lua's SPECS is
+-- one table every reactor of a name shares, so the value cannot live there: it becomes an argument
+-- to step(). NO TECHNOLOGY EXISTS YET -- #94 is the prefactor, and every force still reads
+-- whatever its reactor's own spec declares -- so what is asserted here is the seam and not a
+-- ladder.
+--
+-- 0.9375 is ADR 0020's third rung and is NOT shipped. It is used because it is the number the
+-- decision names; anything else would have read as a value someone might go looking for.
+local researched = L.step(SPEC, "rf-d-t-plasma", FULL, HOT, math.huge, TICK, 0.9375)
+near(researched.energy_units / dt_hot.energy_units, 0.9375 / SPEC.capture_efficiency, 1e-12,
+  "capture efficiency reaches step() as an argument, and scales the sold energy by exactly itself")
+
+-- AND NOTHING ELSE. capture_efficiency governs what is recovered from energy that has already left
+-- the plasma, so it cannot touch the plasma or any plasma statistic -- which is ADR 0020's
+-- consequence that a player sees output rise with no movement in Q.
+near(researched.temperature_c, dt_hot.temperature_c, 0, "and moves the plasma not at all")
+near(researched.q_factor, dt_hot.q_factor, 0, "so Q does not move either, which is ADR 0020's point")
+near(researched.fusion_power_w, dt_hot.fusion_power_w, 0, "nor the fusion power Q is measured from")
+
+-- The default, which is what keeps the spec the single place the unresearched value is written
+-- down -- and what lets every other call in this file, and every pure-logic caller in the mod,
+-- drive the shipped constant by saying nothing. dt_hot above passed no argument at all.
+near(L.step(SPEC, "rf-d-t-plasma", FULL, HOT, math.huge, TICK, SPEC.capture_efficiency).energy_units,
+  dt_hot.energy_units, 0,
+  "and omitting it is the same as passing the spec's own constant")
+
 -- ------------------------------------------------------------- the floor conjures nothing (#103)
 
 -- THAT THE CLAMP CREATES NOTHING, which is a property rather than a measurement now. #103 measured

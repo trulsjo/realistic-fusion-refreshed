@@ -47,8 +47,10 @@ local SPECS = {
 -- ADR 0020 reaches the same place for capture_efficiency by a different route -- an argument to
 -- step() rather than a spec per force -- and its four requirements are what this is built to meet:
 -- reactor-logic stays free of anything Factorio, nothing is allocated per step, the answer is
--- cached per force, and it is invalidated on research rather than re-read in the loop. When that
--- ticket lands, its constant belongs in derive() beside this one.
+-- cached per force, and it is invalidated on research rather than re-read in the loop.
+-- ~~When that ticket lands, its constant belongs in derive() beside this one.~~ It landed as #94
+-- and it did NOT go in derive(): ADR 0020 asks for an argument rather than a field on a per-force
+-- copy of the spec, so it has its own cache below, dropped by the same call and on the same events.
 local force_specs = {}
 
 --- This force's version of one reactor's constants.
@@ -67,6 +69,32 @@ local function derive(base, force)
   spec.confinement_time_s = tau
   return spec
 end
+
+-- WHAT ONE FORCE RECOVERS, per reactor prototype (#94, ADR 0020).
+--
+-- [force_index][prototype name] -> the capture efficiency to hand step(). A number rather than a
+-- field on the derived spec above, which is what ADR 0020 asks for: step() is HANDED the value
+-- instead of reading it off a table every reactor of that name shares, so reactor-logic never has
+-- to know that a force exists.
+--
+-- KEYED BY PROTOTYPE AS WELL AS BY FORCE, because the two reactors do not start from the same
+-- number -- 0.85 against the aneutronic reactor's 0.95 -- and only the neutronic one is ever
+-- researchable (ADR 0020, decision 4). A single value per force would have quietly given an
+-- aneutronic reactor the other tier's efficiency.
+--
+-- NOTHING MOVES IT YET, AND THAT IS #94's WHOLE POINT. rf-plant-efficiency does not exist, so
+-- capture_for() below fills every entry from the reactor's own spec constant and this cache holds
+-- two distinct values on the whole map -- 0.85 and 0.95, one per reactor prototype. It is the seam
+-- rather than the saving: when the technologies land, the ladder walk goes in capture_for() and no
+-- call site or signature changes with it.
+--
+-- NOT IN `storage`, for the reason force_specs is not: Factorio rebuilds the Lua state on every
+-- load, so this starts empty every time and is refilled on the first tick after a load -- from the
+-- spec today and from force.technologies once there is research to read -- and there is no stored
+-- number to go stale. A force created later simply misses and builds its own entry, so
+-- on_force_created needs no handler; a force merged away or reset drops the whole table through
+-- forget_force_cache() below.
+local force_capture = {}
 
 --- The constants to simulate this reactor with, for the force that owns it.
 --
@@ -94,6 +122,41 @@ local function spec_for(entity)
   return spec
 end
 
+--- What the force owning this reactor recovers of everything leaving its plasma (#94).
+--
+-- entity.force_index rather than entity.force.index, for the reason spec_for gives: one property
+-- read instead of two on a path that runs once per reactor per step. Nothing here fetches
+-- entity.force at all yet, because no technology moves the answer -- which is exactly where a
+-- ladder walk would go, on a cache miss and never in the loop.
+--
+-- WHAT #94 COST: NOTHING THIS MACHINE CAN SEE, which is the honest form of the answer and not a
+-- claim of zero. #63 and #66 are open on per-step cost, so it was measured rather than argued.
+-- bench-reactors.ps1 -Blankets -Collectors -Gap 6 -Counts @(0,200) -Runs 10, swapped against the
+-- parent commit and back in one sitting: 8.035 and 8.067 microseconds per reactor against 7.982 and
+-- 7.877, so +0.12 us nominal over TWO pairs, covering #93 and #94 together -- this lookup, the
+-- extra argument to step(), the extra field on the pending entry, and reactor-logic's
+-- capture_energy_j on all 200 blanketed reactors.
+--
+-- TWO PAIRS IS NOT A MEASUREMENT OF 0.12 us. #92 established the method on this machine and why:
+-- per-round swings there were +/-1.3 us, six of ten rounds favoured the baseline, and a ratio of
+-- aggregates read 1.29x on CPU throttling alone. The honest reading is the median of ten alternated
+-- rounds; what two pairs support is that the delta is inside the noise, which is all the ticket
+-- asked. Nothing allocates, and that part IS clean: luaGarbageIncremental went 94.3/97.7 against
+-- 95.3/92.6 -- higher in one pair, lower in the other, so no direction at all.
+local function capture_for(entity, spec)
+  local by_force = force_capture[entity.force_index]
+  if not by_force then
+    by_force = {}
+    force_capture[entity.force_index] = by_force
+  end
+  local capture = by_force[entity.name]
+  if not capture then
+    capture = spec.capture_efficiency
+    by_force[entity.name] = capture
+  end
+  return capture
+end
+
 --- WHERE A REACTOR WANTS ITS PLASMA HELD (#74, ADR 0016).
 --
 -- [prototype name][confinement_time_s][fluid name] -> reactor-logic.density_curve's answer, or
@@ -105,7 +168,7 @@ end
 --
 -- KEYED ON TAU RATHER THAN ON A FORCE, AND NOT INVALIDATED AT ALL. It was keyed by force_index and
 -- dropped alongside force_specs, which read as the obvious thing and was a performance defect:
--- forget_force_specs() is wired to on_research_finished, which fires for EVERY technology a force
+-- forget_force_cache() is wired to on_research_finished, which fires for EVERY technology a force
 -- completes rather than for the four confinement rungs. Rebuilding a spec is two table lookups;
 -- rebuilding every curve is four sweeps and about two hundred milliseconds, inside update(), on the
 -- first reporting tick after a player finishes anything -- including each level of an infinite
@@ -165,6 +228,11 @@ end
 
 --- Drop everything, so the next reactor to be stepped rebuilds it.
 --
+-- BOTH per-force caches, in one call, because every event below changes both: a force whose
+-- research moved has a different confinement time AND a different capture efficiency to resolve,
+-- and a force that was merged away has neither. Two calls wired to five events each would be two
+-- lists to keep in step.
+--
 -- The whole cache rather than the one force the event names, because the events below do not all
 -- name one -- and because a force's entry is two table lookups to rebuild. There is no cost here
 -- worth being clever about.
@@ -173,8 +241,9 @@ end
 -- rather than on a force, so research moves the lookup instead of invalidating it -- see the note
 -- on `curves` above for why dropping them here was a two-hundred-millisecond stall on every
 -- technology a player finished.
-local function forget_force_specs()
+local function forget_force_cache()
   force_specs = {}
+  force_capture = {}
 end
 
 -- The temperature apply() stamps on the reactor energy it writes, memoised per reactor by
@@ -447,7 +516,14 @@ local function blanket_breed(entity, spec, neutrons, headroom)
 end
 
 --- Apply one reactor's step to the world.
-local function apply(entity, spec, plasma, result)
+--
+-- @param capture  what this reactor's owner recovers, as update() resolved it (#94). Wanted here
+--                 as well as in step() because the blanket's capture heat crosses the SAME value
+--                 rather than one of its own -- 0.85 on the only reactor a blanket can breed on.
+--                 ADR 0019 decision 4 refused the blanket a higher figure, on the grounds that
+--                 capture_efficiency is the only term standing between this mod and a free loop
+--                 and every additional instance of it is another number a balance pass can drift.
+local function apply(entity, spec, plasma, result, capture)
   -- NO ENERGY WRITE HERE, and that is #72 rather than an omission. spend() below has already paid
   -- for this step's heating, one tick at a time, and result.heating_used_j is the record of what
   -- it paid rather than a bill to settle now -- deducting it again would charge the reactor twice.
@@ -580,10 +656,7 @@ local function apply(entity, spec, plasma, result)
       -- THE BLANKET'S CAPTURE HEAT, SOLD THROUGH THE REACTOR'S OWN BOX (#93, ADR 0019). The
       -- blanket is a container and 2.0.77 has no prototype that is both an inventory and a fluid
       -- box, so the joules ride the reactor's output exactly as blanket tritium rides its
-      -- collector -- see prototypes/entities.lua. It crosses the reactor's OWN
-      -- capture_efficiency, not a second one of its own: ADR 0019 decision 4 refused the blanket
-      -- a higher figure, because that constant is the only term standing between this mod and a
-      -- free loop and every additional instance of it is another number a balance pass can drift.
+      -- collector -- see prototypes/entities.lua.
       --
       -- INSIDE the `if bred` arm, which is the whole of "heat follows breeding": every gate above
       -- -- no collector, no headroom, no lithium -- already stopped the tritium, so it stops the
@@ -596,7 +669,7 @@ local function apply(entity, spec, plasma, result)
       -- already in result.energy_units at step()'s (fusion_j - charged_j). reactor-logic's
       -- capture_energy_j says what importing a published energy multiplication factor here would
       -- have cost instead, and docs/research/blanket-capture-energy.md derives the figure.
-      sold = sold + bred_j * spec.capture_efficiency / spec.energy_fluid_j_per_unit
+      sold = sold + bred_j * capture / spec.energy_fluid_j_per_unit
     end
     if products then deposit(collector, products) end
   end
@@ -771,13 +844,18 @@ local function update()
       -- spec_for has no fallback on purpose: a fallback would silently simulate an aneutronic
       -- reactor as a neutronic one, which looks like a balance problem rather than a missing entry.
       local spec = spec_for(entity)
+      -- And what that owner RECOVERS, which is the same question asked of a different cache (#94).
+      -- Resolved once here and carried to apply() below rather than asked for twice: apply() needs
+      -- it too, for the blanket's share, and the pending entry it already builds costs nothing to
+      -- widen.
+      local capture = capture_for(entity, spec)
       local plasma = entity.fluidbox[1]
       -- What this reactor was HEATED BY over the interval, not what its buffer happens to hold
       -- (#72). Read before the reset below, so a step that returns nil still consumes the payments
       -- made for it -- the plasma was heated either way and the joules are gone.
       local paid_j = spent[unit_number] or 0
       local result = logic.step(spec, plasma and plasma.name, plasma and plasma.amount,
-        plasma and plasma.temperature, paid_j, dt)
+        plasma and plasma.temperature, paid_j, dt, capture)
 
       -- And whether it goes on being paid at all, which is the same write. A zero starts the next
       -- interval's accumulation from nothing; removing the entry stops spend() charging a reactor
@@ -801,7 +879,9 @@ local function update()
       end
 
       if result then
-        pending[#pending + 1] = { entity = entity, spec = spec, plasma = plasma, result = result }
+        pending[#pending + 1] = {
+          entity = entity, spec = spec, plasma = plasma, result = result, capture = capture,
+        }
       end
     else
       -- Dropped here rather than on a mined or died event, which is why entity-management wires
@@ -818,7 +898,7 @@ local function update()
   end
 
   for _, step in ipairs(pending) do
-    apply(step.entity, step.spec, step.plasma, step.result)
+    apply(step.entity, step.spec, step.plasma, step.result, step.capture)
   end
 end
 
@@ -1658,9 +1738,14 @@ script.on_event(defines.events.on_tick, function(event)
   if event.tick % UPDATE_INTERVAL == 0 then update() end
 end)
 
--- What makes a force's confinement time change (#53). Each of these drops the derived spec cache;
--- the next reactor to be stepped rebuilds it from force.technologies, which is the only place the
--- answer is ever stored.
+-- What makes a force's confinement time change (#53), and its capture efficiency with it (#94).
+-- Each of these drops both per-force caches; the next reactor to be stepped rebuilds them from
+-- force.technologies, which is the only place either answer is ever stored.
+--
+-- ON_FORCE_CREATED IS NOT HERE AND DOES NOT NEED TO BE. Both caches are keyed by force_index and
+-- filled on a miss, so a force that did not exist when they were filled has no entry to go stale:
+-- its first reactor builds one. A handler would drop entries belonging to other forces for no
+-- reason at all.
 --
 -- Wired through a table constructor and pairs() for the reason entity-management wires its build
 -- events that way: a name this engine version does not define is simply a value the constructor
@@ -1678,7 +1763,7 @@ for _, event in pairs({
   defines.events.on_force_reset,
   defines.events.on_forces_merged,
 }) do
-  script.on_event(event, forget_force_specs)
+  script.on_event(event, forget_force_cache)
 end
 
 -- The reactor's signals sit on a companion entity a player cannot see, and the engine will not

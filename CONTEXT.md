@@ -478,9 +478,13 @@ than approximately true.
 > a full collector sells none. **Blanket share is not.** No `rf-signal-blanket-share` exists, so the
 > figure above is a rig measurement rather than something a player can read off a wire.
 >
-> **Plant efficiency is a term and not yet a technology.** No `rf-plant-efficiency` exists and
-> capture efficiency is still a constant no research touches. Remove this note when the signal and
-> the technologies ship.
+> **Plant efficiency is a term and not yet a technology.** No `rf-plant-efficiency` exists, so every
+> force still recovers whatever its reactor declares — 0.85 neutronic, 0.95 aneutronic — and that is
+> the same number for every force running the same reactor. What #94 built is the **seam and not a
+> difference**: capture efficiency reaches `step()` as an argument, resolved per force rather than
+> read off the one table every reactor of a name shares, so a later technology can raise it for one
+> force and leave the others where they are. Remove this note when the signal and the technologies
+> ship.
 
 ## Predecessors
 
