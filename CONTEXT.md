@@ -403,8 +403,11 @@ There are **two** of them, one per conversion route, and the pair is the tier's 
 bookkeeping. Containing them separately is what keeps the routes apart: a heat exchanger cannot be
 bolted to an aneutronic reactor nor a direct energy converter to a neutronic one, and the engine
 refuses the connection rather than letting a player build something that would sit dry. Measured both
-ways in `scripts/check-containment.ps1`: the two matching pairs join and the two crossed pairs do
-not.
+ways in `scripts/check-containment.ps1`, on five bolted pairs: the three matching pairs join and the
+two crossed pairs do not. The third matching pair is `rf-hc-exchanger`, which is there because
+ADR 0031 rests on a plain `"input"` connection still *accepting* a bolt — the finding that took
+`rf-hc-exchanger`'s footprint off containment's critical path, and which nothing but a probe measured
+until then.
 
 See [ADR 0018](docs/adr/0018-energy-is-contained-and-no-pipe-carries-it.md) for why energy is plumbed
 this way rather than piped, and what was rejected.
