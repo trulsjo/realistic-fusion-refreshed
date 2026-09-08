@@ -51,9 +51,14 @@
                                   it costs about 40 ms and why it is here rather than at the data
                                   stage.
       check_plasma_bounds()       The simulation's temperature clamps against every plasma
-                                  fluid's declared range. Widen one without the other and the
-                                  mod loads perfectly, then throws on a live save the first
-                                  time a reactor gets hot.
+                                  fluid's declared range, in BOTH directions. Widen the ceiling
+                                  without the fluid and the mod loads perfectly, then throws on a
+                                  live save the first time a reactor gets hot. Raise the FLOOR
+                                  without the fluid and it never throws at all: a fluid cannot be
+                                  colder than its default_temperature, so the engine hands the
+                                  simulation a below-floor temperature on every cold reactor and
+                                  each step creates energy from nothing (#107, ADR 0021). The two
+                                  ends together require the floors to be equal.
       check_signal_ceiling()      The simulation's temperature ceiling against what a circuit
                                   signal can carry. check_plasma_bounds above ties the ceiling to
                                   what the FLUID holds; this ties it to what the WIRE reports, and

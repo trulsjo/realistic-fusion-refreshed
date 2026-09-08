@@ -877,12 +877,27 @@ function M.step(spec, fluid_name, amount, temperature_c, paid_j, dt, capture)
   local left_j = kept_j + heating_j + charged_j - retained_j
   if left_j < 0 then left_j = 0 end
 
-  -- ENERGY THIS STEP CREATED FROM NOTHING. MUST BE ZERO, and is kept as the guard that says so.
+  -- ENERGY THIS STEP CREATED FROM NOTHING. ZERO FOR EVERY INPUT AT OR ABOVE spec.min_temperature_c,
+  -- and kept as the guard that says so.
   --
   -- If the LOW clamp ever bites, retained_j comes out larger than the plasma physically has: the
   -- temperature would have been put back up to min_temperature_c, handing back joules that had
   -- already left. The drain cap above is what stops that happening, by never letting the plasma go
   -- under the floor in the first place. This subtraction is how we know the cap still works.
+  --
+  -- ~~MUST BE ZERO.~~ IT DEPENDS ON THE INPUT, and #107 is the record of what on. The cap's algebra
+  -- closes only when the temperature it was handed is already at or above the floor: kept_j minus
+  -- floor_thermal_j is remaining * heat_per_particle * (t_k - floor_k), which is non-negative only
+  -- then. Below the floor drainable_j clamps to zero, the plasma still lands under floor_thermal_j,
+  -- the low clamp fires, and this comes out positive -- 248 W at 14 C on a full D-D box, 71.6 kW at
+  -- -273 C. Measured, not argued; tests/test-reactor-logic.lua pins both directions.
+  --
+  -- WHAT MAKES IT UNCONDITIONAL IN A GAME IS A LOAD GUARD RATHER THAN THIS ARITHMETIC.
+  -- M.plasma_bounds_fault below requires every spec's floor to EQUAL its plasma's
+  -- default_temperature, and control.lua's check_plasma_bounds refuses to load otherwise -- so the
+  -- engine cannot hand this function a below-floor temperature at all. Raising min_temperature_c
+  -- without raising the fluid is exactly what would arm it, which is why the refusal is there and
+  -- why this comment no longer claims impossibility.
   --
   -- The high clamp is the opposite case and is NOT this -- there retained_j is smaller, and the
   -- difference leaves through left_j above, correctly, because it really did leave the plasma.
@@ -931,8 +946,9 @@ function M.step(spec, fluid_name, amount, temperature_c, paid_j, dt, capture)
     neutrons         = reactions * fuel.neutrons_per_reaction,
     energy_units     = captured_j / spec.energy_fluid_j_per_unit,
     heating_used_j   = heating_j,
-    -- What the clamp created from nothing this step, as a power. ALWAYS ZERO since the drain cap
-    -- (#103, ADR 0021); it is a regression guard, not a quantity. As a power rather than joules for
+    -- What the clamp created from nothing this step, as a power. ZERO since the drain cap (#103,
+    -- ADR 0021) for every temperature at or above the floor, which since #107 is every temperature
+    -- the engine can produce; it is a regression guard, not a quantity. As a power rather than joules for
     -- the reason fusion_power_w is: it does not move with dt. See where it is computed.
     conjured_power_w = conjured_j / dt,
     fusion_power_w   = fusion_j / dt,
@@ -1388,6 +1404,35 @@ function M.float32_ceil(value)
   local steps = value / scale
   if steps == math.floor(steps) then return value end
   return (math.floor(steps) + 1) * scale
+end
+
+--- Why this reactor spec and this plasma fluid cannot be run together, or nil when they can (#107).
+--
+-- @param spec        reactor constants
+-- @param fluid_min   the fluid's default_temperature, which for a Factorio fluid is a FLOOR rather
+--                    than a default: nothing in the engine can hold that fluid any colder
+-- @param fluid_max   the fluid's max_temperature
+-- @return nil, or one of "min-below-fluid", "min-above-fluid", "max-above-fluid"
+--
+-- Here rather than in control.lua for the reason M.confinement_ladder_overruns is: the decision is
+-- arithmetic over a spec and two numbers, so tests/test-reactor-logic.lua can drive it directly and
+-- watch it fire. control.lua supplies the prototypes and the wording and owns none of the reasoning.
+--
+-- THE TWO ENDS ARE NOT THE SAME QUESTION, which is why this returns which one broke rather than a
+-- boolean. The ceiling and the LOW end read the other way are both the same failure -- apply()
+-- writes a temperature the fluid rejects, and the engine throws in a live save. The low end read
+-- THIS way is a different one and is the whole of #107: a floor ABOVE what the fluid can hold is
+-- accepted by every prototype and by every write, and simply means the engine hands step() a
+-- temperature under spec.min_temperature_c on every cold reactor, for ever. There the drain cap has
+-- nothing to cap -- drainable_j is already negative and clamps to zero -- the low temperature clamp
+-- fires, and retained_j comes back larger than the plasma has. That is the defect ADR 0021 closed,
+-- reopened by an input it does not cover: 248 W conjured at 14 C on a full D-D box, 71.6 kW at
+-- -273 C. So the two ends together say the floors must be EQUAL, and that is the invariant.
+function M.plasma_bounds_fault(spec, fluid_min, fluid_max)
+  if spec.min_temperature_c < fluid_min then return "min-below-fluid" end
+  if spec.min_temperature_c > fluid_min then return "min-above-fluid" end
+  if spec.max_temperature_c > fluid_max then return "max-above-fluid" end
+  return nil
 end
 
 return M
