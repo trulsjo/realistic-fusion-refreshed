@@ -43,7 +43,8 @@ reaction:
 
 ## The equilibrium that isn't
 
-Run with the box kept full and unlimited power:
+Run with the box kept full and unlimited power — the **settled** operating point throughout this
+note, which `CONTEXT.md` names and which a heater-fed reactor is not (#109):
 
 | | settles at | Q | thermal out | burn |
 |---|---|---|---|---|
@@ -135,7 +136,7 @@ the dominant radiative loss is absent from the model.
 
 > **It landed 2026-08-21 (#52), and the prediction was exact** — Q 0.3205, 16.02 MW of fusion. One
 > word needs care, though: the tier is *not* net negative. It still sells **56.1 MW against the 50 MW
-> it draws**, because the radiated X-rays heat the first wall and that heat is recovered. So D-D fuses
+> it draws** at the settled operating point above, because the radiated X-rays heat the first wall and that heat is recovered. So D-D fuses
 > at a loss and sells at a small profit: below **scientific** break-even, above **engineering**
 > break-even, which `CONTEXT.md` now distinguishes. Every figure in this note below this line is the
 > radiation-free one unless it says otherwise.

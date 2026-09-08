@@ -23,7 +23,9 @@ chosen. It is what fell out of the cross-section data at the shipped density and
 the model carried no radiation loss at all.
 
 > **Re-anchored 2026-08-21 (#52).** The term is in, and this ADR's prediction held: the tier now
-> settles at **2.42×10⁸ °C, Q 0.32, 56.1 MW sold against 50 MW drawn**. Read the paragraphs below as
+> settles at **2.42×10⁸ °C, Q 0.32, 56.1 MW sold against 50 MW drawn**. That is the **settled**
+> operating point — box full, plasma at its own equilibrium — and a heater-fed reactor sells half as
+> much again; see `CONTEXT.md` on **operating point** (#109). Read the paragraphs below as
 > the argument that produced that change rather than as a description of what ships. One nuance this
 > ADR could not have known: at Q 0.32 the tier is below *scientific* break-even but slightly above
 > *engineering* break-even, because the radiated X-rays are recovered as wall heat — see `CONTEXT.md`
@@ -95,8 +97,10 @@ absolute numbers moved; the design principle is stated identically in both.
 **"Cannot sustain itself" and "Q 1.00" agree, and the gap between them is the point.** The reactor's
 own balance is exactly break-even, and a D-D *power plant* is net negative because the fuel chain
 around it — Girdler sulfide, electrolysis, pumps — is not free. That is the same accounting #37's
-item 4 already makes for this repository, where about 56 MW of chain draw stands against 50 MW of
-reactor heating. A tier can be at break-even at the reactor and still cost a player power overall,
+item 4 already makes for this repository, where about 56 MW of chain DRAW stands against 50 MW of
+reactor heating. (That 56 MW is a draw and the 56.1 MW above is a sale, and their near-agreement is a
+coincidence of the balance rather than a relationship — `CONTEXT.md` on **operating point** says so
+once, because reading one as the other is the mistake #109 was opened about.) A tier can be at break-even at the reactor and still cost a player power overall,
 and that is a legitimate place for a tier to start.
 
 ## Decision

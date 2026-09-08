@@ -58,6 +58,10 @@ question:
 | chemical plant (H₂S) | ~210 kW |
 | **total** | **~56 MW** |
 
+**That total is a DRAW, not an output**, and the 56.1 MW this ADR quotes further down is what the
+reactor SELLS. The two agreeing to a tenth of a megawatt is a coincidence of the balance and either
+can move without the other; `CONTEXT.md` on **operating point** carries the warning (#109).
+
 `rf-d-d-fusion` sits behind `advanced-circuit` and `concrete` — roughly blue science, where 56 MW is
 about 62 vanilla steam engines. Vanilla nuclear, the comparable tier, needs no startup power at all.
 
@@ -89,7 +93,13 @@ of fusion power against 50 MW of heating. (Q 0.45 at its density optimum; see
 >
 > "Below break-even" here means **scientific** break-even, `Q = 1`. It is not below *engineering*
 > break-even: a plant pays for itself at `Q ≥ (1 − capture_efficiency) / capture_efficiency`, which is
-> 0.1765, and the tier sells **56.1 MW against the 50 MW it draws**. The X-rays this ADR added heat
+> 0.1765, and the tier sells **56.1 MW against the 50 MW it draws** at the **settled** operating
+> point — box full, 1000 units at 2.42×10⁸ °C, all the power it asks for (`CONTEXT.md`, #109). That is
+> the operating point this margin is quoted at, and the argument is not transferable to the other one:
+> a heater-fed reactor is thinner, hotter and sells 85.2 MW, but it is also paying for the heater that
+> keeps it thin, which is a different bill and a different claim. Note too that this margin is the
+> REACTOR's. Against the whole LINE's ~56 MW of draw in the table above, the settled reactor is at
+> break-even rather than above it -- the accounting ADR 0014 makes, and again a different claim. The X-rays this ADR added heat
 > the first wall and that heat is recovered, so the reactor fuses at a loss and sells at a small
 > profit. That does not change the decision — the tier's product is fuel and its power margin is
 > trivial — but it did make `CONTEXT.md`'s old gloss ("consumes more power than it makes") false, and
