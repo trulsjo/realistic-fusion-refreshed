@@ -114,8 +114,11 @@ the remaining gap to a ceiling of 0.95.**
 - **`CONTEXT.md`'s claim about direct energy conversion becomes literally true.** The glossary says DEC
   is "a different route, not a better one... The gain is that the whole steam stage disappears, not that
   the conversion is markedly more efficient". Today a 10-point efficiency gap quietly contradicts that.
-  With the steam route climbing to 0.9375 against the aneutronic 0.95, the gap closes to under a point
-  and the only remaining benefit is the one the glossary names. Applying the line to both reactors would
+  With the steam route climbing to 0.9375 against the aneutronic 0.95, the gap closes to ~~under a
+  point~~ **1.25 points** *(corrected 2026-09-09 when #96 built it: 0.95 − 0.9375 = 0.0125, which is
+  1.25 points in the same units this bullet's own "ten-point gap" is written in; the relative gap is
+  1.3%. The conclusion is unaffected — an eighth of what it was — but the figure was wrong)* and the
+  only remaining benefit is the one the glossary names. Applying the line to both reactors would
   have preserved the contradiction.
 - **ADR 0015 is not threatened.** The line lifts D-D by at most 11.8%, which against Q 0.32 is about
   0.36. The tier stays a **breeder tier** by a wide margin, and the line gives a player a lever to make
@@ -147,6 +150,28 @@ the remaining gap to a ceiling of 0.95.**
   ADR 0019's provisional table; #91 pinned it at +25.8% of a D-T reaction's own release and #93
   measured **+28.0%** of what a reactor actually sells. The comparison is unaffected — both figures
   are more than double this line's +11.8% total.)*
+
+## What shipped
+
+**Built 2026-09-09 by [#96](https://github.com/trulsjo/realistic-fusion-refreshed/issues/96)**, with
+every decision above intact and one figure sharpened.
+
+- The three rungs are literals on `M.reactor.capture_ladder` in `scripts/reactor-logic.lua`, beside a
+  `capture_ceiling` of 0.95, and `control.lua`'s `check_plant_efficiency()` **refuses to load** a rung
+  at or above that ceiling. The asymptote is therefore enforced rather than merely intended — which
+  matters, because the halving rule lives in prose and the rungs live as numbers.
+- **Two figures, easily conflated, and this ADR quotes only the first.** The ceiling caps any line
+  into this constant at **+11.8%** of what a reactor sells (0.95/0.85); the three shipped rungs
+  deliver **+10.3%** (0.9375/0.85). Both are now asserted in `tests/test-reactor-logic.lua` so
+  neither can be quoted as the other.
+- **The free-loop guard is measured rather than argued.** `scripts/check-efficiency.ps1` builds a
+  fully researched reactor that is not fusing and reads **46.8 MW returned against 50 MW drawn** —
+  the 46.9 MW this ADR predicted. "Cold" turned out to be the wrong siting for it: a literally cold
+  reactor returns far *less*, because most of its heating goes into warming the plasma, so the guard
+  is taken at the hardest operating point instead — a plasma too thin to fuse and already pinned at
+  the temperature clamp, where nothing is retained and the whole of the heating is sold.
+- The same rig measures a fully researched force selling exactly **1.102941×** what an unresearched
+  one sells from the same fuel, and an aneutronic reactor not moving at all.
 
 ## Alternatives considered
 

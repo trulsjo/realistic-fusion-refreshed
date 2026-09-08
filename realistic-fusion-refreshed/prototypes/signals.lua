@@ -1,14 +1,16 @@
 require("util") -- table.deepcopy
 
--- What a reactor says about itself on the circuit network (#25, ADR 0010): two virtual signals and
--- the entity that carries them.
+-- What a reactor says about itself on the circuit network (#25, ADR 0010): three virtual signals
+-- and the entity that carries them. Two of them are ADR 0010's; the third is ADR 0019's and is
+-- recorded there as a departure from that set rather than as a drift into one.
 --
 -- Loaded after prototypes/entities.lua because each combinator borrows its reactor's selection box.
 
 local GRAPHICS = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/"
 
--- Two signals rather than a GUI. ADR 0010 chose that deliberately: GUI was 929 of the redesign's
--- ~1,736 runtime lines, and these carry the same two numbers through the engine's own idiom.
+-- Signals rather than a GUI. ADR 0010 chose that deliberately: GUI was 929 of the redesign's
+-- ~1,736 runtime lines, and these carry the numbers a GUI would have shown through the engine's
+-- own idiom.
 --
 -- The temperature signal wears the plasma's own icon, because that is what it is the temperature of.
 --
@@ -33,6 +35,23 @@ data:extend({
     icon_size = 64,
     subgroup = "virtual-signal",
     order = "rf-b[q-factor]",
+  },
+  -- The third, and one more than ADR 0010 specified (#95, ADR 0019). That ADR chose two signals
+  -- over a GUI; a third slot on the combinator those two already ride is not a reopening of the
+  -- choice, and ADR 0019 records the departure rather than drifting into it.
+  --
+  -- A SHARE IS A RATIO, so the rule the Q signal above is written under applies to it in full: it
+  -- must not wear a fluid's icon, because a signal that looks like a fluid is read as a quantity of
+  -- that fluid. It takes a second Krastorio 2 virtual-signal icon and deliberately not the bolt's
+  -- sibling -- these two sit beside each other on one combinator, and two bolts in two colours is
+  -- the reading problem again. See the assets mod's NOTICE.txt.
+  {
+    type = "virtual-signal",
+    name = "rf-signal-blanket-share",
+    icon = GRAPHICS .. "virtual-signals/blanket-share.png",
+    icon_size = 64,
+    subgroup = "virtual-signal",
+    order = "rf-c[blanket-share]",
   },
 })
 

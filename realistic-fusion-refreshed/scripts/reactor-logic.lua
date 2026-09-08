@@ -505,7 +505,61 @@ M.reactor = {
   -- What is recovered of everything leaving the plasma. Below 1 because Factorio's steam turbines
   -- lose nothing, so at 1 a reactor that never fuses would pay for its own heating forever; it
   -- also stands in for the divertor, cryoplant and magnet power that v1 does not model.
+  --
+  -- IT IS THE STARTING VALUE SINCE #96, NOT THE ONLY ONE, exactly as confinement_time_s above is.
+  -- capture_ladder below moves it per force and M.capture_efficiency() resolves the two;
+  -- control.lua is the only caller of that in the mod, and hands the answer to step() as an
+  -- argument rather than as a field, so this file never learns what a force is (ADR 0020,
+  -- decision 5).
   capture_efficiency = 0.85,
+  -- WHAT THE LADDER MAY NEVER REACH (#96, ADR 0020). Not a balance number, and the one figure in
+  -- this table that a balance pass must leave alone: capture_efficiency is the only term standing
+  -- between this mod and perpetual motion -- at 1.0 a reactor that never fuses sells back exactly
+  -- the heating it was given and pays for itself for ever -- so an asymptote below 1.0 is what
+  -- makes a research line into it safe at all.
+  --
+  -- 0.95 rather than a derived number, and ADR 0014 is what permits that: a mod constant has to be
+  -- theoretically possible, not read off a named physical bound. CARNOT IS NOT THAT BOUND and was
+  -- nearly adopted as it -- it bounds heat-to-WORK and this constant governs heat RECOVERY, with
+  -- Factorio's turbine doing the conversion and losing nothing. Taken seriously it would have put
+  -- the ceiling at 62.7%, below the value already shipped.
+  --
+  -- It is also the aneutronic reactor's shipped constant, and that convergence is the point rather
+  -- than a coincidence: see M.aneutronic_reactor below, and CONTEXT.md on direct energy conversion.
+  capture_ceiling = 0.95,
+  -- What research does to the number above (#96).
+  --
+  -- EACH RUNG HALVES THE REMAINING GAP TO capture_ceiling, and that is the whole mechanism rather
+  -- than a curve someone liked: halving a gap never closes it, so the free-loop guard holds
+  -- STRUCTURALLY and there is no clamp to maintain. 0.85 -> 0.90 -> 0.925 -> 0.9375, each exactly
+  -- half of what was left.
+  --
+  -- WRITTEN OUT RATHER THAN COMPUTED, which is a deliberate choice against the more elegant one.
+  -- Three literals can be read, quoted in a tooltip and checked against the ceiling by a load
+  -- guard; a fold over a halving rule would make the numbers correct by construction and
+  -- unreadable at the point where a player meets them. control.lua's check_plant_efficiency
+  -- refuses to load a rung at or above the ceiling, so the structural property is enforced rather
+  -- than merely intended, and tests/test-reactor-logic.lua pins each value AND its halving.
+  --
+  -- THREE RUNGS AND NOT AN INFINITE RESEARCH. The two are identical for the first few levels, but
+  -- the whole space is capped by arithmetic and an infinite sink is calibrated for an unbounded
+  -- reward. TWO FIGURES, EASILY CONFLATED: the CEILING allows +11.8% of what a reactor sells
+  -- (0.95/0.85), and these three rungs deliver +10.3% of it (0.9375/0.85). A fourth would be worth
+  -- about an eighth of what the first is. Read ADR 0020's arithmetic before proposing one.
+  --
+  -- NEUTRONIC ONLY. M.aneutronic_reactor deliberately has no ladder, the same shape the confinement
+  -- ladder above has and for a related reason: that tier already sits at the ceiling, and the two
+  -- routes converging is what makes CONTEXT.md's claim about direct energy conversion -- "a
+  -- different route, not a better one" -- literally rather than approximately true.
+  --
+  -- Rungs are provisional, like every other balance number in this repository, and the CEILING IS
+  -- NOT ONE OF THEM. The technology prototypes read this table rather than restating it, so a rung
+  -- and its tooltip cannot disagree.
+  capture_ladder = {
+    { technology = "rf-plant-efficiency-1", capture_efficiency = 0.90 },
+    { technology = "rf-plant-efficiency-2", capture_efficiency = 0.925 },
+    { technology = "rf-plant-efficiency-3", capture_efficiency = 0.9375 },
+  },
   -- rf-reactor-energy's fuel_value. One unit, one megajoule.
   energy_fluid_j_per_unit = 1e6,
   -- What this reactor sells its output as. Stated on the spec rather than in control.lua because
@@ -624,6 +678,13 @@ M.aneutronic_reactor = {
   -- aneutronic reactor returns 190 MW of sellable fluid for the 200 MW spent heating it. Still
   -- negative, so still not a free loop -- but at 1.0 it would be, and there is no other term
   -- standing between this constant and perpetual motion.
+  --
+  -- AND IT IS NOT RESEARCHABLE, deliberately (#96, ADR 0020, decision 4). There is no
+  -- capture_ladder here and no capture_ceiling either: this tier already sits AT the neutronic
+  -- ladder's ceiling, so a line into it would have to raise the one number that keeps the loop
+  -- closed, on the tier that runs the margin tightest. The two routes converging to within 1.25
+  -- points is what makes CONTEXT.md's claim about direct energy conversion literally true; applying the
+  -- line here would preserve the ten-point gap that claim denies exists.
   capture_efficiency = 0.95,
   energy_fluid_j_per_unit = 1e6,
   energy_fluid = "rf-aneutronic-reactor-energy",
@@ -1071,6 +1132,60 @@ function M.confinement_time(spec, researched)
     end
   end
   return tau
+end
+
+--- What one force actually recovers of everything leaving this reactor's plasma (#96).
+--
+-- @param spec        reactor constants -- one without a capture_ladder simply never moves
+-- @param researched  function(technology_name) -> truthy when that force has it
+--
+-- The exact shape of M.confinement_time above, and the same reasoning applies line for line: the
+-- HIGHEST researched rung wins rather than the count of them, because a force granted level 3 from
+-- the console without the two below it has level 3, and the prerequisite chain is a player-facing
+-- ordering rather than something the simulation may assume held.
+--
+-- WHAT IT DOES NOT DO is put the answer on a spec. ADR 0020 decision 5 asks for an argument to
+-- step() instead, so that two forces running one reactor prototype do not need two copies of a
+-- constants table between them -- and step() therefore takes `capture` and defaults to
+-- spec.capture_efficiency, which keeps the unresearched value written down in exactly one place.
+function M.capture_efficiency(spec, researched)
+  local capture = spec.capture_efficiency
+  if spec.capture_ladder then
+    for _, rung in ipairs(spec.capture_ladder) do
+      if researched(rung.technology) then capture = rung.capture_efficiency end
+    end
+  end
+  return capture
+end
+
+--- The first plant-efficiency value at or above the ceiling, or nil when none is (#96).
+--
+-- @return nil, or a label for what broke and the value that broke it
+--
+-- THE ASYMPTOTE IS THE FREE-LOOP GUARD, so a rung that reaches the ceiling is not a balance
+-- mistake to be found in play -- it is the beginning of the walk to 1.0 that ADR 0020 exists to
+-- refuse, and at 1.0 a reactor that never fuses pays for its own heating for ever. Refusing to
+-- load is preferred to drifting, which is the ticket's own wording: a mod that will not start
+-- names the rung, where a save that has drifted names nothing at all.
+--
+-- IT CHECKS THE UNRESEARCHED VALUE TOO, and that is not padding: the ceiling is a property of the
+-- constant rather than of the ladder, and a spec whose base already sat at or above it would give
+-- a ladder that only ever moved downward -- or, with no ladder at all, a reactor at 1.0 that
+-- nothing here would look at.
+--
+-- Here rather than in control.lua for the reason M.plasma_bounds_fault is: the decision is
+-- arithmetic over a spec, so tests/test-reactor-logic.lua can watch it fire. control.lua supplies
+-- the loop over prototypes and the wording.
+function M.capture_ceiling_fault(spec)
+  local ceiling = spec.capture_ceiling
+  if not ceiling then return nil end
+  if spec.capture_efficiency >= ceiling then
+    return "its unresearched capture_efficiency", spec.capture_efficiency
+  end
+  for _, rung in ipairs(spec.capture_ladder or {}) do
+    if rung.capture_efficiency >= ceiling then return rung.technology, rung.capture_efficiency end
+  end
+  return nil
 end
 
 --- Run a reactor from cold until its temperature stops moving.

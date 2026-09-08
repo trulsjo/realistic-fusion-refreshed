@@ -170,6 +170,14 @@ output.**
   Krastorio 2 into `graphics/krastorio-2/virtual-signals/` is the established licensed pattern
   (LGPLv3, licence file and legal note alongside), so this is routine rather than a new question under
   [ADR 0001](0001-liftable-predecessor-material.md).
+  *(Taken 2026-09-09 with #95: `recycling.png` became `blanket-share.png`. Deliberately not
+  `energy-1.png`, which is the Q signal's bolt in another colour and sits beside it on one
+  combinator; the assets mod's `NOTICE.txt` records what was rejected and why.)*
+- **Shipped 2026-09-09 (#95).** `rf-signal-blanket-share` publishes on the reactor's existing
+  companion combinator, on the same cadence as temperature and Q. `scripts/check-blanket.ps1` reads
+  **22** off the wire on the `fitted` cell against the **21.85%** it meters out of the two fluid
+  boxes, and **0** on both the `bare` and the `sated` cells — no blanket and a stopped blanket giving
+  the same reading, which is "heat follows breeding" seen from the wire.
 - **An existing guard would have eaten the heat silently.** `control.lua` skips the energy write
   entirely when the reactor's own output is below `MIN_FLUID`, so a barely-fusing reactor's blanket
   heat would vanish. Summing before the threshold test fixes it, which is why the prefactor comes

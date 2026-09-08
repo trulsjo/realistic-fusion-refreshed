@@ -18,7 +18,7 @@
 
     IT DOES MORE THAN THE DATA STAGE, and the difference matters to anyone editing the
     simulation. Creating a map runs `on_init`, which is where control.lua's check_prototypes()
-    fires -- so this script enforces twelve invariants that no amount of prototype validation
+    fires -- so this script enforces thirteen invariants that no amount of prototype validation
     would catch:
 
       check_fuel_rows()           Every row of reactor-logic's fuel table declares the fields
@@ -50,6 +50,14 @@
                                   settles a full reactor at the top rung to find out, which is why
                                   it costs about 40 ms and why it is here rather than at the data
                                   stage.
+      check_plant_efficiency()    The plant-efficiency ladder against its own ceiling, and against
+                                  the technology prototypes it names. capture_efficiency is the
+                                  only term standing between this mod and perpetual motion (#96,
+                                  ADR 0020), and a research line into it is permitted only because
+                                  each rung halves the remaining gap to a ceiling below 1.0 -- so
+                                  a rung that reaches the ceiling is not a number that is too big,
+                                  it is the guard being switched off. Four comparisons, where
+                                  check_confinement_ladder above has to settle a plasma.
       check_plasma_bounds()       The simulation's temperature clamps against every plasma
                                   fluid's declared range, in BOTH directions. Widen the ceiling
                                   without the fluid and the mod loads perfectly, then throws on a
@@ -1763,7 +1771,7 @@ end
     # docstring above used to make: creating the map ran control.lua's check_prototypes() too.
     $how = if ($FromZips) { 'built zips' } else { 'junctioned repo directories' }
     Write-Host "OK - prototypes valid, every referenced asset present, map created, the"
-    Write-Host "     simulation's twelve load-time invariants hold, containment survived the"
+    Write-Host "     simulation's thirteen load-time invariants hold, containment survived the"
     Write-Host "     load and every render and mockup agrees with its machine, loading from $how."
     exit 0
 }
