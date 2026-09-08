@@ -768,7 +768,7 @@ output box `deposit()` actually writes into.
 |---|---|---:|---:|
 | `rf-pipe` | it *is* the run | 4000 | **4000** — the whole segment |
 | `rf-reactor` box 1 (plasma, `input-output`) | `rf-pipe` and other reactors | 4000 | **1000** — its own declared volume |
-| `rf-reactor` box 2 (energy, `output`) | 20 `pipe` and a `storage-tank` | 27000 | **1000** — its own declared volume |
+| `rf-reactor` box 2 (energy, `output`) — **a leg that no longer exists**, see below | 20 `pipe` and a `storage-tank` | 27000 | **1000** — its own declared volume |
 | `rf-isotope-collector` box 1 (tritium, `output`) | 20 `pipe` and a `storage-tank` | 27000 | **500** — its own declared volume |
 | `rf-reactor` box 2 (energy, `output`) *since #86* | a bolted `rf-heat-exchanger`, no pipe | — | **1000** — its own volume, not 1200 |
 
