@@ -1052,12 +1052,13 @@ near((1 - SPEC.capture_efficiency) / SPEC.capture_efficiency, 0.1765, 0.01,
 --
 -- ADR 0020 makes plant efficiency researchable, and research is per force. control.lua's SPECS is
 -- one table every reactor of a name shares, so the value cannot live there: it becomes an argument
--- to step(). NO TECHNOLOGY EXISTS YET -- #94 is the prefactor, and every force still reads
--- whatever its reactor's own spec declares -- so what is asserted here is the seam and not a
--- ladder.
+-- to step(). ~~NO TECHNOLOGY EXISTS YET~~ -- three do since #96, and the ladder they move is
+-- asserted in its own block below. What is asserted HERE is still the seam: that the argument
+-- reaches step() and does exactly one thing.
 --
--- 0.9375 is ADR 0020's third rung and is NOT shipped. It is used because it is the number the
--- decision names; anything else would have read as a value someone might go looking for.
+-- 0.9375 is ADR 0020's third rung. ~~and is NOT shipped~~ -- it is shipped since #96, which is why
+-- the block below reads it off the ladder rather than retyping it; here it is still a literal, so
+-- that this block goes on testing the argument even if the ladder is later shortened.
 local researched = L.step(SPEC, "rf-d-t-plasma", FULL, HOT, math.huge, TICK, 0.9375)
 near(researched.energy_units / dt_hot.energy_units, 0.9375 / SPEC.capture_efficiency, 1e-12,
   "capture efficiency reaches step() as an argument, and scales the sold energy by exactly itself")
@@ -1427,6 +1428,157 @@ check(select(1, pcall(L.confinement_ladder_overruns,
   "and so does a horizon too short for a single step")
 
 -- ----------------------------------------------------------------
+
+-- ---------------------------------------------------------- the plant-efficiency ladder (#96)
+--
+-- ADR 0020. Three technologies take capture_efficiency 0.85 -> 0.90 -> 0.925 -> 0.9375, each
+-- closing HALF the remaining distance to a ceiling of 0.95. The halving is the whole mechanism:
+-- halving a gap never closes it, so the free-loop guard holds structurally and there is no clamp
+-- to maintain. Everything here is arithmetic on the ladder plus the two functions control.lua
+-- reaches it through -- the resolver and the load guard's decision.
+
+local CAPTURE_LADDER = SPEC.capture_ladder
+check(type(CAPTURE_LADDER) == "table" and #CAPTURE_LADDER == 3,
+  "the neutronic reactor has a plant-efficiency ladder of exactly three rungs",
+  tostring(CAPTURE_LADDER and #CAPTURE_LADDER))
+check(ANEUTRONIC.capture_ladder == nil and ANEUTRONIC.capture_ceiling == nil,
+  "and the aneutronic reactor deliberately has neither ladder nor ceiling (ADR 0020, decision 4)")
+
+-- THE VALUES AS VALUES, which is the ticket's own wording. Pinned rather than derived, because
+-- these are the numbers a tooltip quotes and a player reads, and a test that recomputed them from
+-- the halving rule would agree with any ladder built by that rule rather than with this one.
+near(SPEC.capture_efficiency, 0.85, 0, "an unresearched force recovers 0.85")
+near(CAPTURE_LADDER[1].capture_efficiency, 0.90,   0, "level 1 takes it to 0.90")
+near(CAPTURE_LADDER[2].capture_efficiency, 0.925,  0, "level 2 to 0.925")
+near(CAPTURE_LADDER[3].capture_efficiency, 0.9375, 0, "and level 3 to 0.9375")
+near(SPEC.capture_ceiling, 0.95, 0, "against a ceiling of 0.95")
+
+-- AND AS A HALVING, which is the property the values are an instance of. Asserted separately from
+-- the values above so that changing one without the other fails rather than passes: a rung moved
+-- by hand would still be "a value", and this is what says it is still the right kind of value.
+local previous = SPEC.capture_efficiency
+for level, rung in ipairs(CAPTURE_LADDER) do
+  near(rung.capture_efficiency, previous + (SPEC.capture_ceiling - previous) / 2, 1e-12,
+    string.format("level %d closes exactly half the gap that was left", level))
+  previous = rung.capture_efficiency
+end
+
+-- NO LEVEL REACHES THE CEILING, which is the free-loop guard stated as arithmetic. It cannot be
+-- reached by halving, so this is a property rather than a coincidence -- but it is what
+-- control.lua's check_plant_efficiency refuses to load over, so it is asserted here as well.
+for level, rung in ipairs(CAPTURE_LADDER) do
+  check(rung.capture_efficiency < SPEC.capture_ceiling,
+    string.format("level %d stays under the ceiling", level),
+    string.format("%.6g against %.6g", rung.capture_efficiency, SPEC.capture_ceiling))
+  check(rung.capture_efficiency < 1,
+    string.format("and well under 1.0, where a reactor would pay for its own heating", level),
+    string.format("%.6g", rung.capture_efficiency))
+end
+
+-- THE TOTAL PRIZE, which is what ADR 0020 decision 2 turns on. TWO FIGURES, NOT ONE, and they are
+-- easy to conflate: +11.8% is what the CEILING allows any line into this constant to be worth
+-- (0.95/0.85), and +10.3% is what the three shipped rungs actually deliver (0.9375/0.85). The ADR
+-- quotes the first when it argues that an infinite research is calibrated for an unbounded reward;
+-- the second is what a player gets. Both are asserted so neither can be quoted as the other.
+near(SPEC.capture_ceiling / SPEC.capture_efficiency - 1, 0.1176, 0.001,
+  "the ceiling caps any line into this constant at +11.8% of what a reactor sells")
+near(CAPTURE_LADDER[3].capture_efficiency / SPEC.capture_efficiency - 1, 0.1029, 0.001,
+  "and the three shipped rungs take +10.3% of that, which is what a player gets")
+
+-- WHAT A FORCE ACTUALLY RUNS. The resolver control.lua calls on a cache miss, driven here with a
+-- plain predicate so that the decision is testable without a game.
+local function has(...)
+  local held = {}
+  for _, name in ipairs({ ... }) do held[name] = true end
+  return function(name) return held[name] end
+end
+near(L.capture_efficiency(SPEC, has()), 0.85, 0,
+  "a force with nothing researched runs the spec's own constant")
+near(L.capture_efficiency(SPEC, has("rf-plant-efficiency-1")), 0.90, 0, "level 1 moves it")
+near(L.capture_efficiency(SPEC, has("rf-plant-efficiency-1", "rf-plant-efficiency-2")), 0.925, 0,
+  "and level 2 on top of it")
+near(L.capture_efficiency(SPEC, has("rf-plant-efficiency-1", "rf-plant-efficiency-2",
+  "rf-plant-efficiency-3")), 0.9375, 0, "and the whole line reaches the top rung")
+-- THE HIGHEST RUNG WINS, NOT THE COUNT, which matters for a force granted level 3 from the console
+-- without the two below it. The prerequisite chain is a player-facing ordering and the simulation
+-- may not assume it held -- the same reasoning M.confinement_time is written under.
+near(L.capture_efficiency(SPEC, has("rf-plant-efficiency-3")), 0.9375, 0,
+  "a force granted only the top rung gets the top rung, not one level of anything")
+near(L.capture_efficiency(SPEC, has("rf-plant-efficiency-2")), 0.925, 0, "and only the middle one, the middle one")
+-- The aneutronic reactor has no ladder, so no amount of research moves it. This is ADR 0020's
+-- decision 4 as an assertion rather than as a comment.
+for _, name in ipairs({ "rf-plant-efficiency-1", "rf-plant-efficiency-2", "rf-plant-efficiency-3" }) do
+  near(L.capture_efficiency(ANEUTRONIC, has(name)), ANEUTRONIC.capture_efficiency, 0,
+    "the aneutronic reactor does not move for " .. name)
+end
+
+-- THE FREE LOOP AT LEVEL 3, which is the assertion the whole ceiling exists for, taken at the
+-- operating point that is WORST for the guard rather than at a convenient one.
+--
+-- "A cold reactor returns less than the heating it draws" is ADR 0020's phrasing and its arithmetic
+-- is the steady state: over a step where the plasma keeps nothing, everything the heating put in
+-- leaves again through left_j and is sold across capture_efficiency. A literally cold reactor
+-- returns far less than that, because most of the heating goes into warming the plasma -- so the
+-- bound is not tested there. It is tested at a plasma too THIN to fuse and already pinned at the
+-- temperature clamp, where nothing can be retained and the whole of the heating is sold. That is
+-- the maximum a non-fusing reactor can ever return, and it is 46.9 MW against 50 MW drawn.
+--
+-- One unit of plasma is 1e17 m^-3, a millionth of a full box's density squared, so the 515 W that
+-- does fuse is five orders below the heating and is noise rather than a term.
+local RATED_W = SPEC.heating_power_w
+local function never_fusing(capture)
+  local result = L.step(SPEC, "rf-d-d-plasma", 1, SPEC.max_temperature_c, math.huge, TICK, capture)
+  return result.energy_units * SPEC.energy_fluid_j_per_unit / TICK, result
+end
+local top_w, top = never_fusing(CAPTURE_LADDER[3].capture_efficiency)
+local base_w = never_fusing(SPEC.capture_efficiency)
+near(top_w, 46.875e6, 0.001,
+  "at level 3 a reactor that is not fusing returns 46.9 MW, which is ADR 0020's own figure")
+check(top_w < RATED_W,
+  "which is less than the 50 MW it draws, so the plant is not a free loop at the top of the line",
+  string.format("%.6g W against %.6g W", top_w, RATED_W))
+near(top_w / RATED_W, CAPTURE_LADDER[3].capture_efficiency, 1e-4,
+  "and the shortfall IS the capture efficiency, which is why the ceiling is the guard")
+check(top.fusion_power_w < 1e-3 * RATED_W,
+  "with fusion five orders below the heating, so this really is the non-fusing case",
+  string.format("%.6g W", top.fusion_power_w))
+near(base_w, 42.5e6, 0.001, "an unresearched force returns 42.5 MW at the same point")
+check(top_w > base_w,
+  "so research does move it -- toward the heating, and never to it",
+  string.format("%.6g W against %.6g W", top_w, base_w))
+-- The bound the asymptote sets, which is the sentence a fourth-rung proposal has to answer: the
+-- drain never falls below 5% of heating whatever is researched.
+check(SPEC.capture_ceiling * RATED_W < RATED_W,
+  "even a force at the ceiling itself would return less than it drew",
+  string.format("%.6g W against %.6g W", SPEC.capture_ceiling * RATED_W, RATED_W))
+
+-- THE DECISION control.lua's check_plant_efficiency MAKES, and the negative half of it. That guard
+-- refuses to load a rung at or above the ceiling; the comparison lives in reactor-logic so it can
+-- be broken here, because a guard nobody has watched fail is a guard nobody knows the shape of.
+check(L.capture_ceiling_fault(SPEC) == nil,
+  "the shipped ladder passes the guard, so load-check.ps1 is not being asked to load a refusal")
+check(L.capture_ceiling_fault(ANEUTRONIC) == nil,
+  "and a reactor with no ceiling at all is not a fault -- it simply has no line")
+local reaching = {
+  capture_efficiency = SPEC.capture_efficiency,
+  capture_ceiling = SPEC.capture_ceiling,
+  capture_ladder = {
+    { technology = "rf-plant-efficiency-1", capture_efficiency = 0.90 },
+    { technology = "rf-plant-efficiency-2", capture_efficiency = 0.95 },
+  },
+}
+local broke, value = L.capture_ceiling_fault(reaching)
+check(broke == "rf-plant-efficiency-2" and value == 0.95,
+  "a rung that ARRIVES at the ceiling is refused, and the refusal names it",
+  string.format("%s at %s", tostring(broke), tostring(value)))
+check(L.capture_ceiling_fault({
+    capture_efficiency = SPEC.capture_efficiency, capture_ceiling = SPEC.capture_ceiling,
+    capture_ladder = { { technology = "rf-plant-efficiency-1", capture_efficiency = 1.0 } },
+  }) == "rf-plant-efficiency-1",
+  "and so is one past it, which is the free loop itself")
+check(L.capture_ceiling_fault({ capture_efficiency = 0.99, capture_ceiling = SPEC.capture_ceiling })
+    == "its unresearched capture_efficiency",
+  "a spec whose UNRESEARCHED value already breaks the ceiling is refused too, ladder or no ladder")
 
 -- ---------------------------------------------------------------- the density curve (#74)
 --

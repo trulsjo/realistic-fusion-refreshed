@@ -257,10 +257,37 @@ Unmodified copies, renamed to the prototype they serve:
     The Q factor circuit signal. It used to wear the reactor energy fluid's icon, and was read in
     game as a quantity of that fluid; a ratio must not look like something that flows in a pipe.
 
+  virtual-signals/blanket-share.png <- icons/virtual-signals/recycling.png
+
+    The blanket share circuit signal (#95, ADR 0019): what fraction of a reactor's sold energy came
+    from its lithium blanket rather than from its plasma. A share is a ratio, so the same rule the
+    Q signal above is written under applies -- it must not look like a fluid.
+
+    NOT energy-1.png, which is the obvious pick and the wrong one: it is the same bolt as the Q
+    signal's energy-2.png in a different colour, and the two signals sit side by side on one
+    combinator. A recycling mark is also what a blanket does -- it catches neutrons that would
+    otherwise leave and sells them back -- so the icon says something rather than merely differing.
+
   technologies/tritium-breeding.png <- technologies/steel-fluid-tanks.png
 
     Capturing the isotopes a running D-D reactor breeds (#28). The technology unlocks the isotope
     collector and nothing else, and a vessel ringed with gas cylinders is what that machine is.
+
+  technologies/plant-efficiency.png <- technologies/energy-control-unit.png
+
+    The plant efficiency line (#96, ADR 0020). The three rungs share it, the way the confinement
+    ladder's three share rf-d-d-fusion's icon.
+
+    NOT rf-d-d-fusion's, which is what confinement.lua reuses and what this would otherwise have
+    taken: that would put THREE lines in one corner of the tree behind one picture, and the two
+    ladders hang off the same technology, so they would be indistinguishable at a glance. NOT
+    direct-energy-conversion.png either, obvious though the energy reading is -- that is the
+    aneutronic tier's icon and this line is deliberately neutronic-only, so borrowing it would say
+    the opposite of ADR 0020 decision 4. NOT steam-engine.png, which is a rusted Victorian engine
+    and reads as older technology rather than as an upgrade past a fusion reactor.
+
+    An abstract piece of plant machinery is what is wanted, because that is what the constant
+    covers: heat recovery AND the divertor, cryoplant and magnet power the model does not simulate.
 
   technologies/d-t.png              <- technologies/matter-processing.png
 

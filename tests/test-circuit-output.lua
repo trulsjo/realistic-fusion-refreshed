@@ -1,4 +1,4 @@
--- Tests for what a reactor reports: the two circuit signals and the status it shows.
+-- Tests for what a reactor reports: the three circuit signals and the status it shows.
 --
 -- Run from the repository root:   lua tests/test-circuit-output.lua
 --
@@ -58,6 +58,58 @@ equal(C.signals({ temperature_c = 15, q_factor = 2.1 }).q, 210, "Q is emitted as
 equal(C.signals({ temperature_c = 15, q_factor = 0 }).q, 0, "Q of zero is zero")
 equal(C.signals({ temperature_c = 15, q_factor = 0.997 }).q, 100,
   "Q just under break-even rounds to 100")
+
+-- ---------------------------------------------------------------- blanket share (#95, ADR 0019)
+--
+-- A SHARE OF THE TOTAL, not an uplift over a bare reactor. Both describe the same machine and the
+-- share is the one whose denominator a player can read off the fluid box; the uplift is recoverable
+-- from it as share / (1 - share), which is why only one of them is on the wire. The examples below
+-- are the same reactor read both ways, so the relationship is asserted rather than described.
+--
+-- A PERCENTAGE AND THEREFORE AN INTEGER, like Q. A signal is an int32 and Factorio throws rather
+-- than wrapping on a bad write, so every case here is checked for being a whole number as well as
+-- for its value -- including the ones that come out of a division that has no reason to be exact.
+local function share(reactor_units, blanket_units)
+  return C.signals({ temperature_c = 6.0e8, q_factor = 1.4, energy_units = reactor_units },
+    blanket_units).blanket_share
+end
+
+equal(share(100, 0), 0, "a reactor with no blanket reports a share of zero")
+equal(share(100, nil), 0, "and so does one whose blanket is simply not passed")
+equal(share(75, 25), 25, "a quarter of the total reads 25")
+equal(share(50, 50), 50, "half and half reads 50")
+equal(share(0, 40), 100, "and a reactor selling nothing of its own reads 100, which is the ceiling")
+
+-- THE SHIPPED MEASUREMENT, from #93's rig: a blanketed D-T reactor sells 28.0% more than the same
+-- reactor without one. That is an UPLIFT, so as a share it is 0.280 / 1.280 = 21.9% -- the two
+-- readings of one machine, and the reason the signal states which it carries.
+equal(share(1.0, 0.280), 22,
+  "the shipped +28.0% uplift reads as a share of 22, which is the same machine described twice")
+
+-- BOUNDED BY CONSTRUCTION rather than by a clamp, which is the whole of why the share was chosen
+-- over the uplift. There is no input to signals() that puts this outside 0..100 while both terms
+-- are non-negative, and a blanket cannot sell negative joules.
+equal(share(1e-9, 1e9), 100, "an extreme ratio still lands on the ceiling rather than past it")
+equal(share(1e9, 1e-9), 0, "and the other way round lands on the floor")
+
+-- ZERO RATHER THAN UNDEFINED at a zero denominator, inherited from reactivity.q_factor which makes
+-- the same choice for the same reason. An idle reactor is not "infinitely blanket-fed".
+equal(share(0, 0), 0, "a reactor selling nothing at all reports zero rather than a NaN")
+equal(C.signals(nil, 40).blanket_share, 0,
+  "and a reactor with nothing to simulate reports zero however much its blanket last sold")
+equal(C.signals({ temperature_c = 15, q_factor = 0 }).blanket_share, 0,
+  "an idle reactor reports zero, which is ADR 0019's stated reading")
+
+-- ROUNDING, stated because the signal is an integer and a share is not. to_signal rounds to
+-- nearest, so a third reads 33 and two thirds read 67 rather than both truncating downward.
+equal(share(2, 1), 33, "a third rounds down to 33")
+equal(share(1, 2), 67, "and two thirds round up to 67")
+for _, case in ipairs({ { 3, 7 }, { 1, 3 }, { 999, 1 }, { 1, 999 } }) do
+  local value = share(case[1], case[2])
+  check(value == math.floor(value) and value >= 0 and value <= 100,
+    string.format("a share of %g against %g is a whole number in 0..100", case[2], case[1]),
+    tostring(value))
+end
 
 -- ---------------------------------------------------------------- the int32 ceiling
 --

@@ -97,8 +97,9 @@ which:
 - **Scientific break-even** is `Q = 1`: the plasma releases as much fusion power as the heating put in.
   This is what "below break-even" means everywhere in `docs/adr/`, and D-D is below it at Q 0.32.
 - **Engineering break-even** is the plant paying for itself, which happens at
-  `Q ≥ (1 − capture_efficiency) / capture_efficiency` — **0.1765** at the shipped 0.85. D-D is *above*
-  it.
+  `Q ≥ (1 − capture_efficiency) / capture_efficiency` — **0.1765** at the unresearched 0.85. D-D is
+  *above* it. **The threshold moves with research** since #96: a force at the top of the plant
+  efficiency ladder needs only **0.0667**, so say which capture efficiency a quoted threshold assumes.
 
 A reactor between the two is fusing at a loss and selling at a profit, which is not a contradiction:
 the radiated X-rays heat the first wall and that heat is recovered. **D-D is exactly there.** Never
@@ -231,9 +232,13 @@ degrees**, so a pipe and a wire disagree by 1000× on purpose; say which one a q
 See [ADR 0025](docs/adr/0025-a-plasma-temperature-ships-in-kilodegrees.md).
 
 **Blanket share** — the fraction of a reactor's sold energy that came from its blanket rather than its
-plasma, exposed as a third circuit signal and expressed as a percentage of the **total**. Not the
-*uplift* over a bare reactor, which is a larger number for the same machine — uplift is recoverable as
-`share / (1 - share)` and is deliberately not what the signal carries.
+plasma, exposed as a third circuit signal (`rf-signal-blanket-share`) and expressed as a percentage of
+the **total**. Not the *uplift* over a bare reactor, which is a larger number for the same machine —
+uplift is recoverable as `share / (1 - share)` and is deliberately not what the signal carries. The
+shipped D-T blanket reads **22** on the wire, where the same machine's uplift is **+28.0%**; quoting
+either as the other is the mistake the distinction exists to stop. It reads **0** on a reactor with no
+blanket, on one whose collector is full, and on one that is not fusing — heat follows breeding, so
+everything that stops the tritium stops this too.
 
 **Tick cadence** — how often the simulation steps. Deliberately separate from the rate computation, so
 throttling is a configuration change. See ADR 0005. **It governs the simulation and not the
@@ -472,19 +477,26 @@ reads as jargon. **The neutronic route only** — direct energy conversion is no
 two routes converging is what makes this file's claim about direct energy conversion literally rather
 than approximately true.
 
-> **What of ADR 0019 and ADR 0020 has been built, as of 2026-09-08.** **Blanket breeding's second
-> product is shipped** (#93): a blanketed D-T reactor sells **+28.0%** more energy than the same
-> reactor without one, measured by `scripts/check-blanket.ps1`, and the heat follows the breeding —
-> a full collector sells none. **Blanket share is not.** No `rf-signal-blanket-share` exists, so the
-> figure above is a rig measurement rather than something a player can read off a wire.
+Say **ladder** and **rung** of it, the way the confinement ladder above is spoken of; the two lines
+hang off the same technology and a player chooses between them. **The ceiling is not a balance
+number.** Every rung is provisional and 0.95 is not: it is what keeps the asymptote an asymptote, and
+a proposal to raise it or to add a fourth rung is a proposal to walk `capture_efficiency` toward 1.0.
+Read ADR 0020's arithmetic before making one — the whole line is worth **+10.3%** of what a reactor
+sells and the ceiling caps any line at **+11.8%**, which is why it is finite rather than infinite.
+
+> **ADR 0019 and ADR 0020 are both built, as of 2026-09-09.** **Blanket breeding's second product is
+> shipped** (#93): a blanketed D-T reactor sells **+28.0%** more energy than the same reactor without
+> one, measured by `scripts/check-blanket.ps1`, and the heat follows the breeding — a full collector
+> sells none. **And a player can read the share off a wire** (#95): `rf-signal-blanket-share` rides
+> the reactor's own signals combinator beside plasma temperature and Q, and the same rig reads **22**
+> off it against the 21.85% it meters out of the two fluid boxes.
 >
-> **Plant efficiency is a term and not yet a technology.** No `rf-plant-efficiency` exists, so every
-> force still recovers whatever its reactor declares — 0.85 neutronic, 0.95 aneutronic — and that is
-> the same number for every force running the same reactor. What #94 built is the **seam and not a
-> difference**: capture efficiency reaches `step()` as an argument, resolved per force rather than
-> read off the one table every reactor of a name shares, so a later technology can raise it for one
-> force and leave the others where they are. Remove this note when the signal and the technologies
-> ship.
+> **Plant efficiency is three technologies** (#96): `rf-plant-efficiency-1/2/3` take a force's capture
+> efficiency 0.85 → 0.90 → 0.925 → 0.9375, each closing half the remaining gap to a ceiling of 0.95.
+> `scripts/check-efficiency.ps1` measures a fully researched force selling **1.102941×** what an
+> unresearched one sells from the same fuel — exactly the ratio of the two efficiencies — an
+> aneutronic reactor not moving at all, and a fully researched reactor that is not fusing returning
+> **46.8 MW against the 50 MW it draws**, which is the free-loop guard measured rather than argued.
 
 ## Predecessors
 

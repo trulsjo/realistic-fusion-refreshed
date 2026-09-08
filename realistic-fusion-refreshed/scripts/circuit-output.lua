@@ -1,6 +1,8 @@
--- What a reactor reports: two circuit signals and a status line.
+-- What a reactor reports: three circuit signals and a status line.
 --
--- Its own file per ADR 0010's layout, which names this as the whole of the v1 interface. There is
+-- Its own file per ADR 0010's layout, which names this as the whole of the v1 interface. Two of the
+-- three signals are that ADR's; the blanket share is ADR 0019's, and is recorded there as a
+-- departure from the stated set rather than as a drift into one (#95). There is
 -- no custom GUI, deliberately: GUI was 929 of the redesign's ~1,736 runtime lines, and the same
 -- values go out through the engine's own idiom for a fraction of that.
 --
@@ -116,10 +118,16 @@ function M.unrepresentable(temperature_c)
   return nil
 end
 
---- The two values a reactor puts on the wire.
+--- The three values a reactor puts on the wire.
 --
--- @param result  what reactor-logic.step returned
--- @return { temperature = int32, q = int32 }
+-- @param result         what reactor-logic.step returned
+-- @param blanket_units  what this reactor's blanket sold into the SAME energy box over the same
+--                       step, in the same units as result.energy_units -- so already across
+--                       capture_efficiency, which ADR 0019 decision 4 makes the blanket cross at
+--                       the reactor's own value. nil or 0 for a reactor with no blanket, one whose
+--                       collector had no room, and one whose blanket had no lithium: ADR 0019's
+--                       "heat follows breeding" means every gate that stops the tritium stops this.
+-- @return { temperature = int32, q = int32, blanket_share = int32 }
 --
 -- Temperature goes out in kilodegrees -- TEMPERATURE_SCALE above, which is where the scale and its
 -- cost are explained. ~~Whole degrees: the only scale that both fits int32 across the fluid's whole
@@ -129,10 +137,28 @@ end
 -- Q is dimensionless and fractional, and a signal is an integer, so it goes out as a percentage.
 -- That is not just to avoid truncating to 2: it makes "Q > 100" the decider condition for "is this
 -- reactor net positive", which is the question worth wiring.
-function M.signals(result)
+--
+-- BLANKET SHARE IS A SHARE AND NOT AN UPLIFT (#95, ADR 0019 decision 6):
+-- blanket / (reactor + blanket), as a percentage. Both readings describe the same machine and this
+-- is the one a player can check -- the denominator is what the energy box actually receives, and
+-- the value is bounded 0 to 100 by construction rather than by a clamp. The uplift reading
+-- (blanket / reactor) has a denominator that is displayed nowhere, is unbounded in principle, and
+-- reads highest on the tier where a blanket matters least. It stays recoverable from this one as
+-- share / (1 - share), which is what makes carrying only one of them enough.
+--
+-- ZERO WHEN THERE IS NOTHING TO TAKE A SHARE OF, rather than a NaN or an "undefined". That is
+-- inherited from reactivity.q_factor, which makes the same choice for the same reason at a zero
+-- denominator: a reactor that is off is not infinitely anything. to_signal would turn the NaN into
+-- a zero anyway -- the guard is here so the answer is a decision rather than a side effect of the
+-- clamp two functions away.
+function M.signals(result, blanket_units)
+  local reactor_units = result and result.energy_units or 0
+  local blanket = (result and blanket_units) or 0
+  local total = reactor_units + blanket
   return {
-    temperature = to_signal((result and result.temperature_c or 0) / TEMPERATURE_SCALE),
-    q           = to_signal((result and result.q_factor or 0) * 100),
+    temperature   = to_signal((result and result.temperature_c or 0) / TEMPERATURE_SCALE),
+    q             = to_signal((result and result.q_factor or 0) * 100),
+    blanket_share = to_signal(total > 0 and (blanket / total * 100) or 0),
   }
 end
 
@@ -260,8 +286,9 @@ local function combinator_for(entity)
   return entity.name .. COMBINATOR_SUFFIX
 end
 
-local TEMPERATURE_SIGNAL = { type = "virtual", name = "rf-signal-plasma-temperature", quality = "normal" }
-local Q_SIGNAL           = { type = "virtual", name = "rf-signal-q-factor", quality = "normal" }
+local TEMPERATURE_SIGNAL   = { type = "virtual", name = "rf-signal-plasma-temperature", quality = "normal" }
+local Q_SIGNAL             = { type = "virtual", name = "rf-signal-q-factor", quality = "normal" }
+local BLANKET_SHARE_SIGNAL = { type = "virtual", name = "rf-signal-blanket-share", quality = "normal" }
 -- quality is not decoration. Without it set_slot rejects the filter with "Can't specify non zero
 -- request with non trivial item filter condition", because a SignalFilter that leaves quality open
 -- is a condition rather than a single signal. Probed; the docs do not say so.
@@ -300,6 +327,7 @@ end
 -- @param fill    how full its input box is, 0 to 1, or nil
 -- @param spec    the reactor's constants, as its own force runs them
 -- @param curve   that spec and plasma's density curve, or nil
+-- @param blanket_units  what this reactor's blanket sold last time apply() ran, or nil (#95)
 --
 -- Called on the reporting cadence, not the simulation one. control.lua owns both; see the note on
 -- REPORT_EVERY there for why they are different numbers.
@@ -308,7 +336,7 @@ end
 -- bookkeeping and no caller has a reason to know about it. status() needs it for the starved
 -- latch -- see the note there -- and nothing else does. Stored per unit_number beside the
 -- combinator register and dropped by the same forget(), so it cannot outlive its reactor.
-function M.publish(entity, result, fill, spec, curve)
+function M.publish(entity, result, fill, spec, curve, blanket_units)
   storage.reactor_status = storage.reactor_status or {}
   local status = M.status(result, fill, spec, curve, storage.reactor_status[entity.unit_number])
   storage.reactor_status[entity.unit_number] = status.key
@@ -328,13 +356,14 @@ function M.publish(entity, result, fill, spec, curve)
   local section = section_for(entity)
   if not section then return end
 
-  local signals = M.signals(result)
-  -- Assigned wholesale rather than slot by slot: it is one API call instead of two, and it drops
+  local signals = M.signals(result, blanket_units)
+  -- Assigned wholesale rather than slot by slot: it is one API call instead of three, and it drops
   -- any slot a player has added by opening the combinator, which keeps what is on the wire the
   -- reactor's own account of itself.
   section.filters = {
-    { value = TEMPERATURE_SIGNAL, min = signals.temperature },
-    { value = Q_SIGNAL,           min = signals.q },
+    { value = TEMPERATURE_SIGNAL,   min = signals.temperature },
+    { value = Q_SIGNAL,             min = signals.q },
+    { value = BLANKET_SHARE_SIGNAL, min = signals.blanket_share },
   }
 end
 

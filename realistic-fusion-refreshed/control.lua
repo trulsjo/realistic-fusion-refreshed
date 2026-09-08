@@ -82,11 +82,16 @@ end
 -- researchable (ADR 0020, decision 4). A single value per force would have quietly given an
 -- aneutronic reactor the other tier's efficiency.
 --
--- NOTHING MOVES IT YET, AND THAT IS #94's WHOLE POINT. rf-plant-efficiency does not exist, so
--- capture_for() below fills every entry from the reactor's own spec constant and this cache holds
--- two distinct values on the whole map -- 0.85 and 0.95, one per reactor prototype. It is the seam
--- rather than the saving: when the technologies land, the ladder walk goes in capture_for() and no
--- call site or signature changes with it.
+-- ~~NOTHING MOVES IT YET, AND THAT IS #94's WHOLE POINT.~~ #96 landed the technologies, and the
+-- prediction held: the ladder walk went into capture_for() below, on the cache-miss path, and no
+-- call site and no signature changed with it. What the cache now holds is up to four values per
+-- reactor prototype -- 0.85, 0.90, 0.925, 0.9375 -- one per force according to how far up
+-- rf-plant-efficiency that force has researched.
+--
+-- ONLY THE NEUTRONIC REACTOR REACHES IT. rf-aneutronic-reactor has no capture_ladder (ADR 0020,
+-- decision 4), so capture_for() returns its constant before touching this table at all -- which is
+-- why keying by prototype was the right call in #94 and would still be if a second researchable
+-- reactor arrived tomorrow.
 --
 -- NOT IN `storage`, for the reason force_specs is not: Factorio rebuilds the Lua state on every
 -- load, so this starts empty every time and is refilled on the first tick after a load -- from the
@@ -144,6 +149,12 @@ end
 -- asked. Nothing allocates, and that part IS clean: luaGarbageIncremental went 94.3/97.7 against
 -- 95.3/92.6 -- higher in one pair, lower in the other, so no direction at all.
 local function capture_for(entity, spec)
+  -- A reactor no technology moves -- rf-aneutronic-reactor, deliberately (ADR 0020 decision 4) --
+  -- never touches the cache at all, which is the same early return spec_for makes above and for
+  -- the same reason: there is nothing per force to remember about a constant that is the same for
+  -- every force.
+  if not spec.capture_ladder then return spec.capture_efficiency end
+
   local by_force = force_capture[entity.force_index]
   if not by_force then
     by_force = {}
@@ -151,7 +162,17 @@ local function capture_for(entity, spec)
   end
   local capture = by_force[entity.name]
   if not capture then
-    capture = spec.capture_efficiency
+    -- THE LADDER WALK #94 LEFT ROOM FOR, landed by #96 exactly where that ticket said it would go:
+    -- on a cache miss, never in the loop. entity.force is fetched only here, which for a settled
+    -- game is never -- the whole reason force_index is used everywhere else on this path.
+    capture = logic.capture_efficiency(spec, function(name)
+      local technology = entity.force.technologies[name]
+      -- Guarded rather than indexed, the way derive() above guards the confinement ladder: a rung
+      -- whose technology prototype is missing is a developer error, and the useful behaviour is
+      -- that the force simply has not researched it. check_plant_efficiency() below is what
+      -- refuses to load over it, once, with a message.
+      return technology ~= nil and technology.researched
+    end)
     by_force[entity.name] = capture
   end
   return capture
@@ -515,6 +536,27 @@ local function blanket_breed(entity, spec, neutrons, headroom)
   return bred.tritium_units, bred.joules
 end
 
+-- WHAT EACH REACTOR'S BLANKET SOLD, so the wire can report a share of it (#95, ADR 0019).
+--
+-- [unit_number] -> units of energy fluid the blanket added to that reactor's own output, last time
+-- apply() ran. In the SAME units as result.energy_units and already across capture_efficiency, so
+-- circuit-output's signals() divides two numbers of one kind and owns the whole of the arithmetic.
+--
+-- IT IS A STEP BEHIND WHAT publish() REPORTS, and that is a property of the two-pass shape rather
+-- than an oversight. update() reads and reports in its first pass and writes in its second, so the
+-- share published at a step is the one apply() computed at the previous one -- 6 ticks earlier
+-- against a reporting cadence of 30. Both terms are per-step quantities over the same interval, so
+-- at any settled operating point the ratio is the same one; during a transient it lags by a step.
+-- Reporting from the read pass is deliberate and older than this (see the note in update()): a
+-- reactor with nothing to simulate has no entry in the write pass at all, and "starved" is exactly
+-- the state worth showing.
+--
+-- NOT IN `storage`, for the reason the force caches are not: it is refilled within one step of a
+-- load, from the world rather than from anything a save carries, and a stored value could only go
+-- stale. A blanket that stops breeding writes a 0 here rather than leaving its last number behind,
+-- which is what makes a full collector read 0 on the wire and not "whatever it last managed".
+local blanket_sold = {}
+
 --- Apply one reactor's step to the world.
 --
 -- @param capture  what this reactor's owner recovers, as update() resolved it (#94). Wanted here
@@ -602,6 +644,11 @@ local function apply(entity, spec, plasma, result, capture)
   -- this function rather than now (#92). The second term arrived with #93: the blanket's capture
   -- heat is bred below and could not reach this box at all while the write came first.
   local sold = result.energy_units
+  -- And how much of that came from the blanket, kept apart so the wire can report the share (#95).
+  -- Zero here rather than only where it is set, so every path through this function leaves a number
+  -- behind: a blanket that was breeding a moment ago and is now stopped -- collector full, lithium
+  -- out, blanket mined -- must publish 0 rather than keep its last reading on the wire.
+  local blanket_units = 0
 
   -- What the reaction bred, if there is anywhere to put it. A reactor with no collector simply
   -- vents it: the by-products are computed either way, so bolting one on later starts collecting
@@ -669,10 +716,18 @@ local function apply(entity, spec, plasma, result, capture)
       -- already in result.energy_units at step()'s (fusion_j - charged_j). reactor-logic's
       -- capture_energy_j says what importing a published energy multiplication factor here would
       -- have cost instead, and docs/research/blanket-capture-energy.md derives the figure.
-      sold = sold + bred_j * capture / spec.energy_fluid_j_per_unit
+      blanket_units = bred_j * capture / spec.energy_fluid_j_per_unit
+      sold = sold + blanket_units
     end
     if products then deposit(collector, products) end
   end
+
+  -- Recorded before the write below rather than after it, so the share describes what the step
+  -- PRODUCED and not what fitted in the box. The write below discards whatever overflows, and
+  -- overflow is a throughput limit on the whole output rather than something the blanket did -- a
+  -- reactor whose heat is not being carried away is still getting the same fraction of it from its
+  -- blanket, and that is what the signal is for.
+  blanket_sold[entity.unit_number] = blanket_units
 
   -- MIN_FLUID, not zero, and for the same reason deposit() uses it: a reactor that is barely
   -- fusing computes a positive output too small for the engine to accept as a fluid amount, and
@@ -873,9 +928,13 @@ local function update()
       -- would otherwise be judged against another one's volume. The curve is swept once per
       -- confinement rung per reactor and plasma, never per force; on the reporting cadence it is
       -- three table lookups.
+      -- And what its blanket last sold, for the share signal (#95). Guarded on `result` for the
+      -- same reason the accumulator below is: a reactor with nothing to simulate is not selling
+      -- anything this step, so a stale number from before it ran dry would be a share of nothing.
       if reporting then
         circuit.publish(entity, result, plasma and (plasma.amount / plasma_capacity(entity.name)),
-          spec, curve_for(entity, spec, plasma and plasma.name))
+          spec, curve_for(entity, spec, plasma and plasma.name),
+          result and blanket_sold[unit_number])
       end
 
       if result then
@@ -894,6 +953,9 @@ local function update()
       -- The reactor's signals combinator is invisible, unminable and still on the wire if it
       -- outlives the reactor, so it goes at the same moment and by the same test.
       circuit.forget(unit_number)
+      -- And its blanket's last sale, by the same test, so the table cannot grow one entry per
+      -- reactor that has ever existed on the map (#95).
+      blanket_sold[unit_number] = nil
     end
   end
 
@@ -1722,11 +1784,54 @@ local function check_confinement_ladder()
   end
 end
 
+--- Refuse to load a plant-efficiency ladder that reaches its own ceiling (#96, ADR 0020).
+--
+-- THE SIBLING OF check_confinement_ladder ABOVE, and a much cheaper one: that guard has to settle
+-- a plasma for twenty minutes of game time to find out where a rung lands, and this one compares
+-- four numbers. They are here for the same reason, though, and it is not balance. ADR 0020 permits
+-- a research line into capture_efficiency ONLY because each rung halves the remaining gap to a
+-- ceiling below 1.0 -- and capture_efficiency is the only term standing between this mod and
+-- perpetual motion, so a rung that reaches the ceiling is not a number that is too big, it is the
+-- guard being switched off. "Refusing to load is preferred to drifting" is the ticket's wording:
+-- a mod that will not start names the rung and the file it is in, where a save that has drifted
+-- quietly pays a player back more than they spent.
+--
+-- OVER EVERY SPEC, because the ceiling lives on the spec and a second reactor may declare its own.
+-- Only rf-reactor has a ladder today, so this checks two specs to prove one thing -- and the day a
+-- tier is given one, it is the rung someone forgot that this names.
+local function check_plant_efficiency()
+  for name, spec in pairs(SPECS) do
+    local broke, value = logic.capture_ceiling_fault(spec)
+    if broke then
+      error(string.format(
+        "%s: %s is %.6g, which is at or above the plant-efficiency ceiling of %.6g. The ceiling is " ..
+        "not a balance number -- capture_efficiency is the only term standing between this mod and " ..
+        "perpetual motion, and ADR 0020 permits a research line into it only because each rung " ..
+        "halves the remaining gap and therefore never arrives. Lower the value in " ..
+        "scripts/reactor-logic.lua, or read ADR 0020's arithmetic before raising capture_ceiling.",
+        name, broke, value, spec.capture_ceiling))
+    end
+    -- The prototypes the ladder names have to exist, for the reason check_confinement_ladder gives
+    -- about its own: capture_for() reads force.technologies tolerantly, so a rung nobody can
+    -- research is not an error there -- it is a line that quietly stops one short.
+    for _, rung in ipairs(spec.capture_ladder or {}) do
+      if not prototypes.technology[rung.technology] then
+        error(string.format(
+          "%s: the plant-efficiency ladder names the technology '%s', which no loaded mod defines " ..
+          "-- so no force could ever recover %.6g of what leaves its plasma. Reconcile " ..
+          "scripts/reactor-logic.lua with prototypes/technology/efficiency.lua.",
+          name, rung.technology, rung.capture_efficiency))
+      end
+    end
+  end
+end
+
 local function check_prototypes()
   check_fuel_rows()
   check_reactor_specs()
   check_input_flow()
   check_confinement_ladder()
+  check_plant_efficiency()
   check_plasma_bounds()
   check_signal_ceiling()
   check_every_plasma_burns()

@@ -2042,7 +2042,7 @@ local function has_sentinel(section)
   return false
 end
 
--- Appended to what is already there rather than replacing it, so the reactor's own two signals are
+-- Appended to what is already there rather than replacing it, so the reactor's own signals are
 -- still on the wire while the sentinel sits beside them. publish() drops the lot on its next run,
 -- which is exactly what is being detected.
 local function plant(entity)

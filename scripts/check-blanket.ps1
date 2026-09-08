@@ -10,6 +10,13 @@
     around it catches them and breeds tritium. tests/test-reactor-logic.lua asserts the arithmetic;
     this asserts that the arithmetic reaches a pipe, spends an item, and stops when it should.
 
+    AND, SINCE #95, THAT A PLAYER CAN READ THE RESULT OFF A WIRE. rf-signal-blanket-share is
+    published on the reactor's own signals combinator, and the `fitted`, `bare` and `sated` cells
+    already here are exactly the three readings it has to give: a share of the total on a breeding
+    reactor, and zero on one with no blanket and on one whose blanket is stopped. The value is
+    cross-checked against this rig's own fluid-box metering rather than pinned to a figure, so two
+    independent routes have to agree on one number.
+
     WHY THE TRITIUM COMES OUT OF THE COLLECTOR
 
     The blanket is a plain container -- lithium is an item, so it needs an inventory and nothing
@@ -186,6 +193,35 @@ local function holds(entity, fluid)
     if contents and contents.name == fluid then total = total + contents.amount end
   end
   return total
+end
+
+-- WHAT A REACTOR PUBLISHES ON THE WIRE (#95, ADR 0019). rf-reactor is a boiler and a boiler carries
+-- no circuit connector, so a reactor's signals ride a companion constant combinator that
+-- scripts/circuit-output.lua creates at the reactor's own position. This rig reads that section
+-- directly rather than dragging a wire: check-observability.ps1 owns the question of whether a wire
+-- can be attached at all, and asking it twice would be two rigs to keep in step over one claim.
+local COMBINATOR    = "rf-reactor-signals"
+local BLANKET_SHARE = "rf-signal-blanket-share"
+
+--- The blanket share this reactor is publishing, or nil if it is publishing none.
+--
+-- nil and 0 are DIFFERENT ANSWERS here and are kept apart on purpose. A signal that is absent means
+-- the reactor never published one -- a prototype renamed, a filter dropped -- and a signal of 0
+-- means it published a share of nothing, which is the correct reading for a reactor with no
+-- blanket. A helper that returned 0 for both would pass the `bare` check below on a mod that had
+-- stopped emitting the signal entirely, which is the failure worth catching.
+local function published_share(reactor)
+  local found = reactor.surface.find_entities_filtered({
+    name = COMBINATOR, position = reactor.position,
+  })
+  local combinator = found[1]
+  if not (combinator and combinator.valid) then return nil end
+  local behavior = combinator.get_control_behavior()
+  local section = behavior and behavior.sections_count > 0 and behavior.get_section(1)
+  for _, filter in pairs(section and section.filters or {}) do
+    if filter.value and filter.value.name == BLANKET_SHARE then return filter.min end
+  end
+  return nil
 end
 
 --- Everything within `radius` of an entity that is holding one fluid.
@@ -897,6 +933,48 @@ script.on_nth_tick(CHECK_AT, function()
     string.format("%.6g against %.6g units -- +%.2f%%",
       fitted_sold, sated_sold, 100 * (fitted_sold / sated_sold - 1)))
 
+  -- ------------------------------------------------------------ and it is on a wire (#95)
+  --
+  -- ADR 0019's third signal, read off the reactor's own combinator on this map. The unit tests own
+  -- what the arithmetic does; this owns that a player can see it, which is a different claim and
+  -- the one nothing outside a game can make.
+  --
+  -- THE VALUE IS CROSS-CHECKED AGAINST THIS RIG'S OWN METERING rather than pinned to a number.
+  -- share = blanket / (reactor + blanket), and the two cells above measure exactly that from the
+  -- other side: (fitted_sold - bare_sold) / fitted_sold is the same quantity, arrived at by
+  -- draining fluid boxes rather than by reading a signal. Two independent routes to one number is
+  -- worth more than either against a constant, and it cannot rot the way a pinned figure does when
+  -- the plasma settles somewhere else.
+  --
+  -- The tolerance is wide and one-sided in neither direction, because the two are not the same
+  -- window: the metered figure is cumulative over the whole run, including the cooler minute at the
+  -- start, and the signal is the last step. Five points apart is far tighter than the gap between
+  -- "the signal works" and any of the ways it could be wrong.
+  local fitted_share = published_share(r.fitted)
+  local metered_share = 100 * (fitted_sold - bare_sold) / fitted_sold
+  record(fitted_share ~= nil,
+    "a blanketed reactor publishes a blanket share signal at all",
+    tostring(fitted_share))
+  record((fitted_share or 0) > 0,
+    "and it is non-zero on a reactor that is actually breeding",
+    string.format("%s%%", tostring(fitted_share)))
+  record(fitted_share ~= nil and math.abs(fitted_share - metered_share) <= 5,
+    "and it agrees with what this rig metered out of the two fluid boxes",
+    string.format("%s%% on the wire against %.2f%% metered",
+      tostring(fitted_share), metered_share))
+
+  -- THE ZERO CASES, and there are two of them for the reason there are two of them in the block
+  -- above: no blanket at all, and a blanket that has been stopped. Both must read 0 rather than
+  -- read nothing -- see published_share on why that distinction is the check.
+  local bare_share = published_share(r.bare)
+  record(bare_share == 0,
+    "a reactor with no blanket publishes a share of zero, rather than no share at all",
+    tostring(bare_share))
+  local sated_share = published_share(r.sated)
+  record(sated_share == 0,
+    "and so does one whose blanket is stopped by a full collector -- heat follows breeding",
+    tostring(sated_share))
+
   -- ------------------------------------------------------------ losing the blanket
   record(not r.pulled_blanket.valid, "the pulled reactor's blanket really was destroyed")
   local pulled_plasma = r.pulled.fluidbox[1]
@@ -1006,8 +1084,8 @@ try {
 
     Write-Host ''
     Write-Host 'OK - a lithium blanket breeds tritium from a running reactor, sells the heat those'
-    Write-Host '     captures release, buys none its collector cannot take, and taking it off'
-    Write-Host '     leaves the reactor working.'
+    Write-Host '     captures release, puts its share of the output on a wire, buys no tritium its'
+    Write-Host '     collector cannot take, and taking it off leaves the reactor working.'
 }
 finally {
     if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }

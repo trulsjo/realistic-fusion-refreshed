@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Checks that a reactor actually reports itself -- status line, both signals, on a real wire.
+    Checks that a reactor actually reports itself -- status line, all three signals, on a real wire.
     Discharges the half of #25 that unit tests cannot reach.
 
 .DESCRIPTION
@@ -153,6 +153,12 @@ function Write-Rig {
 local COMBINATOR = "rf-reactor-signals"
 local TEMPERATURE = { type = "virtual", name = "rf-signal-plasma-temperature", quality = "normal" }
 local Q_FACTOR    = { type = "virtual", name = "rf-signal-q-factor", quality = "normal" }
+-- The third signal (#95, ADR 0019). None of the reactors here has a blanket, so every one of them
+-- reads 0 -- which is worth asserting rather than skipping: the reading a bare reactor gives is
+-- half of what the signal means, and check-blanket.ps1 owns the other half on a machine that
+-- actually breeds. Zero-valued signals never reach a network, so this one is asked of the
+-- combinator's own section below and not of the wire.
+local BLANKET_SHARE = { type = "virtual", name = "rf-signal-blanket-share", quality = "normal" }
 local RED = defines.wire_connector_id.circuit_red
 
 -- READ OFF THE MOD, not retyped (#57). A wire carries thousands of degrees while a fluidbox reports
@@ -365,8 +371,19 @@ local function wire_everything()
       for _, filter in pairs(section and section.filters or {}) do
         if filter.value then declared[filter.value.name] = true end
       end
-      record(declared[TEMPERATURE.name] and declared[Q_FACTOR.name] or false,
-        name .. ": the reactor publishes both signals, whatever their values")
+      record(declared[TEMPERATURE.name] and declared[Q_FACTOR.name]
+        and declared[BLANKET_SHARE.name] or false,
+        name .. ": the reactor publishes all three signals, whatever their values")
+      -- A BARE REACTOR'S SHARE IS ZERO, and there is no blanket anywhere on this map -- so the
+      -- filter has to be present AND its value has to be 0. A signal published at whatever the
+      -- reactor last happened to compute would pass the line above and fail here.
+      local share_value
+      for _, filter in pairs(section and section.filters or {}) do
+        if filter.value and filter.value.name == BLANKET_SHARE.name then share_value = filter.min end
+      end
+      record(share_value == 0,
+        name .. ": and reports a blanket share of zero, having no blanket",
+        tostring(share_value))
     end
   end
 end
@@ -641,7 +658,7 @@ try {
     if ($verdict -notmatch '^PASS') { throw "reactor observability is broken: $verdict" }
 
     Write-Host ''
-    Write-Host 'OK - status line, both signals, and a wire a player could have dragged.'
+    Write-Host 'OK - status line, all three signals, and a wire a player could have dragged.'
 }
 finally {
     if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }
