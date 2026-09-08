@@ -1570,9 +1570,17 @@ function Write-BrownoutReport {
             Net  = $net[$label]
             T    = $endTo.T
             U    = $endTo.U
+            # The LIT operating point, as opposed to the end-of-shortfall one two lines up (#109).
+            # Carried so the prose below can quote the state a "MW lit" figure was taken in without
+            # hardcoding it into a file whose own header says every run overwrites it -- which is the
+            # exact drift this whole ticket is about, and which the first version of that paragraph
+            # committed.
+            LitT = $litTo.T
+            LitU = $litTo.U
             Final = $last.T
         }
     }
+    $dd = $rows | Where-Object { $_.Cell -eq 'dd' } | Select-Object -First 1
 
     $table = foreach ($row in $rows) {
         '| `{0}` | {1} | {2} | {3} | {4} | {5} | {6} |' -f $row.Cell,
@@ -1704,9 +1712,16 @@ across the whole shortfall.
 ``CONTEXT.md`` names under **operating point** and the thing that made ``dd`` look like it contradicted
 the rest of the repository (#109). These reactors are held by a heater that cannot fill them, so every
 one of them is supply-limited -- the cell readings above say ``reactor low_power, heater low_power`` --
-and a thinner plasma settles hotter and sells more. ``dd``'s 85.2 MW is a D-D reactor at **589.7 units
-and 1.1e+09 C**; the same reactor sitting FULL at its own equilibrium is 1000 units at 2.42e+08 C and
-sells **56.1 MW**. Both are right, and neither is the other.
+and a thinner plasma settles hotter and sells more. This run's ``dd`` cell was lit at
+**$('{0:0.#}' -f $dd.LitU) units and $('{0:0.###e+0}' -f $dd.LitT) C**, selling
+**$('{0:0.##}' -f $dd.Lit) MW**. The same reactor sitting FULL at its own equilibrium sells far
+less; ``CONTEXT.md`` carries that figure, because it is a property of the simulation rather than of
+this rig and nothing here measures it. Both are right, and neither is the other.
+
+Every figure in this paragraph comes out of the run above rather than being typed here, which is the
+same rule the table obeys and the reason this file says not to edit it: the ``dd`` row has moved
+three times in three weeks with its operating point moving underneath it, and a hand-written
+sentence beside a generated table is how the two come to disagree.
 
 The rig asserts that ``full``'s output had stopped climbing before the shortfall began, because every
 ratio in this column divides by it. ``dd`` is the one cell deliberately left unconverged -- a D-D plasma

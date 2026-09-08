@@ -1053,8 +1053,14 @@ owns it, and observing it is a different ticket.
 
 ## Observability (#25)
 
-Reactors now publish a status line and two circuit signals. That is per-reactor work in the tick
-path, so it moves the number this note exists to record.
+Reactors now publish a status line and ~~two~~ **three** circuit signals — the third arrived with
+[#95](https://github.com/trulsjo/realistic-fusion-refreshed/issues/95), after these figures were
+taken. That is per-reactor work in the tick path, so it moves the number this note exists to record.
+
+**The figures below are for two**, and the third was not re-measured: it is one more entry in the
+one `section.filters` assignment publish() already makes — the write is wholesale rather than slot
+by slot, so the API crossing this note blames the cost on is unchanged in number. Read the table as
+a floor rather than as a measurement of what ships.
 
 | | per reactor | share of a tick at n = 200 |
 |---|---:|---:|

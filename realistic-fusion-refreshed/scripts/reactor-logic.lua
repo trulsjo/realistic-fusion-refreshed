@@ -1158,9 +1158,9 @@ function M.capture_efficiency(spec, researched)
   return capture
 end
 
---- The first plant-efficiency value at or above the ceiling, or nil when none is (#96).
+--- The first capture efficiency at or above this spec's ceiling, or nil when none is (#96).
 --
--- @return nil, or a label for what broke and the value that broke it
+-- @return nil, or a label for what broke, the value that broke it, and the ceiling it broke
 --
 -- THE ASYMPTOTE IS THE FREE-LOOP GUARD, so a rung that reaches the ceiling is not a balance
 -- mistake to be found in play -- it is the beginning of the walk to 1.0 that ADR 0020 exists to
@@ -1170,20 +1170,31 @@ end
 --
 -- IT CHECKS THE UNRESEARCHED VALUE TOO, and that is not padding: the ceiling is a property of the
 -- constant rather than of the ladder, and a spec whose base already sat at or above it would give
--- a ladder that only ever moved downward -- or, with no ladder at all, a reactor at 1.0 that
--- nothing here would look at.
+-- a ladder that only ever moved downward.
+--
+-- AND A SPEC WITH NO capture_ceiling IS STILL BOUNDED, AT 1.0. That was the whole of a defect
+-- found in review: this returned nil for any spec that declared no ceiling, which is exactly
+-- M.aneutronic_reactor -- the spec with the HIGHEST shipped capture and the tightest margin in the
+-- mod, 190 MW back for 200 MW spent. The comment above claimed to cover "a reactor at 1.0 that
+-- nothing here would look at" and the first line made that false for the only spec it described.
+--
+-- 1.0 rather than a ceiling declared on that spec, deliberately: a ceiling is what a RESEARCH LINE
+-- may approach, and ADR 0020 decision 4 gives the aneutronic tier none. What every reactor shares
+-- is the free loop itself, which is not a balance number and belongs to no ladder. So an absent
+-- ceiling means "no line, bounded only by physics" rather than "unchecked".
 --
 -- Here rather than in control.lua for the reason M.plasma_bounds_fault is: the decision is
 -- arithmetic over a spec, so tests/test-reactor-logic.lua can watch it fire. control.lua supplies
 -- the loop over prototypes and the wording.
 function M.capture_ceiling_fault(spec)
-  local ceiling = spec.capture_ceiling
-  if not ceiling then return nil end
+  local ceiling = spec.capture_ceiling or 1
   if spec.capture_efficiency >= ceiling then
-    return "its unresearched capture_efficiency", spec.capture_efficiency
+    return "its unresearched capture_efficiency", spec.capture_efficiency, ceiling
   end
   for _, rung in ipairs(spec.capture_ladder or {}) do
-    if rung.capture_efficiency >= ceiling then return rung.technology, rung.capture_efficiency end
+    if rung.capture_efficiency >= ceiling then
+      return rung.technology, rung.capture_efficiency, ceiling
+    end
   end
   return nil
 end

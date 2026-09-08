@@ -561,8 +561,11 @@ local blanket_sold = {}
 --
 -- @param capture  what this reactor's owner recovers, as update() resolved it (#94). Wanted here
 --                 as well as in step() because the blanket's capture heat crosses the SAME value
---                 rather than one of its own -- 0.85 on the only reactor a blanket can breed on.
---                 ADR 0019 decision 4 refused the blanket a higher figure, on the grounds that
+--                 rather than one of its own. ~~0.85 on the only reactor a blanket can breed on.~~
+--                 It is 0.85 only for a force that has researched no plant efficiency (#96): the
+--                 blanket's contribution rises with rf-plant-efficiency exactly as the reactor's
+--                 does, which is why ADR 0020 records blanket share as invariant under that line.
+--                 ADR 0019 decision 4 refused the blanket a figure of its own, on the grounds that
 --                 capture_efficiency is the only term standing between this mod and a free loop
 --                 and every additional instance of it is another number a balance pass can drift.
 local function apply(entity, spec, plasma, result, capture)
@@ -648,6 +651,12 @@ local function apply(entity, spec, plasma, result, capture)
   -- Zero here rather than only where it is set, so every path through this function leaves a number
   -- behind: a blanket that was breeding a moment ago and is now stopped -- collector full, lithium
   -- out, blanket mined -- must publish 0 rather than keep its last reading on the wire.
+  --
+  -- THAT COVERS EVERY PATH THROUGH THIS FUNCTION AND NOT EVERY WAY A BLANKET STOPS, which is a
+  -- distinction review had to point out. A reactor that runs DRY never reaches this function at
+  -- all, so its last entry would sit there until it was fed again and then be published over a
+  -- fresh step's total. update() drops the entry on the same line it stops the accumulator, for
+  -- that reason.
   local blanket_units = 0
 
   -- What the reaction bred, if there is anywhere to put it. A reactor with no collector simply
@@ -917,6 +926,14 @@ local function update()
       -- with nothing to simulate, which is what apply() used to do by simply never running for
       -- one. See spend() above for why that is preserved rather than simplified away.
       spent[unit_number] = result and 0 or nil
+      -- AND WHAT ITS BLANKET LAST SOLD GOES WITH IT, for the same reason and on the same test
+      -- (#95). apply() zeroes this entry on every path through itself, but a reactor with nothing
+      -- to simulate never reaches apply() at all -- so a blanketed reactor that runs dry, sits
+      -- starved for minutes and is then fed again would publish its pre-drought blanket units over
+      -- a fresh step's total. The `result and` guard at the report below only masks that while the
+      -- reactor is still starved. Found in review; the comment beside blanket_units in apply() said
+      -- "every path through this function", which was true and was not the whole claim.
+      if not result then blanket_sold[unit_number] = nil end
 
       -- Reported from the read pass, on the state the step was computed against, so a reactor
       -- describes the tick it just simulated rather than one it is part way through. It happens
@@ -1796,20 +1813,25 @@ end
 -- a mod that will not start names the rung and the file it is in, where a save that has drifted
 -- quietly pays a player back more than they spent.
 --
--- OVER EVERY SPEC, because the ceiling lives on the spec and a second reactor may declare its own.
--- Only rf-reactor has a ladder today, so this checks two specs to prove one thing -- and the day a
--- tier is given one, it is the rung someone forgot that this names.
+-- OVER EVERY SPEC, AND EVERY SPEC IS BOUNDED. Only rf-reactor has a ladder and a declared ceiling
+-- today; rf-aneutronic-reactor has neither, and it is bounded at 1.0 -- the free loop itself -- for
+-- the reason reactor-logic's M.capture_ceiling_fault gives. That was a defect found in review: the
+-- guard used to skip any spec with no ceiling, which is exactly the spec with the highest shipped
+-- capture and the tightest margin in the mod.
 local function check_plant_efficiency()
   for name, spec in pairs(SPECS) do
-    local broke, value = logic.capture_ceiling_fault(spec)
+    local broke, value, ceiling = logic.capture_ceiling_fault(spec)
     if broke then
       error(string.format(
-        "%s: %s is %.6g, which is at or above the plant-efficiency ceiling of %.6g. The ceiling is " ..
-        "not a balance number -- capture_efficiency is the only term standing between this mod and " ..
-        "perpetual motion, and ADR 0020 permits a research line into it only because each rung " ..
-        "halves the remaining gap and therefore never arrives. Lower the value in " ..
-        "scripts/reactor-logic.lua, or read ADR 0020's arithmetic before raising capture_ceiling.",
-        name, broke, value, spec.capture_ceiling))
+        "%s: %s is %.6g, which is at or above %s of %.6g. That bound is not a balance number -- " ..
+        "capture_efficiency is the only term standing between this mod and perpetual motion, and " ..
+        "ADR 0020 permits a research line into it only because each rung halves the remaining gap " ..
+        "and therefore never arrives. Lower the value in scripts/reactor-logic.lua, and read " ..
+        "ADR 0020's arithmetic before raising a ceiling.",
+        name, broke, value,
+        spec.capture_ceiling and "this reactor's plant-efficiency ceiling"
+          or "the free loop a reactor with no ceiling is bounded by",
+        ceiling))
     end
     -- The prototypes the ladder names have to exist, for the reason check_confinement_ladder gives
     -- about its own: capture_for() reads force.technologies tolerantly, so a rung nobody can

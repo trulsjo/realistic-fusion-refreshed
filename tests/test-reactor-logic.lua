@@ -1471,7 +1471,7 @@ for level, rung in ipairs(CAPTURE_LADDER) do
     string.format("level %d stays under the ceiling", level),
     string.format("%.6g against %.6g", rung.capture_efficiency, SPEC.capture_ceiling))
   check(rung.capture_efficiency < 1,
-    string.format("and well under 1.0, where a reactor would pay for its own heating", level),
+    string.format("and level %d is well under 1.0, where a reactor would pay for its own heating", level),
     string.format("%.6g", rung.capture_efficiency))
 end
 
@@ -1559,6 +1559,29 @@ check(L.capture_ceiling_fault(SPEC) == nil,
   "the shipped ladder passes the guard, so load-check.ps1 is not being asked to load a refusal")
 check(L.capture_ceiling_fault(ANEUTRONIC) == nil,
   "and a reactor with no ceiling at all is not a fault -- it simply has no line")
+
+-- A SPEC WITH NO CEILING IS STILL BOUNDED, AT 1.0, and this is the half review found missing. The
+-- guard used to return nil for any spec that declared no capture_ceiling, which is exactly
+-- M.aneutronic_reactor -- the spec with the HIGHEST shipped capture and the tightest margin in the
+-- mod. A balance pass raising it to 1.0 would have loaded, and a non-fusing aneutronic reactor
+-- would have sold back exactly its heating for ever.
+--
+-- The line above is what says 0.95 with no ceiling PASSES, so the two together are the whole
+-- statement: no line, bounded by physics, and 1.0 is where physics stops.
+local _, an_value, an_ceiling = L.capture_ceiling_fault(
+  { capture_efficiency = 1.0 })
+check(an_ceiling == 1 and an_value == 1.0,
+  "a ceiling-less reactor at 1.0 is refused, and the bound reported is the free loop itself",
+  string.format("%s at a bound of %s", tostring(an_value), tostring(an_ceiling)))
+check(L.capture_ceiling_fault({ capture_efficiency = 1.2 }) == "its unresearched capture_efficiency",
+  "and so is one past it, which would sell back more than it was given")
+check(L.capture_ceiling_fault({ capture_efficiency = 0.99 }) == nil,
+  "while 0.99 with no ceiling passes -- lossy, so not a loop, whatever else it is")
+check(L.capture_ceiling_fault({
+    capture_efficiency = 0.9,
+    capture_ladder = { { technology = "rf-x", capture_efficiency = 1.0 } },
+  }) == "rf-x",
+  "a ladder on a ceiling-less spec is bounded by 1.0 too, rung by rung")
 local reaching = {
   capture_efficiency = SPEC.capture_efficiency,
   capture_ceiling = SPEC.capture_ceiling,

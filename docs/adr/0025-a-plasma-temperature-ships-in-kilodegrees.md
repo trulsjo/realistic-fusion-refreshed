@@ -45,8 +45,11 @@ table**, whose aneutronic rows and whole 6.9e9 column predate
 
 ### What the signal is, and why the ceiling was 2e9
 
-A reactor publishes two signals, both of them the mod's own: `rf-signal-plasma-temperature` and
-`rf-signal-q-factor`. A Factorio circuit signal is a 32-bit integer and stops at 2 147 483 647; the
+A reactor publishes ~~two~~ **three** signals, all of them the mod's own:
+`rf-signal-plasma-temperature`, `rf-signal-q-factor` and, since
+[#95](https://github.com/trulsjo/realistic-fusion-refreshed/issues/95),
+`rf-signal-blanket-share`. Only the temperature is affected by anything this ADR decides; the other
+two are percentages and nowhere near the integer's range. A Factorio circuit signal is a 32-bit integer and stops at 2 147 483 647; the
 engine throws rather than wraps on a larger write, so `to_signal` clamps.
 
 Temperature went out in whole degrees, which is exact and stops below the temperature a D-T plasma
