@@ -26,6 +26,20 @@
     exactly zero. That is a far stronger statement than "more with than without", and it is only
     available on this tier.
 
+    WHAT THE BLANKET SELLS (#93, ADR 0019)
+
+    A blanket is a power upgrade as well as a fuel one: the two capture reactions release real
+    nuclear energy, and it is sold through the reactor's own rf-reactor-energy box because a
+    container cannot have a fluid box of its own. `fitted` against `bare` is the measurement --
+    same reactor, same fuel, same feed, one blanket -- and `sated` is the negative control.
+
+    THE ENERGY BOX HAS TO BE DRAINED TO MEASURE IT. It holds 1000 units and apply() discards the
+    overflow, so an undrained box on any lit reactor here reads its full 1000 whatever the reactor
+    produced -- which is what the `pulled` cell reads, correctly, because all that cell asks is
+    whether the reactor is still selling anything at all. A comparison needs more than that. So
+    `fitted`, `bare` and `sated` have their energy box emptied every tick and the totals
+    accumulated, which is the only reading that is a production rather than a level.
+
     WHAT IS BUILT
 
       fitted     A D-T reactor with a collector and a blanket loaded with lithium. It must breed
@@ -50,6 +64,13 @@
                  and it would spend real lithium on tritium that is then discarded. Checked by
                  mutation -- with the segment figure in apply() this cell spends 1 887 items for the
                  same 325 units and throws 1 562 away.
+
+      sated      A blanketed D-T reactor whose collector is FULL and stays full, so the blanket
+                 has no headroom to breed into. It must spend no lithium AND sell no more energy
+                 than the `bare` reactor beside it -- ADR 0019's "heat follows breeding" rule,
+                 negative-tested. It is the arm the `orphan` and `empty` cells cannot stand in
+                 for: this reactor is lit, its blanket is loaded, and the only thing stopping it
+                 is the collector gate.
 
       pulled     A blanketed reactor whose blanket is destroyed halfway through. The reactor has
                  to go on running and go on producing energy.
@@ -113,6 +134,7 @@ local DD       = "rf-d-d-plasma"
 local TRITIUM  = "rf-tritium"
 local HELIUM3  = "rf-helium-3"
 local LITHIUM  = "rf-lithium"
+local ENERGY   = "rf-reactor-energy"
 local BLANKET  = "rf-lithium-blanket"
 local FEED     = "__PLASMAFEED__"
 
@@ -129,6 +151,19 @@ local LOADED = 5000
 -- How far around a collector to look for what its reactor bred. Wide enough for its pipe run and
 -- tank, and well short of the next cell.
 local NEARBY = 25
+
+-- The ground this rig builds on, and the chunks that have to exist under it.
+--
+-- DERIVED RATHER THAN WRITTEN DOWN, the way bench-mod-links.ps1 and check-observability.ps1 derive
+-- theirs, because the failure mode of getting it wrong is silent: create_entity on ungenerated
+-- ground either throws from must() or -- worse -- the landfill is written and the machine is not.
+-- The radius was a hardcoded 10 until #93 pushed WEST from -260 to -320 for the `sated` cell, which
+-- left the westmost plasma feed at about -309.5 against a generated -320. It worked, with no margin
+-- at all, and the next cell added on that side would have taken it away.
+--
+-- Plus two chunks of margin, so a cell moving or a footprint growing does not silently run out.
+local WEST, EAST = -320, 300
+local CHUNK_RADIUS = math.ceil(math.max(-WEST, EAST) / 32) + 2
 
 local lines = {}
 local failures = 0
@@ -401,14 +436,14 @@ script.on_init(function()
     t.researched = false
   end
 
-  surface.request_to_generate_chunks({ 0, 0 }, 10)
+  surface.request_to_generate_chunks({ 0, 0 }, CHUNK_RADIUS)
   surface.force_generate_chunk_requests()
   local tiles = {}
-  for x = -260, 300 do
+  for x = WEST, EAST do
     for y = -40, 40 do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
   end
   surface.set_tiles(tiles)
-  for _, e in pairs(surface.find_entities_filtered({ area = { { -260, -40 }, { 300, 40 } } })) do
+  for _, e in pairs(surface.find_entities_filtered({ area = { { WEST, -40 }, { EAST, 40 } } })) do
     if e.type ~= "character" then e.destroy() end
   end
 
@@ -498,6 +533,37 @@ script.on_init(function()
   end
   flooded_collector.fluidbox[flooded_box] = { name = TRITIUM, amount = 0.95 * flooded_capacity }
 
+  -- ------------------------------------------------------------------ sated
+  --
+  -- THE NEGATIVE CONTROL FOR THE CAPTURE HEAT (#93, ADR 0019, decision 2). A lit D-T reactor with a
+  -- loaded blanket and a collector that is already full, so blanket_breed's headroom is exactly
+  -- zero and it returns before breeding. Heat follows breeding, so this reactor has to sell no more
+  -- than `bare` -- and it is the only cell that can say so: `orphan` has no collector to gate on
+  -- and `empty` has no lithium to breed from, so each of them would pass with the collector gate
+  -- deleted.
+  --
+  -- FULL RATHER THAN NEARLY FULL, which is the opposite choice from the `flooded` cell above and
+  -- for the opposite reason. That cell wants a sliver of room so the CAP runs; this one wants none
+  -- at all, because what it measures is the early return.
+  --
+  -- WHAT IT DISCRIMINATES, MEASURED BY MUTATION rather than argued. No single deletion in
+  -- blanket_breed makes this blanket breed -- the headroom is checked three times over, at the
+  -- early return, at the cap and at the `wanted <= 0` test that follows it, and removing any one
+  -- leaves the other two. What this cell catches is the ALTERNATIVE ADR 0019 REJECTED: heat
+  -- following neutron capture instead of breeding. Computed that way -- outside the collector
+  -- block, off result.neutrons whenever a blanket is fitted -- this reactor sells +27.96% while
+  -- spending not one item of lithium, and every other line in this rig stays green.
+  --
+  -- Unplumbed, and it stays full without any help: a D-T reactor breeds nothing of its own, so
+  -- deposit() never writes this box and nothing drains it.
+  local sated = reactor_at(surface, force, -300.5, DT, 1e6)
+  power(surface, force, { -288, 8 })
+  local sated_collector, _, sated_box = collector_on(surface, force, sated, nil)
+  local sated_blanket = blanket_on(surface, force, sated, LOADED)
+  sated_collector.fluidbox[sated_box] = {
+    name = TRITIUM, amount = sated_collector.fluidbox.get_capacity(sated_box),
+  }
+
   -- ------------------------------------------------------------------ pulled
   local pulled = reactor_at(surface, force, -240.5, DT, 1e6)
   power(surface, force, { -228, 8 })
@@ -519,6 +585,11 @@ script.on_init(function()
   local dd_bare_collector = collector_on(surface, force, dd_bare, { 150.5, 25.5 })
 
   storage.gate = gate
+  -- What each metered cell has SOLD over the whole run, filled by the drain below. Named cells
+  -- rather than every reactor on the map, because emptying a box changes what the next write is
+  -- clamped against -- which is the point of doing it -- and the `pulled` cell asks about its box
+  -- LEVEL rather than its production, so draining that one would break it.
+  storage.sold = { fitted = 0, bare = 0, sated = 0 }
   storage.rig = {
     fitted = fitted, fitted_collector = fitted_collector, fitted_tank = fitted_tank,
     fitted_blanket = fitted_blanket,
@@ -532,6 +603,8 @@ script.on_init(function()
     flooded_start_box = holds(flooded_collector, TRITIUM),
     flooded_start_run = holds_across(flooded_run, TRITIUM),
     flooded_filled = flooded_filled,
+    sated = sated, sated_collector = sated_collector, sated_box = sated_box,
+    sated_blanket = sated_blanket,
     pulled = pulled, pulled_collector = pulled_collector, pulled_blanket = pulled_blanket,
     dd = dd, dd_collector = dd_collector, dd_blanket = dd_blanket,
     dd_bare = dd_bare, dd_bare_collector = dd_bare_collector,
@@ -539,14 +612,44 @@ script.on_init(function()
   log("BLANKET-RIG built")
 end)
 
+-- Which reactors are metered for what they SELL (#93). Order is irrelevant; the list is here so
+-- the drain below and the checks cannot drift apart on which cells were measured.
+local METERED = { "fitted", "bare", "sated" }
+
+-- Two jobs on one handler, because Factorio keeps one on_tick registration per mod and a second
+-- script.on_event call would silently replace the first.
+--
 -- The throttled cell's slow consumer, and the running total of what it took. Well under what the
 -- blanket could produce, so the box stays near full and headroom stays small and positive -- which
 -- is the only state control.lua's headroom cap is responsible for.
 script.on_event(defines.events.on_tick, function()
-  local collector = storage.rig and storage.rig.throttled_collector
-  if not (collector and collector.valid) then return end
-  storage.drained = (storage.drained or 0)
-    + collector.remove_fluid({ name = TRITIUM, amount = 0.05 })
+  local rig = storage.rig
+  if not rig then return end
+
+  local collector = rig.throttled_collector
+  if collector and collector.valid then
+    storage.drained = (storage.drained or 0)
+      + collector.remove_fluid({ name = TRITIUM, amount = 0.05 })
+  end
+
+  -- EMPTY THE ENERGY BOX AND KEEP THE RUNNING TOTAL, which is the only way to measure a production
+  -- rather than a level: the box holds 1000 units and apply() discards what will not fit, so any
+  -- reactor producing more than that per step reads the same 1000 as one producing twice as much.
+  --
+  -- Every tick rather than on the simulation's cadence, because the rig does not know what
+  -- UPDATE_INTERVAL is and does not need to: a tick with no write drains nothing and adds nothing.
+  -- The amount asked for is far more than a box can hold, so what comes back is whatever was there.
+  --
+  -- Order against the mod's own on_tick handler does not matter either. Whatever is left in the box
+  -- when the run ends is added to the total at the check, so at worst one step's worth of energy
+  -- moves between the two terms of one sum.
+  local sold = storage.sold
+  for _, name in ipairs(METERED) do
+    local reactor = rig[name]
+    if reactor and reactor.valid then
+      sold[name] = sold[name] + reactor.remove_fluid({ name = ENERGY, amount = 1e9 })
+    end
+  end
 end)
 
 -- Halfway through, destroy the blanket the `pulled` reactor is using. Nothing raises an event for
@@ -738,6 +841,62 @@ script.on_nth_tick(CHECK_AT, function()
         spent, room, capacity - r.flooded_start_box, r.flooded_filled - r.flooded_start_run, segment))
   end
 
+  -- ------------------------------------------------------------ and it sells its capture heat
+  --
+  -- #93, ADR 0019. The blanket is a power upgrade as well as a fuel one, and this is the whole of
+  -- the claim: the same reactor, on the same fuel, at the same feed, sells measurably more with a
+  -- blanket fitted than without one.
+  --
+  -- STATED AS A RATIO WITH A FLOOR RATHER THAN AS A BAND, and the reason is that THE UPLIFT MOVES
+  -- WITH TEMPERATURE. Both terms cross the same capture_efficiency, so ADR 0020's research line
+  -- cannot shift it -- but the reactor's own term is (fusion_j - charged_j) + left_j, and left_j is
+  -- an equilibrium quantity. The model predicts +31.4% at 6e8 C, where left_j is 2.7% of the
+  -- neutron, and +27.5% at the 2.548e9 C these reactors actually settle at, where a plasma at the
+  -- clamp radiates hard and left_j reaches 17%. Measured here at +27.96%, the difference being the
+  -- cooler minute at the start of the run. So the floor is what is asserted and the figure is
+  -- printed beside it; a band would fail on the day the plasma settles somewhere else.
+  --
+  -- Ten per cent, which is far below that +27.96% and far above anything that is not the blanket: the
+  -- two reactors are identical prototypes on identical infinity feeds and the model is
+  -- deterministic, so `sated` below measures what "no blanket heat" actually costs -- and it is
+  -- zero to the last figure printed.
+  local fitted_sold = storage.sold.fitted + holds(r.fitted, ENERGY)
+  local bare_sold   = storage.sold.bare + holds(r.bare, ENERGY)
+  local sated_sold  = storage.sold.sated + holds(r.sated, ENERGY)
+
+  record(bare_sold > 0, "the bare reactor sold energy at all, so the comparison has a denominator",
+    string.format("%.6g units", bare_sold))
+  record(fitted_sold > 1.10 * bare_sold,
+    "a blanketed D-T reactor sells more energy than the same reactor without one",
+    string.format("%.6g against %.6g units -- +%.2f%%",
+      fitted_sold, bare_sold, 100 * (fitted_sold / bare_sold - 1)))
+
+  -- ------------------------------------------------------------ heat follows breeding
+  --
+  -- The rule, negative-tested (ADR 0019, decision 2). A full collector stops the breeding, so it
+  -- stops the heat -- and a player whose consumer has stopped therefore loses the blanket's power
+  -- as well as its tritium. That is deliberate rather than a defect: the alternatives were
+  -- spending lithium for nothing or making heat from no material at all.
+  local sated_held = holds(r.sated_collector, TRITIUM)
+  local sated_capacity = r.sated_collector.fluidbox.get_capacity(r.sated_box)
+  record(sated_held >= sated_capacity - 1e-6,
+    "sated: the collector really is full, so the blanket has no headroom at all",
+    string.format("%.6g of %.6g", sated_held, sated_capacity))
+  local sated_plasma = r.sated.fluidbox[1]
+  record(sated_plasma ~= nil and sated_plasma.temperature > 1e8
+      and lithium_in(r.sated_blanket) == LOADED,
+    "sated: and its reactor is lit with a full blanket, so it could have bred and did not",
+    string.format("%.4g C, %d of %d lithium left",
+      sated_plasma and sated_plasma.temperature or -1, lithium_in(r.sated_blanket), LOADED))
+  record(math.abs(sated_sold - bare_sold) <= 0.01 * bare_sold,
+    "a blanket with a full collector sells NO capture heat -- heat follows breeding",
+    string.format("%.6g against the bare reactor's %.6g units -- %+.4f%%",
+      sated_sold, bare_sold, 100 * (sated_sold / bare_sold - 1)))
+  record(fitted_sold > 1.10 * sated_sold,
+    "so the fitted reactor beats it by the same margin it beats the bare one",
+    string.format("%.6g against %.6g units -- +%.2f%%",
+      fitted_sold, sated_sold, 100 * (fitted_sold / sated_sold - 1)))
+
   -- ------------------------------------------------------------ losing the blanket
   record(not r.pulled_blanket.valid, "the pulled reactor's blanket really was destroyed")
   local pulled_plasma = r.pulled.fluidbox[1]
@@ -846,8 +1005,9 @@ try {
     if ($verdict -notmatch '^PASS') { throw "blanket breeding is broken: $verdict" }
 
     Write-Host ''
-    Write-Host 'OK - a lithium blanket breeds tritium from a running reactor, buys none its collector'
-    Write-Host '     cannot take, and taking it off leaves the reactor working.'
+    Write-Host 'OK - a lithium blanket breeds tritium from a running reactor, sells the heat those'
+    Write-Host '     captures release, buys none its collector cannot take, and taking it off'
+    Write-Host '     leaves the reactor working.'
 }
 finally {
     if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }

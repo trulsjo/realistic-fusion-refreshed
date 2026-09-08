@@ -566,9 +566,13 @@ near(dt_hot.neutrons, dt_hot.plasma_consumed * SPEC.particles_per_unit / 2, 1e-1
 
 -- ---- what the blanket makes of them
 
-check(L.breed(SPEC, BLANKET, 0, CHARGED) == nil, "no neutrons, nothing bred")
+-- Nil rather than a table of zeroes, which is what lets control.lua leave the entity alone -- and
+-- since #93 it is also what makes every one of these arms sell NO capture heat. There is no
+-- separate gate on the joules: a return of nil has no `joules` field to add, so heat follows
+-- breeding through exactly the same door (ADR 0019, decision 2).
+check(L.breed(SPEC, BLANKET, 0, CHARGED) == nil, "no neutrons, nothing bred, and no heat")
 check(L.breed(SPEC, BLANKET, nil, CHARGED) == nil, "a reactor with no step breeds nothing")
-check(L.breed(SPEC, BLANKET, 1e20, 0) == nil, "an empty blanket breeds nothing")
+check(L.breed(SPEC, BLANKET, 1e20, 0) == nil, "an empty blanket breeds nothing, and heats nothing")
 check(L.breed(SPEC, BLANKET, 1e20, nil) == nil, "a blanket that was never loaded breeds nothing")
 
 local bred = L.breed(SPEC, BLANKET, dt_hot.neutrons, CHARGED)
@@ -602,6 +606,11 @@ local wanted = L.breed(SPEC, BLANKET, dt_hot.neutrons, CHARGED)
 local short  = L.breed(SPEC, BLANKET, dt_hot.neutrons, wanted.nuclei_used / 2)
 near(short.nuclei_used, wanted.nuclei_used / 2, 1e-12, "a blanket running out spends exactly what it had")
 near(short.tritium_units, wanted.tritium_units / 2, 1e-12, "and breeds exactly what that bought")
+-- And sells exactly the heat that bought, for the same reason and by the same arithmetic: the
+-- joules come off `bred` rather than off the neutron count, so every cap in this function carries
+-- into the heat without a rule of its own (#93). A blanket held back by a full collector is the
+-- same statement with the cap coming from control.lua instead.
+near(short.joules, wanted.joules / 2, 1e-12, "and sells exactly the capture heat that bought")
 
 -- Breeding follows the simulation, which is the same claim the D-D by-products make and the reason
 -- neither is a recipe: a cool reactor releases fewer neutrons, so its blanket breeds less.
@@ -636,6 +645,87 @@ near(dd_bred.tritium_units / hot_burn.plasma_consumed,
   bred.tritium_units / dt_hot.plasma_consumed / 2, 1e-12,
   "per unit of plasma burnt, a D-D blanket breeds half what a D-T blanket does")
 
+-- ---- what the blanket SELLS (#93, ADR 0019)
+--
+-- The blanket stopped being a fuel fitting only. docs/research/blanket-capture-energy.md pins the
+-- figure and tests/test-blanket-energy.lua asserts the derivation against published masses; what
+-- is asserted here is that the shipped function returns it and that it is disjoint from what
+-- step() already sold.
+
+local EV = 1.602176634e-19
+
+-- Per TRITON, which is the form breed() multiplies, and per NEUTRON, which is the form the
+-- literature quotes. Both read off the shipped function rather than written down twice.
+near(L.capture_energy_j(BLANKET) / EV / 1e6, 4.12428, 1e-5,
+  "a blanket releases 4.124 MeV per triton bred")
+near(L.capture_energy_j(BLANKET) * BLANKET.tritium_per_neutron / EV / 1e6, 4.53671, 1e-5,
+  "which is 4.537 MeV per neutron entering it, at the shipped breeding ratio")
+-- Derived from the ratio, not stored beside it. Both branches make one triton, so the blend is
+-- fixed by the neutron balance: one Li-6 capture per neutron whatever the ratio, and TBR - 1 Li-7
+-- reactions to account for the rest. At a ratio of exactly 1 the endothermic branch disappears and
+-- the figure is the bare Li-6 ceiling -- which is the property that says the two cannot contradict.
+near(L.capture_energy_j({ tritium_per_neutron = 1.0,
+    li6_capture_ev = BLANKET.li6_capture_ev, li7_breeding_ev = BLANKET.li7_breeding_ev })
+  / EV / 1e6, 4.78347, 1e-5,
+  "and moving the ratio to 1 gives the bare Li-6 ceiling, because the blend is derived from it")
+check(L.capture_energy_j(BLANKET) * BLANKET.tritium_per_neutron < BLANKET.li6_capture_ev * EV,
+  "so the shipped blend sits BELOW that ceiling -- the endothermic branch costs something")
+
+near(bred.joules, bred.tritium_units * SPEC.particles_per_unit * L.capture_energy_j(BLANKET), 1e-9,
+  "and what a step sells is that figure times the tritons it actually bred")
+
+-- THE NEUTRON IS NOT SOLD TWICE, which is the whole hazard ADR 0019 named and #91 was opened to
+-- close. Two disjoint statements, one for each half of the accounting.
+--
+-- FIRST: step() sells the neutron's kinetic energy exactly once. What it sells, before
+-- capture_efficiency, is (fusion_j - charged_j) + left_j -- the neutron plus first-wall leakage --
+-- so dividing by the neutron's own share of the release has to land just above 1. A reactor
+-- selling it twice would land near 2, and there is no tolerance wide enough to confuse the two.
+--
+-- 1.5 rather than something tighter, because the leakage term MOVES WITH TEMPERATURE and this
+-- assertion is about a double count rather than about a value: it is 1.027 at the 6e8 C here and
+-- 1.173 at the 2.548e9 C a D-T reactor settles at in game, where the plasma sits on the clamp and
+-- radiates hard. Both are unmistakably one neutron and not two.
+local fusion_j  = dt_hot.fusion_power_w * TICK
+local neutron_j = fusion_j * (1 - L.fuels["rf-d-t-plasma"].charged_fraction)
+local sold_j    = dt_hot.energy_units * SPEC.energy_fluid_j_per_unit / SPEC.capture_efficiency
+check(sold_j > neutron_j and sold_j < 1.5 * neutron_j,
+  "step() sells the neutron's kinetic energy exactly once, plus the wall leakage and no more",
+  string.format("%.4f x the neutron's own %.4g J", sold_j / neutron_j, neutron_j))
+
+-- SECOND: the blanket adds the capture reactions' nuclear Q and nothing else. A published energy
+-- multiplication factor ALREADY CONTAINS the neutron's kinetic energy, so importing one would put
+-- 16.87 MeV per neutron into the same box the neutron's own 14.06 MeV already landed in -- 3.7x the
+-- right figure, and more than double a D-T reactor's whole output. Both wrong imports are computed
+-- here so the numbers are on record rather than in a paragraph.
+local per_neutron  = bred.joules / dt_hot.neutrons
+local naive_import = 1.2 * 14.06e6 * EV
+near(naive_import / per_neutron, 3.719, 1e-3,
+  "M x E_n at M = 1.2 is 3.7x what the blanket sells, which is what a naive import would cost")
+near((1.2 - 1) * 14.06e6 * EV / per_neutron, 0.6198, 1e-3,
+  "and (M - 1) x E_n strips the kinetic energy out correctly but still misses, at 0.62x")
+check(per_neutron < 0.4 * neutron_j / dt_hot.neutrons,
+  "so the blanket's own term is a THIRD of the neutron it rides on, not a multiple of it",
+  string.format("%.4g J against the neutron's %.4g J",
+    per_neutron, neutron_j / dt_hot.neutrons))
+
+-- What it is worth, as the uplift a player will actually see on the fluid box. Both terms cross the
+-- same capture_efficiency (ADR 0019, decision 4), so the ratio is the same whatever that constant
+-- becomes under ADR 0020 -- which is why the two features do not interact.
+--
+-- MEASURED AT ONE TEMPERATURE, NOT AT EQUILIBRIUM, and therefore NOT the number
+-- rf-signal-blanket-share will read: sold energy carries the leakage term, which is an equilibrium
+-- quantity. The share a player sees has to be measured in game once the signal exists.
+check(bred.joules / sold_j > 0.25 and bred.joules / sold_j < 0.35,
+  "a blanket is worth about 31% more sold energy on a D-T reactor at 6e8 C",
+  string.format("+%.2f%%", 100 * bred.joules / sold_j))
+-- Any fuel, with no per-tier gate (ADR 0019, decision 3). D-D makes a neutron on half its
+-- reactions, so the blanket earns its keep there too and by arithmetic rather than by a rule.
+check(dd_bred.joules > 0, "a blanket on a D-D reactor sells capture heat too, with no per-tier gate",
+  string.format("%.4g J a step", dd_bred.joules))
+near(dd_bred.joules / dd_bred.tritium_units, bred.joules / bred.tritium_units, 1e-9,
+  "and per triton bred it sells exactly the same, because the blanket does not know the fuel")
+
 -- ---------------------------------------------------------------- aneutronic tier (#31)
 --
 -- The third and fourth reactions, and the second reactor. Everything here drives the same step()
@@ -669,7 +759,7 @@ check(aneutronic_hot.neutrons == 0, "so a D-He3 reactor reports no neutrons at a
 -- And therefore a blanket on one does nothing. The blanket does not know what fuel is burning; it
 -- is handed a neutron count, and this is what that count being zero means downstream.
 check(L.breed(ANEUTRONIC, BLANKET, aneutronic_hot.neutrons, CHARGED) == nil,
-  "a lithium blanket on an aneutronic reactor breeds nothing")
+  "a lithium blanket on an aneutronic reactor breeds nothing, and sells no heat")
 
 -- The reactant densities, recomputed from the dataset for the reason the D-T block does it: a mix
 -- against a single fuel is the one thing a new row gets wrong silently. D-He3 is a 50/50 blend, so
