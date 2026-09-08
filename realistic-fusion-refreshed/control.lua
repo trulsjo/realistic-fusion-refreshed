@@ -510,51 +510,11 @@ local function apply(entity, spec, plasma, result)
     box[1] = nil
   end
 
-  -- MIN_FLUID, not zero, and for the same reason deposit() uses it: a reactor that is barely
-  -- fusing computes a positive output too small for the engine to accept as a fluid amount, and
-  -- writing one is a crash rather than a rounding error.
-  if result.energy_units >= MIN_FLUID then
-    -- Assigned to box 2 by index rather than inserted: fluidbox.insert would find box 1 whenever
-    -- the reactor had just burnt its last plasma, and quietly fill the plasma box with reactor
-    -- energy. The temperature is stated rather than left out, because omitting it resets the
-    -- fluid to its default every tick; nothing reads it, since the heat exchanger burns this by
-    -- fuel_value.
-    --
-    -- It is READ FROM THE PROTOTYPE rather than written as a literal, and that is the whole of
-    -- #46's second item. This used to be a hardcoded 15, which is a number a player hovering the
-    -- line reads as room temperature and therefore as a bug -- and 15 is exactly what the engine
-    -- itself defaults an unset target_temperature to, so the literal was the absence of an answer
-    -- rather than an answer. Deriving it means the pipe and the reactor's own tooltip cannot
-    -- disagree, whatever the target is. That question -- #46's third item -- is now SETTLED: 550
-    -- for rf-reactor and 165 for rf-aneutronic-reactor, for reasons that live beside each of them
-    -- in prototypes/entities.lua.
-    local produced = box[2]
-    local amount = result.energy_units + (produced and produced.amount or 0)
-    -- This box's own capacity. It used to say "the segment's, because get_capacity reports the
-    -- segment" -- measured under #40 and that is true of a pipe and false of a machine: asked of a
-    -- reactor's box, get_capacity answers the box's declared volume however long the run beyond it
-    -- is. #40 measured that with NOTHING plumbed to this box, which is the case where the box and
-    -- the segment are the same object; #68 re-took it with the box on a 27000-unit run and the
-    -- answer is unchanged at the declared 1000. Nothing changes here, because the box is what a
-    -- write is clamped to anyway; the reasoning was wrong rather than the code, and it would have
-    -- justified writing more than a box can hold.
-    --
-    -- Overflow is discarded, which is the right behaviour and not an oversight: a reactor whose
-    -- heat is not being carried away does not get to bank it. It shows up as output backing up.
-    local capacity = box.get_capacity(2)
-    if amount > capacity then amount = capacity end
-    -- The reactor's OWN energy fluid, not one name the whole mod shares (#31). An aneutronic
-    -- reactor sells rf-aneutronic-reactor-energy into a direct energy converter where a neutronic
-    -- one sells rf-reactor-energy into a heat exchanger, and the two are deliberately not
-    -- interchangeable -- see prototypes/fluids.lua. Writing the wrong one here would be rejected by
-    -- the box's filter and lose the reactor's entire output silently, which is why
-    -- check_energy_outlets() below ties this field to the prototype rather than trusting it.
-    box[2] = {
-      name = spec.energy_fluid,
-      amount = amount,
-      temperature = energy_temperature(entity.name),
-    }
-  end
+  -- What this step sells into the reactor's energy box, summed here and written at the bottom of
+  -- this function rather than now (#92). The sum has one term today, so nothing moves; ADR 0019
+  -- adds the blanket's capture heat, which is bred below and could not reach this box at all while
+  -- the write came first.
+  local sold = result.energy_units
 
   -- What the reaction bred, if there is anywhere to put it. A reactor with no collector simply
   -- vents it: the by-products are computed either way, so bolting one on later starts collecting
@@ -608,6 +568,57 @@ local function apply(entity, spec, plasma, result)
       products[TRITIUM] = (products[TRITIUM] or 0) + bred
     end
     if products then deposit(collector, products) end
+  end
+
+  -- MIN_FLUID, not zero, and for the same reason deposit() uses it: a reactor that is barely
+  -- fusing computes a positive output too small for the engine to accept as a fluid amount, and
+  -- writing one is a crash rather than a rounding error.
+  --
+  -- Tested against the step's SUMMED total rather than against the reactor's own share, once, and
+  -- the clamp below then runs once on that sum plus whatever the box already holds. The distinction
+  -- is dormant while the sum has one term and stops being dormant under ADR 0019: a barely-fusing
+  -- reactor under the threshold would otherwise skip the write and take its blanket's heat with it.
+  if sold >= MIN_FLUID then
+    -- Assigned to box 2 by index rather than inserted: fluidbox.insert would find box 1 whenever
+    -- the reactor had just burnt its last plasma, and quietly fill the plasma box with reactor
+    -- energy. The temperature is stated rather than left out, because omitting it resets the
+    -- fluid to its default every tick; nothing reads it, since the heat exchanger burns this by
+    -- fuel_value.
+    --
+    -- It is READ FROM THE PROTOTYPE rather than written as a literal, and that is the whole of
+    -- #46's second item. This used to be a hardcoded 15, which is a number a player hovering the
+    -- line reads as room temperature and therefore as a bug -- and 15 is exactly what the engine
+    -- itself defaults an unset target_temperature to, so the literal was the absence of an answer
+    -- rather than an answer. Deriving it means the pipe and the reactor's own tooltip cannot
+    -- disagree, whatever the target is. That question -- #46's third item -- is now SETTLED: 550
+    -- for rf-reactor and 165 for rf-aneutronic-reactor, for reasons that live beside each of them
+    -- in prototypes/entities.lua.
+    local produced = box[2]
+    local amount = sold + (produced and produced.amount or 0)
+    -- This box's own capacity. It used to say "the segment's, because get_capacity reports the
+    -- segment" -- measured under #40 and that is true of a pipe and false of a machine: asked of a
+    -- reactor's box, get_capacity answers the box's declared volume however long the run beyond it
+    -- is. #40 measured that with NOTHING plumbed to this box, which is the case where the box and
+    -- the segment are the same object; #68 re-took it with the box on a 27000-unit run and the
+    -- answer is unchanged at the declared 1000. Nothing changes here, because the box is what a
+    -- write is clamped to anyway; the reasoning was wrong rather than the code, and it would have
+    -- justified writing more than a box can hold.
+    --
+    -- Overflow is discarded, which is the right behaviour and not an oversight: a reactor whose
+    -- heat is not being carried away does not get to bank it. It shows up as output backing up.
+    local capacity = box.get_capacity(2)
+    if amount > capacity then amount = capacity end
+    -- The reactor's OWN energy fluid, not one name the whole mod shares (#31). An aneutronic
+    -- reactor sells rf-aneutronic-reactor-energy into a direct energy converter where a neutronic
+    -- one sells rf-reactor-energy into a heat exchanger, and the two are deliberately not
+    -- interchangeable -- see prototypes/fluids.lua. Writing the wrong one here would be rejected by
+    -- the box's filter and lose the reactor's entire output silently, which is why
+    -- check_energy_outlets() below ties this field to the prototype rather than trusting it.
+    box[2] = {
+      name = spec.energy_fluid,
+      amount = amount,
+      temperature = energy_temperature(entity.name),
+    }
   end
 end
 
