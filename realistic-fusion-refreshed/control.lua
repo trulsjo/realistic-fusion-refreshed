@@ -280,9 +280,14 @@ end
 -- its first few seconds and what one with a dead heater is for ever.
 --
 -- What the threshold discards is nothing in both senses. A step is a tenth of a second, so this
--- bounds the loss at 1e-5 units a second against a working reactor's 0.7 of by-product and 82 of
--- reactor energy -- five orders down at the very least, and only reachable at all by a reactor
--- that is not meaningfully fusing.
+-- bounds the loss at 1e-5 units a second against a working reactor's 0.137 of each by-product and
+-- 56.1 of reactor energy -- FOUR orders down at the very least, and only reachable at all by a
+-- reactor that is not meaningfully fusing.
+--
+-- ~~0.7 of by-product and 82 of reactor energy -- five orders down~~ were PRE-#52 figures, taken
+-- when the model carried no radiation term and a D-D reactor settled at 8.8e8 C selling 133 MW
+-- rather than 2.42e8 C and 56.1. The by-products came down with the reaction rate, so the margin
+-- is four orders rather than five. Still nothing, and the threshold is unchanged.
 local MIN_FLUID = 1e-6
 
 --- Put what a reactor bred into the collector bolted to it.
