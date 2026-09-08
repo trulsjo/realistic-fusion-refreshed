@@ -177,8 +177,9 @@ each other (#109):
   than by choice, and therefore **supply-limited**: the reactor and the heater both report
   `low_power`. A thinner plasma settles hotter (see **operating density** above), so a heater-fed
   reactor runs well above the settled temperature and sells MORE. The `dd` cell of
-  [`brownout-rig.md`](docs/research/brownout-rig.md) is **589.7 units at 1.1×10⁹ °C, selling
-  85.2 MW**.
+  [`brownout-rig.md`](docs/research/brownout-rig.md) was **589.7 units at 1.1×10⁹ °C, selling
+  85.2 MW** on 2026-09-09 — dated rather than stated, because unlike the settled figure this one
+  moves, and that note is generated from a run and stamped with the revision that produced it.
 
 **Never quote a reactor's output without naming which.** The two are 52% apart on one prototype at one
 tier, and the heater-fed figure MOVES: `brownout-rig.md`'s `dd` row read 70.58 MW on 2026-08-20,
