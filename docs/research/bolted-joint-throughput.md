@@ -139,8 +139,10 @@ both cases on one rig is what makes "no gradient at all" on the D-T row a measur
 absence of evidence.
 
 (94.0 MW is this rig's D-D reactor on four heaters and a shared plasma segment, drifting slowly down
-across the run and settled inside the gate's 2%. It is not `reactor-logic.lua`'s 56.1 MW equilibrium,
-which is a single reactor held full at its own temperature; nothing here rests on the difference.)
+across the run and settled inside the gate's 2%. It is a **heater-fed** figure rather than a
+**settled** one, which is the distinction `CONTEXT.md` names and #109 opened over: it is not
+`reactor-logic.lua`'s 56.1 MW equilibrium, which is a single reactor held full at its own temperature.
+Nothing here rests on the difference.)
 
 ## Is one connection enough?
 

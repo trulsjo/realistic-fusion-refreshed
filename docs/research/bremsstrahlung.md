@@ -27,7 +27,8 @@ Details and arithmetic below.
 > **The term shipped on 2026-08-21 (#52)**, so this note has stopped being a prediction. Everything
 > below held: D-D settles at 2.42×10⁸ °C, Q 0.3205. What did NOT hold is the sentence that used to
 > end the paragraph above — "the tier is playable *because* the term is missing". It is playable with
-> the term: it sells **56.1 MW against the 50 MW it draws**, because the X-rays heat the first wall
+> the term: it sells **56.1 MW against the 50 MW it draws** at the **settled** operating point --
+> box full at 2.42×10⁸ °C, `CONTEXT.md` (#109) -- because the X-rays heat the first wall
 > and `step()` sells that heat. Below *scientific* break-even, above *engineering* break-even; see
 > `CONTEXT.md` on **break-even**.
 

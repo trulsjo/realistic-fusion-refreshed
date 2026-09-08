@@ -163,6 +163,35 @@ best and would gain from more plasma, rich is thicker and would gain from less. 
 states and neither is a fault — the words are about *which way to move the throttle*, and they are
 the only thing that tells a player the density lever exists.
 
+**Operating point** — the state a quoted reactor figure was measured in: how full its box is, what
+temperature its plasma is at, and whether the reactor is supply-limited. **Two of them are quoted in
+this repository and they are not interchangeable.** Named here because the same reactor was quoted at
+56 and at 85 MW with nothing saying why, and the first reading of that was that the two contradicted
+each other (#109):
+
+- **Settled** — box full, plasma at the temperature its own heating and losses balance at, all the
+  power it asks for. A bare, unresearched D-D reactor is **1000 units at 2.42×10⁸ °C, selling
+  56.1 MW**. This is the reference point: a figure that names no operating point is this one, and
+  `tests/test-reactor-logic.lua` pins it.
+- **Heater-fed** — a reactor its heater is still filling, held below full by the fuel line rather
+  than by choice, and therefore **supply-limited**: the reactor and the heater both report
+  `low_power`. A thinner plasma settles hotter (see **operating density** above), so a heater-fed
+  reactor runs well above the settled temperature and sells MORE. The `dd` cell of
+  [`brownout-rig.md`](docs/research/brownout-rig.md) is **589.7 units at 1.1×10⁹ °C, selling
+  85.2 MW**.
+
+**Never quote a reactor's output without naming which.** The two are 52% apart on one prototype at one
+tier, and the heater-fed figure MOVES: `brownout-rig.md`'s `dd` row read 70.58 MW on 2026-08-20,
+60.6 MW on 2026-08-23 and 85.23 MW on 2026-09-09, with the operating point moving under it each time
+— 589.7 units and 1.1×10⁹ °C today against 718.3 units and 4.37×10⁸ °C a fortnight ago. **What caused
+those moves is not on record**, which is why that note now names the repository revision it was
+rendered from; the settled figure has not moved at all over the same period.
+
+**And do not read a "56 MW" as an output on sight.** ADR 0015's **~56 MW is what a whole D-D line
+DRAWS** — reactor, heater, two electrolysers, extractor and chemical plant — and it sits a table away
+from the 56.1 MW the reactor sells. The near-collision is a coincidence of the balance rather than a
+relationship, and either number can move without the other.
+
 **Ignited** — a plasma whose own fusion self-heating carries it without external confinement heating.
 Confinement heating gets an ignited plasma **to** a fusing temperature; it is not what keeps it at one.
 **D-T at this reactor's density and confinement time is ignited and D-D is not**, which is the tiers'
