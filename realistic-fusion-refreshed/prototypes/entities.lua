@@ -750,9 +750,15 @@ collector.target_temperature = 15
 
 -- Vanilla's boiler is three by two with water in on the west and east faces and steam out of the
 -- north one. Those positions are kept exactly as they are; only what the boxes carry changes. The
--- volumes are a buffer rather than storage: a reactor breeds about 0.6 units a second, so 500 is
--- roughly fifteen minutes of production if nothing drains it, which is long enough that a stalled
--- pipe is a nuisance rather than an instant loss.
+-- volumes are a buffer rather than storage: a reactor breeds about 0.137 units a second of each
+-- by-product, so 500 is roughly an hour of production if nothing drains it, which is long enough
+-- that a stalled pipe is a nuisance rather than an instant loss.
+--
+-- ~~about 0.6 units a second, so 500 is roughly fifteen minutes~~ was a PRE-#52 figure, taken when
+-- the model carried no radiation term and a D-D reactor settled at 8.8e8 C selling 133 MW. It
+-- settles at 2.42e8 C and 56.1 MW now, and the by-products came down with the reaction rate. The
+-- volume is unchanged and the conclusion is unchanged; only the margin was overstated, in the
+-- direction that would have made a stalled pipe look worse than it is.
 local function emit(box, fluid)
   box.production_type = "output"
   box.volume = 500
@@ -1109,8 +1115,8 @@ converter.horizontal_animation = converter_art.horizontal
 -- and a vessel delays that by its own volume and then stops helping. See
 -- docs/research/converter-buffering.md.
 --
--- This tank is a helium-3 vessel (ADR 0018 item 5) and the volume below is unre-justified against
--- that fluid, which is a separate loose end and still open.
+-- This tank is a helium-3 vessel (ADR 0018 item 5), and the volume below is justified against
+-- that fluid since #88.
 --
 -- "Composite" is what a vessel for a light gas is actually made of -- a metal liner overwrapped in
 -- fibre, because helium leaks through steel joints and pressure is how you store useful amounts of
@@ -1134,9 +1140,42 @@ converter.horizontal_animation = converter_art.horizontal
 local tank = pin(table.deepcopy(data.raw["storage-tank"]["storage-tank"]), "rf-aneutronic-composite-tank", {
   mining_time = 0.5,
 })
--- Twice vanilla's, which is a buffer rather than a warehouse: at the converter's hundred units a
--- second it is about eight minutes of supply, long enough to ride out a heater going down and short
--- enough that it is still a pipe network rather than a stockpile. Provisional.
+-- Twice vanilla's. ~~A buffer rather than a warehouse: at the converter's hundred units a second it
+-- is about eight minutes of supply, long enough to ride out a heater going down and short enough
+-- that it is still a pipe network rather than a stockpile.~~
+--
+-- THAT BASIS WAS A CLAIM ABOUT A FLUID THIS VESSEL CANNOT HOLD, and #88 re-took it against the one
+-- it does. ADR 0018 item 5 left the volume standing on the converter's 100 units a second of
+-- rf-aneutronic-reactor-energy, which since #87 carries a category of its own and cannot enter here.
+-- What enters is helium-3 and the D-He3 mix, and those move two orders of magnitude slower:
+--
+--   what                                              helium-3, units/s    50 000 units is
+--   one rf-heater on rf-he3-he3-plasma                        2.5          5.6 hours
+--   one rf-heater on rf-d-he3-plasma (the mix is 50/50)       1.25         11.1 hours
+--   one shipped D-D reactor's helium-3 by-product             0.137        101 hours
+--
+-- The first two are the recipes: 5 units per 2 seconds at crafting_speed 1, and Core's
+-- rf-d-he3-mixing blends 50 deuterium with 50 helium-3 into 100 mix. The third is the shipped
+-- simulation driven to its D-D equilibrium -- 0.137 units a second at 2.42e8 C, alongside the
+-- 56.1 MW that equilibrium is quoted at elsewhere.
+--
+-- SO THE FINDING IS THAT THE VALUE HOLDS AND ITS CHARACTER DOES NOT: 50 000 units is a warehouse by
+-- the struck-through sentence's own standard, and it is kept as one on purpose. Helium-3 is the
+-- scarcest fluid in the mod -- one heater on the mix eats what NINE D-D reactors breed, and one on
+-- bare helium-3 what eighteen do -- so the vessel's job on this tier is to let a player accumulate a
+-- trickle and burn it in bursts, which is a stockpile's job and not a buffer's. Sizing it to the old
+-- eight minutes would put it at 1 200 units, a twentieth of a vanilla tank, and delete the entity's
+-- reason to exist.
+--
+-- What the volume is therefore anchored to is the VESSEL rather than a play-time target: a metal
+-- liner overwrapped in fibre holds a light gas at a pressure a welded steel tank of the same
+-- footprint cannot, and twice vanilla's volume is what that buys. See the paragraph on "composite"
+-- above.
+--
+-- THAT 9:1 SUPPLY RATIO IS A BALANCE QUESTION AND IS NOT SETTLED HERE. Whether the aneutronic tier
+-- should need nine breeders per heater is a decision about the tier, not about a tank, and nothing
+-- in this comment may be read as having taken it. Provisional, like every other balance number in
+-- this repository.
 tank.fluid_box.volume = 50000
 -- In-world it is Krastorio 2's big storage tank, which is where the icon already came from, so the
 -- thing in the hand and the thing on the ground are the same building (#45). It is a sprite swap and
