@@ -347,6 +347,18 @@ face.**
   did measure on 2026-09-07 is that four 40 MW exchangers bolted to one reactor return the same
   78.3 MW to six digits as the drain cell that removes everything: the row is not demand-limited, so
   the two cells are now one experiment.
+
+  **MEASURED AND CLOSED, 2026-09-08 (#89).**
+  [`bolted-joint-throughput.md`](../research/bolted-joint-throughput.md) carries it. One bolted
+  connection is **100 units/tick — 6 000 MW** of this fluid; the eight-exchanger row this bullet
+  names uses **5.3%** of it, and an unthrottled D-T reactor, which is the most the mod can ask,
+  uses **19.9%**. So one connection is enough and the reactor needs no second energy face for
+  throughput. The band this bullet describes is confirmed -- 100 flush, 51.3 at twenty pipes, so the
+  quoted floor of 50 is the right asymptote. One thing it said does not hold: re-deriving the ceiling
+  was never #227's question, #227 being a balance ticket about how much one exchanger should drain.
+  What #89 did hand #227 is worse arithmetic -- the same rig puts an ignited D-T reactor at
+  **996 MW sustained** against the ~320 MW `entities.lua` and #89's own text both reason from. This
+  bullet's "eight chained exchangers" is that figure's consequence and inherits the correction.
 - **UPS is unmeasured**, and ADR 0005's outstanding obligation to measure it is unaffected either way.
 - **The alignment arithmetic is a trap, and it is written down.** A pipe run aligns a connection's
   `target_position` onto the tile the pipe occupies; a **direct bolt** aligns one machine's connection

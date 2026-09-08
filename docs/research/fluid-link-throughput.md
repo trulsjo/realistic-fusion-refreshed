@@ -17,9 +17,17 @@ newer build.
 > cannot be built any more. The machines bolt face to face instead, which is the **flush** end of
 > the band this note quotes, so the numbers for zero pipes still describe the shipped shape and the
 > ones for a run of pipe describe nothing buildable. `bench-mod-links.ps1` was rebuilt for the bolt
-> and now counts pipes on the plasma link only. What a bolted joint carries per second is still
-> unmeasured; [#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227) owns it.
+> and now counts pipes on the plasma link only.
 > The plasma figures are untouched -- that link is still a pipe run.
+>
+> **What a bolted joint carries IS now measured (2026-09-08, #89), and the flush column below is the
+> measurement.** See [`bolted-joint-throughput.md`](bolted-joint-throughput.md): one bolted
+> connection is 6 000 units a second -- 6 000 MW of `rf-reactor-energy`, a unit of it being a
+> megajoule -- against 3 077 through a twenty-pipe run, so the joint carries **1.95x** what the leg
+> that no longer exists did. The whole matrix below was re-taken that day and reproduces to the
+> digit. This banner used to say the question was unmeasured and hand it to
+> [#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227); #227 is a balance ticket
+> about how much one exchanger should drain and never owned it.
 
 ## Why the question exists
 
