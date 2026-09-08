@@ -273,10 +273,19 @@ face.**
   the alternative would have been a pipe carrying reactor energy, which is what
   [#258](https://github.com/trulsjo/realistic-fusion-refreshed/issues/258) asks about. Chaining does
   not fail, so that question stays hypothetical.
-- **The composite tank's volume needs re-justifying.** 50 000 was sized against the converter's
-  hundred units a second — about eight minutes of *energy* supply (`entities.lua:1034-1037`). Against
-  helium-3 that number means something else and has not been examined. The entity's own "composite"
-  material story already pointed at helium-3, so its name and its physics are unaffected.
+- ~~**The composite tank's volume needs re-justifying.**~~
+  **RE-JUSTIFIED 2026-09-08 ([#88](https://github.com/trulsjo/realistic-fusion-refreshed/issues/88)):
+  the number holds and its character does not.** 50 000 was sized against the converter's hundred
+  units a second — about eight minutes of *energy* supply, argued beside the tank in `entities.lua`.
+  Against helium-3, at the recipes' own rates and the shipped simulation's, the same volume is **5.6
+  hours** of one `rf-heater` on bare helium-3, **11.1 hours** through the 50/50 D-He3 mix, and **101
+  hours** of one D-D reactor's breeding. So it is a warehouse by the old sentence's own standard and
+  is kept as one deliberately: helium-3 is the scarcest fluid in the mod, so the vessel's job on this
+  tier is to accumulate a trickle and burn it in bursts, and eight minutes would be 1 200 units. The
+  volume is anchored to the pressure vessel instead. **The supply ratio behind that — one heater eats
+  what nine D-D reactors breed — is a balance question about the tier and is not settled.** The
+  entity's own "composite" material story already pointed at helium-3, so its name and its physics
+  are unaffected, which is what this bullet predicted.
 - ~~**The converter's burstiness argument is now unanswered, and this is the loose end.**~~
   **MEASURED 2026-09-07 ([#85](https://github.com/trulsjo/realistic-fusion-refreshed/issues/85)):
   the chain buffers enough, and the argument does not buy a vessel.**
@@ -353,8 +362,13 @@ face.**
   connection is **100 units/tick — 6 000 MW** of this fluid; the eight-exchanger row this bullet
   names uses **5.3%** of it, and an unthrottled feed on the hardest-driven D-T reactor measured
   uses **19.9%**. So one connection is enough and the reactor needs no second energy face for
-  throughput -- a reactor would have to sell more than 6 000 MW before one bound it, six times what
-  that rig's does. The band this bullet describes is confirmed -- 100 flush, 51.3 at twenty pipes, so the
+  throughput -- a reactor would have to sell more than 6 000 MW before one bound it, **five times**
+  what that rig does.
+  Both that multiplier and the 19.9% above are on the bench's FLOWING bound of
+  1 195 MW; on its sustained bound of 996 MW the margin reads six instead. The basis is named rather
+  than left to the reader, because quoting one of those two bounds against the other is the defect
+  this bullet had to be corrected for once already.
+  The band this bullet describes is confirmed -- 100 flush, 51.3 at twenty pipes, so the
   quoted floor of 50 is the right asymptote. One thing it said does not hold: re-deriving the ceiling
   was never #227's question, #227 being a balance ticket about how much one exchanger should drain.
   What #89 did hand #227 is worse arithmetic -- the same rig puts an ignited D-T reactor at

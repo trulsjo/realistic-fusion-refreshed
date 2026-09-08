@@ -30,10 +30,10 @@ driven was not measured — see [the caveat](#is-one-connection-enough).
 
 **What the measurement did turn up is a balance finding rather than a plumbing one.** An ignited D-T
 reactor on this rig sells **996 to 1 195 MW** — the meter's two bounds, see below — not the "on the
-order of 320 MW" that `entities.lua:585` states and that #89's own text and ADR 0018's
-eight-exchanger row both reason from. Eight ordinary 40 MW exchangers take **26.8%** of it and the
-reactor **discards 73.2%**. Those two percentages are the same on either bound, which is why they are
-the form the finding is stated in. See [the finding for #227](#the-finding-a-d-t-reactor-sells-four-times-what-eight-exchangers-take).
+order of 320 MW" that `entities.lua`'s high-capacity steam pair block states, and that #89's own
+text and ADR 0018's eight-exchanger row both reason from. Eight ordinary 40 MW exchangers take
+**26.8%** of it and the reactor **discards 73.2%**. Those two percentages are the same on either
+bound, which is why they are the form the finding is stated in. See [the finding for #227](#the-finding-a-d-t-reactor-sells-four-times-what-eight-exchangers-take).
 
 ## What a bolted joint carries, against a pipe run
 
@@ -178,11 +178,11 @@ hardest-driven reactor measured here produces.
 
 Not a plumbing result, and #89 asks for it to be stated for a follow-up rather than acted on.
 
-`entities.lua:585` puts an ignited D-T reactor at "on the order of 320 MW", and #89's own text
-reasons from it — *"an ignited D-T reactor sells on the order of 320 MW, which is eight ordinary
-exchangers"*. ADR 0018's throughput bullet quotes no number, and its "row of eight chained
-exchangers" is the same figure's consequence. **Measured, on four heaters, it sells between 996 and
-1 195 MW.** Eight exchangers is therefore roughly a **quarter** of what it makes, not a match for it,
+`entities.lua`'s high-capacity steam pair block puts an ignited D-T reactor at "on the order of
+320 MW", and #89's own text reasons from it — *"an ignited D-T reactor sells on the order of 320 MW,
+which is eight ordinary exchangers"*. ADR 0018's throughput bullet quotes no number, and its "row
+of eight chained exchangers" is the same figure's consequence. **Measured, on four heaters, it
+sells between 996 and 1 195 MW.** Eight exchangers is therefore roughly a **quarter** of what it makes, not a match for it,
 and the `chain` cell throws away **73.2%** of the reactor's output — visible as its energy box
 sitting at 97.9% full for the whole run.
 
@@ -208,7 +208,7 @@ Two qualifications, both load-bearing:
   rather than better: #227 reasons from the same 320 MW to conclude one high-capacity exchanger is
   enough for D-T. It is **three** of them, or two and a half on the lower bound.
 
-**The high-capacity tier's own justification survives it, and gets stronger.** `entities.lua:585`
+**The high-capacity tier's own justification survives it, and gets stronger.** The same block
 argues `rf-hc-exchanger` into existence because 320 MW is "eight exchangers and fifty-five turbines
 PER REACTOR ... not a difficulty curve, it is a blueprint chore". At 1 195 MW it is **thirty
 exchangers and about two hundred turbines** — twenty-five and a hundred and seventy on the lower
