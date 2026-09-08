@@ -427,6 +427,12 @@ contain(reactor.output_fluid_box, REACTOR_ENERGY_CATEGORY)
 -- The prose below is the note as accepted in #252 except where a later round of Truls's changed
 -- what the machine has: #275 added the short-end energy feeds and rebuilt the steam header, and
 -- those sentences are his.
+--
+-- THE STEAM HEADER'S SHAPE WAS WRITTEN DOWN LATER, and not by him. Rings on a tube, the low
+-- sagging drum-to-drum runs, the gooseneck off a cap and the landing inside a cap's ring of bolts
+-- were decisions #275 took and left in build.py's comments alone. A model rebuilt from the note by
+-- itself came back with three loops arching over the machine -- the exact shape build.py says it
+-- was avoiding -- so those sentences are now in the note, describing the object that shipped.
 --[[ look: rf-heat-exchanger   (read under models/house-style.md; accepted in #252, after #246)
 A long, low hall, five wide and fifteen long, that turns reactor energy into steam. Along the
 whole west face runs a closed, riveted manifold trough the full fifteen tiles, with an energy
@@ -451,15 +457,23 @@ east side, a gauge cluster and a handwheel valve.
 
 From the manifold, glowing feed lines run east under the grating to the foot of each drum. At each
 short end a glowing feed runs from the socket into the manifold, so every energy connection has a
-run behind it. The steam header is a deeply banded corrugated hose, and it is three runs rather
-than one pipe passing overhead: each end drum sends its steam to the middle drum, and the middle
-drum sends the lot to the single steam outlet at the middle of the east face. Every run meets a
-drum by bending down onto its cap -- the two between drums at both ends, the outlet run at its
-start -- so the middle drum carries three. The outlet run bends around the drum and the frame
-rather than through them, and drops through an opening in the grating. The water sockets sit low
-on both short ends, feeding a header along the base. The south end is closed by a painted wall
-with a vent, and a control cabinet with a blue panel stands at the south-east corner: those two
-are what break the symmetry.
+run behind it. The steam header is a corrugated hose, and the banding is rings on a tube rather
+than a ripple in it: a ring about every tube-radius along the run, each standing about a quarter
+of the radius proud, with bare tube showing between them -- a gap between rings is what tells a
+corrugated hose from a spring. It is three runs rather than one pipe passing overhead: each end
+drum sends its steam to the middle drum, and the middle drum sends the lot to the single steam
+outlet at the middle of the east face. The two drum-to-drum runs stay LOW AND HANG -- a third of a
+tile of rise off the cap, then a sag that falls below the caps between them -- so they read as
+hoses slung between the drums and not as loops arching over the machine; the outlet run is the one
+that climbs, because it has to cross the middle drum's own shoulder. Every run meets a drum by
+bending down onto its cap -- the two between drums at both ends, the outlet run at its start -- so
+the middle drum carries three, landing inside its ring of bolts and spread around the cap rather
+than stacked on one line. Each leaves and lands vertically with half a tile of straight rise
+before it turns, or the curve overshoots and the hose curls back over itself. The outlet run bends
+around the drum and the frame rather than through them, and drops through an opening in the
+grating. The water sockets sit low on both short ends, feeding a header along the base. The south
+end is closed by a painted wall with a vent, and a control cabinet with a blue panel stands at the
+south-east corner: those two are what break the symmetry.
 
 The manifold channel and its feed lines glow with the energy accent while the machine is working,
 and are DARK when it is not -- they carry the accent as emission, not as their own colour, or a
