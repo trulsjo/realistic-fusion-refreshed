@@ -101,6 +101,22 @@
     the 133 MW #37 settles at, so the link is not demand-limited. Fewer would measure the
     exchangers rather than the reactor.
 
+    EIGHT IS WHAT #89 ASKS FOR, and only on -Plasma rf-d-t-plasma: an ignited D-T reactor sells on
+    the order of 320 MW, which is eight 40 MW exchangers, and whether the eighth one down a chain
+    off ONE bolted connection is fed at all is the question that ticket exists to answer. The
+    per-exchanger table below is what says so; a row whose far end idles reports it there and
+    nowhere else.
+
+.PARAMETER Plasma
+    Which plasma the heater bank makes, and so which tier the chain is driven by. The heater's own
+    input fluid is read off that recipe rather than written down -- D-D eats rf-deuterium and D-T
+    eats Core's rf-d-t-mix -- so nothing else in the rig has to know which tier is running.
+
+    THE DEFAULT IS STILL D-D, which is the tier #48 measured and the one every figure in
+    docs/research/fluid-link-throughput.md's mod-link section was taken on. rf-d-t-plasma is what
+    #89 added it for: D-D settles at 133 MW and never asks much of a bolted joint, so a rig that
+    can only run D-D cannot ask whether the joint is big enough for the tier that would strain it.
+
 .PARAMETER Pipes
     Pipes between the heater bank and the reactor, on the PLASMA link only. It used to set the
     distance on both links; since #86 the energy link has no pipes to count, so a run's two rates
@@ -122,6 +138,7 @@ param(
     [ValidateRange(600, 1000000)] [int] $Ticks      = 126000,
     [ValidateRange(300, 100000)]  [int] $Window     = 6000,
     [ValidateRange(1, 12)]        [int] $Exchangers = 4,
+    [ValidateSet('rf-d-d-plasma', 'rf-d-t-plasma')] [string] $Plasma = 'rf-d-d-plasma',
     [ValidateRange(1, 20)]        [int] $Pipes      = 3,
     [ValidateRange(1, 8)]         [int] $Heaters    = 4,
     [switch] $KeepTemp
@@ -162,7 +179,7 @@ local EXCHANGERS = __EXCHANGERS__
 local PIPES      = __PIPES__
 local HEATERS    = __HEATERS__
 
-local PLASMA = "rf-d-d-plasma"
+local PLASMA = "__PLASMA__"
 local ENERGY = "rf-reactor-energy"
 -- Write-EnergyFeed's prototype. It carries BOTH energy categories since #86 -- read off the two
 -- shipped reactors' output boxes -- because a vanilla infinity pipe stopped being able to reach an
@@ -214,16 +231,34 @@ end
 -- or -- since every box it looks for afterwards is D-D's -- abort halfway through building itself,
 -- and which of those happened could change when any prototype is added.
 --
--- This benchmark is about the D-D tier, so it says which recipe it wants. The category test is what
--- survives of asking: it still catches the recipe being moved out from under the heater, which is
--- the failure the lookup existed to catch.
+-- This benchmark says which recipe it wants -- -Plasma picks it, and the default is still D-D. The
+-- category test is what survives of asking: it still catches the recipe being moved out from under
+-- the heater, which is the failure the lookup existed to catch.
 local function plasma_recipe()
   local recipe = prototypes.recipe[PLASMA]
   local categories = prototypes.entity["rf-heater"].crafting_categories
   if not (recipe and categories[recipe.category]) then
-    error("rf-heater cannot craft " .. PLASMA .. "; this rig is built around the D-D tier")
+    error("rf-heater cannot craft " .. PLASMA .. "; -Plasma named a tier this heater has no recipe for")
   end
   return PLASMA
+end
+
+--- What the heater bank eats to make PLASMA, read off the recipe rather than written down (#89).
+--
+-- It used to be the literal "rf-deuterium" in three places, which was true of the D-D tier and of
+-- nothing else: rf-d-t-plasma is heated out of Core's rf-d-t-mix. Three literals is three places to
+-- miss, and the miss would not have been an error -- box_of() would have found no rf-deuterium box
+-- on a D-T heater and the rig would have aborted mid-build with a message about a box rather than
+-- about the tier.
+--
+-- The first FLUID ingredient, not the first ingredient: nothing in the mod heats plasma out of an
+-- item today, and if something ever does, this rig feeds its heaters through a pipe and would have
+-- to grow an inserter before that recipe could run here at all.
+local function feed_fluid()
+  for _, ingredient in ipairs(prototypes.recipe[PLASMA].ingredients) do
+    if ingredient.type == "fluid" then return ingredient.name end
+  end
+  error(PLASMA .. "'s recipe takes no fluid ingredient; this rig can only feed a heater by pipe")
 end
 
 -- ------------------------------------------------------------------ fluid box helpers
@@ -437,8 +472,8 @@ local function assert_segments(cell)
   claim(cell.reactor, cell.energy_box, ENERGY, "the reactor's energy box")
   for i, heater in ipairs(cell.heaters) do
     claim(heater, box_of(heater, PLASMA), PLASMA, "heater " .. i .. "'s plasma output")
-    claim(heater, box_of(heater, "rf-deuterium"), "rf-deuterium",
-      "heater " .. i .. "'s deuterium input")
+    claim(heater, box_of(heater, feed_fluid()), feed_fluid(),
+      "heater " .. i .. "'s " .. feed_fluid() .. " input")
   end
   for i, exchanger in ipairs(cell.exchangers) do
     claim(exchanger, box_of(exchanger, ENERGY), ENERGY, "exchanger " .. i .. "'s energy input")
@@ -530,8 +565,8 @@ local function build(surface, force, ox, drain, power)
   for i = 0, HEATERS - 1 do
     local built = place_facing(surface, force, "rf-heater", PLASMA,
       { west[1] - (PIPES - 1) - 3 * i, west[2] }, { ox - 24.5 - 4 * i, 20.5 })
-    unbound(surface, force, built, box_of(built, "rf-deuterium"),
-      { name = "rf-deuterium", percentage = 1, mode = "at-least" })
+    unbound(surface, force, built, box_of(built, feed_fluid()),
+      { name = feed_fluid(), percentage = 1, mode = "at-least" })
     -- The first is the one the meter watches. They all feed the same segment, so one is a fair
     -- sample of the link; what the others do is add supply -- which is why assert_intact() keeps
     -- the whole bank rather than only the metered one.
@@ -642,7 +677,21 @@ script.on_init(function()
   -- only as a link that carries nothing. This is also the state the mod gets played in.
   force.research_all_technologies()
 
-  surface.request_to_generate_chunks({ 0, 0 }, 8)
+  -- Cell pitch, derived rather than written down (#89). It was a literal 100, and the comment on
+  -- CLEAR below already gave the arithmetic behind it: about forty tiles for the reactor's own half
+  -- and a water feed at each end of the row, plus fifteen tiles for every machine in the row. That
+  -- is exactly 100 at the four-exchanger default, so nothing about a default run moves -- but at
+  -- eight it is 160, and a literal 100 put the eighth machine straight through the drain cell's
+  -- energy feed. The failure was loud, place_or_die() saw it, and it is still better derived: the
+  -- next footprint change moves it on its own.
+  local CELL_PITCH = math.max(100,
+    math.ceil(prototypes.entity["rf-reactor"].tile_width / 2)
+      + EXCHANGERS * prototypes.entity["rf-heat-exchanger"].tile_width + 25)
+  local EAST = CELL_PITCH + 100
+
+  -- Radius in chunks, so a long row is not built on ungenerated ground. Eight chunks is 256 tiles
+  -- and covered the old fixed layout with nothing to spare.
+  surface.request_to_generate_chunks({ 0, 0 }, math.ceil(EAST / 32) + 2)
   surface.force_generate_chunk_requests()
 
   -- AFTER the chunks exist, which is the shared guard's one precondition: it clears what it can
@@ -653,10 +702,10 @@ script.on_init(function()
   storage.quieted = __QUIETFN__(surface)
 
   -- THE CLEARED BOX RUNS FURTHER EAST AND FURTHER SOUTH THAN IT DID, because the chain cell's row
-  -- is now four fifteen-tile machines laid side by side along the reactor's south face rather than
-  -- a bank hung off a header. Sixty tiles of exchanger plus a water feed at each end is why the two
-  -- cells are a hundred apart below instead of sixty.
-  local CLEAR = { { -120, -60 }, { 200, 40 } }
+  -- is now -EXCHANGERS fifteen-tile machines laid side by side along the reactor's south face rather
+  -- than a bank hung off a header. Fifteen tiles of exchanger each plus a water feed at each end is
+  -- what CELL_PITCH above computes, and the east edge is one cell beyond the second cell's origin.
+  local CLEAR = { { -120, -60 }, { EAST, 40 } }
   local tiles = {}
   for x = CLEAR[1][1], CLEAR[2][1] do
     for y = CLEAR[1][2], CLEAR[2][2] do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
@@ -675,7 +724,7 @@ script.on_init(function()
   -- Kept per cell, so assert_intact() can see the supply path: losing either half takes a cell's
   -- heater dark without invalidating anything the meter touches.
   local power = {}
-  for _, ox in ipairs({ 0, 100 }) do
+  for _, ox in ipairs({ 0, CELL_PITCH }) do
     power[ox] = {}
     for _, dx in ipairs({ 9, -9 }) do
       local sub = place_or_die(surface,
@@ -691,7 +740,10 @@ script.on_init(function()
     end
   end
 
-  storage.cells = { build(surface, force, 0, false, power[0]), build(surface, force, 100, true, power[100]) }
+  storage.cells = {
+    build(surface, force, 0, false, power[0]),
+    build(surface, force, CELL_PITCH, true, power[CELL_PITCH]),
+  }
   for _, cell in ipairs(storage.cells) do
     cell.last_plasma = amount_in(cell.heater, cell.heater_box)
     cell.last_energy = amount_in(cell.reactor, cell.energy_box)
@@ -718,12 +770,16 @@ local function report(cell, window)
     cell.plasma_skipped, plasma and plasma.temperature or 0, plasma and plasma.amount or 0,
     amount_in(reactor, cell.energy_box),
     status_name(cell.heater.status), amount_in(cell.heater, cell.heater_box),
-    amount_in(cell.heater, box_of(cell.heater, "rf-deuterium"))))
+    amount_in(cell.heater, box_of(cell.heater, feed_fluid()))))
 
-  local exchanger = cell.exchangers[1]
-  if exchanger then
-    log(string.format("LINKRIG exch cell=%s window=%d status=%s fuel=%.6g water=%.6g steam=%.6g",
-      cell.name, window, status_name(exchanger.status),
+  -- EVERY exchanger in the row, which is #89's whole instrument. This used to report
+  -- cell.exchangers[1] alone -- the one bolted straight to the reactor, and therefore the one that
+  -- cannot starve however the chain behaves. A row fed through a single joint fails at its FAR end
+  -- or not at all, so the only machine the old line could not see is the only one worth watching.
+  for i, exchanger in ipairs(cell.exchangers) do
+    log(string.format(
+      "LINKRIG exch cell=%s window=%d index=%d status=%s fuel=%.6g water=%.6g steam=%.6g",
+      cell.name, window, i, status_name(exchanger.status),
       amount_in(exchanger, box_of(exchanger, ENERGY)),
       amount_in(exchanger, box_of(exchanger, "water")),
       amount_in(exchanger, box_of(exchanger, "steam"))))
@@ -766,6 +822,7 @@ end)
         Replace('__QUIETFN__', $script:QuietMapFunction).
         Replace('__WINDOW__', "$Window").Replace('__EXCHANGERS__', "$Exchangers").
         Replace('__PIPES__', "$Pipes").Replace('__HEATERS__', "$Heaters").
+        Replace('__PLASMA__', $Plasma).
         Replace('__ENERGYFEED__', (Write-EnergyFeed -RigDirectory $rigDir))
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $lua -Encoding utf8
 }
@@ -821,6 +878,27 @@ try {
         }
     }
     if ($windows.Count -lt 6) { throw "only $($windows.Count) window reports; the run did not finish." }
+
+    # The per-exchanger trace, which is what #89 reads. Logged every window for every machine in the
+    # row; only the last window is reported, because the question is what a settled row does and the
+    # equilibrium gate below is what decides the run was one.
+    # NOT a variable named for the -Exchangers parameter: PowerShell variables are
+    # case-insensitive, so that name IS the [int] parameter, and assigning an array to it fails
+    # with a type-conversion error naming neither the parameter nor the line that built the array.
+    $rowSamples = @()
+    foreach ($record in (Get-Content $runOut | Select-String -Pattern 'LINKRIG exch ')) {
+        $f = @{}
+        foreach ($m in [regex]::Matches("$record", '(\w+)=([^\s]+)')) { $f[$m.Groups[1].Value] = $m.Groups[2].Value }
+        $rowSamples += [pscustomobject]@{
+            Cell   = $f['cell']
+            Window = [int]    $f['window']
+            Index  = [int]    $f['index']
+            Status = $f['status']
+            Fuel   = [double] $f['fuel']
+            Water  = [double] $f['water']
+            Steam  = [double] $f['steam']
+        }
+    }
 
     # ------------------------------------------------------- equilibrium, and the meter's own honesty
     $faults = @()
@@ -884,7 +962,11 @@ try {
     Write-Host ('{0,-8}{1,16}{2,16}{3,14}{4,14}{5,16}{6,12}' -f
         'cell', 'plasma u/tick', 'energy u/tick', 'energy MW', 'plasma held', 'plasma degC', 'ticks met')
     foreach ($s in $summary) {
-        Write-Host ('{0,-8}{1,16:N4}{2,16:N3}{3,14:N1}{4,14:N1}{5,16:N4}{6,12:P0}' -f
+        # The temperature is printed in scientific notation rather than as a fixed-point number
+        # with group separators. N4 was written against the D-D tier, whose 2.4e8 fits; a D-T
+        # reactor runs an order higher and 1.470.790.000,0000 overran the column and ran into the
+        # one beside it, so the row could not be read at all (#89).
+        Write-Host ('{0,-8}{1,16:N4}{2,16:N3}{3,14:N1}{4,14:N1}{5,16:E3}{6,12:P0}' -f
             $s.Cell, $s.PlasmaPerTick, $s.EnergyPerTick, $s.MegawattsOut, $s.PlasmaAmount,
             $s.TempC, $s.EnergyCounted)
     }
@@ -932,6 +1014,40 @@ try {
             Write-Host ('  {0,-7}{1,-8}{2,9:N4} u/tick flowing   {3,6:N0}x to {4,6:N0}x headroom   ({5})' -f
                 $s.Cell, $link.Name, $link.Rate,
                 ($c.Min / $link.Rate), ($c.Max / $link.Rate), $c.What)
+        }
+    }
+
+    # ------------------------------------------------------------------ the row, machine by machine
+    #
+    # A chained row off ONE bolted connection either feeds its far end or does not, and nothing else
+    # this script prints would say which: the link rate above is what crossed the FIRST joint, and a
+    # row whose last machine sits idle crosses that joint just as briskly.
+    $rowWindow = ($rowSamples | Where-Object { $_.Cell -eq 'chain' } |
+        Measure-Object Window -Maximum).Maximum
+    $row = @($rowSamples | Where-Object { $_.Cell -eq 'chain' -and $_.Window -eq $rowWindow } |
+        Sort-Object Index)
+    if ($row.Count -gt 0) {
+        Write-Host ''
+        Write-Host ("the chain cell's row at the last window -- $Plasma, $Exchangers exchanger(s) " +
+                    'off one bolted connection')
+        Write-Host ('{0,-10}{1,-22}{2,14}{3,12}{4,12}' -f
+            'position', 'status', 'energy held', 'water', 'steam')
+        foreach ($e in $row) {
+            Write-Host ('{0,-10}{1,-22}{2,14:N1}{3,12:N0}{4,12:N0}' -f
+                $e.Index, $e.Status, $e.Fuel, $e.Water, $e.Steam)
+        }
+        $idle = @($row | Where-Object { $_.Status -ne 'working' })
+        Write-Host ''
+        if ($idle.Count -eq 0) {
+            Write-Host ("every machine in the row was working, so one connection fed all " +
+                        "$($row.Count) of them.")
+        } else {
+            Write-Host ("$($idle.Count) of $($row.Count) machines were NOT working: positions " +
+                        ((($idle | ForEach-Object { $_.Index }) -join ', ')) + '.')
+            Write-Host ('That is a finding about the shape rather than a fault in this rig -- read it ' +
+                        'beside the energy')
+            Write-Host ('held in each box: a starved far end holds nothing, a demand-limited one holds ' +
+                        'a full box.')
         }
     }
 
