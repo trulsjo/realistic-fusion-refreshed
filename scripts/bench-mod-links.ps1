@@ -106,8 +106,9 @@
     at every number it has had: 160 MW of demand out-runs 133, 94 and 78.3 alike.
 
     EIGHT IS WHAT #89 ASKS FOR, and only on -Plasma rf-d-t-plasma. Eight is the number that ticket
-    reasons to from entities.lua:585's "on the order of 320 MW" for an ignited D-T reactor, and
-    THAT FIGURE IS SUPERSEDED by what this script then measured: 996 to 1 195 MW, so eight 40 MW
+    reasons to from the "on the order of 320 MW" that entities.lua's high-capacity steam pair block
+    states for an ignited D-T reactor, and THAT FIGURE IS SUPERSEDED by what this script then
+    measured: 996 to 1 195 MW, so eight 40 MW
     exchangers take about 26.8% of the reactor rather than matching it. Eight is kept as the number
     #89 asked about rather than raised to the thirty the new figure implies, because the question is
     whether the eighth machine down a chain off ONE bolted connection is fed at all -- and it is
