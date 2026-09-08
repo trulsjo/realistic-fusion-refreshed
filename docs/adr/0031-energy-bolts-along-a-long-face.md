@@ -216,8 +216,9 @@ an energy box is `input-output`. And each tier chains on its own axis.**
   this bullet separates now have answers in
   [`bolted-joint-throughput.md`](../research/bolted-joint-throughput.md). A bolted joint carries
   **100 units/tick — 6 000 MW** on one connection, 1.95x what a twenty-pipe run did. A D-T reactor
-  against a real eight-machine row sustains **320 MW**, which is the row's nameplate rather than the
-  joint's limit: every machine in the row worked and every energy box sat at 199.3 of 200, so the row
+  against a real eight-machine row delivers **320 MW across the joint** -- the row's nameplate rather
+  than the joint's limit, and the bench's *flowing* rate rather than its *sustained* one, which is the
+  basis ADR 0018's figures beside it are also on: every machine in the row worked and every energy box sat at 199.3 of 200, so the row
   is demand-limited and the reactor's own box backs up at 97.9%. **Item 6's deferral survives and
   loses one of its reasons** — intake width cannot be justified on throughput, because the first
   connection is nowhere near full.

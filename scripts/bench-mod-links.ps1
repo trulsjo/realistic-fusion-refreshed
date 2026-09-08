@@ -98,14 +98,22 @@
 
 .PARAMETER Exchangers
     Heat exchangers on the chain cell's reactor. Four 40 MW exchangers is 160 MW of demand against
-    the 133 MW #37 settles at, so the link is not demand-limited. Fewer would measure the
-    exchangers rather than the reactor.
+    the 94 MW this rig's D-D reactor settles at, so the link is not demand-limited. Fewer would
+    measure the exchangers rather than the reactor.
 
-    EIGHT IS WHAT #89 ASKS FOR, and only on -Plasma rf-d-t-plasma: an ignited D-T reactor sells on
-    the order of 320 MW, which is eight 40 MW exchangers, and whether the eighth one down a chain
-    off ONE bolted connection is fed at all is the question that ticket exists to answer. The
-    per-exchanger table below is what says so; a row whose far end idles reports it there and
-    nowhere else.
+    ~~the 133 MW #37 settles at~~ is a PRE-#52 figure, from before the radiation term shipped, and
+    corrected here for the same reason #88 corrected two others (#89). The conclusion is unchanged
+    at every number it has had: 160 MW of demand out-runs 133, 94 and 78.3 alike.
+
+    EIGHT IS WHAT #89 ASKS FOR, and only on -Plasma rf-d-t-plasma. Eight is the number that ticket
+    reasons to from entities.lua:585's "on the order of 320 MW" for an ignited D-T reactor, and
+    THAT FIGURE IS SUPERSEDED by what this script then measured: 996 to 1 195 MW, so eight 40 MW
+    exchangers take about 26.8% of the reactor rather than matching it. Eight is kept as the number
+    #89 asked about rather than raised to the thirty the new figure implies, because the question is
+    whether the eighth machine down a chain off ONE bolted connection is fed at all -- and it is
+    (docs/research/bolted-joint-throughput.md). The per-exchanger table below is what says so; a row
+    whose far end idles reports it there and nowhere else. How many exchangers a reactor SHOULD have
+    is #227's, not this switch's.
 
 .PARAMETER Plasma
     Which plasma the heater bank makes, and so which tier the chain is driven by. The heater's own
@@ -114,8 +122,9 @@
 
     THE DEFAULT IS STILL D-D, which is the tier #48 measured and the one every figure in
     docs/research/fluid-link-throughput.md's mod-link section was taken on. rf-d-t-plasma is what
-    #89 added it for: D-D settles at 133 MW and never asks much of a bolted joint, so a rig that
-    can only run D-D cannot ask whether the joint is big enough for the tier that would strain it.
+    #89 added it for: this rig's D-D reactor settles at 94 MW flowing -- 78.3 sustained -- and never
+    asks much of a bolted joint, so a rig that can only run D-D cannot ask whether the joint is big
+    enough for the tier that would strain it.
 
 .PARAMETER Pipes
     Pipes between the heater bank and the reactor, on the PLASMA link only. It used to set the
@@ -677,13 +686,28 @@ script.on_init(function()
   -- only as a link that carries nothing. This is also the state the mod gets played in.
   force.research_all_technologies()
 
-  -- Cell pitch, derived rather than written down (#89). It was a literal 100, and the comment on
-  -- CLEAR below already gave the arithmetic behind it: about forty tiles for the reactor's own half
-  -- and a water feed at each end of the row, plus fifteen tiles for every machine in the row. That
-  -- is exactly 100 at the four-exchanger default, so nothing about a default run moves -- but at
-  -- eight it is 160, and a literal 100 put the eighth machine straight through the drain cell's
-  -- energy feed. The failure was loud, place_or_die() saw it, and it is still better derived: the
-  -- next footprint change moves it on its own.
+  -- Cell pitch, derived rather than written down (#89). It was a literal 100, which is the room a
+  -- four-machine row needs and no more: at eight exchangers it put the last machine straight through
+  -- the drain cell's energy feed. The failure was loud -- place_or_die() saw it -- and it is still
+  -- better derived than remembered.
+  --
+  -- THE ARITHMETIC IS THE REACTOR'S HALF PLUS THE ROW PLUS 25, FLOORED AT 100, and it is written out
+  -- because a rounder-looking story is wrong: 8 + 4x15 + 25 is 93 at the default, so what produces
+  -- the historical 100 there is the FLOOR and not the sum. At eight the sum wins at 153, which is
+  -- what the eight-exchanger measurement ran on. The floor is what keeps a default run identical to
+  -- every figure taken before this line existed.
+  --
+  -- IT COVERS THE ROW AND NOT THE HEATER BANK, which is the limitation to know before trusting it.
+  -- The row grows EAST of a cell's origin with EXCHANGERS; the plasma run and its heaters grow WEST
+  -- of it with -Pipes and -Heaters, and this expression looks at neither.
+  --
+  -- What a long bank actually hits first is NOT the pitch, which is worth knowing because the
+  -- opposite is the natural guess. Tried at -Pipes 20 -Heaters 8 -- both inside their ValidateRange
+  -- -- the run dies at "rf-heater is on no electric network": the bank outruns the two substations
+  -- placed per cell long before its western end reaches the neighbouring cell. So growing this
+  -- expression westward would not buy those combinations; the power islands would have to grow with
+  -- the bank first. Either way the failure is loud and names its part, which is why neither is
+  -- fixed here.
   local CELL_PITCH = math.max(100,
     math.ceil(prototypes.entity["rf-reactor"].tile_width / 2)
       + EXCHANGERS * prototypes.entity["rf-heat-exchanger"].tile_width + 25)
@@ -703,8 +727,9 @@ script.on_init(function()
 
   -- THE CLEARED BOX RUNS FURTHER EAST AND FURTHER SOUTH THAN IT DID, because the chain cell's row
   -- is now -EXCHANGERS fifteen-tile machines laid side by side along the reactor's south face rather
-  -- than a bank hung off a header. Fifteen tiles of exchanger each plus a water feed at each end is
-  -- what CELL_PITCH above computes, and the east edge is one cell beyond the second cell's origin.
+  -- than a bank hung off a header. CELL_PITCH above is the room one cell needs; the east edge is one
+  -- more cell's worth beyond the second cell's origin, so the drain cell has the same clearance the
+  -- chain cell does.
   local CLEAR = { { -120, -60 }, { EAST, 40 } }
   local tiles = {}
   for x = CLEAR[1][1], CLEAR[2][1] do

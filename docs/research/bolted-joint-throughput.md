@@ -18,16 +18,22 @@ megawatts without a conversion, and this note uses both.
 
 ## The short answer
 
-**One bolted connection carries 6 000 MW, and the most this mod can ask of one is 1 195 MW.** The
-joint is nowhere near being the constraint, the shipped row of eight exchangers uses 5.3% of it, and
-**the reactor does not need energy connections on more than one face** — not for throughput, which was
-the open question. ADR 0031's item 6 stays deferred on its own merits; #89 removes throughput as a
-reason to take it.
+**One bolted connection carries 6 000 MW, and the hardest-driven reactor measured here asks
+1 195 MW of one.** The joint is nowhere near being the constraint, the shipped row of eight
+exchangers uses 5.3% of it, and **the reactor does not need energy connections on more than one
+face** — not for throughput, which was the open question. ADR 0031's item 6 stays deferred on its own
+merits; #89 removes throughput as a reason to take it.
+
+That is a 5× margin on a measured case rather than a proof about every case: a reactor would have to
+sell **five times** what this rig's does before one connection bound it, and how far a reactor can be
+driven was not measured — see [the caveat](#is-one-connection-enough).
 
 **What the measurement did turn up is a balance finding rather than a plumbing one.** An ignited D-T
-reactor on this rig sells **996 MW sustained**, not the "on the order of 320 MW" that
-`entities.lua:585` states and that #89's own text and ADR 0018's eight-exchanger row both reason
-from. Eight ordinary 40 MW exchangers take 320 MW of it and the reactor **discards 68%**. See [the finding for #227](#the-finding-a-d-t-reactor-sells-three-times-what-eight-exchangers-take).
+reactor on this rig sells **996 to 1 195 MW** — the meter's two bounds, see below — not the "on the
+order of 320 MW" that `entities.lua:585` states and that #89's own text and ADR 0018's
+eight-exchanger row both reason from. Eight ordinary 40 MW exchangers take **26.8%** of it and the
+reactor **discards 73.2%**. Those two percentages are the same on either bound, which is why they are
+the form the finding is stated in. See [the finding for #227](#the-finding-a-d-t-reactor-sells-four-times-what-eight-exchangers-take).
 
 ## What a bolted joint carries, against a pipe run
 
@@ -68,8 +74,9 @@ reactor each, four `rf-heater`s each making `rf-d-t-plasma`:
   each one after it chains off its neighbour's east short end (ADR 0031 item 2). Water enters at the
   row's two ends only, because every interior water connection is spent on a joint.
 - **`drain`** — the same reactor with the row replaced by a categorised energy feed that removes
-  reactor energy as fast as it arrives. Nothing throttles the link, so this is **the most this mod
-  will ever ask of a bolted joint**, whatever a player builds downstream.
+  reactor energy as fast as it arrives. Nothing throttles the link, so this is **the most this
+  reactor can ask of a bolted joint**, whatever a player builds downstream of one like it. It bounds
+  demand, not supply: a reactor fed harder produces more, and that is the caveat below.
 
 Both cells settled: rate, plasma temperature and plasma inventory each moved less than their
 tolerance across the last two windows, at 2.846×10⁹ °C and 597.4 units of plasma.
@@ -77,7 +84,7 @@ tolerance across the last two windows, at 2.846×10⁹ °C and 597.4 units of pl
 | | across the joint, per tick | as megawatts | reactor's energy box | joint's ceiling used |
 |---|---:|---:|---:|---:|
 | `chain`, 8 exchangers | **5.333** | **320.0** | **978.7 of 1 000 — 97.9% FULL** | **5.3%** |
-| `drain`, unthrottled | **19.924** | **1 195.4** | 160.5 of 1 000 — 16.1% | **19.9%** |
+| `drain`, unthrottled, 4 heaters | **19.924** | **1 195.4** | 160.5 of 1 000 — 16.1% | **19.9%** |
 
 (Per-tick figures are the script's *flowing* rate — the rate on ticks fluid actually moved, which is
 the one a per-tick ceiling is comparable with. Its *sustained* figures, 4.445 and 16.604 units/tick,
@@ -142,12 +149,18 @@ which is a single reactor held full at its own temperature; nothing here rests o
 | what is asking | units/tick | megawatts | against one connection's 100 units/tick |
 |---|---:|---:|---:|
 | eight ordinary exchangers, the shipped row | 5.333 | 320.0 | **18.8× headroom** |
-| an unthrottled D-T reactor, this rig's most | 19.924 | 1 195.4 | **5.0× headroom** |
+| an unthrottled feed on this rig's D-T reactor | 19.924 | 1 195.4 | **5.0× headroom** |
 | one `rf-hc-exchanger` at nameplate | 6.667 | 400.0 | 15.0× headroom |
 
-The second row is the one that answers the question, because it is the ceiling on demand rather than
-a build: nothing a player assembles can pull harder on that joint than a feed that empties it every
-tick, and that still leaves the joint at a fifth of what it carries.
+The second row is the one that answers the question, because it bounds **demand**: nothing a player
+assembles can pull harder on that joint than a feed that empties it every tick, and that still leaves
+the joint at a fifth of what it carries.
+
+**What it does not bound is supply**, and that is where the answer stops being a proof. This rig's
+reactor runs on four heaters and settles at 597.4 units of a 3 000-unit plasma box; a reactor fed
+harder holds more plasma and sells more, and how far that goes was not measured. What can be said
+precisely is the distance: **a reactor would have to sell more than 6 000 MW before one connection
+bound it**, which is five times this one and nineteen times the ~320 MW the mod's own prose assumes.
 
 **So the reactor needs no second energy face for throughput.** ADR 0031 item 6 deferred intake width
 partly on "#47 measured throughput as near linear in connection count" — true, and irrelevant here,
@@ -158,19 +171,31 @@ than this one.
 its 100 units/tick ceiling **scaled by the source box's fill ratio**, so a reactor does not get 6 000
 MW out of a nearly-empty box. It does not need to: the box settles at whatever fill makes outflow
 equal production, which is what the drain cell shows at 16.1% fill passing 19.9 units/tick. The
-ceiling binds only against a reactor producing more than **6 000 MW**, which is six times what the
+ceiling binds only against a reactor producing more than **6 000 MW**, which is five times what the
 hardest-driven reactor measured here produces.
 
-## The finding: a D-T reactor sells three times what eight exchangers take
+## The finding: a D-T reactor sells four times what eight exchangers take
 
 Not a plumbing result, and #89 asks for it to be stated for a follow-up rather than acted on.
 
 `entities.lua:585` puts an ignited D-T reactor at "on the order of 320 MW", and #89's own text
 reasons from it — *"an ignited D-T reactor sells on the order of 320 MW, which is eight ordinary
 exchangers"*. ADR 0018's throughput bullet quotes no number, and its "row of eight chained
-exchangers" is the same figure's consequence. **Measured, on four heaters, it sells 996 MW sustained and peaks at 1 195 MW.** Eight
-exchangers is therefore a third of what it makes, not a match for it, and the `chain` cell throws away
-**68%** of the reactor's output — visible as its energy box sitting at 97.9% full for the whole run.
+exchangers" is the same figure's consequence. **Measured, on four heaters, it sells between 996 and
+1 195 MW.** Eight exchangers is therefore roughly a **quarter** of what it makes, not a match for it,
+and the `chain` cell throws away **73.2%** of the reactor's output — visible as its energy box
+sitting at 97.9% full for the whole run.
+
+**Why a range and not a number, and why the percentage is neither bound.** The meter cannot report
+one figure here. Its *sustained* rate (996 MW) divides the window's total by every tick, including
+the one in six the reactor writes on and the meter excludes because production and outflow cannot be
+told apart afterwards — so it undercounts by whatever crossed on those ticks. Its *flowing* rate
+(1 195 MW) divides by the counted ticks only, which over-counts unless outflow is uniform, and the
+drain cell's is not: an infinity pipe empties the box every tick, so flow falls with the box between
+writes. The true average sits between them. **The comparison does not depend on which**, because the
+row's rate carries the same ⁵⁄₆ factor — 5.333 against 19.924 flowing, and 4.445 against 16.604
+sustained, are both **26.8%** to three figures. Every ratio here is taken that way, and absolute
+figures are given on the flowing bound with the other named.
 
 Two qualifications, both load-bearing:
 
@@ -181,13 +206,14 @@ Two qualifications, both load-bearing:
 - **It belongs to [#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227)**, which is
   already open on how much one exchanger should drain, and it makes that ticket's arithmetic worse
   rather than better: #227 reasons from the same 320 MW to conclude one high-capacity exchanger is
-  enough for D-T. At 996 MW it is two and a half.
+  enough for D-T. It is **three** of them, or two and a half on the lower bound.
 
 **The high-capacity tier's own justification survives it, and gets stronger.** `entities.lua:585`
 argues `rf-hc-exchanger` into existence because 320 MW is "eight exchangers and fifty-five turbines
-PER REACTOR ... not a difficulty curve, it is a blueprint chore". At 996 MW it is twenty-five
-exchangers and about a hundred and seventy turbines. Nothing about that decision is at risk; only
-the number in front of it is wrong, and in the direction that made the case understated.
+PER REACTOR ... not a difficulty curve, it is a blueprint chore". At 1 195 MW it is **thirty
+exchangers and about two hundred turbines** — twenty-five and a hundred and seventy on the lower
+bound. Nothing about that decision is at risk; only the number in front of it is wrong, and in the
+direction that made the case understated.
 
 Nothing here is a decision. No number was changed.
 
