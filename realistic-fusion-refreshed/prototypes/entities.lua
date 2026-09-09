@@ -4,10 +4,12 @@ require("util") -- table.deepcopy
 -- runs: Power requires Core, never the reverse.
 local claim = require("__realistic-fusion-refreshed-core__.prototypes.vanilla").claim
 
--- The simulation's own constants, at the PROTOTYPE stage. The only thing taken from here is the
--- confinement heating each reactor draws, and it is taken rather than retyped because that figure
--- is stated to the player in two locale strings and a third statement of it would be a third thing
--- to keep in step (#46). scripts/reactor-logic.lua is pure Lua and says so at its head -- it
+-- The simulation's own constants, at the PROTOTYPE stage. TWO things are taken from here, and both
+-- for the same reason -- a second statement of a number is a second thing to keep in step. The
+-- confinement heating each reactor draws is one, because that figure is also stated to the player in
+-- two locale strings and a third statement of it would be a third place to keep in step (#46). The
+-- plasma box volume below is the other, because the simulation reads it as a physics input and the
+-- tests run a full reactor from it (#153). scripts/reactor-logic.lua is pure Lua and says so at its head -- it
 -- touches no data, game, storage or settings -- which is what makes requiring it here legitimate
 -- rather than a stage violation. This is the ONLY direction the dependency runs: nothing in
 -- scripts/ requires anything in prototypes/.
@@ -331,7 +333,17 @@ local covers = table.deepcopy(reactor.fluid_box.pipe_covers)
 -- rf-pipe feed a row of reactors from one pool (ADR 0011), and the energy leaves north AND south.
 reactor.fluid_box = {
   production_type = "input-output",
-  volume = 1000,
+  -- A PHYSICS INPUT, WHICH IS WHY THIS BOX IS ASSIGNED RATHER THAN EDITED. The amount of plasma a
+  -- full reactor holds sets its density, and density sets power in and out: control.lua memoises
+  -- this box's volume from the loaded prototype and reactor-logic's step() divides by volume_m3 to
+  -- get there. Writing the whole table over the one deepcopied from heat-exchanger is what keeps a
+  -- mod sorting before us out of it -- unlike a field edited in place, nothing of the source box
+  -- survives. It says nothing about a mod's data-final-fixes, and no number written here would.
+  --
+  -- Taken from reactor-logic rather than typed, so the tests and the prototype cannot run different
+  -- reactors (#153). Not to be confused with that module's volume_m3, which is the confinement
+  -- region in cubic metres and happens to carry the same 1000.
+  volume = logic.reactor.box_volume,
   pipe_covers = covers,
   pipe_connections = {
     { flow_direction = "input-output", direction = defines.direction.west, position = { -7, 0 } },
@@ -961,7 +973,9 @@ aneutronic.fluid_box = {
   -- runs at three times the density and nine times the rate. reactor-logic keeps one
   -- particles_per_unit for the entire mod precisely so that this box is the lever and a fluid unit
   -- goes on meaning the same thing in every pipe.
-  volume = 3000,
+  --
+  -- Taken from reactor-logic and assigned wholesale, for the reasons given at rf-reactor's box.
+  volume = logic.aneutronic_reactor.box_volume,
   pipe_covers = aneutronic_covers,
   -- The edge of the fifteen-tile footprint, on whole numbers because fifteen is odd -- the same
   -- arithmetic rf-reactor's connections use, and they were on halves at ten.

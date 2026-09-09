@@ -415,8 +415,15 @@ end
 M.reactor = {
   -- Plasma volume. ITER is about 800 m^3.
   volume_m3 = 1000,
-  -- Nuclei per unit of plasma fluid. With a 1000-unit fluid box that is 1e20 m^-3 in a full
-  -- reactor, which is the density a real machine runs at.
+  -- The reactor's plasma fluid box, in fluid units. A PROTOTYPE number, and it lives here because
+  -- three places need it and a second statement of it would be a second thing to keep in step: the
+  -- prototype writes the box from it, tests/test-reactor-logic.lua runs a full reactor from it, and
+  -- density below is quoted against it. control.lua still reads the LOADED prototype rather than
+  -- this field, because a mod sorting after us can change the box and runtime has to honour what it
+  -- actually finds.
+  box_volume = 1000,
+  -- Nuclei per unit of plasma fluid. At box_volume that is 1e20 m^-3 in a full reactor, which is
+  -- the density a real machine runs at.
   particles_per_unit = 1e20,
   -- Confinement heating. Spent out of the reactor's electric buffer by control.lua rather than
   -- declared on the prototype: the prototype's own energy_consumption is the boiler conversion
@@ -653,6 +660,10 @@ M.aneutronic_reactor = {
   -- same 1000 m^3, so a full one runs at 3e20 m^-3 where a full rf-reactor runs at 1e20. That is
   -- the lever, and it is the right one -- fusion rate goes as n^2 while the transport loss goes as
   -- n, so density is what buys ignition, and a denser machine is what the aneutronic tier is.
+  --
+  -- Which is why THIS is the field that differs and volume_m3 is not. Same note as M.reactor's on
+  -- why a prototype number lives in this module.
+  box_volume = 3000,
   particles_per_unit = 1e20,
   -- Four times the confinement heating. D-He3 needs about 230 keV against D-T's 65 to reach its
   -- peak, and a plasma is not taken there by hoping.

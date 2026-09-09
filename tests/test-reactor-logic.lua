@@ -20,7 +20,10 @@ local check, near = H.check, H.near
 local SPEC = L.reactor
 
 local TICK = 1 / 60
-local FULL = 1000        -- the reactor's input fluidbox volume
+-- The reactor's input fluidbox volume, taken from the module for the same reason SPEC is: the
+-- prototype writes its box from this field too, so the game and this file cannot run different
+-- reactors (#153).
+local FULL = SPEC.box_volume
 local HOT = 6.0e8        -- a fusing temperature, in celsius: two minutes into a cold start
 
 -- How long to run before calling the answer settled. Twenty minutes of game time, which is far
@@ -734,9 +737,9 @@ near(dd_bred.joules / dd_bred.tritium_units, bred.joules / bred.tritium_units, 1
 
 local ANEUTRONIC = L.aneutronic_reactor
 -- The aneutronic reactor holds three times the plasma in the same volume, so a full one is three
--- times the density. Read off the prototype's fluid box the way FULL is, rather than derived, so a
--- change to one has to be a change to both.
-local ANEUTRONIC_FULL = 3000
+-- times the density. Taken from the module the way FULL is, and the prototype's box is written from
+-- the same field, so the two cannot disagree (#153).
+local ANEUTRONIC_FULL = ANEUTRONIC.box_volume
 
 check(L.fuels["rf-d-he3-plasma"] ~= nil, "D-He3 plasma has a fuel entry")
 check(L.fuels["rf-he3-he3-plasma"] ~= nil, "He3-He3 plasma has a fuel entry")
@@ -913,7 +916,7 @@ check(he3_best_q < 0.05,
 -- rows are covered at the top of this file; this is the other half of the same guard, and it exists
 -- because a second reactor is exactly the moment a spec field gets added to one and not the other.
 for label, spec in pairs({ ["rf-reactor"] = SPEC, ["rf-aneutronic-reactor"] = ANEUTRONIC }) do
-  for _, field in ipairs({ "volume_m3", "particles_per_unit", "heating_power_w",
+  for _, field in ipairs({ "volume_m3", "box_volume", "particles_per_unit", "heating_power_w",
                            "confinement_time_s", "capture_efficiency", "energy_fluid_j_per_unit",
                            "energy_fluid", "min_temperature_c", "max_temperature_c" }) do
     check(spec[field] ~= nil, string.format("%s's spec declares %s", label, field))

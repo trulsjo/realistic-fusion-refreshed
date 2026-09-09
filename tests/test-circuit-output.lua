@@ -236,7 +236,7 @@ equal(C.unrepresentable(6.9e9), nil,
 -- The threshold between idle and fusing is half a percent of the reactor's RATED heating, so the
 -- spec goes in. The three density states need the curve as well; without one they collapse back to
 -- "running", which is the case asserted at the bottom of this block.
-local CURVE = L.density_curve(SPEC, "rf-d-d-plasma", 1000)
+local CURVE = L.density_curve(SPEC, "rf-d-d-plasma", SPEC.box_volume)
 check(CURVE ~= nil, "the shipped reactor has a density curve to judge fills against")
 
 local function status_of(result, fill)
@@ -347,7 +347,7 @@ equal(C.status(running, 0.01, SPEC, nil, "starved").key, "running",
 local RESEARCHED = {}
 for k, v in pairs(SPEC) do RESEARCHED[k] = v end
 RESEARCHED.confinement_time_s = 70
-local TOP_CURVE = L.density_curve(RESEARCHED, "rf-d-d-plasma", 1000)
+local TOP_CURVE = L.density_curve(RESEARCHED, "rf-d-d-plasma", RESEARCHED.box_volume)
 equal(TOP_CURVE.optimum, 1.0, "by tau 70 s the best density is full supply, as ADR 0016 measured")
 equal(C.status(running, 1.0, RESEARCHED, TOP_CURVE).key, "running",
   "so a full reactor there is at its optimum rather than rich")
@@ -460,7 +460,7 @@ end
 --
 -- The signals have to survive what the simulation actually produces, not just hand-written values.
 -- One cold start, run to the point the reactor is fusing, straight into signals().
-local state = { temperature = 15, amount = 1000 }
+local state = { temperature = 15, amount = SPEC.box_volume }
 local result
 for _ = 1, 60 * 600 do
   result = L.step(SPEC, "rf-d-d-plasma", state.amount, state.temperature, math.huge, 1 / 60)
