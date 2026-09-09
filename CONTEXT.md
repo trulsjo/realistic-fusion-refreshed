@@ -301,6 +301,24 @@ not.** Changing a value the engine acts on in order to fix a display is the wron
 behaviour to mend a tooltip. Not "bug": a host artefact is a consequence of a deliberate choice about
 what to build on, and calling it a bug invites a fix that breaks what it is a consequence of.
 
+**Inherited stat** — a value on one of this mod's prototypes that comes from the vanilla prototype it
+was cloned from, and that no simulated quantity reads. A coexisting set is free to change one and
+this mod does not object: a machine built from a chemical plant, tracking whatever overhaul a player
+chose to install, is a closer reading of coexistence than one holding base-game numbers inside it.
+An emissions rate and a fluid box's buffer size are inherited stats; so is the speed a pump moves
+fluid at.
+
+The counterpart is a stat **set explicitly** — every stat the simulation reads, and every stat that
+decides what a machine *is* rather than what it costs: its recipe categories, its throughput, its
+fluid filters. "Set explicitly" and not "pinned", deliberately: **pinned** is a temperature word
+here and means something else entirely.
+
+**Host artefact**'s sibling, and not the same thing. A host artefact is about what the engine
+*displays*; an inherited stat is about what another mod may *change*. The two failure modes differ
+as well: a host artefact wrongly corrected breaks behaviour to mend a tooltip, whereas a stat that
+turns out to be read after all was never an inherited stat, and leaving it inherited is a defect
+rather than a decision.
+
 ## Measurement words
 
 Two maps a figure can come off, and they are not interchangeable. Say which one a quoted number was

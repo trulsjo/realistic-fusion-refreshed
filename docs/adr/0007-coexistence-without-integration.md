@@ -114,7 +114,7 @@ happened the first time it did.
 | Krastorio 2 ([#33](https://github.com/trulsjo/realistic-fusion-refreshed/issues/33)) | `krastorio2`, 5 mods | green | green | discharges this ADR's minimum. It also generates 47 recipes from ours and wires them into one technology of its own — two different shapes, both counted; measured on the set re-run in [#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130), not in #33 |
 | Space Exploration ([#129](https://github.com/trulsjo/realistic-fusion-refreshed/issues/129)) | `spaceex`, 17 mods | **red** | green | upstream's — five `__base__` paths 2.0 removed, named by SE and the two AAI mods, not pinnable away |
 | Krastorio 2 + Space Exploration ([#130](https://github.com/trulsjo/realistic-fusion-refreshed/issues/130)) | `k2-spaceex`, 22 mods | **red** | green | the same five paths; K2 names none of them and adds no sixth |
-| Angel's ([#131](https://github.com/trulsjo/realistic-fusion-refreshed/issues/131)) | `angels`, 8 mods | green | green | green, and it still edits 41 prototypes of ours neither check can see — two inherited stats of which are ours ([#153](https://github.com/trulsjo/realistic-fusion-refreshed/issues/153)) |
+| Angel's ([#131](https://github.com/trulsjo/realistic-fusion-refreshed/issues/131)) | `angels`, 8 mods | green | green | green, and it still edits 41 prototypes of ours neither check can see — two inherited stats of which are ours, inherited on purpose since ([#153](https://github.com/trulsjo/realistic-fusion-refreshed/issues/153)) |
 | Angel's + Space Age ([#132](https://github.com/trulsjo/realistic-fusion-refreshed/issues/132)) | `angels`, 8 mods, `-With space-age` | green | green | the silence is compatibility; no prototype touched only in combination, but on `rf-heater` the two compose |
 | Bob's ([#133](https://github.com/trulsjo/realistic-fusion-refreshed/issues/133)) | `bobs`, 12 mods | green | green | green since [#192](https://github.com/trulsjo/realistic-fusion-refreshed/issues/192) taught the classifier the **re-homed unlock**. `bobplates` moves every `-barrel` unlock off vanilla `fluid-handling` onto its own `bob-fluid-barrel-processing`, unconditionally, so our 22 land there: `effects` is the only field that differs, 22 added and none removed, and 30 of the 31 unlocks the technology already carried are barrels the game generated from fluids of vanilla's and Bob's — the set's own pass visibly already running before we arrived. Condition 2 became a construction test in [#200](https://github.com/trulsjo/realistic-fusion-refreshed/issues/200) and this lane's verdict and label are unchanged; re-measured 2026-09-02 |
 | Bob's + Space Age ([#134](https://github.com/trulsjo/realistic-fusion-refreshed/issues/134)) | `bobs`, 12 mods, `-With space-age` | green | green | the same re-homing on the same technology, classified the same way; Space Age adds no further finding. 32 of 33 baseline unlocks host, re-measured 2026-09-02 |
@@ -302,7 +302,38 @@ containment survived the load. Everything else an overhaul does to our prototype
 to both, however much it changes: Angel's alters **41 of our 145** prototype objects and Space Age
 **9**, including a pollution rate and a tenfold fluid-box volume on machines this repo ships. Found
 by #131, confirmed by #132, and the reason
-[#153](https://github.com/trulsjo/realistic-fusion-refreshed/issues/153) exists.
+[#153](https://github.com/trulsjo/realistic-fusion-refreshed/issues/153) existed.
+
+**#153 SETTLED THOSE TWO STATS, AND SETTLED THEM BY LETTING THEM GO.** Truls's call, 2026-09-09: the
+emissions rate and the fluid-box volume on the six ASSEMBLING machines this repo clones from a
+vanilla one are
+**inherited deliberately**, and the comment in each file that claimed every balance stat was set
+explicitly now states a rule instead — a stat is set explicitly where the simulation reads it or
+where it defines what the machine *is*, and inherited otherwise. That is this ADR's own line applied
+to a stat rather than to a prototype: a machine built from a chemical plant, polluting at whatever
+rate the overhaul a player installed decided a chemical plant should pollute at, is coexistence
+working rather than coexistence failing. Neither number was chosen, which is what keeps the decision
+from being a balance call made as the side effect of a comment fix. `CONTEXT.md` defines the term —
+an **inherited stat** is a value taken from the vanilla prototype that no simulated quantity reads.
+
+**Two things came out of the same enumeration, and both say this finding understated itself.** It is
+**seven inherited items across ten prototypes** -- Core's five and Power's five -- not two stats
+at two clone sites: the two
+`entities.lua` headers now list them, and they include `rf-pump`'s pumping speed and the fluid-box
+volume on `rf-pipe` and `rf-pipe-to-ground`, none of which any set has been measured touching. And
+**one of the seven is not an inherited stat at all.** `rf-heat-exchanger` replaces only
+`pipe_connections` on its water and steam boxes, so it inherits their **filters** — and a filter
+decides what a machine is rather than what it costs, which puts it on the set-explicitly side of the
+rule. Split out as [#298](https://github.com/trulsjo/realistic-fusion-refreshed/issues/298) rather
+than fixed there, and named in the header meanwhile.
+
+**Nothing became a gate, deliberately.** An edited stat still fails no check in this repository, and
+the paragraph above is still true of everything but the containment slice. The one place the
+enumeration did change code was the reactors' plasma box volume, which is a physics input rather
+than an inherited stat: it was stated twice, in the prototype and as a literal in the tests, and is
+now stated once in `reactor-logic.lua` and read by both. That removes a duplicate; it adds no
+check, because both reactors already assign their fluid boxes wholesale and an earlier-sorting mod
+cannot reach them.
 
 **The containment slice is closed because containment is the one rule enforced by declaration
 rather than by code.** `contain()` writes the category and 2.0 refuses to join two connections whose

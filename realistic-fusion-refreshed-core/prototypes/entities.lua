@@ -6,20 +6,44 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 
 -- Core's machines are built from vanilla ones rather than modelled from scratch.
 --
--- Each one carries its Krastorio 2 building, and three of the four had to grow to do it (ADR 0013).
+-- Each one carries its Krastorio 2 building, and four of the five had to grow to do it (ADR 0013).
 -- Krastorio 2 has exactly one 3x3 building and rf-heater has it, so leaving these at the chemical
--- plant's 3x3 would have meant four identical buildings on the map -- which is the problem having
--- distinct art is meant to solve. Truls's call, and he wanted the substantial sizes.
+-- plant's 3x3 would have meant the four Core machines wearing rf-heater's building -- which is the
+-- problem having distinct art is meant to solve. Truls's call, and he wanted the substantial sizes.
+-- Only rf-deuterium-extractor stays where it started, and its own comment below says so.
 --
 -- The base entity is chosen for its fluid box count, which is the part that actually matters:
 --   chemical-plant  2 in / 2 out  -> electrolysis, concentration, lithium extraction
 --   oil-refinery    2 in / 3 out  -> Girdler sulfide (2 in, 3 out)
 -- The enrichment step returns its catalyst, so it genuinely needs the third output.
 --
--- Every stat that affects balance is set explicitly rather than inherited. A deep copy taken in
--- data.lua picks up whatever another mod has already done to the source prototype, and mods
--- sorting before this one alphabetically -- Krastorio 2 among them, which ADR 0007 names as a
--- coexistence target -- would silently rewrite all four machines.
+-- WHAT IS SET EXPLICITLY, AND WHAT IS INHERITED ON PURPOSE. A deep copy taken in data.lua picks up
+-- whatever a mod sorting before this one has already done to the source prototype -- Krastorio 2
+-- among them, which ADR 0007 names as a coexistence target -- so every field below is one decision
+-- or the other, never an oversight. THE RULE, decided on #153: a stat is set explicitly where the
+-- simulation reads it or where it defines what the machine IS; everything else is inherited. Stated
+-- as a rule rather than as a list of stats, because a list goes stale -- which is what the counts
+-- two paragraphs up did, and what this paragraph used to claim in the other direction.
+--
+-- SET EXPLICITLY below: crafting_categories, crafting_speed, energy_usage, module_slots and
+-- allowed_effects. Identity and throughput both -- a mod rewriting one of those would move the
+-- whole fuel chain without a check noticing.
+--
+-- INHERITED, in CONTEXT.md's sense of an inherited stat: nothing here reads any of these, so a
+-- coexisting set may change them and this mod does not object.
+--   energy_source              its emissions, drain and usage_priority. On the Angel's lane the
+--                              FOUR copied from the chemical plant read 1.8 pollution/min against
+--                              vanilla's 4, that set's rebalance reaching them through the plant
+--                              they are copied from; rf-deuterium-extractor's refinery is barely
+--                              touched and stays at 6, which is what proves the mechanism rather
+--                              than contradicting it (#131). A machine of ours tracking the
+--                              overhaul a player chose is a closer reading of ADR 0007 than one
+--                              polluting at base-game rates inside it.
+--   fluid_boxes[*].volume      vanilla's 100, which Angel's takes to 1000 on the output boxes. A
+--                              bigger box only smooths throughput; it changes no recipe rate.
+--   allowed_module_categories  so a set's own modules fit these machines without being named here.
+-- Measured on the Angel's lane by #131. Truls's call on #153, and ADR 0007's Angel's lane section
+-- records it -- neither number is chosen here, which is the whole point of inheriting them.
 local function from_vanilla(source_name, name, categories, opts)
   local e = table.deepcopy(data.raw["assembling-machine"][source_name])
   e.name = name
