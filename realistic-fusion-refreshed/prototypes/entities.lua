@@ -275,14 +275,23 @@ data:extend({ reactor_graphics.core_animation("rf-reactor-core") })
 -- 1e6 C and every draw to 50 MW. Plasma fuses six to eight orders above any of that, so a running
 -- reactor converts nothing whatever this says. See docs/research/target-temperature.md.
 --
--- And raising it SHRINKS the one case that is not zero. An idle plasma parks at min_temperature_c,
--- below this, where the rate is energy_consumption / (heat_capacity * dT): a bigger delta costs more
--- joules per unit, so going 165 -> 550 takes the unaccounted output from 6.7 W to 1.9 W.
+-- And raising it TOOK THE ONE CASE THAT WAS NOT ZERO TO ZERO. An idle plasma parks at
+-- min_temperature_c, below this, where the rate law is energy_consumption / (heat_capacity * dT):
+-- a bigger delta costs more joules per unit, and the derivation this comment used to carry had that
+-- shrinking the unaccounted output from 6.7 W at 165 to 1.9 W here.
 --
--- NOT RAISED FURTHER, and not by oversight. Pushing this higher would shrink that further still, and
--- was rejected: above about 5000 C no number is a coolant temperature any more, and the point of
--- this one is that it means something. The floor was left alone for the same reason in reverse --
--- see min_temperature_c in scripts/reactor-logic.lua.
+-- #147 MEASURED IT AND 1.9 W IS NOT WHAT HAPPENS. Below one float32 ULP of transfer a tick the
+-- engine moves nothing at all, and at 550 the law asks for 0.52 of one -- so at the shipped normal
+-- quality the leak is exactly ZERO, over ten thousand seconds of measurement. What 165 really gave
+-- was 3.576 W, one ULP rather than the derived 6.7 -- that figure is probe-target-temperature.ps1's
+-- own sweep re-read, not a fresh run, since #147's rig keeps every shipped field and so has no cell
+-- at 165. Either way the move to 550 removed the leak rather than reducing it. See the note above
+-- energy_consumption, scripts/probe-quality-leak.ps1 and docs/research/quality.md.
+--
+-- NOT RAISED FURTHER, and not by oversight. That reasoning is unaffected and only made easier:
+-- above about 5000 C no number is a coolant temperature any more, and the point of this one is that
+-- it means something. There is no longer a leak to trade against it. The floor was left alone for
+-- the same reason in reverse -- see min_temperature_c in scripts/reactor-logic.lua.
 reactor.target_temperature = 550
 -- 1 W, and the tooltip's "Max consumption: 1 W" is a consequence of it rather than a bug -- see
 -- heating_note above, and localised_description below, which is where the player is told so.

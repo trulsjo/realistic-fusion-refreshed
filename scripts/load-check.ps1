@@ -294,9 +294,10 @@
     unrelated reason exits non-zero too, and would otherwise be recorded as the invariant firing.
 
     AND THE WORKING TREE IS ASSERTED UNTOUCHED, in BOTH self-tests, against a fingerprint taken
-    before either does anything -- pack-mods.ps1 included. Eight of the eleven canary halves break
-    one of our prototypes to prove one of our gates fires (four through nine, eight, and eleven),
-    and every one does it in memory; this is what says so rather than assuming it. The FINALLY
+    before either does anything -- pack-mods.ps1 included. SEVEN of the eleven canary halves mutate
+    one of our prototypes: four through nine, and eleven. Six of the seven do it to prove a gate
+    FIRES; half six mutates one to prove a gate stays QUIET, which is the same hazard to the tree.
+    Every one does it in memory; this is what says so rather than assuming it. The FINALLY
     BLOCK compares too, so a half that exits early still reports what it left behind, and the zip
     self-test compares on its own pass path -- which matters more there than here, because it is
     the only self-test that deletes a real file and the branch the sprite-deleting incident was
@@ -1789,11 +1790,13 @@ end
             exit 1
         }
 
-        # Half ten: a plasma no reactor can burn must be refused (#125). The first half to prove one
+        # Half ten: a plasma no reactor can burn must be refused (#125). The SECOND half to prove one
         # of check_prototypes()'s invariants -- the checks that tie the simulation to the prototypes
-        # and are the reason load-check is the gate that matters here. Until #125 every one of them
-        # was asserted only positively: they pass on a good tree, and nothing here would have
-        # noticed one that had quietly stopped firing.
+        # and are the reason load-check is the gate that matters here. Half eight was already one of
+        # them, negatively testing check_input_flow(), which check_prototypes() calls; ten and eleven
+        # take the coverage from one invariant to three. The other ten are still asserted only
+        # positively: they pass on a good tree, and nothing here would notice one that had quietly
+        # stopped firing.
         #
         # WHY THIS INVARIANT, and it is not "whichever was easiest to break". It is the only one a
         # canary can trip by pure ADDITION -- the canary defines a fluid and a recipe of its OWN in
@@ -1898,11 +1901,12 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
             exit 1
         }
 
-        # THE WORKING TREE, ASSERTED RATHER THAN REASONED ABOUT (#125). EIGHT of the eleven halves
-        # break one of our prototypes to prove one of our gates fires -- four, five, six, seven and
-        # nine move a connection or a category, eight cuts an input_flow_limit, eleven swaps two box
-        # filters -- and every one of them does it in `data-final-fixes`, in memory, at load, with
-        # nothing on disk touched. That is the design; this is the assertion. It is here because a
+        # THE WORKING TREE, ASSERTED RATHER THAN REASONED ABOUT (#125). SEVEN of the eleven halves
+        # mutate one of our prototypes -- four, five, six, seven and nine move a connection or a
+        # category, eight cuts an input_flow_limit, eleven swaps two box filters -- and every one of
+        # them does it in `data-final-fixes`, in memory, at load, with nothing on disk touched. Six
+        # of the seven mutate to prove a gate FIRES; six is the one that mutates to prove a gate
+        # stays QUIET, which puts the same thing at risk. That is the design; this is the assertion. It is here because a
         # self-test in this file once deleted the repository's own sprite, so "the mutation is in
         # memory" is a claim to check rather than one to trust.
         $treeChecked = $true

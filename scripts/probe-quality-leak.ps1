@@ -73,6 +73,14 @@
     "the conversion is zero above the target" and "the conversion is zero above the target at every
     quality" are different claims and only the first was ever run.
 
+    THE MAP IS QUIETED AND A DAMAGED RIG FAILS LOUDLY, and here that guard matters more than in the
+    sibling rigs rather than less. This probe's headline result is a ZERO, and an unpowered boiler
+    converts nothing -- so a cell that quietly loses its substation reports exactly the answer the
+    rig is looking for, at the one level where a non-zero answer was expected. Four of the five
+    levels read zero legitimately, so nothing in the numbers would look wrong either. It calls the
+    shared guard, Get-QuietMapLua in scripts/factorio-lib.ps1, before it builds, and checks every
+    cell's boiler, substation and supply valid once a second for the whole run.
+
     WHAT IT DOES NOT DO. It does not remove the leak. That is a fuel leak rather than an energy
     exploit -- the boiler spends a unit of plasma, 10^20 nuclei, to make 1 MJ where fusing the same
     nuclei releases about 58 MJ -- and whether to do anything about it is a design question
@@ -218,11 +226,35 @@ end
 local STATUS = {}
 for name, value in pairs(defines.entity_status) do STATUS[value] = name end
 
+__QUIETMAP__
+--- Every entity a cell is measured through, checked before it is measured through.
+--
+-- THIS RIG'S HEADLINE RESULT IS A ZERO, WHICH IS ALSO WHAT A BROKEN CELL REPORTS. An unpowered
+-- boiler converts nothing, so a cell whose substation has been eaten reads exactly "measured 0" at
+-- the one level where a non-zero answer was expected -- and at four of the five levels the true
+-- answer is zero anyway, so nothing in the numbers would look wrong. The run is a thousand game
+-- seconds by default and ten thousand in this script's own example, which is long enough to be
+-- attacked; Get-QuietMapLua's docstring records a fifty-minute rig that lost a substation that way.
+-- Erroring with the level and regime named asserts nothing about the physics. It is the difference
+-- between "this run did not happen" and a zero that reads like a measurement.
+local function assert_intact(cell)
+  for _, part in ipairs({
+    { "its boiler", cell.entity }, { "its substation", cell.substation },
+    { "its power source", cell.supply },
+  }) do
+    if not part[2].valid then
+      error(string.format("%s %s: %s is gone -- something destroyed part of the rig mid-run, so "
+        .. "this run measures damage rather than the conversion", cell.quality, cell.regime,
+        part[1]))
+    end
+  end
+end
+
 --- The smallest change in a fluid amount the engine will report back, measured at `base`.
 --
 -- THE READING'S RESOLUTION IS THE HALF OF THIS PROBE THAT DECIDES WHETHER THE OTHER HALF MEANS
 -- ANYTHING, so it is measured rather than deduced from what a float ought to do. Write an amount,
--- write it again a little larger, halve the difference until the box stops reporting one, and the
+-- write it again a little smaller, halve the difference until the box stops reporting one, and the
 -- last difference that showed is the answer.
 --
 -- It is destructive to the box it runs on, so it runs on a throwaway subject before the real ones
@@ -262,6 +294,12 @@ script.on_init(function()
   local span = (#levels + 1) * SPACING
   surface.request_to_generate_chunks({ span / 2, 20 }, math.ceil(span / 32) + 3)
   surface.force_generate_chunk_requests()
+
+  -- AFTER the chunks exist, which is the shared guard's one precondition: it clears what it can see,
+  -- and it can only see chunks that have been generated. The count goes into the report so a reader
+  -- can tell the quieting happened rather than take it on trust.
+  storage.quieted = __QUIETFN__(surface)
+
   local tiles = {}
   for x = -30, span + 30 do
     for y = -30, 70 do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
@@ -272,11 +310,16 @@ script.on_init(function()
   end
 
   --- One powered subject: the boiler, a substation and a supply of its own.
+  --
+  -- The substation and the supply are HANDED BACK rather than discarded. Nothing reads them for a
+  -- measurement; they are here so assert_intact() above can see the supply path, which is the half
+  -- that fails silently.
   local function cell(x, y, quality)
     local e = must(surface.create_entity({
       name = SUBJECT, position = { x, y }, force = force, quality = quality, raise_built = false,
     }), SUBJECT .. " at " .. quality)
-    must(surface.create_entity({ name = "substation", position = { x + 9, y }, force = force }),
+    local substation = must(
+      surface.create_entity({ name = "substation", position = { x + 9, y }, force = force }),
       "substation at " .. quality)
     local eei = must(surface.create_entity({
       name = "electric-energy-interface", position = { x + 12.5, y + 0.5 }, force = force,
@@ -285,7 +328,7 @@ script.on_init(function()
     -- spend single-figure watts; the supply is set far above that so "was it powered" can never be
     -- an explanation for a rate that came out low. See scripts/check-brownout.ps1 for the unit.
     eei.power_production = 4e6
-    return e
+    return e, substation, eei
   end
 
   -- The throwaway the resolution is measured on, before anything the report depends on is seeded.
@@ -296,9 +339,10 @@ script.on_init(function()
     local x = index * SPACING
     for _, regime in ipairs({ { "cold", COLD_C, 0 }, { "hot", HOT_C, 30 } }) do
       local label, temperature, y = regime[1], regime[2], regime[3]
+      local entity, substation, supply = cell(x, y, q.name)
       cells[#cells + 1] = {
         quality = q.name, level = q.level, regime = label, seeded_c = temperature,
-        entity = cell(x, y, q.name),
+        entity = entity, substation = substation, supply = supply,
       }
     end
   end
@@ -329,6 +373,8 @@ local function report()
   local seconds = RUN_TICKS / 60
 
   say("run               %d ticks (%.10g s), measured from tick %d", RUN_TICKS, seconds, BASELINE_TICKS)
+  say("map               quieted before the run: pollution and expansion off, peaceful, %d enemy "
+    .. "entities removed", storage.quieted)
   say("fill              every box seeded to %.10g units, fluid_box.volume as get_capacity reports "
     .. "it; the settled level each box actually held is the `seeded` column below", storage.fill)
   say("energy fluid      %s carries fuel_value %.10g J per unit", ENERGY, joules)
@@ -342,8 +388,6 @@ local function report()
   end
   say("target            rf-reactor's target_temperature is %s C",
     tostring(prototypes.entity[SUBJECT].target_temperature))
-  -- Measured, not asserted. The two magnitudes the report reads at, and the smallest change the
-  -- engine reports at each. Everything below is judged against these two numbers.
   -- Measured, not asserted, and it is the number every row below is judged against. Both magnitudes
   -- come back at a double's precision rather than a float's, which is the answer to the resolution
   -- worry #147 was written around: the depletion being measured is ten orders above the smallest
@@ -433,6 +477,10 @@ end)
 script.on_nth_tick(60, function()
   local tick = game.tick
 
+  -- Once a second, for the whole run. A cell that loses its substation stops converting from that
+  -- moment, and the sooner the run stops the less time there is for the reading to look plausible.
+  for _, c in ipairs(storage.cells) do assert_intact(c) end
+
   -- The baseline, once the seeding has relaxed. Everything the report calls "taken" or "made" is
   -- measured from here, not from what was written at tick zero.
   if not storage.based then
@@ -451,7 +499,10 @@ script.on_nth_tick(60, function()
   report()
 end)
 '@
-$lua = $lua.Replace('__RUN_TICKS__', "$($Seconds * 60)")
+$lua = $lua.
+    Replace('__QUIETMAP__', (Get-QuietMapLua)).
+    Replace('__QUIETFN__', $script:QuietMapFunction).
+    Replace('__RUN_TICKS__', "$($Seconds * 60)")
 Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
 
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }
