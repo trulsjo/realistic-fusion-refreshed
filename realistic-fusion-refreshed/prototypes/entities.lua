@@ -43,8 +43,47 @@ end
 -- and a NOTICE naming every source file. Do not move one out of that directory -- the licence
 -- travels with the directory, not with this file (legal-note.txt).
 --
--- Every stat that affects balance is pinned rather than inherited, because a deep copy taken here
--- picks up whatever a mod sorting earlier has already done to the source prototype.
+-- WHAT IS SET EXPLICITLY, AND WHAT IS INHERITED ON PURPOSE. A deep copy taken here picks up
+-- whatever a mod sorting earlier has already done to the source prototype, so every field below is
+-- one decision or the other and never an oversight. THE RULE, decided on #153: a stat is set
+-- explicitly where the simulation reads it or where it defines what the machine IS; everything else
+-- is inherited. Core's entities.lua states the same rule over its own five clone sites.
+--
+-- THE WORD IS "SET EXPLICITLY" AND NOT "PINNED". CONTEXT.md's PINNED is a plasma held at its
+-- temperature ceiling, and this paragraph used to spend the term on a second meaning. pin() below
+-- keeps its name -- it does naming, mining and claim(), and sets no balance stat at all -- but
+-- nothing here adds a third use.
+--
+-- EIGHT OF THE THIRTEEN CLONE SITES IN THIS FILE SET EVERY BALANCE STAT: rf-reactor,
+-- rf-aneutronic-reactor, rf-hc-exchanger, rf-hc-turbine, rf-isotope-collector,
+-- rf-direct-energy-converter, rf-aneutronic-composite-tank and rf-lithium-blanket. Both reactors,
+-- both high-capacity machines and the converter assign their fluid boxes WHOLESALE rather than
+-- editing the deepcopied ones, which is what puts an earlier-sorting mod out of reach of those
+-- boxes entirely -- see the note at rf-reactor's, where the volume is a physics input.
+--
+-- THE OTHER FIVE INHERIT, and every item below is an INHERITED STAT in CONTEXT.md's sense: nothing
+-- here reads it, so a coexisting set may change it and this mod does not object.
+--   rf-heater                   energy_source -- its emissions, drain and usage_priority --
+--                               fluid_boxes[*].volume, and allowed_module_categories. The same
+--                               three Core's five machines inherit and for the same reasons, which
+--                               its header sets out; #131 measured them on the Angel's lane.
+--   rf-heat-exchanger           target_temperature, and the volume AND FILTER of its water and
+--                               steam boxes -- only pipe_connections is replaced on those two, so
+--                               the rest of both tables is vanilla's. The temperature moves with
+--                               the vanilla steam turbine's own maximum_temperature, which is what
+--                               drinks the steam. Its energy_source.fluid_box is NOT in this list:
+--                               that one is declared in full, filtered and contained below.
+--                               THE TWO FILTERS ARE THE ONE ITEM HERE THAT ARGUES FOR BEING SET,
+--                               a filter being identity rather than cost, and #298 owns them; no
+--                               set has been measured changing them.
+--   rf-pipe, rf-pipe-to-ground  fluid_box.volume, vanilla's 100.
+--   rf-pump                     pumping_speed, energy_source and fluid_box.volume. A faster pump
+--                               fills a reactor's box sooner and changes no reaction rate.
+--
+-- NOTHING ABOVE IS A GATE, and none of it can be. load-check asserts validity, assets, containment
+-- and the simulation's invariants; an edited stat fails none of them, and name-check compares only
+-- prototypes present in both dumps, which a prototype of ours never is. That is ADR 0007's finding
+-- 4, and it is why the Angel's lane had to find these rather than a check.
 
 local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entities/"
 
