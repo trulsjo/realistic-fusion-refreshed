@@ -207,6 +207,12 @@ other direction.
 - Default branch `main`. Commit email is set per-repo — do not change it.
 - `CLAUDE.local.md` is personal and git-ignored. Never commit it, and never move its contents into a
   tracked file.
+- **Cite our own code by symbol, never by line number** — the function, field, constant or prototype,
+  with a repo-relative path, because there are two `entities.lua`. A comment with no symbol is cited
+  by a quoted fragment of its own words. Predecessor, vanilla and third-party citations keep their
+  line numbers; we never edit those trees. `scripts/ship-check.ps1` gates **one** of the three shapes
+  this takes — a path with a line number on it — and is blind to a bare `:155` continuation and to
+  "lines 196-197" written out in prose. See `docs/adr/0032-prose-cites-code-by-symbol.md`.
 
 ## Commit messages
 
