@@ -70,6 +70,13 @@
     several times the run to separate its rate from zero, and the question here is whether the
     engine produces ANY non-normal output, not what the rate is.
 
+    THE MAP IS QUIETED AND A DAMAGED RIG FAILS LOUDLY, the same way the two sibling quality rigs
+    do. A 120-second run is much less exposed than theirs, but -Seconds takes six figures and the
+    failure has the same shape in all three: a machine whose substation has been eaten stops
+    crafting and reports an empty tally, which on the FLAGGED machine is exactly the result this
+    rig exists to establish. It calls Get-QuietMapLua in scripts/factorio-lib.ps1 before it builds,
+    and checks every machine, substation and supply valid once a second.
+
     IT DECIDES NOTHING. Whether this mod should apply the flag is option E and Truls's; CLAUDE.md
     forbids settling it as a side effect of measuring it. The findings go into
     docs/research/quality.md.
@@ -252,6 +259,28 @@ local function must(entity, what)
   return entity
 end
 
+__QUIETMAP__
+--- Every entity a subject is measured through, checked before it is measured through.
+--
+-- THE SIBLING RIGS CARRY THIS AND THIS ONE DID NOT, which is the whole reason it is here. A
+-- 120-second run is far less exposed than probe-quality-leak.ps1's thousand or
+-- probe-quality-brownout.ps1's twenty-seven minutes, but -Seconds takes six figures, and the shape
+-- of the failure is the same in all three: a machine whose substation has been eaten stops
+-- crafting and reports an empty tally, which on the FLAGGED machine is exactly the result the rig
+-- exists to establish. Erroring with the subject named asserts nothing about the engine; it is the
+-- difference between "this run did not happen" and a zero that reads like a measurement.
+local function assert_intact(subject)
+  for _, part in ipairs({
+    { "its machine", subject.machine }, { "its substation", subject.substation },
+    { "its power source", subject.supply },
+  }) do
+    if not part[2].valid then
+      error(string.format("%s: %s is gone -- something destroyed part of the rig mid-run, so this "
+        .. "run measures damage rather than the flag", subject.label, part[1]))
+    end
+  end
+end
+
 --- One assembling machine set to one recipe, with a substation of its own.
 --
 -- A SUBSTATION EACH, rather than one covering the row. The first version put three machines in a
@@ -261,15 +290,19 @@ end
 -- every machine carries its own supply and prints its own status, so "made nothing" cannot be an
 -- unpowered machine in disguise.
 local function machine_at(surface, force, x, recipe)
-  must(surface.create_entity({ name = "substation", position = { x + 3, 4.5 }, force = force }),
+  local substation = must(
+    surface.create_entity({ name = "substation", position = { x + 3, 4.5 }, force = force }),
     "substation for " .. recipe)
   local eei = must(surface.create_entity({
     name = "electric-energy-interface", position = { x + 5.5, 4.5 }, force = force,
   }), "power source for " .. recipe)
   eei.power_production = 4e6   -- joules per TICK, which is 240 MW. See scripts/check-brownout.ps1.
-  return must(surface.create_entity({
+  local machine = must(surface.create_entity({
     name = MACHINE, position = { x, 0.5 }, force = force, recipe = recipe,
   }), MACHINE .. " for " .. recipe)
+  -- The supply path is handed back rather than discarded. Nothing reads it for a measurement; it is
+  -- here so assert_intact() above can see the half that fails silently.
+  return machine, substation, eei
 end
 
 script.on_init(function()
@@ -278,6 +311,12 @@ script.on_init(function()
 
   surface.request_to_generate_chunks({ 40, 0 }, 6)
   surface.force_generate_chunk_requests()
+
+  -- AFTER the chunks exist, which is the shared guard's one precondition: it clears what it can
+  -- see, and it can only see chunks that have been generated. The count goes into the report so a
+  -- reader can tell the quieting happened rather than take it on trust.
+  storage.quieted = __QUIETFN__(surface)
+
   local tiles = {}
   for x = -20, 100 do
     for y = -20, 20 do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
@@ -323,9 +362,9 @@ script.on_init(function()
     { "control", "rfaq-control" }, { "flagged", "rfaq-flagged" }, { "vanilla", "iron-gear-wheel" },
   }) do
     local label, recipe = case[1], case[2]
-    local m = machine_at(surface, force, #storage.subjects * 20 + 0.5, recipe)
+    local m, substation, supply = machine_at(surface, force, #storage.subjects * 20 + 0.5, recipe)
     storage.subjects[#storage.subjects + 1] = {
-      label = label, recipe = recipe, machine = m,
+      label = label, recipe = recipe, machine = m, substation = substation, supply = supply,
       -- The tally the output inventory cannot hold. An assembling machine stops when its output
       -- fills, and an iron-chest stacks fifty -- so the first run of this rig read exactly fifty on
       -- the machine that worked, which is the stack size and not a rate. Emptied every second into
@@ -520,6 +559,14 @@ end
 script.on_nth_tick(60, function()
   local tick = game.tick
 
+  -- Once a second, for the whole run. The switcher is in here too: question 3's answer is about
+  -- what happened to its modules, and a switcher that lost its own machine would answer it wrong.
+  for _, s in ipairs(storage.subjects) do assert_intact(s) end
+  if storage.switcher and not storage.switcher.valid then
+    error("the switcher's machine is gone -- something destroyed part of the rig mid-run, so its "
+      .. "module rows measure damage rather than the flag")
+  end
+
   -- The set-up pass, once the machines exist and the engine has had a tick to settle them.
   if not storage.armed then
     storage.armed = true
@@ -529,6 +576,8 @@ script.on_nth_tick(60, function()
     -- Fed AFTER the modules, so a machine that took them crafts with them from its first craft,
     -- and topped up every second by tend() below for the rest of the run.
     tend()
+    say("map    quieted before the run: pollution and expansion off, peaceful, %d enemy entities "
+      .. "removed", storage.quieted)
     say("fed    %s to each machine, topped up every second; crafting for %d ticks", FEED, RUN_TICKS)
     return
   end
@@ -542,7 +591,10 @@ script.on_nth_tick(60, function()
   say("done")
 end)
 '@
-$lua = $lua.Replace('__RUN_TICKS__', "$($Seconds * 60)")
+$lua = $lua.
+    Replace('__QUIETMAP__', (Get-QuietMapLua)).
+    Replace('__QUIETFN__', $script:QuietMapFunction).
+    Replace('__RUN_TICKS__', "$($Seconds * 60)")
 Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
 
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }

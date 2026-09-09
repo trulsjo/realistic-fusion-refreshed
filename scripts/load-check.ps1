@@ -275,7 +275,11 @@
     swapped must be refused. The first is
     required or the others prove nothing, since Factorio also exits non-zero when the repo is
     genuinely broken. Halves three through seven and nine are the ones Factorio exits 0 on, where
-    the check has to decide alone. Run this whenever the script changes.
+    the check has to decide alone. THE OTHER FOUR ARE THE MOD REFUSING ITSELF -- two, eight, ten
+    and eleven all end with Factorio exiting non-zero, which is why each of the last three has to
+    match the refusal's own message as well as its exit code. A reviewer read this list as stale
+    when ten and eleven were added; it is not, and they do not belong in it. Run this whenever the
+    script changes.
 
     TEN AND ELEVEN ARE #125's, and they take check_prototypes() coverage from one invariant to
     three. Those are the checks that tie the simulation to the prototypes, and the reason this
