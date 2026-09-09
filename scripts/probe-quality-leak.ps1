@@ -516,8 +516,8 @@ try {
     $save = Join-Path $temp 'quality-leak.zip'
     Invoke-FactorioStep @step -Arguments @('--create', $save) -Tag 'create' | Out-Null
     $runOut = Invoke-FactorioStep @step -Tag 'run' -Arguments @(
-        # The run length, plus the rig's own five-second baseline pass, plus a second of slack for
-        # the report tick landing on the next multiple of sixty.
+        # The run length, plus the rig's own five-second baseline pass, plus two seconds of slack
+        # for the report tick landing on the next multiple of sixty.
         '--benchmark', $save, '--benchmark-ticks', "$($Seconds * 60 + 300 + 120)",
         '--benchmark-runs', '1', '--disable-audio')
 
