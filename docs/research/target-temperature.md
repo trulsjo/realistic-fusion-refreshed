@@ -122,7 +122,8 @@ and gives one unit per 41.7 hours at 1 W (150 kJ per unit against one joule per 
 > tick — 2⁻²⁴ units, 5.96×10⁻⁸ — and floors what the rate law asks for to a whole number of them. At
 > the 165 target and 1 W the law asks for 1.86 ULPs a tick and gets **one**, which is one unit per
 > **77.7 hours**, not 41.7. The figure this section's own sweep reported, 3.57×10⁻⁵ units in 600
-> ticks, is exactly one ULP a tick to three digits — it was the answer, not the noise floor. See
+> ticks, is exactly one ULP a tick to three digits — it was the answer, not the noise floor. The
+> 165 figure is therefore this note's own sweep re-read; the 550 one is a fresh run. See
 > *What is not verified* below, and `scripts/probe-quality-leak.ps1`.
 >
 > **At the shipped 550 target the same flooring takes it to zero.** The law asks for 0.52 ULPs a
@@ -171,7 +172,7 @@ These are the options as they were weighed. The one taken is in the next section
 | | pipe reads | engine conversion at the floor | needs `max_temperature` raised | coherent with the steam route |
 |---|---|---|---|---|
 | 15 | 15 °C | **exactly zero, always** | no | no |
-| 165 (was shipped) | 165 °C | 6.7 W — **measured 3.576 W** | no | no |
+| 165 (was shipped) | 165 °C | 6.7 W — **3.576 W, re-read off this note's own sweep** | no | no |
 | 500 | 500 °C | 2.1 W — **not run** | yes, to ≥ 500 | marginal — equals its own steam |
 | **550 — chosen** | **550 °C** | **1.9 W — measured ZERO** | **yes, to ≥ 550** | **yes, with an approach margin** |
 
@@ -351,12 +352,16 @@ one.
 - **The Lua write path above `max_temperature` was not tested.** Only the boiler's internal transfer
   was. That is the gap named under *What this does to the guard*, and it is the one measurement that
   would let #46's guard state its reason accurately rather than conservatively.
-- ~~**The 6.7 W free-energy path is derived, not observed.**~~ **Measured 2026-09-09 (#147), with the
-  simulation stubbed out exactly as this bullet asked, and it is smaller than derived.** At the 165
-  target it is 3.576 W and at the shipped 550 it is **zero** — the flooring above, not the rate law.
-  It becomes non-zero again only at legendary quality, where `energy_consumption` reaches 2.5 W and
-  the law clears one ULP a tick: 3.576 W there too, since one ULP is one ULP. See
-  `docs/research/quality.md`.
+- ~~**The 6.7 W free-energy path is derived, not observed.**~~ **Settled 2026-09-09 (#147) and it is
+  smaller than derived, but the two halves have different provenance and the difference matters.**
+  At the shipped 550 target it is **zero**, and that is a measurement: `probe-quality-leak.ps1` runs
+  a copy of `rf-reactor` at its shipped fields with the simulation stubbed out, exactly as this
+  bullet asked, and reads nothing over ten thousand seconds. At the old 165 target it is 3.576 W,
+  and that figure is **a re-reading of this note's own sweep** rather than a new run — no cell in
+  the #147 rig carries a 165 target, because that rig keeps every shipped field. The re-reading is
+  the row two bullets down: 3.57×10⁻⁵ units in 600 ticks is one ULP a tick. It becomes non-zero
+  again at legendary quality, where `energy_consumption` reaches 2.5 W and the law clears one ULP a
+  tick: 3.576 W there too, since one ULP is one ULP. See `docs/research/quality.md`.
 - ~~**Rates below roughly 0.05 units/s did not register in a ten-second window.**~~ **Withdrawn
   2026-09-09 (#147): that was not a resolution limit, it was the engine.** This section used to read
   the low rows as *below the probe's resolution* and warn against reading them as zero. The engine
