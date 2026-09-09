@@ -317,15 +317,51 @@ from being a balance call made as the side effect of a comment fix. `CONTEXT.md`
 an **inherited stat** is a value taken from the vanilla prototype that no simulated quantity reads.
 
 **Two things came out of the same enumeration, and both say this finding understated itself.** It is
-**seven inherited items across ten prototypes** -- Core's five and Power's five -- not two stats
-at two clone sites: the two
-`entities.lua` headers now list them, and they include `rf-pump`'s pumping speed and the fluid-box
-volume on `rf-pipe` and `rf-pipe-to-ground`, none of which any set has been measured touching. And
-**one of the seven is not an inherited stat at all.** `rf-heat-exchanger` replaces only
-`pipe_connections` on its water and steam boxes, so it inherits their **filters** — and a filter
-decides what a machine is rather than what it costs, which puts it on the set-explicitly side of the
-rule. Split out as [#298](https://github.com/trulsjo/realistic-fusion-refreshed/issues/298) rather
-than fixed there, and named in the header meanwhile.
+**seven inherited items across ten prototypes** — Core's five and Power's five — not two stats at two
+clone sites. Enumerated, so the count is checkable rather than asserted:
+
+| # | Prototypes | Inherited |
+|---|---|---|
+| 1 | Core's five `from_vanilla` machines and `rf-heater` | `energy_source` — emissions, drain, `usage_priority` |
+| 2 | the same six | `fluid_boxes[*].volume` |
+| 3 | the same six | `allowed_module_categories` |
+| 4 | `rf-heat-exchanger` | `target_temperature` — a machine-level field, not a fluid-box one |
+| 5 | `rf-heat-exchanger` | the `volume` of its water and steam boxes |
+| 6 | `rf-pipe`, `rf-pipe-to-ground` | `fluid_box.volume` |
+| 7 | `rf-pump` | `pumping_speed`, `energy_source`, `fluid_box.volume` |
+
+Both `entities.lua` headers state the same split at their own clone sites. Rows 6 and 7 have never
+been measured being touched by any set.
+
+**Row 5 used to carry a second field that was not an inherited stat at all.** `rf-heat-exchanger`
+replaced only `pipe_connections` on those two boxes, so it inherited their **filters** as well as
+their volume — and a filter decides what a machine is rather than what it costs, which puts it on
+the set-explicitly side of the rule, the same class as `crafting_categories`, which every
+crafting-machine clone site in this repository states. Split out as
+[#298](https://github.com/trulsjo/realistic-fusion-refreshed/issues/298) rather than settled there,
+and **closed on 2026-09-09**: those two boxes now name `water` and `steam` themselves. The count
+still reads seven because row 5 narrowed rather than disappeared — the volume beside those filters
+was always part of the same row and is still inherited, and still read by nothing.
+
+The fix **changed nothing about the loaded prototype**, measured with `dump-data.ps1` before and
+after on the base-game load the same day: vanilla's boxes carry exactly those two filters, the two
+boxes came back identical, and so did every other prototype type in the dump. Nothing was gated, for
+#153's reason — no set has been measured reassigning a fluid-box filter, where the containment gate
+#209 built answers a reassignment that had actually happened. `production_type` on those boxes is
+the same class as `filter` and is left inherited deliberately: a mod rewriting it would break
+vanilla's own heat exchanger first.
+
+**WHAT THE TWO LINES COST, STATED BECAUSE THIS IS THE ADR ABOUT COEXISTENCE.** Setting a filter is
+not free here, and the gain — a mod cannot quietly make this machine drink something else — has an
+exact mirror image. A water overhaul that re-points vanilla `heat-exchanger`'s input filter at a
+treated-water fluid of its own, while leaving base `water` defined, does not break vanilla's
+exchanger; it deliberately re-plumbs it. Before #298 `rf-heat-exchanger` followed that set. After it,
+the machine demands base `water` while the set's own exchangers take the treated fluid, so a player's
+water network cannot feed ours — with no error, no gate, and by finding 4 above nothing in this
+repository that would see it. **That is the accepted cost, not an oversight**, and it is the one
+argument that would reverse #298: if such a set is ever a coexistence target, the filter is the wrong
+side of the rule for this field and following the host is better than declaring. Reassess then, the
+way #208 left the pipe-to-ground opt-out to be reassessed if a second mod ever reassigned a category.
 
 **Nothing became a gate, deliberately.** An edited stat still fails no check in this repository, and
 the paragraph above is still true of everything but the containment slice. The one place the
