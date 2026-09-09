@@ -218,13 +218,22 @@ end
 --
 -- So the 1 W is not what protects a running reactor -- being hotter than the target is. The 1 W is
 -- what protects an IDLE one: reactor-logic clamps plasma to min_temperature_c = 15, which is below
--- this target, so a cold reactor sits in the converting regime and moves one unit per 41.7 hours.
--- That is the "fifty hours" the old wording half-remembered, and it applies at the floor only.
+-- this target, so a cold reactor sits in the converting regime.
 --
--- One consequence, derived rather than observed and written up in docs/research/target-temperature.md:
--- apply() SETS box 1 and ACCUMULATES box 2, so plasma the engine took is discarded while reactor
--- energy it made is kept. At the floor that is about 6.7 W of output nothing paid plasma for --
--- 1.3e-7 of the reactor's own draw, and negligible until energy_consumption is ever raised.
+-- AND AT THE SHIPPED 1 W IT MOVES NOTHING AT ALL, which #147 measured and this comment used to get
+-- wrong twice over. It said "one unit per 41.7 hours", which was the rate at the 165 target this
+-- entity had before 550; the rate law at 550 would give one unit per 148.6 hours. Neither is what
+-- happens. The engine moves fluid in whole float32 ULPs per tick, 2^-24 units, and at 1 W the rate
+-- law asks for 0.52 of one -- so the transfer floors to zero and stays there over ten thousand
+-- seconds of measurement. Quality is the only thing that reaches it: at legendary's 2.5 W the law
+-- asks for 1.31 ULPs and the engine moves exactly one, 3.576 W of output. Every level between is
+-- zero, epic missing by 0.7%. See scripts/probe-quality-leak.ps1 and docs/research/quality.md.
+--
+-- One consequence, and it is now a measurement rather than a derivation: apply() SETS box 1 and
+-- ACCUMULATES box 2, so plasma the engine took is discarded while reactor energy it made is kept.
+-- At the floor that used to be quoted as about 6.7 W of output nothing paid plasma for. At the
+-- shipped normal quality it is ZERO, and at legendary it is 3.576 W -- 7e-8 of the reactor's own
+-- draw. See docs/research/target-temperature.md for the rate law it is not obeying.
 --
 local reactor = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-reactor", {
   mining_time = 3,

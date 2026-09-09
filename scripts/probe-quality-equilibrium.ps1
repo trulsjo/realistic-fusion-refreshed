@@ -108,9 +108,10 @@
     aneutronic tier, the D-T tier and the confinement ladder are each another lane and none of them
     is what #145 asks about.
 
-    The brownout table and the residual boiler leak, which are the other two things
-    docs/research/quality.md derives without observing. Both want a rig of this shape and neither
-    wants it at full supply on a hot plasma, so they are #146 and #147.
+    The brownout table and the residual boiler leak, which were the other two things
+    docs/research/quality.md derived without observing. Both wanted a rig of this shape and neither
+    wanted it at full supply on a hot plasma, so both got one of their own:
+    scripts/probe-quality-brownout.ps1 (#146) and scripts/probe-quality-leak.ps1 (#147).
 
     ONE CONFIGURATION, not two. probe-quality.ps1 runs with the bundled quality mod alone and again
     with space-age, and reported every number identical across the pair -- so the second
