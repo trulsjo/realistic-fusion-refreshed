@@ -1074,7 +1074,8 @@ contain(aneutronic.output_fluid_box, ANEUTRONIC_ENERGY_CATEGORY)
 local converter = pin(table.deepcopy(data.raw["generator"]["steam-turbine"]), "rf-direct-energy-converter", {
   mining_time = 1,
 })
--- Every stat pinned rather than inherited, the way the note at the top of this file requires.
+-- Every balance stat set explicitly and the fluid box assigned wholesale, which is what puts this
+-- machine among the eight the note at the top of this file names.
 converter.burns_fluid = true
 -- Take only what the current output needs, so a converter running below capacity does not drain
 -- its box and throw the rest away. The same field rf-heat-exchanger sets, for the same reason.
