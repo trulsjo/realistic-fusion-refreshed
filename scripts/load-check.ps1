@@ -263,17 +263,38 @@
     references cross a mod boundary, so there is now a seam for one to fall through.
 
 .PARAMETER SelfTest
-    Verify the check can fail. NINE halves, and the run prints each one numbered as it passes, so a
-    reader can count them against this list: the repo as it stands must pass; a mod carrying an
+    Verify the check can fail. ELEVEN halves, and the run prints each one numbered as it passes, so
+    a reader can count them against this list: the repo as it stands must pass; a mod carrying an
     invalid prototype must fail; a mod naming an icon file that does not exist must be caught; a
     mod that reassigns one of our containment categories must be caught; a mod that moves a
     pipe connection on a machine with rendered art must be caught; a mod that merely ADDS a
     connection category to one must NOT be; a mod that REPLACES one must be; a reactor whose
-    input_flow_limit cannot cover its confinement heating must be refused; and a mod that moves a
-    pipe connection on a machine wearing a MOCKUP must be caught. The first is
+    input_flow_limit cannot cover its confinement heating must be refused; a mod that moves a
+    pipe connection on a machine wearing a MOCKUP must be caught; a mod that puts a plasma of its
+    own through our heating category must be refused; and the isotope collector's two box filters
+    swapped must be refused. The first is
     required or the others prove nothing, since Factorio also exits non-zero when the repo is
     genuinely broken. Halves three through seven and nine are the ones Factorio exits 0 on, where
     the check has to decide alone. Run this whenever the script changes.
+
+    TEN AND ELEVEN ARE #125's, and they are the first two halves about check_prototypes() -- the
+    invariants that tie the simulation to the prototypes, and the reason this script is the gate
+    that matters in this repository. Every one of them used to be asserted only positively: they
+    pass on a good tree, and nothing would have noticed one that had quietly stopped firing. Two of
+    them have now had their negative test done BY HAND and recorded only in a commit message (#55
+    and #119, both by temporarily editing the value under test), which is the shape this half of
+    the self-test exists to replace.
+
+    Ten breaks its invariant by pure ADDITION -- the canary defines a fluid and a recipe of its own
+    in rf-plasma-heating and mutates nothing of ours -- and eleven by MUTATION, swapping
+    rf-isotope-collector's two box filters in `data-final-fixes`. Both must fail BY THE CHECK'S OWN
+    MESSAGE, as half eight does and for the same reason: a canary that fails to load for an
+    unrelated reason exits non-zero too, and would otherwise be recorded as the invariant firing.
+
+    AND THE WORKING TREE IS ASSERTED UNTOUCHED after eleven, against a fingerprint taken before
+    half one. Eight, ten and eleven break our own prototypes to prove our own checks fire; they do
+    it in memory, and this is what says so rather than assuming it. A self-test in this file once
+    deleted the repository's own sprite.
 
     THE NINTH IS #275's, and it is the fifth again for the other kind of art. make-mockup-art.ps1
     draws every mockup from a hand-copied table of footprints and connection tiles that, by its
@@ -478,6 +499,29 @@ function Test-Assets {
 
 # The mod that holds every sprite, and so every graphics/rendered/<machine>/manifest.json (ADR 0023).
 $ASSETS_MOD = 'realistic-fusion-refreshed-assets'
+
+function Get-ModTreeFingerprint {
+    <#  Every file under each of our mod directories, as path, size and last write time.
+
+        The canary self-test's one hazard is that three of its halves break OUR prototypes to prove
+        OUR checks fire. They do it in `data-final-fixes`, in memory, so nothing on disk should
+        move -- and #125 asked for that to be ASSERTED rather than reasoned about, because a
+        self-test in this file once deleted the repository's own sprite.
+
+        Path, size and write time rather than a hash of the contents: it walks the assets mod, so
+        reading every sprite would cost more than the loads it is guarding, and a canary that
+        rewrote a file in place without changing its length is not a failure mode this has.  #>
+    param([Parameter(Mandatory)] [string[]] $Mods)
+
+    $rows = foreach ($mod in $Mods) {
+        $root = Join-Path $repoRoot $mod
+        foreach ($file in (Get-ChildItem -LiteralPath $root -Recurse -File -Force)) {
+            $rel = $file.FullName.Substring($root.Length + 1).Replace('\', '/')
+            "$mod/$rel|$($file.Length)|$($file.LastWriteTimeUtc.Ticks)"
+        }
+    }
+    return @($rows | Sort-Object)
+}
 
 function ConvertTo-CanonicalTree {
     <#  The same value with every object's keys sorted, so two JSON documents that differ only in
@@ -1156,8 +1200,13 @@ try {
     }
 
     if ($SelfTest) {
+        # Before anything: what the working tree looks like, for the assertion after half eleven.
+        # Taken here rather than after the first canary is written, so a half that reached into the
+        # repo at any point in the run is caught rather than only one that reached in late.
+        $treeBefore = Get-ModTreeFingerprint -Mods $ourMods
+
         # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
-        Write-Host 'self-test 1/9: the repo as it stands must load.'
+        Write-Host 'self-test 1/11: the repo as it stands must load.'
         $clean = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'clean'
         # Same pass criterion as a real run: exit 0 without a save is a failure there, so it must
         # be a failure here too, or -SelfTest could certify a check a plain run would reject.
@@ -1181,7 +1230,7 @@ try {
         'data:extend({{ type = "item", name = "rf-loadcheck-canary-item" }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 2/9: an invalid prototype must be rejected.'
+        Write-Host 'self-test 2/11: an invalid prototype must be rejected.'
         $broken = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'canary'
         if ($broken.Code -eq 0) {
             Write-Host ''
@@ -1200,7 +1249,7 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
   icon = D .. "no-such-icon" .. ".png", icon_size = 64 }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 3/9: a prototype naming a file that is not there must be caught.'
+        Write-Host 'self-test 3/11: a prototype naming a file that is not there must be caught.'
         $withCanary = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'assets'
         if ($withCanary.Code -ne 0) {
             Write-Host ''
@@ -1312,7 +1361,7 @@ data.raw.item["rf-loadcheck-canary-item"].order = victim .. "|" .. taken
   icon = "__base__/graphics/icons/iron-plate.png", icon_size = 64 }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 4/9: a set reassigning one of our containment categories must be caught.'
+        Write-Host 'self-test 4/11: a set reassigning one of our containment categories must be caught.'
         $reassigned = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'contain'
         if ($reassigned.Code -ne 0) {
             Write-Host ''
@@ -1402,7 +1451,7 @@ if not slid then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 5/9: a machine whose rendered art no longer fits it must be caught."
+        Write-Host "self-test 5/11: a machine whose rendered art no longer fits it must be caught."
         $renderDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-loaded'
         $disagreements = @(Get-RenderDisagreements -DumpPath $renderDump -Manifests $renderManifests)
         $onVictim = @($disagreements | Where-Object { $_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connections' })
@@ -1475,7 +1524,7 @@ if not touched then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 6/9: another mod adding a connection category must NOT be reported."
+        Write-Host "self-test 6/11: another mod adding a connection category must NOT be reported."
         $coexistDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-coexist'
 
         # The canary reaching the GEOMETRY, proved rather than assumed. This half passes by finding
@@ -1548,7 +1597,7 @@ if not touched then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 7/9: another mod replacing a connection category must be caught."
+        Write-Host "self-test 7/11: another mod replacing a connection category must be caught."
         $replacedDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-replaced'
         $replacedRows = @(Get-RenderDisagreements -DumpPath $replacedDump -Manifests $renderManifests)
         $onCategories = @($replacedRows | Where-Object {
@@ -1598,7 +1647,7 @@ end
   source.input_flow_limit = "1W"
 end)()' | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host 'self-test 8/9: a reactor that can never be paid its heating must be refused.'
+        Write-Host 'self-test 8/11: a reactor that can never be paid its heating must be refused.'
         $starved = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'flow'
         if ($starved.Code -eq 0) {
             Write-Host ''
@@ -1667,7 +1716,7 @@ if not walk(proto, {}) then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host 'self-test 9/9: a machine whose mockup no longer fits it must be caught.'
+        Write-Host 'self-test 9/11: a machine whose mockup no longer fits it must be caught.'
         $mockupDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'mockup-loaded'
         $mockupRows = @(Get-MockupDisagreements -DumpPath $mockupDump -Machines $mockupMachines)
         $onMockup = @($mockupRows | Where-Object { $_.Prototype -eq $mockupName -and $_.Field -eq 'connections' })
@@ -1691,14 +1740,137 @@ end
             exit 1
         }
 
+        # Half ten: a plasma no reactor can burn must be refused (#125). The first half to prove one
+        # of check_prototypes()'s invariants -- the checks that tie the simulation to the prototypes
+        # and are the reason load-check is the gate that matters here. Until #125 every one of them
+        # was asserted only positively: they pass on a good tree, and nothing here would have
+        # noticed one that had quietly stopped firing.
+        #
+        # WHY THIS INVARIANT, and it is not "whichever was easiest to break". It is the only one a
+        # canary can trip by pure ADDITION -- the canary defines a fluid and a recipe of its OWN in
+        # our heating category and mutates nothing of ours -- so it is the cheapest negative test in
+        # the set. And it is not a contrived break: check_every_plasma_burns's own docstring says a
+        # fluid another mod produces through our category "is genuinely a plasma a reactor cannot
+        # burn, which is worth refusing to load over whoever wrote it". This half is that sentence
+        # run rather than read.
+        #
+        # THE CATEGORY IS NAMED HERE AND GUARDED HERE. control.lua's HEATING_CATEGORY is the other
+        # copy of the string; a rename there would leave this canary adding a recipe to a category
+        # nothing reads, which is a half that passes by proving nothing. The guard makes that a loud
+        # failure instead -- the same shape as every other canary's "would prove nothing" bail.
+        @'
+if not data.raw["recipe-category"]["rf-plasma-heating"] then
+  error("load-check canary: no rf-plasma-heating recipe category to add a plasma to, so half ten "
+    .. "would prove nothing -- control.lua's HEATING_CATEGORY has been renamed")
+end
+data:extend({
+  { type = "fluid", name = "rf-loadcheck-canary-plasma",
+    icon = "__base__/graphics/icons/fluid/steam.png", icon_size = 64,
+    default_temperature = 15, max_temperature = 1e9,
+    base_color = { r = 1, g = 0, b = 1 }, flow_color = { r = 1, g = 0, b = 1 } },
+  { type = "recipe", name = "rf-loadcheck-canary-plasma",
+    category = "rf-plasma-heating", energy_required = 1,
+    ingredients = { { type = "fluid", name = "water", amount = 1 } },
+    results = { { type = "fluid", name = "rf-loadcheck-canary-plasma", amount = 1 } } },
+})
+'@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
+
+        Write-Host 'self-test 10/11: a plasma no reactor knows how to burn must be refused.'
+        $unburnable = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'plasma'
+        if ($unburnable.Code -eq 0) {
+            Write-Host ''
+            Write-Host 'FAILED - self-test: a canary put a fluid of its own through rf-plasma-heating and the'
+            Write-Host '         mod loaded anyway. check_every_plasma_burns() is not proving anything, so a'
+            Write-Host '         plasma with no fuel row would sit in a reactor for ever while the reactor'
+            Write-Host '         reported itself starved -- indistinguishable from an empty pipe.'
+            exit 1
+        }
+        # BY THE CHECK'S OWN WORDS, not merely non-zero, for the reason half eight matches: a canary
+        # that failed to load for an unrelated reason -- a typo, a prototype the engine rejects --
+        # exits non-zero too, and would be recorded here as the invariant firing.
+        $unburnableSaid = (Test-Path $unburnable.OutFile) -and
+            (Select-String -Path $unburnable.OutFile -SimpleMatch 'has no fuel entry for' -Quiet)
+        if (-not $unburnableSaid) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the unburnable-plasma canary failed the load (exit $($unburnable.Code)) but"
+            Write-Host '         check_every_plasma_burns() did not say so, so the failure was something else'
+            Write-Host '         and this half proves nothing about the invariant it is named for.'
+            Write-FactorioTail $unburnable
+            exit 1
+        }
+
+        # Half eleven: a collector whose boxes are not what deposit() writes to must be refused
+        # (#125). Ten proves an invariant fires over a prototype the canary ADDED; this one proves
+        # one fires over a prototype the canary MOVED, which is the route the remaining invariants
+        # need. Half eight already mutates one of ours from outside, so the mechanism is not new
+        # here -- what is new is that the break is a swap of two declarations rather than a number,
+        # so there is no value to get wrong and the diagnostic names the box index.
+        #
+        # WHY THIS INVARIANT: control.lua calls it "the third trap of the same shape, and the one
+        # most likely to fire". deposit() writes tritium to box 1 and helium-3 to box 2 by index,
+        # because asking a fluidbox its filter ten times a second buys an answer that cannot change
+        # while the game runs -- so swapping the two declarations in prototypes/entities.lua loads
+        # clean, fills the collector, and carries helium-3 down a player's tritium pipe.
+        @'
+local collector = data.raw.boiler["rf-isotope-collector"]
+local first  = collector.fluid_box and collector.fluid_box.filter
+local second = collector.output_fluid_box and collector.output_fluid_box.filter
+if not first or not second or first == second then
+  error("load-check canary: rf-isotope-collector does not declare two distinctly filtered boxes ("
+    .. tostring(first) .. ", " .. tostring(second) .. "), so half eleven would prove nothing")
+end
+collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
+'@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
+
+        Write-Host 'self-test 11/11: a collector whose two boxes are swapped must be refused.'
+        $swapped = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'boxes'
+        if ($swapped.Code -eq 0) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: rf-isotope-collector's two box filters were swapped and the mod"
+            Write-Host '         loaded anyway. check_collector_boxes() is not proving anything, so a'
+            Write-Host "         player's tritium pipe would quietly carry helium-3."
+            exit 1
+        }
+        $swappedSaid = (Test-Path $swapped.OutFile) -and
+            (Select-String -Path $swapped.OutFile -SimpleMatch 'would leave through the wrong pipe' -Quiet)
+        if (-not $swappedSaid) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: the swapped-boxes canary failed the load (exit $($swapped.Code)) but"
+            Write-Host '         check_collector_boxes() did not say so, so the failure was something else'
+            Write-Host '         and this half proves nothing about the invariant it is named for.'
+            Write-FactorioTail $swapped
+            exit 1
+        }
+
+        # THE WORKING TREE, ASSERTED RATHER THAN REASONED ABOUT (#125). Halves eight, ten and eleven
+        # break our own prototypes to prove our own checks fire, and they do it in data-final-fixes
+        # -- in memory, at load, with nothing on disk touched. That is the design; this is the
+        # assertion. It is here because a self-test in this file once deleted the repository's own
+        # sprite, so "the mutation is in memory" is a claim to check rather than one to trust.
+        $treeAfter = Get-ModTreeFingerprint -Mods $ourMods
+        $moved = @(Compare-Object -ReferenceObject $treeBefore -DifferenceObject $treeAfter)
+        if ($moved) {
+            Write-Host ''
+            Write-Host "FAILED - self-test: $($moved.Count) file(s) under our mod directories changed during"
+            Write-Host '         the run. The canary halves must break our prototypes in memory only.'
+            foreach ($m in $moved) {
+                $side = if ($m.SideIndicator -eq '=>') { 'now' } else { 'was' }
+                Write-Host "           $side  $($m.InputObject)"
+            }
+            exit 1
+        }
+
         Write-Host ''
         Write-Host 'OK - self-test passed: clean repo loads, invalid prototype rejected'
         Write-Host "     (exit $($broken.Code)), missing asset caught, a reassigned containment"
         Write-Host "     category caught by name on $victim, a slid connection caught on"
         Write-Host "     $($renderVictim.name)'s rendered art, an added category tolerated on it,"
         Write-Host '     a replaced one caught by name, a reactor whose input_flow_limit'
-        Write-Host '     cannot cover its heating refused by check_input_flow(), and a slid'
-        Write-Host "     connection caught on $mockupName's mockup."
+        Write-Host '     cannot cover its heating refused by check_input_flow(), a slid'
+        Write-Host "     connection caught on $mockupName's mockup, an unburnable plasma"
+        Write-Host '     refused by check_every_plasma_burns() and a swapped collector box'
+        Write-Host '     refused by check_collector_boxes() -- both by their own words -- and'
+        Write-Host "     $($treeBefore.Count) files under our mod directories untouched by the run."
         exit 0
     }
 
