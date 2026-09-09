@@ -551,11 +551,33 @@ end
 -- reactor with nothing to simulate has no entry in the write pass at all, and "starved" is exactly
 -- the state worth showing.
 --
--- NOT IN `storage`, for the reason the force caches are not: it is refilled within one step of a
--- load, from the world rather than from anything a save carries, and a stored value could only go
--- stale. A blanket that stops breeding writes a 0 here rather than leaving its last number behind,
--- which is what makes a full collector read 0 on the wire and not "whatever it last managed".
-local blanket_sold = {}
+-- IN `storage`, AND THE FIRST DRAFT HAD IT AS A MODULE LOCAL. That was wrong, and the argument it
+-- was wrong by is worth keeping because it is a plausible one: the force caches above ARE module
+-- locals, and this borrowed their justification -- "refilled within one step of a load, so a stored
+-- value could only go stale".
+--
+-- THE ANALOGY DOES NOT HOLD, and the difference is what a peer can recompute. force_specs and
+-- force_capture are memoisations of things every peer already has -- a prototype and
+-- force.technologies, which the save carries -- so a peer that starts with an empty table fills it
+-- with the SAME numbers as every other peer and nothing diverges. This is HISTORY: what a blanket
+-- sold last step cannot be recomputed from a save at all.
+--
+-- So it obeys the rule spend() states below, in this file, about storage.heating_spent: a client
+-- joining a running game rebuilds its Lua state from the save and a module local starts empty on
+-- that peer alone. Here that peer would publish a share of 0 into a combinator's filters -- real
+-- entity state -- on the same reporting tick as its neighbours publish the true figure, because
+-- storage.steps_since_report is shared and every peer reports on the same tick. That is a desync,
+-- and the two values of exactly this shape already in this mod, storage.blanket_charge below and
+-- circuit-output's storage.reactor_status, were both in `storage` already.
+--
+-- Lazily initialised in update(), for the reason spend() gives: on_load runs neither on_init nor
+-- on_configuration_changed, so one `or {}` is the whole of the migration an existing save needs.
+-- update() is the only caller of apply(), so the table is certainly there by the time apply()
+-- writes to it -- and it is passed in as an argument rather than reached for, so that stays a
+-- property of the call rather than of the reading order.
+--
+-- A blanket that stops breeding writes a 0 here rather than leaving its last number behind, which
+-- is what makes a full collector read 0 on the wire and not "whatever it last managed".
 
 --- Apply one reactor's step to the world.
 --
@@ -568,7 +590,7 @@ local blanket_sold = {}
 --                 ADR 0019 decision 4 refused the blanket a figure of its own, on the grounds that
 --                 capture_efficiency is the only term standing between this mod and a free loop
 --                 and every additional instance of it is another number a balance pass can drift.
-local function apply(entity, spec, plasma, result, capture)
+local function apply(entity, spec, plasma, result, capture, blanket_sold)
   -- NO ENERGY WRITE HERE, and that is #72 rather than an omission. spend() below has already paid
   -- for this step's heating, one tick at a time, and result.heating_used_j is the record of what
   -- it paid rather than a bill to settle now -- deducting it again would charge the reactor twice.
@@ -895,6 +917,14 @@ local function update()
   -- unreachable one would read as a case that can happen.
   local spent = storage.heating_spent
 
+  -- What each blanket last sold, for the share signal (#95). Lazily, like storage.heating_spent
+  -- itself and for the same reason -- see the note above apply(), which is where the whole of why
+  -- this is in `storage` rather than a module local is written down. Unlike the accumulator above
+  -- this one DOES need the fallback: spend() does not touch it, so the first update() after a load
+  -- is the first thing that can create it.
+  storage.blanket_sold = storage.blanket_sold or {}
+  local blanket_sold = storage.blanket_sold
+
   -- Counted rather than derived from game.tick, so the reporting cadence stays a multiple of the
   -- simulation's however UPDATE_INTERVAL is set.
   storage.steps_since_report = (storage.steps_since_report or REPORT_EVERY) + 1
@@ -977,7 +1007,7 @@ local function update()
   end
 
   for _, step in ipairs(pending) do
-    apply(step.entity, step.spec, step.plasma, step.result, step.capture)
+    apply(step.entity, step.spec, step.plasma, step.result, step.capture, blanket_sold)
   end
 end
 
