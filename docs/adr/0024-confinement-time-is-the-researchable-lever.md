@@ -191,13 +191,18 @@ own thermometer stays a player's choice under ADR 0016 and is not a defect in th
   > first two do not.
 - **But the fuel chain between the tiers moves a long way.** D-D's by-products go from 0.137 to
   0.627 u/s across the ladder — **4.6×** — so a researched player needs far fewer D-D reactors to feed
-  one D-T reactor. [`d-t-ignition.md`](../research/d-t-ignition.md)'s "about 1.4 D-D reactors feed one
-  D-T reactor" is therefore now research-dependent as well as **already stale from #52**, whose own
-  blast-radius list called for re-anchoring it and which re-anchored the equilibrium table above it and
-  not the arithmetic below. Recorded there and opened as
-  [#117](https://github.com/trulsjo/realistic-fusion-refreshed/issues/117) rather than re-picked here:
-  the section quotes a heater-limited D-T reactor against a saturated D-D one, and deciding which
-  operating point it means is a balance decision of its own, not a side effect of this one.
+  one D-T reactor.
+
+  > **Answered 2026-09-09 by [#117](https://github.com/trulsjo/realistic-fusion-refreshed/issues/117),
+  > and the ratio it replaced was wrong by two orders of magnitude.**
+  > [`d-t-ignition.md`](../research/d-t-ignition.md) quoted "about 1.4 D-D reactors feed one D-T
+  > reactor" — a heater-fed D-T reactor against a settled D-D one, and stale from #52 besides. Truls's
+  > decision was to quote **both tiers settled**, which is the operating point `CONTEXT.md` names as
+  > the reference. At that point it is **94.7 D-D reactors per D-T reactor unresearched, falling to
+  > 18.5 with this ladder researched**, and every rung shortens it. Both ends are pinned in
+  > `tests/test-reactor-logic.lua` rather than computed in prose. What that note leaves open is
+  > whether ninety-five is the intended cost of the unblanketed route, which is a balance question
+  > and not this ADR's to answer either.
 - **The technology tree gains its first upgrade line**, which is exactly what ADR 0014 predicted would
   happen and called "the sanctioned shape for one". Power goes from seven technologies to ten.
 - **ADR 0014's "somewhere past 100 s" becomes about 175 s.** That estimate came from the equilibrium
