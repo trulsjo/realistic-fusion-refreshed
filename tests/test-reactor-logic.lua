@@ -912,9 +912,16 @@ check(he3_best_q < 0.05,
   string.format("best Q %.4g across six fills, against D-He3's %.3g at half fill",
     he3_best_q, half_state.q_factor))
 
--- Every spec the mod ships needs the fields step() and control.lua index without asking. The fuel
--- rows are covered at the top of this file; this is the other half of the same guard, and it exists
--- because a second reactor is exactly the moment a spec field gets added to one and not the other.
+-- Every spec the mod ships needs the fields the mod indexes off it without asking. The fuel rows are
+-- covered at the top of this file; this is the other half of the same guard, and it exists because a
+-- second reactor is exactly the moment a spec field gets added to one and not the other.
+--
+-- NINE OF THE TEN ARE INDEXED AT RUNTIME, by step() or by control.lua. box_volume is the tenth and
+-- is indexed at the PROTOTYPE stage instead -- prototypes/entities.lua writes each reactor's plasma
+-- box from it, and control.lua deliberately reads the LOADED box rather than this field, because a
+-- mod sorting after us can change it. Missing it would fail the data stage and the two locals at the
+-- head of this file rather than a runtime call, which is the same class of breakage and the reason
+-- it belongs in this list (#153).
 for label, spec in pairs({ ["rf-reactor"] = SPEC, ["rf-aneutronic-reactor"] = ANEUTRONIC }) do
   for _, field in ipairs({ "volume_m3", "box_volume", "particles_per_unit", "heating_power_w",
                            "confinement_time_s", "capture_efficiency", "energy_fluid_j_per_unit",
@@ -1109,8 +1116,8 @@ near(floor_tenth.conjured_power_w, 0, 0, "nor a tenth-full one")
 -- BOTH ANEUTRONIC FUELS, at full fill and thin. This is where it mattered: the joint clamp saturated
 -- here, so the figure was the plasma's whole heat content every step rather than a radiated power,
 -- and 322 kW made it the worst case in the mod by twelve times.
-local floor_he3   = at_floor(ANEUTRONIC, "rf-he3-he3-plasma", 3000)
-local floor_dhe3  = at_floor(ANEUTRONIC, "rf-d-he3-plasma", 3000)
+local floor_he3   = at_floor(ANEUTRONIC, "rf-he3-he3-plasma", ANEUTRONIC_FULL)
+local floor_dhe3  = at_floor(ANEUTRONIC, "rf-d-he3-plasma", ANEUTRONIC_FULL)
 local he3_thin    = at_floor(ANEUTRONIC, "rf-he3-he3-plasma", 300)
 local dhe3_thin   = at_floor(ANEUTRONIC, "rf-d-he3-plasma", 300)
 near(floor_he3.conjured_power_w, 0, 0, "a full He3-He3 reactor conjures nothing, where it was 322 kW")
@@ -1801,7 +1808,7 @@ near(curve_at(30, "rf-d-t-plasma").optimum, 1.0, 1e-9,
 
 -- The aneutronic tier has its own reactor, its own volume and no confinement ladder, and it gets
 -- its own curve for the same reason it gets its own spec.
-local ANEUTRONIC_CURVE = L.density_curve(L.aneutronic_reactor, "rf-d-he3-plasma", 3000)
+local ANEUTRONIC_CURVE = L.density_curve(L.aneutronic_reactor, "rf-d-he3-plasma", ANEUTRONIC_FULL)
 check(ANEUTRONIC_CURVE ~= nil, "the aneutronic reactor has a curve of its own")
 check(ANEUTRONIC_CURVE.optimum > 0 and ANEUTRONIC_CURVE.optimum <= 1.0,
   "and its best density is a fill", tostring(ANEUTRONIC_CURVE.optimum))
