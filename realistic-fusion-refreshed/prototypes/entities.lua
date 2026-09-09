@@ -67,15 +67,19 @@ end
 --                               fluid_boxes[*].volume, and allowed_module_categories. The same
 --                               three Core's five machines inherit and for the same reasons, which
 --                               its header sets out; #131 measured them on the Angel's lane.
---   rf-heat-exchanger           target_temperature, and the volume AND FILTER of its water and
---                               steam boxes -- only pipe_connections is replaced on those two, so
---                               the rest of both tables is vanilla's. The temperature moves with
---                               the vanilla steam turbine's own maximum_temperature, which is what
---                               drinks the steam. Its energy_source.fluid_box is NOT in this list:
---                               that one is declared in full, filtered and contained below.
---                               THE TWO FILTERS ARE THE ONE ITEM HERE THAT ARGUES FOR BEING SET,
---                               a filter being identity rather than cost, and #298 owns them; no
---                               set has been measured changing them.
+--   rf-heat-exchanger           its machine-level target_temperature, and the volume of its water
+--                               and steam boxes.
+--                               Those two boxes are edited in place rather than assigned, so
+--                               everything not named at the machine is vanilla's -- which since
+--                               #298 means pipe_connections and the two FILTERS are named and the
+--                               rest is not. The temperature moves with the vanilla steam turbine's
+--                               own maximum_temperature, which is what drinks the steam. Its
+--                               energy_source.fluid_box is NOT in this list: that one is declared
+--                               in full, filtered and contained below.
+--                               THE FILTERS USED TO BE IN THIS LIST AND ARE NOT ANY MORE (#298):
+--                               a filter is identity rather than cost, so the rule puts it on the
+--                               other side. production_type is the same class and stays inherited,
+--                               because a mod rewriting it would break vanilla's machine first.
 --   rf-pipe, rf-pipe-to-ground  fluid_box.volume, vanilla's 100.
 --   rf-pump                     pumping_speed, energy_source and fluid_box.volume. A faster pump
 --                               fills a reactor's box sooner and changes no reaction rate.
@@ -636,6 +640,10 @@ exchanger.burning_cooldown = 20
 -- burning by fuel_value emits no light, so leaving this at its default false is what keeps the
 -- manifold at a steady full-strength glow instead of an invisible one.
 exchanger.fire_glow_flicker_enabled = false
+-- THESE TWO BOXES ARE EDITED IN PLACE, NOT ASSIGNED, which is the whole reason the filters below
+-- have to be stated at all (#298): everything not named here is vanilla heat-exchanger's, including
+-- what a mod sorting before us has already done to it. rf-hc-exchanger below restates both boxes
+-- whole and so states its filters as a matter of course.
 exchanger.fluid_box.pipe_connections = {
   { flow_direction = "input-output", direction = defines.direction.west, position = { -7, 1 } },
   { flow_direction = "input-output", direction = defines.direction.east, position = { 7, 1 } },
@@ -643,6 +651,14 @@ exchanger.fluid_box.pipe_connections = {
 exchanger.output_fluid_box.pipe_connections = {
   { flow_direction = "output", direction = defines.direction.south, position = { 0, 2 } },
 }
+-- WATER IN AND STEAM OUT, STATED RATHER THAN INHERITED (#298). A filter decides what the machine IS
+-- rather than what it costs, which is the side of #153's rule that gets set explicitly. Everything
+-- else on these two boxes -- their volume, their pipe_covers, their production_type -- stays
+-- vanilla's. The header row above says which, and ADR 0007 carries the argument and the one thing
+-- these two lines cost; neither is restated here, because a second statement is a second thing to
+-- keep in step.
+exchanger.fluid_box.filter = "water"
+exchanger.output_fluid_box.filter = "steam"
 
 -- ---------------------------------------------------------------- high-capacity steam pair
 
