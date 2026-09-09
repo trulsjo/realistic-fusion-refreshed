@@ -563,7 +563,7 @@ check(dt_full > 0 and dt_65 / dt_full > 0.40 and dt_65 / dt_full < 0.50,
 -- of tests/test-reactor-logic.lua records having made.
 local shipped_t = 15
 for _ = 1, 1200 * 60 do
-  local st = L.step(L.reactor, "rf-d-d-plasma", 1000, shipped_t, math.huge, 1 / 60)
+  local st = L.step(L.reactor, "rf-d-d-plasma", L.reactor.box_volume, shipped_t, math.huge, 1 / 60)
   shipped_t = st.temperature_c
 end
 -- Against the RELATIVISTIC root specifically -- `D-D/wurzel`, the 2.42e8 this file exists to

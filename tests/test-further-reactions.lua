@@ -426,7 +426,7 @@ check(t_he3_shipped ~= nil and t_he3_shipped < 1e7,
 -- with radiation counted this tier settles at the cold root, which is what the check above asserts.
 -- Read at the same fixed reference as everything else in this block: the question is what Q the
 -- radiation-free model claimed at that temperature, which is the artefact being documented.
-local shipped_step = L.step(A, "rf-he3-he3-plasma", 3000, REFERENCE_T_C, A.heating_power_w, 1)
+local shipped_step = L.step(A, "rf-he3-he3-plasma", A.box_volume, REFERENCE_T_C, A.heating_power_w, 1)
 check(shipped_step ~= nil, "the shipped model has a He3-He3 step at the reference temperature")
 near(shipped_step.q_factor, 1.31, 0.01,
   "the He3-He3 tier reported Q 1.31 there, which is the figure the note calls an artefact")
