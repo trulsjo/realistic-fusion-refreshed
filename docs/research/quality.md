@@ -15,9 +15,11 @@ Three kinds of evidence, kept separate throughout:
   `fluidbox.get_capacity`, `electric_buffer_size`, the prototype getters, container inventory size.
   Run once with the bundled `quality` mod alone and once with `space-age` as well; **every number was
   identical**, so this note quotes one set.
-- **Measurement, running.** Five reactors, one per quality level, lit and settled to equilibrium with
-  temperature and Q read off the signal wire. That is [its own section](#the-equilibrium-measured) and
-  its own rig, and it is what closes the one deduction the rest of this note rests on.
+- **Measurement, running.** Four rigs now, each with its own section and its own script. Five
+  reactors lit and settled to equilibrium (#145, [here](#the-equilibrium-measured)); five supplied
+  down a brownout ladder (#146); ten cold and hot boilers isolated from the simulation (#147); and
+  three assembling machines on a flagged recipe and its twin (#148). Between them they close every
+  deduction and every piece of arithmetic this note used to rest on.
 
 **The first rig is checked in as `scripts/probe-quality.ps1`** ([#97](https://github.com/trulsjo/realistic-fusion-refreshed/issues/97)).
 Run it to reproduce the numbers below rather than taking them on trust:
@@ -28,11 +30,16 @@ Run it to reproduce the numbers below rather than taking them on trust:
 Re-measured that way on 2026-08-27 against Factorio 2.0.77: 261 reported rows per run, **identical
 between the two configurations** — which is the claim above, checked rather than remembered.
 
-**Nothing runs either of them for you.** Both are probes rather than checks: they assert nothing,
+**Nothing runs any of them for you.** All five are probes rather than checks: they assert nothing,
 exit 0 means the run reported, and no check, bench or gate sweep invokes them — `load-check.ps1`
 included. So a later engine version can change any number here and this document goes stale in
 silence unless somebody types those commands. The rigs exist and are not wired; say that plainly
 rather than claiming a guarantee the repository does not have.
+
+    pwsh -File scripts/probe-quality-equilibrium.ps1   # #145, the equilibrium
+    pwsh -File scripts/probe-quality-brownout.ps1      # #146, the brownout ladder
+    pwsh -File scripts/probe-quality-leak.ps1          # #147, the residual boiler leak
+    pwsh -File scripts/probe-allow-quality.ps1         # #148, what allow_quality = false does
 
 ## The short version
 
@@ -61,10 +68,14 @@ knowing about:
   neutrons and by collector headroom, never by inventory.
 - **`rf-reactor`'s `input_flow_limit` goes from 60 MW to 150 MW against an unchanged 50 MW spend**, so
   a legendary reactor rides out a brownout down to a third of supply where a normal one starts losing
-  heating at five-sixths. This is the one place quality changes reactor *behaviour*, and it is the
-  only entry on this list that a balance decision might want to keep.
-- **`rf-reactor`'s own `energy_consumption` scales 1 W → 2.5 W.** That is the neutered boiler
-  conversion the mod does not use. 2.5× of nothing.
+  heating at five-sixths. **Measured since #146**, not divided: five reactors on five networks,
+  supplied down a ladder one hundredth of their own flow limit at a time. This is the one place
+  quality changes reactor *behaviour*, and it is the only entry on this list that a balance decision
+  might want to keep.
+- **`rf-reactor`'s own `energy_consumption` scales 1 W → 2.5 W, and 2.5× of nothing is still
+  nothing.** That is the neutered boiler conversion the mod does not use, and **measured since #147
+  it is exactly zero at four of the five levels** — the engine moves fluid in whole float32 ULPs per
+  tick and the rate law asks for less than one of those at every level below legendary.
 
 And the near-miss: **had fluid box capacity scaled, a legendary `rf-reactor` would have held 2500
 units of plasma in a `volume_m3` that is a Lua constant at 1000.** Density would have gone to
@@ -253,18 +264,60 @@ And the base game uses it, with a comment saying why. `base/prototypes/recipe.lu
 plus every barrel fill and empty recipe (`base/data-updates.lua:156, 190`) and five oil recipes that
 the quality mod itself switches off (`quality/prototypes/base-data-updates.lua`).
 
-So `allow_quality = false` on `rf-reactor`'s recipe means no quality module can act on it, therefore
-no legitimate route to a non-normal `rf-reactor` item, therefore no non-normal reactor on the map. It
-is not an absolute: the rig for this note placed legendary reactors with `create_entity{quality =
-...}`, and the console and the editor can do the same. It closes the player-facing route, which is the
-one that matters. **This was not tested here** — no recipe in this repository was modified — so it is
-a docs-plus-base-game inference rather than a measurement.
+That reading is now **measured**, and it holds. `scripts/probe-allow-quality.ps1` is the rig, added
+under [#148](https://github.com/trulsjo/realistic-fusion-refreshed/issues/148): three
+`assembling-machine-3`s, one on a rig-declared recipe carrying the flag, one on an otherwise
+identical rig recipe without it, and one on an untouched base recipe. **No recipe in either shipped
+mod was modified** — applying the flag is option E and Truls's.
+
+| Question | Answer |
+|---|---|
+| Is the flag readable at runtime? | **No.** `allow_quality`, `allow_quality_message`, `allows_quality` and `quality_allowed` all raise, on `LuaRecipePrototype` and on `LuaRecipe` alike |
+| Refused, or accepted and ignored? | **Refused.** `can_insert` is false and `insert` returns 0, for a shipped `quality-module-3` and for the rig's own |
+| A machine that already holds one? | `set_recipe` is **accepted** and the modules are **gone**: not in the module inventory, not in the output inventory, and not on the ground anywhere in the rig |
+| Does it stop the quality output? | **Yes.** The control machine made rare, epic and legendary chests; the flagged machine made 299 normal ones and nothing else |
+
+So the note's reading was right in substance, and the run adds one thing that matters for writing a
+check: the flag is a **data-stage** property with no runtime face at all, so any assertion option E
+wants has to be made against `data.raw` at load time rather than against a `LuaRecipePrototype`.
+
+**It is still not an absolute.** The last line of the same run creates a legendary chest with
+`create_entity{quality = "legendary"}` and reads it straight back, so the console, the editor and a
+rig can each still make one. It closes the player-facing route, which is the one that matters.
+
+**And it eats modules.** A machine holding four quality modules, switched onto a flagged recipe by
+script, loses them with no refund and no spill. Worth knowing before the flag goes near a recipe a
+player might already be running — **though the switch measured was `LuaEntity.set_recipe`, not a
+player changing the recipe in the machine's own GUI**, and whether those two paths agree was not
+run.
 
 Excluding `"quality"` from a machine's `allowed_effects` is a *different* thing and does not do this
 job: it stops quality modules going into that machine, not the machine itself being quality. Both of
 this mod's machine builders currently include it —
 `realistic-fusion-refreshed/prototypes/entities.lua` and
 `realistic-fusion-refreshed-core/prototypes/entities.lua`.
+
+### Quality promotion is gated behind research, and nothing says so
+
+Found by the rig above rather than looked for, and it cost five runs to reach, so it is written down
+where the next person will trip over it first.
+
+**On a force that has researched nothing, a machine promotes nothing, at any module strength.** Four
+shipped `quality-module-3`s — the engine's `quality = 1` — turned out 1199 untouched vanilla
+`iron-gear-wheel`s and not one of them was above normal. A rig-built module at `quality = 100`, which
+is certainty on any reading of that number, turned out 299 and did the same, on the vanilla recipe
+and on this rig's own alike; the force's production statistics agreed with the inventories that
+nothing else was ever made. It reads exactly like a mechanic that does not work. One call to
+`research_all_technologies()` and the same machine promotes almost every craft.
+
+Two things follow. Any check option E might want **must not rest on an unresearched save**, where
+quality does nothing whatever the recipes say — a test that inserted a quality module and asserted no
+`rf-reactor` came out would pass on a fresh map for the wrong reason. And a rig measuring quality
+needs a control that is expected to promote, or a negative result has two explanations and measures
+neither.
+
+This is about the crafting mechanic, not about the levels: the five grades and their multipliers are
+present and correct on an unresearched force, which is what the section below measured.
 
 ### Defining quality levels
 
@@ -446,27 +499,52 @@ research is per force, not per entity.
 network is `secondary-input`, so in a brownout at supply fraction `f` a reactor receives `f × 60` MW
 and spends 50:
 
-| Quality | `input_flow_limit` | full heating holds down to |
-|---|---|---|
-| normal | 60 MW | **f = 0.833** |
-| uncommon | 78 MW | f = 0.641 |
-| rare | 96 MW | f = 0.521 |
-| epic | 114 MW | f = 0.439 |
-| legendary | **150 MW** | **f = 0.333** |
+| Quality | `input_flow_limit` | derived | **measured**, bracketed to 0.01 |
+|---|---|---|---|
+| normal | 60 MW | f = 0.833 | held at **0.84**, short at **0.83** |
+| uncommon | 78 MW | f = 0.641 | held at **0.65**, short at **0.64** |
+| rare | 96 MW | f = 0.521 | held at **0.53**, short at **0.52** |
+| epic | 114 MW | f = 0.439 | held at **0.44**, short at **0.43** |
+| legendary | **150 MW** | f = 0.333 | held at **0.34**, short at **0.33** |
 
-The aneutronic reactor gives the same fractions — 240 MW against a 200 MW spend, so 600 MW at
-legendary and the same 0.833 → 0.333. **It is not free energy**: the reactor still never spends more
-than `heating_power_w`, so the extra headroom buys resilience rather than power. It is also the only
-thing on the whole list that reads like a quality bonus somebody would have designed on purpose.
+**Every derived fraction falls inside its own measured bracket.** The table is confirmed, and the
+assumption under it — that a shorted reactor asks for its whole `input_flow_limit` rather than for
+the 50 MW it spends — is confirmed with it. That assumption is what makes the flow limit worth
+anything: had a shorted reactor asked only for its spend, every level would have browned out at the
+same place and quality would have bought nothing here either.
 
-The table is arithmetic off the measured flow limits, not an observed brownout.
-`scripts/check-brownout.ps1` is the rig that measures the real thing, and it reads the same
-`get_input_flow_limit()` to calibrate — but it runs at normal quality only, so **a brownout has never
-been measured on a legendary reactor.** Adding a quality lane to that rig is the cheap way to check
-this table, and [#146](https://github.com/trulsjo/realistic-fusion-refreshed/issues/146) is the ticket
-for it. The flow limits it would be calibrated against are re-measured on placed entities in
-[the equilibrium section](#the-equilibrium-measured) — 60 MW to 150 MW, unchanged — so what is left
-open is the brownout behaviour, not the numbers driving it.
+**`scripts/probe-quality-brownout.ps1` is the rig**, added under
+[#146](https://github.com/trulsjo/realistic-fusion-refreshed/issues/146). Five `rf-reactor`s, one per
+level, each alone on its own electric network, supplied down a fixed ladder from full supply to a
+fifth of it one hundredth of the reactor's own flow limit at a time — so the resolution of every
+fraction above is 0.01 and the report prints the rung that held and the rung that did not rather than
+an exact-looking number. Below the knee each cell draws exactly `f × input_flow_limit`, which is the
+note's model reading back off the wire.
+
+It is a **probe, not a lane on `scripts/check-brownout.ps1`**, and that is deliberate. A gate
+asserting brownout behaviour at legendary would commit the mod to guaranteeing it, and ADR 0003
+tolerates Space Age rather than targeting it. Whether the mod should make that promise is a scope
+decision and Truls's; moving these rows into the gate afterwards is small.
+
+Two things the rig had to get right, both recorded because both produced a wrong answer first. The
+supply interface delivers out of its own buffer, so that buffer is at once a reserve that hides the
+knee and a ceiling on what it can deliver: at 10 MJ the normal, uncommon and rare cells each read a
+rung optimistic, since a rung's shortfall is a hundredth of the cell's own flow limit and 10 MJ
+covers the smaller ones for most of a rung — while at 1 kJ the interface supplied 60 kW and nothing
+browned out at all. The buffer is one tick of full production now, which is the smallest size that
+can still deliver what the rig sets. And flow statistics in 2.0 are keyed by name **and
+quality** — asked for the bare name, four of the five cells report having drawn nothing ever.
+
+The aneutronic reactor gives the same fractions by arithmetic — 240 MW against a 200 MW spend, so
+600 MW at legendary and the same 0.833 → 0.333 — and is **not** measured here. **It is not free
+energy**: the reactor still never spends more than `heating_power_w`, so the extra headroom buys
+resilience rather than power. It is also the only thing on the whole list that reads like a quality
+bonus somebody would have designed on purpose.
+
+What the rig does **not** cover is contention. Every cell is one reactor alone on a short supply, so
+what is measured is what a reactor gets when the supply itself is short — not how two
+`secondary-input` consumers split a short network between them. The sentence above asserts both;
+only the first has been run.
 
 ### The residual boiler leak, since quality multiplies it
 
@@ -475,27 +553,59 @@ open is the brownout behaviour, not the numbers driving it.
 `FluidPrototype.heat_capacity`'s documented default of `"1kJ"` — "Joule needed to heat 1 Unit by
 1 °C" — and 15 °C to 550 °C is 535 kJ per unit. At 1 W that is **one unit per 535 000 s ≈ 148.6 h**.
 Quality takes `energy_consumption` to 2.5 W, so a legendary reactor's engine-side conversion runs at
-one unit per 214 000 s ≈ 59.4 h — **1 MJ per 59.4 h, or 4.7 W**, against 50 MW of heating. One part
-in ten million.
+one unit per 214 000 s ≈ 59.4 h — **1 MJ per 59.4 h, or 4.7 W**, against 50 MW of heating, which
+would be one part in ten million. That is the derivation this note shipped with; the measurement
+below does not agree with it.
 
-**And it only runs while the reactor is idle**, which [#101](https://github.com/trulsjo/realistic-fusion-refreshed/issues/101)
-established after this note was written: the conversion is exactly zero whenever the plasma is at or
-above the target, so a *fusing* reactor leaks nothing at any quality. The figures above are the cold
-case — a plasma parked at `min_temperature_c`.
+**That arithmetic is now measured, and not one of its five rows survives.**
+`scripts/probe-quality-leak.ps1` is the rig, added under
+[#147](https://github.com/trulsjo/realistic-fusion-refreshed/issues/147): ten copies of `rf-reactor`
+under a rig-only name, so `entity-management.lua` never registers them and nothing but the engine
+touches their plasma — five cold at `min_temperature_c` and five hot at the shipped D-D equilibrium,
+one pair per quality level, run for a thousand game seconds and again for ten thousand.
+
+| Quality | `energy_consumption` | rate law says | **measured** | what the law asks per tick |
+|---|---|---|---|---|
+| normal | 1 W | 1.87 W | **0** | 0.523 ULP |
+| uncommon | 1.3 W | 2.43 W | **0** | 0.679 ULP |
+| rare | 1.6 W | 2.99 W | **0** | 0.836 ULP |
+| epic | 1.9 W | 3.55 W | **0** | 0.993 ULP |
+| legendary | 2.5 W | 4.67 W | **3.576 W** | 1.307 ULP |
+
+**The engine moves fluid in whole float32 ULPs per tick** — 2⁻²⁴ units, 5.96×10⁻⁸ — and the rate law
+asks for less than one of those at every level below legendary, so the transfer floors to nothing.
+At legendary it asks for 1.307 and gets exactly one: the measured rate is 5.9604644775×10⁻⁸ units a
+tick to ten digits, which is the ULP itself and not a number the rate law produces. Epic misses by
+0.7%.
+
+So a **normal `rf-reactor` has no residual leak at all**, and the one level that does leaks 24% less
+than the arithmetic. This also retires the derived 1.9 W of unaccounted output the comment on
+`target_temperature` in `prototypes/entities.lua` quoted: at the shipped normal quality it is zero.
+
+**#101 is re-confirmed at every level.** All five hot cells read exactly zero over both run lengths,
+so a *fusing* reactor leaks nothing at any quality — which was measured at normal only before.
+
+**The reading is not the limit; the transfer is.** The rig measures the smallest change a fluid box
+will report back rather than assuming one, and it is about 1.1×10⁻¹³ units at a thousand — a double's
+precision, not a float's — so every zero above is ten orders clear of the noise and none of it is a
+rounding artefact. The resolution worry #147 was written around is answered; the quantisation that
+replaced it is a different mechanism.
+
+Two things the rig turned up that are not about quality and are worth knowing. A fluid box seeded to
+its own declared `volume` of 1000 **relaxes to 526.3158 over about two seconds** and holds that
+figure to the digit, at every quality and in both temperature regimes — so `get_capacity()` and what
+a box will actually hold are not the same number. And the input and output readings of the same
+conversion **disagree by a factor of 1.887** in the one cell where there is anything to compare —
+close to the 1.900 the seeded box relaxes by, and not equal to it.
 
 And it is a *fuel* leak rather than an energy exploit: the boiler consumes a unit of plasma —
-10²⁰ nuclei — to make 1 MJ, where fusing the same 10²⁰ D-D nuclei releases about 58 MJ. Quality makes
-a bad trade 2.5× more frequent. **Not re-measured at quality**: `probe-quality.ps1` places entities
-and reads prototypes rather than running one, and `probe-quality-equilibrium.ps1` runs a *hot* reactor
-— where #101 says the leak is exactly zero — so neither rig reaches this figure. It is arithmetic off
-declared fields plus the repository's own normal-quality measurement, and
-[#147](https://github.com/trulsjo/realistic-fusion-refreshed/issues/147) is the ticket for measuring
-it.
+10²⁰ nuclei — to make 1 MJ, where fusing the same 10²⁰ D-D nuclei releases about 58 MJ. At the one
+level where it runs at all, 3.576 W against 50 MW of heating is one part in fourteen million.
 
 ## The equilibrium, measured
 
-The section above and everything before it is prototype measurement plus arithmetic. This one is five
-reactors running.
+Its own section because it is the deduction the whole note used to rest on, and because it is the rig
+the three that followed were built from. Five reactors running.
 
 **The rig is checked in as `scripts/probe-quality-equilibrium.ps1`**
 ([#145](https://github.com/trulsjo/realistic-fusion-refreshed/issues/145)). Five `rf-reactor`s, one
@@ -559,15 +669,20 @@ the D-T tier and the confinement ladder are each another lane and none of them i
 
 Stated plainly, because this repository treats an unverified claim as a defect.
 
-- **The brownout table and the boiler leak were not measured running.** [The equilibrium is
-  now](#the-equilibrium-measured); those two are not. Both are arithmetic off declared fields, both
-  want a rig of this shape, and neither wants it at full supply on a hot plasma — so they are
-  [#146](https://github.com/trulsjo/realistic-fusion-refreshed/issues/146) and
-  [#147](https://github.com/trulsjo/realistic-fusion-refreshed/issues/147) rather than a line in this
-  one.
-- **`allow_quality = false` was not tested.** No recipe in this repository was modified. Its effect is
-  inferred from the locale string, from four base-game uses, and from the property's presence on
-  `RecipePrototype` — the docs themselves give it no description sentence.
+- **The brownout table's contention case is not measured.** The fractions themselves now are, under
+  #146, and every derived one falls inside its measured bracket — but each cell in that rig is one
+  reactor alone on a short supply. How two `secondary-input` consumers split a short network between
+  them is the other half of the note's own sentence and has not been run.
+- **The aneutronic reactor's brownout fractions are still arithmetic.** #146 measured `rf-reactor`
+  only. 240 MW against a 200 MW spend gives the same 0.833 → 0.333 by division, and division is all
+  it is.
+- **Why the engine floors a fluid transfer to whole float32 ULPs per tick is inferred, not
+  documented.** #147 measured the flooring — five levels, two run lengths, the legendary rate landing
+  on 2⁻²⁴ units a tick to ten digits — and no 2.0.77 doc page found in this pass says the engine does
+  that. The measurement stands on its own; the mechanism named for it is a reading of the numbers.
+- **The two oddities #147 turned up on the way are recorded and not explained.** A fluid box seeded
+  to its declared `volume` settles at 526.3158 of 1000, and the input and output sides of the same
+  conversion disagree by a factor of about 1.887. Both are reproducible and neither has been chased.
 - **Whether a mod may add a sixth quality level is unknown.** FFF #375 refers to restrictions without
   stating them and no 2.0.77 doc page found in this pass covers it. Narrowed but not measured by
   [`inverted-quality.md`](inverted-quality.md).
@@ -685,9 +800,18 @@ non-normal version can be produced.
 - **Against:** it is a visible restriction where the other options are invisible, and quality players
   tend to notice a building they cannot upgrade. It also breaks the *cosmetic* expectation that every
   building has five grades.
-- **Against:** untested here, and it would want its own check — an assertion that no quality-module
-  route produces an `rf-reactor` — since the guarantee is a load-time property nothing currently
-  holds.
+- **For:** the mechanism is **measured** since #148 and it does what the paragraph above says: the
+  module is refused outright rather than accepted and ignored, and a machine on a flagged recipe
+  makes normal output while an identical one beside it makes legendary.
+- **Against:** it would still want its own check — an assertion that no quality-module route produces
+  an `rf-reactor` — since the guarantee is a load-time property nothing currently holds. #148 says
+  what shape that check has to take: the flag has **no runtime face**, so the assertion is against
+  `data.raw` at load time, and it must not be written on an unresearched force, where quality does
+  nothing whatever the recipes say.
+- **Against:** it **destroys modules already in a machine.** Switching a machine that holds four
+  quality modules onto a flagged recipe loses them with no refund and nothing on the ground. Applying
+  this to `rf-reactor`'s recipe would not reach existing machines, but applying it to Core's
+  assemblers later would.
 - **Note:** it does **not** remove the fuel chain's 2.5×, which is on Core's assemblers and would need
   the same treatment applied to five more recipes to be consistent.
 
@@ -760,7 +884,8 @@ First-party design statement:
   types improve; quality modules as the production route; "completely optional"; the reference to
   restrictions on mod-defined tiers, which it does not state.
 
-Measured for this note:
+Measured for this note. The four running rigs are described in their own sections; this is the
+standing-still one:
 
 - `scripts/probe-quality.ps1`, which reads every entity in
   `realistic-fusion-refreshed/prototypes/entities.lua` and
@@ -775,9 +900,12 @@ Measured for this note:
 
 Not sourced primarily, and flagged where used:
 
-- The semantics of `allow_quality`, which the 2.0.77 docs do not describe.
+- The semantics of `allow_quality`, which the 2.0.77 docs do not describe. **Measured here since
+  #148** — see [the section](#denying-the-quality-version-outright) — but the measurement is this
+  repository's own and no doc page confirms it.
+- Why the engine floors a fluid transfer to whole float32 ULPs per tick. Measured under #147 and
+  documented nowhere this pass reached.
 - The meaning of `"quality_required"` in a mod's `info.json`.
 - Whether a mod may define a sixth quality level.
-- Anything about how quality interacts with a *running* simulation, which was not measured.
 
 The wiki was used only to reach the FFF and is cited for nothing.

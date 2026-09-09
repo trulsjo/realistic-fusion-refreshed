@@ -115,9 +115,20 @@ true but not the load-bearing reason.
 **Where it is *not* switched off is the floor.** `reactor-logic.lua` clamps plasma to
 `min_temperature_c = 15`, and a sub-fusion plasma reaches that floor in under a second — so an idle
 reactor holding plasma sits at exactly 15 °C, which is below the 165 target. There the formula applies
-and gives **one unit per 41.7 hours** at 1 W (150 kJ per unit against one joule per second). That
-corrects the repository's *"on the order of one unit per fifty hours"* to a measured figure, and it is
-the right order.
+and gives one unit per 41.7 hours at 1 W (150 kJ per unit against one joule per second).
+
+> **And the engine does not deliver that rate either, which #147 measured in 2026-09-09 and this
+> section originally read as a resolution limit.** The engine moves fluid in whole float32 ULPs per
+> tick — 2⁻²⁴ units, 5.96×10⁻⁸ — and floors what the rate law asks for to a whole number of them. At
+> the 165 target and 1 W the law asks for 1.86 ULPs a tick and gets **one**, which is one unit per
+> **77.7 hours**, not 41.7. The figure this section's own sweep reported, 3.57×10⁻⁵ units in 600
+> ticks, is exactly one ULP a tick to three digits — it was the answer, not the noise floor. See
+> *What is not verified* below, and `scripts/probe-quality-leak.ps1`.
+>
+> **At the shipped 550 target the same flooring takes it to zero.** The law asks for 0.52 ULPs a
+> tick, so nothing moves at all, measured over ten thousand seconds. The paragraphs below that quote
+> 6.7 W and 1.9 W are the rate law's answers and are kept for the reasoning; the engine's answers are
+> 3.576 W at 165 and **nothing** at 550.
 
 ### A small free-energy path, from the asymmetry between the two writes
 
@@ -160,9 +171,9 @@ These are the options as they were weighed. The one taken is in the next section
 | | pipe reads | engine conversion at the floor | needs `max_temperature` raised | coherent with the steam route |
 |---|---|---|---|---|
 | 15 | 15 °C | **exactly zero, always** | no | no |
-| 165 (was shipped) | 165 °C | 6.7 W | no | no |
-| 500 | 500 °C | 2.1 W | yes, to ≥ 500 | marginal — equals its own steam |
-| **550 — chosen** | **550 °C** | **1.9 W** | **yes, to ≥ 550** | **yes, with an approach margin** |
+| 165 (was shipped) | 165 °C | 6.7 W — **measured 3.576 W** | no | no |
+| 500 | 500 °C | 2.1 W — **not run** | yes, to ≥ 500 | marginal — equals its own steam |
+| **550 — chosen** | **550 °C** | **1.9 W — measured ZERO** | **yes, to ≥ 550** | **yes, with an approach margin** |
 
 Three things the numbers say that the ticket could not:
 
@@ -187,9 +198,14 @@ Three things the numbers say that the ticket could not:
 coolant in all but name, and a coolant cannot raise steam to its own temperature — both exchangers
 make 500 °C steam, so 500 was exactly marginal and 165 was backwards. 550 leaves the approach margin a
 real plant has. It also takes the leak from 6.7 W to **1.9 W** for free, since the rate goes as
-`1/(target − floor)` — and that is **measured, not inferred**: the probe sweeps 550 directly and
-returns 1.866 units/s per megawatt of draw against a predicted 1.869, which at the shipped 1 W is
-1.87 W of unaccounted output.
+`1/(target − floor)` — and the rate law itself is **measured, not inferred**: the probe sweeps 550
+directly and returns 1.866 units/s per megawatt of draw against a predicted 1.869.
+
+> **The step down to 1 W is what does not survive** (#147, 2026-09-09). The law is measured at a
+> megawatt of draw and scaling it to the shipped one watt assumes the engine can move an arbitrarily
+> small amount per tick, and it cannot: it floors to whole float32 ULPs. So the leak at 550 is not
+> 1.9 W, it is **nothing at all** — the decision below is unaffected and made better, since the
+> quantity it traded away turns out to be zero rather than small.
 
 **The aneutronic reactor stays at 165, and the asymmetry is the decision.** That route has no thermal
 stage — a direct energy converter decelerates charged particles against collector plates — and the
@@ -335,15 +351,24 @@ one.
 - **The Lua write path above `max_temperature` was not tested.** Only the boiler's internal transfer
   was. That is the gap named under *What this does to the guard*, and it is the one measurement that
   would let #46's guard state its reason accurately rather than conservatively.
-- **The 6.7 W free-energy path is derived, not observed.** It follows from the measured conversion law
-  and the two `control.lua` writes quoted above, and it is far below what a probe can resolve against a
-  50 MW reactor. If it ever matters it should be measured with the simulation stubbed out.
-- **Rates below roughly 0.05 units/s did not register in a ten-second window.** `target = 1000000`
-  reported zero at 50 MW where the formula predicts 0.05 units/s, and the `target = 165` 1 W cell
-  reported 3.57×10⁻⁵ units against a predicted 6.6×10⁻⁵. Read the sub-0.05 rows as *below the probe's
-  resolution*, not as zero — the flat-zero result on the hot side is a separate finding and is not
-  resolution-limited, since 50 MW there would have moved hundreds of units a second if anything moved
-  at all.
+- ~~**The 6.7 W free-energy path is derived, not observed.**~~ **Measured 2026-09-09 (#147), with the
+  simulation stubbed out exactly as this bullet asked, and it is smaller than derived.** At the 165
+  target it is 3.576 W and at the shipped 550 it is **zero** — the flooring above, not the rate law.
+  It becomes non-zero again only at legendary quality, where `energy_consumption` reaches 2.5 W and
+  the law clears one ULP a tick: 3.576 W there too, since one ULP is one ULP. See
+  `docs/research/quality.md`.
+- ~~**Rates below roughly 0.05 units/s did not register in a ten-second window.**~~ **Withdrawn
+  2026-09-09 (#147): that was not a resolution limit, it was the engine.** This section used to read
+  the low rows as *below the probe's resolution* and warn against reading them as zero. The engine
+  moves fluid in whole float32 ULPs per tick and floors the rate law's answer to a whole number of
+  them, so a row asking for less than one ULP a tick really is exactly zero and stays zero however
+  long the run. The `target = 165` 1 W cell's 3.57×10⁻⁵ units in 600 ticks is one ULP a tick to three
+  digits — the quantum, not a rounding of 6.6×10⁻⁵. A fluid box reports changes down to about
+  10⁻¹³ units at this magnitude, so the reading was never the constraint.
+
+  What survives unchanged is the flat-zero result on the hot side, which is a separate finding and was
+  never resolution-limited: 50 MW above the target would have moved hundreds of units a second if
+  anything moved at all.
 - **One plasma, one reaction.** Everything was measured with `rf-d-d-plasma`. The other three plasmas
   declare the same `default_temperature`, `max_temperature` and (absent) `heat_capacity`, so the law
   should carry, but it was not run.
