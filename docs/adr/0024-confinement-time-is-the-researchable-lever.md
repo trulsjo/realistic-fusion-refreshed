@@ -199,7 +199,7 @@ own thermometer stays a player's choice under ADR 0016 and is not a defect in th
   > reactor" — a heater-fed D-T reactor against a settled D-D one, and stale from #52 besides. Truls's
   > decision was to quote **both tiers settled**, which is the operating point `CONTEXT.md` names as
   > the reference. At that point it is **94.7 D-D reactors per D-T reactor unresearched, falling to
-  > 18.5 with this ladder researched**, and every rung shortens it. Both ends are pinned in
+  > 18.5 with this ladder researched**, and every rung shortens it. Every rung is pinned in
   > `tests/test-reactor-logic.lua` rather than computed in prose. What that note leaves open is
   > whether ninety-five is the intended cost of the unblanketed route, which is a balance question
   > and not this ADR's to answer either.

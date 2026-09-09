@@ -1388,32 +1388,55 @@ local function chain(spec)
   }
 end
 
-local BARE = chain(SPEC)
-local TOPPED = chain(at_rung(#LADDER))
+-- One measurement per rung, the shipped confinement time first. Each rung is settled once and
+-- every assertion below reads this table, which is also what keeps the suite's cost down: a
+-- settled D-D reactor is 72 000 steps and there is no reason to pay for one twice.
+local RUNGS = { chain(SPEC) }
+for level = 1, #LADDER do RUNGS[#RUNGS + 1] = chain(at_rung(level)) end
 
-near(BARE.needed, 12.9747, 0.01, "a settled D-T reactor burns 13.0 units of tritium a second")
-near(BARE.bred, 0.137012, 0.01, "a settled D-D reactor breeds 0.137 units of tritium a second")
-near(BARE.ratio, 94.6969, 0.01, "so 94.7 D-D reactors feed one D-T reactor, unresearched")
-near(BARE.per_reactor_w / 1e6, 88.457, 0.01, "and the chain sells 88.5 MW per reactor in it")
+local BARE   = RUNGS[1]
+local TOPPED = RUNGS[#RUNGS]
 
-near(TOPPED.ratio, 18.5032, 0.01, "with the confinement ladder researched, 18.5 D-D per D-T")
-near(TOPPED.per_reactor_w / 1e6, 244.242, 0.01, "and 244 MW per reactor")
+-- EVERY CELL OF THE NOTE'S TABLE, not only the two ends. The first version of this block pinned
+-- rung 0 and rung 3 and asserted the rungs between only to fall, which left six published cells
+-- computed nowhere -- a rebalance could move the 40 s or 50 s row and the suite would still say
+-- "0 failures". That is the same drift #117 was opened about, one table down, so the table is
+-- pinned row by row. Found in review of the commit that added this block.
+--
+-- The rows are d-t-ignition.md's, in its order: tritium bred, tritium needed, D-D reactors per
+-- D-T reactor, and megawatts per reactor across the whole chain.
+local PUBLISHED = {
+  { tau = 30, bred = 0.137012, needed = 12.9747, ratio = 94.6969, mw = 88.457 },
+  { tau = 40, bred = 0.246974, needed = 12.3144, ratio = 49.8611, mw = 124.569 },
+  { tau = 50, bred = 0.406267, needed = 11.8952, ratio = 29.2794, mw = 175.662 },
+  { tau = 60, bred = 0.627339, needed = 11.6077, ratio = 18.5032, mw = 244.242 },
+}
+check(#PUBLISHED == #RUNGS, "the published table has a row for every rung of the ladder",
+  string.format("%d rows against %d rungs", #PUBLISHED, #RUNGS))
+for i, want in ipairs(PUBLISHED) do
+  local got = RUNGS[i]
+  near(got.bred, want.bred, 0.01,
+    string.format("at %d s a D-D reactor breeds %.4g u/s of tritium", want.tau, want.bred))
+  near(got.needed, want.needed, 0.01,
+    string.format("at %d s a D-T reactor burns %.4g u/s of tritium", want.tau, want.needed))
+  near(got.ratio, want.ratio, 0.01,
+    string.format("at %d s it takes %.4g D-D reactors to feed one", want.tau, want.ratio))
+  near(got.per_reactor_w / 1e6, want.mw, 0.01,
+    string.format("at %d s the chain sells %.4g MW per reactor in it", want.tau, want.mw))
+end
 
--- MONOTONE, which is the claim rather than three more numbers: every rung of the ladder makes the
--- chain shorter, so there is no rung a player reaches and finds the plumbing got worse. It holds
--- for a reason the rungs cannot break -- see below -- but it
--- is asserted rather than argued because nothing else here would notice if a rung inverted it.
+-- MONOTONE, which is a claim the four rows above cannot make on their own: every rung makes the
+-- chain shorter, so there is no rung a player reaches and finds the plumbing got worse. Asserted
+-- rather than argued because nothing else here would notice if a rung inverted it, and because it
+-- has to keep holding when the rungs are retuned.
 --
 -- BOTH ENDS PULL THE SAME WAY, which is why it holds: the breeder breeds more (0.137 to 0.627 u/s)
 -- and the burner needs less (12.97 to 11.61), because D-T settles past the peak of its own
 -- cross-section and fuses slower there. Neither end works against the other.
-local previous_ratio = BARE.ratio
 for level = 1, #LADDER do
-  local ratio = chain(at_rung(level)).ratio
-  check(ratio < previous_ratio,
+  check(RUNGS[level + 1].ratio < RUNGS[level].ratio,
     string.format("rung %d shortens the fuel chain", level),
-    string.format("%.4g D-D per D-T after %.4g", ratio, previous_ratio))
-  previous_ratio = ratio
+    string.format("%.4g D-D per D-T after %.4g", RUNGS[level + 1].ratio, RUNGS[level].ratio))
 end
 
 -- AND THE BLANKET IS THE OTHER ROUTE ENTIRELY, not a discount on this one (#30, ADR 0019). The

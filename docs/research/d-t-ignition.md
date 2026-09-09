@@ -165,12 +165,14 @@ either way and does not double.
 
 **Both tiers are quoted SETTLED here, and choosing that is what #117 was actually for.** Settled is
 box full and all the power the reactor asks for — the operating point `CONTEXT.md` names as the
-reference, and the one every equilibrium figure above is quoted at. This section used to compare
-a *heater-fed* D-T reactor (2.5 u/s, one heater) against a *settled* D-D one, which are not the
-same kind of number, and picking one moves the ratio further than either of the two stale figures
-it also carried. The fuel-line table above is the heater-fed reading and is unchanged; this section is not
-that reading. Both tiers are also settled to the same horizon — twenty minutes, not the one minute
-the equilibrium table quotes D-T at, which is close but not converged.
+reference. This section used to compare a *heater-fed* D-T reactor (2.5 u/s, one heater) against a
+*settled* D-D one, which are not the same kind of number, and picking one moves the ratio further
+than either of the two stale figures it also carried. The fuel-line table above is the heater-fed
+reading and is unchanged; this section is not that reading.
+
+**Both tiers are also run to the same horizon here — twenty minutes.** The equilibrium table above
+quotes D-T at one minute, which is what its row says and is close but not converged: 3.25×10⁹ °C
+and 26.0 u/s at a minute against 3.27×10⁹ and 25.9 settled.
 
 **And every figure in this section carries the radiation term**, unlike the note's default above.
 
@@ -198,10 +200,12 @@ Both effects shorten the chain, and every rung does.
 | 60 s | `rf-plasma-confinement-3` | 0.627 u/s | 11.61 u/s | **18.5** | 244.2 |
 
 **Every number above comes out of `tests/test-reactor-logic.lua`**, through the shipped `step()` and
-`settle()`, in the block headed *the fuel chain, at the settled point (#117)*. Both ends of the
-ladder are pinned to 1% and each rung is required to shorten the chain, so a rebalance moves these
-figures there before it moves them here. Nothing in this section is computed by hand, which is what
-let the previous version go a month with a numerator that had moved and a ratio that had not.
+`settle()`, in the block headed *the fuel chain, at the settled point (#117)*. **Every cell of the
+table is pinned there to 1%, row by row** — not only the two ends, which is what the first version
+of that block did and would have let a retuned middle rung sit here wrong while the suite reported
+no failures. Each rung is additionally required to shorten the chain. So a rebalance moves these
+figures there before it moves them here, and nothing in this section is computed by hand — which is
+what let the previous version go a month with a numerator that had moved and a ratio that had not.
 
 **Whether ninety-five is the intended cost of the unblanketed route is a balance question, and it is
 not settled here.** What the measurement says is that the D-D by-product chain is not plumbing a

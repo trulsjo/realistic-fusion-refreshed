@@ -277,13 +277,15 @@
     genuinely broken. Halves three through seven and nine are the ones Factorio exits 0 on, where
     the check has to decide alone. Run this whenever the script changes.
 
-    TEN AND ELEVEN ARE #125's, and they are the first two halves about check_prototypes() -- the
-    invariants that tie the simulation to the prototypes, and the reason this script is the gate
-    that matters in this repository. Every one of them used to be asserted only positively: they
-    pass on a good tree, and nothing would have noticed one that had quietly stopped firing. Two of
-    them have now had their negative test done BY HAND and recorded only in a commit message (#55
-    and #119, both by temporarily editing the value under test), which is the shape this half of
-    the self-test exists to replace.
+    TEN AND ELEVEN ARE #125's, and they take check_prototypes() coverage from one invariant to
+    three. Those are the checks that tie the simulation to the prototypes, and the reason this
+    script is the gate that matters in this repository. HALF EIGHT WAS ALREADY ONE OF THEM -- it
+    negatively tests check_input_flow(), which check_prototypes() calls -- so ten and eleven are
+    the second and third rather than the first two. The other ten are still asserted only
+    positively: they pass on a good tree, and nothing here would notice one that had quietly
+    stopped firing. Two of those ten have had their negative test done BY HAND and recorded only in
+    a commit message (#55 and #119, both by temporarily editing the value under test), which is the
+    shape these halves exist to replace.
 
     Ten breaks its invariant by pure ADDITION -- the canary defines a fluid and a recipe of its own
     in rf-plasma-heating and mutates nothing of ours -- and eleven by MUTATION, swapping
@@ -291,10 +293,14 @@
     MESSAGE, as half eight does and for the same reason: a canary that fails to load for an
     unrelated reason exits non-zero too, and would otherwise be recorded as the invariant firing.
 
-    AND THE WORKING TREE IS ASSERTED UNTOUCHED after eleven, against a fingerprint taken before
-    half one. Eight, ten and eleven break our own prototypes to prove our own checks fire; they do
-    it in memory, and this is what says so rather than assuming it. A self-test in this file once
-    deleted the repository's own sprite.
+    AND THE WORKING TREE IS ASSERTED UNTOUCHED, in BOTH self-tests, against a fingerprint taken
+    before either does anything -- pack-mods.ps1 included. Eight of the eleven canary halves break
+    one of our prototypes to prove one of our gates fires (four through nine, eight, and eleven),
+    and every one does it in memory; this is what says so rather than assuming it. The FINALLY
+    BLOCK compares too, so a half that exits early still reports what it left behind, and the zip
+    self-test compares on its own pass path -- which matters more there than here, because it is
+    the only self-test that deletes a real file and the branch the sprite-deleting incident was
+    in.
 
     THE NINTH IS #275's, and it is the fifth again for the other kind of art. make-mockup-art.ps1
     draws every mockup from a hand-copied table of footprints and connection tiles that, by its
@@ -521,6 +527,35 @@ function Get-ModTreeFingerprint {
         }
     }
     return @($rows | Sort-Object)
+}
+
+function Test-ModTreeUnchanged {
+    <#  Whether our mod directories are still exactly where they were, REPORTED rather than thrown.
+
+        Called twice, and the second call is why it reports: once on a self-test's pass path, where
+        a moved file is a failure of its own, and once from the finally block, so a half that
+        exited early still says whether it left anything behind on the way out. By the time the
+        finally runs the exit code is already committed, so exiting again there would only replace
+        one wrong answer with another.
+
+        FILES, NOT ROWS. Compare-Object emits one object per side, so a single modified file
+        arrives as two -- reporting that as "2 file(s) changed" was a defect found in review of
+        this very guard. The rows are still printed, because both sides are what places the change;
+        the COUNT is of distinct paths.  #>
+    param([Parameter(Mandatory)] [string[]] $Before, [Parameter(Mandatory)] [string[]] $Mods)
+
+    $moved = @(Compare-Object -ReferenceObject $Before -DifferenceObject (Get-ModTreeFingerprint -Mods $Mods))
+    if (-not $moved) { return $false }
+
+    $paths = @($moved | ForEach-Object { ($_.InputObject -split '\|')[0] } | Sort-Object -Unique)
+    Write-Host ''
+    Write-Host "FAILED - self-test: $($paths.Count) file(s) under our mod directories changed during"
+    Write-Host '         the run. Every half must break our prototypes in memory only.'
+    foreach ($m in $moved) {
+        $side = if ($m.SideIndicator -eq '=>') { 'now' } else { 'was' }
+        Write-Host "           $side  $($m.InputObject)"
+    }
+    return $true
 }
 
 function ConvertTo-CanonicalTree {
@@ -1057,6 +1092,17 @@ function Test-Containment {
 }
 
 try {
+    # WHAT THE WORKING TREE LOOKS LIKE, before either self-test has done anything -- pack-mods.ps1
+    # included, which the zip self-test runs and which walks every mod directory. Both self-tests
+    # compare against this on their way out, and the finally block compares against it after an
+    # early exit; a plain run never touches it.
+    #
+    # The zip self-test is the one that earned this. It is the only self-test that deletes a real
+    # file, and the incident the guard exists for -- a mis-wired asset map that made a self-test
+    # delete the repository's own sprite -- happened in exactly that branch.
+    $treeBefore  = if ($SelfTest) { Get-ModTreeFingerprint -Mods $ourMods } else { $null }
+    $treeChecked = $false
+
     # Where Find-MissingAssets should look for each of our mods' files. In junction mode that is the
     # repository; in zip mode it must be the unpacked archive, or the check would resolve every
     # sprite against the working tree and certify a zip it never opened.
@@ -1191,20 +1237,23 @@ try {
             exit 1
         }
 
+        # AND NOT ONLY THAT ONE FILE. The check above proves the victim's repository copy survived,
+        # which is the claim this half turns on; this proves nothing else moved either. It is the
+        # same assertion the canary self-test makes and it belongs here more than there -- this is
+        # the branch that deletes a real file, and the branch the sprite-deleting incident was in.
+        $treeChecked = $true
+        if (Test-ModTreeUnchanged -Before $treeBefore -Mods $ourMods) { exit 1 }
+
         Write-Host ''
         Write-Host 'OK - self-test passed: the built zips load and resolve every asset, and a file'
         Write-Host "     removed from the unpacked archive was caught ($($caught.Rel))"
         Write-Host "     while the repository's own copy of it stayed put -- so the asset check"
-        Write-Host '     follows the mods rather than always reading the working tree.'
+        Write-Host '     follows the mods rather than always reading the working tree -- and no'
+        Write-Host "     file under our $($ourMods.Count) mod directories moved."
         exit 0
     }
 
     if ($SelfTest) {
-        # Before anything: what the working tree looks like, for the assertion after half eleven.
-        # Taken here rather than after the first canary is written, so a half that reached into the
-        # repo at any point in the run is caught rather than only one that reached in late.
-        $treeBefore = Get-ModTreeFingerprint -Mods $ourMods
-
         # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
         Write-Host 'self-test 1/11: the repo as it stands must load.'
         $clean = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'clean'
@@ -1754,10 +1803,17 @@ end
         # burn, which is worth refusing to load over whoever wrote it". This half is that sentence
         # run rather than read.
         #
-        # THE CATEGORY IS NAMED HERE AND GUARDED HERE. control.lua's HEATING_CATEGORY is the other
-        # copy of the string; a rename there would leave this canary adding a recipe to a category
-        # nothing reads, which is a half that passes by proving nothing. The guard makes that a loud
-        # failure instead -- the same shape as every other canary's "would prove nothing" bail.
+        # THE CATEGORY IS NAMED HERE, AND THE GUARD BELOW CHECKS THE PROTOTYPE, NOT THE CONSTANT.
+        # `rf-plasma-heating` is written down three times -- prototypes/categories.lua declares it,
+        # control.lua's HEATING_CATEGORY reads it, and this canary joins them -- and the canary can
+        # only see the first, because it runs in the data stage. So the guard catches the category
+        # prototype going away and CANNOT catch a rename of control.lua's constant alone.
+        #
+        # That rename is still caught, by the assertion rather than by the guard: with the constant
+        # renamed, check_every_plasma_burns looks at a category nothing produces, the canary loads
+        # clean, and the `Code -eq 0` branch fails the half. The message will blame the invariant
+        # for not firing rather than name the rename, which is the one direction this half reports
+        # imprecisely -- fixing it properly means the canary reading the constant, and it cannot.
         @'
 if not data.raw["recipe-category"]["rf-plasma-heating"] then
   error("load-check canary: no rf-plasma-heating recipe category to add a plasma to, so half ten "
@@ -1842,23 +1898,15 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
             exit 1
         }
 
-        # THE WORKING TREE, ASSERTED RATHER THAN REASONED ABOUT (#125). Halves eight, ten and eleven
-        # break our own prototypes to prove our own checks fire, and they do it in data-final-fixes
-        # -- in memory, at load, with nothing on disk touched. That is the design; this is the
-        # assertion. It is here because a self-test in this file once deleted the repository's own
-        # sprite, so "the mutation is in memory" is a claim to check rather than one to trust.
-        $treeAfter = Get-ModTreeFingerprint -Mods $ourMods
-        $moved = @(Compare-Object -ReferenceObject $treeBefore -DifferenceObject $treeAfter)
-        if ($moved) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: $($moved.Count) file(s) under our mod directories changed during"
-            Write-Host '         the run. The canary halves must break our prototypes in memory only.'
-            foreach ($m in $moved) {
-                $side = if ($m.SideIndicator -eq '=>') { 'now' } else { 'was' }
-                Write-Host "           $side  $($m.InputObject)"
-            }
-            exit 1
-        }
+        # THE WORKING TREE, ASSERTED RATHER THAN REASONED ABOUT (#125). EIGHT of the eleven halves
+        # break one of our prototypes to prove one of our gates fires -- four, five, six, seven and
+        # nine move a connection or a category, eight cuts an input_flow_limit, eleven swaps two box
+        # filters -- and every one of them does it in `data-final-fixes`, in memory, at load, with
+        # nothing on disk touched. That is the design; this is the assertion. It is here because a
+        # self-test in this file once deleted the repository's own sprite, so "the mutation is in
+        # memory" is a claim to check rather than one to trust.
+        $treeChecked = $true
+        if (Test-ModTreeUnchanged -Before $treeBefore -Mods $ourMods) { exit 1 }
 
         Write-Host ''
         Write-Host 'OK - self-test passed: clean repo loads, invalid prototype rejected'
@@ -1951,6 +1999,16 @@ finally {
     # Junctions always go, even with -KeepTemp: leaving links to the repo in %TEMP% hands a
     # delete-through-the-link hazard to whatever cleans it up later.
     Remove-ModJunctions -ModDirectory $modDir
+
+    # AND AFTER AN EARLY EXIT, the tree still gets its answer. Both self-tests compare on their pass
+    # path, where a moved file is a failure of its own -- but every half between one and eleven can
+    # `exit 1` before reaching that, and the half that failed is exactly the one most likely to have
+    # left something behind. Reported rather than exited on, because the code is already set: what
+    # is missing at that point is not a verdict but the list. After the junctions, so a delete that
+    # went through one is included.
+    if ($treeBefore -and -not $treeChecked) {
+        [void](Test-ModTreeUnchanged -Before $treeBefore -Mods $ourMods)
+    }
 
     if ($KeepTemp) {
         Write-Host "temp kept at: $temp"
