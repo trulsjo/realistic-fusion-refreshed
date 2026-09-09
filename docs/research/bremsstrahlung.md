@@ -312,7 +312,8 @@ actually fuses harder.
 Sub-breakeven, and the reactor is no longer a fusion machine — it is a 50 MW heater with a 16 MW
 bonus, radiating 27 MW straight out of the wall. Everything in `d-t-ignition.md`'s fuel-chain
 section, which depends on a D-D reactor breeding 0.92 u/s of tritium at its settling point, goes with
-it.
+it. (**Re-anchored 2026-09-09 by #117**: 0.137 u/s at the settled point, and the section quotes both
+tiers settled rather than one of each.)
 
 Both of these are the physics being right, not a bug. A D-D plasma at 10²⁰ m⁻³ with 30 s of
 confinement and 50 MW of heating is genuinely nowhere near D-D ignition, and the shipped tier only

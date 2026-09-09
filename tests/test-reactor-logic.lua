@@ -1343,6 +1343,88 @@ check(top_gain < 0.10 and unresearched_gain > 0.30,
   "and tuning the supply is worth under 10% there, against over 30% unresearched",
   string.format("%.1f%% at rung 3, %.1f%% unresearched", top_gain * 100, unresearched_gain * 100))
 
+-- ------------------------------------------------- the fuel chain, at the settled point (#117)
+--
+-- HOW MANY D-D REACTORS FEED ONE D-T REACTOR. Here rather than in a paragraph because
+-- docs/research/d-t-ignition.md quoted this ratio from an arithmetic comment for a month after the
+-- numerator moved under it, and #117 asked for a figure a rig produces instead.
+--
+-- BOTH TIERS AT ONE OPERATING POINT, which was #117's first requirement and is Truls's decision:
+-- SETTLED -- box full, all the power the reactor asks for. CONTEXT.md names it the reference point
+-- and pins the D-D end of it; the note used to compare a heater-fed D-T reactor against a settled
+-- D-D one, which are not the same kind of number.
+--
+-- The chain is two lines of stoichiometry and nothing else. Half a D-T plasma unit is tritium
+-- (`fractions`), and a quarter of the deuterium a D-D reactor burns comes back as tritium -- the
+-- by-products block above pins that quarter against `plasma_consumed`. So the ratio is what one
+-- reactor needs over what the other leaves behind.
+--
+-- IT MOVES WITH THE LADDER, AND BOTH TIERS MOVE. The ladder sits on the reactor rather than on a
+-- tier (reactor-logic's confinement_ladder note), so research speeds the breeder up and slows the
+-- burner down at once -- D-T settles hotter, past the peak of its own cross-section, and burns
+-- less. That is why one number cannot answer the question and why the two ends are pinned
+-- separately rather than a rate of change being asserted.
+local T_FRACTION = L.fuels["rf-d-t-plasma"].fractions[2]
+
+--- Both ends of the chain at one confinement time.
+--
+-- BOTH ENDS AT SETTLE_S, and the D-T end especially. The D-T block above settles that tier for one
+-- minute, which is what the note's own table quotes and is NOT converged: 3.248e9 C at a minute
+-- against 3.265e9 C settled, and 26.03 u/s of plasma against 25.95. The gap is small and it is a
+-- different operating point, so the chain is measured at the same horizon the D-D end has always
+-- been measured at rather than at whichever one each tier happened to be quoted at.
+local function chain(spec)
+  local _, dt = settle(spec, SETTLE_S, math.huge, nil, "rf-d-t-plasma")
+  local _, dd = settle(spec, SETTLE_S, math.huge, nil, "rf-d-d-plasma")
+  local needed = dt.plasma_consumed / TICK * T_FRACTION
+  local bred   = dd.products["rf-tritium"] / TICK
+  local ratio  = needed / bred
+  local sold_w = (dt.energy_units + dd.energy_units * ratio) / TICK * spec.energy_fluid_j_per_unit
+  return {
+    needed = needed, bred = bred, ratio = ratio,
+    -- What the whole chain sells, per reactor in it -- the figure the note quotes as the tier's
+    -- step, and the one that says the step is per-reactor rather than per-plant.
+    per_reactor_w = sold_w / (1 + ratio),
+  }
+end
+
+local BARE = chain(SPEC)
+local TOPPED = chain(at_rung(#LADDER))
+
+near(BARE.needed, 12.9747, 0.01, "a settled D-T reactor burns 13.0 units of tritium a second")
+near(BARE.bred, 0.137012, 0.01, "a settled D-D reactor breeds 0.137 units of tritium a second")
+near(BARE.ratio, 94.6969, 0.01, "so 94.7 D-D reactors feed one D-T reactor, unresearched")
+near(BARE.per_reactor_w / 1e6, 88.457, 0.01, "and the chain sells 88.5 MW per reactor in it")
+
+near(TOPPED.ratio, 18.5032, 0.01, "with the confinement ladder researched, 18.5 D-D per D-T")
+near(TOPPED.per_reactor_w / 1e6, 244.242, 0.01, "and 244 MW per reactor")
+
+-- MONOTONE, which is the claim rather than three more numbers: every rung of the ladder makes the
+-- chain shorter, so there is no rung a player reaches and finds the plumbing got worse. It holds
+-- for a reason the rungs cannot break -- see below -- but it
+-- is asserted rather than argued because nothing else here would notice if a rung inverted it.
+--
+-- BOTH ENDS PULL THE SAME WAY, which is why it holds: the breeder breeds more (0.137 to 0.627 u/s)
+-- and the burner needs less (12.97 to 11.61), because D-T settles past the peak of its own
+-- cross-section and fuses slower there. Neither end works against the other.
+local previous_ratio = BARE.ratio
+for level = 1, #LADDER do
+  local ratio = chain(at_rung(level)).ratio
+  check(ratio < previous_ratio,
+    string.format("rung %d shortens the fuel chain", level),
+    string.format("%.4g D-D per D-T after %.4g", ratio, previous_ratio))
+  previous_ratio = ratio
+end
+
+-- AND THE BLANKET IS THE OTHER ROUTE ENTIRELY, not a discount on this one (#30, ADR 0019). The
+-- breeding block above proves a blanketed D-T reactor breeds back more tritium than it burns, so
+-- the ratio this section measures is the cost of the UNBLANKETED chain -- the one a player is on
+-- before rf-blanket-breeding. Stated here as well because the two numbers are read together and
+-- the note quotes them in one breath.
+check(BARE.ratio > 1 and TOPPED.ratio > 1,
+  "the unblanketed chain always costs more than one D-D reactor per D-T reactor",
+  string.format("%.4g unresearched, %.4g researched", BARE.ratio, TOPPED.ratio))
+
 -- ------------------------------------------------------------------------------- the guard (#53)
 --
 -- control.lua's check_confinement_ladder refuses to load a ladder whose top rung settles D-D

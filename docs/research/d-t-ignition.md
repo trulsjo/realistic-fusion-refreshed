@@ -161,38 +161,63 @@ either way and does not double.
 
 ## Does the fuel chain support it?
 
-Yes, and by a smaller margin than the raw power figures suggest — which is the point of a tier.
+**Yes — with a lithium blanket.** Without one, ninety-five D-D reactors feed one D-T reactor.
 
-- A D-T reactor on one heater burns **2.5 u/s of plasma**, so 2.5 u/s of `rf-d-t-mix`, so
-  **1.25 u/s of tritium**.
-- A D-D reactor at its settling point burns 3.66 u/s of deuterium and breeds a quarter of that back
-  as tritium: **0.92 u/s**.
+**Both tiers are quoted SETTLED here, and choosing that is what #117 was actually for.** Settled is
+box full and all the power the reactor asks for — the operating point `CONTEXT.md` names as the
+reference, and the one every equilibrium figure above is quoted at. This section used to compare
+a *heater-fed* D-T reactor (2.5 u/s, one heater) against a *settled* D-D one, which are not the
+same kind of number, and picking one moves the ratio further than either of the two stale figures
+it also carried. The fuel-line table above is the heater-fed reading and is unchanged; this section is not
+that reading. Both tiers are also settled to the same horizon — twenty minutes, not the one minute
+the equilibrium table quotes D-T at, which is close but not converged.
 
-**About 1.4 D-D reactors feed one D-T reactor.** Together that is 507 MW from 2.4 reactors, 214 MW
-each, against 133 MW for a D-D reactor on its own — a 61% step for roughly a doubling of the
-plumbing. Not a runaway, and not free.
+**And every figure in this section carries the radiation term**, unlike the note's default above.
 
-> **Superseded for the blanketed case, 2026-08-17 (#30).** That ratio is the cost of the D-D
-> by-product route, and it is now the *unblanketed* cost. A lithium blanket breeds 1.1 tritons per
-> escaping neutron and a D-T reaction releases one neutron and burns one triton, so a blanketed D-T
-> reactor breeds back more tritium than it burns and needs no D-D reactor upstream at all.
-> Measured in game by `scripts/check-blanket.ps1`: 2 113 units of tritium over two minutes against
-> a D-D reactor's 83.7 of by-product, and the ratio comes out at 1.1000 against the model's 1.1.
-> The 1.4-reactor figure still describes a player who has not researched `rf-blanket-breeding`, and
-> that is the progression rather than an obsolescence.
+- A settled D-T reactor burns **25.9 u/s of plasma**, so 25.9 u/s of `rf-d-t-mix`, so
+  **13.0 u/s of tritium**.
+- A settled D-D reactor burns **0.548 u/s** of deuterium and breeds a quarter of that back as
+  tritium: **0.137 u/s**.
 
-> **And the arithmetic above it is stale twice over — flagged 2026-08-24 (#53), not fixed.** It
-> quotes 3.66 u/s of deuterium and 133 MW, which are **pre-#52** figures: that ticket re-anchored
-> the equilibrium table further up this page and left this section alone, so the numerator moved
-> and the ratio did not. #53 then made it **research-dependent** as well — D-D's by-products go
-> from 0.137 to 0.627 u/s across the confinement ladder, 4.6x, so a researched player needs far
-> fewer D-D reactors per D-T reactor than an unresearched one.
-> 
-> Left to #117 rather than re-picked here, because fixing it means **choosing an
-> operating point** and the section does not currently hold one: it quotes a heater-limited D-T
-> reactor (2.5 u/s) against a saturated D-D one, which are not the same kind of number. Deciding
-> which the fuel chain should be quoted at is a balance question, and settling it as a side effect
-> of a confinement ladder is exactly the drift this page exists to stop.
+**94.7 D-D reactors feed one D-T reactor.** Together that is 8 465 MW from 95.7 reactors, **88.5 MW
+each**, against 56.1 MW for a D-D reactor on its own — a 58% step per reactor for ninety-five times
+the plumbing. The step per reactor is close to what this section always claimed, which said 61%. The
+plumbing is not.
+
+**The confinement ladder moves both tiers, and in opposite directions** (#53, ADR 0024). It sits on
+the reactor rather than on a tier, so research speeds the breeder up and slows the burner down at
+the same time: D-D's tritium goes from 0.137 to 0.627 u/s, **4.6×**, while D-T settles hotter —
+3.27×10⁹ to 3.92×10⁹ °C — past the peak of its own cross-section, so it burns 25.9 u/s down to 23.2.
+Both effects shorten the chain, and every rung does.
+
+| confinement | technology | D-D breeds | D-T needs | D-D per D-T | MW per reactor |
+|---|---|---|---|---|---|
+| 30 s | none — shipped | 0.137 u/s | 12.97 u/s | **94.7** | 88.5 |
+| 40 s | `rf-plasma-confinement-1` | 0.247 u/s | 12.31 u/s | 49.9 | 124.6 |
+| 50 s | `rf-plasma-confinement-2` | 0.406 u/s | 11.90 u/s | 29.3 | 175.7 |
+| 60 s | `rf-plasma-confinement-3` | 0.627 u/s | 11.61 u/s | **18.5** | 244.2 |
+
+**Every number above comes out of `tests/test-reactor-logic.lua`**, through the shipped `step()` and
+`settle()`, in the block headed *the fuel chain, at the settled point (#117)*. Both ends of the
+ladder are pinned to 1% and each rung is required to shorten the chain, so a rebalance moves these
+figures there before it moves them here. Nothing in this section is computed by hand, which is what
+let the previous version go a month with a numerator that had moved and a ratio that had not.
+
+**Whether ninety-five is the intended cost of the unblanketed route is a balance question, and it is
+not settled here.** What the measurement says is that the D-D by-product chain is not plumbing a
+player builds: ninety-five extra machines lift the average from 56.1 MW to 88.5 MW. That makes the
+blanket below the route rather than an optimisation of this one. Retuning it — or accepting it as the
+price of the tier before `rf-blanket-breeding` — is Truls's call.
+
+> **The blanketed case, 2026-08-17 (#30), is a different route and not a discount on this one.** A
+> lithium blanket breeds 1.1 tritons per escaping neutron and a D-T reaction releases one neutron and
+> burns one triton, so a blanketed D-T reactor breeds back more tritium than it burns and needs no
+> D-D reactor upstream at all. Measured in game by `scripts/check-blanket.ps1`: 2 113 units of
+> tritium over two minutes against a D-D reactor's 83.7 of by-product, and the ratio comes out at
+> 1.1000 against the model's 1.1. The ninety-five-reactor figure describes a player who has not
+> researched `rf-blanket-breeding`, and the distance from ninety-five to none is the progression
+> rather than an obsolescence — the same shape this paragraph always claimed, over a much wider gap
+> than the 1.4 it used to sit under.
 
 Balance is provisional here as everywhere in this repository, and this section is the first thing
 that should move if it is retuned.
