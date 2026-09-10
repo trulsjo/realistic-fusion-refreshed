@@ -55,8 +55,8 @@ could feed a fluid nothing buildable can carry — which is precisely what
 `rf-probe-energy-feed` below is for.
 
 The aneutronic half of that design needed no probing. `scripts/check-aneutronic.ps1` already builds a
-converter so that its own south connection lands on the tile the reactor's output points at (`:387`)
-and a second converter five tiles behind it (`:396-404`) — direct-bolt and chaining, shipped and
+`converter` through `bolt()` so that its own south connection lands on the tile the reactor's output
+points at, and a `second_converter` five tiles behind it — direct-bolt and chaining, shipped and
 gated, **for a generator's own fluid box**.
 
 `rf-heat-exchanger` is not that. Its intake is a fluid energy source —
@@ -360,7 +360,8 @@ one sentence neither this page nor `exchanger-chaining.md` could state before.
   wrong afterwards.
 - **One shipped gate becomes true-but-meaningless.** `scripts/check-aneutronic.ps1` asserts the
   composite tank buffers the tier's energy fluid, but fills it with `insert_fluid` on an unplumbed
-  tank (`:463-466`), and Lua insertion ignores connection categories. It would keep passing after the
-  capability was gone.
+  tank, and Lua insertion ignores connection categories. It would keep passing after the capability
+  was gone. **#87 has since replaced that row**, and the comment above the file's `tanks` loop records
+  it: *"THE ROW THIS REPLACES WAS TRUE AND MEANINGLESS"*.
 - **The rigs that plumb this leg with vanilla pipes** are `check-d-t.ps1`, `check-hc.ps1`,
   `check-brownout.ps1`, `bench-mod-links.ps1` and `bench-reactors.ps1`.

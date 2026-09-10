@@ -54,8 +54,10 @@ an uncommitted change in the working tree, by `check_steam_sinks()` in `realisti
 items the mod's recipes touch is ten, and none of `nuclear-power`'s five unlocks is among them. So a
 `nuclear-power` edge cannot be justified under the existing rule at all — **it would be the first
 prerequisite in this repository chosen for progression rather than closure**, which is exactly the "far
-bigger claim" `d-d.lua:17–19` names. Meanwhile `rf-hc-turbine` already proves the mod can ship its own
-turbine (`entities.lua:301`), so #36 is a four-way choice rather than a three-way one.
+bigger claim" that `realistic-fusion-refreshed/prototypes/technology/d-d.lua`'s head comment names in
+*"Fusion is not gated behind fission"*. Meanwhile `rf-hc-turbine` already proves the mod can ship its
+own turbine (`realistic-fusion-refreshed/prototypes/entities.lua` — `hc_turbine`), so #36 is a
+four-way choice rather than a three-way one.
 
 ## 1. What vanilla 2.0.77 actually ships
 
@@ -141,16 +143,16 @@ Read from `realistic-fusion-refreshed*/prototypes/technology/` on `main` at comm
 | Technology | Module | Prerequisites | Cost | Where |
 |---|---|---|---|---|
 | `rf-heavy-water` | Core | `chemical-science-pack`, `fluid-handling` | 100 × three packs | `realistic-fusion-refreshed-core/prototypes/technology/deuterium.lua` |
-| `rf-deuterium-extraction` | Core | `rf-heavy-water` | 200 × three | `deuterium.lua:36` |
-| `rf-lithium-extraction` | Core | `chemical-science-pack`, `fluid-handling` | 150 × three | `lithium.lua:10` |
-| `rf-gas-mixing` | Core | `rf-deuterium-extraction` | 200 × three | `mixing.lua:15` |
+| `rf-deuterium-extraction` | Core | `rf-heavy-water` | 200 × three | `realistic-fusion-refreshed-core/prototypes/technology/deuterium.lua` |
+| `rf-lithium-extraction` | Core | `chemical-science-pack`, `fluid-handling` | 150 × three | `realistic-fusion-refreshed-core/prototypes/technology/lithium.lua` |
+| `rf-gas-mixing` | Core | `rf-deuterium-extraction` | 200 × three | `realistic-fusion-refreshed-core/prototypes/technology/mixing.lua` |
 | `rf-d-d-fusion` | Power | `rf-deuterium-extraction`, `advanced-circuit`, `concrete` | 500 × three | `realistic-fusion-refreshed/prototypes/technology/d-d.lua` |
-| `rf-tritium-breeding` | Power | `rf-d-d-fusion` | 300 × three | `d-t.lua:21` |
-| `rf-d-t-fusion` | Power | `rf-tritium-breeding`, `rf-gas-mixing` | 600 × three | `d-t.lua:55` |
-| `rf-blanket-breeding` | Power | `rf-d-t-fusion`, `rf-tritium-breeding`, `rf-lithium-extraction` | 900 × three | `blanket.lua:29` |
-| `rf-helium-3-breeding` | Power | `rf-tritium-breeding` | 500 × three | `aneutronic.lua:34` |
-| `rf-direct-energy-conversion` | Power | `rf-helium-3-breeding`, `processing-unit`, `production-science-pack` | 800 × four | `aneutronic.lua:63` |
-| `rf-aneutronic-fusion` | Power | `rf-direct-energy-conversion`, `rf-d-t-fusion`, `rf-gas-mixing` | 1500 × four | `aneutronic.lua:105` |
+| `rf-tritium-breeding` | Power | `rf-d-d-fusion` | 300 × three | `realistic-fusion-refreshed/prototypes/technology/d-t.lua` |
+| `rf-d-t-fusion` | Power | `rf-tritium-breeding`, `rf-gas-mixing` | 600 × three | `realistic-fusion-refreshed/prototypes/technology/d-t.lua` |
+| `rf-blanket-breeding` | Power | `rf-d-t-fusion`, `rf-tritium-breeding`, `rf-lithium-extraction` | 900 × three | `realistic-fusion-refreshed/prototypes/technology/blanket.lua` |
+| `rf-helium-3-breeding` | Power | `rf-tritium-breeding` | 500 × three | `realistic-fusion-refreshed/prototypes/technology/aneutronic.lua` |
+| `rf-direct-energy-conversion` | Power | `rf-helium-3-breeding`, `processing-unit`, `production-science-pack` | 800 × four | `realistic-fusion-refreshed/prototypes/technology/aneutronic.lua` |
+| `rf-aneutronic-fusion` | Power | `rf-direct-energy-conversion`, `rf-d-t-fusion`, `rf-gas-mixing` | 1500 × four | `realistic-fusion-refreshed/prototypes/technology/aneutronic.lua` |
 
 Three observations.
 
@@ -158,7 +160,8 @@ Three observations.
 `nuclear` returns six comment lines in `d-d.lua` and one in `reactor-logic.lua`, and not a single
 prototype reference. No recipe consumes uranium, a fuel cell, or a heat pipe. The only entity name
 shared with vanilla's fission neighbourhood is `steam-turbine`, and that is an *unlock*, not an
-ingredient (`d-d.lua:39`).
+ingredient — `realistic-fusion-refreshed/prototypes/technology/d-d.lua`'s `rf-d-d-fusion` effects
+carry it.
 
 **The question is already recorded in the code, framed the way this note finds it.**
 the head comment of `realistic-fusion-refreshed/prototypes/technology/d-d.lua`, verbatim:
@@ -176,9 +179,10 @@ So the mod's current position is not an oversight — it is a deliberate deferra
 material for closing it.
 
 **ADR 0010 names seven Power technologies and this would not add one.** A prerequisite edge is not a
-new prototype, so unlike `rf-hc-turbine`'s home (`d-t.lua:61–71`) or a hypothetical `rf-turbine`, this
-change does not extend ADR 0010's declared set. It changes an edge, which is a smaller kind of change
-to make and a larger kind of claim to make.
+new prototype, so unlike `rf-hc-turbine`'s home (the `rf-hc-turbine` unlock in
+`realistic-fusion-refreshed/prototypes/technology/d-t.lua`'s `rf-d-t-fusion`) or a hypothetical
+`rf-turbine`, this change does not extend ADR 0010's declared set. It changes an edge, which is a
+smaller kind of change to make and a larger kind of claim to make.
 
 ## 2b. The rule that already governs prerequisites here — and `nuclear-power` cannot satisfy it
 
@@ -249,11 +253,13 @@ pipe  processing-unit  steel-plate  sulfur  water
 
 **Ten items, and not one of them is unlocked by `nuclear-power`.** There is no ingredient anywhere in
 this mod that a fission technology gates. (Six entity prototypes in `realistic-fusion-refreshed/prototypes/entities.lua`
-are `table.deepcopy` of vanilla's `heat-exchanger` and `steam-turbine` templates — lines 100, 192, 242,
-301, 459, 548 — but that is a prototype-stage read of a data table, not a recipe ingredient, and it puts
-nothing in any closure.)
+are `table.deepcopy` of vanilla's `heat-exchanger` and `steam-turbine` templates — `reactor`,
+`exchanger`, `hc_exchanger` and `aneutronic` off the first, `hc_turbine` and `converter` off the second
+— but that is a prototype-stage read of a data table, not a recipe ingredient, and it puts nothing in
+any closure.)
 
-**The far-end half: it could have been, once, and no longer can.** Before `d-d.lua:39` unlocked
+**The far-end half: it could have been, once, and no longer can.** Before
+`realistic-fusion-refreshed/prototypes/technology/d-d.lua`'s `rf-d-d-fusion` unlocked
 `steam-turbine`, the steam sink was genuinely unreachable and `nuclear-power` would have satisfied the
 rule by supplying it. That is exactly why #36's second option exists. But the answer shipped, and
 `check_steam_sinks()` accepts *any* reachable sink by construction — so the rule is satisfied today and
@@ -263,11 +269,14 @@ would be satisfied by two of #36's three answers.
 repository chosen for progression rather than closure.** Every existing vanilla prerequisite has a
 mechanical reason — `advanced-circuit`, `concrete` and `processing-unit` are there because unlocked
 recipes consume them, and `chemical-science-pack`, `production-science-pack` and `fluid-handling` are
-there because the research itself needs the pack (`aneutronic.lua:66–74` spells that second case out).
-A `nuclear-power` edge would be justified by neither. **That is what `d-d.lua:17–19` means by "a far
-bigger claim about this mod than a recipe unlock is"** — not that the claim is wrong, but that it is a
-different kind of edge from every edge the tree currently has, and would be the precedent for
-progression-shaped prerequisites in a tree that has so far only had closure-shaped ones.
+there because the research itself needs the pack —
+`realistic-fusion-refreshed/prototypes/technology/aneutronic.lua` spells that second case out above
+`rf-direct-energy-conversion`'s `prerequisites`, in *"one for the RESEARCH ITSELF"*. A
+`nuclear-power` edge would be justified by neither. **That is what
+`realistic-fusion-refreshed/prototypes/technology/d-d.lua` means by "a far bigger claim about this
+mod than a recipe unlock is"** — not that the claim is wrong, but that it is a different kind of
+edge from every edge the tree currently has, and would be the precedent for progression-shaped
+prerequisites in a tree that has so far only had closure-shaped ones.
 
 ### And #32 already shipped the third answer's pattern
 
@@ -285,9 +294,11 @@ nothing fissile, and every ingredient already inside `rf-d-t-fusion`'s closure.
 **So the mod already ships its own steam turbine.** #36's third option — *"Ship an `rf-turbine`"* — is
 the same `pin(table.deepcopy(...))` pattern one tier down at vanilla's 1 unit/tick, with the art
 question already answered by the same K2 source. That does not make it free (a new entity, item, recipe
-and locale entry, and it *would* extend ADR 0010's declared set, which `d-t.lua:63–66` notes is Truls's
-call), but it is materially cheaper than the ticket's framing suggests, and it is the only option that
-answers #36 without either changing vanilla progression or depending on a fission technology.
+and locale entry, and it *would* extend ADR 0010's declared set, which
+`realistic-fusion-refreshed/prototypes/technology/d-t.lua` notes is Truls's call, in *"eighth would
+extend that list"*), but it is materially cheaper than the ticket's framing suggests, and it is the
+only option that answers #36 without either changing vanilla progression or depending on a fission
+technology.
 
 ## 3. What the predecessors did — unanimous until the live one
 
@@ -327,12 +338,13 @@ to it, the cleanest possible implementation: one node to move if the decision ch
 
 **It gated *everything*, including the fuel chain.** In the predecessors, `rfp-deuterium-extraction`
 takes `rfp-fusion-theory` as its prerequisite (`technology.lua:118`), so heavy water itself was behind
-fission. This repo deliberately inverted that direction — `deuterium.lua:1–4` states it: *"None of them
-takes a Power technology as a prerequisite -- that direction is the explicit inversion of the port's
-tree."* **A `nuclear-power` prerequisite on this repo's tree therefore has a shape choice inside it
-that the predecessors never faced**: does it go on Core's `rf-heavy-water` (the predecessors' shape,
-gating water chemistry behind uranium) or on Power's `rf-d-d-fusion` (fission gates *reactors*, not
-extraction)?
+fission. This repo deliberately inverted that direction —
+`realistic-fusion-refreshed-core/prototypes/technology/deuterium.lua`'s head comment states it:
+*"None of them takes a Power technology as a prerequisite -- that direction is the explicit
+inversion of the port's tree."* **A `nuclear-power` prerequisite on this repo's tree therefore has a
+shape choice inside it that the predecessors never faced**: does it go on Core's `rf-heavy-water`
+(the predecessors' shape, gating water chemistry behind uranium) or on Power's `rf-d-d-fusion`
+(fission gates *reactors*, not extraction)?
 
 **The predecessors' gate also solved the steam problem, and they never said so.** They ship an
 `rfp-heat-exchanger` (`prototypes/technology/technology.lua:194`) unlocked from `rfp-fusion-reactor`,
@@ -649,7 +661,9 @@ survey names — *"an item another mod removed, an icon path that moved"*.
 ### Nothing — the status quo
 
 **What it costs:** the mod stays silent about where 56 MW comes from, and #36's steam-turbine unlock
-stays as the small documented change to vanilla progression that `d-d.lua:14–19` already describes.
+stays as the small documented change to vanilla progression that
+`realistic-fusion-refreshed/prototypes/technology/d-d.lua` already describes, in *"small and stated
+rather than smuggled"*.
 
 **What it buys:** the mod loads and progresses identically under every mod set, because it depends on
 nothing fissile. That is a real property and it is the one the mod currently has.
@@ -689,11 +703,14 @@ moves.
 
 ### A. No prerequisite. The status quo.
 
-`rf-d-d-fusion` keeps unlocking `steam-turbine` (`d-d.lua:39`) and the mod stays fission-free.
+`rf-d-d-fusion` keeps unlocking `steam-turbine` — the last effect in
+`realistic-fusion-refreshed/prototypes/technology/d-d.lua` — and the mod stays fission-free.
 
 - **For:** the mod depends on nothing fissile, so it progresses identically under every mod set in the
   coexistence survey; matches how Factorio 2.0.77 itself gates fusion; requires no decision and no
-  ADR; the small vanilla-progression shift is already documented at `d-d.lua:14–18`.
+  ADR; the small vanilla-progression shift is already documented in
+  `realistic-fusion-refreshed/prototypes/technology/d-d.lua`, in *"small and stated rather than
+  smuggled"*.
 - **Against:** the mod stays silent about the 56 MW entry cost; the steam-turbine-before-nuclear shift
   remains, which #36 exists because nobody chose; and it declines the best-cited piece of flavour in
   the subject.
@@ -711,11 +728,12 @@ moves.
   depends on a startup setting; it hands K2's `kr-rare-metal-processing` a place in this mod's
   progression; and the 900 extra science units plus off-starting-area uranium prospecting is a real toll
   on the first fusion reactor.
-- **Cost:** one line, plus deleting `d-d.lua:39` and its comment, plus a `CONTEXT.md` entry. The
-  verification is not free: #36's third acceptance criterion — *a player researching `rf-d-d-fusion` and
-  nothing else can still convert the exchanger's steam to electricity, verified through the tech tree* —
-  would need re-running, and honestly ought to be re-run under Bob's too, which `scripts/` has no
-  harness for.
+- **Cost:** one line, plus deleting the `steam-turbine` unlock in
+  `realistic-fusion-refreshed/prototypes/technology/d-d.lua` and its comment, plus a `CONTEXT.md`
+  entry. The verification is not free: #36's third acceptance criterion — *a player researching
+  `rf-d-d-fusion` and nothing else can still convert the exchanger's steam to electricity, verified
+  through the tech tree* — would need re-running, and honestly ought to be re-run under Bob's too,
+  which `scripts/` has no harness for.
 
 ### C. `nuclear-power` on `rf-d-t-fusion` only. The physically literal placement.
 
@@ -738,10 +756,11 @@ No prerequisite and no vanilla unlock: the mod supplies the thing that drinks it
 
 - **For:** the only answer that resolves #36 without either shifting vanilla progression or depending
   on a fission technology; keeps every prerequisite closure-shaped (§2b); the pattern, the art source
-  and the arithmetic are already proven at `entities.lua:301`; immune to what any overhaul does to
-  `nuclear-power`, which neither A nor B is.
-- **Against:** it **extends ADR 0010's declared prototype set**, which `d-t.lua:63–66` flags as Truls's
-  decision rather than a side effect — the same reason `rf-hc-turbine` went into `rf-d-t-fusion`
+  and the arithmetic are already proven at `realistic-fusion-refreshed/prototypes/entities.lua`'s
+  `hc_turbine`; immune to what any overhaul does to `nuclear-power`, which neither A nor B is.
+- **Against:** it **extends ADR 0010's declared prototype set**, which
+  `realistic-fusion-refreshed/prototypes/technology/d-t.lua` flags as Truls's decision rather than a
+  side effect — the same reason `rf-hc-turbine` went into `rf-d-t-fusion`
   instead of getting its own technology; and it adds an entity, item, recipe and locale entry for a
   machine vanilla already has.
 - **Cost:** low-to-medium and lower than #36 implies, because §2b establishes the pattern is already

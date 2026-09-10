@@ -486,12 +486,13 @@ in the chain to legendary changes the net power of a non-fusing reactor by nothi
 `capture_efficiency` in particular is unreachable **because** it is a Lua constant and not a prototype
 field — which the brief asked to be verified rather than assumed. Checked two ways. It is **defined
 and read only in `reactor-logic.lua`**: the only other occurrences of the name anywhere in the repo
-are a comment in `prototypes/entities.lua:546` and two mentions in `tests/test-reactor-logic.lua`, and
-no prototype file assigns it. And separately, none of `BoilerPrototype`, `GeneratorPrototype`,
-`FluidEnergySource`'s `effectivity`, `FluidPrototype` or `QualityPrototype` at 2.0.77 exposes a
-quality-scalable efficiency at all, so even a version of the mod that *did* read one off a prototype
-would have nothing to read. ADR 0020's asymptote is the only thing that moves the constant, and
-research is per force, not per entity.
+are a comment above `realistic-fusion-refreshed/prototypes/entities.lua`'s `converter` — *"where
+capture_efficiency stands for everything not recovered"* — and two mentions in
+`tests/test-reactor-logic.lua`, and no prototype file assigns it. And separately, none of
+`BoilerPrototype`, `GeneratorPrototype`, `FluidEnergySource`'s `effectivity`, `FluidPrototype` or
+`QualityPrototype` at 2.0.77 exposes a quality-scalable efficiency at all, so even a version of the
+mod that *did* read one off a prototype would have nothing to read. ADR 0020's asymptote is the only
+thing that moves the constant, and research is per force, not per entity.
 
 ### The one term quality does move, and what it is worth
 

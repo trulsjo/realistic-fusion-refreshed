@@ -15,10 +15,14 @@ signal is a 32-bit integer, which
 [#55](https://github.com/trulsjo/realistic-fusion-refreshed/issues/55) built a load-time guard
 around. That sentence stops being true here.
 
-`reactor-logic.lua` carries it in five places and is the easiest to miss, because it is the file the
-other two point *at* rather than the one they point from: lines 196-197 ("it stays for one reason
-that holds: int32 stops at 2.147e9"), 204, 208, 227, and 576-578 ("2e9 is where a temperature stops
-fitting in the int32 a circuit signal is"). All five are
+`realistic-fusion-refreshed/scripts/reactor-logic.lua` carries it in five places and is the easiest
+to miss, because it is the file the other two point *at* rather than the one they point from. Four
+sit in the comments inside `M.fuels`' `["rf-d-t-plasma"]` entry — *"stays for one reason that holds:
+int32 stops at 2.147e9"*, *"clamp survived on the int32 argument alone"*, *"half again above both the
+clamp and the int32"* and *"int32 ceiling are confinement_time_s and the plasma's purity"* — and the
+fifth is above `M.aneutronic_reactor`'s `max_temperature_c`, which on this ADR's date said the same
+of the aneutronic bounds: *"2e9 is where a temperature stops fitting in the int32 a circuit signal
+is"*. All five are
 [#57](https://github.com/trulsjo/realistic-fusion-refreshed/issues/57)'s to rewrite, and #57 is more
 than a wording change — see [Consequences](#consequences).
 

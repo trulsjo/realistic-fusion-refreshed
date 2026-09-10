@@ -546,7 +546,8 @@ the pinned signal.
 
 ## Verdict on the existing claim
 
-The claim, in `reactor-logic.lua` lines 115–117 and `docs/research/d-t-ignition.md` point 1:
+The claim, in `realistic-fusion-refreshed/scripts/reactor-logic.lua`'s `M.fuels` `["rf-d-t-plasma"]`
+entry as it then stood, and in `docs/research/d-t-ignition.md` point 1:
 
 > A real D-T plasma at 1e20 m^-3 has exactly such a channel in bremsstrahlung, which this
 > zero-dimensional model does not carry and which would bite long before 4.6e9.
@@ -579,17 +580,18 @@ call.~~ **All three are done. Audited 2026-08-21 (#98) and struck below, with wh
 repaired.** The section is kept rather than deleted because the three claims it names were really
 made, and a reader meeting them in an older commit needs to find out here that they went.
 
-1. ~~**`realistic-fusion-refreshed/scripts/reactor-logic.lua`, lines 115–119.** "would bite long before 4.6e9" is
-   not true; it moves the equilibrium to 3.26×10⁹. The sentence can be repaired without giving up the
-   conclusion — the clamp *should* stay, because the int32 ceiling is a hard constraint and reason 2
-   in `d-t-ignition.md` was always the load-bearing one. What has to go is the claim that
-   bremsstrahlung justifies it.~~
-   **Done.** The claim is gone and the correction is in its place, now in `reactor-logic.lua`'s D-D fuel entry
-   — "That was reasoning rather than arithmetic and it does not survive being checked", followed by
-   the three bullets this note supplied, including that the clamp sheds about 640 MW where
-   bremsstrahlung is 169 MW. The clamp stayed, on the int32 argument, exactly as recommended. **The
-   line range above was already stale before this audit and is staler now** — #98 added about sixty
-   lines to that file — which is the argument against citing line numbers in prose at all.
+1. ~~**`realistic-fusion-refreshed/scripts/reactor-logic.lua`, `M.fuels`' `["rf-d-t-plasma"]`
+   entry.** "would bite long before 4.6e9" is not true; it moves the equilibrium to 3.26×10⁹. The
+   sentence can be repaired without giving up the conclusion — the clamp *should* stay, because the
+   int32 ceiling is a hard constraint and reason 2 in `d-t-ignition.md` was always the load-bearing
+   one. What has to go is the claim that bremsstrahlung justifies it.~~
+   **Done.** The claim is gone and the correction is in its place, in the same `["rf-d-t-plasma"]`
+   entry — *"It was ALSO justified as standing in for bremsstrahlung"*, followed by the three bullets
+   this note supplied, including that the clamp sheds about 640 MW where bremsstrahlung is 169 MW. The
+   clamp stayed, on the int32 argument, exactly as recommended. **The line range this bullet used to
+   carry was already stale before this audit and staler afterwards** — #98 added about sixty lines to
+   that file — which is the argument against citing line numbers in prose at all, and is now
+   [ADR 0032](../adr/0032-prose-cites-code-by-symbol.md).
 2. ~~**`docs/research/d-t-ignition.md`, the "equilibrium that isn't" section, point 1.** Same sentence,
    same problem. Its closing line — "Fixing it properly means a bremsstrahlung term, which would move
    D-D's balance too" — is half right in a useful way: bremsstrahlung *would* move D-D's balance, far
