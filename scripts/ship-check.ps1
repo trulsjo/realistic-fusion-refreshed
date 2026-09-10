@@ -406,19 +406,31 @@ if ($dangling) {
 # TWO OF ADR 0032'S THREE SHAPES ARE CHECKED, AND THE THIRD IS NOT (#303):
 #
 #   1. `prototypes/fluids.lua:119` -- a path and a colon. Matched, then subject to the ambiguity
-#      exemption above. ADR 0032 decision item 2 closes that hole from the other side: once every
-#      own-tree citation carries a repo-relative path it resolves to one tracked file and this fires
-#      unchanged. #302 did that, so a pass here is now the absence of violations rather than the
-#      exemption swallowing thirty of them -- which is only demonstrable by planting one, never by
-#      reading a green run, and is why #303's pull request plants one instead of asserting it.
+#      exemption above. ADR 0032 decision item 2 NARROWS that hole from the other side rather than
+#      closing it, and the difference matters: a path anchored at the REPO root resolves to one
+#      tracked file and fires here, while a MOD-relative one still names two and is still exempt.
+#      Five paths are ambiguous that way -- data.lua, prototypes/entities.lua, prototypes/fluids.lua,
+#      prototypes/categories.lua, prototypes/items.lua -- and the specimen on this very line is one
+#      of them, which is why writing it here is safe.
+#
+#      So: zero own-tree citations resolve to one tracked file today, and a pass is therefore the
+#      absence of violations rather than the exemption swallowing thirty of them -- demonstrable only
+#      by planting one, never by reading a green run, which is why #303's pull request plants one
+#      instead of asserting it. But prose still writes the bare mod-relative form more than twice as
+#      often as the repo-relative one, so THAT is the shape the next regression will most likely take
+#      and this check will not see it. Only a citation written the way item 2 asks is gated.
 #
 #   2. `:155` written bare in backticks -- a continuation inheriting the path named earlier on the
 #      SAME LINE. New in #303. THE BACKTICKS ARE THE DISCRIMINATOR AND ARE REQUIRED: unbackticked,
 #      a colon and a number cannot be told from a page range, a ratio or a timestamp --
 #      dag-layout-algorithms.md carries `11(2):109-125` and three more citations shaped exactly
-#      like it -- and measured on 2026-09-10 the loose pattern matches 2,536 places against this
-#      one's 21. A gate that cried wolf on bibliography entries gets switched off, which is the same
-#      failure the ambiguity exemption above already refuses to risk.
+#      like it -- and measured on 2026-09-10 over the files this check actually reads, with the same
+#      skip filter, the loose `:\d+` matches around 250 places against this one's two dozen. (A
+#      tenfold larger
+#      figure is available by counting tools/endf/*.json too, and would be dishonest here: those are
+#      the datasets the list below excludes by name for exactly this reason.) A gate that cried wolf
+#      on bibliography entries gets switched off, which is the same failure the ambiguity exemption
+#      above already refuses to risk.
 #
 #   3. "lines 196-197, 204, 208, 227, and 576-578" -- running prose, no path and no colon. NOT
 #      ATTEMPTED, and that is a decision rather than an omission. There is no handle here a regex
@@ -433,6 +445,11 @@ if ($dangling) {
 #     to a file nobody named. connection-category-reassignment.md has four that inherit a
 #     third-party data-final-fixes.lua from the line above, and they are correctly silent, but by
 #     being unattributable rather than by being classified. Reading is the backstop there too.
+#
+#     AND PER-LINE CAN MISATTRIBUTE IN ITS OWN DIRECTION, which is the honest other half: reword one
+#     of those four so any path of ours appears earlier on the same line, and this check fails on a
+#     continuation that was always the third party's. The wrong guess is cheaper in this direction --
+#     a false failure is argued with, a false pass is not noticed -- but it is not no guess.
 #   - the specimens, and this is the one worth knowing before editing any of the three. ADR 0032,
 #     CLAUDE.md's conventions bullet and this comment each write the banned form out on purpose,
 #     because a rule against a shape cannot be stated without showing the shape. All of them are
@@ -454,6 +471,12 @@ $tracked = @(& git -C $repoRoot ls-files | Where-Object { $_ })
 # $citing is NOT widened to match. Section 6 is a different check answering a different question,
 # and coupling the two harder so they can share one list would make widening either one a change to
 # both -- which is exactly the trap this comment would then have to warn about instead.
+#
+# IT NARROWS AS WELL AS WIDENS, and only the widening is obvious. $citing reads EVERY file directly
+# in scripts/; this reads only tracked ones with the five extensions, so scripts/mockup-machines.psd1
+# and scripts/tree-viewer.template.html leave scope, and so does any file not yet `git add`ed. A new
+# doc is therefore ungated until it is staged. Nothing violates the rule in either place today; the
+# trade is deliberate, because a list built from the index is what keeps the generated trees out.
 $citingCode = @($tracked | Where-Object { $_ -match '\.(?:md|lua|ps1|py|js)$' })
 
 # A path token, with the line number optional so shape 2 can inherit one that carries none.
@@ -464,8 +487,15 @@ $numbered = [System.Collections.Generic.List[object]]::new()
 $anyCite  = 0
 $anyCont  = 0
 foreach ($rel in $citingCode) {
+    # The list comes from the index and the content from the worktree, so the two can disagree: a
+    # file deleted or renamed but not yet staged is still tracked and no longer there. Get-Content
+    # then throws under the $ErrorActionPreference above, which killed the whole run -- no failure
+    # summary and every later section unrun, on nothing worse than an unstaged `rm`. Skipped rather
+    # than reported: this section checks prose, and worktree integrity is not its question.
+    $full = Join-Path $repoRoot $rel
+    if (-not (Test-Path -LiteralPath $full)) { continue }
     $n = 0
-    foreach ($line in (Get-Content (Join-Path $repoRoot $rel))) {
+    foreach ($line in (Get-Content -LiteralPath $full)) {
         $n++
         # Verbatim log output, the predecessor archives and vanilla, per the note above. Whole-line,
         # which is what keeps a shape-2 continuation inheriting one of those paths silent too.
@@ -502,17 +532,24 @@ foreach ($rel in $citingCode) {
 # nothing, so a regex that stopped matching would print green while checking nothing at all.
 #
 # Shape 1's floor is unchanged at ten, and #303 confirmed it still bites rather than lowering it:
-# #302 removed forty-six own-tree citations from the corpus and 89 path:line matches remain, because
-# the predecessor and vanilla ones this check deliberately walks past are counted here too. That is
+# #302 removed forty-six own-tree citations and over ninety path:line matches remain, because the
+# predecessor and vanilla ones this check deliberately walks past are counted here too. That is
 # the point -- the floor measures whether the PATTERN still works, not whether the repo still
 # offends, so it survives the corpus being cleaned.
+#
+# EVERY COUNT IN THIS SECTION INCLUDES THE SPECIMENS IN ITS OWN COMMENTS, which is why none of them
+# is written exactly. Two drafts quoted precise figures -- 89 and 21, then 91 and 24 -- and each was
+# falsified by the prose that quoted it, because adding a sentence about a specimen adds a specimen.
+# Round numbers are not vagueness here, they are the only stable way to state this. Re-measure before
+# changing a floor; do not trust a figure in a comment the figure counts.
 $checks++
 if ($anyCite -lt 10) {
     $failures.Add("only $anyCite path:line citation(s) found across $($citingCode.Count) files, " +
         'which means the pattern above stopped matching rather than that the repo stopped citing')
 }
 
-# Shape 2's floor, at eight against 21 found on 2026-09-10. It cannot be a floor on continuations
+# Shape 2's floor, at eight against the two dozen found on 2026-09-10. It cannot be a floor on
+# continuations
 # judged OURS, because that number is zero and is meant to be -- every one in the tree is either
 # unattributable or inherits an ambiguous path. So it counts the shape being FOUND, which is what
 # proves the pattern still matches.
