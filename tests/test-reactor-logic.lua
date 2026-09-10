@@ -1321,6 +1321,39 @@ near(q_at(1), 0.5777, 0.01, "rung 1 reaches Q 0.578 at full supply")
 near(q_at(2), 0.9503, 0.01, "rung 2 reaches Q 0.950 at full supply")
 near(q_at(3), 1.4675, 0.01, "rung 3 reaches Q 1.468 at full supply")
 
+-- WHAT THE REACTOR SELLS AT EACH RUNG, IN MEGAWATTS, and why a Q is not enough on its own (#227).
+--
+-- The rungs above are pinned as Q, which is fusion power over heating power and says nothing about
+-- what leaves the machine. What a heat exchanger has to drain is the ENERGY FLUID, and #227 sized
+-- rf-heat-exchanger's 70 MW against these four numbers -- one exchanger covers the reactor
+-- unresearched and at rung 1, and is deliberately short from rung 2. They were quoted in a comment
+-- in prototypes/entities.lua and pinned nowhere, which meant a rebalance could have moved the
+-- reactor out from under a machine capacity chosen to match it and no gate would have said a word.
+--
+-- Capture is the spec's own unresearched 0.85 here. ADR 0020's ladder multiplies all four by
+-- 0.9375/0.85 at its top rung, which is a separate lever and is not pinned twice.
+local function mw_at(level, fill)
+  local spec = level > 0 and at_rung(level) or SPEC
+  local _, state = settle(spec, SETTLE_S, math.huge, nil, nil, FULL * (fill or 1))
+  return state.energy_units * SPEC.energy_fluid_j_per_unit / TICK / 1e6
+end
+
+near(mw_at(0), 56.1, 0.01, "unresearched, a full D-D reactor sells 56.1 MW", "MW")
+near(mw_at(1), 67.1, 0.01, "rung 1 sells 67.1 MW, which one 70 MW exchanger still covers", "MW")
+near(mw_at(2), 82.9, 0.01, "rung 2 sells 82.9 MW, which it does not -- #227 chose this", "MW")
+near(mw_at(3), 104.9, 0.01, "rung 3 sells 104.9 MW at full supply", "MW")
+
+-- AND AT THE DENSITY OPTIMUM, which is the case #227's capacity does NOT cover at rung 1 and the
+-- reason that comment says so out loud. ADR 0016 makes tuning density a player lever and ADR 0024
+-- tabulates where the optimum sits; at rung 1 it is about 75% full, and a reactor run there sells
+-- more than one exchanger can take. Pinned because it is the figure that decides whether "one
+-- exchanger is enough" is true, and it depends on the fill rather than on the research alone.
+near(mw_at(1, 0.75), 73.7, 0.02,
+  "but at rung 1's density optimum it sells 73.7 MW, which one exchanger does not", "MW")
+check(mw_at(1, 0.75) > 70 and mw_at(1) < 70,
+  "so one 70 MW exchanger drains a rung-1 reactor run FULL and not one run at its optimum",
+  string.format("%.1f MW full, %.1f MW tuned", mw_at(1), mw_at(1, 0.75)))
+
 -- THE PROGRESSION THE TICKET ASKS FOR, stated as the claim rather than as three numbers: below
 -- break-even unresearched, above it with the ladder done, and no rung wasted in between.
 check(hot_state.q_factor < 1 and q_at(1) < 1,

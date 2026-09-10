@@ -5,9 +5,19 @@
 -- seven and none of them is a high-capacity one, so adding an eighth would extend that list -- which
 -- is a decision about the shape of the tree rather than a consequence of building this, and belongs
 -- to Truls. They are unlocked by rf-d-t-fusion instead, which is not a fallback but the moment the
--- need appears: a D-D reactor sells around 86 MW and two exchangers absorb it comfortably, while an
--- ignited D-T reactor sells on the order of 320 MW and needs eight exchangers and fifty-five
--- turbines. The tier that creates the problem is the tier that hands over the answer.
+-- need appears: a D-D reactor sells around 86 MW and two exchangers absorb it, while an ignited D-T
+-- reactor sells on the order of 320 MW and needs five exchangers and fifty-five turbines. The tier
+-- that creates the problem is the tier that hands over the answer.
+--
+-- BOTH REACTOR FIGURES ARE ONE-HEATER READINGS, and #227 moved neither of them. It moved the
+-- exchanger, 40 MW to 70, so this said "eight exchangers" and now says five; the turbine count is
+-- untouched because it divides the reactor's output by a TURBINE's appetite and an exchanger's
+-- rating cancels out. "Comfortably" went from the D-D half for the same reason: two 70 MW machines
+-- against 86 MW is a machine and a quarter of slack rather than three quarters.
+--
+-- The 86 and the 320 both come from docs/research/d-t-ignition.md's feed table at the shipped
+-- 2.5 units/s -- one heater, which is what a player has. Four heaters put the D-T reactor at 996 to
+-- 1 195 MW instead (#89), so neither figure means anything without its heater count.
 --
 -- If a separate technology is wanted later, moving these two effects is the whole change.
 --
@@ -17,8 +27,13 @@
 --
 -- Balance is provisional, as everywhere. The one relationship that is not free is the ratio between
 -- them: an exchanger makes 400 MW of steam and a turbine drinks 58.2 MW of it, so roughly seven
--- turbines to an exchanger -- exactly the ratio the ordinary pair already has, because both halves
--- of the tier are the same factor of ten.
+-- turbines to an exchanger.
+--
+-- THAT USED TO BE "exactly the ratio the ordinary pair already has, because both halves of the tier
+-- are the same factor of ten", AND IT NO LONGER IS. #227 took rf-heat-exchanger to 70 MW and left
+-- rf-hc-exchanger at 400, so the ordinary pair now runs about twelve vanilla turbines to an
+-- exchanger against this pair's seven. The two pairs are internally consistent and no longer
+-- consistent with each other; whether 400 should follow to 700 is not #227's and is not decided.
 data:extend({
   {
     type = "recipe",

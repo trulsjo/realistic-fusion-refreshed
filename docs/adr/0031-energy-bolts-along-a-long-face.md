@@ -147,6 +147,12 @@ an energy box is `input-output`. And each tier chains on its own axis.**
    three box volumes, `mining_time` (1 against 0.5), and the art. `mode` and `target_temperature`
    already agree, both inherited from the same vanilla heat exchanger.
 
+   > **`400 MW against 40 MW` is now 400 against 70**, since
+   > [#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227) took
+   > `rf-heat-exchanger` to 70 MW on 2026-09-10. The enumeration is otherwise unaffected — the gap
+   > narrowed from 10x to 5.71x and did not close — and the figure is annotated rather than
+   > rewritten because this item records what was decided on 2026-09-07.
+
 4. **`rf-direct-energy-converter` is declared fifteen wide by five tall with energy `input-output` on
    both long faces**, `{0, -2}` and `{0, 2}`. No short-end connections: it has one fluid box and
    nothing else to place there.

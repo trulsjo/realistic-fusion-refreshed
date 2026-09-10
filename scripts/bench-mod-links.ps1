@@ -97,24 +97,32 @@
     Ticks per reported window. The last two are what the equilibrium gate compares.
 
 .PARAMETER Exchangers
-    Heat exchangers on the chain cell's reactor. Four 40 MW exchangers is 160 MW of demand against
+    Heat exchangers on the chain cell's reactor. Four 70 MW exchangers is 280 MW of demand against
     the 94 MW this rig's D-D reactor settles at, so the link is not demand-limited. Fewer would
     measure the exchangers rather than the reactor.
 
     ~~the 133 MW #37 settles at~~ is a PRE-#52 figure, from before the radiation term shipped, and
     corrected here for the same reason #88 corrected two others (#89). The conclusion is unchanged
-    at every number it has had: 160 MW of demand out-runs 133, 94 and 78.3 alike.
+    at every number it has had: 280 MW of demand out-runs 133, 94 and 78.3 alike -- and so did the
+    160 MW that four 40 MW machines made before #227, which is why the default is not being moved.
+    THE SWITCH DELIBERATELY OVER-PROVISIONS, so a change that raises each machine's demand makes it
+    more over-provisioned rather than less, and nothing here needs re-tuning.
 
     EIGHT IS WHAT #89 ASKS FOR, and only on -Plasma rf-d-t-plasma. Eight is the number that ticket
     reasons to from the "on the order of 320 MW" that entities.lua's high-capacity steam pair block
-    states for an ignited D-T reactor, and THAT FIGURE IS SUPERSEDED by what this script then
-    measured: 996 to 1 195 MW, so eight 40 MW
-    exchangers take about 26.8% of the reactor rather than matching it. Eight is kept as the number
-    #89 asked about rather than raised to the thirty the new figure implies, because the question is
-    whether the eighth machine down a chain off ONE bolted connection is fed at all -- and it is
-    (docs/research/bolted-joint-throughput.md). The per-exchanger table below is what says so; a row
-    whose far end idles reports it there and nowhere else. How many exchangers a reactor SHOULD have
-    is #227's, not this switch's.
+    states for an ignited D-T reactor, and THAT FIGURE IS FOR ONE HEATER where this rig runs four:
+    on four it measured 996 to 1 195 MW. So eight 70 MW exchangers take 47% (on the flowing bound)
+    to 56% (on the sustained one) of what this rig's reactor makes, rather than matching it. Eight is
+    kept as the number #89 asked about rather than raised to the fourteen-to-seventeen those bounds
+    imply, because the question is whether the eighth machine down a chain off ONE bolted connection
+    is fed at all -- and it is (docs/research/bolted-joint-throughput.md). The per-exchanger table
+    below is what says so; a row whose far end idles reports it there and nowhere else.
+
+    #227 IS SETTLED AND DID NOT MOVE THIS SWITCH. Truls's call, 2026-09-10: one exchanger drains a
+    D-D reactor at ship and through the first confinement rung, which took the machine from 40 MW to
+    70. It moves the percentages in this help -- eight machines took 27% to 32% of this rig's
+    reactor at 40 MW and take 47% to 56% at 70, both spans quoted across the same two bounds -- and
+    it changes neither default, for the reason above.
 
 .PARAMETER Plasma
     Which plasma the heater bank makes, and so which tier the chain is driven by. The heater's own
