@@ -20,18 +20,27 @@ to miss, because it is the file the other two point *at* rather than the one the
 sit in the comments inside `M.fuels`' `["rf-d-t-plasma"]` entry — *"stays for one reason that holds:
 int32 stops at 2.147e9"*, *"clamp survived on the int32 argument alone"*, *"half again above both the
 clamp and the int32"* and *"int32 ceiling are confinement_time_s and the plasma's purity"* — and the
-fifth above `M.aneutronic_reactor`'s `max_temperature_c`. All five are
+fifth above `M.aneutronic_reactor`'s `min_temperature_c`, in the comment that covers both of that
+tier's bounds. All five are
 [#57](https://github.com/trulsjo/realistic-fusion-refreshed/issues/57)'s to rewrite, and #57 is more
 than a wording change — see [Consequences](#consequences).
 
-> **#57 has since done it, and the four handles above are why this reads oddly today.** All four
-> still grep, because #57 struck the sentences through rather than deleting them: the first and the
-> fourth now stand inside a `~~…~~`, marked *"Retired by #57"* and *"There is no int32 ceiling to
-> reach since #57"*. So a reader who greps a handle lands on text the file marks retired. That is the
-> intended outcome and not rot — the file is the record of what the reason was and that it went. The
-> fifth had no handle left to quote, because #57 rewrote that comment outright, so it is cited by its
-> symbol alone. When this ADR was written it read *"The same bounds, and the same reason"* of the
-> aneutronic tier.
+> **#57 has since done it, and that is why the five handles above read oddly today.** All five
+> survive, because #57 struck the sentences through rather than deleting them, so a reader who greps
+> a handle lands on text the file marks retired. That is the intended outcome and not rot — the file
+> is the record of what the reason was and that it went. The first and the fourth stand inside a
+> `~~…~~`, marked *"Retired by #57"* and *"ceiling to reach since #57"* — that second handle is the
+> tail of the sentence rather than the whole of it, because the file wraps it across two comment
+> lines and nothing greps the join.
+>
+> **The fifth moved after #57 rewrote it, which is why it is anchored on the floor and not the
+> ceiling.** When this ADR was written, `min_temperature_c` and `max_temperature_c` shared one
+> comment, reading *"The same bounds, and the same reason: 2e9 is where a temperature stops fitting
+> in the int32 a circuit signal is"*. `886e490` (#57) rewrote it in place; `26d494e` (#58) then split
+> it, leaving #57's text above `min_temperature_c` — greppable as *"The same bounds, and"* — and
+> inserting a fresh comment above `max_temperature_c` that says nothing about int32. So the ceiling
+> is the wrong field to look under, and the comment now sitting there is #58's work rather than this
+> ADR's subject.
 
 **Spends [ADR 0014](0014-realistic-means-theoretically-possible.md)** the way
 [ADR 0024](0024-confinement-time-is-the-researchable-lever.md) does. ADR 0014 fixed what "realistic"
