@@ -157,9 +157,11 @@ Read from `realistic-fusion-refreshed*/prototypes/technology/` on `main` at comm
 Three observations.
 
 **The mod has no fission coupling of any kind today.** Grepping both modules for `uranium` and
-`nuclear` returns six comment lines in `d-d.lua` and one in `reactor-logic.lua`, and not a single
-prototype reference. No recipe consumes uranium, a fuel cell, or a heat pipe. The only entity name
-shared with vanilla's fission neighbourhood is `steam-turbine`, and that is an *unlock*, not an
+`nuclear` returns comment lines and nothing else — in `realistic-fusion-refreshed/control.lua`,
+`realistic-fusion-refreshed/prototypes/technology/d-d.lua` and
+`realistic-fusion-refreshed/scripts/reactor-logic.lua` — and not a single prototype reference. No
+recipe consumes uranium, a fuel cell, or a heat pipe. The only entity name any recipe of ours shares
+with vanilla's fission neighbourhood is `steam-turbine`, and that is an *unlock*, not an
 ingredient — `realistic-fusion-refreshed/prototypes/technology/d-d.lua`'s `rf-d-d-fusion` effects
 carry it.
 
@@ -172,8 +174,8 @@ the head comment of `realistic-fusion-refreshed/prototypes/technology/d-d.lua`, 
 > uranium processing. So a player could research fusion, build the whole chain, and have nowhere
 > to put the steam. The turbine is therefore unlocked here.
 >
-> […] Making `nuclear-power` a prerequisite instead would avoid it and gate fusion behind fission,
-> which is a far bigger claim about this mod than a recipe unlock is.
+> […] Fusion is not gated behind fission -- that would be a far bigger claim about what this
+> mod is than a recipe unlock is -- and there is no rf-turbine […]
 
 So the mod's current position is not an oversight — it is a deliberate deferral, and this note is the
 material for closing it.
@@ -273,9 +275,9 @@ there because the research itself needs the pack —
 `realistic-fusion-refreshed/prototypes/technology/aneutronic.lua` spells that second case out above
 `rf-direct-energy-conversion`'s `prerequisites`, in *"one for the RESEARCH ITSELF"*. A
 `nuclear-power` edge would be justified by neither. **That is what
-`realistic-fusion-refreshed/prototypes/technology/d-d.lua` means by "a far bigger claim about this
-mod than a recipe unlock is"** — not that the claim is wrong, but that it is a different kind of
-edge from every edge the tree currently has, and would be the precedent for progression-shaped
+`realistic-fusion-refreshed/prototypes/technology/d-d.lua` means by "a far bigger claim about what
+this mod is than a recipe unlock is"** — not that the claim is wrong, but that it is a different
+kind of edge from every edge the tree currently has, and would be the precedent for progression-shaped
 prerequisites in a tree that has so far only had closure-shaped ones.
 
 ### And #32 already shipped the third answer's pattern

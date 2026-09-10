@@ -20,11 +20,18 @@ to miss, because it is the file the other two point *at* rather than the one the
 sit in the comments inside `M.fuels`' `["rf-d-t-plasma"]` entry — *"stays for one reason that holds:
 int32 stops at 2.147e9"*, *"clamp survived on the int32 argument alone"*, *"half again above both the
 clamp and the int32"* and *"int32 ceiling are confinement_time_s and the plasma's purity"* — and the
-fifth is above `M.aneutronic_reactor`'s `max_temperature_c`, which on this ADR's date said the same
-of the aneutronic bounds: *"2e9 is where a temperature stops fitting in the int32 a circuit signal
-is"*. All five are
+fifth above `M.aneutronic_reactor`'s `max_temperature_c`. All five are
 [#57](https://github.com/trulsjo/realistic-fusion-refreshed/issues/57)'s to rewrite, and #57 is more
 than a wording change — see [Consequences](#consequences).
+
+> **#57 has since done it, and the four handles above are why this reads oddly today.** All four
+> still grep, because #57 struck the sentences through rather than deleting them: the first and the
+> fourth now stand inside a `~~…~~`, marked *"Retired by #57"* and *"There is no int32 ceiling to
+> reach since #57"*. So a reader who greps a handle lands on text the file marks retired. That is the
+> intended outcome and not rot — the file is the record of what the reason was and that it went. The
+> fifth had no handle left to quote, because #57 rewrote that comment outright, so it is cited by its
+> symbol alone. When this ADR was written it read *"The same bounds, and the same reason"* of the
+> aneutronic tier.
 
 **Spends [ADR 0014](0014-realistic-means-theoretically-possible.md)** the way
 [ADR 0024](0024-confinement-time-is-the-researchable-lever.md) does. ADR 0014 fixed what "realistic"
