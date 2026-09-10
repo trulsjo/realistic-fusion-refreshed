@@ -179,10 +179,20 @@ which is outside the rule. So no source file in this repository violates it.
   can be caught by carrying the last path seen on the line; "lines 196-197" in running prose has no
   handle a regex can trust, and a gate that guesses there would fire on every ADR quoting a
   predecessor. #303 states this as a limit rather than pretending to cover it.
+
+  > **Done 2026-09-10 (#303).** Shape 2 is gated, by exactly the carry-the-last-path rule above,
+  > with the backticks required as the discriminator. Shape 3 is not attempted and is stated as a
+  > gap in the script's help. Two smaller gaps came with it: a continuation whose path sits on an
+  > earlier line, and one written without backticks.
 - **The gate reads `scripts/` and `docs/` only.** `$citing` is the files directly in `scripts/` plus
   `docs/**/*.md`. It does not read `CONTEXT.md`, `README.md`, `models/` or any `.lua`, so decision
   item 5 is a convention a reviewer keeps, not one a run enforces. Say so in the script rather than
   letting a green run imply otherwise.
+
+  > **Superseded 2026-09-10 (#303).** The citation check now reads its own list — every tracked
+  > `.md`, `.lua`, `.ps1`, `.py` and `.js` — so item 5 is enforced. `$citing` itself is unchanged,
+  > because section 6 answers a different question. The new list narrows as well as widens: an
+  > untracked or unstaged file is out of scope, where `$citing` read every file in `scripts/`.
 - **`ship-check.ps1` has no `-SelfTest` and gains none.** Its own help says why, and draws a
   distinction worth keeping: sections 1 to 4 *"name every file and string they require, so a mistake
   in them fails rather than goes quiet"* and need nothing further. The **scanning** checks are the

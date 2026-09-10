@@ -210,9 +210,13 @@ other direction.
 - **Cite our own code by symbol, never by line number** — the function, field, constant or prototype,
   with a repo-relative path, because there are two `entities.lua`. A comment with no symbol is cited
   by a quoted fragment of its own words. Predecessor, vanilla and third-party citations keep their
-  line numbers; we never edit those trees. `scripts/ship-check.ps1` gates **one** of the three shapes
-  this takes — a path with a line number on it — and is blind to a bare `:155` continuation and to
-  "lines 196-197" written out in prose. See `docs/adr/0032-prose-cites-code-by-symbol.md`.
+  line numbers; we never edit those trees. Since #303 `scripts/ship-check.ps1` gates **two** of the
+  three shapes this takes — a path with a line number on it, and a backticked `:155` continuation
+  inheriting a path named earlier on the same line — across every tracked `.md`, `.lua`, `.ps1`,
+  `.py` and `.js`. It stays blind to "lines 196-197" written out in prose, to a continuation whose
+  path is on an earlier line, and to one written without backticks; and a **mod**-relative path like
+  `prototypes/entities.lua:119` still names two files, so only a citation anchored at the repo root
+  is actually gated. See `docs/adr/0032-prose-cites-code-by-symbol.md` and the script's section 7.
 
 ## Commit messages
 
