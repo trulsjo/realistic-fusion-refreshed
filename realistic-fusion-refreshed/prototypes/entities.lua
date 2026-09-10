@@ -420,7 +420,7 @@ contain(reactor.fluid_box, PLASMA_CATEGORY)
 -- splits into two of half the length, at fifteen tiles a machine.
 --
 -- ADR 0031's Alternatives puts that as "eight exchangers make a single row 120 tiles wide rather
--- than two of 60", and the count is left out here on purpose: #227 took the machine to 70 MW, so
+-- than two of 60", and the count is left out here on purpose: #227 took the machine to 90 MW, so
 -- the same one-heater reactor that ADR reasoned from wants five rather than eight, and a reactor on
 -- four heaters wants fourteen to seventeen. The halving is what the second face buys, and it does
 -- not depend on which of those the reader has.
@@ -565,54 +565,58 @@ local exchanger = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-
 -- the one entity here that does NOT take pin's derived graphics/krastorio-2/entities/<name>.png,
 -- and the file it used to take is deleted rather than left lying about (#252).
 exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
--- ONE EXCHANGER DRAINS A D-D REACTOR, AND 70 IS NOT A ROUND-UP OF THE REACTOR'S OUTPUT (#227).
--- Truls's call, 2026-09-10: one of these is enough at ship and through the first confinement rung,
--- and no further. A settled D-D reactor sells 56.1 MW unresearched and 67.1 MW at
--- rf-plasma-confinement-1 -- tests/test-reactor-logic.lua pins the first and reactor-logic's own
--- confinement_ladder sets the second -- so 70 MW covers both with a little air. The air is
--- deliberate and is the whole reason the figure is not 68: a capacity matched to a reactor's output
--- to three figures reads as a number tuned against another number, and a player cannot see either.
+-- ONE EXCHANGER DRAINS A D-D REACTOR, AND 90 IS SIZED ON THE FED REACTOR RATHER THAN THE SETTLED
+-- ONE (#227). Truls's calls, 2026-09-10. He asked first for one machine to be enough at ship and
+-- through the first confinement rung, which put the figure at 70; the measurements below then showed
+-- 70 short of the rate a heater actually feeds a reactor at, and he took it to 90.
 --
--- SETTLED AND AT FULL SUPPLY, which CONTEXT.md requires be said and ADR 0024 item 1 calls a
--- load-bearing qualifier. Sized against any other operating point the figure reads differently, and
--- the two that matter are worth having here rather than rediscovered:
+-- WHAT 90 COVERS, and every figure here is pinned by tests/test-reactor-logic.lua rather than
+-- quoted from a comment:
 --
---   * TUNED DENSITY, which ADR 0016 makes a mechanic and ADR 0024 tabulates. A reactor held at its
---     density optimum peaks at 61.6 MW unresearched -- covered -- and at 73.7 MW at rung 1, which is
---     NOT. So one exchanger drains a rung-1 reactor run full and starves behind one run at its
---     optimum, by about 5%. Truls's decision was taken against the full-supply figures; whether the
---     capacity should cover the optimum instead is a live question and is not settled here.
---   * FUEL-LINE-FED, WHERE THIS CAPACITY IS MEASURED NOT TO KEEP UP, AND THAT IS THE CASE A PLAYER
---     ACTUALLY BUILDS. docs/research/d-t-ignition.md's feed table reads a D-D reactor at 86 MW on
---     one heater's 2.5 units/s and 103 MW on two heaters' 5 -- the shipped heater rate is the first
---     of those. bench-mod-links.ps1 -Exchangers 1, 126 000 ticks, both cells past their own
---     equilibrium gate, 2026-09-10, agrees: 86.4 MW sustained through a pipe to a large sink with
---     the reactor's energy box at 21 of 1 000, so that is the reactor selling everything it makes.
---     Bolt ONE 70 MW exchanger on instead and the leg carries 58.3 MW while THE REACTOR'S BOX GOES
---     TO 1 000 OF 1 000 -- full, backed up, about 28 MW discarded.
+--   * THE FED REACTOR, which is the case a player builds and the reason for the number.
+--     docs/research/d-t-ignition.md's feed table reads a D-D reactor at 86 MW on one heater's
+--     2.5 units/s. That is the shipped rate and the designed ratio -- prototypes/recipes/d-t.lua
+--     keeps D-T on it precisely so "one heater still feeds one reactor" -- so 86 MW is the plant
+--     this capacity is sized for, and 90 clears it by 4%.
 --
---     (58.3 rather than 70 is the metering, not the machine: control.lua steps every six ticks, so
---     the bench sees flow on five ticks in six and 70 x 5/6 is 58.3. Its while-flowing column reads
---     1.1667 units/tick, which is 70 MW exactly. The exchanger does draw its full rating.)
+--     THE SAME TABLE READS 103 MW AT TWO HEATERS AND IT SATURATES THERE, so a player who over-feeds
+--     one reactor outruns one exchanger. bench-mod-links.ps1 runs FOUR heaters by design -- its
+--     -Exchangers help says it over-provisions on purpose -- and measures that reactor at
+--     103.7 units-of-energy-per-tick-while-flowing against this machine's 90. Its box stays full at
+--     1 000 of 1 000 with one exchanger bolted on, at 90 MW as at 70. Covering the saturated
+--     multi-heater reactor would want about 105 MW; covering the designed one-heater plant wants 90,
+--     and 90 is what Truls chose.
 --
---     SO ONE OF THESE DRAINS A D-D REACTOR AT THE SIMULATION'S OWN EQUILIBRIUM AND NOT AT THE RATE
---     A HEATER ACTUALLY FEEDS ONE, and the gap is not a settling artifact: started hot and full, the
---     pure model is at 2.422e8 C and 56.1 MW inside 30 000 ticks and does not move again through
---     600 000, while the bench sits at 5.507e8 C after 126 000. A fed reactor burns and replaces
---     plasma continuously and never reaches the box-full equilibrium settle() computes, which is
---     what CONTEXT.md's operating-point vocabulary is for -- this reactor has been quoted at 56 and
---     at 85 MW before (#109) and both were right.
+--     READ THAT BENCH'S TWO COLUMNS AND NOT ONE. Its "energy MW" column is a 5/6 UNDERCOUNT of both
+--     sides: the meter watches the source box fall, control.lua writes the reactor every six ticks,
+--     and the writing tick is excluded because production and outflow cannot be separated after the
+--     fact. So the exchanger reads 75 MW sustained where it burns 90 -- its while-flowing column is
+--     1.5 units/tick, exactly 90 MW -- and the reactor reads 86.4 where it makes 103.7. Comparing
+--     the sustained figure of one against the while-flowing figure of the other is how a reader
+--     concludes 90 is enough here, or that 70 was; neither is.
+--   * SETTLED AND AT FULL SUPPLY, which CONTEXT.md requires be named and ADR 0024 item 1 calls a
+--     load-bearing qualifier: 56.1 MW unresearched, 67.1 at rf-plasma-confinement-1 and 82.9 at
+--     rung 2, so 90 covers the ladder to its second rung and not to its third's 104.9.
+--   * TUNED DENSITY, which ADR 0016 makes a player lever and ADR 0024 tabulates. Held at its density
+--     optimum a reactor peaks at 61.6 MW unresearched, 73.7 at rung 1 and 88.8 at rung 2 -- all
+--     covered, the last of them by a little over a megawatt. At rung 3's 107.6 it is not.
 --
---     Covering 86 MW would want about 90. Truls chose 70 on 2026-09-10 against the settled table,
---     which is the reference point CONTEXT.md names and the only one pinned by a test; this
---     measurement was put in front of him with the change and is recorded rather than acted on.
+-- SO THE HONEST STATEMENT IS "one exchanger drains a D-D reactor through confinement rung 2, fed or
+-- full, tuned or not", and at rung 3 a second machine is wanted whatever the operating point. Going
+-- further is #315, which cannot be built the way the reactor's ladder is: a BoilerPrototype has no
+-- module_slots, no allowed_effects and no effect_receiver in 2.0.77, so energy_consumption is
+-- settled at start-up and cannot be handed out per force the way control.lua hands out
+-- confinement_time_s.
 --
--- It is short from rung 2 (82.9 MW at full supply) on, by decision rather than by oversight. Whether
--- it should keep pace through research is #315, which cannot be built the way the reactor's ladder
--- is: a BoilerPrototype has no module_slots, no allowed_effects and no effect_receiver in 2.0.77, so
--- energy_consumption is settled at start-up and cannot be handed out per force the way
--- control.lua hands out confinement_time_s.
-exchanger.energy_consumption = "70MW"
+-- WHY 70 WAS NOT ENOUGH. It cleared the pure model's 56.1 MW equilibrium and nothing else: the
+-- designed one-heater plant is 86 MW and 70 does not reach it. The pure model's figure is the one to
+-- be careful of, because a FED reactor never reaches it -- started hot and full the model is at
+-- 2.422e8 C inside 30 000 ticks and does not move through 600 000, while the bench's reactor sits at
+-- 5.507e8 C after 126 000, because a fed reactor burns and replaces plasma continuously and never
+-- settles into a full box. That is what CONTEXT.md's operating-point vocabulary is for; this reactor
+-- has been quoted at 56 and at 85 MW before (#109) and both were right. Sizing on the settled figure
+-- alone is the trap, and the first attempt at this ticket fell in it. Sizing on the settled figure alone is the trap, and 70 fell in.
+exchanger.energy_consumption = "90MW"
 exchanger.energy_source = {
   type = "fluid",
   effectivity = 1,
@@ -717,15 +721,15 @@ exchanger.output_fluid_box.filter = "steam"
 
 -- Generation that scales without a thousand buildings (#32).
 --
--- The steam route's problem is arithmetic rather than design. One rf-heat-exchanger turns 70 MW of
+-- The steam route's problem is arithmetic rather than design. One rf-heat-exchanger turns 90 MW of
 -- reactor energy into 500 C steam, and a vanilla steam turbine drinks one unit of that a tick --
--- 5.82 MW -- so an exchanger feeds about twelve turbines. An ignited D-T reactor on the shipped
--- one-heater feed sells on the order of 320 MW, which is five exchangers and fifty-five turbines
+-- 5.82 MW -- so an exchanger feeds about fifteen turbines. An ignited D-T reactor on the shipped
+-- one-heater feed sells on the order of 320 MW, which is four exchangers and fifty-five turbines
 -- PER REACTOR. That is not a difficulty curve, it is a blueprint chore, and it is what this pair
 -- exists to remove.
 --
--- ONLY THE EXCHANGER COUNT MOVED UNDER #227, from eight to five: the machine went from 40 MW to
--- 70 and the reactor did not move at all. The turbine count is unchanged because it divides the
+-- ONLY THE EXCHANGER COUNT MOVED UNDER #227, from eight to four: the machine went from 40 MW to
+-- 90 and the reactor did not move at all. The turbine count is unchanged because it divides the
 -- reactor's output by a TURBINE's appetite, and neither of those changed -- an exchanger's rating
 -- cancels out of it entirely.
 --
@@ -741,8 +745,8 @@ exchanger.output_fluid_box.filter = "steam"
 --
 -- The turbine is ten times its ordinary counterpart, which is the predecessor's factor and is kept
 -- because it is a round number rather than because it was tuned. THE EXCHANGER NO LONGER IS: #227
--- took rf-heat-exchanger to 70 MW and left this at 400, so the pair's two halves now sit at 10x and
--- 5.71x. Whether 400 should follow is not this ticket's and is not decided. Balance is provisional.
+-- took rf-heat-exchanger to 90 MW and left this at 400, so the pair's two halves now sit at 10x and
+-- 4.44x. Whether 400 should follow is not this ticket's and is not decided. Balance is provisional.
 --
 -- THE ONE THING THAT MUST NOT GO WRONG HERE, and the acceptance criterion this tier is written
 -- around: a generator's real output is fluid_usage_per_tick x 60 x (maximum_temperature -
@@ -754,12 +758,12 @@ exchanger.output_fluid_box.filter = "steam"
 -- engine agrees with the arithmetic, so the number cannot drift away from the fluid it is made of.
 local hc_graphics = require("__realistic-fusion-refreshed-assets__.graphics.krastorio-2.buildings.hc-pictures")
 
--- 5.71 times rf-heat-exchanger's 70 MW. A boiler's energy_consumption is what it puts INTO the
+-- 4.44 times rf-heat-exchanger's 90 MW. A boiler's energy_consumption is what it puts INTO the
 -- fluid, so this is 400 MW of steam and there is no second figure to keep in step with it.
 --
 -- IT WAS TEN TIMES, AND #227 MOVED THE OTHER HALF OF THE RATIO RATHER THAN THIS ONE. 400 is left
 -- exactly where it was; what changed is the machine it is a multiple of. Restoring the round factor
--- would mean 700 MW here, which is a balance decision nobody has taken. 400 still covers a lit D-T
+-- would mean 900 MW here, which is a balance decision nobody has taken. 400 still covers a lit D-T
 -- reactor on one heater's 320-odd MW with room to spare, which is the case this tier was sized for;
 -- a reactor on four heaters is 996 to 1 195 MW and wants two and a half to three of these, and that
 -- is a feed-rate question rather than an argument about the factor.
