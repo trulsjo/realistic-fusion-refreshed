@@ -527,19 +527,24 @@ script.on_nth_tick(CHECK_AT, function()
   -- ------------------------------------------------------------ building count
   --
   -- The ticket's second criterion, stated as the arithmetic a player actually does: how many
-  -- machines it takes to absorb one ignited D-T reactor, which sells on the order of 320 MW.
+  -- machines it takes to absorb one ignited D-T reactor.
   --
   -- ONE HEATER'S WORTH, WHICH IS WHAT A PLAYER HAS. docs/research/d-t-ignition.md's feed table puts
   -- a lit D-T reactor at 324 MW on the shipped 2.5 units/s, and check-brownout.ps1 measured its
   -- trailing-minute output reaching 322 MW at 1800 s and 324 at 2100. Four heaters would read 996
   -- to 1 195 MW instead (#89) and the counts below would quadruple; the switch is the feed, not the
-  -- arithmetic. #227 left this figure alone -- it moved the exchanger, and the two counts printed
-  -- below moved with it.
+  -- arithmetic.
+  --
+  -- THE CONSTANT BELOW IS 324 AND WAS 320 UNTIL #227. A round number was fine while nothing nearby
+  -- was more precise, and stopped being fine when this comment started quoting the measurement to
+  -- three figures. It changes the two counts that get PRINTED by about a percent and changes no
+  -- verdict, for the reason below. What #227 really moved here is the exchanger's rating, and the
+  -- ordinary-pair count moved with it.
   --
   -- The VERDICT does not depend on the figure at all: every term divides the same number by a
   -- machine's own rating, so it cancels out of the ratio record() asserts. What it sets is the two
   -- counts that get printed.
-  local reactor_mw = 320
+  local reactor_mw = 324
   -- Called with no arguments, not with the prototype as self: Factorio hands these out already
   -- bound, so passing the prototype makes it the quality argument and the engine answers "Invalid
   -- QualityID" rather than anything about the call.

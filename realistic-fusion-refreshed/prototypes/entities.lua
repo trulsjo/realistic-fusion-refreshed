@@ -421,8 +421,8 @@ contain(reactor.fluid_box, PLASMA_CATEGORY)
 --
 -- ADR 0031's Alternatives puts that as "eight exchangers make a single row 120 tiles wide rather
 -- than two of 60", and the count is left out here on purpose: #227 took the machine to 90 MW, so
--- the same one-heater reactor that ADR reasoned from wants five rather than eight, and a reactor on
--- four heaters wants fourteen to seventeen. The halving is what the second face buys, and it does
+-- the same one-heater reactor that ADR reasoned from wants four rather than eight, and a reactor on
+-- four heaters wants eleven to thirteen. The halving is what the second face buys, and it does
 -- not depend on which of those the reader has.
 --
 -- Not east or west: those are plasma, and freeing one would spend ADR 0011's shared pool. The
@@ -570,14 +570,25 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 -- through the first confinement rung, which put the figure at 70; the measurements below then showed
 -- 70 short of the rate a heater actually feeds a reactor at, and he took it to 90.
 --
--- WHAT 90 COVERS, and every figure here is pinned by tests/test-reactor-logic.lua rather than
--- quoted from a comment:
+-- WHAT 90 COVERS. Which figures below are PINNED and which are only cited is stated per bullet
+-- rather than claimed once for all of them, because a draft of this comment said "every figure here
+-- is pinned" and four of the nine were not:
 --
 --   * THE FED REACTOR, which is the case a player builds and the reason for the number.
 --     docs/research/d-t-ignition.md's feed table reads a D-D reactor at 86 MW on one heater's
---     2.5 units/s. That is the shipped rate and the designed ratio -- prototypes/recipes/d-t.lua
---     keeps D-T on it precisely so "one heater still feeds one reactor" -- so 86 MW is the plant
---     this capacity is sized for, and 90 clears it by 4%.
+--     2.5 units/s. That is the shipped rate and the designed ratio --
+--     realistic-fusion-refreshed/prototypes/recipes/d-t.lua keeps D-T on it precisely so "one heater
+--     still feeds one reactor" -- so 86 MW is the plant this capacity is sized for, and 90 clears it
+--     by 4 MW, which is 4.7%.
+--
+--     CITED, NOT PINNED, AND THE CITATION NEEDS A QUALIFIER. That feed table sits below the line in
+--     its own note reading "Every figure in this note below this line is the radiation-free one
+--     unless it says otherwise", so 86 MW is a PRE-#52 figure from before the radiation term
+--     shipped. Nothing in the tree pins the current-physics one-heater output, because the pure
+--     model cannot simulate a fuel line and the rigs that can do not run one heater. What makes 90
+--     safe rather than lucky is the DIRECTION of the correction: radiation took the settled figure
+--     from 133 MW to 56.1, so a radiation-free reading OVERSTATES, and the true one-heater output is
+--     at or below 86. Whoever measures it should replace this bullet with the measurement.
 --
 --     THE SAME TABLE READS 103 MW AT TWO HEATERS AND IT SATURATES THERE, so a player who over-feeds
 --     one reactor outruns one exchanger. bench-mod-links.ps1 runs FOUR heaters by design -- its
@@ -594,12 +605,16 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 --     1.5 units/tick, exactly 90 MW -- and the reactor reads 86.4 where it makes 103.7. Comparing
 --     the sustained figure of one against the while-flowing figure of the other is how a reader
 --     concludes 90 is enough here, or that 70 was; neither is.
---   * SETTLED AND AT FULL SUPPLY, which CONTEXT.md requires be named and ADR 0024 item 1 calls a
---     load-bearing qualifier: 56.1 MW unresearched, 67.1 at rf-plasma-confinement-1 and 82.9 at
---     rung 2, so 90 covers the ladder to its second rung and not to its third's 104.9.
+--   * SETTLED AND AT FULL SUPPLY -- ALL FOUR PINNED by tests/test-reactor-logic.lua's mw_at block.
+--     CONTEXT.md requires the operating point be named and ADR 0024 item 1 calls it a load-bearing
+--     qualifier: 56.1 MW unresearched, 67.1 at rf-plasma-confinement-1, 82.9 at rung 2 and 104.9 at
+--     rung 3, so 90 covers the ladder to its second rung and not to its third.
 --   * TUNED DENSITY, which ADR 0016 makes a player lever and ADR 0024 tabulates. Held at its density
 --     optimum a reactor peaks at 61.6 MW unresearched, 73.7 at rung 1 and 88.8 at rung 2 -- all
---     covered, the last of them by a little over a megawatt. At rung 3's 107.6 it is not.
+--     covered, the last of them by a little over a megawatt, and ALL THREE PINNED in the same block.
+--     Rung 3's optimum is about 107.6 and is NOT covered; it is the one figure in this bullet that
+--     is not pinned, because the assertion that matters at rung 3 is that full supply's 104.9
+--     already exceeds 90 and the optimum only widens the gap.
 --
 -- SO THE HONEST STATEMENT IS "one exchanger drains a D-D reactor through confinement rung 2, fed or
 -- full, tuned or not", and at rung 3 a second machine is wanted whatever the operating point. Going
@@ -615,7 +630,7 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 -- 5.507e8 C after 126 000, because a fed reactor burns and replaces plasma continuously and never
 -- settles into a full box. That is what CONTEXT.md's operating-point vocabulary is for; this reactor
 -- has been quoted at 56 and at 85 MW before (#109) and both were right. Sizing on the settled figure
--- alone is the trap, and the first attempt at this ticket fell in it. Sizing on the settled figure alone is the trap, and 70 fell in.
+-- alone is the trap, and the first attempt at this ticket fell in it.
 exchanger.energy_consumption = "90MW"
 exchanger.energy_source = {
   type = "fluid",
