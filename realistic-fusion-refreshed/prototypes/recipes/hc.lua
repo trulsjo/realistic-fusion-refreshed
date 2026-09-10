@@ -5,15 +5,15 @@
 -- seven and none of them is a high-capacity one, so adding an eighth would extend that list -- which
 -- is a decision about the shape of the tree rather than a consequence of building this, and belongs
 -- to Truls. They are unlocked by rf-d-t-fusion instead, which is not a fallback but the moment the
--- need appears: a D-D reactor sells around 86 MW and two exchangers absorb it, while an ignited D-T
--- reactor sells on the order of 320 MW and needs five exchangers and fifty-five turbines. The tier
+-- need appears: a D-D reactor sells around 86 MW and one exchanger absorbs it, while an ignited D-T
+-- reactor sells on the order of 320 MW and needs four exchangers and fifty-five turbines. The tier
 -- that creates the problem is the tier that hands over the answer.
 --
 -- BOTH REACTOR FIGURES ARE ONE-HEATER READINGS, and #227 moved neither of them. It moved the
--- exchanger, 40 MW to 70, so this said "eight exchangers" and now says five; the turbine count is
+-- exchanger, 40 MW to 90, so this said "eight exchangers" and now says four; the turbine count is
 -- untouched because it divides the reactor's output by a TURBINE's appetite and an exchanger's
--- rating cancels out. "Comfortably" went from the D-D half for the same reason: two 70 MW machines
--- against 86 MW is a machine and a quarter of slack rather than three quarters.
+-- rating cancels out. "Comfortably" left the D-D half too, and then #227 went to 90 MW and ONE
+-- machine covers 86 MW, so the D-D half now names one exchanger rather than two.
 --
 -- The 86 and the 320 both come from docs/research/d-t-ignition.md's feed table at the shipped
 -- 2.5 units/s -- one heater, which is what a player has. Four heaters put the D-T reactor at 996 to
@@ -30,10 +30,10 @@
 -- turbines to an exchanger.
 --
 -- THAT USED TO BE "exactly the ratio the ordinary pair already has, because both halves of the tier
--- are the same factor of ten", AND IT NO LONGER IS. #227 took rf-heat-exchanger to 70 MW and left
--- rf-hc-exchanger at 400, so the ordinary pair now runs about twelve vanilla turbines to an
+-- are the same factor of ten", AND IT NO LONGER IS. #227 took rf-heat-exchanger to 90 MW and left
+-- rf-hc-exchanger at 400, so the ordinary pair now runs about fifteen vanilla turbines to an
 -- exchanger against this pair's seven. The two pairs are internally consistent and no longer
--- consistent with each other; whether 400 should follow to 700 is not #227's and is not decided.
+-- consistent with each other; whether 400 should follow to 900 is not #227's and is not decided.
 data:extend({
   {
     type = "recipe",

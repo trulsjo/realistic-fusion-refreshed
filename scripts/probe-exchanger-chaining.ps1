@@ -16,9 +16,9 @@
     manifold, is what this asks.
 
     THE ROW LENGTH IS HISTORICAL SINCE #227, AND THE MEASUREMENT IS NOT. That ticket took
-    rf-heat-exchanger to 70 MW, so the same one-heater reactor now wants about five of these rather
+    rf-heat-exchanger to 90 MW, so the same one-heater reactor now wants about four of these rather
     than eight -- and a reactor on four heaters, which #89 measured at 996 to 1 195 MW, wants
-    fourteen to seventeen. Both are right and they differ by feed rate, not by arithmetic.
+    eleven to thirteen. Both are right and they differ by feed rate, not by arithmetic.
     Eight is left exactly as it was: what this probe measured is whether the ENGINE will carry fuel
     and water through seven short-end joints, which is a question about the engine and not about the
     balance, and shortening the row would throw away the harder case for no reason. Read "eight" as
@@ -59,7 +59,7 @@
     machines bolt short end to short end, every interior water connection is consumed by a joint,
     so a row is fed water at its two ends and nowhere else. Eight machines at 40 MW want about
     3,300 units of water a second through those two connections, which is the figure this probe
-    measured as reachable. At #227's 70 MW the same eight would want about 5,800, and that is
+    measured as reachable. At #227's 90 MW the same eight would want about 7,400, and that is
     UNMEASURED -- see the row-of-eight section below.
 
     Findings belong in docs/research/. Kept committed so the next engine version can be asked the
@@ -493,7 +493,7 @@ script.on_nth_tick(30, function()
   -- WHY EIGHT, AND WHY IT IS A DIFFERENT QUESTION FROM THE PAIRS ABOVE. A lit D-T reactor sells
   -- about 322 MW (check-brownout.ps1) and one exchanger took 40 MW when this was written, so eight
   -- is the shape ADR 0018 describes and the one #275 ships. #227 has since taken the machine to
-  -- 70 MW, which makes the same reactor want about five -- and eight stays, because the question
+  -- 90 MW, which makes the same reactor want about four -- and eight stays, because the question
   -- here is how many short-end joints the engine will carry fuel through, not how many a player
   -- needs. Every measurement in this file and in
   -- probe-energy-containment.ps1 has used TWO machines. Both ADR 0018's Consequences and
@@ -512,9 +512,9 @@ script.on_nth_tick(30, function()
   -- rf-hc-turbine's 600 units/s of 500 C steam is 58.2 MW, so 40 MW is 412 units/s -- puts eight
   -- machines at about 3,300 units/s arriving through those two connections.
   --
-  -- THAT IS THE FIGURE MEASURED, AND #227 MOVED THE MACHINE UNDER IT. At 70 MW the same derivation
-  -- gives 722 units/s each and about 5,800 for a row of eight, three quarters again as much through
-  -- the same two connections. Whether they still reach is UNMEASURED: this probe last ran at 40 MW.
+  -- THAT IS THE FIGURE MEASURED, AND #227 MOVED THE MACHINE UNDER IT. At 90 MW the same derivation
+  -- gives 928 units/s each and about 7,400 for a row of eight, more than twice as much through the
+  -- same two connections. Whether they still reach is UNMEASURED: this probe last ran at 40 MW.
   -- Re-running it is how that gets answered, which is what a committed probe is for.
   --
   -- THE ENERGY SOURCE IS DELIBERATELY UNLIMITED: an infinity pipe rather than a reactor, because a
@@ -615,8 +615,8 @@ script.on_event(defines.events.on_tick, function()
   if not storage.report_at then return end
 
   -- KEEP THE FIRST ONE FED, which the first version of this probe did not and was wrong for. Its
-  -- energy box holds 200 units and the machine burns 70 MW of 1 MJ units -- 1.167 a tick since #227,
-  -- 0.667 before it -- so a single fill lasts 171 ticks where it used to last 300, and the run is
+  -- energy box holds 200 units and the machine burns 90 MW of 1 MJ units -- 1.5 a tick since #227,
+  -- 0.667 before it -- so a single fill lasts 133 ticks where it used to last 300, and the run is
   -- 300. Unfed, "nothing reached the second" would measure the first running dry rather than
   -- anything about chaining, and #227 made that failure arrive sooner rather than later. Topping it
   -- up every tick means there is always fluid there to travel if the engine will carry it.

@@ -63,13 +63,13 @@ data:extend({
       -- ADR 0010 names seven Power technologies and none of them is a high-capacity one, so an
       -- eighth would extend that list -- a decision about the shape of the tree, and Truls's rather
       -- than a side effect of building the machines. This is also the tier that creates the need:
-      -- a D-D reactor sells about 86 MW, which two ordinary exchangers absorb, while an ignited D-T
-      -- reactor sells around 320 MW and would otherwise want five exchangers and fifty-five
+      -- a D-D reactor sells about 86 MW, which one ordinary exchanger absorbs, while an ignited D-T
+      -- reactor sells around 320 MW and would otherwise want four exchangers and fifty-five
       -- turbines. Handing over the answer in the same technology as the problem is the shape a
       -- player can act on.
       --
       -- Both reactor figures are one-heater readings and #227 moved neither. It took the exchanger
-      -- from 40 MW to 70, so "eight exchangers" here became five; the turbine count divides the
+      -- from 40 MW to 90, so "eight exchangers" here became four; the turbine count divides the
       -- reactor's output by a turbine's appetite and does not move at all. See
       -- realistic-fusion-refreshed/prototypes/recipes/hc.lua for the same arithmetic and its source.
       --

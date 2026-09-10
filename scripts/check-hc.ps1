@@ -2,7 +2,7 @@
 .SYNOPSIS
     Checks that the high-capacity steam pair delivers what it declares, and that each half is the
     multiple of its ordinary counterpart that its own prototype declares, measured rather than
-    asserted -- ten for the turbine, and since #227 took rf-heat-exchanger to 70 MW no longer ten
+    asserted -- ten for the turbine, and since #227 took rf-heat-exchanger to 90 MW no longer ten
     for the exchanger. Discharges #32. Since #275 it also builds the
     neutronic plant the way a player does -- exchangers BOLTED to a reactor and CHAINED to each other,
     no pipe carrying reactor energy -- and asserts that energy, water and steam all arrive.
@@ -361,23 +361,23 @@ script.on_init(function()
   -- west water connection stands on the same tile, so water for the second machine has to cross the
   -- row the same way energy does. That is what "reachable" means in CONTEXT.md.
   --
-  -- rf-hc-turbine rather than a vanilla one, so the exchanger has a sink worth the name: 70 MW of
+  -- rf-hc-turbine rather than a vanilla one, so the exchanger has a sink worth the name: 90 MW of
   -- steam into a 58.2 MW turbine, where one 5.8 MW vanilla turbine would leave the boiler
   -- `full_output` most ticks and the status assertion would flicker.
   --
   -- THE TURBINE IS NOW THE SMALLER HALF, AND #227 IS WHAT INVERTED IT. Until then the exchanger made
-  -- 40 MW into a 58.2 MW sink and was drained flat out. At 70 MW it makes 12.03 steam units a tick
-  -- into a turbine drinking 10, a 20% surplus, so the sink is no longer the larger half and the
+  -- 40 MW into a 58.2 MW sink and was drained flat out. At 90 MW it makes 15.46 steam units a tick
+  -- into a turbine drinking 10, a 55% surplus, so the sink is no longer the larger half and the
   -- sentence above no longer describes this rig.
   --
-  -- MEASURED RATHER THAN ARGUED, 2026-09-10 at the default -Ticks: both exchangers in the row still
-  -- report `working` and both turbines run. So the assertions below hold at the inverted ratio --
-  -- WHICH IS NOT THE SAME AS KNOWING WHY. `scale_fluid_usage` throttling the fuel draw to the steam
-  -- actually being taken is the obvious candidate and is NOT a sufficient explanation on its own,
-  -- because it was equally in effect when the vanilla turbine was observed to cause `full_output` at
-  -- a far larger surplus. What separates 1.2x from 12x here is unmeasured. If these assertions ever
-  -- start reporting `full_output`, the fix is a second turbine on the row and not a weaker
-  -- assertion, and the margin is now thin enough that it is worth expecting.
+  -- MEASURED RATHER THAN ARGUED, at 70 MW and again at 90 on 2026-09-10, both at the default -Ticks:
+  -- both exchangers in the row report `working` and both turbines run. So the assertions below hold
+  -- at the inverted ratio -- WHICH IS NOT THE SAME AS KNOWING WHY. `scale_fluid_usage` throttling
+  -- the fuel draw to the steam actually being taken is the obvious candidate and is NOT a sufficient
+  -- explanation on its own, because it was equally in effect when the vanilla turbine was observed
+  -- to cause `full_output` at a far larger surplus. Where between a 55% surplus and a vanilla
+  -- turbine's twelvefold one the status flips is unmeasured. If these assertions ever start
+  -- reporting `full_output`, the fix is a second turbine on the row and not a weaker assertion.
   --
   -- The reactor is a shipped rf-reactor, unlit. control.lua never hears of it (script-built, no
   -- event raised), so nothing drains or fills its boxes but the on_tick below, which refills the
@@ -512,8 +512,8 @@ script.on_nth_tick(CHECK_AT, function()
   near(ordinary_steam, expected_steam(EXCHANGER), 0.02,
     "and rf-heat-exchanger still makes its own", "units/s")
   -- DERIVED FROM THE TWO PROTOTYPES, NOT A LITERAL 10 (#227). This asserted a hardcoded ten until
-  -- rf-heat-exchanger went to 70 MW and rf-hc-exchanger stayed at 400, which makes the real factor
-  -- 5.71 -- and the gate failed on the balance change rather than on a defect. Reading the ratio off
+  -- rf-heat-exchanger went to 90 MW and rf-hc-exchanger stayed at 400, which makes the real factor
+  -- 4.44 -- and the gate failed on the balance change rather than on a defect. Reading the ratio off
   -- the same get_max_energy_usage() the two checks above use means it cannot fail that way again,
   -- and whether 400 should follow to 700 stays a decision rather than something a rig has pinned.
   --
