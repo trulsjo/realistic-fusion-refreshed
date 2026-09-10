@@ -153,10 +153,7 @@ inverted rule makes necessary. See [Consequences](#consequences).
   a fluid argument and is not one.
 
 - **The eight-exchangers problem is untouched, and the doubt about it is settled.** A lit D-T
-  reactor sells about 322 MW and one exchanger takes 40 MW — **90 MW since
-  [#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227), 2026-09-10, so it is
-  four exchangers rather than eight; the reactor figure is unchanged and so is the question below.**
-  Whether those eight can feed each other
+  reactor sells about 322 MW and one exchanger takes 40 MW. Whether those eight can feed each other
   was [#111](https://github.com/trulsjo/realistic-fusion-refreshed/issues/111)'s question, and it
   closed on **2026-09-06**: they can, ADR 0018 was right, and
   `docs/research/exchanger-chaining.md`'s contrary measurement was its own rig. What that leaves is
@@ -164,6 +161,13 @@ inverted rule makes necessary. See [Consequences](#consequences).
   `input-output` energy connections on the shipped footprint and #275 declared them, where ADR 0018's
   own Decision item 4 had said what it should declare in coordinates this ADR made obsolete. Eight
   chain, measured.
+
+  > **"one exchanger takes 40 MW" is 90 MW since 2026-09-10**
+  > ([#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227)), so the same 322 MW
+  > reactor wants **four** rather than eight. The reactor figure is unchanged, and so is what this
+  > bullet settles: eight chained and the engine carried it, which is a fact about the joints and
+  > not about the count. Appended rather than spliced into the sentence above, because this bullet
+  > records what was measured on its own date.
 
 ## Alternatives considered
 

@@ -1326,9 +1326,10 @@ near(q_at(3), 1.4675, 0.01, "rung 3 reaches Q 1.468 at full supply")
 -- The rungs above are pinned as Q, which is fusion power over heating power and says nothing about
 -- what leaves the machine. What a heat exchanger has to drain is the ENERGY FLUID, and #227 sized
 -- rf-heat-exchanger against these numbers: at 90 MW one machine covers the ladder to rung 2 and not
--- to rung 3, fed or full, tuned or not. They were quoted in a comment in prototypes/entities.lua and
--- pinned nowhere, which meant a rebalance could have moved the reactor out from under a machine
--- capacity chosen to match it and no gate would have said a word.
+-- to rung 3, fed or full, tuned or not. They were quoted in a comment in
+-- realistic-fusion-refreshed/prototypes/entities.lua and pinned nowhere, which meant a rebalance
+-- could have moved the reactor out from under a machine capacity chosen to match it and no gate
+-- would have said a word.
 --
 -- THE EXCHANGER'S OWN RATING IS DELIBERATELY NOT REPEATED HERE. It is a prototype field and this
 -- file loads no prototypes, so asserting against a literal 90 would put one balance number in two
@@ -1354,7 +1355,7 @@ near(mw_at(3), 104.9, 0.01, "rung 3 sells 104.9 MW at full supply", "MW")
 -- -- about 65% full unresearched, 75% at rung 1, 85% at rung 2 -- and a reactor run there sells more
 -- than the same reactor run full. Rung 2's is the tight one against #227's 90 MW, clearing it by
 -- barely a megawatt, so it is the figure most worth pinning: a 2% drift up falsifies the claim in
--- entities.lua that one exchanger drains a rung-2 reactor.
+-- realistic-fusion-refreshed/prototypes/entities.lua that one exchanger drains a rung-2 reactor.
 near(mw_at(0, 0.65), 61.6, 0.02, "unresearched, its density optimum sells 61.6 MW", "MW")
 near(mw_at(1, 0.75), 73.7, 0.02, "rung 1's density optimum sells 73.7 MW", "MW")
 near(mw_at(2, 0.85), 88.8, 0.02, "rung 2's density optimum sells 88.8 MW -- the tight one", "MW")
