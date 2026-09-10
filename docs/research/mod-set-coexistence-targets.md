@@ -974,5 +974,5 @@ date). Specific pages and documents:
 - Local archives: `C:\src\factorio\_reference\RealisticFusionPower_1.8.18\` (the
   `compatibility-patches/` tree, `data.lua`, `info.json`) and
   `C:\src\factorio\_reference\RealisticFusionPowerPort_1.9.0\`, `…_1.9.2\`
-- This repository: `scripts/load-check.ps1`, `scripts/factorio-lib.ps1` (`Get-BundledMods` line 288,
-  `Resolve-BundledSelection` line 306, `Write-ModList` line 351, `New-ModJunctions` line 371)
+- This repository: `scripts/load-check.ps1`, `scripts/factorio-lib.ps1` (`Get-BundledMods`,
+  `Resolve-BundledSelection`, `Write-ModList`, `New-ModJunctions`)

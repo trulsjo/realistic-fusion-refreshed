@@ -92,10 +92,11 @@ without that error is its own ticket and gates the implementation, the same way
 
 ### Two constraints the shape had to fit
 
-**The blanket cannot grow a face.** `rf-lithium-blanket` is a `container`, and `entities.lua:415-416`
-records why: giving it a pipe of its own would need a prototype with both an item inventory and a
-fluid box, and 2.0.77 has none. Its tritium already leaves through the reactor's collector for
-exactly this reason.
+**The blanket cannot grow a face.** `rf-lithium-blanket` is a `container`, and
+`realistic-fusion-refreshed/prototypes/entities.lua`'s `blanket` records why, in *"an entity with
+BOTH an item inventory and a fluid box"*: giving it a pipe of its own would need such a prototype,
+and 2.0.77 has none. Its tritium already leaves through the reactor's collector for exactly this
+reason.
 
 **Breeding is gated on the collector.** `control.lua` calls `blanket_breed` only inside
 `if collector then`, capped to the collector's tritium headroom, because running a blanket into

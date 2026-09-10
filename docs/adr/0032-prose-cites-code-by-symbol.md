@@ -25,6 +25,23 @@ a comment; `CLAUDE.md` never mentioned it, no ADR recorded it, and the class was
 Swept by [#302](https://github.com/trulsjo/realistic-fusion-refreshed/issues/302), gated by
 [#303](https://github.com/trulsjo/realistic-fusion-refreshed/issues/303).
 
+> **Swept 2026-09-10 (#302 and #304).** **Forty-six** own-tree code citations, not the forty-five
+> below, plus the two doc-to-doc references decision item 6 defers. **Thirty-four of the forty-eight
+> were pointing at something other than what the citing sentence claimed** — six known, twenty-eight
+> not. The forty-sixth was a shape 3 nobody had counted: `fission-as-fusion-prerequisite.md`'s "lines
+> 100, 192, 242, 301, 459, 548" for the six `table.deepcopy` sites, every one of them stale. Which is
+> the floor paragraph below coming true on the first attempt to work from the table.
+>
+> **The `path:line` and `` `:NNN` `` tokens still written out in this ADR are its specimens of the
+> banned form, not live citations** — the same standing Consequences gives *"verbatim game
+> output"*. `CLAUDE.md`'s conventions section and `scripts/ship-check.ps1`'s own comment each carry
+> one for the same reason. They are all bare paths, so the gate's exemption still covers
+> them; whether it should name them instead is #303's to settle.
+>
+> Two sentences below are therefore past tense now: ADR 0018 no longer cites `prototypes/fluids.lua`
+> by line, and `docs/adr/0025` no longer cites `reactor-logic.lua` in prose. What made them worth
+> quoting was never the citation — it was that a passing gate could not see it.
+
 ## Context
 
 ### A line number is a claim no gate reads

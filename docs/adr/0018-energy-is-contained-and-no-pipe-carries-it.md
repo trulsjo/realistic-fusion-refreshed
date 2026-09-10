@@ -141,9 +141,11 @@ never listed, and it costs no entity at all.
 
 ### What leaving it alone would have left open
 
-`auto_barrel = false` closes barrels on both energy fluids (`prototypes/fluids.lua:119`, `:155`), and
-the plasma category closes plasma wagons (`entities.lua:706-715`). But the energy fluids carry no
-category, so:
+`auto_barrel = false` closes barrels on both energy fluids —
+`realistic-fusion-refreshed/prototypes/fluids.lua`'s `rf-reactor-energy` and
+`rf-aneutronic-reactor-energy` — and the plasma category closes plasma wagons
+(`realistic-fusion-refreshed/prototypes/entities.lua` — `contain(pump.fluid_box, PLASMA_CATEGORY)`).
+But the energy fluids carry no category, so:
 
 | vessel | holds | at 1 MJ a unit |
 |---|---|---|
@@ -212,8 +214,9 @@ face.**
 3. **One category per fluid, not one shared between them.** A converter cannot bolt to a neutronic
    reactor and an exchanger cannot bolt to an aneutronic one: the engine refuses the connection
    outright rather than joining two boxes whose filters disagree and leaving a player to work out why
-   nothing flows. `prototypes/fluids.lua:125` calls the separation of the two conversion routes "the
-   tier's whole mechanic rather than bookkeeping", and `CONTEXT.md` calls direct energy conversion
+   nothing flows. `realistic-fusion-refreshed/prototypes/fluids.lua` calls the separation of the two
+   conversion routes *"the tier's whole mechanic rather than bookkeeping"*, above
+   `rf-aneutronic-reactor-energy`, and `CONTEXT.md` calls direct energy conversion
    "a different route, not a better one". This puts both statements in the geometry.
 
 4. **`rf-heat-exchanger`'s energy box becomes `input-output` on three connections** — north
@@ -289,10 +292,11 @@ face.**
 - ~~**The converter's burstiness argument is now unanswered, and this is the loose end.**~~
   **MEASURED 2026-09-07 ([#85](https://github.com/trulsjo/realistic-fusion-refreshed/issues/85)):
   the chain buffers enough, and the argument does not buy a vessel.**
-  `entities.lua:1000-1004` argued that an ignited reactor's output follows its fuel line and arrives in
-  bursts, against a converter drinking at a fixed rate, and that a buffer between them is what turns
-  that into steady output. With no tank in the chain the buffering is whatever the boxes hold: the
-  reactor's 1000-unit output box plus 1000 in every chained converter, with `scale_fluid_usage`
+  `realistic-fusion-refreshed/prototypes/entities.lua`'s `tank` argued that *"an ignited reactor's
+  output follows its fuel line rather than a set rate"* and arrives in bursts, against a converter
+  drinking at a fixed rate, and that a buffer between them is what turns that into steady output.
+  With no tank in the chain the buffering is whatever the boxes hold: the reactor's 1000-unit output
+  box plus 1000 in every chained converter, with `scale_fluid_usage`
   meaning partial fluid gives partial power rather than a stall.
 
   `scripts/probe-converter-buffer.ps1` built a heater-fed aneutronic reactor driving a chained row of
@@ -395,10 +399,11 @@ face.**
   because #44 named it as the main risk. Native heat would have cost the shared plasma pool, since the
   emitter and the pool cannot be one entity. Heat is not adopted; the reactor keeps the box that makes
   a run of `rf-pipe` feed a row of reactors from one pool, and fluid-coupling is exactly as it was.
-- **ADR 0010's prototype set is unchanged**, including the fluids and the plasma-safe pipe family it
-  lists at `:126-131`. What this amends is its containment rule: `:144` says *"Vanilla pipes must not
-  carry plasma"*, and after this the same sentence is true of the two energy fluids as well — which
-  ADR 0010 could not have said, because at the time they were meant to travel on ordinary pipes.
+- **ADR 0010's prototype set is unchanged**, including the fluids and the plasma-safe pipe family
+  its *Prototype set* section lists. What this amends is its containment rule: the same section says
+  *"Vanilla pipes must not carry plasma"*, and after this the same sentence is true of the two energy
+  fluids as well — which ADR 0010 could not have said, because at the time they were meant to travel
+  on ordinary pipes.
 
 ## Alternatives considered
 
