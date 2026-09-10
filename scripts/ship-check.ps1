@@ -92,8 +92,9 @@
 
     It also cannot judge whether a symbol is the RIGHT symbol, and that is ADR 0032's bet rather
     than a shortfall: a wrong name greps to nothing and a reader notices, where a number landing two
-    lines off reads as correct. Two citations merged in #306 pointing at the wrong field anyway, so
-    read that bet as a bet.
+    lines off reads as correct. Two citations merged in #306 that neither half of this could see --
+    one naming the wrong field, one quoting a fragment that greps to nothing -- so read that bet as
+    a bet.
 
     There is no -SelfTest here, unlike the checks that read a Factorio dump. Those need one because
     they can pass by finding nothing; sections 1 to 4 name every file and string they require, so a
@@ -423,14 +424,13 @@ if ($dangling) {
 #   2. `:155` written bare in backticks -- a continuation inheriting the path named earlier on the
 #      SAME LINE. New in #303. THE BACKTICKS ARE THE DISCRIMINATOR AND ARE REQUIRED: unbackticked,
 #      a colon and a number cannot be told from a page range, a ratio or a timestamp --
-#      dag-layout-algorithms.md carries `11(2):109-125` and three more citations shaped exactly
-#      like it -- and measured on 2026-09-10 over the files this check actually reads, with the same
-#      skip filter, the loose `:\d+` matches around 250 places against this one's two dozen. (A
-#      tenfold larger
-#      figure is available by counting tools/endf/*.json too, and would be dishonest here: those are
-#      the datasets the list below excludes by name for exactly this reason.) A gate that cried wolf
-#      on bibliography entries gets switched off, which is the same failure the ambiguity exemption
-#      above already refuses to risk.
+#      dag-layout-algorithms.md carries `11(2):109-125` and three more citations shaped exactly like
+#      it -- and measured on 2026-09-10 over the files this check actually reads, with the same skip
+#      filter, the loose `:\d+` matches around 250 places against this one's two dozen. (A tenfold
+#      larger figure is available by counting tools/endf/*.json too, and would be dishonest here:
+#      those are the datasets the list below excludes by name for exactly this reason.) A gate that
+#      cried wolf on bibliography entries gets switched off, which is the same failure the ambiguity
+#      exemption above already refuses to risk.
 #
 #   3. "lines 196-197, 204, 208, 227, and 576-578" -- running prose, no path and no colon. NOT
 #      ATTEMPTED, and that is a decision rather than an omission. There is no handle here a regex
@@ -549,10 +549,9 @@ if ($anyCite -lt 10) {
 }
 
 # Shape 2's floor, at eight against the two dozen found on 2026-09-10. It cannot be a floor on
-# continuations
-# judged OURS, because that number is zero and is meant to be -- every one in the tree is either
-# unattributable or inherits an ambiguous path. So it counts the shape being FOUND, which is what
-# proves the pattern still matches.
+# continuations judged OURS, because that number is zero and is meant to be -- every one in the tree
+# is either unattributable or inherits an ambiguous path. So it counts the shape being FOUND, which
+# is what proves the pattern still matches.
 $checks++
 if ($anyCont -lt 8) {
     $failures.Add("only $anyCont bare-continuation citation(s) found across " +
