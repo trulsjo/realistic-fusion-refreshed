@@ -390,6 +390,14 @@ read at all five levels; only the two ends are shown, and "flat" means all five 
 | `rf-pipe`, `rf-pipe-to-ground` | `pipe` | — | 100 | **100** | Nothing scales |
 | `rf-pump` | `pump` | **`pumping_speed`** | 1200 /s | **3000 /s** | No |
 
+> **`rf-heat-exchanger`'s base moved after this was measured.**
+> [#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227) took its
+> `energy_consumption` from 40 MW to **70 MW** on 2026-09-10, so its legendary figure is now
+> **175 MW** rather than the 100 MW in the row above. The row is left at what the rig actually read
+> on 2026-08-21 rather than rewritten to a number nobody measured — **what this note establishes is
+> the factor, 2.5x, and that is what survives the change.** `rf-hc-exchanger` is untouched at
+> 400 MW, so the two exchangers' bases now differ by 5.71x where this table was taken at 10x.
+
 ### Core — `realistic-fusion-refreshed-core/prototypes/entities.lua`
 
 All five are `assembling-machine` and all five behave identically:

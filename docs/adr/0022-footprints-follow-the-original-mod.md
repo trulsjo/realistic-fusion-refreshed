@@ -153,7 +153,10 @@ inverted rule makes necessary. See [Consequences](#consequences).
   a fluid argument and is not one.
 
 - **The eight-exchangers problem is untouched, and the doubt about it is settled.** A lit D-T
-  reactor sells about 322 MW and one exchanger takes 40 MW. Whether those eight can feed each other
+  reactor sells about 322 MW and one exchanger takes 40 MW — **70 MW since
+  [#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227), 2026-09-10, so it is
+  five exchangers rather than eight; the reactor figure is unchanged and so is the question below.**
+  Whether those eight can feed each other
   was [#111](https://github.com/trulsjo/realistic-fusion-refreshed/issues/111)'s question, and it
   closed on **2026-09-06**: they can, ADR 0018 was right, and
   `docs/research/exchanger-chaining.md`'s contrary measurement was its own rig. What that leaves is

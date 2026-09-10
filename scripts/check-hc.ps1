@@ -1,7 +1,9 @@
 <#
 .SYNOPSIS
-    Checks that the high-capacity steam pair delivers what it declares, and that it is ten times the
-    ordinary pair measured rather than asserted. Discharges #32. Since #275 it also builds the
+    Checks that the high-capacity steam pair delivers what it declares, and that each half is the
+    multiple of its ordinary counterpart that its own prototype declares, measured rather than
+    asserted -- ten for the turbine, and since #227 took rf-heat-exchanger to 70 MW no longer ten
+    for the exchanger. Discharges #32. Since #275 it also builds the
     neutronic plant the way a player does -- exchangers BOLTED to a reactor and CHAINED to each other,
     no pipe carrying reactor energy -- and asserts that energy, water and steam all arrive.
 
@@ -359,9 +361,23 @@ script.on_init(function()
   -- west water connection stands on the same tile, so water for the second machine has to cross the
   -- row the same way energy does. That is what "reachable" means in CONTEXT.md.
   --
-  -- rf-hc-turbine rather than a vanilla one, so the exchanger is drained flat out: 40 MW of steam
-  -- into a 58 MW turbine leaves the boiler `working`, where one 5.8 MW vanilla turbine would leave
-  -- it `full_output` most ticks and the status assertion would flicker.
+  -- rf-hc-turbine rather than a vanilla one, so the exchanger has a sink worth the name: 70 MW of
+  -- steam into a 58.2 MW turbine, where one 5.8 MW vanilla turbine would leave the boiler
+  -- `full_output` most ticks and the status assertion would flicker.
+  --
+  -- THE TURBINE IS NOW THE SMALLER HALF, AND #227 IS WHAT INVERTED IT. Until then the exchanger made
+  -- 40 MW into a 58.2 MW sink and was drained flat out. At 70 MW it makes 12.03 steam units a tick
+  -- into a turbine drinking 10, a 20% surplus, so the sink is no longer the larger half and the
+  -- sentence above no longer describes this rig.
+  --
+  -- MEASURED RATHER THAN ARGUED, 2026-09-10 at the default -Ticks: both exchangers in the row still
+  -- report `working` and both turbines run. So the assertions below hold at the inverted ratio --
+  -- WHICH IS NOT THE SAME AS KNOWING WHY. `scale_fluid_usage` throttling the fuel draw to the steam
+  -- actually being taken is the obvious candidate and is NOT a sufficient explanation on its own,
+  -- because it was equally in effect when the vanilla turbine was observed to cause `full_output` at
+  -- a far larger surplus. What separates 1.2x from 12x here is unmeasured. If these assertions ever
+  -- start reporting `full_output`, the fix is a second turbine on the row and not a weaker
+  -- assertion, and the margin is now thin enough that it is worth expecting.
   --
   -- The reactor is a shipped rf-reactor, unlit. control.lua never hears of it (script-built, no
   -- event raised), so nothing drains or fills its boxes but the on_tick below, which refills the
@@ -495,13 +511,34 @@ script.on_nth_tick(CHECK_AT, function()
     "rf-hc-exchanger makes the steam its energy consumption says it should", "units/s")
   near(ordinary_steam, expected_steam(EXCHANGER), 0.02,
     "and rf-heat-exchanger still makes its own", "units/s")
-  near(hc_steam / ordinary_steam, 10, 0.02,
-    "so the high-capacity exchanger is ten ordinary ones", "x")
+  -- DERIVED FROM THE TWO PROTOTYPES, NOT A LITERAL 10 (#227). This asserted a hardcoded ten until
+  -- rf-heat-exchanger went to 70 MW and rf-hc-exchanger stayed at 400, which makes the real factor
+  -- 5.71 -- and the gate failed on the balance change rather than on a defect. Reading the ratio off
+  -- the same get_max_energy_usage() the two checks above use means it cannot fail that way again,
+  -- and whether 400 should follow to 700 stays a decision rather than something a rig has pinned.
+  --
+  -- It is implied by the two absolute checks above and is kept anyway, for the reason expected_steam
+  -- exists at all: this is the tier's headline arithmetic, and a gate that states it prints the
+  -- factor where a reader will see it.
+  local declared_factor = expected_steam(HC_EXCHANGER) / expected_steam(EXCHANGER)
+  near(hc_steam / ordinary_steam, declared_factor, 0.02,
+    "so the high-capacity exchanger is as many ordinary ones as its prototype says", "x")
 
   -- ------------------------------------------------------------ building count
   --
   -- The ticket's second criterion, stated as the arithmetic a player actually does: how many
   -- machines it takes to absorb one ignited D-T reactor, which sells on the order of 320 MW.
+  --
+  -- ONE HEATER'S WORTH, WHICH IS WHAT A PLAYER HAS. docs/research/d-t-ignition.md's feed table puts
+  -- a lit D-T reactor at 324 MW on the shipped 2.5 units/s, and check-brownout.ps1 measured its
+  -- trailing-minute output reaching 322 MW at 1800 s and 324 at 2100. Four heaters would read 996
+  -- to 1 195 MW instead (#89) and the counts below would quadruple; the switch is the feed, not the
+  -- arithmetic. #227 left this figure alone -- it moved the exchanger, and the two counts printed
+  -- below moved with it.
+  --
+  -- The VERDICT does not depend on the figure at all: every term divides the same number by a
+  -- machine's own rating, so it cancels out of the ratio record() asserts. What it sets is the two
+  -- counts that get printed.
   local reactor_mw = 320
   -- Called with no arguments, not with the prototype as self: Factorio hands these out already
   -- bound, so passing the prototype makes it the quality argument and the engine answers "Invalid
@@ -654,9 +691,10 @@ try {
     if ($verdict -notmatch '^PASS') { throw "the high-capacity pair or the bolted plant is broken: $verdict" }
 
     Write-Host ''
-    Write-Host 'OK - both machines deliver what they declare, each is ten times its ordinary'
-    Write-Host '     counterpart measured rather than asserted, and the neutronic plant bolts and'
-    Write-Host '     chains with no pipe carrying reactor energy.'
+    Write-Host 'OK - both machines deliver what they declare, the turbine is ten times its ordinary'
+    Write-Host '     counterpart and the exchanger the factor its own prototype declares, both'
+    Write-Host '     measured rather than asserted, and the neutronic plant bolts and chains with no'
+    Write-Host '     pipe carrying reactor energy.'
 }
 finally {
     if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }
