@@ -49,6 +49,11 @@
         not built while the mod is unpublished. Tracked separately; do not read a pass here as
         cover for it.
 
+    Since #303 the citation check in section 7 covers two of the three shapes ADR 0032 names -- a
+    path with a line number on it, and a bare `:155` continuation inheriting the path named earlier
+    on the same line. It reads every tracked .md, .lua, .ps1, .py and .js, which is wider than the
+    rest of this script, because ADR 0032 binds our own comments as well as docs/.
+
     Since #183 it also asserts that every docs/ path cited anywhere in scripts/ or docs/ resolves
     to a file that exists. Two notes were researched, written and committed for #158 and #159, and
     never merged; three files on main cited them, both tickets read as completed, and the findings
@@ -77,16 +82,30 @@
     Nor does it look at the mod portal, where the long description lives outside the zip. That copy is
     uploaded by hand and this repository cannot see it.
 
+    Section 7 cannot see ADR 0032's third shape -- "lines 196-197, 204, 208, 227, and 576-578"
+    written out in running prose. There is no handle in that a regex can trust, and a pattern loose
+    enough for it fires on every ADR quoting a predecessor by line. #302 found five of those by
+    reading, and reading is what will find the next. It also cannot see a continuation whose path
+    sits on an earlier line than the `:155` itself, nor an unbackticked one, both for the same
+    reason: the alternative attributes citations to files nobody named. The section comment carries
+    the measurements.
+
+    It also cannot judge whether a symbol is the RIGHT symbol, and that is ADR 0032's bet rather
+    than a shortfall: a wrong name greps to nothing and a reader notices, where a number landing two
+    lines off reads as correct. Two citations merged in #306 pointing at the wrong field anyway, so
+    read that bet as a bet.
+
     There is no -SelfTest here, unlike the checks that read a Factorio dump. Those need one because
     they can pass by finding nothing; sections 1 to 4 name every file and string they require, so a
     mistake in them fails rather than goes quiet.
 
-    SECTION 5 IS THE EXCEPTION, and is stated here rather than left to be discovered. It selects by
-    scanning this directory and matching a predicate, so it is exactly the shape that can pass by
-    finding nothing. What stands in for a self-test is its floor: a script that opens with a comment
-    block but is not in scope fails. That is narrower than a -SelfTest would be, because it cannot
-    see a mistake in the scan itself -- break that and there is nothing left to check and so nothing
-    left to fail.
+    SECTIONS 5, 6 AND 7 ARE THE EXCEPTION, and are stated here rather than left to be discovered.
+    Each selects by scanning and matching a predicate, so each is exactly the shape that can pass by
+    finding nothing. What stands in for a self-test is a floor: section 5 fails when a script opens
+    with a comment block but is not in scope, and sections 6 and 7 fail when they find too few
+    citations to believe -- section 7 twice over, once per shape it matches. That is narrower than a
+    -SelfTest would be, because a floor cannot see a mistake in the scan itself -- break that and
+    there is nothing left to check and so nothing left to fail.
 
 .EXAMPLE
     pwsh -File scripts/ship-check.ps1
@@ -365,7 +384,7 @@ if ($dangling) {
 
 # ----------------------------------------------------------------------------- our own files, by line
 #
-# NOTHING IN PROSE MAY CITE ONE OF THIS REPOSITORY'S OWN FILES BY LINE NUMBER (#69).
+# 7. NOTHING IN PROSE MAY CITE ONE OF THIS REPOSITORY'S OWN FILES BY LINE NUMBER (#69, ADR 0032).
 #
 # Not a style rule. A line number is a claim about a file that no gate reads, and it goes wrong
 # silently the moment anyone adds a comment above the thing it points at -- which is the ordinary
@@ -383,43 +402,132 @@ if ($dangling) {
 #     which one is meant cannot be decided here, and a gate that guesses would cry wolf on the
 #     predecessor citations that fill port-and-original-inspection.md. A citation is ours only when
 #     the path given resolves to exactly ONE tracked file.
+#
+# TWO OF ADR 0032'S THREE SHAPES ARE CHECKED, AND THE THIRD IS NOT (#303):
+#
+#   1. `prototypes/fluids.lua:119` -- a path and a colon. Matched, then subject to the ambiguity
+#      exemption above. ADR 0032 decision item 2 closes that hole from the other side: once every
+#      own-tree citation carries a repo-relative path it resolves to one tracked file and this fires
+#      unchanged. #302 did that, so a pass here is now the absence of violations rather than the
+#      exemption swallowing thirty of them -- which is only demonstrable by planting one, never by
+#      reading a green run, and is why #303's pull request plants one instead of asserting it.
+#
+#   2. `:155` written bare in backticks -- a continuation inheriting the path named earlier on the
+#      SAME LINE. New in #303. THE BACKTICKS ARE THE DISCRIMINATOR AND ARE REQUIRED: unbackticked,
+#      a colon and a number cannot be told from a page range, a ratio or a timestamp --
+#      dag-layout-algorithms.md carries `11(2):109-125` and three more citations shaped exactly
+#      like it -- and measured on 2026-09-10 the loose pattern matches 2,536 places against this
+#      one's 21. A gate that cried wolf on bibliography entries gets switched off, which is the same
+#      failure the ambiguity exemption above already refuses to risk.
+#
+#   3. "lines 196-197, 204, 208, 227, and 576-578" -- running prose, no path and no colon. NOT
+#      ATTEMPTED, and that is a decision rather than an omission. There is no handle here a regex
+#      can trust: a pattern loose enough to catch it fires on every ADR that quotes a predecessor
+#      by line, which is most of port-and-original-inspection.md and predecessor-survey.md. #302
+#      found five such citations of ours by READING, and reading is what will have to find the next
+#      one. Stated in the help block as a gap so a green run does not imply otherwise.
+#
+# WHAT SHAPE 2 STILL MISSES, stated for the same reason:
+#   - a continuation whose path sits on an EARLIER line. Per-line is the whole design -- carrying
+#     state further means guessing where a sentence ended, and a wrong guess attributes a citation
+#     to a file nobody named. connection-category-reassignment.md has four that inherit a
+#     third-party data-final-fixes.lua from the line above, and they are correctly silent, but by
+#     being unattributable rather than by being classified. Reading is the backstop there too.
+#   - the specimens, and this is the one worth knowing before editing any of the three. ADR 0032,
+#     CLAUDE.md's conventions bullet and this comment each write the banned form out on purpose,
+#     because a rule against a shape cannot be stated without showing the shape. All of them are
+#     silent today either because no path precedes them on their line or because the path they
+#     inherit is one of the ambiguous ones -- which is luck, not a decision. Writing a specimen with
+#     a repo-relative path WILL fail this check. The fix then is to reword the specimen, NOT to
+#     exempt the file: exempting it would hide a genuinely broken citation inside the very document
+#     that bans them, and these three are where a reader is most likely to trust one.
 $tracked = @(& git -C $repoRoot ls-files | Where-Object { $_ })
+
+# This check reads more than $citing does, and has its own list on purpose (#303). ADR 0032 decision
+# item 5 binds our Lua and PowerShell comments as well as docs/, and nothing violated it when that
+# was written, so covering them now costs nothing and gets more expensive later. Every tracked .md,
+# .lua, .ps1, .py and .js -- 201 files on 2026-09-10 against the 123 $citing walks, and built from
+# git ls-files so an untracked generated tree is excluded by never appearing. .json is deliberately
+# out: tools/endf/*.json are cross-section datasets whose every row reads `,{"E":1.001E+06 ...}` and
+# matches a colon-and-digits pattern thousands of times.
+#
+# $citing is NOT widened to match. Section 6 is a different check answering a different question,
+# and coupling the two harder so they can share one list would make widening either one a change to
+# both -- which is exactly the trap this comment would then have to warn about instead.
+$citingCode = @($tracked | Where-Object { $_ -match '\.(?:md|lua|ps1|py|js)$' })
+
+# A path token, with the line number optional so shape 2 can inherit one that carries none.
+$OWN_PATH = '(?<![\w./-])([\w./-]+\.(?:lua|ps1|py|js|json|md))(:\d+(?:-\d+)?)?'
+$OWN_CONT = '`:(\d+(?:-\d+)?)`'
 
 $numbered = [System.Collections.Generic.List[object]]::new()
 $anyCite  = 0
-foreach ($file in $citing) {
+$anyCont  = 0
+foreach ($rel in $citingCode) {
     $n = 0
-    foreach ($line in (Get-Content $file.FullName)) {
+    foreach ($line in (Get-Content (Join-Path $repoRoot $rel))) {
         $n++
-        # Verbatim log output, the predecessor archives and vanilla, per the note above.
+        # Verbatim log output, the predecessor archives and vanilla, per the note above. Whole-line,
+        # which is what keeps a shape-2 continuation inheriting one of those paths silent too.
         if ($line -match '__|Script @|ORIG/|PORT/|_reference/|RealisticFusion|(?<![\w-])base/') { continue }
-        foreach ($m in [regex]::Matches($line, '(?<![\w./-])([\w./-]+\.(?:lua|ps1|py|js|json|md)):\d+')) {
+
+        # Shape 1.
+        foreach ($m in [regex]::Matches($line, $OWN_PATH)) {
+            if (-not $m.Groups[2].Success) { continue }
             $anyCite++
             $path = $m.Groups[1].Value
             $hits = @($tracked | Where-Object { $_ -eq $path -or $_.EndsWith('/' + $path) })
             if ($hits.Count -eq 1) {
-                $numbered.Add([pscustomobject]@{ Cite = $m.Value; From = $file.Name; Line = $n })
+                $numbered.Add([pscustomobject]@{
+                    Shown = "$($m.Value) (in ${rel}:$n)"; From = $rel; Line = $n })
+            }
+        }
+
+        # Shape 2. The last path token before the continuation, on this line, is the one it means.
+        foreach ($m in [regex]::Matches($line, $OWN_CONT)) {
+            $anyCont++
+            $before = [regex]::Matches($line.Substring(0, $m.Index), $OWN_PATH)
+            if (-not $before.Count) { continue }
+            $path = $before[$before.Count - 1].Groups[1].Value
+            $hits = @($tracked | Where-Object { $_ -eq $path -or $_.EndsWith('/' + $path) })
+            if ($hits.Count -eq 1) {
+                $numbered.Add([pscustomobject]@{
+                    Shown = "$($m.Value) inheriting $path (in ${rel}:$n)"; From = $rel; Line = $n })
             }
         }
     }
 }
 
-# The floor, for the same reason section 5 and the docs/ check above carry one: this passes by
-# finding nothing, so a regex that stopped matching would print green while checking nothing. The
-# repo cites files with line numbers constantly -- predecessor and vanilla ones legitimately -- so
-# if the pattern finds none at all, the pattern broke rather than the habit.
+# A floor per shape, for the same reason section 5 and section 6 carry one: both pass by finding
+# nothing, so a regex that stopped matching would print green while checking nothing at all.
+#
+# Shape 1's floor is unchanged at ten, and #303 confirmed it still bites rather than lowering it:
+# #302 removed forty-six own-tree citations from the corpus and 89 path:line matches remain, because
+# the predecessor and vanilla ones this check deliberately walks past are counted here too. That is
+# the point -- the floor measures whether the PATTERN still works, not whether the repo still
+# offends, so it survives the corpus being cleaned.
 $checks++
 if ($anyCite -lt 10) {
-    $failures.Add("only $anyCite path:line citation(s) found across $($citing.Count) files, which " +
-        'means the pattern above stopped matching rather than that the repo stopped citing')
+    $failures.Add("only $anyCite path:line citation(s) found across $($citingCode.Count) files, " +
+        'which means the pattern above stopped matching rather than that the repo stopped citing')
+}
+
+# Shape 2's floor, at eight against 21 found on 2026-09-10. It cannot be a floor on continuations
+# judged OURS, because that number is zero and is meant to be -- every one in the tree is either
+# unattributable or inherits an ambiguous path. So it counts the shape being FOUND, which is what
+# proves the pattern still matches.
+$checks++
+if ($anyCont -lt 8) {
+    $failures.Add("only $anyCont bare-continuation citation(s) found across " +
+        "$($citingCode.Count) files, which means the shape-2 pattern above stopped matching " +
+        'rather than that the repo stopped writing them')
 }
 
 $checks++
 if ($numbered.Count) {
-    $shown = (($numbered | Sort-Object From, Line |
-        ForEach-Object { "$($_.Cite) (in $($_.From):$($_.Line))" }) -join '; ')
+    $shown = (($numbered | Sort-Object From, Line | ForEach-Object { $_.Shown }) -join '; ')
     $failures.Add('these cite one of our own files by line number, which goes stale silently -- ' +
-        "name the function or the prototype instead: $shown")
+        "name the function, field, constant or prototype instead (ADR 0032): $shown")
 }
 
 if ($failures.Count) {
