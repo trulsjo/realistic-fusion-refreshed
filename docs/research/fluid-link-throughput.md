@@ -9,15 +9,11 @@ committed rather than the numbers alone, because this is a fact about a version 
 the next version is entitled to a different one. Re-run it before quoting any figure here against a
 newer build.
 
-> **No pipe carries reactor energy: read the matrix's *flush* column for that leg, and the pipe
-> columns for plasma only.** [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86)
-> shipped [ADR 0018](../adr/0018-energy-is-contained-and-no-pipe-carries-it.md)'s item 1 on
-> 2026-09-07, so the reactor and its exchangers bolt face to face — the flush case — while the
-> plasma link is still a pipe run and every pipe column still describes it. What a bolted joint
-> carries is measured separately, in
-> [`bolted-joint-throughput.md`](bolted-joint-throughput.md) (2026-09-08, #89): 6 000 units a
-> second against 3 077 through a twenty-pipe run, **1.95x**. The matrix below was re-taken that day
-> and reproduces to the digit.
+> **No pipe carries reactor energy** since
+> [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) shipped
+> [ADR 0018](../adr/0018-energy-is-contained-and-no-pipe-carries-it.md)'s item 1 on 2026-09-07, so
+> read the **flush** column for that leg and the pipe columns for plasma, which is still a pipe run;
+> the joint itself is measured in [`bolted-joint-throughput.md`](bolted-joint-throughput.md).
 
 ## Why the question exists
 
@@ -101,31 +97,22 @@ the meter having counted the ticks the update cadence predicts.
 
 | link | arrangement | carries, while flowing | its ceiling | headroom |
 |---|---|---|---|---|
-| heater → reactor (plasma) | output into **input-output** | 0.0968 units/tick | 45–50 units/tick | **465× to 517×** |
+| heater → reactor (plasma) | output into **input-output** | 0.0968 units/tick | 49.9 units/tick | **~516×** |
 | reactor → exchangers (energy) | output into input, **bolted** | 1.6768 units/tick | 50–100 units/tick | **30× to 60×** |
 
 Sustained over every tick rather than only the ticks fluid was seen moving, those are 0.0320 and
 1.3974 units/tick; the higher "while flowing" figure is quoted above because it yields the *smaller*
 headroom. At 1 MJ a unit the energy link is carrying **83.8 MW**, and one connection would pass
-between 3 and 6 GW.
+between 3 and 6 GW. The plasma ceiling is this note's own measured control below, 49.9 units/tick on
+one connection; `bench-mod-links.ps1` prints a wider 465× to 517× because its constant carries a
+45-unit band bottom that nothing here measures.
 
-> **Measured 2026-08-17 at 81 MW, re-measured 2026-09-11 at 83.8 MW after
-> [#215](https://github.com/trulsjo/realistic-fusion-refreshed/issues/215).** The figures were not
-> expected to hold: the energy leg was a vanilla pipe run then and is a bolt now, and the plasma
-> settles 22% cooler — 5.347×10⁸ °C against 6.88×10⁸. The run in between, on 2026-09-01, measured
-> nothing: `c3abb81` had taken `rf-heat-exchanger` from 3×2 to 5×15 against a rig whose exchanger
-> pitch was still the 3×2 machine's, so the `chain` cell carried no reactor energy at all until #86
-> rebuilt the rig for the bolt.
->
-> **The temperature has not moved since that failed run** — 5.347×10⁸ °C today against its
-> 5.346×10⁸ — so the 22% fall happened between 2026-08-17 and 2026-09-01, and `587f699`, which
-> began selling reactor energy at 550 °C rather than 165, is in that window and undiagnosed.
->
-> **The delivered power is still moving, and it is mostly not the run length.** This cell read
-> 94.0 MW on 2026-09-08 at 126 000 ticks; re-run today at that same length it reads **86.4 MW**, and
-> at 360 000 ticks 83.8 MW. So the longer run accounts for about 3% and something landed between
-> 2026-09-08 and 2026-09-10 for the other 8%. Both movements belong to
-> [#225](https://github.com/trulsjo/realistic-fusion-refreshed/issues/225), which is open.
+> Measured 2026-08-17 at 81 MW, re-measured 2026-09-11 at **83.8 MW** after
+> [#215](https://github.com/trulsjo/realistic-fusion-refreshed/issues/215) — both figures sustained.
+> The energy leg was a vanilla pipe run then and is a bolt now, and the plasma settles 22% cooler, at
+> 5.347×10⁸ °C against 6.88×10⁸. **Why the rates moved is
+> [#225](https://github.com/trulsjo/realistic-fusion-refreshed/issues/225)**, which is open and has
+> the series.
 
 **Neither link is within an order of magnitude of anything.** The reactor and the exchangers were
 built as a real chain and again with the exchangers replaced by the rigs' categorised energy feed,
@@ -136,12 +123,11 @@ says why: all four machines worked, their energy boxes holding 0.4, 0.4, 0.3 and
 four 90 MW exchangers against a reactor selling 83.8 MW, so nothing accumulates anywhere and the
 reactor is the constraint rather than the joint.
 
-**At the D-T tier the exchangers do bound it**, which is why the sentence above names its cell.
-[`bolted-joint-throughput.md`](bolted-joint-throughput.md) runs this same rig on `rf-d-t-plasma`
-with eight exchangers: the chained row takes **320.0 MW** where an unthrottled feed on the same
-reactor takes **1 195.4 MW**. So "the exchangers throttle nothing" is true of D-D on four machines
-and false of D-T on eight. The conclusion above survives either way — 1 195 MW is still a fifth of
-one connection's 6 000.
+**At the D-T tier they do bound it**, which is why the sentence above names its cell:
+[`bolted-joint-throughput.md`](bolted-joint-throughput.md) runs this same rig on `rf-d-t-plasma` with
+eight exchangers and the chained row takes **320.0 MW** where an unthrottled feed on the same reactor
+takes **1 195.4 MW** — and the conclusion survives either way, 1 195 MW being a fifth of one
+connection's 6 000.
 
 **So the 1.1 geometry answers a question this mod does not have.** Whatever case there is for a
 15-wide heat exchanger butted flush against the reactor — and there is one, about how the machines
@@ -166,19 +152,15 @@ have been quoting it against a ceiling twice too high.
 
 ### One thing that is not about throughput
 
-The reactor settles at **83.8 MW of reactor energy** on a real heater bank. #37 records ~~133 MW~~ of
-*fusion* power with plasma kept full by an infinity pipe, and the two are not the same quantity —
-`capture_efficiency` is 0.85 and the fluid output is what leaves the plasma, not what fuses in it.
-But part of the gap is real and worth knowing: a heater injects plasma at 10⁶ °C, so **refuelling a
-running reactor cools it**, and a reactor fuelled by machines settles cooler than the same reactor
-fuelled by an infinity pipe. That belongs to #37 rather than here.
-
-> **133 MW is a pre-#52 figure and is struck rather than replaced.** It predates the radiation term,
-> as `bench-mod-links.ps1`'s own `-Exchangers` help records in striking it there too. Re-deriving
-> what a full D-D plasma fuses is #37's, not this note's, so nothing is quoted in its place — but
-> the gap this paragraph describes cannot be read off the old number, and the direction is the one
-> stated: reactor energy sold exceeds fusion power, because most of what leaves the plasma is the
-> confinement heating passing through it.
+The reactor settles at **83.8 MW of reactor energy** on a real heater bank. #37 records a larger
+figure for *fusion* power with plasma kept full by an infinity pipe, and the two are not the same
+quantity — `capture_efficiency` is 0.85 and the fluid output is what leaves the plasma, not what
+fuses in it. (**The 133 MW this used to quote is a pre-#52 figure**, from before the radiation term,
+and `bench-mod-links.ps1`'s own `-Exchangers` help strikes it for the same reason; re-deriving it is
+#37's, so no number is quoted in its place.) But part of the gap is real and worth knowing: a heater
+injects plasma at 10⁶ °C, so **refuelling a running reactor cools it**, and a reactor fuelled by
+machines settles cooler than the same reactor fuelled by an infinity pipe. That belongs to #37 rather
+than here.
 
 ## The finding that is not in the table
 
