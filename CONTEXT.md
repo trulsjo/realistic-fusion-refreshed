@@ -352,6 +352,37 @@ so the same save swept at count zero is a real baseline, and the per-reactor cos
 base yields is a subtraction rather than an estimate. `-Save`, which measures a save exactly as it is,
 can produce no such figure — a factory cannot be un-built.
 
+**Cell** — one variant inside a rig: the same ground built twice or more, differing in one respect, so
+the difference between them is a subtraction rather than an estimate. `bench-mod-links.ps1` builds
+two, `chain` and `drain`; `check-brownout.ps1` builds eight. A rig has cells; a borrowed base does
+not.
+
+**Say which cell a figure came off.** A rig's cells are not interchangeable readings of one quantity —
+they *are* the comparison the rig exists to make, so a figure quoted without its cell has lost the
+half that gave it meaning. [#215](https://github.com/trulsjo/realistic-fusion-refreshed/issues/215) is
+what that costs: `bench-mod-links.ps1`'s `chain` cell returned zero from 2026-08-23 to 2026-09-07
+while `drain` kept reporting, and a table quoting neither name read as one measurement.
+
+**And a cell name is a name in whatever document quotes it.** The cell now called `drain` was called
+`sink` until #215, because [`fluid-link-throughput.md`](docs/research/fluid-link-throughput.md) spends
+its first half using "sink" for the *receiving end* of a link — one word for two things in one
+document.
+
+**Bench** — a script that measures a quantity and reports it: `scripts/bench-*.ps1`. The third shape
+beside a check and a probe, and what separates the three is what each one asserts.
+
+- A **check** asserts an invariant. It is a gate: it passes or fails, and a failure blocks.
+- A **probe** asserts nothing. It answers a question a decision is waiting on, and exit 0 means it ran
+  and reported — never that the answer was the hoped-for one.
+- A **bench** asserts only its own validity. It refuses to report a number it cannot stand behind —
+  *"N check(s) failed; the rates above are not an equilibrium measurement"* — and nothing blocks on
+  it, because no gate runs it.
+
+**A red bench blocks nothing, which is why one can stay broken.** `bench-mod-links.ps1`'s `chain` cell
+produced nothing for a fortnight after `c3abb81` resized the exchanger, and no gate noticed; #215
+found it by hand while discharging
+[#190](https://github.com/trulsjo/realistic-fusion-refreshed/issues/190).
+
 ## Plumbing
 
 > **All three fluids are contained, built and gated (2026-09-07).** ADR 0018 was accepted on
