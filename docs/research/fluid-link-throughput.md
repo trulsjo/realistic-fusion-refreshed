@@ -98,14 +98,21 @@ the meter having counted the ticks the update cadence predicts.
 | link | arrangement | carries, while flowing | its ceiling | headroom |
 |---|---|---|---|---|
 | heater → reactor (plasma) | output into **input-output** | 0.0968 units/tick | 49.9 units/tick | **~516×** |
-| reactor → exchangers (energy) | output into input, **bolted** | 1.6768 units/tick | 50–100 units/tick | **30× to 60×** |
+| reactor → exchangers (energy) | output into input, **bolted** | 1.6768 units/tick | 100 units/tick | **~60×** |
 
 Sustained over every tick rather than only the ticks fluid was seen moving, those are 0.0320 and
 1.3974 units/tick; the higher "while flowing" figure is quoted above because it yields the *smaller*
-headroom. At 1 MJ a unit the energy link is carrying **83.8 MW**, and one connection would pass
-between 3 and 6 GW. The plasma ceiling is this note's own measured control below, 49.9 units/tick on
-one connection; `bench-mod-links.ps1` prints a wider 465× to 517× because its constant carries a
-45-unit band bottom that nothing here measures.
+headroom. At 1 MJ a unit the energy link is carrying **83.8 MW**, and one connection would pass 6 GW.
+
+**Both ceilings are this note's own measured controls rather than the script's bands**, and that is
+one argument applied to both rows. The control table below gives 100 units/tick for output into
+input and 49.9 for output into input-output, each on one connection — the two arrangements these
+links actually are. `bench-mod-links.ps1` prints wider bands, 30× to 60× and 465× to 517×, because
+its constants carry floors of 50 and 45: the 50 is the end of a long pipe run, which
+[#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) removed from this leg
+altogether, and the 45 nothing here measures at all. The 49.9 is also the smaller of the two figures
+its control measured — output into input-output does not scale with connection count, 3 connections
+carrying 75.1 — so it is the conservative pick by the same rule that quotes the flowing rate above.
 
 > Measured 2026-08-17 at 81 MW, re-measured 2026-09-11 at **83.8 MW** after
 > [#215](https://github.com/trulsjo/realistic-fusion-refreshed/issues/215) — both figures sustained.
@@ -158,7 +165,8 @@ The reactor settles at **83.8 MW of reactor energy** on a real heater bank. #37 
 (**The 133 MW this used to quote is a pre-#52 figure**, from before the radiation term, and
 `bench-mod-links.ps1`'s own `-Exchangers` help strikes it for the same reason. Re-deriving it is
 #37's, so no number is quoted in its place — **and with none quoted, this paragraph does not say
-which quantity is the larger**, only that they are different ones.) But part of the gap is real and worth knowing: a heater
+which quantity is the larger**, only that they are different ones.) But part of the gap is real and
+worth knowing: a heater
 injects plasma at 10⁶ °C, so **refuelling a running reactor cools it**, and a reactor fuelled by
 machines settles cooler than the same reactor fuelled by an infinity pipe. That belongs to #37 rather
 than here.
@@ -263,8 +271,9 @@ The predecessor geometry quoted at the top is read from Realistic Fusion Power's
 [`port-and-original-inspection.md`](port-and-original-inspection.md).
 
 This mod's own rates are measured by `scripts/bench-mod-links.ps1`, run 2026-09-11 against the same
-build, at 360 000 ticks with 6 000 per window — the same length and the same window as the
-2026-08-17 run it replaces, whose window was the script's default of the day and is unchanged since.
+build, at 360 000 ticks with 6 000 per window — the same length as the 2026-08-17 run it replaces,
+and the same window, that being the script's default at both dates (checked at the two commits, not
+across every one in between; the 2026-08-17 row never recorded its own).
 The prototype values it can be checked against, as they stand that day:
 `rf-reactor-energy`'s `fuel_value` from `realistic-fusion-refreshed/prototypes/fluids.lua`, the exchanger's
 `energy_consumption` and the reactor's and exchanger's fluid boxes from
