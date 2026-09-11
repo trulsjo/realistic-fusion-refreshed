@@ -99,12 +99,25 @@ $ourMods  = Get-RepoMods -RepoRoot $repoRoot
 
 # THE TYPES WORTH ASKING ABOUT, and the reason it is three rather than every type in the dump. A
 # hidden FLUID is the finding #219 opened on; a hidden ITEM is the same accident one step along, and
-# a hidden RECIPE is how the barrel halves of it show up. Everything else this repository defines --
+# a hidden RECIPE is how BOTH barrel halves of it show up -- see $DERIVED below for why the
+# `empty-` half needs its own pattern to be seen at all. Everything else this repository defines --
 # technologies, entities, signals -- either has no `hidden` the player reads or is covered by one of
 # these three through the item it places.
 $TYPES = @('fluid', 'item', 'recipe')
 
 $PREFIX = 'rf-'
+
+# OURS BY PREFIX, AND ONE SHAPE THAT IS OURS BY CONSEQUENCE. Base Factorio generates
+# `empty-rf-<fluid>-barrel` for each of our barrelled fluids, and that name does NOT start with the
+# prefix -- it is ours because the fluid is, not because anyone chose it. name-check.ps1 carries the
+# same pattern under the same name and says so in the same words.
+#
+# THIS PROBE HAS TO CARRY IT WHERE probe-connection-categories.ps1 DOES NOT, and the difference is
+# the type list. That probe reads pipe connections, and a barrel recipe has no fluid box, so the
+# derived names cannot reach its report at all; it says so and stops. This one reads recipes, where
+# they appear and where they are hidden: on `seablock` four of them are, and a first version of this
+# script filtered on the prefix alone and reported 22 where the answer is 26.
+$DERIVED = "^empty-$PREFIX.+-barrel$"
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
 $bundled     = Get-BundledMods -FactorioExe $FactorioExe
@@ -163,7 +176,7 @@ function Get-OurVisibility {
     foreach ($type in $TYPES) {
         if (-not $dump.ContainsKey($type)) { continue }
         foreach ($name in $dump[$type].Keys) {
-            if (-not $name.StartsWith($PREFIX)) { continue }
+            if (-not ($name.StartsWith($PREFIX, [StringComparison]::Ordinal) -or $name -match $DERIVED)) { continue }
             $p = $dump[$type][$name]
             $map["$type/$name"] = [bool] ($p.ContainsKey('hidden') -and $p['hidden'])
         }
