@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Fails if this repo defines a prototype name that is not its own, or one another mod already
     uses. Discharges #33's collision criterion, and -AlsoModDirectory extends it per set for #61.
