@@ -116,10 +116,19 @@ carrying 75.1 — so it is the conservative pick by the same rule that quotes th
 
 > Measured 2026-08-17 at 81 MW, re-measured 2026-09-11 at **83.8 MW** after
 > [#215](https://github.com/trulsjo/realistic-fusion-refreshed/issues/215) — both figures sustained.
-> The energy leg was a vanilla pipe run then and is a bolt now, and the plasma settles 22% cooler, at
-> 5.347×10⁸ °C against 6.88×10⁸. **Why the rates moved is
-> [#225](https://github.com/trulsjo/realistic-fusion-refreshed/issues/225)**, which is open and has
-> the series.
+> The energy leg was a vanilla pipe run then and is a bolt now, which is why its figure could not
+> have held.
+>
+> **The plasma settles 22% cooler too — 5.347×10⁸ °C against 6.88×10⁸ — and the bolt did not cause
+> that.** The plasma link is a pipe run before and after; nothing about it changed. That temperature
+> was already 5.346×10⁸ °C on 2026-09-01, six days before
+> [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) bolted anything, so the fall
+> happened between 2026-08-17 and 2026-09-01 and has not moved since. The candidate nobody has ruled
+> out is `587f699`, which began selling reactor energy at 550 °C rather than 165.
+>
+> **Why the rates moved is
+> [#225](https://github.com/trulsjo/realistic-fusion-refreshed/issues/225)**, which is open and holds
+> the series for both.
 
 **Neither link is within an order of magnitude of anything.** The reactor and the exchangers were
 built as a real chain and again with the exchangers replaced by the rigs' categorised energy feed,
