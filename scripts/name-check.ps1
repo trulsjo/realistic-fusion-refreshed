@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Fails if this repo defines a prototype name that is not its own, or one another mod already
     uses. Discharges #33's collision criterion, and -AlsoModDirectory extends it per set for #61.
@@ -176,13 +176,17 @@
     cannot -- a declared edit whose content changed, one identical in both dumps, one the baseline
     does not have, and a change nobody declared -- each asserted under its own name so a failure
     says which judgement went wrong; then it requires nothing-declared to fire nothing, and the live
-    run to name technology/fluid-handling and only it. That empty case is weaker than the one
-    Get-Replaced gets beside it, and the difference is measured rather than assumed: the call site
-    wraps the result in @(), and @() over a function that emitted nothing is an empty array whether
-    or not the function kept its own @(). So the case catches a rewrite that returns an explicit
-    $null -- @($null) counts one -- and would NOT catch @() being dropped inside Get-FiredEdits as
-    redundant. Closing that needs an assertion on the unwrapped result, which is the shape
-    Get-Replaced's pair uses.
+    run to name technology/fluid-handling and only it. Since #223 the empty case binds the result
+    UNWRAPPED, the shape Get-Replaced's pair uses: it requires the function to hand an empty result
+    back as $null, which is the precondition that makes the @() at every call site load-bearing, and
+    then that @() around it is an empty array. A rewrite returning an explicit $null fails it by name.
+
+    WHAT NO ASSERTION HERE CAN CATCH, and #223 is where it was measured rather than assumed:
+    dropping the @() INSIDE Get-FiredEdits. On PowerShell 7 `return @($pipeline)` and
+    `return $pipeline` are indistinguishable from outside -- both $null when the pipeline is empty,
+    both a bare scalar when it emits one -- so the edit changes nothing a caller or a test can see.
+    #223 asked for an assertion that would fail on it; there is none to write. Get-Replaced's pair
+    has the same limit and always did.
 
 .PARAMETER KeepTemp
     Keep the dumps for inspection. Junctions are always removed.
@@ -714,6 +718,12 @@ function Get-DerivedWiring {
                 # so raising it would guard against something no lane has shown.
                 # A lane that finds the joint has found a real one; widen it there, with its
                 # measurement.
+                #
+                # AND SINCE #222 THE NUMBER IS PINNED. The self-test's case 'a host carrying exactly
+                # ONE barrel unlock' is built on a baseline holding one qualifying unlock rather than
+                # the two every other re-homing case carries, so changing `0 -lt` to `1 -lt` fails it
+                # by name. Before that, moving this threshold alone broke nothing -- which is the
+                # state the paragraph above was describing while sounding like the opposite.
                 $barrels = @{}
                 foreach ($f in $OurFluids) {
                     # BASE FACTORIO'S OWN SWITCH, READ FROM THE DUMP rather than re-derived. A fluid
@@ -1431,6 +1441,24 @@ data.raw.item["iron-plate"].stack_size = 123' |
                         $vanillaFill, $vanillaEmpty
                         @{ type = 'unlock-recipe'; recipe = "$ourUnbottled-barrel" }) }
 
+        # EXACTLY ONE QUALIFYING BASELINE UNLOCK, which is the case that pins the `0 -lt` in
+        # $barrelHost (#222). Every other re-homing case is built on $bobBefore, and that fixture
+        # carries TWO qualifying unlocks -- water-barrel and empty-water-barrel -- so it clears a
+        # threshold of one exactly as easily as a threshold of zero and distinguishes neither. The
+        # four condition-2 negatives all host NOTHING that qualifies, so they do not distinguish
+        # them either. This one hosts one: at `1 -lt` it stops being a host, its re-homed unlocks
+        # are rejected, and the case reports instead of being exempt.
+        #
+        # ONE FILL WITHOUT ITS empty- HALF IS DELIBERATE and is not the shape
+        # 'a barrel whose empty- half never appeared' tests. That case is about a fluid of OURS with
+        # no empty- recipe in the dump, which fails condition 1; this is about how much of THEIR
+        # barrelling has to be present before the destination counts as a host at all, which is
+        # condition 2. water-barrel still qualifies here because the baseline dump holds fluid/water
+        # and recipe/empty-water-barrel -- what changed is only how many of the pair this technology
+        # unlocks.
+        $bobLoneBefore = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill) }
+        $bobLoneAfter  = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill, $oursFill, $oursEmpty) }
+
         $j = { param($o) $o | ConvertTo-Json -Depth 100 -Compress }
 
         $cases = @(
@@ -1458,6 +1486,7 @@ data.raw.item["iron-plate"].stack_size = 123' |
             @{ Label = 'a re-homing with an effect REMOVED';          Key = $bobTech;   Before = $bobBefore;   After = $bobDropped;  Exempt = $false }
             @{ Label = 'barrels named for a fluid the game skips';   Key = $bobTech;   Before = $bobBefore;   After = $bobPlasma;   Exempt = $false }
             @{ Label = 'a barrel whose empty- half never appeared';  Key = $bobTech;   Before = $bobBefore;   After = $bobUnbot;    Exempt = $false }
+            @{ Label = 'a host carrying exactly ONE barrel unlock';  Key = $bobTech;   Before = $bobLoneBefore; After = $bobLoneAfter; Exempt = $true; Shape = 'rehomed' }
         )
         # THE EMPTY CASE FIRST, because it is the one a real lane hits most and the one the K2 lane
         # could never reach. Nothing replaced is what a clean coexistence result looks like.
@@ -1599,11 +1628,27 @@ data.raw.item["iron-plate"].stack_size = 123' |
             }
         }
 
-        # The empty case binds and counts, which is the trap this file has been caught by three
-        # times: a bare return of an empty array unrolls to $null, and $null.Count is not 0.
-        $noneFired = @(Get-FiredEdits -Declared @() -WithUs $fakeWith -Baseline $fakeBase)
-        if ($noneFired.Count -ne 0) {
-            Write-Host 'FAILED - self-test: Get-FiredEdits with nothing declared did not come back as an empty array.'
+        # THE EMPTY CASE, BOUND UNWRAPPED, which is the only place the unrolling is visible (#223).
+        # It pins the PRECONDITION that makes the @() at every call site load-bearing: this function
+        # hands an empty result back as $null, so a caller that binds it bare and asks for .Count
+        # gets 1 rather than 0. Wrapping here and counting -- which this did until #223 -- asserts
+        # only that @() over nothing is empty, which is true however the function returns.
+        #
+        # WHAT IT CANNOT CATCH, MEASURED RATHER THAN ASSUMED (#223). Dropping the @() INSIDE this
+        # function changes nothing a caller can see: on PowerShell 7 `return @($pipeline)` and
+        # `return $pipeline` are indistinguishable, both $null when the pipeline is empty and both a
+        # bare scalar when it emits one. #223 asked for an assertion that would fail on that edit;
+        # there is none to write, and the ticket records the measurement. This is the pair
+        # Get-Replaced gets in half five, and that pair has the same limit.
+        $rawNoneFired = Get-FiredEdits -Declared @() -WithUs $fakeWith -Baseline $fakeBase
+        if ($null -ne $rawNoneFired) {
+            Write-Host 'FAILED - self-test: Get-FiredEdits no longer unrolls an empty result to $null,'
+            Write-Host '         so a call site that binds it bare and counts would now be silently safe --'
+            Write-Host '         and the @() this file puts at every such call site would read as redundant.'
+            exit 1
+        }
+        if ((@($rawNoneFired)).Count -ne 0) {
+            Write-Host 'FAILED - self-test: @() around an empty Get-FiredEdits result is not an empty array.'
             exit 1
         }
 
