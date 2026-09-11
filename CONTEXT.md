@@ -325,6 +325,10 @@ Two maps a figure can come off, and they are not interchangeable. Say which one 
 taken on; the whole of [ADR 0005](docs/adr/0005-real-time-fusion-simulation.md)'s last open residue
 was the difference between them, until #67 measured both and found they agree.
 
+**Then what a map is divided into, and what kind of script produced the figure** — **Cell** and
+**Bench** below. Neither is a map, and both belong here for the same reason the two maps do: a number
+quoted without them has lost something a reader needs to judge it by.
+
 **Rig** — a map this repository builds itself, to make one question answerable: flat ground, power,
 the entities under test, and deliberately nothing else. Every `scripts/check-*.ps1` builds one, and so
 does `bench-reactors.ps1`'s own sweep. A rig can be built twice and varied in one respect, which is

@@ -152,12 +152,13 @@ have been quoting it against a ceiling twice too high.
 
 ### One thing that is not about throughput
 
-The reactor settles at **83.8 MW of reactor energy** on a real heater bank. #37 records a larger
-figure for *fusion* power with plasma kept full by an infinity pipe, and the two are not the same
-quantity — `capture_efficiency` is 0.85 and the fluid output is what leaves the plasma, not what
-fuses in it. (**The 133 MW this used to quote is a pre-#52 figure**, from before the radiation term,
-and `bench-mod-links.ps1`'s own `-Exchangers` help strikes it for the same reason; re-deriving it is
-#37's, so no number is quoted in its place.) But part of the gap is real and worth knowing: a heater
+The reactor settles at **83.8 MW of reactor energy** on a real heater bank. #37 records a figure for
+*fusion* power with plasma kept full by an infinity pipe, and the two are not the same quantity —
+`capture_efficiency` is 0.85 and the fluid output is what leaves the plasma, not what fuses in it.
+(**The 133 MW this used to quote is a pre-#52 figure**, from before the radiation term, and
+`bench-mod-links.ps1`'s own `-Exchangers` help strikes it for the same reason. Re-deriving it is
+#37's, so no number is quoted in its place — **and with none quoted, this paragraph does not say
+which quantity is the larger**, only that they are different ones.) But part of the gap is real and worth knowing: a heater
 injects plasma at 10⁶ °C, so **refuelling a running reactor cools it**, and a reactor fuelled by
 machines settles cooler than the same reactor fuelled by an infinity pipe. That belongs to #37 rather
 than here.
