@@ -12,7 +12,7 @@ and the next pin refresh is entitled to a different one.
 
 ## The answer
 
-**One lane of eleven hides anything of ours, and it hides twenty-two prototypes.**
+**One lane of eleven hides anything of ours, and it hides twenty-six prototypes.**
 
 | lane | mods | hidden by the set |
 |---|---:|---:|
@@ -25,7 +25,7 @@ and the next pin refresh is entitled to a different one.
 | `krastorio2` | 5 | 0 |
 | `madclowns` | 7 | 0 |
 | `riteg` | 1 | 0 |
-| **`seablock`** | **46** | **22** |
+| **`seablock`** | **46** | **26** |
 | `spaceex` | 17 | 0 |
 
 No lane *un*-hides anything of ours, and no lane's dump is missing a prototype of ours — so removal,
@@ -47,9 +47,19 @@ which would be a different accident, does not happen either.
 | `rf-reactor-energy` | what the neutronic reactor sells |
 | `rf-aneutronic-reactor-energy` | what the aneutronic reactor sells |
 
-**Four items and nine recipes** with them: the `-barrel` items and fill recipes for the four
-barrelled fluids above, and the recipes that make the plasmas and the mixes —
-`rf-d-t-plasma`, `rf-d-he3-plasma`, `rf-he3-he3-plasma`, `rf-d-t-mixing`, `rf-d-he3-mixing`.
+**Four items and thirteen recipes** with them. The items are the `-barrel` items for the four
+barrelled fluids above. The recipes are **both halves** of each of those four barrels — the
+`rf-<fluid>-barrel` fill and the `empty-rf-<fluid>-barrel` empty, eight in all — plus the five that
+make the plasmas and the mixes: `rf-d-t-plasma`, `rf-d-he3-plasma`, `rf-he3-he3-plasma`,
+`rf-d-t-mixing`, `rf-d-he3-mixing`.
+
+> **A first version of this note said four items and NINE recipes, and 22 rather than 26.** The probe
+> filtered on the `rf-` prefix alone, and base Factorio names the empty half `empty-rf-<fluid>-barrel`
+> — ours by consequence rather than by choice, which `name-check.ps1` already handles under
+> `$DERIVED` and this probe did not. So the four empty halves were invisible to it: neither counted
+> as hidden nor as absent. **The contradiction is what found it** — the same note said the Angel's
+> sweep hides *both* barrel recipes while its own count held only the fills, and both could not be
+> true. Fixed in the probe, re-run over all eleven lanes, and the numbers here are the second run's.
 
 **The visible eight are the Core fuel chain plus `rf-d-d-plasma`** — `rf-brine`,
 `rf-depleted-water`, `rf-deuterium`, `rf-heavy-water`, `rf-hydrogen`, `rf-hydrogen-sulfide`,
@@ -116,10 +126,18 @@ answer.
 not this note's. [ADR 0007](../adr/0007-coexistence-without-integration.md) finding 4 is the frame and
 [#153](https://github.com/trulsjo/realistic-fusion-refreshed/issues/153) is the nearest precedent — it
 settled two comparable cases **by letting them go**, on the grounds that a machine inheriting an
-overhaul's pollution rate is "coexistence working rather than coexistence failing". What may
-distinguish this one: those were *inherited* stats on prototypes cloned from vanilla, where `hidden`
-here is a set editing a prototype that is wholly ours, and the effect is player-visible rather than a
-cost number.
+overhaul's pollution rate is "coexistence working rather than coexistence failing".
+
+Both readings have something to stand on, and this note takes neither.
+
+- **For treating it as a defect:** #153's cases were *inherited* stats on prototypes cloned from
+  vanilla, where `hidden` here is a set editing a prototype that is wholly ours; and the effect is
+  player-visible rather than a cost number.
+- **For letting it go:** whatever sets the field is a blanket pass over `data.raw` rather than
+  anything aimed at us — the one mechanism that *has* been identified, Angel's barrelling sweep,
+  touches every fluid in the game — which is the same shape ADR 0007 already accepts, and it is one
+  lane of eleven. A player who installs a 46-mod overhaul has accepted that it rearranges what the
+  crafting UI shows.
 
 **Nothing in this note is a recommendation.** It says what eleven lanes do.
 
@@ -127,8 +145,11 @@ cost number.
 
 `scripts/probe-hidden-prototypes.ps1`, run 2026-09-12 with `-With quality -KeepTemp` against Factorio
 2.0.77 (build 84539) on Windows, over the eleven lanes cached by `scripts/fetch-mods.ps1` at the
-ADR 0026 pins. The `seablock` reading reproduces the one taken by hand on 2026-09-11 from a
-`name-check.ps1 -AlsoModDirectory .mod-cache/seablock -With quality -KeepTemp` dump, fluid for fluid.
+ADR 0026 pins. **Every figure here is the SECOND run of that day**, after the derived-barrel blindness
+above was fixed; the first run's 22 is superseded and no number from it survives in this note. The
+`seablock` fluid reading reproduces the one taken by hand on 2026-09-11 from a
+`name-check.ps1 -AlsoModDirectory .mod-cache/seablock -With quality -KeepTemp` dump, fluid for fluid —
+that hand reading looked at fluids only, so it could not have caught the missing recipes either.
 
 The Angel's barrelling mechanism is read from `angelsrefining`'s own Lua in `.mod-cache/seablock`,
 which is that mod's source at its pinned version and is not this repository's to ship — see
