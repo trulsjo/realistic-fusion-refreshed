@@ -42,10 +42,16 @@
     WHAT IS BUILT
 
       control   The SHIPPED rf-heat-exchanger, untouched, with an ordinary infinity pipe on the tile
-                its energy connection points at. It must join and reactor energy must cross. This is
-                the instrument's own calibration and it is not optional: without it, a bug in the
-                placement arithmetic or in the join test reads exactly like containment working, and
-                every negative below would be unfalsifiable.
+                its energy connection points at. IT READS joins=no SINCE #86, and that is the answer
+                rather than the instrument failing: ADR 0018 gave rf-reactor-energy a
+                connection_category of its own and shipped no pipe that carries it, so the mod's own
+                machine now refuses a vanilla one. It read joins=YES before 2026-09-07 and was this
+                probe's calibration then.
+
+                WHAT CALIBRATES THE JOIN TEST TODAY is any /accept row, which offers the categorised
+                feed. If none of those reads joins=YES and carries fuel, a bug in the placement
+                arithmetic or in the join test reads exactly like containment working and every
+                negative below is unfalsifiable.
 
       str       The same exchanger with connection_category set as a BARE STRING, the form contain()
                 already uses. Two of them: one offered an ordinary infinity pipe, which must refuse,
