@@ -140,7 +140,10 @@ build over one it did not create, because it landfills and clears everything in 
 > `scriptUpdate` by about 1.5×, so the inflation is column-dependent. The mean pair does not move in
 > that direction at all: its *baseline* is higher on the quiet machine, because the borrowed base's
 > own Lua spikes in roughly one run in four whatever the load — which is [#235][235], and is why a
-> busy reading here is not simply a quiet one scaled up.
+> busy reading here is not simply a quiet one scaled up. (**That spike is identified as of
+> 2026-09-13** and it is not "the borrowed base's own Lua": it is an I/O stall on the harness's own
+> `log()` write. The reason a busy reading is not a scaled quiet one stands; see the foot of this
+> note.)
 >
 > What the caveat does reconcile is the contradiction a reader would otherwise hit: "between 12 and
 > 16 ms" below against the **10.7 ms** this note's own premise records. Same map, same statistic; the
@@ -164,13 +167,17 @@ build over one it did not create, because it landfills and clears everything in 
   it would understate the cost by roughly the interval. Treat anything finer than the 1.4× floor
   `reactor-runtime-cost.md` records as unmeasured either way.
 
-  **The rule above is about the median of TICKS. A median across RUNS is a separate question and is
-  open** — [#235][235]. The borrowed base's own Lua costs about +500 µs in roughly one run in four,
-  at every count including *n* = 0, on a quiet machine where the rig is tight to 1.09×. So the
-  pooled mean this note tells you to read is the statistic one bad run of five can move by 20%,
-  and whether a borrowed base should be reported as a median across runs instead is #235's to
-  settle. Until it is, **run more repeats rather than fewer**, and do not quote a figure from a
-  count whose per-run spread is wide.
+  **The rule above is about the median of TICKS. A median across RUNS is a separate question** —
+  and the pooled mean this note tells you to read is the statistic one bad run of five can move by
+  20%. Until that is settled, **run more repeats rather than fewer**, and do not quote a figure
+  from a count whose per-run spread is wide.
+
+  > **Superseded in two ways, 2026-09-13.** The "+500 µs in roughly one run in four, at every count"
+  > this bullet described is **not a per-tick cost and not the borrowed base's Lua** — it is a
+  > handful of multi-hundred-millisecond I/O stalls on the harness's own `log()` write, diluted by
+  > the pooled mean. And the decision is **[#326][326]**, not #235, which answered the mechanism
+  > rather than choosing the statistic. Neither option this bullet weighs is the right answer:
+  > `Find-StalledRuns` now names the poisoned run so it can be discarded. See the foot of this note.
 - **Nothing consumes the energy or the by-products**, exactly as in the rig and for the same reason.
   The steam route is absent on purpose: `control.lua` clamps the energy write to the box and discards
   the overflow, and the whole simulation step runs anyway. A full *collector*, by contrast, idles the
@@ -184,9 +191,10 @@ build over one it did not create, because it landfills and clears everything in 
 
 [#235][235] recorded that the borrowed base's own Lua costs about **+500 µs a tick in roughly one
 benchmark run in four**, constant whatever *n* is, and named three candidates. Investigated
-2026-09-12. **The spike itself did not reproduce**, and two of the three candidates are eliminated —
-but the search found a fourth cause that was never on the list, and it was changing every figure
-this harness has ever published.
+2026-09-12. **The spike itself did not reproduce on 2026-09-12**, and two of the three candidates are
+eliminated — but the search found a fourth cause that was never on the list, and it was changing
+every figure this harness has ever published. **It reproduced the next day, once that cause was
+fixed, and the answer is at the foot of this section.**
 
 ### The scenario script is not it, and that is settled by reading
 
@@ -334,15 +342,31 @@ sat inside Lua for four tenths of a second; `luaGarbageIncremental` on that tick
 sittings land on census ticks too. Nothing a reactor count can change makes a file system block, and
 that is why #235 measured the same excess at *n* = 0, 50 and 200.
 
-**Candidate three is dead with the other two.** The stalls are not periodic: t = 876 here, t = 91,
-551, 606 and 786 in an earlier sitting, scattered. A period scan over 12,000 ticks of the residual
-found nothing a shuffle control did not also find — its apparent peaks were the largest periods
-tested, which is what noise looks like, and they were driven by these same few outliers.
+**Candidate three is dead with the other two.** #235 asked about something periodic *at a cadence
+near the run length*, and there is nothing there: a period scan over 12,000 ticks of the residual
+found nothing a shuffle control did not also find, its apparent peaks being the largest periods
+tested — which is what noise looks like — and driven by these same few outliers.
 
-**The `-Ticks` question, answered.** Probabilistic, not periodic — and the probability rises with
-the number of `log()` writes a run makes, not with its tick count as such. That is why the rate fell
-from #235's roughly one run in four to about one in twenty on 2026-09-13: same ticks per run, a
-hundredth of the writes once `-ReportEvery` worked again.
+**The stall ticks are not scattered, and that is better evidence than if they were.** t = 876 here;
+t = 91, 551, 606 and 786 in an earlier sitting. **All five are ≡ 1 (mod 5)** — every one of them a
+census tick, on the lattice the section above identified. They are confined rather than periodic in
+#235's sense, and the confinement is to the tick that calls `log()`, which corroborates the
+mechanism from numbers collected for a different purpose.
+
+**The `-Ticks` question, answered: probabilistic, not periodic.** A stall is an external event, so
+its chance in a run grows with how long the run is and how often it touches the file system — not
+with any cadence in the map.
+
+**What the rate is, and what it is not evidence for.** On 2026-09-13, at the OLD cadence of 5, the
+spike appeared in **one run of twenty**. #235 records roughly one in four. Both are the same 200
+writes per 1,000 ticks, so the difference between them is the machine on the day and not the
+cadence. It is tempting to read the whole 2026-09-13 record as "fewer writes, fewer stalls", and the
+record does not support it: **0 of 7 usable runs at `-ReportEvery 1`** (1,000 writes a run, where
+the write hypothesis predicts the *most*), **1 of 20 at cadence 5** (200 writes), **0 of 8 at
+cadence 500** (2 writes). Non-monotone, on populations far too small to separate. What can be said
+is that a stall must land on a tick that does something slow, that every one observed landed on a
+census tick, and that a run making two writes offers a hundredth of the opportunities of one making
+two hundred.
 
 **What is not established.** *Why* the file system blocks for 389 ms — antivirus, a flush, disk
 contention — is outside this project and was not chased. And the write hypothesis predicts the rate
@@ -360,7 +384,10 @@ which also means `-Runs 1` cannot decide and reports nothing.
 
 `-SelfTest` half 5 holds all three directions — the 389 ms one-run stall is flagged, 5.5 ms of real
 simulation is not, and a 108 ms spike repeating in every run is not. Run against the recorded
-twenty-run dump it returns exactly `run 6, tick 876, 389.3 ms` and passes the other nineteen.
+twenty-run dump it returns exactly `run 6, tick 876, 389.3 ms` and passes the other nineteen. The
+tick it reports is the dump's own `t<n>` label, so it can be grepped straight out of the file; on a
+truncated dump, where a malformed row has been dropped, it is a position rather than a label and the
+sample-count warning says so.
 
 ### The statistic for a borrowed base
 
@@ -400,12 +427,6 @@ beside it and says whether collection explains it.
 
 **Until #326 is settled, the script's behaviour is unchanged**, which is the pooled mean by default.
 That is the status quo rather than the recommendation being adopted in advance of the decision.
-
-[235]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/235
-[230]: https://github.com/trulsjo/realistic-fusion-refreshed/pull/230
-[adr5]: ../adr/0005-real-time-fusion-simulation.md
-[327]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/327
-[326]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/326
 
 ## Reproducibility, and how it fails
 
