@@ -252,7 +252,7 @@ Same sitting, same machine, borrowed base, `-Collectors -Blankets -Gap 6 -Ticks 
 | census every 500 ticks | **16.20 µs** | **1,286.03 µs** | **6.3492 µs** — 7.62% of a tick |
 
 **The rig's own census was 2.18 µs per reactor, 25.6% of the published figure.** The tick-level
-decomposition, run before the fix was made, predicted **2.23 µs** — within 2% of what the before/after
+decomposition, run before the fix was made, predicted **2.23 µs** — 2.3% above what the before/after
 sitting then measured, which is the check that the two methods see the same thing. (Its own share came
 out at 25.5% rather than 26.1% because the four-cell model totals 8.77 µs against the reported 8.53,
 the cells not being perfectly additive. Compare the absolutes; the percentages carry that 3% with
@@ -276,18 +276,28 @@ taken before 2026-09-03 is clean** — which covers most of
 included.
 
 **What is affected is every per-reactor figure taken from 2026-09-03 on, and not only the borrowed
-base's** — the rig runs the same handler. Two documents carry such figures. **Neither has been
-re-taken and neither is restated here:**
+base's** — the rig runs the same handler. Two documents carry such figures, across **three**
+sittings. **None has been re-taken and none is restated here:**
 
 | Document | The figures | Does its conclusion turn on them? |
 |---|---|---|
-| [`reactor-runtime-cost.md`](reactor-runtime-cost.md) | the #67 sitting of 2026-09-06 | the absolutes move; the rig-against-base comparison is between two figures inflated alike |
+| [`reactor-runtime-cost.md`](reactor-runtime-cost.md) | the **#67** sitting of 2026-09-06 — 7.01 µs against a rig control's 6.33 | the absolutes move, and *these two* are inflated alike |
+| the same | the **#72** confinement-heating sitting, also 2026-09-06 — 3.112 and 3.989 µs, *"the delta is +0.88 µs per reactor"* | unknown. The delta is between two counts in one sweep, so the census may cancel out of it; nobody has checked |
 | [ADR 0005][adr5] | **7.01 µs** per reactor against the control's **6.33**, and **8.41%** of a tick at 200 blanketed D-D | **No.** Both absolutes are inflated by the census; the ratio moves 1.11 to about 1.16 and stays inside the 1.35× floor, so `UPDATE_INTERVAL` still stays at 6 |
 
-ADR 0005 is the one that matters, because a superseded figure left standing in a permanent decision
-record reads as deliberate — [#230][230]'s lesson, recorded in `docs/agents/code-review.md`. Its
-verdict survives and its numbers do not. Re-taking them is a decision about a published record rather
-than a correction to a script.
+**One comparison in `reactor-runtime-cost.md` is NOT between figures inflated alike, and it is the
+one that licenses the rest.** Its *"The rig control reproduces the record"* paragraph sets the #67
+sitting's 6.33 µs rig control against **#62's 5.44 µs** and calls the 1.16× between them proof that
+*"the two columns above are apples to apples"*. But #62's figures landed in `2e4411f` at
+**2026-09-03 14:05**, and the collision landed in `0b43649` at **19:56 the same day** — so **5.44 is
+clean and 6.33 is not.** Corrected, the pair is nearer 5.44 against 4.15, a ratio of about **1.31**:
+still under the 1.35× floor, but against it rather than comfortably inside it, and no longer a
+reproduction of anything. That paragraph now carries a note saying so.
+
+ADR 0005 is the one that matters most, because a superseded figure left standing in a permanent
+decision record reads as deliberate — [#230][230]'s lesson, recorded in `docs/agents/code-review.md`.
+Its verdict survives and its numbers do not. Re-taking any of these is [#327][327], and a decision
+about a published record rather than a correction to a script.
 
 ### Where that leaves #235's own question
 
@@ -312,7 +322,12 @@ what it was asked about.
 
 ### The statistic for a borrowed base
 
-**Keep the pooled mean and raise `-Runs`.** Reasons, in order:
+**This is a recommendation and not a decision. The decision is [#326][326]'s, and it is open.**
+`CLAUDE.md` reserves calls of this kind for Truls, and changing the statistic would change what every
+figure in [`reactor-runtime-cost.md`](reactor-runtime-cost.md) means — so what follows is the
+argument, not the outcome. Read the table's third column as "what the recommendation rests on".
+
+**Recommended: keep the pooled mean and raise `-Runs`.** Reasons, in order:
 
 - The case for a median across runs was that one bad run in five moves the pooled mean by 20%. With
   the census at its intended cadence the baseline is 16.2 µs rather than 91.3, so a fixed excess is a
@@ -328,9 +343,14 @@ So the recommendation is procedural rather than statistical: **run more repeats,
 line, and discard a run whose `script mean` is out of family** — now easier, because `gc mean` sits
 beside it and says whether collection explains it.
 
+**Until #326 is settled, the script's behaviour is unchanged**, which is the pooled mean by default.
+That is the status quo rather than the recommendation being adopted in advance of the decision.
+
 [235]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/235
 [230]: https://github.com/trulsjo/realistic-fusion-refreshed/pull/230
 [adr5]: ../adr/0005-real-time-fusion-simulation.md
+[327]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/327
+[326]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/326
 
 ## Reproducibility, and how it fails
 
@@ -359,3 +379,5 @@ unavailable.
 [235]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/235
 [230]: https://github.com/trulsjo/realistic-fusion-refreshed/pull/230
 [adr5]: ../adr/0005-real-time-fusion-simulation.md
+[327]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/327
+[326]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/326

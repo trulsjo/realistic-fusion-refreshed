@@ -997,11 +997,18 @@ New-Item -ItemType Directory -Force -Path ($Save ? (Join-Path $modDir $surveyNam
 # (#235) and operative from the moment it stopped being, which is why it is corrected here.
 #
 # AND THE GATES NOW JUDGE AN OLDER SNAPSHOT. Every BENCH-RIG gate reads the LAST report, which used
-# to be within five ticks of the end and can now be five hundred. The accumulating ones -- bred=
-# against expect=, full_pct=, lithium_min= -- are the exposed ones: a state reached by tick 995 but
-# not by tick 500 would now fail a good run. Not observed on the sitting that took the figures in
-# docs/research/borrowed-base.md, which passed every gate with -Collectors -Blankets at the default
-# cadence, but it has had one sitting rather than a history.
+# to be within five ticks of the end and can now be a whole -ReportEvery behind it. Two gates THROW
+# on it and are the exposed ones: bred= against expect=, and lithium_min=. A blanket that bred after
+# the last report is not counted, so a good run can fail with bred= short of expect=.
+#
+# full_pct= only Write-Warnings and can fail nothing, so it is not in that list -- it goes the other
+# way, understating a saturation that arrived late. Naming it as a failure would overstate what the
+# code does.
+#
+# Not observed on the sitting that took the figures in docs/research/borrowed-base.md, which passed
+# every gate with -Collectors -Blankets at the default cadence, but it has had one sitting rather
+# than a history. The two throwing gates therefore say how old their snapshot was when they fail,
+# so a spurious failure is diagnosable instead of mysterious.
 if ($ReportEvery -ge $Ticks) { $ReportEvery = [Math]::Max(1, [int]($Ticks / 2)) }
 
 # What the census cadence is supposed to be from here on, kept so the rig's generation can assert it
@@ -2716,6 +2723,24 @@ try {
             # breed. That is true and it made the gate useless: at n = 200 about 110 blankets ought
             # to breed, so a regression that idled 109 of them passed as a valid measurement.
             # Knowing WHICH rows breed is the whole difference, and the rig can compute it.
+            # HOW OLD THE SNAPSHOT THESE GATES JUDGE IS (#235). Both of them throw, and both read
+            # the LAST census report rather than the run's last tick. The census fires on
+            # -ReportEvery, so the report can be up to that many ticks behind the end -- and a
+            # blanket that bred in the gap is not in the count these gates compare. Before #235 the
+            # cadence was wrongly 5 and the gap was never worth mentioning; at 500 it is, so a
+            # failure says how stale it was rather than leaving the reader to work out that the run
+            # may have been fine. It cannot say the gap is the CAUSE -- only that it is available as
+            # one.
+            #
+            # The report's own tick is always a multiple of -ReportEvery, so it cannot be compared
+            # against the run's last tick to get the gap -- the rig logs game.tick and the script
+            # never learns which game.tick the run ended on. What IS known is the bound, and the
+            # bound is the whole point, so the note states it rather than computing a difference
+            # that would always come out zero.
+            $staleNote = ("  NOTE: the census reports every $ReportEvery ticks, so this snapshot " +
+                          "can be up to that many ticks behind the run's last tick, and a blanket " +
+                          "that bred in the gap is not counted here. Re-run with a smaller " +
+                          "-ReportEvery before concluding the rig is at fault.")
             $expect = if ("$state" -match 'expect=(\d+)') { [int]$Matches[1] } else { -1 }
             if ($expect -le 0) {
                 throw ("rig at n=$count expected no blanket to breed, so -Blankets measured " +
@@ -2724,12 +2749,13 @@ try {
             if ($bred -ne $expect) {
                 throw ("rig at n=$count had $bred of $count blankets breed, expected exactly " +
                        "$expect (the reactors on a neutron-releasing fuel), so blankets were idle " +
-                       "and the figure is not a blanketed reactor's cost: '$state'")
+                       "and the figure is not a blanketed reactor's cost: '$state'$staleNote")
             }
             $lithiumMin = if ("$state" -match 'lithium_min=(-?\d+)') { [int]$Matches[1] } else { -1 }
             if ($lithiumMin -le 0) {
                 throw ("rig at n=$count ran a blanket dry ($lithiumMin lithium left in the " +
-                       "emptiest one that bred), so part of the run measured an empty container: '$state'")
+                       "emptiest one that bred), so part of the run measured an empty container: " +
+                       "'$state'$staleNote")
             }
         }
 
