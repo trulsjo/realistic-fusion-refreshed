@@ -993,6 +993,13 @@ New-Item -ItemType Directory -Force -Path ($Save ? (Join-Path $modDir $surveyNam
 # fixed fraction rather than growing as runs get shorter.
 if ($ReportEvery -ge $Ticks) { $ReportEvery = [Math]::Max(1, [int]($Ticks / 2)) }
 
+# What the census cadence is supposed to be from here on, kept so the rig's generation can assert it
+# rather than trust it (#235). Every later change to $ReportEvery is a bug unless it is the ablation
+# guard below, and the one that actually happened was invisible: reading control.lua's REPORT_EVERY
+# into "$reportEvery" is a write to THIS variable, because PowerShell does not distinguish the two
+# spellings. The census then ran every 5 ticks rather than every 500 for the life of the script.
+$reportAsked = $ReportEvery
+
 
 # The shipped cadence, read rather than remembered -- an ablated rung has to step as often as the
 # mod it replaces or its per-reactor figure is off by whatever the two intervals differ by. This is
@@ -1009,13 +1016,22 @@ if ((Get-Content $controlLua -Raw) -match '(?m)^local UPDATE_INTERVAL = (\d+)') 
 # every step, so the census's window has to be long enough to contain one. Remembering either
 # number would give a gate that passes because it looked too early.
 if ((Get-Content $controlLua -Raw) -match '(?m)^local REPORT_EVERY = (\d+)') {
-    $reportEvery = [int]$Matches[1]
+    $shippedReport = [int]$Matches[1]
 } else {
     throw ("could not read REPORT_EVERY from $controlLua; -Save's simulation gate would not know " +
            'how long to wait for a publish.')
 }
 # Ticks between one circuit publish and the next, which is the two cadences multiplied.
-$publishEvery = $interval * $reportEvery
+#
+# $shippedReport RATHER THAN $reportEvery, AND THE NAME IS THE WHOLE FIX (#235). PowerShell
+# variable names are case-INSENSITIVE, so the lowercase spelling this block used to carry was not
+# a second variable at all -- it was the -ReportEvery PARAMETER, and reading REPORT_EVERY out of
+# control.lua silently overwrote it. The rig's census then ran on the shipped mod's publish
+# cadence of 5 rather than on -ReportEvery's 500: a hundred times the intended rate, one log write
+# every five ticks for the whole run, and -ReportEvery itself inert whatever it was passed.
+# Measured on the borrowed base before the rename: the census tick cost 414 us against 12.9 us for
+# every other tick and was 89% of the whole n = 0 scriptUpdate mean.
+$publishEvery = $interval * $shippedReport
 
 # on_nth_tick handlers are keyed by PERIOD, so registering the rig's report at the same interval the
 # ablation ladder steps at would not add a handler -- it would silently replace one, and the rig
@@ -1593,8 +1609,14 @@ if ABLATE ~= "none" then
   end
 end
 
--- Proof that what was benchmarked was a running reactor and not a cold one. One tick in a hundred
--- carries a log write, and the median throws away far more of the distribution than that.
+-- Proof that what was benchmarked was a running reactor and not a cold one. One tick in
+-- -ReportEvery carries a log write -- one in 500 by default, two per 1000-tick run.
+--
+-- THIS WALK IS NOT FREE AND IT DOES NOT CANCEL (#235). It loops storage.reactors, .collectors and
+-- .blankets, so it costs nothing at n = 0 and a great deal at n = 200, and the difference lands in
+-- the numerator of every per-reactor figure. Measured on the borrowed base while it was wrongly
+-- running every 5 ticks: 2.18 us per reactor, 25.6% of the reported cost. Raising -ReportEvery is
+-- therefore not a tuning knob but a correctness one; see docs/research/borrowed-base.md.
 script.on_nth_tick(__REPORT__, function()
   local n, hot, powered, temp, plasma, output, energy = 0, 0, 0, 0, 0, 0, 0
   -- Tallied by the fluid each reactor is actually burning, because that -- not the entity, and not
@@ -1689,6 +1711,16 @@ end)
 '@
     # The shipped plasma set carries its own pipe connection category (#26), so a vanilla
     # infinity-pipe can no longer feed a reactor. The rig declares one that can.
+    # WHAT -ReportEvery ASKED FOR IS WHAT THE RIG GETS (#235). The ablation guard is the only
+    # licensed change between the snapshot and here; anything else means something reassigned the
+    # parameter, which is exactly how the census came to run a hundred times too often and put
+    # 2.18 us per reactor of instrumentation into every figure the harness published.
+    $licensed = ($Ablate -ne 'none' -and $ReportEvery -eq $interval + 1)
+    if ($ReportEvery -ne $reportAsked -and -not $licensed) {
+        throw ("the rig's census cadence is $ReportEvery but -ReportEvery asked for $reportAsked. " +
+               'Something reassigned it after the parameter block -- check for a variable whose ' +
+               'name differs only in case, which PowerShell does not distinguish.')
+    }
     $lua = $lua.Replace('__COUNT__', "$Count").Replace('__GRID__', "$grid").
                 Replace('__REPORT__', "$ReportEvery").Replace('__GAP__', "$Gap").
                 Replace('__PLASMAFEED__', (Write-PlasmaFeed -RigDirectory $rigDir)).
@@ -1841,6 +1873,12 @@ function New-TimingRow {
         WholeByRun  = @(Split-Runs $Columns['wholeUpdate']  $Ticks $Runs | ForEach-Object { Get-Median $_ })
         ScriptByRun = @(Split-Runs $Columns['scriptUpdate'] $Ticks $Runs |
                         ForEach-Object { ($_ | Measure-Object -Average).Average })
+        # The MEAN, to match ScriptByRun, because the question this column exists to answer is
+        # whether a run whose scriptUpdate mean is elevated is a run that collected more (#235).
+        # Comparing a mean against a median would not answer it. Incremental GC is bursty by
+        # construction, so its median is near zero on every run and carries no signal at all.
+        GcByRun     = @(Split-Runs $Columns['luaGarbageIncremental'] $Ticks $Runs |
+                        ForEach-Object { ($_ | Measure-Object -Average).Average })
     }
     foreach ($c in $REPORT) {
         $row["$c.median"] = (Get-Median $Columns[$c]) / 1000.0   # ns -> us
@@ -1927,9 +1965,15 @@ function Write-Survey {
         A SEPARATE FACTORIO RUN FROM THE ONE THAT PRODUCES THE NUMBERS, and that is the point of
         it being its own mod rather than a report tick bolted onto the measurement. Adding a mod to
         a save adds its Lua to scriptUpdate, and -Save has no baseline to subtract that back out of
-        -- the rig can charge its own report walk to a delta, this cannot. So the census gets a run
-        of its own with this mod enabled, the measurement runs with it explicitly disabled, and the
-        cost it adds to the reported figures is none.
+        -- the rig's own report walk is at least subtracted against a baseline, this cannot be. So
+        the census gets a run of its own with this mod enabled, the measurement runs with it
+        explicitly disabled, and the cost it adds to the reported figures is none.
+
+        THAT SUBTRACTION IS NOT A GET-OUT FOR THE RIG, and this note used to imply it was: it said
+        the rig "can charge its own report walk to a delta", which is true only of a walk costing the
+        same at every count. The rig's walk loops the reactor, collector and blanket registers, so
+        the baseline cancels its CONSTANT part and leaves everything that scales with n sitting in
+        the numerator. Measured at #235: 2.18 us per reactor. See docs/research/borrowed-base.md.
 
         What it costs instead is one more load of the save and one more run of it, which is why the
         walk happens twice in that run rather than every tick. See the census run's own note for
@@ -2381,9 +2425,10 @@ if ($Save) {
         Write-Host ("scriptUpdate median {0,8:N2} us  mean {1,8:N2} us   whole median {2,8:N2} us" -f
             $row.'scriptUpdate.median', $row.'scriptUpdate.mean', $row.'wholeUpdate.median')
         if ($row.WholeByRun.Count -gt 1) {
-            Write-Host ("        by run: whole median [{0}] us   script mean [{1}] us" -f
+            Write-Host ("        by run: whole median [{0}] us   script mean [{1}] us   gc mean [{2}] us" -f
                 (($row.WholeByRun  | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
-                (($row.ScriptByRun | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '))
+                (($row.ScriptByRun | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
+                (($row.GcByRun     | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '))
         }
         Write-MachineNote -Label 'save' -Cpu $cpu -Load $load -Why (
             'Nothing here is a difference against a baseline, so there is no subtraction that ' +
@@ -2710,9 +2755,10 @@ try {
         # Each benchmark run on its own, and the effective clock beside them, so a count that came
         # out slow can be attributed to the machine or cleared of it on the spot. See Split-Runs.
         if ($row.WholeByRun.Count -gt 1) {
-            Write-Host ("        by run: whole median [{0}] us   script mean [{1}] us" -f
+            Write-Host ("        by run: whole median [{0}] us   script mean [{1}] us   gc mean [{2}] us" -f
                 (($row.WholeByRun  | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
-                (($row.ScriptByRun | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '))
+                (($row.ScriptByRun | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
+                (($row.GcByRun     | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '))
         }
         Write-MachineNote -Label "n=$count" -Cpu $cpu -Load $load -Why (
             'Every figure from it is a difference against an n = 0 baseline measured at a ' +

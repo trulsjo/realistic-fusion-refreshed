@@ -180,6 +180,127 @@ build over one it did not create, because it landfills and clears everything in 
   target; a Space Age measurement is a separate, later question and deliberately not a prerequisite
   of #67.
 
+## The +500 µs spike, and what looking for it found instead — #235
+
+[#235][235] recorded that the borrowed base's own Lua costs about **+500 µs a tick in roughly one
+benchmark run in four**, constant whatever *n* is, and named three candidates. Investigated
+2026-09-12. **The spike itself did not reproduce**, and two of the three candidates are eliminated —
+but the search found a fourth cause that was never on the list, and it was changing every figure
+this harness has ever published.
+
+### The scenario script is not it, and that is settled by reading
+
+The save's `__level__` is **stock freeplay**: its `control.lua` is one line,
+`require('__base__/script/freeplay/control.lua')`, which adds `freeplay` and — no Space Age —
+`silo-script`. Between them those register **eight events and not one tick handler**: seven
+player-and-cutscene events in `freeplay.events`, and `on_rocket_launched` in `silo_script.events`.
+No `on_tick`, no `on_nth_tick`, anywhere.
+
+Of the eight, only `on_rocket_launched` can fire during a benchmark, and on this save it does
+nothing: it returns at once once `script_data.finished[force.name]` is set, which a megabase that has
+already launched set long ago. **The scenario script does no per-tick work at all**, so it cannot be
+the source of a per-tick cost. Candidate one is closed without an experiment.
+
+### Garbage collection is not it either, and that took the instrument the ticket asked for
+
+`bench-reactors.ps1` kept per-run figures for `wholeUpdate` and `scriptUpdate` only, which is why
+#235 records the `luaGarbageIncremental` correlation as unreadable. It now keeps `GcByRun` too and
+prints it on the same `by run:` line, so every future sitting carries the column.
+
+Read at **tick** resolution rather than per run, over 4,000 ticks of the borrowed base at *n* = 0:
+
+| | |
+|---|---|
+| per-tick correlation, `scriptUpdate` against `luaGarbageIncremental` | **0.073** |
+| `luaGarbageIncremental` median on the expensive ticks | **27.9 µs** |
+| the same, over all ticks | **25.8 µs** |
+
+The expensive ticks are not the collecting ticks. Candidate two is closed.
+
+### What the ticks actually were: our own instrumentation, a hundred times too often
+
+`scriptUpdate` at *n* = 0 was **93.2 µs mean against a 13.1 µs median**, and the gap is one tick in
+five: gaps between ticks over 200 µs were **5, in 795 of 800 cases**. Strictly periodic, which on its
+own answers the ticket's periodic-versus-probabilistic question for the *baseline* cost. Split by
+that period, the census tick cost **414 µs against 12.9 µs for every other tick — 86% of the whole
+`scriptUpdate` mean.**
+
+Period five is the rig's own census-and-`log()` handler. It was meant to run on `-ReportEvery`,
+which defaults to **500**. It ran every **5**.
+
+**The cause is that PowerShell variable names are case-insensitive.** `bench-reactors.ps1` reads the
+shipped mod's `REPORT_EVERY` out of `control.lua` into `$reportEvery`, a few lines after the
+`-ReportEvery` parameter has been set up — and those are the same variable. Reading the mod's value
+overwrote the parameter. `-ReportEvery` was inert whatever it was passed, its `ValidateRange` and its
+`.PARAMETER` block decorating a value nothing used, and the rig wrote a log line every fifth tick for
+as long as the script has existed. The comment above the handler said *"One tick in a hundred carries
+a log write"*, which is what makes it invisible: the code and the prose disagreed and only the code
+ran.
+
+Nothing failed, and nothing could have. A rig that reports a hundred times too often still reports,
+so every gate that reads the census line still passed.
+
+### What it cost, measured before and after the rename
+
+Same sitting, same machine, borrowed base, `-Collectors -Blankets -Gap 6 -Ticks 1000 -Runs 3`:
+
+| | `scriptUpdate` mean, *n* = 0 | mean, *n* = 200 | per reactor |
+|---|---|---|---|
+| census every 5 ticks | 91.30 µs | 1,797.37 µs | **8.5304 µs** — 10.23% of a tick |
+| census every 500 ticks | **16.20 µs** | **1,286.03 µs** | **6.3492 µs** — 7.62% of a tick |
+
+**The rig's own census was 2.18 µs per reactor, 25.6% of the published figure.** It was predicted at
+2.23 µs and 25.5% from the tick-level decomposition before the fix was made, which is the check that
+the two methods are measuring the same thing.
+
+**It does not cancel, and the script said it did.** Its note for `-Save` reads *"the rig can charge
+its own report walk to a delta"* — true only of a walk that costs the same at every count, and this
+one walks `storage.reactors`, `storage.collectors` and `storage.blankets`. At *n* = 0 the loops are
+empty and the tick costs 414 µs; at *n* = 200 they are not and it costs 3,723 µs. The difference lands
+in the numerator of every per-reactor figure.
+
+**Every per-reactor figure this harness has published is affected, not only the borrowed base's.**
+The rig runs the same handler. The figures in
+[`reactor-runtime-cost.md`](reactor-runtime-cost.md) have **not** been re-taken and are not restated
+here; that is a decision about a published record rather than a correction to a script.
+
+### Where that leaves #235's own question
+
+**Unresolved, and the ticket stays open.** The +500 µs spike did not appear in **15 runs** across
+three sittings on 2026-09-12, which with the nine-run sitting already on the ticket makes 24
+consecutive clean runs. It cannot be reproduced on demand and it has not been explained.
+
+What the fix does is make the mechanism far less likely to matter, without proving it was the cause.
+A run used to carry **200 `log()` writes per 1,000 ticks** and now carries two. An I/O stall on that
+write would add a fixed cost per tick **independent of *n***, which is exactly the signature #235
+records — so the surface area for it is cut a hundredfold. **That is a hypothesis, not a
+measurement**: no spiking run was ever caught with the instrument attached, and the one mildly
+elevated run seen on 2026-09-12 had its excess mostly *outside* the census tick, which counts against
+it rather than for it.
+
+The `-Ticks` question is answered for the periodic baseline cost and **not** for the spike, which is
+what it was asked about.
+
+### The statistic for a borrowed base
+
+**Keep the pooled mean and raise `-Runs`.** Reasons, in order:
+
+- The case for a median across runs was that one bad run in five moves the pooled mean by 20%. With
+  the census at its intended cadence the baseline is 16.2 µs rather than 91.3, so a fixed excess is a
+  far larger *relative* outlier and far easier to see and discard by hand than to average away.
+- Changing the statistic changes what every figure in `reactor-runtime-cost.md` means, and the
+  ticket's own fourth sitting measured the cost of not changing it: with a clean baseline the two
+  agree to **0.3%** at *n* = 200 (6.99 µs median-across-runs against 7.01 pooled mean).
+- A median across runs would have *hidden* what this investigation found. The census cost was
+  present in every run, not in one in four; a statistic chosen to drop outliers would have left it
+  exactly where it was.
+
+So the recommendation is procedural rather than statistical: **run more repeats, read the per-run
+line, and discard a run whose `script mean` is out of family** — now easier, because `gc mean` sits
+beside it and says whether collection explains it.
+
+[235]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/235
+
 ## Reproducibility, and how it fails
 
 **The recipe is the durable artefact, not the save.** `-PlantInto` is committed; the borrowed base is
