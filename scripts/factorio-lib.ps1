@@ -481,10 +481,18 @@ local function $placeOrDie(surface, spec, what)
     -- whatever stands in it is listed. Swept from the PROTOTYPE's collision box rather than from a
     -- written-down size, for the reason every offset in these rigs is derived: the size is exactly
     -- what changed underneath the layout.
+    -- ROTATED WITH THE ENTITY, because a collision_box is declared for north and this rig's whole
+    -- subject is non-square machines. Placed east or west, an unrotated sweep reads the wrong
+    -- rectangle and can answer "nothing this sweep could see" with the blocker plainly there --
+    -- which would make the one branch that exists to name it useless exactly when it is needed.
     local box = prototypes.entity[spec.name].collision_box
+    local lx, ly, rx, ry = box.left_top.x, box.left_top.y, box.right_bottom.x, box.right_bottom.y
+    local d = spec.direction
+    if d == defines.direction.east or d == defines.direction.west then
+      lx, ly, rx, ry = ly, lx, ry, rx
+    end
     local found, names = surface.find_entities_filtered({
-      area = { { x + box.left_top.x, y + box.left_top.y },
-               { x + box.right_bottom.x, y + box.right_bottom.y } },
+      area = { { x + lx, y + ly }, { x + rx, y + ry } },
     }), {}
     for _, e in pairs(found) do
       if e.type ~= "character" then
@@ -523,6 +531,8 @@ end
 ---
 ---   pipe        the pipe prototype, because the categorised energy feeds are not "infinity-pipe".
 ---               Defaults to "infinity-pipe".
+---   skip_taken  a connection whose target tile something already stands on is SKIPPED rather than
+---               refused. Off by default, and the default is the load-bearing half -- see below.
 ---   allow_none  every face already taken is legitimate for ONE box in probe-energy-containment's
 ---               chained pair -- the lower exchanger has the reactor on one short end and its
 ---               neighbour on the other, and is fed along the column instead -- and a broken layout
@@ -533,19 +543,26 @@ end
 ---   note        function(fmt, ...) a rig passes so the allow_none case is recorded in that rig's
 ---               own store. Optional; without one the case is silent.
 ---
---- THE OCCUPANCY SKIP AND THE PLACEMENT GUARD ARE BOTH HERE AND ARE NOT THE SAME TEST. A tile a
---- neighbour legitimately owns is skipped -- two exchangers fifteen tiles apart join through their
---- water boxes, so the column is fed from whichever end is free -- and a tile the engine refuses for
---- any other reason still stops the run. Collapsing the two reintroduces the fault above.
+--- WHY skip_taken IS OPT-IN, AND WHY GETTING THIS WRONG UNDOES #215. The two behaviours the private
+--- copies had are NOT the same test and one is not a safe default for the other. Skipping is right
+--- in probe-energy-containment, where two exchangers fifteen tiles apart join through their water
+--- boxes and the column is fed from whichever end is free -- a neighbour on a target tile is the
+--- arrangement, not a fault. Everywhere else an occupied target tile IS the fault, and it is exactly
+--- the #215 one: when the exchanger's water connections moved to its short ends, bench-mod-links'
+--- pipes landed eight tiles out, inside the reactor's own footprint, and placed anyway.
+---
+--- A shared version that always skips would have turned that abort into a quiet half-plumbed rig
+--- reporting a lower, entirely plausible megawatt figure -- the same shape of silence #215 exists to
+--- remove. So skipping happens only where a caller says the neighbour is legitimate, and every other
+--- caller still routes the tile through $placeOrDie and stops.
 local function $unbound(surface, force, entity, index, filter, opts)
   opts = opts or {}
   local name = opts.pipe or "infinity-pipe"
   local attached, total = 0, 0
   for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
     total = total + 1
-    -- #215: when the exchanger's water connections moved to its short ends, these pipes landed
-    -- eight tiles out -- inside the reactor's own footprint -- and placed anyway.
-    if #surface.find_entities_filtered({ position = connection.target_position }) == 0 then
+    local taken = #surface.find_entities_filtered({ position = connection.target_position }) > 0
+    if not (taken and opts.skip_taken) then
       local pipe = $placeOrDie(surface,
         { name = name, position = connection.target_position, force = force },
         entity.name .. "'s " .. filter.name .. " infinity pipe")

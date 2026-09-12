@@ -214,11 +214,11 @@ local function bolt_on(surface, force, reactor, tank_seed)
     step = { step[1] / length, step[2] / length }
     local RUN = 3
     rf_pipe_run(surface, force, "pipe", { at.x, at.y }, step, RUN)
-    -- The tank's connection has to land on the tile just past the last pipe, so it is placed by
-    -- probing rather than by arithmetic on its size.
-    -- The tank's connection has to land on the tile just past the last pipe, so it is placed by
-    -- probing rather than by arithmetic on its size. "first" rather than "only": a storage tank
-    -- carries four interchangeable connections and no filter on any of them.
+    -- The tank's connection has to POINT AT the last pipe of the run, so it is placed by probing
+    -- rather than by arithmetic on its size: a storage tank is three by three and carries four
+    -- connections at fixed offsets rather than one on every edge tile, so butting it against the
+    -- end of a run lines up only by luck. "first" rather than "only" because those four are
+    -- interchangeable here and none of them carries a filter.
     tanks[fluid] = rf_place_facing(surface, force, {
       name = "storage-tank", connection = "first",
       target = { at.x + step[1] * (RUN - 1), at.y + step[2] * (RUN - 1) },
