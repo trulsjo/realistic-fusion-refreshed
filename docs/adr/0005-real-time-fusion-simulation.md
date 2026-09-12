@@ -125,7 +125,19 @@ requires restructuring is not a fallback.
   `UPDATE_INTERVAL` stays at 6. 200 blanketed D-D reactors — the worst of the five configurations
   #62 measured at 200 reactors, and the top count this project sweeps to — cost 8.41% of a tick on
   that megabase as a mean over every tick, and 0.4% to 2.1% at the ten to fifty an ordinary build
-  has. The megabase's *median* tick moved less, 64.8% of the budget to 69.0%, because the simulation
+  has.
+
+  > **The absolutes in this bullet are inflated and the verdict is not — noted 2026-09-12 (#235).**
+  > The harness's own census walk was running a hundred times more often than `-ReportEvery` asked
+  > for, and it scales with reactor count, so it sat in the numerator of every per-reactor figure
+  > taken from `0b43649` (2026-09-03) on. Measured at 2.18 µs per reactor in this configuration:
+  > **7.01 and 6.33 are each about 2.2 µs too high, and 8.41% is nearer 5.8%.** The ratio is what
+  > this bullet actually rests on and it barely moves — 1.11 to about 1.16, still inside the 1.35×
+  > floor — so **`UPDATE_INTERVAL` stays at 6 and nothing here is reopened.** The figures are left
+  > standing rather than quietly restated, because re-taking them is a measurement nobody has made
+  > yet. See [`docs/research/borrowed-base.md`](../research/borrowed-base.md).
+
+  The megabase's *median* tick moved less, 64.8% of the budget to 69.0%, because the simulation
   steps one tick in six. **Only that one configuration was re-run**,
   so the 4.5 µs above stays #62's figure on #62's evidence; what #67 establishes is that the ground a
   figure is taken on does not change it. See *On a loaded tick, not a rig* in
