@@ -299,26 +299,68 @@ decision record reads as deliberate — [#230][230]'s lesson, recorded in `docs/
 Its verdict survives and its numbers do not. Re-taking any of these is [#327][327], and a decision
 about a published record rather than a correction to a script.
 
-### Where that leaves #235's own question
+### What the spike is — answered 2026-09-13
 
-**Unresolved, and the ticket stays open.** The +500 µs spike did not appear in any of the **15 runs**
-taken across three sittings on 2026-09-12, and the ticket's own fourth sitting of 2026-09-06 did not
-see it either. It cannot be reproduced on demand and it has not been explained. (One of the 15 was
-mildly elevated — +4.7 µs on a 92 µs mean — which is two orders of magnitude below this ticket's
-effect and is not it; see below.)
+**It is not a per-tick cost and never was. It is a handful of multi-hundred-millisecond stalls,
+diluted across a thousand ticks by the pooled mean.**
 
-What the fix does is make the mechanism far less likely to matter, without proving it was the cause.
-A run used to carry **200 `log()` writes per 1,000 ticks** and now carries two. An I/O stall on that
-write would add a fixed cost per tick **independent of *n***, which is exactly the signature #235
-records — so the surface area for it is cut a hundredfold. **That is a hypothesis, not a
-measurement**: no spiking run was ever caught with the instrument attached. The one mildly elevated
-run of 2026-09-12 — run 4 of the four-run `-KeepTemp` sitting, 96.8 µs against the other three's
-92.0 — put most of its excess *outside* the census tick, which counts against the I/O story rather
-than for it. It is a different and much smaller thing than the ticket's +500 µs, and so is the
-elevated run the ticket's own fourth sitting records.
+Fixing `-ReportEvery` is what made this findable: the parameter works now, so **`-ReportEvery 5`
+reproduces the old behaviour exactly** and the effect can be summoned instead of waited for. Twenty
+runs at the old cadence, `-Counts 0`, borrowed base, quiet machine:
 
-The `-Ticks` question is answered for the periodic baseline cost and **not** for the spike, which is
-what it was asked about.
+| | |
+|---|---|
+| nineteen runs | `script mean` 90.3 – 99.3 µs |
+| **run 6** | **662.6 µs** |
+| run 6's `gc mean` | **37.6 µs** — mid-pack, against 37.0 – 40.0 for the rest |
+| run 6's `whole median` | 10,397 µs — ordinary |
+
+Split by tick, run 6's 570 µs of excess is **six ticks of a thousand**:
+
+| tick | `scriptUpdate` | share of the excess |
+|---|---|---|
+| **t = 876** | **389.3 ms** | 68% |
+| next five | 80.3, 47.0, 40.1, 2.4, 0.9 ms | 30% |
+| **the other 994** | — | **2%** |
+
+**Run 6's median tick is 11.60 µs against 11.70 for the clean runs.** That is the whole mystery: a
+pooled mean divides one 389 ms stall across a thousand ticks and reports it as *+389 µs of cost per
+tick*, and the median cannot see it at all. Three sittings measured a real thing and described it in
+the one unit that makes it unrecognisable.
+
+**It is the machine blocking, not work.** `wholeUpdate` on t = 876 is **400.5 ms**, so the engine
+sat inside Lua for four tenths of a second; `luaGarbageIncremental` on that tick is 58 µs against a
+24 µs median. The tick is a census tick — the one that calls `log()` — and the stalls in the other
+sittings land on census ticks too. Nothing a reactor count can change makes a file system block, and
+that is why #235 measured the same excess at *n* = 0, 50 and 200.
+
+**Candidate three is dead with the other two.** The stalls are not periodic: t = 876 here, t = 91,
+551, 606 and 786 in an earlier sitting, scattered. A period scan over 12,000 ticks of the residual
+found nothing a shuffle control did not also find — its apparent peaks were the largest periods
+tested, which is what noise looks like, and they were driven by these same few outliers.
+
+**The `-Ticks` question, answered.** Probabilistic, not periodic — and the probability rises with
+the number of `log()` writes a run makes, not with its tick count as such. That is why the rate fell
+from #235's roughly one run in four to about one in twenty on 2026-09-13: same ticks per run, a
+hundredth of the writes once `-ReportEvery` worked again.
+
+**What is not established.** *Why* the file system blocks for 389 ms — antivirus, a flush, disk
+contention — is outside this project and was not chased. And the write hypothesis predicts the rate
+should be highest at `-ReportEvery 1`, where a run makes a thousand writes; a sitting there produced
+no clean stall in seven usable runs. Seven runs of a one-in-twenty event settles nothing either way,
+but it is recorded rather than left out.
+
+### The harness now says so itself
+
+`Find-StalledRuns` flags a run carrying a tick that is both **over 50 ms** and **at least 20× the
+same tick index in every other run**, and both conditions are load-bearing. Size alone was the first
+version and it was useless: a plain rig sweep spends about **108 ms at t = 30 of every run**, the
+same index each time, and that is work rather than a stall. Reproducibility is what separates them,
+which also means `-Runs 1` cannot decide and reports nothing.
+
+`-SelfTest` half 5 holds all three directions — the 389 ms one-run stall is flagged, 5.5 ms of real
+simulation is not, and a 108 ms spike repeating in every run is not. Run against the recorded
+twenty-run dump it returns exactly `run 6, tick 876, 389.3 ms` and passes the other nineteen.
 
 ### The statistic for a borrowed base
 
@@ -342,6 +384,19 @@ argument, not the outcome. Read the table's third column as "what the recommenda
 So the recommendation is procedural rather than statistical: **run more repeats, read the per-run
 line, and discard a run whose `script mean` is out of family** — now easier, because `gc mean` sits
 beside it and says whether collection explains it.
+
+> **Strengthened 2026-09-13, once the spike was identified.** Neither statistic the ticket offered is
+> the answer, because the thing being averaged is not a cost at all — it is a stall. A **median
+> across runs** would drop the poisoned run and give the right number for the wrong reason, and it
+> would still be wrong the moment two runs in five stall. A **pooled mean** reports the stall as
+> cost. What actually fixes it is neither: **detect the stalled run and discard it**, which is what
+> `Find-StalledRuns` now does, and which leaves the mean free to mean what the script's own
+> `.DESCRIPTION` says it means. #326 remains the place that decision is made.
+>
+> Note what the per-tick **median** does here, since it is the same word used two different ways.
+> The median across *ticks* is already immune — run 6's was 11.60 µs against 11.70 for clean runs.
+> It is the median across *runs* that the ticket proposed, and that one is a blunter instrument than
+> naming the bad run.
 
 **Until #326 is settled, the script's behaviour is unchanged**, which is the pooled mean by default.
 That is the status quo rather than the recommendation being adopted in advance of the decision.
