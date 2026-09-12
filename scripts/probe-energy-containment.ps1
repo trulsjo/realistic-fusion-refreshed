@@ -424,13 +424,17 @@ end
 local function plumb_steam(surface, force, exchanger, boxed_in)
   local water = rf_box_of(exchanger, "water")
   local steam = rf_box_of(exchanger, "steam")
+  -- skip_taken, and THIS RIG IS THE ONE CALLER THAT WANTS IT. Two exchangers fifteen tiles apart
+  -- join through their water boxes, so a neighbour standing on a target tile is the arrangement
+  -- rather than a fault, and the column is fed from whichever end is free. Everywhere else an
+  -- occupied target tile is the #215 fault and rf_unbound stops on it -- see that function's note.
   if water then
     rf_unbound(surface, force, exchanger, water, { name = "water", percentage = 1, mode = "at-least" },
-      { pipe = ORDINARY, allow_none = boxed_in, note = say })
+      { pipe = ORDINARY, skip_taken = true, allow_none = boxed_in, note = say })
   end
   if steam then
     rf_unbound(surface, force, exchanger, steam, { name = "steam", percentage = 0, mode = "at-most" },
-      { pipe = ORDINARY })
+      { pipe = ORDINARY, skip_taken = true })
   end
 end
 

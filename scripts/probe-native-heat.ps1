@@ -530,8 +530,22 @@ local function attach_exchanger(surface, force, row, tile)
     position = { tile.x - cx - u.x, tile.y - cy - u.y },
     force = force,
   }, row.label .. " heat exchanger")
+  -- skip_taken ON THE WATER BOX ONLY, and it was earned rather than assumed (#226). The exchanger's
+  -- position is not this rig's to choose -- it is wherever its heat connection has to be to touch
+  -- the pipe tile -- and on the `tight` row that puts one of its two water faces against
+  -- rf-probe-reactor. Measured 2026-09-12: the guarded version stops with "heat-exchanger's water
+  -- infinity pipe will not fit at (42.5, 39.5) ... In the way: rf-probe-reactor at (40.5, 40.5)".
+  --
+  -- WHAT WAS HAPPENING BEFORE IS THE POINT. create_entity collision-checks nothing, so this rig had
+  -- been building that infinity pipe INSIDE the reactor on every run -- a pipe joined to nothing,
+  -- feeding nothing, invisible in the report. The machine ran all along on its other water face,
+  -- which is why no reading ever moved. A neighbour on one target tile with the other face free is
+  -- the same arrangement probe-energy-containment's chained column has, so it is skipped the same
+  -- way -- and rf_unbound still stops the run if BOTH faces turn out to be taken.
+  --
+  -- The steam box keeps the guard. Nothing stands on its targets and nothing should.
   rf_unbound(surface, force, exchanger, rf_box_of(exchanger, "water"),
-    { name = "water", percentage = 1, mode = "at-least" })
+    { name = "water", percentage = 1, mode = "at-least" }, { skip_taken = true })
   rf_unbound(surface, force, exchanger, rf_box_of(exchanger, "steam"),
     { name = "steam", percentage = 0, mode = "at-most" })
   -- #226, carrying #215's second guard. Water in and steam out on one machine, plumbed from two

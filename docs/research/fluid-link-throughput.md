@@ -117,8 +117,9 @@ carrying 75.1 — so it is the conservative pick by the same rule that quotes th
 > Measured 2026-08-17 at 81 MW, re-measured 2026-09-11 at **83.8 MW** after
 > [#215](https://github.com/trulsjo/realistic-fusion-refreshed/issues/215) — both figures sustained.
 > The energy leg was a vanilla pipe run then and is a bolt now, which is why its figure could not
-> have held. **Why every rate moved is the section below**, and all of it is the simulation changing
-> under a rig that did not.
+> have held. **Why every rate moved is the section below.** Three named commits are the simulation
+> changing under a rig that did not — `c794fc5`, `c2cb7e3` and `48c43c0` — and the remaining 11% is
+> the rig itself, the bolt and the re-lay being #215's, which is what the sentence above says.
 
 ### Every figure here is measured on a fully-researched force
 
@@ -187,9 +188,13 @@ touches either mod's `scripts/`, plus anchors at each end. What closes the gap i
 runs bracket the window in the real game and the composite they give is the fall that was asked
 about: a third mover hiding in the prototypes would have to leave that composite intact.
 
-**Net across the window: −22.3% on temperature and −15.8% on delivered power.** The two steps run in
-opposite directions and the fall is what is left of them, which is why the movement read as a single
-unexplained drop rather than as two named ones.
+**Net across THE TWO STEPS: −22.3% on temperature and −15.8% on delivered power** — 81.2 MW to
+68.4 and 6.877×10⁸ °C to 5.346×10⁸. They run in opposite directions and the fall is what is left of
+them, which is why the movement read as a single unexplained drop rather than as two named ones.
+
+**Across the whole table it is −22.2% and +3.2%**, because the last row is ten days later and two
+more things have happened by then. Those two figures are not interchangeable and the sign of the
+second one is not the same, so say which span is meant.
 
 **`587f699` is eliminated, and nothing should re-propose it.** It was the only named candidate in
 three passes of triage. Its own commit message rules it out: moving the energy sale from 165 °C to
@@ -212,7 +217,18 @@ not converge to the same number at 126 000 ticks: today's 126 000-tick run reads
 0.0333 sustained against the 360 000-tick run's 0.0968 and 0.0320. Every plasma figure in this note
 is the 360 000-tick one.
 
-**`48c43c0` — the plant-efficiency ladder, 2026-09-09 — is the last move, and it is +10.3%.**
+**The last leg, 2026-09-01 to 2026-09-11, is +22.5% and is two things, only one of which is here.**
+68.4 MW to 83.8. The plant-efficiency ladder below accounts for +10.3% of it, which puts 68.4 at
+75.4; the remaining **+11.1%** is the rig changing rather than the simulation — the energy leg
+stopped being a vanilla pipe run and became a bolt, and the layout was re-laid, both
+[#215](https://github.com/trulsjo/realistic-fusion-refreshed/issues/215)'s and neither ever claimed
+to be neutral. This note's own blockquote above says the earlier figure "could not have held" for
+exactly that reason. **That residual is not attributed to a commit here** and is not this section's
+to attribute: #225 was opened about the 22% temperature fall and the plasma rate step, which are
+named above, and #215 owns the leg that changed the rig underneath the measurement.
+
+**`48c43c0` — the plant-efficiency ladder, 2026-09-09 — is the simulation's part of that leg, and it
+is +10.3%.**
 Measured at 126 000 ticks on 2026-09-11, one run with the ladder researched and one without:
 **86.3862 MW against 78.3235 MW**, a ratio of **1.1029410** against the ladder's own arithmetic
 0.9375 ÷ 0.85 = **1.1029412** — seven significant figures. The flowing bound gives the same ratio,
