@@ -16,17 +16,46 @@ Two scripts, both committed, both re-runnable:
 `reactor-logic.lua`'s `energy_fluid_j_per_unit = 1e6`). Every rate below is therefore readable as
 megawatts without a conversion, and this note uses both.
 
-> **Every figure here is a BASE-CAPTURE figure, and the rig would report 10.3% more today.**
-> `bench-mod-links.ps1` researches every technology, so its reactors sit at the top of whatever
-> ladders exist on the day it runs. On 2026-09-08 the plant-efficiency ladder did not exist yet:
-> `48c43c0` wired it the next day, 2026-09-09, and `capture_ladder` on `M.reactor` in
+> **Every reactor-output figure here is a BASE-CAPTURE figure, and the rig would report 10.3% more
+> today.** `bench-mod-links.ps1` researches every technology, so its reactors sit at the top of
+> whatever ladders exist on the day it runs. On 2026-09-08 the plant-efficiency ladder did not exist
+> yet: `48c43c0` wired it the next day, 2026-09-09, and `capture_ladder` on `M.reactor` in
 > `realistic-fusion-refreshed/scripts/reactor-logic.lua` now takes capture from the base 0.85 to
-> 0.9375 at rung 3 — **×1.1029412** on everything a reactor sells. Nothing here has been re-run
-> since, so the researched equivalents are arithmetic rather than measurement: 320.0 MW → 352.9,
-> 1 195.4 → 1 318.5, 94.0 → 103.7, 78.3 → 86.4. **Every ratio and every percentage in this note is
-> unaffected**, because the factor divides out of both sides — which is why the conclusions are
-> stated as ratios. The confinement ladder is not in this correction: it already existed on
-> 2026-09-08 and the rig already had it.
+> 0.9375 at rung 3 — **×1.1029412** on everything a reactor SELLS. Nothing here has been re-run
+> since, so the researched equivalents are arithmetic rather than measurement.
+>
+> **THE FACTOR APPLIES TO WHAT A REACTOR SELLS, WHICH IS NOT EVERY FIGURE ON THIS PAGE**, and sorting
+> the two is the whole of the correction. A SUPPLY-limited row reports what the reactor made, so it
+> scales. A DEMAND-limited row reports what the machines downstream took, and they take the same
+> whatever the reactor makes — so it does not. Nor does the joint's own ceiling, which is an engine
+> number.
+>
+> | figure | what it is | today |
+> |---|---|---|
+> | `drain`, 1 195.4 MW flowing / 996.0 sustained | supply-limited: the reactor | **1 318.5 / 1 098.5** |
+> | D-D control, 94.0 MW flowing / 78.3 sustained | supply-limited: the reactor | **103.7 / 86.4** |
+> | `chain`, 320.0 MW | **demand-limited**: eight 40 MW exchangers | **320.0, unchanged** |
+> | `rf-hc-exchanger`, 400.0 MW | a nameplate rating | **400.0, unchanged** |
+> | one bolted connection, 6 000 MW | the engine's ceiling | **6 000, unchanged** |
+>
+> **So a ratio divides the factor out only when BOTH its sides are reactor output, and several here
+> are not.** The ones that move, and where to:
+>
+> - **the 26.8% / 73.2% split** — a fixed 320 MW of demand against a scaling reactor — becomes
+>   **24.27% / 75.73%**. It appears twice on this page, as the `chain`-against-`drain` ratio and as
+>   "eight exchangers take a quarter of it", and those are the same quantity because the `chain`
+>   row's throughput IS the exchangers' demand. Both readings move together, and the finding they
+>   support gets **stronger**: the reactor discards more, not less.
+> - **`drain`'s "joint's ceiling used"**, 19.9% → **21.98%**; the D-D control's 1.6% → **1.73%**.
+> - **`drain`'s headroom**, 5.0× → **4.55×**, so the short answer's "5× to 19× to spare" is
+>   **4.55× to 18.8×**.
+>
+> The ones that do not move are `chain`'s 5.3% and 18.8×, and `rf-hc-exchanger`'s 15.0× — all three
+> taken against a figure that is not the reactor's.
+>
+> **No conclusion on this page turns over.** Every margin it argues from stays an order of magnitude
+> or better, and the balance finding it exists to record gets larger. The confinement ladder is not
+> in this correction: it already existed on 2026-09-08 and the rig already had it.
 >
 > The 86.4 MW is not arithmetic alone — it was measured on 2026-09-11 at the same 126 000 ticks, and
 > the ratio it gives against the 78.3 below is 1.1029410 against the ladder's own 1.1029412. See
@@ -43,14 +72,19 @@ merits; #89 removes throughput as a reason to take it.
 
 That is a 5× margin on a measured case rather than a proof about every case: a reactor would have to
 sell **five times** what this rig's does before one connection bound it, and how far a reactor can be
-driven was not measured — see [the caveat](#is-one-connection-enough).
+driven was not measured — see [the caveat](#is-one-connection-enough). **On a force holding the
+plant-efficiency ladder that margin is 4.55×**, for the reason the note at the top of this page
+gives; the figures below are the ones the rig measured, before that ladder existed.
 
 **What the measurement did turn up is a balance finding rather than a plumbing one.** An ignited D-T
 reactor on this rig sells **996 to 1 195 MW** — the meter's two bounds, see below — not the "on the
 order of 320 MW" that `entities.lua`'s high-capacity steam pair block states, and that #89's own
 text and ADR 0018's eight-exchanger row both reason from. Eight ordinary 40 MW exchangers take
 **26.8%** of it and the reactor **discards 73.2%**. Those two percentages are the same on either
-bound, which is why they are the form the finding is stated in. See [the finding for #227](#the-finding-a-d-t-reactor-sells-four-times-what-eight-exchangers-take).
+bound, which is why they are the form the finding is stated in. **On a researched force they are
+24.27% and 75.73%** — still the same on either bound, and the finding is larger rather than smaller;
+the note at the top of this page says why this particular ratio moves when most do not. See
+[the finding for #227](#the-finding-a-d-t-reactor-sells-four-times-what-eight-exchangers-take).
 
 ## What a bolted joint carries, against a pipe run
 

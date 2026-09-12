@@ -183,8 +183,12 @@ that has climbed it.
 
 **What the sweep covers, exactly.** It settles the simulation, so it sees a change to
 `reactor-logic.lua` and is blind to a change to a prototype the rig also reads — a fluid box's volume,
-a `fuel_value`, a recipe's output. Twenty-four commits were swept, being every one in the window that
-touches either mod's `scripts/`, plus anchors at each end. What closes the gap is that the two rig
+a `fuel_value`, a recipe's output. **Thirty-two commits were swept**: all twenty-one in the window
+that touch either mod's `scripts/`, nine anchors before it running back to the commit the 2026-08-17
+figures were taken at, and the window's two endpoints, `4df2591` and `2381730`, which touch the rig
+rather than the simulation. Eight of the twenty-one were added after review caught the first count
+claiming a coverage it did not have; all eight are documentation commits and all eight land on one of
+the two plateaus below, so the answer is unchanged and the claim is now true. What closes the gap is that the two rig
 runs bracket the window in the real game and the composite they give is the fall that was asked
 about: a third mover hiding in the prototypes would have to leave that composite intact.
 
@@ -208,9 +212,9 @@ commit one day earlier.
 360 000 ticks: 0.0891 u/tick at `d9ece9c`, 0.0536 at `30e100b`, 0.0968 at `4df2591` and again at
 `2381730`. The fall and the recovery overshoot, so the published series — 0.089 on 2026-08-17 against
 0.0968 since — shows a *rise* where the temperature shows a fall. Sustained goes 0.0408 → 0.00893 →
-0.0320 across the same four and falls on net, which is the bound that tracks what the plasma actually
-burns; the flowing bound is sustained divided by the fraction of ticks the meter counted, and the
-refuelling cadence moved with the burn.
+0.0319 → 0.0320 across the same four and falls on net, which is the bound that tracks what the plasma
+actually burns; the flowing bound is sustained divided by the fraction of ticks the meter counted,
+and the refuelling cadence moved with the burn.
 
 **Quote the plasma figures at a stated run length or not at all.** Unlike the energy rates, they do
 not converge to the same number at 126 000 ticks: today's 126 000-tick run reads 0.0675 flowing and
