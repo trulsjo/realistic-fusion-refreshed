@@ -260,7 +260,7 @@ specific commit of the redesign — `46f83971`, 2022-10-09 — nearly six months
 | Posted to | Realistic Fusion Power's mod portal discussion, thread *"About version 2.0"* |
 | URL | <https://mods.factorio.com/mod/RealisticFusionPower/discussion/626322f706bc9f47b0984b15> |
 | Posted by | **Romner_set**, who started the thread and describes the footage in it as his own work |
-| Thread started | 2022-04-22, decoding the thread id as a MongoDB ObjectId; the portal shows *"4 years ago"*, which agrees. **This is the thread, not the post** — the footage is `46f83971`, 2022-10-09, so the video went up at least six months into a thread that ran for years |
+| Thread started | 2022-04-22, decoding the thread id as a MongoDB ObjectId; the portal shows *"4 years ago"*, which agrees. **This is the thread, not the post** — the footage is `46f83971`, 2022-10-09, so the video went up at least five months and 17 days into a thread that ran for years |
 | What he says about it | *"how the current prototype which doesn't represent the final version at all looks like"*, and that compression hurt the quality |
 
 **Stated terms: none.** Checked 2026-09-12 — the thread carries no licence, no permission and no
