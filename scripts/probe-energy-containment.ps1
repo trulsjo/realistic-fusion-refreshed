@@ -137,7 +137,7 @@
     A consequence worth knowing: two exchangers fifteen tiles apart also join through their WATER
     boxes, south {0, 7} against north {0, -7}. One water feed serves the column -- which it has to,
     because the first exchanger's own water box ends up with both faces taken (the reactor below,
-    the second exchanger above) and unbound() correctly attaches nothing to it.
+    the second exchanger above) and rf_unbound() correctly attaches nothing to it.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
@@ -346,10 +346,13 @@ local function say(fmt, ...)
   storage.notes[#storage.notes + 1] = string.format(fmt, ...)
 end
 
-local function must(entity, what)
-  if not entity then error(what .. " refused") end
-  return entity
-end
+-- The shared map-building helpers: rf_place_or_die, rf_box_of, rf_unbound, rf_place_facing,
+-- rf_pipe_run and rf_assert_segments. Get-RigBuildLua in scripts/factorio-lib.ps1 defines them, and
+-- its docstring records what each private copy contributed -- THIS rig's unbound is where the
+-- occupancy skip and the allow_none opt-in come from, and both survive in the shared one.
+--
+-- `must` is absorbed by rf_place_or_die rather than kept beside it: it did strictly less.
+__RIGBUILD__
 
 local function yesno(b) return b and "YES" or "no" end
 
@@ -360,19 +363,10 @@ local function status_name(value)
   return tostring(value)
 end
 
---- The index of the box filtered to `fluid`, or nil.
---
--- A fluid energy source's box IS in entity.fluidbox and DOES carry its filter -- scripts/
--- bench-mod-links.ps1 already finds rf-heat-exchanger's energy intake this way. Worth stating,
--- because if it were not there the whole probe would report "no such box" and that would be a fact
--- about the API rather than about containment.
-local function box_of(entity, fluid)
-  for index = 1, #entity.fluidbox do
-    local filter = entity.fluidbox.get_filter(index)
-    if filter and filter.name == fluid then return index end
-  end
-  return nil
-end
+-- A fluid energy source's box IS in entity.fluidbox and DOES carry its filter, which is what makes
+-- rf_box_of work on an exchanger's energy intake. Worth stating, because if it were not there the
+-- whole probe would report "no such box" and that would be a fact about the API rather than about
+-- containment.
 
 local function amount_of(entity, index)
   local contents = index and entity.fluidbox[index]
@@ -380,7 +374,7 @@ local function amount_of(entity, index)
 end
 
 local function held(entity, fluid)
-  return amount_of(entity, box_of(entity, fluid))
+  return amount_of(entity, rf_box_of(entity, fluid))
 end
 
 --- Does any connection on `index` reach `other`?
@@ -413,133 +407,12 @@ local function connection_tile(entity, c)
   return { x = c.target_position.x, y = c.target_position.y - (dy > 0 and 1 or -1) }
 end
 
---- Place `name` so that the connection on its `fluid` box pointing `side` lands on `target`.
---
--- The entity is placed once, asked where its connection actually points, and moved by the
--- difference. The alternative is writing down where a heat exchanger keeps its fuel intake, and
--- those are vanilla's numbers rather than this repository's -- exactly the class of remembered
--- constant that broke the reactor benchmark (#49). scripts/bench-mod-links.ps1 does the same.
---
--- `side` picks WHICH connection, geometrically rather than by index. The chain variant declares
--- three of them and pairs iterates in whatever order it likes, so taking the first would bolt the
--- exchanger on by a different face from one run to the next.
--- `side` may be nil, meaning "the box's only connection, wherever it is".
---
--- IT USED TO BE MANDATORY AND THAT BROKE THIS PROBE. Both shipped exchangers took their energy on
--- the south face when this was written, so the two calls below said "south" and meant "the energy
--- inlet". #45 moved rf-heat-exchanger's onto its west long face -- five by fifteen exists so that a
--- long side lies along a reactor -- and the probe stopped running with "has no connection on its
--- south face". A rig that names a face is asserting a layout it does not own.
---
--- So a caller that just wants the one connection asks for it that way, and only a box with several
--- has to say which. TWO callers now say which, and only one of them declares the face it names:
--- the chain variant below is rig-defined, but the `control` row names "north" on the SHIPPED
--- exchanger, which since #275 has three energy connections and no single one to guess. That is the
--- layout-it-does-not-own case this comment warns about, taken knowingly: it fails loudly, with
--- "has no connection on its north face", rather than measuring the wrong tile in silence.
-local function place_facing(surface, force, name, fluid, side, target, seed)
-  local probe = must(surface.create_entity({ name = name, position = seed, force = force }),
-    "a probe " .. name)
-  local index = box_of(probe, fluid)
-  if not index then
-    probe.destroy()
-    error(name .. " has no box filtered to " .. fluid)
-  end
-  local connections = probe.fluidbox.get_pipe_connections(index)
-  local chosen
-  if side == nil then
-    if #connections ~= 1 then
-      probe.destroy()
-      error(string.format(
-        "%s's %s box has %d connections, so the caller has to say which face to align",
-        name, fluid, #connections))
-    end
-    chosen = connections[1].target_position
-  else
-    for _, c in pairs(connections) do
-      local dx = c.target_position.x - probe.position.x
-      local dy = c.target_position.y - probe.position.y
-      -- WHICH WAY THE CONNECTION FACES, by its dominant axis. It used to require dx == 0 for north
-      -- and south, which is only true of a connection in the middle of a short end -- and on the
-      -- 5x15 the middle of both short ends is water, so the chain variant's energy connections sit
-      -- one tile off centre at {-1, -7} and {-1, 7} and matched nothing. A connection points along
-      -- whichever axis it is further out on; that is the test.
-      local matches =
-        (side == "south" and dy > 0 and math.abs(dy) > math.abs(dx)) or
-        (side == "north" and dy < 0 and math.abs(dy) > math.abs(dx)) or
-        (side == "west"  and dx < 0 and math.abs(dx) > math.abs(dy)) or
-        (side == "east"  and dx > 0 and math.abs(dx) > math.abs(dy))
-      if matches then chosen = c.target_position end
-    end
-  end
-  if not chosen then
-    probe.destroy()
-    error(string.format("%s's %s box has no connection on its %s face", name, fluid, side))
-  end
-  local position = {
-    seed[1] + (target.x - chosen.x),
-    seed[2] + (target.y - chosen.y),
-  }
-  probe.destroy()
-  return must(surface.create_entity({ name = name, position = position, force = force }),
-    string.format("%s at (%g, %g)", name, position[1], position[2]))
-end
-
---- An infinity pipe on every connection of `index`, so the box under test is neither starved nor
---- backed up by something the probe is not asking about.
---- ... and never on a tile something already stands on, and never silently on none of them.
---
--- create_entity does NOT collision-check, so without the occupancy test this happily buries a pipe
--- under a machine. It bit the chain row: the first exchanger's north water connection targets the
--- tile the SECOND exchanger then occupies, and its south one targets a tile inside the reactor.
--- The energy reading survived it -- the strays are water-filtered and sit clear of the energy
--- connections -- but a rig whose entire value is that its geometry is trustworthy cannot carry two
--- boilers overlapping two pipes.
---
--- (It bit it on the 3x2 machine, where the pair chained sideways and the clash was east against
--- west. The clash moved with the shape and did not go away, which is the point: this test is about
--- a neighbour standing on a target tile, not about which face that neighbour is on.)
---
--- Skipping is right rather than merely safe: two exchangers fifteen tiles apart join through their
--- water boxes, so the column is fed along itself from whichever end is free.
-local function unbound(surface, force, entity, index, filter, allow_none)
-  local attached = 0
-  local total = 0
-  for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
-    total = total + 1
-    local occupied = surface.find_entities_filtered({ position = connection.target_position })
-    if #occupied == 0 then
-      local pipe = surface.create_entity({
-        name = ORDINARY, position = connection.target_position, force = force,
-      })
-      if pipe then
-        pipe.set_infinity_pipe_filter(filter)
-        attached = attached + 1
-      end
-    end
-  end
-  -- STILL AN ERROR UNLESS THE CALLER SAID OTHERWISE, and the flag is the point (#111). This used
-  -- to error unconditionally, on the stated grounds that "every box this is called on has at least
-  -- one free face in this rig" -- which was never true of the chained pair: the first exchanger's
-  -- water box has the reactor below it and the second exchanger above it, so both faces are taken
-  -- and the probe died during map creation instead of reporting anything.
-  --
-  -- Making it a note for every caller was the wrong fix and is not what this does. All faces taken
-  -- is legitimate for ONE box in this rig and a broken layout everywhere else, and the failure it
-  -- would then hide is one this rig has already had: a control machine placed a tile too close
-  -- covered the last free water face of the column, both chained exchangers dropped to
-  -- no_input_fluid, and AC 3 reported on two machines that were not running. So only the caller
-  -- that owns the legitimate case passes allow_none, and everything else still stops the run.
-  if attached == 0 then
-    if not allow_none then
-      error(string.format("no free connection to attach an infinity pipe to on %s box %d (%s)",
-        entity.name, index, filter.name))
-    end
-    say("plumbing: %s box %d (%s) has all %d of its faces taken by neighbours, so it is fed along " ..
-      "the column rather than from a pipe of its own",
-      entity.name, index, filter.name, total)
-  end
-end
+-- WHAT THIS RIG CONTRIBUTED TO THE SHARED HELPERS (#226). rf_unbound's occupancy skip and its
+-- allow_none opt-in were written here and both survive verbatim in Get-RigBuildLua, as does
+-- rf_place_facing's dominant-axis face test. The reasoning behind each is in that docstring rather
+-- than repeated here; what matters at the call sites below is that a caller which just wants "the
+-- one connection" asks for it with connection = "only", and a caller naming a face is knowingly
+-- asserting a layout it does not own.
 
 --- Water in and steam out, so an exchanger that DOES get fuel can actually run.
 --
@@ -549,14 +422,15 @@ end
 --- exactly one machine here -- the lower exchanger of the chained pair, with the reactor on one
 --- short end and its neighbour on the other -- and that machine is fed along the column instead.
 local function plumb_steam(surface, force, exchanger, boxed_in)
-  local water = box_of(exchanger, "water")
-  local steam = box_of(exchanger, "steam")
+  local water = rf_box_of(exchanger, "water")
+  local steam = rf_box_of(exchanger, "steam")
   if water then
-    unbound(surface, force, exchanger, water, { name = "water", percentage = 1, mode = "at-least" },
-      boxed_in)
+    rf_unbound(surface, force, exchanger, water, { name = "water", percentage = 1, mode = "at-least" },
+      { pipe = ORDINARY, allow_none = boxed_in, note = say })
   end
   if steam then
-    unbound(surface, force, exchanger, steam, { name = "steam", percentage = 0, mode = "at-most" })
+    rf_unbound(surface, force, exchanger, steam, { name = "steam", percentage = 0, mode = "at-most" },
+      { pipe = ORDINARY })
   end
 end
 
@@ -579,10 +453,10 @@ local function power(surface, force, at)
   if at[1] % 1 ~= 0 or at[2] % 1 ~= 0 then
     error(string.format("power() wants a whole-number position, got (%g, %g)", at[1], at[2]))
   end
-  must(surface.create_entity({ name = "substation", position = at, force = force }), "substation")
-  local eei = must(surface.create_entity({
+  rf_place_or_die(surface, { name = "substation", position = at, force = force }, "substation")
+  local eei = rf_place_or_die(surface, {
     name = "electric-energy-interface", position = { at[1] + 2.5, at[2] + 0.5 }, force = force,
-  }), "power source")
+  }, "power source")
   eei.power_production = 1e9 / 60
   eei.electric_buffer_size = 1e9 / 10
   return eei
@@ -594,10 +468,11 @@ local function offer(surface, force, label, exchanger_name, pipe_name, at, side)
   -- nil for the variants: whichever face the one-connection frame takes its energy on. See above.
   -- The SHIPPED rf-heat-exchanger has had three energy connections since #275, so its row has to
   -- name the face, or place_facing rightly refuses to guess.
-  local e = place_facing(surface, force, exchanger_name, ENERGY, side,
-    { x = at[1], y = at[2] }, { at[1], at[2] - 20 })
-  local pipe = must(surface.create_entity({ name = pipe_name, position = at, force = force }),
-    pipe_name .. " for " .. label)
+  local e = rf_place_facing(surface, force, {
+    name = exchanger_name, fluid = ENERGY, connection = side or "only",
+    target = { x = at[1], y = at[2] }, seed = { at[1], at[2] - 20 },
+  })
+  local pipe = rf_place_or_die(surface, { name = pipe_name, position = at, force = force }, pipe_name .. " for " .. label)
   pipe.set_infinity_pipe_filter({ name = ENERGY, percentage = 1, mode = "at-least" })
   plumb_steam(surface, force, e)
   return { label = label, exchanger = e, pipe = pipe, pipe_name = pipe_name }
@@ -611,12 +486,30 @@ script.on_init(function()
   surface.request_to_generate_chunks({ 0, 0 }, 12)
   surface.force_generate_chunk_requests()
 
-  -- AND CLEAR WHAT STANDS ON THE GROUND, for the reason probe-exchanger-chaining.ps1's row section
-  -- gives: a --create map is seeded afresh every run, and unbound() skips a target tile something
-  -- stands on -- so a tree on one row's steam target reads as "all faces taken" and the rig dies
-  -- during map creation, on a row that changed nothing. Seen twice in three runs on 2026-09-07,
-  -- on the list/refuse row both times. The area covers every row this file places, with margin.
-  for _, e in pairs(surface.find_entities_filtered({ area = { { -70, -50 }, { 160, 90 } } })) do
+  -- THE GROUND THIS RIG BUILDS ON. One rectangle, declared once, covering every row this file
+  -- places with margin -- and both things done to it are done over exactly that rectangle, so a row
+  -- moving out of it fails loudly rather than onto whatever the seed put there.
+  local AREA = { { -70, -50 }, { 160, 90 } }
+
+  -- LANDFILLED, because a --create map is seeded afresh every run and this rig lays machines on
+  -- natural terrain (#226). rf_place_or_die asks can_place_entity the way a player placing by hand
+  -- is asked, and that refuses a water tile -- so before this, the rig's answer depended on where
+  -- the seed had put a lake. Two consecutive runs on 2026-09-12 failed at different places for that
+  -- reason, one on the list/refuse exchanger and one on a substation with nothing in the way.
+  -- create_entity checked none of it and built on the water, which is why it had never shown up.
+  local tiles = {}
+  for x = AREA[1][1], AREA[2][1] do
+    for y = AREA[1][2], AREA[2][2] do
+      tiles[#tiles + 1] = { name = "landfill", position = { x, y } }
+    end
+  end
+  surface.set_tiles(tiles)
+
+  -- AND CLEAR WHAT STANDS ON IT, for the reason probe-exchanger-chaining.ps1's row section gives:
+  -- rf_unbound() skips a target tile something stands on -- so a tree on one row's steam target
+  -- reads as "all faces taken" and the rig dies during map creation, on a row that changed nothing.
+  -- Seen twice in three runs on 2026-09-07, on the list/refuse row both times.
+  for _, e in pairs(surface.find_entities_filtered({ area = AREA })) do
     if e.type ~= "character" then e.destroy() end
   end
 
@@ -655,10 +548,10 @@ script.on_init(function()
   --
   -- One rig for both: the chain row IS the bolt row with a second exchanger on the end of it, and
   -- building two would mean two reactors to fill and two chances for the fill loop to differ.
-  local reactor = must(surface.create_entity({
+  local reactor = rf_place_or_die(surface, {
     name = "rf-probe-reactor", position = { 0.5, 60.5 }, force = force,
-  }), "rf-probe-reactor")
-  local out = box_of(reactor, ENERGY)
+  }, "rf-probe-reactor")
+  local out = rf_box_of(reactor, ENERGY)
   if not out then error("rf-probe-reactor has no box filtered to " .. ENERGY) end
   -- The reactor's connection TILE, not the tile it points at -- see connection_tile above. The
   -- exchanger is then placed so that its own south connection points here, which puts its
@@ -679,8 +572,10 @@ script.on_init(function()
   -- The seed is a scratch position, and place_facing offsets FROM IT rather than from where the
   -- engine put the scratch entity -- so it has to be a position the engine would not move. A 5x15
   -- has odd dimensions both ways, which means a tile centre in both axes: X.5, not X.
-  local first = place_facing(surface, force, "rf-probe-exchanger-chain", ENERGY, "south",
-    target, { 0.5, 40.5 })
+  local first = rf_place_facing(surface, force, {
+    name = "rf-probe-exchanger-chain", fluid = ENERGY, connection = "south",
+    target = target, seed = { 0.5, 40.5 },
+  })
 
   -- Fifteen tiles NORTH: the exchanger is fifteen tall, so that is the next one up the column with
   -- no gap. Their energy connections at north {-1,-7} and south {-1,7} then point at each other's
@@ -688,13 +583,13 @@ script.on_init(function()
   --
   -- North rather than south because south is where the reactor is. It used to be three tiles east,
   -- which was right for the 3x2 machine #82 measured and buries a 5-wide one inside its neighbour.
-  local second = must(surface.create_entity({
+  local second = rf_place_or_die(surface, {
     name = "rf-probe-exchanger-chain-b",
     position = { first.position.x, first.position.y - 15 }, force = force,
-  }), "the second chained exchanger")
+  }, "the second chained exchanger")
 
   -- BOTH exchangers exist before either is plumbed, and that ordering is the fix rather than a
-  -- preference: unbound() skips a connection whose target tile is occupied, and it can only skip
+  -- preference: rf_unbound() skips a connection whose target tile is occupied, and it can only skip
   -- what has already been built. Plumbing `first` while `second` was still a gap buried an infinity
   -- pipe under it.
   -- THE CHAIN ROW'S OWN CALIBRATION, and it was missing (#111). A third one, same prototype and
@@ -709,13 +604,13 @@ script.on_init(function()
   -- WELL CLEAR OF THE COLUMN, and that is load-bearing rather than tidy. The first attempt put it
   -- one tile off the line where the second's neighbour would be: it read the right answer -- not
   -- joined, no fuel -- and its own footprint then covered the tile the second exchanger's last free
-  -- water face pointed at, so unbound() skipped it, the column lost its only water feed and both
+  -- water face pointed at, so rf_unbound() skipped it, the column lost its only water feed and both
   -- chained machines dropped to no_input_fluid. A control that changes what it is calibrating is
   -- not a control.
-  local aloof = must(surface.create_entity({
+  local aloof = rf_place_or_die(surface, {
     name = "rf-probe-exchanger-chain-b",
     position = { -40.5, first.position.y }, force = force,
-  }), "the unjoined third exchanger")
+  }, "the unjoined third exchanger")
 
   -- `first` is the one box that is allowed to find no free water face: the reactor is on its south
   -- end and `second` on its north. Every other call still errors, which is what catches a machine
@@ -744,10 +639,10 @@ script.on_init(function()
   --
   -- ITS OWN REACTOR, because rf-reactor declares a single energy output and the chain row above has
   -- already taken the one on that machine.
-  local hc_reactor = must(surface.create_entity({
+  local hc_reactor = rf_place_or_die(surface, {
     name = "rf-probe-reactor", position = { 60.5, 60.5 }, force = force,
-  }), "the hc row's rf-probe-reactor")
-  local hc_out = box_of(hc_reactor, ENERGY)
+  }, "the hc row's rf-probe-reactor")
+  local hc_out = rf_box_of(hc_reactor, ENERGY)
   if not hc_out then error("the hc row's rf-probe-reactor has no box filtered to " .. ENERGY) end
   if not hc_reactor.electric_network_id then
     error("the hc row's rf-probe-reactor is on no electric network; move or add a substation")
@@ -756,21 +651,49 @@ script.on_init(function()
   local hc_target = connection_tile(hc_reactor, hc_conn)
 
   -- side = nil on purpose: rf-hc-exchanger's energy box has exactly ONE connection, and asking for
-  -- it that way makes place_facing error rather than guess if that ever stops being true. Naming a
+  -- it that way makes rf_place_facing error rather than guess if that ever stops being true. Naming a
   -- face here would assert a layout this rig does not own -- the mistake #45 already caused once.
-  local hc_bolt = place_facing(surface, force, "rf-probe-hc-str", ENERGY, nil,
-    hc_target, { 60.5, 40.5 })
+  local hc_bolt = rf_place_facing(surface, force, {
+    name = "rf-probe-hc-str", fluid = ENERGY, connection = "only",
+    target = hc_target, seed = { 60.5, 40.5 },
+  })
   plumb_steam(surface, force, hc_bolt)
 
   -- Its calibration: a second one joined to nothing, plumbed the same way. Without it, "the bolted
   -- one holds fuel" cannot be told from the fill loop reaching everything, which is the exact
   -- failure #111 was opened for.
-  local hc_aloof = must(surface.create_entity({
+  local hc_aloof = rf_place_or_die(surface, {
     name = "rf-probe-hc-str", position = { 100.5, hc_bolt.position.y }, force = force,
-  }), "the unjoined hc exchanger")
+  }, "the unjoined hc exchanger")
   plumb_steam(surface, force, hc_aloof)
 
   storage.hc = { reactor = hc_reactor, out = hc_out, machine = hc_bolt, aloof = hc_aloof }
+
+  -- ------------------------------------------------------------------ the plumbing, judged
+  --
+  -- #226, carrying #215's second guard here. Every offset in this rig is derived from a connection
+  -- target or a selection box, which proves the layout follows the prototype and says nothing about
+  -- where the fluid goes. This asks -- and it is worth asking twice over on this rig, because a
+  -- steam pipe landing on a water line would leave a machine at no_input_fluid, which is exactly the
+  -- reading every AC here is written in terms of.
+  --
+  -- WATER AND STEAM ONLY, AND THE ENERGY BOX DELIBERATELY NOT. Whether a categorised energy box
+  -- joins the pipe offered to it is the QUESTION this probe exists to answer: half its rows are
+  -- built expecting a refusal, and a refused connection has no target and no segment of its own, so
+  -- claiming it would turn every measured refusal into an error. The two water lines are the rig's
+  -- own plumbing and must not cross; that is what is claimed.
+  local function judge(label, machine)
+    rf_assert_segments(label, {
+      { entity = machine, fluid = "water", what = label .. "'s water input" },
+      { entity = machine, fluid = "steam", what = label .. "'s steam output" },
+    })
+  end
+  for _, row in ipairs(storage.offers) do judge(row.label .. " row", row.exchanger) end
+  judge("chain row, first", first)
+  judge("chain row, second", second)
+  judge("chain row, aloof", aloof)
+  judge("hc row, bolted", hc_bolt)
+  judge("hc row, aloof", hc_aloof)
 
   say("built: %d offered rows, the bolt and chain pair, and the one-connection bolt row",
     #storage.offers)
@@ -778,12 +701,17 @@ end)
 
 local function report()
   say("== the instrument: does the rig's own join test work at all ==")
-  say("The `control` row below is the SHIPPED exchanger with an ordinary pipe -- what the mod does")
-  say("today. If it does not read joins=YES and carries>0, nothing else on this page means anything.")
+  say("The `control` row below is the SHIPPED exchanger with an ordinary pipe. IT READS joins=no")
+  say("SINCE #86, and that is containment working rather than the instrument failing: ADR 0018 gave")
+  say("rf-reactor-energy a connection_category of its own and shipped no pipe that carries it, so a")
+  say("vanilla infinity pipe is now refused by the mod's own machine. It read joins=YES before")
+  say("2026-09-07 and the note here still said it must, which would have condemned every row below.")
+  say("The row that calibrates the join test today is any /accept row: those use the categorised")
+  say("feed, and if none of them read joins=YES and carries>0, nothing on this page means anything.")
 
   say("== AC 1: does connection_category reach the engine on a fluid energy source's box ==")
   for _, row in ipairs(storage.offers) do
-    local index = box_of(row.exchanger, ENERGY)
+    local index = rf_box_of(row.exchanger, ENERGY)
     say("%-12s %-26s + %-22s joins=%-3s carries=%-10.6g status=%s",
       row.label, row.exchanger.name, row.pipe_name,
       yesno(joins(row.exchanger, index, row.pipe)),
@@ -848,7 +776,7 @@ local function report()
 
   say("== AC 3: does input-output chain on a fluid energy source's box ==")
   say("chain: the second exchanger joins the first: %s",
-    yesno(joins(b.second, box_of(b.second, ENERGY), b.first)))
+    yesno(joins(b.second, rf_box_of(b.second, ENERGY), b.first)))
   say("chain: it holds %.6g units and reports %s",
     storage.second_held or 0, status_name(b.second.status))
   say("chain: against the first one's %.6g units and %s",
@@ -857,10 +785,10 @@ local function report()
   -- had ever asked it -- the geometry does work out, but an inference dressed as a measurement is
   -- exactly what a probe exists not to produce.
   say("chain: and their WATER boxes join as well, so one feed serves the row: %s",
-    yesno(joins(b.second, box_of(b.second, "water"), b.first)))
+    yesno(joins(b.second, rf_box_of(b.second, "water"), b.first)))
   say("chain/control: an unjoined third one off to the side joins the second: %s, and holds %.6g "
     .. "units -- this row must read no and 0, or the two above mean nothing",
-    yesno(joins(b.aloof, box_of(b.aloof, ENERGY), b.second)), storage.aloof_held or 0)
+    yesno(joins(b.aloof, rf_box_of(b.aloof, ENERGY), b.second)), storage.aloof_held or 0)
 
   -- AC 5 (#275). The chain rows above bolt with an "input-output" connection. rf-hc-exchanger
   -- declares ONE connection and declares it plain "input", and no row anywhere had asked whether
@@ -872,7 +800,7 @@ local function report()
     say("input-bolt: the subject is rf-probe-hc-str -- the shipped rf-hc-exchanger, categorised,")
     say("input-bolt: one energy connection, flow_direction \"input\", nothing else changed")
     say("input-bolt: its box joins the reactor's output directly, no pipe: %s",
-      yesno(joins(h.machine, box_of(h.machine, ENERGY), h.reactor)))
+      yesno(joins(h.machine, rf_box_of(h.machine, ENERGY), h.reactor)))
     say("input-bolt: it holds %.6g units and reports %s",
       storage.hc_held or 0, status_name(h.machine.status))
     say("input-bolt: the reactor's output box held %.6g of a %.6g capacity going into this tick",
@@ -927,7 +855,7 @@ script.on_event(defines.events.on_tick, function(event)
 end)
 '@
 
-    $lua = $lua.Replace('__SETTLE__', "$Settle")
+    $lua = $lua.Replace('__RIGBUILD__', (Get-RigBuildLua)).Replace('__SETTLE__', "$Settle")
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
 }
 

@@ -205,41 +205,15 @@ local ENERGY = "rf-reactor-energy"
 -- would be an edit there rather than here.
 local ENERGY_FEED = "__ENERGYFEED__"
 
--- create_entity collision-checks nothing, so every silent overlap in this rig got built rather
--- than refused (#215). can_place_entity is the check, and WHICH check matters: at 2.0.77 its
--- build_check_type defaults to ghost_revive
--- (https://lua-api.factorio.com/2.0.77/classes/LuaSurface.html#can_place_entity), which is not
--- what a player placing by hand gets. Named here so the weaker default cannot creep back in, and
--- asserted because an unknown key would read as nil and quietly restore that default.
-local BUILD_CHECK = defines.build_check_type.manual
-if not BUILD_CHECK then
-  error("defines.build_check_type.manual is gone; this rig's placement guard would silently "
-    .. "fall back to ghost_revive")
-end
-
--- A position arrives here two ways: written as { x, y } by this script, or read off a connection
--- as a MapPosition. Only the error messages care, and they would rather not care twice.
-local function xy(position)
-  return position.x or position[1], position.y or position[2]
-end
-
--- EVERY entity this rig builds goes through here, which is the point. Guarding only the two
--- functions that placed the exchangers would have left pipe_run, the drain's infinity pipe, the
--- reactor and the power islands still placing silently into whatever is already there -- and
--- pipe_run's own comment has said "create_entity does not collision-check" the whole time.
-local function place_or_die(surface, spec, what)
-  local x, y = xy(spec.position)
-  if not surface.can_place_entity({
-    name = spec.name, position = spec.position, force = spec.force,
-    direction = spec.direction, build_check_type = BUILD_CHECK,
-  }) then
-    error(string.format("%s will not fit at (%g, %g): something is already there, so this rig's "
-      .. "layout is stale against that prototype's footprint", what, x, y))
-  end
-  local entity = surface.create_entity(spec)
-  if not entity then error(string.format("%s refused at (%g, %g)", what, x, y)) end
-  return entity
-end
+-- The shared map-building helpers: rf_place_or_die, rf_box_of, rf_unbound, rf_place_facing,
+-- rf_pipe_run and rf_assert_segments.
+--
+-- THIS RIG IS WHERE #215's TWO GUARDS WERE WRITTEN -- rf_place_or_die and rf_assert_segments -- and
+-- #226 moved all six out because that is exactly the problem: five scripts carried private copies of
+-- these helpers, so a guard added here reached none of the other four, two of which are gates rather
+-- than probes. Get-RigBuildLua in scripts/factorio-lib.ps1 holds the reconciled versions and the
+-- reasoning behind each.
+__RIGBUILD__
 
 -- The recipe that makes PLASMA, named rather than discovered.
 --
@@ -265,7 +239,7 @@ end
 --
 -- It used to be the literal "rf-deuterium" in three places, which was true of the D-D tier and of
 -- nothing else: rf-d-t-plasma is heated out of Core's rf-d-t-mix. Three literals is three places to
--- miss, and the miss would not have been an error -- box_of() would have found no rf-deuterium box
+-- miss, and the miss would not have been an error -- rf_box_of() would have found no rf-deuterium box
 -- on a D-T heater and the rig would have aborted mid-build with a message about a box rather than
 -- about the tier.
 --
@@ -280,19 +254,6 @@ local function feed_fluid()
 end
 
 -- ------------------------------------------------------------------ fluid box helpers
---
--- Boxes are found by the fluid they are filtered to rather than by index. The reactor's are
--- declared in a known order, but the heat exchanger's third box belongs to its energy source
--- rather than to the boiler, and an assembling machine's come from whatever recipe is set -- so
--- an index would be a guess in two of the three cases and a hostage to prototype edits in all of
--- them.
-local function box_of(entity, fluid)
-  for index = 1, #entity.fluidbox do
-    local filter = entity.fluidbox.get_filter(index)
-    if filter and filter.name == fluid then return index end
-  end
-  return nil
-end
 
 local function amount_in(entity, index)
   local contents = entity.fluidbox[index]
@@ -308,69 +269,11 @@ local function status_name(value)
   return tostring(value)
 end
 
--- An infinity pipe against every connection of a box: unbounded supply, or unbounded disposal.
--- Everything that is not one of the two links under test is made unbounded this way, so that the
--- links are the only thing in the rig that can be a limit.
-local function unbound(surface, force, entity, index, filter)
-  local attached = 0
-  for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
-    -- #215: when the exchanger's water connections moved to its short ends, these pipes landed
-    -- eight tiles out -- inside the reactor's own footprint -- and placed anyway.
-    local pipe = place_or_die(surface,
-      { name = "infinity-pipe", position = connection.target_position, force = force },
-      entity.name .. "'s " .. filter.name .. " infinity pipe")
-    pipe.set_infinity_pipe_filter(filter)
-    attached = attached + 1
-  end
-  if attached == 0 then
-    error(string.format("could not attach any infinity pipe to %s box %d", entity.name, index))
-  end
-end
-
--- Place an entity so that one of its connections points at a chosen tile.
---
--- The alternative is to write down where a chemical plant keeps its output and where a heat
--- exchanger keeps its heat input, and those are vanilla's numbers rather than this repository's --
--- exactly the class of remembered constant that broke the reactor benchmark (#49). So the entity
--- is placed once, asked where its connection actually points, and moved by the difference.
-local function place_facing(surface, force, name, fluid, target, seed)
-  -- Not place_or_die: this one is thrown away, and it exists to be asked where its connections
-  -- point. That answer is relative to itself, so an overlap here changes nothing it is asked for.
-  local probe = surface.create_entity({ name = name, position = seed, force = force })
-  if not probe then error("could not place a probe " .. name) end
-  if probe.type == "assembling-machine" then probe.set_recipe(plasma_recipe()) end
-
-  local index = box_of(probe, fluid)
-  if not index then error(name .. " has no box filtered to " .. fluid) end
-  local connections = probe.fluidbox.get_pipe_connections(index)
-  if #connections == 0 then error(name .. "'s " .. fluid .. " box has no connections") end
-
-  local at = connections[1].target_position
-  local position = { seed[1] + (target[1] - at.x), seed[2] + (target[2] - at.y) }
-  probe.destroy()
-
-  local entity = place_or_die(surface, { name = name, position = position, force = force }, name)
+-- An assembling machine has no fluid boxes until a recipe is set, so rf_place_facing is handed one
+-- of these to run on the throwaway probe as well as on the machine it keeps. The shared helper
+-- cannot call plasma_recipe() itself -- that is this rig's, and names this rig's tier.
+local function set_plasma_recipe(entity)
   if entity.type == "assembling-machine" then entity.set_recipe(plasma_recipe()) end
-  return entity
-end
-
--- The pipe is named by the caller, and since #86 exactly one caller is left. #26 gives the plasma
--- set a connection_category of its own, so rf-pipe joins the reactor's plasma box and nothing else;
--- ADR 0018 then gave the energy boxes a category of their own too, and shipped NO pipe that carries
--- it. So the plasma line is rf-pipe and the energy line is no line at all -- machines bolted face to
--- face. Getting the plasma one wrong does not misreport, it fails to connect, and assert_joined
--- below says so.
---
--- Idempotent, which the energy line's corner needed while it had one. Kept because create_entity
--- does not collision-check and a caller that walks two runs into the same tile would otherwise get
--- two pipes in it silently.
-local function pipe_run(surface, force, name, from, step, count)
-  for i = 0, count - 1 do
-    local at = { from[1] + step[1] * i, from[2] + step[2] * i }
-    if not surface.find_entity(name, at) then
-      place_or_die(surface, { name = name, position = at, force = force }, name)
-    end
-  end
 end
 
 -- Which way a runtime connection faces, read off the tile it targets rather than remembered.
@@ -383,7 +286,7 @@ end
 
 -- The connection of `entity`'s box on `fluid` that faces `side`, or nil.
 local function connection_facing(entity, fluid, side)
-  local index = box_of(entity, fluid)
+  local index = rf_box_of(entity, fluid)
   if not index then error(entity.name .. " has no box filtered to " .. fluid) end
   for _, c in pairs(entity.fluidbox.get_pipe_connections(index)) do
     if facing(c) == side then return c end
@@ -394,7 +297,7 @@ end
 -- Place `name` so that its `fluid` connection facing `side` STANDS ON `tile`, which is the other
 -- machine's target_position.
 --
--- NOT place_facing BELOW, AND THE DIFFERENCE IS THE WHOLE OF #86's ARITHMETIC. place_facing aligns
+-- NOT rf_place_facing BELOW, AND THE DIFFERENCE IS THE WHOLE OF #86's ARITHMETIC. rf_place_facing aligns
 -- a connection's TARGET onto a chosen tile, which is what a pipe run wants: the pipe occupies that
 -- tile. A BOLT aligns one machine's connection TILE onto the other machine's target. Align target
 -- against target and the two machines sit one tile clear of each other, both pointing at the same
@@ -405,7 +308,7 @@ end
 -- box has three and pairs() promises no order -- so an index would bolt the row together by a
 -- different face from one run to the next.
 local function bolt(surface, force, name, fluid, side, tile, seed)
-  -- Not place_or_die: this one is thrown away and only ever asked where its connections are,
+  -- Not rf_place_or_die: this one is thrown away and only ever asked where its connections are,
   -- relative to itself, so an overlap here changes nothing it is asked for.
   local probe = surface.create_entity({ name = name, position = seed, force = force })
   if not probe then error("could not place a probe " .. name) end
@@ -416,7 +319,7 @@ local function bolt(surface, force, name, fluid, side, tile, seed)
   end
   local off = { found.position.x - probe.position.x, found.position.y - probe.position.y }
   probe.destroy()
-  return place_or_die(surface, {
+  return rf_place_or_die(surface, {
     name = name, position = { tile.x - off[1], tile.y - off[2] }, force = force,
   }, string.format("%s bolted onto (%g, %g)", name, tile.x, tile.y))
 end
@@ -430,74 +333,28 @@ local function assert_joined(entity, index, what)
   error(what .. ": no connection on this box reaches anything")
 end
 
--- AND THAT IT REACHES THE RIGHT THING, which is a different question and the one #215 turned on.
---
--- Every fluid here has its own plumbing, and the engine merges any two segments whose tiles touch.
--- A steam pipe landing on the energy line breaks no connection -- assert_joined above passes on
--- every box in the rig -- it merely makes a segment that cannot accept reactor energy. The reactor
--- then reads as a machine that produces nothing rather than as a plumbing mistake, which is exactly
--- how the exchanger bank sat broken from 2026-08-23 to 2026-09-02 with every check green.
---
--- So each box is asked which segment it is in, and two DIFFERENT fluids sharing one is the error.
--- Same fluid sharing is not: the whole point of the energy line is that the reactor and every
--- exchanger sit in one segment, and adjacent exchangers' water pipes may touch without harm.
-local function assert_segments(cell)
-  local owner = {}
-  -- WHOSE segment id, and it is not the machine's own. get_fluid_segment_id on a machine's box
-  -- returns nil far more often than not: MEASURED ON THIS RIG AGAINST FACTORIO 2.0.77 (build
-  -- 84539), it answered for the reactor's plasma box and for every exchanger's water box, and
-  -- returned nil for the reactor's energy box, every heater box and every steam box. The version
-  -- is named because the API publishes per version and this is a fact about one of them. The
-  -- manual does not contradict it and does not predict it either:
-  -- https://lua-api.factorio.com/2.0.77/classes/LuaFluidBox.html#get_fluid_segment_id gives
-  -- "does not belong to a fluid segment" as one of its nil cases without saying which boxes fall
-  -- into it, so WHICH ones is the rig's finding rather than the manual's.
-  -- bench-fluid-links.ps1 only ever tostring()s the value into a log line, so nothing here had
-  -- established it. The pipe on the other side of the connection always has one, so the segment
-  -- is read through the connection's target.
-  local function claim(entity, index, fluid, what)
-    if not index then error(cell.name .. " cell: " .. what .. ": no box carries " .. fluid) end
-    local ids = {}
-    for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
-      if connection.target then
-        local id = connection.target.get_fluid_segment_id(connection.target_fluidbox_index)
-        if id then ids[#ids + 1] = id end
-      end
-    end
-    -- Flush against another machine there is no pipe to ask, and then the box's own id is the only
-    -- one there is. Neither being available means nothing can be judged, which is not a pass.
-    if #ids == 0 then
-      local own = entity.fluidbox.get_fluid_segment_id(index)
-      if not own then
-        error(cell.name .. " cell: " .. what .. ": in no fluid segment, and neither is anything it "
-          .. "connects to -- this box cannot be judged")
-      end
-      ids[1] = own
-    end
-    for _, id in ipairs(ids) do
-      local held = owner[id]
-      if held and held.fluid ~= fluid then
-        error(string.format(
-          "%s cell: %s carries %s, but shares fluid segment %d with %s, which carries %s. Two "
-          .. "fluids in one segment: neither line can carry what it is for, and nothing else in "
-          .. "this rig says so", cell.name, what, fluid, id, held.what, held.fluid))
-      end
-      owner[id] = { fluid = fluid, what = what }
-    end
+-- AND THAT IT REACHES THE RIGHT THING is rf_assert_segments, above, which is a different question
+-- and the one #215 turned on. What belongs here is only the LIST of boxes this rig wants judged.
+local function cell_segments(cell)
+  local claims = {
+    { entity = cell.reactor, index = cell.plasma_box, fluid = PLASMA,
+      what = "the reactor's plasma box" },
+    { entity = cell.reactor, index = cell.energy_box, fluid = ENERGY,
+      what = "the reactor's energy box" },
+  }
+  local function add(entity, fluid, what)
+    claims[#claims + 1] = { entity = entity, fluid = fluid, what = what }
   end
-
-  claim(cell.reactor, cell.plasma_box, PLASMA, "the reactor's plasma box")
-  claim(cell.reactor, cell.energy_box, ENERGY, "the reactor's energy box")
   for i, heater in ipairs(cell.heaters) do
-    claim(heater, box_of(heater, PLASMA), PLASMA, "heater " .. i .. "'s plasma output")
-    claim(heater, box_of(heater, feed_fluid()), feed_fluid(),
-      "heater " .. i .. "'s " .. feed_fluid() .. " input")
+    add(heater, PLASMA, "heater " .. i .. "'s plasma output")
+    add(heater, feed_fluid(), "heater " .. i .. "'s " .. feed_fluid() .. " input")
   end
   for i, exchanger in ipairs(cell.exchangers) do
-    claim(exchanger, box_of(exchanger, ENERGY), ENERGY, "exchanger " .. i .. "'s energy input")
-    claim(exchanger, box_of(exchanger, "water"), "water", "exchanger " .. i .. "'s water input")
-    claim(exchanger, box_of(exchanger, "steam"), "steam", "exchanger " .. i .. "'s steam output")
+    add(exchanger, ENERGY, "exchanger " .. i .. "'s energy input")
+    add(exchanger, "water", "exchanger " .. i .. "'s water input")
+    add(exchanger, "steam", "exchanger " .. i .. "'s steam output")
   end
+  rf_assert_segments(cell.name .. " cell", claims)
 end
 
 __QUIETMAP__
@@ -547,13 +404,13 @@ end
 -- power is this cell's substations and energy interfaces, already placed. The cell keeps them so
 -- assert_intact() can see the supply path; nothing here reads them for a measurement.
 local function build(surface, force, ox, drain, power)
-  local reactor = place_or_die(surface,
+  local reactor = rf_place_or_die(surface,
     { name = "rf-reactor", position = { ox + 0.5, 0.5 }, force = force, raise_built = true },
     "rf-reactor")
   if not reactor.electric_network_id then error("rf-reactor is on no electric network") end
 
   -- The reactor's plasma box is box 1, by index and not by filter. It is the one place in this rig
-  -- that cannot use box_of: #28 removed rf-reactor's input filter, because one reactor now burns
+  -- that cannot use rf_box_of: #28 removed rf-reactor's input filter, because one reactor now burns
   -- either plasma and a filter takes exactly one fluid. get_filter reports the PROTOTYPE's filter,
   -- so asking for the plasma box by fluid returns nil and this rig aborts before it builds anything.
   --
@@ -561,7 +418,7 @@ local function build(surface, force, ox, drain, power)
   -- boxes in a known order -- and the contract is asserted rather than assumed: box 1 unfiltered,
   -- box 2 filtered to reactor energy. A prototype edit that swapped them still stops the run.
   local plasma_box = 1
-  local energy_box = box_of(reactor, ENERGY)
+  local energy_box = rf_box_of(reactor, ENERGY)
   if reactor.fluidbox.get_filter(plasma_box) then
     error("rf-reactor's input box has regained a filter; see prototypes/entities.lua")
   end
@@ -577,13 +434,16 @@ local function build(surface, force, ox, drain, power)
   -- figure comes out flatteringly large. Heaters are cheap here; supply-limiting the reactor is
   -- not.
   local west = { ox + 0.5 - 8, 0.5 }
-  pipe_run(surface, force, "rf-pipe", west, { -1, 0 }, PIPES + 3 * (HEATERS - 1))
+  rf_pipe_run(surface, force, "rf-pipe", west, { -1, 0 }, PIPES + 3 * (HEATERS - 1))
   local heater
   local heaters = {}
   for i = 0, HEATERS - 1 do
-    local built = place_facing(surface, force, "rf-heater", PLASMA,
-      { west[1] - (PIPES - 1) - 3 * i, west[2] }, { ox - 24.5 - 4 * i, 20.5 })
-    unbound(surface, force, built, box_of(built, feed_fluid()),
+    local built = rf_place_facing(surface, force, {
+      name = "rf-heater", fluid = PLASMA, prepare = set_plasma_recipe,
+      target = { west[1] - (PIPES - 1) - 3 * i, west[2] },
+      seed = { ox - 24.5 - 4 * i, 20.5 },
+    })
+    rf_unbound(surface, force, built, rf_box_of(built, feed_fluid()),
       { name = feed_fluid(), percentage = 1, mode = "at-least" })
     -- The first is the one the meter watches. They all feed the same segment, so one is a fair
     -- sample of the link; what the others do is add supply -- which is why assert_intact() keeps
@@ -597,7 +457,7 @@ local function build(surface, force, ox, drain, power)
   -- IT WAS A PIPE RUN NORTH INTO A HEADER, AND THAT LAYOUT HAD BEEN STALE SINCE c3abb81 (#215). The
   -- header pitched the exchangers six tiles apart, which described rf-heat-exchanger when it was
   -- vanilla's 3x2; at 5x15 exchanger i's steam outlet targeted exchanger i+1's stub, so steam and
-  -- reactor energy fought over the same tile and place_or_die() refused to build it at all.
+  -- reactor energy fought over the same tile and rf_place_or_die() refused to build it at all.
   --
   -- #86 settles it by removing the choice. ADR 0018 gives the fluid a connection category of its
   -- own and ships no pipe that carries it, so there is no header to pitch: the first exchanger
@@ -614,7 +474,7 @@ local function build(surface, force, ox, drain, power)
     -- Nothing downstream to throttle the link: whatever crosses is removed the same tick. The
     -- rigs' categorised feed rather than a vanilla infinity pipe, because a vanilla one cannot
     -- reach this box at all any more -- which is the whole of what Write-EnergyFeed exists for.
-    local pipe = place_or_die(surface,
+    local pipe = rf_place_or_die(surface,
       { name = ENERGY_FEED, position = reactor_out.target_position, force = force },
       "the drain's energy feed")
     pipe.set_infinity_pipe_filter({ name = ENERGY, percentage = 0, mode = "at-most" })
@@ -642,7 +502,7 @@ local function build(surface, force, ox, drain, power)
       if not water then
         error("rf-heat-exchanger has no " .. spec[2] .. "-facing water connection")
       end
-      local pipe = place_or_die(surface,
+      local pipe = rf_place_or_die(surface,
         { name = "infinity-pipe", position = water.target_position, force = force },
         "the row's " .. spec[2] .. " water feed")
       pipe.set_infinity_pipe_filter({ name = "water", percentage = 1, mode = "at-least" })
@@ -651,7 +511,7 @@ local function build(surface, force, ox, drain, power)
     -- Steam out of every machine. Its one steam connection is on the free long face, so nothing
     -- here has to be skipped.
     for _, exchanger in ipairs(exchangers) do
-      unbound(surface, force, exchanger, box_of(exchanger, "steam"),
+      rf_unbound(surface, force, exchanger, rf_box_of(exchanger, "steam"),
         { name = "steam", percentage = 0, mode = "at-most" })
     end
   end
@@ -660,13 +520,13 @@ local function build(surface, force, ox, drain, power)
   -- nothing, and a pipe run that lines up one tile out carries nothing. Both look like a quiet
   -- zero in the results rather than like a broken rig.
   if not heater.electric_network_id then error("rf-heater is on no electric network") end
-  assert_joined(heater, box_of(heater, PLASMA), "heater plasma output")
+  assert_joined(heater, rf_box_of(heater, PLASMA), "heater plasma output")
   assert_joined(reactor, plasma_box, "reactor plasma box")
   assert_joined(reactor, energy_box, "reactor energy output")
   for _, exchanger in ipairs(exchangers) do
-    assert_joined(exchanger, box_of(exchanger, ENERGY), "exchanger energy input")
-    assert_joined(exchanger, box_of(exchanger, "water"), "exchanger water input")
-    assert_joined(exchanger, box_of(exchanger, "steam"), "exchanger steam output")
+    assert_joined(exchanger, rf_box_of(exchanger, ENERGY), "exchanger energy input")
+    assert_joined(exchanger, rf_box_of(exchanger, "water"), "exchanger water input")
+    assert_joined(exchanger, rf_box_of(exchanger, "steam"), "exchanger steam output")
   end
 
   local cell = {
@@ -676,13 +536,13 @@ local function build(surface, force, ox, drain, power)
     name = drain and "drain" or "chain",
     reactor = reactor, heater = heater, heaters = heaters, exchangers = exchangers, power = power,
     plasma_box = plasma_box, energy_box = energy_box,
-    heater_box = box_of(heater, PLASMA),
+    heater_box = rf_box_of(heater, PLASMA),
     -- Meter state. last_* is what the source box held at the previous sample.
     last_plasma = 0, last_energy = 0,
     plasma_out = 0, energy_out = 0, plasma_ticks = 0, energy_ticks = 0, plasma_skipped = 0,
   }
 
-  assert_segments(cell)
+  cell_segments(cell)
   return cell
 end
 
@@ -697,7 +557,7 @@ script.on_init(function()
 
   -- Cell pitch, derived rather than written down (#89). It was a literal 100, which is the room a
   -- four-machine row needs and no more: at eight exchangers it put the last machine straight through
-  -- the drain cell's energy feed. The failure was loud -- place_or_die() saw it -- and it is still
+  -- the drain cell's energy feed. The failure was loud -- rf_place_or_die() saw it -- and it is still
   -- better derived than remembered.
   --
   -- THE ARITHMETIC IS THE REACTOR'S HALF PLUS THE ROW PLUS 25, FLOORED AT 100, and it is written out
@@ -761,9 +621,9 @@ script.on_init(function()
   for _, ox in ipairs({ 0, CELL_PITCH }) do
     power[ox] = {}
     for _, dx in ipairs({ 9, -9 }) do
-      local sub = place_or_die(surface,
+      local sub = rf_place_or_die(surface,
         { name = "substation", position = { ox + dx, 5 }, force = force }, "a substation")
-      local eei = place_or_die(surface, {
+      local eei = rf_place_or_die(surface, {
         name = "electric-energy-interface",
         position = { ox + dx + (dx > 0 and 2.5 or -2.5), 5.5 }, force = force,
       }, "a power source")
@@ -804,7 +664,7 @@ local function report(cell, window)
     cell.plasma_skipped, plasma and plasma.temperature or 0, plasma and plasma.amount or 0,
     amount_in(reactor, cell.energy_box),
     status_name(cell.heater.status), amount_in(cell.heater, cell.heater_box),
-    amount_in(cell.heater, box_of(cell.heater, feed_fluid()))))
+    amount_in(cell.heater, rf_box_of(cell.heater, feed_fluid()))))
 
   -- EVERY exchanger in the row, which is #89's whole instrument. This used to report
   -- cell.exchangers[1] alone -- the one bolted straight to the reactor, and therefore the one that
@@ -814,9 +674,9 @@ local function report(cell, window)
     log(string.format(
       "LINKRIG exch cell=%s window=%d index=%d status=%s fuel=%.6g water=%.6g steam=%.6g",
       cell.name, window, i, status_name(exchanger.status),
-      amount_in(exchanger, box_of(exchanger, ENERGY)),
-      amount_in(exchanger, box_of(exchanger, "water")),
-      amount_in(exchanger, box_of(exchanger, "steam"))))
+      amount_in(exchanger, rf_box_of(exchanger, ENERGY)),
+      amount_in(exchanger, rf_box_of(exchanger, "water")),
+      amount_in(exchanger, rf_box_of(exchanger, "steam"))))
   end
   cell.plasma_out, cell.energy_out = 0, 0
   cell.plasma_ticks, cell.energy_ticks, cell.plasma_skipped = 0, 0, 0
@@ -852,6 +712,7 @@ script.on_event(defines.events.on_tick, function()
 end)
 '@
     $lua = $lua.
+        Replace('__RIGBUILD__', (Get-RigBuildLua)).
         Replace('__QUIETMAP__', (Get-QuietMapLua)).
         Replace('__QUIETFN__', $script:QuietMapFunction).
         Replace('__WINDOW__', "$Window").Replace('__EXCHANGERS__', "$Exchangers").

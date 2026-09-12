@@ -93,10 +93,20 @@ actually declares.
 
 Three of those rows are instrumentation rather than findings, and all three are load-bearing:
 
-- **`control` is the calibration.** It uses the shipped exchanger and an ordinary pipe, which is what
-  the mod does today, so it must read `joins=YES` and carry fuel. Without it, a bug in the placement
-  arithmetic or in the join test would read exactly like containment working, and **every negative
-  below would be unfalsifiable**. It earned its place: see the off-by-one recorded further down.
+- **`control` WAS the calibration, and since 2026-09-07 it is a finding instead.** It uses the shipped
+  exchanger and an ordinary pipe. When this page was written that was what the mod did, so the row
+  read `joins=YES` and carried fuel, and it was the check that a bug in the placement arithmetic or
+  in the join test could not read as containment working. **It reads `joins=no carries=0` today** —
+  measured 2026-09-12, and identically on `main` and on #226's branch, so it is not a rig change.
+  [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) shipped
+  [ADR 0018](../adr/0018-energy-is-contained-and-no-pipe-carries-it.md): `rf-reactor-energy` carries
+  a `connection_category` of its own and no pipe in the game carries it, so the mod's own exchanger
+  now refuses a vanilla pipe, which is the whole point of that ADR.
+
+  **What calibrates the join test now is any `/accept` row**, which uses the categorised feed. Those
+  still read `joins=YES` and carry fuel, so the negatives below are still falsifiable; it is the
+  identity of the control that moved, not the evidence. Read on that footing rather than on the
+  paragraph this replaces, which would have condemned every row on the page.
 - **`list` exists because a negative on the bare string would have decided #44.** "The field was
   spelled wrong" is the one way such a negative could be wrong, so both forms were built. #43 tried
   `fluid_box` against `fluid_boxes` for exactly this reason, and it was the difference between a
@@ -112,7 +122,7 @@ box with a *misdeclared* category also refuses everything, and from outside the 
 **Yes, in both forms, and the refusal is total.**
 
 ```
-control      rf-heat-exchanger        + infinity-pipe        joins=YES carries=199.333 status=working
+control      rf-heat-exchanger        + infinity-pipe        joins=YES carries=199.333 status=working   <- reads joins=no since #86; see above
 str/refuse   rf-probe-exchanger-str   + infinity-pipe        joins=no  carries=0       status=no_input_fluid
 str/accept   rf-probe-exchanger-str   + rf-probe-energy-feed joins=YES carries=199.333 status=working
 list/refuse  rf-probe-exchanger-list  + infinity-pipe        joins=no  carries=0       status=no_input_fluid

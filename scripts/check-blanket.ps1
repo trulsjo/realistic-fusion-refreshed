@@ -163,7 +163,8 @@ local NEARBY = 25
 --
 -- DERIVED RATHER THAN WRITTEN DOWN, the way bench-mod-links.ps1 and check-observability.ps1 derive
 -- theirs, because the failure mode of getting it wrong is silent: create_entity on ungenerated
--- ground either throws from must() or -- worse -- the landfill is written and the machine is not.
+-- ground either throws from rf_place_or_die() or -- worse -- the landfill is written and the
+-- machine is not.
 -- The radius was a hardcoded 10 until #93 pushed WEST from -260 to -320 for the `sated` cell, which
 -- left the westmost plasma feed at about -309.5 against a generated -320. It worked, with no margin
 -- at all, and the next cell added on that side would have taken it away.
@@ -181,10 +182,16 @@ local function record(ok, name, detail)
     detail and ("  -- " .. detail) or "")
 end
 
-local function must(entity, what)
-  if not entity then error(what .. " refused") end
-  return entity
-end
+-- The shared map-building helpers: rf_place_or_die, rf_box_of, rf_unbound, rf_place_facing,
+-- rf_pipe_run and rf_assert_segments. Get-RigBuildLua in scripts/factorio-lib.ps1 defines them.
+--
+-- THIS RIG IS A GATE, WHICH IS WHY #226 REACHED IT. It was run to decide whether a change was safe
+-- while nothing in it checked that its own plumbing went where it thought: `must` proved only that
+-- the engine returned an entity, so a machine laid out for a superseded footprint read as a machine
+-- producing nothing. rf_place_or_die asks can_place_entity first and rf_assert_segments asks each
+-- box which fluid segment it is really in. `must` is gone rather than kept beside them -- it did
+-- strictly less, and leaving it available is leaving the weaker check to be reached for.
+__RIGBUILD__
 
 local function holds(entity, fluid)
   local total = 0
@@ -245,21 +252,11 @@ local function lithium_in(blanket)
 end
 
 local function power(surface, force, at)
-  must(surface.create_entity({ name = "substation", position = at, force = force }), "substation")
-  local eei = must(surface.create_entity({
+  rf_place_or_die(surface, { name = "substation", position = at, force = force }, "substation")
+  local eei = rf_place_or_die(surface, {
     name = "electric-energy-interface", position = { at[1] + 2.5, at[2] + 0.5 }, force = force,
-  }), "power source")
+  }, "power source")
   eei.power_production = 4e6
-end
-
-local function pipe_run(surface, force, from, step, count)
-  for i = 0, count - 1 do
-    local at = { from[1] + step[1] * i, from[2] + step[2] * i }
-    if not surface.find_entity("pipe", at) then
-      must(surface.create_entity({ name = "pipe", position = at, force = force }),
-        string.format("pipe at (%g, %g)", at[1], at[2]))
-    end
-  end
 end
 
 --- What a list of entities holds of one fluid, summed.
@@ -322,13 +319,13 @@ end
 
 --- A reactor on a plasma feed, at `ox`. Geometry read off the prototypes rather than written down.
 local function reactor_at(surface, force, ox, plasma, temperature)
-  local reactor = must(surface.create_entity({
+  local reactor = rf_place_or_die(surface, {
     name = "rf-reactor", position = { ox, 0.5 }, force = force, raise_built = true,
-  }), "rf-reactor")
+  }, "rf-reactor")
   local west = reactor.fluidbox.get_pipe_connections(1)[1].target_position
-  local feed = must(surface.create_entity({
+  local feed = rf_place_or_die(surface, {
     name = FEED, position = { west.x, west.y }, force = force,
-  }), "plasma feed")
+  }, "plasma feed")
   feed.set_infinity_pipe_filter({
     name = plasma, percentage = 1, temperature = temperature, mode = "at-least",
   })
@@ -342,14 +339,14 @@ end
 local function collector_on(surface, force, reactor, tank_seed)
   local rbox = prototypes.entity["rf-reactor"].selection_box
   local cbox = prototypes.entity["rf-isotope-collector"].selection_box
-  local collector = must(surface.create_entity({
+  local collector = rf_place_or_die(surface, {
     name = "rf-isotope-collector",
     position = {
       reactor.position.x,
       reactor.position.y + rbox.right_bottom.y + (cbox.right_bottom.y - cbox.left_top.y) / 2,
     },
     force = force, direction = defines.direction.south, raise_built = true,
-  }), "rf-isotope-collector")
+  }, "rf-isotope-collector")
 
   -- Only the tritium box is plumbed. Helium-3 is left to accumulate in the collector, which is
   -- where the d-d cell reads it from.
@@ -368,20 +365,17 @@ local function collector_on(surface, force, reactor, tank_seed)
   local step = { at.x - collector.position.x, at.y - collector.position.y }
   local length = math.max(math.abs(step[1]), math.abs(step[2]))
   step = { step[1] / length, step[2] / length }
-  pipe_run(surface, force, { at.x, at.y }, step, 3)
+  rf_pipe_run(surface, force, "pipe", { at.x, at.y }, step, 3)
 
-  -- The tank is placed by probing where its own connection lands, the way check-breeding does: a
-  -- storage tank carries four connections at fixed offsets rather than one per edge tile.
-  local probe = must(surface.create_entity({
-    name = "storage-tank", position = tank_seed, force = force }), "storage tank probe")
-  local pat = probe.fluidbox.get_pipe_connections(1)[1].target_position
-  local target = { at.x + step[1] * 2, at.y + step[2] * 2 }
-  probe.destroy()
-  local tank = must(surface.create_entity({
-    name = "storage-tank",
-    position = { tank_seed[1] + (target[1] - pat.x), tank_seed[2] + (target[2] - pat.y) },
-    force = force,
-  }), "storage tank")
+  -- The tank is placed by probing where its own connection lands: a storage tank carries four
+  -- connections at fixed offsets rather than one per edge tile, so butting it against the end of a
+  -- pipe run lines up only by luck. "first" rather than "only" because there are four of them and
+  -- they are interchangeable here; no filter, because a tank's boxes carry none.
+  local tank = rf_place_facing(surface, force, {
+    name = "storage-tank", connection = "first",
+    target = { at.x + step[1] * 2, at.y + step[2] * 2 },
+    seed = tank_seed,
+  })
   return collector, tank, index
 end
 
@@ -396,18 +390,50 @@ end
 local function blanket_on(surface, force, reactor, lithium)
   local rbox = prototypes.entity["rf-reactor"].selection_box
   local bbox = prototypes.entity[BLANKET].selection_box
-  local blanket = must(surface.create_entity({
+  local blanket = rf_place_or_die(surface, {
     name = BLANKET,
     position = {
       reactor.position.x,
       reactor.position.y + rbox.left_top.y - (bbox.right_bottom.y - bbox.left_top.y) / 2,
     },
     force = force, raise_built = true,
-  }), BLANKET)
+  }, BLANKET)
   if lithium > 0 then
     blanket.get_inventory(defines.inventory.chest).insert({ name = LITHIUM, count = lithium })
   end
   return blanket
+end
+
+--- Every plumbed box in one cell is in a fluid segment of its own fluid (#226, carrying #215's guard).
+--
+-- WHAT IT COVERS AND WHAT IT CANNOT. Only boxes this rig actually plumbs are claimed, because
+-- rf_assert_segments refuses to judge a box that is in no segment and connects to nothing -- and
+-- that is the correct answer for this rig's energy boxes, which are deliberately bare, and for the
+-- collector of a cell built with no tank. Claiming them would turn "nothing is attached, on purpose"
+-- into an error. So the plasma feed is always claimed and the tritium outlet only when it was piped.
+--
+-- The pairing that matters here is plasma against tritium: both lines run through vanilla pipe in a
+-- cell twenty tiles wide, and a run that strayed onto the other would leave the reactor unfuelled or
+-- the collector unable to drain, either of which reads as breeding being broken rather than as
+-- plumbing being wrong.
+local function cell_segments(name, reactor, plasma, collector, tank)
+  -- THE REACTOR'S PLASMA BOX IS BOX 1, BY INDEX AND NOT BY FILTER, which is the one place in this
+  -- rig that rf_box_of cannot answer: #28 removed rf-reactor's input filter, because one reactor
+  -- burns either plasma and a filter takes exactly one fluid. get_filter reports the PROTOTYPE's
+  -- filter, so asking for the plasma box by fluid returns nil. Index is safe for the reason
+  -- rf_box_of's own note gives -- the reactor declares its boxes in a known order -- and the
+  -- contract is asserted rather than assumed, one line below.
+  if reactor.fluidbox.get_filter(1) then
+    error("rf-reactor's input box has regained a filter; see prototypes/entities.lua")
+  end
+  local claims = {
+    { entity = reactor, index = 1, fluid = plasma, what = "the reactor's plasma box" },
+  }
+  if collector and tank then
+    claims[#claims + 1] =
+      { entity = collector, fluid = TRITIUM, what = "the collector's tritium outlet" }
+  end
+  rf_assert_segments(name .. " cell", claims)
 end
 
 script.on_init(function()
@@ -500,7 +526,7 @@ script.on_init(function()
   -- ------------------------------------------------------------------ empty
   local empty = reactor_at(surface, force, -120.5, DT, 1e6)
   power(surface, force, { -108, 8 })
-  local empty_collector = collector_on(surface, force, empty, { -90.5, 25.5 })
+  local empty_collector, empty_tank = collector_on(surface, force, empty, { -90.5, 25.5 })
   local empty_blanket = blanket_on(surface, force, empty, 0)
 
   -- ------------------------------------------------------------------ orphan
@@ -603,7 +629,7 @@ script.on_init(function()
   -- ------------------------------------------------------------------ pulled
   local pulled = reactor_at(surface, force, -240.5, DT, 1e6)
   power(surface, force, { -228, 8 })
-  local pulled_collector = collector_on(surface, force, pulled, { -210.5, 25.5 })
+  local pulled_collector, pulled_tank = collector_on(surface, force, pulled, { -210.5, 25.5 })
   local pulled_blanket = blanket_on(surface, force, pulled, LOADED)
 
   -- ------------------------------------------------------------------ d-d, blanketed and not
@@ -613,12 +639,28 @@ script.on_init(function()
   -- collector. The unblanketed one beside it is what says the inequality is the blanket's doing.
   local dd = reactor_at(surface, force, 60.5, DD, 6e8)
   power(surface, force, { 72, 8 })
-  local dd_collector = collector_on(surface, force, dd, { 90.5, 25.5 })
+  local dd_collector, dd_tank = collector_on(surface, force, dd, { 90.5, 25.5 })
   local dd_blanket = blanket_on(surface, force, dd, LOADED)
 
   local dd_bare = reactor_at(surface, force, 120.5, DD, 6e8)
   power(surface, force, { 132, 8 })
-  local dd_bare_collector = collector_on(surface, force, dd_bare, { 150.5, 25.5 })
+  local dd_bare_collector, dd_bare_tank = collector_on(surface, force, dd_bare, { 150.5, 25.5 })
+
+  -- ------------------------------------------------------------------ the plumbing, judged
+  --
+  -- #226, carrying #215's second guard into this rig. Every cell above was laid out correctly by
+  -- derivation from the prototypes' own selection boxes, and none of that says the fluid goes where
+  -- the rig thinks it does. This asks.
+  cell_segments("fitted", fitted, DT, fitted_collector, fitted_tank)
+  cell_segments("bare", bare, DT, bare_collector, bare_tank)
+  cell_segments("empty", empty, DT, empty_collector, empty_tank)
+  cell_segments("orphan", orphan, DT, nil, nil)
+  cell_segments("throttled", throttled, DT, throttled_collector, nil)
+  cell_segments("flooded", flooded, DT, flooded_collector, flooded_tank)
+  cell_segments("sated", sated, DT, sated_collector, nil)
+  cell_segments("pulled", pulled, DT, pulled_collector, pulled_tank)
+  cell_segments("d-d", dd, DD, dd_collector, dd_tank)
+  cell_segments("d-d bare", dd_bare, DD, dd_bare_collector, dd_bare_tank)
 
   storage.gate = gate
   -- What each metered cell has SOLD over the whole run, filled by the drain below. Named cells
@@ -1057,7 +1099,8 @@ script.on_nth_tick(CHECK_AT, function()
 end)
 '@
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') `
-        -Value $lua.Replace('__PLASMAFEED__', $feed).Replace('__TICKS__', "$Ticks")
+        -Value ($lua.Replace('__RIGBUILD__', (Get-RigBuildLua)).
+            Replace('__PLASMAFEED__', $feed).Replace('__TICKS__', "$Ticks"))
 }
 
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }

@@ -274,10 +274,15 @@ local function say(fmt, ...)
   storage.notes[#storage.notes + 1] = string.format(fmt, ...)
 end
 
-local function must(entity, what)
-  if not entity then error(what .. " refused") end
-  return entity
-end
+-- The shared map-building helpers: rf_place_or_die, rf_box_of, rf_unbound, rf_place_facing,
+-- rf_pipe_run and rf_assert_segments. Get-RigBuildLua in scripts/factorio-lib.ps1 defines them.
+--
+-- #226 listed this rig as LIKELY CLEAR of c3abb81's resizes and it is: everything here is
+-- rf-reactor, vanilla heat machinery and this file's own rf-probe-* prototypes, none of which that
+-- commit touched. It is rewired anyway, because the point of one implementation is that a guard
+-- added once reaches every rig -- and `must`, which this file used everywhere, proved only that the
+-- engine returned an entity. rf_place_or_die absorbs it and asks can_place_entity first.
+__RIGBUILD__
 
 -- Directions as unit vectors. A heat connection gives the tile INSIDE the entity plus the face it
 -- points out of, so the neighbour tile is one step that way -- unlike a fluid connection, which
@@ -356,11 +361,10 @@ local function power(surface, force, at, watts)
   if at[1] % 1 ~= 0 or at[2] % 1 ~= 0 then
     error(string.format("power() wants a whole-number position, got (%g, %g)", at[1], at[2]))
   end
-  local pole = must(surface.create_entity({ name = "substation", position = at, force = force }),
-    "substation")
-  local eei = must(surface.create_entity({
+  local pole = rf_place_or_die(surface, { name = "substation", position = at, force = force }, "substation")
+  local eei = rf_place_or_die(surface, {
     name = "electric-energy-interface", position = { at[1] + 2.5, at[2] + 0.5 }, force = force,
-  }), "power source")
+  }, "power source")
   eei.power_production = watts / 60
   -- And the stock buffer goes, which check-brownout.ps1 calls the single thing most likely to be got
   -- wrong in a rig like this: vanilla's interface ships an enormous one, because it is the editor's
@@ -383,8 +387,7 @@ local function lay_heat_pipe(surface, force, from, direction, length)
   local at = { x = from.x, y = from.y }
   local tiles = {}
   for i = 1, length do
-    must(surface.create_entity({ name = "heat-pipe", position = at, force = force }),
-      string.format("heat pipe %d of %d", i, length))
+    rf_place_or_die(surface, { name = "heat-pipe", position = at, force = force }, string.format("heat pipe %d of %d", i, length))
     tiles[#tiles + 1] = at
     at = { x = at.x + u.x, y = at.y + u.y }
   end
@@ -395,8 +398,7 @@ end
 -- run stays cold. The largest gradient the engine can be shown, which is why every throughput
 -- number this rig prints is best case and is labelled as one.
 local function sink(surface, force, at)
-  local s = must(surface.create_entity({ name = "heat-interface", position = at, force = force }),
-    "heat sink")
+  local s = rf_place_or_die(surface, { name = "heat-interface", position = at, force = force }, "heat sink")
   -- set_heat_setting rather than a heat_setting attribute: LuaEntity has the pair of getters in
   -- 2.0.77 and writing the field throws "LuaEntity doesn't contain key heat_setting". The same trap
   -- control.lua's check_steam_sinks hit with get_max_energy_production, found the same way.
@@ -404,48 +406,21 @@ local function sink(surface, force, at)
   return s
 end
 
---- An infinity pipe against every connection of a fluid box: unbounded supply, or unbounded
--- disposal. bench-mod-links.ps1 does the same, so that nothing outside the thing under test can be
--- the limit.
-local function unbound(surface, force, entity, index, filter)
-  local attached = 0
-  for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
-    local pipe = surface.create_entity({
-      name = "infinity-pipe", position = connection.target_position, force = force,
-    })
-    if pipe then
-      pipe.set_infinity_pipe_filter(filter)
-      attached = attached + 1
-    end
-  end
-  if attached == 0 then
-    error(string.format("could not attach any infinity pipe to %s box %d", entity.name, index))
-  end
-end
-
-local function box_of(entity, fluid)
-  for index = 1, #entity.fluidbox do
-    local filter = entity.fluidbox.get_filter(index)
-    if filter and filter.name == fluid then return index end
-  end
-  return nil
-end
-
 -- ---------------------------------------------------------------- the pooling row
 
 --- Two probe reactors on a run of rf-pipe, and nothing else. Returns nil when the reactor turns out
 -- to have no fluid box, which is itself the answer to the first acceptance criterion.
 local function build_pool(surface, force, y)
-  local west = must(surface.create_entity({
+  local west = rf_place_or_die(surface, {
     name = SOURCE, position = { 0.5, y + 0.5 }, force = force,
-  }), "pooling reactor (west)")
+  }, "pooling reactor (west)")
 
   -- Both spellings, because a negative here decides #44 and "I used the wrong key" is the one way a
   -- negative could be wrong. fluid_box is what a boiler takes and fluid_boxes what a crafting
   -- machine takes; the reactor prototype documents neither.
-  local plural = must(surface.create_entity({
+  local plural = rf_place_or_die(surface, {
     name = PLURAL, position = { 20.5, y + 0.5 }, force = force,
-  }), "pooling reactor (plural key)")
+  }, "pooling reactor (plural key)")
   say("pool: %s declares fluid_box and has %d fluid box(es) at runtime", SOURCE, #west.fluidbox)
   say("pool: %s declares fluid_boxes and has %d", PLURAL, #plural.fluidbox)
   plural.destroy()
@@ -470,17 +445,16 @@ local function build_pool(surface, force, y)
   local last
   local at = { x = east_target.x, y = east_target.y }
   for i = 1, SHORT do
-    must(surface.create_entity({ name = "rf-pipe", position = at, force = force }),
-      string.format("rf-pipe %d", i))
+    rf_place_or_die(surface, { name = "rf-pipe", position = at, force = force }, string.format("rf-pipe %d", i))
     last = at
     at = { x = at.x + 1, y = at.y }
   end
 
   -- Placed once, asked where its west connection actually points, then moved by the difference so
   -- that the connection lands on the last pipe of the run.
-  local probe = must(surface.create_entity({
+  local probe = rf_place_or_die(surface, {
     name = SOURCE, position = { at.x + 4, y + 0.5 }, force = force,
-  }), "pooling reactor (east, probe)")
+  }, "pooling reactor (east, probe)")
   local west_connection
   for _, c in pairs(probe.fluidbox.get_pipe_connections(1)) do
     if c.target_position.x < probe.position.x then west_connection = c end
@@ -491,8 +465,7 @@ local function build_pool(surface, force, y)
     probe.position.y,
   }
   probe.destroy()
-  local east = must(surface.create_entity({ name = SOURCE, position = position, force = force }),
-    "pooling reactor (east)")
+  local east = rf_place_or_die(surface, { name = SOURCE, position = position, force = force }, "pooling reactor (east)")
 
   return { west = west, east = east, volume = prototypes.entity[SOURCE].fluidbox_prototypes[1].volume }
 end
@@ -502,9 +475,9 @@ end
 --- A source, a run of heat pipe on each requested face, and a sink at the end of each. Every row in
 -- this rig that involves heat is one call to this.
 local function build_heat_row(surface, force, label, opts)
-  local source = must(surface.create_entity({
+  local source = rf_place_or_die(surface, {
     name = opts.source, position = opts.at, force = force,
-  }), label .. " source")
+  }, label .. " source")
   power(surface, force, opts.power_at, opts.watts or 4e6)
 
   local buffer = buffer_of(opts.source)
@@ -552,15 +525,22 @@ local function attach_exchanger(surface, force, row, tile)
   local connection = prototypes.entity["heat-exchanger"].heat_energy_source_prototype.connections[1]
   local u = UNIT[connection.direction]
   local cx, cy = xy(connection.position)
-  local exchanger = must(surface.create_entity({
+  local exchanger = rf_place_or_die(surface, {
     name = "heat-exchanger",
     position = { tile.x - cx - u.x, tile.y - cy - u.y },
     force = force,
-  }), row.label .. " heat exchanger")
-  unbound(surface, force, exchanger, box_of(exchanger, "water"),
+  }, row.label .. " heat exchanger")
+  rf_unbound(surface, force, exchanger, rf_box_of(exchanger, "water"),
     { name = "water", percentage = 1, mode = "at-least" })
-  unbound(surface, force, exchanger, box_of(exchanger, "steam"),
+  rf_unbound(surface, force, exchanger, rf_box_of(exchanger, "steam"),
     { name = "steam", percentage = 0, mode = "at-most" })
+  -- #226, carrying #215's second guard. Water in and steam out on one machine, plumbed from two
+  -- infinity pipes it was placed against by arithmetic on a HEAT connection -- so nothing here has
+  -- ever checked that the two fluid lines did not land on each other.
+  rf_assert_segments(row.label .. " heat exchanger", {
+    { entity = exchanger, fluid = "water", what = "its water input" },
+    { entity = exchanger, fluid = "steam", what = "its steam output" },
+  })
   row.exchanger = exchanger
   -- The pipe it was placed against, kept so the report can say what temperature was on offer.
   row.pipe_probe = surface.find_entity("heat-pipe", tile)
@@ -627,10 +607,10 @@ script.on_init(function()
   -- The self-heating pair: no pipes and no sink, so whatever heat appears in them came from the
   -- engine spending their declared consumption. The cold one is never written by Lua at all; the
   -- warm one is written exactly once, on the first tick, to put it at its ceiling.
-  storage.self_cold = must(surface.create_entity({
-    name = HUNGRY, position = { 0.5, 200.5 }, force = force }), "self-heating reactor (cold)")
-  storage.self_warm = must(surface.create_entity({
-    name = WARM, position = { 20.5, 200.5 }, force = force }), "self-heating reactor (warm)")
+  storage.self_cold = rf_place_or_die(surface, {
+    name = HUNGRY, position = { 0.5, 200.5 }, force = force }, "self-heating reactor (cold)")
+  storage.self_warm = rf_place_or_die(surface, {
+    name = WARM, position = { 20.5, 200.5 }, force = force }, "self-heating reactor (warm)")
   -- One pole each, twenty tiles apart: a substation reaches eighteen, so these are two networks and
   -- each pole's statistics are its own reactor's alone.
   storage.cold_pole = power(surface, force, { 0, 194 }, 1e9)
@@ -858,7 +838,8 @@ script.on_event(defines.events.on_tick, function(event)
 end)
 '@
 
-    $lua = $lua.Replace('__WARMUP__', "$Warmup").Replace('__WINDOW__', "$Window")
+    $lua = $lua.Replace('__RIGBUILD__', (Get-RigBuildLua)).
+        Replace('__WARMUP__', "$Warmup").Replace('__WINDOW__', "$Window")
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
 }
 
