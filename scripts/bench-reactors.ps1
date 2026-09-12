@@ -681,7 +681,7 @@ function Resolve-SaveMods {
         #
         # The -ccontains above is the same rule on the same grounds. Found in review, in the zip
         # branch; the directory branch had it too, because Test-Path folds case for a directory
-        # exactly as it does for a file. -SelfTest 4/4 holds both shut with one decoy each.
+        # exactly as it does for a file. -SelfTest 4/5 holds both shut with one decoy each.
         $found = $null
         $wantedDir = "$($mod.Name)_$($mod.Version)"
         # -LiteralPath because a mod directory's own path may contain brackets, which -Path would
@@ -708,7 +708,7 @@ function Resolve-SaveMods {
             # rather than trusted. `-Filter "LTN_*.zip"` matches LTN_Combinator_2.0.1.zip, so a save
             # wanting LTN on a machine that has only the Combinator would resolve LTN to the
             # Combinator's zip and be reported RESOLVED -- the same silent failure the case rule
-            # above describes, by a third route. Found in review; -SelfTest 3/4.
+            # above describes, by a third route. Found in review; -SelfTest 3/5.
             #
             # -Filter is the file system's own glob and folds case like the rest of NTFS, so it can
             # only ever return a superset here. The -cmatch is what narrows it back.
@@ -777,6 +777,121 @@ $rigOnly = @('Counts', 'Pooled', 'Mixed', 'Collectors', 'Blankets', 'Ablate', 'G
 # The same rule applied to -SelfTest itself, and it has to come first: -SelfTest returns below,
 # before the rest of the script runs at all, so anything passed with it would be discarded in
 # silence -- which is the fault the paragraph above refuses.
+# Split-Runs and Find-StalledRuns sit ABOVE the -SelfTest block because -SelfTest calls them
+# and PowerShell binds a function only when its definition has been executed. They were below
+# it when the stall half was written, and it failed with "'Find-StalledRuns' is not
+# recognized" -- the self-test catching its own first mistake.
+
+function Get-Median {
+    param([System.Collections.Generic.List[double]] $Values)
+    if ($Values.Count -eq 0) { return [double]::NaN }
+    $s = [double[]] $Values; [Array]::Sort($s)
+    $n = $s.Count
+    if ($n % 2) { return $s[($n - 1) / 2] }
+    return ($s[$n / 2 - 1] + $s[$n / 2]) / 2
+}
+
+function Split-Runs {
+    <#  Cut a pooled sample list back into one list per benchmark run.
+
+        --benchmark-runs concatenates its runs into one verbose dump in order, so the split is
+        positional: run r is samples [r*Ticks, (r+1)*Ticks). Returns nothing if the sample count
+        does not match, rather than guessing at a boundary.
+
+        This was built to test the standing explanation for this rig's run-to-run spread -- thermal
+        throttling on a laptop part -- and disposed of it: #39 found the part never drops below its
+        base clock, and that the spread is other work on the machine. What the split is worth
+        keeping for is what it found on the way. A single benchmark run of the identical map spans
+        1.86x, where the invocation that pools five of them spans 1.34x, so an outlier run is the
+        unit of noise here. Printing the runs separately is what makes one visible instead of
+        leaving it buried in the mean it moved.  #>
+    param([System.Collections.Generic.List[double]] $Values, [int] $Ticks, [int] $Runs)
+    if ($Values.Count -ne $Ticks * $Runs) { return @() }
+    $out = @()
+    for ($r = 0; $r -lt $Runs; $r++) {
+        $out += , ([System.Collections.Generic.List[double]] $Values.GetRange($r * $Ticks, $Ticks))
+    }
+    return $out
+}
+
+# The counters the machine is watched through, and the one place their names live.
+#
+# `% Processor Performance` is the effective clock as a percentage of the part's BASE frequency --
+# the same counter Task Manager's "Speed" is derived from. A thermally throttled part sits BELOW 100
+# and stays there; one that is merely busy sits above it on turbo. That distinction is what ruled
+# thermal throttling out under #39.
+#
+# `% Processor Utility` is how much of the machine is in use. Ours is one Factorio and its benchmark
+# is single-threaded, so on a twelve-thread part this run's own contribution is under a tenth.
+# Anything much above that is somebody else's work -- the one confound this rig cannot subtract,
+# because every figure it reports is a difference between two Factorio processes minutes apart, and
+# work that arrives between them lands on the difference rather than cancelling.
+#
+# THE NAMES ARE LOCALISED ON NON-ENGLISH WINDOWS, so Get-Counter throws rather than answering. That
+# is handled as "not known to have been quiet" and never as "quiet" -- see the NaN branch below. A
+# guard that cannot run has not passed.
+$PERF_COUNTER = '\Processor Information(_Total)\% Processor Performance'
+$LOAD_COUNTER = '\Processor Information(_Total)\% Processor Utility'
+
+function Find-StalledRuns {
+    <#  Which runs contain a tick so long, AND so unlike the same tick in every other run, that it
+        can only be the machine blocking rather than work (#235).
+
+        THE +500 US SPIKE #235 CHASED IS THIS, AND IT WAS NEVER A PER-TICK COST. Measured on the
+        borrowed base 2026-09-13: a run whose scriptUpdate mean read 662.6 us against nineteen
+        others at 92.5 turned out to be SIX ticks of a thousand. One was 389.3 ms -- its
+        wholeUpdate was 400.5 ms, so the engine sat blocked inside Lua for four tenths of a second
+        -- and those six carried 98% of the run's excess. The run's MEDIAN tick was 11.60 us
+        against 11.70 for the clean runs, which is why three sittings saw the effect and nobody
+        could find it: a pooled mean divides one 389 ms stall across a thousand ticks and reports
+        it as +389 us of cost.
+
+        SIZE ALONE IS NOT THE TEST, AND THE FIRST VERSION OF THIS GOT THAT WRONG. It flagged any
+        tick past 50 ms, on the reasoning that no reactor count could make Lua block that long --
+        and a plain rig sweep immediately produced a 108 ms tick at t = 30 of EVERY run, the same
+        index each time. Reproducible work is not a stall however large it is, so the test is
+        whether the tick is an outlier against the SAME TICK INDEX in the other runs. A stall lands
+        in one run; startup, the first publish and anything cadence-driven land in all of them.
+
+        That makes -Runs 1 undecidable, and it says so by reporting nothing rather than guessing.  #>
+    param(
+        [Parameter(Mandatory)] $Samples,      # scriptUpdate, nanoseconds, every tick of every run
+        [Parameter(Mandatory)] [int] $Ticks,
+        [Parameter(Mandatory)] [int] $Runs,
+        [double] $StallMicroseconds = 50000,  # below this it is not worth a warning whatever it is
+        [double] $TimesOtherRuns    = 20      # and it must be this much unlike its peers
+    )
+
+    # No comma-wrapping on the returns. ",$out" exists to stop PowerShell unrolling a single-item
+    # result, but on an EMPTY array it produces a one-item wrapper instead -- so @(Find-StalledRuns
+    # ...) counted a clean sitting as one stalled run, and -SelfTest 5/5 caught it. Callers wrap in
+    # @() instead, which gives 0 for nothing and 1 for one.
+    $out = @()
+    if ($Runs -lt 2) { return $out }
+
+    $byRun = @(Split-Runs $Samples $Ticks $Runs)
+    for ($r = 0; $r -lt $byRun.Count; $r++) {
+        $worstUs = 0.0; $worstAt = -1
+        for ($i = 0; $i -lt $Ticks; $i++) {
+            $us = $byRun[$r][$i] / 1000.0
+            if ($us -lt $StallMicroseconds -or $us -le $worstUs) { continue }
+            # The same tick index everywhere else. Median, so one OTHER stalled run cannot hide
+            # this one by dragging the comparison up.
+            $peers = @(for ($q = 0; $q -lt $byRun.Count; $q++) {
+                if ($q -ne $r) { $byRun[$q][$i] / 1000.0 }
+            })
+            $peer = Get-Median $peers
+            if ($peer -le 0) { $peer = 0.001 }
+            if (($us / $peer) -ge $TimesOtherRuns) { $worstUs = $us; $worstAt = $i }
+        }
+        if ($worstAt -ge 0) {
+            $out += [pscustomobject]@{ Run = $r + 1; Tick = $worstAt; WorstMicroseconds = $worstUs }
+        }
+    }
+    return $out
+}
+
+
 if ($SelfTest) {
     # Against the real common-parameter list, not against 'Verbose' alone. [CmdletBinding()] adds
     # eleven of them and every one arrives in $PSBoundParameters like any other argument, so
@@ -865,11 +980,11 @@ if ($SelfTest) {
         $try = Read-ModBlock -Buffer $buffer -Length $buffer.Length -Start $p
         if ($try -and $try[0].Name -ceq 'base') { $parsed = $try; break }
     }
-    if (-not $parsed) { throw '-SelfTest 1/4 FAILED: the parser found no mod list in a synthesised header.' }
+    if (-not $parsed) { throw '-SelfTest 1/5 FAILED: the parser found no mod list in a synthesised header.' }
     $got  = ($parsed | ForEach-Object { "$($_.Name) $($_.Version)" }) -join '; '
     $want = ($expected | ForEach-Object { "$($_.Name) $($_.Version -join '.')" }) -join '; '
-    if ($got -cne $want) { throw "-SelfTest 1/4 FAILED: parsed '$got', expected '$want'." }
-    Write-Host "  1/4 ok: parsed '$got', wide-encoded version included."
+    if ($got -cne $want) { throw "-SelfTest 1/5 FAILED: parsed '$got', expected '$want'." }
+    Write-Host "  1/5 ok: parsed '$got', wide-encoded version included."
 
     # And the refusal. An empty directory resolves nothing, so every name in the list must come
     # back named -- a resolver that skipped what it could not find would hand the benchmark a map
@@ -882,18 +997,18 @@ if ($SelfTest) {
             Resolve-SaveMods -Wanted $parsed -SourceDirectory $emptyDir -Bundled @{} -Ours (Get-RepoMods) |
                 Out-Null
         } catch { $refused = "$($_.Exception.Message)" }
-        if (-not $refused) { throw '-SelfTest 2/4 FAILED: two unresolvable mods were accepted rather than refused.' }
+        if (-not $refused) { throw '-SelfTest 2/5 FAILED: two unresolvable mods were accepted rather than refused.' }
         foreach ($name in @('a-third-mod', 'wide')) {
             if (-not $refused.Contains($name)) {
-                throw "-SelfTest 2/4 FAILED: the refusal does not name '$name': $refused"
+                throw "-SelfTest 2/5 FAILED: the refusal does not name '$name': $refused"
             }
         }
         # base is the engine's and is deliberately not a mod anybody installs, so naming it would
         # send the reader looking for something that cannot be found.
         if ($refused.Contains('base ')) {
-            throw "-SelfTest 2/4 FAILED: the refusal names base, which is not an installable mod: $refused"
+            throw "-SelfTest 2/5 FAILED: the refusal names base, which is not an installable mod: $refused"
         }
-        Write-Host '  2/4 ok: both unresolved mods named, base not among them.'
+        Write-Host '  2/5 ok: both unresolved mods named, base not among them.'
 
         # And the refusal again, against the near miss rather than the empty directory. A zip
         # whose name merely STARTS with the wanted name plus an underscore is a different mod:
@@ -911,14 +1026,14 @@ if ($SelfTest) {
                     Out-Null
             } catch { $refused = "$($_.Exception.Message)" }
             if (-not $refused) {
-                throw ('-SelfTest 3/4 FAILED: wide_Combinator_2.0.1.zip was accepted as the mod ' +
+                throw ('-SelfTest 3/5 FAILED: wide_Combinator_2.0.1.zip was accepted as the mod ' +
                        '"wide", so a save could be benchmarked with the wrong mod loaded and ' +
                        'nothing would say so.')
             }
             if (-not $refused.Contains('wide 1.2.300')) {
-                throw "-SelfTest 3/4 FAILED: the refusal does not name 'wide 1.2.300': $refused"
+                throw "-SelfTest 3/5 FAILED: the refusal does not name 'wide 1.2.300': $refused"
             }
-            Write-Host '  3/4 ok: a name_suffix_version.zip is not accepted as name.'
+            Write-Host '  3/5 ok: a name_suffix_version.zip is not accepted as name.'
         } finally { Remove-TempDirectory -Path $decoyDir -Label 'bench-reactors -SelfTest' }
 
         # And the near miss that is only a difference of CASE, which NTFS does not distinguish and
@@ -938,16 +1053,61 @@ if ($SelfTest) {
                     Out-Null
             } catch { $refused = "$($_.Exception.Message)" }
             if (-not $refused) {
-                throw ('-SelfTest 4/4 FAILED: a mod called "Wide" was accepted as the mod "wide". ' +
+                throw ('-SelfTest 4/5 FAILED: a mod called "Wide" was accepted as the mod "wide". ' +
                        'Factorio reads a mod name from its own info.json and does not fold case, so ' +
                        "the save's real mod would have been absent from a run reported as clean.")
             }
             if (-not $refused.Contains('wide 1.2.300')) {
-                throw "-SelfTest 4/4 FAILED: the refusal does not name 'wide 1.2.300': $refused"
+                throw "-SelfTest 4/5 FAILED: the refusal does not name 'wide 1.2.300': $refused"
             }
-            Write-Host '  4/4 ok: neither Wide/ nor Wide_1.2.300.zip is accepted as wide.'
+            Write-Host '  4/5 ok: neither Wide/ nor Wide_1.2.300.zip is accepted as wide.'
         } finally { Remove-TempDirectory -Path $caseDir -Label 'bench-reactors -SelfTest' }
     } finally { Remove-TempDirectory -Path $emptyDir -Label 'bench-reactors -SelfTest' }
+
+    # 5/5: the stall detector, on the run that actually produced #235's effect -- and on the
+    # reproducible spike that made the first version of it useless.
+    #
+    # A REGRESSION HERE IS SILENT AND EXPENSIVE. If the detector stops firing, a poisoned run
+    # reports a per-reactor figure inflated by an I/O stall and every gate still passes -- exactly
+    # how #235 survived three sittings. Three directions are asserted, and the third cost a rewrite.
+    Write-Host '-SelfTest: the stall detector, on the run that produced #235.'
+    $flat  = { ,@(1..1000 | ForEach-Object { 11600.0 }) }
+    $clean = & $flat
+    $stall = & $flat
+    $stall[875] = 389341000.0                                  # the real tick: t = 876, 389.3 ms
+    $found = @(Find-StalledRuns -Samples ($clean + $stall) -Ticks 1000 -Runs 2)
+    if ($found.Count -ne 1 -or $found[0].Run -ne 2) {
+        throw ('-SelfTest 5/5 FAILED: expected run 2 of two to be flagged, got ' +
+               "$($found.Count) run(s). A run carrying a 389 ms tick must be flagged and a clean " +
+               'one must not, or #235 can recur unseen.')
+    }
+    if ([Math]::Abs($found[0].WorstMicroseconds - 389341.0) -gt 1.0) {
+        throw ("-SelfTest 5/5 FAILED: reported worst tick $($found[0].WorstMicroseconds) us, " +
+               'expected 389341 us.')
+    }
+
+    # The honest ceiling stays under the absolute floor: the dearest real scriptUpdate tick this
+    # project has measured is the 200-reactor simulation step, about 5.5 ms.
+    $dearA = & $flat; $dearA[500] = 5500000.0
+    $dearB = & $flat; $dearB[500] = 5500000.0
+    if (@(Find-StalledRuns -Samples ($dearA + $dearB) -Ticks 1000 -Runs 2).Count -ne 0) {
+        throw ('-SelfTest 5/5 FAILED: a 5.5 ms tick was called a stall. That is the simulation ' +
+               'step at 200 reactors, so every blanketed sweep would report as poisoned.')
+    }
+
+    # AND THE ONE THAT MATTERS. A huge tick repeating at the same index in every run is work, not a
+    # stall. A plain rig sweep really does spend about 108 ms at t = 30 of every run, and the first
+    # version of this detector -- which tested size alone -- flagged both runs of a healthy
+    # -Counts 10 -Ticks 300 sweep on that tick. Reproducibility is what separates the two.
+    $repA = & $flat; $repA[30] = 108000000.0
+    $repB = & $flat; $repB[30] = 106000000.0
+    if (@(Find-StalledRuns -Samples ($repA + $repB) -Ticks 1000 -Runs 2).Count -ne 0) {
+        throw ('-SelfTest 5/5 FAILED: a 108 ms tick present at the SAME index in every run was ' +
+               'called a stall. That is the rig''s own t = 30 spike, so every rig sweep would ' +
+               'warn and the warning would stop being read.')
+    }
+    Write-Host ('  5/5 ok: the 389 ms one-run stall is flagged; 5.5 ms of work is not; a 108 ms ' +
+                'spike repeating in every run is not.')
 
     Write-Host '-SelfTest: PASS'
     return
@@ -1793,48 +1953,6 @@ function Get-Timings {
     return $cols
 }
 
-function Split-Runs {
-    <#  Cut a pooled sample list back into one list per benchmark run.
-
-        --benchmark-runs concatenates its runs into one verbose dump in order, so the split is
-        positional: run r is samples [r*Ticks, (r+1)*Ticks). Returns nothing if the sample count
-        does not match, rather than guessing at a boundary.
-
-        This was built to test the standing explanation for this rig's run-to-run spread -- thermal
-        throttling on a laptop part -- and disposed of it: #39 found the part never drops below its
-        base clock, and that the spread is other work on the machine. What the split is worth
-        keeping for is what it found on the way. A single benchmark run of the identical map spans
-        1.86x, where the invocation that pools five of them spans 1.34x, so an outlier run is the
-        unit of noise here. Printing the runs separately is what makes one visible instead of
-        leaving it buried in the mean it moved.  #>
-    param([System.Collections.Generic.List[double]] $Values, [int] $Ticks, [int] $Runs)
-    if ($Values.Count -ne $Ticks * $Runs) { return @() }
-    $out = @()
-    for ($r = 0; $r -lt $Runs; $r++) {
-        $out += , ([System.Collections.Generic.List[double]] $Values.GetRange($r * $Ticks, $Ticks))
-    }
-    return $out
-}
-
-# The counters the machine is watched through, and the one place their names live.
-#
-# `% Processor Performance` is the effective clock as a percentage of the part's BASE frequency --
-# the same counter Task Manager's "Speed" is derived from. A thermally throttled part sits BELOW 100
-# and stays there; one that is merely busy sits above it on turbo. That distinction is what ruled
-# thermal throttling out under #39.
-#
-# `% Processor Utility` is how much of the machine is in use. Ours is one Factorio and its benchmark
-# is single-threaded, so on a twelve-thread part this run's own contribution is under a tenth.
-# Anything much above that is somebody else's work -- the one confound this rig cannot subtract,
-# because every figure it reports is a difference between two Factorio processes minutes apart, and
-# work that arrives between them lands on the difference rather than cancelling.
-#
-# THE NAMES ARE LOCALISED ON NON-ENGLISH WINDOWS, so Get-Counter throws rather than answering. That
-# is handled as "not known to have been quiet" and never as "quiet" -- see the NaN branch below. A
-# guard that cannot run has not passed.
-$PERF_COUNTER = '\Processor Information(_Total)\% Processor Performance'
-$LOAD_COUNTER = '\Processor Information(_Total)\% Processor Utility'
-
 function Get-ForeignLoad {
     <#  How much of the machine somebody else is using, as a percentage of the whole part.
 
@@ -1861,15 +1979,6 @@ function Get-ClockPercent {
     try {
         [math]::Round((Get-Counter $PERF_COUNTER -ErrorAction Stop).CounterSamples[0].CookedValue, 1)
     } catch { [double]::NaN }
-}
-
-function Get-Median {
-    param([System.Collections.Generic.List[double]] $Values)
-    if ($Values.Count -eq 0) { return [double]::NaN }
-    $s = [double[]] $Values; [Array]::Sort($s)
-    $n = $s.Count
-    if ($n % 2) { return $s[($n - 1) / 2] }
-    return ($s[$n / 2 - 1] + $s[$n / 2]) / 2
 }
 
 function New-TimingRow {
@@ -2453,6 +2562,18 @@ if ($Save) {
                 (($row.ScriptByRun | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
                 (($row.GcByRun     | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '))
         }
+        # A run the machine blocked in rather than worked in, named on the spot (#235). The pooled
+        # mean cannot survive one of these and the median cannot see it, so neither statistic says
+        # anything useful without this line.
+        foreach ($st in @(Find-StalledRuns -Samples $cols['scriptUpdate'] -Ticks $Ticks -Runs $Runs)) {
+            $msg = ("run {0} spent {1:N1} ms inside scriptUpdate on tick {2} alone, and no other " +
+                    'run spends anything like it on that tick. That is the machine blocking, not ' +
+                    'work. It adds about {3:N0} us to this row of a pooled mean and the median ' +
+                    'cannot see it. DISCARD THIS RUN and re-take the count. See #235 and ' +
+                    'docs/research/borrowed-base.md.')
+            Write-Warning ($msg -f $st.Run, ($st.WorstMicroseconds / 1000.0), $st.Tick,
+                                  ($st.WorstMicroseconds / $Ticks))
+        }
         Write-MachineNote -Label 'save' -Cpu $cpu -Load $load -Why (
             'Nothing here is a difference against a baseline, so there is no subtraction that ' +
             'could have cancelled it out -- it is simply added to every figure below.')
@@ -2801,6 +2922,18 @@ try {
                 (($row.WholeByRun  | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
                 (($row.ScriptByRun | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
                 (($row.GcByRun     | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '))
+        }
+        # A run the machine blocked in rather than worked in, named on the spot (#235). The pooled
+        # mean cannot survive one of these and the median cannot see it, so neither statistic says
+        # anything useful without this line.
+        foreach ($st in @(Find-StalledRuns -Samples $cols['scriptUpdate'] -Ticks $Ticks -Runs $Runs)) {
+            $msg = ("run {0} spent {1:N1} ms inside scriptUpdate on tick {2} alone, and no other " +
+                    'run spends anything like it on that tick. That is the machine blocking, not ' +
+                    'work. It adds about {3:N0} us to this row of a pooled mean and the median ' +
+                    'cannot see it. DISCARD THIS RUN and re-take the count. See #235 and ' +
+                    'docs/research/borrowed-base.md.')
+            Write-Warning ($msg -f $st.Run, ($st.WorstMicroseconds / 1000.0), $st.Tick,
+                                  ($st.WorstMicroseconds / $Ticks))
         }
         Write-MachineNote -Label "n=$count" -Cpu $cpu -Load $load -Why (
             'Every figure from it is a difference against an n = 0 baseline measured at a ' +
