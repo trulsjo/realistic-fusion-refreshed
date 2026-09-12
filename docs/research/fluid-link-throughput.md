@@ -155,7 +155,9 @@ rig runs. **Every figure in the table below is a run of this rig, not a reading 
 | `2381730` | 2026-09-11 | 1.3974 u/tick | **83.8 MW** | 5.347×10⁸ °C |
 
 All four at 360 000 ticks, 6 000 per window, D-D, four exchangers, against Factorio 2.0.77 (build
-84539). The first two were re-run on 2026-09-12 out of a detached worktree at those commits; the
+84539). Four 40 MW exchangers on the first three rows and four 90 MW ones on the last, #227 having
+landed between; the rig is supply-limited at both, which the paragraph below this table measures
+again, so the bank is not what any of these rows is reading. The first two were re-run on 2026-09-12 out of a detached worktree at those commits; the
 2026-08-17 row of the series this note used to carry is the `d9ece9c` row, **reproduced**: 81.2 MW
 against 81, 1.353975 units/tick sustained against 1.354, 6.87698×10⁸ °C against 6.88×10⁸, and 0.0891
 units/tick of plasma flowing against 0.089. One figure does not land on its old digits — the energy
@@ -177,6 +179,13 @@ simulation, which puts the settled temperature at 2.4222×10⁸ °C at every com
 `30e100b` and at 6.4830×10⁸ from `c2cb7e3` to `4df2591` — one step, at that commit, with nothing
 moving on either side of it. **Not a defect either**: it is the ladder working as designed on a force
 that has climbed it.
+
+**What the sweep covers, exactly.** It settles the simulation, so it sees a change to
+`reactor-logic.lua` and is blind to a change to a prototype the rig also reads — a fluid box's volume,
+a `fuel_value`, a recipe's output. Twenty-four commits were swept, being every one in the window that
+touches either mod's `scripts/`, plus anchors at each end. What closes the gap is that the two rig
+runs bracket the window in the real game and the composite they give is the fall that was asked
+about: a third mover hiding in the prototypes would have to leave that composite intact.
 
 **Net across the window: −22.3% on temperature and −15.8% on delivered power.** The two steps run in
 opposite directions and the fall is what is left of them, which is why the movement read as a single
