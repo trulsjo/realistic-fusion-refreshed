@@ -222,8 +222,10 @@ The expensive ticks are not the collecting ticks. Candidate two is closed.
 `scriptUpdate` at *n* = 0 was **93.2 µs mean against a 13.1 µs median**, and the gap is one tick in
 five: gaps between ticks over 200 µs were **5, in 795 of 800 cases**. Strictly periodic, which on its
 own answers the ticket's periodic-versus-probabilistic question for the *baseline* cost. Split by
-that period, the census tick cost **414 µs against 12.9 µs for every other tick — 86% of the whole
-`scriptUpdate` mean.**
+that period, the census tick cost **414 µs against 12.9 µs for every other tick.** Amortised over
+the five, that tick is **89% of the whole `scriptUpdate` mean** gross, or **86%** counting only its
+excess over an ordinary tick. (Both are quoted in this commit; they answer different questions and
+the second is the one that would go away if the handler did.)
 
 Period five is the rig's own census-and-`log()` handler. It was meant to run on `-ReportEvery`,
 which defaults to **500**. It ran every **5**.
@@ -232,8 +234,8 @@ which defaults to **500**. It ran every **5**.
 shipped mod's `REPORT_EVERY` out of `control.lua` into `$reportEvery`, a few lines after the
 `-ReportEvery` parameter has been set up — and those are the same variable. Reading the mod's value
 overwrote the parameter. `-ReportEvery` was inert whatever it was passed, its `ValidateRange` and its
-`.PARAMETER` block decorating a value nothing used, and the rig wrote a log line every fifth tick for
-as long as the script has existed. The comment above the handler said *"One tick in a hundred carries
+`.PARAMETER` block decorating a value nothing used, and the rig wrote a log line every fifth tick.
+The comment above the handler said *"One tick in a hundred carries
 a log write"*, which is what makes it invisible: the code and the prose disagreed and only the code
 ran.
 
@@ -249,34 +251,61 @@ Same sitting, same machine, borrowed base, `-Collectors -Blankets -Gap 6 -Ticks 
 | census every 5 ticks | 91.30 µs | 1,797.37 µs | **8.5304 µs** — 10.23% of a tick |
 | census every 500 ticks | **16.20 µs** | **1,286.03 µs** | **6.3492 µs** — 7.62% of a tick |
 
-**The rig's own census was 2.18 µs per reactor, 25.6% of the published figure.** It was predicted at
-2.23 µs and 25.5% from the tick-level decomposition before the fix was made, which is the check that
-the two methods are measuring the same thing.
+**The rig's own census was 2.18 µs per reactor, 25.6% of the published figure.** The tick-level
+decomposition, run before the fix was made, predicted **2.23 µs** — within 2% of what the before/after
+sitting then measured, which is the check that the two methods see the same thing. (Its own share came
+out at 25.5% rather than 26.1% because the four-cell model totals 8.77 µs against the reported 8.53,
+the cells not being perfectly additive. Compare the absolutes; the percentages carry that 3% with
+them.)
 
 **It does not cancel, and the script said it did.** Its note for `-Save` reads *"the rig can charge
 its own report walk to a delta"* — true only of a walk that costs the same at every count, and this
 one walks `storage.reactors`, `storage.collectors` and `storage.blankets`. At *n* = 0 the loops are
-empty and the tick costs 414 µs; at *n* = 200 they are not and it costs 3,723 µs. The difference lands
+empty and the tick costs 414 µs; at *n* = 200 they are not and it costs 3,723 µs as a mean over three
+runs of the pre-fix sitting. (Reconstructing that tick from the before/after table instead gives about
+3,860 µs, a 4% disagreement between a directly-measured cell mean and one backed out of two run
+means. The per-reactor figure quoted below is the measured before/after difference, not the reconstruction.) The difference lands
 in the numerator of every per-reactor figure.
 
-**Every per-reactor figure this harness has published is affected, not only the borrowed base's.**
-The rig runs the same handler. The figures in
-[`reactor-runtime-cost.md`](reactor-runtime-cost.md) have **not** been re-taken and are not restated
-here; that is a decision about a published record rather than a correction to a script.
+**The window is datable, and it is not the whole record.** `git log -S'reportEvery'` returns one
+commit: **`0b43649`, 2026-09-03**, *"benchmark a save the script did not build"* — the `-Save`
+feature, which introduced the `control.lua` read in the first place. The script itself dates from
+`5444188`, 2026-08-15. So **`-ReportEvery` worked as documented for nineteen days, and every figure
+taken before 2026-09-03 is clean** — which covers most of
+[`reactor-runtime-cost.md`](reactor-runtime-cost.md), its 2026-08-17, -08-18 and -08-20 sections
+included.
+
+**What is affected is every per-reactor figure taken from 2026-09-03 on, and not only the borrowed
+base's** — the rig runs the same handler. Two documents carry such figures. **Neither has been
+re-taken and neither is restated here:**
+
+| Document | The figures | Does its conclusion turn on them? |
+|---|---|---|
+| [`reactor-runtime-cost.md`](reactor-runtime-cost.md) | the #67 sitting of 2026-09-06 | the absolutes move; the rig-against-base comparison is between two figures inflated alike |
+| [ADR 0005][adr5] | **7.01 µs** per reactor against the control's **6.33**, and **8.41%** of a tick at 200 blanketed D-D | **No.** Both absolutes are inflated by the census; the ratio moves 1.11 to about 1.16 and stays inside the 1.35× floor, so `UPDATE_INTERVAL` still stays at 6 |
+
+ADR 0005 is the one that matters, because a superseded figure left standing in a permanent decision
+record reads as deliberate — [#230][230]'s lesson, recorded in `docs/agents/code-review.md`. Its
+verdict survives and its numbers do not. Re-taking them is a decision about a published record rather
+than a correction to a script.
 
 ### Where that leaves #235's own question
 
-**Unresolved, and the ticket stays open.** The +500 µs spike did not appear in **15 runs** across
-three sittings on 2026-09-12, which with the nine-run sitting already on the ticket makes 24
-consecutive clean runs. It cannot be reproduced on demand and it has not been explained.
+**Unresolved, and the ticket stays open.** The +500 µs spike did not appear in any of the **15 runs**
+taken across three sittings on 2026-09-12, and the ticket's own fourth sitting of 2026-09-06 did not
+see it either. It cannot be reproduced on demand and it has not been explained. (One of the 15 was
+mildly elevated — +4.7 µs on a 92 µs mean — which is two orders of magnitude below this ticket's
+effect and is not it; see below.)
 
 What the fix does is make the mechanism far less likely to matter, without proving it was the cause.
 A run used to carry **200 `log()` writes per 1,000 ticks** and now carries two. An I/O stall on that
 write would add a fixed cost per tick **independent of *n***, which is exactly the signature #235
 records — so the surface area for it is cut a hundredfold. **That is a hypothesis, not a
-measurement**: no spiking run was ever caught with the instrument attached, and the one mildly
-elevated run seen on 2026-09-12 had its excess mostly *outside* the census tick, which counts against
-it rather than for it.
+measurement**: no spiking run was ever caught with the instrument attached. The one mildly elevated
+run of 2026-09-12 — run 4 of the four-run `-KeepTemp` sitting, 96.8 µs against the other three's
+92.0 — put most of its excess *outside* the census tick, which counts against the I/O story rather
+than for it. It is a different and much smaller thing than the ticket's +500 µs, and so is the
+elevated run the ticket's own fourth sitting records.
 
 The `-Ticks` question is answered for the periodic baseline cost and **not** for the spike, which is
 what it was asked about.
@@ -300,6 +329,8 @@ line, and discard a run whose `script mean` is out of family** — now easier, b
 beside it and says whether collection explains it.
 
 [235]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/235
+[230]: https://github.com/trulsjo/realistic-fusion-refreshed/pull/230
+[adr5]: ../adr/0005-real-time-fusion-simulation.md
 
 ## Reproducibility, and how it fails
 
@@ -326,3 +357,5 @@ unavailable.
 [adr29]: ../adr/0029-the-factory-measurement-rests-on-a-borrowed-base.md
 
 [235]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/235
+[230]: https://github.com/trulsjo/realistic-fusion-refreshed/pull/230
+[adr5]: ../adr/0005-real-time-fusion-simulation.md

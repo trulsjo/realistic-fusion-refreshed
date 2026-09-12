@@ -989,8 +989,19 @@ New-Item -ItemType Directory -Force -Path ($Save ? (Join-Path $modDir $surveyNam
 
 # A report interval at or past the run length leaves only the tick-0 report, which is taken before
 # the rig has filled and would fail the "every reactor hot" gate on a perfectly good run. Halving
-# the run length keeps two reports per run whatever -Ticks is, so the reporting overhead stays a
-# fixed fraction rather than growing as runs get shorter.
+# the run length keeps AT LEAST one report after tick 0, and two once -Ticks is twice the interval,
+# so the reporting overhead stays a fixed fraction rather than growing as runs get shorter.
+#
+# It used to say "two reports per run whatever -Ticks is", which is false between 501 and 999 ticks
+# at the default 500 -- one report, at tick 500. Harmless while the cadence was being clobbered to 5
+# (#235) and operative from the moment it stopped being, which is why it is corrected here.
+#
+# AND THE GATES NOW JUDGE AN OLDER SNAPSHOT. Every BENCH-RIG gate reads the LAST report, which used
+# to be within five ticks of the end and can now be five hundred. The accumulating ones -- bred=
+# against expect=, full_pct=, lithium_min= -- are the exposed ones: a state reached by tick 995 but
+# not by tick 500 would now fail a good run. Not observed on the sitting that took the figures in
+# docs/research/borrowed-base.md, which passed every gate with -Collectors -Blankets at the default
+# cadence, but it has had one sitting rather than a history.
 if ($ReportEvery -ge $Ticks) { $ReportEvery = [Math]::Max(1, [int]($Ticks / 2)) }
 
 # What the census cadence is supposed to be from here on, kept so the rig's generation can assert it
@@ -1614,8 +1625,11 @@ end
 --
 -- THIS WALK IS NOT FREE AND IT DOES NOT CANCEL (#235). It loops storage.reactors, .collectors and
 -- .blankets, so it costs nothing at n = 0 and a great deal at n = 200, and the difference lands in
--- the numerator of every per-reactor figure. Measured on the borrowed base while it was wrongly
--- running every 5 ticks: 2.18 us per reactor, 25.6% of the reported cost. Raising -ReportEvery is
+-- the numerator of every per-reactor figure -- the LOOPS cost nothing at n = 0, but the write costs
+-- 414 us whatever n is and only that constant part cancels. Measured on the borrowed base with
+-- -Collectors -Blankets -Gap 6 while it was wrongly running every 5 ticks: 2.18 us per reactor,
+-- 25.6% of the reported cost. A bare rig walks one register rather than three, so neither number
+-- carries over unchanged. Raising -ReportEvery is
 -- therefore not a tuning knob but a correctness one; see docs/research/borrowed-base.md.
 script.on_nth_tick(__REPORT__, function()
   local n, hot, powered, temp, plasma, output, energy = 0, 0, 0, 0, 0, 0, 0
@@ -1875,8 +1889,10 @@ function New-TimingRow {
                         ForEach-Object { ($_ | Measure-Object -Average).Average })
         # The MEAN, to match ScriptByRun, because the question this column exists to answer is
         # whether a run whose scriptUpdate mean is elevated is a run that collected more (#235).
-        # Comparing a mean against a median would not answer it. Incremental GC is bursty by
-        # construction, so its median is near zero on every run and carries no signal at all.
+        # Comparing a mean against a median would not answer it. The median is the wrong statistic
+        # here for the same reason it is wrong for scriptUpdate: incremental GC is bursty, so a
+        # median tick understates it. Measured on the borrowed base at n = 0, its median is 25.8 us
+        # against a 39.9 us mean -- not negligible, just not the question.
         GcByRun     = @(Split-Runs $Columns['luaGarbageIncremental'] $Ticks $Runs |
                         ForEach-Object { ($_ | Measure-Object -Average).Average })
     }
