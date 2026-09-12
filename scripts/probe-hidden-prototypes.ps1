@@ -9,10 +9,12 @@
     coexistence decision and is deliberately not this script's to take
     (#219).
 
-    IT RUNS NO MAP, which separates it from every other probe in this directory. It only dumps
-    prototypes, the way `name-check.ps1` and `locale-check.ps1` do, because `hidden` is a data-stage
-    field and a running game would add nothing to the answer. Read that as "cheap", not as "weaker":
-    there is no runtime behaviour here for a map to reveal.
+    IT RUNS NO MAP, which puts it with the minority of probes here rather than the majority: thirteen
+    of the sixteen build one, and `probe-connection-categories.ps1` and `probe-dumped-reference.ps1`
+    are the two that already did not. It only dumps prototypes, the way `name-check.ps1` and
+    `locale-check.ps1` do, because `hidden` is a data-stage field and a running game would add nothing
+    to the answer. Read that as "cheap", not as "weaker": there is no runtime behaviour here for a map
+    to reveal.
 
     WHY THIS EXISTS
 

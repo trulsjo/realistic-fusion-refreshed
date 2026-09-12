@@ -165,6 +165,10 @@
     `auto_barrel = false`, and a fill recipe whose `empty-` half the baseline does not hold. Then a
     tooltip row naming nothing of ours, a row of theirs reworded in the same diff as one of ours, a
     field outside the shape's own changing, and any entry being removed must all still be reported. It
+    It pins the host threshold itself since #222, with a baseline carrying EXACTLY ONE qualifying
+    barrel unlock that must still be exempt -- the case that fails if `0 -lt` is ever raised to
+    `1 -lt`, which nothing here could tell apart before, because every other re-homing case is built
+    on a fixture holding two and the negatives hold none. It
     also asserts each exemption is granted under the RIGHT label -- `unlock`, `rehomed`,
     `unlock+rehomed` or `tooltip` -- since one loop dispatches every one of them and a prototype
     excused for the wrong reason prints a sentence that is not true.
