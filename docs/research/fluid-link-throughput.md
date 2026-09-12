@@ -117,18 +117,100 @@ carrying 75.1 — so it is the conservative pick by the same rule that quotes th
 > Measured 2026-08-17 at 81 MW, re-measured 2026-09-11 at **83.8 MW** after
 > [#215](https://github.com/trulsjo/realistic-fusion-refreshed/issues/215) — both figures sustained.
 > The energy leg was a vanilla pipe run then and is a bolt now, which is why its figure could not
-> have held.
->
-> **The plasma settles 22% cooler too — 5.347×10⁸ °C against 6.88×10⁸ — and the bolt did not cause
-> that.** The plasma link is a pipe run before and after; nothing about it changed. That temperature
-> was already 5.346×10⁸ °C on 2026-09-01, six days before
-> [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) bolted anything, so the fall
-> happened between 2026-08-17 and 2026-09-01 and has not moved since. The candidate nobody has ruled
-> out is `587f699`, which began selling reactor energy at 550 °C rather than 165.
->
-> **Why the rates moved is
-> [#225](https://github.com/trulsjo/realistic-fusion-refreshed/issues/225)**, which is open and holds
-> the series for both.
+> have held. **Why every rate moved is the section below**, and all of it is the simulation changing
+> under a rig that did not.
+
+### Every figure here is measured on a fully-researched force
+
+`bench-mod-links.ps1`'s `on_init` calls `force.research_all_technologies()`, and the comment beside
+it says why: that is also the state the mod gets played in by the time a player has a reactor worth
+benchmarking. So **83.8 MW is a researched reactor's figure, not a base one.** Two ladders reach it:
+
+- **plant efficiency** ([#96](https://github.com/trulsjo/realistic-fusion-refreshed/issues/96),
+  [ADR 0020](../adr/0020-plant-efficiency-is-researchable.md)) — `capture_ladder` on `M.reactor` in
+  `realistic-fusion-refreshed/scripts/reactor-logic.lua` takes capture from the base 0.85 to
+  **0.9375** at rung 3, which is **+10.3%** on everything the reactor sells.
+- **confinement time** ([#53](https://github.com/trulsjo/realistic-fusion-refreshed/issues/53),
+  [ADR 0024](../adr/0024-confinement-time-is-the-researchable-lever.md)) — `confinement_ladder` on the same
+  spec takes tau from 30 s to **60 s**, which moves the equilibrium temperature and therefore
+  everything downstream of it.
+
+**The base-capture equivalent of 83.8 MW is about 76.0 MW** — 83.8 ÷ 1.1029412, which is arithmetic
+rather than a measurement; no 360 000-tick run has been taken on an unresearched force. The
+confinement ladder has no such divisor, because it moves a physical parameter rather than scaling an
+output: a base-confinement figure has to be measured, and the one that exists is the 43.7 MW below.
+
+### Why the rates moved, commit by commit
+
+Answered by [#225](https://github.com/trulsjo/realistic-fusion-refreshed/issues/225). The method is
+the one that ticket sets: the equilibrium lives in the pure simulation, which runs outside Factorio,
+so the window was swept there at seconds per commit and the two steps it found were then bracketed by
+rig runs. **Every figure in the table below is a run of this rig, not a reading of a commit message.**
+
+| taken at | date | sustained | delivered | plasma |
+|---|---|---:|---:|---:|
+| `d9ece9c` | 2026-08-21 | 1.353975 u/tick | **81.2 MW** | 6.87698×10⁸ °C |
+| `30e100b` | 2026-08-22 | 0.727653 u/tick | **43.7 MW** | 2.39299×10⁸ °C |
+| `4df2591` | 2026-09-01 | 1.140 u/tick | **68.4 MW** | 5.346×10⁸ °C |
+| `2381730` | 2026-09-11 | 1.3974 u/tick | **83.8 MW** | 5.347×10⁸ °C |
+
+All four at 360 000 ticks, 6 000 per window, D-D, four exchangers, against Factorio 2.0.77 (build
+84539). The first two were re-run on 2026-09-12 out of a detached worktree at those commits; the
+2026-08-17 row of the series this note used to carry is the `d9ece9c` row, **reproduced**: 81.2 MW
+against 81, 1.353975 units/tick sustained against 1.354, 6.87698×10⁸ °C against 6.88×10⁸, and 0.0891
+units/tick of plasma flowing against 0.089. One figure does not land on its old digits — the energy
+link's flowing rate reads **1.6248** where 2026-08-17 recorded **1.63** — and that one is derived
+rather than measured: it is the sustained rate divided by the 5/6 of ticks the meter counts, and
+1.353975 ÷ 0.833333 is 1.62477 exactly. The sustained figure both dates agree on is the measured one.
+So nothing about the rig or the method drifted across the window, which is what makes the two steps
+below attributable to the simulation.
+
+**`c794fc5` — the radiation loss term ([#52](https://github.com/trulsjo/realistic-fusion-refreshed/issues/52)),
+2026-08-21.** 81.2 MW → 43.7 MW, 6.877×10⁸ °C → 2.393×10⁸. Its own commit message says the D-D tier
+falls from Q 2.14 to Q 0.32; this is that fall arriving at the fluid box. **Not a defect** — a plasma
+that radiates is the physics the mod had been missing.
+
+**`c2cb7e3` — the confinement ladder ([#53](https://github.com/trulsjo/realistic-fusion-refreshed/issues/53)),
+2026-08-24.** 43.7 MW → 68.4 MW, back to 5.346×10⁸ °C. It reaches this rig because the rig researches
+everything, so the reactor runs on rung 3's 60 s rather than the shipped 30 s. Located in the pure
+simulation, which puts the settled temperature at 2.4222×10⁸ °C at every commit from `c794fc5` to
+`30e100b` and at 6.4830×10⁸ from `c2cb7e3` to `4df2591` — one step, at that commit, with nothing
+moving on either side of it. **Not a defect either**: it is the ladder working as designed on a force
+that has climbed it.
+
+**Net across the window: −22.3% on temperature and −15.8% on delivered power.** The two steps run in
+opposite directions and the fall is what is left of them, which is why the movement read as a single
+unexplained drop rather than as two named ones.
+
+**`587f699` is eliminated, and nothing should re-propose it.** It was the only named candidate in
+three passes of triage. Its own commit message rules it out: moving the energy sale from 165 °C to
+550 takes *the unaccounted output from 6.7 W to 1.9 W*, and *a running reactor converts nothing
+whatever this field says*, measured under [#101](https://github.com/trulsjo/realistic-fusion-refreshed/issues/101)
+across every target to 10⁶ °C. Watts cannot move 22% of a plasma temperature. The two rig runs above
+bracket it directly as well: it sits between them, and the whole step is already accounted for by the
+commit one day earlier.
+
+**The plasma rate is the same two commits and reads oddly because they cross.** Flowing, all at
+360 000 ticks: 0.0891 u/tick at `d9ece9c`, 0.0536 at `30e100b`, 0.0968 at `4df2591` and again at
+`2381730`. The fall and the recovery overshoot, so the published series — 0.089 on 2026-08-17 against
+0.0968 since — shows a *rise* where the temperature shows a fall. Sustained goes 0.0408 → 0.00893 →
+0.0320 across the same four and falls on net, which is the bound that tracks what the plasma actually
+burns; the flowing bound is sustained divided by the fraction of ticks the meter counted, and the
+refuelling cadence moved with the burn.
+
+**Quote the plasma figures at a stated run length or not at all.** Unlike the energy rates, they do
+not converge to the same number at 126 000 ticks: today's 126 000-tick run reads 0.0675 flowing and
+0.0333 sustained against the 360 000-tick run's 0.0968 and 0.0320. Every plasma figure in this note
+is the 360 000-tick one.
+
+**`48c43c0` — the plant-efficiency ladder, 2026-09-09 — is the last move, and it is +10.3%.**
+Measured at 126 000 ticks on 2026-09-11, one run with the ladder researched and one without:
+**86.3862 MW against 78.3235 MW**, a ratio of **1.1029410** against the ladder's own arithmetic
+0.9375 ÷ 0.85 = **1.1029412** — seven significant figures. The flowing bound gives the same ratio,
+which is the check that the two bounds are read consistently. The un-researched run reproduces the
+78.3 MW that [`bolted-joint-throughput.md`](bolted-joint-throughput.md) recorded on 2026-09-08, the
+day before that commit. **The plasma is untouched by it**: temperature and plasma rate are identical
+to the last digit across the two runs, so the ladder moves only what the reactor sells.
 
 **Neither link is within an order of magnitude of anything.** The reactor and the exchangers were
 built as a real chain and again with the exchangers replaced by the rigs' categorised energy feed,

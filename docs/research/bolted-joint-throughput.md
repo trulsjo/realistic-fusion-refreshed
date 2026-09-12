@@ -16,6 +16,23 @@ Two scripts, both committed, both re-runnable:
 `reactor-logic.lua`'s `energy_fluid_j_per_unit = 1e6`). Every rate below is therefore readable as
 megawatts without a conversion, and this note uses both.
 
+> **Every figure here is a BASE-CAPTURE figure, and the rig would report 10.3% more today.**
+> `bench-mod-links.ps1` researches every technology, so its reactors sit at the top of whatever
+> ladders exist on the day it runs. On 2026-09-08 the plant-efficiency ladder did not exist yet:
+> `48c43c0` wired it the next day, 2026-09-09, and `capture_ladder` on `M.reactor` in
+> `realistic-fusion-refreshed/scripts/reactor-logic.lua` now takes capture from the base 0.85 to
+> 0.9375 at rung 3 — **×1.1029412** on everything a reactor sells. Nothing here has been re-run
+> since, so the researched equivalents are arithmetic rather than measurement: 320.0 MW → 352.9,
+> 1 195.4 → 1 318.5, 94.0 → 103.7, 78.3 → 86.4. **Every ratio and every percentage in this note is
+> unaffected**, because the factor divides out of both sides — which is why the conclusions are
+> stated as ratios. The confinement ladder is not in this correction: it already existed on
+> 2026-09-08 and the rig already had it.
+>
+> The 86.4 MW is not arithmetic alone — it was measured on 2026-09-11 at the same 126 000 ticks, and
+> the ratio it gives against the 78.3 below is 1.1029410 against the ladder's own 1.1029412. See
+> [`fluid-link-throughput.md`](fluid-link-throughput.md) and
+> [#225](https://github.com/trulsjo/realistic-fusion-refreshed/issues/225).
+
 ## The short answer
 
 **One bolted connection carries 6 000 MW, and the hardest-driven reactor measured here asks
@@ -126,7 +143,9 @@ case to the row above:
 
 Its sustained figure is **78.3 MW**, which is the number ADR 0018's Consequences records from
 2026-09-07 — reproduced to the digit a day later, on a script this ticket edited. That is the
-regression check.
+regression check. It was reproduced a third time on 2026-09-11, deliberately, on a force held short
+of the plant-efficiency ladder: **78.3235 MW**, against **86.3862 MW** with the ladder. That pair is
+what pins the ×1.1029412 the note at the top applies to every figure here.
 
 All four working, water full at 200, and **a shallow gradient the D-T row does not have**: 0.4 at the
 first machine down to 0.3 at the fourth. That is what supply-limited looks like — 94 MW of reactor
