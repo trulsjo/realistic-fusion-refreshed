@@ -90,10 +90,14 @@ so the repository is not an option regardless of terms.
   out lower with reactors in that sweep; it rose with every count. (This bullet said "about 13 ms"
   until 2026-09-06; that came from the withdrawn 20-tick probe, and the measured figure is 10.8 ms
   empty and 11.5 ms at 200 reactors.)
-- **`_reference/` still documents the provenance of nothing else in it** — the predecessor mods, the
-  three `ultimateCore` packs, the Krastorio 2 checkouts and a screen recording. Out of scope for #65
-  and filed as [#234](https://github.com/trulsjo/realistic-fusion-refreshed/issues/234); this ADR
+- **`_reference/` documented the provenance of nothing else in it until #234** — the predecessor mods,
+  the five UFP zips, the Krastorio 2 checkouts and a screen recording. Out of scope for
+  #65 and filed as [#234](https://github.com/trulsjo/realistic-fusion-refreshed/issues/234); this ADR
   governs the borrowed base alone.
+
+  > **Closed 2026-09-12.** [`docs/research/reference-provenance.md`](../research/reference-provenance.md)
+  > inventories all thirteen items in `_reference/`, this one included by reference rather than by
+  > repetition. This ADR still governs the borrowed base alone.
 
 ## Alternatives considered
 

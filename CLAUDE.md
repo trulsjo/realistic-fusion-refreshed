@@ -133,8 +133,18 @@ licence is WTFPL" does not settle what a given file is. See `docs/adr/0001-lifta
 keep graphics derived from **Krastorio 2** in their own directories with the licence text alongside,
 while everything else stays permissive. Upstream K2 assets
 (<https://codeberg.org/raiguard/Krastorio2Assets>) are **LGPLv3**; the copy inside the four-module
-redesign is marked **GPLv3** — read the file next to the sprites rather than assuming either. This repo
-uses the same scheme — see `legal-note.txt`.
+redesign is marked **GPLv3** — read the file next to the sprites rather than assuming either. **The
+upstream LGPLv3 is the root, not the whole tree**: `Krastorio2Assets/compatibility/IndustrialRevolution/`
+carries a `SUB-LICENSE.txt` putting its five PNGs under **CC BY-NC-ND 4.0**, which is the one clause
+above that rules material out outright. Nothing from it is in any of the three mods and nothing from
+it is committed, checked 2026-09-12 — the directory is present three times under the git-ignored
+`.mod-cache*/`, which is where the gates unpack upstream. This repo uses the same scheme — see
+`legal-note.txt`.
+
+**Every item in `C:\src\factorio\_reference\` — what it is, where it came from, when it was obtained
+and what terms it states — is inventoried in `docs/research/reference-provenance.md`** (#234). This
+section states the rules; that note says which file on disk is which. The zips this next paragraph
+names are no longer there — only the trees extracted from them — so a re-check works from those.
 
 **Verified 2026-08-17 (#38)** against the zips in `C:\src\factorio\_reference\`, which the survey could
 not download and had to leave open. Both the 1.1 original (1.8.18) and Durikkan's port (1.9.0, 1.9.2)

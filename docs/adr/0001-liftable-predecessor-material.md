@@ -38,6 +38,14 @@ Three findings made this a decision rather than a correction:
    applies to Romner's 2022 copy inside the archive. This repo's documents were right about upstream
    and silent about the copy.
 
+   > **Amended 2026-09-12 (#234).** "Upstream is LGPLv3" is true of the **root** `LICENSE` and of
+   > everything this project has taken, and it is not true of the whole tree.
+   > `Krastorio2Assets/compatibility/IndustrialRevolution/` carries a `SUB-LICENSE.txt` putting its
+   > five PNGs under **CC BY-NC-ND 4.0** — the NonCommercial-NoDerivatives combination this ADR rules
+   > out outright — and `sounds/` is sub-licensed MIT. Nothing from either is in any shipped mod,
+   > checked that day. The inventory is
+   > [`docs/research/reference-provenance.md`](../research/reference-provenance.md).
+
 Relicensing this project was considered and does not help: NonCommercial and NoDerivatives are
 incompatible with every open-source licence, and the per-directory convention already permits copyleft
 material inside an Unlicense repo. The project licence remains The Unlicense, unreopened.
