@@ -216,15 +216,23 @@
     a benchmark of a map with different prototypes is a benchmark of a different map.
 
 .PARAMETER SelfTest
-    Prove the four pieces of -Save's machinery that can fail quietly, and exit. Needs no Factorio
-    and no save. It parses a synthesised save header, including the wide encoding a version
-    component only reaches at 255 and no real mod on hand has; it requires an unresolvable mod to
-    be named rather than skipped; it requires a zip whose name merely BEGINS with the wanted name
-    plus an underscore to be refused rather than taken for it; and it requires a mod differing only
-    in CASE to be refused too, planting one decoy in each of the two forms a mod can take on disk.
+    Prove the five pieces of machinery here that can fail quietly, and exit. Needs no Factorio and
+    no save. Four are -Save's. It parses a synthesised save header, including the wide encoding a
+    version component only reaches at 255 and no real mod on hand has; it requires an unresolvable
+    mod to be named rather than skipped; it requires a zip whose name merely BEGINS with the wanted
+    name plus an underscore to be refused rather than taken for it; and it requires a mod differing
+    only in CASE to be refused too, planting one decoy in each of the two forms a mod can take on
+    disk.
 
-    Those four and no more, because every one of them produces a confident wrong answer rather than
-    an error, and all three of the last three produce the SAME wrong answer by different routes: a
+    THE FIFTH IS THE STALL DETECTOR (#235), and it is here for the same reason as the other four
+    rather than as an afterthought: a run the machine blocked in reports a per-reactor figure
+    inflated by an I/O stall, and every other gate passes. It holds Find-StalledRuns from both
+    sides -- the recorded 389 ms one-run stall is flagged and named at the right tick, two runs
+    stalling on one tick are both flagged, and neither 5.5 ms of real simulation nor a 108 ms spike
+    repeating in every run is called a stall.
+
+    Those five and no more, because every one of them produces a confident wrong answer rather than
+    an error, and three of the first four produce the SAME wrong answer by different routes: a
     run that loads the save without the mod the save names, reports a clean pass, and is believed. A
     mis-parsed header names the wrong mods. A mod list one entry short measures a map with a mod's
     entities stripped out of it. LTN_Combinator resolving as LTN is that with a bonus mod loaded to
@@ -875,16 +883,35 @@ function Find-StalledRuns {
         for ($i = 0; $i -lt $Ticks; $i++) {
             $us = $byRun[$r][$i] / 1000.0
             if ($us -lt $StallMicroseconds -or $us -le $worstUs) { continue }
-            # The same tick index everywhere else. Median, so one OTHER stalled run cannot hide
-            # this one by dragging the comparison up.
-            $peers = @(for ($q = 0; $q -lt $byRun.Count; $q++) {
-                if ($q -ne $r) { $byRun[$q][$i] / 1000.0 }
-            })
-            $peer = Get-Median $peers
+            # The same tick index everywhere else, compared against the FASTEST of them.
+            #
+            # THE MEDIAN WAS WRONG HERE AND THE DEFAULT IS WHERE IT BROKE. -Runs defaults to 3, so
+            # a median over two peers is their mean, and one other stalled run drags it up by half
+            # the stall. Measured: two of three runs stalling at the same index reported NOTHING,
+            # and so did two of two. That is not a corner -- stalls land on census ticks, and at
+            # -ReportEvery 500 with -Ticks 1000 a run has only two of those, so two stalls in a
+            # default sitting collide on one index about half the time and both vanish.
+            #
+            # The minimum has no such hole: if ANY other run is fast at this index, the tick is not
+            # work. It cannot cry wolf on reproducible work either, because work that repeats is
+            # present in every peer, so the minimum is as large as the median would have been --
+            # the rig's 108 ms t = 30 spike is still correctly ignored, which half 5 asserts.
+            $peer = [double]::MaxValue
+            for ($q = 0; $q -lt $byRun.Count; $q++) {
+                if ($q -eq $r) { continue }
+                $v = $byRun[$q][$i] / 1000.0
+                if ($v -lt $peer) { $peer = $v }
+            }
             if ($peer -le 0) { $peer = 0.001 }
             if (($us / $peer) -ge $TimesOtherRuns) { $worstUs = $us; $worstAt = $i }
         }
         if ($worstAt -ge 0) {
+            # Run is 1-based because runs are counted from one everywhere else in this script.
+            # TICK IS 0-BASED ON PURPOSE, because it is the number a reader takes to the dump: rows
+            # there are labelled t0 .. t(Ticks-1), so this IS that label -- as long as no row was
+            # dropped. Get-Timings discards rows whose field count does not match the header, and
+            # one dropped row shifts every position after it, so on a truncated dump this is a
+            # position rather than a label. The sample-count warning fires in that case.
             $out += [pscustomobject]@{ Run = $r + 1; Tick = $worstAt; WorstMicroseconds = $worstUs }
         }
     }
@@ -1074,7 +1101,7 @@ if ($SelfTest) {
     $flat  = { ,@(1..1000 | ForEach-Object { 11600.0 }) }
     $clean = & $flat
     $stall = & $flat
-    $stall[875] = 389341000.0                                  # the real tick: t = 876, 389.3 ms
+    $stall[876] = 389341000.0     # the real one: dump label t876 of run 6, 389.3 ms
     $found = @(Find-StalledRuns -Samples ($clean + $stall) -Ticks 1000 -Runs 2)
     if ($found.Count -ne 1 -or $found[0].Run -ne 2) {
         throw ('-SelfTest 5/5 FAILED: expected run 2 of two to be flagged, got ' +
@@ -1084,6 +1111,26 @@ if ($SelfTest) {
     if ([Math]::Abs($found[0].WorstMicroseconds - 389341.0) -gt 1.0) {
         throw ("-SelfTest 5/5 FAILED: reported worst tick $($found[0].WorstMicroseconds) us, " +
                'expected 389341 us.')
+    }
+    if ($found[0].Tick -ne 876) {
+        throw ("-SelfTest 5/5 FAILED: reported tick $($found[0].Tick), expected 876. Tick is the " +
+               "dump's own t<n> label, which is 0-based -- reporting an ordinal instead sends the " +
+               'reader one row past the stall.')
+    }
+
+    # TWO runs stalling at the SAME index, at the default -Runs 3. This is the case the first
+    # version missed: it compared against the MEDIAN of the peers, which over two peers is their
+    # mean, so one stalled peer hid the other and a default sitting reported nothing. Stalls land
+    # on census ticks and a default run has only two of those, so the collision is ordinary rather
+    # than exotic.
+    $twoA = & $flat; $twoB = & $flat; $twoC = & $flat
+    $twoA[400] = 120000000.0
+    $twoB[400] = 118000000.0
+    $two = @(Find-StalledRuns -Samples ($twoA + $twoB + $twoC) -Ticks 1000 -Runs 3)
+    if ($two.Count -ne 2) {
+        throw ("-SelfTest 5/5 FAILED: two of three runs stalled on the same tick and $($two.Count) " +
+               'were flagged. Comparing against the median of the peers lets one stalled run hide ' +
+               'another; the fastest peer is the comparison that does not.')
     }
 
     # The honest ceiling stays under the absolute floor: the dearest real scriptUpdate tick this
@@ -1106,8 +1153,8 @@ if ($SelfTest) {
                'called a stall. That is the rig''s own t = 30 spike, so every rig sweep would ' +
                'warn and the warning would stop being read.')
     }
-    Write-Host ('  5/5 ok: the 389 ms one-run stall is flagged; 5.5 ms of work is not; a 108 ms ' +
-                'spike repeating in every run is not.')
+    Write-Host ('  5/5 ok: the 389 ms one-run stall is flagged at tick 876; two runs stalling ' +
+                'on one tick are both flagged; 5.5 ms of work is not, nor a 108 ms spike in every run.')
 
     Write-Host '-SelfTest: PASS'
     return
@@ -2568,11 +2615,15 @@ if ($Save) {
         foreach ($st in @(Find-StalledRuns -Samples $cols['scriptUpdate'] -Ticks $Ticks -Runs $Runs)) {
             $msg = ("run {0} spent {1:N1} ms inside scriptUpdate on tick {2} alone, and no other " +
                     'run spends anything like it on that tick. That is the machine blocking, not ' +
-                    'work. It adds about {3:N0} us to this row of a pooled mean and the median ' +
-                    'cannot see it. DISCARD THIS RUN and re-take the count. See #235 and ' +
-                    'docs/research/borrowed-base.md.')
+                    'work. It adds about {3:N0} us to that run''s own script mean and about ' +
+                    '{4:N0} us to this row''s pooled mean, and no median can see either. DISCARD ' +
+                    'THIS RUN and re-take the count. See #235 and docs/research/borrowed-base.md.')
+            # Two divisors, because the row's mean pools EVERY tick of EVERY run -- dividing the
+            # stall by $Ticks alone would overstate this row by a factor of $Runs, which is the
+            # same unit error that cost #235 three sittings.
             Write-Warning ($msg -f $st.Run, ($st.WorstMicroseconds / 1000.0), $st.Tick,
-                                  ($st.WorstMicroseconds / $Ticks))
+                                  ($st.WorstMicroseconds / $Ticks),
+                                  ($st.WorstMicroseconds / ($Ticks * $Runs)))
         }
         Write-MachineNote -Label 'save' -Cpu $cpu -Load $load -Why (
             'Nothing here is a difference against a baseline, so there is no subtraction that ' +
@@ -2929,11 +2980,15 @@ try {
         foreach ($st in @(Find-StalledRuns -Samples $cols['scriptUpdate'] -Ticks $Ticks -Runs $Runs)) {
             $msg = ("run {0} spent {1:N1} ms inside scriptUpdate on tick {2} alone, and no other " +
                     'run spends anything like it on that tick. That is the machine blocking, not ' +
-                    'work. It adds about {3:N0} us to this row of a pooled mean and the median ' +
-                    'cannot see it. DISCARD THIS RUN and re-take the count. See #235 and ' +
-                    'docs/research/borrowed-base.md.')
+                    'work. It adds about {3:N0} us to that run''s own script mean and about ' +
+                    '{4:N0} us to this row''s pooled mean, and no median can see either. DISCARD ' +
+                    'THIS RUN and re-take the count. See #235 and docs/research/borrowed-base.md.')
+            # Two divisors, because the row's mean pools EVERY tick of EVERY run -- dividing the
+            # stall by $Ticks alone would overstate this row by a factor of $Runs, which is the
+            # same unit error that cost #235 three sittings.
             Write-Warning ($msg -f $st.Run, ($st.WorstMicroseconds / 1000.0), $st.Tick,
-                                  ($st.WorstMicroseconds / $Ticks))
+                                  ($st.WorstMicroseconds / $Ticks),
+                                  ($st.WorstMicroseconds / ($Ticks * $Runs)))
         }
         Write-MachineNote -Label "n=$count" -Cpu $cpu -Load $load -Why (
             'Every figure from it is a difference against an n = 0 baseline measured at a ' +
