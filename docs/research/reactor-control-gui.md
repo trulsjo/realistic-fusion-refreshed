@@ -2,7 +2,11 @@
 
 Read 2026-08-19 against
 [#37](https://github.com/trulsjo/realistic-fusion-refreshed/issues/37). Two sources: a 2:12 screen
-recording Truls supplied at `C:\src\factorio\_reference\gui_prototype_showcase.mp4`, and the GUI's
+recording Truls supplied at `C:\src\factorio\_reference\gui_prototype_showcase.mp4` (posted by
+Romner_set to [the mod portal's *"About version 2.0"*
+thread](https://mods.factorio.com/mod/RealisticFusionPower/discussion/626322f706bc9f47b0984b15);
+established 2026-09-12, and the terms are recorded in
+[`reference-provenance.md`](reference-provenance.md)), and the GUI's
 source in the archived four-module redesign —
 `RealisticFusionPower/scripts/gui.lua` (672 lines), `gui-events.lua` (370) and `reactor-logic.lua`
 (355), at <https://github.com/4881e05257b099383da78c50269d2ceb/realistic-fusion-dev>.
@@ -19,7 +23,7 @@ source in the archived four-module redesign —
 
 The short version: **the GUI exists, it is liftable, and three of its four levers are nearly free
 here while the fourth reaches into ADR 0011's state model.** The recording is not the archived HEAD —
-it can be dated to a specific commit, four months before the last GUI work.
+it can be dated to a specific commit, nearly six months before the last GUI work.
 
 **It is Factorio 1.1 code.** The redesign's "2.0" is its own version number, the collision `CLAUDE.md`
 warns about. None of this ever ran on Factorio 2.0.
@@ -71,13 +75,20 @@ Its left column reads `Fusion rate` **and** `Plasma density`. That pair exists a
 | `46f83971` finish heater & reactor GUI | 2022-10-09 | `Fusion rate` + `Plasma density` (`u/m³`) — **this is the recording** |
 | `22fa69f5` Make reactor simulation work | 2022-11-20 | `Plasma density` → `Plasma volume` (`m³`) |
 | `ad7ee3c9` Add He-4 control to & remove fusion rate from GUI | 2022-11-20 | `Fusion rate` dropped; He-4 gains input/removal |
-| `3eb3f957` Update GUI & fix crashes | 2023-03-17 | last GUI work |
-| `77043677` Add shortcut for remote reactor control | 2023-04-01 | last code commit in the repo |
+| `3eb3f957` Update GUI & fix crashes | 2023-03-17 | last change to the readouts — 18 lines of `gui.lua` |
+| `77043677` Add shortcut for remote reactor control | 2023-04-01 | last code commit in the repo, **and the largest GUI change in its history** — 720 lines of `gui.lua` |
 
 Two dead readouts corroborate it: `Fusion rate` is 0 and `Plasma density` is 50 in **every** frame,
 and the recording predates "Make reactor simulation work" by six weeks. The shell was finished before
-the model behind it was. **The archive is therefore four months ahead of the recording** — the copy we
-can read is the more complete artefact, not the less.
+the model behind it was. **The archive is therefore nearly six months ahead of the recording** — the
+copy we can read is the more complete artefact, not the less.
+
+> **Corrected 2026-09-12, twice over, and the conclusion is unchanged both times.** This said "four
+> months" here and above. It was measured to `3eb3f957` (2023-03-17), which is five months and eight
+> days from the recording, not four. And `3eb3f957` is not where the GUI work stops: `77043677`
+> (2023-04-01) rewrites 720 lines of `gui.lua` against that commit's 18, so it is the largest GUI
+> change in the repository and the right end of the gap. **2022-10-09 to 2023-04-01 is five months
+> and 23 days.** The table above is corrected to match.
 
 This also revises `predecessor-survey.md`, which recorded the redesign's simulation and GUI as
 "entirely unverified" because nobody had run it. The recording is Romner running it. It does not

@@ -132,9 +132,16 @@ decision is a factor of 8.93, and it is entirely fictional physics.
 ### Krastorio 2 (2.1.3, LGPLv3)
 
 Read from `C:\src\factorio\_reference\Krastorio2`, whose root `LICENSE` is the **GNU LGPLv3** — the
-same licence as this repository, and `Krastorio2Assets` likewise. Under `CLAUDE.md`'s rules that makes
-K2 material liftable into its own directory with the licence text and modifications stated. It is a
-single root licence; there is no per-directory marking to check.
+same licence as this repository, and `Krastorio2Assets`' root likewise. Under `CLAUDE.md`'s rules that
+makes K2 material liftable into its own directory with the licence text and modifications stated.
+`Krastorio2` is a single root licence with no per-directory marking to check.
+
+> **Corrected 2026-09-12 (#234).** That last sentence covered `Krastorio2Assets` too, and it should
+> not have. The asset repository carries three sub-licences, and
+> `compatibility/IndustrialRevolution/` puts its five PNGs under **CC BY-NC-ND 4.0** — which
+> `CLAUDE.md` rules out outright. Nothing in this section's conclusions turns on it; check the
+> directory before lifting a sprite. See
+> [`reference-provenance.md`](reference-provenance.md).
 
 K2 **adds no fission chemistry**. It rebalances vanilla's (`prototypes/updates/base/{entities,recipes}.lua`):
 
