@@ -260,7 +260,7 @@ face.**
   no pipe at all.
 - **No vanilla tank or wagon can hold either energy fluid.** The 25 GJ and 50 GJ storage above is
   gone. That is the removal of a capability nobody designed rather than a balance change.
-- **One class of silent mistake disappears.** `bench-mod-links.ps1` records it, in `assert_segments()`: an exchanger
+- **One class of silent mistake disappears.** `rf_assert_segments`, shared by every rig out of `Get-RigBuildLua` in `scripts/factorio-lib.ps1` since #226 and written in `bench-mod-links.ps1` before it, records it: an exchanger
   sat directly on a shared energy header joins its *water* inlet to that header, which fills with
   water, and "it reads as a reactor that produces nothing rather than as a plumbing mistake". Water
   cannot join a categorised energy run.
