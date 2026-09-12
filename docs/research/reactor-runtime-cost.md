@@ -1636,6 +1636,18 @@ it cost more.
 a sweep taken three days later with nine runs instead of three. The method reproduces, so the two
 columns above are apples to apples.
 
+> **This paragraph compares a clean figure against a contaminated one — noted 2026-09-12 (#235).**
+> The harness's own census walk was running a hundred times more often than `-ReportEvery` asked for
+> from `0b43649` onward, and it scales with reactor count, so it sat in every per-reactor figure
+> taken after it. **`0b43649` is 2026-09-03 19:56; #62's 5.44 µs landed in `2e4411f` at 14:05 the
+> same day.** So 5.44 is clean and this section's 6.33 is inflated by about 2.2 µs. Corrected, the
+> pair is nearer 5.44 against 4.15 — about **1.31×**, still under the 1.35× floor but against it
+> rather than inside it, and not a reproduction. **The 1.16× is withdrawn; what replaces it is a
+> measurement nobody has taken.** The two columns above remain apples to apples with each other,
+> since both come from the #67 sitting and are inflated alike — it is only the cross-check against
+> #62 that mixes clean with contaminated. See [`borrowed-base.md`](borrowed-base.md) and
+> [#327](https://github.com/trulsjo/realistic-fusion-refreshed/issues/327).
+
 **What #67 expected, and wrote down in order to stop expecting, held on both halves.** The mod's
 share of a *busy* tick falls, and its absolute cost does not move:
 
