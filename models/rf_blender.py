@@ -50,6 +50,12 @@ GLOW_BASE_DARKEN = 0.07
 # included) and it is the one place a future fluid could be accented by accident: anything with
 # "plasma" in its name is taken to be one.
 #
+# THIS MAP IS NAMES, NOT VALUES, and the values are gated elsewhere. scripts/ship-check.ps1
+# section 8 holds a fluid's colour in the Core mod against its palette row in house-style.md and
+# against every build script's own PALETTE copy (#334); models/test_rf_blender.py checks only the
+# mapping below. An accent named for one of our fluids is in that gate's scope automatically, so a
+# third by-product accent needs nothing added to make it hold.
+#
 # THE TWO BY-PRODUCT ACCENTS ARE THE FLUIDS' OWN ICON COLOURS, not new picks (Truls, #262):
 # realistic-fusion-refreshed-core/prototypes/fluids.lua draws rf-tritium green and rf-helium-3
 # violet, and a player who has learnt a fluid from its icon should meet the same colour on the
