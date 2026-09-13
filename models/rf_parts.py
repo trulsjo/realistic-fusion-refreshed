@@ -1,0 +1,267 @@
+"""The mesh helpers every machine's build script shares, imported from inside Blender's Python.
+
+    import rf_parts as parts
+    parts.use(mat)              # the machine's own material resolver, before anything is built
+
+ONE COPY, because two drifted in a week. models/isotope-collector/build.py was written by copying
+these out of models/heat-exchanger/build.py, and by the time #340 pulled them back together the two
+disagreed on `rivets`'s default radius, on how many branches `hbeam` carried, on whether `mat` knew
+about frost, and on which accents the palette held -- some of that per-machine and right, some of it
+a fix one copy got and the other did not. Five more machines are coming and each would have copied
+them again (#334 is the same failure arriving by the same route, in colour tables).
+
+WHAT STAYS PER MACHINE: `mat`. The heat exchanger's takes `glow` and `corrode`, the isotope
+collector's takes `frost`, and their palettes differ because the machines carry different fluids.
+So the helpers here forward whatever keyword flags they are given straight to the installed
+resolver and never look inside them.
+
+THE ORDER OF `random` DRAWS IS PART OF THE CONTRACT. `bevel` and `jitter` both draw from the global
+`random`, which each build script seeds once; the imperfections are deterministic only as long as
+the draws happen in the same order. Anything that re-orders a helper's body changes every
+imperfection after it, even when the geometry logic is identical -- so a change here is verified by
+re-rendering both machines and comparing sheets, never by reading the diff.
+
+Detail floors are checked here rather than in the build scripts, on the reasoning
+models/rf_blender.py's `check_detail` sets out: the read dimension, never the smallest.
+"""
+import math
+import random
+import sys
+
+import bpy
+
+import rf_blender as rf
+
+
+def MATERIAL(name, **flags):                      # replaced by use(); a clear error if it is not
+    sys.exit("rf_parts: no material resolver installed -- call rf_parts.use(mat) before building.")
+
+
+def use(mat_fn):
+    """Install the machine's material resolver. Every helper calls it as `mat_fn(name, **flags)`."""
+    global MATERIAL
+    MATERIAL = mat_fn
+
+
+def bevel(obj, width=0.03):
+    """Round every visible edge so the key light catches it (house style).
+
+    THE WIDTH IS UNEVEN ON PURPOSE (Truls, #252). One bevel width across a whole machine is itself
+    a kind of perfection: every corner catches the sun with the same highlight and the result reads
+    as one extruded object. A spread of 0.75 to 1.6 of the nominal width is invisible as a number
+    and enough that no two corners are the same.
+    """
+    mod = obj.modifiers.new("Bevel", "BEVEL")
+    mod.width = width * random.uniform(0.75, 1.6)
+    mod.segments = 2
+
+
+def _plate(name, size, loc, material, rot=(0, 0, 0), bev=0.03, **mat_opts):
+    """A box with NO detail-floor check, for a caller that has already made the check on its own
+    behalf. `hbeam` is the only one: a beam is checked once on its flange width, and its web and
+    two flanges then go in as the parts of a feature rather than as features."""
+    bpy.ops.mesh.primitive_cube_add(size=1, location=loc, rotation=rot)
+    o = bpy.context.object
+    o.name = name
+    o.scale = size
+    o.data.materials.append(MATERIAL(material, **mat_opts))
+    if bev:
+        bevel(o, bev)
+    return o
+
+
+def box(name, size, loc, material, rot=(0, 0, 0), bev=0.03, cut=False, **mat_opts):
+    # THE READ IS THE SMALLEST DIMENSION, which is only true because every groove here is cut at
+    # least as deep as it is wide (house style, #335). A channel 0.05 wide and 0.03 deep would be
+    # judged on its sink depth -- a dimension nobody sees -- instead of on the width that reads.
+    rf.check_detail(name, min(size), cut=cut)
+    return _plate(name, size, loc, material, rot=rot, bev=bev, **mat_opts)
+
+
+def cyl(name, radius, depth, loc, material, axis="Z", rot=None, verts=48, **mat_opts):
+    rot = rot or {"Z": (0, 0, 0), "X": (0, math.pi / 2, 0), "Y": (math.pi / 2, 0, 0)}[axis]
+    rf.check_detail(name, min(2 * radius, depth))      # a rod reads by its width, a disc by its thickness
+    bpy.ops.mesh.primitive_cylinder_add(radius=radius, depth=depth, location=loc, rotation=rot, vertices=verts)
+    o = bpy.context.object
+    o.name = name
+    o.data.materials.append(MATERIAL(material, **mat_opts))
+    bevel(o, 0.02)
+    return o
+
+
+def dent(obj, centre, radius, depth, cuts=14):
+    """Strike a hollow into an object, around a world-space point.
+
+    Truls, #252: one drum should have a significant dent. A primitive cylinder has vertices only at
+    its two ends, so there is nothing in the middle to move -- the mesh is subdivided first, and
+    the push is toward the object's own vertical axis so the hollow follows the curve instead of
+    flattening a facet. Falloff is squared, which reads as struck metal rather than as a bite.
+    """
+    import bmesh
+    from mathutils import Vector
+
+    bpy.context.view_layer.update()                  # obj.scale was set after it was created
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=cuts, use_grid_fill=True)
+    mw, inv = obj.matrix_world, obj.matrix_world.inverted().to_3x3()
+    c = Vector(centre)
+    for v in bm.verts:
+        world = mw @ v.co
+        d = (world - c).length
+        if d >= radius:
+            continue
+        axis = Vector((mw.translation.x, mw.translation.y, world.z))
+        outward = world - axis
+        if outward.length < 1e-6:
+            continue
+        v.co -= inv @ (outward.normalized() * depth * (1 - d / radius) ** 2)
+    moved = sum(1 for v in bm.verts
+                if (mw @ v.co - c).length < radius)
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+    print(f"DENT {obj.name}: {moved} vertices inside the strike")
+
+
+def torus(name, major, minor, loc, material, rot=(0, 0, 0), **mat_opts):
+    rf.check_detail(name, 2 * minor)                   # a ring reads by its thickness, not its radius
+    bpy.ops.mesh.primitive_torus_add(major_radius=major, minor_radius=minor, location=loc, rotation=rot,
+                                     major_segments=48, minor_segments=12)
+    o = bpy.context.object
+    o.name = name
+    o.data.materials.append(MATERIAL(material, **mat_opts))
+    return o
+
+
+def _centreline(curve_obj):
+    """The evaluated centreline of a curve object, in world space, in order along the curve.
+
+    The bevel is what turns a curve into a tube, so it is switched off for the evaluation and put
+    back: with a bevel the mesh is the tube's skin, and its vertices are no use for finding where
+    the tube's axis runs.
+    """
+    depth = curve_obj.data.bevel_depth
+    curve_obj.data.bevel_depth = 0.0
+    bpy.context.view_layer.update()
+    evaluated = curve_obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
+    mesh = evaluated.to_mesh()
+    points = [tuple(curve_obj.matrix_world @ v.co) for v in mesh.vertices]
+    evaluated.to_mesh_clear()
+    curve_obj.data.bevel_depth = depth
+    if len(points) < 2:
+        raise RuntimeError(f"{curve_obj.name}: evaluated centreline has {len(points)} point(s)")
+    return points
+
+
+def pipe(name, points, radius, material, corrugate=0.0, band=(1.15, 0.22), **mat_opts):
+    """A pipe along a Bezier curve through `points` (slightly wobbly by construction), with
+    optional corrugation rings every `corrugate` tiles.
+
+    `band` scales a ring against the pipe's radius: (major, minor). The default is the subtle
+    collar every pipe here has always had; the steam header passes a heavier one, because on that
+    pipe the corrugation is the thing being drawn rather than a detail on it.
+    """
+    rf.check_detail(name, 2 * radius)
+    cd = bpy.data.curves.new(name, "CURVE")
+    cd.dimensions = "3D"
+    cd.bevel_depth = radius
+    cd.bevel_resolution = 6
+    cd.fill_mode = "FULL"
+    sp = cd.splines.new("BEZIER")
+    sp.bezier_points.add(len(points) - 1)
+    for bp, p in zip(sp.bezier_points, points):
+        bp.co = p
+        bp.handle_left_type = bp.handle_right_type = "AUTO"
+    o = bpy.data.objects.new(name, cd)
+    # bpy.context.scene, not a module-global `scene`: this used to live inside a build script
+    # where that name was in scope, and lifting it out was the one thing that did not survive
+    # the move. Same object either way -- each build script sets `scene = bpy.context.scene`.
+    bpy.context.scene.collection.objects.link(o)
+    o.data.materials.append(MATERIAL(material, **mat_opts))
+    if corrugate:
+        # RINGS ON THE TUBE, NOT ON THE CONTROL POLYLINE, and that is the fix rather than a
+        # refinement (Truls, #275). They used to be spaced along the straight lines BETWEEN the
+        # control points, while the tube itself is a Bezier that bows away from those lines. On a
+        # nearly straight pipe the error is a pixel and nobody saw it; on the steam header, once it
+        # was given a real bend, the rings left the tube and the whole thing read as a spring lying
+        # beside a thin wire instead of a corrugated hose.
+        #
+        # So the centreline is asked for rather than assumed: the curve is evaluated with its bevel
+        # switched off, which yields the tessellated centreline, and the rings are walked along that
+        # by arc length. Deterministic, and it costs one evaluation per corrugated pipe.
+        spine = _centreline(o)
+        travelled, next_ring, k = 0.0, corrugate / 2, 0
+        for a, b in zip(spine, spine[1:]):
+            seg = math.dist(a, b)
+            if seg < 1e-9:
+                continue
+            while next_ring <= travelled + seg:
+                t = (next_ring - travelled) / seg
+                c = tuple(a[j] + (b[j] - a[j]) * t for j in range(3))
+                d = tuple(b[j] - a[j] for j in range(3))
+                yaw = math.atan2(d[1], d[0])
+                pitch = math.atan2(d[2], math.hypot(d[0], d[1]))
+                torus(f"{name}-ring{k}", radius * band[0], radius * band[1], c, material,
+                      rot=(0, math.pi / 2 - pitch, yaw), **mat_opts)
+                k += 1
+                next_ring += corrugate
+            travelled += seg
+        print(f"CORRUGATE {name}: {k} rings over {travelled:.2f} tiles of tube")
+    return o
+
+
+def hbeam(name, length, loc, axis="Z", depth=0.2, flange=0.16, web=0.03, material="frame"):
+    """An H-profile beam: two flanges and a web, along `axis`.
+
+    ALMOST STRAIGHT, NOT STRAIGHT (Truls, #252). A rolled beam bolted into a frame is out by a few
+    millimetres and a fabricated one is out by more; a grid of perfectly parallel beams is the
+    thing that says "computer". The whole beam is shifted by up to 0.02 tiles and tilted by up to
+    0.012 rad -- about 1 px of lean over a two-tile post at 64 px a tile, which is under the
+    detail floor as a feature and over it as an impression. The three sub-boxes take the same
+    rotation about their own centres rather than about the beam's; at this angle the shear between
+    web and flange is under two thousandths of a tile, which is nothing.
+    """
+    # THE READ IS THE FLANGE WIDTH. A beam's web is a third the thickness of anything else here
+    # and stands edge-on to this camera: what a post shows is the face of its flange. Judged on the
+    # web, the floor would condemn the frame the house style is built around -- so the beam is
+    # checked once, here, and its three boxes go in unchecked.
+    rf.check_detail(name, flange)
+    loc = (jitter(loc[0], 0.02), jitter(loc[1], 0.02), jitter(loc[2], 0.012))
+    rot = (jitter(0, 0.012), jitter(0, 0.012), jitter(0, 0.012))
+    if axis == "Z":
+        _plate(f"{name}-web", (web, depth - 0.05, length), loc, material, bev=0, rot=rot)
+        for sx in (-1, 1):
+            _plate(f"{name}-f{sx}", (flange, web, length), (loc[0] + sx * 0, loc[1] + sx * (depth / 2), loc[2]), material, bev=0.01, rot=rot)
+    elif axis == "Y":
+        _plate(f"{name}-web", (web, length, depth - 0.05), loc, material, bev=0, rot=rot)
+        for sz in (-1, 1):
+            _plate(f"{name}-f{sz}", (flange, length, web), (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01, rot=rot)
+    else:
+        _plate(f"{name}-web", (length, web, depth - 0.05), loc, material, bev=0, rot=rot)
+        for sz in (-1, 1):
+            _plate(f"{name}-f{sz}", (length, flange, web), (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01, rot=rot)
+
+
+def rivets(name, start, end, n, r=0.045, material="dark"):
+    rf.check_detail(name, 2 * r)                       # a rivet reads by its diameter
+    for i in range(n):
+        t = (i + 0.5) / n
+        loc = tuple(start[j] + (end[j] - start[j]) * t for j in range(3))
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=r, location=loc, segments=12, ring_count=8)
+        o = bpy.context.object
+        o.name = f"{name}-{i}"
+        o.data.materials.append(MATERIAL(material))
+
+
+def seam(name, size, loc, rot=(0, 0, 0)):
+    """A dark groove: a thin frame-coloured box sunk into a panel face.
+
+    The one CUT-detail helper on the machine, so the one that takes the lower floor. Every other
+    helper builds something that stands proud and reads by its own silhouette.
+    """
+    box(name, size, loc, "frame", rot=rot, bev=0, cut=True)
+
+
+def jitter(v, s):
+    return v + random.uniform(-s, s)
