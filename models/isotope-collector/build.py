@@ -11,12 +11,12 @@ THE MACHINE IS SQUARE AND IS BUILT IN THE DECLARED FRAME. There is no turn at th
 models/heat-exchanger/build.py has one: five by five has no long axis to disagree about, and the
 look note's whole first point is that no face is a contact face.
 
-WHERE THE MODEL DEPARTS FROM THE NOTE, and it does in one place, said here so the next round can
-settle it either way. The note has "the tritium drum on the east-west line" -- in line with the two
-sockets it feeds -- but the cold box stands on that line and fills the middle of the footprint, so
-a drum there would run through it. The drum lies across the SOUTH bay instead, and it is the two
-runs off its ends that come up the west and east bays to the sockets. The helium-3 drum needed no
-such change: it lies in the north bay and the north socket's own stub runs into its side.
+THE LOOK NOTE NOW DESCRIBES THIS OBJECT, not the draft it started as. The draft was written from
+what the machine does, before anyone knew what the footprint would allow, and it was wrong in eight
+places -- most of all in putting the tritium drum on the east-west line, in line with the two
+sockets it feeds, where the cold box stands. Truls had it rewritten from the shipped model on
+2026-09-13 rather than left to rot, which is #275's lesson taken before it bites: that machine's
+note went stale, and a model rebuilt from it came back as a different machine.
 """
 import json
 import math
@@ -364,17 +364,13 @@ else:
     box("BoxLid", (2 * BOX_HALF - 0.12, 2 * BOX_HALF - 0.12, 0.08), (0, 0, BOX_TOP + 0.02),
         "dark", frost=True)
 
-    # -- the walkway: a grating ring in the four bays on short H-beam posts, so the machine reads
-    # as part of the same plant as the open-framed ones.
+    # -- the walkway: a deck in all four bays on short H-beam posts, so the machine reads as part
+    # of the same plant as the open-framed ones.
     for sx in (-1, 1):
         for sy in (-1, 1):
             hbeam(f"Post{sx}{sy}", DECK_Z - SLAB, (sx * (HALF - 0.2), sy * (HALF - 0.2), SLAB + (DECK_Z - SLAB) / 2))
             hbeam(f"PostMidX{sx}{sy}", DECK_Z - SLAB, (sx * (HALF - 0.2), sy * 0.55, SLAB + (DECK_Z - SLAB) / 2))
             hbeam(f"PostMidY{sx}{sy}", DECK_Z - SLAB, (sx * 0.55, sy * (HALF - 0.2), SLAB + (DECK_Z - SLAB) / 2))
-    # The ring is four bays, and they are laid so the slats do not all run the same way: the north
-    # and south bays are full width with their slats running east-west, and the east and west bays
-    # fill the gap between them with slats running north-south. A deck whose slats all run one way
-    # across a square reads as a striped floor rather than as four walkways round a box.
     BAY = HALF - BOX_HALF                                  # 1.0 tile of deck on each side
     # THE DECK OPENS WHERE A SOCKET CROSSES IT, which is not a detail but the thing that lets the
     # sockets be seen at all. A socket stands at z 0.55 with a radius of 0.3, so its top is above
@@ -422,8 +418,10 @@ else:
                      (cx, cy - length / 2 + (i + 1) * GROOVE_PITCH, DECK_Z + 0.02))
 
     # -- two columns on the lid, side by side and of UNEQUAL height: the one thing on the machine
-    # that says separation rather than storage. The taller wears tritium's green at its cap, the
-    # shorter helium-3's violet, and those two bands are the only colour on the machine.
+    # that says separation rather than storage. The taller wears tritium's green at its cap and the
+    # shorter helium-3's violet. NOT the only colour on the machine, which an earlier draft of the
+    # look note claimed: each accent also rides its drum's relief valve and sight glass and both of
+    # its sockets, and the control cabinet carries a blue panel that belongs to no fluid.
     T_COL = (-0.45, 0.02)
     H_COL = (0.44, 0.10)
     t_cap = column("ColT", (*T_COL, BOX_TOP + 0.06), 0.24, 1.32, "tritium")
@@ -443,9 +441,9 @@ else:
     receiver("DrumT", T_DRUM, 0.3, T_LEN, "tritium", valve_at=-1)
     receiver("DrumHe", H_DRUM, 0.26, 2.3, "helium-3", valve_at=1)
 
-    # -- the drops: each column's cap down the box's side into its own drum. The tritium run goes
-    # out over the WEST wall, which the sun hits, and turns south along the bay; the helium-3 run
-    # crosses the north wall, which is the shorter way to its drum.
+    # -- the drops: each column's shoulder down the box's side into its own drum. The tritium run
+    # goes out over the WEST wall, which the sun hits, and turns south along the bay; the helium-3
+    # run crosses the north wall, which is the shorter way to its drum.
     # EACH DROP LEAVES ITS COLUMN AT THE SHOULDER, not off the cap. A run off the cap has to rise
     # before it can turn, and the cap is already at the top of the 2.5-tile budget: the apex would
     # be the tallest thing on the machine and it would be a pipe. Off the side, every drop only
