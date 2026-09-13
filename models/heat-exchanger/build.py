@@ -190,7 +190,10 @@ def bevel(obj, width=0.03):
     mod.segments = 2
 
 
-def box(name, size, loc, material, glow=False, rot=(0, 0, 0), bev=0.03, corrode=False):
+def _plate(name, size, loc, material, glow=False, rot=(0, 0, 0), bev=0.03, corrode=False):
+    """A box with NO detail-floor check, for a caller that has already made the check on its own
+    behalf. `hbeam` is the only one: a beam is checked once on its flange width, and its web and
+    two flanges then go in as the parts of a feature rather than as features."""
     bpy.ops.mesh.primitive_cube_add(size=1, location=loc, rotation=rot)
     o = bpy.context.object
     o.name = name
@@ -201,8 +204,17 @@ def box(name, size, loc, material, glow=False, rot=(0, 0, 0), bev=0.03, corrode=
     return o
 
 
+def box(name, size, loc, material, glow=False, rot=(0, 0, 0), bev=0.03, corrode=False, cut=False):
+    # THE READ IS THE SMALLEST DIMENSION, which is only true because every groove here is cut at
+    # least as deep as it is wide (house style, #335). A channel 0.05 wide and 0.03 deep would be
+    # judged on its sink depth -- a dimension nobody sees -- instead of on the width that reads.
+    rf.check_detail(name, min(size), cut=cut)
+    return _plate(name, size, loc, material, glow=glow, rot=rot, bev=bev, corrode=corrode)
+
+
 def cyl(name, radius, depth, loc, material, axis="Z", glow=False, rot=None, verts=48, corrode=False):
     rot = rot or {"Z": (0, 0, 0), "X": (0, math.pi / 2, 0), "Y": (math.pi / 2, 0, 0)}[axis]
+    rf.check_detail(name, min(2 * radius, depth))      # a rod reads by its width, a disc by its thickness
     bpy.ops.mesh.primitive_cylinder_add(radius=radius, depth=depth, location=loc, rotation=rot, vertices=verts)
     o = bpy.context.object
     o.name = name
@@ -247,6 +259,7 @@ def dent(obj, centre, radius, depth, cuts=14):
 
 
 def torus(name, major, minor, loc, material, rot=(0, 0, 0)):
+    rf.check_detail(name, 2 * minor)                   # a ring reads by its thickness, not its radius
     bpy.ops.mesh.primitive_torus_add(major_radius=major, minor_radius=minor, location=loc, rotation=rot,
                                      major_segments=48, minor_segments=12)
     o = bpy.context.object
@@ -283,6 +296,7 @@ def pipe(name, points, radius, material, glow=False, corrugate=0.0, band=(1.15, 
     collar every pipe here has always had; the steam header passes a heavier one, because on that
     pipe the corrugation is the thing being drawn rather than a detail on it.
     """
+    rf.check_detail(name, 2 * radius)
     cd = bpy.data.curves.new(name, "CURVE")
     cd.dimensions = "3D"
     cd.bevel_depth = radius
@@ -339,23 +353,29 @@ def hbeam(name, length, loc, axis="Z", depth=0.2, flange=0.16, web=0.03, materia
     rotation about their own centres rather than about the beam's; at this angle the shear between
     web and flange is under two thousandths of a tile, which is nothing.
     """
+    # THE READ IS THE FLANGE WIDTH. A beam's web is a third the thickness of anything else here
+    # and stands edge-on to this camera: what a post shows is the face of its flange. Judged on the
+    # web, the floor would condemn the frame the house style is built around -- so the beam is
+    # checked once, here, and its three boxes go in unchecked.
+    rf.check_detail(name, flange)
     loc = (jitter(loc[0], 0.02), jitter(loc[1], 0.02), jitter(loc[2], 0.012))
     rot = (jitter(0, 0.012), jitter(0, 0.012), jitter(0, 0.012))
     if axis == "Z":
-        box(f"{name}-web", (web, depth - 0.05, length), loc, material, bev=0, rot=rot)
+        _plate(f"{name}-web", (web, depth - 0.05, length), loc, material, bev=0, rot=rot)
         for sx in (-1, 1):
-            box(f"{name}-f{sx}", (flange, web, length), (loc[0] + sx * 0, loc[1] + sx * (depth / 2), loc[2]), material, bev=0.01, rot=rot)
+            _plate(f"{name}-f{sx}", (flange, web, length), (loc[0] + sx * 0, loc[1] + sx * (depth / 2), loc[2]), material, bev=0.01, rot=rot)
     elif axis == "Y":
-        box(f"{name}-web", (web, length, depth - 0.05), loc, material, bev=0, rot=rot)
+        _plate(f"{name}-web", (web, length, depth - 0.05), loc, material, bev=0, rot=rot)
         for sz in (-1, 1):
-            box(f"{name}-f{sz}", (flange, length, web), (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01, rot=rot)
+            _plate(f"{name}-f{sz}", (flange, length, web), (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01, rot=rot)
     else:
-        box(f"{name}-web", (length, web, depth - 0.05), loc, material, bev=0, rot=rot)
+        _plate(f"{name}-web", (length, web, depth - 0.05), loc, material, bev=0, rot=rot)
         for sz in (-1, 1):
-            box(f"{name}-f{sz}", (length, flange, web), (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01, rot=rot)
+            _plate(f"{name}-f{sz}", (length, flange, web), (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01, rot=rot)
 
 
 def rivets(name, start, end, n, r=0.045, material="dark"):
+    rf.check_detail(name, 2 * r)                       # a rivet reads by its diameter
     for i in range(n):
         t = (i + 0.5) / n
         loc = tuple(start[j] + (end[j] - start[j]) * t for j in range(3))
@@ -366,8 +386,12 @@ def rivets(name, start, end, n, r=0.045, material="dark"):
 
 
 def seam(name, size, loc, rot=(0, 0, 0)):
-    """A dark groove: a thin frame-coloured box sunk into a panel face."""
-    box(name, size, loc, "frame", rot=rot, bev=0)
+    """A dark groove: a thin frame-coloured box sunk into a panel face.
+
+    The one CUT-detail helper on the machine, so the one that takes the lower floor. Every other
+    helper builds something that stands proud and reads by its own silhouette.
+    """
+    box(name, size, loc, "frame", rot=rot, bev=0, cut=True)
 
 
 def jitter(v, s):

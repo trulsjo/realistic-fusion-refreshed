@@ -10,9 +10,11 @@ square tiles IN THE CAMERA, by a pixel aspect of 1/sin(pitch) on x: the render t
 final sheet size, pixel-exact on both axes, with no resize afterwards. A vertical shows at
 h / tan(pitch) = 0.707 h.
 """
+import atexit
 import hashlib
 import json
 import math
+import os
 import sys
 
 PX_PER_TILE = 64
@@ -70,6 +72,72 @@ def accent(fluid):
     if "plasma" in fluid:
         return "plasma"
     sys.exit(f"no house-style accent for fluid {fluid!r}; add it to rf_blender.ACCENT_OF_FLUID")
+
+
+# DETAIL FLOORS, in tiles. models/house-style.md states them in pixels on the player's screen and
+# says why they are two rather than one; docs/research/detail-floor.md holds the measurement they
+# were set from. They live here, beside the camera and the glow, because a floor written into a
+# build script is a floor that drifts -- the mesh helpers are already copied per machine.
+#
+# A CUT DETAIL reads by the shadow line cut into it, so contrast does the work: 0.05 tiles is
+# 1.6 px on the player's screen at scale 0.5, and every groove and seam that ships is exactly that.
+# A RAISED DETAIL reads by its own lit silhouette against what is behind it and needs more: 0.06,
+# which is 1.9 px. Vanilla's own deliberate rivets are finer than both, so there is headroom below.
+CUT_DETAIL_FLOOR = 0.05
+RAISED_DETAIL_FLOOR = 0.06
+
+
+def check_detail(name, read, cut=False):
+    """Refuse a feature whose read dimension is under its floor. Returns `read` so a caller can
+    wrap a value inline.
+
+    `read` IS THE DIMENSION THAT CARRIES THE READ, not the object's smallest: a rivet's diameter, a
+    torus's minor DIAMETER, an H-beam's flange width, a groove's width. Passing the smallest instead
+    condemns the H-beam web, which is 0.03 tiles, stands edge-on to this camera and is never the
+    thing anyone sees -- and the house style names H-beams as the frame every open machine is built
+    from. Read a torus as its minor RADIUS and most of them fail too.
+
+    A BEVEL IS NOT A FEATURE. Bevel widths here are 0.01 to 0.03 and are edge treatment: every
+    visible edge carries one so the key light catches it. Checking them would fail every object on
+    every machine. `bevel` does not call this and should not.
+
+    Fails the build rather than warning, because a render is what happens next and a sheet that
+    shimmers is worse than no sheet.
+    """
+    floor = CUT_DETAIL_FLOOR if cut else RAISED_DETAIL_FLOOR
+    if read < floor - 1e-9:
+        kind = "cut" if cut else "raised"
+        message = (f"detail floor: {name} reads at {read:.4f} tiles "
+                   f"({read * PX_PER_TILE * 0.5:.2f} px on the player's screen), under the "
+                   f"{kind}-detail floor of {floor} ({floor * PX_PER_TILE * 0.5:.2f} px). "
+                   f"See models/house-style.md.")
+        if os.environ.get("RF_DETAIL_AUDIT"):
+            _AUDIT.append((name, read, kind, floor))
+            return read
+        sys.exit(message)
+    return read
+
+
+# AUDIT MODE, because the gate above stops at the first offender and a model has many. With
+# RF_DETAIL_AUDIT set, a violation is collected instead of fatal and the whole list prints when the
+# build ends -- which is how a machine's full failure list is got in one run rather than in a dozen
+# builds, one fix apart. It is a reporting mode and never a way to ship: the build still renders a
+# model it has just said is wrong, so nothing should set it but a person asking a question.
+_AUDIT = []
+
+
+def _report_audit():
+    if not _AUDIT:
+        return
+    print("", file=sys.stderr)
+    print(f"RF_DETAIL_AUDIT: {len(_AUDIT)} feature(s) under their floor", file=sys.stderr)
+    print(f"  {'feature':32} {'tiles':>7} {'screen px':>10} {'kind':>7} {'floor':>7}", file=sys.stderr)
+    for name, read, kind, floor in sorted(_AUDIT, key=lambda r: r[1]):
+        print(f"  {name:32} {read:7.4f} {read * PX_PER_TILE * 0.5:10.2f} {kind:>7} {floor:7.3f}",
+              file=sys.stderr)
+
+
+atexit.register(_report_audit)
 
 
 def geometry_sha256(path):
