@@ -733,7 +733,66 @@ else:
     # band. Placed in the declared frame from geometry.json, so they land where the prototype says.
     (sx0, sy0), (sx1, sy1) = geo["selection_box"]
     UNIT = {"north": (0, -1), "east": (1, 0), "south": (0, 1), "west": (-1, 0)}   # Factorio frame
-    SOCKET_Z = 0.55
+
+    # SOCKET HEIGHT IS MEASURED AGAINST A VANILLA PIPE, NOT CHOSEN (Truls, 2026-09-14: the sockets
+    # "should appear to connect with vanilla pipes"). It was 0.55 on both rendered machines and the
+    # join was a visible step -- scripts/probe-socket-height.ps1 is the rig that showed it and the
+    # note below is what it measured.
+    #
+    # A cylinder of radius r lying along an axis at height z draws its silhouette centred
+    # 0.707 z above the ground line, the r terms cancelling: the top point (y -r, z + r) lands at
+    # -r - 0.707(z + r) and the bottom (y +r, z - r) at +r - 0.707(z - r), and the mean of those is
+    # -0.707 z. Measured on the rendered sheet at z 0.55 the centre sat 0.398 tiles up, against
+    # 0.707 x 0.55 = 0.389 predicted, so the projection is understood rather than curve-fitted.
+    #
+    # Vanilla's own pipe draws its body centred 0.031 tiles above the ground line
+    # (base/graphics/entity/pipe/pipe-straight-horizontal.png, scale 0.5 and no shift, so 64 px to
+    # the tile and directly comparable with ours). Setting 0.707 z = 0.031 gives this:
+    SOCKET_Z = 0.044
+    #
+    # AND THAT PUTS THE TUBE THROUGH THE PLINTH, which is the trade Truls made explicitly: *"Going
+    # below the floor is preferable to this look. If intersecting the floor, the floor should have a
+    # modelled hole for the pipe."* The slab's top is at 0.25 and a 0.3-radius socket at 0.044
+    # reaches 0.344, so every socket now enters the slab rather than floating over it. `port` below
+    # cuts the hole and rims it, so the pipe passes through an opening that was built for it instead
+    # of clipping through solid stone.
+    #
+    # WHAT IS NOT FIXED HERE: ours is still about a quarter fatter than vanilla's pipe, 0.75 tiles
+    # of drawn height against 0.609. Height was the dominant error and is the one Truls named.
+
+    def port(axis, across, edge, sign, radius=0.36, depth=0.7):
+        """Cut the hole a socket passes through, in the slab, and rim its mouth.
+
+        The cutter is a modifier rather than an applied boolean, the way `bevel` is: Blender
+        evaluates BEVEL then BOOLEAN in the order they were added, so the hole is cut into the
+        already-rounded slab and neither has to be baked. Nothing here is destructive, so a
+        re-render from the same script gives the same object.
+
+        `radius` is the socket's 0.3 plus clearance: a hole exactly the size of the tube leaves a
+        z-fighting shell where the two surfaces touch, and a hole a little proud reads as a hole.
+        """
+        cutter_loc = [0.0, 0.0, SOCKET_Z]
+        cutter_loc[0 if axis == "X" else 1] = edge - sign * (depth / 2 - 0.12)
+        cutter_loc[1 if axis == "X" else 0] = across
+        bpy.ops.mesh.primitive_cylinder_add(
+            radius=radius, depth=depth, vertices=32, location=cutter_loc,
+            rotation=(0, math.pi / 2, 0) if axis == "X" else (math.pi / 2, 0, 0))
+        cutter = bpy.context.object
+        cutter.name = f"PortCut-{axis}-{across:g}"
+        cutter.display_type = "WIRE"
+        cutter.hide_render = True
+        slab = bpy.data.objects["Slab"]
+        m = slab.modifiers.new(cutter.name, "BOOLEAN")
+        m.object = cutter
+        m.operation = "DIFFERENCE"
+        m.solver = "EXACT"
+        # The rim: a collar standing just proud of the slab face, so the opening is a fitting rather
+        # than a bite taken out of the stone. It is the thing that says the hole was meant.
+        rim_loc = [0.0, 0.0, SOCKET_Z]
+        rim_loc[0 if axis == "X" else 1] = edge - sign * 0.03
+        rim_loc[1 if axis == "X" else 0] = across
+        torus(f"PortRim-{axis}-{across:g}", radius + 0.02, 0.05, tuple(rim_loc), "dark",
+              rot=(0, math.pi / 2, 0) if axis == "X" else (math.pi / 2, 0, 0))
 
     def inboard(c, back):
         """`back` tiles inboard of the tile a connection stands on, at socket height.
@@ -760,6 +819,7 @@ else:
                 "metal", axis="X", frost=True)
             cyl(f"Band-{d}-{c['fluid']}", 0.34, 0.22,
                 (edge - 0.28 * (1 if d == "east" else -1), py, SOCKET_Z), band, axis="X")
+            port("X", py, edge, 1 if d == "east" else -1)
         else:
             edge = -sy0 if d == "north" else -sy1   # flipped: north is +Y
             inner = (TY - 0.5) * (1 if d == "north" else -1)
@@ -767,6 +827,7 @@ else:
                 "metal", axis="Y", frost=True)
             cyl(f"Band-{d}-{c['fluid']}", 0.34, 0.22,
                 (px, edge - 0.28 * (1 if d == "north" else -1), SOCKET_Z), band, axis="Y")
+            port("Y", px, edge, 1 if d == "north" else -1)
 
     # -- the runs from the tritium drum's two ends up the west and east bays to the two tritium
     # sockets. This is the departure the docstring names: the drum cannot lie on the socket line,
@@ -787,16 +848,30 @@ else:
     #
     # The lesson is one lesson: a number copied from another machine's build script is a number
     # measured against another machine's body.
+    #
+    # SINCE THE SOCKETS DROPPED TO PIPE HEIGHT THESE RUNS END IN THE FLOOR, not on a stub. A socket
+    # at 0.044 is inside the plinth, so a run that reached it would be a tube buried in stone for
+    # its last half tile -- and the deck already opens over every socket lane, so the honest
+    # picture is a run that turns down through the opening and goes under the walkway. A player
+    # reads a pipe entering the floor and a pipe leaving the wall as the same pipe, which is what
+    # real plant looks like and what the old version was pretending not to need.
     tritium = [c for c in geo["connections"] if c["fluid"] == "rf-tritium"]
     for c in tritium:
         end = inboard(c, back=0.15)
         sx = 1 if c["direction"] == "east" else -1
+        # Straight down the last leg, stopping just inside the slab: stacked control points in z
+        # make the approach vertical, so the tube meets the floor square instead of glancing into
+        # it and showing a slanted open mouth -- the lesson the drops above already carry.
+        drop_x = sx * (HALF - 0.62)
         pipe(f"RunT-{c['direction']}",
              [(T_DRUM[0] + sx * (T_LEN / 2 - 0.1), T_DRUM[1], T_DRUM[2]),
               (T_DRUM[0] + sx * (T_LEN / 2 + 0.3), T_DRUM[1], T_DRUM[2]),
               (sx * (HALF - 0.42), T_DRUM[1] + 0.62, DECK_Z + jitter(0.1, 0.03)),
-              (sx * (HALF - 0.4), end[1] - 0.25, SOCKET_Z + 0.08),
-              end], 0.12, "metal", frost=True)
+              (drop_x, end[1], DECK_Z + 0.06),
+              (drop_x, end[1], SLAB - 0.02)], 0.12, "metal", frost=True)
+        # The opening it goes through, rimmed like the sockets are, so the floor reads as having
+        # been built for the pipe rather than punctured by it.
+        torus(f"FloorPortRim-{c['direction']}", 0.2, 0.05, (drop_x, end[1], DECK_Z + 0.04), "dark")
     # The helium-3 socket needs no run of its own: it stands in the north bay and its stub goes
     # straight into the drum's side, which is the shortest honest plumbing on the machine.
 
