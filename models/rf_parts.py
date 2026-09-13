@@ -12,8 +12,13 @@ them again (#334 is the same failure arriving by the same route, in colour table
 
 WHAT STAYS PER MACHINE: `mat`. The heat exchanger's takes `glow` and `corrode`, the isotope
 collector's takes `frost`, and their palettes differ because the machines carry different fluids.
-So the helpers here forward whatever keyword flags they are given straight to the installed
-resolver and never look inside them.
+So the five helpers that BUILD a surface -- `box`, `cyl`, `torus`, `pipe` and the `_plate` the
+first two go through -- forward whatever keyword flags they are given straight to the resolver and
+never look inside them. `hbeam`, `rivets` and `seam` do not, and are the three that choose their own
+material: a beam and a rivet are `frame` and `dark` by default, a seam is always `frame`. Passing
+`frost=True` to one of those is a TypeError rather than a silent miss, which is the right failure --
+but it is a failure, so if a machine ever wants a frosted rivet the flag has to be plumbed through
+`rivets` first.
 
 THE ORDER OF `random` DRAWS IS PART OF THE CONTRACT. `bevel` and `jitter` both draw from the global
 `random`, which each build script seeds once; the imperfections are deterministic only as long as

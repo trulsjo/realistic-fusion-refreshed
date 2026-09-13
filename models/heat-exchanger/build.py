@@ -29,7 +29,9 @@ import rf_blender as rf  # noqa: E402
 #
 # models/rf_parts.py holds every mesh helper both machines use, and `mat` below is the one thing
 # that stays here: this machine's palette and its own weathering. `use` installs it, and the
-# helpers forward whatever keyword flags a call gives them straight back to it (#340).
+# helpers that build a surface -- `box`, `cyl`, `torus`, `pipe` -- forward whatever keyword
+# flags a call gives them straight back to it (#340). `hbeam`, `rivets` and `seam` pick their
+# own material and take no flags; rf_parts' own docstring says why.
 #
 # The names come in bare rather than behind a `parts.` prefix: they are the vocabulary this
 # file is written in, and prefixing 72 call sites would be the diff that hides whether
