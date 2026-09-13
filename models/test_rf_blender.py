@@ -74,6 +74,8 @@ assert refuses("rivet", 0.05)
 # its minor DIAMETER: the drum rib bands are minor radius 0.035, which passes at 0.07 and fails at
 # 0.035. An H-beam is judged on its FLANGE WIDTH, 0.14, not on its 0.03 web -- the web is edge-on
 # at this camera and a floor read off it condemns the frame the house style is built around.
+# 0.14 is the isotope collector's deck post, which passes its own section; rf_parts.hbeam
+# defaults to 0.16 and the assertion holds either way.
 assert not refuses("drum rib band (minor diameter)", 2 * 0.035)
 assert refuses("drum rib band (minor radius, the wrong read)", 0.035)
 assert not refuses("H-beam post (flange width)", 0.14)

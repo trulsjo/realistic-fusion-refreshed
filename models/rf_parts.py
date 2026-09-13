@@ -38,7 +38,12 @@ def MATERIAL(name, **flags):                      # replaced by use(); a clear e
 
 
 def use(mat_fn):
-    """Install the machine's material resolver. Every helper calls it as `mat_fn(name, **flags)`."""
+    """Install the machine's material resolver. Every helper calls it as `mat_fn(name, **flags)`.
+
+    ONE MACHINE PER PROCESS. The resolver is module state, so a future batch builder that made two
+    machines in one Blender session would paint the second with the first's palette unless it called
+    this again between them. Every build today is its own `blender -b`, so nothing is at risk yet.
+    """
     global MATERIAL
     MATERIAL = mat_fn
 
@@ -161,6 +166,12 @@ def pipe(name, points, radius, material, corrugate=0.0, band=(1.15, 0.22), **mat
     `band` scales a ring against the pipe's radius: (major, minor). The default is the subtle
     collar every pipe here has always had; the steam header passes a heavier one, because on that
     pipe the corrugation is the thing being drawn rather than a detail on it.
+
+    A RING HAS A HIGHER FLOOR THAN ITS PIPE. At the default band a ring's minor diameter is 0.44 of
+    the pipe's radius, so a pipe that clears the raised-detail floor on its own at radius 0.03 dies
+    at `<name>-ring0` until radius 0.136. The shipped header clears it at 0.19 with its own heavier
+    band. It fails loudly and by name, so this is a thing to know before adding `corrugate=` to a
+    thin pipe rather than a thing to work around.
     """
     rf.check_detail(name, 2 * radius)
     cd = bpy.data.curves.new(name, "CURVE")

@@ -97,6 +97,14 @@ def check_detail(name, read, cut=False):
     thing anyone sees -- and the house style names H-beams as the frame every open machine is built
     from. Read a torus as its minor RADIUS and most of them fail too.
 
+    TWO CALLERS DO PASS THE SMALLEST, knowingly. `rf_parts.box` passes `min(size)` and `rf_parts.cyl`
+    passes `min(2 * radius, depth)`, because neither helper is told which face this camera will see.
+    For a groove that is exactly right: grooves are cut square, so the smallest dimension IS the
+    width. For a raised member it is conservative, and sometimes wrong in the H-beam's own direction
+    -- a handwheel disc 0.28 across and 0.05 thick shows its FACE to the camera and was judged on its
+    edge. Three of those were thickened on the heat exchanger, whose art is accepted, so the cost is
+    real and whether to add a `read=` override is Truls's call (raised reviewing #339).
+
     A BEVEL IS NOT A FEATURE. Bevel widths here are 0.01 to 0.03 and are edge treatment: every
     visible edge carries one so the key light catches it. Checking them would fail every object on
     every machine. `bevel` does not call this and should not.

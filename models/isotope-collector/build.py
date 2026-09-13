@@ -35,11 +35,13 @@ import rf_blender as rf  # noqa: E402
 # that stays here: this machine's palette and its own weathering. `use` installs it, and the
 # helpers forward whatever keyword flags a call gives them straight back to it (#340).
 #
-# `from ... import *` is deliberate rather than a `parts.` prefix on four hundred call sites: the
-# names are the vocabulary the whole file is written in, and prefixing them would be the diff that
-# hides whether anything else moved.
+# The names come in bare rather than behind a `parts.` prefix: they are the vocabulary this
+# file is written in, and prefixing 60 call sites would be the diff that hides whether
+# anything else moved. Named one by one rather than starred, so what this file uses can be
+# read off the import line -- and `bevel` is NOT among them: every machine's bevels are put
+# on from inside the helpers, so importing it here only made a name nothing calls.
 import rf_parts  # noqa: E402
-from rf_parts import bevel, box, cyl, hbeam, jitter, pipe, rivets, seam, torus  # noqa: E402,F401
+from rf_parts import box, cyl, hbeam, jitter, pipe, rivets, seam, torus  # noqa: E402,F401
 
 args = rf.script_args()
 out_path = args[0] if args else os.path.join(HERE, "isotope-collector.blend")
@@ -193,10 +195,6 @@ def mat(name, frost=False):
     nt.links.new(rmix.outputs["Value"], b.inputs["Roughness"])
     MATS[key] = m
     return m
-
-
-
-
 
 
 def receiver(name, centre, radius, length, accent, valve_at, gauges=True):
