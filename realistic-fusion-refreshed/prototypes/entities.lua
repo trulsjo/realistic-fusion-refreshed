@@ -919,6 +919,55 @@ hc_turbine.energy_source = {
 --
 -- Ordinary fluids, so ordinary pipes: nothing here is contained (#26). The by-products are cold
 -- gases, not plasma.
+
+-- The note below was drafted from the machine's own behaviour rather than from a picture, and
+-- Truls took it as it stood for the first render (#262, 2026-09-13). It is a FIRST-RENDER note,
+-- not an accepted one: the heat exchanger's went through three rounds in game before it settled,
+-- and acceptance here is still by eye in a real map. Whatever the render changes, change here too
+-- -- #275 is the case where the model moved and the prose did not, and a rebuild from the stale
+-- note came back with the wrong machine.
+--[[ look: rf-isotope-collector   (read under models/house-style.md; first render, #262)
+A cold, square box, five by five, that separates what a reactor has already bred. It makes
+nothing and burns nothing: gas arrives from the reactor beside it and leaves sorted, so the
+machine is plumbing and vessels, with no firebox and no flame anywhere on it.
+
+IT HAS NO FRONT. It is its own rotation -- one sheet serves all four directions -- and the
+reactor may stand on any side of it, or a tile clear of it and still pair. So no face is a
+contact face and none is dressed as one: the body is built to read the same from every side,
+which is the opposite of the heat exchanger's one long manifold face.
+
+The core is a closed cold box: a squat, insulated cabinet of painted panels with a visible seam
+grid and a rivet line, standing about a tile and a half, set in from the footprint edge on all
+four sides. Closed because a vacuum-jacketed cold box is closed for real, not to save work. A
+grating deck runs round it on all four sides at slab height, carried on short dark H-beam posts,
+so the machine still reads as part of the same plant as the open-framed ones.
+
+Two slim distillation columns rise from the top of the box, side by side and of unequal height --
+they are the one thing that says SEPARATION rather than storage. Bare metal, each with rib bands
+and a weld seam, each capped by a bolted flange. The taller column wears a green band at its cap
+and the shorter a violet one, and those are the only two colours on the machine.
+
+THE MACHINE IS FROSTED, where the heat exchanger is corroded, and for the same kind of reason:
+it is cold. A white rime sits on the cold box's upper panels and on the bare lines nearest the
+columns, patchy and heaviest at the seams and flanges, thinning to nothing by the time a line
+reaches the footprint edge. It never covers an accent band; the bands stay clean and read.
+
+Two horizontal receiver drums lie low against the deck, each in line with the sockets it feeds:
+the tritium drum on the east-west line, the helium-3 drum on the north side. They are the buffer
+a player can see -- each with a sight gauge and a handwheel valve at one end, and a pressure
+relief valve (a part that could move later) on top. Short runs drop from the columns into the
+drums and out again to the sockets: green west and east, violet north, each socket a bare-metal
+stub with its own accent band.
+
+THE SOUTH FACE IS THE ONE WITHOUT A SOCKET, and it carries what breaks the symmetry: a control
+cabinet with a small blue panel and a vent stack beside it, set a little off centre. On a
+machine that never rotates the asymmetry is character, not a rotation cue.
+
+NOTHING ON IT GLOWS, and that is deliberate. The collector takes no power and does no work of its
+own, so it has no working state to light; a glowing part here would promise an activity the
+machine does not have. The accents are its own colour in the structure sheet, not emission, and
+there is no glow sheet. Nothing on it moves yet.
+]]
 local collector = pin(table.deepcopy(data.raw["boiler"]["boiler"]), "rf-isotope-collector", {
   mining_time = 0.5,
 })

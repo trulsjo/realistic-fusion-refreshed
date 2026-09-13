@@ -31,7 +31,8 @@ assert 2.5 < shadow_reach < rf.MARGIN_TILES, (shadow_reach, rf.MARGIN_TILES)
 
 # Every fluid a mockup machine carries has an accent; an unknown one refuses rather than guesses.
 for fluid, want in (("rf-reactor-energy", "energy"), ("rf-aneutronic-reactor-energy", "energy"),
-                    ("steam", "steam"), ("water", "water"), ("rf-d-t-plasma", "plasma")):
+                    ("steam", "steam"), ("water", "water"), ("rf-d-t-plasma", "plasma"),
+                    ("rf-tritium", "tritium"), ("rf-helium-3", "helium-3")):
     assert rf.accent(fluid) == want, fluid
 try:
     rf.accent("lubricant")
