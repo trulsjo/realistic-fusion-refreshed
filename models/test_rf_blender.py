@@ -81,6 +81,12 @@ assert refuses("drum rib band (minor radius, the wrong read)", 0.035)
 assert not refuses("H-beam post (flange width)", 0.14)
 assert refuses("H-beam post (web thickness, the wrong read)", 0.03)
 
+# rf_parts.box and rf_parts.cyl take a `read=` for a member whose FACE carries the read -- a panel
+# standing proud of a wall, a handwheel disc square to the camera. It is not an opt-out: whatever
+# dimension is handed over is still judged, so a face genuinely under the floor still fails.
+assert not refuses("handwheel disc, judged across its face", 0.56)
+assert refuses("a face that really is too small", 0.04)
+
 print("ok")
 
 # The geometry hash is over canonical JSON, so a CRLF checkout of the same file hashes the same
