@@ -85,8 +85,34 @@ effects actually mean: how far the surface faces up. `mat` in
   taller than it is wide.
 - Every machine has a **base slab**: frame colour, 0.25 tiles tall, filling the collision box. It is
   what makes the set read as one plant on mixed ground.
-- Detail floor: nothing smaller than 0.125 tiles (8 px). Panels, seams and bolts below that vanish
-  or shimmer.
+- **Two detail floors, because a cut feature and a raised one read by different means.** A
+  **cut detail** -- a groove, a seam, a weld bead -- reads by the shadow line cut into it, so
+  contrast does the work and it survives being very thin. A **raised detail** -- a rivet, a bolt, a
+  band, a strut -- reads by its own lit silhouette against what is behind it, and needs enough
+  pixels to be a shape rather than a speck.
+
+  | | on the player's screen | tiles | sheet px |
+  |---|---:|---:|---:|
+  | cut detail | 1.6 px | 0.05 | 3.2 |
+  | raised detail | 1.9 px | 0.06 | 3.8 |
+
+  **The unit is the player's screen**, not the sheet: a sheet is 64 px to the tile and ships at
+  `scale = 0.5`, so one tile is 32 screen pixels and that is the only resolution anyone looks at.
+
+  **The floor governs the dimension that carries the read**, not the smallest dimension: a rivet's
+  diameter, a torus's minor DIAMETER, an H-beam's flange width, a groove's width. Measure the
+  smallest instead and the rule condemns the H-beam web, which is edge-on at this camera and never
+  the thing anyone sees -- and H-beams are this document's own named element. So that a groove's
+  smallest dimension IS its width, **cut every groove at least as deep as it is wide**; a shallow
+  wide channel casts a weaker shadow line, which is the whole reason a cut feature reads at all.
+
+  ~~Nothing smaller than 0.125 tiles (8 px). Panels, seams and bolts below that vanish or
+  shimmer.~~ **Superseded on measurement, 2026-09-13 (#335).** That figure was four times vanilla's
+  median detail and above vanilla's 90th percentile: as written it forbade nearly all of Factorio's
+  own art, and every detail feature on both of our machines -- bolts and rivets included, which it
+  named. It was also stated in sheet pixels. Both floors above are set AT what two machines already
+  ship, with vanilla finer still below them. `docs/research/detail-floor.md` has the numbers, the
+  five vanilla sheets they came from, what the method cannot see, and the script to rerun it.
 - Symmetry is broken on purpose at least once per machine so the four rotations are told apart.
 
 ## Connections
