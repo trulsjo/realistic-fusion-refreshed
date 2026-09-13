@@ -158,9 +158,48 @@ effects actually mean: how far the surface faces up. `mat` in
 
 ## Connections
 
-Every pipe connection gets a **socket** baked into the structure: a bare-metal stub of radius 0.3
-tiles from the body to the footprint edge on the connection's tile, with one accent band of the
-fluid it carries. Vanilla's `pipe_covers` cap the stub when nothing is joined (#240, decided #247).
+Every pipe connection gets a **socket** baked into the structure: a bare-metal stub from the body
+to the footprint edge on the connection's tile, with one accent band of the fluid it carries.
+
+**A SOCKET A PLAYER CAN PLUMB IS DRAWN LIKE THE PIPE THAT PLUGS INTO IT** -- height and thickness
+both, and both are measured rather than chosen (Truls, 2026-09-13 and 2026-09-14). It was radius
+0.3 at height 0.55 on both machines that had one, and the join was a visible step: the stub stood
+0.367 tiles higher on screen than the pipe and drew a quarter thicker.
+`scripts/probe-socket-height.ps1` is the rig that showed it and took the numbers below.
+
+The arithmetic, stated because the easy version of it is wrong. This camera maps depth 1:1 and
+height by 0.707, so a tube's circular cross-section draws as an ellipse:
+
+- its centre sits `0.707 z` above the ground line, the radius terms cancelling;
+- its screen height is `2 r sqrt(1 + 0.707^2)` = `2.449 r`. **Not** `3.414 r`, which is what taking
+  the topmost and bottommost points of the tube independently gives -- those two points are not the
+  silhouette's extremes.
+
+Vanilla's pipe (`base/graphics/entity/pipe/pipe-straight-horizontal.png`, scale 0.5 and no shift,
+so 64 px to the tile and directly comparable with ours) draws its body **0.609 tiles tall, centred
+0.031 tiles above the ground line**. Solving the two expressions against those gives **z = 0.044**
+and **r = 0.249**, and the collector measures 0.594 tiles against vanilla's 0.609 after both.
+
+**THE SOCKET GOES THROUGH THE FLOOR, AND THE FLOOR GETS A HOLE.** At that height a socket's tube
+reaches below the plinth's top, so it enters the structure instead of floating over it. That trade
+is deliberate: *"Going below the floor is preferable to this look. If intersecting the floor, the
+floor should have a modelled hole for the pipe"* (Truls, 2026-09-14). The opening is modelled and
+rimmed, so it reads as a fitting rather than a bite out of the stone, and an internal run that
+would otherwise be buried turns down through its own rimmed opening in the deck instead.
+
+**A CONTAINED CONNECTION IS EXEMPT, and the exemption is the point.** ADR 0018's contained fluids
+meet a machine FACE, never a pipe -- no pipe, tank, wagon or pump a player can build will join one.
+Matching those to a vanilla pipe would match them to something that cannot exist. So the rule binds
+a connection left `default` and no other, which is why rf-heat-exchanger's water pair and steam
+outlet move while its three reactor-energy connections do not, even where a water and an energy
+socket sit one tile apart on the same wall at different heights.
+
+**What it costs, recorded so it is not rediscovered as a surprise.** An accent band on a thinner
+stub at pipe height is a thin ring at the machine's edge, not the raised collar it was, and the
+accents are what tell a player which socket carries what. If that goes too far, the band can stay
+proud while the tube stays thin; they are separate numbers.
+
+Vanilla's `pipe_covers` cap the stub when nothing is joined (#240, decided #247).
 Boilers and generators bake sockets into every direction sheet; no separate pipe picture. A socket
 on the far side of a tall body may be hidden at this camera; that is accepted, the cover and the
 pipe say where it is.
