@@ -319,7 +319,7 @@ def receiver(name, centre, radius, length, accent, valve_at, gauges=True):
     for k, frac in enumerate((-0.28, 0.30)):
         torus(f"{name}Rib{k}", radius + 0.015, 0.035, (cx + frac * length, cy, cz), "dark",
               rot=(0, math.pi / 2, 0))
-    seam(f"{name}Weld", (0.03, 0.04, 2 * radius + 0.02),
+    seam(f"{name}Weld", (0.05, 0.05, 2 * radius + 0.02),
          (cx + jitter(0, 0.2), cy - radius + 0.02, cz), rot=(0, jitter(0, 0.15), 0))
     for sx in (-1, 1):                                    # dished ends
         cyl(f"{name}End{sx}", radius * 0.92, 0.1, (cx + sx * (length / 2 + 0.04), cy, cz),
@@ -357,7 +357,7 @@ def column(name, base, radius, height, accent):
     cyl(f"{name}Shell", radius, height, (cx, cy, z0 + height / 2), "metal", verts=48, frost=True)
     for k, frac in enumerate((0.26, 0.58, 0.86)):
         torus(f"{name}Rib{k}", radius + 0.012, 0.03, (cx, cy, z0 + height * frac), "dark")
-    seam(f"{name}Weld", (0.03, 2 * radius + 0.02, 0.04),
+    seam(f"{name}Weld", (0.05, 2 * radius + 0.02, 0.05),
          (cx + radius - 0.02, cy, z0 + height * 0.42), rot=(0, 0, jitter(0, 0.2)))
     top = z0 + height
     torus(f"{name}CapFlange", radius * 0.98, 0.05, (cx, cy, top), "metal", frost=True)
@@ -399,8 +399,8 @@ else:
     DECK_Z = SLAB + 0.2                  # top of the walkway plates in the bays
 
     box("Slab", (2 * HALF, 2 * HALF, SLAB), (0, 0, SLAB / 2), "frame")
-    seam("SlabSeam", (2 * HALF + 0.02, 0.05, 0.03), (0, jitter(0, 0.5), SLAB))
-    seam("SlabSeam2", (0.05, 2 * HALF + 0.02, 0.03), (jitter(0, 0.5), 0, SLAB))
+    seam("SlabSeam", (2 * HALF + 0.02, 0.05, 0.05), (0, jitter(0, 0.5), SLAB))
+    seam("SlabSeam2", (0.05, 2 * HALF + 0.02, 0.05), (jitter(0, 0.5), 0, SLAB))
 
     # -- the cold box. Closed panels, not an open frame: a vacuum-jacketed cold box is closed for
     # real, which is the house style's own exception. Frosted, and it is the biggest frosted
@@ -410,7 +410,10 @@ else:
         t = -BOX_HALF + (i + 1) * (2 * BOX_HALF) / 4
         seam(f"BoxSeamX{i}", (0.05, 2 * BOX_HALF + 0.02, BOX_H - 0.24), (t, 0, SLAB + BOX_H / 2))
         seam(f"BoxSeamY{i}", (2 * BOX_HALF + 0.02, 0.05, BOX_H - 0.24), (0, t, SLAB + BOX_H / 2))
-    seam("BoxBand", (2 * BOX_HALF + 0.03, 2 * BOX_HALF + 0.03, 0.05), (0, 0, SLAB + BOX_H * 0.62))
+    # A BAND ROUND THE BODY, not a groove cut into it, so it is a plate and takes the raised
+    # floor -- #335's decision, and the one call that `seam` was doing the wrong kind of work for.
+    box("BoxBand", (2 * BOX_HALF + 0.03, 2 * BOX_HALF + 0.03, 0.06), (0, 0, SLAB + BOX_H * 0.62),
+        "frame", bev=0)
     for sx, sy in ((0, -1), (-1, 0)):    # rivet lines on the two walls the sun and camera reach
         rivets(f"BoxRivets{sx}{sy}",
                (sx * (BOX_HALF + 0.01) + sy * (-BOX_HALF + 0.25), sy * (BOX_HALF + 0.01) + sx * (-BOX_HALF + 0.25), BOX_TOP - 0.18),
@@ -461,7 +464,7 @@ else:
         for k, (cx, length) in enumerate(segments(-HALF + 0.05, HALF - 0.05, lanes[d])):
             box(f"Deck{d}{k}", (length, BAY - 0.06, 0.06), (cx, cy, DECK_Z), "dark", bev=0.01)
             for i in range(int(length / GROOVE_PITCH)):
-                seam(f"Groove{d}{k}-{i}", (0.05, BAY - 0.06, 0.03),
+                seam(f"Groove{d}{k}-{i}", (0.05, BAY - 0.06, 0.05),
                      (cx - length / 2 + (i + 1) * GROOVE_PITCH, cy, DECK_Z + 0.02))
     for sx in (-1, 1):                                     # east and west bays, between them
         d = "east" if sx > 0 else "west"
@@ -469,7 +472,7 @@ else:
         for k, (cy, length) in enumerate(segments(-BOX_HALF + 0.03, BOX_HALF - 0.03, lanes[d])):
             box(f"Deck{d}{k}", (BAY - 0.06, length, 0.06), (cx, cy, DECK_Z), "dark", bev=0.01)
             for i in range(int(length / GROOVE_PITCH)):
-                seam(f"Groove{d}{k}-{i}", (BAY - 0.06, 0.05, 0.03),
+                seam(f"Groove{d}{k}-{i}", (BAY - 0.06, 0.05, 0.05),
                      (cx, cy - length / 2 + (i + 1) * GROOVE_PITCH, DECK_Z + 0.02))
 
     # -- two columns on the lid, side by side and of UNEQUAL height: the one thing on the machine
@@ -539,14 +542,14 @@ else:
     CAB = (0.72, 0.5, 0.95)
     cpos = (1.48, -(BOX_HALF + 0.47), DECK_Z + CAB[2] / 2)
     box("Cabinet", CAB, cpos, "paint")
-    seam("CabinetSeam", (0.04, CAB[1] + 0.02, CAB[2] - 0.24), cpos)
+    seam("CabinetSeam", (0.05, CAB[1] + 0.02, CAB[2] - 0.24), cpos)
     box("CabinetPanel", (0.42, 0.06, 0.3), (cpos[0], cpos[1] - CAB[1] / 2, cpos[2] + 0.26), "dark", bev=0)
     rivets("CabinetRivets", (cpos[0] - 0.28, cpos[1] - CAB[1] / 2 - 0.01, cpos[2] - 0.42),
            (cpos[0] + 0.28, cpos[1] - CAB[1] / 2 - 0.01, cpos[2] - 0.42), 5, r=0.032)
     VENT = (1.75, 0.75, DECK_Z + 0.35)
     box("VentHood", (0.42, 0.3, 0.7), VENT, "paint")
     for k in range(4):
-        box(f"VentLouvre{k}", (0.36, 0.05, 0.05), (VENT[0], VENT[1] - 0.16, VENT[2] - 0.22 + k * 0.14), "dark", bev=0)
+        box(f"VentLouvre{k}", (0.36, 0.06, 0.06), (VENT[0], VENT[1] - 0.16, VENT[2] - 0.22 + k * 0.14), "dark", bev=0)
     cyl("VentStack", 0.11, 1.1, (VENT[0], VENT[1] + 0.04, VENT[2] + 0.9), "metal", verts=24)
     cyl("VentCowl", 0.16, 0.12, (VENT[0], VENT[1] + 0.04, VENT[2] + 1.5), "dark", verts=24)
 

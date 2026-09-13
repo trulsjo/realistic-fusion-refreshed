@@ -404,8 +404,8 @@ if variant == "cube":
 else:
     SLAB = 0.25
     box("Slab", (W, L, SLAB), (0, 0, SLAB / 2), "frame")
-    seam("SlabSeam", (W + 0.02, 0.05, 0.03), (0, 0, SLAB))
-    seam("SlabSeam2", (0.05, L + 0.02, 0.03), (0.6, 0, SLAB))
+    seam("SlabSeam", (W + 0.02, 0.05, 0.05), (0, 0, SLAB))
+    seam("SlabSeam2", (0.05, L + 0.02, 0.05), (0.6, 0, SLAB))
 
     # -- west manifold: the reactor contact. Closed panels, seams, rivet line, energy band. Glows.
     MAN_W, MAN_H = 0.8, 1.25
@@ -436,7 +436,7 @@ else:
         glow=True, rot=(0, 0, MAN_YAW))
     for i in range(14):
         y = -HALF_L + 0.6 + i * (L - 1.2) / 13
-        box(f"ManifoldGrille{i}", (MAN_W * 0.5, 0.05, 0.05), (on_manifold(y) + 0.05, y, SLAB + MAN_H + 0.04),
+        box(f"ManifoldGrille{i}", (MAN_W * 0.5, 0.06, 0.06), (on_manifold(y) + 0.05, y, SLAB + MAN_H + 0.04),
             "dark", bev=0, rot=(0, 0, MAN_YAW))
 
     # -- open frame of H-beams, no walls. Posts on the east edge and the mid-line, rails on top.
@@ -464,7 +464,7 @@ else:
         y = -HALF_L + 0.5 + i * (L - 1.0) / 29
         if abs(y - OUTLET_Y) < 0.30:
             continue
-        box(f"Slat{i}", (W - MAN_W - 0.7, 0.06, 0.05), (0.35, y, SLAB + 0.5), "dark", bev=0)
+        box(f"Slat{i}", (W - MAN_W - 0.7, 0.06, 0.06), (0.35, y, SLAB + 0.5), "dark", bev=0)
     # A conduit run down the east frame with clamps, and diagonal braces in two bays. Both are here
     # because the frame read as an empty crate (Truls, #252): the bays were identical and had
     # nothing in them, so fifteen tiles of machine carried three drums and air.
@@ -490,7 +490,7 @@ else:
 
     # South end wall: a closed panel the camera can see, between manifold and cabinet.
     box("EndWall", (W - MAN_W - 0.3, 0.16, 1.15), (MXE + (EX - MXE) / 2 - 0.05, -HALF_L + 0.12, SLAB + 0.575), "paint")
-    seam("EndWallSeam", (0.04, 0.18, 0.95), (MXE + (EX - MXE) / 2 - 0.9, -HALF_L + 0.12, SLAB + 0.575))
+    seam("EndWallSeam", (0.05, 0.18, 0.95), (MXE + (EX - MXE) / 2 - 0.9, -HALF_L + 0.12, SLAB + 0.575))
     rivets("EndWallRivets", (MXE + 0.2, -HALF_L + 0.03, SLAB + 1.0), (EX - 0.3, -HALF_L + 0.03, SLAB + 1.0), 9, r=0.04)
     box("EndWallVent", (0.9, 0.06, 0.4), (MXE + (EX - MXE) / 2 + 0.3, -HALF_L + 0.03, SLAB + 0.55), "dark", bev=0)
 
@@ -530,7 +530,7 @@ else:
             dent(d, strike, 0.62, 0.42)
             for rib in ribs:                     # already 48x12; a few cuts is plenty
                 dent(rib, strike, 0.62, 0.42, cuts=4)
-        seam(f"Drum{i}Weld", (0.03, 2 * r + 0.02, 0.04), (DX + r - 0.02, y, z0 + h * 0.4), rot=(0, 0, jitter(0, 0.2)))
+        seam(f"Drum{i}Weld", (0.05, 2 * r + 0.02, 0.05), (DX + r - 0.02, y, z0 + h * 0.4), rot=(0, 0, jitter(0, 0.2)))
         cyl(f"Drum{i}Cap", r * 0.6, 0.18, (DX, y, z0 + h + 0.09), "metal")
         # A bolted flange where the cap meets the drum, and a ring of bolts on it: the drum tops are
         # what the camera sees most of, and they were bare (#252).
@@ -558,7 +558,7 @@ else:
         for k in range(2):
             cyl(f"Drum{i}Gauge{k}", 0.13, 0.06, (gx + 0.15, gy - 0.17 + k * 0.34, SLAB + 0.95),
                 "steam", axis="X", verts=20)
-        cyl(f"Drum{i}Wheel", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "dark", axis="Y", verts=24)
+        cyl(f"Drum{i}Wheel", 0.28, 0.06, (gx + 0.02, gy - 0.72, SLAB + 0.85), "dark", axis="Y", verts=24)
         cyl(f"Drum{i}WheelStem", 0.07, 0.36, (gx + 0.02, gy - 0.55, SLAB + 0.85), "metal", axis="Y", verts=12)
         torus(f"Drum{i}WheelRim", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "metal",
               rot=(math.pi / 2, 0, 0))
@@ -647,7 +647,7 @@ else:
     CAB = (0.8, 1.3, 1.7)
     cpos = (HALF_W - 0.55, -HALF_L + 0.95, SLAB + CAB[2] / 2)
     box("Cabinet", CAB, cpos, "paint")
-    seam("CabinetSeam", (CAB[0] + 0.02, 0.04, CAB[2] - 0.3), cpos)
+    seam("CabinetSeam", (CAB[0] + 0.02, 0.05, CAB[2] - 0.3), cpos)
     box("CabinetPanel", (0.06, 0.7, 0.5), (cpos[0] + CAB[0] / 2, cpos[1], cpos[2] + 0.3), "water", bev=0)
     rivets("CabinetRivets", (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] - 0.5, cpos[2] - CAB[2] / 2 + 0.15),
            (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] + 0.5, cpos[2] - CAB[2] / 2 + 0.15), 6)
