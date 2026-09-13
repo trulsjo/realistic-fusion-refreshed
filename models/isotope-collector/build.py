@@ -65,6 +65,9 @@ scene.name = "rf"
 # The same values the heat exchanger settled on for #252, so the two machines read as one plant;
 # "tritium" and "helium-3" are new, and are the fluids' own icon colours rather than fresh picks
 # (rf_blender.ACCENT_OF_FLUID says why).
+# The two accents are the fluids' own colours, not picks: scripts/ship-check.ps1 section 8 fails if
+# either stops matching rf-tritium or rf-helium-3 in the Core mod's prototypes/fluids.lua, or the
+# matching row in models/house-style.md (#334). Re-render after changing one.
 PALETTE = {
     "body":     ((0.24, 0.26, 0.30), 0.72, 0.0),
     "frame":    ((0.07, 0.08, 0.09), 0.6, 0.2),

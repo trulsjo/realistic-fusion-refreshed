@@ -28,12 +28,15 @@ big, not because they are ornate. Nothing rusts, nothing is bolted on as an afte
 One accent per fluid, used the same way on every machine, so a player reads a machine's plumbing
 from its colours before reading its tooltip. An accent is a band or a manifold, never a whole body.
 
-**The last two are the fluids' own icon colours** (Truls, #262), taken straight from
-`realistic-fusion-refreshed-core/prototypes/fluids.lua` rather than picked: the by-products have an
-established colour a player already reads in a pipe, and the socket should agree with it. The first four
-were picked for the role instead. Reactor energy, steam and water are roles before they are fluids;
-**plasma cannot follow the new rule at all**, because one accent covers four fluids whose own icon
-colours are orange, green, blue and magenta -- there is no single pipe for it to agree with.
+**The last two are the fluids' own icon colours** (Truls, #262), and `scripts/ship-check.ps1`
+section 8 holds the three copies of each together (#334) -- this row, the fluid, and every build
+script's `PALETTE`. Change one and it names the other two rather than letting them drift. They are
+taken straight from `realistic-fusion-refreshed-core/prototypes/fluids.lua` rather than picked: the
+by-products have an established colour a player already reads in a pipe, and the socket should agree
+with it. The first four were picked for the role instead. Reactor energy, steam and water are roles
+before they are fluids; **plasma cannot follow the new rule at all**, because one accent covers
+four fluids whose own icon colours are orange, green, blue and magenta -- there is no single pipe
+for it to agree with.
 
 **Helium-3's violet is near the plasma accent** -- 0.80 0.45 1.00 against 0.55 0.20 1.00 -- which
 the isotope collector does not have to resolve, since it carries no plasma. A machine that carries

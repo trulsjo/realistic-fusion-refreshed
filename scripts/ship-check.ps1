@@ -2,7 +2,8 @@
 .SYNOPSIS
     Fails if the claims the shipped mods make about themselves have stopped being true, if the
     scripts in this directory have stopped answering Get-Help, if any prose cites one of our own
-    files by line number, or if a docs/ note this repo cites
+    files by line number, if an accent named for a fluid has stopped being that fluid's colour,
+    or if a docs/ note this repo cites
     is not there to be read.
 
 .DESCRIPTION
@@ -54,6 +55,16 @@
     on the same line. It reads every tracked .md, .lua, .ps1, .py and .js, which is wider than the
     rest of this script, because ADR 0032 binds our own comments as well as docs/.
 
+    Since #334 it also asserts that the two accents taken from a fluid's own colour still carry it.
+    Three files type the same RGB triple -- the Core mod's prototypes/fluids.lua, the palette table
+    in models/house-style.md and the PALETTE of each build script -- and nothing else in this
+    repository types a FLUID's colour at all, so a recolour of rf-tritium or rf-helium-3 would leave
+    every rendered socket disagreeing with the pipe it feeds while every gate still passed. Other
+    colours are typed in several places (rf_blender.py's icon backdrop, make-mockup-art.ps1's
+    per-connection palette) and are nobody's copy of anything, so they are out of scope. Which
+    accents are in scope is derived rather than listed; section 8 says how, and why the four role
+    accents are not among them.
+
     Since #183 it also asserts that every docs/ path cited anywhere in scripts/ or docs/ resolves
     to a file that exists. Two notes were researched, written and committed for #158 and #159, and
     never merged; three files on main cited them, both tickets read as completed, and the findings
@@ -100,13 +111,22 @@
     they can pass by finding nothing; sections 1 to 4 name every file and string they require, so a
     mistake in them fails rather than goes quiet.
 
-    SECTIONS 5, 6 AND 7 ARE THE EXCEPTION, and are stated here rather than left to be discovered.
+    SECTIONS 5 TO 8 ARE THE EXCEPTION, and are stated here rather than left to be discovered.
     Each selects by scanning and matching a predicate, so each is exactly the shape that can pass by
     finding nothing. What stands in for a self-test is a floor: section 5 fails when a script opens
-    with a comment block but is not in scope, and sections 6 and 7 fail when they find too few
-    citations to believe -- section 7 twice over, once per shape it matches. That is narrower than a
-    -SelfTest would be, because a floor cannot see a mistake in the scan itself -- break that and
-    there is nothing left to check and so nothing left to fail.
+    with a comment block but is not in scope, sections 6 and 7 fail when they find too few
+    citations to believe -- section 7 twice over, once per shape it matches -- and section 8 carries
+    four: one on each of the three things it scans, and one on the pairing between two of them. That is narrower than a -SelfTest would be, because a floor
+    cannot see a mistake in the scan itself -- break that and there is nothing left to check and so
+    nothing left to fail.
+
+    SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
+    Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
+    stopped saying no fails rather than turning every check below it green. It was also demonstrated
+    by hand on 2026-09-13 (#334), five ways: recolouring rf-tritium in the Core mod failed the
+    palette row AND the build script; recolouring either of those alone failed that one by name;
+    renaming a build script's PALETTE key failed it for having no entry; and breaking
+    Test-SameColour itself failed the pair above.
 
 .EXAMPLE
     pwsh -File scripts/ship-check.ps1
@@ -566,6 +586,173 @@ if ($numbered.Count) {
         "name the function, field, constant or prototype instead (ADR 0032): $shown")
 }
 
+# ------------------------------------------------------------------- the accents that are a fluid's
+#
+# 8. AN ACCENT NAMED FOR A FLUID MUST BE THAT FLUID'S OWN COLOUR (#334).
+#
+# Two of the house style's accents are not picks. models/house-style.md says so in its own words:
+# tritium's green and helium-3's violet are taken straight from the Core mod's prototypes/fluids.lua
+# "rather than picked", on the argument that a player who has learnt a fluid from its icon should
+# meet the same colour on the machine's socket. The other accents -- energy, steam, water, plasma --
+# are roles first and were chosen for the role, and plasma cannot follow the rule at all, since one
+# accent covers four fluids of four different colours.
+#
+# So the same RGB triple is typed three times over: in fluids.lua, in house-style.md's palette
+# table, and in the PALETTE of every build script that renders a machine carrying the fluid. Nothing
+# else in this repository types a FLUID's colour -- other colours are typed in plenty of places and
+# are copies of nothing. models/rf_blender.py's ACCENT_OF_FLUID maps the fluid to the accent's
+# NAME and models/test_rf_blender.py checks that mapping, but a name is not a value: recolour
+# rf-tritium and every rendered socket goes on being the old green, silently disagreeing with the
+# pipe it feeds, and every gate in this repository still passes. The drift surface grows with each
+# render, because each new build.py carries its own copy.
+#
+# WHICH ACCENTS ARE IN SCOPE IS DERIVED, NOT LISTED, so a third by-product accent is covered the day
+# it is written. A palette row "<X> accent" is in scope exactly when the Core mod declares a fluid
+# called rf-<X>. That picks up Tritium and Helium-3 and leaves the four role accents alone: there is
+# no rf-energy, no rf-plasma, and steam and water are the game's own fluids rather than ours, so
+# none of the four names a fluid this repository declares. It is also the right rule rather than a
+# convenient one -- an accent named after one of our fluids should agree with it, whoever adds it.
+#
+# THE FLOORS, for the reason sections 5, 6 and 7 carry one: a scan passes by finding nothing, so a
+# regex that stopped matching would print green while checking nothing at all. There are FOUR --
+# one on each of the three things scanned (the fluid declarations, the palette rows, the machines
+# whose geometry says which accents their build script must hold) and one on the pairing of an
+# accent to a fluid, which is derived from the first two rather than scanned for. The two files
+# themselves are named rather than searched for, so a missing one throws instead of going quiet.
+#
+# A FLOOR CANNOT SEE A BROKEN COMPARISON, which is the hole sections 5 to 7 live with and this one
+# does not have to: Test-SameColour is exercised on a known-equal and a known-unequal pair below,
+# every run. That is the self-test half #334 asked for, at the size the thing being proved deserves.
+$fluidsLua  = Join-Path $repoRoot 'realistic-fusion-refreshed-core/prototypes/fluids.lua'
+$houseStyle = Join-Path $repoRoot 'models/house-style.md'
+
+$fluidColour = @{}
+foreach ($m in [regex]::Matches((Get-Content $fluidsLua -Raw),
+        'fluid\(\s*"(rf-[\w-]+)"\s*,\s*\{\s*r\s*=\s*([\d.]+)\s*,\s*g\s*=\s*([\d.]+)\s*,\s*b\s*=\s*([\d.]+)\s*\}')) {
+    $fluidColour[$m.Groups[1].Value] = @($m.Groups[2].Value, $m.Groups[3].Value, $m.Groups[4].Value)
+}
+$checks++
+if ($fluidColour.Count -lt 8) {
+    $failures.Add(("only $($fluidColour.Count) fluid colour(s) read out of the Core mod's " +
+        'prototypes/fluids.lua, where eleven are declared -- so the pattern above stopped matching ' +
+        'rather than that the mod stopped declaring fluids'))
+}
+
+# A palette row: the role, the linear RGB, and what wears it. Only the accent rows carry a fluid's
+# name; Body steel, Frame, Bare metal and Glow are not accents and do not match.
+$accents = [System.Collections.Generic.List[object]]::new()
+foreach ($line in (Get-Content $houseStyle)) {
+    $m = [regex]::Match($line, '^\|\s*(.+?)\s+accent\s*\|\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\|')
+    if (-not $m.Success) { continue }
+    $accents.Add([pscustomobject]@{
+        Name   = $m.Groups[1].Value.ToLowerInvariant()
+        Colour = @($m.Groups[2].Value, $m.Groups[3].Value, $m.Groups[4].Value) })
+}
+# Four, against the six rows the table holds today, so retiring one accent does not fail this while
+# a broken pattern still does. Deliberately not six: a floor at the exact count is a second, unsaid
+# rule about how many accents the house style is allowed to have.
+$checks++
+if ($accents.Count -lt 4) {
+    $failures.Add(("only $($accents.Count) accent row(s) read out of models/house-style.md's " +
+        'palette table, where six are written -- so the pattern above stopped matching rather ' +
+        'than that the house style stopped having accents'))
+}
+
+# Equal to the tolerance the table is written to. Both sides are decimal text, so this is exact in
+# practice; the epsilon is so that 0.5 and 0.50 are the same colour, which is the likelier edit.
+function Test-SameColour {
+    param([string[]] $A, [string[]] $B)
+    for ($i = 0; $i -lt 3; $i++) {
+        $x = [double]::Parse($A[$i], [cultureinfo]::InvariantCulture)
+        $y = [double]::Parse($B[$i], [cultureinfo]::InvariantCulture)
+        if ([math]::Abs($x - $y) -gt 1e-9) { return $false }
+    }
+    return $true
+}
+
+# The comparison has to be able to say no, and has to survive a colour written with fewer decimals.
+# Every check below is green if Test-SameColour always returns true, so this is proved rather than
+# assumed.
+$checks++
+if (-not (Test-SameColour @('0.50', '1.00', '0.60') @('0.5', '1', '0.6'))) {
+    $failures.Add('Test-SameColour calls two spellings of one colour different, so every ' +
+        'comparison below is unreliable')
+}
+$checks++
+if (Test-SameColour @('0.50', '1.00', '0.60') @('0.50', '0.90', '0.60')) {
+    $failures.Add('Test-SameColour calls two different colours the same, so every comparison ' +
+        'below passes for free')
+}
+
+$fromFluid = @($accents | Where-Object { $fluidColour.ContainsKey("rf-$($_.Name)") })
+# Two, which is every one there is, so this one has no headroom and is meant not to. Dropping a
+# fluid accent is exactly the edit that must not happen quietly: the house style's argument for
+# these two is that a player meets a fluid's own colour on the socket, so losing one is a change to
+# that argument and should be made by editing this number on purpose.
+$checks++
+if ($fromFluid.Count -lt 2) {
+    $failures.Add(("only $($fromFluid.Count) palette accent(s) name a fluid this repo declares, " +
+        'where tritium and helium-3 both do -- either the pairing above stopped matching, or an ' +
+        'accent taken from a fluid was retired without this number being moved with it'))
+}
+
+foreach ($accent in $fromFluid) {
+    $fluid = "rf-$($accent.Name)"
+    $checks++
+    if (-not (Test-SameColour $accent.Colour $fluidColour[$fluid])) {
+        $failures.Add(("$fluid is drawn $($fluidColour[$fluid] -join ' ') in the Core mod's " +
+            'prototypes/fluids.lua but its palette row in models/house-style.md says ' +
+            "$($accent.Colour -join ' ') -- a socket rendered in that accent would disagree with " +
+            'the pipe it feeds'))
+    }
+}
+
+# WHICH BUILD SCRIPT MUST CARRY WHICH ACCENT IS READ OFF THE MACHINE, not counted. Every
+# models/<machine>/geometry.json records the fluid on each connection the machine declares, so it
+# says exactly which accents that machine's build.py has to hold. Counting matches instead would
+# let a renamed PALETTE key leave scope in silence -- indistinguishable from a machine that
+# legitimately carries neither fluid -- and #334 raised this check precisely because the drift
+# surface grows with every machine rendered.
+$inScope = 0
+foreach ($geometry in (Get-ChildItem (Join-Path $repoRoot 'models') -File -Filter geometry.json -Recurse)) {
+    $build = Join-Path $geometry.DirectoryName 'build.py'
+    if (-not (Test-Path $build)) { continue }   # geometry extracted, model not built yet
+    $rel     = $build.Substring($repoRoot.Length + 1).Replace('\', '/')
+    $carries = @((Get-Content $geometry.FullName -Raw | ConvertFrom-Json).connections |
+                 ForEach-Object { $_.fluid } | Sort-Object -Unique)
+    $text    = Get-Content $build -Raw
+    foreach ($accent in $fromFluid) {
+        $fluid = "rf-$($accent.Name)"
+        if ($carries -notcontains $fluid) { continue }
+        $inScope++
+        $want = $fluidColour[$fluid]
+        $m = [regex]::Match($text, '"' + [regex]::Escape($accent.Name) +
+                                   '"\s*:\s*\(\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)')
+        $checks++
+        if (-not $m.Success) {
+            $failures.Add(("$rel renders a machine that carries $fluid but its PALETTE has no " +
+                "entry keyed $($accent.Name), so the socket is drawn in something other than the " +
+                'colour the fluid is drawn in'))
+            continue
+        }
+        $got = @($m.Groups[1].Value, $m.Groups[2].Value, $m.Groups[3].Value)
+        if (-not (Test-SameColour $got $want)) {
+            $failures.Add(("$fluid is drawn $($want -join ' ') in the Core mod's " +
+                "prototypes/fluids.lua but $rel renders its accent $($got -join ' ') -- the " +
+                'socket and the pipe would not be the same colour'))
+        }
+    }
+}
+
+# The third floor, on the pairing of a machine to its accents. Today the isotope collector is the
+# only built model carrying either fluid, and it carries both.
+$checks++
+if ($inScope -lt 2) {
+    $failures.Add(("only $inScope built model(s) carry a fluid whose accent is that fluid's " +
+        'colour, where the isotope collector carries two -- so the geometry pattern above ' +
+        'stopped matching rather than that no machine carries them'))
+}
+
 if ($failures.Count) {
     Write-Host ''
     foreach ($f in $failures) { Write-Host "FAIL  $f" -ForegroundColor Red }
@@ -579,6 +766,6 @@ if ($failures.Count) {
 
 Write-Host ("ship-check: {0} checks, 0 failures." -f $checks) -ForegroundColor Green
 Write-Host 'The clean break and the quality gap are stated in both code mods and in README.md; the'
-Write-Host 'licence and the scope rule ship inside all three; the assets floor matches and no code mod'
-Write-Host 'ships art.'
+Write-Host 'licence and the scope rule ship inside all three; the assets floor matches, no code mod'
+Write-Host 'ships art, and every accent named for a fluid still carries that fluid''s own colour.'
 exit 0
