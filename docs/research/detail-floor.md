@@ -11,10 +11,12 @@ python docs/research/detail-floor/measure-detail.py --rivets
 ## The question
 
 `models/house-style.md` said *"Detail floor: nothing smaller than 0.125 tiles (8 px). Panels, seams
-and bolts below that vanish or shimmer."* Every detail feature on both rendered machines was under
-it — every seam, every groove, every rib band, and **every bolt and rivet**, which the rule names.
-A rule with a hundred per cent violation rate is either wrong or being ignored, and nobody had
-measured which.
+and bolts below that vanish or shimmer."* — bolts by name; rivets it never mentioned.
+
+Every seam, every groove, every rib band and **every bolt and rivet** on both rendered machines was
+under it: 261 of the 369 features the gate now checks, or 70.7 per cent, measured by rebuilding
+both machines with the checker set to the old figure. Whole classes of feature at a hundred per
+cent, and the classes the rule named. Nobody had measured which way that cut.
 
 ## Two units, and the old rule used the wrong one
 
@@ -40,8 +42,12 @@ its surround and a cut one darker. Opaque pixels only.
 | vanilla storage tank | 6 613 | 1 | 2.0 px | 5 | 0.031 | 1.0 px |
 | vanilla electric furnace | 5 625 | 1 | 2.0 px | 6 | 0.031 | 1.0 px |
 | vanilla chemical plant | 439 722 | 1 | 2.0 px | 6 | 0.031 | 1.0 px |
-| **ours — heat exchanger** | 21 833 | 1 | 3.0 px | 6 | 0.047 | 1.5 px |
-| **ours — isotope collector** | 7 598 | 1 | 2.0 px | 6 | 0.031 | 1.0 px |
+| **ours — heat exchanger** | 21 861 | 1 | 3.0 px | 6 | 0.047 | 1.5 px |
+| **ours — isotope collector** | 7 765 | 1 | 2.0 px | 6 | 0.031 | 1.0 px |
+
+**Our two rows are of the sheets as of #340.** Only the run count moves when a machine is
+re-rendered — it did twice while #335's own tickets were landing, which is why the count is pinned
+to a commit and the three percentiles are not. Vanilla's five rows move only when Wube reships.
 
 **THE MEDIAN COUNTS SURFACE GRAIN, not only deliberate features**, so read it as "typical
 high-frequency feature" and never as a design target. Procedural grime and a rendered surface both
@@ -65,8 +71,9 @@ eleven rows:
 ## What it settles
 
 **The old floor was four times vanilla's median and above vanilla's 90th percentile.** As written it
-forbids nearly all of Factorio's own art. Our two machines already sit exactly on vanilla's density,
-so they were never too fine — the rule was too coarse.
+forbids nearly all of Factorio's own art. The isotope collector sits exactly on vanilla's density at
+2.0 sheet pixels; the heat exchanger is half again coarser at 3.0. Neither was ever too fine — the
+rule was too coarse.
 
 There is headroom below what we ship. Vanilla's deliberate rivets are two sheet pixels; our smallest
 feature is 3.2. The floors #335 chose are therefore set *at* what we already do rather than above

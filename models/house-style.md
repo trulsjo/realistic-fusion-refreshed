@@ -109,8 +109,8 @@ effects actually mean: how far the surface faces up. `mat` in
   ~~Nothing smaller than 0.125 tiles (8 px). Panels, seams and bolts below that vanish or
   shimmer.~~ **Superseded on measurement, 2026-09-13 (#335).** That figure was four times vanilla's
   median detail and above vanilla's 90th percentile: as written it forbade nearly all of Factorio's
-  own art, and every detail feature on both of our machines -- bolts and rivets included, which it
-  named. It was also stated in sheet pixels. Both floors above are set AT what two machines already
+  own art, and 261 of the 369 features on our two machines -- every seam, groove, rib band, bolt and
+  rivet among them, and it named bolts. It was also stated in sheet pixels. Both floors above are set AT what two machines already
   ship, with vanilla finer still below them. `docs/research/detail-floor.md` has the numbers, the
   five vanilla sheets they came from, what the method cannot see, and the script to rerun it.
 - Symmetry is broken on purpose at least once per machine so the four rotations are told apart.

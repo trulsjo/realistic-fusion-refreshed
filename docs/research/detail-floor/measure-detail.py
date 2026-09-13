@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Measure how wide a sprite's detail features are, in ours and in vanilla's.
 
-    python docs/research/detail-floor/measure-detail.py [--factorio-data DIR] [--json]
+    python docs/research/detail-floor/measure-detail.py [--rivets] [--factorio-data DIR] [--json]
 
 Written for #335, which had to choose a detail floor and found the house style's 0.125 tiles was
 four times vanilla's median. It stays committed so a future Factorio can be asked the same question
