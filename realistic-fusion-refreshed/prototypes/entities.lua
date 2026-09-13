@@ -962,8 +962,9 @@ short dark strut. The taller wears tritium's green at its cap and the shorter he
 
 COLOUR IS BY FLUID AND APPEARS WHEREVER THAT FLUID IS, not once per machine: each isotope's
 accent is on its column cap, on its drum's relief valve, in its drum's sight glass and on its
-sockets. Nothing else on the machine is coloured except one small blue panel on the control
-cabinet, which is the only thing here that belongs to no fluid at all.
+sockets. NOTHING ELSE ON THE MACHINE IS COLOURED. The control cabinet's panel is a dark screen,
+not the blue one the heat exchanger's cabinet wears -- blue is water's accent, this machine has no
+water on it, and a coloured band is how a player is told what a machine's plumbing carries.
 
 THE MACHINE IS FROSTED, where the heat exchanger is corroded, and for the same kind of reason:
 it is cold. The rime is patchy and gathers UP each part it sits on -- heaviest on upper panels,
@@ -975,10 +976,18 @@ bands and welds, the cabinet and the vent stay bare, and no accent band is ever 
 
 Two horizontal receiver drums lie low on the deck, in the bays nearest the sockets they feed:
 the tritium drum across the SOUTH bay, the helium-3 drum across the north. They are the buffer a
-player can see -- rib bands, a weld seam, dished ends with flanges, a sight gauge at one end and
-a handwheel at the other, and a pressure relief valve (a part that could move later) on
-top. The tritium drum is two tiles and not the full width, which is what leaves room in its own
-bay for the cabinet and the vent.
+player can see -- rib bands, a weld seam, dished ends with flanges, and a pressure relief valve
+(a part that could move later) on top. The tritium drum is two tiles and not the full width, which
+is what leaves room in its own bay for the cabinet.
+
+ONLY THE SOUTH DRUM CARRIES A GAUGE CLUSTER -- a sight gauge at one end and a handwheel at the
+other, on the face turned toward the camera. The north drum has neither, and that is a decision
+rather than an oversight: its south face is the strip between it and the cold box, which the box
+hides completely at this camera, and the handwheel ran into the box's north wall besides. Detail
+that cannot be seen AND intersects something is worse than no detail. What hangs off a drum is
+also what decides whether it fits: the south drum stands closer to the box than it looks like it
+should, because at arm's length its handwheel reached past the footprint edge into a tile a player
+reads as free.
 
 A run drops from each column's SHOULDER, not off its cap -- the caps are already at the top of
 the height the machine is allowed, and a run off a cap has to rise before it can turn. The
@@ -994,10 +1003,13 @@ socket, green west and green east. The helium-3 socket has no run of its own -- 
 north bay and its stub goes straight into the drum's side, which is the shortest honest plumbing
 on the machine. Every socket is a bare-metal stub with its fluid's band.
 
-THE SOUTH BAY CARRIES WHAT BREAKS THE SYMMETRY, and it is the bay with no socket in it: east of the
-drum stand a vent stack with a louvred hood and, beyond it, a control cabinet with a small blue
-panel. The machine is square and its four sheets are otherwise near enough the same
-picture turned, so this corner is how a player tells one from another.
+THE SYMMETRY IS BROKEN IN TWO BAYS, and not by design so much as by room. A control cabinet with a
+dark screen stands at the south-east corner, in the one bay with no socket in it; the vent stack
+with its louvred hood went to the EAST bay, north of the socket lane, because the south bay could
+not hold the drum, the run leaving its east end, the cabinet AND a stack without something passing
+through something else. Two marked bays is the better accident: the machine is square and its four
+sheets are otherwise near enough the same picture turned, so these are how a player tells one from
+another.
 
 NOTHING ON IT GLOWS, and that is deliberate. The collector takes no power and does no work of its
 own, so it has no working state to light; a glowing part here would promise an activity the
@@ -1046,14 +1058,31 @@ collector.output_fluid_box = emit(collector.output_fluid_box, "rf-helium-3")
 -- nothing at 3x2 but a spaceship part, so this is a drawn placeholder at a size chosen rather than
 -- inherited.
 --
--- Square on purpose: it makes the machine its own rotation, so one sheet serves all four
--- directions and a player is not made to think about which way it faces to bolt it on.
+-- Square on purpose: it makes the machine its own rotation, so a player is not made to think about
+-- which way it faces to bolt it on.
+--
+-- THAT IS NOT THE SAME AS ONE SHEET SERVING FOUR DIRECTIONS, which is what this comment used to
+-- say and what the look note above repeated (#262). A square FOOTPRINT is unchanged by a quarter
+-- turn; these CONNECTIONS are not -- tritium west and east, helium-3 north -- so every rotation
+-- puts them somewhere else and each needs its own picture. Both the mockup and the render ship
+-- four, and graphics/mockup/pictures.lua records what one sheet for all four actually did to a
+-- square machine: it drew the output on the north edge in every orientation and so was wrong in
+-- three out of four.
 --
 -- Growing it does not change the pairing. entity-management pairs one collector to a reactor by
 -- the tiles touching it, with a whole tile of margin, so a bigger collector still touches -- and a
 -- reactor has at most one either way, so nothing about the economics moves.
 collector.collision_box = { { -2.25, -2.25 }, { 2.25, 2.25 } }
 collector.selection_box = { { -2.5, -2.5 }, { 2.5, 2.5 } }
+-- STILL THE MOCKUP. models/isotope-collector/ and graphics/rendered/isotope-collector/ hold a
+-- rendered set as of #262, and switching to it is a separate reviewed edit that waits on Truls
+-- accepting the look in a real map.
+--
+-- WHOEVER MAKES THAT SWITCH HAS ONE THING TO FIX FIRST: nothing on this machine glows, so the
+-- render wrote no glow sheet and its manifest records `glow: false`. graphics/rendered/pictures.lua's
+-- M.boiler puts a `fire_glow` layer on every direction unconditionally, so calling it here would
+-- ask the engine for FOUR files that do not exist -- <name>-glow, -e-glow, -s-glow, -w-glow -- and
+-- the load would fail on all four. It needs a variant without the layer, or a flag.
 collector.pictures = mockup.boiler("isotope-collector", 5, 5)
 collector.fluid_box.pipe_connections = {
   { flow_direction = "output", direction = defines.direction.west, position = { -2, 0 } },

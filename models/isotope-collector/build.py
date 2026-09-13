@@ -55,11 +55,15 @@ PALETTE = {
     "metal":    ((0.55, 0.55, 0.58), 0.35, 0.8),
     "dark":     ((0.26, 0.27, 0.29), 0.5, 0.7),
     "paint":    ((0.58, 0.55, 0.47), 0.8, 0.0),
-    "water":    ((0.25, 0.55, 1.00), 0.5, 0.0),
     "tritium":  ((0.50, 1.00, 0.60), 0.5, 0.0),
     "helium-3": ((0.80, 0.45, 1.00), 0.5, 0.0),
 }
-ACCENTS = ("tritium", "helium-3", "water")   # stay clean: no grime, no frost, so they read
+# NO WATER ENTRY, and that is the point rather than an omission. The heat exchanger's control
+# cabinet wears a blue panel and may: it carries water. This machine carries none, and the house
+# style gives the water accent to "every surface that carries water" on the grounds that a player
+# reads a machine's plumbing from its colours before reading its tooltip -- so a blue panel here
+# would tell them about a pipe that does not exist. The cabinet's panel is a dark screen instead.
+ACCENTS = ("tritium", "helium-3")            # stay clean: no grime, no frost, so they read
 MATS = {}
 
 # FROST IS THIS MACHINE'S CORROSION. The heat exchanger rusts because it is hot and wet; this one
@@ -68,10 +72,20 @@ MATS = {}
 # as a paint colour and not as ice.
 #
 #   * a noise, so it is patchy;
-#   * the object's OWN height (generated coordinates, 0 at its foot and 1 at its top), so rime
-#     gathers on upper panels, cap flanges and the tops of tubes and thins downward -- which is
-#     where it collects for real and, at this camera, the only place it can be seen.
+#   * HOW FAR THE SURFACE FACES UP, so rime gathers on lids, cap flanges and the tops of tubes and
+#     thins away down a wall -- which is where it collects for real and, at this camera, the only
+#     place it can be seen. Not to nothing: a vertical wall keeps about a quarter of the rime a
+#     lid gets, or the box's south and west faces -- the two the camera and the sun reach -- would
+#     be the only bare steel on a machine whose whole point is that it is cold.
 #
+# THE FIRST VERSION OF THAT SECOND TERM WAS THE OBJECT'S OWN HEIGHT, read from Generated texture
+# coordinates, and it was wrong on every part that is rotated. Generated coordinates are the
+# object's LOCAL bounding box and take no notice of the object's rotation, while `cyl` builds every
+# cylinder along local Z and turns the object afterwards -- so on both drums, all three socket
+# stubs and all four dished ends the gradient ran along the tube's AXIS and laid the rime on one
+# END of each. It looked plausible in a render because a drum with a frosted end is not an obviously
+# impossible object. The surface normal's world Z has no such hole: it is the same number whichever
+# way the part was built and turned.
 # Not on accents and not on the slab: an accent has to read as its fluid's colour, and a frosted
 # base slab would put ice on the ground.
 FROST = (0.86, 0.90, 0.94)
@@ -119,9 +133,9 @@ def mat(name, frost=False):
     colour_out = mix.outputs["Result"]
     rough_target = rough
     if frost:
-        coord = nt.nodes.new("ShaderNodeTexCoord")
-        height = nt.nodes.new("ShaderNodeSeparateXYZ")
-        nt.links.new(coord.outputs["Generated"], height.inputs["Vector"])
+        facing = nt.nodes.new("ShaderNodeNewGeometry")
+        up = nt.nodes.new("ShaderNodeSeparateXYZ")
+        nt.links.new(facing.outputs["Normal"], up.inputs["Vector"])
         rime = nt.nodes.new("ShaderNodeTexNoise")
         rime.inputs["Scale"].default_value = 13.0
         rime.inputs["Detail"].default_value = 7.0
@@ -134,16 +148,19 @@ def mat(name, frost=False):
         rime_ramp.color_ramp.elements[0].position = 0.62
         rime_ramp.color_ramp.elements[1].position = 0.78
         nt.links.new(rime.outputs["Fac"], rime_ramp.inputs["Fac"])
-        # The height gradient is a MULTIPLIER on the patchiness, not a second layer over it: added,
+        # The facing gradient is a MULTIPLIER on the patchiness, not a second layer over it: added,
         # the two give a solid white cap and a hard line where it stops, which is a snow drift
         # rather than rime.
+        #
+        # Normal Z is -1 underneath, 0 on a vertical wall and 1 on a lid, so the range below reads
+        # as: undersides 0.18, walls about 0.27, lids 0.7. The top never reaches 1 because even in
+        # its thickest patch the rime has to let the steel through, or it stops being a film on a
+        # surface and becomes the surface.
         gate = nt.nodes.new("ShaderNodeMapRange")
         gate.clamp = True
-        # To Max is 0.7, not 1: even in its thickest patch the rime lets the steel through, which is
-        # what keeps it reading as a film on a surface instead of as the surface.
-        for socket, v in (("From Min", 0.45), ("From Max", 0.98), ("To Min", 0.0), ("To Max", 0.7)):
+        for socket, v in (("From Min", -0.2), ("From Max", 0.9), ("To Min", 0.18), ("To Max", 0.7)):
             gate.inputs[socket].default_value = v
-        nt.links.new(height.outputs["Z"], gate.inputs["Value"])
+        nt.links.new(up.outputs["Z"], gate.inputs["Value"])
         mask = nt.nodes.new("ShaderNodeMath")
         mask.operation = "MULTIPLY"
         nt.links.new(rime_ramp.outputs["Color"], mask.inputs[0])
@@ -189,8 +206,8 @@ def box(name, size, loc, material, rot=(0, 0, 0), bev=0.03, frost=False):
     return o
 
 
-def cyl(name, radius, depth, loc, material, axis="Z", rot=None, verts=48, frost=False):
-    rot = rot or {"Z": (0, 0, 0), "X": (0, math.pi / 2, 0), "Y": (math.pi / 2, 0, 0)}[axis]
+def cyl(name, radius, depth, loc, material, axis="Z", verts=48, frost=False):
+    rot = {"Z": (0, 0, 0), "X": (0, math.pi / 2, 0), "Y": (math.pi / 2, 0, 0)}[axis]
     bpy.ops.mesh.primitive_cylinder_add(radius=radius, depth=depth, location=loc, rotation=rot,
                                         vertices=verts)
     o = bpy.context.object
@@ -227,26 +244,20 @@ def pipe(name, points, radius, material, frost=False):
     return o
 
 
-def hbeam(name, length, loc, axis="Z", depth=0.18, flange=0.14, web=0.03, material="frame"):
-    """An H-profile beam: two flanges and a web, along `axis`. Almost straight, not straight -- a
-    grid of perfectly parallel beams is the thing that says "computer" (Truls, #252)."""
+def hbeam(name, length, loc, depth=0.18, flange=0.14, web=0.03, material="frame"):
+    """An upright H-profile beam: two flanges and a web, along Z. Almost straight, not straight --
+    a grid of perfectly parallel beams is the thing that says "computer" (Truls, #252).
+
+    UPRIGHT ONLY. models/heat-exchanger/build.py's version takes an `axis` and carries three
+    branches for it, because that machine has rails and cross members; every beam on this one is a
+    deck post, so the other two branches came across as unreachable code and are not here.
+    """
     loc = (jitter(loc[0], 0.02), jitter(loc[1], 0.02), jitter(loc[2], 0.012))
     rot = (jitter(0, 0.012), jitter(0, 0.012), jitter(0, 0.012))
-    if axis == "Z":
-        box(f"{name}-web", (web, depth - 0.05, length), loc, material, bev=0, rot=rot)
-        for sy in (-1, 1):
-            box(f"{name}-f{sy}", (flange, web, length),
-                (loc[0], loc[1] + sy * (depth / 2), loc[2]), material, bev=0.01, rot=rot)
-    elif axis == "Y":
-        box(f"{name}-web", (web, length, depth - 0.05), loc, material, bev=0, rot=rot)
-        for sz in (-1, 1):
-            box(f"{name}-f{sz}", (flange, length, web),
-                (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01, rot=rot)
-    else:
-        box(f"{name}-web", (length, web, depth - 0.05), loc, material, bev=0, rot=rot)
-        for sz in (-1, 1):
-            box(f"{name}-f{sz}", (length, flange, web),
-                (loc[0], loc[1], loc[2] + sz * (depth / 2)), material, bev=0.01, rot=rot)
+    box(f"{name}-web", (web, depth - 0.05, length), loc, material, bev=0, rot=rot)
+    for sy in (-1, 1):
+        box(f"{name}-f{sy}", (flange, web, length),
+            (loc[0], loc[1] + sy * (depth / 2), loc[2]), material, bev=0.01, rot=rot)
 
 
 def rivets(name, start, end, n, r=0.04, material="dark"):
@@ -264,12 +275,19 @@ def seam(name, size, loc, rot=(0, 0, 0)):
     box(name, size, loc, "frame", rot=rot, bev=0)
 
 
-def receiver(name, centre, radius, length, accent, valve_at):
-    """A horizontal receiver drum lying along X: ribs, a weld seam, dished ends, a sight gauge and
-    a handwheel at one end, and a relief valve on top (the part that could move later).
+def receiver(name, centre, radius, length, accent, valve_at, gauges=True):
+    """A horizontal receiver drum lying along X: ribs, a weld seam, dished ends, a relief valve on
+    top (the part that could move later), and -- when `gauges` -- a sight gauge at one end and a
+    handwheel at the OTHER, on the drum's south face.
 
-    `valve_at` is the x sign the gauge and handwheel stand at, so the two drums are not mirror
-    images of each other.
+    `valve_at` is the x sign the gauge stands at and the handwheel takes the other, so the two
+    drums are not identical copies of each other.
+
+    `gauges=False` for a drum in the NORTH bay, where neither can be seen. The cluster hangs off
+    the south face, which for a north drum is the strip between it and the cold box: at this
+    camera the box occludes the whole of it, and the handwheel and its stem ran into the box's
+    north wall besides. Building detail that is invisible AND intersecting is worse than building
+    none, so the north drum goes without and the machine is a little less symmetric for it.
     """
     cx, cy, cz = centre
     d = cyl(f"{name}Shell", radius, length, centre, "metal", axis="X", verts=56, frost=True)
@@ -293,7 +311,11 @@ def receiver(name, centre, radius, length, accent, valve_at):
     torus(f"{name}ValveBand", 0.15, 0.03, (vx, cy, cz + radius + 0.38), accent)
     cyl(f"{name}ValveCap", 0.06, 0.22, (vx, cy + 0.16, cz + radius + 0.38), "metal", axis="Y",
         verts=16)
-    # Sight gauge and handwheel at one end, on the south face where the camera sees them.
+    if not gauges:
+        return
+    # Sight gauge at one end and handwheel at the other, on the south face where the camera sees
+    # them. Both hang off the drum, so how far the drum stands from the footprint edge is what
+    # decides whether they stay inside the collision box -- see T_DRUM.
     gx = cx + valve_at * (length / 2 - 0.35)
     box(f"{name}Gauges", (0.42, 0.2, 0.34), (gx, cy - radius - 0.08, cz - 0.05), "paint")
     cyl(f"{name}Glass", 0.1, 0.06, (gx, cy - radius - 0.2, cz - 0.05), accent, axis="Y", verts=20)
@@ -316,7 +338,11 @@ def column(name, base, radius, height, accent):
     top = z0 + height
     torus(f"{name}CapFlange", radius * 0.98, 0.05, (cx, cy, top), "metal", frost=True)
     cyl(f"{name}Cap", radius * 0.72, 0.16, (cx, cy, top + 0.08), "metal", verts=32, frost=True)
-    torus(f"{name}Band", radius * 0.8, 0.045, (cx, cy, top + 0.13), accent)
+    # THE BAND IS THE TALLEST THING ON THE COLUMN, so it is what the height budget is measured
+    # against. At top + 0.13 its 0.045 minor radius reached 2.505 on the taller column -- over the
+    # 2.5 the house style allows a five-wide, by a third of a pixel, while this file claimed the
+    # cap was met. 0.11 puts it under.
+    torus(f"{name}Band", radius * 0.8, 0.045, (cx, cy, top + 0.11), accent)
     for k in range(8):
         a = 2 * math.pi * k / 8
         bpy.ops.mesh.primitive_cylinder_add(
@@ -324,6 +350,9 @@ def column(name, base, radius, height, accent):
             location=(cx + radius * 0.98 * math.cos(a), cy + radius * 0.98 * math.sin(a), top + 0.03))
         bpy.context.object.name = f"{name}CapBolt{k}"
         bpy.context.object.data.materials.append(mat("dark"))
+    # The cap's top, which with the band dropped to 0.11 is now the column's true maximum: the band
+    # reaches top + 0.155 and the cap top + 0.16. It was not before, and that is why this file could
+    # claim the height budget was met while the taller column stood 0.005 over it.
     return top + 0.16
 
 
@@ -332,11 +361,13 @@ if variant == "cube":
     box("Cube", (1, 1, 1), (0, 0, 0.5), "body")
 else:
     # THE HEIGHT BUDGET IS 2.5 TILES and every number below is spent against it. The house style
-    # gives a five-wide machine 1.5 to 2.5 tiles, and the first render broke it: a 1.5-tile cold box
-    # with 1.55 tiles of column on top stood 3.45, taller than the fifteen-wide heat exchanger is
-    # allowed and half again over the cap. The box is squat instead and the columns get the height,
-    # which is also what makes them read as SLIM -- 0.22 of radius over 1.2 of run. The note's
-    # "about a tile and a half" is now the box and its columns' first rib, not the box alone.
+    # gives a five-wide machine 1.5 to 2.5 tiles, and the first render broke it: a slab, a 1.5-tile
+    # cold box and 1.55 tiles of column with its cap stood 3.52, which is 1.4 times the cap. (NOT
+    # "taller than the fifteen-wide heat exchanger is allowed", which an earlier draft of this
+    # comment claimed -- the house style allows a fifteen-wide FOUR tiles, so 3.52 would have been
+    # legal on that machine and is not on this one. The rule is per width.) The box is squat
+    # instead and the columns get the height, which is also what makes them read as SLIM: 0.24 of
+    # radius over 1.32 of run on the tritium column, 0.19 over 1.00 on the helium-3 one.
     SLAB = 0.25
     BOX_HALF = 1.25                      # the cold box: 2.5 x 2.5, leaving a 1-tile bay all round
     BOX_H = 0.7
@@ -435,11 +466,15 @@ else:
     # the vent the note puts on the south face: a drum across the whole south bay left them nowhere
     # to stand but inside it. Two tiles of drum to the west, then the vent, then the cabinet at the
     # corner -- which is also the machine's one asymmetry, so the south bay is where it all is.
-    T_DRUM = (-0.45, -(BOX_HALF + 0.58), DECK_Z + 0.3)
+    # THE TRITIUM DRUM STANDS 0.37 OFF THE COLD BOX AND NOT 0.58, because its gauge cluster hangs
+    # off its south face and the house style puts the body inside the COLLISION box: at 0.58 the
+    # handwheel reached 0.18 of a tile past the south face, into a tile a player reads as free.
+    # The drum's own shell was never the problem -- what overhangs is always the thing bolted to it.
+    T_DRUM = (-0.55, -(BOX_HALF + 0.37), DECK_Z + 0.3)
     T_LEN = 2.0
     H_DRUM = (-0.1, BOX_HALF + 0.5, DECK_Z + 0.26)
     receiver("DrumT", T_DRUM, 0.3, T_LEN, "tritium", valve_at=-1)
-    receiver("DrumHe", H_DRUM, 0.26, 2.3, "helium-3", valve_at=1)
+    receiver("DrumHe", H_DRUM, 0.26, 2.3, "helium-3", valve_at=1, gauges=False)
 
     # -- the drops: each column's shoulder down the box's side into its own drum. The tritium run
     # goes out over the WEST wall, which the sun hits, and turns south along the bay; the helium-3
@@ -469,20 +504,22 @@ else:
                     (H_LAND, H_DRUM[1], H_DRUM[2] + 0.30),
                     (H_LAND, H_DRUM[1], H_DRUM[2] + 0.03)], 0.09, "metal", frost=True)
 
-    # -- the south face's asymmetry: a control cabinet with a blue panel and a vent stack beside
-    # it, standing on the deck in the south bay east of the drum and set off centre. The south face
-    # is the one with no socket on it, which is why the note puts them there. On a machine that
-    # never rotates this is character rather than a rotation cue -- but the four direction sheets
-    # are still rendered, because the engine turns the connections and the picture must turn with
-    # them (../mockup/pictures.lua sets out why at length).
+    # -- the asymmetry, in two pieces and two bays. A control cabinet with a dark screen stands at
+    # the south-east corner, in the one bay with no socket in it; the vent stack went to the EAST
+    # bay, north of the socket lane, because the south bay could not hold the drum, the run leaving
+    # its east end, the cabinet AND a stack without something passing through something else. Two
+    # bays marked rather than one is the better accident: the four direction sheets are otherwise
+    # near enough the same picture turned, and the engine turns the connections and not the
+    # picture, so all four are rendered
+    # (realistic-fusion-refreshed-assets/graphics/mockup/pictures.lua sets out why at length).
     CAB = (0.72, 0.5, 0.95)
     cpos = (1.48, -(BOX_HALF + 0.47), DECK_Z + CAB[2] / 2)
     box("Cabinet", CAB, cpos, "paint")
     seam("CabinetSeam", (0.04, CAB[1] + 0.02, CAB[2] - 0.24), cpos)
-    box("CabinetPanel", (0.42, 0.06, 0.3), (cpos[0], cpos[1] - CAB[1] / 2, cpos[2] + 0.26), "water", bev=0)
+    box("CabinetPanel", (0.42, 0.06, 0.3), (cpos[0], cpos[1] - CAB[1] / 2, cpos[2] + 0.26), "dark", bev=0)
     rivets("CabinetRivets", (cpos[0] - 0.28, cpos[1] - CAB[1] / 2 - 0.01, cpos[2] - 0.42),
            (cpos[0] + 0.28, cpos[1] - CAB[1] / 2 - 0.01, cpos[2] - 0.42), 5, r=0.032)
-    VENT = (0.85, -(BOX_HALF + 0.45), DECK_Z + 0.35)
+    VENT = (1.75, 0.75, DECK_Z + 0.35)
     box("VentHood", (0.42, 0.3, 0.7), VENT, "paint")
     for k in range(4):
         box(f"VentLouvre{k}", (0.36, 0.05, 0.05), (VENT[0], VENT[1] - 0.16, VENT[2] - 0.22 + k * 0.14), "dark", bev=0)
@@ -495,11 +532,18 @@ else:
     UNIT = {"north": (0, -1), "east": (1, 0), "south": (0, 1), "west": (-1, 0)}   # Factorio frame
     SOCKET_Z = 0.55
 
-    def inboard(c, back=0.5, z=SOCKET_Z):
-        """The inner end of a connection's socket: half a tile in from the tile it stands on."""
+    def inboard(c, back):
+        """`back` tiles inboard of the tile a connection stands on, at socket height.
+
+        NOT "the inner end of the socket", which is what this said on both machines that have one
+        and is what put a run 0.2 tiles short of the stub it fed. The socket's inner face is at
+        TX - 0.5 (the same expression the socket loop above uses), so back=0.5 lands a quarter of a
+        tile PAST it, further in, and anything larger stops short of it in open air. To reach into
+        a stub, pass a `back` smaller than 0.5.
+        """
         ux, uy = UNIT[c["direction"]]
         px, py = c["position"]
-        return (px - back * ux, -(py - back * uy), z)
+        return (px - back * ux, -(py - back * uy), SOCKET_Z)
 
     for c in geo["connections"]:
         px, py = c["position"]
@@ -555,8 +599,10 @@ else:
 
 # THE ICON IS THE WHOLE MACHINE IN THE SQUARE, with margin (#252). No yaw: five by five is square,
 # so the icon is the north sheet seen closer and turning it would only make it a diamond. The
-# window is sized on the SCREEN extent -- five tiles across, and five plus the vent stack's height
-# showing at 0.707 h up the screen -- and the centre rides north by half that height so the machine
+# window is sized on the SCREEN extent -- five tiles across, and five plus the machine's height
+# showing at 0.707 h up the screen. That height is the TRITIUM COLUMN's accent band at about 2.5,
+# not the vent stack, which stops at 2.36: 7.3 is 5 + 0.707 x 2.5 + half a tile of margin, and the
+# vent would have given 7.17. The centre rides north by half that height so the machine
 # sits low in the square with the margin above it.
 if variant == "cube":
     tiles_w, tiles_h, icon_centre, icon_tiles, icon_yaw = 1, 1, (0, 0, 0.5), 1.5, 0.0

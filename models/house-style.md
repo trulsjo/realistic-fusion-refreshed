@@ -30,11 +30,20 @@ from its colours before reading its tooltip. An accent is a band or a manifold, 
 
 **The last two are the fluids' own icon colours** (Truls, #262), taken straight from
 `realistic-fusion-refreshed-core/prototypes/fluids.lua` rather than picked: the by-products have an
-established colour a player already reads in a pipe, and the socket should agree with it. The first
-four were picked for the role instead, because reactor energy, steam and water are roles before they
-are fluids. **Helium-3's violet is near the plasma accent** -- 0.80 0.45 1.00 against 0.55 0.20 1.00
--- which the isotope collector does not have to resolve, since it carries no plasma. A machine that
-carries both will.
+established colour a player already reads in a pipe, and the socket should agree with it. The first four
+were picked for the role instead. Reactor energy, steam and water are roles before they are fluids;
+**plasma cannot follow the new rule at all**, because one accent covers four fluids whose own icon
+colours are orange, green, blue and magenta -- there is no single pipe for it to agree with.
+
+**Helium-3's violet is near the plasma accent** -- 0.80 0.45 1.00 against 0.55 0.20 1.00 -- which
+the isotope collector does not have to resolve, since it carries no plasma. A machine that carries
+both will.
+
+**An accent belongs only to a machine that carries the fluid.** Obvious from the table's own "every
+surface that carries X", and stated because it was broken within a week of being written: the
+isotope collector's control cabinet took a blue panel from the heat exchanger's, which is right on
+a machine with water sockets and a lie on one without. A screen or an indicator that belongs to no
+fluid is `dark` or `paint`, not a borrowed accent.
 
 ## Materials
 

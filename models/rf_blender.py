@@ -42,7 +42,11 @@ GLOW_EMISSION = 0.3
 GLOW_BASE_DARKEN = 0.07
 
 # House-style accent per fluid. The geometry file carries the fluid name (#248); the accent is
-# ours. Anything else is an error rather than a guess: an unaccented socket lies about its fluid.
+# ours. An unlisted fluid is an error rather than a guess, because an unaccented socket lies about
+# what it carries -- with ONE exception, `accent`'s plasma fallback, which is a substring match and
+# therefore is a guess. It is deliberate (every plasma shares one accent, ADR 0010's four of them
+# included) and it is the one place a future fluid could be accented by accident: anything with
+# "plasma" in its name is taken to be one.
 #
 # THE TWO BY-PRODUCT ACCENTS ARE THE FLUIDS' OWN ICON COLOURS, not new picks (Truls, #262):
 # realistic-fusion-refreshed-core/prototypes/fluids.lua draws rf-tritium green and rf-helium-3
