@@ -40,8 +40,9 @@ import rf_blender as rf  # noqa: E402
 # The names come in bare rather than behind a `parts.` prefix: they are the vocabulary this
 # file is written in, and prefixing 60 call sites would be the diff that hides whether
 # anything else moved. Named one by one rather than starred, so what this file uses can be
-# read off the import line -- and `bevel` is NOT among them: every machine's bevels are put
-# on from inside the helpers, so importing it here only made a name nothing calls.
+# read off the import line. `bevel` stays behind the `rf_parts.` prefix rather than joining them:
+# the helpers put every machine's bevels on from inside themselves, and the one call here that
+# needs it by hand -- `ice_lump`, on a primitive no helper builds -- is easier to find spelt out.
 import rf_parts  # noqa: E402
 from rf_parts import box, cyl, hbeam, jitter, pipe, rivets, seam, torus  # noqa: E402,F401
 
@@ -76,6 +77,33 @@ PALETTE = {
     "paint":    ((0.58, 0.55, 0.47), 0.8, 0.0),
     "tritium":  ((0.50, 1.00, 0.60), 0.5, 0.0),
     "helium-3": ((0.80, 0.45, 1.00), 0.5, 0.0),
+    # THREE ROLES ADDED FOR THE KRASTORIO-WARD PASS (Truls, 2026-09-13; models/house-style.md's
+    # "What the set is"). More colour and more texture was the instruction, and NO YELLOW was the
+    # other half of it -- K2's black-and-yellow hazard striping is the one thing this set keeps out,
+    # so the density has to come from having more MATERIALS rather than louder ones.
+    #
+    #   ice     modelled condensation, not the rime wash. Glossy on purpose: at roughness 0.15 it
+    #           catches the key light as a highlight, which is what separates wet ice from a pale
+    #           paint. Exempt from grime below, like an accent -- ice that has been rained on with
+    #           soot is not ice.
+    #   rubber  lagging, conduit and hose. Near-black and very matte, so it reads against every
+    #           metal on the machine. This is the one that does the most Krastorio work: their
+    #           machines are laced with black corrugated trunking and ours had none.
+    #   copper  small fittings, valve bodies, unions. Warm without being yellow, and metallic, so
+    #           it separates a fitting from the pipe it sits on at 64 px a tile.
+    "ice":      ((0.82, 0.90, 0.97), 0.15, 0.0),
+    "rubber":   ((0.09, 0.09, 0.10), 0.85, 0.0),
+    "copper":   ((0.55, 0.33, 0.18), 0.30, 0.9),
+    # A FOURTH, ADDED AN HOUR AFTER THE OTHER THREE (Truls, 2026-09-13, revising "no yellow"):
+    # *"using yellow is OK, but all yellow machines are not the goal. I don't think k2 uses yellow
+    # universally either."* He is right that it does not -- K2's fusion reactor is yellow-heavy and
+    # most of its machines carry a guard or a lifting point in yellow and are otherwise grey.
+    #
+    # So this is a MARKING colour, and models/house-style.md states the rule: guards, lifting
+    # points, warning plates, kerbs. Never a body, never a whole panel, and never a fluid accent --
+    # the accents say what a socket carries, and a marking colour competing with them would cost
+    # the set the one thing its colours are for. Three elements wear it here and that is the point.
+    "hazard":   ((0.72, 0.55, 0.09), 0.55, 0.0),
 }
 # NO WATER ENTRY, and that is the point rather than an omission. The heat exchanger's control
 # cabinet wears a blue panel and may: it carries water. This machine carries none, and the house
@@ -83,6 +111,11 @@ PALETTE = {
 # reads a machine's plumbing from its colours before reading its tooltip -- so a blue panel here
 # would tell them about a pipe that does not exist. The cabinet's panel is a dark screen instead.
 ACCENTS = ("tritium", "helium-3")            # stay clean: no grime, no frost, so they read
+# Everything that takes no grime. The accents, because they have to read as their fluid's colour,
+# and ice, because dirty ice is not ice. `ice` is NOT an accent and must not be added to ACCENTS:
+# scripts/ship-check.ps1 section 8 holds every ACCENTS name against a fluid of the same name, and
+# there is no rf-ice to hold it against.
+CLEAN = ACCENTS + ("ice",)
 MATS = {}
 
 # FROST IS THIS MACHINE'S CORROSION. The heat exchanger rusts because it is hot and wet; this one
@@ -121,7 +154,7 @@ def mat(name, frost=False):
     b.inputs["Base Color"].default_value = (*rgb, 1.0)
     b.inputs["Roughness"].default_value = rough
     b.inputs["Metallic"].default_value = metal
-    if name in ACCENTS:
+    if name in CLEAN:
         MATS[key] = m
         return m
     # GRIME, the heat exchanger's exactly: a broad noise for patches blended with a fine one for
@@ -200,6 +233,48 @@ def mat(name, frost=False):
     nt.links.new(rmix.outputs["Value"], b.inputs["Roughness"])
     MATS[key] = m
     return m
+
+
+def icicle(name, base, length, radius=0.037):
+    """A cone of ice hanging point-down from `base`.
+
+    MODELLED, NOT PAINTED, and that is the whole point of it (Truls, 2026-09-13). The rime in `mat`
+    is a shader: it tints a surface and leaves its silhouette alone, so at this camera a frosted
+    drum is a drum that happens to be pale. Condensation on a cold machine is a SHAPE -- it hangs
+    off edges and breaks the outline -- and an outline is the one thing a top-down sprite at 64 px
+    a tile reads reliably.
+
+    Radius 0.037 gives a 0.074 read, over the raised floor and not by much: an icicle any fatter
+    stops being an icicle and becomes a stalactite. check_detail is called on the DIAMETER for the
+    reason it documents -- silhouette is what carries this, and the cone's own length is not the
+    dimension in question.
+    """
+    rf.check_detail(name, 2 * radius)
+    bpy.ops.mesh.primitive_cone_add(radius1=radius, radius2=0.0, depth=length, vertices=10,
+                                    location=(base[0], base[1], base[2] - length / 2))
+    o = bpy.context.object
+    o.name = name
+    o.rotation_euler = (math.pi, 0, 0)          # point down
+    o.data.materials.append(mat("ice"))
+    return o
+
+
+def ice_lump(name, loc, width, height=None):
+    """A rounded swelling of ice that has run and refrozen, for a surface rather than an edge.
+
+    Flattened on purpose: a sphere reads as a ball bolted on, and what this is drawing is ice that
+    crept. Ico rather than UV so the silhouette is faceted and catches the light unevenly -- a
+    perfectly smooth blob reads as plastic, which is the failure the house style's "nothing is
+    geometrically perfect" names.
+    """
+    rf.check_detail(name, width)
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=width / 2, location=loc)
+    o = bpy.context.object
+    o.name = name
+    o.scale = (1.0, jitter(0.85, 0.12), (height or width * 0.45) / width)
+    o.data.materials.append(mat("ice"))
+    rf_parts.bevel(o, 0.01)
+    return o
 
 
 def receiver(name, centre, radius, length, accent, valve_at, gauges=True):
@@ -465,6 +540,194 @@ else:
         box(f"VentLouvre{k}", (0.36, 0.06, 0.06), (VENT[0], VENT[1] - 0.16, VENT[2] - 0.22 + k * 0.14), "dark", bev=0)
     cyl("VentStack", 0.11, 1.1, (VENT[0], VENT[1] + 0.04, VENT[2] + 0.9), "metal", verts=24)
     cyl("VentCowl", 0.16, 0.12, (VENT[0], VENT[1] + 0.04, VENT[2] + 1.5), "dark", verts=24)
+
+    # -- THE REFRIGERATION SKID, which is the Krastorio-ward pass's biggest single addition and the
+    # one piece of it that is not decoration (Truls, 2026-09-13: more connected machinery, "even if
+    # there is no clear reason for it"). This one has a reason and it is worth having: the machine
+    # separates gases by being COLD, the look note has rimed it from the start, and nothing on it
+    # explained where the cold came from. A compressor, a condenser coil and a lagged suction line
+    # answer that and add the density at the same time -- and they are why there is condensation to
+    # model at all.
+    #
+    # It stands on the lid's west half, the one part of the lid the two columns leave free. Height
+    # is the constraint that shapes it: the lid is at 0.97 and the budget is 2.5, so everything here
+    # is low and wide rather than tall. Nothing added in this pass may become the machine's maximum;
+    # the tritium column's cap still is.
+    SKID = (-0.82, -0.62, BOX_TOP + 0.06)
+    box("SkidBase", (0.74, 0.62, 0.1), (SKID[0], SKID[1], SKID[2] + 0.05), "frame", bev=0.01)
+    # The compressor: a squat vertical can with a motor stacked on it, the shape any refrigeration
+    # plant has. Painted rather than bare, because it is kit bolted to the machine rather than part
+    # of the pressure envelope -- the same reason the cabinet and the vent hood are painted.
+    cyl("Compressor", 0.21, 0.34, (SKID[0] - 0.14, SKID[1], SKID[2] + 0.27), "paint", verts=28)
+    cyl("CompressorMotor", 0.16, 0.26, (SKID[0] - 0.14, SKID[1], SKID[2] + 0.57), "dark", verts=24)
+    # 0.032 and not 0.028: a torus is judged on its minor DIAMETER, and 0.056 came in under the
+    # 0.06 raised floor. The floor caught it on the first build of this pass, which is the floor
+    # doing its job rather than an obstacle -- a 1.79 px band is not a band on a player's screen.
+    torus("CompressorBand", 0.17, 0.032, (SKID[0] - 0.14, SKID[1], SKID[2] + 0.45), "copper")
+    # Four fins at 0.05 rather than six at 0.04: the cut floor is 0.05, and the floor refused the
+    # first version by name. Fewer, readable fins beat more that vanish -- which is the floor's
+    # whole argument, and the reason it is enforced in the build rather than judged in a render.
+    for k in range(4):                                  # cooling fins on the motor can
+        seam(f"MotorFin{k}", (0.33, 0.33, 0.05), (SKID[0] - 0.14, SKID[1], SKID[2] + 0.46 + k * 0.05))
+    # The condenser: a stack of four horizontal tubes with return bends, which is what a coil looks
+    # like from directly above and is the densest thing per tile on the machine.
+    for k in range(4):
+        cyl(f"CondenserTube{k}", 0.05, 0.56, (SKID[0] + 0.2, SKID[1] - 0.18 + k * 0.12, SKID[2] + 0.2),
+            "metal", axis="X", verts=16)
+    for k in range(3):
+        torus(f"CondenserBend{k}", 0.06, 0.05,
+              (SKID[0] + 0.2 + (0.28 if k % 2 == 0 else -0.28), SKID[1] - 0.12 + k * 0.12, SKID[2] + 0.2),
+              "metal", rot=(math.pi / 2, 0, 0))
+    cyl("CondenserFan", 0.19, 0.05, (SKID[0] + 0.2, SKID[1] + 0.02, SKID[2] + 0.34), "dark",
+        verts=28, read=0.38)
+    # Three bars at 0.07 thick rather than four at 0.04. `box` judges on its smallest dimension, so
+    # a guard bar is read on its THICKNESS, and a 0.04 bar is 1.28 px on a player's screen -- the
+    # floor said so by name. Three readable bars over a fan still say "guard"; four invisible ones
+    # say nothing and cost geometry.
+    # THE GUARD IS YELLOW, which is the first of three markings on this machine. A guard over a
+    # spinning fan is exactly what is painted yellow on a real plant, so this is the honest place
+    # to spend one rather than a decoration looking for a home.
+    for k in range(3):                                  # the guard over it, read by its own bars
+        a = math.pi * k / 3
+        box(f"FanGuard{k}", (0.40, 0.07, 0.07),
+            (SKID[0] + 0.2, SKID[1] + 0.02, SKID[2] + 0.39), "hazard", rot=(0, 0, a), bev=0.01)
+    # BOTH CORRUGATED RUNS CARRY A HEAVIER `band` THAN THE DEFAULT, and `rf_parts.pipe` says why in
+    # its own docstring: a ring's minor diameter is a fraction of the pipe's radius, so a ring dies
+    # on the raised floor long before its pipe does. The default 0.22 factor put the suction line's
+    # rings at 1.63 px on a player's screen and the floor refused them by name. The conduit is
+    # thickened as well as banded harder -- corrugated trunking that reads as smooth hose is not
+    # the thing being drawn.
+    #
+    # THE SUCTION LINE IS LAGGED, and lagging is the reason `rubber` exists in the palette. A cold
+    # line sweats, so a real one is wrapped; a wrapped line is fat, black and matte, and that is the
+    # single most Krastorio-looking thing on the machine now. It leaves the compressor, crosses the
+    # lid and dives into the cold box, and it corrugates because the wrap does.
+    pipe("SuctionLine", [(SKID[0] - 0.14, SKID[1] + 0.2, SKID[2] + 0.3),
+                         (SKID[0] - 0.1, SKID[1] + 0.5, SKID[2] + 0.24),
+                         (SKID[0] + 0.15, SKID[1] + 0.78, BOX_TOP + 0.16),
+                         (SKID[0] + 0.2, SKID[1] + 0.95, BOX_TOP - 0.1)], 0.085, "rubber",
+         corrugate=0.09, band=(1.32, 0.38))
+    # The liquid line back down is bare and thin: it is warm, so it does not sweat and is not wrapped.
+    # Two lines that look different is the point -- a pair of identical tubes says nothing.
+    pipe("LiquidLine", [(SKID[0] + 0.44, SKID[1] - 0.16, SKID[2] + 0.2),
+                        (SKID[0] + 0.62, SKID[1] - 0.05, SKID[2] + 0.12),
+                        (SKID[0] + 0.66, SKID[1] + 0.42, BOX_TOP - 0.06)], 0.045, "metal")
+    cyl("LiquidUnion", 0.065, 0.09, (SKID[0] + 0.64, SKID[1] + 0.2, BOX_TOP + 0.04), "copper",
+        verts=16, read=0.13)
+
+    # -- CONDUIT, the other half of "more connected machinery". Black corrugated trunking on clamps,
+    # running from the control cabinet at the south-east corner, west along the south bay, and up
+    # the cold box's wall to a junction box beside the skid. It carries nothing the simulation knows
+    # about and it is not pretending to: a plant has cable runs, and a machine with none reads as a
+    # labelled box rather than as part of one. That is the instruction taken literally.
+    JBOX = (-0.2, -(BOX_HALF - 0.1), BOX_TOP + 0.16)
+    pipe("Conduit", [(cpos[0] - 0.3, cpos[1] + 0.22, cpos[2] - 0.1),
+                     (0.75, -(HALF - 0.35), DECK_Z + 0.16),
+                     (0.1, -(BOX_HALF + 0.5), DECK_Z + 0.2),
+                     (-0.05, -(BOX_HALF + 0.05), SLAB + BOX_H * 0.78),
+                     (JBOX[0], JBOX[1], JBOX[2] - 0.02)], 0.075, "rubber",
+         corrugate=0.08, band=(1.3, 0.42))
+    box("JunctionBox", (0.3, 0.24, 0.26), JBOX, "paint", bev=0.02)
+    box("JunctionLid", (0.24, 0.2, 0.07), (JBOX[0], JBOX[1], JBOX[2] + 0.16), "dark", bev=0.01)
+    # The second marking: a warning plate on the junction box, because that is what is on one.
+    box("JunctionPlate", (0.16, 0.07, 0.1), (JBOX[0], JBOX[1] - 0.13, JBOX[2] + 0.02), "hazard",
+        bev=0.01, read=0.16)
+    for k, t in enumerate((-0.75, -0.15, 0.45)):        # clamps holding the run to the deck
+        box(f"ConduitClamp{k}", (0.12, 0.1, 0.09), (t, -(HALF - 0.33), DECK_Z + 0.1), "dark", bev=0.01)
+    # A second, shorter run: cabinet up to the tritium column's instrument band. Two runs going
+    # different ways is what stops the first one reading as the machine's only wire.
+    pipe("ConduitB", [(cpos[0] - 0.1, cpos[1] + 0.25, cpos[2] + 0.3),
+                      (0.6, -(BOX_HALF + 0.15), BOX_TOP + 0.1),
+                      (T_COL[0] + 0.26, T_COL[1] - 0.1, BOX_TOP + 0.62)], 0.045, "rubber")
+
+    # -- MORE OF THE SAME PLANT, and nothing here has a job. A bank of small parallel tubes with
+    # flanges crossing the north bay behind the helium-3 drum, and a pair of gas bottles strapped to
+    # the cold box's east wall. Both are there because a fusion plant has kit standing about and our
+    # machine had none: the instruction was more connected machinery even where there is no clear
+    # reason, and these are the honest version of that -- they look like plant, and they do not
+    # pretend to be a socket, a gauge or anything a player could plumb into.
+    for k in range(3):
+        cyl(f"TubeBank{k}", 0.048, 1.5, (-0.15 + k * 0.14, BOX_HALF + 0.86, DECK_Z + 0.12),
+            "metal", axis="X", verts=16)
+        torus(f"TubeBankFlange{k}", 0.062, 0.05,
+              (0.55 + k * 0.02, BOX_HALF + 0.86, DECK_Z + 0.12), "copper", rot=(0, math.pi / 2, 0))
+    for k in range(2):
+        cyl(f"Bottle{k}", 0.13, 0.72, (BOX_HALF + 0.22, -0.45 + k * 0.32, DECK_Z + 0.4),
+            "body", verts=24)
+        cyl(f"BottleNeck{k}", 0.05, 0.12, (BOX_HALF + 0.22, -0.45 + k * 0.32, DECK_Z + 0.82),
+            "copper", verts=12, read=0.1)
+    box("BottleStrap", (0.06, 0.78, 0.07), (BOX_HALF + 0.17, -0.29, DECK_Z + 0.62), "dark", bev=0.01)
+
+    # -- THE THIRD AND LAST MARKING: lifting points at two corners of the base slab, where a crane
+    # would take a machine this heavy. Two and not four, for the same reason the cabinet and the
+    # vent are in two bays rather than all of them -- the four direction sheets are otherwise near
+    # enough the same picture turned, and every asymmetry is one more thing that tells them apart.
+    # This is where the marking budget stops: three elements on the machine, none of them a body.
+    for sx, sy in ((-1, -1), (1, 1)):
+        box(f"LiftPad{sx}{sy}", (0.3, 0.3, 0.07),
+            (sx * (HALF - 0.22), sy * (HALF - 0.22), SLAB + 0.035), "hazard", bev=0.01)
+        torus(f"LiftEye{sx}{sy}", 0.075, 0.035,
+              (sx * (HALF - 0.22), sy * (HALF - 0.22), SLAB + 0.1), "dark", rot=(math.pi / 2, 0, 0))
+
+    # -- THE ICE, last, so it sits on whatever was built above it.
+    #
+    # WHY THIS IS GEOMETRY AND THE RIME IS NOT. The shader rime in `mat` tints a surface and leaves
+    # its silhouette alone, so at this camera a frosted drum is a drum that happens to be pale.
+    # Condensation on a cold machine is a SHAPE. Modelling it is the instruction (Truls,
+    # 2026-09-13) and the only way it survives being resampled to 64 px a tile.
+    #
+    # AND IT IS PLACED FOR THE CAMERA, WHICH IS THE WHOLE CRAFT OF IT. The first version of this
+    # block hung icicles off all four lid edges and they were INVISIBLE -- the render came back with
+    # a denser machine and no ice anyone could point at. The camera stands south and looks north at
+    # 54.7 degrees, so exactly three things read: a TOP face, a SOUTH face, and anything that breaks
+    # the OUTLINE. An icicle pointing straight down off a lid does none of them -- it hangs behind
+    # the very lid it hangs from. This is the same trap `receiver`'s `gauges=False` documents for
+    # the north drum, met again on a different part.
+    #
+    # So the ice goes three places and nowhere else: on top faces where it has run and refrozen, on
+    # south edges where it hangs against a wall the camera is looking at, and OVER edges, where a
+    # lump straddles the rim and puts ice outside the machine's own outline. The last of those does
+    # the most work per piece.
+    LID_ICE = BOX_HALF - 0.06
+
+    # 1. On top. The lid is the biggest cold surface and the camera looks straight down on it, so
+    #    this is where most of the ice belongs. Uneven on purpose -- ice that grew where it happened
+    #    to grow is the look, and an even scatter is a texture.
+    for name, (lx, ly), w in (("A", (-1.02, 0.62), 0.34), ("B", (-0.72, 0.86), 0.26),
+                              ("C", (0.86, -0.58), 0.3), ("D", (1.0, 0.2), 0.24),
+                              ("E", (0.1, 0.88), 0.28), ("F", (-0.2, -0.9), 0.22),
+                              ("G", (0.62, 0.74), 0.2)):
+        ice_lump(f"IceLid{name}", (lx, ly, BOX_TOP + 0.05), w)
+    ice_lump("IceDrumTTop", (T_DRUM[0] - 0.3, T_DRUM[1], T_DRUM[2] + 0.27), 0.3)
+    ice_lump("IceDrumHeTop", (H_DRUM[0] + 0.55, H_DRUM[1], H_DRUM[2] + 0.23), 0.26)
+    ice_lump("IceCapT", (T_COL[0] + 0.13, T_COL[1] - 0.06, t_cap - 0.19), 0.22)
+    ice_lump("IceCapHe", (H_COL[0] - 0.1, H_COL[1] + 0.07, h_cap - 0.15), 0.18)
+
+    # 2. Over the edge. A lump centred ON the lid rim spills past it, so part of the ice stands
+    #    outside the box's own silhouette and the outline stops being a straight line. Four on the
+    #    south rim, which the camera faces, and two on each of the east and west rims, which it sees
+    #    in profile. None on the north rim: the machine's own body is in front of it.
+    for k, t in enumerate((-0.9, -0.3, 0.35, 0.85)):
+        ice_lump(f"IceRimS{k}", (t + jitter(0, 0.06), -LID_ICE, BOX_TOP + 0.02), jitter(0.3, 0.06))
+    for sx in (-1, 1):
+        for k, t in enumerate((-0.55, 0.45)):
+            ice_lump(f"IceRim{sx}{k}", (sx * LID_ICE, t + jitter(0, 0.08), BOX_TOP + 0.02),
+                     jitter(0.26, 0.05))
+
+    # 3. Hanging, on SOUTH faces only, where an icicle shows against the wall behind it instead of
+    #    behind the thing it hangs from. The lid's south rim and both drums' south flanks are the
+    #    only three places on this machine where that is true.
+    for k, t in enumerate((-0.62, -0.05, 0.5, 0.95)):
+        icicle(f"IceDripLid{k}", (t + jitter(0, 0.05), -LID_ICE - 0.02, BOX_TOP - 0.03),
+               jitter(0.26, 0.07))
+    for k, t in enumerate((-0.62, -0.18, 0.3, 0.66)):
+        icicle(f"IceDrumT{k}", (T_DRUM[0] + t, T_DRUM[1] - 0.28, T_DRUM[2] - 0.02), jitter(0.28, 0.07))
+    for k, t in enumerate((-0.8, -0.2, 0.5)):
+        icicle(f"IceDrumHe{k}", (H_DRUM[0] + t, H_DRUM[1] - 0.24, H_DRUM[2] - 0.02), jitter(0.2, 0.05))
+    # And on the suction line, which is the coldest thing on the lid and the reason the skid is here.
+    for k, t in enumerate((0.3, 0.62)):
+        ice_lump(f"IceSuction{k}", (SKID[0] - 0.05 + k * 0.16, SKID[1] + t, BOX_TOP + 0.2),
+                 jitter(0.2, 0.04))
 
     # -- sockets: one per declared connection, body to footprint edge, with its fluid's accent
     # band. Placed in the declared frame from geometry.json, so they land where the prototype says.
