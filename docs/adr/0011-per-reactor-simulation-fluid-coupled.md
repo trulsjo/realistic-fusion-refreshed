@@ -183,7 +183,7 @@ remains pre-authorised.
   > of injected heating — each equality asserted at the step rather than assumed — delivered by one,
   > two and three reactors, and then by a single reactor moved along the run:
   >
-  > | heating delivered by | arrived |
+  > | heating delivered by | arrived (one six-tick interval) |
   > |---|---:|
   > | one reactor, west | 72.19% |
   > | two reactors | 71.92% |
@@ -195,18 +195,30 @@ remains pre-authorised.
   > The count series is the **arithmetic mean of the positional ramp** over the reactors each row
   > occupies — 71.92 is (72.19 + 71.65) / 2, and the mean of all three is 71.65 against a measured
   > 71.64, with nothing fitted.
-  > So **writer count costs nothing**; what costs about a point is *where* on the segment the energy
-  > enters. That is not the write order (the east reactor keeps 71.10% first or last) and it is not
-  > the gradient the writes make (the flat three-writer row and the 73%-uneven centre row agree to a
-  > hundredth of a point).
+  > So **writer count costs nothing**; what costs about a point *over that window* is where on the
+  > segment the energy enters. That is not the write order (the east reactor keeps 71.10% first or
+  > last) and it is not the gradient the writes make (the flat three-writer row and the 73%-uneven
+  > centre row agree to a hundredth of a point).
+  >
+  > **And the positional ramp is the window, not the engine. Measured 2026-09-13 (#271).** The same
+  > three single-writer rows, read again at longer windows with nothing driven a second time: the
+  > 1.089-point ramp at 6 ticks is 0.214 at 30, 0.010 at 60 and **0.000 from 120 ticks out to 960**,
+  > where all three positions read 57.609%, which is every figure the rig prints. That the longest
+  > window is past the end of the movement is asserted — the rows' heat does not change at all over
+  > the last 480 ticks, and every box on each run, bridge pipes included, is at one temperature to a
+  > part in a million. The ramp was redistribution still in flight when
+  > the six-tick window closed. **Nothing about position survives the run settling.**
   >
   > **What that settles for this ADR.** The excess this delegation was doubted over is **not ours**
   > in either of the two shapes it was suspected in -- `update()`'s two-pass write shape (#73's
-  > earlier correction above) and writer count (this one). Roughly a point of it is an asymmetry inside the
-  > engine's handling of a segment, which is the same class of thing as the mixing loss already
-  > accepted here and is accepted with it. The remaining seventeen points between `bare` and
-  > `solopipe` are fill and temperature — the two rows sit at 44.6% and 27.6% full — which is a
-  > property of the plumbing a player builds and not a defect at all.
+  > earlier correction above) and writer count (this one). ~~Roughly a point of it is an asymmetry
+  > inside the engine's handling of a segment, which is the same class of thing as the mixing loss
+  > already accepted here and is accepted with it.~~ **Nor is any of it a positional asymmetry inside
+  > the engine (#271): that point was an artefact of a six-tick measurement and is zero once the run
+  > settles.** The seventeen points between `bare` and `solopipe` are fill and temperature — the two
+  > rows sit at 44.6% and 27.6% full — which is a property of the plumbing a player builds and not a
+  > defect at all. What remains attributed to the engine is the mixing loss alone, which this ADR
+  > already accepts.
   >
   > **Nothing here is now unattributed**, which is what the sentence above was waiting for. The
   > delegation stays, for the reasons it was made rather than for want of an alternative.
