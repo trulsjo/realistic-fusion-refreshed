@@ -65,6 +65,19 @@ pressure vessel, an end wall the camera can see.
 **Grime is procedural.** Every painted and bare-metal surface carries a noise-driven darkening
 and roughening; accents stay clean so they read.
 
+**A per-surface gradient must be driven by something that survives rotation.** Any effect that
+varies over a surface -- grime gathering low, rime gathering high -- needs a term saying which way
+the surface faces, and the obvious choice is wrong. Blender's **Generated** texture coordinates are
+the object's own bounding box in *local* space and take no notice of its rotation, while the build
+scripts here make every cylinder along local Z and turn the object afterwards. Drive a gradient
+from Generated and every rotated part gets it along its own axis: on the isotope collector that put
+the frost on one *end* of both drums, all three socket stubs and all four dished ends. It survived
+three rounds of looking at renders, because a drum with a frosted end is not an obviously
+impossible object. **Use the surface normal's world Z** (`ShaderNodeNewGeometry` -> Normal -> Z),
+which is the same number whichever way the part was built and turned, and which says what these
+effects actually mean: how far the surface faces up. `mat` in
+`models/isotope-collector/build.py` carries the worked version.
+
 ## Proportion and detail
 
 - One Blender unit is one tile. The body sits inside the **collision box**, not the selection box.
@@ -88,6 +101,25 @@ pipe say where it is.
 **Exception: plasma.** `rf-pipe` wears Krastorio 2's steel pipe, so a vanilla cover on a plasma
 socket would not match the pipe that joins it. Plasma-carrying boxes may need K2's steel covers or
 rendered ones; decided when the first plasma machine is rendered (Truls, #247).
+
+**A run ends inside what it joins, and meets it square.** A pipe is a curve with a round profile, so
+wherever it stops it shows a disc. There are two ways to leave that disc in the open air, and the
+isotope collector's first render managed both in one corner:
+
+- **Landing on the skin instead of inside it.** A run whose last control point sits exactly on a
+  drum's surface stops tangent to the shell, and the disc is a pixel above the metal. The Bezier's
+  tangent there is whatever the previous control point implied, so the disc is also slanted and
+  reads as a cut pipe. Land a quarter of a radius *inside* the vessel, and stack the last two
+  control points on one axis so the approach is square rather than glancing.
+- **Stopping short of a socket.** A socket's inner face is half a tile in from the tile it stands
+  on. A run aimed at a distance *measured against another machine's body* lands in open air on a
+  machine that has none there -- the collector inherited a figure from the heat exchanger, where it
+  lands inside a fourteen-tile manifold, and left a fifth of a tile of nothing. Overlap the stub;
+  do not meet it.
+
+The general form is worth more than either: **a number copied from another machine's build script
+is a number measured against another machine's body.** `models/isotope-collector/build.py`'s
+`inboard` carries the long version.
 
 ## Camera, light, output
 
