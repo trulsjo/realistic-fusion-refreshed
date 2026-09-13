@@ -91,7 +91,9 @@
     below the shape rows exist for. `bare` against `solopipe` differs in fill and temperature as well
     as in how many reactors write, so the seventeen-point gap was never a measurement of any one of
     the three. Held alone -- one geometry, one fill, one starting temperature, one total of injected
-    heating -- the rows come out:
+    heating -- the rows come out, MEASURED OVER ONE SIX-TICK INTERVAL WITH THE WRITES AT THE START
+    OF IT, which is the window every figure in this block belongs to and not a standing loss (#271,
+    below):
 
       one writer, west reactor       72.19%
       two writers, western pair      71.92%
@@ -112,10 +114,33 @@
     is not the gradient the writes create, because the flat three-writer row and the steeply uneven
     middle row agree to a hundredth of a point.
 
-    WHAT IS STILL OPEN is why the engine treats one end of a run differently from the other. The two
-    reactors that disagree most are both ENDS, so it is not a symmetry of the geometry, and nothing
-    reachable from Lua says what it is. It is about a point across a three-reactor run, against the
-    seventeen the gap above needed, so it is a characterisation rather than a lead.
+    AND THE RAMP IS THE MEASUREMENT WINDOW, NOT THE ENGINE (#271). It was left open on the reading
+    that the engine treats one end of a run differently from the other, and it does not. The same
+    three rows, read again at longer windows with nothing driven a second time:
+
+       6 ticks    west 72.188%   middle 71.648%   east 71.099%   ramp  1.089 points
+      12 ticks    west 62.725%   middle 62.255%   east 61.781%   ramp  0.944
+      30 ticks    west 57.883%   middle 57.775%   east 57.669%   ramp  0.214
+      60 ticks    west 57.614%   middle 57.609%   east 57.604%   ramp  0.010
+     120 ticks    west 57.609%   middle 57.609%   east 57.609%   ramp  0.000
+     960 ticks    west 57.609%   middle 57.609%   east 57.609%   ramp  0.000
+
+    The ramp is a hundredth of a point by one second and zero by two, and the three positions then
+    agree to the five figures the report prints. So the one-interval figure was redistribution still
+    in flight when the
+    window closed. NOTHING about position survives the run settling.
+
+    WHY THE TRANSIENT RUNS WEST TO EAST RATHER THAN SYMMETRICALLY IS NOT ANSWERED HERE, and is not
+    narrated either -- this rig exists because a gap was once explained instead of measured, and a
+    plausible story about dilution would be the same mistake one level down. What IS measured is
+    that whatever it is, it is gone by two seconds and the run's three positions are then the same
+    to six figures, so there is no standing effect for a mechanism to be owed for.
+
+    That the longest window is past the end of the movement is asserted rather than assumed -- the
+    rows' heat does not change at all over the last 480 ticks and every run is flat to a part in a
+    million. The LONGER windows are reported and asserted at none of them: the one-interval band
+    above stays as the characterisation it is, and a second band on a float comparison is not what
+    should guard a figure that is zero.
 
     WHAT THIS FOUND THAT WAS NOT EXPECTED
 
@@ -176,7 +201,13 @@
 
 .PARAMETER Ticks
     Ticks to run before the final check. Long enough that a pool fed by one reactor is visibly hot
-    and visibly down on plasma. Forced off the simulation's beat -- see the adjustment below.
+    and visibly down on plasma, and -- since #271 -- long enough to contain the last of the longer
+    windows, which closes at tick 1266. Forced off the simulation's beat -- see the adjustment below.
+
+    THE 1267 FLOOR IS A REMEMBERED NUMBER AND THE RIG PROVES IT. The real floor is derived inside
+    control.lua from the same constants the windows are, and the rig refuses to load if this range
+    ever stops covering it -- so moving SEED_UNTIL or LATE_WINDOWS fails here rather than silently
+    dropping the last two windows and blaming the engine for it.
 
 .PARAMETER Tail
     How many rf-pipe to hang off the end of the `piped` row. The bookkeeping check is only as strong
@@ -199,7 +230,7 @@
 [CmdletBinding()]
 param(
     [string] $FactorioExe,
-    [ValidateRange(600, 200000)] [int] $Ticks = 1800,
+    [ValidateRange(1267, 200000)] [int] $Ticks = 1800,
     [ValidateRange(1, 500)]      [int] $Tail  = 20,
     [string[]] $With = @(),
     [switch] $KeepTemp
@@ -315,6 +346,43 @@ local SETTLE_UNTIL = SEED_UNTIL + 240
 local STEP_BEFORE = math.ceil(SETTLE_UNTIL / INTERVAL) * INTERVAL + INTERVAL
 local STEP_AFTER  = STEP_BEFORE + INTERVAL
 
+-- THE SAME WRITE, READ AGAIN MUCH LATER (#271).
+--
+-- The bookkeeping pair above is one interval wide and stays one interval wide: a wider window would
+-- be a prediction of a step the window does not contain, which is the failure STEP_BEFORE's note
+-- records falling into once already. These are extra READINGS of the writer rows and of nothing
+-- else. Those rows are unregistered, so after their single drive at STEP_BEFORE nothing simulates
+-- them and the only thing happening between one reading and the next is the engine moving fluid
+-- about a run that nothing is adding to or taking from.
+--
+-- The question they answer is whether the positional ramp measured over one interval is a standing
+-- loss or redistribution still in flight when that window closes. Six ticks is long enough for the
+-- engine to move fluid and not obviously long enough for it to finish.
+--
+-- Counted in INTERVALS, and the first entry IS the existing window, so the table is the whole
+-- x-axis of the report rather than only the part of it that is new. The longest is 160 intervals --
+-- 960 ticks, sixteen seconds -- against a measured flattening time of about two. That it is long
+-- enough is ASSERTED at report time rather than read off a number that looked generous, which is
+-- the mistake JOLT_END had to be corrected for.
+local LATE_WINDOWS = { 1, 2, 5, 10, 20, 40, 80, 160 }
+local LATE_TICK = {}
+for _, n in ipairs(LATE_WINDOWS) do
+  if n > 1 then LATE_TICK[STEP_BEFORE + n * INTERVAL] = n end
+end
+
+-- AND THE RUN HAS TO BE LONG ENOUGH TO CONTAIN THEM, checked here rather than trusted to the
+-- -Ticks range in the PowerShell above. A run that stops before the last window does not fail
+-- quietly -- the "every window was sampled" check catches it -- but it fails with the report's
+-- generic message, which sends the reader to look at the engine for what is a too-short run. This
+-- says the actual thing, and it is derived from the same constants the windows are, so it is the
+-- gate on that hard-coded 1267 rather than a second copy of it.
+local LAST_LATE = STEP_BEFORE + LATE_WINDOWS[#LATE_WINDOWS] * INTERVAL
+if CHECK_AT <= LAST_LATE then
+  error(string.format(
+    "-Ticks %d is too short: the last of #271's windows closes at tick %d and the report runs at %d. Pass -Ticks %d or more, and raise the ValidateRange in check-pooling.ps1 to match.",
+    CHECK_AT, LAST_LATE, CHECK_AT, LAST_LATE + 1))
+end
+
 -- When `mix` is read. Three seconds after it is left alone, against a measured flattening time of
 -- about two.
 local MIX_AT = SEED_UNTIL + 180
@@ -330,11 +398,28 @@ local MIX_AT = SEED_UNTIL + 180
 local JOLT_AT  = SEED_UNTIL + 120
 local JOLT_END = JOLT_AT + 120
 
+local function report_out()
+  storage.report = storage.report or { lines = {}, failures = 0, checks = 0 }
+  return storage.report
+end
+
 local function record(ok, name, detail)
-  storage.report = storage.report or { lines = {}, failures = 0 }
-  if not ok then storage.report.failures = storage.report.failures + 1 end
-  storage.report.lines[#storage.report.lines + 1] = string.format("%s  %s%s",
+  local r = report_out()
+  r.checks = r.checks + 1
+  if not ok then r.failures = r.failures + 1 end
+  r.lines[#r.lines + 1] = string.format("%s  %s%s",
     ok and "ok  " or "FAIL", name, detail and ("  -- " .. detail) or "")
+end
+
+--- A line that is printed and asserts nothing, and is not counted as a check.
+---
+--- #271's longer windows are reported this way on purpose. Whichever way the ramp lands out there,
+--- a second band on a float comparison is not what should guard it, and a `record` that can only
+--- ever pass is a check in name only. The verdict counts `checks` rather than lines, so these
+--- cannot pad it either.
+local function note(text)
+  local r = report_out()
+  r.lines[#r.lines + 1] = "note  " .. text
 end
 
 local function must(entity, what)
@@ -1281,6 +1366,23 @@ script.on_event(defines.events.on_tick, function()
   elseif tick == MIX_AT then
     local hot, cold, s = spread(cells.mix.reactors)
     storage.mix_end = { hot = hot, cold = cold, spread = s }
+  elseif LATE_TICK[tick] and storage.writers_before then
+    -- #271. Read-only: the writer rows are read again and nothing is written to anything. LAST in
+    -- the chain on purpose, and it has to stay last -- every branch above owns its tick, and a late
+    -- window landing on one of theirs must go unsampled rather than displace it, because this is
+    -- the only branch whose absence is asserted for. The report says so if one never arrives.
+    --
+    -- Spread over EVERY box on the run and not the three reactors, which is the correction
+    -- JOLT_END's own comment records making: a bridge pipe left hotter or colder than both of them
+    -- is exactly what "the run has stopped moving" has to rule out, and ten of each row's thirteen
+    -- boxes are pipes.
+    storage.writers_late = storage.writers_late or {}
+    local sample = {}
+    for _, row in ipairs(storage.writers) do
+      local _, _, sp = spread(row.cell.all)
+      sample[row.name] = { heat = heat(row.cell), plasma = pooled(row.cell), spread = sp or 0 }
+    end
+    storage.writers_late[LATE_TICK[tick]] = sample
   end
 end)
 
@@ -1763,20 +1865,107 @@ script.on_nth_tick(CHECK_AT, function()
         string.format("%.2f%% written first against %.2f%% written last, a difference of %.2f points",
           kept.reversed * 100, kept.east * 100, order))
 
-      -- ---- CONTROL TWO: WHAT DOES MATTER IS WHERE ON THE RUN THE HEAT GOES IN.
+      -- ---- CONTROL TWO: WHAT DOES MATTER OVER ONE INTERVAL IS WHERE ON THE RUN THE HEAT GOES IN.
       --
       -- Three rows, one writer each, differing only in which of the three reactors is heated. They
       -- come out on a ramp, monotone from the west reactor to the east one, and the ramp is about a
-      -- point across. That is not a symmetry of the geometry -- the west and east reactors are both
-      -- ENDS of the run and they do not agree -- so it is an asymmetry inside the engine's own
-      -- handling of a segment, and nothing observable from Lua says which. Named as what it is
-      -- rather than explained: this rig exists because a gap was once explained instead of measured.
+      -- point across. It is not a symmetry of the geometry -- the west and east reactors are both
+      -- ENDS of the run and they do not agree.
+      --
+      -- IT IS ALSO NOT AN ASYMMETRY INSIDE THE ENGINE, WHICH IS WHAT THIS COMMENT USED TO SAY. The
+      -- block below reads the same rows again at longer windows (#271) and the ramp is gone by two
+      -- seconds: it was this window catching the engine part-way through redistributing. So the band
+      -- here characterises a SIX-TICK reading and nothing more, which is why the wording above says
+      -- what it is measured over. Kept as an assertion because it is the shape of the one-step
+      -- measurement everything else in this block is made from, not because a point is at stake.
       local ramp = (kept.writers1 - kept.east) * 100
       record(ramp > 0.5 and ramp < 2.0
          and kept.writers1 > kept.middle and kept.middle > kept.east,
-        "where the heat enters DOES matter, and monotonically along the run",
+        "over one interval, where the heat enters DOES matter, and monotonically along the run",
         string.format("west %.2f%%, middle %.2f%%, east %.2f%% -- %.2f points across, all one writer",
           kept.writers1 * 100, kept.middle * 100, kept.east * 100, ramp))
+
+      -- ---- AND WHETHER THAT RAMP IS THE ENGINE OR THE INSTRUMENT (#271).
+      --
+      -- Everything above is measured over ONE interval with the writes at the start of it. Six
+      -- ticks is long enough for the engine to move fluid and not obviously long enough for it to
+      -- finish, so a monotone half-point-per-position ramp is what redistribution still in flight
+      -- could look like -- and the `five` row already reports four unpowered reactors
+      -- agreeing to two parts in ten thousand at steady state, which a standing per-position loss
+      -- is hard to reconcile with.
+      --
+      -- So the same three rows are read again at longer windows. Nothing is driven a second time
+      -- and the one-step pair above is untouched: these are readings of a run that has already had
+      -- its single step and is now only being stirred by the engine.
+      --
+      -- REPORTED RATHER THAN ASSERTED, which is what `note` is for. Two things ARE asserted,
+      -- because both would fail silently: that every window was sampled at all, and that the rows
+      -- had stopped moving before the longest one closed.
+      local late = storage.writers_late or {}
+      local longest = LATE_WINDOWS[#LATE_WINDOWS]
+      local penult  = LATE_WINDOWS[#LATE_WINDOWS - 1]
+
+      local taken = 0
+      for _, n in ipairs(LATE_WINDOWS) do
+        if n == 1 or late[n] then taken = taken + 1 end
+      end
+      record(taken == #LATE_WINDOWS,
+        "every window the ramp is reported at was actually sampled",
+        string.format("%d of %d, the longest at %d ticks after the writes",
+          taken, #LATE_WINDOWS, longest * INTERVAL))
+
+      -- THE WINDOW REACHES PAST THE END OF THE MOVEMENT, ASSERTED. A ramp that shrinks with the
+      -- window says nothing unless the last window is past the end of it: shrinking is what a
+      -- too-short window looks like too. Two ways of being still, both required -- the run's heat
+      -- has stopped changing between the last two windows, and every box on the run, pipes
+      -- included, is at one temperature.
+      if late[longest] and late[penult] then
+        local drift, unflat, drift_row, unflat_row = -1, -1, "none", "none"
+        for _, row in ipairs(storage.writers) do
+          local a, b = late[penult][row.name], late[longest][row.name]
+          local d = rel(a.heat, b.heat)
+          if d > drift then drift, drift_row = d, row.name end
+          if b.spread > unflat then unflat, unflat_row = b.spread, row.name end
+        end
+        record(drift < 1e-6 and unflat < 1e-6,
+          "and the rows had stopped moving before the longest window closed",
+          string.format("over the %d ticks from the %d-tick window to the %d-tick one the worst row (%s) moved %.3g of its heat, and the worst (%s) is flat to %.3g",
+            (longest - penult) * INTERVAL, penult * INTERVAL, longest * INTERVAL,
+            drift_row, drift, unflat_row, unflat))
+      end
+
+      -- The same arithmetic as `kept` above, at an arbitrary window. Window 1 IS `kept`, read from
+      -- the one-step pair rather than recomputed, so the first line of the table below is the
+      -- asserted figure and not a second measurement of it.
+      local function kept_at(n, name)
+        if n == 1 then return kept[name] end
+        local s = late[n] and late[n][name]
+        if not s then return nil end
+        local w = storage.writers_before[name]
+        return (s.heat - w.heat) / w.predicted
+      end
+
+      note("the positional ramp against the window it is measured over (#271):")
+      for _, n in ipairs(LATE_WINDOWS) do
+        local west, mid, east = kept_at(n, "writers1"), kept_at(n, "middle"), kept_at(n, "east")
+        if west and mid and east then
+          note(string.format("  %4d ticks: west %.3f%%, middle %.3f%%, east %.3f%% -- ramp %+.3f points",
+            n * INTERVAL, west * 100, mid * 100, east * 100, (west - east) * 100))
+        end
+      end
+
+      -- STATED AS A NUMBER EITHER WAY, which is what #271 asks for: the ramp at one interval
+      -- against the ramp at the longest window, and which of the two readings the figure quoted in
+      -- the research note and in this file's header therefore belongs to.
+      local west_far, east_far = kept_at(longest, "writers1"), kept_at(longest, "east")
+      if west_far and east_far then
+        local far = (west_far - east_far) * 100
+        note(string.format("so: %.2f points across at %d ticks, %+.3f at %d -- %s",
+          ramp, INTERVAL, far, longest * INTERVAL,
+          math.abs(far) < 0.05
+            and "the ramp is a property of the six-tick window and not a standing loss"
+            or "the ramp outlives the window it was found in"))
+      end
 
       -- ---- THE ANSWER: WRITER COUNT COSTS NOTHING, AND THE APPARENT EFFECT IS THAT RAMP'S MEAN.
       --
@@ -1945,7 +2134,7 @@ script.on_nth_tick(CHECK_AT, function()
 
   local report = storage.report
   report.lines[#report.lines + 1] = string.format("%s: %d checks, %d failures",
-    report.failures == 0 and "PASS" or "FAIL", #report.lines, report.failures)
+    report.failures == 0 and "PASS" or "FAIL", report.checks, report.failures)
   for _, line in ipairs(report.lines) do log("POOL-RIG " .. line) end
 end)
 '@
@@ -1967,7 +2156,7 @@ try {
     $runOut = Invoke-FactorioStep @step -Tag 'run' -Arguments @(
         '--benchmark', $save, '--benchmark-ticks', "$($Ticks + 60)", '--benchmark-runs', '1', '--disable-audio')
 
-    $reported = @(Get-Content $runOut | Select-String -Pattern 'POOL-RIG (ok|FAIL|PASS)' |
+    $reported = @(Get-Content $runOut | Select-String -Pattern 'POOL-RIG (ok|FAIL|PASS|note)' |
         ForEach-Object { ($_ -split 'POOL-RIG ', 2)[1].TrimEnd() })
     if ($reported.Count -eq 0) { throw 'the rig reported nothing; it never reached its check tick.' }
 

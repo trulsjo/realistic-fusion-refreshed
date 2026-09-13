@@ -931,7 +931,12 @@ excess exists; it does not isolate that mechanism, and no fix is attempted here.
 > temperature the box started at, and the heating enters linearly, so moving heating between reactors
 > cannot move the prediction.
 >
-> | row | heating delivered by | arrived |
+> Every figure in this table is taken over **one six-tick `UPDATE_INTERVAL`**, with the writes at
+> the start of it. That qualifier is load-bearing and the rest of this section used to be written
+> without it: see *The ramp was the window* below, where the same rows are read again at longer
+> windows and the positional spread goes to zero.
+>
+> | row | heating delivered by | arrived (one interval) |
 > |---|---|---:|
 > | `writers1` | one reactor, the **west** one | **72.19%** |
 > | `writers2` | two, split evenly | **71.92%** |
@@ -950,8 +955,8 @@ excess exists; it does not isolate that mechanism, and no fix is attempted here.
 >
 > Nothing is fitted there: the per-position figures come from the single-writer rows and the count
 > rows are then required to hit their mean, with no free parameter. **Writer count costs nothing. What
-> costs anything is where on the segment the energy enters, and writer count enters only through the
-> mean of that.**
+> costs anything over this window is where on the segment the energy enters, and writer count enters
+> only through the mean of that.**
 >
 > Two candidate readings of *that* are excluded by controls rather than by argument:
 >
@@ -963,14 +968,63 @@ excess exists; it does not isolate that mechanism, and no fix is attempted here.
 >   something for the engine to flatten. That had been the obvious next explanation, and it also has
 >   the sign wrong: the uneven rows keep *more*.
 >
-> **What is still open, and it is small.** Why the engine treats one end of a run differently from the
-> other. The two reactors that disagree most are *both ends* of the run, so it is not a symmetry of
-> the geometry, and nothing reachable from Lua says what it is. The whole ramp is about **1.1 points**
-> across a three-reactor run, against the **~17.6** the gap above needed — so it is a
-> characterisation to have written down, not a lead worth chasing. (That gap is 17.6 points on the
-> table above and 17.8 on the run these six rows came off; `solopipe` reads 75.2% or 75.4% depending
-> on the run, which is the size of the run-to-run movement here and the reason nothing below is
-> quoted to a tenth.)
+> ~~**What is still open, and it is small.** Why the engine treats one end of a run differently from
+> the other. The two reactors that disagree most are *both ends* of the run, so it is not a symmetry
+> of the geometry, and nothing reachable from Lua says what it is.~~ **Closed 2026-09-13 (#271): it
+> was the measurement window, not the engine — see below.** The ramp is about **1.1 points** across a
+> three-reactor run at one interval, against the **~17.6** the gap above needed. (That gap is 17.6
+> points on the table above and 17.8 on the run these six rows came off; `solopipe` reads 75.2% or
+> 75.4% depending on the run, which is the size of the run-to-run movement here and the reason
+> nothing below is quoted to a tenth.)
+>
+> #### The ramp was the window
+>
+> **Measured 2026-09-13 (#271).** A six-tick window is long enough for the engine to move fluid and
+> not obviously long enough for it to finish, so the ramp may be a property of the instrument rather
+> than of the engine. The rig's own `five` row already argued that way from the other side: at steady
+> state *"the four unpowered reactors agree with each other to two parts in ten thousand"*, which a
+> standing half-point-per-position loss is hard to reconcile with.
+>
+> `check-pooling.ps1` now reads the same three single-writer rows again at longer windows. Nothing is
+> driven a second time — the rows are unregistered, so after their one step the only thing happening
+> is the engine moving fluid about a run that gains nothing further.
+>
+> | window | `writers1` (west) | `middle` | `east` | ramp |
+> |---:|---:|---:|---:|---:|
+> | 6 ticks | 72.188% | 71.648% | 71.099% | **1.089 points** |
+> | 12 ticks | 62.725% | 62.255% | 61.781% | 0.944 |
+> | 30 ticks | 57.883% | 57.775% | 57.669% | 0.214 |
+> | 60 ticks | 57.614% | 57.609% | 57.604% | 0.010 |
+> | 120 ticks | 57.609% | 57.609% | 57.609% | **0.000** |
+> | 960 ticks | 57.609% | 57.609% | 57.609% | **0.000** |
+>
+> **The ramp is a hundredth of a point by one second and zero by two, and the three positions then
+> agree to the five figures the report prints.** It was redistribution still in flight when the
+> six-tick window closed.
+> **Nothing about position survives the run settling.**
+>
+> **Why the transient runs west to east rather than symmetrically is not answered here, and is not
+> narrated either.** A plausible story about one end having less of the run to be diluted into would
+> be the same mistake this section exists to correct, one level down — and the geometry argues
+> against it anyway, since west and east are symmetric ends of a symmetric run. What is measured is
+> that whatever it is, it is gone by two seconds, so there is no standing effect a mechanism is owed
+> for.
+>
+> **That the longest window is past the end of the movement is asserted, not assumed** — the failure
+> `JOLT_END` had to be corrected for. Over the last 480 ticks the rows' heat does not change at all,
+> and every box on every run — the ten bridge pipes as well as the three reactors, which is
+> `JOLT_END`'s other correction — is at one temperature to a part in a million.
+>
+> **The longer windows are reported and not asserted.** Whichever way this had landed, a second band
+> on a float comparison is not what should guard it; the one-interval ramp assertion stays as the
+> characterisation it is, and the rest print as `note` lines that the verdict does not count.
+>
+> Two consequences beyond the ramp itself. **#272 and #273 were closed unbuilt on 2026-09-13** —
+> both existed to chase an engine asymmetry that is not there. And the one-interval arrived fractions are a snapshot
+> of a run mid-redistribution rather than a steady state: settled, this geometry keeps **57.61%**,
+> against the 72.19% the west row reads at six ticks. (`bare` reads 57.6% too, over one interval on a
+> continuously driven row. Whether that is the same number twice or a coincidence is not something
+> these rows measure, and it is not claimed here.)
 >
 > **And the gap itself is therefore fill and temperature.** `bare` sits at 44.6% fill and `solopipe`
 > at 27.6%; neither writer count nor position accounts for more than a point of the seventeen between
@@ -993,8 +1047,10 @@ temperature, that is a balance effect rather than a rounding one.
 **Nothing is settled here about what to do**, and nothing should be. The engine's share may be
 something to accept and design around; ~~the mod's share looks more like a defect in the two-pass
 update and is worth its own ticket~~ — **it is not the two-pass update, and it is not writer count
-either; both were measured and both are false. What is left is fill and temperature, plus a ~1.1
-point positional ramp inside the engine that nothing reachable from Lua explains** — and reopening
+either; both were measured and both are false. ~~What is left is fill and temperature, plus a ~1.1
+point positional ramp inside the engine that nothing reachable from Lua explains~~ — **the ramp was
+the six-tick window and is gone by two seconds (#271), so what is left is fill and temperature and
+nothing else** — and reopening
 [ADR 0011](../adr/0011-per-reactor-simulation-fluid-coupled.md)'s delegation of sharing is an
 architectural decision either way. What is settled is the measurement.
 
