@@ -8,7 +8,43 @@ five mockups, because the Krastorio 2 art is slated to go if this route works (T
 ## What the set is
 
 A fusion plant, not a foundry. Clean, heavy, engineered. Things are big because the physics is
-big, not because they are ornate. Nothing rusts, nothing is bolted on as an afterthought.
+big, not because they are ornate.
+
+**TOWARDS KRASTORIO 2, NOT AWAY FROM IT** (Truls, 2026-09-13, on seeing rf-isotope-collector stand
+beside rf-reactor in a real map for the first time -- `scripts/probe-isotope-collector-art.ps1`).
+More colour, more texture, and **more connected machinery even where there is no clear reason for
+it**: conduit, trunking, a run that goes somewhere off the machine, kit that reads as part of a
+plant rather than as a labelled box. The Krastorio 2 reactor next to it is black, yellow, red-hot
+and dense, and our own machine read as pale and flat beside it -- two mods rather than one.
+
+This REVERSES two sentences that stood here, and both are named rather than silently edited:
+
+- *"nothing is bolted on as an afterthought"* is withdrawn. Machinery that exists because a plant
+  has machinery is now wanted. What it does not license is a sprite that lies: a socket where no
+  connection is declared still misleads a player, and the rule under Palette that an accent belongs
+  only to a machine carrying that fluid is untouched.
+- *"stops before it reads as Krastorio 2's density"*, under Materials, is withdrawn with it. That
+  sentence set the ceiling in the wrong place and this is the new direction of travel.
+
+*"Nothing rusts"* went earlier and not by this decision: rf-heat-exchanger's manifold is corroded
+in patches on purpose (#252), because it is hot, wet and outdoors. The line is dropped here because
+it was already untrue, not because 2026-09-13 changed it.
+
+**HAZARD YELLOW IS ALLOWED, AND IS NOT A BODY COLOUR** (Truls, 2026-09-13, revising his own answer
+of an hour before, which was no yellow at all). The correction is worth keeping because it names the
+real rule: *"all yellow machines are not the goal. I don't think k2 uses yellow universally either"*
+-- and it does not. Krastorio 2's fusion reactor is yellow-heavy; most of its machines carry a guard,
+a lifting point or a warning plate in yellow and are otherwise grey.
+
+So yellow is a MARKING colour here. It goes on guards, lifting points, warning plates, walkway edges
+and kerbs -- the things that are yellow on a real plant because somebody has to see them. It is never
+a body, never a whole panel, and never more than a few small elements on one machine. It is also not
+a fluid accent and must never be used as one: the accents say what a socket carries, and a marking
+colour competing with them would cost the set the one thing its colours are for.
+
+HOW FAR IS NOT SETTLED. This is a direction, not a target, and no machine has been rebuilt to it
+yet. The detail floors under Materials are unchanged and still bind: more detail is wanted, detail
+too fine to read at 64 px per tile still is not.
 
 ## Palette
 
@@ -23,6 +59,7 @@ big, not because they are ornate. Nothing rusts, nothing is bolted on as an afte
 | Plasma accent | 0.55 0.20 1.00 | every surface that carries **plasma** |
 | Tritium accent | 0.50 1.00 0.60 | every surface that carries **tritium** |
 | Helium-3 accent | 0.80 0.45 1.00 | every surface that carries **helium-3** |
+| Hazard yellow | 0.72 0.55 0.09 | guards, lifting points, warning plates, kerbs -- **markings only**, never a body |
 | Glow | the accent of the fluid, emission `rf_blender.GLOW_EMISSION`, only while working | see Glow |
 
 One accent per fluid, used the same way on every machine, so a player reads a machine's plumbing
@@ -58,7 +95,8 @@ per tile.
 **Nothing is geometrically perfect** (Truls, 2026-09-04). A drum carries rib bands and a weld seam
 and is not a plain cylinder; a pipe between two parts sags or bends a little and may be corrugated;
 a panel has seams and a rivet line. Detail is added in that order until the surface stops reading
-as plastic beside vanilla, and stops before it reads as Krastorio 2's density.
+as plastic beside vanilla. It used to stop "before it reads as Krastorio 2's density"; that
+ceiling was withdrawn on 2026-09-13 -- see What the set is.
 
 **Walls are optional.** Where a machine has internals worth seeing, the body is an open frame of
 **H-beams** with the internals visible through it, not a closed box, and decks are gratings.
