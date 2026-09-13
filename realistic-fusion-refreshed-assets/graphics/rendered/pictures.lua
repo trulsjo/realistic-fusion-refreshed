@@ -11,7 +11,8 @@
 --
 -- THIS REPLACES A MOCKUP, NOT A VANILLA SPRITE. ../mockup/pictures.lua stays for the machines whose
 -- art is still to come; a machine moves over here when its model exists and Truls has accepted the
--- look in game. rf-heat-exchanger is the first (#252, closing #108).
+-- look in game. rf-heat-exchanger is the first (#252, closing #108) and rf-isotope-collector the
+-- second (#333, closing #262).
 
 local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/rendered/"
 
@@ -19,8 +20,9 @@ local DIRECTORY = "__realistic-fusion-refreshed-assets__/graphics/rendered/"
 local PIXELS_PER_TILE = 64
 local SCALE = 0.5
 
--- THE SHEET IS THE FOOTPRINT PLUS A MARGIN ON EVERY SIDE, which is the one number the Lua has to
--- know that the prototype cannot tell it. models/rf_blender.py MARGIN_TILES fixes it at 3 -- the
+-- THE SHEET IS THE FOOTPRINT PLUS A MARGIN ON EVERY SIDE. This is one of two facts the Lua has to
+-- know that the prototype cannot tell it -- M.boiler's `no_glow` is the other, and its own comment
+-- says why both are retyped rather than read. models/rf_blender.py MARGIN_TILES fixes it at 3 -- the
 -- machine's shadow reaches 2.83 tiles past its east edge and 2 clipped it (#249) -- and every
 -- rendered manifest records the value it used as `frame.margin_tiles`. The data stage cannot read
 -- JSON, so the number is retyped here; if it ever changes, both files change together. The margin
@@ -90,12 +92,26 @@ local M = {}
 -- burns reactor energy in a manifold. The caller must set `burning_cooldown` above 1 or the engine
 -- draws neither.
 --
+-- NOT EVERY MACHINE HAS A GLOW SHEET, and the flag is negative on purpose. A machine with nothing
+-- to light renders four structures, four shadows and no glow at all -- its manifest records
+-- `glow: false` -- and asking for the four files that were never written fails the load on all
+-- four. The flag says so; omitting it keeps the glow, because of the two ways to forget it that is
+-- the loud one. A glowing machine that forgets `no_glow` asks for files that exist and is right;
+-- a dark machine that forgets it fails at load and is found. Defaulting the other way would drop a
+-- glow silently, and nothing here would catch that. The data stage cannot read the manifest's JSON,
+-- so this is the second fact retyped out of it after MARGIN_TILES: if a machine gains or loses its
+-- glow, the render and this call change together.
+--
 -- @param machine  directory name under graphics/rendered/
 -- @param tiles_w  footprint width in tiles
 -- @param tiles_h  footprint height in tiles
-function M.boiler(machine, tiles_w, tiles_h)
+-- @param no_glow  true for a machine whose manifest records `glow: false`; omit otherwise
+function M.boiler(machine, tiles_w, tiles_h, no_glow)
   local function side(file, w, h)
-    return { structure = sheet(machine, file, w, h), fire_glow = glow(machine, file, w, h) }
+    return {
+      structure = sheet(machine, file, w, h),
+      fire_glow = (not no_glow) and glow(machine, file, w, h) or nil,
+    }
   end
   return {
     north = side(machine,          tiles_w, tiles_h),
