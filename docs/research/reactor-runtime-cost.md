@@ -1558,10 +1558,18 @@ builds the fleet on a surface of its own as this mod's `on_init` runs, so the pl
 same factory, the same tick, the same mods and the same planted surface generated and powered.
 Reactors absent and reactors present are one argument apart, and the argument is `-Counts`.
 
-**Nine runs a count, three times the script's default, and that is #235's doing.** The borrowed
-base's own Lua has been seen to spike about +500 µs in roughly one run in four, which at *n* = 50 is
-a large fraction of the signal, and the standing advice is to run more repeats. See *What #235 did
-here* below, because this sitting did not reproduce it.
+**Nine runs a count, three times the script's default, and that is #235's doing.** A run had been
+seen to read about +500 µs a tick in roughly one run in four, which at *n* = 50 is a large fraction
+of the signal, and the standing advice is to run more repeats. See *What #235 did here* below,
+because this sitting did not reproduce it.
+
+> **What that spike is, answered 2026-09-13 (#235).** It is **not the borrowed base's own Lua**, and
+> it is **not a per-tick cost** — this note used to call it both. It is a handful of
+> multi-hundred-millisecond **I/O stalls on the harness's own `log()` write**, which a pooled mean
+> divides across a thousand ticks and reports as +500 µs of cost. Nothing about the advice changes:
+> more runs is still right, and this sitting still did not carry one. What changes is that a stalled
+> run is now **detected and named** rather than averaged in — `bench-reactors.ps1` warns and tells
+> you to discard it. See [`borrowed-base.md`](borrowed-base.md).
 
 **Every launch was quiet** — 43%, 28% and 15% of the part in other hands on the borrowed base, 17%,
 11% and 10% on the rig, with no `BUSY` at any count of either sweep. After #39 that is the
@@ -1704,8 +1712,10 @@ than dropped. (The Lua figure is a per-run mean and the tick figure a per-run me
 reports them; the gap between them is an order of magnitude, which no difference of statistic
 accounts for.)
 
-**Nothing here settles #235 and nothing here reopens it.** Three sittings saw the spike and one did
-not; that is a fourth data point, not an explanation. What it does settle is this ticket's *n* = 50
+**Nothing here settled #235 and nothing here reopened it.** Three sittings saw the spike and one did
+not; that is a fourth data point, not an explanation. (**#235 was answered on 2026-09-13**, by
+reproducing the spike on demand once `-ReportEvery` was fixed. This sweep is still not what answered
+it, which is what this paragraph was written to say.) What it does settle is this ticket's *n* = 50
 row. The earlier attempt put the borrowed base *below* the rig, which is not physical, and the cause
 is visible now that the baseline is clean: a baseline inflated by the spike is a larger subtrahend,
 so it understates the per-reactor cost, and it does so worst at the count where the signal is
@@ -1769,9 +1779,13 @@ it costs on flat ground.
   their own power, because 200 of them draw about 10 GW and wiring them into TimEv's grid would
   brown out the base and make the report look fine. What is measured is the simulation's cost on a
   busy tick, which is the question; what a fusion plant is worth inside a working factory is not.
-- **#235 is open and this sweep did not close it.** The borrowed base still needs more runs than a
-  rig for the same confidence, and whether a pooled mean is the right statistic for one is still
-  that ticket's to settle.
+- **This sweep did not close #235, and the borrowed base still needs more runs than a rig for the
+  same confidence.** The ticket itself was answered on 2026-09-13 — the spike is an I/O stall on the
+  harness's own `log()` write, not a per-tick cost — and the harness now detects a stalled run
+  instead of averaging it in. **Which statistic a borrowed base reports is
+  [#326](https://github.com/trulsjo/realistic-fusion-refreshed/issues/326)**, not #235:
+  that was always a separate decision and this note used to send the reader to the wrong ticket for
+  it.
 - **Nothing was measured with a player watching.** Item 3 of *[What this does not
   close](#what-this-does-not-close)* above is untouched: rendering and GUI are absent from every
   figure on this page, this one included.
