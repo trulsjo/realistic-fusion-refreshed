@@ -760,7 +760,24 @@ else:
     # WHAT IS NOT FIXED HERE: ours is still about a quarter fatter than vanilla's pipe, 0.75 tiles
     # of drawn height against 0.609. Height was the dominant error and is the one Truls named.
 
-    def port(axis, across, edge, sign, radius=0.36, depth=0.7):
+    # SOCKET RADIUS, MEASURED AGAINST A VANILLA PIPE THE WAY THE HEIGHT WAS (#345, for Truls to
+    # look at -- the decision is his and is not taken by this number existing).
+    #
+    # A cylinder's cross-section is a circle in the depth/height plane, and this camera maps depth
+    # 1:1 and height by 0.707, so the circle draws as an ellipse and its SCREEN HEIGHT is
+    # 2r * sqrt(1 + 0.707^2) = 2.449 r. Not 3.414 r, which is what taking the topmost and
+    # bottommost points independently gives: those two points are not the silhouette's extremes,
+    # and the error is worth naming because it is the easy one to make. At r 0.3 the formula
+    # predicts 0.735 tiles and the rendered sheet measured 0.750, the difference being the bevel
+    # and the frost -- so the projection is understood rather than curve-fitted.
+    #
+    # Vanilla's pipe body draws 0.609 tiles tall, so 2.449 r = 0.609 gives r = 0.249. That is what
+    # this is: our socket drawn as thick as the pipe that plugs into it, and no thicker.
+    SOCKET_R = 0.249
+    BAND_R = SOCKET_R + 0.04        # the accent stands a little proud of the tube, as it always has
+    PORT_R = SOCKET_R + 0.06        # and the hole a little proud of the accent, so it reads as a hole
+
+    def port(axis, across, edge, sign, radius=PORT_R, depth=0.7):
         """Cut the hole a socket passes through, in the slab, and rim its mouth.
 
         The cutter is a modifier rather than an applied boolean, the way `bevel` is: Blender
@@ -815,17 +832,17 @@ else:
         if d in ("west", "east"):
             edge = sx0 if d == "west" else sx1
             inner = (TX - 0.5) * (1 if d == "east" else -1)
-            cyl(f"Socket-{d}-{c['fluid']}", 0.3, abs(edge - inner), ((edge + inner) / 2, py, SOCKET_Z),
+            cyl(f"Socket-{d}-{c['fluid']}", SOCKET_R, abs(edge - inner), ((edge + inner) / 2, py, SOCKET_Z),
                 "metal", axis="X", frost=True)
-            cyl(f"Band-{d}-{c['fluid']}", 0.34, 0.22,
+            cyl(f"Band-{d}-{c['fluid']}", BAND_R, 0.22,
                 (edge - 0.28 * (1 if d == "east" else -1), py, SOCKET_Z), band, axis="X")
             port("X", py, edge, 1 if d == "east" else -1)
         else:
             edge = -sy0 if d == "north" else -sy1   # flipped: north is +Y
             inner = (TY - 0.5) * (1 if d == "north" else -1)
-            cyl(f"Socket-{d}-{c['fluid']}", 0.3, abs(edge - inner), (px, (edge + inner) / 2, SOCKET_Z),
+            cyl(f"Socket-{d}-{c['fluid']}", SOCKET_R, abs(edge - inner), (px, (edge + inner) / 2, SOCKET_Z),
                 "metal", axis="Y", frost=True)
-            cyl(f"Band-{d}-{c['fluid']}", 0.34, 0.22,
+            cyl(f"Band-{d}-{c['fluid']}", BAND_R, 0.22,
                 (px, edge - 0.28 * (1 if d == "north" else -1), SOCKET_Z), band, axis="Y")
             port("Y", px, edge, 1 if d == "north" else -1)
 
