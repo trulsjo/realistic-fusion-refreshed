@@ -450,15 +450,26 @@ else:
     # before it can turn, and the cap is already at the top of the 2.5-tile budget: the apex would
     # be the tallest thing on the machine and it would be a pipe. Off the side, every drop only
     # ever descends.
+    #
+    # A RUN ENDS INSIDE THE VESSEL IT JOINS, NOT ON ITS SKIN, and the two numbers that do it are
+    # the last control point's depth and the one stacked above it. Truls, on the first render: the
+    # two pipes in the west bay "appear unconnected". They were: each ended with its centreline
+    # exactly on the drum's top surface, so a tube of radius 0.1 stopped tangent to the shell and
+    # showed its open end cap as a disc in the air a pixel above the drum. Worse, the Bezier's
+    # tangent there was still the sweep of the descent, so the cap was slanted and read as a cut
+    # pipe. Landing 0.25 INSIDE the shell hides the cap, and stacking the last two control points
+    # in z makes the approach vertical so the tube meets the drum square instead of glancing off.
+    T_LAND = T_DRUM[0] - T_LEN / 2 + 0.30
     pipe("DropT", [(T_COL[0] - 0.2, T_COL[1], t_cap - 0.3),
                    (-(BOX_HALF + 0.35), T_COL[1] - 0.2, BOX_TOP + 0.45),
-                   (-(BOX_HALF + 0.45), T_DRUM[1] + 0.5, DECK_Z + 0.75),
-                   (T_DRUM[0] - T_LEN / 2 + 0.25, T_DRUM[1], T_DRUM[2] + 0.3)], 0.1, "metal",
-         frost=True)
+                   (-(BOX_HALF + 0.45), T_DRUM[1] + 0.45, DECK_Z + 0.70),
+                   (T_LAND, T_DRUM[1], T_DRUM[2] + 0.34),
+                   (T_LAND, T_DRUM[1], T_DRUM[2] + 0.05)], 0.1, "metal", frost=True)
+    H_LAND = H_DRUM[0] + 0.7
     pipe("DropHe", [(H_COL[0] + 0.16, H_COL[1], h_cap - 0.25),
                     (H_COL[0] + 0.2, BOX_HALF + 0.2, BOX_TOP + 0.35),
-                    (H_DRUM[0] + 0.75, H_DRUM[1] - 0.05, H_DRUM[2] + 0.26)], 0.09, "metal",
-         frost=True)
+                    (H_LAND, H_DRUM[1], H_DRUM[2] + 0.30),
+                    (H_LAND, H_DRUM[1], H_DRUM[2] + 0.03)], 0.09, "metal", frost=True)
 
     # -- the south face's asymmetry: a control cabinet with a blue panel and a vent stack beside
     # it, standing on the deck in the south bay east of the drum and set off centre. The south face
@@ -516,12 +527,28 @@ else:
     # sockets. This is the departure the docstring names: the drum cannot lie on the socket line,
     # so its ends do the travelling. Every tritium connection has a run behind it, which is what
     # the heat exchanger's #275 round decided a socket needs.
+    # BOTH ENDS OF THESE RUNS WERE IN MID-AIR on the first render, and for two different reasons.
+    #
+    # At the drum, the run started 0.1 tiles PAST the dished end cap, heading off along the Bezier's
+    # tangent toward the next control point -- so it left the drum at an angle with a visible open
+    # mouth. It starts 0.1 INSIDE the shell now, with a second control point stacked along the
+    # drum's own axis so the tangent there is axial and the tube comes straight out of the end.
+    #
+    # At the socket, `back` was 0.45 -- which on the heat exchanger lands inside a fourteen-tile
+    # manifold, and here landed in the open air of the bay. A socket's inner end is half a tile in
+    # from its tile, so back=0.5 is exactly that end and anything larger STOPS SHORT: 0.45 left a
+    # fifth of a tile of nothing between the run and the stub it was supposed to feed. 0.15 puts the
+    # run a tenth of a tile inside the stub, which is an overlap and not a gap.
+    #
+    # The lesson is one lesson: a number copied from another machine's build script is a number
+    # measured against another machine's body.
     tritium = [c for c in geo["connections"] if c["fluid"] == "rf-tritium"]
     for c in tritium:
-        end = inboard(c, back=0.45)
+        end = inboard(c, back=0.15)
         sx = 1 if c["direction"] == "east" else -1
         pipe(f"RunT-{c['direction']}",
-             [(T_DRUM[0] + sx * (T_LEN / 2 + 0.1), T_DRUM[1], T_DRUM[2]),
+             [(T_DRUM[0] + sx * (T_LEN / 2 - 0.1), T_DRUM[1], T_DRUM[2]),
+              (T_DRUM[0] + sx * (T_LEN / 2 + 0.3), T_DRUM[1], T_DRUM[2]),
               (sx * (HALF - 0.42), T_DRUM[1] + 0.62, DECK_Z + jitter(0.1, 0.03)),
               (sx * (HALF - 0.4), end[1] - 0.25, SOCKET_Z + 0.08),
               end], 0.12, "metal", frost=True)
