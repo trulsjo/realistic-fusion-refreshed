@@ -1,0 +1,146 @@
+{
+  "camera": {
+    "ground_stretch": 1.2252835945245226,
+    "pitch_deg": 54.7,
+    "sun_elevation_deg": 42.0,
+    "sun_from": "west",
+    "view_transform": "AgX"
+  },
+  "directions": [
+    "",
+    "-e",
+    "-s",
+    "-w"
+  ],
+  "files": [
+    "isotope-collector-e-shadow.png",
+    "isotope-collector-e.png",
+    "isotope-collector-icon.png",
+    "isotope-collector-s-shadow.png",
+    "isotope-collector-s.png",
+    "isotope-collector-shadow.png",
+    "isotope-collector-w-shadow.png",
+    "isotope-collector-w.png",
+    "isotope-collector.png"
+  ],
+  "frame": {
+    "east": [
+      704,
+      704
+    ],
+    "margin_tiles": 3.0,
+    "north": [
+      704,
+      704
+    ],
+    "pixels_per_tile": 64,
+    "scale": 0.5,
+    "shift": [
+      0,
+      0
+    ],
+    "tiles": [
+      5,
+      5
+    ]
+  },
+  "geometry": {
+    "collision_box": [
+      [
+        -2.25,
+        -2.25
+      ],
+      [
+        2.25,
+        2.25
+      ]
+    ],
+    "connections": [
+      {
+        "box": "fluid_box",
+        "connection_category": null,
+        "connection_type": "normal",
+        "direction": "west",
+        "flow": "output",
+        "fluid": "rf-tritium",
+        "position": [
+          -2,
+          0
+        ],
+        "production_type": "output"
+      },
+      {
+        "box": "fluid_box",
+        "connection_category": null,
+        "connection_type": "normal",
+        "direction": "east",
+        "flow": "output",
+        "fluid": "rf-tritium",
+        "position": [
+          2,
+          0
+        ],
+        "production_type": "output"
+      },
+      {
+        "box": "output_fluid_box",
+        "connection_category": null,
+        "connection_type": "normal",
+        "direction": "north",
+        "flow": "output",
+        "fluid": "rf-helium-3",
+        "position": [
+          0,
+          -2
+        ],
+        "production_type": "output"
+      }
+    ],
+    "name": "rf-isotope-collector",
+    "selection_box": [
+      [
+        -2.5,
+        -2.5
+      ],
+      [
+        2.5,
+        2.5
+      ]
+    ],
+    "source": "--dump-data, Factorio 2.0.77; written by tools/extract-geometry.py",
+    "tiles": [
+      5,
+      5
+    ],
+    "type": "boiler"
+  },
+  "geometry_sha256": "a0fd26ff76d700757ae87c39f74bf7e81633f4c64c0e6c659a800e22318c23d0",
+  "glow": false,
+  "icon": {
+    "centre": [
+      0.0,
+      0.88,
+      0.0
+    ],
+    "file": "isotope-collector-icon.png",
+    "size": [
+      120,
+      64
+    ],
+    "tiles": 7.3,
+    "yaw_deg": 0.0
+  },
+  "machine": "isotope-collector",
+  "model": "models/isotope-collector/isotope-collector.blend",
+  "model_sha256": "0837b61ba94a19dc95a0a88b3523512d61b8540254cecd2ae0bfcf831a246f92",
+  "render": {
+    "blender": "5.2.0 LTS",
+    "device": "CPU",
+    "engine": "CYCLES",
+    "glow_emission": null,
+    "glow_samples": 8,
+    "samples": 64,
+    "seed": 0
+  },
+  "source": "written by models/render.py"
+}

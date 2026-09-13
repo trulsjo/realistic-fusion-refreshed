@@ -21,10 +21,20 @@ big, not because they are ornate. Nothing rusts, nothing is bolted on as an afte
 | Steam accent | 0.85 0.88 0.90 | every surface that carries **steam** |
 | Water accent | 0.25 0.55 1.00 | every surface that carries **water** |
 | Plasma accent | 0.55 0.20 1.00 | every surface that carries **plasma** |
+| Tritium accent | 0.50 1.00 0.60 | every surface that carries **tritium** |
+| Helium-3 accent | 0.80 0.45 1.00 | every surface that carries **helium-3** |
 | Glow | the accent of the fluid, emission `rf_blender.GLOW_EMISSION`, only while working | see Glow |
 
 One accent per fluid, used the same way on every machine, so a player reads a machine's plumbing
 from its colours before reading its tooltip. An accent is a band or a manifold, never a whole body.
+
+**The last two are the fluids' own icon colours** (Truls, #262), taken straight from
+`realistic-fusion-refreshed-core/prototypes/fluids.lua` rather than picked: the by-products have an
+established colour a player already reads in a pipe, and the socket should agree with it. The first
+four were picked for the role instead, because reactor energy, steam and water are roles before they
+are fluids. **Helium-3's violet is near the plasma accent** -- 0.80 0.45 1.00 against 0.55 0.20 1.00
+-- which the isotope collector does not have to resolve, since it carries no plasma. A machine that
+carries both will.
 
 ## Materials
 

@@ -43,11 +43,20 @@ GLOW_BASE_DARKEN = 0.07
 
 # House-style accent per fluid. The geometry file carries the fluid name (#248); the accent is
 # ours. Anything else is an error rather than a guess: an unaccented socket lies about its fluid.
+#
+# THE TWO BY-PRODUCT ACCENTS ARE THE FLUIDS' OWN ICON COLOURS, not new picks (Truls, #262):
+# realistic-fusion-refreshed-core/prototypes/fluids.lua draws rf-tritium green and rf-helium-3
+# violet, and a player who has learnt a fluid from its icon should meet the same colour on the
+# machine's socket. Helium-3's violet is close to the plasma accent, which is not a clash on the
+# isotope collector -- it carries no plasma -- but will want watching on a machine that carries
+# both.
 ACCENT_OF_FLUID = {
     "rf-reactor-energy": "energy",
     "rf-aneutronic-reactor-energy": "energy",
     "steam": "steam",
     "water": "water",
+    "rf-tritium": "tritium",
+    "rf-helium-3": "helium-3",
 }
 
 
