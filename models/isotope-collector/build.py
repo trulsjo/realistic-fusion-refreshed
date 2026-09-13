@@ -29,6 +29,18 @@ sys.path.insert(0, os.path.dirname(HERE))
 import bpy  # noqa: E402
 import rf_blender as rf  # noqa: E402
 
+# ---- shared parts ---------------------------------------------------------------------------
+#
+# models/rf_parts.py holds every mesh helper both machines use, and `mat` below is the one thing
+# that stays here: this machine's palette and its own weathering. `use` installs it, and the
+# helpers forward whatever keyword flags a call gives them straight back to it (#340).
+#
+# `from ... import *` is deliberate rather than a `parts.` prefix on four hundred call sites: the
+# names are the vocabulary the whole file is written in, and prefixing them would be the diff that
+# hides whether anything else moved.
+import rf_parts  # noqa: E402
+from rf_parts import bevel, box, cyl, hbeam, jitter, pipe, rivets, seam, torus  # noqa: E402,F401
+
 args = rf.script_args()
 out_path = args[0] if args else os.path.join(HERE, "isotope-collector.blend")
 variant = args[1] if len(args) > 1 else "machine"
@@ -183,120 +195,8 @@ def mat(name, frost=False):
     return m
 
 
-def jitter(v, s):
-    return v + random.uniform(-s, s)
 
 
-def bevel(obj, width=0.03):
-    """Round every visible edge so the key light catches it (house style). The width is uneven on
-    purpose: one bevel across a whole machine is its own kind of perfection (Truls, #252)."""
-    mod = obj.modifiers.new("Bevel", "BEVEL")
-    mod.width = width * random.uniform(0.75, 1.6)
-    mod.segments = 2
-
-
-def _plate(name, size, loc, material, rot=(0, 0, 0), bev=0.03, frost=False):
-    """A box with NO detail-floor check, for a caller that has already made the check on its own
-    behalf. `hbeam` is the only one: a beam is checked once on its flange width, and its web and
-    two flanges then go in as the parts of a feature rather than as features."""
-    bpy.ops.mesh.primitive_cube_add(size=1, location=loc, rotation=rot)
-    o = bpy.context.object
-    o.name = name
-    o.scale = size
-    o.data.materials.append(mat(material, frost))
-    if bev:
-        bevel(o, bev)
-    return o
-
-
-def box(name, size, loc, material, rot=(0, 0, 0), bev=0.03, frost=False, cut=False):
-    # THE READ IS THE SMALLEST DIMENSION, which is only true because every groove here is cut at
-    # least as deep as it is wide (house style, #335). A channel 0.05 wide and 0.03 deep would be
-    # judged on its sink depth -- a dimension nobody sees -- instead of on the width that reads.
-    rf.check_detail(name, min(size), cut=cut)
-    return _plate(name, size, loc, material, rot=rot, bev=bev, frost=frost)
-
-
-def cyl(name, radius, depth, loc, material, axis="Z", verts=48, frost=False):
-    rot = {"Z": (0, 0, 0), "X": (0, math.pi / 2, 0), "Y": (math.pi / 2, 0, 0)}[axis]
-    rf.check_detail(name, min(2 * radius, depth))      # a rod reads by its width, a disc by its thickness
-    bpy.ops.mesh.primitive_cylinder_add(radius=radius, depth=depth, location=loc, rotation=rot,
-                                        vertices=verts)
-    o = bpy.context.object
-    o.name = name
-    o.data.materials.append(mat(material, frost))
-    bevel(o, 0.02)
-    return o
-
-
-def torus(name, major, minor, loc, material, rot=(0, 0, 0), frost=False):
-    rf.check_detail(name, 2 * minor)                   # a ring reads by its thickness, not its radius
-    bpy.ops.mesh.primitive_torus_add(major_radius=major, minor_radius=minor, location=loc,
-                                     rotation=rot, major_segments=40, minor_segments=12)
-    o = bpy.context.object
-    o.name = name
-    o.data.materials.append(mat(material, frost))
-    return o
-
-
-def pipe(name, points, radius, material, frost=False):
-    """A pipe along a Bezier curve through `points`."""
-    rf.check_detail(name, 2 * radius)
-    cd = bpy.data.curves.new(name, "CURVE")
-    cd.dimensions = "3D"
-    cd.bevel_depth = radius
-    cd.bevel_resolution = 6
-    cd.fill_mode = "FULL"
-    sp = cd.splines.new("BEZIER")
-    sp.bezier_points.add(len(points) - 1)
-    for bp, p in zip(sp.bezier_points, points):
-        bp.co = p
-        bp.handle_left_type = bp.handle_right_type = "AUTO"
-    o = bpy.data.objects.new(name, cd)
-    scene.collection.objects.link(o)
-    o.data.materials.append(mat(material, frost))
-    return o
-
-
-def hbeam(name, length, loc, depth=0.18, flange=0.14, web=0.03, material="frame"):
-    """An upright H-profile beam: two flanges and a web, along Z. Almost straight, not straight --
-    a grid of perfectly parallel beams is the thing that says "computer" (Truls, #252).
-
-    UPRIGHT ONLY. models/heat-exchanger/build.py's version takes an `axis` and carries three
-    branches for it, because that machine has rails and cross members; every beam on this one is a
-    deck post, so the other two branches came across as unreachable code and are not here.
-    """
-    # THE READ IS THE FLANGE WIDTH. A beam's web is a third the thickness of anything else here
-    # and stands edge-on to this camera: what a post shows is the face of its flange. Judged on the
-    # web, the floor would condemn the frame the house style is built around -- so the beam is
-    # checked once, here, and its three boxes go in unchecked.
-    rf.check_detail(name, flange)
-    loc = (jitter(loc[0], 0.02), jitter(loc[1], 0.02), jitter(loc[2], 0.012))
-    rot = (jitter(0, 0.012), jitter(0, 0.012), jitter(0, 0.012))
-    _plate(f"{name}-web", (web, depth - 0.05, length), loc, material, bev=0, rot=rot)
-    for sy in (-1, 1):
-        _plate(f"{name}-f{sy}", (flange, web, length),
-               (loc[0], loc[1] + sy * (depth / 2), loc[2]), material, bev=0.01, rot=rot)
-
-
-def rivets(name, start, end, n, r=0.04, material="dark"):
-    rf.check_detail(name, 2 * r)                       # a rivet reads by its diameter
-    for i in range(n):
-        t = (i + 0.5) / n
-        loc = tuple(start[j] + (end[j] - start[j]) * t for j in range(3))
-        bpy.ops.mesh.primitive_uv_sphere_add(radius=r, location=loc, segments=12, ring_count=8)
-        o = bpy.context.object
-        o.name = f"{name}-{i}"
-        o.data.materials.append(mat(material))
-
-
-def seam(name, size, loc, rot=(0, 0, 0)):
-    """A dark groove: a thin frame-coloured box sunk into a panel face.
-
-    The one CUT-detail helper on the machine, so the one that takes the lower floor. Every other
-    helper builds something that stands proud and reads by its own silhouette.
-    """
-    box(name, size, loc, "frame", rot=rot, bev=0, cut=True)
 
 
 def receiver(name, centre, radius, length, accent, valve_at, gauges=True):
@@ -380,6 +280,8 @@ def column(name, base, radius, height, accent):
     return top + 0.16
 
 
+rf_parts.use(mat)
+
 # ---- the machine ----------------------------------------------------------------------------
 if variant == "cube":
     box("Cube", (1, 1, 1), (0, 0, 0.5), "body")
@@ -424,11 +326,17 @@ else:
 
     # -- the walkway: a deck in all four bays on short H-beam posts, so the machine reads as part
     # of the same plant as the open-framed ones.
+    # THE POST SECTION IS PASSED, NOT INHERITED (#340). While these helpers were copied per machine
+    # this file's `hbeam` defaulted to 0.18 x 0.14 and the heat exchanger's to 0.2 x 0.16 -- a
+    # divergence nobody chose, discovered only when the two were pulled into one module and the
+    # collector's deck posts silently thickened. These are its own numbers: a deck post is a lighter
+    # member than a fifteen-tile frame's, and it stays that way.
+    POST = dict(depth=0.18, flange=0.14)
     for sx in (-1, 1):
         for sy in (-1, 1):
-            hbeam(f"Post{sx}{sy}", DECK_Z - SLAB, (sx * (HALF - 0.2), sy * (HALF - 0.2), SLAB + (DECK_Z - SLAB) / 2))
-            hbeam(f"PostMidX{sx}{sy}", DECK_Z - SLAB, (sx * (HALF - 0.2), sy * 0.55, SLAB + (DECK_Z - SLAB) / 2))
-            hbeam(f"PostMidY{sx}{sy}", DECK_Z - SLAB, (sx * 0.55, sy * (HALF - 0.2), SLAB + (DECK_Z - SLAB) / 2))
+            hbeam(f"Post{sx}{sy}", DECK_Z - SLAB, (sx * (HALF - 0.2), sy * (HALF - 0.2), SLAB + (DECK_Z - SLAB) / 2), **POST)
+            hbeam(f"PostMidX{sx}{sy}", DECK_Z - SLAB, (sx * (HALF - 0.2), sy * 0.55, SLAB + (DECK_Z - SLAB) / 2), **POST)
+            hbeam(f"PostMidY{sx}{sy}", DECK_Z - SLAB, (sx * 0.55, sy * (HALF - 0.2), SLAB + (DECK_Z - SLAB) / 2), **POST)
     BAY = HALF - BOX_HALF                                  # 1.0 tile of deck on each side
     # THE DECK OPENS WHERE A SOCKET CROSSES IT, which is not a detail but the thing that lets the
     # sockets be seen at all. A socket stands at z 0.55 with a radius of 0.3, so its top is above
