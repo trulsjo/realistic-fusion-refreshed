@@ -643,20 +643,33 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
   --   one writer, west 72.19%   two writers 71.92%   three writers 71.64%
   --   one writer, centre 71.65%   one writer, east 71.10%   east written FIRST 71.10%
   --
+  -- Those six are measured over ONE six-tick UPDATE_INTERVAL with the writes at the start of it,
+  -- which is the window they belong to and not a standing loss -- see #271 below.
+  --
   -- The count series is the arithmetic MEAN of the positional ramp over the reactors each row
   -- occupies -- 71.92 is (72.19 + 71.65) / 2, and the mean of all three is 71.65 against a measured
   -- 71.64. Nothing is fitted. So
-  -- writer count costs nothing. What costs about a point is where on the segment the energy enters,
-  -- and that is neither the write order (east keeps 71.10% first or last) nor the gradient the
-  -- writes make (the flat three-writer row and the 73%-uneven centre row agree to a hundredth).
+  -- writer count costs nothing. What costs about a point over that window is where on the segment
+  -- the energy enters, and that is neither the write order (east keeps 71.10% first or last) nor
+  -- the gradient the writes make (the flat three-writer row and the 73%-uneven centre row agree to
+  -- a hundredth).
+  --
+  -- AND THAT POSITIONAL RAMP IS THE WINDOW, NOT THE ENGINE (#271, 2026-09-13). This comment said
+  -- it was about a point of engine asymmetry, and it is not: the same three single-writer rows read
+  -- again at longer windows come out 1.089 points apart at 6 ticks, 0.214 at 30, 0.010 at 60 and
+  -- 0.000 from 120 ticks out to 960, where all three positions read 57.609%. The rows are asserted
+  -- to have stopped moving by then -- no change in heat at all over the last 480 ticks, every box
+  -- on each run at one temperature to a part in a million -- so it was redistribution still in
+  -- flight when the six-tick window closed. Why it runs west to east rather than symmetrically is
+  -- unexplained, and is left named as unexplained rather than narrated.
   --
   -- So NOTHING IN THIS FILE IS CHANGED, and now for a reason rather than for a deferral: BOTH of
   -- the mechanisms this comment ever named as OURS -- the two-pass write shape and writer count --
   -- have been measured and neither exists. The engine's mixing loss in the first bullet is real and
-  -- is not ours. What is left of the ~17.6-point gap is
+  -- is not ours, and it is now the ONLY thing attributed to the engine. What is left of the
+  -- ~17.6-point gap is
   -- FILL AND TEMPERATURE -- `bare` sits at 44.6% full and `solopipe` at 27.6% -- which is a property
-  -- of the plumbing a player builds rather than a defect, plus about a point of engine asymmetry
-  -- accepted alongside the mixing loss above.
+  -- of the plumbing a player builds rather than a defect, and nothing else.
   -- docs/research/reactor-runtime-cost.md carries the numbers and scripts/check-pooling.ps1 the rig.
   local remaining = plasma.amount - result.plasma_consumed
   if remaining > 0 then
