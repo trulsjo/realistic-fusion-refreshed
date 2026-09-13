@@ -8,8 +8,11 @@
     # them. Widths and heights are the selection box in tiles. Kind picks the colour a connection is
     # drawn in and Text its label; neither is checked against the game, only X, Y, Width and Height.
     #
-    # rf-heat-exchanger is not here: it has worn rendered art since #252, and its manifest is held
-    # against the prototype by the rendered-art gate instead.
+    # rf-heat-exchanger and rf-isotope-collector are not here: they have worn rendered art since
+    # #252 and #333, and their manifests are held against their prototypes by the rendered-art gate
+    # instead. A machine leaves this table when it moves over, or make-mockup-art.ps1 would go on
+    # drawing sheets nothing loads and load-check would hold a hand-copied table against a machine
+    # the render already describes.
     Machines = @(
         @{
             # Both long sides, so one butts the reactor and the other passes fluid to the next converter
@@ -37,16 +40,6 @@
                 @{ X =  7; Y =  0; Kind = 'input';  Text = 'plasma' },
                 @{ X =  0; Y = -7; Kind = 'output'; Text = 'energy' },
                 @{ X =  0; Y =  7; Kind = 'output'; Text = 'energy' }
-            )
-        },
-        @{
-            Mod = 'realistic-fusion-refreshed-assets'; Name = 'isotope-collector'; Label = "ISOTOPE`nCOLLECTOR"
-            Prototype = 'boiler'
-            Width = 5; Height = 5; Core = $false
-            Connections = @(
-                @{ X = -2; Y =  0; Kind = 'output'; Text = 'tritium' },
-                @{ X =  2; Y =  0; Kind = 'output'; Text = 'tritium' },
-                @{ X =  0; Y = -2; Kind = 'output'; Text = 'He3' }
             )
         },
         @{

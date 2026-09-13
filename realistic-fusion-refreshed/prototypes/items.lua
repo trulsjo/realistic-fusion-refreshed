@@ -3,11 +3,12 @@
 -- prototypes/fluids.lua.
 local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entities/"
 
--- rf-heat-exchanger's icon is not derived: it is rendered from the machine's own Blender model
--- (#252), so it comes from here instead. Its Krastorio 2 icon is deleted and out of the NOTICE.
+-- Two icons here are not derived: rf-heat-exchanger's (#252) and rf-isotope-collector's (#333)
+-- are rendered from those machines' own Blender models, so they come from here instead. Both
+-- Krastorio 2 icons they displaced are deleted and out of the NOTICE.
 local rendered = require("__realistic-fusion-refreshed-assets__.graphics.rendered.pictures")
 
--- `icon` overrides the derived path. rf-heat-exchanger uses it: its icon is rendered, not derived.
+-- `icon` overrides the derived path. The two rendered machines use it; everything else derives.
 local function item(name, subgroup, order, stack_size, icon)
   return {
     type = "item",
@@ -29,7 +30,8 @@ data:extend({
   -- comparing the two sizes is the whole point of the tier (#32).
   item("rf-hc-exchanger",    "energy", "rf-c[heat-exchanger]-b[hc]", 20),
   item("rf-hc-turbine",      "energy", "rf-c[heat-exchanger]-c[hc-turbine]", 20),
-  item("rf-isotope-collector", "energy", "rf-d[isotope-collector]", 20),
+  item("rf-isotope-collector", "energy", "rf-d[isotope-collector]", 20,
+                                                   rendered.icon("isotope-collector")),
   item("rf-lithium-blanket",   "energy", "rf-e[lithium-blanket]",   20),
   -- The aneutronic tier (#31). Ordered after the neutronic machines rather than interleaved with
   -- them, so the two routes read as two routes in the crafting menu.

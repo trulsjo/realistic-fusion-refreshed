@@ -19,7 +19,7 @@ local logic = require("scripts.reactor-logic")
 local mockup = require("__realistic-fusion-refreshed-assets__.graphics.mockup.pictures")
 -- The real thing, rendered from a Blender model (#238). Also our own work and our own licence. A
 -- machine moves from mockup to rendered when its model exists and the look has been accepted in
--- game; rf-heat-exchanger is the first (#252).
+-- game; rf-heat-exchanger is the first (#252) and rf-isotope-collector the second (#333).
 local rendered = require("__realistic-fusion-refreshed-assets__.graphics.rendered.pictures")
 
 -- What a reactor's tooltip cannot say for itself. Both reactors are boilers (ADR 0011), so the
@@ -482,7 +482,8 @@ contain(reactor.output_fluid_box, REACTOR_ENERGY_CATEGORY)
 -- the NOTICE no longer names it. Nothing about this machine comes from Krastorio 2 or from either
 -- predecessor any more.
 --
--- The mockup it replaced is still in graphics/mockup/ for the four machines that have no model yet.
+-- The mockup it replaced is still in graphics/mockup/ for the three machines that have no model
+-- yet -- four until #333 took the isotope collector over to its own render as well.
 -- Do not swap in a Krastorio 2 building for any of them: the only two that ever fitted this
 -- machine's footprint were a spaceship part and a tank, and a building that lies about what it does
 -- is worse than a box that admits what it is.
@@ -1020,6 +1021,11 @@ manifest records `glow: false`. Nothing on it moves yet.
 local collector = pin(table.deepcopy(data.raw["boiler"]["boiler"]), "rf-isotope-collector", {
   mining_time = 0.5,
 })
+-- Rendered from the same model as the building, so icon and machine are the same object -- the
+-- heat exchanger's arrangement (#252), here for the second machine (#333). This does NOT take
+-- pin's derived graphics/krastorio-2/entities/<name>.png, and that file -- Krastorio 2's
+-- flare-stack icon -- is deleted rather than left lying about, and out of the NOTICE.
+collector.icons = { { icon = rendered.icon("isotope-collector"), icon_size = 64 } }
 collector.mode = "output-to-separate-pipe"
 -- Needs no power and asks for none. The collector does no work of its own -- control.lua writes
 -- into it -- so an electric source would only give it a "no power" status while it went on working
@@ -1052,11 +1058,12 @@ end
 collector.fluid_box = emit(collector.fluid_box, "rf-tritium")
 collector.output_fluid_box = emit(collector.output_fluid_box, "rf-helium-3")
 
--- FIVE BY FIVE, ON MOCKUP ART (#45, ADR 0022). It was vanilla's 3x2 boiler, both the wrong machine
+-- FIVE BY FIVE (#45, ADR 0022). It was vanilla's 3x2 boiler, both the wrong machine
 -- and, Truls's judgement, too small for something that does work. There is no counterpart in the
 -- original mod to take a size from -- the collector is ours, from #27 -- and Krastorio 2 has
--- nothing at 3x2 but a spaceship part, so this is a drawn placeholder at a size chosen rather than
--- inherited.
+-- nothing at 3x2 but a spaceship part, so this is a size chosen rather than inherited. It was
+-- chosen ON MOCKUP ART and the model was built to it afterwards (#262), so the render did not
+-- pick it; nothing about the switch to rendered art moved the footprint.
 --
 -- Square on purpose: it makes the machine its own rotation, so a player is not made to think about
 -- which way it faces to bolt it on.
@@ -1074,16 +1081,24 @@ collector.output_fluid_box = emit(collector.output_fluid_box, "rf-helium-3")
 -- reactor has at most one either way, so nothing about the economics moves.
 collector.collision_box = { { -2.25, -2.25 }, { 2.25, 2.25 } }
 collector.selection_box = { { -2.5, -2.5 }, { 2.5, 2.5 } }
--- STILL THE MOCKUP. models/isotope-collector/ and graphics/rendered/isotope-collector/ hold a
--- rendered set as of #262, and switching to it is a separate reviewed edit that waits on Truls
--- accepting the look in a real map.
+-- THE RENDERED SET, as of #333, from models/isotope-collector/ by way of #262. The mockup this
+-- replaces is deleted and the machine is out of scripts/mockup-machines.psd1: the rendered-art
+-- gate holds its manifest against this prototype instead, which is the same job done by reading
+-- the render rather than a hand-copied table.
 --
--- WHOEVER MAKES THAT SWITCH HAS ONE THING TO FIX FIRST: nothing on this machine glows, so the
--- render wrote no glow sheet and its manifest records `glow: false`. graphics/rendered/pictures.lua's
--- M.boiler puts a `fire_glow` layer on every direction unconditionally, so calling it here would
--- ask the engine for FOUR files that do not exist -- <name>-glow, -e-glow, -s-glow, -w-glow -- and
--- the load would fail on all four. It needs a variant without the layer, or a flag.
-collector.pictures = mockup.boiler("isotope-collector", 5, 5)
+-- 704x704 per sheet -- five tiles plus the three-tile margin on every side, at 64 px to the tile,
+-- which is what the manifest's `frame` records. pictures.lua computes it from MARGIN_TILES rather
+-- than taking it here, so the number is not retyped a third time. No `shift` is set, on either
+-- layer, and none is needed: the margin is symmetric, so the engine's default of zero is right and
+-- the manifest records zero too.
+--
+-- `no_glow` IS SET, AND IT HAS TO BE. Nothing on this machine glows -- the look note above says
+-- why -- so the render wrote no glow sheet and its manifest records `glow: false`. M.boiler
+-- otherwise puts a `fire_glow` layer on every direction, which would ask the engine for FOUR files
+-- that do not exist (<name>-glow, -e-glow, -s-glow, -w-glow) and fail the load on all four. The
+-- flag is negative so that omitting it keeps the glow: forgetting it on a dark machine fails
+-- loudly at load, while the other default would drop a glow in silence.
+collector.pictures = rendered.boiler("isotope-collector", 5, 5, true)
 collector.fluid_box.pipe_connections = {
   { flow_direction = "output", direction = defines.direction.west, position = { -2, 0 } },
   { flow_direction = "output", direction = defines.direction.east, position = { 2, 0 } },
