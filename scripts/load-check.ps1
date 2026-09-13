@@ -174,7 +174,7 @@
     what a player would see. Python 3 on PATH is a requirement of this gate; a missing interpreter
     is a failure, not a skip.
 
-    AND THE SAME FOR EVERY MOCKUP (#275). The four machines that wear a mockup take sheets drawn by
+    AND THE SAME FOR EVERY MOCKUP (#275). The machines that still wear a mockup take sheets drawn by
     scripts/make-mockup-art.ps1 from a table of footprints and connection tiles in
     scripts/mockup-machines.psd1, hand-copied from entities.lua. Every row of that table is held
     against the loaded dump the same way: footprint in tiles, and the set of tiles its connections

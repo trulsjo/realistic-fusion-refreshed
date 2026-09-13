@@ -183,15 +183,13 @@ What was taken, and what was changed
 
 Unmodified copies, renamed to the prototype they serve:
 
-  entities/isotope-collector.png      <- icons/entities/flare-stack.png
-
-    The by-product collector's icon (#27). Gas-handling kit, which is what the entity is.
-
-    Its in-world sprite is vanilla's boiler, so icon and building do not match yet. Krastorio 2's
-    flare stack building does exist and could be taken, but not cheaply: it is a 2x2 furnace with a
-    four-way directional sprite set, where the collector is a 3x2 boiler and a boiler wants a
-    BoilerPictureSet rather than an animation. That is a resize and a different picture structure
-    rather than a copy, so it is #45's work and not #27's.
+    entities/isotope-collector.png (<- icons/entities/flare-stack.png) WAS the first entry in this
+    list and is DELETED, 2026-09-13 (#333, closing #262). It was the by-product collector's icon
+    (#27) -- gas-handling kit, which is what the entity is -- and it is gone for the same reason
+    the heat exchanger's was: rf-isotope-collector now renders its own icon from its own Blender
+    model, ../rendered/isotope-collector/, so nothing of Krastorio 2's is left on that machine in
+    either form. The mismatch this entry used to record -- a flare-stack icon over vanilla's boiler
+    -- is what the render closed. Do not take it again; re-render instead.
 
   pipe/pipe-*.png (21 files)          <- buildings/steel-pipe/steel-pipe-*.png
   pipe-to-ground/pipe-to-ground-*.png <- buildings/steel-pipe-to-ground/steel-pipe-to-ground-*.png
@@ -309,9 +307,10 @@ Unmodified copies, renamed to the prototype they serve:
     single vessel. Krastorio 2's energy storage is not otherwise used by this repository, so
     nothing else claims it, and this mod has no batteries for it to be confused with.
 
-    Its in-world sprite is vanilla's steel chest, so icon and building do not match -- the same gap
-    rf-isotope-collector has, recorded above, and left open for the same reason: there is no K2
-    building of this shape to take and drawing one is not this ticket's work.
+    Its in-world sprite is vanilla's steel chest, so icon and building do not match -- the gap
+    rf-isotope-collector HAD, and closed by rendering both from one model (#333). This one is left
+    open for the reason the collector's was: there is no K2 building of this shape to take and
+    drawing one is not this ticket's work.
 
   technologies/blanket-breeding.png <- technologies/fusion-reactor-equipment.png
 
@@ -411,9 +410,10 @@ Unmodified copies, renamed to the prototype they serve:
     coil is a turret in the mod it comes from. Power electronics is what a direct converter
     actually is -- a very large rectifier on a collector plate -- and that is what this draws.
 
-    Its in-world sprite is vanilla's steam turbine, so icon and building do not match: the same gap
-    rf-isotope-collector and rf-lithium-blanket have, recorded below, and left open for the same
-    reason.
+    Its in-world sprite is vanilla's steam turbine, so icon and building do not match: the gap
+    rf-lithium-blanket still has, recorded below, and left open for the same reason. The isotope
+    collector had it too and no longer does -- #333 rendered its icon and its building from one
+    model.
 
   entities/reactor.png          <- icons/entities/fusion-reactor.png
   entities/heater.png           <- icons/entities/fuel-refinery.png
@@ -429,10 +429,10 @@ Unmodified copies, renamed to the prototype they serve:
     reactor's building sheets above: those are a starting point for art nobody has drawn yet, and
     this is art that now exists. Do not take it again; re-render instead.
 
-The three machines with no Krastorio 2 building, and why
--------------------------------------------------------
+The two machines with no Krastorio 2 building, and why
+-----------------------------------------------------
 
-None of these three takes anything from this directory beyond its icon. They wear drawn placeholders
+Neither of these two takes anything from this directory beyond its icon. They wear drawn placeholders
 instead -- see ../mockup/ and the repository's scripts/make-mockup-art.ps1, which are its own work
 under the repository's own licence. This section records why nothing here could serve, so the search
 is not run a third time.
@@ -447,30 +447,36 @@ nothing breaks a save, and otherwise leave it. The search found nothing usable.
                                      Krastorio 2 cannot supply at all. #108 drew the real art -- a
                                      rendered building and a rendered icon, ../rendered/
                                      heat-exchanger/ -- so this machine now takes nothing from this
-                                     directory in either form. The other three are unaffected.
+                                     directory in either form. The other three were unaffected by
+                                     that change; the collector left the list separately, below.
 
   rf-direct-energy-converter 3x5 -> 5x15
                                      The original mod's footprint too, and the pair to the exchanger
                                      in that layout. At its old size the only matches were
                                      kr-advanced-tank -- a VEHICLE -- and a 5x3 research computer.
 
-  rf-isotope-collector    3x2 -> 5x5  One match at its old size, kr-spaceship-material-fabricator-1.
-                                     Not taken: its icon here is already the flare stack, so the
+  rf-isotope-collector    3x2 -> 5x5  WAS the third machine here and is no longer one of them, as of
+                                     2026-09-13 (#333, closing #262). The search is kept because it
+                                     is why nothing was taken while the machine waited: one match at
+                                     its old size, kr-spaceship-material-fabricator-1, not taken
+                                     because its icon here was already the flare stack, so the
                                      building would have disagreed with its own icon -- the mismatch
-                                     the composite tank just stopped having -- and a spaceship part
-                                     is a long way from a by-product collector. Resized on Truls's
-                                     judgement that 3x2 is too small for a machine that does work.
+                                     the composite tank had just stopped having -- and a spaceship
+                                     part is a long way from a by-product collector. Resized on
+                                     Truls's judgement that 3x2 is too small for a machine that does
+                                     work, and the model was built to that size afterwards. It now
+                                     takes nothing from this directory in either form.
 
   rf-lithium-blanket      1x1 -> 5x5  No match at any size worth having. Every 1x1 building in
                                      Krastorio 2 is a belt, a loader, an inserter, a pipe-to-ground
                                      or a remnant; the nearest container, kr-strongbox, is 2x2.
                                      Resized for the same reason as the collector.
 
-The shape of the problem for all four: Krastorio 2's large buildings are close to square -- 7x7 and
-15x15 -- and its non-square ones are small. It has a 5x7 turbine, which rf-hc-turbine wears, a 5x3
-research computer, a 3x5 vehicle, a 12x11 transceiver and a 22x3 logo, and nothing anywhere near
-five by fifteen. So growing any of these to fit a Krastorio 2 building would mean picking it for its
-size rather than for what it depicts.
+The shape of the problem, for all four rows above and not only the two still standing: Krastorio 2's
+large buildings are close to square -- 7x7 and 15x15 -- and its non-square ones are small. It has a
+5x7 turbine, which rf-hc-turbine wears, a 5x3 research computer, a 3x5 vehicle, a 12x11 transceiver
+and a 22x3 logo, and nothing anywhere near five by fifteen. So growing any of these to fit a
+Krastorio 2 building would mean picking it for its size rather than for what it depicts.
 
 
 MODIFIED -- these are derivative works and remain LGPLv3:

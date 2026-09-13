@@ -4,14 +4,17 @@
     with its pipe connections marked where they actually are.
 
 .DESCRIPTION
-    Four machines have no art of their own and wear a vanilla building that is the wrong size and,
-    for three of them, the wrong machine. A vanilla sprite at the wrong footprint is worse than a
-    plain box, because it looks finished and it lies about where the pipes go.
+    Three machines have no art of their own and each would otherwise wear a vanilla building of the
+    wrong size and the wrong machine: a steel chest, a heat exchanger and a steam turbine. A vanilla
+    sprite at the wrong footprint is worse than a plain box, because it looks finished and it lies
+    about where the pipes go.
 
     So these are mockups on purpose. They state the footprint, they mark every connection, and they
-    carry the machine's name, and they are meant to be replaced. The heat exchanger already was:
-    #108 took it to rendered art in #252, and #275 removed its row and its sheets from here. What
-    replaces the remaining four is whatever follows #252.
+    carry the machine's name, and they are meant to be replaced. Two already were: #108 took the
+    heat exchanger to rendered art in #252, with #275 removing its row and its sheets from here,
+    and #262 did the isotope collector, switched over by #333. It was the one whose vanilla
+    building -- a boiler -- was at least the right kind of machine, which is why the sentence above
+    no longer has an exception in it. What replaces the remaining three is whatever follows #252.
 
     THE ART IS ORIGINAL AND THAT IS THE POINT. Rectangles drawn by this script are nobody else's
     work, so they carry the repository's own licence and raise no provenance question at all. That
