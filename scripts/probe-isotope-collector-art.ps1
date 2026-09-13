@@ -226,6 +226,42 @@ local function fill(entity, amount)
   end
 end
 
+--- Every tile this entity's connections point AT, as a "x,y" set. A tile a machine wants a pipe on
+--- is a tile nothing may be built over, which is what the pairing below has to respect.
+local function connection_tiles(entity)
+  local tiles = {}
+  for i = 1, #entity.fluidbox do
+    for _, c in pairs(entity.fluidbox.get_pipe_connections(i)) do
+      if c.target_position then
+        tiles[string.format("%g,%g", c.target_position.x, c.target_position.y)] = true
+      end
+    end
+  end
+  return tiles
+end
+
+--- The one face of this machine that no connection leaves by -- its BLIND face -- asked rather than
+--- remembered. nil if every face carries one, which is not this machine but could be the next.
+---
+--- THIS IS THE FACE THAT SHOULD MEET A REACTOR, and it is Truls's correction to the first version
+--- of this probe, which stood the collector west of the reactor and so buried its own east tritium
+--- socket against the reactor's wall. A machine with three sockets and four faces has exactly one
+--- side it can afford to lose; bolting by any other is asking a player to give up a pipe run.
+local function blind_face(entity)
+  local used = {}
+  for i = 1, #entity.fluidbox do
+    for _, c in pairs(entity.fluidbox.get_pipe_connections(i)) do
+      local dx = c.target_position.x - c.position.x
+      local dy = c.target_position.y - c.position.y
+      if dy < 0 then used.north = true elseif dy > 0 then used.south = true
+      elseif dx < 0 then used.west = true else used.east = true end
+    end
+  end
+  for _, side in ipairs({ "south", "north", "west", "east" }) do
+    if not used[side] then return side end
+  end
+end
+
 --- An ordinary pipe on every tile this machine's connections point at. Vanilla's pipe on purpose
 --- rather than rf-pipe: these fluids are uncontained (#26), and an ordinary pipe reaching them is
 --- the claim being photographed.
@@ -287,7 +323,6 @@ script.on_nth_tick(60, function()
   -- boundaries; one odd and one even gives a half, which shifts the parity in exactly the way it
   -- has to shift. That is why this is a formula and not a constant.
   local REACTOR_X, REACTOR_Y = 0.5, 0.5
-  local PAIR_X = REACTOR_X - (RW + W) / 2
 
   -- EVERY SOLO SUBJECT IS SPACED BY THE WIDEST FRAME, NOT BY THE PITCH, and the pitch is what the
   -- first run of this probe used. The frames are wider than the pitch -- the machine plus six tiles
@@ -308,7 +343,7 @@ script.on_nth_tick(60, function()
   local COLD_X    = REACTOR_X + RW / 2 + SPACING
   local WORKING_X = COLD_X + SPACING
   local PIPES_X   = WORKING_X + SPACING
-  local x1 = math.min(PAIR_X - W, GRID_X - PITCH) - 4
+  local x1 = math.min(REACTOR_X - RW / 2 - W - math.max(RW, W), GRID_X - PITCH) - 4
   local y1 = -math.max(RH, H) - 6
   local x2 = PIPES_X + SPACING + 4
   local y2 = GRID_Y + PITCH + 4
@@ -339,12 +374,69 @@ script.on_nth_tick(60, function()
     end
   end
 
-  -- THE PAIRED ARRANGEMENT. entity-management.lua's `touching` grows the reactor's bounding box by
-  -- one tile and takes whatever collector it finds, so flush against a face is comfortably inside
-  -- it -- but this rig does not prove the pairing and must not be read as proving it. Nothing here
-  -- runs a reaction; check-breeding.ps1 is the gate that holds the breeding path.
-  place(surface, REACTOR, REACTOR_X, REACTOR_Y)
-  place(surface, MACHINE, PAIR_X, REACTOR_Y)
+  -- THE PAIRED ARRANGEMENT, AND IT IS BOLTED BY THE BLIND FACE (Truls, 2026-09-13). The first
+  -- version of this probe stood the collector west of the reactor, which put the collector's own
+  -- EAST tritium socket flat against the reactor's wall with nowhere for its pipe to go. The
+  -- machine has three sockets and four faces, so exactly one face is free to lose -- the south one
+  -- -- and that is the face that meets the reactor. The collector therefore stands NORTH of it.
+  --
+  -- AND IT SLIDES ALONG THAT FACE UNTIL IT BLOCKS NOTHING. Centred, a 5-wide collector on the
+  -- reactor's north edge sits squarely on the tile the reactor's own north energy connection points
+  -- at, so a heat exchanger could no longer bolt there -- one machine's plumbing solved by breaking
+  -- another's. The offsets are tried outward from centre and the first that covers no connection
+  -- tile of either machine wins. Nothing here is a footprint written down: move a socket and this
+  -- finds the new answer instead of photographing a layout nobody can build.
+  local reactor = place(surface, REACTOR, REACTOR_X, REACTOR_Y)
+  local blind = blind_face(prototypes.entity[MACHINE] and
+    surface.create_entity({ name = MACHINE, position = { GRID_X, GRID_Y - 4 * PITCH },
+                            force = "player" }))
+  say(string.format("%s's blind face is %s, so it bolts to the reactor by that side",
+    MACHINE, tostring(blind)))
+  for _, e in pairs(surface.find_entities_filtered({
+      area = { { GRID_X - W, GRID_Y - 4 * PITCH - H }, { GRID_X + W, GRID_Y - 4 * PITCH + H } },
+      name = MACHINE })) do
+    e.destroy()
+  end
+  if not blind then error(MACHINE .. " has a connection on every face; this rig cannot bolt it") end
+
+  local blocked = connection_tiles(reactor)
+  local ALONG = { north = "x", south = "x", west = "y", east = "y" }
+  local AWAY  = { north = -1, south = 1, west = -1, east = 1 }
+  -- The blind face meets the reactor, so the machine sits on the OPPOSITE side of it.
+  local side = ({ north = "south", south = "north", west = "east", east = "west" })[blind]
+  local along, away = ALONG[side], AWAY[side]
+  local far = (side == "north" or side == "south")
+      and { x = 0, y = away * (RH + H) / 2 } or { x = away * (RW + W) / 2, y = 0 }
+
+  local pair_x, pair_y
+  for step = 0, math.max(RW, RH) do
+    for _, sign in ipairs(step == 0 and { 1 } or { -1, 1 }) do
+      local cx = REACTOR_X + far.x + (along == "x" and sign * step or 0)
+      local cy = REACTOR_Y + far.y + (along == "y" and sign * step or 0)
+      local clear = true
+      for x = math.floor(cx - W / 2), math.ceil(cx + W / 2) - 1 do
+        for y = math.floor(cy - H / 2), math.ceil(cy + H / 2) - 1 do
+          if blocked[string.format("%g,%g", x + 0.5, y + 0.5)] then clear = false end
+        end
+      end
+      if clear and surface.can_place_entity({
+          name = MACHINE, position = { cx, cy }, force = "player",
+          build_check_type = BUILD_CHECK }) then
+        pair_x, pair_y = cx, cy
+        break
+      end
+    end
+    if pair_x then break end
+  end
+  if not pair_x then
+    error("no position on the reactor's " .. side .. " face leaves both machines' sockets reachable")
+  end
+  say(string.format("collector bolted on the reactor's %s face at %g,%g, clear of every "
+    .. "connection tile", side, pair_x, pair_y))
+  local paired = place(surface, MACHINE, pair_x, pair_y)
+  -- Pipes on the paired machine too, which is the point of bolting by the blind face: all three
+  -- sockets must still be reachable. A picture of three pipes is the proof.
+  pipe_up(surface, paired)
 
   -- The single-machine subjects, spaced a whole pitch apart so one cannot creep into another's
   -- frame when the footprint changes.
@@ -367,8 +459,9 @@ script.on_nth_tick(60, function()
   storage.grid = { x = GRID_X, y = GRID_Y, pitch = PITCH }
   storage.solo = { cold_x = COLD_X, working_x = WORKING_X, pipes_x = PIPES_X,
                    solo_tiles = SOLO_TILES, pipes_tiles = PIPES_TILES }
-  storage.pair = { x = (PAIR_X + REACTOR_X) / 2, y = REACTOR_Y,
-                   w = RW + W, h = math.max(RH, H) }
+  storage.pair = { x = (pair_x + REACTOR_X) / 2, y = (pair_y + REACTOR_Y) / 2,
+                   w = math.abs(pair_x - REACTOR_X) + math.max(RW, W) + 2,
+                   h = math.abs(pair_y - REACTOR_Y) + math.max(RH, H) + 2 }
   storage.shoot_at = game.tick + 120
 end)
 
