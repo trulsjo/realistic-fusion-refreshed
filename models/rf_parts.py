@@ -75,17 +75,33 @@ def _plate(name, size, loc, material, rot=(0, 0, 0), bev=0.03, **mat_opts):
     return o
 
 
-def box(name, size, loc, material, rot=(0, 0, 0), bev=0.03, cut=False, **mat_opts):
-    # THE READ IS THE SMALLEST DIMENSION, which is only true because every groove here is cut at
-    # least as deep as it is wide (house style, #335). A channel 0.05 wide and 0.03 deep would be
-    # judged on its sink depth -- a dimension nobody sees -- instead of on the width that reads.
-    rf.check_detail(name, min(size), cut=cut)
+def box(name, size, loc, material, rot=(0, 0, 0), bev=0.03, cut=False, read=None, **mat_opts):
+    """A box. `read` is the dimension the detail floor judges it on, when that is not the smallest.
+
+    THE DEFAULT IS THE SMALLEST DIMENSION, which is right for a groove and for a bar. Grooves are
+    cut square (house style, #335), so a channel's smallest dimension IS the width that reads rather
+    than the sink depth nobody sees; and a grating slat or a grille bar reads by its narrow edge.
+
+    IT IS WRONG FOR A PANEL FACING THE CAMERA, and that is what `read` is for. A cabinet panel 0.42
+    by 0.3 standing 0.06 proud of a wall reads by its FACE -- the 0.06 is how far it sticks out.
+    Judged on the smallest, it is the H-beam web error in the other direction, and the house style's
+    whole point is that the floor governs the dimension that carries the read.
+    """
+    rf.check_detail(name, min(size) if read is None else read, cut=cut)
     return _plate(name, size, loc, material, rot=rot, bev=bev, **mat_opts)
 
 
-def cyl(name, radius, depth, loc, material, axis="Z", rot=None, verts=48, **mat_opts):
+def cyl(name, radius, depth, loc, material, axis="Z", rot=None, verts=48, read=None, **mat_opts):
+    """A cylinder. `read` is the dimension the detail floor judges it on, when that is not the
+    smallest -- see `box`, and pass `2 * radius` for a DISC whose face is square to the camera.
+
+    The default judges a cylinder on the smaller of its diameter and its depth, which is right for a
+    rod (it reads by its width) and wrong for a disc (it reads by its face). A handwheel 0.28 across
+    and 0.05 thick was judged on its 0.05 edge and thickened for it, on art that was already
+    accepted -- which is what put `read` here (Truls, reviewing #339).
+    """
     rot = rot or {"Z": (0, 0, 0), "X": (0, math.pi / 2, 0), "Y": (math.pi / 2, 0, 0)}[axis]
-    rf.check_detail(name, min(2 * radius, depth))      # a rod reads by its width, a disc by its thickness
+    rf.check_detail(name, min(2 * radius, depth) if read is None else read)
     bpy.ops.mesh.primitive_cylinder_add(radius=radius, depth=depth, location=loc, rotation=rot, vertices=verts)
     o = bpy.context.object
     o.name = name

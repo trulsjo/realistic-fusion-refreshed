@@ -240,7 +240,8 @@ def receiver(name, centre, radius, length, accent, valve_at, gauges=True):
     # decides whether they stay inside the collision box -- see T_DRUM.
     gx = cx + valve_at * (length / 2 - 0.35)
     box(f"{name}Gauges", (0.42, 0.2, 0.34), (gx, cy - radius - 0.08, cz - 0.05), "paint")
-    cyl(f"{name}Glass", 0.1, 0.06, (gx, cy - radius - 0.2, cz - 0.05), accent, axis="Y", verts=20)
+    cyl(f"{name}Glass", 0.1, 0.06, (gx, cy - radius - 0.2, cz - 0.05), accent, axis="Y", verts=20,
+        read=0.2)
     wx = cx - valve_at * (length / 2 - 0.3)
     cyl(f"{name}WheelStem", 0.055, 0.3, (wx, cy - radius - 0.12, cz + 0.05), "metal", axis="Y",
         verts=12)
@@ -449,7 +450,8 @@ else:
     cpos = (1.48, -(BOX_HALF + 0.47), DECK_Z + CAB[2] / 2)
     box("Cabinet", CAB, cpos, "paint")
     seam("CabinetSeam", (0.05, CAB[1] + 0.02, CAB[2] - 0.24), cpos)
-    box("CabinetPanel", (0.42, 0.06, 0.3), (cpos[0], cpos[1] - CAB[1] / 2, cpos[2] + 0.26), "dark", bev=0)
+    box("CabinetPanel", (0.42, 0.06, 0.3), (cpos[0], cpos[1] - CAB[1] / 2, cpos[2] + 0.26), "dark",
+        bev=0, read=0.3)
     rivets("CabinetRivets", (cpos[0] - 0.28, cpos[1] - CAB[1] / 2 - 0.01, cpos[2] - 0.42),
            (cpos[0] + 0.28, cpos[1] - CAB[1] / 2 - 0.01, cpos[2] - 0.42), 5, r=0.032)
     VENT = (1.75, 0.75, DECK_Z + 0.35)

@@ -287,7 +287,8 @@ else:
     box("EndWall", (W - MAN_W - 0.3, 0.16, 1.15), (MXE + (EX - MXE) / 2 - 0.05, -HALF_L + 0.12, SLAB + 0.575), "paint")
     seam("EndWallSeam", (0.05, 0.18, 0.95), (MXE + (EX - MXE) / 2 - 0.9, -HALF_L + 0.12, SLAB + 0.575))
     rivets("EndWallRivets", (MXE + 0.2, -HALF_L + 0.03, SLAB + 1.0), (EX - 0.3, -HALF_L + 0.03, SLAB + 1.0), 9, r=0.04)
-    box("EndWallVent", (0.9, 0.06, 0.4), (MXE + (EX - MXE) / 2 + 0.3, -HALF_L + 0.03, SLAB + 0.55), "dark", bev=0)
+    box("EndWallVent", (0.9, 0.06, 0.4), (MXE + (EX - MXE) / 2 + 0.3, -HALF_L + 0.03, SLAB + 0.55),
+        "dark", bev=0, read=0.4)
 
     # -- three drums: rib bands, weld seam, cap, relief valve. Not identical.
     DRUM_H = 2.3
@@ -352,8 +353,12 @@ else:
         box(f"Drum{i}Gauges", (0.26, 0.58, 0.46), (gx, gy, SLAB + 0.9), "paint")
         for k in range(2):
             cyl(f"Drum{i}Gauge{k}", 0.13, 0.06, (gx + 0.15, gy - 0.17 + k * 0.34, SLAB + 0.95),
-                "steam", axis="X", verts=20)
-        cyl(f"Drum{i}Wheel", 0.28, 0.06, (gx + 0.02, gy - 0.72, SLAB + 0.85), "dark", axis="Y", verts=24)
+                "steam", axis="X", verts=20, read=0.26)
+        # BACK TO 0.05, and judged on its face. #339 took this to 0.06 because the floor was
+        # reading its edge; with `read` the disc is measured across, so it keeps the thickness it
+        # was drawn with.
+        cyl(f"Drum{i}Wheel", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "dark", axis="Y",
+            verts=24, read=0.56)
         cyl(f"Drum{i}WheelStem", 0.07, 0.36, (gx + 0.02, gy - 0.55, SLAB + 0.85), "metal", axis="Y", verts=12)
         torus(f"Drum{i}WheelRim", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "metal",
               rot=(math.pi / 2, 0, 0))
@@ -443,7 +448,8 @@ else:
     cpos = (HALF_W - 0.55, -HALF_L + 0.95, SLAB + CAB[2] / 2)
     box("Cabinet", CAB, cpos, "paint")
     seam("CabinetSeam", (CAB[0] + 0.02, 0.05, CAB[2] - 0.3), cpos)
-    box("CabinetPanel", (0.06, 0.7, 0.5), (cpos[0] + CAB[0] / 2, cpos[1], cpos[2] + 0.3), "water", bev=0)
+    box("CabinetPanel", (0.06, 0.7, 0.5), (cpos[0] + CAB[0] / 2, cpos[1], cpos[2] + 0.3), "water",
+        bev=0, read=0.5)
     rivets("CabinetRivets", (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] - 0.5, cpos[2] - CAB[2] / 2 + 0.15),
            (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] + 0.5, cpos[2] - CAB[2] / 2 + 0.15), 6)
 
