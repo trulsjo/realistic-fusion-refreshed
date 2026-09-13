@@ -923,50 +923,87 @@ hc_turbine.energy_source = {
 -- The note below was drafted from the machine's own behaviour rather than from a picture, and
 -- Truls took it as it stood for the first render (#262, 2026-09-13). It is a FIRST-RENDER note,
 -- not an accepted one: the heat exchanger's went through three rounds in game before it settled,
--- and acceptance here is still by eye in a real map. Whatever the render changes, change here too
--- -- #275 is the case where the model moved and the prose did not, and a rebuild from the stale
--- note came back with the wrong machine.
+-- and acceptance here is still by eye in a real map.
+--
+-- REWRITTEN THE SAME DAY FROM THE MODEL THAT SHIPPED, at Truls's instruction, because a first
+-- draft written from behaviour cannot know what the geometry will allow and this one was wrong in
+-- eight places -- the tritium drum could not lie where it said, the cold box could not stand as
+-- tall as it said, the deck is not the thing it said, and "the only two colours on the machine"
+-- was three. That is #275's lesson taken before it bites rather than after: a model rebuilt from
+-- that note by itself would have come back as a different machine. Where the sentences below are
+-- specific about a shape, they are describing the object in models/isotope-collector/build.py.
 --[[ look: rf-isotope-collector   (read under models/house-style.md; first render, #262)
 A cold, square box, five by five, that separates what a reactor has already bred. It makes
 nothing and burns nothing: gas arrives from the reactor beside it and leaves sorted, so the
 machine is plumbing and vessels, with no firebox and no flame anywhere on it.
 
-IT HAS NO FRONT. It is its own rotation -- one sheet serves all four directions -- and the
-reactor may stand on any side of it, or a tile clear of it and still pair. So no face is a
-contact face and none is dressed as one: the body is built to read the same from every side,
-which is the opposite of the heat exchanger's one long manifold face.
+IT HAS NO FRONT. The reactor may stand on any side of it, or a tile clear of it and still pair,
+so no face is a contact face and none is dressed as one: the body is built to read the same from
+every side, which is the opposite of the heat exchanger's one long manifold face. That is not
+the same as needing only one picture -- it still ships four direction sheets, because the engine
+turns the connections and the sockets have to turn with them.
 
 The core is a closed cold box: a squat, insulated cabinet of painted panels with a visible seam
-grid and a rivet line, standing about a tile and a half, set in from the footprint edge on all
-four sides. Closed because a vacuum-jacketed cold box is closed for real, not to save work. A
-grating deck runs round it on all four sides at slab height, carried on short dark H-beam posts,
-so the machine still reads as part of the same plant as the open-framed ones.
+grid, a band round it and a rivet line along the two walls the sun and the camera reach, set in
+from the footprint edge by a tile on all four sides. Closed because a vacuum-jacketed cold box is
+closed for real, not to save work. It is LOW -- seven tenths of a tile, so the whole machine
+with its columns comes in at the 2.5 tiles the house style allows a five-wide -- and the columns
+get the height the box gives up, which is also what makes them read as slim. A deck runs round
+it in all four bays, a plate a little above the slab on short dark H-beam posts, grooved every three
+tenths of a tile rather than laid as bars: at 64 px a tile what the eye reads is the dark between
+bars, and a ring of dark stripes round a box is cooling fins. THE DECK OPENS WHERE A SOCKET
+CROSSES IT, about half a tile either side, because a stub tops out above the plate and an
+unbroken ring would bury all three.
 
-Two slim distillation columns rise from the top of the box, side by side and of unequal height --
-they are the one thing that says SEPARATION rather than storage. Bare metal, each with rib bands
-and a weld seam, each capped by a bolted flange. The taller column wears a green band at its cap
-and the shorter a violet one, and those are the only two colours on the machine.
+Two slim distillation columns rise from the lid, side by side and of unequal height -- they are
+the one thing that says SEPARATION rather than storage. Bare metal, each with three rib bands and
+a weld seam, each capped by a bolted flange with a ring of bolts, and tied to each other by a
+short dark strut. The taller wears tritium's green at its cap and the shorter helium-3's violet.
+
+COLOUR IS BY FLUID AND APPEARS WHEREVER THAT FLUID IS, not once per machine: each isotope's
+accent is on its column cap, on its drum's relief valve, in its drum's sight glass and on its
+sockets. Nothing else on the machine is coloured except one small blue panel on the control
+cabinet, which is the only thing here that belongs to no fluid at all.
 
 THE MACHINE IS FROSTED, where the heat exchanger is corroded, and for the same kind of reason:
-it is cold. A white rime sits on the cold box's upper panels and on the bare lines nearest the
-columns, patchy and heaviest at the seams and flanges, thinning to nothing by the time a line
-reaches the footprint edge. It never covers an accent band; the bands stay clean and read.
+it is cold. The rime is patchy and gathers UP each part it sits on -- heaviest on upper panels,
+cap flanges and the tops of tubes, thinning downward -- and it is thin enough everywhere that the
+steel shows through it. What carries it is the rule, not a distance: everything the cold gas is
+inside is frosted -- the box and its lid, the columns and their caps, both drums and their dished
+ends, every run, every socket stub -- and nothing else is. The slab, the deck, the posts, the rib
+bands and welds, the cabinet and the vent stay bare, and no accent band is ever covered.
 
-Two horizontal receiver drums lie low against the deck, each in line with the sockets it feeds:
-the tritium drum on the east-west line, the helium-3 drum on the north side. They are the buffer
-a player can see -- each with a sight gauge and a handwheel valve at one end, and a pressure
-relief valve (a part that could move later) on top. Short runs drop from the columns into the
-drums and out again to the sockets: green west and east, violet north, each socket a bare-metal
-stub with its own accent band.
+Two horizontal receiver drums lie low on the deck, in the bays nearest the sockets they feed:
+the tritium drum across the SOUTH bay, the helium-3 drum across the north. They are the buffer a
+player can see -- rib bands, a weld seam, dished ends with flanges, a sight gauge at one end and
+a handwheel at the other, and a pressure relief valve (a part that could move later) on
+top. The tritium drum is two tiles and not the full width, which is what leaves room in its own
+bay for the cabinet and the vent.
 
-THE SOUTH FACE IS THE ONE WITHOUT A SOCKET, and it carries what breaks the symmetry: a control
-cabinet with a small blue panel and a vent stack beside it, set a little off centre. On a
-machine that never rotates the asymmetry is character, not a rotation cue.
+A run drops from each column's SHOULDER, not off its cap -- the caps are already at the top of
+the height the machine is allowed, and a run off a cap has to rise before it can turn. The
+tritium drop goes out over the west wall, which the sun hits, and turns south down the bay; the
+helium-3 drop crosses the north wall, which is the shorter way. EVERY RUN ENDS INSIDE THE VESSEL
+IT JOINS and meets it square, never tangent to its skin: a tube that stops on a drum's surface
+shows its open end as a disc in the air, which is exactly how this machine failed its first
+render.
+
+The tritium drum's two ENDS do the travelling to the sockets, since the box stands on the line
+between them: a run leaves each dished end along the drum's own axis and comes up its bay to the
+socket, green west and green east. The helium-3 socket has no run of its own -- it stands in the
+north bay and its stub goes straight into the drum's side, which is the shortest honest plumbing
+on the machine. Every socket is a bare-metal stub with its fluid's band.
+
+THE SOUTH BAY CARRIES WHAT BREAKS THE SYMMETRY, and it is the bay with no socket in it: east of the
+drum stand a vent stack with a louvred hood and, beyond it, a control cabinet with a small blue
+panel. The machine is square and its four sheets are otherwise near enough the same
+picture turned, so this corner is how a player tells one from another.
 
 NOTHING ON IT GLOWS, and that is deliberate. The collector takes no power and does no work of its
 own, so it has no working state to light; a glowing part here would promise an activity the
 machine does not have. The accents are its own colour in the structure sheet, not emission, and
-there is no glow sheet. Nothing on it moves yet.
+there is no glow sheet -- the rendered set is four structures, four shadows and the icon, and its
+manifest records `glow: false`. Nothing on it moves yet.
 ]]
 local collector = pin(table.deepcopy(data.raw["boiler"]["boiler"]), "rf-isotope-collector", {
   mining_time = 0.5,
