@@ -2003,13 +2003,16 @@ script.on_nth_tick(CHECK_AT, function()
       -- ---- WHAT THAT LEAVES THE bare-AGAINST-solopipe GAP AS, which is the question #73 was
       -- re-scoped around and the line a reader arrives at after the bookkeeping above.
       --
-      -- Nothing of it is writer count. The whole positional ramp is about a point end to end, and
-      -- the gap it was invoked to explain is seventeen. `bare` is lower than `solopipe` because it
+      -- Nothing of it is writer count. The whole positional ramp is about a point across the run
+      -- AT THIS WINDOW -- and zero at any window past two seconds (#271) -- against the seventeen
+      -- the gap it was invoked to explain needs. The qualifier is not decoration: without it this
+      -- line is the only one left in the file that reads the ramp as a standing loss, which is the
+      -- framing #271 retired. `bare` is lower than `solopipe` because it
       -- is fuller and hotter, not because three reactors write to it.
       local gap = ((results.solopipe or 0) - (results.bare or 0)) * 100
       record(gap > 8 * ramp,
         "so the gap #40 attributed to writer count is not writer count and not position either",
-        string.format("a %.2f point positional ramp against a %.1f point gap -- bare %.1f%% at %.1f%% fill, solopipe %.1f%% at %.1f%% fill",
+        string.format("a %.2f point one-interval positional ramp (zero once settled) against a %.1f point gap -- bare %.1f%% at %.1f%% fill, solopipe %.1f%% at %.1f%% fill",
           ramp, gap,
           (results.bare or 0) * 100,
           before.bare and (before.bare.plasma / declared_capacity(cells.bare) * 100) or 0,
