@@ -41,6 +41,44 @@ except SystemExit:
 else:
     raise AssertionError("accent() guessed for an unknown fluid")
 
+# ---- the detail floors (#335, #338) ---------------------------------------------------------
+#
+# The floors are stated in pixels on the player's screen, which is the sheet at scale 0.5.
+assert abs(rf.CUT_DETAIL_FLOOR * rf.PX_PER_TILE * 0.5 - 1.6) < 1e-9
+assert abs(rf.RAISED_DETAIL_FLOOR * rf.PX_PER_TILE * 0.5 - 1.92) < 1e-9
+assert rf.CUT_DETAIL_FLOOR < rf.RAISED_DETAIL_FLOOR, "a cut feature reads thinner than a raised one"
+
+# A feature AT its floor passes -- both floors are set at what two machines already ship, so a
+# rule that rejected the boundary would reject the work it was measured from.
+assert rf.check_detail("groove", rf.CUT_DETAIL_FLOOR, cut=True) == rf.CUT_DETAIL_FLOOR
+assert rf.check_detail("rivet", rf.RAISED_DETAIL_FLOOR) == rf.RAISED_DETAIL_FLOOR
+
+
+def refuses(*args, **kwargs):
+    try:
+        rf.check_detail(*args, **kwargs)
+    except SystemExit:
+        return True
+    return False
+
+
+assert refuses("groove", rf.CUT_DETAIL_FLOOR - 0.001, cut=True)
+assert refuses("rivet", rf.RAISED_DETAIL_FLOOR - 0.001)
+
+# THE TWO FLOORS ARE NOT INTERCHANGEABLE: a 0.05 feature is a legal groove and an illegal rivet.
+# That is the whole point of splitting them, so it is pinned rather than left to the numbers.
+assert not refuses("groove", 0.05, cut=True)
+assert refuses("rivet", 0.05)
+
+# The read dimension, on the two primitives where getting it wrong is silent. A torus is judged on
+# its minor DIAMETER: the drum rib bands are minor radius 0.035, which passes at 0.07 and fails at
+# 0.035. An H-beam is judged on its FLANGE WIDTH, 0.14, not on its 0.03 web -- the web is edge-on
+# at this camera and a floor read off it condemns the frame the house style is built around.
+assert not refuses("drum rib band (minor diameter)", 2 * 0.035)
+assert refuses("drum rib band (minor radius, the wrong read)", 0.035)
+assert not refuses("H-beam post (flange width)", 0.14)
+assert refuses("H-beam post (web thickness, the wrong read)", 0.03)
+
 print("ok")
 
 # The geometry hash is over canonical JSON, so a CRLF checkout of the same file hashes the same
