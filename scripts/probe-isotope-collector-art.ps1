@@ -32,11 +32,13 @@
         the look note in prototypes/entities.lua says why, and its manifest records `glow: false` --
         so the same two shots are here to prove a NEGATIVE. night.png is the load-bearing one: at
         midnight a stray emission would be the only thing visible on the frame.
-      - A PIPES SHOT, which the exchanger has no need of. Every fluid this machine carries is
-        ordinary and uncontained (#26), its three sockets are tritium west, tritium east and
-        helium-3 north, and the whole argument for the two accents (#262, models/house-style.md) is
-        that a player reads which socket is which from its colour. A picture with an ordinary pipe
-        on each socket is where that argument is tested or fails.
+      - A PIPES SHOT THAT NEEDS NO FILTERING. The exchanger's probe took this shot from here
+        (#346), but it has to ask the engine which of its six connections a pipe can join, because
+        three of them are contained. Every fluid this machine carries is ordinary and uncontained
+        (#26), its three sockets are tritium west, tritium east and helium-3 north, and the whole
+        argument for the two accents (#262, models/house-style.md) is that a player reads which
+        socket is which from its colour. A picture with an ordinary pipe on each socket is where
+        that argument is tested or fails.
 
     WHAT IT SHOOTS, and why each one:
 
@@ -282,8 +284,8 @@ end
 --- Flat, dry, uniform ground under a rectangle, so the shot is of the machine and not of the
 --- terrain it happened to land on -- and so nothing is refused for standing in water.
 ---
---- DECORATIVES ARE DESTROYED AS WELL AS TILES RETILED, which the heat exchanger's probe does not
---- do and should. set_tiles alone leaves every shrub, dry root and rock patch standing: they are
+--- DECORATIVES ARE DESTROYED AS WELL AS TILES RETILED, which the heat exchanger's probe does too
+--- since #346. set_tiles alone leaves every shrub, dry root and rock patch standing: they are
 --- not entities, so the sweep below walks straight past them, and the first run of this probe came
 --- back with weeds across half of every frame. "Uniform ground" was a claim the code did not keep.
 local function pave(surface, x1, y1, x2, y2)
