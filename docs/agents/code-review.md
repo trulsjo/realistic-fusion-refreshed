@@ -74,16 +74,18 @@ pairs", "the one sentence that did not need correcting" — a claim about *all* 
 checked by walking the set, never by agreeing with its tone.
 
 **When a change supersedes a figure, grep the repository for the old one, and read every hit in a
-file that records a measurement** — in practice `docs/adr/` and `docs/research/`, which is where
-such files live today. A correction that lands in three places and misses the fourth is worse than
-no correction, because the survivor now reads as deliberate, and a file the diff never opened is
-where the survivor sits. If the change claims in its own body to have corrected a section, that
+file that records a measurement** — start in `docs/adr/` and `docs/research/`, where most of them
+are, but the test is the kind of file and not the directory: `CLAUDE.md` records measurements, and
+so does this one. A correction that lands in three places and misses the fourth is worse than no
+correction, because the survivor now reads as deliberate, and a file the diff never opened is where
+the survivor sits. If the change claims in its own body to have corrected a section, that
 claim is itself reviewable.
 
 **A hit inside a superseded block is not a defect; an unmarked old figure is.** The house style
-keeps an old reading with a dated note rather than restating it, so "find every occurrence" and
-"change every occurrence" are not the same instruction. Read the hit, confirm the block carries its
-date, and move on. What the rule is looking for is an old figure still presented as current.
+keeps an old reading with a note saying what replaced it rather than restating it, so "find every
+occurrence" and "change every occurrence" are not the same instruction. Read the hit, confirm the
+block carries that note — a date, an issue number, or both — and move on. What the rule looks for
+is an old figure still presented as current.
 
 **This binds the reviewer.** All three escapes #331 records were reviewer misses on changes whose
 own files were correct. An author who greps before opening the pull request saves a round, but the
