@@ -452,8 +452,12 @@ else:
         (OUTLET_DROP, mid_y, SLAB + 0.30),
         (OUTLET_DROP, mid_y, SLAB - 0.02),
     ], HEADER_R, "metal", corrugate=HEADER_CORRUGATE, band=HEADER_BAND)
-    # The opening it goes through, rimmed like the sockets are, so the floor reads as having been
-    # built for the pipe rather than punctured by it.
+    # A COLLAR WHERE IT GOES IN, AND NO HOLE UNDER IT. Unlike a socket's `port`, nothing is cut
+    # here: the run simply stops 0.02 below the slab's top, inside solid stone, and the ring reads
+    # as the flange round a penetration. At this camera the difference is invisible -- the pipe
+    # covers what a hole would show -- so the geometry a boolean would add buys nothing. Said
+    # plainly because "rimmed like the sockets are" is what this comment used to claim, and a
+    # reader sent to find the modelled opening would not have found one.
     torus("OutletPortRim", 0.2, 0.05, (OUTLET_DROP, mid_y, SLAB + 0.02), "dark")
     # A BAND, not the half-tile steam-coloured block this used to be: near-white at that size read
     # as a lamp on the middle drum (Truls, #252). On the descent, which is the one stretch of the
@@ -557,8 +561,15 @@ else:
     UNIT = {"north": (0, -1), "east": (1, 0), "south": (0, 1), "west": (-1, 0)}   # Factorio frame
 
     def inboard(c, back=0.5, z=None):
-        """The inner end of a connection's socket: half a tile in from the tile it stands on, at
-        that connection's own socket height unless `z` says otherwise."""
+        """`back` tiles inboard of the tile a connection stands on, at that connection's own socket
+        height unless `z` says otherwise.
+
+        NOT "the inner end of the socket", which is what this said on both machines that have one
+        and is what put a run 0.2 tiles short of the stub it fed. The socket's inner face is at
+        TX - 0.5 (the same expression the socket loop above uses), so back=0.5 lands a quarter of a
+        tile PAST it, further in, and anything larger stops shorter still. To reach INTO a stub,
+        pass a `back` smaller than 0.5.
+        """
         ux, uy = UNIT[c["direction"]]
         px, py = c["position"]
         return (px - back * ux, -(py - back * uy), socket_z(c) if z is None else z)
@@ -566,15 +577,17 @@ else:
     # SINCE THE WATER SOCKETS DROPPED TO PIPE HEIGHT THIS HEADER ENDS IN THE SLAB, not on a stub
     # (#343), and it is the collector's lesson taken rather than relearnt. A header run at the
     # sockets' own 0.044 would be buried in stone for its whole length and draw nothing; a header
-    # left where it was would stop in mid-air a quarter tile short of a socket that is now inside
-    # the floor. So it stays under the grating where it reads, and turns DOWN into the slab at each
-    # end through a rimmed opening. A player reads a pipe entering the floor and a pipe leaving the
-    # wall as the same pipe, which is what real plant looks like.
+    # left where it was would stop in mid-air, above a socket that is now inside the floor. So it
+    # stays under the grating where it reads, and turns DOWN into the slab at each end with a
+    # collar where it goes in. A player reads a pipe entering the floor and a pipe leaving the wall
+    # as the same pipe, which is what real plant looks like.
     #
-    # AND IT STOPS SHORT OF THE SOCKETS RATHER THAN OVER THEM, which is why `back` is 0.9 here and
-    # not the 0.5 that means "the socket's inner end". A floor rim on that end -- a ring half a
-    # tile across, at the height the socket now lies at -- would pass straight through the tube.
-    # 0.9 puts the drop 0.4 tiles further in, where the rim clears it.
+    # AND IT STOPS SHORT OF THE SOCKETS RATHER THAN OVER THEM, which is why `back` is 0.9 and not
+    # the 0.5 the call used to take. Mind what those mean: `inboard(c, 0.5)` is the inner edge of
+    # the TILE the connection stands on, x = 6.5 here, while the socket's inner end is a quarter
+    # tile further out at TX - 0.5 = 6.75. So a floor collar at 0.5 -- a ring half a tile across --
+    # would reach exactly 6.75 and sit tangent to the tube's end cap. 0.9 puts the drop 0.4 tiles
+    # further in, clear of it with room for the tube's own radius.
     HEADER_Z = 0.55
     water = [c for c in geo["connections"] if c["fluid"] == "water"]
     if len(water) == 2:
