@@ -430,6 +430,7 @@ else:
     # RailE2 lying along the declared south edge.) It passes through nothing but the deck opening.
     # NOT `out`: that is this script's output path, and shadowing it made Blender try to save the
     # model to a tuple after the whole machine had been built.
+    OUTLET_DROP = HALF_W - 0.95     # 0.45 inboard of the steam socket's inner end; see the run below
     out_top = (DX + CAP_ENTRY, mid_y, mid_cap)
     pipe("HeaderOut", [
         out_top,
@@ -438,8 +439,22 @@ else:
         (OUTLET_X, OUTLET_Y, SLAB + 2.10),
         (OUTLET_X, OUTLET_Y, SLAB + 0.37),
         (OUTLET_X - 0.05, mid_y + 0.55, SLAB + 0.32),
-        (HALF_W - 0.5, mid_y, SLAB + 0.30),
+        # AND DOWN INTO THE SLAB, since #343 dropped the steam socket to pipe height: the socket's
+        # inner end is inside the stone now, so a run that stopped where this one used to stop
+        # would end in mid-air above it. Stacked in z on the point before it, so the tube turns
+        # down and meets the floor square rather than glancing into it.
+        #
+        # IT GOES DOWN SHORT OF THE SOCKET RATHER THAN ONTO IT. The socket's inner end is at
+        # HALF_W - 0.5 in this frame, and a floor rim there -- a ring half a tile across, at the
+        # height the socket now lies at -- would pass straight through the tube. OUTLET_DROP is far
+        # enough in that the rim clears it and near enough that a player reads the pipe going into
+        # the floor and the pipe leaving the wall as one pipe.
+        (OUTLET_DROP, mid_y, SLAB + 0.30),
+        (OUTLET_DROP, mid_y, SLAB - 0.02),
     ], HEADER_R, "metal", corrugate=HEADER_CORRUGATE, band=HEADER_BAND)
+    # The opening it goes through, rimmed like the sockets are, so the floor reads as having been
+    # built for the pipe rather than punctured by it.
+    torus("OutletPortRim", 0.2, 0.05, (OUTLET_DROP, mid_y, SLAB + 0.02), "dark")
     # A BAND, not the half-tile steam-coloured block this used to be: near-white at that size read
     # as a lamp on the middle drum (Truls, #252). On the descent, which is the one stretch of the
     # steam route standing in the open where a band can be seen.
@@ -471,37 +486,94 @@ else:
     # -- sockets: one per declared connection, body to footprint edge, accent band. Placed in the
     # DECLARED frame, after the turn, so TX and TY here and never HALF_W / HALF_L.
     (sx0, sy0), (sx1, sy1) = geo["selection_box"]
+    SOCKET_R = 0.3                  # #345 is where this is measured against a pipe; height is #343
+    BAND_R = SOCKET_R + 0.04        # the accent stands a little proud of the tube, as it always has
+    PORT_R = SOCKET_R + 0.06        # and the hole a little proud of the accent, so it reads as a hole
+
+    # THIS MACHINE DRAWS ITS SOCKETS AT TWO HEIGHTS, AND THE PAIR ON EACH SHORT END DIFFER BY HALF
+    # A TILE ON PURPOSE (#343). Read as a mistake it invites a "fix" that breaks the
+    # machine, so: water west, water east and steam south carry no `connection_category`, a player
+    # plumbs them with ordinary pipes, and they are drawn at rf_parts.SOCKET_Z -- the height a
+    # vanilla pipe is drawn at. The three reactor-energy connections are CONTAINED (ADR 0018, #86):
+    # no pipe, tank, wagon or pump a player can build will ever join them, they bolt face to face
+    # against a reactor or the next exchanger in the row, and lowering them would match them to a
+    # pipe that cannot exist. So water at [-7, 1] sits low and energy at [-7, -1] two tiles away on
+    # the same wall does not, and that is the machine working rather than the machine wrong.
+    CONTAINED_Z = 0.55              # a bolted face meets a machine, so this is a look, not a match
+
+    def plumbable(c):
+        """Whether a player can put an ordinary pipe on this connection.
+
+        Read off `connection_category` rather than off a list of fluids, which is the same
+        discriminator scripts/load-check.ps1's gate uses -- a connection left `default` is one a
+        player can plumb. A fourth energy face added tomorrow is contained without this being
+        touched, and a category taken off one makes it plumbable and lowers its socket.
+        """
+        return not c["connection_category"]
+
+    def socket_z(c):
+        """How high a connection's stub is drawn: the pipe's height, or the contained one."""
+        return rf_parts.SOCKET_Z if plumbable(c) else CONTAINED_Z
+
     for c in geo["connections"]:
         px, py = c["position"]
         py = -py                                   # Factorio south -> Blender -Y
         d = c["direction"]
-        z = 0.55
+        z = socket_z(c)
+        # The slab's top is at 0.25 and a lowered socket reaches through it, so it gets a modelled,
+        # rimmed opening rather than clipping the stone (Truls, 2026-09-14). A contained socket
+        # stands clear above the slab and needs none.
         if d in ("west", "east"):
+            sign = 1 if d == "east" else -1
             edge = sx0 if d == "west" else sx1
-            inner = (TX - 0.5) * (1 if d == "east" else -1)
-            cyl(f"Socket-{d}-{c['fluid']}", 0.3, abs(edge - inner), ((edge + inner) / 2, py, z), "metal", axis="X")
-            cyl(f"Band-{d}-{c['fluid']}", 0.34, 0.22, (edge - 0.28 * (1 if d == "east" else -1), py, z), rf.accent(c["fluid"]), axis="X")
+            inner = (TX - 0.5) * sign
+            cyl(f"Socket-{d}-{c['fluid']}", SOCKET_R, abs(edge - inner), ((edge + inner) / 2, py, z), "metal", axis="X")
+            cyl(f"Band-{d}-{c['fluid']}", BAND_R, 0.22, (edge - 0.28 * sign, py, z), rf.accent(c["fluid"]), axis="X")
+            if plumbable(c):
+                rf_parts.port(bpy.data.objects["Slab"], "X", py, edge, sign, PORT_R)
         else:
+            sign = 1 if d == "north" else -1
             edge = -sy0 if d == "north" else -sy1  # flipped: north is +Y
-            inner = (TY - 0.5) * (1 if d == "north" else -1)
-            cyl(f"Socket-{d}-{c['fluid']}", 0.3, abs(edge - inner), (px, (edge + inner) / 2, z), "metal", axis="Y")
-            cyl(f"Band-{d}-{c['fluid']}", 0.34, 0.22, (px, edge - 0.28 * (1 if d == "north" else -1), z), rf.accent(c["fluid"]), axis="Y")
+            inner = (TY - 0.5) * sign
+            cyl(f"Socket-{d}-{c['fluid']}", SOCKET_R, abs(edge - inner), (px, (edge + inner) / 2, z), "metal", axis="Y")
+            cyl(f"Band-{d}-{c['fluid']}", BAND_R, 0.22, (px, edge - 0.28 * sign, z), rf.accent(c["fluid"]), axis="Y")
+            if plumbable(c):
+                rf_parts.port(bpy.data.objects["Slab"], "Y", px, edge, sign, PORT_R)
     # water header along the base between the two end sockets, wherever the prototype puts them:
     # since #275 they sit off the short-end centre (`_ e _ w _`), so the header is read off the
     # geometry rather than drawn down the middle.
     UNIT = {"north": (0, -1), "east": (1, 0), "south": (0, 1), "west": (-1, 0)}   # Factorio frame
 
-    def inboard(c, back=0.5, z=0.55):
-        """The inner end of a connection's socket: half a tile in from the tile it stands on."""
+    def inboard(c, back=0.5, z=None):
+        """The inner end of a connection's socket: half a tile in from the tile it stands on, at
+        that connection's own socket height unless `z` says otherwise."""
         ux, uy = UNIT[c["direction"]]
         px, py = c["position"]
-        return (px - back * ux, -(py - back * uy), z)
+        return (px - back * ux, -(py - back * uy), socket_z(c) if z is None else z)
 
+    # SINCE THE WATER SOCKETS DROPPED TO PIPE HEIGHT THIS HEADER ENDS IN THE SLAB, not on a stub
+    # (#343), and it is the collector's lesson taken rather than relearnt. A header run at the
+    # sockets' own 0.044 would be buried in stone for its whole length and draw nothing; a header
+    # left where it was would stop in mid-air a quarter tile short of a socket that is now inside
+    # the floor. So it stays under the grating where it reads, and turns DOWN into the slab at each
+    # end through a rimmed opening. A player reads a pipe entering the floor and a pipe leaving the
+    # wall as the same pipe, which is what real plant looks like.
+    #
+    # AND IT STOPS SHORT OF THE SOCKETS RATHER THAN OVER THEM, which is why `back` is 0.9 here and
+    # not the 0.5 that means "the socket's inner end". A floor rim on that end -- a ring half a
+    # tile across, at the height the socket now lies at -- would pass straight through the tube.
+    # 0.9 puts the drop 0.4 tiles further in, where the rim clears it.
+    HEADER_Z = 0.55
     water = [c for c in geo["connections"] if c["fluid"] == "water"]
     if len(water) == 2:
-        a, b = inboard(water[0]), inboard(water[1])
+        a, b = inboard(water[0], back=0.9, z=HEADER_Z), inboard(water[1], back=0.9, z=HEADER_Z)
         mid = ((a[0] + b[0]) / 2 + jitter(0, 0.1), (a[1] + b[1]) / 2 + jitter(0, 0.1), 0.5)
-        pipe("WaterHeader", [a, mid, b], 0.13, "metal")
+        # Stacked control points in z at both ends, so the tube meets the floor square instead of
+        # glancing into it and showing a slanted open mouth.
+        pipe("WaterHeader", [(a[0], a[1], SLAB - 0.02), a, mid, b, (b[0], b[1], SLAB - 0.02)],
+             0.13, "metal")
+        for conn, end in zip(water, (a, b)):
+            torus(f"WaterPortRim-{conn['direction']}", 0.2, 0.05, (end[0], end[1], SLAB + 0.02), "dark")
 
     # -- glowing feeds from the SHORT-END energy sockets into the manifold (Truls, #275).
     #
