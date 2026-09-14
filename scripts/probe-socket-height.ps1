@@ -1,52 +1,60 @@
 <#
 .SYNOPSIS
-    Photographs a machine's pipe socket against an ordinary pipe, close up, so the step between them
+    Photographs a machine's pipe socket against an ordinary pipe, close up, so the join between them
     can be seen and measured. Screenshots only -- it asserts nothing.
 
 .DESCRIPTION
     A PROBE, NOT A CHECK. Exit 0 means it ran and wrote the pictures, never that the sockets are
-    right. It exists because of a defect Truls found on 2026-09-13 that had been shipping unseen:
-    a rendered socket and the vanilla pipe plugged into it DO NOT LINE UP. The machine's stub is
-    drawn higher than the pipe's, so a run of pipe meets a machine at a step.
+    right. It was written for a defect Truls found on 2026-09-13 that had been shipping unseen:
+    a rendered socket and the vanilla pipe plugged into it DID NOT LINE UP. The machine's stub was
+    drawn higher than the pipe's, so a run of pipe met a machine at a step.
 
     NOBODY HAD LOOKED, and that is the interesting part. Both rendered machines put their sockets at
-    the same height -- `SOCKET_Z = 0.55` in models/isotope-collector/build.py, `z = 0.55` in
-    models/heat-exchanger/build.py -- so both have it. scripts/probe-heat-exchanger-art.ps1 shoots
-    the machine bolted to a reactor, alone, and in four rotations, and never once puts a pipe on it;
-    probe-isotope-collector-art.ps1 was the first to do that, and the first frame showed it.
-    load-check compares a manifest's geometry against the prototype and cannot see a sprite at all.
+    z 0.55, so both had it. scripts/probe-heat-exchanger-art.ps1 shot the machine bolted to a
+    reactor, alone, and in four rotations, and never once put a pipe on it (#346 is where it
+    learned to); probe-isotope-collector-art.ps1 was the first to do that, and the first frame
+    showed it. load-check compares a manifest's geometry against the prototype and cannot see a
+    sprite at all -- #344 is the gate that can, and it was written from what this probe measured.
 
-    WHAT THE SPRITES SAY, measured off the sheets rather than off a screenshot, because both are
+    WHAT THE SPRITES SAID, measured off the sheets rather than off a screenshot, because both are
     drawn at scale 0.5 with no shift and are therefore directly comparable at 64 px to the tile:
 
       vanilla pipe   body 0.609 tiles tall on screen, centre 0.031 tiles above ground
       our socket     body 0.750 tiles tall on screen, centre 0.398 tiles above ground
 
-    A world height h shows as 0.707 h on screen, so our socket is drawn about 0.52 tiles of world
+    A world height h shows as 0.707 h on screen, so our socket was drawn about 0.52 tiles of world
     height too high, and about a quarter too fat.
 
-    AND THE TWO CANNOT SIMPLY BE MADE TO AGREE, which is why this is a probe and not a fix. Our
-    socket is a cylinder projected honestly: radius 0.3 at z 0.55, so its silhouette is what a real
-    tube at that height would throw. Vanilla's pipe is not -- work its drawn extents back and no
-    cylinder fits them. It is a stylised flat ribbon, drawn low and shallow, the way Factorio's own
-    art is drawn. Lowering our socket until the two centres coincide puts its axis at about z 0.05,
-    which draws correctly and buries the tube in the deck the bays are built around.
+    THE HEIGHT HAS SINCE BEEN FIXED ON BOTH, and not by making a cylinder pretend to be vanilla's
+    ribbon. Work vanilla's drawn extents back and no cylinder fits them: it is a stylised flat
+    ribbon, drawn low and shallow, the way Factorio's own art is. What Truls settled instead, on
+    2026-09-14, is that our honest cylinder is drawn AT THE PIPE'S OWN CENTRE, and that the tube
+    then passing through the plinth is preferable to one floating over it so long as the floor has
+    a modelled hole for it. models/rf_parts.py's `SOCKET_Z` carries that height and the derivation
+    behind it; #343 is where rf-heat-exchanger followed rf-isotope-collector to it.
 
-    So this rig takes the pictures and leaves the choice alone. It is a decision about how closely
-    this mod's art imitates vanilla's conventions against its own, and CLAUDE.md puts that kind of
-    call with Truls.
+    THE WIDTH IS FIXED ON ONE MACHINE ONLY. rf-isotope-collector's `SOCKET_R` was solved the same
+    way, 0.249, and is drawn as thick as the pipe; rf-heat-exchanger's is still 0.3, about a fifth
+    wider. #345 is where that is decided, and joint-exchanger.png is the frame it is
+    decided from.
+
+    SO THE HEIGHT FRAMES ARE NOW A REGRESSION CHECK BY EYE rather than the question itself. A socket
+    drawn at the right height can still be the wrong SHAPE beside a pipe, and that is a person
+    looking, which is what keeps this a probe.
 
     WHAT IT SHOOTS:
 
       joint-collector.png  rf-isotope-collector's west socket with an ordinary pipe on it, zoomed
                            hard, nothing else in frame. The subject is the seam between the two.
-      joint-exchanger.png  rf-heat-exchanger's water socket, the same way, because the defect is
-                           shared and a picture of one machine invites the wrong conclusion.
+      joint-exchanger.png  rf-heat-exchanger's water socket, the same way, because the defect was
+                           shared and a picture of one machine invites the wrong conclusion. It is
+                           also where the remaining WIDTH difference is judged, since that machine
+                           is the one that still has it.
       pipe-alone.png       three tiles of ordinary pipe on bare ground at the same zoom, as the
                            reference the other two are read against.
       run.png              a pipe run leaving the collector's west socket and going five tiles, at
                            the game's own zoom. This is the one a player would actually see, and it
-                           is here so the step can be judged at the size it is met at rather than
+                           is here so the join can be judged at the size it is met at rather than
                            only under magnification.
 
     Findings belong in docs/research/ or on the ticket. Kept committed so the next machine rendered
@@ -316,10 +324,10 @@ try {
     }
     Write-Host ''
     Write-Host "screenshots: $OutputDirectory"
-    Write-Host 'Both rendered machines build sockets at z 0.55. The sprites say ours are drawn about'
-    Write-Host '0.52 tiles of world height too high and a quarter too fat against a vanilla pipe --'
-    Write-Host 'and that vanilla pipe is a stylised flat ribbon rather than an honest cylinder, so'
-    Write-Host 'matching it exactly is a decision about house style, not a number to correct.'
+    Write-Host "Both rendered machines build their player-facing sockets at rf_parts' SOCKET_Z now,"
+    Write-Host "which is where a vanilla pipe's own body is drawn, so the step these frames were"
+    Write-Host 'taken to show is gone. THE WIDTHS STILL DIFFER: the collector is drawn as thick as'
+    Write-Host 'its pipe and rf-heat-exchanger is about a fifth wider (#345).'
 }
 finally {
     if ($proc -and -not $proc.HasExited) { $proc.Kill() ; $proc.WaitForExit(10000) | Out-Null }

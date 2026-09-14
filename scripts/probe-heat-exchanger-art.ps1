@@ -31,6 +31,13 @@
                          over the structure, so this is where #249's open question is settled:
                          whether the manifold channel reads as the energy accent or washes pale.
       working-night.png  The same at midnight, where the glow is all there is.
+      pipes.png          One machine with an ordinary pipe on every connection a player can plumb,
+                         and none on the three that are contained -- which is asked of the engine
+                         rather than listed here (see pipe_up). THE FRAME THAT WAS MISSING FOR
+                         MONTHS (#346): the socket-height defect Truls found on 2026-09-13 lived in
+                         the join between a socket and the pipe in it, and until this shot not one
+                         frame this rig took had a pipe in it at all. A socket in the wrong place,
+                         or an accent that does not match the fluid its pipe carries, shows here too.
       rotations.png      One machine in each of the four directions, in a two-by-two grid whose
                          pitch comes from the machine's own footprint. The engine turns the
                          connections and not the picture, so this is where a wrongly ordered sheet
@@ -208,8 +215,45 @@ local function status_name(entity)
   return tostring(entity.status)
 end
 
+--- An ordinary pipe on every connection a player can actually plumb, and none on the rest.
+--- Vanilla's pipe on purpose rather than rf-pipe: the claim being photographed is that an ordinary
+--- pipe reaches these fluids at all.
+---
+--- WHICH CONNECTIONS THOSE ARE IS ASKED, NOT LISTED. Three of this machine's six carry a
+--- connection_category of their own (ADR 0018, #86) and nothing a player can build joins them. So a
+--- pipe is built on every tile a connection points at and the engine is then asked whether it
+--- joined; one that did not is destroyed again. That is a stronger answer than any table here could
+--- be, because it is the same question a player asks by dragging a pipe at the machine -- and it
+--- stays right the day a connection's category changes.
+local function pipe_up(surface, entity)
+  local made, refused = 0, 0
+  for i = 1, #entity.fluidbox do
+    for _, c in pairs(entity.fluidbox.get_pipe_connections(i)) do
+      if c.target_position and #surface.find_entities_filtered({ position = c.target_position }) == 0 then
+        local p = place(surface, "pipe", c.target_position.x, c.target_position.y)
+        local joined = false
+        for _, pc in pairs(p.fluidbox.get_pipe_connections(1)) do
+          if pc.target and pc.target.owner and pc.target.owner.unit_number == entity.unit_number then
+            joined = true
+          end
+        end
+        if joined then made = made + 1 else p.destroy() ; refused = refused + 1 end
+      end
+    end
+  end
+  say(string.format("%s took %d pipe(s); %d connection(s) refused one, which is what contained means",
+    entity.name, made, refused))
+  return made, refused
+end
+
 --- Flat, dry, uniform ground under a rectangle, so the shot is of the machine and not of the
 --- terrain it happened to land on -- and so nothing is refused for standing in water.
+---
+--- DECORATIVES ARE DESTROYED AS WELL AS TILES RETILED. set_tiles alone leaves every shrub, dry root
+--- and rock patch standing: they are not entities, so the sweep below walks straight past them, and
+--- "uniform ground" was a claim this comment made that the code did not keep.
+--- probe-isotope-collector-art.ps1 learnt that first, from frames that came back with weeds across
+--- half of them; this is the same fix (#346).
 local function pave(surface, x1, y1, x2, y2)
   local tiles = {}
   for x = math.floor(x1), math.ceil(x2) do
@@ -218,6 +262,7 @@ local function pave(surface, x1, y1, x2, y2)
     end
   end
   surface.set_tiles(tiles)
+  surface.destroy_decoratives({ area = { { x1, y1 }, { x2, y2 } } })
 end
 
 script.on_nth_tick(60, function()
@@ -237,11 +282,25 @@ script.on_nth_tick(60, function()
   local PITCH = math.max(W, H) + 3
   say(string.format("%s is %d x %d, so the grid pitch is %d", MACHINE, W, H, PITCH))
 
+  -- THE SOLO SUBJECTS ARE SPACED BY THE WIDEST FRAME, NOT BY THE PITCH, which is the collector
+  -- probe's lesson taken rather than relearnt (#346): the frames are wider than the pitch, so a
+  -- spacing that only clears a machine lets a neighbour intrude on a frame. The pipes frame is the
+  -- widest because a pipe stands a tile outside the footprint on every plumbable side. Computed
+  -- once here and handed to the shutter in storage, so spacing and framing cannot drift apart.
+  local SOLO_W, SOLO_H = W + 6, H + 6
+  local PIPES_W, PIPES_H = W + 8, H + 8
+  local SPACING = math.max(SOLO_W, PIPES_W) + 1
+  say(string.format("solo frame %dx%d, pipes frame %dx%d, so solo subjects stand %d apart",
+    SOLO_W, SOLO_H, PIPES_W, PIPES_H, SPACING))
+
   -- Paved and cleared from the extremes the layout actually reaches, so moving a shot cannot leave
   -- a machine standing in water or behind somebody's trees. GRID is the rotations frame's centre.
   local GRID_X, GRID_Y = -0.5, 100.5
+  local COLD_X = 40.5
+  local WORKING_X = COLD_X + SPACING
+  local PIPES_X = WORKING_X + SPACING
   local x1, y1 = math.min(-PITCH, GRID_X - PITCH), -PITCH
-  local x2, y2 = 40.5 + 2 * PITCH + 8, GRID_Y + PITCH
+  local x2, y2 = PIPES_X + SPACING, GRID_Y + PITCH
   pave(surface, x1, y1, x2, y2)
   -- THE CHARACTER IS MOVED, NOT DESTROYED, AND IT IS MOVED BY THE ENTITY RATHER THAN THROUGH THE
   -- PLAYER. It stands at the spawn point, which is exactly where the reactor goes, and it is the
@@ -284,12 +343,15 @@ script.on_nth_tick(60, function()
   bolt(surface, MACHINE, ENERGY, "north", south.target_position, { GRID_X, GRID_Y - 3 * PITCH })
   place(surface, "rf-hc-exchanger", 0.5 + math.ceil(W / 2) + 7, 0.5)
 
-  -- The two single-machine subjects, spaced off the pitch so one cannot creep into the other's
-  -- frame when the footprint changes.
-  local COLD_X = 40.5
-  local WORKING_X = COLD_X + PITCH + 4
+  -- The three single-machine subjects, spaced off the widest frame so one cannot creep into
+  -- another's when the footprint changes.
   local cold    = place(surface, MACHINE, COLD_X, 0.5)
   local working = place(surface, MACHINE, WORKING_X, 0.5)
+  -- AND ONE WITH PIPES ON IT (#346). No frame this rig took had ever put a pipe against this
+  -- machine: it shot the bolted pair, the machine alone and four rotations, and the socket-height
+  -- defect Truls found on 2026-09-13 had shipped for months with no picture that could show it.
+  -- A probe that cannot photograph the join cannot be asked about it.
+  pipe_up(surface, place(surface, MACHINE, PIPES_X, 0.5))
 
   -- One per direction, in a two-by-two grid at that pitch, far enough north to stay out of every
   -- other frame. Four in a row was 66 tiles wide once the machine turned -- wider than any frame
@@ -302,7 +364,8 @@ script.on_nth_tick(60, function()
   storage.cold = cold
   storage.working = working
   storage.grid = { x = GRID_X, y = GRID_Y, pitch = PITCH }
-  storage.solo = { cold_x = COLD_X, working_x = WORKING_X, w = W, h = H }
+  storage.solo = { cold_x = COLD_X, working_x = WORKING_X, pipes_x = PIPES_X, h = H,
+                   solo_w = SOLO_W, solo_h = SOLO_H, pipes_w = PIPES_W, pipes_h = PIPES_H }
   storage.shoot_at = game.tick + 120
 end)
 
@@ -350,13 +413,14 @@ script.on_event(defines.events.on_tick, function()
   -- still written for the old shape: 864 x 1824 at zoom 3 is nine tiles wide by nineteen tall, a
   -- portrait frame for a machine five wide and fifteen long. Turned fifteen by five, the subject
   -- ran out of both sides of its own portrait -- and cold.png and working-*.png are the shots this
-  -- probe exists for.
-  local solo_w, solo_h = solo.w + 6, solo.h + 6
+  -- probe exists for. The sizes come from storage rather than being recomputed here: two
+  -- expressions for one number is how the spacing above and the framing here would come apart.
 
   tiles_shot("layout.png",       7.0, 0.5 + solo.h / 2, 30, pair_h, 2, 0)
-  tiles_shot("cold.png",         solo.cold_x,    0.5, solo_w, solo_h, 3, 0)
-  tiles_shot("working-day.png",  solo.working_x, 0.5, solo_w, solo_h, 3, 0)
-  tiles_shot("working-night.png", solo.working_x, 0.5, solo_w, solo_h, 3, 0.5)
+  tiles_shot("cold.png",         solo.cold_x,    0.5, solo.solo_w,  solo.solo_h,  3, 0)
+  tiles_shot("working-day.png",  solo.working_x, 0.5, solo.solo_w,  solo.solo_h,  3, 0)
+  tiles_shot("working-night.png", solo.working_x, 0.5, solo.solo_w, solo.solo_h,  3, 0.5)
+  tiles_shot("pipes.png",        solo.pipes_x,   0.5, solo.pipes_w, solo.pipes_h, 3, 0)
   tiles_shot("rotations.png", g.x, g.y, 2 * g.pitch + 4, 2 * g.pitch + 4, 1.5, 0)
 
   game.set_wait_for_screenshots_to_finish()
