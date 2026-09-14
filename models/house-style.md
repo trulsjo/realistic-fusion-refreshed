@@ -190,9 +190,15 @@ would otherwise be buried turns down through its own rimmed opening in the deck 
 **A CONTAINED CONNECTION IS EXEMPT, and the exemption is the point.** ADR 0018's contained fluids
 meet a machine FACE, never a pipe -- no pipe, tank, wagon or pump a player can build will join one.
 Matching those to a vanilla pipe would match them to something that cannot exist. So the rule binds
-a connection left `default` and no other, which is why rf-heat-exchanger's water pair and steam
-outlet move while its three reactor-energy connections do not, even where a water and an energy
-socket sit one tile apart on the same wall at different heights.
+a connection left `default` and no other.
+
+rf-heat-exchanger is the machine that will show what that costs, and **it has not been done to it
+yet**: every one of its six sockets still stands at the old 0.55, water, steam and reactor energy
+alike, so it still meets a pipe at a step. When it is brought over (#343) its water pair and its
+steam outlet move and its three energy connections stay, which will leave a water socket and an
+energy socket one tile apart on the same short end AT DIFFERENT HEIGHTS. That is the rule working
+rather than a slip, and it is written down here because the obvious next thing anyone will want to
+do is level them.
 
 **What it costs, recorded so it is not rediscovered as a surprise.** An accent band on a thinner
 stub at pipe height is a thin ring at the machine's edge, not the raised collar it was, and the
