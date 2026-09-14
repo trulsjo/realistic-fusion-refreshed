@@ -382,7 +382,7 @@ else:
     # instead of ending in mid-air beside it.
     #
     # A HOSE, BANDED AND BENT LIKE KRASTORIO 2'S. The old one was "not quite straight" with a ring
-    # every 0.45 tiles, which at 64 px a tile is a collar every 29 px on a 24 px pipe: read as a
+    # every 0.45 tiles, which at 64 px a tile is a ring every 29 px on a 24 px pipe: read as a
     # smooth tube with a few rings on it. The big hose on K2's reactor sheet -- the one crossing its
     # lower half -- bands at roughly its own radius, stands its ribs well proud, and swings clear of
     # its own line between supports. So 0.26 between rings on a 0.38-tile tube, each rib standing a
