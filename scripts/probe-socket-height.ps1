@@ -25,22 +25,22 @@
     A world height h shows as 0.707 h on screen, so our socket was drawn about 0.52 tiles of world
     height too high, and about a quarter too fat.
 
-    THE HEIGHT HAS SINCE BEEN FIXED ON BOTH, and not by making a cylinder pretend to be vanilla's
-    ribbon. Work vanilla's drawn extents back and no cylinder fits them: it is a stylised flat
-    ribbon, drawn low and shallow, the way Factorio's own art is. What Truls settled instead, on
-    2026-09-14, is that our honest cylinder is drawn AT THE PIPE'S OWN CENTRE, and that the tube
-    then passing through the plinth is preferable to one floating over it so long as the floor has
-    a modelled hole for it. models/rf_parts.py's `SOCKET_Z` carries that height and the derivation
-    behind it; #343 is where rf-heat-exchanger followed rf-isotope-collector to it.
+    BOTH HAVE SINCE BEEN FIXED ON BOTH MACHINES, and not by making a cylinder pretend to be
+    vanilla's ribbon. Work vanilla's drawn extents back and no cylinder fits them: it is a stylised
+    flat ribbon, drawn low and shallow, the way Factorio's own art is. What Truls settled instead --
+    the height on 2026-09-14, the thickness on #345 -- is that our honest cylinder is drawn at the
+    pipe's own CENTRE and at the pipe's own WIDTH, and that the tube then passing through the
+    plinth is preferable to one floating over it so long as the floor has a modelled hole for it.
+    models/house-style.md carries the rule and the arithmetic, models/rf_parts.py's `SOCKET_Z` the
+    height itself, and #343 is where rf-heat-exchanger followed rf-isotope-collector to both.
 
-    THE WIDTH IS FIXED ON ONE MACHINE ONLY. rf-isotope-collector's `SOCKET_R` was solved the same
-    way, 0.249, and is drawn as thick as the pipe; rf-heat-exchanger's is still 0.3, about a fifth
-    wider. #345 is where that is decided, and joint-exchanger.png is the frame it is
-    decided from.
+    IT BINDS ONLY A SOCKET A PLAYER CAN PLUMB. rf-heat-exchanger's three reactor-energy connections
+    are contained (ADR 0018) and keep the machine's old 0.55 and 0.3, so its short ends carry two
+    sockets drawn differently on purpose. joint-exchanger.png is where that is looked at.
 
-    SO THE HEIGHT FRAMES ARE NOW A REGRESSION CHECK BY EYE rather than the question itself. A socket
-    drawn at the right height can still be the wrong SHAPE beside a pipe, and that is a person
-    looking, which is what keeps this a probe.
+    SO THESE FRAMES ARE NOW A REGRESSION CHECK BY EYE rather than the question itself. A socket
+    drawn at the right height and width can still be the wrong SHAPE beside a pipe, and that is a
+    person looking, which is what keeps this a probe.
 
     WHAT IT SHOOTS:
 
@@ -324,10 +324,10 @@ try {
     }
     Write-Host ''
     Write-Host "screenshots: $OutputDirectory"
-    Write-Host "Both rendered machines build their player-facing sockets at rf_parts' SOCKET_Z now,"
-    Write-Host "which is where a vanilla pipe's own body is drawn, so the step these frames were"
-    Write-Host 'taken to show is gone. THE WIDTHS STILL DIFFER: the collector is drawn as thick as'
-    Write-Host 'its pipe and rf-heat-exchanger is about a fifth wider (#345).'
+    Write-Host "Both rendered machines draw every socket a player can plumb at rf_parts' SOCKET_Z"
+    Write-Host 'and at radius 0.249 now -- where a vanilla pipe draws its own body, and as thick --'
+    Write-Host 'so the step these frames were taken to show is gone. What is left to judge by eye is'
+    Write-Host "the SHAPE of the join, and rf-heat-exchanger's contained sockets beside its plumbed."
 }
 finally {
     if ($proc -and -not $proc.HasExited) { $proc.Kill() ; $proc.WaitForExit(10000) | Out-Null }

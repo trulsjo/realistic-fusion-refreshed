@@ -206,8 +206,9 @@ def port(body, axis, across, edge, sign, radius, depth=0.7):
 
     `radius` is the socket's own plus clearance -- both machines add 0.06 -- because a hole exactly
     the size of the tube leaves a z-fighting shell where the two surfaces touch, and a hole a little
-    proud reads as a hole. It is passed rather than derived: the two machines do not draw their
-    sockets the same width, and #345 is where that is decided.
+    proud reads as a hole. It is passed rather than derived from SOCKET_Z's sibling constant,
+    because a machine may cut a port for a socket of any width: models/house-style.md binds a
+    PLUMBABLE socket to the pipe's 0.249, and says nothing about the rest.
 
     DRAWS NOTHING FROM `random`, which is why it could be lifted out of a build script without
     moving a single imperfection: the cutter is a raw primitive and `torus` puts on no bevel. See

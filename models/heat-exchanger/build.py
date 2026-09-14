@@ -486,20 +486,23 @@ else:
     # -- sockets: one per declared connection, body to footprint edge, accent band. Placed in the
     # DECLARED frame, after the turn, so TX and TY here and never HALF_W / HALF_L.
     (sx0, sy0), (sx1, sy1) = geo["selection_box"]
-    SOCKET_R = 0.3                  # #345 is where this is measured against a pipe; height is #343
-    BAND_R = SOCKET_R + 0.04        # the accent stands a little proud of the tube, as it always has
-    PORT_R = SOCKET_R + 0.06        # and the hole a little proud of the accent, so it reads as a hole
 
-    # THIS MACHINE DRAWS ITS SOCKETS AT TWO HEIGHTS, AND THE PAIR ON EACH SHORT END DIFFER BY HALF
-    # A TILE ON PURPOSE (#343). Read as a mistake it invites a "fix" that breaks the
-    # machine, so: water west, water east and steam south carry no `connection_category`, a player
-    # plumbs them with ordinary pipes, and they are drawn at rf_parts.SOCKET_Z -- the height a
-    # vanilla pipe is drawn at. The three reactor-energy connections are CONTAINED (ADR 0018, #86):
-    # no pipe, tank, wagon or pump a player can build will ever join them, they bolt face to face
-    # against a reactor or the next exchanger in the row, and lowering them would match them to a
-    # pipe that cannot exist. So water at [-7, 1] sits low and energy at [-7, -1] two tiles away on
-    # the same wall does not, and that is the machine working rather than the machine wrong.
-    CONTAINED_Z = 0.55              # a bolted face meets a machine, so this is a look, not a match
+    # THIS MACHINE DRAWS ITS SOCKETS TWO WAYS, AND THE PAIR ON EACH SHORT END DIFFER BY HALF A TILE
+    # IN HEIGHT ON PURPOSE (#343). Read as a mistake it invites a "fix" that breaks the machine,
+    # so: water west, water east and steam south carry no `connection_category`, a player plumbs
+    # them with ordinary pipes, and models/house-style.md's rule binds them -- drawn at the height
+    # AND the thickness of the pipe that plugs in, both measured rather than chosen (Truls,
+    # 2026-09-13 and -14; #345 closed on the thickness). The three reactor-energy connections are
+    # CONTAINED (ADR 0018, #86): no pipe, tank, wagon or pump a player can build will ever join
+    # them, they bolt face to face against a reactor or the next exchanger in the row, and matching
+    # them to a pipe would match them to something that cannot exist. So water at [-7, 1] sits low
+    # and thin, and energy at [-7, -1] two tiles away on the same wall does neither -- that is the
+    # machine working rather than the machine wrong.
+    #
+    # The three contained ones keep the 0.55 and the 0.3 this machine has always had: exempt from
+    # the rule is not the same as bound by a different one, and a look chosen for them would be a
+    # decision nobody has been asked for.
+    CONTAINED_Z, CONTAINED_R = 0.55, 0.3
 
     def plumbable(c):
         """Whether a player can put an ordinary pipe on this connection.
@@ -507,7 +510,7 @@ else:
         Read off `connection_category` rather than off a list of fluids, which is the same
         discriminator scripts/load-check.ps1's gate uses -- a connection left `default` is one a
         player can plumb. A fourth energy face added tomorrow is contained without this being
-        touched, and a category taken off one makes it plumbable and lowers its socket.
+        touched, and a category taken off one makes it plumbable and brings it under the rule.
         """
         return not c["connection_category"]
 
@@ -515,11 +518,20 @@ else:
         """How high a connection's stub is drawn: the pipe's height, or the contained one."""
         return rf_parts.SOCKET_Z if plumbable(c) else CONTAINED_Z
 
+    def socket_r(c):
+        """How thick it is drawn. 0.249 is solved the way the height is, and in the same place:
+        this camera draws a tube 2.449 r tall on screen, vanilla's pipe body draws 0.609 tiles, so
+        2.449 r = 0.609. models/house-style.md carries the arithmetic and rf-isotope-collector was
+        the first machine to wear it."""
+        return 0.249 if plumbable(c) else CONTAINED_R
+
     for c in geo["connections"]:
         px, py = c["position"]
         py = -py                                   # Factorio south -> Blender -Y
         d = c["direction"]
-        z = socket_z(c)
+        z, r = socket_z(c), socket_r(c)
+        band_r = r + 0.04       # the accent stands a little proud of the tube, as it always has
+        port_r = r + 0.06       # and the hole a little proud of the accent, so it reads as a hole
         # The slab's top is at 0.25 and a lowered socket reaches through it, so it gets a modelled,
         # rimmed opening rather than clipping the stone (Truls, 2026-09-14). A contained socket
         # stands clear above the slab and needs none.
@@ -527,18 +539,18 @@ else:
             sign = 1 if d == "east" else -1
             edge = sx0 if d == "west" else sx1
             inner = (TX - 0.5) * sign
-            cyl(f"Socket-{d}-{c['fluid']}", SOCKET_R, abs(edge - inner), ((edge + inner) / 2, py, z), "metal", axis="X")
-            cyl(f"Band-{d}-{c['fluid']}", BAND_R, 0.22, (edge - 0.28 * sign, py, z), rf.accent(c["fluid"]), axis="X")
+            cyl(f"Socket-{d}-{c['fluid']}", r, abs(edge - inner), ((edge + inner) / 2, py, z), "metal", axis="X")
+            cyl(f"Band-{d}-{c['fluid']}", band_r, 0.22, (edge - 0.28 * sign, py, z), rf.accent(c["fluid"]), axis="X")
             if plumbable(c):
-                rf_parts.port(bpy.data.objects["Slab"], "X", py, edge, sign, PORT_R)
+                rf_parts.port(bpy.data.objects["Slab"], "X", py, edge, sign, port_r)
         else:
             sign = 1 if d == "north" else -1
             edge = -sy0 if d == "north" else -sy1  # flipped: north is +Y
             inner = (TY - 0.5) * sign
-            cyl(f"Socket-{d}-{c['fluid']}", SOCKET_R, abs(edge - inner), (px, (edge + inner) / 2, z), "metal", axis="Y")
-            cyl(f"Band-{d}-{c['fluid']}", BAND_R, 0.22, (px, edge - 0.28 * sign, z), rf.accent(c["fluid"]), axis="Y")
+            cyl(f"Socket-{d}-{c['fluid']}", r, abs(edge - inner), (px, (edge + inner) / 2, z), "metal", axis="Y")
+            cyl(f"Band-{d}-{c['fluid']}", band_r, 0.22, (px, edge - 0.28 * sign, z), rf.accent(c["fluid"]), axis="Y")
             if plumbable(c):
-                rf_parts.port(bpy.data.objects["Slab"], "Y", px, edge, sign, PORT_R)
+                rf_parts.port(bpy.data.objects["Slab"], "Y", px, edge, sign, port_r)
     # water header along the base between the two end sockets, wherever the prototype puts them:
     # since #275 they sit off the short-end centre (`_ e _ w _`), so the header is read off the
     # geometry rather than drawn down the middle.

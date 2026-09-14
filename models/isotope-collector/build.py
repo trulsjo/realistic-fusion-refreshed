@@ -752,8 +752,9 @@ else:
     # floor should have a modelled hole for the pipe."*
     SOCKET_Z = rf_parts.SOCKET_Z
 
-    # SOCKET RADIUS, MEASURED AGAINST A VANILLA PIPE THE WAY THE HEIGHT WAS (#345, for Truls to
-    # look at -- the decision is his and is not taken by this number existing).
+    # SOCKET RADIUS, MEASURED AGAINST A VANILLA PIPE THE WAY THE HEIGHT WAS, and settled the same
+    # way: #345 put the three options in front of Truls and is closed on his answer. The rule --
+    # height AND thickness, for a socket a player can plumb -- lives in models/house-style.md.
     #
     # A cylinder's cross-section is a circle in the depth/height plane, and this camera maps depth
     # 1:1 and height by 0.707, so the circle draws as an ellipse and its SCREEN HEIGHT is
