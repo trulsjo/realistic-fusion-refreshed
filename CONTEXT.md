@@ -387,8 +387,9 @@ produced nothing for a fortnight after `c3abb81` resized the exchanger, and no g
 found it by hand while discharging
 [#190](https://github.com/trulsjo/realistic-fusion-refreshed/issues/190).
 
-**Superseded block** — a passage that keeps an old reading rather than restating it, with a dated
-note saying what replaced it and why. The house style for a figure that has moved: the old number
+**Superseded block** — a passage that keeps an old reading rather than restating it, with a note
+saying what replaced it and why. The note carries a date, an issue number, or both: ADR 0015's is
+dated, ADR 0011's cites only #40. The house style for a figure that has moved: the old number
 stays, so the reasoning that stood on it can still be read. A superseded block is therefore not a
 stale figure — it is a figure that says it is old. An old figure still presented as current is the
 defect, and telling the two apart is what
