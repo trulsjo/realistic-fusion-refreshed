@@ -281,15 +281,17 @@
     input_flow_limit cannot cover its confinement heating must be refused; a mod that moves a
     pipe connection on a machine wearing a MOCKUP must be caught; a mod that puts a plasma of its
     own through our heating category must be refused; the isotope collector's two box filters
-    swapped must be refused; and the socket-height gate must both pass the sheets as they stand and
-    report a sheet lifted a quarter tile. The first is
+    swapped must be refused; and the socket-height gate must measure its own reference off vanilla's
+    sheet, judge by the number it measured, pass the sheets as they stand, and report a sheet
+    lifted a quarter tile. The first is
     required or the others prove nothing, since Factorio also exits non-zero when the repo is
     genuinely broken. Halves three through seven and nine are the ones Factorio exits 0 on, where
     the check has to decide alone. THE OTHER FOUR ARE THE MOD REFUSING ITSELF -- two, eight, ten
     and eleven all end with Factorio exiting non-zero, which is why each of the last three has to
     match the refusal's own message as well as its exit code. TWELVE IS NEITHER: it runs no canary
-    mod at all, because the gate it proves (#344) reads committed sprites and needs no game -- see
-    Test-SocketHeights. A reviewer read this list as stale
+    mod at all, because the gate it proves (#344) needs no game RUN. It does read the install, for
+    one file: since #355 it measures where a vanilla pipe is drawn off the base game's own sheet
+    instead of carrying a number for it. See Test-SocketHeights. A reviewer read this list as stale
     when ten and eleven were added; it is not, and they do not belong in it. Run this whenever the
     script changes.
 
@@ -765,6 +767,38 @@ function Test-RenderedArt {
     Write-Host "rendered art: all $($manifests.Count) manifest(s) agree with the live footprint, connections and recorded categories."
 }
 
+# The one sheet the socket-height gate measures its reference off, named here so the plain run and
+# the self-test cannot end up pointing at different files. Since #355 the gate does not carry a
+# number for where a vanilla pipe is drawn; it reads it off this.
+$VANILLA_PIPE_SHEET = 'base/graphics/entity/pipe/pipe-straight-horizontal.png'
+
+function Get-VanillaPipeSheet {
+    <#  The full path to vanilla's horizontal pipe sprite in the install this run is using, or a
+        failure. Not a warning and not a skip: the gate has no typed reference to fall back to
+        since #355, so a missing sheet means nothing can be judged.  #>
+
+    # Get-FactorioDataDirectory THROWS when the install has no data/, so the lookup is caught and
+    # reported the same way a missing sheet is. Both are the same failure to a reader -- the
+    # reference cannot be read -- and a raw terminating error would have said so in a different
+    # voice from every other gate here.
+    try {
+        $data = Get-FactorioDataDirectory -FactorioExe $FactorioExe
+        $sheet = Join-Path $data $VANILLA_PIPE_SHEET
+        $found = Test-Path -LiteralPath $sheet
+    } catch {
+        $data, $sheet, $found = "the install at $FactorioExe", $null, $false
+    }
+    if (-not $found) {
+        Write-Host ''
+        Write-Host "FAILED - socket height: $VANILLA_PIPE_SHEET is not in $data."
+        Write-Host '         That sheet is the reference every player-facing socket is measured'
+        Write-Host '         against, so without it nothing can be judged. Treating as a failure'
+        Write-Host '         rather than reporting a pass it did not earn.'
+        exit 1
+    }
+    return $sheet
+}
+
 function Test-SocketHeights {
     <#  Every player-facing socket must be DRAWN at the height a vanilla pipe is drawn at (#344).
 
@@ -774,10 +808,13 @@ function Test-SocketHeights {
         tools/check-socket-height.py, which reads pixels and so needs pillow and numpy; its own
         header sets out the measurement and what it cannot see.
 
-        NO DUMP AND NO GAME. It compares a sheet against the manifest beside it and the vanilla
-        pipe's own sprite geometry, all three of which are committed -- so unlike everything else
-        in this run it would answer the same with the game uninstalled. It is run from here anyway,
-        because this is where a person looks for the answer.  #>
+        NO DUMP AND NO GAME RUN, BUT IT DOES READ THE INSTALL. It compares a rendered sheet against
+        the manifest beside it -- both committed -- and against vanilla's own pipe sprite, which is
+        not: since #355 the gate measures where that pipe is drawn rather than carrying a number for
+        it, because the number it used to carry was half a pixel wrong and nothing here could tell.
+        So this hands it the sheet out of the install the rest of the run already resolved. It would
+        no longer answer the same with the game uninstalled, and that is the trade: a reference that
+        cannot silently rot, for a gate that needs the base game's files present.  #>
 
     if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
         Write-Host ''
@@ -797,6 +834,7 @@ function Test-SocketHeights {
     # pipeline while every gate here writes to the host, and the two do not interleave in order --
     # this gate's lines came out AFTER the run's own success line the first time it was wired in.
     $lines = @(& python (Join-Path $repoRoot 'tools/check-socket-height.py') `
+        --vanilla-pipe (Get-VanillaPipeSheet) `
         @($manifests | ForEach-Object { $_.FullName }) 2>&1 | ForEach-Object { "$_" })
     $failed = $LASTEXITCODE -ne 0
     if ($failed) { Write-Host '' }
@@ -1956,22 +1994,26 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
             exit 1
         }
 
-        # THE ONE HALF THAT NEEDS NO CANARY MOD, because the gate it proves needs no game (#344):
-        # tools/check-socket-height.py measures the committed sheets against the manifests beside
-        # them, so it can be made to fail by lifting a sheet in memory rather than by breaking a
-        # prototype. Its own two halves do that -- every socket right as it stands, and every socket
-        # reported wrong a quarter tile up -- and this runs them, so `-SelfTest` covers every gate
-        # the plain run does.
-        Write-Host 'self-test 12/12: the socket-height gate must pass the sheets and fail a lifted one.'
+        # THE ONE HALF THAT NEEDS NO CANARY MOD, because the gate it proves needs no game RUN
+        # (#344): tools/check-socket-height.py measures the committed sheets against the manifests
+        # beside them, so it can be made to fail by lifting a sheet in memory rather than by
+        # breaking a prototype. Its own three halves do that -- the reference tracking vanilla's
+        # sheet both ways and rejecting the shadow baked under it (#355), every socket right as it
+        # stands, and every socket reported wrong a quarter tile up -- and this runs them, so
+        # `-SelfTest` covers every gate the plain run does. It reads the install for the reference,
+        # like the plain run; what it needs no game FOR is a map.
+        Write-Host 'self-test 12/12: the socket-height gate must measure its own reference, pass the sheets, and fail a lifted one.'
         $heightLines = @(& python (Join-Path $repoRoot 'tools/check-socket-height.py') --self-test `
+            --vanilla-pipe (Get-VanillaPipeSheet) `
             @((Get-RenderManifests -AssetsDirectory $ourDirectories[$ASSETS_MOD]) | ForEach-Object { $_.FullName }) `
             2>&1 | ForEach-Object { "$_" })
         $heightFailed = $LASTEXITCODE -ne 0
         if ($heightFailed) {
             foreach ($line in $heightLines) { Write-Host $line }
             Write-Host ''
-            Write-Host 'FAILED - self-test: the socket-height gate could not show both that it passes the'
-            Write-Host '         sheets as they stand and that it catches a socket drawn too high.'
+            Write-Host 'FAILED - self-test: the socket-height gate could not show that it measures its own'
+            Write-Host '         reference, that it passes the sheets as they stand, and that it catches a'
+            Write-Host '         socket drawn too high.'
             exit 1
         }
 
@@ -1996,7 +2038,8 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
         Write-Host "     connection caught on $mockupName's mockup, an unburnable plasma"
         Write-Host '     refused by check_every_plasma_burns() and a swapped collector box'
         Write-Host '     refused by check_collector_boxes() -- both by their own words -- a'
-        Write-Host '     socket-height gate that passes the sheets and catches a lifted one,'
+        Write-Host '     socket-height gate that measures its own reference off vanilla, passes the'
+        Write-Host '     sheets and catches a lifted one,'
         Write-Host "     and $($treeBefore.Count) files under our mod directories untouched by the run."
         exit 0
     }
