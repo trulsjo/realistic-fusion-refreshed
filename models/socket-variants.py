@@ -23,15 +23,19 @@ actually what ships.
 
 THE TREATMENTS, which are the four #350 names and no more:
 
-  bare        nothing added. The control, and the proof that this script's own pipeline draws
-              nothing of its own: a `bare` sheet must come out pixel-identical to the shipped one.
-  flanged     vanilla's flange pair at the stub's mouth -- two discs standing proud of the tube,
-              in the tube's own material, just inboard of the dark rim.
-  dark-cored  a shadowed channel along the tube's most camera-facing line, the way vanilla's pipe
-              reads. Which line that is depends on the tube's direction and is derived below, not
-              guessed.
-  collared    the dark rim moved off the footprint edge onto the body face, so it rings the hole in
-              the slab instead of the mouth in mid-air. Nothing is added; one object moves.
+  bare            nothing added. The control, and the proof that this script's own pipeline draws
+                  nothing of its own: a `bare` sheet must come out pixel-identical to the shipped
+                  one.
+  flanged         vanilla's flange pair at the stub's mouth -- two discs standing proud of the
+                  tube, in the tube's own material, just inboard of the dark rim. THE ONE #351
+                  CHOSE; it ships from #353, and this stays the rig that can show why.
+  dark-cored      a shadowed channel along the tube's most camera-facing line, the way vanilla's
+                  pipe reads. Which line that is depends on the tube's direction and is derived
+                  below, not guessed.
+  rimmed-inboard  the dark rim moved off the footprint edge onto the body face, so it rings the
+                  hole in the slab instead of the mouth in mid-air. Nothing is added; one object
+                  moves. Called `collared` until #351, where the word went to the accent band it
+                  already meant in models/house-style.md -- one word cannot name both.
 
 Every added piece goes through models/rf_parts.py, so it takes the house style's bevel and the
 detail floor without this file restating either, and a change to the shipped socket geometry reaches
@@ -54,7 +58,7 @@ import rf_blender as rf  # noqa: E402
 import rf_parts  # noqa: E402
 from rf_parts import box, cyl  # noqa: E402
 
-TREATMENTS = ("bare", "flanged", "dark-cored", "collared")
+TREATMENTS = ("bare", "flanged", "dark-cored", "rimmed-inboard")
 
 # THE FLANGE PAIR IS FITTED TO THE BARE TUBE, NOT PLACED AT TYPED OFFSETS. There is very little
 # bare tube at a socket's mouth: on the collector the stub is 0.75 tiles long, the dark rim owes
@@ -273,7 +277,7 @@ for stub in sockets:
         box(f"Core-{stub.name}", size, tuple(centre), CORE_MATERIAL, rot=rot, bev=0,
             read=CORE_WIDTH)
 
-if treatment == "collared":
+if treatment == "rimmed-inboard":
     if not rims:
         fail(f"{os.path.basename(model_path)} has no object named PortRim-*, so there is no rim to move")
     for rim in rims:

@@ -159,7 +159,8 @@ effects actually mean: how far the surface faces up. `mat` in
 ## Connections
 
 Every pipe connection gets a **socket** baked into the structure: a bare-metal stub from the body
-to the footprint edge on the connection's tile, with one accent band of the fluid it carries.
+to the footprint edge on the connection's tile, with one accent band of the fluid it carries, and
+-- on a socket a player can plumb -- a flange pair at its mouth (#351, below).
 
 **A SOCKET A PLAYER CAN PLUMB IS DRAWN LIKE THE PIPE THAT PLUGS INTO IT** -- height and thickness
 both, and both are measured rather than chosen (Truls, 2026-09-13 and 2026-09-14). It was radius
@@ -217,6 +218,58 @@ them against, and a look chosen for them would be a decision nobody has been ask
 stub at pipe height is a thin ring at the machine's edge, not the raised collar it was, and the
 accents are what tell a player which socket carries what. If that goes too far, the band can stay
 proud while the tube stays thin; they are separate numbers.
+
+**"COLLAR" MEANS THE ACCENT BAND HERE AND NOTHING ELSE** (#351). The word named two objects for a
+while -- the raised ring in the paragraph above, and a rim moved inboard onto the body face, which
+was one of #350's four treatments. The band keeps it; that treatment is `rimmed-inboard` in
+`models/socket-variants.py` and `scripts/probe-socket-shapes.ps1`.
+
+### The mouth wears a flange pair
+
+**A PLUMBABLE SOCKET'S MOUTH WEARS VANILLA'S FLANGE PAIR: two ribs standing proud of the tube, in
+the tube's own material, just inboard of the dark rim** (Truls, 2026-09-14, settling #351 from the
+frames #350 shot). It ships from #353. `docs/research/socket-shapes.md` has the frames and the
+full reading of them; ADR 0033 has the principle. What has to live here is the rule and the two
+things that will otherwise be undone by accident.
+
+**The principle it settles, which is wider than this rule.** A socket borrows a vanilla drawing cue
+when the cue is also hardware a real pipe has. A flange is; a painted window is not. That is why
+`dark-cored` lost on more than its looks: our tube is a cylinder and vanilla's window is the shadow
+inside a stylised ribbon, so drawing it would draw a feature the geometry does not have.
+
+**THE FRAMES FOUND SOMETHING NOBODY HAD WRITTEN DOWN, and it is why three of the four treatments
+were never really candidates. There is almost no bare tube at a socket's mouth.** With a pipe
+joined, what shows outside the slab is vanilla's `pipe_cover`, then the accent band, then the slab
+edge. `dark-cored` came out indistinguishable from the control at zoom 8 for exactly that reason --
+there was no exposed tube to put a channel on. `rimmed-inboard` was the only visibly different one
+and it failed on the accents: moving the rim inboard pushes the band onto the body face, where the
+slab edge clips it to a sliver. A shape that costs a player the ability to tell tritium from
+helium-3 is a bad trade whatever the seam looks like.
+
+**#350'S ZOOM-1 CRITERION IS OVERRIDDEN HERE, DELIBERATELY, AND THIS PARAGRAPH IS THE ONLY RECORD
+OF IT.** #350 said *"a difference nobody can see at 32 px to the tile is not a candidate, and
+magnification alone would hide that"*. None of the four treatments is distinguishable at zoom 1 --
+not the flange either. The criterion is a good guard against being fooled by magnification, and it
+was written before anyone knew the mouth had no visible surface to treat. It is set aside because a
+flange is real hardware rather than an artefact of zoom, and players do zoom in. **Do not undo the
+flange on the strength of #350's sentence**; that is the shape of the mistake this paragraph
+exists to stop.
+
+**THE RIBS ARE FITTED BY MEASUREMENT, NEVER PLACED AT TYPED OFFSETS**, and the first version of the
+variant script is the reason. There is very little clear tube to work in: on the isotope collector
+the stub is 0.75 tiles long, the dark rim owes the first 0.08 and the accent band starts at 0.17,
+leaving 0.09 tiles of metal for a pair of ribs. Typed offsets buried one rib in the rim and clipped
+the band with the other -- a fat lump rather than a flange pair. So measure the clear span between
+the rim and the band that are already in the model and divide the ribs into it, and **fail loudly on
+a machine with no room rather than drawing a lump**. What makes a rib read as a flange is standing
+PROUD of the tube, not its thickness: 0.07 tiles is 4.5 px each side at 64 px to the tile, which is
+why the detail floor is cleared on the disc's face and not on its edge.
+
+**THE ACCENT BAND IS UNCHANGED** (#351, same decision). The frames show it reading at zoom 8 and
+present at zoom 1, so the cost recorded two paragraphs up was paid and is survivable. What the
+frames also raised, and what is **not** settled here: at zoom 1 an accent is about six pixels of
+pale colour, and tritium and helium-3 are both pale. That is a question about every accent on every
+machine rather than about sockets, so it is #359 and not this rule.
 
 Vanilla's `pipe_covers` cap the stub when nothing is joined (#240, decided #247).
 Boilers and generators bake sockets into every direction sheet; no separate pipe picture. A socket

@@ -22,10 +22,11 @@
 
     THE FOUR TREATMENTS are #350's, and models/socket-variants.py draws them:
 
-      bare        what ships today, as the control
-      flanged     vanilla's flange pair added at the stub's mouth
-      dark-cored  a shadowed channel down the tube, the way vanilla's window reads
-      collared    the dark rim brought in from the footprint edge onto the body face
+      bare            what ships today, as the control
+      flanged         vanilla's flange pair added at the stub's mouth -- THE ONE #351 CHOSE
+      dark-cored      a shadowed channel down the tube, the way vanilla's window reads
+      rimmed-inboard  the dark rim brought in from the footprint edge onto the body face
+                      (called `collared` until #351 gave that word to the accent band)
 
     NOTHING IT MAKES CAN SHIP, and that is the property to keep when editing it. The variants are
     rendered from THROWAWAY copies of models/isotope-collector/isotope-collector.blend into a
@@ -112,7 +113,7 @@ param(
     [string]   $Blender,
     [string]   $SheetDirectory,
     [string]   $OutputDirectory,
-    [string[]] $Treatments = @('bare', 'flanged', 'dark-cored', 'collared'),
+    [string[]] $Treatments = @('bare', 'flanged', 'dark-cored', 'rimmed-inboard'),
     [int]      $Samples = 64,
     [int]      $TimeoutSeconds = 300,
     [switch]   $KeepTemp
