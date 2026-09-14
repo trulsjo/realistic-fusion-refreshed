@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Fail when a player-facing socket is drawn at a height a vanilla pipe would not meet.
 
-    python tools/check-socket-height.py <manifest.json> [...]      # gate: exit 1 on a mismatch
-    python tools/check-socket-height.py --self-test <manifest.json> [...]
+    python tools/check-socket-height.py --vanilla-pipe <pipe-straight-horizontal.png> \
+           <manifest.json> [...]                                   # gate: exit 1 on a mismatch
+    python tools/check-socket-height.py --vanilla-pipe <...> --self-test <manifest.json> [...]
 
 A GATE, and it reads pixels -- which is the point. rf-heat-exchanger and rf-isotope-collector both
 built their sockets at z 0.55 for months, both were drawn about half a tile of world height above
@@ -63,6 +64,14 @@ socket does -- so a verdict here says nothing about which. It also says nothing 
 socket is on the right EDGE of the machine; load-check's rendered-art gate holds the recorded
 geometry against the live prototype, and that is what covers it.
 
+IT NEEDS THE BASE GAME'S OWN SHEET, and since #355 that is a real dependency rather than a
+convenience. The reference this compares against -- where vanilla draws its pipe -- is measured off
+`base/graphics/entity/pipe/pipe-straight-horizontal.png` at run time instead of being carried as a
+number, because the number it used to carry was half a pixel wrong and nothing could tell. So the
+path is a required argument, scripts/load-check.ps1 passes it from the install it already resolved,
+and a missing sheet is a failure with a message rather than a fall back to a typed value: there is
+no typed value left to fall back to.
+
 Needs pillow and numpy -- the only third-party Python any gate here requires. Run from the
 repository root.
 """
@@ -71,6 +80,7 @@ import json
 import math
 import os
 import sys
+import tempfile
 
 try:
     import numpy as np
@@ -87,36 +97,71 @@ import rf_blender as rf  # noqa: E402  (no bpy at module level)
 # sheets were rendered through rather than copied as a number. NOTHING HERE DIVIDES BY IT: the
 # header sets out why a drawn centre does not convert back into a world height at this socket
 # height, and the one place that used to do it printed a figure 1.75x what the build script holds.
-# It is kept because it is what makes 0.031 and rf_parts.SOCKET_Z's 0.044 the same statement, which
-# is the fact a reader of this file needs and would otherwise go looking for.
+# It is kept because it is what WOULD make the measured reference and rf_blender.SOCKET_Z one
+# statement, and today they are not: 0.707 x 0.044 is 0.031, and the reference measures 0.023. That
+# gap is the defect #355 uncovered and #356 closes, and nothing here enforces the relation yet --
+# rf_blender imports no bpy since #354, so this file CAN import SOCKET_Z and hold it against the
+# measurement, and #356 is where that check is added along with the number it checks.
 SCREEN_PER_WORLD = 1.0 / math.tan(math.radians(rf.CAMERA_PITCH_DEG))
 
-# WHERE A VANILLA PIPE DRAWS ITS BODY, in tiles above the ground line. Measured off
-# base/graphics/entity/pipe/pipe-straight-horizontal.png, which the prototype draws at scale 0.5
-# with no shift -- so 64 px to the tile, the same as ours, and directly comparable. The sheet has
-# the pipe's shadow baked into it below the body; the body's full-width run is rows 43..81 of 128,
-# whose midpoint is this read as row CENTRES and 0.023 read as row EDGES. `drawn_centre` below reads
-# our own silhouette by edges, so the two sides of the comparison are half a pixel out of step with
-# each other: 0.008 tiles against a tolerance ten times that, always in the same direction, and
-# smaller than the geometric bias it sits inside. 0.031 is kept because it is the number
-# models/rf_parts.SOCKET_Z and models/house-style.md were both solved from, and a gate that quoted a
-# different one would read as disagreeing with the rule it enforces.
-VANILLA_PIPE_CENTRE = 0.031
-
-# NOT CROSS-CHECKED AGAINST models/rf_parts.SOCKET_Z, and the reason is a constraint rather than a
-# choice: `0.707 z = 0.031` is what that module solved for, so the two are one statement and ought
-# to be held together -- but rf_parts imports bpy and cannot be imported outside Blender. The two
-# comments name each other instead, which is weaker and is said so.
-
-# HOW FAR OFF IS TOO FAR. Not equality: both machines measure about 0.024 tiles above vanilla's
-# centre rather than on it, and the header says where that comes from -- the ground plane cuts the
-# socket's underside at this height, so the midpoint rides high. It is geometric and it scales with
-# the socket's radius; the lit bevel and the anti-aliasing are worth a fraction of a pixel beside
-# it. There is a further half pixel in the reference, below.
+# WHERE A VANILLA PIPE DRAWS ITS BODY IS MEASURED, NOT TYPED (#355), and it used to be typed. The
+# number here was 0.031 tiles, carried from a hand reading, and it was wrong by half a pixel in the
+# permissive direction. The sheet's barrel runs rows 43..81 of 128; read by row CENTRES its midpoint
+# is 62.5 and read by row EDGES it is also 62.5, which is 1.5 px above the image centre -- 0.023
+# tiles. 0.031 is 2.0 px, and comes from averaging the bare row INDICES (43 + 81) / 2 = 62 against a
+# centre of 64: the index convention on one side of a comparison and the edge convention on the
+# other. The old comment disclosed the difference as a convention artefact and kept the number
+# because it was what SOCKET_Z had been solved from, which is exactly how a mis-measurement outlives
+# the person who made it.
 #
-# 0.08 tiles is five pixels on a sheet and two and a half at the game's own zoom. It admits that
-# bias with room to spare and still catches the defect this exists for by a factor of four, since a
-# socket at z 0.55 draws 0.389 tiles up and is not clipped at all.
+# So the gate reads vanilla's own sheet, by `drawn_centre`'s own convention, and no one has to get a
+# convention right twice.
+
+# The colour floor that separates the drawn pipe from the shadow baked in underneath it. OURS HAVE
+# NO BAKED SHADOW -- models/render.py writes structure and shadow to separate sheets -- so this
+# asymmetry exists on vanilla's side only, and alpha cannot do the work: the shadow is opaque for
+# most of its depth. Colour can, because the shadow is drawn BLACK. Measured on 2.0.77's
+# pipe-straight-horizontal.png the dimmest row of pipe peaks at 40 of 255 and the brightest row of
+# shadow at 8, so this sits in a five-fold gap rather than on a knife edge -- and
+# `vanilla_pipe_centre` reports the gap it actually found, and refuses a sheet where it has closed.
+PIPE_COLOUR_FLOOR = 24
+# And the visibility floor the colour is read through. Alpha cannot separate pipe from shadow -- the
+# shadow is opaque for most of its depth -- but it is still what says whether a pixel is drawn at
+# all, and RGB under a transparent pixel is meaningless. 8 of 255 is the same floor `drawn_centre`
+# reads our own silhouettes at, so both sides of the comparison call the same thing visible.
+PIPE_ALPHA_FLOOR = 8
+# How much clear air the floor must have on each side of it, as a fraction of the floor. Neither the
+# dimmest row kept nor the brightest row dropped may come within this much of it. At 0.25 that is 30
+# and 18, against a measured 40 and 8 -- so the check has room today and fails loudly on the day a
+# sheet closes the gap, rather than quietly re-measuring a different set of rows.
+PIPE_COLOUR_MARGIN = 0.25
+
+# The sheets this reference may be measured off. Both are the same pipe seen along the screen's
+# horizontal axis, which is the orientation ours are compared in, and both measure +0.023 -- the
+# window variant differs only in the lighter panel down the barrel, which changes no extent. Any
+# other sprite in that directory is a different object drawn at a different height.
+VANILLA_PIPE_SHEETS = frozenset(("pipe-straight-horizontal.png", "pipe-straight-horizontal-window.png"))
+
+# HOW FAR OFF IS TOO FAR. Not equality: both machines measure about 0.031 tiles above vanilla's
+# centre rather than on it, and that residual is TWO things rather than one, which the reference
+# being wrong used to hide.
+#
+#   0.024 is geometric and is the header's: the ground plane cuts the socket's underside at this
+#          height, so the midpoint rides high. It scales with the socket's radius, and the lit
+#          bevel and the anti-aliasing are worth a fraction of a pixel beside it. Measured against
+#          the axis the projection predicts -- 0.707 x SOCKET_Z -- so it does not move when the
+#          reference does.
+#   0.008 is the mistake. SOCKET_Z was solved from the old typed 0.031 rather than from the 0.023
+#          vanilla actually draws at, so every plumbable socket is built 0.0109 tiles of world
+#          height too high -- 0.49 px on the sheet, 0.25 px at the game's own zoom. #356 is where
+#          the constant follows the measurement and this term goes.
+#
+# 0.08 tiles is five pixels on a sheet and two and a half at the game's own zoom. It admits both
+# with room to spare and still catches the defect this exists for by a factor of four: a socket at
+# z 0.55 clears the ground plane entirely and MEASURED 0.398 tiles up on the rendered sheet, which
+# lands 0.375 from the reference. 0.707 x 0.55 = 0.389 is what the projection PREDICTS for it, and
+# the two differ because a real sheet carries a bevel and a wash; the measured one is the one that
+# says what this tolerance would have caught.
 TOLERANCE = 0.08
 
 # The outboard strip is inset by this many pixels at each end, because the collision edge column
@@ -132,6 +177,113 @@ WINDOW_TILES = 1.0
 class Unmeasurable(Exception):
     """The sheet could not be read where the socket should be. A failure, not a pass: an instrument
     fault reported as a clean run is the shape every gate here is written against."""
+
+
+def vanilla_pipe_centre(path):
+    """How far above the ground line vanilla draws its horizontal pipe's body, in tiles.
+
+    THE REFERENCE EVERY SOCKET HERE IS JUDGED AGAINST, read off the base game's own sheet so that
+    both sides of the comparison are measured the same way by construction. `drawn_centre` reads our
+    silhouette by row EDGES -- first row's top edge to last row's bottom edge -- and this reads
+    vanilla's the same way. Getting a convention right once is the whole point of measuring it here
+    rather than typing the answer.
+
+    THE SHEET IS DIRECTLY COMPARABLE WITH OURS: the prototype draws it at scale 0.5 with no shift,
+    so it is 64 px to the tile exactly as our sheets are, and its centre row is its ground line.
+
+    WHAT IS EXCLUDED, AND WHY IT HAS TO BE. Vanilla bakes the pipe's shadow into the same sheet;
+    ours are separate files. The shadow is opaque for most of its depth, so alpha cannot separate
+    them -- but it is drawn black, and the pipe is not, so colour can. See PIPE_COLOUR_FLOOR.
+
+    THE FLANGE TIPS ARE COUNTED AND IT DOES NOT MATTER. On 2.0.77 the drawn silhouette is rows
+    37..87, whose midpoint is 62.5; the barrel alone -- the rows running the sprite's full width,
+    43..81 -- has a midpoint of 62.5 as well, because the flanges are symmetric about it, six rows
+    above and six below. Both readings give the same reference, so this does not rest on where a
+    flange is judged to stop. The window variant of the same sprite measures 62.5 too.
+
+    Raises Unmeasurable rather than guessing. A gate that cannot read its own reference must say so:
+    reporting a pass it did not earn is the failure this whole file exists against.
+    """
+    # WHICH SPRITE, NOT JUST WHICH SIZE. Every pipe sprite in that directory is 128 square, and
+    # several draw a ribbon this function would happily measure: the VERTICAL pipe measures +0.156
+    # and the T-pieces and the cross measure something else again, all without complaint. Nothing in
+    # the pixels tells them apart cheaply -- pipe-ending-left has the same row extents as the
+    # straight horizontal -- so this checks the name, which is what a path typo gets wrong. It does
+    # not defend against a renamed file, and nothing sensible would.
+    if os.path.basename(path).lower() not in VANILLA_PIPE_SHEETS:
+        raise Unmeasurable(f"{os.path.basename(path)} is not a straight horizontal pipe sheet; this "
+                           f"reference is measured off one of: {', '.join(sorted(VANILLA_PIPE_SHEETS))}")
+    if not os.path.exists(path):
+        raise Unmeasurable(f"vanilla's pipe sheet is not at {path}")
+    try:
+        a = np.asarray(Image.open(path).convert("RGBA"))
+    except OSError as why:
+        raise Unmeasurable(f"{os.path.basename(path)} could not be read: {why}")
+    height, width = a.shape[:2]
+    # Two tiles square at our own pixels-per-tile is what the arithmetic below assumes. A sheet of
+    # another size is a sprite this function was not written for, and mis-measuring it silently
+    # would move every verdict in the run.
+    if (height, width) != (2 * rf.PX_PER_TILE, 2 * rf.PX_PER_TILE):
+        raise Unmeasurable(f"{os.path.basename(path)} is {width}x{height} px, where this measurement "
+                           f"expects {2 * rf.PX_PER_TILE} square (two tiles at {rf.PX_PER_TILE} px)")
+
+    # COLOUR ONLY WHERE SOMETHING IS DRAWN. A fully transparent pixel still carries RGB in a PNG,
+    # and exporters leave whatever was in the buffer there -- vanilla's own pipe-straight-vertical
+    # sheet has 255 under alpha 0. Reading the peak off raw RGB would let that padding decide both
+    # the rule and the margin below: it reported `kept 255, dropped 255` on that sheet, which is a
+    # false diagnosis in one direction and, on a sheet whose bright pixels happen to be invisible,
+    # a false pass in the other.
+    rgb_peak = np.where(a[..., 3] > PIPE_ALPHA_FLOOR, a[..., :3].max(axis=2), 0)
+    drawn = rgb_peak > PIPE_COLOUR_FLOOR
+    rows = np.nonzero(drawn.any(axis=1))[0]
+    if len(rows) == 0:
+        raise Unmeasurable(f"nothing but black is drawn in {os.path.basename(path)}, so the pipe "
+                           f"cannot be told from the shadow baked under it")
+    low, high = int(rows[0]), int(rows[-1])
+    if high - low + 1 != len(rows):
+        raise Unmeasurable(f"the pipe's rows in {os.path.basename(path)} are not contiguous "
+                           f"({len(rows)} rows spanning {low}..{high}), so the colour floor has "
+                           f"split the body instead of separating it from the shadow")
+
+    # THE GAP THE COLOUR FLOOR SITS IN, asserted rather than trusted. If a future sheet darkens the
+    # pipe or lightens the shadow until the two meet, the rows above stop being the pipe and the
+    # reference moves silently -- which is the same class of defect this function was written to
+    # end.
+    # AND IT MUST BE SHAPED LIKE A PIPE LYING ACROSS THE SCREEN. The name check above catches a path
+    # typo, which is the likely mistake; these catch a file that has been renamed or repacked, which
+    # a name cannot. A straight horizontal pipe fills its tile edge to edge, so its widest drawn row
+    # is exactly one tile -- and it is a RIBBON, so its whole silhouette is under a tile tall, where
+    # anything with a vertical arm is half again as deep (pipe-cross and pipe-straight-vertical both
+    # draw 84 rows against this sprite's 51).
+    #
+    # WHAT THE PAIR STILL DOES NOT CATCH, enumerated over all nineteen sprites in that directory
+    # rather than guessed: three pass both shape checks. pipe-ending-left and pipe-ending-right draw
+    # rows 37..87 exactly as this one does and measure the same +0.023, so a rename to either is
+    # harmless. pipe-t-down is the one that matters -- 64 wide and 59 deep, but rows 37..95, which
+    # measures -0.039 -- and only the name refuses it. Said rather than left to be discovered,
+    # because a guard's gaps are the part a reader needs.
+    widest = int(drawn.sum(axis=1).max())
+    if widest != rf.PX_PER_TILE:
+        raise Unmeasurable(f"{os.path.basename(path)} draws {widest} px across at its widest, not "
+                           f"the {rf.PX_PER_TILE} a pipe running the width of its tile would. This "
+                           f"is not the sprite this reference is measured off")
+    if high - low + 1 > rf.PX_PER_TILE:
+        raise Unmeasurable(f"{os.path.basename(path)} draws {high - low + 1} rows deep, more than "
+                           f"the {rf.PX_PER_TILE} a pipe lying across the screen fits in. This "
+                           f"sprite has something standing up it, so it is not the reference")
+
+    dimmest_kept = int(rgb_peak[low:high + 1].max(axis=1).min())
+    outside = np.concatenate([rgb_peak[:low], rgb_peak[high + 1:]])
+    brightest_dropped = int(outside.max()) if outside.size else 0
+    if (dimmest_kept < PIPE_COLOUR_FLOOR * (1 + PIPE_COLOUR_MARGIN)
+            or brightest_dropped > PIPE_COLOUR_FLOOR * (1 - PIPE_COLOUR_MARGIN)):
+        raise Unmeasurable(
+            f"the colour floor of {PIPE_COLOUR_FLOOR} no longer separates {os.path.basename(path)}'s "
+            f"pipe from its baked shadow: dimmest row kept peaks at {dimmest_kept}, brightest row "
+            f"dropped at {brightest_dropped}. Re-measure the sheet before moving the floor")
+
+    centre_row = (low + high + 1) / 2                 # row EDGES, the convention drawn_centre uses
+    return (height / 2 - centre_row) / rf.PX_PER_TILE, (low, high, dimmest_kept, brightest_dropped)
 
 
 def plumbable(connection):
@@ -253,15 +405,19 @@ def rolled_sheet(shift_px):
     return load
 
 
-def report(rows):
-    """Print one line per measured connection; return each one's verdict, in the same order."""
+def report(rows, reference):
+    """Print one line per measured connection; return each one's verdict, in the same order.
+
+    `reference` is where vanilla draws its pipe, measured by `vanilla_pipe_centre` rather than
+    typed. It is passed rather than read from module state so the self-test can hand it a
+    deliberately wrong one and watch every verdict move, which is half one's third case."""
     verdicts = []
     for name, label, centre, why in rows:
         if why is not None:
             print(f"  {name:24s} {label:24s} UNMEASURABLE: {why}")
             verdicts.append("UNMEASURABLE")
             continue
-        off = centre - VANILLA_PIPE_CENTRE
+        off = centre - reference
         verdict = "ok" if abs(off) <= TOLERANCE else "TOO HIGH" if off > 0 else "TOO LOW"
         # NO WORLD z IN THIS LINE, and its absence is deliberate. Dividing the drawn centre by
         # SCREEN_PER_WORLD used to be printed here as "world z", which read as the number the build
@@ -269,18 +425,63 @@ def report(rows):
         # rf_parts.SOCKET_Z, so the gate was quoting a height back at a reader who would then find
         # a different one in the source. Drawn tiles are what was measured and are all that is said.
         print(f"  {name:24s} {label:24s} drawn {centre:+.3f} tiles up against the pipe's "
-              f"{VANILLA_PIPE_CENTRE:+.3f} ({off:+.3f} out, tolerance {TOLERANCE}): {verdict}")
+              f"{reference:+.3f} ({off:+.3f} out, tolerance {TOLERANCE}): {verdict}")
         verdicts.append(verdict)
     return verdicts
 
 
-def self_test(manifests):
-    """Prove the check can fail, in both directions, without a game or a render.
+def synthetic_pipe_sheet(top_row, rows_tall, shadow_rows):
+    """A sheet with a coloured band and a black band under it, for the reference half below.
 
-    HALF ONE: every plumbable socket on both machines as they stand must pass. HALF TWO: the same
-    sheets lifted a quarter tile up the screen must be reported TOO HIGH on every one of them. A
-    gate that only ever passes and a gate that only ever fails look the same from outside, so both
-    halves are here.
+    The point is a sheet whose right answer is arithmetic rather than another measurement: a band
+    starting at `top_row`, `rows_tall` deep, with `shadow_rows` of pure black beneath it at about
+    the alpha vanilla bakes its own shadow at. Only the coloured band is the pipe, so the answer is
+    that band's edge-midpoint and the black must not move it by a pixel.
+    """
+    side = 2 * rf.PX_PER_TILE
+    # ONE TILE WIDE, CENTRED, because that is what a pipe sprite is and `vanilla_pipe_centre` now
+    # insists on it. The first version of this helper filled the whole 128 and the shape guard threw
+    # it out -- which is the guard working, and the reason to build the case properly rather than to
+    # loosen the guard for a test.
+    lo, hi = side // 4, side // 4 + rf.PX_PER_TILE
+    a = np.zeros((side, side, 4), dtype=np.uint8)
+    a[top_row:top_row + rows_tall, lo:hi, :3] = 90        # well clear of PIPE_COLOUR_FLOOR
+    a[top_row:top_row + rows_tall, lo:hi, 3] = 255
+    a[top_row + rows_tall:top_row + rows_tall + shadow_rows, lo:hi, :3] = 0
+    a[top_row + rows_tall:top_row + rows_tall + shadow_rows, lo:hi, 3] = 170
+    return a
+
+
+def measured_from_array(a):
+    """`vanilla_pipe_centre` over an array already in hand. It reads a path, not an array, because
+    that is what a gate is given; the self-test writes its cases out and hands over the path so it
+    exercises the same code the run does rather than a second copy of the arithmetic."""
+    with tempfile.TemporaryDirectory(prefix="rf-pipe-") as scratch:
+        path = os.path.join(scratch, "pipe-straight-horizontal.png")
+        Image.fromarray(a, "RGBA").save(path)
+        return vanilla_pipe_centre(path)[0]
+
+
+def self_test(manifests, pipe_sheet):
+    """Prove the check can fail, in every direction it can be wrong in, without a game or a render.
+
+    HALF ONE is the REFERENCE, and it is first because the other two are read against it. Vanilla's
+    sheet is rolled a known number of pixels down and then up, and the measured reference must
+    follow by exactly that much each way: an instrument that does not move with its input is not
+    measuring. Then two synthetic sheets whose answer is arithmetic prove the one judgement the
+    measurement makes -- that the black baked underneath is excluded, and excluded whether there is
+    none of it or a lot.
+
+    HALF TWO: every plumbable socket on both machines as they stand must pass -- and then the same
+    sheets, judged against a reference moved three tolerances each way, must fail every socket and
+    fail it the right way round. That second part is not decoration. Measuring a reference correctly
+    and JUDGING BY IT are different claims, and the first two attempts at this half proved only the
+    first: every verdict here holds under the old wrong 0.031 as well as the measured 0.023, so a
+    gate that quietly went on using a typed number would have passed its own self-test.
+
+    HALF THREE: the same sheets lifted a quarter tile up the screen must be reported TOO HIGH on
+    every one of them. A gate that only ever passes and a gate that only ever fails look the same
+    from outside, so both are here.
 
     THE LIFT IS A QUARTER TILE RATHER THAN THE HALF THE REAL DEFECT WAS, and the reason is worth
     keeping: half a tile pushes a socket against the top of the search window, so the check reports
@@ -288,45 +489,121 @@ def self_test(manifests):
     the comparison this gate is for. A quarter tile is three times the tolerance and still well
     inside the window, so the verdict comes from the measurement.
     """
-    print("self-test 1/2: every plumbable socket on the shipped sheets must pass.")
+    print("self-test 1/3: the reference must track vanilla's own sheet both ways, and must not be "
+          "dragged by the shadow baked under it.")
+    try:
+        reference, (low, high, kept, dropped) = vanilla_pipe_centre(pipe_sheet)
+    except Unmeasurable as why:
+        print(f"FAILED - self-test: the reference could not be measured at all: {why}")
+        return 1
+    print(f"  vanilla pipe              rows {low}..{high} of {2 * rf.PX_PER_TILE}, centre "
+          f"{reference:+.4f} tiles up (dimmest row kept peaks {kept}, brightest dropped {dropped}, "
+          f"floor {PIPE_COLOUR_FLOOR})")
+
+    original = np.asarray(Image.open(pipe_sheet).convert("RGBA"))
+    for shift in (5, -5):
+        # Rolling the sheet DOWN the screen by `shift` rows lowers the drawn centre by the same, so
+        # the reference must fall by shift / PX_PER_TILE tiles. Both signs, because an instrument
+        # that only tracks one way is half an instrument.
+        want = reference - shift / rf.PX_PER_TILE
+        got = measured_from_array(np.roll(original, shift, axis=0))
+        print(f"  rolled {shift:+d} px                measured {got:+.4f}, expected {want:+.4f}")
+        if abs(got - want) > 1e-9:
+            print(f"FAILED - self-test: rolling vanilla's sheet {shift:+d} px moved the measured "
+                  f"reference to {got:+.4f} where it should have been {want:+.4f}.")
+            return 1
+
+    # A band of known extent, with and without black under it. The right answer is the band's own
+    # edge-midpoint both times; a shadow leaking into the measurement would drag the second down.
+    top, tall = 40, 30
+    want = (rf.PX_PER_TILE - (top + top + tall) / 2) / rf.PX_PER_TILE
+    for shadow in (0, 20):
+        got = measured_from_array(synthetic_pipe_sheet(top, tall, shadow))
+        print(f"  synthetic, {shadow:2d} shadow rows   measured {got:+.4f}, expected {want:+.4f}")
+        if abs(got - want) > 1e-9:
+            print(f"FAILED - self-test: a band of {tall} rows from row {top} with {shadow} black "
+                  f"rows under it measured {got:+.4f} where the band's own centre is {want:+.4f}, "
+                  f"so the baked shadow is not being excluded.")
+            return 1
+
+    print("self-test 2/3: every plumbable socket on the shipped sheets must pass.")
     rows = []
     for path in manifests:
         check(path, load_sheet, rows)
     if not rows:
-        print("FAILED - self-test: no plumbable connection was measured at all, so neither half "
-              "proves anything.")
+        print("FAILED - self-test: no plumbable connection was measured at all, so the halves "
+              "after this one prove nothing.")
         return 1
-    bad = [v for v in report(rows) if v != "ok"]
+    bad = [v for v in report(rows, reference) if v != "ok"]
     if bad:
         print(f"FAILED - self-test: {len(bad)} socket(s) failed on the sheets as they stand, so "
-              "half two cannot tell a working check from a broken one.")
+              "half three cannot tell a working check from a broken one.")
         return 1
 
+    # AND THE REFERENCE MUST REACH THE VERDICTS, which measuring it correctly does not prove. This
+    # gate spent months comparing against a number that was wrong, and a self-test that measures a
+    # reference and then judges by something else would let exactly that happen again: the two
+    # halves above and below pass under either 0.023 or the old 0.031, because 0.055 is within
+    # tolerance of both and a lifted socket is TOO HIGH against both. So the same sheets are judged
+    # against a reference moved three tolerances each way, and every verdict must follow it.
+    print(f"self-test 2/3 (cont.): the same sheets judged against a reference {3 * TOLERANCE:+.2f} "
+          f"and {-3 * TOLERANCE:+.2f} out must fail every socket, and fail it the right way.")
+    for moved, expected in ((reference - 3 * TOLERANCE, "TOO HIGH"), (reference + 3 * TOLERANCE, "TOO LOW")):
+        wrong = [(row, verdict) for row, verdict in zip(rows, report(rows, moved))
+                 if verdict != expected]
+        if wrong:
+            print(f"FAILED - self-test: with the reference moved to {moved:+.3f}, "
+                  f"{len(wrong)} socket(s) were not reported {expected}, so the number this gate "
+                  f"measures is not the number it judges by:")
+            for (name, label, _, _), verdict in wrong:
+                print(f"           {name}  {label}: {verdict}")
+            return 1
+
     shift = int(round(0.25 * rf.PX_PER_TILE))
-    print(f"self-test 2/2: the same sheets lifted {shift} px must be reported TOO HIGH on every one.")
+    print(f"self-test 3/3: the same sheets lifted {shift} px must be reported TOO HIGH on every one.")
     lifted = []
     for path in manifests:
         check(path, rolled_sheet(shift), lifted)
-    missed = [(row, verdict) for row, verdict in zip(lifted, report(lifted)) if verdict != "TOO HIGH"]
+    missed = [(row, verdict) for row, verdict in zip(lifted, report(lifted, reference))
+              if verdict != "TOO HIGH"]
     if missed:
         print(f"FAILED - self-test: {len(missed)} socket(s) were lifted a quarter tile and this "
               "check did not report them as drawn too high:")
         for (name, label, _, _), verdict in missed:
             print(f"           {name}  {label}: {verdict}")
         return 1
-    print("self-test: both halves pass.")
+    print("self-test: all three halves pass.")
     return 0
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("manifest", nargs="+", help="graphics/rendered/<machine>/manifest.json")
+    ap.add_argument("--vanilla-pipe", required=True, metavar="PATH",
+                    help="base/graphics/entity/pipe/pipe-straight-horizontal.png in the Factorio "
+                         "install; the reference every socket is measured against")
     ap.add_argument("--self-test", action="store_true",
                     help="prove the check can fail, on the sheets as they stand")
     a = ap.parse_args(argv)
 
     if a.self_test:
-        return self_test(a.manifest)
+        return self_test(a.manifest, a.vanilla_pipe)
+
+    # THE REFERENCE IS MEASURED BEFORE ANYTHING IS JUDGED, and a reference that cannot be read is a
+    # failure rather than a fallback. There is no typed number to fall back TO any more, which is
+    # the point of #355 -- and a gate that quietly reverted to one would be reporting a pass it did
+    # not earn, which is the shape this whole file is written against.
+    try:
+        reference, (low, high, kept, dropped) = vanilla_pipe_centre(a.vanilla_pipe)
+    except Unmeasurable as why:
+        print(f"FAILED - socket height: {why}.")
+        print("         Nothing was judged. This gate measures our sockets against the height "
+              "vanilla draws its own pipe at, and it reads that off the base game's sheet rather "
+              "than carrying a number, so without the sheet there is no comparison to make.")
+        return 1
+    print(f"  vanilla pipe             drawn {reference:+.3f} tiles up, measured from "
+          f"{os.path.basename(a.vanilla_pipe)} rows {low}..{high} "
+          f"(dimmest row kept peaks {kept}, brightest dropped {dropped})")
 
     rows = []
     for path in a.manifest:
@@ -339,14 +616,14 @@ def main(argv=None):
     # socket from a lost category. A measured socket in the wrong place is fixed by building it
     # somewhere else; a socket that could not be measured at all is an instrument fault, and telling
     # its reader to re-render would send them to change art that may be perfectly good.
-    verdicts = report(rows)
+    verdicts = report(rows, reference)
     misdrawn = [v for v in verdicts if v in ("TOO HIGH", "TOO LOW")]
     unreadable = [v for v in verdicts if v == "UNMEASURABLE"]
     if misdrawn:
         print(f"FAILED - socket height: {len(misdrawn)} socket(s) a player plumbs are not drawn "
               "where a vanilla pipe is.")
         print("         A pipe run into one of these meets the machine at a step. Build the socket "
-              "at models/rf_parts.SOCKET_Z and re-render; a CONTAINED connection belongs at the "
+              "at models/rf_blender.SOCKET_Z and re-render; a CONTAINED connection belongs at the "
               "machine's own height and should carry a connection_category instead.")
     if unreadable:
         print(f"FAILED - socket height: {len(unreadable)} socket(s) could not be measured at all, "
@@ -356,7 +633,7 @@ def main(argv=None):
     if misdrawn or unreadable:
         return 1
     print(f"socket height: all {len(rows)} player-facing socket(s) meet a vanilla pipe "
-          f"(within {TOLERANCE} tiles of its {VANILLA_PIPE_CENTRE:+.3f}).")
+          f"(within {TOLERANCE} tiles of its measured {reference:+.3f}).")
     return 0
 
 

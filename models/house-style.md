@@ -177,8 +177,18 @@ height by 0.707, so a tube's circular cross-section draws as an ellipse:
 
 Vanilla's pipe (`base/graphics/entity/pipe/pipe-straight-horizontal.png`, scale 0.5 and no shift,
 so 64 px to the tile and directly comparable with ours) draws its body **0.609 tiles tall, centred
-0.031 tiles above the ground line**. Solving the two expressions against those gives **z = 0.044**
+0.023 tiles above the ground line**. Solving the two expressions against those gives **z = 0.033**
 and **r = 0.249**, and the collector measures 0.594 tiles against vanilla's 0.609 after both.
+
+**THE SHIPPED z IS STILL 0.044, AND THAT IS A KNOWN DEFECT RATHER THAN THIS PARAGRAPH BEING STALE.**
+The centre was read as 0.031 when the rule was written -- the bare row indices `(43 + 81) / 2 = 62`
+against an image centre of 64, mixing the index convention with the edge convention the rest of the
+measurement uses -- and `z` was solved from that. Since #355 `tools/check-socket-height.py` measures
+the reference off vanilla's own sheet rather than carrying a number, so the disagreement is in the
+open and the gate reports it. Every plumbable socket is therefore drawn 0.0109 tiles of world height
+too high, which is 0.49 px on the sheet and 0.25 px at the game's own zoom.
+[#356](https://github.com/trulsjo/realistic-fusion-refreshed/issues/356) is where the models follow
+the number, because doing it re-renders both machines and changes art that has been accepted.
 
 **THE SOCKET GOES THROUGH THE FLOOR, AND THE FLOOR GETS A HOLE.** At that height a socket's tube
 reaches below the plinth's top, so it enters the structure instead of floating over it. That trade
