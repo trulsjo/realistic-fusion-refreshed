@@ -210,12 +210,16 @@ def port(body, axis, across, edge, sign, radius, depth=0.7):
     m.object = cutter
     m.operation = "DIFFERENCE"
     m.solver = "EXACT"
-    # The rim: a collar at the stub's OUTER MOUTH, on the footprint edge the socket stops at rather
+    # The rim: a ring at the stub's OUTER MOUTH, on the footprint edge the socket stops at rather
     # than on the body face the hole is cut in -- which on both machines are a quarter tile apart,
     # because the selection box stands that far outside the collision box. So it reads as the flange
     # a pipe bolts to, and it is the thing that says the stub ends deliberately rather than being cut
-    # off by the frame. Put on the body face instead it would be a collar round the hole; that is a
-    # different look and would change art already accepted, so it is left where the collector put it.
+    # off by the frame. Put on the body face instead it would ring the hole -- #350 drew exactly that
+    # as `rimmed-inboard` and #351 REJECTED it, because moving the rim inboard pushes the accent band
+    # onto the body face where the slab edge clips it to a sliver. So it stays where the collector
+    # put it, and that is now a decision rather than an unasked question.
+    # A RING, never a "collar": on a socket #351 gave that word to the accent band. (A FLOOR
+    # collar, where a pipe turns down through the deck, is a different object and keeps its name.)
     rim_loc = [0.0, 0.0, SOCKET_Z]
     rim_loc[0 if axis == "X" else 1] = edge - sign * 0.03
     rim_loc[1 if axis == "X" else 0] = across
@@ -248,7 +252,7 @@ def pipe(name, points, radius, material, corrugate=0.0, band=(1.15, 0.22), **mat
     optional corrugation rings every `corrugate` tiles.
 
     `band` scales a ring against the pipe's radius: (major, minor). The default is the subtle
-    collar every pipe here has always had; the steam header passes a heavier one, because on that
+    ring every pipe here has always had; the steam header passes a heavier one, because on that
     pipe the corrugation is the thing being drawn rather than a detail on it.
 
     A RING HAS A HIGHER FLOOR THAN ITS PIPE. At the default band a ring's minor diameter is 0.44 of
