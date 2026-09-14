@@ -112,9 +112,16 @@ PALETTE = {
 # would tell them about a pipe that does not exist. The cabinet's panel is a dark screen instead.
 ACCENTS = ("tritium", "helium-3")            # stay clean: no grime, no frost, so they read
 # Everything that takes no grime. The accents, because they have to read as their fluid's colour,
-# and ice, because dirty ice is not ice. `ice` is NOT an accent and must not be added to ACCENTS:
-# scripts/ship-check.ps1 section 8 holds every ACCENTS name against a fluid of the same name, and
-# there is no rf-ice to hold it against.
+# and ice, because dirty ice is not ice.
+#
+# `ice` IS NOT AN ACCENT AND MUST NOT JOIN ACCENTS, but the reason is a rule rather than a gate, so
+# it is stated as one. BOTH TUPLES ARE LOCAL TO THIS FILE AND NOTHING READS THEM: scripts/ship-check.ps1
+# section 8 never looks at either. It works out which accents are in scope from the palette rows in
+# models/house-style.md crossed with the fluids the Core mod declares, and then greps THIS FILE'S
+# PALETTE for a key of that name. So "ice" is out of its reach because house-style.md has no Ice
+# accent row and there is no rf-ice, and it would stay out of reach however these tuples were
+# written. The rule holds because an accent means a fluid's colour on a machine that carries it;
+# nothing will fail if it is broken.
 CLEAN = ACCENTS + ("ice",)
 MATS = {}
 
