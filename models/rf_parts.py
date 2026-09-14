@@ -20,10 +20,11 @@ and a port's rim is always `dark`. Passing `frost=True` to one of those is a Typ
 silent miss, which is the right failure -- but it is a failure, so if a machine ever wants a frosted
 rivet the flag has to be plumbed through `rivets` first.
 
-AND ONE NUMBER RATHER THAN A HELPER: `SOCKET_Z`, the height a player-facing socket is drawn at. It
-is here for the same reason the helpers are -- the second machine to need it would have copied it
-(#342) -- and it comes with its derivation, because it is measured against a vanilla pipe and not
-chosen.
+AND ONE NUMBER RE-EXPORTED RATHER THAN HELD: `SOCKET_Z`, the height a player-facing socket is drawn
+at. It was here from #342, for the same reason the helpers are -- the second machine to need it
+would have copied it -- and it now lives in models/rf_blender.py, which imports no bpy, so the gate
+that measures sockets can read the same number the models are built at (#354). Build scripts still
+say `rf_parts.SOCKET_Z` and none of them changed.
 
 THE ORDER OF `random` DRAWS IS PART OF THE CONTRACT. `bevel` and `jitter` both draw from the global
 `random`, which each build script seeds once; the imperfections are deterministic only as long as
@@ -43,32 +44,13 @@ import bpy
 import rf_blender as rf
 
 
-# THE HEIGHT A PLAYER-FACING SOCKET IS DRAWN AT, MEASURED AGAINST A VANILLA PIPE AND NOT CHOSEN
-# (Truls, 2026-09-14: the sockets "should appear to connect with vanilla pipes"). It was 0.55 on
-# both rendered machines and the join was a visible step -- scripts/probe-socket-height.ps1 is the
-# rig that showed it and this is what it measured.
-#
-# A cylinder of radius r lying along an axis at height z draws its silhouette centred 0.707 z above
-# the ground line, the r terms cancelling: the top point (y -r, z + r) lands at -r - 0.707(z + r)
-# and the bottom (y +r, z - r) at +r - 0.707(z - r), and the mean of those is -0.707 z. Measured on
-# the rendered sheet at z 0.55 the centre sat 0.398 tiles up, against 0.707 x 0.55 = 0.389
-# predicted, so the projection is understood rather than curve-fitted.
-#
-# Vanilla's own pipe draws its body centred 0.031 tiles above the ground line
-# (base/graphics/entity/pipe/pipe-straight-horizontal.png, scale 0.5 and no shift, so 64 px to the
-# tile and directly comparable with ours). Setting 0.707 z = 0.031 gives this:
-SOCKET_Z = 0.044
-#
-# AND THAT PUTS THE TUBE THROUGH THE PLINTH, which is the trade Truls made explicitly: *"Going below
-# the floor is preferable to this look. If intersecting the floor, the floor should have a modelled
-# hole for the pipe."* Both machines stand on a slab 0.25 tiles thick, and a socket of any radius
-# over 0.206 at this height reaches through it -- so `port` below cuts the hole and rims it, and
-# every machine with a player-facing socket calls it.
-#
-# ONLY A PLAYER-FACING SOCKET. A CONTAINED connection (ADR 0018) meets a machine face, never a pipe:
-# lowering one would match it to a pipe that cannot exist and break the bolted contact it is for.
-# models/heat-exchanger/build.py is the machine that carries both kinds and says so at its socket
-# loop.
+# THE HEIGHT A PLAYER-FACING SOCKET IS DRAWN AT lives in models/rf_blender.py, beside the camera it
+# is derived from, and is re-exported here because every build script reads it as `rf_parts.SOCKET_Z`
+# and because a socket is a thing this module draws. It moved there in #354 so that
+# tools/check-socket-height.py -- which cannot import this file, since this one imports bpy -- can
+# hold the gate's reference against the number the models are actually built at. Nothing about the
+# value changed in that move; rf_blender carries the derivation and the trade behind it.
+SOCKET_Z = rf.SOCKET_Z
 
 
 def MATERIAL(name, **flags):                      # replaced by use(); a clear error if it is not

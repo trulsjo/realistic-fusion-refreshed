@@ -43,6 +43,39 @@ GLOW_EMISSION = 0.3
 # on 2026-09-05: at 0.12 the fourteen-tile channel came out mid-brown and read as copper.
 GLOW_BASE_DARKEN = 0.07
 
+# THE HEIGHT A PLAYER-FACING SOCKET IS DRAWN AT, MEASURED AGAINST A VANILLA PIPE AND NOT CHOSEN
+# (Truls, 2026-09-14: the sockets "should appear to connect with vanilla pipes"). It was 0.55 on
+# both rendered machines and the join was a visible step -- scripts/probe-socket-height.ps1 is the
+# rig that showed it and this is what it measured.
+#
+# IT IS HERE, BESIDE THE CAMERA, FOR TWO REASONS. It is derived from CAMERA_PITCH_DEG, so it belongs
+# with the pitch it is solved against rather than a file away from it; and this module imports no
+# bpy, so tools/check-socket-height.py can import the number the models are built at and hold its
+# own reference against it (#354). models/rf_parts.py re-exports it, so every build script still
+# reads it as `rf_parts.SOCKET_Z` and none of them changed when it moved.
+#
+# A cylinder of radius r lying along an axis at height z draws its silhouette centred 0.707 z above
+# the ground line, the r terms cancelling: the top point (y -r, z + r) lands at -r - 0.707(z + r)
+# and the bottom (y +r, z - r) at +r - 0.707(z - r), and the mean of those is -0.707 z. Measured on
+# the rendered sheet at z 0.55 the centre sat 0.398 tiles up, against 0.707 x 0.55 = 0.389
+# predicted, so the projection is understood rather than curve-fitted.
+#
+# Vanilla's own pipe draws its body centred 0.031 tiles above the ground line
+# (base/graphics/entity/pipe/pipe-straight-horizontal.png, scale 0.5 and no shift, so 64 px to the
+# tile and directly comparable with ours). Setting 0.707 z = 0.031 gives this:
+SOCKET_Z = 0.044
+#
+# AND THAT PUTS THE TUBE THROUGH THE PLINTH, which is the trade Truls made explicitly: *"Going below
+# the floor is preferable to this look. If intersecting the floor, the floor should have a modelled
+# hole for the pipe."* Both machines stand on a slab 0.25 tiles thick, and a socket of any radius
+# over 0.206 at this height reaches through it -- so `rf_parts.port` cuts the hole and rims it, and
+# every machine with a player-facing socket calls it.
+#
+# ONLY A PLAYER-FACING SOCKET. A CONTAINED connection (ADR 0018) meets a machine face, never a pipe:
+# lowering one would match it to a pipe that cannot exist and break the bolted contact it is for.
+# models/heat-exchanger/build.py is the machine that carries both kinds and says so at its socket
+# loop.
+
 # House-style accent per fluid. The geometry file carries the fluid name (#248); the accent is
 # ours. An unlisted fluid is an error rather than a guess, because an unaccented socket lies about
 # what it carries -- with ONE exception, `accent`'s plasma fallback, which is a substring match and
