@@ -192,13 +192,16 @@ meet a machine FACE, never a pipe -- no pipe, tank, wagon or pump a player can b
 Matching those to a vanilla pipe would match them to something that cannot exist. So the rule binds
 a connection left `default` and no other.
 
-rf-heat-exchanger is the machine that will show what that costs, and **it has not been done to it
-yet**: every one of its six sockets still stands at the old 0.55, water, steam and reactor energy
-alike, so it still meets a pipe at a step. When it is brought over (#343) its water pair and its
-steam outlet move and its three energy connections stay, which will leave a water socket and an
-energy socket one tile apart on the same short end AT DIFFERENT HEIGHTS. That is the rule working
-rather than a slip, and it is written down here because the obvious next thing anyone will want to
-do is level them.
+rf-heat-exchanger is the machine that shows what that costs, and **it has now been brought over**
+(#343): its water pair and its steam outlet moved to 0.044 and 0.249, and its three reactor-energy
+connections kept the 0.55 and 0.3 they have always had. So that machine carries a water socket and
+an energy socket two tiles apart on the same short end AT DIFFERENT HEIGHTS AND DIFFERENT
+THICKNESSES. That is the rule working rather than a slip, and it is written down here because the
+obvious next thing anyone will want to do is level them.
+
+**Exempt is not the same as bound by a different rule.** The contained three keep the machine's old
+numbers rather than taking new ones: nothing they meet is a pipe, so there is nothing to measure
+them against, and a look chosen for them would be a decision nobody has been asked for.
 
 **What it costs, recorded so it is not rediscovered as a surprise.** An accent band on a thinner
 stub at pipe height is a thin ring at the machine's edge, not the raised collar it was, and the

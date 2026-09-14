@@ -33,8 +33,9 @@ measured on the sheet where it does: direction sheet 0 for an east or west conne
 for a north or south one, which is the same machine with the camera turned a quarter (models/
 render.py turns the rig by +90 degrees per direction).
 
-WHAT IT CANNOT SEE. Height, and only height. Our sockets are drawn a little fatter or thinner than
-vanilla's pipe and this says nothing about that -- #345 is where the width is decided. It also says
+WHAT IT CANNOT SEE. Height, and only height. models/house-style.md binds a plumbable socket's
+THICKNESS to the pipe's as well, and this says nothing about that: the measurement is deliberately
+built to be blind to it, since the radius terms are what cancel out of the midpoint. It also says
 nothing about whether a socket is on the right EDGE of the machine; load-check's rendered-art gate
 holds the recorded geometry against the live prototype, and that is what covers it.
 

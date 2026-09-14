@@ -553,13 +553,14 @@ before it turns, or the curve overshoots and the hose curls back over itself. Th
 around the drum and the frame rather than through them, and drops through an opening in the
 grating.
 
-THE THREE SOCKETS A PLAYER CAN PLUMB ARE DRAWN AT THE HEIGHT A VANILLA PIPE IS -- water on both
-short ends, steam at the middle of the east face -- so a run into one reads as one continuous pipe
-and not as a step. At that height the stub passes through the slab, so each of the three has a
-modelled opening in it with a rim, rather than a tube clipping through solid stone. The three
-reactor-energy connections do NOT: they meet a machine face and never a pipe, so they stand half a
-tile higher, and the two sockets on each short end sitting at different heights is this machine
-working rather than this machine wrong. The water header still runs along
+THE THREE SOCKETS A PLAYER CAN PLUMB ARE DRAWN LIKE THE PIPE THAT PLUGS INTO THEM, height and
+thickness both -- water on both short ends, steam at the middle of the east face -- so a run into
+one reads as one continuous pipe and not as a step. At that height the stub passes through the
+slab, so each of the three has a modelled opening in it with a rim, rather than a tube clipping
+through solid stone. The three reactor-energy connections do NOT: they meet a machine face and
+never a pipe, so they stay where they were, half a tile higher and a fifth thicker, and the two
+sockets on each short end being drawn differently is this machine working rather than this machine
+wrong. The water header still runs along
 the base between its two sockets, but it turns down into the slab at each end, and the outlet run
 does the same where it reaches the steam socket. The south
 end is closed by a painted wall with a vent, and a control cabinet with a blue panel stands at the
