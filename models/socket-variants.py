@@ -26,7 +26,7 @@ THE TREATMENTS, which are the four #350 names and no more:
   bare            nothing added. The control, and the proof that this script's own pipeline draws
                   nothing of its own: a `bare` sheet must come out pixel-identical to the shipped
                   one.
-  flanged         vanilla's flange pair at the stub's mouth -- two discs standing proud of the
+  flanged         vanilla's flange pair at the stub's mouth -- two ribs standing proud of the
                   tube, in the tube's own material, just inboard of the dark rim. THE ONE #351
                   CHOSE; it ships from #353, and this stays the rig that can show why.
   dark-cored      a shadowed channel along the tube's most camera-facing line, the way vanilla's
@@ -73,8 +73,10 @@ TREATMENTS = ("bare", "flanged", "dark-cored", "rimmed-inboard")
 FLANGE_GAP = 0.2                 # of the clear span, between the two ribs
 FLANGE_MIN_THICK = 0.02          # under this a rib is thinner than a pixel and there is no pair
 # What makes a rib read as a flange is standing PROUD of the tube, not its thickness: 0.07 tiles is
-# 4.5 px each side at 64 px to the tile, which is why the detail floor is cleared on the disc's
-# face and not on its edge (models/rf_parts.py's `cyl` on `read=`).
+# 2.24 px ON THE PLAYER'S SCREEN, which is why the detail floor is cleared on the rib's face and not
+# on its edge (models/rf_parts.py's `cyl` on `read=`). It clears the 1.9 px raised floor by a third
+# of a pixel, so quote it in screen pixels: at 64 px to the sheet the same rib reads as 4.5 and
+# looks like twice the headroom it has.
 FLANGE_PROUD = 0.07
 
 # The shadowed channel. It is an added plate, not a boolean subtraction, so it takes the RAISED
@@ -88,9 +90,10 @@ CORE_THICK = 0.03
 # rather than as a shadow, which is the one thing this treatment is imitating.
 CORE_MATERIAL = "frame"
 
-# How far a moved rim stands OUTBOARD of the body wall, so it reads as a collar round the hole
-# rather than a disc buried in it. Not rf_parts.port's own 0.03, which goes the other way: that
-# one sets the rim 0.03 INBOARD of the footprint edge, where it rings nothing but air.
+# How far a moved rim stands OUTBOARD of the body wall, so it reads as a ring round the hole
+# rather than a disc buried in it. A RING, not a "collar" -- on a socket #351 gave that word to the
+# accent band. Not rf_parts.port's own 0.03, which goes the other way: that one sets the rim
+# 0.03 INBOARD of the footprint edge, where it rings nothing but air.
 RIM_PROUD = 0.03
 
 random.seed(350)                 # rf_parts' bevels draw from `random`; same treatment, same model
