@@ -849,8 +849,9 @@ else:
               (sx * (HALF - 0.42), T_DRUM[1] + 0.62, DECK_Z + jitter(0.1, 0.03)),
               (drop_x, end[1], DECK_Z + 0.06),
               (drop_x, end[1], SLAB - 0.02)], 0.12, "metal", frost=True)
-        # The opening it goes through, rimmed like the sockets are, so the floor reads as having
-        # been built for the pipe rather than punctured by it.
+        # A collar where it goes in, and NO HOLE UNDER IT: unlike a socket's `port`, nothing is
+        # cut here -- the run stops just inside the slab and the ring reads as the flange round a
+        # penetration. At this camera the pipe covers what a hole would show.
         torus(f"FloorPortRim-{c['direction']}", 0.2, 0.05, (drop_x, end[1], DECK_Z + 0.04), "dark")
     # The helium-3 socket needs no run of its own: it stands in the north bay and its stub goes
     # straight into the drum's side, which is the shortest honest plumbing on the machine.

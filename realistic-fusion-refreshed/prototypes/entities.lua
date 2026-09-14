@@ -561,8 +561,9 @@ through solid stone. The three reactor-energy connections do NOT: they meet a ma
 never a pipe, so they stay where they were, half a tile higher and a fifth thicker, and the two
 sockets on each short end being drawn differently is this machine working rather than this machine
 wrong. The water header still runs along
-the base between its two sockets, but it turns down into the slab at each end, and the outlet run
-does the same where it reaches the steam socket. The south
+the base between its two sockets, but it turns down into the slab at each end with a collar where
+it goes in, and the outlet run does the same a little short of the steam socket. Neither goes down
+through a modelled hole the way a socket does; the pipe covers what one would show. The south
 end is closed by a painted wall with a vent, and a control cabinet with a blue panel stands at the
 south-east corner: those two are what break the symmetry.
 

@@ -21,9 +21,25 @@ recorded field, never a list of fluids or machines.
 HOW THE MEASUREMENT WORKS, and why it needs no second camera model. models/rf_blender.py's rig is
 orthographic at CAMERA_PITCH_DEG with the pixel aspect squaring the ground, so on every sheet one
 ground tile is PX_PER_TILE pixels in both axes and a world height h draws 1/tan(pitch) = 0.707 h
-above the ground line. A socket is a cylinder lying along a ground axis: its silhouette is
-symmetric about that axis, the radius terms cancelling, so the MIDPOINT of its drawn extent is the
-axis, wherever the accent band and the port rim put the extremes.
+above the ground line. A socket is a cylinder lying along a ground axis, so its silhouette is
+symmetric about that axis and the MIDPOINT of its drawn extent is the axis, wherever the accent
+band and the port rim put the extremes.
+
+THAT SYMMETRY HOLDS ONLY WHILE THE WHOLE SILHOUETTE IS ABOVE THE GROUND PLANE, AND AT PIPE HEIGHT
+IT IS NOT. `rf_blender.build_rig` puts a shadow-catching ground plane at z 0, and a socket drawn at
+SOCKET_Z reaches well below it -- radius 0.249 about its axis at 0.044 -- so its underside is cut
+off and the midpoint rides high. Measured on the shipped sheets: 0.469 tiles of silhouette above
+the predicted axis and 0.422 below it, a midpoint 0.024 tiles above where an unclipped tube would
+put it. At the old z 0.55 the tube cleared the plane and the same measurement landed within 0.002
+of prediction, which is how the derivation came to be trusted somewhere it does not apply.
+
+SO THIS COMPARES TWO DRAWN CENTRES AND DOES NOT RECOVER A WORLD HEIGHT. It measures where our
+socket is drawn, against where a vanilla pipe's body is drawn, and both sides are numbers off a
+sheet. That is the right comparison anyway -- vanilla's pipe is a stylised ribbon and not a
+projected cylinder, so there is no world z to recover on its side either -- but it means the
+residual below is geometric rather than incidental, and that it scales with the socket's RADIUS.
+Both machines draw a plumbable socket at 0.249 (models/house-style.md), so both carry the same
+0.024; a machine that drew one thicker would carry more.
 
 Isolating the socket is the other half, and it takes two cuts rather than one. The COLUMNS are the
 strip between the collision edge and the selection edge: the slab, the deck and the frame all stop
@@ -41,12 +57,14 @@ A silhouette touching the edge of that window is reported UNMEASURABLE rather th
 its extent is then cut off and its midpoint is not the axis.
 
 WHAT IT CANNOT SEE. Height, and only height. models/house-style.md binds a plumbable socket's
-THICKNESS to the pipe's as well, and this says nothing about that: the measurement is deliberately
-built to be blind to it, since the radius terms are what cancel out of the midpoint. It also says
-nothing about whether a socket is on the right EDGE of the machine; load-check's rendered-art gate
-holds the recorded geometry against the live prototype, and that is what covers it.
+THICKNESS to the pipe's as well, and this does not check it: a thicker socket moves the reported
+centre a little through the clipping above, but only a little, and in the same direction a raised
+socket does -- so a verdict here says nothing about which. It also says nothing about whether a
+socket is on the right EDGE of the machine; load-check's rendered-art gate holds the recorded
+geometry against the live prototype, and that is what covers it.
 
-Needs pillow and numpy. Run from the repository root.
+Needs pillow and numpy -- the only third-party Python any gate here requires. Run from the
+repository root.
 """
 import argparse
 import json
@@ -54,30 +72,51 @@ import math
 import os
 import sys
 
-import numpy as np
-from PIL import Image
+try:
+    import numpy as np
+    from PIL import Image
+except ImportError as missing:                    # a gate that cannot run must say why, not traceback
+    sys.exit(f"check-socket-height: {missing}. This gate reads sprite pixels and needs both pillow "
+             f"and numpy in the `python` on PATH -- `python -m pip install pillow numpy`. It is the "
+             f"only third-party Python this repository's gates require.")
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models"))
 import rf_blender as rf  # noqa: E402  (no bpy at module level)
 
-# A world height of 1 tile draws this many tiles up the screen. One expression, shared with the
-# build scripts through the camera it comes from rather than copied as a number.
+# A world height of 1 tile draws this many tiles up the screen -- 0.707, taken from the camera the
+# sheets were rendered through rather than copied as a number. NOTHING HERE DIVIDES BY IT: the
+# header sets out why a drawn centre does not convert back into a world height at this socket
+# height, and the one place that used to do it printed a figure 1.75x what the build script holds.
+# It is kept because it is what makes 0.031 and rf_parts.SOCKET_Z's 0.044 the same statement, which
+# is the fact a reader of this file needs and would otherwise go looking for.
 SCREEN_PER_WORLD = 1.0 / math.tan(math.radians(rf.CAMERA_PITCH_DEG))
 
 # WHERE A VANILLA PIPE DRAWS ITS BODY, in tiles above the ground line. Measured off
 # base/graphics/entity/pipe/pipe-straight-horizontal.png, which the prototype draws at scale 0.5
 # with no shift -- so 64 px to the tile, the same as ours, and directly comparable. The sheet has
 # the pipe's shadow baked into it below the body; the body's full-width run is rows 43..81 of 128,
-# whose midpoint is this to within half a pixel, depending on whether a row index is read as a
-# centre or as an edge. This is the number models/rf_parts.SOCKET_Z was solved from, and the half
-# pixel is 0.008 tiles against a tolerance ten times that.
+# whose midpoint is this read as row CENTRES and 0.023 read as row EDGES. `drawn_centre` below reads
+# our own silhouette by edges, so the two sides of the comparison are half a pixel out of step with
+# each other: 0.008 tiles against a tolerance ten times that, always in the same direction, and
+# smaller than the geometric bias it sits inside. 0.031 is kept because it is the number
+# models/rf_parts.SOCKET_Z and models/house-style.md were both solved from, and a gate that quoted a
+# different one would read as disagreeing with the rule it enforces.
 VANILLA_PIPE_CENTRE = 0.031
 
-# HOW FAR OFF IS TOO FAR. Not equality: a socket is a lit, bevelled, anti-aliased cylinder with an
-# accent band and a rimmed opening on it, and both machines measure about 0.024 tiles above
-# vanilla's centre rather than on it. 0.08 tiles is five pixels on a sheet and two and a half at the
-# game's own zoom -- it admits that bias with room to spare and still catches the defect this exists
-# for by a factor of four, since a socket at z 0.55 draws 0.389 tiles up.
+# NOT CROSS-CHECKED AGAINST models/rf_parts.SOCKET_Z, and the reason is a constraint rather than a
+# choice: `0.707 z = 0.031` is what that module solved for, so the two are one statement and ought
+# to be held together -- but rf_parts imports bpy and cannot be imported outside Blender. The two
+# comments name each other instead, which is weaker and is said so.
+
+# HOW FAR OFF IS TOO FAR. Not equality: both machines measure about 0.024 tiles above vanilla's
+# centre rather than on it, and the header says where that comes from -- the ground plane cuts the
+# socket's underside at this height, so the midpoint rides high. It is geometric and it scales with
+# the socket's radius; the lit bevel and the anti-aliasing are worth a fraction of a pixel beside
+# it. There is a further half pixel in the reference, below.
+#
+# 0.08 tiles is five pixels on a sheet and two and a half at the game's own zoom. It admits that
+# bias with room to spare and still catches the defect this exists for by a factor of four, since a
+# socket at z 0.55 draws 0.389 tiles up and is not clipped at all.
 TOLERANCE = 0.08
 
 # The outboard strip is inset by this many pixels at each end, because the collision edge column
@@ -224,9 +263,13 @@ def report(rows):
             continue
         off = centre - VANILLA_PIPE_CENTRE
         verdict = "ok" if abs(off) <= TOLERANCE else "TOO HIGH" if off > 0 else "TOO LOW"
+        # NO WORLD z IN THIS LINE, and its absence is deliberate. Dividing the drawn centre by
+        # SCREEN_PER_WORLD used to be printed here as "world z", which read as the number the build
+        # script should carry and is not: the clipping the header sets out puts it about 1.75x
+        # rf_parts.SOCKET_Z, so the gate was quoting a height back at a reader who would then find
+        # a different one in the source. Drawn tiles are what was measured and are all that is said.
         print(f"  {name:24s} {label:24s} drawn {centre:+.3f} tiles up against the pipe's "
-              f"{VANILLA_PIPE_CENTRE:+.3f} ({off:+.3f}, world z {centre / SCREEN_PER_WORLD:.3f} "
-              f"against {VANILLA_PIPE_CENTRE / SCREEN_PER_WORLD:.3f}): {verdict}")
+              f"{VANILLA_PIPE_CENTRE:+.3f} ({off:+.3f} out, tolerance {TOLERANCE}): {verdict}")
         verdicts.append(verdict)
     return verdicts
 
@@ -292,13 +335,25 @@ def main(argv=None):
         print("FAILED - socket height: none of the manifests given records a connection a player "
               "can plumb, so this check found nothing to measure rather than finding nothing wrong.")
         return 1
-    bad = [v for v in report(rows) if v != "ok"]
-    if bad:
-        print(f"FAILED - socket height: {len(bad)} socket(s) a player plumbs are not drawn where a "
-              "vanilla pipe is.")
+    # TWO KINDS OF FAILURE AND TWO REMEDIES, the way load-check's rendered-art gate separates a moved
+    # socket from a lost category. A measured socket in the wrong place is fixed by building it
+    # somewhere else; a socket that could not be measured at all is an instrument fault, and telling
+    # its reader to re-render would send them to change art that may be perfectly good.
+    verdicts = report(rows)
+    misdrawn = [v for v in verdicts if v in ("TOO HIGH", "TOO LOW")]
+    unreadable = [v for v in verdicts if v == "UNMEASURABLE"]
+    if misdrawn:
+        print(f"FAILED - socket height: {len(misdrawn)} socket(s) a player plumbs are not drawn "
+              "where a vanilla pipe is.")
         print("         A pipe run into one of these meets the machine at a step. Build the socket "
               "at models/rf_parts.SOCKET_Z and re-render; a CONTAINED connection belongs at the "
               "machine's own height and should carry a connection_category instead.")
+    if unreadable:
+        print(f"FAILED - socket height: {len(unreadable)} socket(s) could not be measured at all, "
+              "which is an instrument fault and not a finding about the art.")
+        print("         The line above each says what was wrong. Nothing here says those sockets "
+              "are drawn badly, and re-rendering is not the remedy until they can be read.")
+    if misdrawn or unreadable:
         return 1
     print(f"socket height: all {len(rows)} player-facing socket(s) meet a vanilla pipe "
           f"(within {TOLERANCE} tiles of its {VANILLA_PIPE_CENTRE:+.3f}).")
