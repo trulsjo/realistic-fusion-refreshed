@@ -72,11 +72,14 @@ TREATMENTS = ("bare", "flanged", "dark-cored", "rimmed-inboard")
 # with no room at all fails loudly instead of drawing a lump.
 FLANGE_GAP = 0.2                 # of the clear span, between the two ribs
 FLANGE_MIN_THICK = 0.02          # under this a rib is thinner than a pixel and there is no pair
-# What makes a rib read as a flange is standing PROUD of the tube, not its thickness: 0.07 tiles is
-# 2.24 px ON THE PLAYER'S SCREEN, which is why the detail floor is cleared on the rib's face and not
-# on its edge (models/rf_parts.py's `cyl` on `read=`). It clears the 1.9 px raised floor by a third
-# of a pixel, so quote it in screen pixels: at 64 px to the sheet the same rib reads as 4.5 and
-# looks like twice the headroom it has.
+# What makes a rib read as a flange is standing PROUD of the tube, not its thickness: 0.07 tiles,
+# which is 2.24 px ON THE PLAYER'S SCREEN (never the 4.5 it measures at 64 px to the sheet -- the
+# detail floor is the one thing this repository refuses to quote in sheet pixels).
+#
+# PROUD IS NOT WHAT THE FLOOR MEASURES. The floor judges `read=`, and the call below hands it the
+# disc's FACE, 2 * (radius + FLANGE_PROUD) -- about 0.64 tiles, 20 px on screen for the collector.
+# A clearance computed from 0.07 instead says this rib misses the 1.9 px floor by a whisker when it
+# in fact clears by eighteen pixels. #361 published that mistake; do not repeat it.
 FLANGE_PROUD = 0.07
 
 # The shadowed channel. It is an added plate, not a boolean subtraction, so it takes the RAISED

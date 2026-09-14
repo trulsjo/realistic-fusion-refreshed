@@ -225,13 +225,23 @@ was one of #350's four treatments. The band keeps it; that treatment is `rimmed-
 `models/socket-variants.py` and `scripts/probe-socket-shapes.ps1`, and a socket's rim is a RING.
 
 **That is narrower than #351 first wrote it, and the first version was false on the day.** It said
-"and nothing else", which condemned vocabulary this repository had been using correctly for weeks:
-a **floor collar** -- the ring where a pipe turns down through the deck -- is named that in
-`models/heat-exchanger/build.py`, in `models/isotope-collector/build.py` and in the exchanger's own
-entity description. That is a different object on a different part of the machine and nothing about
-it was ever ambiguous. Nothing was renamed; the rule was. **The lesson is the one this document
-keeps relearning: a rule saying "nothing else" is an instruction to enumerate, and #351 wrote one
-without doing it.**
+"and nothing else", which condemned vocabulary already in correct use elsewhere. **The word has
+three referents in this repository and only one of them is a socket's:**
+
+| What | Where | Spelling found there |
+|---|---|---|
+| a socket's accent band | this document | *collar* -- the one #351 keeps |
+| the ring where a pipe turns down through the deck | `models/heat-exchanger/build.py` (three times, one of them capitalised), `models/isotope-collector/build.py`, and the `look: rf-heat-exchanger` note in `realistic-fusion-refreshed/prototypes/entities.lua` | *collar where it goes in*, and once *floor collar* |
+| a corrugation ring along a hose run | `models/heat-exchanger/build.py` | *collar* -- renamed *ring* by #361, to agree with `models/rf_parts.py`'s `pipe` |
+
+Neither of the other two sits on a socket, so the narrowed rule reaches none of them and nothing was
+renamed for its sake. **Age is not the argument and #351's correction first claimed it was: the
+deck-collar wording went in earlier the SAME DAY, not "for weeks".** It is protected because it is
+unambiguous where it stands, not because it is old. **The lesson is the one this document keeps
+relearning: a rule saying "nothing else" is an instruction to enumerate. #351 wrote one without
+doing it, #361 then wrote a correction that miscounted the set and misdated it, and the enumeration
+above is what either should have started from.** Note the trap that hid one entry from both: a
+case-sensitive `git grep collar` misses `A COLLAR`.
 
 ### The mouth wears a flange pair
 
@@ -271,11 +281,17 @@ leaving 0.09 tiles of metal for a pair of ribs. Typed offsets buried one rib in 
 the band with the other -- a fat lump rather than a flange pair. So measure the clear span between
 the rim and the band that are already in the model and divide the ribs into it, and **fail loudly on
 a machine with no room rather than drawing a lump**. What makes a rib read as a flange is standing
-PROUD of the tube, not its thickness: 0.07 tiles is **2.24 px on the player's screen**, which is why
-the detail floor is cleared on the rib's face and not on its edge. **That clears the 1.9 px raised
-floor by a third of a pixel**, and the thin margin is the whole reason this document insists on the
-screen as the unit: quoted at 64 px to the sheet the same rib reads as 4.5 px and looks like twice
-the headroom it has.
+PROUD of the tube, not its thickness: 0.07 tiles, which is **2.24 px on the player's screen** and
+not the 4.5 this was once quoted as -- that figure was the same rib measured at 64 px to the sheet,
+in a clause about the detail floor, which is the one place this document forbids the sheet as a unit.
+
+**PROUD IS WHAT THE EYE READS; THE FACE IS WHAT THE FLOOR MEASURES, AND THEY ARE NOT THE SAME
+NUMBER.** The floor judges whatever `cyl` is handed as `read=`, and a flange hands it the disc's
+FACE -- `2 * (radius + FLANGE_PROUD)`, about 0.64 tiles or 20 px on screen for the collector -- so a
+rib far thinner than the floor survives it comfortably. **Do not compute a clearance from the proud
+amount.** #361 did, reported a margin of a third of a pixel on a rib that in fact clears by
+eighteen, and used the invented near-miss as the argument for the unit rule. The unit rule needs no
+such argument; it is the rule.
 
 **THE ACCENT BAND IS UNCHANGED** (#351, same decision). The frames show it reading at zoom 8 and
 present at zoom 1, so the cost recorded two paragraphs up was paid and is survivable. What the
