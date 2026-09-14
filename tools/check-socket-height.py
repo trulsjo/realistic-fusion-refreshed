@@ -25,13 +25,20 @@ above the ground line. A socket is a cylinder lying along a ground axis: its sil
 symmetric about that axis, the radius terms cancelling, so the MIDPOINT of its drawn extent is the
 axis, wherever the accent band and the port rim put the extremes.
 
-Isolating the socket is the other half. Outside the collision box there is nothing on either
-machine but socket stubs -- the slab, the deck and the frame all stop at the footprint -- so the
-strip between the collision edge and the selection edge holds the socket and nothing else. That
-strip is a column range only when the socket runs left-to-right on screen, so each connection is
-measured on the sheet where it does: direction sheet 0 for an east or west connection, sheet "-e"
-for a north or south one, which is the same machine with the camera turned a quarter (models/
-render.py turns the rig by +90 degrees per direction).
+Isolating the socket is the other half, and it takes two cuts rather than one. The COLUMNS are the
+strip between the collision edge and the selection edge: the slab, the deck and the frame all stop
+at the footprint, so the only thing standing out there is a socket stub. That strip is a column
+range only when the socket runs left-to-right on screen, so each connection is measured on the
+sheet where it does -- direction sheet 0 for an east or west connection, sheet "-e" for a north or
+south one, which is the same machine with the camera turned a quarter (models/render.py turns the
+rig by +90 degrees per direction). The ROWS are one tile either side of that connection's own
+ground line, which is what keeps the two sockets on rf-heat-exchanger's short ends -- two tiles
+apart, one plumbable and one not -- out of each other's measurement. Neither cut is redundant: a
+part that a jitter walks a few hundredths of a tile past the footprint is caught by the row window
+if it is caught at all, and the row window alone would hold most of the machine.
+
+A silhouette touching the edge of that window is reported UNMEASURABLE rather than measured, since
+its extent is then cut off and its midpoint is not the axis.
 
 WHAT IT CANNOT SEE. Height, and only height. models/house-style.md binds a plumbable socket's
 THICKNESS to the pipe's as well, and this says nothing about that: the measurement is deliberately
@@ -60,15 +67,17 @@ SCREEN_PER_WORLD = 1.0 / math.tan(math.radians(rf.CAMERA_PITCH_DEG))
 # WHERE A VANILLA PIPE DRAWS ITS BODY, in tiles above the ground line. Measured off
 # base/graphics/entity/pipe/pipe-straight-horizontal.png, which the prototype draws at scale 0.5
 # with no shift -- so 64 px to the tile, the same as ours, and directly comparable. The sheet has
-# the pipe's shadow baked into it below the body; the body is rows 43..81 of 128, and its midpoint
-# lands here. This is the number models/rf_parts.SOCKET_Z was solved from.
+# the pipe's shadow baked into it below the body; the body's full-width run is rows 43..81 of 128,
+# whose midpoint is this to within half a pixel, depending on whether a row index is read as a
+# centre or as an edge. This is the number models/rf_parts.SOCKET_Z was solved from, and the half
+# pixel is 0.008 tiles against a tolerance ten times that.
 VANILLA_PIPE_CENTRE = 0.031
 
 # HOW FAR OFF IS TOO FAR. Not equality: a socket is a lit, bevelled, anti-aliased cylinder with an
-# accent band and a rimmed opening on it, and the collector measures about 0.024 tiles above
-# vanilla's centre after #343 rather than on it. 0.08 tiles is five pixels on a sheet and two and a
-# half at the game's own zoom -- it admits that bias with room to spare and still catches the defect
-# this exists for by a factor of four, since a socket at z 0.55 draws 0.389 tiles up.
+# accent band and a rimmed opening on it, and both machines measure about 0.024 tiles above
+# vanilla's centre rather than on it. 0.08 tiles is five pixels on a sheet and two and a half at the
+# game's own zoom -- it admits that bias with room to spare and still catches the defect this exists
+# for by a factor of four, since a socket at z 0.55 draws 0.389 tiles up.
 TOLERANCE = 0.08
 
 # The outboard strip is inset by this many pixels at each end, because the collision edge column
