@@ -174,6 +174,15 @@
     what a player would see. Python 3 on PATH is a requirement of this gate; a missing interpreter
     is a failure, not a skip.
 
+    AND IT OPENS THE SPRITES THEMSELVES, FOR ONE THING ONLY (#344): every socket a player can put an
+    ordinary pipe on must be DRAWN at the height a vanilla pipe is drawn at. That is not the same
+    question as the one above and neither covers it -- both rendered machines shipped for months
+    with every connection recorded exactly where the prototype had it and every stub about half a
+    tile of world height too high, so a pipe run met the machine at a visible step and every gate
+    here passed. A connection carrying a `connection_category` is CONTAINED (ADR 0018) and is out of
+    scope: it meets a machine face, never a pipe. tools/check-socket-height.py does the measuring
+    and its header sets out how; pillow and numpy are what it needs beyond Python itself.
+
     AND THE SAME FOR EVERY MOCKUP (#275). The machines that still wear a mockup take sheets drawn by
     scripts/make-mockup-art.ps1 from a table of footprints and connection tiles in
     scripts/mockup-machines.psd1, hand-copied from entities.lua. Every row of that table is held
@@ -263,7 +272,7 @@
     references cross a mod boundary, so there is now a seam for one to fall through.
 
 .PARAMETER SelfTest
-    Verify the check can fail. ELEVEN halves, and the run prints each one numbered as it passes, so
+    Verify the check can fail. TWELVE halves, and the run prints each one numbered as it passes, so
     a reader can count them against this list: the repo as it stands must pass; a mod carrying an
     invalid prototype must fail; a mod naming an icon file that does not exist must be caught; a
     mod that reassigns one of our containment categories must be caught; a mod that moves a
@@ -271,13 +280,16 @@
     connection category to one must NOT be; a mod that REPLACES one must be; a reactor whose
     input_flow_limit cannot cover its confinement heating must be refused; a mod that moves a
     pipe connection on a machine wearing a MOCKUP must be caught; a mod that puts a plasma of its
-    own through our heating category must be refused; and the isotope collector's two box filters
-    swapped must be refused. The first is
+    own through our heating category must be refused; the isotope collector's two box filters
+    swapped must be refused; and the socket-height gate must both pass the sheets as they stand and
+    report a sheet lifted a quarter tile. The first is
     required or the others prove nothing, since Factorio also exits non-zero when the repo is
     genuinely broken. Halves three through seven and nine are the ones Factorio exits 0 on, where
     the check has to decide alone. THE OTHER FOUR ARE THE MOD REFUSING ITSELF -- two, eight, ten
     and eleven all end with Factorio exiting non-zero, which is why each of the last three has to
-    match the refusal's own message as well as its exit code. A reviewer read this list as stale
+    match the refusal's own message as well as its exit code. TWELVE IS NEITHER: it runs no canary
+    mod at all, because the gate it proves (#344) reads committed sprites and needs no game -- see
+    Test-SocketHeights. A reviewer read this list as stale
     when ten and eleven were added; it is not, and they do not belong in it. Run this whenever the
     script changes.
 
@@ -298,7 +310,7 @@
     unrelated reason exits non-zero too, and would otherwise be recorded as the invariant firing.
 
     AND THE WORKING TREE IS ASSERTED UNTOUCHED, in BOTH self-tests, against a fingerprint taken
-    before either does anything -- pack-mods.ps1 included. SEVEN of the eleven canary halves mutate
+    before either does anything -- pack-mods.ps1 included. SEVEN of the twelve canary halves mutate
     one of our prototypes: four through nine, and eleven. Six of the seven do it to prove a gate
     FIRES; half six mutates one to prove a gate stays QUIET, which is the same hazard to the tree.
     Every one does it in memory; this is what says so rather than assuming it. The FINALLY
@@ -751,6 +763,45 @@ function Test-RenderedArt {
         exit 1
     }
     Write-Host "rendered art: all $($manifests.Count) manifest(s) agree with the live footprint, connections and recorded categories."
+}
+
+function Test-SocketHeights {
+    <#  Every player-facing socket must be DRAWN at the height a vanilla pipe is drawn at (#344).
+
+        Here rather than in a gate of its own because this is the second art gate over the same
+        subject: Test-RenderedArt already walks every manifest, and a third place that knows what a
+        manifest is would be the divergence this repository keeps spending tickets on. The work is
+        tools/check-socket-height.py, which reads pixels and so needs pillow and numpy; its own
+        header sets out the measurement and what it cannot see.
+
+        NO DUMP AND NO GAME. It compares a sheet against the manifest beside it and the vanilla
+        pipe's own sprite geometry, all three of which are committed -- so unlike everything else
+        in this run it would answer the same with the game uninstalled. It is run from here anyway,
+        because this is where a person looks for the answer.  #>
+
+    if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+        Write-Host ''
+        Write-Host 'FAILED - socket height: no `python` on PATH, so the socket-height gate could not run.'
+        Write-Host '         Treating as a failure rather than reporting a pass it did not earn.'
+        exit 1
+    }
+    # The same floor Test-RenderedArt has, for the same reason: no manifest at all reports no
+    # disagreement, which reads exactly like every socket being right.
+    $manifests = Get-RenderManifests -AssetsDirectory $ourDirectories[$ASSETS_MOD]
+    if (-not $manifests) {
+        Write-Host ''
+        Write-Host "FAILED - socket height: no graphics/rendered/*/manifest.json found under $ASSETS_MOD."
+        exit 1
+    }
+    # Captured and echoed rather than left to print itself. A native command writes down the
+    # pipeline while every gate here writes to the host, and the two do not interleave in order --
+    # this gate's lines came out AFTER the run's own success line the first time it was wired in.
+    $lines = @(& python (Join-Path $repoRoot 'tools/check-socket-height.py') `
+        @($manifests | ForEach-Object { $_.FullName }) 2>&1 | ForEach-Object { "$_" })
+    $failed = $LASTEXITCODE -ne 0
+    if ($failed) { Write-Host '' }
+    foreach ($line in $lines) { Write-Host $line }
+    if ($failed) { exit 1 }
 }
 
 # The hand-copied table every mockup is drawn from, shared with make-mockup-art.ps1 (#275).
@@ -1260,7 +1311,7 @@ try {
 
     if ($SelfTest) {
         # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
-        Write-Host 'self-test 1/11: the repo as it stands must load.'
+        Write-Host 'self-test 1/12: the repo as it stands must load.'
         $clean = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'clean'
         # Same pass criterion as a real run: exit 0 without a save is a failure there, so it must
         # be a failure here too, or -SelfTest could certify a check a plain run would reject.
@@ -1284,7 +1335,7 @@ try {
         'data:extend({{ type = "item", name = "rf-loadcheck-canary-item" }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 2/11: an invalid prototype must be rejected.'
+        Write-Host 'self-test 2/12: an invalid prototype must be rejected.'
         $broken = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'canary'
         if ($broken.Code -eq 0) {
             Write-Host ''
@@ -1303,7 +1354,7 @@ data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
   icon = D .. "no-such-icon" .. ".png", icon_size = 64 }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 3/11: a prototype naming a file that is not there must be caught.'
+        Write-Host 'self-test 3/12: a prototype naming a file that is not there must be caught.'
         $withCanary = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'assets'
         if ($withCanary.Code -ne 0) {
             Write-Host ''
@@ -1415,7 +1466,7 @@ data.raw.item["rf-loadcheck-canary-item"].order = victim .. "|" .. taken
   icon = "__base__/graphics/icons/iron-plate.png", icon_size = 64 }})' |
             Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 4/11: a set reassigning one of our containment categories must be caught.'
+        Write-Host 'self-test 4/12: a set reassigning one of our containment categories must be caught.'
         $reassigned = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'contain'
         if ($reassigned.Code -ne 0) {
             Write-Host ''
@@ -1505,7 +1556,7 @@ if not slid then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 5/11: a machine whose rendered art no longer fits it must be caught."
+        Write-Host "self-test 5/12: a machine whose rendered art no longer fits it must be caught."
         $renderDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-loaded'
         $disagreements = @(Get-RenderDisagreements -DumpPath $renderDump -Manifests $renderManifests)
         $onVictim = @($disagreements | Where-Object { $_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connections' })
@@ -1578,7 +1629,7 @@ if not touched then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 6/11: another mod adding a connection category must NOT be reported."
+        Write-Host "self-test 6/12: another mod adding a connection category must NOT be reported."
         $coexistDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-coexist'
 
         # The canary reaching the GEOMETRY, proved rather than assumed. This half passes by finding
@@ -1651,7 +1702,7 @@ if not touched then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 7/11: another mod replacing a connection category must be caught."
+        Write-Host "self-test 7/12: another mod replacing a connection category must be caught."
         $replacedDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-replaced'
         $replacedRows = @(Get-RenderDisagreements -DumpPath $replacedDump -Manifests $renderManifests)
         $onCategories = @($replacedRows | Where-Object {
@@ -1701,7 +1752,7 @@ end
   source.input_flow_limit = "1W"
 end)()' | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host 'self-test 8/11: a reactor that can never be paid its heating must be refused.'
+        Write-Host 'self-test 8/12: a reactor that can never be paid its heating must be refused.'
         $starved = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'flow'
         if ($starved.Code -eq 0) {
             Write-Host ''
@@ -1770,7 +1821,7 @@ if not walk(proto, {}) then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host 'self-test 9/11: a machine whose mockup no longer fits it must be caught.'
+        Write-Host 'self-test 9/12: a machine whose mockup no longer fits it must be caught.'
         $mockupDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'mockup-loaded'
         $mockupRows = @(Get-MockupDisagreements -DumpPath $mockupDump -Machines $mockupMachines)
         $onMockup = @($mockupRows | Where-Object { $_.Prototype -eq $mockupName -and $_.Field -eq 'connections' })
@@ -1838,7 +1889,7 @@ data:extend({
 })
 '@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host 'self-test 10/11: a plasma no reactor knows how to burn must be refused.'
+        Write-Host 'self-test 10/12: a plasma no reactor knows how to burn must be refused.'
         $unburnable = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'plasma'
         if ($unburnable.Code -eq 0) {
             Write-Host ''
@@ -1885,7 +1936,7 @@ end
 collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
 '@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host 'self-test 11/11: a collector whose two boxes are swapped must be refused.'
+        Write-Host 'self-test 11/12: a collector whose two boxes are swapped must be refused.'
         $swapped = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'boxes'
         if ($swapped.Code -eq 0) {
             Write-Host ''
@@ -1905,7 +1956,26 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
             exit 1
         }
 
-        # THE WORKING TREE, ASSERTED RATHER THAN REASONED ABOUT (#125). SEVEN of the eleven halves
+        # THE ONE HALF THAT NEEDS NO CANARY MOD, because the gate it proves needs no game (#344):
+        # tools/check-socket-height.py measures the committed sheets against the manifests beside
+        # them, so it can be made to fail by lifting a sheet in memory rather than by breaking a
+        # prototype. Its own two halves do that -- every socket right as it stands, and every socket
+        # reported wrong a quarter tile up -- and this runs them, so `-SelfTest` covers every gate
+        # the plain run does.
+        Write-Host 'self-test 12/12: the socket-height gate must pass the sheets and fail a lifted one.'
+        $heightLines = @(& python (Join-Path $repoRoot 'tools/check-socket-height.py') --self-test `
+            @((Get-RenderManifests -AssetsDirectory $ourDirectories[$ASSETS_MOD]) | ForEach-Object { $_.FullName }) `
+            2>&1 | ForEach-Object { "$_" })
+        $heightFailed = $LASTEXITCODE -ne 0
+        if ($heightFailed) {
+            foreach ($line in $heightLines) { Write-Host $line }
+            Write-Host ''
+            Write-Host 'FAILED - self-test: the socket-height gate could not show both that it passes the'
+            Write-Host '         sheets as they stand and that it catches a socket drawn too high.'
+            exit 1
+        }
+
+        # THE WORKING TREE, ASSERTED RATHER THAN REASONED ABOUT (#125). SEVEN of the twelve halves
         # mutate one of our prototypes -- four, five, six, seven and nine move a connection or a
         # category, eight cuts an input_flow_limit, eleven swaps two box filters -- and every one of
         # them does it in `data-final-fixes`, in memory, at load, with nothing on disk touched. Six
@@ -1925,8 +1995,9 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
         Write-Host '     cannot cover its heating refused by check_input_flow(), a slid'
         Write-Host "     connection caught on $mockupName's mockup, an unburnable plasma"
         Write-Host '     refused by check_every_plasma_burns() and a swapped collector box'
-        Write-Host '     refused by check_collector_boxes() -- both by their own words -- and'
-        Write-Host "     $($treeBefore.Count) files under our mod directories untouched by the run."
+        Write-Host '     refused by check_collector_boxes() -- both by their own words -- a'
+        Write-Host '     socket-height gate that passes the sheets and catches a lifted one,'
+        Write-Host "     and $($treeBefore.Count) files under our mod directories untouched by the run."
         exit 0
     }
 
@@ -1975,6 +2046,13 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
         # Before the asset check for the same reason containment is: the upstream asset reds must
         # not hide it. Reads the loaded dump, so a set moving our connection fails it (#250).
         Test-RenderedArt -DumpPath $loadedDump
+
+        # The other half of the same question, and the only thing here that opens a sprite (#344).
+        # Test-RenderedArt proves a socket is recorded where the machine has it; this proves it is
+        # DRAWN where the pipe a player plugs into it is drawn. Neither covers the other: both
+        # machines shipped for months with every connection in the right place and every stub half a
+        # tile too high, and nothing failed.
+        Test-SocketHeights
 
         # The mockups' hand-copied table, held against the same dump (#275). Beside the render gate
         # because it is the same question asked of the other kind of art: is the picture drawn where
