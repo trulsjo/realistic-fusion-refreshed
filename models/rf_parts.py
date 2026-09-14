@@ -14,11 +14,16 @@ WHAT STAYS PER MACHINE: `mat`. The heat exchanger's takes `glow` and `corrode`, 
 collector's takes `frost`, and their palettes differ because the machines carry different fluids.
 So the five helpers that BUILD a surface -- `box`, `cyl`, `torus`, `pipe` and the `_plate` the
 first two go through -- forward whatever keyword flags they are given straight to the resolver and
-never look inside them. `hbeam`, `rivets` and `seam` do not, and are the three that choose their own
-material: a beam and a rivet are `frame` and `dark` by default, a seam is always `frame`. Passing
-`frost=True` to one of those is a TypeError rather than a silent miss, which is the right failure --
-but it is a failure, so if a machine ever wants a frosted rivet the flag has to be plumbed through
-`rivets` first.
+never look inside them. `hbeam`, `rivets`, `seam` and `port` do not, and are the four that choose
+their own material: a beam and a rivet are `frame` and `dark` by default, a seam is always `frame`,
+and a port's rim is always `dark`. Passing `frost=True` to one of those is a TypeError rather than a
+silent miss, which is the right failure -- but it is a failure, so if a machine ever wants a frosted
+rivet the flag has to be plumbed through `rivets` first.
+
+AND ONE NUMBER RATHER THAN A HELPER: `SOCKET_Z`, the height a player-facing socket is drawn at. It
+is here for the same reason the helpers are -- the second machine to need it would have copied it
+(#342) -- and it comes with its derivation, because it is measured against a vanilla pipe and not
+chosen.
 
 THE ORDER OF `random` DRAWS IS PART OF THE CONTRACT. `bevel` and `jitter` both draw from the global
 `random`, which each build script seeds once; the imperfections are deterministic only as long as
@@ -36,6 +41,34 @@ import sys
 import bpy
 
 import rf_blender as rf
+
+
+# THE HEIGHT A PLAYER-FACING SOCKET IS DRAWN AT, MEASURED AGAINST A VANILLA PIPE AND NOT CHOSEN
+# (Truls, 2026-09-14: the sockets "should appear to connect with vanilla pipes"). It was 0.55 on
+# both rendered machines and the join was a visible step -- scripts/probe-socket-height.ps1 is the
+# rig that showed it and this is what it measured.
+#
+# A cylinder of radius r lying along an axis at height z draws its silhouette centred 0.707 z above
+# the ground line, the r terms cancelling: the top point (y -r, z + r) lands at -r - 0.707(z + r)
+# and the bottom (y +r, z - r) at +r - 0.707(z - r), and the mean of those is -0.707 z. Measured on
+# the rendered sheet at z 0.55 the centre sat 0.398 tiles up, against 0.707 x 0.55 = 0.389
+# predicted, so the projection is understood rather than curve-fitted.
+#
+# Vanilla's own pipe draws its body centred 0.031 tiles above the ground line
+# (base/graphics/entity/pipe/pipe-straight-horizontal.png, scale 0.5 and no shift, so 64 px to the
+# tile and directly comparable with ours). Setting 0.707 z = 0.031 gives this:
+SOCKET_Z = 0.044
+#
+# AND THAT PUTS THE TUBE THROUGH THE PLINTH, which is the trade Truls made explicitly: *"Going below
+# the floor is preferable to this look. If intersecting the floor, the floor should have a modelled
+# hole for the pipe."* Both machines stand on a slab 0.25 tiles thick, and a socket of any radius
+# over 0.206 at this height reaches through it -- so `port` below cuts the hole and rims it, and
+# every machine with a player-facing socket calls it.
+#
+# ONLY A PLAYER-FACING SOCKET. A CONTAINED connection (ADR 0018) meets a machine face, never a pipe:
+# lowering one would match it to a pipe that cannot exist and break the bolted contact it is for.
+# models/heat-exchanger/build.py is the machine that carries both kinds and says so at its socket
+# loop.
 
 
 def MATERIAL(name, **flags):                      # replaced by use(); a clear error if it is not
@@ -158,6 +191,53 @@ def torus(name, major, minor, loc, material, rot=(0, 0, 0), **mat_opts):
     o.name = name
     o.data.materials.append(MATERIAL(material, **mat_opts))
     return o
+
+
+def port(body, axis, across, edge, sign, radius, depth=0.7):
+    """Cut the hole a socket passes through, in `body`, and rim its mouth.
+
+    `axis` is the socket's own axis, "X" or "Y"; `across` is its position on the other ground axis;
+    `edge` is the footprint edge it stops at and `sign` which way that lies (+1 east or north).
+
+    The cutter is a modifier rather than an applied boolean, the way `bevel` is: Blender evaluates
+    BEVEL then BOOLEAN in the order they were added, so the hole is cut into the already-rounded
+    body and neither has to be baked. Nothing here is destructive, so a re-render from the same
+    script gives the same object.
+
+    `radius` is the socket's own plus clearance -- both machines add 0.06 -- because a hole exactly
+    the size of the tube leaves a z-fighting shell where the two surfaces touch, and a hole a little
+    proud reads as a hole. It is passed rather than derived: the two machines do not draw their
+    sockets the same width, and #345 is where that is decided.
+
+    DRAWS NOTHING FROM `random`, which is why it could be lifted out of a build script without
+    moving a single imperfection: the cutter is a raw primitive and `torus` puts on no bevel. See
+    this module's own header on why that matters.
+    """
+    cutter_loc = [0.0, 0.0, SOCKET_Z]
+    cutter_loc[0 if axis == "X" else 1] = edge - sign * (depth / 2 - 0.12)
+    cutter_loc[1 if axis == "X" else 0] = across
+    bpy.ops.mesh.primitive_cylinder_add(
+        radius=radius, depth=depth, vertices=32, location=cutter_loc,
+        rotation=(0, math.pi / 2, 0) if axis == "X" else (math.pi / 2, 0, 0))
+    cutter = bpy.context.object
+    cutter.name = f"PortCut-{axis}-{across:g}"
+    cutter.display_type = "WIRE"
+    cutter.hide_render = True
+    m = body.modifiers.new(cutter.name, "BOOLEAN")
+    m.object = cutter
+    m.operation = "DIFFERENCE"
+    m.solver = "EXACT"
+    # The rim: a collar at the stub's OUTER MOUTH, on the footprint edge the socket stops at rather
+    # than on the body face the hole is cut in -- which on both machines are a quarter tile apart,
+    # because the selection box stands that far outside the collision box. So it reads as the flange
+    # a pipe bolts to, and it is the thing that says the stub ends deliberately rather than being cut
+    # off by the frame. Put on the body face instead it would be a collar round the hole; that is a
+    # different look and would change art already accepted, so it is left where the collector put it.
+    rim_loc = [0.0, 0.0, SOCKET_Z]
+    rim_loc[0 if axis == "X" else 1] = edge - sign * 0.03
+    rim_loc[1 if axis == "X" else 0] = across
+    torus(f"PortRim-{axis}-{across:g}", radius + 0.02, 0.05, tuple(rim_loc), "dark",
+          rot=(0, math.pi / 2, 0) if axis == "X" else (math.pi / 2, 0, 0))
 
 
 def _centreline(curve_obj):

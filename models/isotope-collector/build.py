@@ -741,31 +741,16 @@ else:
     (sx0, sy0), (sx1, sy1) = geo["selection_box"]
     UNIT = {"north": (0, -1), "east": (1, 0), "south": (0, 1), "west": (-1, 0)}   # Factorio frame
 
-    # SOCKET HEIGHT IS MEASURED AGAINST A VANILLA PIPE, NOT CHOSEN (Truls, 2026-09-14: the sockets
-    # "should appear to connect with vanilla pipes"). It was 0.55 on both rendered machines and the
-    # join was a visible step -- scripts/probe-socket-height.ps1 is the rig that showed it and the
-    # note below is what it measured.
+    # SOCKET HEIGHT IS MEASURED AGAINST A VANILLA PIPE, NOT CHOSEN, and since #342 it is measured
+    # ONCE: rf_parts.SOCKET_Z carries the number and the derivation behind it, so the next machine
+    # reads it rather than rediscovering it. Every connection on this machine is uncontained (#26),
+    # so every socket here takes it; rf-heat-exchanger is the machine where that is a choice.
     #
-    # A cylinder of radius r lying along an axis at height z draws its silhouette centred
-    # 0.707 z above the ground line, the r terms cancelling: the top point (y -r, z + r) lands at
-    # -r - 0.707(z + r) and the bottom (y +r, z - r) at +r - 0.707(z - r), and the mean of those is
-    # -0.707 z. Measured on the rendered sheet at z 0.55 the centre sat 0.398 tiles up, against
-    # 0.707 x 0.55 = 0.389 predicted, so the projection is understood rather than curve-fitted.
-    #
-    # Vanilla's own pipe draws its body centred 0.031 tiles above the ground line
-    # (base/graphics/entity/pipe/pipe-straight-horizontal.png, scale 0.5 and no shift, so 64 px to
-    # the tile and directly comparable with ours). Setting 0.707 z = 0.031 gives this:
-    SOCKET_Z = 0.044
-    #
-    # AND THAT PUTS THE TUBE THROUGH THE PLINTH, which is the trade Truls made explicitly: *"Going
-    # below the floor is preferable to this look. If intersecting the floor, the floor should have a
-    # modelled hole for the pipe."* The slab's top is at 0.25 and a 0.3-radius socket at 0.044
-    # reaches 0.344, so every socket now enters the slab rather than floating over it. `port` below
-    # cuts the hole and rims it, so the pipe passes through an opening that was built for it instead
-    # of clipping through solid stone.
-    #
-    # WHAT IS NOT FIXED HERE: ours is still about a quarter fatter than vanilla's pipe, 0.75 tiles
-    # of drawn height against 0.609. Height was the dominant error and is the one Truls named.
+    # The slab's top is at 0.25, so a socket of this radius at that height enters the stone rather
+    # than floating over it, and `rf_parts.port` cuts the hole and rims it -- the trade Truls made
+    # explicitly: *"Going below the floor is preferable to this look. If intersecting the floor, the
+    # floor should have a modelled hole for the pipe."*
+    SOCKET_Z = rf_parts.SOCKET_Z
 
     # SOCKET RADIUS, MEASURED AGAINST A VANILLA PIPE THE WAY THE HEIGHT WAS (#345, for Truls to
     # look at -- the decision is his and is not taken by this number existing).
@@ -784,39 +769,9 @@ else:
     BAND_R = SOCKET_R + 0.04        # the accent stands a little proud of the tube, as it always has
     PORT_R = SOCKET_R + 0.06        # and the hole a little proud of the accent, so it reads as a hole
 
-    def port(axis, across, edge, sign, radius=PORT_R, depth=0.7):
-        """Cut the hole a socket passes through, in the slab, and rim its mouth.
-
-        The cutter is a modifier rather than an applied boolean, the way `bevel` is: Blender
-        evaluates BEVEL then BOOLEAN in the order they were added, so the hole is cut into the
-        already-rounded slab and neither has to be baked. Nothing here is destructive, so a
-        re-render from the same script gives the same object.
-
-        `radius` is the socket's 0.3 plus clearance: a hole exactly the size of the tube leaves a
-        z-fighting shell where the two surfaces touch, and a hole a little proud reads as a hole.
-        """
-        cutter_loc = [0.0, 0.0, SOCKET_Z]
-        cutter_loc[0 if axis == "X" else 1] = edge - sign * (depth / 2 - 0.12)
-        cutter_loc[1 if axis == "X" else 0] = across
-        bpy.ops.mesh.primitive_cylinder_add(
-            radius=radius, depth=depth, vertices=32, location=cutter_loc,
-            rotation=(0, math.pi / 2, 0) if axis == "X" else (math.pi / 2, 0, 0))
-        cutter = bpy.context.object
-        cutter.name = f"PortCut-{axis}-{across:g}"
-        cutter.display_type = "WIRE"
-        cutter.hide_render = True
-        slab = bpy.data.objects["Slab"]
-        m = slab.modifiers.new(cutter.name, "BOOLEAN")
-        m.object = cutter
-        m.operation = "DIFFERENCE"
-        m.solver = "EXACT"
-        # The rim: a collar standing just proud of the slab face, so the opening is a fitting rather
-        # than a bite taken out of the stone. It is the thing that says the hole was meant.
-        rim_loc = [0.0, 0.0, SOCKET_Z]
-        rim_loc[0 if axis == "X" else 1] = edge - sign * 0.03
-        rim_loc[1 if axis == "X" else 0] = across
-        torus(f"PortRim-{axis}-{across:g}", radius + 0.02, 0.05, tuple(rim_loc), "dark",
-              rot=(0, math.pi / 2, 0) if axis == "X" else (math.pi / 2, 0, 0))
+    def port(axis, across, edge, sign):
+        """This machine's hole-cutter: rf_parts.port through the slab, at this machine's clearance."""
+        rf_parts.port(bpy.data.objects["Slab"], axis, across, edge, sign, PORT_R)
 
     def inboard(c, back):
         """`back` tiles inboard of the tile a connection stands on, at socket height.
