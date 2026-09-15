@@ -23,7 +23,9 @@
     THE FOUR TREATMENTS are #350's, and models/socket-variants.py draws them:
 
       bare            what ships today, as the control
-      flanged         vanilla's flange pair added at the stub's mouth -- THE ONE #351 CHOSE
+      flanged         vanilla's flange pair added at the stub's mouth -- THE ONE #351 CHOSE, and
+                      what #353 then put on both machines, so on a re-rendered machine this
+                      treatment REFUSES rather than stacking a second pair over the control
       dark-cored      a shadowed channel down the tube, the way vanilla's window reads
       rimmed-inboard  the dark rim brought in from the footprint edge onto the body face
                       (called `collared` until #351 gave that word to the accent band)
@@ -37,9 +39,12 @@
 
     THE CONTROL IS LITERALLY WHAT SHIPS, and that is checkable rather than asserted: rendering the
     `bare` variant reproduces realistic-fusion-refreshed-assets' isotope-collector.png and
-    isotope-collector-shadow.png byte for byte (verified 2026-09-14, sha256 44ce42a9be01 and
-    45a2b4183d85). If a change here ever breaks that, the control has stopped being a control and
-    every frame beside it is being read against the wrong reference.
+    isotope-collector-shadow.png byte for byte (re-verified 2026-09-15 after #353 and #356
+    re-rendered both machines, sha256 b55814de1e78 and 8f2a09f68b92; they read 44ce42a9be01 and
+    45a2b4183d85 before that). If a change here ever breaks that, the control has stopped being a
+    control and every frame beside it is being read against the wrong reference. RE-MEASURE THESE
+    WHENEVER THE MACHINE IS RE-RENDERED -- they are a hash of the shipped sheets, so any render
+    invalidates them, and a stale prefix here is a claim nothing else in the repository can catch.
 
     WHAT IT SHOOTS, per treatment:
 

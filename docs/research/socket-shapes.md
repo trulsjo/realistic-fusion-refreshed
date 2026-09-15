@@ -10,9 +10,11 @@ It asserts nothing and decides nothing.**
 
 #350 committed the rig on the grounds that the next engine version could be asked the same question.
 That is true of the *method* and not of these frames: the variant sheets were rendered with
-`SOCKET_Z` at 0.044, and
-[#356](https://github.com/trulsjo/realistic-fusion-refreshed/issues/356) changes it to 0.033. After
-#356 lands, re-running the rig reproduces a different set. So the ten PNGs in `socket-shapes/` are
+`SOCKET_Z` at 0.044, which
+[#356](https://github.com/trulsjo/realistic-fusion-refreshed/issues/356) has since corrected to
+0.033 -- and #353 has since put the chosen flange pair on the shipped machines, so `bare` is now the
+flanged control and `flanged` refuses rather than stacking a second pair. **Re-running the rig no
+longer reproduces these frames, and it is not meant to.** So the ten PNGs in `socket-shapes/` are
 here because a decision recorded as "we looked and chose" with nothing left to look at is exactly
 what #351's acceptance criteria were written to prevent.
 

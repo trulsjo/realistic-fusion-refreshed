@@ -27,7 +27,9 @@ them, and `load-check.ps1` is where the invariants tying the simulation to the p
 Since #250 it also fails when a `graphics/rendered/<machine>/manifest.json` disagrees with the live
 prototype's footprint or connections, by asking `tools/extract-geometry.py` again, and since #344
 when a socket a player can plumb is DRAWN at a height no vanilla pipe would meet, by reading the
-sheet with `tools/check-socket-height.py`. **Both need Python on PATH, and the second needs `pillow`
+sheet with `tools/check-socket-height.py` — which since #356 also fails when `rf_blender.SOCKET_Z`
+itself stops predicting the height vanilla draws its pipe at, so a wrong constant is caught before
+anything is rendered from it. **Both need Python on PATH, and the second needs `pillow`
 and `numpy` in it** — the only third-party Python this repository's gates require, and the one
 prerequisite that is neither Factorio nor Blender. A missing one is a failure with a message, not a
 skip. **The categories on those connections are compared as a subset, not for equality**, and this

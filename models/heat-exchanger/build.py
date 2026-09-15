@@ -558,7 +558,7 @@ else:
 
     # SINCE THE WATER SOCKETS DROPPED TO PIPE HEIGHT THIS HEADER ENDS IN THE SLAB, not on a stub
     # (#343), and it is the collector's lesson taken rather than relearnt. A header run at the
-    # sockets' own 0.044 would be buried in stone for its whole length and draw nothing; a header
+    # sockets' own 0.033 would be buried in stone for its whole length and draw nothing; a header
     # left where it was would stop in mid-air, above a socket that is now inside the floor. So it
     # stays under the grating where it reads, and turns DOWN into the slab at each end with a
     # collar where it goes in. A player reads a pipe entering the floor and a pipe leaving the wall
