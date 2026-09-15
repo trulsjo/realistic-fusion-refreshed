@@ -329,6 +329,24 @@ was the difference between them, until #67 measured both and found they agree.
 **Bench** below. Neither is a map, and both belong here for the same reason the two maps do: a number
 quoted without them has lost something a reader needs to judge it by.
 
+**And the scale a picture was taken at** — **Zoom** below. It is here rather than in Art because a
+zoom is not an artefact: it is what a figure in pixels was measured through, and the same rule
+applies. Say it.
+
+**Zoom** — the game's screenshot scale, where **zoom 1 is 32 px to the tile and is the size a player
+meets a machine at**. Everything above that is magnification: zoom 2 is 64 px to the tile, zoom 8 is
+256. Our rendered sheets are drawn at 64 px to the tile and ship at `scale 0.5`, so one sheet pixel
+is half a screen pixel at zoom 1 — which is why `tools/check-socket-height.py` calls a 0.494 px move
+on a sheet "0.25 px at the game's own zoom", and why a difference that survives magnification may
+still be invisible where it is met.
+
+**A picture quoted without its zoom has lost the half that says whether anyone can see it**, and
+[#371](https://github.com/trulsjo/realistic-fusion-refreshed/issues/371) is what that costs.
+`scripts/probe-socket-height.ps1` shot its player's-eye frame at zoom 2 and called it the game's own
+zoom in three separate sentences, while `docs/research/socket-shapes.md` had zoom 1 right. Two
+scripts used one word for two scales, and the frame that existed to answer "is this visible" showed
+every difference at twice its real size. The scale is now named by number wherever it is shot.
+
 **Rig** — a map this repository builds itself, to make one question answerable: flat ground, power,
 the entities under test, and deliberately nothing else. Every `scripts/check-*.ps1` builds one, and so
 does `bench-reactors.ps1`'s own sweep. A rig can be built twice and varied in one respect, which is
