@@ -90,8 +90,12 @@
     which is printed at the end.
 
 .PARAMETER Treatments
-    Which treatments to render and shoot. Defaults to all four. Names must be ones
-    models/socket-variants.py knows.
+    Which treatments to render and shoot. Names must be ones models/socket-variants.py knows.
+
+    DEFAULTS TO THREE OF THE FOUR, and `flanged` is the one left out. Since #353 both shipped
+    machines wear the flange pair, so `bare` IS the flanged machine and socket-variants.py refuses
+    that treatment on either of them -- a run that asked for it would throw before shooting
+    anything. Ask for it by name on a machine that has not been re-rendered; there is none today.
 
 .PARAMETER Samples
     Cycles samples per variant render. 64 is what the shipped sheets use, and lowering it makes the
@@ -118,7 +122,7 @@ param(
     [string]   $Blender,
     [string]   $SheetDirectory,
     [string]   $OutputDirectory,
-    [string[]] $Treatments = @('bare', 'flanged', 'dark-cored', 'rimmed-inboard'),
+    [string[]] $Treatments = @('bare', 'dark-cored', 'rimmed-inboard'),   # not 'flanged'; see above
     [int]      $Samples = 64,
     [int]      $TimeoutSeconds = 300,
     [switch]   $KeepTemp

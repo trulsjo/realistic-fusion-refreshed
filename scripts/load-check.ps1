@@ -801,7 +801,11 @@ function Get-VanillaPipeSheet {
 }
 
 function Test-SocketHeights {
-    <#  Every player-facing socket must be DRAWN at the height a vanilla pipe is drawn at (#344).
+    <#  Every player-facing socket must be DRAWN at the height a vanilla pipe is drawn at (#344),
+        and since #356 models/rf_blender.py's SOCKET_Z must PREDICT that height as well -- two
+        failures with two remedies, because a sheet rendered before the constant moved still shows
+        the old one, so judging the art alone would let a wrong constant through until someone
+        happened to re-render.
 
         Here rather than in a gate of its own because this is the second art gate over the same
         subject: Test-RenderedArt already walks every manifest, and a third place that knows what a

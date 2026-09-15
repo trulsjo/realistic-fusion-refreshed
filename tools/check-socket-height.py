@@ -540,7 +540,8 @@ def self_test(manifests, pipe_sheet):
     says nothing about the sheets halves two and three read. rf_blender.SOCKET_Z as it stands must
     agree with that reference, and three constants that do not must all be reported PARTED: the old
     0.044, which is the defect this cross-check exists for and the one thing here that is a real
-    number rather than an offset, and the constant moved twice the tolerance each way.
+    number rather than an offset, and the constant moved three tolerances each way -- three rather
+    than two because two lands back on 0.044; the code below says so where it computes the offset.
 
     THE LIFT IS A QUARTER TILE RATHER THAN THE HALF THE REAL DEFECT WAS, and the reason is worth
     keeping: half a tile pushes a socket against the top of the search window, so the check reports
