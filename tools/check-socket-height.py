@@ -50,17 +50,12 @@ the full 0.52 px and its BOTTOM moved 0.03 px, which is what "the underside is c
 outside. The gate itself reported no change at all, and that is the row threshold below rather than
 a disagreement: it reads whole rows at alpha 8, so a quarter-pixel move is invisible to it.
 
-Isolating the socket is the other half, and it takes two cuts rather than one. The COLUMNS are the
-strip between the collision edge and the selection edge: the slab, the deck and the frame all stop
-at the footprint, so the only thing standing out there is a socket stub. That strip is a column
-range only when the socket runs left-to-right on screen, so each connection is measured on the
-sheet where it does -- direction sheet 0 for an east or west connection, sheet "-e" for a north or
-south one, which is the same machine with the camera turned a quarter (models/render.py turns the
-rig by +90 degrees per direction). The ROWS are one tile either side of that connection's own
-ground line, which is what keeps the two sockets on rf-heat-exchanger's short ends -- two tiles
-apart, one plumbable and one not -- out of each other's measurement. Neither cut is redundant: a
-part that a jitter walks a few hundredths of a tile past the footprint is caught by the row window
-if it is caught at all, and the row window alone would hold most of the machine.
+Isolating the socket is the other half, and since #365 it is tools/socket_strip.py's rather than
+this file's: two cuts, one in columns and one in rows, shared with tools/measure-socket-parts.py so
+that the gate and the instrument cannot come to disagree about where a socket is drawn. That
+module's header says what each cut is for and why neither is redundant. What is left here is the
+ENVELOPE question it is asked -- the midpoint of everything standing clear of the body, since a
+pipe meets the whole silhouette and not one piece of it.
 
 A silhouette touching the edge of that window is reported UNMEASURABLE rather than measured, since
 its extent is then cut off and its midpoint is not the axis.
@@ -85,7 +80,6 @@ repository root.
 """
 import argparse
 import json
-import math
 import os
 import sys
 import tempfile
@@ -98,8 +92,19 @@ except ImportError as missing:                    # a gate that cannot run must 
              f"and numpy in the `python` on PATH -- `python -m pip install pillow numpy`. It is the "
              f"only third-party Python this repository's gates require.")
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models"))
 import rf_blender as rf  # noqa: E402  (no bpy at module level)
+import socket_strip  # noqa: E402
+
+# WHERE THE STRIP ARITHMETIC LIVES, and it is no longer here. Which columns hold a socket, which
+# rows belong to its connection, what counts as drawn and when a silhouette is cut off by its own
+# window are all tools/socket_strip.py's, shared with tools/measure-socket-parts.py (#365). That
+# tool asks a different question -- one piece of a socket at a time rather than the envelope this
+# gate measures -- off the same two cuts, and two copies of them would drift the way
+# models/rf_parts.py's header records two copies of the mesh helpers drifting inside a week.
+Unmeasurable = socket_strip.Unmeasurable
+plumbable = socket_strip.plumbable
 
 # A world height of 1 tile draws this many tiles up the screen -- 0.70804, taken from the camera the
 # sheets were rendered through rather than copied as a number. NOTHING HERE DIVIDES BY IT: the
@@ -110,7 +115,7 @@ import rf_blender as rf  # noqa: E402  (no bpy at module level)
 # agree. Until #356 they did not: 0.70804 x 0.044 is 0.0312 and the reference measures 0.0234, and
 # nothing compared them. rf_blender imports no bpy since #354, so this file can import the constant
 # the models are built at and hold it against what vanilla's own sheet says it should be.
-SCREEN_PER_WORLD = 1.0 / math.tan(math.radians(rf.CAMERA_PITCH_DEG))
+SCREEN_PER_WORLD = socket_strip.SCREEN_PER_WORLD
 
 # HOW FAR THE CONSTANT AND THE MEASURED REFERENCE MAY PART, in SHEET PIXELS, before the cross-check
 # fails. A quarter of a pixel, and both ends of that are deliberate.
@@ -148,9 +153,10 @@ CONSTANT_TOLERANCE_PX = 0.25
 PIPE_COLOUR_FLOOR = 24
 # And the visibility floor the colour is read through. Alpha cannot separate pipe from shadow -- the
 # shadow is opaque for most of its depth -- but it is still what says whether a pixel is drawn at
-# all, and RGB under a transparent pixel is meaningless. 8 of 255 is the same floor `drawn_centre`
-# reads our own silhouettes at, so both sides of the comparison call the same thing visible.
-PIPE_ALPHA_FLOOR = 8
+# all, and RGB under a transparent pixel is meaningless. It is socket_strip.ALPHA_FLOOR itself,
+# which is the floor our own silhouettes are read at, so both sides of the comparison call the same
+# thing visible by construction rather than by two numbers agreeing.
+PIPE_ALPHA_FLOOR = socket_strip.ALPHA_FLOOR
 # How much clear air the floor must have on each side of it, as a fraction of the floor. Neither the
 # dimmest row kept nor the brightest row dropped may come within this much of it. At 0.25 that is 30
 # and 18, against a measured 40 and 8 -- so the check has room today and fails loudly on the day a
@@ -183,20 +189,6 @@ VANILLA_PIPE_SHEETS = frozenset(("pipe-straight-horizontal.png", "pipe-straight-
 # for it, and the two differ because a real sheet carries a bevel and a wash; the measured one is
 # the one that says what this tolerance would have caught.
 TOLERANCE = 0.08
-
-# The outboard strip is inset by this many pixels at each end, because the collision edge column
-# still holds the anti-aliased edge of the body and the far column the very end of the stub.
-INSET_PX = 2
-
-# Rows searched either side of a connection's ground line, in tiles. One tile holds a socket drawn
-# anywhere from the floor to z 0.55 whole, and stops short of the next connection on the same wall:
-# rf-heat-exchanger puts water and reactor energy two tiles apart on each short end.
-WINDOW_TILES = 1.0
-
-
-class Unmeasurable(Exception):
-    """The sheet could not be read where the socket should be. A failure, not a pass: an instrument
-    fault reported as a clean run is the shape every gate here is written against."""
 
 
 def vanilla_pipe_centre(path):
@@ -339,88 +331,17 @@ def report_constant(reference, socket_z=None):
     return ok
 
 
-def plumbable(connection):
-    """True for a connection a player can put an ordinary pipe on. See the module header."""
-    return not connection.get("connection_category")
-
-
-def sheet_frame(manifest, connection):
-    """(suffix, width_px, height_px) of the sheet this connection is measured on."""
-    fr = manifest["frame"]
-    tw, th = fr["tiles"]
-    px_per_tile, margin = fr["pixels_per_tile"], fr["margin_tiles"]
-    # A socket runs left-to-right on screen only on the sheets whose camera looks along its axis.
-    # Sheet "" is the machine as declared; "-e" is the camera a quarter turn on, which lays a
-    # north-south socket across the screen. Either would do of the two that work; the first is
-    # taken so the choice is not a judgement.
-    east_west = connection["direction"] in ("west", "east")
-    suffix = "" if east_west else "-e"
-    if suffix not in manifest["directions"]:
-        raise Unmeasurable(f"the manifest records no '{suffix or 'north'}' sheet to measure it on")
-    across, along = (tw, th) if east_west else (th, tw)
-    return (suffix,
-            int(round((across + 2 * margin) * px_per_tile)),
-            int(round((along + 2 * margin) * px_per_tile)))
-
-
-def socket_span(manifest, connection):
-    """(low, high, ground) for a connection, in tiles on the sheet it is measured on.
-
-    `low`..`high` is the OUTBOARD strip along the screen's horizontal axis: from the collision edge
-    the machine's body stops at to the selection edge the socket stops at. `ground` is where that
-    connection's ground line sits on the screen's vertical axis, in tiles above the sheet centre.
-    """
-    g = manifest["geometry"]
-    (cx0, cy0), (cx1, cy1) = g["collision_box"]
-    (sx0, sy0), (sx1, sy1) = g["selection_box"]
-    px, py = connection["position"]
-    d = connection["direction"]
-    # Factorio's +y is south and Blender's is north, which is the flip both build scripts make at
-    # their socket loop. On sheet "" the screen's horizontal axis is Blender x and its vertical is
-    # Blender y; on "-e" the camera has turned a quarter, so horizontal is Blender y and vertical
-    # is -Blender x.
-    if d == "east":
-        edge, collision, ground = sx1, cx1, -py
-    elif d == "west":
-        edge, collision, ground = sx0, cx0, -py
-    elif d == "north":
-        edge, collision, ground = -sy0, -cy0, -px
-    elif d == "south":
-        edge, collision, ground = -sy1, -cy1, -px
-    else:
-        raise Unmeasurable(f"unknown direction '{d}'")
-    return min(edge, collision), max(edge, collision), ground
-
-
 def drawn_centre(alpha, manifest, connection):
-    """How far above its ground line a connection's socket is drawn, in tiles."""
-    fr = manifest["frame"]
-    px_per_tile = fr["pixels_per_tile"]
-    _, w_px, h_px = sheet_frame(manifest, connection)
-    if alpha.shape != (h_px, w_px):
-        raise Unmeasurable(f"the sheet is {alpha.shape[1]}x{alpha.shape[0]} px where the manifest's "
-                           f"frame says {w_px}x{h_px}")
-    low, high, ground = socket_span(manifest, connection)
-    col0 = int(round(w_px / 2 + low * px_per_tile)) + INSET_PX
-    col1 = int(round(w_px / 2 + high * px_per_tile)) - INSET_PX
-    if col1 - col0 < 1:
-        raise Unmeasurable("the selection box is no wider than the collision box on that side, so "
-                           "no part of the socket stands clear of the machine to be measured")
-    ground_row = h_px / 2 - ground * px_per_tile
-    row0 = int(round(ground_row - WINDOW_TILES * px_per_tile))
-    row1 = int(round(ground_row + WINDOW_TILES * px_per_tile))
-    if row0 < 0 or row1 > h_px:
-        raise Unmeasurable("the search window falls outside the sheet")
-    strip = alpha[row0:row1, col0:col1] > 8
-    rows = np.nonzero(strip.any(axis=1))[0]
-    if len(rows) == 0:
-        raise Unmeasurable(f"nothing is drawn in columns {col0}..{col1} within a tile of the "
-                           f"connection's ground line, so there is no stub there to measure")
-    if rows[0] == 0 or rows[-1] == strip.shape[0] - 1:
-        raise Unmeasurable("the stub reaches the edge of the search window, so its extent -- and "
-                           "therefore its centre -- is cut off rather than measured")
-    top, bottom = row0 + rows[0], row0 + rows[-1] + 1
-    return (ground_row - (top + bottom) / 2) / px_per_tile
+    """How far above its ground line a connection's socket is drawn, in tiles.
+
+    THE ENVELOPE, not one piece of the socket: the midpoint of everything standing clear of the
+    body, because a pipe meets the whole silhouette. tools/measure-socket-parts.py is the tool that
+    takes the same strip apart rim by rib; the two share tools/socket_strip.py and differ only in
+    what they ask it.
+    """
+    s = socket_strip.strip(alpha, manifest, connection)
+    top, bottom = s.extent()
+    return (s.ground_row - (top + bottom) / 2) / s.px_per_tile
 
 
 def check(manifest_path, sheets, rows):
@@ -432,7 +353,7 @@ def check(manifest_path, sheets, rows):
             continue
         label = f"{connection['direction']} {connection['fluid']}"
         try:
-            suffix, _, _ = sheet_frame(manifest, connection)
+            suffix, _, _ = socket_strip.sheet_frame(manifest, connection)
             centre = drawn_centre(sheets(os.path.dirname(manifest_path), machine, suffix),
                                   manifest, connection)
         except Unmeasurable as why:

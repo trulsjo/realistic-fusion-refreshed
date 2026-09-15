@@ -251,10 +251,34 @@ separate.
 **THE MEASUREMENT IS SENSITIVE TO ITS COLUMN WINDOW, AND THAT IS THE METHOD NOTE #362 NEEDS.** Each
 part is read only in the columns where it is the widest thing present; one column too far either way
 picks up its neighbour and moves the answer by whole pixels. The stub reads +21.5/+19.5 over columns
-198..203 and +20.5/+18.5 over 198..202, because column 203 is where the band begins. Rim and ribs
-are stable across every window tried; the stub and the band are not, and the numbers above are the
-stable ones. The stub is measured on a flange-free control render, since on the shipped sheet no
-column shows bare tube.
+198..202 and +20.5/+18.5 over 198..201, because column 202 is the first that draws any of the accent
+band -- the band begins 0.88 px into it. Rim and ribs are stable across every window tried; the stub
+and the band are not, and the numbers above are the stable ones. The stub is measured on a
+flange-free control render, since on the shipped sheet no column shows bare tube.
+
+**Those two windows were written 198..203 and 198..202 until #365**, each one too high at the far
+end, because they were taken as Python slice bounds and a slice is half-open. Nothing measured
+moved -- both readings reproduce exactly -- only how the window was written down. Both ends are
+inclusive above, which is how `tools/measure-socket-parts.py` prints them.
+
+**THE GUARD IS NOW THE INSTRUMENT'S RATHER THAN THE READER'S** (#365). `tools/measure-socket-parts.py`
+prints the table above a part at a time, works each part's window out from the same constants the
+models are built from rather than from a column range anyone typed, and refuses a number that moves
+when that window is narrowed by one column at either end. Three of the four rows come off the
+committed sheets -- band, ribs and rim, identical on all six PLUMBABLE sockets the two machines
+carry between them -- and on those sheets the stub is reported as having NO WINDOW rather than a
+number, which is this note's own last sentence said by a tool. (The other three sockets are
+contained: they wear no rim and no ribs, so they report a stub and a band and nothing else.)
+
+**The fourth row is reproduced on the control render, and the leak with it.** The control is the
+shipped model with its six `Flange-*` objects deleted and one direction re-rendered to a scratch
+directory -- nothing in the repository is touched and nothing is committed, so re-deriving that row
+means re-rendering. Through columns 198..201 the stub measures +20.5/+18.5, which is the table's
+row; widened to 198..202 it measures +21.5/+19.5, which is the leak that shipped, and the tool
+reports THAT one unstable rather than returning it. The same boundary shows on the shipped sheet
+without any render: the flange rib ends and the accent band begins at column 202.88, so column 203
+starts a tenth of a pixel past it, and the band read through a window holding that column measures
++24.5 above where its own columns give +23.5.
 
 **The mechanism is still not settled**: `tools/check-socket-height.py`'s header attributes the lost
 underside to the shadow-catching ground plane, and these numbers are consistent with an underside

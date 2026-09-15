@@ -87,6 +87,56 @@ SOCKET_Z = 0.033
 # models/heat-exchanger/build.py is the machine that carries both kinds and says so at its socket
 # loop.
 
+# WHERE A SOCKET'S PIECES SIT ON ITS TUBE, as distances inboard from the footprint edge the stub
+# stops at, and how far past the tube each of them stands. `rf_parts.port` places the rim from the
+# first three and `rf_parts.socket` places the rest; they live together because the flange pair is
+# FITTED INTO WHAT THE RIM AND THE BAND LEAVE BETWEEN THEM, so a rim or a band written out
+# somewhere else would move without the ribs following. Constants rather than arguments because
+# these are a socket's proportions rather than a machine's choice: both rendered machines have
+# always used exactly these.
+#
+# THEY ARE HERE RATHER THAN IN models/rf_parts.py FOR SOCKET_Z'S OWN REASON (#365). rf_parts
+# imports bpy, so nothing outside Blender can read it, and tools/measure-socket-parts.py has to
+# know which columns of a sheet each piece of a socket occupies before it can measure one. Reading
+# them here makes the instrument and the model one statement; typing them into the tool would make
+# them two, which is the failure #340 recorded and the reason `socket` is one helper at all.
+# rf_parts re-exports every one, so every build script still reads them where it always did.
+RIM_BACK = 0.03                  # the dark rim's centre
+RIM_MINOR = 0.05                 # its tube radius, so the rim owes the first RIM_BACK + RIM_MINOR
+RIM_PROUD = 0.02                 # how far its major radius stands past the tube
+BAND_BACK = 0.28                 # the accent band's centre
+BAND_DEPTH = 0.22                # so the band starts BAND_BACK - BAND_DEPTH / 2 back
+BAND_PROUD = 0.04                # how far the band stands out past the tube
+PORT_CLEARANCE = 0.06            # and the hole past the band, so it reads as a hole
+
+# THE FLANGE PAIR AT A PLUMBABLE SOCKET'S MOUTH (#351, shipped by #353): two ribs standing proud of
+# the tube, in the tube's own material, just inboard of the dark rim. models/house-style.md carries
+# the decision and ADR 0033 the principle behind it -- a socket borrows a vanilla drawing cue when
+# the cue is also hardware a real pipe has, and a flange is.
+#
+# THE RIBS ARE FITTED INTO THE CLEAR TUBE, NEVER PLACED AT TYPED OFFSETS. There is very little of
+# it: the rim owes 0.08 and the band starts at 0.17, which leaves 0.09 tiles of metal. Typed
+# offsets are how models/socket-variants.py first drew this, and they buried one rib in the rim and
+# clipped the band with the other -- a fat lump rather than a flange pair. So the span is derived
+# from the rim and band constants above and the ribs are divided into it.
+#
+# WHICH MAKES THE SPAN THE SAME ON EVERY MACHINE, and `rf_parts.socket`'s floor on it is therefore
+# a guard on THESE FOUR CONSTANTS rather than on a machine. Nothing a build script passes can move
+# it: a caller chooses `z` and `radius`, and the rim and the band sit at the same distances back
+# whatever it chooses. models/socket-variants.py is where the same floor is live per machine,
+# because there the span is measured off a stored model rather than known while building one.
+FLANGE_GAP = 0.2                 # of the clear span, left between the two ribs
+FLANGE_MIN_THICK = 0.02          # under this a rib is thinner than a pixel and there is no pair
+# What makes a rib read as a flange is standing PROUD of the tube, not its thickness: 0.07 tiles,
+# which is 2.24 px ON THE PLAYER'S SCREEN -- never the 4.5 it measures at 64 px to the sheet, the
+# one unit this repository refuses to quote a detail in.
+#
+# PROUD IS NOT WHAT THE FLOOR MEASURES. The floor judges `read=`, and `rf_parts.socket` hands it
+# the disc's FACE, 2 * (radius + FLANGE_PROUD) -- about 0.64 tiles, 20 px on screen -- so a rib
+# this thin clears the raised-detail floor by eighteen pixels rather than missing it by a third of
+# one. #361 published that mistake; do not repeat it.
+FLANGE_PROUD = 0.07
+
 # House-style accent per fluid. The geometry file carries the fluid name (#248); the accent is
 # ours. An unlisted fluid is an error rather than a guess, because an unaccented socket lies about
 # what it carries -- with ONE exception, `accent`'s plasma fallback, which is a substring match and
