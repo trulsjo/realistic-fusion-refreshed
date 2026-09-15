@@ -33,3 +33,6 @@ __pycache__/
 
 # Blender's save-over backups beside models/<machine>/<machine>.blend; the model is the .blend
 *.blend1
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
