@@ -56,6 +56,14 @@ reruns. Neither ships: a model is not a sprite, so ADR 0023 keeps it out of Asse
 **Regenerate** — rebuild a model from its look note, discarding the stored one. An explicit option,
 never the default: the default is to render the model that exists, so that hand edits survive.
 
+**Composite** — a rendered sheet pasted beside something else so a person can judge it, by
+`models/post.py`: `vanilla` places it on a tile grid next to vanilla's own heat exchanger, boiler
+and chest; `compare` places any labelled sheets side by side. Made to be looked at and never
+shipped. **Not a probe frame**: a composite is sheets on a grid with no game running, where a probe
+photographs the machine in a real save with a pipe on it. `.claude/skills/render-machine/SKILL.md`
+turns on the difference — *"Acceptance by eye is Truls's: show him the composite"* — and #357 is
+where the two were read as one thing, so an acceptance was asked for with the wrong artefact.
+
 ## The fuel chain
 
 **Girdler sulfide process** — the deuterium enrichment method, using hydrogen sulfide as a recirculating
