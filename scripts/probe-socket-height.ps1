@@ -51,8 +51,8 @@
 
     WHAT IT SHOOTS:
 
-      joint-collector.png  rf-isotope-collector's west socket with an ordinary pipe on it, zoomed
-                           hard, nothing else in frame. The subject is the seam between the two.
+      joint-collector.png  rf-isotope-collector's west socket with an ordinary pipe on it, at zoom
+                           8, nothing else in frame. The subject is the seam between the two.
       joint-exchanger.png  rf-heat-exchanger's water socket, the same way, because the defect was
                            shared and a picture of one machine invites the wrong conclusion. It is
                            also where the remaining WIDTH difference is judged, since that machine
@@ -60,9 +60,19 @@
       pipe-alone.png       three tiles of ordinary pipe on bare ground at the same zoom, as the
                            reference the other two are read against.
       run.png              a pipe run leaving the collector's west socket and going five tiles, at
-                           the game's own zoom. This is the one a player would actually see, and it
-                           is here so the join can be judged at the size it is met at rather than
-                           only under magnification.
+                           ZOOM 1 -- 32 px to the tile, the size a player meets it at. This is the
+                           one a player would actually see, and it is here so the join can be judged
+                           at that size rather than only under magnification.
+
+    THE ZOOMS ARE NAMED BY NUMBER RATHER THAN DESCRIBED, and #371 is why. run.png was shot at zoom
+    2, and two sentences here called that the game's own zoom while a third made zoom 8 four times a
+    player's rather than eight -- so the one frame that exists to say whether a difference is
+    VISIBLE showed it at twice the size it is met at. A fourth claim went with them: "a step of a
+    fifth of a tile is three pixels at the game's own zoom", which no reading of 0.2 tiles at any of
+    these scales reproduces. It is REPLACED rather than corrected, by the worked example above,
+    which this file already proves. docs/research/socket-shapes.md had it right all along -- "zoom
+    1, 32 px to the tile, where a player meets it" -- so the two probes now agree about a term they
+    both use, and CONTEXT.md's Measurement words is where it is fixed for everyone else.
 
     Findings belong in docs/research/ or on the ticket. Kept committed so the next machine rendered
     -- and the next engine version -- can be asked the same question.
@@ -251,15 +261,18 @@ script.on_event(defines.events.on_tick, function()
   end
 
   -- THE JOINT FRAMES ARE CENTRED ON THE SEAM, not on either machine: the subject is the half-tile
-  -- where the socket stops and the pipe starts. Zoom 8 puts one tile on 256 px, which is four times
-  -- what a player sees and is the point -- a step of a fifth of a tile is three pixels at the
-  -- game's own zoom and has to be magnified before anyone can argue about it.
+  -- where the socket stops and the pipe starts. Zoom 8 puts one tile on 256 px, which is EIGHT
+  -- times what a player sees -- zoom 1, 32 px to the tile -- and that is the point. The header's
+  -- own worked example says how small the subject is: 0.011 tiles of world height, the error this
+  -- probe was built for, is a quarter of a pixel at the game's zoom. Nothing that small can be
+  -- argued about unmagnified.
   shot("joint-collector.png", s.collector.x + 0.5, s.collector.y, 4, 3, 8)
   if s.exchanger then shot("joint-exchanger.png", s.exchanger.x + 0.5, s.exchanger.y, 4, 3, 8) end
   shot("pipe-alone.png", s.pipe.x, s.pipe.y, 4, 3, 8)
-  -- And the same seam at the size a player actually meets it, which is the frame that decides
-  -- whether any of this matters.
-  shot("run.png", s.collector_centre.x - 4, s.collector_centre.y, 14, 8, 2)
+  -- And the same seam at ZOOM 1 -- 32 px to the tile, the size a player actually meets it -- which
+  -- is the frame that decides whether any of this matters. Shot at zoom 2 until #371, which made
+  -- every difference in the one frame that judges visibility look twice its real size.
+  shot("run.png", s.collector_centre.x - 4, s.collector_centre.y, 14, 8, 1)
 
   game.set_wait_for_screenshots_to_finish()
   helpers.write_file(OUT .. "done.txt", "done\n")
