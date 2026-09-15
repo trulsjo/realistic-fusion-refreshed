@@ -65,14 +65,29 @@
                            at that size rather than only under magnification.
 
     THE ZOOMS ARE NAMED BY NUMBER RATHER THAN DESCRIBED, and #371 is why. run.png was shot at zoom
-    2, and two sentences here called that the game's own zoom while a third made zoom 8 four times a
-    player's rather than eight -- so the one frame that exists to say whether a difference is
-    VISIBLE showed it at twice the size it is met at. A fourth claim went with them: "a step of a
-    fifth of a tile is three pixels at the game's own zoom", which no reading of 0.2 tiles at any of
-    these scales reproduces. It is REPLACED rather than corrected, by the worked example above,
-    which this file already proves. docs/research/socket-shapes.md had it right all along -- "zoom
-    1, 32 px to the tile, where a player meets it" -- so the two probes now agree about a term they
-    both use, and CONTEXT.md's Measurement words is where it is fixed for everyone else.
+    2, and FIVE CLAIMS were wrong about it -- four sentences in three places, enumerated because a
+    count is no better than the list behind it:
+
+      1. this entry, that run.png is "at the game's own zoom"
+      2. this entry again, that it "is the one a player would actually see"
+      3. the joint-frames comment, that zoom 8 is "four times what a player sees" -- it is eight
+      4. that same sentence, that "a step of a fifth of a tile is three pixels at the game's own
+         zoom"
+      5. the comment above the run.png shot, that it is "the size a player actually meets it"
+
+    So the one frame that exists to say whether a difference is VISIBLE showed it at twice the size
+    it is met at.
+
+    THEY ARE NOT ALL PUT RIGHT THE SAME WAY, which is worth saying because only one of them was a
+    wrong sentence. 1, 2 and 5 were false only because the shot was at zoom 2: moving it to zoom 1
+    makes them true, and they now name the zoom rather than describe it. 3 is a wrong number and is
+    corrected in place. 4 is REPLACED rather than corrected -- no reading of 0.2 tiles at any scale
+    this repository uses gives three pixels, 6.4 on the ground at zoom 1 or 4.5 as a world height
+    through the 0.707 projection -- so rather than swap in a figure that cannot be derived from what
+    was written, that sentence gives way to the worked example above, which this file already
+    proves. docs/research/socket-shapes.md had it right all along -- "zoom 1, 32 px to the tile,
+    where a player meets it" -- so the two socket probes now agree about a term they both use, and
+    CONTEXT.md's Measurement words is where it is fixed for everyone else.
 
     Findings belong in docs/research/ or on the ticket. Kept committed so the next machine rendered
     -- and the next engine version -- can be asked the same question.
