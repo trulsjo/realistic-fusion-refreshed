@@ -738,7 +738,6 @@ else:
 
     # -- sockets: one per declared connection, body to footprint edge, with its fluid's accent
     # band. Placed in the declared frame from geometry.json, so they land where the prototype says.
-    (sx0, sy0), (sx1, sy1) = geo["selection_box"]
     UNIT = {"north": (0, -1), "east": (1, 0), "south": (0, 1), "west": (-1, 0)}   # Factorio frame
 
     # SOCKET HEIGHT IS MEASURED AGAINST A VANILLA PIPE, NOT CHOSEN, and since #342 it is measured
@@ -767,47 +766,26 @@ else:
     # Vanilla's pipe body draws 0.609 tiles tall, so 2.449 r = 0.609 gives r = 0.249. That is what
     # this is: our socket drawn as thick as the pipe that plugs into it, and no thicker.
     SOCKET_R = 0.249
-    BAND_R = SOCKET_R + 0.04        # the accent stands a little proud of the tube, as it always has
-    PORT_R = SOCKET_R + 0.06        # and the hole a little proud of the accent, so it reads as a hole
-
-    def port(axis, across, edge, sign):
-        """This machine's hole-cutter: rf_parts.port through the slab, at this machine's clearance."""
-        rf_parts.port(bpy.data.objects["Slab"], axis, across, edge, sign, PORT_R)
 
     def inboard(c, back):
         """`back` tiles inboard of the tile a connection stands on, at socket height.
 
         NOT "the inner end of the socket", which is what this said on both machines that have one
-        and is what put a run 0.2 tiles short of the stub it fed. The socket's inner face is at
-        TX - 0.5 (the same expression the socket loop above uses), so back=0.5 lands a quarter of a
-        tile PAST it, further in, and anything larger stops short of it in open air. To reach into
-        a stub, pass a `back` smaller than 0.5.
+        and is what put a run 0.2 tiles short of the stub it fed. The socket's inner face is half a
+        tile inside the collision edge -- `rf_parts.socket`'s own `inner`, TX - 0.5 here -- so
+        back=0.5 lands a quarter of a tile PAST it, further in, and anything larger stops short of
+        it in open air. To reach into a stub, pass a `back` smaller than 0.5.
         """
         ux, uy = UNIT[c["direction"]]
         px, py = c["position"]
         return (px - back * ux, -(py - back * uy), SOCKET_Z)
 
+    # ONE HELPER DRAWS THE STUB, THE BAND AND THE PORT (#352). The heat exchanger had the other
+    # copy of this loop and the two already differed in how they computed their sign. Every
+    # connection here is uncontained, so every socket is plumbable and `plumbable` is left at its
+    # default -- rf-heat-exchanger is the machine where that is a choice.
     for c in geo["connections"]:
-        px, py = c["position"]
-        py = -py                                   # Factorio south -> Blender -Y
-        d = c["direction"]
-        band = rf.accent(c["fluid"])
-        if d in ("west", "east"):
-            edge = sx0 if d == "west" else sx1
-            inner = (TX - 0.5) * (1 if d == "east" else -1)
-            cyl(f"Socket-{d}-{c['fluid']}", SOCKET_R, abs(edge - inner), ((edge + inner) / 2, py, SOCKET_Z),
-                "metal", axis="X", frost=True)
-            cyl(f"Band-{d}-{c['fluid']}", BAND_R, 0.22,
-                (edge - 0.28 * (1 if d == "east" else -1), py, SOCKET_Z), band, axis="X")
-            port("X", py, edge, 1 if d == "east" else -1)
-        else:
-            edge = -sy0 if d == "north" else -sy1   # flipped: north is +Y
-            inner = (TY - 0.5) * (1 if d == "north" else -1)
-            cyl(f"Socket-{d}-{c['fluid']}", SOCKET_R, abs(edge - inner), (px, (edge + inner) / 2, SOCKET_Z),
-                "metal", axis="Y", frost=True)
-            cyl(f"Band-{d}-{c['fluid']}", BAND_R, 0.22,
-                (px, edge - 0.28 * (1 if d == "north" else -1), SOCKET_Z), band, axis="Y")
-            port("Y", px, edge, 1 if d == "north" else -1)
+        rf_parts.socket(bpy.data.objects["Slab"], c, geo, SOCKET_Z, SOCKET_R, frost=True)
 
     # -- the runs from the tritium drum's two ends up the west and east bays to the two tritium
     # sockets. This is the departure the docstring names: the drum cannot lie on the socket line,
