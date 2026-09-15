@@ -218,29 +218,49 @@ stub at pipe height is a thin ring at the machine's edge, not the raised collar 
 accents are what tell a player which socket carries what. If that goes too far, the band can stay
 proud while the tube stays thin; they are separate numbers.
 
-**AND IT DRAWS PROUD AT THE TOP AND NEARLY FLUSH AT THE BOTTOM, WHICH IS NOT A MODELLING ERROR.**
-Truls saw it on the #353 frames and read it as perspective; it is not, and the difference is why
-this is written down. Every piece of a socket is coaxial -- on rf-isotope-collector's west socket
+**AND IT DRAWS A LITTLE MORE PROUD AT THE TOP THAN AT THE BOTTOM, WHICH IS NOT A MODELLING ERROR.**
+Truls saw it on the #353 frames, read it as "flush at the bottom, but not at the top", and put it
+down to perspective. The look is real and the cause is not perspective, which is why this is
+written down -- but the difference measures one pixel, not the gap the words suggest. Every piece of a socket is coaxial -- on rf-isotope-collector's west socket
 the stub, the band and the rim all sit at `y 0.0000, z 0.0330`, and the band is 0.578 tiles across
 against the stub's 0.498, so it stands 0.04 proud all the way round by construction. The projection
 is symmetric about that axis too, so perspective would take the same from both edges. What is
 asymmetric is how the UNDERSIDES are drawn. Measured on the shipped sheet, in pixels about the
 socket's axis:
 
-| part | radius | uncut prediction | measured above | measured below |
-|---|---|---|---|---|
-| stub | 0.249 | ±19.5 | +21.5 | +19.5 |
-| accent band | 0.289 | ±22.7 | +23.5 | +20.5 |
-| flange ribs | 0.319 | ±25.0 | +25.5 | +22.5 |
-| dark rim | 0.379 | ±29.7 | +30.5 | +26.5 |
+| part | radius | uncut prediction | measured above | measured below | gains | loses |
+|---|---|---|---|---|---|---|
+| stub | 0.249 | ±19.5 | +20.5 | +18.5 | +1.0 | 1.0 |
+| accent band | 0.289 | ±22.7 | +23.5 | +20.5 | +0.8 | 2.2 |
+| flange ribs | 0.319 | ±25.0 | +25.5 | +22.5 | +0.5 | 2.5 |
+| dark rim | 0.379 | ±29.7 | +30.5 | +26.5 | +0.8 | 3.2 |
 
-Each part gains about a pixel above its uncut prediction and loses two to three below it, and the
-deficit grows with the radius -- 2.2 px for the band, 2.5 for the ribs, 3.2 for the rim. So the band
-stands about 4 px proud of the stub at the top and about 1 px at the bottom. **The mechanism is not
-settled**: `tools/check-socket-height.py`'s header attributes the lost underside to the
-shadow-catching ground plane, and these numbers are consistent with an underside loss but do not fit
-a cut at one screen row -- the four parts stop at four different rows. It is the same effect that
-leaves that gate its +0.031 residual, and #362 is where it is chased. Measured 2026-09-15.
+Every part gains about a pixel above its uncut prediction -- the bevel and the anti-aliasing -- and
+loses more below it the wider it is, monotonically: 1.0 px at radius 0.249 through 3.2 px at 0.379.
+So the band, which would stand 3.2 px proud of the stub at BOTH edges if nothing were cut, stands
+3.0 px proud at the top and 2.0 px at the bottom.
+
+**THAT IS A ONE-PIXEL ASYMMETRY, WHICH IS SMALLER THAN WHAT IT WAS FIRST WRITTEN AS.** The first
+version of this note said 4 px and 1 px, and both were wrong: the 4 compared the band's MEASURED
+edge against the stub's PREDICTED one, and the stub's own row was measured through a column window
+that leaked the band's first column into it. Whether a one-pixel difference is the whole of what
+Truls saw is NOT established -- the lower edge also meets the slab and the ground shadow, where
+there is less contrast to read an edge against, and that is a second candidate this note does not
+separate.
+
+**THE MEASUREMENT IS SENSITIVE TO ITS COLUMN WINDOW, AND THAT IS THE METHOD NOTE #362 NEEDS.** Each
+part is read only in the columns where it is the widest thing present; one column too far either way
+picks up its neighbour and moves the answer by whole pixels. The stub reads +21.5/+19.5 over columns
+198..203 and +20.5/+18.5 over 198..202, because column 203 is where the band begins. Rim and ribs
+are stable across every window tried; the stub and the band are not, and the numbers above are the
+stable ones. The stub is measured on a flange-free control render, since on the shipped sheet no
+column shows bare tube.
+
+**The mechanism is still not settled**: `tools/check-socket-height.py`'s header attributes the lost
+underside to the shadow-catching ground plane, and these numbers are consistent with an underside
+loss but do not fit a cut at one screen row -- the four parts stop at four different rows. It is the
+same effect that leaves that gate its +0.031 residual, and #362 is where it is chased. Measured
+2026-09-15, corrected 2026-09-15.
 
 **ON A SOCKET, "COLLAR" MEANS THE ACCENT BAND** (#351). The word named two parts of one socket for
 a while -- the raised ring in the paragraph above, and a rim moved inboard onto the body face, which
