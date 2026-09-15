@@ -199,8 +199,13 @@ PORT_CLEARANCE = 0.06            # and the hole past the band, so it reads as a 
 # it: the rim owes 0.08 and the band starts at 0.17, which leaves 0.09 tiles of metal. Typed
 # offsets are how models/socket-variants.py first drew this, and they buried one rib in the rim and
 # clipped the band with the other -- a fat lump rather than a flange pair. So the span is derived
-# from the rim and band constants above and the ribs are divided into it, and a machine with no
-# room fails loudly rather than drawing the lump.
+# from the rim and band constants above and the ribs are divided into it.
+#
+# WHICH MAKES THE SPAN THE SAME ON EVERY MACHINE, and the floor below is therefore a guard on THESE
+# FOUR CONSTANTS rather than on a machine. Nothing a build script passes can move it: a caller
+# chooses `z` and `radius`, and the rim and the band sit at the same distances back whatever it
+# chooses. models/socket-variants.py is where the same floor is live per machine, because there
+# the span is measured off a stored model rather than known while building one.
 FLANGE_GAP = 0.2                 # of the clear span, left between the two ribs
 FLANGE_MIN_THICK = 0.02          # under this a rib is thinner than a pixel and there is no pair
 # What makes a rib read as a flange is standing PROUD of the tube, not its thickness: 0.07 tiles,
@@ -214,11 +219,17 @@ FLANGE_MIN_THICK = 0.02          # under this a rib is thinner than a pixel and 
 FLANGE_PROUD = 0.07
 
 
-def port(body, axis, across, edge, sign, radius, depth=0.7):
+def port(body, axis, across, edge, sign, radius, z=SOCKET_Z, depth=0.7):
     """Cut the hole a socket passes through, in `body`, and rim its mouth.
 
     `axis` is the socket's own axis, "X" or "Y"; `across` is its position on the other ground axis;
     `edge` is the footprint edge it stops at and `sign` which way that lies (+1 east or north).
+
+    `z` IS THE SOCKET'S HEIGHT AND IS PASSED, not read from the constant. It defaults to SOCKET_Z
+    because a port is only ever cut for a socket a player plumbs, and those are all drawn there --
+    but `socket` hands its own `z` over rather than relying on that, since the alternative is a
+    machine that plumbs at some other height getting a hole and a rim floating at 0.033 with
+    nothing complaining.
 
     The cutter is a modifier rather than an applied boolean, the way `bevel` is: Blender evaluates
     BEVEL then BOOLEAN in the order they were added, so the hole is cut into the already-rounded
@@ -235,7 +246,7 @@ def port(body, axis, across, edge, sign, radius, depth=0.7):
     moving a single imperfection: the cutter is a raw primitive and `torus` puts on no bevel. See
     this module's own header on why that matters.
     """
-    cutter_loc = [0.0, 0.0, SOCKET_Z]
+    cutter_loc = [0.0, 0.0, z]
     cutter_loc[0 if axis == "X" else 1] = edge - sign * (depth / 2 - 0.12)
     cutter_loc[1 if axis == "X" else 0] = across
     bpy.ops.mesh.primitive_cylinder_add(
@@ -259,7 +270,7 @@ def port(body, axis, across, edge, sign, radius, depth=0.7):
     # put it, and that is now a decision rather than an unasked question.
     # A RING, never a "collar": on a socket #351 gave that word to the accent band. (A FLOOR
     # collar, where a pipe turns down through the deck, is a different object and keeps its name.)
-    rim_loc = [0.0, 0.0, SOCKET_Z]
+    rim_loc = [0.0, 0.0, z]
     rim_loc[0 if axis == "X" else 1] = edge - sign * RIM_BACK
     rim_loc[1 if axis == "X" else 0] = across
     torus(f"PortRim-{axis}-{across:g}", radius + RIM_PROUD, RIM_MINOR, tuple(rim_loc), "dark",
@@ -315,7 +326,7 @@ def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
     cyl(f"Band-{d}-{fluid}", radius + BAND_PROUD, BAND_DEPTH, at(edge - BAND_BACK * sign),
         rf.accent(fluid), axis=axis)
     if plumbable:
-        port(body, axis, across, edge, sign, radius + PORT_CLEARANCE)
+        port(body, axis, across, edge, sign, radius + PORT_CLEARANCE, z=z)
         # THE FLANGE PAIR, on a plumbable socket and no other. A contained connection meets a
         # machine face rather than a pipe, so a shape chosen to sit against vanilla's `pipe_cover`
         # has nothing to sit against on one -- the same exemption #343 made for the height.
@@ -328,9 +339,11 @@ def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
         far = BAND_BACK - BAND_DEPTH / 2
         thick = (far - near) * (1 - FLANGE_GAP) / 2
         if thick < FLANGE_MIN_THICK:
-            sys.exit(f"rf_parts.socket: {d} {fluid} leaves {far - near:.3f} tiles of bare tube "
-                     f"between its rim and its accent band, which is not enough for a flange pair "
-                     f"({2 * FLANGE_MIN_THICK:.2f} tiles of rib plus a gap). Nothing was drawn.")
+            sys.exit(f"rf_parts: a socket leaves {far - near:.3f} tiles of bare tube between its "
+                     f"rim and its accent band, which is not enough for a flange pair "
+                     f"({2 * FLANGE_MIN_THICK:.2f} tiles of rib plus a gap). Nothing was drawn. "
+                     f"This is the rim and band constants above disagreeing with the flange ones, "
+                     f"not {d} {fluid} being unusual -- every socket here has the same span.")
         for k, back in enumerate((near + thick / 2, far - thick / 2)):
             # A DISC READS BY ITS FACE, not by its thickness, so `read=` is handed the face --
             # without it a rib this thin dies on the raised-detail floor.

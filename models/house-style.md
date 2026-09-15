@@ -279,10 +279,12 @@ the variant script is the reason. There is very little clear tube to work in: on
 collector the stub is 0.75 tiles long, the dark rim owes the first 0.08 and the accent band starts
 at 0.17, leaving 0.09 tiles of metal for a pair of ribs. Typed offsets buried one rib in the rim and
 clipped the band with the other -- a fat lump rather than a flange pair. So the span comes from the
-rim and the band rather than from a number typed beside them, and the ribs are divided into it, and
-a machine with no room **fails loudly rather than drawing a lump**. `rf_parts.socket` derives it
-from the constants that place those two, because it draws all three; `models/socket-variants.py`
-measures it off a stored model, because it draws onto one it did not build. What makes a rib read as a flange is standing
+rim and the band rather than from a number typed beside them, and the ribs are divided into it. The
+two places that do it differ, and the difference is worth knowing: `rf_parts.socket` derives the
+span from the constants that place those two, because it draws all three while building, so its
+span is the same on every machine and **its floor guards those constants rather than any machine**.
+`models/socket-variants.py` measures the span off a stored model, because it draws onto one it did
+not build -- **that** is where a machine with no room **fails loudly rather than drawing a lump**. What makes a rib read as a flange is standing
 PROUD of the tube, not its thickness: 0.07 tiles, which is **2.24 px on the player's screen** and
 not the 4.5 this was once quoted as -- that figure was the same rib measured at 64 px to the sheet,
 in a clause about the detail floor, which is the one place this document forbids the sheet as a unit.

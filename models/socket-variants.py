@@ -228,6 +228,19 @@ def bare_span(stub, axis, sign, i, j, across, mouth):
 print(f"SOCKET-VARIANTS {treatment}: {len(sockets)} socket(s), {len(rims)} rim(s) in "
       f"{os.path.basename(model_path)}")
 
+# A SECOND PAIR ON A MACHINE THAT ALREADY WEARS ONE IS NOT A TREATMENT, it is a lie drawn over the
+# control. The shape shipped in #353, so on a re-rendered machine `bare` already has the ribs and
+# this would only stack coincident geometry on top of them. Refusing says so; there is nothing here
+# that could usefully strip them.
+#
+# ONCE, BEFORE THE LOOP, and that is the whole point of where it stands. Inside the per-socket loop
+# it saw the ribs it had itself drawn on the socket before and failed on every model -- flanged or
+# not, since every machine here has three sockets. The first version did exactly that.
+if treatment == "flanged" and any(o.name.startswith("Flange-") for o in bpy.data.objects):
+    fail(f"{os.path.basename(model_path)} already carries a flange pair -- the shape shipped in "
+         f"#353, so `bare` is now the flanged machine and there is nothing for this treatment to "
+         f"add. Shoot `bare` instead.")
+
 for stub in sockets:
     axis, sign = axis_of(stub)
     i = 0 if axis == "X" else 1                     # the stub's own ground axis
@@ -240,14 +253,6 @@ for stub in sockets:
     material = stub.data.materials[0].name
 
     if treatment == "flanged":
-        # A SECOND PAIR ON A MACHINE THAT ALREADY WEARS ONE IS NOT A TREATMENT, it is a lie drawn
-        # over the control. The shape shipped in #353, so on a re-rendered machine `bare` already
-        # has the ribs and this would only stack coincident geometry on top of them. Refusing says
-        # so; there is nothing here that could usefully strip them.
-        if any(o.name.startswith("Flange-") for o in bpy.data.objects):
-            fail(f"{os.path.basename(model_path)} already carries a flange pair -- the shape shipped "
-                 f"in #353, so `bare` is now the flanged machine and there is nothing for this "
-                 f"treatment to add. Shoot `bare` instead.")
         near, far = bare_span(stub, axis, sign, i, j, across, mouth)
         thick = (far - near) * (1 - FLANGE_GAP) / 2
         if thick < FLANGE_MIN_THICK:
