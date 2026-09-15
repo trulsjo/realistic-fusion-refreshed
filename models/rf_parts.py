@@ -21,11 +21,14 @@ silent miss, which is the right failure -- but it is a failure, so if a machine 
 rivet the flag has to be plumbed through `rivets` first. `socket` is the one that does both: it
 forwards to the tube and its ribs, and chooses the accent and the rim itself.
 
-AND ONE NUMBER RE-EXPORTED RATHER THAN HELD: `SOCKET_Z`, the height a player-facing socket is drawn
-at. It was here from #342, for the same reason the helpers are -- the second machine to need it
-would have copied it -- and it now lives in models/rf_blender.py, which imports no bpy, so the gate
-that measures sockets can read the same number the models are built at (#354). Build scripts still
-say `rf_parts.SOCKET_Z` and none of them changed.
+AND A SOCKET'S NUMBERS ARE RE-EXPORTED RATHER THAN HELD: `SOCKET_Z`, the height a player-facing
+socket is drawn at, and since #365 the ten proportions that say where its rim, its band and its
+flange ribs sit on the tube. They were here for the same reason the helpers are -- the second
+machine to need them would have copied them -- and they now live in models/rf_blender.py, which
+imports no bpy, so the tools that measure a socket can read the same numbers the models are built
+at (#354, #365). Every caller still reads them here: build scripts say `rf_parts.SOCKET_Z`, and
+models/socket-variants.py takes the three flange constants off `rf_parts` as it always did. None of
+them changed.
 
 THE ORDER OF `random` DRAWS IS PART OF THE CONTRACT. `bevel` and `jitter` both draw from the global
 `random`, which each build script seeds once; the imperfections are deterministic only as long as
@@ -176,47 +179,22 @@ def torus(name, major, minor, loc, material, rot=(0, 0, 0), **mat_opts):
     return o
 
 
-# WHERE A SOCKET'S PIECES SIT ON ITS TUBE, as distances inboard from the footprint edge the stub
-# stops at. `port` places the rim from the first three and `socket` places the rest; they live
-# together because the flange pair is FITTED INTO WHAT THE RIM AND THE BAND LEAVE BETWEEN THEM, so
-# a rim or a band written out somewhere else would move without the ribs following. Constants
-# rather than arguments because these are a socket's proportions rather than a machine's choice:
-# both rendered machines have always used exactly these.
-RIM_BACK = 0.03                  # the dark rim's centre
-RIM_MINOR = 0.05                 # its tube radius, so the rim owes the first RIM_BACK + RIM_MINOR
-RIM_PROUD = 0.02                 # how far its major radius stands past the tube
-BAND_BACK = 0.28                 # the accent band's centre
-BAND_DEPTH = 0.22                # so the band starts BAND_BACK - BAND_DEPTH / 2 back
-BAND_PROUD = 0.04                # how far the band stands out past the tube
-PORT_CLEARANCE = 0.06            # and the hole past the band, so it reads as a hole
-
-# THE FLANGE PAIR AT A PLUMBABLE SOCKET'S MOUTH (#351, shipped by #353): two ribs standing proud of
-# the tube, in the tube's own material, just inboard of the dark rim. models/house-style.md carries
-# the decision and ADR 0033 the principle behind it -- a socket borrows a vanilla drawing cue when
-# the cue is also hardware a real pipe has, and a flange is.
-#
-# THE RIBS ARE FITTED INTO THE CLEAR TUBE, NEVER PLACED AT TYPED OFFSETS. There is very little of
-# it: the rim owes 0.08 and the band starts at 0.17, which leaves 0.09 tiles of metal. Typed
-# offsets are how models/socket-variants.py first drew this, and they buried one rib in the rim and
-# clipped the band with the other -- a fat lump rather than a flange pair. So the span is derived
-# from the rim and band constants above and the ribs are divided into it.
-#
-# WHICH MAKES THE SPAN THE SAME ON EVERY MACHINE, and the floor below is therefore a guard on THESE
-# FOUR CONSTANTS rather than on a machine. Nothing a build script passes can move it: a caller
-# chooses `z` and `radius`, and the rim and the band sit at the same distances back whatever it
-# chooses. models/socket-variants.py is where the same floor is live per machine, because there
-# the span is measured off a stored model rather than known while building one.
-FLANGE_GAP = 0.2                 # of the clear span, left between the two ribs
-FLANGE_MIN_THICK = 0.02          # under this a rib is thinner than a pixel and there is no pair
-# What makes a rib read as a flange is standing PROUD of the tube, not its thickness: 0.07 tiles,
-# which is 2.24 px ON THE PLAYER'S SCREEN -- never the 4.5 it measures at 64 px to the sheet, the
-# one unit this repository refuses to quote a detail in.
-#
-# PROUD IS NOT WHAT THE FLOOR MEASURES. The floor judges `read=`, and the call below hands it the
-# disc's FACE, 2 * (radius + FLANGE_PROUD) -- about 0.64 tiles, 20 px on screen -- so a rib this
-# thin clears the raised-detail floor by eighteen pixels rather than missing it by a third of one.
-# #361 published that mistake; do not repeat it.
-FLANGE_PROUD = 0.07
+# WHERE A SOCKET'S PIECES SIT ON ITS TUBE, re-exported from models/rf_blender.py the way SOCKET_Z
+# above is and for the same reason: that module imports no bpy, so tools/measure-socket-parts.py
+# can work out which columns of a sheet each piece occupies from the numbers the models are
+# actually built from (#365). Every build script still reads them as `rf_parts.<NAME>` and none of
+# them changed when they moved. The derivation and the trade behind each one live there; what is
+# here is only the re-export, and `port` and `socket` below are what place them.
+RIM_BACK = rf.RIM_BACK
+RIM_MINOR = rf.RIM_MINOR
+RIM_PROUD = rf.RIM_PROUD
+BAND_BACK = rf.BAND_BACK
+BAND_DEPTH = rf.BAND_DEPTH
+BAND_PROUD = rf.BAND_PROUD
+PORT_CLEARANCE = rf.PORT_CLEARANCE
+FLANGE_GAP = rf.FLANGE_GAP
+FLANGE_MIN_THICK = rf.FLANGE_MIN_THICK
+FLANGE_PROUD = rf.FLANGE_PROUD
 
 
 def port(body, axis, across, edge, sign, radius, z=SOCKET_Z, depth=0.7):
