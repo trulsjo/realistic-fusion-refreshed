@@ -175,6 +175,15 @@ def torus(name, major, minor, loc, material, rot=(0, 0, 0), **mat_opts):
     return o
 
 
+# WHERE A SOCKET'S ACCENT BAND SITS ON ITS TUBE, and how far the hole through the floor stands
+# clear of it. Constants rather than arguments because these are a socket's proportions rather than
+# a machine's choice: both rendered machines have always used exactly these, in two copies.
+BAND_BACK = 0.28                 # the band's centre, inboard of the footprint edge
+BAND_DEPTH = 0.22
+BAND_PROUD = 0.04                # how far the band stands out past the tube
+PORT_CLEARANCE = 0.06            # and the hole past the band, so it reads as a hole
+
+
 def port(body, axis, across, edge, sign, radius, depth=0.7):
     """Cut the hole a socket passes through, in `body`, and rim its mouth.
 
@@ -225,6 +234,57 @@ def port(body, axis, across, edge, sign, radius, depth=0.7):
     rim_loc[1 if axis == "X" else 0] = across
     torus(f"PortRim-{axis}-{across:g}", radius + 0.02, 0.05, tuple(rim_loc), "dark",
           rot=(0, math.pi / 2, 0) if axis == "X" else (math.pi / 2, 0, 0))
+
+
+def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
+    """Draw one connection's socket: the bare-metal stub, its accent band and -- on a socket a
+    player can plumb -- the port through `body`.
+
+    `connection` is one entry of the machine's geometry.json and `geo` the file it came from. The
+    stub runs from half a tile inside the COLLISION edge out to the SELECTION edge, which is where
+    both rendered machines put theirs; on both, those are a quarter tile apart, so the mouth stands
+    clear of the body and the rim `port` puts on it reads as the flange a pipe bolts to.
+
+    WHAT IS THE CALLER'S BUSINESS AND MUST STAY THERE: `z`, `radius` and `plumbable`. A CONTAINED
+    connection (ADR 0018) meets a machine FACE and never a pipe, so it is drawn at the machine's own
+    height and thickness and gets no hole through the floor; a connection a player plumbs is drawn
+    like the pipe that plugs into it -- SOCKET_Z and 0.249, both measured (models/house-style.md).
+    rf-heat-exchanger carries both kinds and reads the difference off `connection_category`;
+    rf-isotope-collector has none. A helper that decided containment for its caller would sooner or
+    later put a socket at pipe height on a face that meets a reactor.
+
+    `mat_opts` reach the STUB only: the collector frosts its tube, and an accent band is the one
+    thing on a socket that must stay the colour of the fluid it names.
+
+    THE ORDER OF THE THREE IS PART OF THE CONTRACT -- stub, band, port -- because `cyl` bevels and
+    a bevel draws from `random`. Re-ordering them moves every imperfection after them on every
+    machine that calls this, and the only way to see it is to re-render. See this module's header.
+    """
+    d = connection["direction"]
+    fluid = connection["fluid"]
+    axis = "X" if d in ("west", "east") else "Y"
+    sign = 1 if d in ("east", "north") else -1      # +1 east or north, `port`'s own convention
+    i = 0 if axis == "X" else 1                     # the socket's own ground axis
+    (cx0, cy0), (cx1, cy1) = geo["collision_box"]
+    (sx0, sy0), (sx1, sy1) = geo["selection_box"]
+    # Factorio's +y is south and Blender's is north, so a position flips and the Y edges swap.
+    px, py = connection["position"]
+    across = -py if axis == "X" else px
+    edge = (sx1 if sign > 0 else sx0) if axis == "X" else (-sy0 if sign > 0 else -sy1)
+    half = (cx1 - cx0) / 2 if axis == "X" else (cy1 - cy0) / 2
+    inner = (half - 0.5) * sign                     # half a tile inside the body wall
+
+    def at(along):
+        loc = [0.0, 0.0, z]
+        loc[i], loc[1 - i] = along, across
+        return tuple(loc)
+
+    cyl(f"Socket-{d}-{fluid}", radius, abs(edge - inner), at((edge + inner) / 2), "metal",
+        axis=axis, **mat_opts)
+    cyl(f"Band-{d}-{fluid}", radius + BAND_PROUD, BAND_DEPTH, at(edge - BAND_BACK * sign),
+        rf.accent(fluid), axis=axis)
+    if plumbable:
+        port(body, axis, across, edge, sign, radius + PORT_CLEARANCE)
 
 
 def _centreline(curve_obj):

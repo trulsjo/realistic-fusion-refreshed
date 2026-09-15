@@ -57,7 +57,6 @@ geo = json.load(open(geo_path, encoding="utf-8"))
 # and when the declared box is wider than it is tall the finished body is turned a quarter turn so
 # the manifold faces north. The sockets are placed AFTER the turn, in the declared frame, so they
 # land where the prototype says regardless.
-TX, TY = (x1 - x0) / 2, (y1 - y0) / 2      # declared half extents: 7.25 x 2.25 since #275
 W, L = sorted((x1 - x0, y1 - y0))          # 4.5 x 14.5, the body's own frame
 HALF_W, HALF_L = W / 2, L / 2
 TURNED = (x1 - x0) > (y1 - y0)
@@ -487,10 +486,10 @@ else:
             o.matrix_world = turn @ o.matrix_world
         bpy.context.view_layer.update()
 
-    # -- sockets: one per declared connection, body to footprint edge, accent band. Placed in the
-    # DECLARED frame, after the turn, so TX and TY here and never HALF_W / HALF_L.
-    (sx0, sy0), (sx1, sy1) = geo["selection_box"]
-
+    # -- sockets: one per declared connection, body to footprint edge, accent band. `rf_parts.socket`
+    # reads its boxes out of geometry.json, which is the DECLARED frame -- so they land after the
+    # turn, where the prototype says, and nothing here is in the body's own HALF_W / HALF_L frame.
+    #
     # THIS MACHINE DRAWS ITS SOCKETS TWO WAYS, AND THE PAIR ON EACH SHORT END DIFFER BY HALF A TILE
     # IN HEIGHT ON PURPOSE (#343). Read as a mistake it invites a "fix" that breaks the machine,
     # so: water west, water east and steam south carry no `connection_category`, a player plumbs
@@ -529,32 +528,15 @@ else:
         the first machine to wear it."""
         return 0.249 if plumbable(c) else CONTAINED_R
 
+    # ONE HELPER DRAWS THE STUB, THE BAND AND THE PORT (#352), because the collector had a second
+    # copy of this loop and five more machines are coming. What stays here is the three functions
+    # above: which connections are plumbable, and how high and how thick each kind is drawn. The
+    # slab's top is at 0.25 and a lowered socket reaches through it, so a plumbable one gets a
+    # modelled, rimmed opening rather than clipping the stone (Truls, 2026-09-14); a contained
+    # socket stands clear above the slab and needs none, which is what passing `plumbable` decides.
     for c in geo["connections"]:
-        px, py = c["position"]
-        py = -py                                   # Factorio south -> Blender -Y
-        d = c["direction"]
-        z, r = socket_z(c), socket_r(c)
-        band_r = r + 0.04       # the accent stands a little proud of the tube, as it always has
-        port_r = r + 0.06       # and the hole a little proud of the accent, so it reads as a hole
-        # The slab's top is at 0.25 and a lowered socket reaches through it, so it gets a modelled,
-        # rimmed opening rather than clipping the stone (Truls, 2026-09-14). A contained socket
-        # stands clear above the slab and needs none.
-        if d in ("west", "east"):
-            sign = 1 if d == "east" else -1
-            edge = sx0 if d == "west" else sx1
-            inner = (TX - 0.5) * sign
-            cyl(f"Socket-{d}-{c['fluid']}", r, abs(edge - inner), ((edge + inner) / 2, py, z), "metal", axis="X")
-            cyl(f"Band-{d}-{c['fluid']}", band_r, 0.22, (edge - 0.28 * sign, py, z), rf.accent(c["fluid"]), axis="X")
-            if plumbable(c):
-                rf_parts.port(bpy.data.objects["Slab"], "X", py, edge, sign, port_r)
-        else:
-            sign = 1 if d == "north" else -1
-            edge = -sy0 if d == "north" else -sy1  # flipped: north is +Y
-            inner = (TY - 0.5) * sign
-            cyl(f"Socket-{d}-{c['fluid']}", r, abs(edge - inner), (px, (edge + inner) / 2, z), "metal", axis="Y")
-            cyl(f"Band-{d}-{c['fluid']}", band_r, 0.22, (px, edge - 0.28 * sign, z), rf.accent(c["fluid"]), axis="Y")
-            if plumbable(c):
-                rf_parts.port(bpy.data.objects["Slab"], "Y", px, edge, sign, port_r)
+        rf_parts.socket(bpy.data.objects["Slab"], c, geo, socket_z(c), socket_r(c),
+                        plumbable=plumbable(c))
     # water header along the base between the two end sockets, wherever the prototype puts them:
     # since #275 they sit off the short-end centre (`_ e _ w _`), so the header is read off the
     # geometry rather than drawn down the middle.
@@ -565,10 +547,10 @@ else:
         height unless `z` says otherwise.
 
         NOT "the inner end of the socket", which is what this said on both machines that have one
-        and is what put a run 0.2 tiles short of the stub it fed. The socket's inner face is at
-        TX - 0.5 (the same expression the socket loop above uses), so back=0.5 lands a quarter of a
-        tile PAST it, further in, and anything larger stops shorter still. To reach INTO a stub,
-        pass a `back` smaller than 0.5.
+        and is what put a run 0.2 tiles short of the stub it fed. The socket's inner face is half a
+        tile inside the collision edge -- `rf_parts.socket`'s own `inner` -- so back=0.5 lands a
+        quarter of a tile PAST it, further in, and anything larger stops shorter still. To reach
+        INTO a stub, pass a `back` smaller than 0.5.
         """
         ux, uy = UNIT[c["direction"]]
         px, py = c["position"]
@@ -585,7 +567,8 @@ else:
     # AND IT STOPS SHORT OF THE SOCKETS RATHER THAN OVER THEM, which is why `back` is 0.9 and not
     # the 0.5 the call used to take. Mind what those mean: `inboard(c, 0.5)` is the inner edge of
     # the TILE the connection stands on, x = 6.5 here, while the socket's inner end is a quarter
-    # tile further out at TX - 0.5 = 6.75. So a floor collar at 0.5 -- a ring half a tile across --
+    # tile further out at 7.25 - 0.5 = 6.75, the declared half extent less half a tile. So a floor
+    # collar at 0.5 -- a ring half a tile across --
     # would reach exactly 6.75 and sit tangent to the tube's end cap. 0.9 puts the drop 0.4 tiles
     # further in, clear of it with room for the tube's own radius.
     HEADER_Z = 0.55
