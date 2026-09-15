@@ -18,7 +18,8 @@ never look inside them. `hbeam`, `rivets`, `seam` and `port` do not, and are the
 their own material: a beam and a rivet are `frame` and `dark` by default, a seam is always `frame`,
 and a port's rim is always `dark`. Passing `frost=True` to one of those is a TypeError rather than a
 silent miss, which is the right failure -- but it is a failure, so if a machine ever wants a frosted
-rivet the flag has to be plumbed through `rivets` first.
+rivet the flag has to be plumbed through `rivets` first. `socket` is the one that does both: it
+forwards to the tube and its ribs, and chooses the accent and the rim itself.
 
 AND ONE NUMBER RE-EXPORTED RATHER THAN HELD: `SOCKET_Z`, the height a player-facing socket is drawn
 at. It was here from #342, for the same reason the helpers are -- the second machine to need it
@@ -175,13 +176,42 @@ def torus(name, major, minor, loc, material, rot=(0, 0, 0), **mat_opts):
     return o
 
 
-# WHERE A SOCKET'S ACCENT BAND SITS ON ITS TUBE, and how far the hole through the floor stands
-# clear of it. Constants rather than arguments because these are a socket's proportions rather than
-# a machine's choice: both rendered machines have always used exactly these, in two copies.
-BAND_BACK = 0.28                 # the band's centre, inboard of the footprint edge
-BAND_DEPTH = 0.22
+# WHERE A SOCKET'S PIECES SIT ON ITS TUBE, as distances inboard from the footprint edge the stub
+# stops at. `port` places the rim from the first three and `socket` places the rest; they live
+# together because the flange pair is FITTED INTO WHAT THE RIM AND THE BAND LEAVE BETWEEN THEM, so
+# a rim or a band written out somewhere else would move without the ribs following. Constants
+# rather than arguments because these are a socket's proportions rather than a machine's choice:
+# both rendered machines have always used exactly these.
+RIM_BACK = 0.03                  # the dark rim's centre
+RIM_MINOR = 0.05                 # its tube radius, so the rim owes the first RIM_BACK + RIM_MINOR
+RIM_PROUD = 0.02                 # how far its major radius stands past the tube
+BAND_BACK = 0.28                 # the accent band's centre
+BAND_DEPTH = 0.22                # so the band starts BAND_BACK - BAND_DEPTH / 2 back
 BAND_PROUD = 0.04                # how far the band stands out past the tube
 PORT_CLEARANCE = 0.06            # and the hole past the band, so it reads as a hole
+
+# THE FLANGE PAIR AT A PLUMBABLE SOCKET'S MOUTH (#351, shipped by #353): two ribs standing proud of
+# the tube, in the tube's own material, just inboard of the dark rim. models/house-style.md carries
+# the decision and ADR 0033 the principle behind it -- a socket borrows a vanilla drawing cue when
+# the cue is also hardware a real pipe has, and a flange is.
+#
+# THE RIBS ARE FITTED INTO THE CLEAR TUBE, NEVER PLACED AT TYPED OFFSETS. There is very little of
+# it: the rim owes 0.08 and the band starts at 0.17, which leaves 0.09 tiles of metal. Typed
+# offsets are how models/socket-variants.py first drew this, and they buried one rib in the rim and
+# clipped the band with the other -- a fat lump rather than a flange pair. So the span is derived
+# from the rim and band constants above and the ribs are divided into it, and a machine with no
+# room fails loudly rather than drawing the lump.
+FLANGE_GAP = 0.2                 # of the clear span, left between the two ribs
+FLANGE_MIN_THICK = 0.02          # under this a rib is thinner than a pixel and there is no pair
+# What makes a rib read as a flange is standing PROUD of the tube, not its thickness: 0.07 tiles,
+# which is 2.24 px ON THE PLAYER'S SCREEN -- never the 4.5 it measures at 64 px to the sheet, the
+# one unit this repository refuses to quote a detail in.
+#
+# PROUD IS NOT WHAT THE FLOOR MEASURES. The floor judges `read=`, and the call below hands it the
+# disc's FACE, 2 * (radius + FLANGE_PROUD) -- about 0.64 tiles, 20 px on screen -- so a rib this
+# thin clears the raised-detail floor by eighteen pixels rather than missing it by a third of one.
+# #361 published that mistake; do not repeat it.
+FLANGE_PROUD = 0.07
 
 
 def port(body, axis, across, edge, sign, radius, depth=0.7):
@@ -230,15 +260,15 @@ def port(body, axis, across, edge, sign, radius, depth=0.7):
     # A RING, never a "collar": on a socket #351 gave that word to the accent band. (A FLOOR
     # collar, where a pipe turns down through the deck, is a different object and keeps its name.)
     rim_loc = [0.0, 0.0, SOCKET_Z]
-    rim_loc[0 if axis == "X" else 1] = edge - sign * 0.03
+    rim_loc[0 if axis == "X" else 1] = edge - sign * RIM_BACK
     rim_loc[1 if axis == "X" else 0] = across
-    torus(f"PortRim-{axis}-{across:g}", radius + 0.02, 0.05, tuple(rim_loc), "dark",
+    torus(f"PortRim-{axis}-{across:g}", radius + RIM_PROUD, RIM_MINOR, tuple(rim_loc), "dark",
           rot=(0, math.pi / 2, 0) if axis == "X" else (math.pi / 2, 0, 0))
 
 
 def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
     """Draw one connection's socket: the bare-metal stub, its accent band and -- on a socket a
-    player can plumb -- the port through `body`.
+    player can plumb -- the port through `body` and the flange pair at its mouth.
 
     `connection` is one entry of the machine's geometry.json and `geo` the file it came from. The
     stub runs from half a tile inside the COLLISION edge out to the SELECTION edge, which is where
@@ -253,11 +283,12 @@ def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
     rf-isotope-collector has none. A helper that decided containment for its caller would sooner or
     later put a socket at pipe height on a face that meets a reactor.
 
-    `mat_opts` reach the STUB only: the collector frosts its tube, and an accent band is the one
-    thing on a socket that must stay the colour of the fluid it names.
+    `mat_opts` reach the STUB AND ITS RIBS -- the collector frosts its tube and the flange is in
+    the tube's own material -- and nothing else. An accent band must stay the colour of the fluid it
+    names, and a rim is always `dark`.
 
-    THE ORDER OF THE THREE IS PART OF THE CONTRACT -- stub, band, port -- because `cyl` bevels and
-    a bevel draws from `random`. Re-ordering them moves every imperfection after them on every
+    THE ORDER IS PART OF THE CONTRACT -- stub, band, port, then the ribs -- because `cyl` bevels
+    and a bevel draws from `random`. Re-ordering them moves every imperfection after them on every
     machine that calls this, and the only way to see it is to re-render. See this module's header.
     """
     d = connection["direction"]
@@ -285,6 +316,27 @@ def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
         rf.accent(fluid), axis=axis)
     if plumbable:
         port(body, axis, across, edge, sign, radius + PORT_CLEARANCE)
+        # THE FLANGE PAIR, on a plumbable socket and no other. A contained connection meets a
+        # machine face rather than a pipe, so a shape chosen to sit against vanilla's `pipe_cover`
+        # has nothing to sit against on one -- the same exemption #343 made for the height.
+        #
+        # The clear tube is what the rim and the band leave: the rim owes RIM_BACK + RIM_MINOR from
+        # the mouth and the band starts BAND_BACK - BAND_DEPTH / 2 in. Both are read off the
+        # constants above rather than typed here, so a rib cannot drift out of the gap it was
+        # fitted to.
+        near = RIM_BACK + RIM_MINOR
+        far = BAND_BACK - BAND_DEPTH / 2
+        thick = (far - near) * (1 - FLANGE_GAP) / 2
+        if thick < FLANGE_MIN_THICK:
+            sys.exit(f"rf_parts.socket: {d} {fluid} leaves {far - near:.3f} tiles of bare tube "
+                     f"between its rim and its accent band, which is not enough for a flange pair "
+                     f"({2 * FLANGE_MIN_THICK:.2f} tiles of rib plus a gap). Nothing was drawn.")
+        for k, back in enumerate((near + thick / 2, far - thick / 2)):
+            # A DISC READS BY ITS FACE, not by its thickness, so `read=` is handed the face --
+            # without it a rib this thin dies on the raised-detail floor.
+            cyl(f"Flange-Socket-{d}-{fluid}-{k}", radius + FLANGE_PROUD, thick,
+                at(edge - back * sign), "metal", axis=axis,
+                read=2 * (radius + FLANGE_PROUD), **mat_opts)
 
 
 def _centreline(curve_obj):

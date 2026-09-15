@@ -28,7 +28,10 @@ THE TREATMENTS, which are the four #350 names and no more:
                   one.
   flanged         vanilla's flange pair at the stub's mouth -- two ribs standing proud of the
                   tube, in the tube's own material, just inboard of the dark rim. THE ONE #351
-                  CHOSE; it ships from #353, and this stays the rig that can show why.
+                  CHOSE, and rf_parts has drawn it on every plumbable socket since #353 -- so on a
+                  re-rendered machine `bare` IS the flanged machine and this treatment refuses
+                  rather than stacking a second pair. It stays for a machine not yet re-rendered,
+                  and as the rig that can show why.
   dark-cored      a shadowed channel along the tube's most camera-facing line, the way vanilla's
                   pipe reads. Which line that is depends on the tube's direction and is derived
                   below, not guessed.
@@ -69,18 +72,12 @@ TREATMENTS = ("bare", "flanged", "dark-cored", "rimmed-inboard")
 #
 # So the span is MEASURED off the rim and the band that are already in the model, and the ribs are
 # divided into it. A machine whose numbers differ gets ribs that fit its own tube, and a machine
-# with no room at all fails loudly instead of drawing a lump.
-FLANGE_GAP = 0.2                 # of the clear span, between the two ribs
-FLANGE_MIN_THICK = 0.02          # under this a rib is thinner than a pixel and there is no pair
-# What makes a rib read as a flange is standing PROUD of the tube, not its thickness: 0.07 tiles,
-# which is 2.24 px ON THE PLAYER'S SCREEN (never the 4.5 it measures at 64 px to the sheet -- the
-# detail floor is the one thing this repository refuses to quote in sheet pixels).
-#
-# PROUD IS NOT WHAT THE FLOOR MEASURES. The floor judges `read=`, and the call below hands it the
-# disc's FACE, 2 * (radius + FLANGE_PROUD) -- about 0.64 tiles, 20 px on screen for the collector.
-# A clearance computed from 0.07 instead says this rib misses the 1.9 px floor by a whisker when it
-# in fact clears by eighteen pixels. #361 published that mistake; do not repeat it.
-FLANGE_PROUD = 0.07
+# with no room at all fails loudly instead of drawing a lump. THE SHAPE'S OWN NUMBERS COME FROM
+# rf_parts, which has drawn them on the shipped machines since #353 -- what is local here is only
+# the measurement, because this file works on a model rather than while building one.
+FLANGE_GAP = rf_parts.FLANGE_GAP
+FLANGE_MIN_THICK = rf_parts.FLANGE_MIN_THICK
+FLANGE_PROUD = rf_parts.FLANGE_PROUD
 
 # The shadowed channel. It is an added plate, not a boolean subtraction, so it takes the RAISED
 # floor -- and it clears it on its WIDTH, which is what `read=` is for. Judged on its smallest
@@ -95,9 +92,10 @@ CORE_MATERIAL = "frame"
 
 # How far a moved rim stands OUTBOARD of the body wall, so it reads as a ring round the hole
 # rather than a disc buried in it. A RING, not a "collar" -- on a socket #351 gave that word to the
-# accent band. Not rf_parts.port's own 0.03, which goes the other way: that one sets the rim
-# 0.03 INBOARD of the footprint edge, where it rings nothing but air.
-RIM_PROUD = 0.03
+# accent band. It is NOT rf_parts.RIM_BACK, which is the same 0.03 going the other way: that one
+# sets the rim 0.03 INBOARD of the footprint edge, where it rings nothing but air. Nor is it
+# rf_parts.RIM_PROUD, which is how far the shipped rim's major radius stands past the tube.
+RIM_OUTBOARD = 0.03
 
 random.seed(350)                 # rf_parts' bevels draw from `random`; same treatment, same model
 
@@ -242,6 +240,14 @@ for stub in sockets:
     material = stub.data.materials[0].name
 
     if treatment == "flanged":
+        # A SECOND PAIR ON A MACHINE THAT ALREADY WEARS ONE IS NOT A TREATMENT, it is a lie drawn
+        # over the control. The shape shipped in #353, so on a re-rendered machine `bare` already
+        # has the ribs and this would only stack coincident geometry on top of them. Refusing says
+        # so; there is nothing here that could usefully strip them.
+        if any(o.name.startswith("Flange-") for o in bpy.data.objects):
+            fail(f"{os.path.basename(model_path)} already carries a flange pair -- the shape shipped "
+                 f"in #353, so `bare` is now the flanged machine and there is nothing for this "
+                 f"treatment to add. Shoot `bare` instead.")
         near, far = bare_span(stub, axis, sign, i, j, across, mouth)
         thick = (far - near) * (1 - FLANGE_GAP) / 2
         if thick < FLANGE_MIN_THICK:
@@ -290,7 +296,7 @@ if treatment == "rimmed-inboard":
         axis, sign = axis_of(rim)
         i = 0 if axis == "X" else 1
         was = rim.location[i]
-        rim.location[i] = body_face(axis, sign) + sign * RIM_PROUD
+        rim.location[i] = body_face(axis, sign) + sign * RIM_OUTBOARD
         print(f"SOCKET-VARIANTS   {rim.name}: {was:+.3f} -> {rim.location[i]:+.3f} along {axis}")
 
 os.makedirs(os.path.dirname(out_path), exist_ok=True)     # a scratch path that does not exist yet

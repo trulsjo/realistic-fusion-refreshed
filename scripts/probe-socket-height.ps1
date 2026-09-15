@@ -19,13 +19,14 @@
     WHAT THE SPRITES SAID, measured off the sheets rather than off a screenshot, because both are
     drawn at scale 0.5 with no shift and are therefore directly comparable at 64 px to the tile:
 
-      vanilla pipe   body 0.609 tiles tall on screen, centre 0.023 tiles above ground
+      vanilla pipe   body 0.609 tiles tall on screen, centre 0.0234 tiles above ground
       our socket     body 0.750 tiles tall on screen, centre 0.398 tiles above ground
 
-    THE PIPE'S CENTRE READ 0.031 HERE UNTIL #355, and that half-pixel error is still in the shipped
-    art: the height was solved from it, so every plumbable socket sits 0.0109 tiles of world height
-    high -- 0.25 px at the game's own zoom. The gate measures the reference off vanilla's sheet now
-    rather than carrying it, and #356 is where the models follow. Nothing below has moved.
+    THE PIPE'S CENTRE READ 0.031 HERE UNTIL #355, and the half-pixel error it carried was in the
+    shipped art until #356: the height was solved from it, so every plumbable socket sat 0.011 tiles
+    of world height high -- 0.25 px at the game's own zoom. The gate measures the reference off
+    vanilla's sheet now rather than carrying it, and holds the constant against it. The reading
+    above is corrected; nothing else below has moved.
 
     A world height h shows as 0.707 h on screen, so our socket was drawn about 0.52 tiles of world
     height too high, and about a quarter too fat.

@@ -282,8 +282,9 @@
     pipe connection on a machine wearing a MOCKUP must be caught; a mod that puts a plasma of its
     own through our heating category must be refused; the isotope collector's two box filters
     swapped must be refused; and the socket-height gate must measure its own reference off vanilla's
-    sheet, judge by the number it measured, pass the sheets as they stand, and report a sheet
-    lifted a quarter tile. The first is
+    sheet, judge by the number it measured, pass the sheets as they stand, report a sheet lifted a
+    quarter tile, and report SOCKET_Z itself as PARTED when it does not predict that reference.
+    The first is
     required or the others prove nothing, since Factorio also exits non-zero when the repo is
     genuinely broken. Halves three through seven and nine are the ones Factorio exits 0 on, where
     the check has to decide alone. THE OTHER FOUR ARE THE MOD REFUSING ITSELF -- two, eight, ten
@@ -2002,7 +2003,7 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
         # stands, and every socket reported wrong a quarter tile up -- and this runs them, so
         # `-SelfTest` covers every gate the plain run does. It reads the install for the reference,
         # like the plain run; what it needs no game FOR is a map.
-        Write-Host 'self-test 12/12: the socket-height gate must measure its own reference, pass the sheets, and fail a lifted one.'
+        Write-Host 'self-test 12/12: the socket-height gate must measure its own reference, pass the sheets, fail a lifted one, and fail a parted SOCKET_Z.'
         $heightLines = @(& python (Join-Path $repoRoot 'tools/check-socket-height.py') --self-test `
             --vanilla-pipe (Get-VanillaPipeSheet) `
             @((Get-RenderManifests -AssetsDirectory $ourDirectories[$ASSETS_MOD]) | ForEach-Object { $_.FullName }) `
@@ -2012,8 +2013,9 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
             foreach ($line in $heightLines) { Write-Host $line }
             Write-Host ''
             Write-Host 'FAILED - self-test: the socket-height gate could not show that it measures its own'
-            Write-Host '         reference, that it passes the sheets as they stand, and that it catches a'
-            Write-Host '         socket drawn too high.'
+            Write-Host '         reference, that it passes the sheets as they stand, that it catches a socket'
+            Write-Host '         drawn too high, and that it catches a SOCKET_Z that has parted from the'
+            Write-Host '         reference.'
             exit 1
         }
 
@@ -2039,7 +2041,7 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
         Write-Host '     refused by check_every_plasma_burns() and a swapped collector box'
         Write-Host '     refused by check_collector_boxes() -- both by their own words -- a'
         Write-Host '     socket-height gate that measures its own reference off vanilla, passes the'
-        Write-Host '     sheets and catches a lifted one,'
+        Write-Host '     sheets, catches a lifted one and catches a parted SOCKET_Z,'
         Write-Host "     and $($treeBefore.Count) files under our mod directories untouched by the run."
         exit 0
     }

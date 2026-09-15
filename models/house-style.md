@@ -178,18 +178,17 @@ height by 0.707, so a tube's circular cross-section draws as an ellipse:
 
 Vanilla's pipe (`base/graphics/entity/pipe/pipe-straight-horizontal.png`, scale 0.5 and no shift,
 so 64 px to the tile and directly comparable with ours) draws its body **0.609 tiles tall, centred
-0.023 tiles above the ground line**. Solving the two expressions against those gives **z = 0.033**
+0.0234 tiles above the ground line**. Solving the two expressions against those gives **z = 0.033**
 and **r = 0.249**, and the collector measures 0.594 tiles against vanilla's 0.609 after both.
 
-**THE SHIPPED z IS STILL 0.044, AND THAT IS A KNOWN DEFECT RATHER THAN THIS PARAGRAPH BEING STALE.**
-The centre was read as 0.031 when the rule was written -- the bare row indices `(43 + 81) / 2 = 62`
-against an image centre of 64, mixing the index convention with the edge convention the rest of the
-measurement uses -- and `z` was solved from that. Since #355 `tools/check-socket-height.py` measures
-the reference off vanilla's own sheet rather than carrying a number, so the disagreement is in the
-open and the gate reports it. Every plumbable socket is therefore drawn 0.0109 tiles of world height
-too high, which is 0.49 px on the sheet and 0.25 px at the game's own zoom.
-[#356](https://github.com/trulsjo/realistic-fusion-refreshed/issues/356) is where the models follow
-the number, because doing it re-renders both machines and changes art that has been accepted.
+**THE SHIPPED z WAS 0.044 UNTIL #356, AND IT IS 0.033 NOW.** The centre was read as 0.031 when the
+rule was written -- the bare row indices `(43 + 81) / 2 = 62` against an image centre of 64, mixing
+the index convention with the edge convention the rest of the measurement uses -- and `z` was solved
+from that, so every plumbable socket was drawn 0.011 tiles of world height too high, which is 0.49
+px on the sheet and 0.25 px at the game's own zoom. Since #355 `tools/check-socket-height.py`
+measures the reference off vanilla's own sheet rather than carrying a number, and since #356 it
+holds `rf_blender.SOCKET_Z` against that measurement to a quarter of a pixel. **The two can no
+longer part in silence, which is the part of this that outlives the number.**
 
 **THE SOCKET GOES THROUGH THE FLOOR, AND THE FLOOR GETS A HOLE.** At that height a socket's tube
 reaches below the plinth's top, so it enters the structure instead of floating over it. That trade
@@ -204,8 +203,8 @@ Matching those to a vanilla pipe would match them to something that cannot exist
 a connection left `default` and no other.
 
 rf-heat-exchanger is the machine that shows what that costs, and **it has now been brought over**
-(#343): its water pair and its steam outlet moved to 0.044 and 0.249, and its three reactor-energy
-connections kept the 0.55 and 0.3 they have always had. So that machine carries a water socket and
+(#343, at the height #356 corrected): its water pair and its steam outlet are at 0.033 and 0.249,
+and its three reactor-energy connections kept the 0.55 and 0.3 they have always had. So that machine carries a water socket and
 an energy socket two tiles apart on the same short end AT DIFFERENT HEIGHTS AND DIFFERENT
 THICKNESSES. That is the rule working rather than a slip, and it is written down here because the
 obvious next thing anyone will want to do is level them.
@@ -247,9 +246,10 @@ case-sensitive `git grep collar` misses `A COLLAR`.
 
 **A PLUMBABLE SOCKET'S MOUTH WEARS VANILLA'S FLANGE PAIR: two ribs standing proud of the tube, in
 the tube's own material, just inboard of the dark rim** (Truls, 2026-09-14, settling #351 from the
-frames #350 shot). It ships from #353. `docs/research/socket-shapes.md` has the frames and the
-full reading of them; ADR 0033 has the principle. What has to live here is the rule and the two
-things that will otherwise be undone by accident.
+frames #350 shot). `rf_parts.socket` has drawn it on every plumbable socket since #353.
+`docs/research/socket-shapes.md` has the frames and the full reading of them; ADR 0033 has the
+principle. What has to live here is the rule and the two things that will otherwise be undone by
+accident.
 
 **The principle it settles, which is wider than this rule.** A socket borrows a vanilla drawing cue
 when the cue is also hardware a real pipe has. A flange is; a painted window is not. That is why
@@ -274,13 +274,15 @@ flange is real hardware rather than an artefact of zoom, and players do zoom in.
 flange on the strength of #350's sentence**; that is the shape of the mistake this paragraph
 exists to stop.
 
-**THE RIBS ARE FITTED BY MEASUREMENT, NEVER PLACED AT TYPED OFFSETS**, and the first version of the
-variant script is the reason. There is very little clear tube to work in: on the isotope collector
-the stub is 0.75 tiles long, the dark rim owes the first 0.08 and the accent band starts at 0.17,
-leaving 0.09 tiles of metal for a pair of ribs. Typed offsets buried one rib in the rim and clipped
-the band with the other -- a fat lump rather than a flange pair. So measure the clear span between
-the rim and the band that are already in the model and divide the ribs into it, and **fail loudly on
-a machine with no room rather than drawing a lump**. What makes a rib read as a flange is standing
+**THE RIBS ARE FITTED TO THE CLEAR SPAN, NEVER PLACED AT TYPED OFFSETS**, and the first version of
+the variant script is the reason. There is very little clear tube to work in: on the isotope
+collector the stub is 0.75 tiles long, the dark rim owes the first 0.08 and the accent band starts
+at 0.17, leaving 0.09 tiles of metal for a pair of ribs. Typed offsets buried one rib in the rim and
+clipped the band with the other -- a fat lump rather than a flange pair. So the span comes from the
+rim and the band rather than from a number typed beside them, and the ribs are divided into it, and
+a machine with no room **fails loudly rather than drawing a lump**. `rf_parts.socket` derives it
+from the constants that place those two, because it draws all three; `models/socket-variants.py`
+measures it off a stored model, because it draws onto one it did not build. What makes a rib read as a flange is standing
 PROUD of the tube, not its thickness: 0.07 tiles, which is **2.24 px on the player's screen** and
 not the 4.5 this was once quoted as -- that figure was the same rib measured at 64 px to the sheet,
 in a clause about the detail floor, which is the one place this document forbids the sheet as a unit.

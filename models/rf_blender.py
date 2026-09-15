@@ -60,27 +60,26 @@ GLOW_BASE_DARKEN = 0.07
 # the rendered sheet at z 0.55 the centre sat 0.398 tiles up, against 0.707 x 0.55 = 0.389
 # predicted, so the projection is understood rather than curve-fitted.
 #
-# Vanilla's own pipe draws its body centred 0.023 tiles above the ground line
+# Vanilla's own pipe draws its body centred 0.0234 tiles above the ground line
 # (base/graphics/entity/pipe/pipe-straight-horizontal.png, scale 0.5 and no shift, so 64 px to the
-# tile and directly comparable with ours). Setting 0.707 z = 0.023 gives 0.033.
+# tile and directly comparable with ours -- its barrel's edge-midpoint is 1.5 px above the image
+# centre, and 1.5 / 64 = 0.0234). Setting 0.70804 z = 0.0234 gives 0.0331, which is this to three
+# places. tools/check-socket-height.py measures that reference off vanilla's own sheet at run time
+# (#355) and holds THIS CONSTANT against it (#356), so the two can no longer part in silence.
 #
-# THIS IS 0.044, WHICH IS SOLVED FROM 0.031, WHICH WAS A MIS-READING. The pipe's barrel runs rows
-# 43..81 of 128; its midpoint is 62.5 read by row centres and 62.5 read by row edges, which is 1.5
-# px above the image centre -- 0.023 tiles. 0.031 is 2.0 px, and comes from averaging the bare row
-# INDICES (43 + 81) / 2 = 62 against a centre of 64: one convention on one side of the arithmetic
-# and another on the other. tools/check-socket-height.py now MEASURES the reference off the sheet
-# instead of carrying it (#355), so the two disagree in the open rather than silently.
-#
-# The consequence is that every plumbable socket is drawn 0.0109 tiles of world height too high --
-# 0.49 px on the sheet, 0.25 px at the game's own zoom. #356 is where this number follows the
-# measurement, because doing it here would re-render both machines and change art Truls has
-# accepted, which is his call and not a side effect of fixing a gate.
-SOCKET_Z = 0.044
+# IT WAS 0.044 UNTIL #356, AND 0.044 IS WHAT SOLVING AGAINST 0.031 GIVES. The pipe's barrel runs
+# rows 43..81 of 128; its midpoint is 62.5 read by row centres and 62.5 read by row edges, which is
+# the 1.5 px above. 0.031 is 2.0 px, and comes from averaging the bare row INDICES
+# (43 + 81) / 2 = 62 against a centre of 64: one convention on one side of the arithmetic and
+# another on the other. Every plumbable socket was therefore drawn 0.011 tiles of world height too
+# high -- 0.49 px on the sheet, 0.25 px at the game's own zoom -- for as long as the two numbers
+# were typed rather than compared.
+SOCKET_Z = 0.033
 #
 # AND THAT PUTS THE TUBE THROUGH THE PLINTH, which is the trade Truls made explicitly: *"Going below
 # the floor is preferable to this look. If intersecting the floor, the floor should have a modelled
 # hole for the pipe."* Both machines stand on a slab 0.25 tiles thick, and a socket of any radius
-# over 0.206 at this height reaches through it -- so `rf_parts.port` cuts the hole and rims it, and
+# over 0.217 at this height reaches through it -- so `rf_parts.port` cuts the hole and rims it, and
 # every machine with a player-facing socket calls it.
 #
 # ONLY A PLAYER-FACING SOCKET. A CONTAINED connection (ADR 0018) meets a machine face, never a pipe:

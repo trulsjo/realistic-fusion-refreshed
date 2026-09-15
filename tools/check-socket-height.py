@@ -28,19 +28,27 @@ band and the port rim put the extremes.
 
 THAT SYMMETRY HOLDS ONLY WHILE THE WHOLE SILHOUETTE IS ABOVE THE GROUND PLANE, AND AT PIPE HEIGHT
 IT IS NOT. `rf_blender.build_rig` puts a shadow-catching ground plane at z 0, and a socket drawn at
-SOCKET_Z reaches well below it -- radius 0.249 about its axis at 0.044 -- so its underside is cut
-off and the midpoint rides high. Measured on the shipped sheets: 0.469 tiles of silhouette above
-the predicted axis and 0.422 below it, a midpoint 0.024 tiles above where an unclipped tube would
-put it. At the old z 0.55 the tube cleared the plane and the same measurement landed within 0.002
-of prediction, which is how the derivation came to be trusted somewhere it does not apply.
+SOCKET_Z reaches well below it -- radius 0.249 about its axis at 0.033 -- so its underside is cut
+off and the midpoint rides high. At the old z 0.55 the tube cleared the plane and the same
+measurement landed within 0.002 of prediction, which is how the derivation came to be trusted
+somewhere it does not apply.
 
 SO THIS COMPARES TWO DRAWN CENTRES AND DOES NOT RECOVER A WORLD HEIGHT. It measures where our
 socket is drawn, against where a vanilla pipe's body is drawn, and both sides are numbers off a
 sheet. That is the right comparison anyway -- vanilla's pipe is a stylised ribbon and not a
 projected cylinder, so there is no world z to recover on its side either -- but it means the
 residual below is geometric rather than incidental, and that it scales with the socket's RADIUS.
-Both machines draw a plumbable socket at 0.249 (models/house-style.md), so both carry the same
-0.024; a machine that drew one thicker would carry more.
+Both machines draw a plumbable socket at 0.249 (models/house-style.md), so both carry the same one;
+a machine that drew one thicker would carry more.
+
+AND THE RESIDUAL IS NOT INDEPENDENT OF THE HEIGHT, which #356 assumed it was. Lowering the socket
+lowers the axis but also pushes more of the tube under the cut, so the two move against each other.
+Measured on both machines either side of that change, with a sub-pixel read of the same strip:
+every plumbable socket's residual fell from about 2.28 px to about 2.00 px -- 0.28 px -- where
+lowering SOCKET_Z by 0.011 tiles moves the axis alone by 0.494 px. The silhouette's TOP followed
+the full 0.52 px and its BOTTOM moved 0.03 px, which is what "the underside is cut" looks like from
+outside. The gate itself reported no change at all, and that is the row threshold below rather than
+a disagreement: it reads whole rows at alpha 8, so a quarter-pixel move is invisible to it.
 
 Isolating the socket is the other half, and it takes two cuts rather than one. The COLUMNS are the
 strip between the collision edge and the selection edge: the slab, the deck and the frame all stop
@@ -93,16 +101,29 @@ except ImportError as missing:                    # a gate that cannot run must 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models"))
 import rf_blender as rf  # noqa: E402  (no bpy at module level)
 
-# A world height of 1 tile draws this many tiles up the screen -- 0.707, taken from the camera the
+# A world height of 1 tile draws this many tiles up the screen -- 0.70804, taken from the camera the
 # sheets were rendered through rather than copied as a number. NOTHING HERE DIVIDES BY IT: the
 # header sets out why a drawn centre does not convert back into a world height at this socket
 # height, and the one place that used to do it printed a figure 1.75x what the build script holds.
-# It is kept because it is what WOULD make the measured reference and rf_blender.SOCKET_Z one
-# statement, and today they are not: 0.707 x 0.044 is 0.031, and the reference measures 0.023. That
-# gap is the defect #355 uncovered and #356 closes, and nothing here enforces the relation yet --
-# rf_blender imports no bpy since #354, so this file CAN import SOCKET_Z and hold it against the
-# measurement, and #356 is where that check is added along with the number it checks.
+# It is MULTIPLIED by instead, in `constant_matches_reference` below, which is what makes the
+# measured reference and rf_blender.SOCKET_Z one statement rather than two numbers that happened to
+# agree. Until #356 they did not: 0.70804 x 0.044 is 0.0312 and the reference measures 0.0234, and
+# nothing compared them. rf_blender imports no bpy since #354, so this file can import the constant
+# the models are built at and hold it against what vanilla's own sheet says it should be.
 SCREEN_PER_WORLD = 1.0 / math.tan(math.radians(rf.CAMERA_PITCH_DEG))
+
+# HOW FAR THE CONSTANT AND THE MEASURED REFERENCE MAY PART, in SHEET PIXELS, before the cross-check
+# fails. A quarter of a pixel, and both ends of that are deliberate.
+#
+# It cannot be equality. rf_blender.SOCKET_Z is written to three places -- 0.033 where the exact
+# solution is 0.033102 -- so it lands 0.0046 px off the reference by rounding alone, and the
+# reference itself is measured by row edges and so quantised to half a pixel.
+#
+# It has to be tighter than half a pixel, because the defect it exists to catch is exactly half a
+# pixel: the old 0.031 reference was 2.0 px where the sheet draws 1.5, which put SOCKET_Z at 0.044
+# and every plumbable socket 0.494 px too high. A quarter of a pixel fails that by a factor of two
+# and passes today's constant by a factor of fifty.
+CONSTANT_TOLERANCE_PX = 0.25
 
 # WHERE A VANILLA PIPE DRAWS ITS BODY IS MEASURED, NOT TYPED (#355), and it used to be typed. The
 # number here was 0.031 tiles, carried from a hand reading, and it was wrong by half a pixel in the
@@ -142,26 +163,25 @@ PIPE_COLOUR_MARGIN = 0.25
 # other sprite in that directory is a different object drawn at a different height.
 VANILLA_PIPE_SHEETS = frozenset(("pipe-straight-horizontal.png", "pipe-straight-horizontal-window.png"))
 
-# HOW FAR OFF IS TOO FAR. Not equality: both machines measure about 0.031 tiles above vanilla's
-# centre rather than on it, and that residual is TWO things rather than one, which the reference
-# being wrong used to hide.
+# HOW FAR OFF IS TOO FAR. Not equality: both machines measure 0.031 tiles above vanilla's centre
+# rather than on it, and that residual is GEOMETRIC -- the header's. The ground plane cuts the
+# socket's underside at this height, so the midpoint rides high; it scales with the socket's radius,
+# and the lit bevel and the anti-aliasing are worth a fraction of a pixel beside it.
 #
-#   0.024 is geometric and is the header's: the ground plane cuts the socket's underside at this
-#          height, so the midpoint rides high. It scales with the socket's radius, and the lit
-#          bevel and the anti-aliasing are worth a fraction of a pixel beside it. Measured against
-#          the axis the projection predicts -- 0.707 x SOCKET_Z -- so it does not move when the
-#          reference does.
-#   0.008 is the mistake. SOCKET_Z was solved from the old typed 0.031 rather than from the 0.023
-#          vanilla actually draws at, so every plumbable socket is built 0.0109 tiles of world
-#          height too high -- 0.49 px on the sheet, 0.25 px at the game's own zoom. #356 is where
-#          the constant follows the measurement and this term goes.
+# IT USED TO BE TWO THINGS, and #356 removed the second. SOCKET_Z had been solved from a reference
+# read as 0.031 rather than the 0.0234 vanilla actually draws at, so every plumbable socket was
+# built 0.011 tiles of world height too high. Correcting it moved the sub-pixel residual from 2.28
+# px to 2.00 px rather than by the 0.49 px the axis alone moves -- the header says why -- and left
+# what this gate reads where it was, because a quarter-pixel move does not cross a row. That is why
+# the figure above did not change when the defect was fixed, and `constant_matches_reference` rather
+# than this tolerance is now what holds the height honest.
 #
-# 0.08 tiles is five pixels on a sheet and two and a half at the game's own zoom. It admits both
-# with room to spare and still catches the defect this exists for by a factor of four: a socket at
-# z 0.55 clears the ground plane entirely and MEASURED 0.398 tiles up on the rendered sheet, which
-# lands 0.375 from the reference. 0.707 x 0.55 = 0.389 is what the projection PREDICTS for it, and
-# the two differ because a real sheet carries a bevel and a wash; the measured one is the one that
-# says what this tolerance would have caught.
+# 0.08 tiles is five pixels on a sheet and two and a half at the game's own zoom. It admits the
+# residual with room to spare and still catches the defect this exists for by a factor of four: a
+# socket at z 0.55 clears the ground plane entirely and MEASURED 0.398 tiles up on the rendered
+# sheet, which lands 0.375 from the reference. 0.707 x 0.55 = 0.389 is what the projection PREDICTS
+# for it, and the two differ because a real sheet carries a bevel and a wash; the measured one is
+# the one that says what this tolerance would have caught.
 TOLERANCE = 0.08
 
 # The outboard strip is inset by this many pixels at each end, because the collision edge column
@@ -284,6 +304,39 @@ def vanilla_pipe_centre(path):
 
     centre_row = (low + high + 1) / 2                 # row EDGES, the convention drawn_centre uses
     return (height / 2 - centre_row) / rf.PX_PER_TILE, (low, high, dimmest_kept, brightest_dropped)
+
+
+def constant_matches_reference(reference, socket_z=None):
+    """(ok, predicted, off_px) for rf_blender.SOCKET_Z against the measured reference.
+
+    THE CHECK #354 MADE POSSIBLE AND #356 ADDED, and the one that would have caught the defect at
+    its source. Every other measurement here reads a SHEET: it says where a socket was drawn, which
+    only reports a wrong constant once a machine has been re-rendered with it. This reads the
+    constant itself, so a build script pointed at a height vanilla does not draw at fails on the day
+    the number changes rather than on the day someone renders.
+
+    The relation is the projection, in the one direction it is sound: a socket built at world height
+    z draws its axis SCREEN_PER_WORLD x z above the ground line, so the constant PREDICTS a drawn
+    centre and that prediction must be the reference. The inverse is not sound at this height --
+    the header's clipping -- which is why nothing here divides.
+
+    `socket_z` is the constant to judge, defaulting to the one the models are built at. It is an
+    argument so the self-test can hand it a wrong one and watch this fail.
+    """
+    z = rf.SOCKET_Z if socket_z is None else socket_z
+    predicted = SCREEN_PER_WORLD * z
+    off_px = (predicted - reference) * rf.PX_PER_TILE
+    return abs(off_px) <= CONSTANT_TOLERANCE_PX, predicted, off_px
+
+
+def report_constant(reference, socket_z=None):
+    """Print the cross-check's line and return whether it holds."""
+    z = rf.SOCKET_Z if socket_z is None else socket_z
+    ok, predicted, off_px = constant_matches_reference(reference, z)
+    print(f"  SOCKET_Z {z:<16.4f} predicts a centre {predicted:+.4f} tiles up against the pipe's "
+          f"{reference:+.4f} ({off_px:+.3f} px out, tolerance {CONSTANT_TOLERANCE_PX} px): "
+          f"{'ok' if ok else 'PARTED'}")
+    return ok
 
 
 def plumbable(connection):
@@ -483,13 +536,19 @@ def self_test(manifests, pipe_sheet):
     every one of them. A gate that only ever passes and a gate that only ever fails look the same
     from outside, so both are here.
 
+    HALF FOUR is the CONSTANT, and it is last because it reads the reference half one measures and
+    says nothing about the sheets halves two and three read. rf_blender.SOCKET_Z as it stands must
+    agree with that reference, and three constants that do not must all be reported PARTED: the old
+    0.044, which is the defect this cross-check exists for and the one thing here that is a real
+    number rather than an offset, and the constant moved twice the tolerance each way.
+
     THE LIFT IS A QUARTER TILE RATHER THAN THE HALF THE REAL DEFECT WAS, and the reason is worth
     keeping: half a tile pushes a socket against the top of the search window, so the check reports
     it UNMEASURABLE -- a failure, and the right one, but it exercises the window guard instead of
     the comparison this gate is for. A quarter tile is three times the tolerance and still well
     inside the window, so the verdict comes from the measurement.
     """
-    print("self-test 1/3: the reference must track vanilla's own sheet both ways, and must not be "
+    print("self-test 1/4: the reference must track vanilla's own sheet both ways, and must not be "
           "dragged by the shadow baked under it.")
     try:
         reference, (low, high, kept, dropped) = vanilla_pipe_centre(pipe_sheet)
@@ -526,7 +585,7 @@ def self_test(manifests, pipe_sheet):
                   f"so the baked shadow is not being excluded.")
             return 1
 
-    print("self-test 2/3: every plumbable socket on the shipped sheets must pass.")
+    print("self-test 2/4: every plumbable socket on the shipped sheets must pass.")
     rows = []
     for path in manifests:
         check(path, load_sheet, rows)
@@ -546,7 +605,7 @@ def self_test(manifests, pipe_sheet):
     # halves above and below pass under either 0.023 or the old 0.031, because 0.055 is within
     # tolerance of both and a lifted socket is TOO HIGH against both. So the same sheets are judged
     # against a reference moved three tolerances each way, and every verdict must follow it.
-    print(f"self-test 2/3 (cont.): the same sheets judged against a reference {3 * TOLERANCE:+.2f} "
+    print(f"self-test 2/4 (cont.): the same sheets judged against a reference {3 * TOLERANCE:+.2f} "
           f"and {-3 * TOLERANCE:+.2f} out must fail every socket, and fail it the right way.")
     for moved, expected in ((reference - 3 * TOLERANCE, "TOO HIGH"), (reference + 3 * TOLERANCE, "TOO LOW")):
         wrong = [(row, verdict) for row, verdict in zip(rows, report(rows, moved))
@@ -560,7 +619,7 @@ def self_test(manifests, pipe_sheet):
             return 1
 
     shift = int(round(0.25 * rf.PX_PER_TILE))
-    print(f"self-test 3/3: the same sheets lifted {shift} px must be reported TOO HIGH on every one.")
+    print(f"self-test 3/4: the same sheets lifted {shift} px must be reported TOO HIGH on every one.")
     lifted = []
     for path in manifests:
         check(path, rolled_sheet(shift), lifted)
@@ -572,7 +631,27 @@ def self_test(manifests, pipe_sheet):
         for (name, label, _, _), verdict in missed:
             print(f"           {name}  {label}: {verdict}")
         return 1
-    print("self-test: all three halves pass.")
+
+    print("self-test 4/4: SOCKET_Z must agree with the measured reference, and must be reported "
+          "PARTED when it does not.")
+    if not report_constant(reference):
+        print(f"FAILED - self-test: models/rf_blender.SOCKET_Z is {rf.SOCKET_Z}, which does not "
+              f"predict the reference this run measured. The cross-check is working; the constant "
+              f"is not.")
+        return 1
+    # 0.044 is the defect itself: SOCKET_Z solved against a reference read as 2.0 px where the
+    # sheet draws 1.5. The two offsets either side of it prove the check is a comparison rather
+    # than a hard-coded refusal of that one number -- THREE tolerances rather than two, because two
+    # lands on 0.044 again and a case that prints the same constant twice proves half as much as it
+    # appears to.
+    off = (CONSTANT_TOLERANCE_PX * 3) / (rf.PX_PER_TILE * SCREEN_PER_WORLD)
+    for wrong in (0.044, rf.SOCKET_Z + off, rf.SOCKET_Z - off):
+        if report_constant(reference, wrong):
+            print(f"FAILED - self-test: SOCKET_Z {wrong:.4f} was accepted against a reference of "
+                  f"{reference:+.4f}, so this cross-check would not have caught the height being "
+                  f"solved from the wrong number.")
+            return 1
+    print("self-test: all four halves pass.")
     return 0
 
 
@@ -605,6 +684,12 @@ def main(argv=None):
           f"{os.path.basename(a.vanilla_pipe)} rows {low}..{high} "
           f"(dimmest row kept peaks {kept}, brightest dropped {dropped})")
 
+    # THE CONSTANT FIRST, THE ART AFTER. They are two different failures with two different
+    # remedies: a parted constant means every machine built from it is wrong and the fix is the
+    # number, while a misdrawn socket on a sound constant means one machine's model is stale and the
+    # fix is a render. Judging the sheets would answer neither question on its own.
+    constant_ok = report_constant(reference)
+
     rows = []
     for path in a.manifest:
         check(path, load_sheet, rows)
@@ -630,10 +715,18 @@ def main(argv=None):
               "which is an instrument fault and not a finding about the art.")
         print("         The line above each says what was wrong. Nothing here says those sockets "
               "are drawn badly, and re-rendering is not the remedy until they can be read.")
-    if misdrawn or unreadable:
+    if not constant_ok:
+        print(f"FAILED - socket height: models/rf_blender.SOCKET_Z predicts a drawn centre more "
+              f"than {CONSTANT_TOLERANCE_PX} px from where vanilla draws its own pipe.")
+        print("         Every machine built from it is drawn at the wrong height, whether or not "
+              "the sheets above passed -- a sheet rendered before the constant moved still shows "
+              "the old one. Solve SOCKET_Z against the measured reference on the line above, then "
+              "re-render every machine with a plumbable socket.")
+    if misdrawn or unreadable or not constant_ok:
         return 1
     print(f"socket height: all {len(rows)} player-facing socket(s) meet a vanilla pipe "
-          f"(within {TOLERANCE} tiles of its measured {reference:+.3f}).")
+          f"(within {TOLERANCE} tiles of its measured {reference:+.3f}), and SOCKET_Z "
+          f"{rf.SOCKET_Z} is solved from that same measurement.")
     return 0
 
 

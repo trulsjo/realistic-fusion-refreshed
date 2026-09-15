@@ -808,7 +808,7 @@ else:
     # measured against another machine's body.
     #
     # SINCE THE SOCKETS DROPPED TO PIPE HEIGHT THESE RUNS END IN THE FLOOR, not on a stub. A socket
-    # at 0.044 is inside the plinth, so a run that reached it would be a tube buried in stone for
+    # at 0.033 is inside the plinth, so a run that reached it would be a tube buried in stone for
     # its last half tile -- and the deck already opens over every socket lane, so the honest
     # picture is a run that turns down through the opening and goes under the walkway. A player
     # reads a pipe entering the floor and a pipe leaving the wall as the same pipe, which is what
