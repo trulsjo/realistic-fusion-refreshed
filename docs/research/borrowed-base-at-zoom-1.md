@@ -46,22 +46,36 @@ nothing to make room.
 
 | machine | at | ground | entities of TimEv's within 20 tiles |
 |---|---|---|---:|
-| `rf-isotope-collector` | −8607.5, 594.5 | `red-desert-1` | **409** |
+| `rf-isotope-collector` | −8607.5, 594.5 | `red-desert-1` | **410** |
 | `rf-heat-exchanger` | −8607.5, 614.5 | `dirt-4` | **286** |
 
 Both landed beside rail, locomotives, power poles and pipes. The frames are not of a machine in a
 quiet corner.
 
-## The accent's own colour does not change — on seven of eight sockets
+The counts exclude our own two machines by name. They were one low until a review of this work: the
+count subtracted one for the machine being placed and ran BEFORE the placement, so there was nothing
+to subtract — and the two were not even wrong the same way, because by the time the exchanger was
+searched for the collector was standing twenty tiles off and inside its box, where the stray
+subtraction cancelled a real neighbour of ours instead. The collector's figure moves 409 to 410 and
+the exchanger's is unchanged at 286; nothing else in this note moves, and the frames are
+byte-identical.
+
+**A frame shot inside the borrowed base is reproducible without a seed**, unlike every other art
+probe's: the map is loaded rather than generated, so there is no random grass variant under the
+machine. Two runs a fix apart gave six byte-identical frames.
+
+## The accent's own colour does not change — on five of the six measurable sockets
 
 Measured with `tools/measure-frame-accents.py` (#387), which puts
 `tools/measure-accent-separation.py`'s own window on a frame. Base against matched-terrain control,
 same run:
 
-**Seven of the eight measurable sockets give the identical hex in both.** `#a0b8a8`, `#506e5e`,
-`#c9a179`, `#8ca8c1`, `#345776` — the factory is not drawn over the band and does not shade it.
+**Six of the nine sockets are measurable at all** — `tools/measure-frame-accents.py` refuses a
+north or south connection, because its window is the `-e` sheet and these frames draw the machine as
+declared. **Five of those six give the identical hex in both**: `#a0b8a8`, `#506e5e`, `#c9a179`,
+`#8ca8c1`, `#345776`. The factory is not drawn over those bands and does not shade them.
 
-**The eighth is drawn over.** The exchanger's east `rf-reactor-energy` band reads `#c38d51` inside
+**The sixth is drawn over.** The exchanger's east `rf-reactor-energy` band reads `#c38d51` inside
 the base against `#c19768` on the control, **4.3 dE00**, with a wobble of 3.7 — so the move is
 barely above its own instability and should not be quoted to a decimal. What causes it is not
 marginal at all: **a copper power wire runs vertically across that band.**
@@ -149,8 +163,8 @@ machine on anything but grass.
 ## Does it differ from `accent-legibility-at-zoom-1.md`?
 
 **On what that note measured, no.** Every accent reads the same colour inside a factory as on a rig,
-to the hex, on seven of eight sockets — which is the stronger version of what that note found and
-what #387 then measured properly.
+to the hex, on five of the six measurable sockets — which is the stronger version of what that note
+found and what #387 then measured properly.
 
 **On what it did not measure, yes, in two ways neither note could have seen:** a vanilla power wire
 crosses an accent band and is 12.2 dE00 from it, and a machine's ground is worth more contrast than

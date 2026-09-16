@@ -435,14 +435,26 @@ autosave-interval=0
         # the heat exchanger's probe copied five empty files and reported success. Wait until each
         # file has a size that has stopped changing. The sidecars need no such wait; they go through
         # helpers.write_file like the marker itself.
+        #
+        # ITS OWN DEADLINE, NOT THE MARKER'S. This used to reuse $deadline, so a slow LOAD ate the
+        # budget the WRITE needs: probe-borrowed-base-art.ps1 opens a 167 MB save, which is most of
+        # its 600 s, and a marker arriving near the end left the loop below with no time to iterate
+        # at all -- reported as "the game wrote no bytes for: (no PNG at all)" on a run that was
+        # writing normally.
+        $settleBy = (Get-Date).AddSeconds($TimeoutSeconds)
         $sizes = @{}
-        while ((Get-Date) -lt $deadline) {
+        while ((Get-Date) -lt $settleBy) {
             $now = @{}
             foreach ($f in (Get-ChildItem -LiteralPath $shotDir -Filter '*.png')) { $now[$f.Name] = $f.Length }
+            # @(...).Count RATHER THAN -not ON THE PIPELINE, and the difference is a hard failure on
+            # a transient. Where-Object collapses a SINGLE match to the scalar it matched, and
+            # `-not 0` is $true -- so exactly one zero-byte PNG read as "none are zero", the loop
+            # called the set settled, and the check below then threw on a run that needed one more
+            # 700 ms tick. Two zero-byte files behaved correctly, which is why it survived.
             $settled = $now.Count -gt 0 -and
-                       -not ($now.Values | Where-Object { $_ -eq 0 }) -and
+                       @($now.Values | Where-Object { $_ -eq 0 }).Count -eq 0 -and
                        $now.Count -eq $sizes.Count -and
-                       -not ($now.Keys | Where-Object { $sizes[$_] -ne $now[$_] })
+                       @($now.Keys | Where-Object { $sizes[$_] -ne $now[$_] }).Count -eq 0
             $sizes = $now
             if ($settled) { break }
             Start-Sleep -Milliseconds 700

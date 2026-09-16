@@ -128,12 +128,21 @@ local CONTROL_SURFACE = "rf-art-control"
 -- little of what is about to be.
 local BUSY_RADIUS = 20
 
---- How much of somebody's factory stands within BUSY_RADIUS of a point. The number that turns "on a
---- screen with a factory on it" from a claim into a reading.
+--- How much of SOMEBODY ELSE'S factory stands within BUSY_RADIUS of a point. The number that turns
+--- "on a screen with a factory on it" from a claim into a reading.
+---
+--- OURS ARE COUNTED AND SUBTRACTED BY NAME, which is not what a `- 1` did. This used to take the
+--- total and subtract one for the machine being placed -- except that it is called BEFORE the
+--- placement, so there was nothing to subtract and every count came out one low. And the two
+--- machines were not even wrong the same way: by the time the second is searched for the first is
+--- standing on the surface, twenty tiles away and so inside its box, where the stray `- 1`
+--- cancelled a real neighbour of ours instead. Counting ours explicitly is right whether this runs
+--- before or after a placement, and says in the code what the figure is meant to mean.
 local function neighbours(surface, x, y)
-  return surface.count_entities_filtered({
-    area = { { x - BUSY_RADIUS, y - BUSY_RADIUS }, { x + BUSY_RADIUS, y + BUSY_RADIUS } },
-    force = "player" }) - 1
+  local area = { { x - BUSY_RADIUS, y - BUSY_RADIUS }, { x + BUSY_RADIUS, y + BUSY_RADIUS } }
+  local all = surface.count_entities_filtered({ area = area, force = "player" })
+  local ours = surface.count_entities_filtered({ area = area, force = "player", name = MACHINES })
+  return all - ours
 end
 
 --- The busiest chunks of a surface, busiest first, as { {x=, y=, built=}, ... }.

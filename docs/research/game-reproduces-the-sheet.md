@@ -32,11 +32,13 @@ between the sheet and the frame is *below what either instrument resolves*. The 
 it plain: it moved 0.4 and wobbles 3.6, which is a band two screen pixels wide saying it cannot be
 measured that finely by anybody.
 
-**Reproduce it in two commands.** Both are exact since #387 turned the weather off (below):
+**Reproduce it in three commands**, and it takes both probes: the top two rows are the collector's
+and the other four the exchanger's. All of it is exact since #387 turned the weather off (below):
 
 ```
-pwsh -File scripts/probe-heat-exchanger-art.ps1 -MapSeed 1 -OutputDirectory out
-python tools/measure-frame-accents.py out/game-alone.png
+pwsh -File scripts/probe-isotope-collector-art.ps1 -MapSeed 1 -OutputDirectory out/collector
+pwsh -File scripts/probe-heat-exchanger-art.ps1   -MapSeed 1 -OutputDirectory out/exchanger
+python tools/measure-frame-accents.py out/collector/game-alone.png out/exchanger/game-alone.png
 ```
 
 ## What the 8.4 turned out to be
