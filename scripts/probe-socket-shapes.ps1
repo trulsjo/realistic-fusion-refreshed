@@ -61,6 +61,19 @@
                             socket would have met. Same spacing, same parity, same framing -- and
                             zoom 1 as well, for the same reason every treatment gets one.
 
+    THE GROUND HOLDS STILL BETWEEN RUNS since #374, and it did not before. The working area was
+    paved with grass-1, whose variants base declares with weighted probabilities over sizes 1, 2
+    and 4 -- so the engine draws for every tile set_tiles writes and two runs got different grass.
+    Measured on the other socket probe, 84.75 per cent of a reference frame's pixels differed
+    between two runs on art that had not changed. A FIXED MAP SEED DOES NOT REACH THAT DRAW and was
+    tried first; what fixes it is paving with a lab tile, whose main variant is `count = 1`. The
+    rig also builds on a surface of its own, created with the seed typed in the control stage, so
+    what lies outside the paved rectangle is the same every run too.
+
+    WITHIN one run it changes nothing -- every subject already stood on one map -- and what it buys
+    is the comparison ACROSS runs: re-render a treatment, run again, and the diff is the socket
+    rather than the ground.
+
     Findings belong in docs/research/ or on #351.
 
     IT IS WRITTEN FOR ONE MACHINE AND SAYS WHERE. rf-isotope-collector is named in three places --
@@ -308,6 +321,14 @@ local TREATMENTS = { $treatmentList }
 local OUT = "rf-shape/"
 local function say(line) localised_print('SHAPEPROBE ' .. line) end
 
+-- THE SEED IS TYPED so the rig owns its ground rather than borrowing the save's. It is NOT what
+-- makes two runs identical -- `pave` below is, and its comment says why -- and it was tried alone
+-- first and did not. What it holds is everything the floor does not: the trees, rocks and
+-- decoratives outside the paved rectangle, which no frame reaches today and one would the day a
+-- footprint grew. Any fixed number does; this one is the ticket's.
+local MAP_SEED = 374
+local SURFACE = "rf-socket-probe"
+
 local BUILD_CHECK = defines.build_check_type.manual
 if not BUILD_CHECK then error("defines.build_check_type.manual is gone") end
 
@@ -336,11 +357,24 @@ end
 
 --- Flat, dry, uniform ground, decoratives destroyed as well as tiles retiled -- set_tiles alone
 --- leaves every shrub standing, which probe-isotope-collector-art.ps1 learnt the hard way.
+---
+--- THE TILE HAS ONE VARIANT, AND THAT IS THE WHOLE OF #374. It was grass-1, whose variants.main
+--- carries weighted probabilities over sizes 1, 2 and 4 -- so the engine DRAWS for every tile it
+--- sets, and two runs paved the same rectangle with different grass. A fixed map seed does not
+--- reach that draw: it was tried first and the ground still differed on 85 per cent of the
+--- reference frame. base's lab tiles are the ones whose main variant is `count = 1`, so there is
+--- nothing to draw and the floor is the same floor every run. Dark rather than white because every
+--- subject here is a light-grey machine and a tan pipe, and a shadow has to stay readable under
+--- them.
+local FLOOR = "lab-dark-2"
+
+--- The one-variant claim is NOT asserted here. A probe asserts nothing, and what checks this one is
+--- the thing it exists for: two runs and a diff. The header says so.
 local function pave(surface, x1, y1, x2, y2)
   local tiles = {}
   for x = math.floor(x1), math.ceil(x2) do
     for y = math.floor(y1), math.ceil(y2) do
-      tiles[#tiles + 1] = { name = "grass-1", position = { x, y } }
+      tiles[#tiles + 1] = { name = FLOOR, position = { x, y } }
     end
   end
   surface.set_tiles(tiles)
@@ -351,7 +385,7 @@ script.on_nth_tick(60, function()
   if storage.stage then return end
   storage.stage = "built"
 
-  local surface = game.surfaces[1]
+  local surface = game.get_surface(SURFACE) or game.create_surface(SURFACE, { seed = MAP_SEED })
   surface.always_day = true
 
   -- The subjects are a long way apart so no frame can catch a neighbour, and the spacing is read
@@ -376,12 +410,12 @@ script.on_nth_tick(60, function()
   local x2, y2 = #TREATMENTS * SPACING + 20, SPACING
   pave(surface, x1, y1, x2, y2)
   for _, e in pairs(surface.find_entities_filtered({ area = { { x1, y1 }, { x2, y2 } } })) do
-    if e.type == "character" then
-      if not e.teleport({ x2 - 3, y1 + 3 }) then error("could not park the character") end
-    else
-      e.destroy()
-    end
+    e.destroy()
   end
+  -- THE PLAYER IS LEFT WHERE IT IS, on the save's own surface, and take_screenshot's force_render
+  -- draws this one anyway. Moving it here was tried first and the engine refused the teleport --
+  -- freeplay has the player in its intro cutscene at this tick -- and the parking that the rig used
+  -- to need is not needed at all now: nobody is standing on this surface to get into a frame.
 
   -- Six tiles of pipe under every subject: enough that the frames at the game's own zoom show a
   -- RUN meeting the machine rather than one lonely pipe, which is a different picture and an
@@ -418,7 +452,7 @@ end)
 script.on_event(defines.events.on_tick, function()
   if not storage.shoot_at or game.tick < storage.shoot_at then return end
   storage.shoot_at = nil
-  local surface = game.surfaces[1]
+  local surface = game.get_surface(SURFACE)
 
   local function shot(file, x, y, tiles_w, tiles_h, zoom)
     game.take_screenshot({
