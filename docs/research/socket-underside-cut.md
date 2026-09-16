@@ -77,7 +77,16 @@ gain of material.
 
 The stub reports NO WINDOW on both, which is `tools/measure-socket-parts.py` being right rather than
 a gap in the answer: two flange ribs leave 1.15 px of tube between them and no whole column of a
-shipped sheet falls clear of both. Its row is the bare cylinder at radius 0.249 in the next section.
+shipped sheet falls clear of both. Its row is the bare cylinder at radius 0.249 in the next section,
+which loses 1.0 px under the plane and nothing without it.
+
+**IT COULD NOW BE READ ON THE MACHINE ITSELF, AND IT HAS NOT BEEN.** #376 landed
+`scripts/probe-flange-free-render.ps1` and `models/socket-variants.py`'s `unflanged` treatment while
+this work was in flight, so a render with the ribs deleted is one command and
+`measure-socket-parts.py --no-flange` reads the stub off it. A render that is BOTH `unflanged` and
+`groundless` would give the machine's own stub with the plane gone — but `socket-variants.py` takes
+one treatment, not two, so that needs a change to it and is not done here. The bare cylinder answers
+the same question and is what the verdict above rests on.
 
 **AND IT IS TWO MACHINES, NOT ONE.** `rf-heat-exchanger`'s south steam socket is measured on the
 `-e` sheet, a different machine at a different place on a different frame, and it gives the same
