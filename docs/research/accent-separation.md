@@ -2,10 +2,20 @@
 
 Measured 2026-09-16 for [#379](https://github.com/trulsjo/realistic-fusion-refreshed/issues/379),
 which is the measuring half of
-[#359](https://github.com/trulsjo/realistic-fusion-refreshed/issues/359). #359 asks whether two
-accents on one machine are far enough apart and then asks for a decision; **this note decides
-nothing.** It is the figures the decision is waiting on, and the decision stays Truls's. Rerun it
-with
+[#359](https://github.com/trulsjo/realistic-fusion-refreshed/issues/359). #359 asked whether two
+accents on one machine are far enough apart and then asked for a decision; **this note decides
+nothing**, which is the property it was written to have and still has.
+
+**The decision has since been taken, and it moved nothing here.** Truls settled #359 on 2026-09-16:
+the standard is [ADR 0034](../adr/0034-an-accent-is-read-against-its-neighbour.md) and the rule is
+in `models/house-style.md`'s Palette. No colour and no geometry changed, so every figure below
+stands as measured. What the decision was taken on is a second note,
+`docs/research/accent-legibility-at-zoom-1.md`, which photographs both machines in a real map — so
+this note says what the sheet holds and that one says what a player is shown. **Read this one for a
+distance and that one for a look**; its own figures come off a hand-placed hue cut and are not a
+second opinion on the table below.
+
+Rerun this note's measurements with
 
 ```
 python tools/measure-accent-separation.py --de76
@@ -224,14 +234,9 @@ pairs appear in the bench's own output instead of in this table.
 ## What this note does not do
 
 It does not say whether any figure above is far enough apart. It does not propose lengthening a
-band, moving a palette colour, or turning any of this into a gate. Those are #359's, and
-`CLAUDE.md` reserves them for Truls.
-
-**#359 settled it on 2026-09-16, and left everything above alone.** The decision is ADR 0034 and
-the rule is in `models/house-style.md`'s Palette. The evidence it was settled on is a second note,
-`docs/research/accent-legibility-at-zoom-1.md`, which photographs both machines in a real map
-rather than reading their sheets — so where this note says what the sheet holds, that one says what
-a player is shown. Neither figure above moved, because no colour and no geometry changed.
+band, moving a palette colour, or turning any of this into a gate. Those were #359's, and
+`CLAUDE.md` reserves them for Truls. He settled them on 2026-09-16 and changed nothing here — see
+the head of this note, which says where the decision and its evidence live.
 
 ## Self-check
 
