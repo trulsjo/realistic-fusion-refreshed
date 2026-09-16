@@ -79,10 +79,23 @@ The stub reports NO WINDOW on both, which is `tools/measure-socket-parts.py` bei
 a gap in the answer: two flange ribs leave 1.15 px of tube between them and no whole column of a
 shipped sheet falls clear of both. Its row is the bare cylinder at radius 0.249 in the next section.
 
+**AND IT IS TWO MACHINES, NOT ONE.** `rf-heat-exchanger`'s south steam socket is measured on the
+`-e` sheet, a different machine at a different place on a different frame, and it gives the same
+three rows to the pixel — 2.2 / 2.5 / 3.2 px lost as shipped, `+23.5/+23.5`, `+25.5/+25.5` and
+`+30.5/+30.5` with the plane gone:
+
+```
+python scripts/probe-socket-underside.py machine --machine heat-exchanger \
+       --direction south --fluid steam --radius 0.249 --out <scratch>
+```
+
 ### The shadow catcher's own flags
 
 Read off the object in the Blender doing the rendering, with each description taken from that
-build's own RNA rather than from a manual page — `rf_blender.ground_report` prints it:
+build's own RNA rather than from a manual page — `rf_blender.ground_report` prints it. **Abridged
+below**: the tool gives every flag a line of its own, and the six `visible_*` lines are collapsed
+here because they carry the same value and near-identical text. Run the probe for the full
+transcript.
 
 ```
 Ground, under blender 5.2.0 LTS:
@@ -176,8 +189,8 @@ the plane recovers exactly 0.0 px on every cylinder above the threshold, at all 
 | 0.450 | 0.260 | +2.0 | +0.0 | +0.0 |
 
 Radius 0.379 and 0.450 at z 0.200 are the two rows where the model says the plane still bites and
-the render says it does not: it predicts 0.05 px and 0.5 px of loss there, both under the one pixel
-the measurement can see. That is the model and the instrument agreeing at the limit of the
+the render says it does not: it predicts 0.05 px and 0.43 px of loss there, both under the one
+pixel the measurement can read. That is the model and the instrument agreeing at the limit of the
 instrument, not a disagreement.
 
 ## What this settles for the height gate
@@ -192,11 +205,18 @@ being shown it.** The envelope the gate measures is the widest part, the dark ri
 | residual against vanilla's pipe at +0.02337 | +0.03172 tiles, 2.030 px | +0.031 (the gate) |
 | the same at the old SOCKET_Z 0.044 | +0.03618 tiles, 2.316 px | about 2.28 px (#356) |
 | what correcting SOCKET_Z moved it by | 0.286 px | 0.28 px (#356) |
+| what the rim's TOP edge moved by | 0.498 px | 0.52 px (#356) |
+| what its BOTTOM edge moved by | 0.072 px | 0.03 px (#356) |
 
 So **the +0.031 residual is what it should be**, and #356's puzzle is closed with it: the axis alone
-moves 0.494 px when `SOCKET_Z` falls 0.011 tiles, and the drawn centre moved 0.28 because lowering
-the axis pushes more of the rim under the plane at the same time. The gate's tolerance of 0.08 tiles
-holds this with room to spare and its header already says so.
+moves 0.498 px when `SOCKET_Z` falls 0.011 tiles — which is the top-edge row of the table, the same
+quantity, since the extent above the axis is `r / sin(pitch)` and does not depend on `z` at all —
+and the drawn centre moved 0.28 because lowering the axis pushes more of the rim under the plane at
+the same time. The last two rows are the same
+thing said edge by edge, and they are a prediction the model was not built against: the top rides
+with the axis and the bottom barely moves, because the bottom is pinned to where the tube crosses
+world z 0 and that point only slides `sqrt(r^2 - z^2)` as `z` changes. The gate's tolerance of 0.08
+tiles holds all of this with room to spare and its header already says so.
 
 **It is not a defect and there is nothing here to fix.** The trade that produces it — a socket at
 pipe height passing through the plinth — is Truls's and is settled (#362, Not in scope). What was
@@ -211,4 +231,5 @@ tiles for a rim of radius 0.379 at z 0.033, and `sqrt(r^2 - z^2) + z/tan(pitch)`
   separates that from the geometry; these are alpha measurements and say nothing about contrast.
 - **Any radius over 0.45 or any height over 0.55.** The grid is `models/socket-cylinders.py`'s
   `RADII` and `HEIGHTS` and is committed; extending it is an edit to that file and two more renders.
-- **Any machine but the isotope collector**, for the `machine` scene. `--machine` takes another.
+- **Any machine but the two rendered ones**, for the `machine` scene. `--machine`, `--direction`
+  and `--fluid` take another; there are only two machines with rendered sheets today.

@@ -240,7 +240,9 @@ with open(os.path.join(out_dir, "cylinders.json"), "w", encoding="utf-8", newlin
         # WHAT AN UNCUT CYLINDER OF RADIUS 1 DRAWS EITHER SIDE OF ITS AXIS, recorded so a reader of
         # this file alone knows what the numbers beside it are compared against. It is derived in
         # tools/socket_strip.py from the camera pitch; repeated here as a value rather than a second
-        # derivation, and the probe asserts the two agree.
+        # derivation, and the probe refuses to read a scene whose value disagrees with the one it is
+        # measuring through. That is a probe checking its own instrument, not asserting anything
+        # about a socket.
         "uncut_per_radius": 1.0 / math.sin(math.radians(rf.CAMERA_PITCH_DEG)),
         "cylinders": cylinders,
         "source": "written by models/socket-cylinders.py",
