@@ -227,6 +227,12 @@ It does not say whether any figure above is far enough apart. It does not propos
 band, moving a palette colour, or turning any of this into a gate. Those are #359's, and
 `CLAUDE.md` reserves them for Truls.
 
+**#359 settled it on 2026-09-16, and left everything above alone.** The decision is ADR 0034 and
+the rule is in `models/house-style.md`'s Palette. The evidence it was settled on is a second note,
+`docs/research/accent-legibility-at-zoom-1.md`, which photographs both machines in a real map
+rather than reading their sheets — so where this note says what the sheet holds, that one says what
+a player is shown. Neither figure above moved, because no colour and no geometry changed.
+
 ## Self-check
 
 `tools/colour_distance.py` is graded against a published test set rather than against this

@@ -56,6 +56,16 @@ reruns. Neither ships: a model is not a sprite, so ADR 0023 keeps it out of Asse
 **Regenerate** — rebuild a model from its look note, discarding the stored one. An explicit option,
 never the default: the default is to render the model that exists, so that hand edits survive.
 
+**Accent** — the colour a fluid puts on a machine: a band on a socket, a ring on a drum, any
+surface `models/house-style.md`'s Palette gives a fluid's colour to. **It is read against its
+neighbour, not recognised on its own** ([ADR
+0034](docs/adr/0034-an-accent-is-read-against-its-neighbour.md)) — it tells one socket from another
+on the machine in front of the player, and is not a name for a fluid a player identifies anywhere.
+One palette row does not make one colour: on `rf-heat-exchanger` water's own two sockets land 33.0
+dE00 apart, further than energy from water. So **"how far apart are two accents on one machine" is
+a question and "what colour is helium-3" is not**. A band is one accent's shape and not the word
+itself; a machine that carries no fluid at a socket paints no accent there.
+
 **Proud** — standing out past something else. **A proudness figure names what it is proud OF, or it
 means nothing**, and a socket offers three references that differ by pixels: its own stub, vanilla's
 pipe barrel, and vanilla's outer flange. The same accent band is 3.0 px proud above the stub and 4.0
