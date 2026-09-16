@@ -30,8 +30,13 @@ probes reproduces these frames only until a machine is re-rendered.
 **The three magnified files are zoom-1 pixels enlarged by nearest-neighbour, not renders at another
 zoom.** Every pixel in them is a pixel a player gets; the enlargement only makes them arguable.
 [#371](https://github.com/trulsjo/realistic-fusion-refreshed/issues/371) is what confusing the two
-costs, and it is why both probes now name every shot's zoom by number -- until this issue each one
-said "the game's own camera" while its lowest shot was zoom 1.5.
+costs, and it is why neither probe now calls a magnified frame the game's own camera. Until this
+issue each one said exactly that, while its lowest shot was zoom 1.5 and the frames a person was
+meant to judge the machine from were zoom 3. **What changed is the sentence at the top of each file
+and the two frames that answer at zoom 1** -- not every shot. The other twelve carry their zoom as
+the argument to `tiles_shot`, which is where it has always been. Only the exchanger's zoom-3 frames
+have their zoom appear in prose at all, and there only inside a comment about a sizing error those
+frames once had.
 
 ## The pale pair, which is what #359 asked about
 
