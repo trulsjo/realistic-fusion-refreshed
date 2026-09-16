@@ -13,12 +13,19 @@ next engine version can be asked the same question. Findings belong in docs/rese
 
 WHERE IT LIVES WAS #366'S AND #367'S TO SETTLE, AND THIS PARAGRAPH IS IT SETTLED. It is a probe, so
 it goes in scripts/ with the other probes; it is Python rather than PowerShell, because what it
-drives is Blender and what it reads is a sprite sheet, and neither is a thing this repository does
-from PowerShell. THAT COMBINATION IS NOT NEW: scripts/probe-sprite-geometry.py is a Python probe in
-this directory that reads sprite sheets and starts no game either, and it predates this by months.
-What IS new is needing Blender, and that is a dependency rather than a shape. CLAUDE.md's paragraph
-on probes said a probe builds a real map; it was already wrong about three of the nineteen
-PowerShell ones and about that file, and it now says what is actually true.
+reads is a sprite sheet and that is not a thing this repository does from PowerShell.
+
+NOTHING ABOUT IT IS NEW, WHICH IS THE POINT. scripts/probe-sprite-geometry.py is a Python probe in
+this directory that reads sprite sheets and starts no game, and scripts/probe-flange-free-render.ps1
+drives Blender and starts no game either -- so neither the language, nor the Blender dependency, nor
+being gameless is a first. CLAUDE.md's paragraph on probes said a probe builds a real map; it was
+already wrong about four of the twenty PowerShell ones and about probe-sprite-geometry.py, and it
+now says what is actually true.
+
+AN EARLIER DRAFT OF THIS PARAGRAPH SAID BLENDER WAS THE NEW PART, and counted nineteen PowerShell
+probes. Both were taken before this branch was rebased onto the main that carries #376's
+probe-flange-free-render.ps1, and neither was retaken afterwards. A count is a measurement; rebasing
+is a change that supersedes one.
 
 WHAT IT ANSWERS
 
@@ -49,17 +56,18 @@ a stronger thing to hold a measurement against and the reason this file fits not
 
 AND THE COMPARISON IS EDGE AGAINST EDGE, which is the part worth reading slowly. A drawn edge
 spreads past the geometry that cast it -- the bevel and the reconstruction filter -- so every part
-of every socket measures about a pixel MORE than its uncut prediction above the axis. The same
-spread is on the underside, so `loses` is not the residual: the residual is what is left after the
-gain measured at the top of the SAME cylinder is taken off the shortfall at its bottom. A
-comparison that forgets that reports a pixel of anti-aliasing as a pixel of occlusion, which is how
-#362 came to hold a table nobody could fit.
+of every socket measures about a pixel MORE than its prediction, at the bottom as well as the top.
+So `loses` is not the residual. THE RESIDUAL IS THE BOTTOM'S EXCESS OVER ITS PREDICTION MINUS THE
+TOP'S OWN EXCESS OVER ITS PREDICTION -- `below - gains - predicted`, where `gains` is the top's
+excess because the top's prediction is the uncut extent. The two excesses cancel, so it is zero when
+the model is right whatever the spread is. A comparison that forgets that reports a pixel of
+anti-aliasing as a pixel of occlusion, which is how #362 came to hold a table nobody could fit.
 
 WHERE THE NUMBERS ARE READ. tools/socket_strip.py, the same module and the same two cuts
 tools/check-socket-height.py and tools/measure-socket-parts.py read through: the outboard column
 strip, the rows a tile either side of a connection's ground line, the alpha floor, and the window
 guard that refuses a reading which moves when its window is narrowed by one column at either end. A
-number this prints as UNSTABLE is not a finding about the art.
+number this prints as UNUSABLE is not a finding about the art.
 
 NOTHING IT MAKES CAN SHIP. Both Blender scripts refuse to write into models/ or the Assets mod, and
 --out is refused inside any of this repository's mods. The renders are throwaway and are not
@@ -224,10 +232,18 @@ def print_scene(title, rows, plane):
             continue
         gains = r["above"] - r["uncut"]
         loses = r["uncut"] - r["below"]
-        # THE RESIDUAL IS THE SHORTFALL MINUS THE SAME CYLINDER'S OWN EDGE GAIN, not the shortfall.
-        # Both edges carry the bevel and the filter, so subtracting the top's gain from the bottom's
-        # measurement is what leaves occlusion on its own.
-        resid = r["below"] + gains - r["predicted"]
+        # THE BOTTOM'S EXCESS OVER ITS PREDICTION, MINUS THE TOP'S OWN EXCESS OVER ITS PREDICTION.
+        # Both edges are drawn edges and both stand the same fraction of a pixel proud of the
+        # geometry that cast them -- the bevel and the reconstruction filter -- so the two excesses
+        # cancel and what is left is zero when the model is right, whatever the spread happens to
+        # be. `gains` IS the top's excess, because the top's prediction is the uncut extent.
+        #
+        # IT ADDED `gains` UNTIL THE REVIEW OF THIS BRANCH, which cancelled nothing and left twice
+        # the spread standing in the column -- about +1.5 px on every row, cut or uncut. The verdict
+        # survived it, because the same formula ran on both groups and they still matched, but the
+        # column did not mean what this comment said and the answer looked four times looser than it
+        # is. Subtracting, the whole grid lands inside a pixel of zero.
+        resid = r["below"] - gains - r["predicted"]
         r["gains"], r["loses"], r["resid"] = gains, loses, resid
         print(f"  {r['radius']:>6.3f} {r['z']:>6.3f} {r['uncut']:>6.1f} {r['above']:>+7.1f} "
               f"{r['below']:>+7.1f} {gains:>+6.1f} {loses:>+6.1f} {r['predicted']:>6.1f} "

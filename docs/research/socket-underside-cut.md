@@ -148,20 +148,31 @@ heights, one per connection on a 3 x 54 tile footprint — and the probe renders
 measures every one. Every number goes through `tools/socket_strip.py`, the same two cuts, the same
 alpha floor and the same window guard the gate and the instrument read through.
 
-**The residual is the whole result.** It is the measured underside, plus the same cylinder's own
-measured top-edge gain, minus the prediction: zero if the model is exact, and whatever the edge
-spread is otherwise.
+**The residual is the whole result.** It is the bottom's excess over its prediction, minus the
+top's own excess over its prediction — which is `gains`, because the top's prediction is the uncut
+extent. Both edges are drawn edges and both stand the same fraction of a pixel proud of the
+geometry that cast them, so the two excesses cancel and the residual is **zero when the model is
+right**, whatever that spread happens to be.
 
 | render | rows | residual |
 |---|---|---|
-| ground plane present, the 19 rows it reaches | 19 | +0.8 to +2.2 px, mean +1.5 |
-| ground plane present, the 17 rows it does not reach | 17 | +0.7 to +2.0 px, mean +1.4 |
-| ground plane deleted, all 36 | 36 | +0.6 to +2.5 px, mean +1.5 |
+| ground plane present, the 19 rows it reaches | 19 | −0.9 to +0.6 px, mean −0.1 |
+| ground plane present, the 17 rows it does not reach | 17 | −0.9 to +0.8 px, mean +0.1 |
+| ground plane deleted, all 36 | 36 | −0.9 to +0.8 px, mean +0.0 |
 
-**The rows the plane cuts are indistinguishable from the rows it does not, and from the rows in a
-render with no plane in it at all.** All three groups scatter over the same two pixels, which is the
-edge spread and the half-pixel row-edge quantisation at each end. There is nothing left over for a
+**All three groups sit on zero, inside a pixel.** The rows the plane cuts are indistinguishable from
+the rows it does not, and from the rows in a render with no plane in it at all; ±0.9 px is the
+half-pixel of row-edge quantisation at each end and nothing more. There is nothing left over for a
 second cause to be.
+
+**THE FIRST VERSION OF THIS TABLE READ +0.6 TO +2.5, AND THE ARITHMETIC WAS WRONG** — found by the
+review of the pull request, not by a gate. The probe ADDED the top's excess where it had to
+subtract it, so instead of cancelling the spread it stood twice the spread in the column: about
++1.5 px on every row, cut or uncut. **The verdict never depended on it**, because the same formula
+ran on both groups and they matched either way, and no other number in this note comes off it. What
+it cost was the strength of the answer: the residual looked four times looser than it is, and a
+column documented as "zero if the model is exact" printed +1.5 while three separate places said it
+should print 0.
 
 With the plane gone, **the largest asymmetry over the whole grid is 0.9 px** — at radius 0.45 and
 z 0.10, on a silhouette 72 px tall. Every other one of the thirty-six is closer than that.
