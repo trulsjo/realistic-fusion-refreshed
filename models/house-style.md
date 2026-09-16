@@ -86,18 +86,26 @@ both will.
 Truls, #359). It tells one socket on the machine in front of the player from another, in one frame,
 under one light. It is **not** a name for a fluid that a player recognises on sight, and the table's
 "every surface that carries X" must not be read as one -- because a single palette row does not
-produce a single colour. On `rf-heat-exchanger` water's own two sockets land **33.0 dE00** apart,
-further than the **29.2** separating energy from water at their closest: the west socket stands in
+produce a single colour. On `rf-heat-exchanger` water's own two sockets land **32.2 dE00** apart,
+further than the **29.5** separating energy from water at their closest: the west socket stands in
 the open and the east is shaded by the machine's own body. Ask how far two accents ON ONE MACHINE
 land apart. Do not ask what colour an accent is.
 
 **Measured under that standard, nothing here needs changing, and #359 changed nothing.** The
-closest pair that can share a machine is **11.2 dE00**, steam against water, off the bench in
+closest pair that can share a machine is **11.7 dE00**, steam against water, off the bench in
 `docs/research/accent-separation.md`. The pale pair #359 was raised about reads at roughly **23.6**
 on two drums 24.5 screen pixels apart on the collector's own deck — a **hue-cut** figure from
 `docs/research/accent-legibility-at-zoom-1.md`, good enough to say the two are visibly different
 colours and not good enough to quote as a distance. Bands two screen pixels wide read at zoom 1
-because they are 22 to 27 tall.
+because they are 23.5 to 27 tall.
+
+**THOSE FOUR FIGURES WERE RE-MEASURED AFTER ADR 0035** and are a little off the ones ADR 0034 and
+`docs/research/accent-separation.md` quote (33.0, 29.2, 11.2, and a band 22 tall). Taking the cut
+off a socket's underside gave every plumbable band 1.5 screen pixels more height at zoom 1, and the
+extra pixels moved each median a few tenths of a dE00. **The standard's own comparison is unchanged
+in direction and narrower in margin**: water against itself still lands further apart than energy
+from water at its closest, by 2.7 dE00 where it was 3.8. Re-measured 2026-09-16 with
+`tools/measure-accent-separation.py`, which reads the committed sheets and nothing else.
 **The standard binds machines not yet rendered**: a pair on a new machine is checked against it
 rather than reopening the question. **None of this is gated, deliberately** -- a threshold on
 legibility would be a decision wearing a check's clothes.
