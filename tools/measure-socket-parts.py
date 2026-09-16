@@ -25,9 +25,11 @@ the columns where it is the widest thing present, and one column either way pick
 and moves the answer by whole pixels. That leak published two wrong rows into models/house-style.md
 and they shipped -- on rf-isotope-collector's west socket the stub reads +21.5/+19.5 over columns
 198..202 where it is +20.5/+18.5 over 198..201, because column 202 is the first that draws any of
-the accent band. So the guard lives in the instrument: every number carries the window it was read
-through, and a number that MOVES when that window is narrowed by one column at either end is
-reported unstable rather than returned.
+the accent band. So the guard lives in the instrument rather than in the reader: every number
+carries the window it was read through, and a number that MOVES when that window is narrowed by one
+column at either end is reported unstable rather than returned. IT LIVES IN tools/socket_strip.py
+SINCE #367, beside the `extent` it guards, because a second bench came to need the same check and a
+second copy of a guard is a guard that stops guarding one of the two.
 
 BOTH OF THOSE READINGS REPRODUCE, and neither needs the game. The stub's needs a flange-free
 control render, since on the shipped sheets no column shows bare tube at all -- and since #376 that
@@ -125,38 +127,6 @@ def parts_of(radius, plumbable, flanged=True):
             ("accent band", radius + rf.BAND_PROUD, band_near, rf.BAND_BACK + rf.BAND_DEPTH / 2),
             ("flange ribs", radius + rf.FLANGE_PROUD, near, band_near),
             ("dark rim", rim, rf.RIM_BACK - rf.RIM_MINOR, rf.RIM_BACK + rf.RIM_MINOR)]
-
-
-def read(s, axis, col0, col1):
-    """(above, below) in pixels about the socket's axis, through columns `col0`..`col1` inclusive."""
-    top, bottom = s.extent(col0, col1)
-    return axis - top, bottom - axis
-
-
-def measure(s, axis, col0, col1):
-    """(above, below, unstable) through that window, `unstable` being why the reading may not be
-    trusted or None when it may.
-
-    NARROWED BY ONE COLUMN AT EACH END, SEPARATELY, and both must give the same answer. A window
-    that has picked up a neighbour loses it when the end it came in at is dropped, and the reading
-    moves by whole pixels -- which is the defect this tool exists for. A window under three columns
-    cannot be narrowed both ways at all, so it is reported unstable too: a number that cannot be
-    checked is not a number this returns as sound.
-    """
-    full = read(s, axis, col0, col1)
-    if col1 - col0 + 1 < 3:
-        return full + (f"a window of {col1 - col0 + 1} column(s) cannot be narrowed at both ends, "
-                       f"so this reading could not be checked",)
-    for lo, hi in ((col0 + 1, col1), (col0, col1 - 1)):
-        try:
-            narrowed = read(s, axis, lo, hi)
-        except socket_strip.Unmeasurable as why:
-            return full + (f"narrowed to columns {lo}..{hi} it could not be read at all: {why}",)
-        if narrowed != full:
-            return full + (f"narrowed to columns {lo}..{hi} it reads "
-                           f"{narrowed[0]:+.1f}/{narrowed[1]:+.1f}, not "
-                           f"{full[0]:+.1f}/{full[1]:+.1f}",)
-    return full + (None,)
 
 
 def load_sheet(directory, machine, suffix):
@@ -278,7 +248,7 @@ def main(argv=None):
                 continue
             col0, col1 = window
         try:
-            above, below, why = measure(s, axis, col0, col1)
+            above, below, why = s.measure(axis, col0, col1)
         except socket_strip.Unmeasurable as cannot:
             print(f"  {name:<12} {radius:>6.3f} {uncut:>6.1f} {'':>7} {'':>7} {'':>6} {'':>6}"
                   f"  UNMEASURABLE: {cannot}")
