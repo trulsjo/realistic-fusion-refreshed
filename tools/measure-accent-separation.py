@@ -15,9 +15,10 @@ pieces are drawn, this one asks what colour they are and how much of it there is
 
 WHAT IT MEASURES, AND WHERE. An accent is drawn as the BAND around a socket's tube -- one per
 connection, in the fluid's own accent colour, models/rf_blender.py's BAND_DEPTH wide and standing
-BAND_PROUD past the tube. So "how much colour an accent gets" is that band's drawn area, and "how
-far two accents land apart" is the distance between two bands as the sheets draw them. Everything
-comes off the committed sheets under
+BAND_PROUD past the tube. So "how much colour an accent gets" is how much of that band the sheet
+still draws -- which on half the sockets here is less than the band, because the machine's own body
+stands in front of the rest -- and "how far two accents land apart" is the distance between two of
+them as drawn. Everything comes off the committed sheets under
 realistic-fusion-refreshed-assets/graphics/rendered/<machine>/; no game, no Blender, no render.
 
 THREE THINGS IT HAS TO GET RIGHT, AND HOW EACH IS DONE HERE.
@@ -40,17 +41,20 @@ THREE THINGS IT HAS TO GET RIGHT, AND HOW EACH IS DONE HERE.
 
 THE WINDOW, AND WHY EVERY FIGURE CARRIES ONE. A column that straddles two pieces of a socket draws
 both, and one column either way moves a reading -- the leak tools/socket_strip.py's header sets out,
-which published two wrong rows into models/house-style.md and shipped them. So a band's window comes
-from its own geometry, pulled in at both ends by the width the renderer's filter smears an edge, and
-then EVERY COLOUR IS TAKEN AGAIN through that window narrowed by one at each end, in both axes. The
+which published two wrong rows into models/house-style.md and shipped them. So every boundary is
+pulled in by the width the renderer's filter smears an edge, and where a band ENDS is measured
+rather than assumed: `follow_band` walks each column inboard and keeps it only while it is nearer
+the accent than the machine's own surface, both read off the same sheet. The first version of this
+file took the band's built span on trust and measured the heat exchanger's body on four of its six
+sockets; the review of #379 caught it, and that is why `follow_band` exists.
+
+THEN EVERY COLOUR IS TAKEN AGAIN through its window narrowed by one at each end, in both axes. The
 largest move any of those four produces is printed beside the colour as its WOBBLE, and a pair whose
 two accents are no further apart than their own wobbles is reported unstable rather than returned.
-
-THE WOBBLE IS NOT NOISE AND IS NOT A FAULT. A band is a lit cylinder: its ends turn away from the
-camera and its underside is in shadow, so the colour genuinely varies across it and a median is a
-summary rather than a value. That is why the guard here is a COMPARISON -- wobble against the
-distance being reported -- and not a tolerance somebody picked. There is no threshold in this file,
-because a threshold on legibility would be a decision wearing a check's clothes.
+A band is a lit cylinder, so its colour genuinely varies across it and a median is a summary rather
+than a value -- which is why the guard is a COMPARISON, wobble against the distance being reported,
+and not a tolerance somebody picked. There is no threshold in this file, because a threshold on
+legibility would be a decision wearing a check's clothes.
 
 WHAT IT CANNOT REACH. Only machines with a committed models/<machine>/geometry.json are in scope:
 that file is where a connection's fluid is recorded without starting the game. Every other entity's
@@ -61,8 +65,9 @@ pairs named as untestable, so the list is there the day a sheet arrives.
 TWO SELF-CHECKS, BESIDE IT, AND THEY GRADE DIFFERENT THINGS. tools/test_colour_distance.py grades
 the colour maths against Sharma, Wu and Dalal's published test data -- somebody else's answers, so a
 mistake shared with this repository cannot pass. tools/test_measure_accent_separation.py pins the
-two pieces of arithmetic that would be silently wrong rather than loudly wrong: the halved window's
-off-by-one, and the halving being done in light rather than in gamma-encoded bytes.
+three pieces of arithmetic that would be silently wrong rather than loudly wrong: the halved
+window's off-by-one, the filter guard's own off-by-one at a boundary, and the halving being done in
+light rather than in gamma-encoded bytes.
 
 Pure Python. Needs pillow and numpy -- the same pair tools/check-socket-height.py needs, and this
 repository's only third-party Python. A missing one is a failure with a message, not a skip. Run
@@ -161,26 +166,88 @@ def inside(lo, hi):
     return (j0, j1) if j1 >= j0 else None
 
 
-def band_span(s):
-    """The accent band's full extent along the tube, as (lo, hi) sheet columns inclusive, or None.
+def band_edges(s):
+    """(front, back, step) of the accent band along the tube, in fractional sheet columns.
 
-    Pulled in by socket_strip.FILTER_HALF_PX at each end and NOT clipped to the outboard strip. The
-    band starts 0.17 tiles back from the socket's mouth and the strip is only 0.25 tiles deep, so
-    more than half of every band on these machines lies inboard of the collision edge, where the
-    machine's own body is behind it and alpha can no longer say where the band ends. The colour
-    there is still the band's: on rf-isotope-collector's west socket the green runs to column 216
-    and column 217 reads grey, which is where the geometry puts the back of the band (216.96). So
-    the colour is sampled across the whole band, and the ROWS come from the outboard part where
-    alpha can be trusted.
+    `front` is the mouth-side edge and `back` the inboard one; `step` is +1 when inboard is towards
+    the right of the sheet and -1 when it is towards the left, so a caller can walk the tube without
+    knowing which way the socket points. Straight out of models/rf_blender.py's BAND_BACK and
+    BAND_DEPTH, measured from the mouth the same way models/rf_parts.py's `socket` draws it.
     """
-    near = rf.BAND_BACK - rf.BAND_DEPTH / 2
-    far = rf.BAND_BACK + rf.BAND_DEPTH / 2
-    a = s.mouth_col - s.outward * near * s.px_per_tile
-    b = s.mouth_col - s.outward * far * s.px_per_tile
-    lo = int(math.ceil(min(a, b) + socket_strip.FILTER_HALF_PX))
-    hi = int(math.floor(max(a, b) - socket_strip.FILTER_HALF_PX))
-    lo, hi = max(lo, 0), min(hi, s.alpha.shape[1] - 1)
-    return (lo, hi) if hi >= lo else None
+    step = -s.outward
+    front = s.mouth_col + step * (rf.BAND_BACK - rf.BAND_DEPTH / 2) * s.px_per_tile
+    back = s.mouth_col + step * (rf.BAND_BACK + rf.BAND_DEPTH / 2) * s.px_per_tile
+    return front, back, step
+
+
+def clear_of(edge, step, inward):
+    """The first whole sheet column on one side of a fractional boundary that the renderer's filter
+    does not smear across, walking in `step`.
+
+    socket_strip.Strip.columns_of's convention, and it has to be that one rather than a rounding of
+    its own: a column j covers [j, j+1), so it is clear of a boundary ahead of it only when its FAR
+    side is, which is one column short of where a plain floor lands. `inward` is True for the column
+    just past the boundary in the direction of travel, False for the last one before it.
+    """
+    guard = socket_strip.FILTER_HALF_PX
+    if (step > 0) == inward:
+        return int(math.ceil(edge + guard))
+    return int(math.floor(edge - guard)) - 1
+
+
+def follow_band(alpha_rgb, rows, s, clean):
+    """How far inboard the accent is still what the sheet draws, as ((lo, hi), why it stopped).
+
+    THE BAND'S GEOMETRIC SPAN IS WHERE IT WAS BUILT, NOT WHERE IT IS SEEN, and the difference is a
+    whole machine wide. The band starts 0.17 tiles back from the socket's mouth while the outboard
+    strip is only 0.25 tiles deep, so most of every band on these machines lies inboard of the
+    collision edge -- and what is drawn there is whichever of the band and the machine's own body
+    is nearer the camera. On rf-isotope-collector's west socket that is the band, which reads green
+    to sheet column 216, a tenth of a pixel from where the geometry puts its back. On
+    rf-heat-exchanger's west socket it is the body, from column 210 on. Assuming either answer
+    everywhere measures the wrong thing on half the sockets, which is what the first version of
+    this bench did.
+
+    So each column is CLASSIFIED rather than assumed, between two colours the sheet itself
+    supplies: the band, taken from the filter-clean columns outboard of the footprint where
+    tools/socket_strip.py guarantees only the socket is drawn, and the machine, taken from the
+    columns just past the band's back edge where the band is guaranteed absent. A column joins the
+    run while it is nearer the first than the second. Nearest-of-two between two measured
+    references, so there is no threshold here either.
+    """
+    front, back, step = band_edges(s)
+    width = alpha_rgb.shape[1]
+
+    def lab_of(col0, col1):
+        block = alpha_rgb[rows[0]:rows[1] + 1, min(col0, col1):max(col0, col1) + 1]
+        drawn = block[..., 3] > socket_strip.ALPHA_FLOOR
+        if not drawn.any():
+            raise socket_strip.Unmeasurable(f"nothing is drawn in columns {col0}..{col1}")
+        return cd.srgb_to_lab(np.median(block[..., :3][drawn], axis=0) / 255.0)
+
+    # The machine's own surface, read three columns past the band's back edge. It has to exist: with
+    # nothing to compare a column against, an inboard column cannot be told from the body and this
+    # bench will not guess which it is.
+    off0 = clear_of(back, step, inward=True)
+    off1 = off0 + 2 * step
+    if not (0 <= off0 < width and 0 <= off1 < width):
+        raise socket_strip.Unmeasurable(
+            f"the sheet ends {abs(off1 - off0) + 1} columns past the band's back edge, so there is "
+            f"nothing to tell an inboard column of band from a column of machine")
+    band_lab, body_lab = lab_of(*clean), lab_of(off0, off1)
+
+    last = clear_of(back, step, inward=False)
+    lo, hi = clean
+    col = (hi if step > 0 else lo) + step
+    while (last - col) * step >= 0 and 0 <= col < width:
+        here = lab_of(col, col)
+        to_band, to_body = cd.ciede2000(here, band_lab), cd.ciede2000(here, body_lab)
+        if to_band > to_body:
+            return (lo, hi), (f"column {col} is {to_body:.1f} dE00 from the machine's own surface "
+                              f"and {to_band:.1f} from the accent, so the band stops before it")
+        lo, hi = min(lo, col), max(hi, col)
+        col += step
+    return (lo, hi), None
 
 
 def sample(sheet, rows, cols):
@@ -226,11 +293,11 @@ class Reading:
     """One socket's accent band, as the shipped sheets draw it at zoom 1."""
 
     def __init__(self, connection, accent, sheet_name, rows, cols, rgb, pixels,
-                 height_px, width_px, wobble, wobble_at):
+                 height_px, width_px, wobble, wobble_at, stopped):
         self.connection, self.accent, self.sheet_name = connection, accent, sheet_name
         self.rows, self.cols, self.rgb, self.pixels = rows, cols, rgb, pixels
         self.height_px, self.width_px = height_px, width_px
-        self.wobble, self.wobble_at = wobble, wobble_at
+        self.wobble, self.wobble_at, self.stopped = wobble, wobble_at, stopped
         self.lab = cd.srgb_to_lab(rgb)
 
     @property
@@ -239,13 +306,13 @@ class Reading:
 
     @property
     def area_px(self):
-        """The band's drawn area at zoom 1: its width along the tube times its drawn height.
+        """How much accent a player gets at zoom 1, in screen pixels, AS A FLOOR.
 
-        A PRODUCT RATHER THAN A COUNT, and `band_span` says why. Inboard of the collision edge the
-        band is drawn over the machine's own body, so no alpha count can separate it there; its
-        height inboard is the height measured outboard, because a cylinder's silhouette does not
-        change along its length -- which the sheets confirm, every column of the window drawing the
-        same number of rows.
+        A PRODUCT RATHER THAN A COUNT, because no alpha count can separate the band from the
+        machine's body once the two overlap -- `follow_band` says why -- while a cylinder's
+        silhouette does not change along its length, so the height read outboard is the height
+        everywhere the accent survives. It is a floor because the run is trimmed at the mouth end by
+        the filter guard: about a pixel of band that is certainly drawn is outside every window here.
         """
         return self.width_px * self.height_px
 
@@ -271,24 +338,24 @@ def read_band(directory, manifest, connection, accent):
         raise socket_strip.Unmeasurable("no column of this sheet draws the accent band clear of "
                                         "what is either side of it")
     top, bottom = s.extent(*clean)            # row edges, `bottom` exclusive
-    span = band_span(s)
-    if span is None:
-        raise socket_strip.Unmeasurable("the accent band's own span falls outside the sheet")
+    span, stopped = follow_band(full, (top, bottom - 1), s, clean)
 
     rows, cols = inside(top, bottom - 1), inside(*span)
     if rows is None or cols is None:
-        raise socket_strip.Unmeasurable(f"at zoom 1 the band is {(span[1] - span[0] + 1) / 2:.1f} "
+        raise socket_strip.Unmeasurable(f"at zoom 1 the accent is {(span[1] - span[0] + 1) / 2:.1f} "
                                         f"by {(bottom - top) / 2:.1f} px, which leaves no whole "
                                         f"screen pixel inside its window")
     halved = halve(full)
     rgb, pixels = sample(halved, rows, cols)
     wobble, where = wobble_of(halved, cd.srgb_to_lab(rgb), rows, cols)
 
-    # The band's drawn height is halved to zoom 1; its width comes from the span the band was built
-    # at, which is the same on every machine (models/rf_blender.BAND_DEPTH) and which the sheet's
-    # own colour boundary confirms by landing where that span puts it.
+    # BOTH SIDES OF THE EXTENT ARE MEASURED, AND THE WIDTH IS A FLOOR RATHER THAN THE BAND'S SIZE.
+    # The height is the silhouette read outboard, halved. The width is the run `follow_band`
+    # actually got, which is trimmed at the mouth end by the filter guard -- about a pixel of band
+    # that is certainly drawn is outside it -- so the figure is at least this much and never more
+    # than models/rf_blender.BAND_DEPTH allows.
     return Reading(connection, accent, sheet_name, rows, cols, rgb, pixels,
-                   (bottom - top) / 2, rf.BAND_DEPTH * s.px_per_tile / 2, wobble, where)
+                   (bottom - top) / 2, (span[1] - span[0] + 1) / 2, wobble, where, stopped)
 
 
 def machines(models_dir, rendered_dir, only):
@@ -319,8 +386,10 @@ def report_pairs(pairs, readings, failed, de76):
             print(f"  pair {a} x {b}   UNTESTABLE: {why}")
             untestable += 1
             continue
-        got = sorted((cd.ciede2000(x.lab, y.lab), x, y)
-                     for x in readings[a] for y in readings[b])
+        # `key=` rather than tuple order: two socket pairs can land exactly the same distance
+        # apart, and a Reading has no ordering to fall through to.
+        got = sorted(((cd.ciede2000(x.lab, y.lab), x, y)
+                      for x in readings[a] for y in readings[b]), key=lambda t: t[0])
         lo, hi = got[0], got[-1]
         # THE ONLY JUDGEMENT IN THIS FILE, AND IT IS ABOUT THE INSTRUMENT. Two colours whose
         # distance is no bigger than the two windows' own wobbles are not measured as different;
@@ -388,18 +457,22 @@ def report_machine(name, model_dir, geometry, sheets, de76):
                   f"{r.width_px:>4.1f} x {r.height_px:<4.1f} {r.area_px:>7.1f}  "
                   f"rows {r.rows[0]}..{r.rows[1]}, cols {r.cols[0]}..{r.cols[1]}, "
                   f"{r.pixels} px sampled")
+            if r.stopped is not None:
+                print(f"  {'':<9} {'':<25} SHORT OF THE BAND'S BACK EDGE: {r.stopped}")
             readings.setdefault(accent, []).append(r)
 
     print(f"  colour is the median of the window; 'wobble' is how far it moves, in dE00, under the "
           f"worst of four one-step narrowings")
-    print(f"  'w x h' is the band as drawn at zoom 1, in screen px, and 'area' their product")
+    print(f"  'w x h' is how much accent the sheet actually draws at zoom 1, in screen px, and "
+          f"'area' their product; both are floors, trimmed at the mouth by the filter guard")
     for accent, rs in sorted(readings.items()):
         if len(rs) < 2:
             continue
         # THE YARDSTICK, AND IT IS A MEASUREMENT RATHER THAN AN OPINION. One accent on two faces of
         # one machine is the same colour lit two ways, so how far THOSE land apart is the scale any
         # figure above has to be read against.
-        apart = sorted((cd.ciede2000(x.lab, y.lab), x, y) for x, y in itertools.combinations(rs, 2))
+        apart = sorted(((cd.ciede2000(x.lab, y.lab), x, y)
+                        for x, y in itertools.combinations(rs, 2)), key=lambda t: t[0])
         worst = apart[-1]
         print(f"  same accent, two faces: {accent} spans dE00 {apart[0][0]:.1f} .. {worst[0]:.1f} "
               f"across its {len(rs)} sockets ({worst[1].socket} vs {worst[2].socket})")

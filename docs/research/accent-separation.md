@@ -42,20 +42,22 @@ second way to get this wrong.
 
 | pair | palette dE00 | drawn dE00, closest two sockets | palette dE76 | drawn dE76 |
 |---|---:|---:|---:|---:|
-| helium-3 × tritium | 41.8 | **30.4** | 80.8 | 37.9 |
-| energy × water | 45.5 | **10.1** | 93.6 | 10.1 |
-| steam × water | 21.4 | **14.9** | 38.0 | 16.3 |
-| energy × steam | 29.4 | 18.5 (unstable, below) | 62.9 | 20.9 |
+| helium-3 × tritium | 41.8 | **30.0** | 80.8 | 37.8 |
+| energy × water | 45.5 | **29.2** | 93.6 | 42.3 |
+| steam × water | 21.4 | **11.2** | 38.0 | 15.0 |
+| energy × steam | 29.4 | **19.3** | 62.9 | 29.0 |
 
-**The drawn figure is never the palette figure and the gap is not a constant**: helium-3 × tritium
-keeps 73 per cent of its palette distance, energy × water keeps 22 per cent. Quoting the table would
-have over-stated one pair by a factor of four and a half.
+**The drawn figure is never the palette figure**: each pair keeps between 52 and 72 per cent of its
+palette distance, so quoting the table over-states a pair by between a third and a factor of two.
+The gap is not a constant either, so no single correction recovers it — `steam × water` loses
+nearly half while `helium-3 × tritium` loses barely a quarter.
 
-**And the two formulas disagree by more on the palette than on the pixels.** For helium-3 × tritium
-dE76 calls the palette rows 80.8 apart and dE00 calls them 41.8 — nearly double — while on the
-drawn pixels the two agree to within a quarter. dE76 is Euclidean in Lab and over-reports at the
-high chroma the palette rows sit at, which is why `tools/colour_distance.py` carries CIEDE2000 and
-the extra seventy lines that go with it.
+**And the two formulas disagree by more on the palette than on the pixels.** dE76 calls the palette
+rows 1.8 to 2.1 times as far apart as dE00 does; on the drawn pixels the factor is 1.3 or less.
+dE76 is Euclidean in Lab, and it does not divide a chroma difference down as the chroma rises, so
+it parts company with the eye most at the high chroma the palette rows sit at and least at the
+chroma that survives to the sheet. That is why `tools/colour_distance.py` carries CIEDE2000 and the
+extra seventy lines that go with it.
 
 ## Method, and the window every figure was read through
 
@@ -63,16 +65,28 @@ Everything below is **at zoom 1 — 32 px to the tile, the size a player meets a
 (`CONTEXT.md`, Zoom). The sheets are drawn at 64 and ship at `scale 0.5`, so each sheet is halved
 before anything is measured off it. The halving averages in **linear light with the colour
 premultiplied by alpha**, which is what a graphics card filtering an sRGB texture does; averaging
-the gamma-encoded bytes darkens every edge instead. [#371](https://github.com/trulsjo/realistic-fusion-refreshed/issues/371)
-is what a picture quoted without its zoom costs.
+the gamma-encoded bytes darkens every edge instead.
+[#371](https://github.com/trulsjo/realistic-fusion-refreshed/issues/371) is what a picture quoted
+without its zoom costs.
 
-- **Where a band is.** `tools/socket_strip.py` isolates one connection's socket, and the accent
-  band's span along the tube comes from `models/rf_blender.py`'s `BAND_BACK` and `BAND_DEPTH` —
-  never from columns typed into the tool. Both ends are pulled in by `socket_strip.FILTER_HALF_PX`,
-  the width the renderer's reconstruction filter smears an edge, so no column of the window draws
-  the flange rib or the port beside it.
-- **The colour** is the **median** of the window. A band is a lit cylinder, so its pixels are a
-  spread and the mean of a spread moves as soon as one contaminated column joins it.
+- **Where a band starts.** `tools/socket_strip.py` isolates one connection's socket, and the accent
+  band's front edge comes from `models/rf_blender.py`'s `BAND_BACK` and `BAND_DEPTH` — never from
+  columns typed into the tool. Every boundary is pulled in by `socket_strip.FILTER_HALF_PX`, the
+  width the renderer's reconstruction filter smears an edge, so no column of a window draws the
+  flange rib beside it.
+- **Where a band ENDS is measured, not assumed, and this is the thing the first version of this
+  bench got wrong.** A band is 0.22 tiles long and starts 0.17 tiles back from the socket's mouth,
+  while the outboard strip is only 0.25 tiles deep — so most of every band lies inboard of the
+  collision edge, and what the sheet draws there is whichever of the band and the machine's own
+  body is nearer the camera. On `rf-isotope-collector`'s west socket it is the band, green to
+  within a tenth of a pixel of where the geometry puts its back. On `rf-heat-exchanger`'s west
+  socket it is the body, from four columns in. So each column is classified between two colours the
+  sheet itself supplies — the band, read outboard of the footprint where only the socket can be
+  drawn, and the machine, read past the band's back edge where the band is guaranteed absent — and
+  joins the run only while it is nearer the first. Nearest-of-two between two measured references,
+  so no threshold.
+- **The colour** is the **median** of the run. A band is a lit cylinder, so its pixels are a spread
+  and the mean of a spread moves as soon as one contaminated column joins it.
 - **The wobble** is how far that median moves, in dE00, under the worst of four one-step narrowings
   — one column off each end, one row off each. It is printed beside every colour, and a pair whose
   two accents are no further apart than their two wobbles added is **reported unstable rather than
@@ -85,81 +99,83 @@ is what a picture quoted without its zoom costs.
 ## What the sheets draw
 
 Two machines have sheets. Everything in this section is off
-`tools/measure-accent-separation.py`, run on 2026-09-16 against the sheets as they
-stand at `0a3dc7b`.
+`tools/measure-accent-separation.py`, run on 2026-09-16 against the sheets as they stand at
+`0a3dc7b`. `w × h` is how much accent the sheet actually draws at zoom 1, in screen pixels, and it
+is a **floor**: the run is trimmed at the mouth end by the filter guard, so about a pixel of band
+that is certainly drawn is outside every window here.
 
 ### rf-isotope-collector — the pair #359 is about
 
-| accent | socket | sheet | colour | L\* | a\* | b\* | wobble |
-|---|---|---|---|---:|---:|---:|---:|
-| helium-3 | north rf-helium-3 | `isotope-collector-e.png` | `#564868` | 33.2 | +13.2 | −16.5 | 1.2 |
-| tritium | west rf-tritium | `isotope-collector.png` | `#a5bbaa` | 74.0 | −10.9 | +6.1 | 0.5 |
-| tritium | east rf-tritium | `isotope-collector.png` | `#517160` | 44.6 | −15.4 | +5.6 | 0.3 |
+| accent | socket | sheet | colour | L\* | a\* | b\* | wobble | w × h | area ≥ |
+|---|---|---|---|---:|---:|---:|---:|---|---:|
+| helium-3 | north rf-helium-3 | `isotope-collector-e.png` | `#594b6d` | 34.5 | +13.1 | −17.1 | 1.2 | 5.0 × 22.0 | 110.0 |
+| tritium | west rf-tritium | `isotope-collector.png` | `#a5bbaa` | 74.0 | −10.9 | +6.1 | 0.5 | 6.0 × 22.0 | 132.0 |
+| tritium | east rf-tritium | `isotope-collector.png` | `#517160` | 44.6 | −15.4 | +5.6 | 0.3 | 6.0 × 22.0 | 132.0 |
 
-**helium-3 × tritium: dE00 30.4 to 47.6** over the two socket pairs. Closest is the north helium-3
-against the east tritium; furthest is the same helium-3 against the west tritium.
+**helium-3 × tritium: dE00 30.0 to 46.3** over the two socket pairs. Closest is the north helium-3
+against the east tritium; furthest is the same helium-3 against the west tritium. Both tritium
+bands run their whole built span; the helium-3 one stops short, where the machine's body comes in
+front of it.
 
 ### rf-heat-exchanger
 
-| accent | socket | sheet | colour | L\* | a\* | b\* | wobble |
-|---|---|---|---|---:|---:|---:|---:|
-| energy | west rf-reactor-energy | `heat-exchanger.png` | `#afa596` | 68.3 | +0.8 | +9.4 | 6.7 |
-| energy | north rf-reactor-energy | `heat-exchanger-e.png` | `#43413f` | 27.8 | +0.3 | +1.7 | 6.5 |
-| energy | east rf-reactor-energy | `heat-exchanger.png` | `#c29768` | 65.5 | +10.0 | +30.9 | 0.7 |
-| steam | south steam | `heat-exchanger-e.png` | `#757a7c` | 50.7 | −1.3 | −1.8 | 12.4 |
-| water | west water | `heat-exchanger.png` | `#9aa49f` | 66.4 | −4.6 | +1.1 | 2.4 |
-| water | east water | `heat-exchanger.png` | `#345778` | 35.8 | −2.4 | −22.3 | 0.3 |
+| accent | socket | sheet | colour | L\* | a\* | b\* | wobble | w × h | area ≥ |
+|---|---|---|---|---:|---:|---:|---:|---|---:|
+| energy | west rf-reactor-energy | `heat-exchanger.png` | `#caa27b` | 69.2 | +9.7 | +25.5 | 0.9 | 3.0 × 27.0 | 81.0 |
+| energy | north rf-reactor-energy | `heat-exchanger-e.png` | `#684925` | 33.7 | +8.8 | +26.6 | 1.0 | 2.0 × 27.0 | 54.0 |
+| energy | east rf-reactor-energy | `heat-exchanger.png` | `#c29768` | 65.5 | +10.0 | +30.9 | 0.7 | 6.0 × 27.0 | 162.0 |
+| steam | south steam | `heat-exchanger-e.png` | `#b6b8ba` | 74.7 | −0.4 | −1.1 | 1.0 | 3.5 × 22.0 | 77.0 |
+| water | west water | `heat-exchanger.png` | `#92acc3` | 69.2 | −3.8 | −14.6 | 2.0 | 2.0 × 22.0 | 44.0 |
+| water | east water | `heat-exchanger.png` | `#345778` | 35.8 | −2.4 | −22.3 | 0.3 | 6.0 × 22.0 | 132.0 |
 
 | pair | dE00, closest | dE00, furthest |
 |---|---:|---:|
-| energy × water | 10.1 | 45.1 |
-| steam × water | 14.9 | 19.1 |
-| energy × steam | 18.5 — **unstable** | 25.5 |
+| steam × water | 11.2 | 39.2 |
+| energy × steam | 19.3 | 43.6 |
+| energy × water | 29.2 | 45.9 |
 
-**energy × steam is refused, not reported.** The west energy band wobbles 6.7 dE00 and the south
-steam band 12.4; between them that is 19.1, which is not smaller than the 18.5 the two medians are
-apart. The number would be the window moving, not the accents parting.
+No pair on either machine is refused: every wobble is at or under 2.0 dE00, and the closest pair is
+11.2 apart.
 
 ## Three things the numbers say
 
-**1. The face a socket is on moves its colour as far as the accent does, and on one machine
-further.** The sun is fixed and
-the camera turns, so one accent is lit two ways on one machine:
+**1. Four of the heat exchanger's six bands are cut short by the machine's own body, and two of
+them get a third of the screen the widest ones do.**
 
-| accent | how far its own sockets land apart, dE00 |
+| socket | accent it draws, at zoom 1 |
 |---|---|
-| tritium, 2 sockets | 26.3 |
-| water, 2 sockets | 34.7 |
-| energy, 3 sockets | 13.1 to 40.7 |
+| north rf-reactor-energy | 2.0 px |
+| west water | 2.0 px |
+| west rf-reactor-energy | 3.0 px |
+| south steam | 3.5 px |
+| east rf-reactor-energy, east water | 6.0 px, the whole run |
 
-On `rf-heat-exchanger` the **closest energy-to-water** pair is 10.1 dE00 and the **closest
-energy-to-energy** pair across two faces is 13.1. Two different accents on the same face are closer
-together than one accent is to itself on two faces. On `rf-isotope-collector`, tritium spans 26.3
-across its own two sockets against the 30.4 that separates it from helium-3 at their closest.
+On `rf-isotope-collector` only the north helium-3 socket loses any, at 5.0 px against the two
+tritium sockets' 6.0. **Two screen pixels of accent** is what a player gets on the exchanger's north
+energy and west water sockets. Nothing here says whether that is enough; it says how much there is.
 
-**2. A band is half-lit, and the shadow half is near-neutral.** Reading the steam band column by
-column along its own span — the six zoom-1 columns 102..107 of `heat-exchanger-e.png` — its
-median L\* runs 71.0, 76.0, 75.9, 49.4, 32.3, 29.9, and the inboard end
-falls into shadow and loses nearly all its chroma. That is what the large wobbles above are: a real
-gradient, not an instrument fault. Every median in this note is a summary of such a gradient.
+**2. The same accent on two sockets of one machine lands anywhere from 4 to 35 dE00 apart.**
 
-**3. Every band gets the same amount of screen, and it is small.**
-
-| socket kind | band, at zoom 1 | area |
+| accent | socket pair | dE00 |
 |---|---|---:|
-| plumbable, tube radius 0.249 | 7.04 × 22.0 px | 154.9 px² |
-| contained, tube radius 0.3 | 7.04 × 27.0 px | 190.1 px² |
+| energy | west vs east | 3.9 |
+| tritium | west vs east | 26.3 |
+| energy | north vs east | 31.8 |
+| water | west vs east | 33.0 |
+| energy | west vs north | 35.3 |
 
-The width is `BAND_DEPTH` — 0.22 tiles — and so is the same on every machine; the height is the
-band's drawn silhouette, taller on a contained socket because it is drawn thicker. **Seven screen
-pixels of width** is the whole of what an accent gets along the tube.
+On `rf-heat-exchanger` water's own two sockets land **33.0** apart — further than the **29.2** that
+separates energy from water at their closest. The compass face is not the whole story: the two
+energy sockets on the same sheet are 3.9 apart while the two water sockets on that same sheet are
+33.0. The water sockets are plumbable and sit low at `rf_blender.SOCKET_Z`, where the machine shades
+the eastern one; the energy sockets are contained and stand at 0.55 in the open.
 
-The area is a product rather than a pixel count, and that is deliberate. The band starts 0.17 tiles
-back from the socket's mouth while the outboard strip is only 0.25 tiles deep, so **more than half
-of every band lies inboard of the collision edge**, where the machine's own body is behind it and
-alpha can no longer say where the band stops. Colour still can: on the collector's west socket the
-green runs to sheet column 216 and column 217 reads grey, which is where `BAND_BACK` and
-`BAND_DEPTH` put the back of the band — 216.96.
+**3. The bands are narrow, and much taller than they are wide.** A band is 0.22 tiles along the
+tube, which is 7.04 screen px at zoom 1 before anything occludes it, against a drawn height of 22.0
+px on a plumbable socket and 27.0 on a contained one — the contained sockets are drawn at tube
+radius 0.3 against 0.249, so they are taller. The height is the same in every column of every run,
+which is what a cylinder's silhouette does, and which is what lets the area be a product rather than
+a count: once the band and the machine's body overlap, no alpha count can tell them apart.
 
 ## The pairs that cannot be measured yet
 
@@ -217,9 +233,12 @@ python tools/test_colour_distance.py
 ```
 
 The bench's own arithmetic is pinned separately, by `tools/test_measure_accent_separation.py`: the
-halved window's off-by-one, and the halving being done in light rather than in gamma-encoded bytes.
-Both are cases where a wrong answer is still a plausible colour, which is why each is asserted
-against a case where the right answer and the likely wrong one differ visibly.
+halved window's off-by-one, the filter guard's own off-by-one at a boundary, and the halving being
+done in light rather than in gamma-encoded bytes. All three are cases where a wrong answer is still
+a plausible colour, which is why each is asserted against a case where the right answer and the
+likely wrong one differ visibly. It also runs the bench over both machines and requires four of the
+heat exchanger's six sockets to report stopping short of the band's back edge, which is the
+defect the review of #379 found and is the one thing here that cannot be caught by reading.
 
 ```
 python tools/test_measure_accent_separation.py
