@@ -62,7 +62,8 @@ neighbour, not recognised on its own** ([ADR
 0034](docs/adr/0034-an-accent-is-read-against-its-neighbour.md)) — it tells one socket from another
 on the machine in front of the player, and is not a name for a fluid a player identifies anywhere.
 One palette row does not make one colour: on `rf-heat-exchanger` water's own two sockets land 33.0
-dE00 apart, further than energy from water. So **"how far apart are two accents on one machine" is
+dE00 apart, further than the 29.2 separating energy from water **at their closest** — that pair runs
+to 45.9 at its furthest, so the qualifier is the whole comparison. So **"how far apart are two accents on one machine" is
 a question and "what colour is helium-3" is not**. A band is one accent's shape and not the word
 itself; a machine that carries no fluid at a socket paints no accent there.
 

@@ -46,9 +46,17 @@ recognises on sight, and no rule, gate or geometry choice may be justified on th
 should be.
 
 **The consequence for #359 is that nothing changes.** No palette value moves, no band lengthens, no
-geometry is touched, and #334's gate and its three copies stay as they are. The pairs that share a
-machine are 11.2 dE00 apart at the closest and the pale pair is 23.6 apart as the game draws it,
-both far above what an eye needs for two patches side by side.
+geometry is touched, and #334's gate and its three copies stay as they are. The closest pair that
+can share a machine is **11.2 dE00**, off the bench, and the pale pair reads at roughly **23.6** in
+the game frame — both far above what an eye needs for two patches side by side.
+
+**The two figures are not equally solid, and the decision does not need them to be.** 11.2 comes
+from `tools/measure-accent-separation.py`, through a geometry-derived window with a stability check
+beside it. 23.6 comes from a hand-placed hue cut, which `docs/research/accent-legibility-at-zoom-1.md`
+itself calls *"adequate for 'are these two visibly different colours' and inadequate for 'how far
+apart are they, exactly'"*. Read 23.6 as the answer to the first question only. Nothing above rests
+on its second decimal: the pair was decided on being visibly two colours, which is what a crude
+method can establish and what the frames show.
 
 **The standard binds machines not yet rendered.** A pair on a new machine is checked against it
 rather than reopening the question. Eleven of thirteen entities have no sheets; plasma is carried by
@@ -62,10 +70,14 @@ bench.
 
 ## Consequences
 
-**The rulebook's own sentence is now narrower than it reads.** *"The accents say what a socket
-carries"* stays, because on one machine it is exactly true. What it cannot be read as is *"a colour
-names a fluid"*, and the paragraph in `models/house-style.md` says so, because a reader meeting the
-sentence alone would conclude the opposite.
+**Two of the rulebook's own sentences are now narrower than they read**, and both are edited in
+place rather than left for the new paragraph to correct at a distance. *"The accents say what a
+socket carries"* stays, because on one machine it is exactly true; what it cannot be read as is *"a
+colour names a fluid"*. The second is *"One accent per fluid, used the same way on every machine, so
+a player reads a machine's plumbing from its colours before reading its tooltip"* — which is the
+more directly absolute of the two, since it spans machines outright. It also survives, read as a
+claim about telling one machine's sockets apart, and `models/house-style.md` now says which reading
+is meant. A reader meeting either sentence alone would conclude the opposite.
 
 **A future complaint of the form "this accent looks wrong on this machine" is not evidence of a
 palette problem.** Under this standard it is a lighting observation until somebody shows two
@@ -100,8 +112,8 @@ nothing.
 
 **Move a palette colour** — helium-3 or tritium shifts far enough that no reading of the pair is
 close. Rejected as the most expensive option against the least demonstrated defect: #334's gate and
-all three copies move, every sheet re-renders, and the pair it would separate is already 23.6 dE00
-apart in the frame a player meets.
+all three copies move, every sheet re-renders, and the pair it would separate already reads as two
+colours in the frame a player meets.
 
 **Move the band inboard of where a vanilla pipe ends.** Proposed inside #359's own working on the
 claim that a plugged-in pipe covers most of the band. **The claim was false**, and it was made from

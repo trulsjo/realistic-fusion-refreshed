@@ -63,7 +63,10 @@ too fine to read at 64 px per tile still is not.
 | Glow | the accent of the fluid, emission `rf_blender.GLOW_EMISSION`, only while working | see Glow |
 
 One accent per fluid, used the same way on every machine, so a player reads a machine's plumbing
-from its colours before reading its tooltip. An accent is a band or a manifold, never a whole body.
+from its colours before reading its tooltip -- **which is a claim about one machine's sockets told
+apart from each other, not about a colour recognised anywhere.** Read the second way it is false;
+see "An accent is read against its neighbour" below. An accent is a band or a manifold, never a
+whole body.
 
 **The last two are the fluids' own icon colours** (Truls, #262), and `scripts/ship-check.ps1`
 section 8 holds the three copies of each together (#334) -- this row, the fluid, and every build
@@ -89,11 +92,12 @@ the open and the east is shaded by the machine's own body. Ask how far two accen
 land apart. Do not ask what colour an accent is.
 
 **Measured under that standard, nothing here needs changing, and #359 changed nothing.** The
-closest pair that can share a machine is 11.2 dE00 (steam against water) and the pale pair #359 was
-raised about is 23.6 as the game draws it, on two drums 24.5 screen pixels apart on the collector's
-own deck. Bands two screen pixels wide read at zoom 1 because they are 22 to 27 tall. The figures
-are in `docs/research/accent-separation.md` (the sheets) and
-`docs/research/accent-legibility-at-zoom-1.md` (both machines photographed in the game).
+closest pair that can share a machine is **11.2 dE00**, steam against water, off the bench in
+`docs/research/accent-separation.md`. The pale pair #359 was raised about reads at roughly **23.6**
+on two drums 24.5 screen pixels apart on the collector's own deck — a **hue-cut** figure from
+`docs/research/accent-legibility-at-zoom-1.md`, good enough to say the two are visibly different
+colours and not good enough to quote as a distance. Bands two screen pixels wide read at zoom 1
+because they are 22 to 27 tall.
 **The standard binds machines not yet rendered**: a pair on a new machine is checked against it
 rather than reopening the question. **None of this is gated, deliberately** -- a threshold on
 legibility would be a decision wearing a check's clothes.
