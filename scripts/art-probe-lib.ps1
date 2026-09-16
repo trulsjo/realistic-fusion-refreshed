@@ -161,11 +161,17 @@ end
 --- THE GRASS VARIANT IS STILL THE MAP'S, NOT OURS. set_tiles names grass-1; which of its variants
 --- each tile draws comes off the map seed, so two runs on random maps differ on most of a frame's
 --- pixels while the machine itself does not. Pass -MapSeed to make two frames comparable.
-local function pave(surface, x1, y1, x2, y2)
+---
+--- `tile` NAMES THE GROUND AND DEFAULTS TO grass-1, which is what every frame in
+--- docs/research/accent-legibility-at-zoom-1/ stands on and what #359 meant by "on grass". A
+--- probe comparing a machine against one standing somewhere else passes the OTHER ground's tile,
+--- so that the two frames differ in the thing being asked about and not in their terrain as well
+--- (#388).
+local function pave(surface, x1, y1, x2, y2, tile)
   local tiles = {}
   for x = math.floor(x1), math.ceil(x2) do
     for y = math.floor(y1), math.ceil(y2) do
-      tiles[#tiles + 1] = { name = "grass-1", position = { x, y } }
+      tiles[#tiles + 1] = { name = tile or "grass-1", position = { x, y } }
     end
   end
   surface.set_tiles(tiles)
@@ -354,6 +360,24 @@ function Invoke-ArtProbe {
         Write-Host "bundled enabled: $(if ($enabled) { $enabled -join ', ' } else { 'none (base 2.0 only)' })"
         Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabled -Mods ($ourMods + $RigName)
 
+        # THE CONFIG IS WRITTEN HERE RATHER THAN LEFT TO Invoke-Factorio, for two reasons. It has to
+        # exist before the LAUNCH, and a -LoadGame probe never takes the --create step that would
+        # otherwise have made it. And autosave is turned off: a five-minute autosave during a probe
+        # is wasted I/O on every rig, and on a borrowed base it is the one thing ADR 0029 asks not
+        # to happen at all. It writes to write-data/saves and never back to the loaded file, so this
+        # is belt as well as braces -- and the whole write-data directory goes with the temp one.
+        $configPath = Join-Path $temp 'factorio-config.ini'
+        $writeData  = Join-Path $temp 'write-data'
+        New-Item -ItemType Directory -Path $writeData -Force | Out-Null
+        @"
+[path]
+read-data=__PATH__executable__/../../data
+write-data=$writeData
+
+[other]
+autosave-interval=0
+"@ | Set-Content -Path $configPath -Encoding utf8
+
         # THE MAP THE FRAMES ARE SHOT ON. A probe handed -LoadGame opens that save instead of
         # creating one, which is what an art probe standing inside a borrowed base needs (#388,
         # ADR 0029) -- nothing here writes a save back, so the borrowed file is untouched on disk.
@@ -371,9 +395,7 @@ function Invoke-ArtProbe {
                 -Tag 'create' -Arguments $create | Out-Null
         }
 
-        # The same private write-data directory Invoke-Factorio makes, reused: it is where the
-        # config points, so it is also where script-output lands.
-        $configPath = Join-Path $temp 'factorio-config.ini'
+        # script-output lands under the write-data directory the config above points at.
         $shotDir    = Join-Path $temp 'write-data/script-output/rf-art'
         $doneFile   = Join-Path $shotDir 'done.txt'
 

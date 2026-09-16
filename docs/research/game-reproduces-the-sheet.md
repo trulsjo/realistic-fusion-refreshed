@@ -62,7 +62,9 @@ the committed ones — see the caveat at the foot of this note.
 **`accent-separation.md`'s `#92acc3` is stale for the same reason** and so is its `#a5bbaa` for the
 collector's west tritium: both predate `9ab4c57`. Today's sheet reads `#8ea9c1` and `#a2b8a8`. That
 is a separate correction and this note does not make it; it is recorded here because a reader
-comparing the two tables would otherwise find a fourth discrepancy and think it was ours.
+comparing the two tables would otherwise find a fourth discrepancy and think it was ours. Its
+tightest pair moved with them: the exchanger's steam and water accents read **11.7** dE00 apart
+today where that note says 11.2.
 
 ## The thing nobody had noticed: a frame carries weather
 

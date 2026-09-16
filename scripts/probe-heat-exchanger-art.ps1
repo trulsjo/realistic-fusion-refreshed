@@ -274,9 +274,11 @@ script.on_event(defines.events.on_tick, function()
 
   -- ZOOM 1 -- 32 px to the tile, the size a player meets the machine at (CONTEXT.md, Zoom). Every
   -- other frame above is magnification. #359 asks whether two accents can be told apart where they
-  -- are MET, and this machine is the hard case: docs/research/accent-separation.md measures its
-  -- steam and water accents 11.2 dE00 apart at their closest, the tightest pair on any sheet, and
-  -- draws two of its six bands at two screen pixels. game-alone.png is the bench's own window and
+  -- are MET, and this machine is the hard case: tools/measure-accent-separation.py reads its steam
+  -- and water accents 11.7 dE00 apart at their closest, the tightest pair on any sheet, and draws
+  -- two of its six bands -- north energy and west water -- at two screen pixels.
+  -- docs/research/accent-separation.md quotes 11.2 for the same pair and predates the 2026-09-16
+  -- re-render; the live figure is the one above. game-alone.png is the bench's own window and
   -- game-pipes.png is the condition #359 names -- on grass, with vanilla pipes plugged in.
   tiles_shot("game-alone.png", solo.cold_x,  0.5, solo.solo_w,  solo.solo_h,  1, 0)
   tiles_shot("game-pipes.png", solo.pipes_x, 0.5, solo.pipes_w, solo.pipes_h, 1, 0)
