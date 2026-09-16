@@ -33,6 +33,16 @@ off and the midpoint rides high. At the old z 0.55 the tube cleared the plane an
 measurement landed within 0.002 of prediction, which is how the derivation came to be trusted
 somewhere it does not apply.
 
+THAT PARAGRAPH WAS AN ASSERTION UNTIL 2026-09-16 AND IS NOW A MEASUREMENT (#366, #367). It is right.
+Rendering a machine with the plane deleted puts every part's underside back exactly -- the accent
+band, the flange ribs and the dark rim each draw as far below their axis as above it, to the pixel
+-- and thirty-six bare cylinders across six radii and six heights agree with a model of the plane
+that has no fitted parameter in it: below the axis a tube draws sqrt(r^2 - z^2) + z/tan(pitch),
+until z reaches r cos(pitch) and the plane stops reaching it. A shadow catcher is transparent in the
+beauty pass but NOT to what is behind it, which is the half of the claim nobody had checked.
+docs/research/socket-underside-cut.md has the tables and scripts/probe-socket-underside.py reruns
+them.
+
 SO THIS COMPARES TWO DRAWN CENTRES AND DOES NOT RECOVER A WORLD HEIGHT. It measures where our
 socket is drawn, against where a vanilla pipe's body is drawn, and both sides are numbers off a
 sheet. That is the right comparison anyway -- vanilla's pipe is a stylised ribbon and not a
@@ -173,6 +183,13 @@ VANILLA_PIPE_SHEETS = frozenset(("pipe-straight-horizontal.png", "pipe-straight-
 # rather than on it, and that residual is GEOMETRIC -- the header's. The ground plane cuts the
 # socket's underside at this height, so the midpoint rides high; it scales with the socket's radius,
 # and the lit bevel and the anti-aliasing are worth a fraction of a pixel beside it.
+#
+# AND 0.031 IS WHAT IT SHOULD BE, WHICH #366 AND #367 SETTLED RATHER THAN ASSUMED. The envelope is
+# the widest part, the dark rim at radius 0.379, and the header's model of the plane predicts its
+# drawn centre at +0.05509 tiles against vanilla's +0.02337: a residual of 0.0317 tiles, or 2.030
+# px, with nothing fitted. The same model gives 2.316 px at the old SOCKET_Z of 0.044, so it also
+# reproduces the 0.28 px #356 measured across that change and could not explain. There is no defect
+# here to chase; docs/research/socket-underside-cut.md carries the arithmetic.
 #
 # IT USED TO BE TWO THINGS, and #356 removed the second. SOCKET_Z had been solved from a reference
 # read as 0.031 rather than the 0.0234 vanilla actually draws at, so every plumbable socket was

@@ -339,11 +339,25 @@ ends and the accent band begins at column 202.88, so column 203 starts a tenth o
 and the band read through a window holding that column measures +24.5 above where its own columns
 give +23.5.
 
-**The mechanism is still not settled**: `tools/check-socket-height.py`'s header attributes the lost
-underside to the shadow-catching ground plane, and these numbers are consistent with an underside
-loss but do not fit a cut at one screen row -- the four parts stop at four different rows. It is the
-same effect that leaves that gate its +0.031 residual, and #362 is where it is chased. Measured
-2026-09-15, corrected 2026-09-15.
+**THE MECHANISM IS SETTLED, AND IT IS THE GROUND PLANE** (#366, #367, measured 2026-09-16).
+`rf_blender.build_rig`'s shadow-catching plane hides everything below world z 0, exactly as
+`tools/check-socket-height.py`'s header always claimed. Rendering this machine with that plane
+deleted puts every row above back symmetric to the pixel -- the band +23.5/+23.5, the ribs
++25.5/+25.5, the rim +30.5/+30.5 -- and thirty-six bare cylinders across six radii and six heights
+agree with a model of it that fits nothing: below its axis a tube of radius `r` at height `z` draws
+`sqrt(r^2 - z^2) + z/tan(pitch)` tiles, until `z` reaches `r cos(pitch)` and the plane stops
+reaching it at all.
+
+**THE TWO THINGS THAT MADE IT LOOK UNFITTABLE WERE BOTH THE COMPARISON RATHER THAN THE CAUSE.** A
+plane at one world HEIGHT is not a cut at one screen ROW under a pitched camera: the lowest drawn
+point of a tube is the point of its cross-section at z 0, which lands `sqrt(r^2 - z^2)` tiles below
+the ground line and therefore on a different row for every radius. And a drawn edge stands about a
+pixel proud of the geometry that cast it at BOTH ends, so a shortfall measured against a geometric
+prediction has to have the same cylinder's own top-edge gain taken off it before it means anything.
+It is the same effect that leaves that gate its +0.031 residual, which the model predicts at 0.0317
+tiles without being shown it. `docs/research/socket-underside-cut.md` carries the tables and
+`scripts/probe-socket-underside.py` reruns them. Measured 2026-09-15, corrected 2026-09-15, settled
+2026-09-16.
 
 **ON A SOCKET, "COLLAR" MEANS THE ACCENT BAND** (#351). The word named two parts of one socket for
 a while -- the raised ring in the paragraph above, and a rim moved inboard onto the body face, which
