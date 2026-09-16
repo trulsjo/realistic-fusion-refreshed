@@ -200,12 +200,34 @@ local function sweep(surface, x1, y1, x2, y2, park_x, park_y)
   end
 end
 
---- Get a surface ready to be photographed: its chunks generated and its sun fixed. Both probes ran
---- these three lines identically before #386.
+--- Get a surface ready to be photographed: chunks generated, sun fixed, WEATHER OFF.
+---
+--- CLOUDS ARE WHY THIS IS FOUR LINES RATHER THAN THREE, and they cost a measurement before anybody
+--- noticed them (#387). Factorio draws a moving cloud shadow over the map, and a screenshot catches
+--- whatever the clouds were doing on that tick: soft-edged, tens of tiles across, and worth up to
+--- 6.4 dE00 on an accent band read off a frame -- against the 0.7 the game otherwise differs from
+--- the sheet by. It cannot be subtracted either. On the frame that caught one it darkened the top
+--- two thirds of a socket by up to 22% and left the bottom third IDENTICAL TO THE PIXEL, which is a
+--- shadow with an edge across it and not an offset.
+---
+--- They were also most of what made one frame irreproducible, THOUGH NOT ALL OF IT, and the
+--- difference is measured rather than assumed. rf-heat-exchanger's working-night.png came back
+--- different from two runs of identical code on the same map seed: 311,621 pixels apart, by up to
+--- 17 of 255, with clouds on. With them off the same pair is 115,233 pixels apart by AT MOST 2, so
+--- the clouds were the visible part and something in the glow still jitters by a level or two. That
+--- residue is unexplained and is not this function's; it is recorded here so nobody re-finds it and
+--- calls it weather. Every other frame either probe takes is byte-identical across runs at a fixed
+--- seed, the collector's own night.png included -- which is what `glow: false` means, and is why
+--- only the machine that HAS a glow shows the residue.
+---
+--- always_day fixes the sun and does NOT fix the clouds: they are a separate LuaSurface flag, and
+--- setting it false means clouds are never shown whatever the player's graphics settings say
+--- (LuaSurface.show_clouds, 2.0.77). The first three lines are what both probes ran before #386.
 local function ready(surface)
   surface.request_to_generate_chunks({ 0, 0 }, 8)
   surface.force_generate_chunk_requests()
   surface.always_day = true
+  surface.show_clouds = false
 end
 
 --- WHICH SURFACE THE SHUTTER LOOKS AT. nil means the map's first, which is every rig this
