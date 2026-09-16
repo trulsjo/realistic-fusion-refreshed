@@ -40,7 +40,7 @@ structure on a view layer that marks the ground plane INDIRECT ONLY, so the plan
 and no longer stands in front of it; the shadow comes off a second layer where it still catches.
 Every plumbable socket on both machines now reads +0.000 against vanilla's pipe where it read +0.031
 before, which is what docs/research/socket-underside-cut.md predicted from the geometry without
-being shown it -- 0.70804 x 0.033 = +0.02336 tiles against the +0.02337 this gate measures off
+being shown it -- 0.70804 x 0.033 = +0.02337 tiles against the +0.02337 this gate measures off
 vanilla's own sheet.
 
 THE CLIPPING PARAGRAPHS BELOW ARE KEPT BECAUSE THE ARITHMETIC IS STILL THE REASON THIS GATE IS
@@ -197,7 +197,7 @@ VANILLA_PIPE_SHEETS = frozenset(("pipe-straight-horizontal.png", "pipe-straight-
 # widest part is the dark rim at radius 0.379, drawn centre +0.05509 tiles against vanilla's
 # +0.02337, a residual of 0.0317 tiles or 2.030 px, with nothing fitted -- and #373 then took the
 # cut away rather than living with it. THE PREDICTION WAS TESTED BY THE FIX: with nothing cut the
-# model says the centre is 0.70804 x 0.033 = +0.02336, and re-rendering both machines measured
+# model says the centre is 0.70804 x 0.033 = +0.02337, and re-rendering both machines measured
 # +0.023 on every plumbable socket. docs/research/socket-underside-cut.md carries the arithmetic.
 #
 # IT USED TO BE TWO THINGS, and #356 removed the second. SOCKET_Z had been solved from a reference

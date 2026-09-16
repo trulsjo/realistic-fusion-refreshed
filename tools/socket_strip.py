@@ -46,11 +46,17 @@ INSET_PX to one and every socket the gate measures becomes UNMEASURABLE. That is
 rather than a quiet wrong answer, which is the right way round, but it is a coupling and not a
 coincidence: the two numbers are trims at the same edge and the wider one has to be the envelope's.
 
-WHAT IS NOT HERE: the reference a gate judges against, the parts an instrument names, and the model
-a probe holds a reading against. Each caller keeps its own, because all three are judgements about
-what a measurement MEANS rather than arithmetic about where it is read. `measure`'s window guard is
-here rather than with them because it is the second kind: it says whether a reading can be believed,
-not what it implies.
+WHAT IS NOT HERE: the reference a gate judges against, and the model a probe holds a reading
+against. Each caller keeps its own, because both are judgements about what a measurement MEANS
+rather than arithmetic about where it is read. `measure`'s window guard is here rather than with
+them because it is the second kind: it says whether a reading can be believed, not what it implies.
+
+THE PARTS AN INSTRUMENT NAMES WERE IN THAT LIST UNTIL #373, and `parts_of` below is why they left
+it. Where a part sits along the tube is not a judgement about meaning: it is the arrangement
+models/rf_parts.py draws, worked out from models/rf_blender.py's own constants, and what it decides
+is WHICH COLUMNS a reading may be taken through -- which is the arithmetic this module exists for.
+It moved when a second caller came to need it, because the alternative was two copies of one
+arrangement and the copy that drifts is the one nobody is looking at.
 
 Needs numpy, which every caller already does. Run from the repository root.
 """

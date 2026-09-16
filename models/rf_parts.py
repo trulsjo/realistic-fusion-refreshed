@@ -336,7 +336,9 @@ def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
     # copied by tools/extract-geometry.py, and a Factorio prototype records no radius and no height
     # -- so until this nothing anywhere recorded what a socket was DRAWN at, and
     # tools/check-socket-parts.py could not have been written. Typing the numbers into that gate
-    # instead is exactly the two-statements failure tools/measure-socket-parts.py's header names.
+    # instead is the failure models/rf_blender.py already names over its socket-piece constants --
+    # "makes the instrument and the model one statement; typing them into the tool would make them
+    # two".
     #
     # A JSON STRING rather than a list of dicts, because a Blender custom property holds primitives
     # and this has to survive being saved into the .blend and read back by another script. Keyed by

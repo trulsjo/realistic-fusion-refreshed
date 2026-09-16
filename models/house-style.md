@@ -415,8 +415,9 @@ point of a tube is the point of its cross-section at z 0, which lands `sqrt(r^2 
 the ground line and therefore on a different row for every radius. And a drawn edge stands about a
 pixel proud of the geometry that cast it at BOTH ends, so a shortfall measured against a geometric
 prediction has to have the same cylinder's own top-edge gain taken off it before it means anything.
-It is the same effect that leaves that gate its +0.031 residual, which the model predicts at 0.0317
-tiles without being shown it. `docs/research/socket-underside-cut.md` carries the tables and
+It is the same effect that used to leave that gate a +0.031 residual, which the model predicted at
+0.0317 tiles without being shown it -- ADR 0035 then took the cut away and the residual with it, and
+every plumbable socket now reads +0.000 against vanilla's pipe. `docs/research/socket-underside-cut.md` carries the tables and
 `scripts/probe-socket-underside.py` reruns them. Measured 2026-09-15, corrected 2026-09-15, settled
 2026-09-16.
 
