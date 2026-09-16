@@ -7,6 +7,13 @@ a re-render.
 
 Taken 2026-09-15 with `scripts/probe-socket-height.ps1`.
 
+**THIS NOTE DESCRIBES THE #357 PAIR AND NOTHING SINCE.** #374 and #378 changed the probe under it:
+it paves with `lab-dark-2` rather than grass and it writes one pair of frames per plumbable socket,
+`seam-<machine>-<side>-<fluid>.png` and `run-<machine>-<side>-<fluid>.png`, so none of the
+filenames below is one it produces today. `docs/research/socket-join/README.md` says what the two
+sets in that directory are and which of them a re-run reproduces. Nothing measured here has moved;
+the frames it names are still the frames on disk.
+
 ## What is being compared, and why it is not what #357 first said
 
 #357 was written as an acceptance of a quarter of a pixel: #356 dropped every plumbable socket by
@@ -72,7 +79,16 @@ checking this note against the frames gets numbers that do not match it. One rev
 that and reported the statistics as not reproducing.
 
 So these pairs are for reading the SEAM. They do not support a pixel diff, and a whole-frame
-impression will be dominated by grass. A fixed map seed would fix it and is not in this ticket.
+impression will be dominated by grass.
+
+**"A fixed map seed would fix it" was written here and is FALSE**, which #374 found out by trying
+it: a pinned seed on a surface of the rig's own still left 84.53 per cent of the reference frame's
+pixels differing between two runs, at a mean channel delta of 11.5 over the ones that did. The
+cause is not the seed but the TILE. base's `grass-1` declares its variants with weighted
+probabilities over sizes 1, 2 and 4, so the engine draws for every tile `set_tiles` writes and no
+seed a rig can set reaches that draw. Paving with a lab tile, whose main variant is `count = 1`,
+does fix it: two runs are byte-identical now, which is what `docs/research/socket-join/every-side/`
+is shot on. These pairs are still grass and still not diffable.
 
 ## What settled it
 

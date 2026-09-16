@@ -269,11 +269,16 @@ local function short(name) return (string.gsub(name, "^rf%-", "")) end
 --- table here could be, because it is the question a player asks by dragging a pipe at the machine,
 --- and it stays right the day a connection's category changes.
 local function plumbable(surface, entity)
-  local found, refused = {}, 0
+  local found, refused, unasked = {}, 0, 0
   for i = 1, #entity.fluidbox do
     local filter = entity.fluidbox.get_filter(i)
     for _, c in pairs(entity.fluidbox.get_pipe_connections(i)) do
-      if c.target_position and #surface.find_entities_filtered({ position = c.target_position }) == 0 then
+      -- A TILE THAT IS ALREADY OCCUPIED CANNOT BE ASKED, and it is counted rather than passed over:
+      -- the whole claim above is that the answer comes from the engine, and a connection quietly
+      -- missing from both totals is the one way that claim could go wrong without saying so.
+      if c.target_position and #surface.find_entities_filtered({ position = c.target_position }) > 0 then
+        unasked = unasked + 1
+      elseif c.target_position then
         local p = place(surface, "pipe", c.target_position.x, c.target_position.y)
         local joined = false
         for _, pc in pairs(p.fluidbox.get_pipe_connections(1)) do
@@ -294,7 +299,8 @@ local function plumbable(surface, entity)
       end
     end
   end
-  say(string.format("%s: %d plumbable socket(s), %d refused a pipe", entity.name, #found, refused))
+  say(string.format("%s: %d plumbable socket(s), %d refused a pipe, %d could not be asked",
+    entity.name, #found, refused, unasked))
   return found
 end
 
@@ -358,6 +364,7 @@ script.on_nth_tick(60, function()
 
   local frames = {}
   for n, name in ipairs(SUBJECTS) do
+    local W, H = footprint(name)
     local machine = place(surface, name, 0.5 + (n - 1) * SPACING, 0.5)
     local centre = machine.position
     for _, s in ipairs(plumbable(surface, machine)) do
@@ -366,17 +373,35 @@ script.on_nth_tick(60, function()
         place(surface, "pipe", s.tile.x + d[1] * k, s.tile.y + d[2] * k)
       end
       -- A NORTH OR SOUTH SOCKET IS MET END-ON, so its frame is turned: the subject runs up and
-      -- down the screen rather than across it, and the unturned 4x3 would spend its long side on
+      -- down the screen rather than across it, and an unturned frame would spend its long side on
       -- floor. The header says what such a frame can and cannot settle.
       local endon = d[1] == 0
+      local along, across = (endon and H or W), (endon and W or H)
+
+      -- THE RUN FRAME IS SIZED OFF THE FOOTPRINT, NOT TYPED. It was 14x8 tiles four tiles off the
+      -- machine centre, which framed the 5x5 collector and cut the last pipe off both of
+      -- rf-heat-exchanger's water runs: that machine is fifteen tiles wide, so a half-width of
+      -- seven never reached a socket eight tiles out, let alone the run beyond it. SPACING is read
+      -- off footprint() for exactly that reason and the header states the rule; this was the one
+      -- frame still disagreeing with it.
+      --
+      -- OUT is how far past the machine centre the last pipe sits, plus four tiles of floor to see
+      -- it against. BACK is enough of the machine to show which machine it is. The frame spans one
+      -- to the other and sits centred between them.
+      local reach = math.abs(endon and (s.tile.y - centre.y) or (s.tile.x - centre.x)) + RUN_TILES
+      local out, back = reach + 4, along / 2 + 1
+      local length, offset = out + back, (out - back) / 2
+      local rw, rh = (endon and (across + 3) or length), (endon and length or (across + 3))
+
       local tag = string.format("%s-%s-%s", short(name), s.side, short(s.fluid))
       frames[#frames + 1] = { file = "seam-" .. tag .. ".png",
         x = s.tile.x - d[1] * 0.5, y = s.tile.y - d[2] * 0.5,
         w = endon and 3 or 4, h = endon and 4 or 3, zoom = 8 }
       frames[#frames + 1] = { file = "run-" .. tag .. ".png",
-        x = centre.x + d[1] * 4, y = centre.y + d[2] * 4,
-        w = endon and 8 or 14, h = endon and 14 or 8, zoom = 1 }
-      say(string.format("%s %s %s: socket tile %g,%g", name, s.side, s.fluid, s.tile.x, s.tile.y))
+        x = centre.x + d[1] * offset, y = centre.y + d[2] * offset,
+        w = rw, h = rh, zoom = 1 }
+      say(string.format("%s %s %s: socket tile %g,%g; run frame %gx%g tiles",
+        name, s.side, s.fluid, s.tile.x, s.tile.y, rw, rh))
     end
   end
   if #frames == 0 then error("no subject has a socket an ordinary pipe will join") end
@@ -456,8 +481,15 @@ try {
 
     # The marker is not the pictures: take_screenshot queues and the engine writes on its own
     # thread, so done.txt lands while every PNG is still zero bytes. Wait for settled sizes.
+    #
+    # ON ITS OWN DEADLINE, not the marker's. Sharing one budget meant a done.txt that landed near
+    # the end left this loop no iteration at all, so $sizes stayed empty and the throw below said
+    # "the game wrote no bytes" about what was really a timeout -- a wrong diagnosis for the one
+    # failure a person would have to chase by hand. There are thirteen frames to write now, three
+    # of them 1024x768, where there were four.
+    $settleDeadline = (Get-Date).AddSeconds($TimeoutSeconds)
     $sizes = @{}
-    while ((Get-Date) -lt $deadline) {
+    while ((Get-Date) -lt $settleDeadline) {
         $now = @{}
         foreach ($f in (Get-ChildItem -LiteralPath $shotDir -Filter '*.png')) { $now[$f.Name] = $f.Length }
         $settled = $now.Count -gt 0 -and -not ($now.Values | Where-Object { $_ -eq 0 }) -and
@@ -467,9 +499,10 @@ try {
         Start-Sleep -Milliseconds 700
     }
     $unwritten = @($sizes.Keys | Where-Object { $sizes[$_] -eq 0 })
-    if ($sizes.Count -eq 0 -or $unwritten) {
-        throw "the game wrote no bytes for: $(if ($unwritten) { $unwritten -join ', ' } else { '(no PNG at all)' })"
+    if ($sizes.Count -eq 0) {
+        throw "no PNG appeared in $shotDir within $TimeoutSeconds s of the done marker."
     }
+    if ($unwritten) { throw "the game wrote no bytes for: $($unwritten -join ', ')" }
 
     $shots = @(Get-ChildItem -LiteralPath $shotDir -Filter '*.png' | Sort-Object Name)
     foreach ($s in $shots) { Copy-Item -LiteralPath $s.FullName -Destination $OutputDirectory -Force }

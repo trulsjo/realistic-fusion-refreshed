@@ -320,22 +320,24 @@ number, which is this note's own last sentence said by a tool. (The other three 
 contained: they wear no rim and no ribs, so they report a stub and a band and nothing else.)
 
 **The fourth row is reproduced on the control render, and the leak with it.** The control is the
-shipped model with its six `Flange-*` objects deleted and re-rendered to a scratch
-directory -- nothing in the repository is touched and nothing is committed, so re-deriving that row
-means re-rendering. **`scripts/probe-flange-free-render.ps1` is that render, in one command**
-(#376): it runs `models/socket-variants.py`'s `unflanged` treatment over the stored model and
+shipped model with its six `Flange-*` objects deleted and re-rendered to a scratch directory --
+nothing in the repository is touched and nothing is committed, so re-deriving that row means
+re-rendering. **`scripts/probe-flange-free-render.ps1` is that render, in one command** (#376): it
+runs `models/socket-variants.py`'s `unflanged` treatment over the stored model and
 `models/render.py` over the result, into a directory the caller names and which it refuses if it is
 inside a mod. Before that the method lived only in this paragraph and the row could not be got back
-without working it out again. Measure the result with `--no-flange`, which is the caller telling
-`tools/measure-socket-parts.py` that the ribs' span is bare tube -- without it the tool still works
-its windows out from the constants the model was built from, labels that span "flange ribs" and
-measures it at the ribs' radius. Re-verified that way 2026-09-16: `+20.5`/`+18.5` through columns
-198..201, and nothing in the table unstable. Through columns 198..201 the stub measures +20.5/+18.5, which is the table's
-row; widened to 198..202 it measures +21.5/+19.5, which is the leak that shipped, and the tool
-reports THAT one unstable rather than returning it. The same boundary shows on the shipped sheet
-without any render: the flange rib ends and the accent band begins at column 202.88, so column 203
-starts a tenth of a pixel past it, and the band read through a window holding that column measures
-+24.5 above where its own columns give +23.5.
+without working it out again.
+
+Measure the result with `--no-flange`, which is the caller telling `tools/measure-socket-parts.py`
+that the ribs' span is bare tube -- without it the tool still works its windows out from the
+constants the model was built from, labels that span "flange ribs" and measures it at the ribs'
+radius. Through columns 198..201 the stub then measures +20.5/+18.5, which is the table's row, and
+nothing in the table is reported unstable; re-verified that way 2026-09-16. Widened to 198..202 it
+measures +21.5/+19.5, which is the leak that shipped, and the tool reports THAT one unstable rather
+than returning it. The same boundary shows on the shipped sheet without any render: the flange rib
+ends and the accent band begins at column 202.88, so column 203 starts a tenth of a pixel past it,
+and the band read through a window holding that column measures +24.5 above where its own columns
+give +23.5.
 
 **The mechanism is still not settled**: `tools/check-socket-height.py`'s header attributes the lost
 underside to the shadow-catching ground plane, and these numbers are consistent with an underside

@@ -153,10 +153,22 @@ foreach ($f in (Get-ChildItem -LiteralPath $outFull | Sort-Object Name)) {
 }
 Write-Host ''
 Write-Host "flange-free render: $outFull"
-Write-Host 'Measure it with, for a plumbable socket of radius 0.249 -- --no-flange is what tells'
-Write-Host 'the tool this is a control render, and without it the stub still has no window:'
+# THE COMMAND IS BUILT FROM THE MANIFEST THIS RUN WROTE, not typed. `--direction west` alone is
+# ambiguous on rf-heat-exchanger, which records two west connections -- water and reactor energy --
+# and measure-socket-parts.py rightly refuses to guess between them. So every plumbable connection
+# is listed, each with the --fluid that names it. A contained one is left out: it is drawn at the
+# machine's own height and radius and needs a --z this script has no business inventing.
+$connections = (Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json).geometry.connections
+$plumbable = @($connections | Where-Object { -not $_.connection_category })
+Write-Host 'Measure it with --no-flange, which is what tells the tool this is a control render;'
+Write-Host 'without it the ribs'' span is still labelled "flange ribs" and the stub has no window:'
 Write-Host ''
-Write-Host "  python tools/measure-socket-parts.py `"$manifest`" --direction west --radius 0.249 --no-flange"
+foreach ($c in $plumbable) {
+    Write-Host "  python tools/measure-socket-parts.py `"$manifest`" --direction $($c.direction) --fluid $($c.fluid) --radius 0.249 --no-flange"
+}
+if (-not $plumbable) {
+    Write-Host "  (no connection here is plumbable; a contained one needs its own --radius and --z)"
+}
 Write-Host ''
 Write-Host "On rf-isotope-collector's west socket that reproduces models/house-style.md's stub row:"
 Write-Host '+20.5 above the axis, +18.5 below, 1.0 px lost underneath, through columns 198..201.'
