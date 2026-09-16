@@ -23,8 +23,8 @@ pixels on a sheet that is already committed.
 WHY IT IS A TOOL RATHER THAN A HABIT: THE COLUMN WINDOW. Each piece of a socket can only be read in
 the columns where it is the widest thing present, and one column either way picks up its neighbour
 and moves the answer by whole pixels. That leak published two wrong rows into models/house-style.md
-and they shipped -- on rf-isotope-collector's west socket the stub reads +21.5/+19.5 over columns
-198..202 where it is +20.5/+18.5 over 198..201, because column 202 is the first that draws any of
+and they shipped -- on rf-isotope-collector's west socket the stub reads +21.5/+21.5 over columns
+198..202 where it is +20.5/+20.5 over 198..201, because column 202 is the first that draws any of
 the accent band. So the guard lives in the instrument rather than in the reader: every number
 carries the window it was read through, and a number that MOVES when that window is narrowed by one
 column at either end is reported unstable rather than returned. IT LIVES IN tools/socket_strip.py
@@ -37,7 +37,7 @@ render is one command: scripts/probe-flange-free-render.ps1, which runs socket-v
 `unflanged` treatment over the stored model and models/render.py over the result, into a directory
 you name and which it refuses if it is inside a mod. Measure that sheet with --no-flange -- which
 is the CALLER saying what kind of sheet it is, since every window here is worked out from the
-constants the model was built from and never from the pixels -- and the stub reports +20.5/+18.5
+constants the model was built from and never from the pixels -- and the stub reports +20.5/+20.5
 through columns 198..201, which is models/house-style.md's row. Nothing in the repository is
 touched and nothing is committed, so this file reports the stub as having NO WINDOW on the shipped
 sheets rather than a number it cannot get to. The SAME boundary can be shown with no render at all: the
@@ -91,42 +91,10 @@ import rf_blender as rf  # noqa: E402  (no bpy at module level)
 import socket_strip  # noqa: E402
 
 
-def parts_of(radius, plumbable, flanged=True):
-    """Every piece of a socket of this radius, as (name, radius, back_near, back_far).
-
-    `back_near`..`back_far` is the span the piece occupies along the tube, in tiles inboard from the
-    footprint edge the stub stops at. All of it is models/rf_blender.py's constants arranged the way
-    models/rf_parts.py's `port` and `socket` arrange them when they draw one -- the rim from the
-    first three, the band from its own pair, the ribs fitted into what those two leave between them.
-
-    THE STUB IS WHAT THE OTHERS DO NOT COVER, which on a plumbable socket is the gap between the two
-    flange ribs and nothing else. That gap is 1.15 px wide on the shipped sheets, so no column of
-    them falls inside it clear of both ribs and the stub has no window there -- reported as such
-    rather than read through a window that also holds a rib. A CONTAINED socket wears neither rim
-    nor ribs, so its bare tube runs from the mouth to the band and reads easily.
-
-    `flanged=False` is the FLANGE-FREE CONTROL RENDER, and it is the caller's claim about the sheet
-    rather than anything read off it: with the ribs deleted their span is bare tube, so the ribs
-    row goes and the stub takes the whole span from the rim's inner edge to the band. Left on a
-    shipped sheet it would measure the ribs and call them the stub, which is why it is not the
-    default and why scripts/probe-flange-free-render.ps1 is what produces a sheet to pass it.
-    """
-    rim = radius + rf.PORT_CLEARANCE + rf.RIM_PROUD + rf.RIM_MINOR
-    band_near = rf.BAND_BACK - rf.BAND_DEPTH / 2
-    if not plumbable:
-        return [("stub", radius, 0.0, band_near),
-                ("accent band", radius + rf.BAND_PROUD, band_near, rf.BAND_BACK + rf.BAND_DEPTH / 2)]
-    near = rf.RIM_BACK + rf.RIM_MINOR
-    if not flanged:
-        return [("stub", radius, near, band_near),
-                ("accent band", radius + rf.BAND_PROUD, band_near,
-                 rf.BAND_BACK + rf.BAND_DEPTH / 2),
-                ("dark rim", rim, rf.RIM_BACK - rf.RIM_MINOR, rf.RIM_BACK + rf.RIM_MINOR)]
-    thick = (band_near - near) * (1 - rf.FLANGE_GAP) / 2
-    return [("stub", radius, near + thick, band_near - thick),
-            ("accent band", radius + rf.BAND_PROUD, band_near, rf.BAND_BACK + rf.BAND_DEPTH / 2),
-            ("flange ribs", radius + rf.FLANGE_PROUD, near, band_near),
-            ("dark rim", rim, rf.RIM_BACK - rf.RIM_MINOR, rf.RIM_BACK + rf.RIM_MINOR)]
+# THE PIECES OF A SOCKET LIVE IN tools/socket_strip.py SINCE #373, beside the column window they
+# are read through, because tools/check-socket-parts.py needs the same arrangement and two copies
+# of it would drift. Re-exported under its old name so this file reads as it always did.
+parts_of = socket_strip.parts_of
 
 
 def load_sheet(directory, machine, suffix):

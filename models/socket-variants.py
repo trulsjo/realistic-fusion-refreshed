@@ -59,8 +59,8 @@ MEASURED rather than looked at, and each removes one thing:
                   should LOOK like; it exists so the bare tube can be MEASURED. On a shipped sheet
                   the two ribs leave 1.15 px of tube between them and no whole column falls clear
                   of both, so tools/measure-socket-parts.py correctly reports the stub as having NO
-                  WINDOW -- and models/house-style.md's stub row, +20.5 above the axis and +18.5
-                  below, came off a control render built by hand and thrown away. #376 is where
+                  WINDOW -- and models/house-style.md's stub row, +20.5 above the axis and +20.5
+                  below, comes off a control render built by hand and thrown away. #376 is where
                   that recipe was committed, and scripts/probe-flange-free-render.ps1 is the one
                   command that runs it. Nothing rendered from this treatment ships or is committed;
                   it is measured and deleted.
@@ -71,6 +71,14 @@ MEASURED rather than looked at, and each removes one thing:
                   what cuts a socket's underside can be MEASURED instead of asserted (#366, #362).
                   Nothing rendered from it ships or is committed: it is measured and deleted, and
                   scripts/probe-socket-underside.py is the one command that runs it.
+
+                  IT NO LONGER UNCOVERS AN UNDERSIDE, because since ADR 0035 models/render.py's
+                  structure layer marks that plane INDIRECT ONLY and nothing is cut in the first
+                  place. What deleting it still does is take away its bounce light and empty the
+                  shadow sheet, which is a different pair of things from what this treatment was
+                  written for. It is kept because both docs/research/socket-underside-cut.md and
+                  models/house-style.md cite it in commands a reader is meant to be able to run,
+                  and because a rig that stops cutting is a claim somebody may want to re-measure.
 
 Every added piece goes through models/rf_parts.py, so it takes the house style's bevel and the
 detail floor without this file restating either, and a change to the shipped socket geometry reaches

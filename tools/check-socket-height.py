@@ -26,22 +26,28 @@ above the ground line. A socket is a cylinder lying along a ground axis, so its 
 symmetric about that axis and the MIDPOINT of its drawn extent is the axis, wherever the accent
 band and the port rim put the extremes.
 
-THAT SYMMETRY HOLDS ONLY WHILE THE WHOLE SILHOUETTE IS ABOVE THE GROUND PLANE, AND AT PIPE HEIGHT
-IT IS NOT. `rf_blender.build_rig` puts a shadow-catching ground plane at z 0, and a socket drawn at
-SOCKET_Z reaches well below it -- radius 0.249 about its axis at 0.033 -- so its underside is cut
-off and the midpoint rides high. At the old z 0.55 the tube cleared the plane and the same
-measurement landed within 0.002 of prediction, which is how the derivation came to be trusted
-somewhere it does not apply.
+THAT SYMMETRY HELD ONLY WHILE THE WHOLE SILHOUETTE WAS ABOVE THE GROUND PLANE, AND AT PIPE HEIGHT
+IT WAS NOT. `rf_blender.build_rig` puts a shadow-catching ground plane at z 0, and a socket drawn at
+SOCKET_Z reaches well below it -- radius 0.249 about its axis at 0.033 -- so its underside was cut
+off and the midpoint rode high. That was an assertion here until 2026-09-16, when #366 and #367
+measured it: a machine rendered with the plane deleted puts every part's underside back to the
+pixel, and thirty-six bare cylinders across six radii and six heights agree with a model of the
+plane that has no fitted parameter in it. A shadow catcher is transparent in the beauty pass but NOT
+to what is behind it, which was the half of the claim nobody had checked.
 
-THAT PARAGRAPH WAS AN ASSERTION UNTIL 2026-09-16 AND IS NOW A MEASUREMENT (#366, #367). It is right.
-Rendering a machine with the plane deleted puts every part's underside back exactly -- the accent
-band, the flange ribs and the dark rim each draw as far below their axis as above it, to the pixel
--- and thirty-six bare cylinders across six radii and six heights agree with a model of the plane
-that has no fitted parameter in it: below the axis a tube draws sqrt(r^2 - z^2) + z/tan(pitch),
-until z reaches r cos(pitch) and the plane stops reaching it. A shadow catcher is transparent in the
-beauty pass but NOT to what is behind it, which is the half of the claim nobody had checked.
-docs/research/socket-underside-cut.md has the tables and scripts/probe-socket-underside.py reruns
-them.
+SINCE ADR 0035 NOTHING IS CUT, and this gate's residual went with it. models/render.py renders the
+structure on a view layer that marks the ground plane INDIRECT ONLY, so the plane lights a machine
+and no longer stands in front of it; the shadow comes off a second layer where it still catches.
+Every plumbable socket on both machines now reads +0.000 against vanilla's pipe where it read +0.031
+before, which is what docs/research/socket-underside-cut.md predicted from the geometry without
+being shown it -- 0.70804 x 0.033 = +0.02336 tiles against the +0.02337 this gate measures off
+vanilla's own sheet.
+
+THE CLIPPING PARAGRAPHS BELOW ARE KEPT BECAUSE THE ARITHMETIC IS STILL THE REASON THIS GATE IS
+SHAPED AS IT IS, and because a socket could be put back under a plane by a rig change. What is no
+longer true is that it bites: a drawn centre and a world height now agree to a thousandth.
+tools/check-socket-parts.py is the gate that would catch it coming back, part by part, where this
+one measures only the envelope and moved by a quarter of its tolerance when the cut was at its worst.
 
 SO THIS COMPARES TWO DRAWN CENTRES AND DOES NOT RECOVER A WORLD HEIGHT. It measures where our
 socket is drawn, against where a vanilla pipe's body is drawn, and both sides are numbers off a
@@ -51,14 +57,16 @@ residual below is geometric rather than incidental, and that it scales with the 
 Both machines draw a plumbable socket at 0.249 (models/house-style.md), so both carry the same one;
 a machine that drew one thicker would carry more.
 
-AND THE RESIDUAL IS NOT INDEPENDENT OF THE HEIGHT, which #356 assumed it was. Lowering the socket
-lowers the axis but also pushes more of the tube under the cut, so the two move against each other.
-Measured on both machines either side of that change, with a sub-pixel read of the same strip:
-every plumbable socket's residual fell from about 2.28 px to about 2.00 px -- 0.28 px -- where
-lowering SOCKET_Z by 0.011 tiles moves the axis alone by 0.494 px. The silhouette's TOP followed
-the full 0.52 px and its BOTTOM moved 0.03 px, which is what "the underside is cut" looks like from
-outside. The gate itself reported no change at all, and that is the row threshold below rather than
-a disagreement: it reads whole rows at alpha 8, so a quarter-pixel move is invisible to it.
+AND THE RESIDUAL WAS NOT INDEPENDENT OF THE HEIGHT, which #356 assumed it was. While the plane cut,
+lowering the socket lowered the axis but also pushed more of the tube under the cut, so the two
+moved against each other. Measured on both machines either side of that change, with a sub-pixel
+read of the same strip: every plumbable socket's residual fell from about 2.28 px to about 2.00 px
+-- 0.28 px -- where lowering SOCKET_Z by 0.011 tiles moves the axis alone by 0.494 px. The
+silhouette's TOP followed the full 0.52 px and its BOTTOM moved 0.03 px, which is what "the
+underside is cut" looked like from outside. The gate itself reported no change at all, and that is
+the row threshold below rather than a disagreement: it reads whole rows at alpha 8, so a
+quarter-pixel move is invisible to it. With the cut gone the two are independent again, and both
+residuals are zero.
 
 Isolating the socket is the other half, and since #365 it is tools/socket_strip.py's rather than
 this file's: two cuts, one in columns and one in rows, shared with tools/measure-socket-parts.py so
@@ -179,17 +187,18 @@ PIPE_COLOUR_MARGIN = 0.25
 # other sprite in that directory is a different object drawn at a different height.
 VANILLA_PIPE_SHEETS = frozenset(("pipe-straight-horizontal.png", "pipe-straight-horizontal-window.png"))
 
-# HOW FAR OFF IS TOO FAR. Not equality: both machines measure 0.031 tiles above vanilla's centre
-# rather than on it, and that residual is GEOMETRIC -- the header's. The ground plane cuts the
-# socket's underside at this height, so the midpoint rides high; it scales with the socket's radius,
-# and the lit bevel and the anti-aliasing are worth a fraction of a pixel beside it.
+# HOW FAR OFF IS TOO FAR. Both machines now measure 0.000 tiles off vanilla's centre, so the
+# tolerance is no longer admitting a residual -- it is headroom against the row threshold and the
+# bevel, and nothing else.
 #
-# AND 0.031 IS WHAT IT SHOULD BE, WHICH #366 AND #367 SETTLED RATHER THAN ASSUMED. The envelope is
-# the widest part, the dark rim at radius 0.379, and the header's model of the plane predicts its
-# drawn centre at +0.05509 tiles against vanilla's +0.02337: a residual of 0.0317 tiles, or 2.030
-# px, with nothing fitted. The same model gives 2.316 px at the old SOCKET_Z of 0.044, so it also
-# reproduces the 0.28 px #356 measured across that change and could not explain. There is no defect
-# here to chase; docs/research/socket-underside-cut.md carries the arithmetic.
+# IT WAS 0.031 TILES UNTIL ADR 0035, AND THAT RESIDUAL WAS GEOMETRIC. The ground plane cut a
+# socket's underside at this height, so the envelope's midpoint rode high by an amount that scaled
+# with the socket's radius. #366 and #367 showed it was exactly what the geometry predicts -- the
+# widest part is the dark rim at radius 0.379, drawn centre +0.05509 tiles against vanilla's
+# +0.02337, a residual of 0.0317 tiles or 2.030 px, with nothing fitted -- and #373 then took the
+# cut away rather than living with it. THE PREDICTION WAS TESTED BY THE FIX: with nothing cut the
+# model says the centre is 0.70804 x 0.033 = +0.02336, and re-rendering both machines measured
+# +0.023 on every plumbable socket. docs/research/socket-underside-cut.md carries the arithmetic.
 #
 # IT USED TO BE TWO THINGS, and #356 removed the second. SOCKET_Z had been solved from a reference
 # read as 0.031 rather than the 0.0234 vanilla actually draws at, so every plumbable socket was
@@ -197,7 +206,9 @@ VANILLA_PIPE_SHEETS = frozenset(("pipe-straight-horizontal.png", "pipe-straight-
 # px to 2.00 px rather than by the 0.49 px the axis alone moves -- the header says why -- and left
 # what this gate reads where it was, because a quarter-pixel move does not cross a row. That is why
 # the figure above did not change when the defect was fixed, and `constant_matches_reference` rather
-# than this tolerance is now what holds the height honest.
+# than this tolerance is what holds the height honest. ADR 0035 then removed the first, so the
+# residual this paragraph is about is now zero; the paragraph stays because the reason a quarter-
+# pixel move is invisible here has not changed.
 #
 # 0.08 tiles is five pixels on a sheet and two and a half at the game's own zoom. It admits the
 # residual with room to spare and still catches the defect this exists for by a factor of four: a

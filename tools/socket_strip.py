@@ -157,6 +157,48 @@ def plumbable(connection):
     return not connection.get("connection_category")
 
 
+# WHERE A SOCKET'S PIECES ARE, moved here from tools/measure-socket-parts.py by #373 for this
+# module's own stated reason: tools/check-socket-parts.py came to need the same arrangement, and a
+# second copy of it is an arrangement that stops describing one of the two. The gate and the bench
+# now take the pieces and the window they are read through from one place.
+def parts_of(radius, plumbable, flanged=True):
+    """Every piece of a socket of this radius, as (name, radius, back_near, back_far).
+
+    `back_near`..`back_far` is the span the piece occupies along the tube, in tiles inboard from the
+    footprint edge the stub stops at. All of it is models/rf_blender.py's constants arranged the way
+    models/rf_parts.py's `port` and `socket` arrange them when they draw one -- the rim from the
+    first three, the band from its own pair, the ribs fitted into what those two leave between them.
+
+    THE STUB IS WHAT THE OTHERS DO NOT COVER, which on a plumbable socket is the gap between the two
+    flange ribs and nothing else. That gap is 1.15 px wide on the shipped sheets, so no column of
+    them falls inside it clear of both ribs and the stub has no window there -- reported as such
+    rather than read through a window that also holds a rib. A CONTAINED socket wears neither rim
+    nor ribs, so its bare tube runs from the mouth to the band and reads easily.
+
+    `flanged=False` is the FLANGE-FREE CONTROL RENDER, and it is the caller's claim about the sheet
+    rather than anything read off it: with the ribs deleted their span is bare tube, so the ribs
+    row goes and the stub takes the whole span from the rim's inner edge to the band. Left on a
+    shipped sheet it would measure the ribs and call them the stub, which is why it is not the
+    default and why scripts/probe-flange-free-render.ps1 is what produces a sheet to pass it.
+    """
+    rim = radius + rf.PORT_CLEARANCE + rf.RIM_PROUD + rf.RIM_MINOR
+    band_near = rf.BAND_BACK - rf.BAND_DEPTH / 2
+    if not plumbable:
+        return [("stub", radius, 0.0, band_near),
+                ("accent band", radius + rf.BAND_PROUD, band_near, rf.BAND_BACK + rf.BAND_DEPTH / 2)]
+    near = rf.RIM_BACK + rf.RIM_MINOR
+    if not flanged:
+        return [("stub", radius, near, band_near),
+                ("accent band", radius + rf.BAND_PROUD, band_near,
+                 rf.BAND_BACK + rf.BAND_DEPTH / 2),
+                ("dark rim", rim, rf.RIM_BACK - rf.RIM_MINOR, rf.RIM_BACK + rf.RIM_MINOR)]
+    thick = (band_near - near) * (1 - rf.FLANGE_GAP) / 2
+    return [("stub", radius, near + thick, band_near - thick),
+            ("accent band", radius + rf.BAND_PROUD, band_near, rf.BAND_BACK + rf.BAND_DEPTH / 2),
+            ("flange ribs", radius + rf.FLANGE_PROUD, near, band_near),
+            ("dark rim", rim, rf.RIM_BACK - rf.RIM_MINOR, rf.RIM_BACK + rf.RIM_MINOR)]
+
+
 def sheet_frame(manifest, connection):
     """(suffix, width_px, height_px) of the sheet this connection is measured on."""
     fr = manifest["frame"]

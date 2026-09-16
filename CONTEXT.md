@@ -69,9 +69,11 @@ itself; a machine that carries no fluid at a socket paints no accent there.
 
 **Proud** — standing out past something else. **A proudness figure names what it is proud OF, or it
 means nothing**, and a socket offers three references that differ by pixels: its own stub, vanilla's
-pipe barrel, and vanilla's outer flange. The same accent band is 3.0 px proud above the stub and 4.0
-px proud above the barrel; below, it is 2.0 and 1.0. Quoting one where a reader assumes the other is
-how #357's asymmetry got written down as a one-pixel nothing when what is seen is three
+pipe barrel, and vanilla's outer flange. The same accent band is 3.0 px proud of the stub and 4.0 px
+proud of the barrel, above and below alike since
+[ADR 0035](docs/adr/0035-the-rig-draws-what-is-below-the-ground-line.md). It was the two references
+disagreeing that hid #357's asymmetry: against the cut stub it read as one pixel, against the
+symmetric barrel as three, and the smaller figure was the one written down
 ([#373](https://github.com/trulsjo/realistic-fusion-refreshed/issues/373)). The same rule as
 Measurement words below, applied to a pixel rather than a map: say which one.
 

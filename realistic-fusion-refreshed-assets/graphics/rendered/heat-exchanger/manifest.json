@@ -175,7 +175,7 @@
   },
   "machine": "heat-exchanger",
   "model": "models/heat-exchanger/heat-exchanger.blend",
-  "model_sha256": "87900af5252fe0ac19fc8bde429803d8e502d4e530a86a61bca51e407c281258",
+  "model_sha256": "e1deeac1aa45864af6fc3431209fd913aa8617593554312aaeaa716bfe4a1fce",
   "render": {
     "blender": "5.2.0 LTS",
     "device": "CPU",
@@ -185,5 +185,73 @@
     "samples": 64,
     "seed": 0
   },
+  "sockets": [
+    {
+      "direction": "west",
+      "fluid": "rf-reactor-energy",
+      "plumbable": false,
+      "position": [
+        -7,
+        -1
+      ],
+      "radius": 0.3,
+      "z": 0.55
+    },
+    {
+      "direction": "north",
+      "fluid": "rf-reactor-energy",
+      "plumbable": false,
+      "position": [
+        0,
+        -2
+      ],
+      "radius": 0.3,
+      "z": 0.55
+    },
+    {
+      "direction": "east",
+      "fluid": "rf-reactor-energy",
+      "plumbable": false,
+      "position": [
+        7,
+        -1
+      ],
+      "radius": 0.3,
+      "z": 0.55
+    },
+    {
+      "direction": "west",
+      "fluid": "water",
+      "plumbable": true,
+      "position": [
+        -7,
+        1
+      ],
+      "radius": 0.249,
+      "z": 0.033
+    },
+    {
+      "direction": "east",
+      "fluid": "water",
+      "plumbable": true,
+      "position": [
+        7,
+        1
+      ],
+      "radius": 0.249,
+      "z": 0.033
+    },
+    {
+      "direction": "south",
+      "fluid": "steam",
+      "plumbable": true,
+      "position": [
+        0,
+        2
+      ],
+      "radius": 0.249,
+      "z": 0.033
+    }
+  ],
   "source": "written by models/render.py"
 }
