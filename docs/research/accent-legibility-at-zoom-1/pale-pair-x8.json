@@ -1,0 +1,42 @@
+{
+  "frame": "pale-pair-x8.png",
+  "magnification": 8,
+  "resampling": "nearest-neighbour",
+  "made_by": "cropped and enlarged by hand; every pixel is a pixel of the source frame",
+  "panels": [
+    {
+      "side": "left",
+      "source_frame": "collector-alone.png",
+      "zoom": 1,
+      "crop": {
+        "x": 172,
+        "y": 80,
+        "w": 64,
+        "h": 66
+      },
+      "world": {
+        "x": 21.875,
+        "y": -2.5,
+        "w": 2.0,
+        "h": 2.0625
+      }
+    },
+    {
+      "side": "right",
+      "source_frame": "collector-pipes.png",
+      "zoom": 1,
+      "crop": {
+        "x": 204,
+        "y": 112,
+        "w": 64,
+        "h": 66
+      },
+      "world": {
+        "x": 49.875,
+        "y": -2.5,
+        "w": 2.0,
+        "h": 2.0625
+      }
+    }
+  ]
+}

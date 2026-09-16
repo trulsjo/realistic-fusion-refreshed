@@ -11,10 +11,15 @@
     the sheets exist and agree with the prototype's footprint (#250); nothing proves they look
     right. That is a person looking, and this is what puts the pictures in front of them (#252).
 
-    WHY IT NEEDS THE GRAPHICAL CLIENT, unlike every other probe here. game.take_screenshot renders
-    through the game's own renderer, so --benchmark and --create cannot produce one. This launches
-    the full client against a scratch map, waits for the mod to write a done marker beside the
-    screenshots, and then closes the game. A window opens for a few seconds; that is expected.
+    THE SIBLING OF scripts/probe-isotope-collector-art.ps1, AND THEY NOW SHARE THEIR SCAFFOLDING.
+    place(), footprint(), box_of(), status_name(), pave(), pipe_up(), the character sweep, the
+    shutter, the launch and the settle-wait live in scripts/art-probe-lib.ps1 and are dot-sourced
+    from both (#386). Everything below this paragraph is this machine's own question.
+
+    WHAT THIS PROBE KEEPS FOR ITSELF: the bolt arithmetic. `facing`, `connection_facing` and `bolt`
+    place one machine so that its own connection tile lands on another machine's target -- which is
+    what ADR 0018's Consequences call a trap, and which the collector's probe has no use for,
+    because that machine shares no connection with a reactor at all.
 
     WHAT IT SHOOTS, and why each one:
 
@@ -34,15 +39,22 @@
       working-night.png  The same at midnight, where the glow is all there is.
       pipes.png          One machine with an ordinary pipe on every connection a player can plumb,
                          and none on the three that are contained -- which is asked of the engine
-                         rather than listed here (see pipe_up). THE FRAME THAT WAS MISSING FOR
-                         MONTHS (#346): the socket-height defect Truls found on 2026-09-13 lived in
-                         the join between a socket and the pipe in it, and until this shot not one
-                         frame this rig took had a pipe in it at all. A socket in the wrong place,
-                         or an accent that does not match the fluid its pipe carries, shows here too.
+                         rather than listed here (see the library's pipe_up). THE FRAME THAT WAS
+                         MISSING FOR MONTHS (#346): the socket-height defect Truls found on
+                         2026-09-13 lived in the join between a socket and the pipe in it, and until
+                         this shot not one frame this rig took had a pipe in it at all. A socket in
+                         the wrong place, or an accent that does not match the fluid its pipe
+                         carries, shows here too.
       rotations.png      One machine in each of the four directions, in a two-by-two grid whose
                          pitch comes from the machine's own footprint. The engine turns the
                          connections and not the picture, so this is where a wrongly ordered sheet
                          set shows itself: sockets on the wrong edge, cabinet in the wrong corner.
+
+    EVERY FRAME NOW CARRIES A SIDECAR (#385). `<frame>.json` beside `<frame>.png` records the zoom,
+    the world position the camera was centred on, the resolution, and the position, direction and
+    footprint of everything in shot -- written by the shutter from the arguments it takes the
+    picture with, which is the warning this file's own framing comment already carried: "two
+    expressions for one number is how the spacing above and the framing here would come apart."
 
     The machine is fed by writing its fluid boxes directly each tick rather than by plumbing a
     reactor into it. The picture is the subject; how the energy got there is not, and a real
@@ -65,11 +77,18 @@
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
 .PARAMETER OutputDirectory
-    Where the PNGs are copied. Defaults to a timestamped directory under the system temp path,
-    which is printed at the end.
+    Where the PNGs and their sidecars are copied. Defaults to a timestamped directory under the
+    system temp path, which is printed at the end.
 
 .PARAMETER TimeoutSeconds
     How long to wait for the game to write the done marker before giving up. Default 180.
+
+.PARAMETER MapSeed
+    Map generation seed, passed to --create. Unset means a random map, which is what the frames
+    already committed were shot on -- and which is why re-running this probe reproduces the MACHINE
+    and not the ground under it. Every grass tile picks a variant off the map seed, so two runs of
+    identical code differ on about 85% of a frame's pixels while the machine itself differs by at
+    most 5 of 255. Give a seed to make a frame comparable with another frame.
 
 .PARAMETER KeepTemp
     Leave the scratch mod directory, the save and the raw script-output in place.
@@ -85,90 +104,25 @@ param(
     [string] $FactorioExe,
     [string] $OutputDirectory,
     [int]    $TimeoutSeconds = 180,
+    [int]    $MapSeed,
     [switch] $KeepTemp
 )
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 . "$repoRoot/scripts/factorio-lib.ps1"
-
-$ourMods = Get-RepoMods
-$rigName = 'rf-heat-exchanger-art-probe'
+. "$repoRoot/scripts/art-probe-lib.ps1"
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
-$bundled     = Get-BundledMods -FactorioExe $FactorioExe
-
-$temp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-hx-art-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-$modDir = Join-Path $temp 'mods'
-$rigDir = Join-Path $modDir $rigName
-New-Item -ItemType Directory -Path $rigDir -Force | Out-Null
-
 if (-not $OutputDirectory) {
     $OutputDirectory = Join-Path ([IO.Path]::GetTempPath()) ('rf-hx-art-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 }
-New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 
-@{
-    name = $rigName; version = '0.0.1'; title = 'Heat exchanger art probe'
-    author = 'probe-heat-exchanger-art.ps1'; factorio_version = '2.0'
-    dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
-} | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
-
-# ---------------------------------------------------------------------------- the rig's control
-$control = @'
--- Generated by probe-heat-exchanger-art.ps1. Nothing here ships.
+# ------------------------------------------------------ this probe's own half of the rig's control
+$layout = @'
 
 local MACHINE = "rf-heat-exchanger"
 local ENERGY  = "rf-reactor-energy"
-local OUT     = "rf-art/"
-
--- Tagged so the caller can pick these out of a log that is mostly not ours.
-local function say(line) localised_print('ARTPROBE ' .. line) end
-
-local BUILD_CHECK = defines.build_check_type.manual
-if not BUILD_CHECK then
-  error("defines.build_check_type.manual is gone; this rig's placement guard would silently "
-    .. "fall back to ghost_revive")
-end
-
---- An odd-sided building's centre sits at a tile centre, so its edges land on tile boundaries.
---- Every position below is at a tile centre on purpose: "flush" is only true if it is.
----
---- REFUSES AN OVERLAP RATHER THAN PHOTOGRAPHING ONE. create_entity does NOT collision-check, so
---- until #275 this happily stacked two machines on one another and the shot came out garbled --
---- which is the worst way for this probe to fail, because a probe asserts nothing and a garbled
---- picture still looks like a picture. bench-mod-links.ps1's place_or_die is the same guard for the
---- same reason; the error says "stale" because that is what a refused placement here means.
-local function place(surface, name, x, y, direction)
-  if not surface.can_place_entity({
-      name = name, position = { x, y }, direction = direction,
-      force = "player", build_check_type = BUILD_CHECK }) then
-    error(string.format("%s will not fit at (%g, %g): something is already there, so this rig's "
-      .. "layout is stale against that prototype's footprint", name, x, y))
-  end
-  local e = surface.create_entity({
-    name = name, position = { x, y }, direction = direction,
-    force = "player", raise_built = true,
-  })
-  if not e then error("could not place " .. name .. " at " .. x .. "," .. y) end
-  return e
-end
-
---- The machine's footprint in whole tiles, asked rather than written down.
-local function footprint(name)
-  local box = prototypes.entity[name].collision_box
-  return math.ceil(box.right_bottom.x - box.left_top.x),
-         math.ceil(box.right_bottom.y - box.left_top.y)
-end
-
---- Which fluidbox index carries a given fluid, asked rather than assumed: the order of a boiler's
---- boxes is the engine's business, and rf-heat-exchanger's energy source adds one of its own.
-local function box_of(entity, fluid)
-  for i = 1, #entity.fluidbox do
-    local f = entity.fluidbox.get_filter(i)
-    if f and f.name == fluid then return i end
-  end
-end
 
 --- Which way a connection faces, read off the tile it targets rather than remembered.
 local function facing(connection)
@@ -207,73 +161,12 @@ local function bolt(surface, name, fluid, side, tile, seed)
   return place(surface, name, tile.x - dx, tile.y - dy)
 end
 
---- entity.status as its name. There is no status_string in 2.0.77.
-local function status_name(entity)
-  if not (entity and entity.valid) then return "?" end
-  for k, v in pairs(defines.entity_status) do
-    if v == entity.status then return k end
-  end
-  return tostring(entity.status)
-end
-
---- An ordinary pipe on every connection a player can actually plumb, and none on the rest.
---- Vanilla's pipe on purpose rather than rf-pipe: the claim being photographed is that an ordinary
---- pipe reaches these fluids at all.
----
---- WHICH CONNECTIONS THOSE ARE IS ASKED, NOT LISTED. Three of this machine's six carry a
---- connection_category of their own (ADR 0018, #86) and nothing a player can build joins them. So a
---- pipe is built on every tile a connection points at and the engine is then asked whether it
---- joined; one that did not is destroyed again. That is a stronger answer than any table here could
---- be, because it is the same question a player asks by dragging a pipe at the machine -- and it
---- stays right the day a connection's category changes.
-local function pipe_up(surface, entity)
-  local made, refused = 0, 0
-  for i = 1, #entity.fluidbox do
-    for _, c in pairs(entity.fluidbox.get_pipe_connections(i)) do
-      if c.target_position and #surface.find_entities_filtered({ position = c.target_position }) == 0 then
-        local p = place(surface, "pipe", c.target_position.x, c.target_position.y)
-        local joined = false
-        for _, pc in pairs(p.fluidbox.get_pipe_connections(1)) do
-          if pc.target and pc.target.owner and pc.target.owner.unit_number == entity.unit_number then
-            joined = true
-          end
-        end
-        if joined then made = made + 1 else p.destroy() ; refused = refused + 1 end
-      end
-    end
-  end
-  say(string.format("%s took %d pipe(s); %d connection(s) refused one, which is what contained means",
-    entity.name, made, refused))
-  return made, refused
-end
-
---- Flat, dry, uniform ground under a rectangle, so the shot is of the machine and not of the
---- terrain it happened to land on -- and so nothing is refused for standing in water.
----
---- DECORATIVES ARE DESTROYED AS WELL AS TILES RETILED. set_tiles alone leaves every shrub, dry root
---- and rock patch standing: they are not entities, so the sweep below walks straight past them, and
---- "uniform ground" was a claim this comment made that the code did not keep.
---- probe-isotope-collector-art.ps1 learnt that first, from frames that came back with weeds across
---- half of them; this is the same fix (#346).
-local function pave(surface, x1, y1, x2, y2)
-  local tiles = {}
-  for x = math.floor(x1), math.ceil(x2) do
-    for y = math.floor(y1), math.ceil(y2) do
-      tiles[#tiles + 1] = { name = "grass-1", position = { x, y } }
-    end
-  end
-  surface.set_tiles(tiles)
-  surface.destroy_decoratives({ area = { { x1, y1 }, { x2, y2 } } })
-end
-
 script.on_nth_tick(60, function()
   if storage.stage then return end
   storage.stage = "built"
 
   local surface = game.surfaces[1]
-  surface.request_to_generate_chunks({ 0, 0 }, 8)
-  surface.force_generate_chunk_requests()
-  surface.always_day = true
+  ready(surface)
 
   -- THE PITCH BETWEEN NEIGHBOURS, off the machine rather than written down. A rotated machine is
   -- as wide as the other one is tall, so the long side governs both axes; +3 keeps a few tiles of
@@ -303,31 +196,7 @@ script.on_nth_tick(60, function()
   local x1, y1 = math.min(-PITCH, GRID_X - PITCH), -PITCH
   local x2, y2 = PIPES_X + SPACING, GRID_Y + PITCH
   pave(surface, x1, y1, x2, y2)
-  -- THE CHARACTER IS MOVED, NOT DESTROYED, AND IT IS MOVED BY THE ENTITY RATHER THAN THROUGH THE
-  -- PLAYER. It stands at the spawn point, which is exactly where the reactor goes, and it is the
-  -- one thing this sweep spares -- destroying the player's character on a live client is not
-  -- something a screenshot is worth. It blocks a manual build check like anything else, so
-  -- place()'s guard refused the reactor outright the first time this ran: the guard was right and
-  -- the layout was wrong.
-  --
-  -- Going through game.players[i].character did NOT move it, measured on 2.0.77: a character
-  -- entity stands at spawn at tick 60 while the player's own `character` is not yet the one to
-  -- reach it by. Teleporting the entity the sweep already has in hand always works, and the return
-  -- value is checked because a teleport that quietly fails would come back as the same baffling
-  -- "will not fit" as before.
-  local PARK_X, PARK_Y = x2 - 3, y1 + 3
-  for _, e in pairs(surface.find_entities_filtered({
-      area = { { x1 - 5, y1 - 5 }, { x2 + 5, y2 + 5 } } })) do
-    if e.type == "character" then
-      if not e.teleport({ PARK_X, PARK_Y }) then
-        error(string.format("could not move the character off the spawn point to (%g, %g); it "
-          .. "stands where the reactor goes", PARK_X, PARK_Y))
-      end
-      say(string.format("parked the character at %g,%g", PARK_X, PARK_Y))
-    else
-      e.destroy()
-    end
-  end
+  sweep(surface, x1, y1, x2, y2, x2 - 3, y1 + 3)
 
   -- THE BOLTED PAIR (ADR 0031, #275). The reactor sells reactor energy north and south, so the
   -- exchanger stands SOUTH of it with its north long face against the reactor's south output,
@@ -381,31 +250,10 @@ script.on_event(defines.events.on_tick, function()
   if game.tick < storage.shoot_at then return end
   storage.shoot_at = nil
 
-  local surface = game.surfaces[1]
-
   -- Reported so a picture of a machine that was NOT burning cannot be read as one that was. This
   -- is the whole difference between cold.png and working-*.png.
   say("cold machine status    : " .. status_name(storage.cold))
   say("working machine status : " .. status_name(storage.working))
-
-  -- daytime is passed per shot rather than set on the surface, so one run gives both. 0 is noon
-  -- and 0.5 is midnight; the pictures say which is which and the names are checked against them.
-  local function shot(file, x, y, w_px, h_px, zoom, daytime)
-    game.take_screenshot({
-      surface = surface, position = { x, y }, resolution = { w_px, h_px }, zoom = zoom,
-      path = OUT .. file, daytime = daytime,
-      show_gui = false, show_entity_info = false, anti_alias = true, force_render = true,
-    })
-    say("shot " .. file)
-  end
-
-  -- EVERY FRAME IS SIZED IN TILES AND THEN CONVERTED, because a resolution alone says nothing
-  -- about what is in shot: at zoom z one tile is 32*z pixels. The layout frame has to hold the
-  -- reactor and the machine bolted below it -- twenty tiles of subject where the old one framed
-  -- nineteen and clipped -- and the rotations frame has to hold the grid above.
-  local function tiles_shot(file, x, y, tiles_w, tiles_h, zoom, daytime)
-    shot(file, x, y, math.ceil(tiles_w * 32 * zoom), math.ceil(tiles_h * 32 * zoom), zoom, daytime)
-  end
 
   local g, solo = storage.grid, storage.solo
   local pair_h = 15 + solo.h + 2          -- the reactor, the machine bolted below it, and margin
@@ -433,97 +281,13 @@ script.on_event(defines.events.on_tick, function()
   tiles_shot("game-alone.png", solo.cold_x,  0.5, solo.solo_w,  solo.solo_h,  1, 0)
   tiles_shot("game-pipes.png", solo.pipes_x, 0.5, solo.pipes_w, solo.pipes_h, 1, 0)
 
-  game.set_wait_for_screenshots_to_finish()
-  helpers.write_file(OUT .. "done.txt", "done\n")
-  say("done")
+  finish()
 end)
 '@
-Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $control -Encoding utf8
 
-# ---------------------------------------------------------------------------- run it
-$proc = $null
-try {
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
-    $enabled = Resolve-BundledSelection -Requested @() -Bundled $bundled
-    Write-Host "bundled enabled: $(if ($enabled) { $enabled -join ', ' } else { 'none (base 2.0 only)' })"
-    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabled -Mods ($ourMods + $rigName)
-
-    $save = Join-Path $temp 'art.zip'
-    Invoke-FactorioStep -FactorioExe $FactorioExe -ModDirectory $modDir -OutputDirectory $temp `
-        -Tag 'create' -Arguments @('--create', $save) | Out-Null
-
-    # The same private write-data directory Invoke-Factorio makes, reused: it is where the config
-    # points, so it is also where script-output lands.
-    $configPath = Join-Path $temp 'factorio-config.ini'
-    $shotDir    = Join-Path $temp 'write-data/script-output/rf-art'
-    $doneFile   = Join-Path $shotDir 'done.txt'
-
-    # Launched from a scratch directory holding steam_appid.txt, for the reason dev-launch.ps1
-    # gives: the Steam API reads that file from the WORKING directory and otherwise relaunches the
-    # game through Steam, dropping --mod-directory and --config on the floor.
-    $launchDir = Join-Path $temp 'launch'
-    New-Item -ItemType Directory -Path $launchDir -Force | Out-Null
-    '427520' | Set-Content -Path (Join-Path $launchDir 'steam_appid.txt') -Encoding ascii -NoNewline
-
-    $line = (@('--config', $configPath, '--mod-directory', $modDir, '--load-game', $save,
-               '--disable-audio') | ForEach-Object { ConvertTo-NativeArgument $_ }) -join ' '
-    Write-Host 'launching the graphical client; a window will open and close by itself.'
-    $runOut = Join-Path $temp 'run-stdout.txt'
-    $proc = Start-Process -FilePath $FactorioExe -ArgumentList $line `
-        -WorkingDirectory $launchDir -PassThru -RedirectStandardOutput $runOut
-
-    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
-    while (-not (Test-Path -LiteralPath $doneFile) -and (Get-Date) -lt $deadline) {
-        if ($proc.HasExited) { throw "Factorio exited (code $($proc.ExitCode)) before writing the screenshots." }
-        Start-Sleep -Milliseconds 500
-    }
-    if (-not (Test-Path -LiteralPath $doneFile)) {
-        throw "timed out after $TimeoutSeconds s waiting for $doneFile."
-    }
-
-    # THE MARKER IS NOT THE PICTURES. take_screenshot queues; the engine renders and writes on its
-    # own thread, and helpers.write_file lands in the same tick that queued them -- so done.txt
-    # appears while every PNG is still zero bytes. Found the hard way: the first run of this probe
-    # copied five empty files and reported success. Wait until each file has a size that has
-    # stopped changing.
-    $sizes = @{}
-    while ((Get-Date) -lt $deadline) {
-        $now = @{}
-        foreach ($f in (Get-ChildItem -LiteralPath $shotDir -Filter '*.png')) { $now[$f.Name] = $f.Length }
-        $settled = $now.Count -gt 0 -and
-                   -not ($now.Values | Where-Object { $_ -eq 0 }) -and
-                   $now.Count -eq $sizes.Count -and
-                   -not ($now.Keys | Where-Object { $sizes[$_] -ne $now[$_] })
-        $sizes = $now
-        if ($settled) { break }
-        Start-Sleep -Milliseconds 700
-    }
-    $unwritten = @($sizes.Keys | Where-Object { $sizes[$_] -eq 0 })
-    if ($sizes.Count -eq 0 -or $unwritten) {
-        throw "the game wrote no bytes for: $(if ($unwritten) { $unwritten -join ', ' } else { '(no PNG at all)' })"
-    }
-
-    $shots = @(Get-ChildItem -LiteralPath $shotDir -Filter '*.png' | Sort-Object Name)
-    foreach ($s in $shots) { Copy-Item -LiteralPath $s.FullName -Destination $OutputDirectory -Force }
-
-    Write-Host ''
-    Get-Content $runOut | Select-String -Pattern 'ARTPROBE ' |
-        ForEach-Object { Write-Host (($_ -split 'ARTPROBE ', 2)[1].TrimEnd()) }
-    Write-Host ''
-    foreach ($s in $shots) {
-        $img = Join-Path $OutputDirectory $s.Name
-        Write-Host ("  {0,-20} {1,8:N0} KB   {2}" -f $s.Name, ($s.Length / 1KB), $img)
-    }
-    Write-Host ''
-    Write-Host "screenshots: $OutputDirectory"
-}
-finally {
-    if ($proc -and -not $proc.HasExited) { $proc.Kill() ; $proc.WaitForExit(10000) | Out-Null }
-    if (-not $KeepTemp) {
-        Remove-ModJunctions -ModDirectory $modDir
-        Remove-TempDirectory -Path $temp -Label 'probe-heat-exchanger-art'
-    } else { Write-Host "kept: $temp" }
-}
-
-Write-Host ''
-Write-Host 'Probe finished. Exit 0 means the pictures were taken, not that the art is right.'
+Invoke-ArtProbe -FactorioExe $FactorioExe -RepoRoot $repoRoot `
+    -RigName 'rf-heat-exchanger-art-probe' -RigTitle 'Heat exchanger art probe' `
+    -Author 'probe-heat-exchanger-art.ps1' -TempPrefix 'rf-hx-art-' `
+    -Control ($ArtProbeLua + $layout) -OutputDirectory $OutputDirectory `
+    -TimeoutSeconds $TimeoutSeconds -KeepTemp:$KeepTemp `
+    -MapSeed $(if ($PSBoundParameters.ContainsKey('MapSeed')) { $MapSeed } else { $null })

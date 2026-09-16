@@ -1,0 +1,37 @@
+{
+  "frame": "collector-alone.png",
+  "zoom": 1,
+  "pixels_per_tile": 32,
+  "resolution": {
+    "w": 352,
+    "h": 352
+  },
+  "centre": {
+    "x": 22,
+    "y": 0.5
+  },
+  "tiles": {
+    "w": 11,
+    "h": 11
+  },
+  "daytime": 0,
+  "surface": "nauvis",
+  "machines": [
+    {
+      "name": "rf-isotope-collector",
+      "position": {
+        "x": 22.5,
+        "y": 0.5
+      },
+      "direction": 0,
+      "footprint": {
+        "w": 5,
+        "h": 5
+      }
+    }
+  ],
+  "shot_by": {
+    "probe": "scripts/probe-isotope-collector-art.ps1",
+    "frame": "game-alone.png"
+  }
+}
