@@ -127,20 +127,25 @@ def run_blender(blender, script, args, blend=None,
 
 
 def guard(out_dir):
-    """Refuse an --out inside any of this repository's mods.
+    """Refuse an --out inside any of this repository's mods, or inside models/.
 
-    The same guard both Blender scripts make on their own out paths, made once more here because
-    this is what chooses theirs. A probe whose whole claim is that nothing it makes can ship should
-    enforce that rather than state it.
+    The same two roots both Blender scripts refuse on their own out paths, refused once more here
+    because this is what chooses theirs -- and EARLIER than they can, which is why it is not
+    redundant. `scene_machine` creates its working directory and copies geometry.json into it
+    before Blender is started at all, so an --out under models/ would have written two files into
+    a shipped directory before socket-variants.py got the chance to say no. A probe whose whole
+    claim is that nothing it makes can ship should enforce that rather than state it.
     """
     full = os.path.normcase(os.path.abspath(out_dir))
-    for mod in sorted(d for d in os.listdir(REPO)
-                      if d.startswith("realistic-fusion-refreshed")
-                      and os.path.isdir(os.path.join(REPO, d))):
+    guarded = ["models"] + sorted(d for d in os.listdir(REPO)
+                                  if d.startswith("realistic-fusion-refreshed")
+                                  and os.path.isdir(os.path.join(REPO, d)))
+    for mod in guarded:
         root = os.path.normcase(os.path.abspath(os.path.join(REPO, mod)))
         if full == root or full.startswith(root + os.sep):
-            sys.exit(f"probe-socket-underside: --out {out_dir} is inside the {mod} mod. Everything "
-                     f"this writes is throwaway; give a directory outside every mod.")
+            sys.exit(f"probe-socket-underside: --out {out_dir} is inside {mod}/, where shipped "
+                     f"files live. Everything this writes is throwaway; give a directory outside "
+                     f"models/ and outside every mod.")
 
 
 def below_predicted(radius, z, plane=True):
@@ -200,7 +205,7 @@ def measure_scene(sheets, scene, plane):
     return rows
 
 
-def print_scene(title, rows):
+def print_scene(title, rows, plane):
     print(f"\n{title}")
     print(f"  {'radius':>6} {'z':>6} {'uncut':>6} {'above':>7} {'below':>7} {'gains':>6} "
           f"{'loses':>6} {'pred':>6} {'resid':>6}  window")
@@ -222,14 +227,20 @@ def print_scene(title, rows):
         print(f"  {r['radius']:>6.3f} {r['z']:>6.3f} {r['uncut']:>6.1f} {r['above']:>+7.1f} "
               f"{r['below']:>+7.1f} {gains:>+6.1f} {loses:>+6.1f} {r['predicted']:>6.1f} "
               f"{resid:>+6.1f}  cols {r['window'][0]}..{r['window'][1]}"
-              + ("" if r["cut"] else "   (plane does not reach this one)"))
+              + ("" if r["cut"] or not plane else "   (plane does not reach this one)"))
     if unstable:
         print(f"  {unstable} of {len(rows)} row(s) carry no number this probe will stand behind.")
     # THE RESIDUAL IS THE WHOLE VERDICT, so it is summarised rather than left to be eyeballed over
-    # thirty-six rows. Split by whether the plane reaches the cylinder: if the plane is the cause
-    # and the model of it is right, the two groups are the same size, and what they measure is the
-    # edge spread rather than any occlusion.
-    for reached, label in ((True, "the plane reaches"), (False, "the plane does not reach")):
+    # thirty-six rows. On the render that HAS a plane it is split by whether the plane reaches the
+    # cylinder: if the plane is the cause and the model of it is right, the two groups are the same
+    # size, and what they measure is the edge spread rather than any occlusion. On the render that
+    # has none there is no split to make -- every row is an uncut cylinder, and "the plane does not
+    # reach this one" said of a scene with no plane in it is the opposite of informative.
+    if plane:
+        groups = ((True, "the plane reaches"), (False, "the plane does not reach"))
+    else:
+        groups = ((False, "measured with no plane in the scene"),)
+    for reached, label in groups:
         got = [r["resid"] for r in rows if r.get("resid") is not None and r["cut"] is reached]
         if got:
             print(f"  residual over the {len(got)} row(s) {label}: "
@@ -250,24 +261,44 @@ def scene_cylinders(a, blender):
                         ["--samples", str(a.samples), "--directions", "1", "--out", sheets],
                         blend=model)
         scene = json.load(open(os.path.join(a.out, tag, "cylinders.json"), encoding="utf-8"))
+        # THE SCENE SAYS WHICH WAY IT WAS BUILT, AND THAT IS READ RATHER THAN INFERRED FROM THE
+        # DIRECTORY NAME. Under --reuse the directory is whatever was there last time, and
+        # measuring a scene that still has its plane against the no-plane prediction would print a
+        # whole table of plausible wrong residuals.
+        if scene["ground"] != (tag == "ground"):
+            sys.exit(f"probe-socket-underside: {os.path.join(a.out, tag)} holds a scene built with "
+                     f"the ground plane {'present' if scene['ground'] else 'removed'}, which is not "
+                     f"what this half of the comparison is. Drop --reuse, or point --out somewhere "
+                     f"else.")
         if abs(scene["uncut_per_radius"] - socket_strip.UNCUT_PER_RADIUS) > 1e-9:
             sys.exit(f"probe-socket-underside: the scene was built through a camera drawing "
                      f"{scene['uncut_per_radius']:.6f} of silhouette per unit radius and this is "
                      f"reading it as {socket_strip.UNCUT_PER_RADIUS:.6f}. Re-render it.")
         out[tag] = measure_scene(sheets, scene, plane=(tag == "ground"))
 
-    print_scene("WITH THE GROUND PLANE, as every shipped sheet is rendered:", out["ground"])
-    print_scene("WITH THE GROUND PLANE DELETED:", out["no-ground"])
+    print_scene("WITH THE GROUND PLANE, as every shipped sheet is rendered:", out["ground"], True)
+    print_scene("WITH THE GROUND PLANE DELETED:", out["no-ground"], False)
 
-    print("\nWHAT THE TWO RENDERS SAY, one line per cylinder the plane reaches:")
+    # A ROW EITHER RENDER COULD NOT STAND BEHIND IS LEFT OUT OF THIS TABLE, not reprinted without
+    # its warning. `print_scene` above has already said which and why; repeating the number here
+    # with a `recovered` beside it and no marker is what the module header says this file does not
+    # do.
+    print("")
+    print("WHAT THE TWO RENDERS SAY, one line per cylinder, with the ones the plane never reached")
+    print("marked as such:")
     print(f"  {'radius':>6} {'z':>6} {'below (ground)':>15} {'below (none)':>13} "
           f"{'recovered':>10} {'lost to the plane':>18}")
+    dropped = 0
     for g, n in zip(out["ground"], out["no-ground"]):
-        if g["below"] is None or n["below"] is None:
+        if g["below"] is None or n["below"] is None or g["why"] or n["why"]:
+            dropped += 1
             continue
         print(f"  {g['radius']:>6.3f} {g['z']:>6.3f} {g['below']:>+15.1f} {n['below']:>+13.1f} "
               f"{n['below'] - g['below']:>+10.1f} {g['uncut'] - g['below']:>18.1f}"
               + ("" if g["cut"] else "   (plane does not reach this one)"))
+    if dropped:
+        print(f"  {dropped} cylinder(s) left out: one render or the other carries no number this "
+              f"probe will stand behind. The two tables above say which, and why.")
     print("  'recovered' is what deleting the plane put back; 'lost to the plane' is the shortfall")
     print("  against the uncut prediction while it was there. If the plane is the whole cause the")
     print("  two agree to within the edge spread, and the no-ground column loses nothing at all.")
@@ -276,13 +307,20 @@ def scene_cylinders(a, blender):
     # a cylinder should draw the same distance above its axis as below it, because nothing is left
     # to cut either edge -- so the largest asymmetry over the whole grid is the claim, and it is
     # printed whatever it comes to.
+    # `why` AS WELL AS `above`, and that is the whole of this line. A row whose window moved when
+    # it was narrowed still carries numbers; print_scene prints it as UNUSABLE and keeps it out of
+    # the residual summary, and letting it become the one computed conclusion here would put a
+    # reading the guard refused at the top of the finding.
     worst = max(((abs(r["above"] - r["below"]), r) for r in out["no-ground"]
-                 if r["above"] is not None), key=lambda p: p[0], default=None)
+                 if r["above"] is not None and r["why"] is None),
+                key=lambda p: p[0], default=None)
     if worst:
         gap, r = worst
         print("")
+        sound = sum(1 for x in out["no-ground"] if x["above"] is not None and x["why"] is None)
         print("WITH THE PLANE GONE the most lopsided cylinder of the "
-              f"{len(out['no-ground'])} is radius {r['radius']:g} at z {r['z']:g}, drawing "
+              f"{sound} this probe stands behind is radius {r['radius']:g} at z {r['z']:g}, "
+              f"drawing "
               f"{r['above']:+.1f} above its axis and {r['below']:+.1f} below: {gap:.1f} px apart.")
     return out
 
@@ -306,12 +344,19 @@ def scene_machine(a, blender):
         shutil.copy2(os.path.join(REPO, "models", a.machine, "geometry.json"), work)
         run_blender(blender, "models/socket-variants.py",
                     ["groundless", os.path.join(work, f"{a.machine}.blend")], blend=model)
+        # ONE DIRECTION FOR AN EAST-WEST SOCKET AND TWO FOR A NORTH-SOUTH ONE, because
+        # tools/socket_strip.py measures a connection on the sheet where its tube runs across the
+        # screen -- "" for east and west, "-e" for north and south, which is the second render.
+        # Hard-wiring 1 made --direction north fail on the groundless half alone, with the shipped
+        # half succeeding beside it off a manifest that has all four.
+        directions = "1" if a.direction in ("west", "east") else "2"
         run_blender(blender, "models/render.py",
-                    ["--samples", str(a.samples), "--directions", "1", "--out", sheets],
+                    ["--samples", str(a.samples), "--directions", directions, "--out", sheets],
                     blend=os.path.join(work, f"{a.machine}.blend"))
 
     shipped = os.path.join(REPO, "realistic-fusion-refreshed-assets", "graphics", "rendered",
                            a.machine, "manifest.json")
+    failed = no_window = False
     for title, manifest in (("AS SHIPPED, the ground plane in place:", shipped),
                             ("THE SAME MACHINE WITH THE GROUND PLANE DELETED:",
                              os.path.join(sheets, "manifest.json"))):
@@ -324,10 +369,26 @@ def scene_machine(a, blender):
         # subprocess's is not: without it the two tables print before the headings that say which is
         # which, which is worse than no headings.
         sys.stdout.flush()
-        subprocess.run(cmd, check=False)
-    print("\nThe stub is reported NO WINDOW on both, and that is the tool being right rather than a")
-    print("finding: two flange ribs leave 1.15 px of tube between them and no whole column falls")
-    print("clear of both. Its row is the `cylinders` scene's radius 0.249, which is bare tube.")
+        done = subprocess.run(cmd, capture_output=True, text=True)
+        print((done.stdout or "") + (done.stderr or ""), end="")
+        if done.returncode != 0:
+            failed = True
+        elif "NO WINDOW" in (done.stdout or ""):
+            no_window = True
+    # WHAT IS SAID HERE IS READ OFF WHAT WAS PRINTED, NOT TYPED. The paragraph below used to print
+    # unconditionally, which made it a claim rather than a reading: it survived a bench that exited
+    # non-zero, and it was wrong for a CONTAINED connection, where the socket wears neither rim nor
+    # ribs and its stub runs from the mouth to the band with a window of its own.
+    print("")
+    if failed:
+        print("One of the two readings above failed. Nothing here is a finding until it does not.")
+    elif no_window:
+        print("The stub is reported NO WINDOW above, and that is the tool being right rather than a")
+        print("gap: on a plumbable socket the two flange ribs leave 1.15 px of tube between them and")
+        print("no whole column falls clear of both. Its row is the `cylinders` scene's bare tube at")
+        print("the same radius.")
+    else:
+        print("Every part named by this socket was read through a window of its own.")
 
 
 def main(argv=None):

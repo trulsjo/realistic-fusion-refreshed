@@ -124,4 +124,36 @@ assert strip.clear_of(216.96, -1, inward=True) == 215, strip.clear_of(216.96, -1
 assert strip.clear_of(216.0, +1, inward=True) == 217, strip.clear_of(216.0, +1, inward=True)
 assert strip.clear_of(216.0, +1, inward=False) == 214, strip.clear_of(216.0, +1, inward=False)
 
+# ---- the window guard, which moved here from tools/measure-socket-parts.py in #367 ------------
+#
+# THE GUARD IS THE REASON THAT MODULE EXISTS AND IT ARRIVED HERE WITHOUT A CASE. What it has to do
+# is refuse a reading that MOVES when its window is narrowed by one column at either end -- the leak
+# that published two wrong rows into models/house-style.md -- and refuse one it cannot check at all.
+# Both are shown on a sheet made for the purpose rather than asserted.
+#
+# The sheet is a tall block over the left half of the strip and a short one over the right, so a
+# window holding a column of each reads the tall block's extent, and the same window narrowed from
+# the right loses it. That is the leak in miniature: the neighbour is wider, so the neighbour wins.
+LEAK = np.zeros((SIDE, SIDE), dtype=np.uint8)
+LEAK[300:340, 196:200] = 255          # the tall block, columns 196..199
+LEAK[310:330, 200:207] = 255          # the short one beside it, columns 200..206
+
+leak = strip.strip(LEAK, MANIFEST, WEST)
+AXIS = 320.0
+
+# A window over the short block alone is stable: narrowing it either way reads the same rows.
+above, below, why = leak.measure(AXIS, 201, 205)
+assert (above, below, why) == (10.0, 10.0, None), (above, below, why)
+
+# A window that reaches one column into the tall block reads the tall block, and says so rather
+# than returning it: dropping that column changes the answer.
+above, below, why = leak.measure(AXIS, 199, 205)
+assert (above, below) == (20.0, 20.0), (above, below)
+assert why and "narrowed to columns 200..205" in why, why
+
+# And a window too short to narrow at both ends is refused for that reason alone, whatever it reads.
+above, below, why = leak.measure(AXIS, 201, 202)
+assert (above, below) == (10.0, 10.0), (above, below)
+assert why and "cannot be narrowed at both ends" in why, why
+
 print("socket_strip: ok")
