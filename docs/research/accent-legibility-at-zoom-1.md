@@ -17,6 +17,14 @@ The same reason #350's are. The decision recorded here is "we looked and left it
 decision of that shape with nothing left to look at is worthless to the next reader. Re-running the
 probes reproduces these frames only until a machine is re-rendered.
 
+> **Which happened the same evening, and these are the old frames (#387).** Both machines were
+> re-rendered at 23:48 on 2026-09-16 (`9ab4c57`), two and a half hours after these frames were
+> committed. They are kept rather than re-shot: they are what ADR 0034 was decided on, and evidence
+> that is old and says so is worth more than evidence quietly replaced. They were also shot with the
+> game's cloud shadows left on, which #387 found is worth up to 6.4 dE00 on a band -- more than any
+> quantity this note measures. Every art probe now shoots with `surface.show_clouds = false`, so a
+> frame taken today is not one of these and is reproducible to the byte.
+
 | File | What it shows |
 |---|---|
 | `collector-alone.png` | `rf-isotope-collector` on grass, 11 tiles across, zoom 1 |
@@ -68,7 +76,10 @@ sampled through one window in both frames:
 | collector west, tritium | 126 px, `#a3baaa` | 126 px, `#a3baaa` | **0.0 dE00** |
 | exchanger west, water | 237 px, `#7592ae` | 237 px, `#7592ae` | **0.0 dE00** |
 
-Identical, to the pixel. Vanilla's pipe butts up **outboard** of the accent, against the socket's
+Identical, to the pixel. **Confirmed 2026-09-17 through a better window** -- `socket_strip`'s own,
+with the clouds off -- where the piped and unpiped frames give the same hex on all six measurable
+sockets ([`game-reproduces-the-sheet.md`](game-reproduces-the-sheet.md)). Vanilla's pipe butts up
+**outboard** of the accent, against the socket's
 flange pair, and the band sits inboard of it — which is what ADR 0033's end treatment put there.
 `collector-west-socket-x8.png` and `exchanger-west-sockets-x7.png` are the two frames side by side.
 
@@ -93,6 +104,15 @@ for the same two sockets, the game frame agrees to 0.6 dE00 on one and differs b
 |---|---|---|---:|
 | collector west, tritium | `#a5bbaa` | `#a3baaa` | 0.6 |
 | exchanger west, water | `#92acc3` | `#7592ae` | 8.4 |
+
+> **Settled 2026-09-17 (#387), and the 8.4 is not the game.** Measured through one window by
+> `tools/measure-frame-accents.py`, the exchanger's west water band moves **0.4 dE00** between the
+> sheet and the frame, and no band on either machine moves more than 0.7. About 7 of the 8.4 was
+> the difference between the two windows and about 0.7 was a re-render this note predates. See
+> [`game-reproduces-the-sheet.md`](game-reproduces-the-sheet.md), which also records that the
+> `#92acc3` and `#a5bbaa` quoted above are themselves stale: both sheets were re-rendered at 23:48
+> on 2026-09-16, two and a half hours after these frames were shot, and read `#8ea9c1` and
+> `#a2b8a8` today. The paragraph below is left as written because its reasoning was right.
 
 **Do not read the 8.4 as the game darkening anything.** The two figures came through different
 windows: the bench picks its columns from `models/rf_blender.py`'s `BAND_BACK` and `BAND_DEPTH` and
