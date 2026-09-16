@@ -1,0 +1,73 @@
+{
+  "frame": "collector-pipes.png",
+  "zoom": 1,
+  "pixels_per_tile": 32,
+  "resolution": {
+    "w": 416,
+    "h": 416
+  },
+  "centre": {
+    "x": 50,
+    "y": 0.5
+  },
+  "tiles": {
+    "w": 13,
+    "h": 13
+  },
+  "daytime": 0,
+  "surface": "nauvis",
+  "machines": [
+    {
+      "name": "pipe",
+      "position": {
+        "x": 50.5,
+        "y": -2.5
+      },
+      "direction": 0,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      }
+    },
+    {
+      "name": "pipe",
+      "position": {
+        "x": 47.5,
+        "y": 0.5
+      },
+      "direction": 0,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      }
+    },
+    {
+      "name": "rf-isotope-collector",
+      "position": {
+        "x": 50.5,
+        "y": 0.5
+      },
+      "direction": 0,
+      "footprint": {
+        "w": 5,
+        "h": 5
+      }
+    },
+    {
+      "name": "pipe",
+      "position": {
+        "x": 53.5,
+        "y": 0.5
+      },
+      "direction": 0,
+      "footprint": {
+        "w": 1,
+        "h": 1
+      }
+    }
+  ],
+  "shot_by": {
+    "probe": "scripts/probe-isotope-collector-art.ps1",
+    "frame": "game-pipes.png"
+  }
+}
