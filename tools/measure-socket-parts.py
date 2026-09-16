@@ -3,6 +3,7 @@
 
     python tools/measure-socket-parts.py <manifest.json> --direction west --radius 0.249
     python tools/measure-socket-parts.py <...> --direction west --fluid water --radius 0.249
+    python tools/measure-socket-parts.py <...> --direction west --radius 0.249 --no-flange
     python tools/measure-socket-parts.py <...> --direction west --radius 0.249 \
            --part "accent band" --window 203..206    # read one part through a window you name
 
@@ -29,11 +30,15 @@ through, and a number that MOVES when that window is narrowed by one column at e
 reported unstable rather than returned.
 
 BOTH OF THOSE READINGS REPRODUCE, and neither needs the game. The stub's needs a flange-free
-control render, since on the shipped sheets no column shows bare tube at all: copy the machine's
-.blend and its geometry.json to a scratch directory, delete its `Flange-*` objects, and run
-models/render.py over the copy with --directions 1 --out. Nothing in the repository is touched and
-nothing is committed, so this file reports the stub as having NO WINDOW on the shipped sheets
-rather than a number it cannot get to. The SAME boundary can be shown with no render at all: the
+control render, since on the shipped sheets no column shows bare tube at all -- and since #376 that
+render is one command: scripts/probe-flange-free-render.ps1, which runs socket-variants.py's
+`unflanged` treatment over the stored model and models/render.py over the result, into a directory
+you name and which it refuses if it is inside a mod. Measure that sheet with --no-flange -- which
+is the CALLER saying what kind of sheet it is, since every window here is worked out from the
+constants the model was built from and never from the pixels -- and the stub reports +20.5/+18.5
+through columns 198..201, which is models/house-style.md's row. Nothing in the repository is
+touched and nothing is committed, so this file reports the stub as having NO WINDOW on the shipped
+sheets rather than a number it cannot get to. The SAME boundary can be shown with no render at all: the
 usage line above reads the accent band +24.5 above its axis where its own columns give +23.5,
 because the flange rib ends at column 202.88 and column 203 starts a tenth of a pixel past that.
 
@@ -84,7 +89,7 @@ import rf_blender as rf  # noqa: E402  (no bpy at module level)
 import socket_strip  # noqa: E402
 
 
-def parts_of(radius, plumbable):
+def parts_of(radius, plumbable, flanged=True):
     """Every piece of a socket of this radius, as (name, radius, back_near, back_far).
 
     `back_near`..`back_far` is the span the piece occupies along the tube, in tiles inboard from the
@@ -97,6 +102,12 @@ def parts_of(radius, plumbable):
     them falls inside it clear of both ribs and the stub has no window there -- reported as such
     rather than read through a window that also holds a rib. A CONTAINED socket wears neither rim
     nor ribs, so its bare tube runs from the mouth to the band and reads easily.
+
+    `flanged=False` is the FLANGE-FREE CONTROL RENDER, and it is the caller's claim about the sheet
+    rather than anything read off it: with the ribs deleted their span is bare tube, so the ribs
+    row goes and the stub takes the whole span from the rim's inner edge to the band. Left on a
+    shipped sheet it would measure the ribs and call them the stub, which is why it is not the
+    default and why scripts/probe-flange-free-render.ps1 is what produces a sheet to pass it.
     """
     rim = radius + rf.PORT_CLEARANCE + rf.RIM_PROUD + rf.RIM_MINOR
     band_near = rf.BAND_BACK - rf.BAND_DEPTH / 2
@@ -104,6 +115,11 @@ def parts_of(radius, plumbable):
         return [("stub", radius, 0.0, band_near),
                 ("accent band", radius + rf.BAND_PROUD, band_near, rf.BAND_BACK + rf.BAND_DEPTH / 2)]
     near = rf.RIM_BACK + rf.RIM_MINOR
+    if not flanged:
+        return [("stub", radius, near, band_near),
+                ("accent band", radius + rf.BAND_PROUD, band_near,
+                 rf.BAND_BACK + rf.BAND_DEPTH / 2),
+                ("dark rim", rim, rf.RIM_BACK - rf.RIM_MINOR, rf.RIM_BACK + rf.RIM_MINOR)]
     thick = (band_near - near) * (1 - rf.FLANGE_GAP) / 2
     return [("stub", radius, near + thick, band_near - thick),
             ("accent band", radius + rf.BAND_PROUD, band_near, rf.BAND_BACK + rf.BAND_DEPTH / 2),
@@ -185,6 +201,11 @@ def main(argv=None):
     ap.add_argument("--z", type=float,
                     help="the world height its axis was built at; defaults to rf_blender.SOCKET_Z "
                          "for a plumbable connection and is required for a contained one")
+    ap.add_argument("--no-flange", action="store_true",
+                    help="the sheet is a flange-free control render "
+                         "(scripts/probe-flange-free-render.ps1), so the ribs' span is bare tube "
+                         "and the stub is measured through it. Says so about the sheet; it is not "
+                         "detected, and on a shipped sheet it would measure the ribs")
     ap.add_argument("--part", help="measure only this part")
     ap.add_argument("--window", metavar="LOW..HIGH",
                     help="read --part through these sheet columns instead of the ones its own "
@@ -223,16 +244,22 @@ def main(argv=None):
         return 1
     axis = s.axis_row(z)
 
-    parts = parts_of(a.radius, plumbable)
+    flanged = not a.no_flange
+    if a.no_flange and not plumbable:
+        sys.exit(f"measure-socket-parts: {connection['direction']} {connection['fluid']} is "
+                 f"CONTAINED (ADR 0018) and wears no flange pair on any sheet, so --no-flange "
+                 f"names nothing. Its bare tube already reads from the mouth to the band.")
+    parts = parts_of(a.radius, plumbable, flanged)
     if a.part:
         parts = [p for p in parts if p[0] == a.part]
         if not parts:
             sys.exit(f"measure-socket-parts: this socket has no part called '{a.part}'. It has: "
-                     + ", ".join(f"'{p[0]}'" for p in parts_of(a.radius, plumbable)))
+                     + ", ".join(f"'{p[0]}'" for p in parts_of(a.radius, plumbable, flanged)))
 
     print(f"{manifest['geometry']['name']}  {connection['direction']} {connection['fluid']}  "
           f"({'plumbable' if plumbable else 'contained'}, tube radius {a.radius:g}, axis at z "
-          f"{z:g} -- sheet row {axis:.3f} of {sheet})")
+          f"{z:g} -- sheet row {axis:.3f} of {sheet}"
+          + (", read as a FLANGE-FREE CONTROL render" if a.no_flange else "") + ")")
     print(f"  {'part':<12} {'radius':>6} {'uncut':>6} {'above':>7} {'below':>7} {'gains':>6} "
           f"{'loses':>6}  window")
     unstable = 0

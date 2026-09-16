@@ -40,6 +40,18 @@ THE TREATMENTS, which are the four #350 names and no more:
                   moves. Called `collared` until #351, where the word went to the accent band it
                   already meant in models/house-style.md -- one word cannot name both.
 
+AND A FIFTH THAT IS NOT #350'S AND IS NOT A CANDIDATE:
+
+  unflanged       every `Flange-*` object deleted. It answers no question about what a socket
+                  should LOOK like; it exists so the bare tube can be MEASURED. On a shipped sheet
+                  the two ribs leave 1.15 px of tube between them and no whole column falls clear
+                  of both, so tools/measure-socket-parts.py correctly reports the stub as having NO
+                  WINDOW -- and models/house-style.md's stub row, +20.5 above the axis and +18.5
+                  below, came off a control render built by hand and thrown away. #376 is where
+                  that recipe was committed, and scripts/probe-flange-free-render.ps1 is the one
+                  command that runs it. Nothing rendered from this treatment ships or is committed;
+                  it is measured and deleted.
+
 Every added piece goes through models/rf_parts.py, so it takes the house style's bevel and the
 detail floor without this file restating either, and a change to the shipped socket geometry reaches
 these variants for free. The material resolver installed below looks materials up in the OPENED
@@ -61,7 +73,7 @@ import rf_blender as rf  # noqa: E402
 import rf_parts  # noqa: E402
 from rf_parts import box, cyl  # noqa: E402
 
-TREATMENTS = ("bare", "flanged", "dark-cored", "rimmed-inboard")
+TREATMENTS = ("bare", "flanged", "dark-cored", "rimmed-inboard", "unflanged")
 
 # THE FLANGE PAIR IS FITTED TO THE BARE TUBE, NOT PLACED AT TYPED OFFSETS. There is very little
 # bare tube at a socket's mouth: on the collector the stub is 0.75 tiles long, the dark rim owes
@@ -240,6 +252,19 @@ if treatment == "flanged" and any(o.name.startswith("Flange-") for o in bpy.data
     fail(f"{os.path.basename(model_path)} already carries a flange pair -- the shape shipped in "
          f"#353, so `bare` is now the flanged machine and there is nothing for this treatment to "
          f"add. Shoot `bare` instead.")
+
+# THE ONE TREATMENT THAT REMOVES RATHER THAN ADDS, and the mirror of the refusal above: `flanged`
+# will not stack a second pair on a machine that already wears one, and this will not strip a pair
+# from a machine that wears none. Both say the model is not the one the caller thinks it is.
+if treatment == "unflanged":
+    ribs = [o for o in bpy.data.objects if o.name.startswith("Flange-")]
+    if not ribs:
+        fail(f"{os.path.basename(model_path)} carries no Flange-* object, so there is nothing to "
+             f"strip. Its sockets already show bare tube; measure the shipped sheet.")
+    names = sorted(o.name for o in ribs)     # read BEFORE removal; the objects are dead after it
+    for rib in ribs:
+        bpy.data.objects.remove(rib, do_unlink=True)
+    print(f"SOCKET-VARIANTS   stripped {len(names)} flange rib(s): " + ", ".join(names))
 
 for stub in sockets:
     axis, sign = axis_of(stub)
