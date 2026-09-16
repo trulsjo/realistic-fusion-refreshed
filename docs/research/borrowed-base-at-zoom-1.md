@@ -89,10 +89,11 @@ Every pixel of each frame outside the machine's own footprint, as one distributi
 | `ground-exchanger` (`dirt-4`) | `#7b542d` | 6.4 | 18.3 |
 | `base-exchanger` | `#66492a` | **11.5** | **23.7** |
 
-**A factory background is about three times as varied as a paved one**, and its 90th percentile
-means it holds colours 24 to 26 dE00 from its own middle — as far apart as an accent is from the
-background. That, rather than any shift in the accent itself, is what "competing with somebody
-else's factory" amounts to.
+**A factory background is two to three times as varied as a paved one** — 10.3 against 3.5 and 3.1
+for the collector, 11.5 against 3.7 and 6.4 for the exchanger — and its 90th percentile means it
+holds colours 23.7 and 26.4 dE00 from its own middle, which is as far as an accent stands from the
+background at all. That, rather than any shift in the accent itself, is what "competing with
+somebody else's factory" amounts to.
 
 ### And the terrain matters more than the clutter does
 
@@ -113,11 +114,19 @@ band is the one the wire is drawn across, and taking its base-frame colour inste
 rather than 32.0. Held fixed, the column is about the background; not held fixed, it would mix the
 wire into it twice.
 
-**Moving from grass to the base's own dirt costs 5 to 12 dE00 on five of the six accents. Adding
-the factory on top then gives about half of it back**, because the factory's greys and darks pull
-the surround's median away from the tan ground the machine is standing on. A grass control alone
-would have reported the sum of the two and called it the factory's doing, which is the whole reason
-for the second control.
+**Moving from grass to the base's own dirt costs between 4.7 and 12.1 dE00 on five of the six
+accents**, and gains 6.0 on the sixth — the collector's east tritium, which is the darkest accent
+here and the one a pale ground helps rather than hurts.
+
+**Adding the factory on top gives roughly half of that back on three of them** — the collector's
+west tritium and both of the exchanger's energy sockets, +6.0, +6.7 and +6.1 against losses of 11.3,
+12.1 and 10.7 — because the factory's greys and darks pull the surround's median away from the tan
+ground the machine is standing on. On the exchanger's west water it gives a third back, +3.0 of 9.0;
+and on the other two it takes a little more away, −2.4 and −1.0. So "half" is the shape of it on
+half the sockets and not a rule.
+
+A grass control alone would have reported terrain and clutter together and called the sum the
+factory's doing, which is the whole reason for the second control.
 
 **Read the middle column as the more useful one.** If these accents are ever a problem, the
 evidence here says terrain is the larger part of why — and this project has never looked at a
