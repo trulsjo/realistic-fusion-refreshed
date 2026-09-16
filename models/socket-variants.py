@@ -40,7 +40,8 @@ THE TREATMENTS, which are the four #350 names and no more:
                   moves. Called `collared` until #351, where the word went to the accent band it
                   already meant in models/house-style.md -- one word cannot name both.
 
-AND A FIFTH THAT IS NOT #350'S AND IS NOT A CANDIDATE:
+AND TWO MORE THAT ARE NOT #350'S AND ARE NOT CANDIDATES. Both exist so that something can be
+MEASURED rather than looked at, and each removes one thing:
 
   unflanged       every `Flange-*` object deleted. It answers no question about what a socket
                   should LOOK like; it exists so the bare tube can be MEASURED. On a shipped sheet
@@ -51,6 +52,13 @@ AND A FIFTH THAT IS NOT #350'S AND IS NOT A CANDIDATE:
                   that recipe was committed, and scripts/probe-flange-free-render.ps1 is the one
                   command that runs it. Nothing rendered from this treatment ships or is committed;
                   it is measured and deleted.
+
+  groundless      models/rf_blender.build_rig's shadow-catching Ground plane deleted, and every one
+                  of its Cycles visibility flags printed on the way out. It answers no question
+                  about what a socket should LOOK like; it exists so the claim that that plane is
+                  what cuts a socket's underside can be MEASURED instead of asserted (#366, #362).
+                  Nothing rendered from it ships or is committed: it is measured and deleted, and
+                  scripts/probe-socket-underside.py is the one command that runs it.
 
 Every added piece goes through models/rf_parts.py, so it takes the house style's bevel and the
 detail floor without this file restating either, and a change to the shipped socket geometry reaches
@@ -73,7 +81,7 @@ import rf_blender as rf  # noqa: E402
 import rf_parts  # noqa: E402
 from rf_parts import box, cyl  # noqa: E402
 
-TREATMENTS = ("bare", "flanged", "dark-cored", "rimmed-inboard", "unflanged")
+TREATMENTS = ("bare", "flanged", "dark-cored", "rimmed-inboard", "unflanged", "groundless")
 
 # THE FLANGE PAIR IS FITTED TO THE BARE TUBE, NOT PLACED AT TYPED OFFSETS. There is very little
 # bare tube at a socket's mouth: on the collector the stub is 0.75 tiles long, the dark rim owes
@@ -253,9 +261,10 @@ if treatment == "flanged" and any(o.name.startswith("Flange-") for o in bpy.data
          f"#353, so `bare` is now the flanged machine and there is nothing for this treatment to "
          f"add. Shoot `bare` instead.")
 
-# THE ONE TREATMENT THAT REMOVES RATHER THAN ADDS, and the mirror of the refusal above: `flanged`
-# will not stack a second pair on a machine that already wears one, and this will not strip a pair
-# from a machine that wears none. Both say the model is not the one the caller thinks it is.
+# THE TREATMENT THAT REMOVES A SOCKET PART RATHER THAN ADDING ONE, and the mirror of the refusal
+# above: `flanged` will not stack a second pair on a machine that already wears one, and this will
+# not strip a pair from a machine that wears none. Both say the model is not the one the caller
+# thinks it is.
 if treatment == "unflanged":
     ribs = [o for o in bpy.data.objects if o.name.startswith("Flange-")]
     if not ribs:
@@ -265,6 +274,25 @@ if treatment == "unflanged":
     for rib in ribs:
         bpy.data.objects.remove(rib, do_unlink=True)
     print(f"SOCKET-VARIANTS   stripped {len(names)} flange rib(s): " + ", ".join(names))
+
+# THE ONE TREATMENT THAT TOUCHES NO SOCKET AT ALL, and the reason it is in this file rather than in
+# a file of its own: what it wants is a throwaway copy of a shipped model with one object changed,
+# which is every line above. The per-socket loop below simply does nothing for it.
+#
+# THE FLAGS ARE READ AND PRINTED, NOT ASSUMED (#366). rf_blender.ground_report prints every
+# `visible_*` on the object, with `is_shadow_catcher` and `is_holdout` beside them, and the running
+# Blender's own description of each -- so the reading is the render's rather than a manual page
+# quoted from memory.
+if treatment == "groundless":
+    ground = bpy.data.objects.get("Ground")
+    if ground is None:
+        fail(f"{os.path.basename(model_path)} has no object named Ground, so there is no plane to "
+             f"remove. rf_blender.build_rig makes one; a model built some other way is not a model "
+             f"this treatment can say anything about.")
+    for line in rf.ground_report(ground):
+        print(f"SOCKET-VARIANTS   {line}")
+    bpy.data.objects.remove(ground, do_unlink=True)
+    print("SOCKET-VARIANTS   Ground removed; the shadow sheet this renders is empty by construction")
 
 for stub in sockets:
     axis, sign = axis_of(stub)

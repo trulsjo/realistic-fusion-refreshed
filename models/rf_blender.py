@@ -285,6 +285,34 @@ def set_frame(scene, width_px, height_px, width_tiles):
     scene.camera.data.ortho_scale = width_tiles
 
 
+def ground_report(ground):
+    """What `build_rig`'s Ground plane is configured as, and what the running Blender says each of
+    those flags MEANS, as a list of lines for a caller to print one by one.
+
+    THE DESCRIPTIONS ARE THE RUNNING BUILD'S OWN, not a manual page quoted from memory (#366). A
+    shadow catcher is documented as rendering transparent, so whether it occludes anything in the
+    beauty pass is a question about how the object is configured as much as about where the geometry
+    is -- and the answer differs by version. Reading `bl_rna` makes the report and the renderer the
+    same statement.
+
+    ONE COPY, because the two callers are a throwaway builder each: models/socket-cylinders.py builds a
+    scene from nothing and models/socket-variants.py opens a shipped machine, and both delete this
+    plane to measure what it was hiding. It lives here because this is the file that puts the plane
+    in the scene.
+    """
+    import bpy
+    # THE NAMES COME OFF bl_rna RATHER THAN OFF dir(), because `dir()` on an object also lists its
+    # METHODS -- `visible_get` among them -- and asking bl_rna for one of those is a KeyError rather
+    # than an empty description. The first version of this did exactly that.
+    rna = bpy.types.Object.bl_rna.properties
+    flags = ["is_shadow_catcher", "is_holdout"] + sorted(
+        k for k in rna.keys() if k.startswith("visible_"))
+    lines = [f"Ground, under blender {bpy.app.version_string}:"]
+    for a in flags:
+        lines.append(f"    {a} = {getattr(ground, a)!r}  -- {rna[a].description}")
+    return lines
+
+
 def build_rig(scene, tiles_w, tiles_h, icon_centre, icon_tiles, margin=MARGIN_TILES, icon_yaw=0.0):
     """Ground, camera, sun and world, with the camera and sun parented to one empty ("Rig") that
     render.py turns per direction. Records on the scene what render.py needs: the footprint, the
