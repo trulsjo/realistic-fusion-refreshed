@@ -386,7 +386,9 @@ def scene_machine(a, blender):
         print("The stub is reported NO WINDOW above, and that is the tool being right rather than a")
         print("gap: on a plumbable socket the two flange ribs leave 1.15 px of tube between them and")
         print("no whole column falls clear of both. Its row is the `cylinders` scene's bare tube at")
-        print("the same radius.")
+        print("the same radius. scripts/probe-flange-free-render.ps1 (#376) renders a sheet whose")
+        print("ribs are deleted, which measure-socket-parts.py reads with --no-flange -- but that")
+        print("sheet keeps its ground plane, so it answers a different question from this one.")
     else:
         print("Every part named by this socket was read through a window of its own.")
 
