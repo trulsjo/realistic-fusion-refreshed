@@ -1,9 +1,10 @@
 # Socket join frames
 
 Two sets of screenshots of the same subject — a rendered machine's pipe socket with an ordinary
-vanilla pipe plugged into it — taken by `scripts/probe-socket-height.ps1` on 2026-09-16. They are
-pictures, not measurements: nothing here asserts that a socket is right.
-`tools/check-socket-height.py` is the gate that does, off the sheets.
+vanilla pipe plugged into it — both taken by `scripts/probe-socket-height.ps1`, the `#357` pair on
+2026-09-15 and `every-side/` on 2026-09-16. They are pictures, not measurements: nothing here
+asserts that a socket is right. `tools/check-socket-height.py` is the gate that does, off the
+sheets.
 
 ## `every-side/` — the reproducible set
 
@@ -21,8 +22,8 @@ Thirteen frames, one pair per plumbable socket plus a shared reference. This is 
 A `seam-` frame is at zoom 8 — one tile on 256 px, eight times what a player sees — and is centred
 on the half-tile where the socket stops and the pipe starts. A `run-` frame is the same socket with
 a five-tile pipe run leaving it at zoom 1, which is 32 px to the tile and the size a player meets
-it at. `pipe-alone.png` is three tiles of vanilla pipe on bare ground at zoom 8, shot once, as the
-reference every seam frame is read against.
+it at. `pipe-alone.png` is three tiles of vanilla pipe on the same floor at zoom 8, shot once, as
+the reference every seam frame is read against.
 
 The three sockets that are missing from the table are rf-heat-exchanger's reactor-energy
 connections. They are contained (ADR 0018), they meet a machine face and never a pipe, and the

@@ -97,11 +97,12 @@
 
     AND THE MAP SEED IS NOT WHAT CAUSED IT, which is worth writing down because it is what the
     ticket expected and it was tried first. Pinning a seed and building on a surface of the rig's
-    own left the ground differing on 84.53 per cent of that frame, at a mean channel delta of 11 --
-    unchanged in kind. The cause is the TILE: base's grass-1 declares its variants with weighted
-    probabilities over sizes 1, 2 and 4, so the engine draws for every tile set_tiles writes, and
-    no seed a rig can set reaches that draw. The rig paves with a lab tile instead, whose main
-    variant is `count = 1`, and then two runs are byte-identical. Measured both ways on 2026-09-16.
+    own left 84.53 per cent of that frame's pixels differing, at a mean channel delta of 11.5 over
+    the ones that did -- unchanged in kind. The cause is the TILE: base's grass-1 declares its
+    variants with weighted probabilities over sizes 1, 2 and 4, so the engine draws for every tile
+    set_tiles writes, and no seed a rig can set reaches that draw. The rig paves with a lab tile
+    instead, whose main variant is `count = 1`, and then two runs are byte-identical. Measured both
+    ways on 2026-09-16.
 
     THE SEED IS KEPT ANYWAY, for what the floor does not cover: the rig creates its own surface
     with the seed typed below, so the trees, rocks and decoratives OUTSIDE the paved rectangle are
@@ -111,8 +112,9 @@
     WHAT IT SHOOTS, per plumbable socket, and the machine, the side and the fluid are in the name:
 
       seam-<machine>-<side>-<fluid>.png   that socket with an ordinary pipe on it, at zoom 8 --
-                            one tile on 256 px, which is EIGHT times what a player sees -- and
-                            nothing else in frame. The subject is the seam between the two.
+                            one tile on 256 px, which is EIGHT times what a player sees. Four
+                            tiles by three, centred on the seam rather than on either object, so
+                            the machine's own edge is the only other thing in it.
       run-<machine>-<side>-<fluid>.png    the same socket with a five-tile pipe run leaving it, at
                             ZOOM 1 -- 32 px to the tile, the size a player meets it at. This is the
                             one a player would actually see, and it is here so the join can be
@@ -120,8 +122,8 @@
 
     and once, as the reference every seam frame is read against:
 
-      pipe-alone.png        three tiles of ordinary pipe on bare ground at zoom 8, with no machine
-                            anywhere near it.
+      pipe-alone.png        three tiles of ordinary pipe on the same floor at zoom 8, with no
+                            machine anywhere near it.
 
     THE ZOOMS ARE NAMED BY NUMBER RATHER THAN DESCRIBED, and #371 is why. The run frame was shot at
     zoom 2, and FIVE CLAIMS were wrong about it -- four sentences in three places, enumerated
@@ -363,9 +365,9 @@ script.on_nth_tick(60, function()
       for k = 1, RUN_TILES do
         place(surface, "pipe", s.tile.x + d[1] * k, s.tile.y + d[2] * k)
       end
-      -- A NORTH OR SOUTH SOCKET IS MET END-ON, so its frame is turned: the subject is a column
-      -- rather than a run, and 4x3 tiles on it is three tiles of ground either side of a thing one
-      -- tile wide. The header says what such a frame can and cannot settle.
+      -- A NORTH OR SOUTH SOCKET IS MET END-ON, so its frame is turned: the subject runs up and
+      -- down the screen rather than across it, and the unturned 4x3 would spend its long side on
+      -- floor. The header says what such a frame can and cannot settle.
       local endon = d[1] == 0
       local tag = string.format("%s-%s-%s", short(name), s.side, short(s.fluid))
       frames[#frames + 1] = { file = "seam-" .. tag .. ".png",
@@ -379,8 +381,8 @@ script.on_nth_tick(60, function()
   end
   if #frames == 0 then error("no subject has a socket an ordinary pipe will join") end
 
-  -- The reference: three tiles of ordinary pipe on bare ground, nothing near it. Shot ONCE -- it is
-  -- what every seam frame is read against, and a second copy of it is a second thing to keep true.
+  -- The reference: three tiles of ordinary pipe on the same floor, nothing near it. Shot ONCE --
+  -- it is what every seam frame is read against, and a second copy is a second thing to keep true.
   local PIPE_X, PIPE_Y = 0.5 + (#SUBJECTS) * SPACING, 0.5
   for k = -1, 1 do place(surface, "pipe", PIPE_X + k, PIPE_Y) end
   frames[#frames + 1] = { file = "pipe-alone.png", x = PIPE_X, y = PIPE_Y, w = 4, h = 3, zoom = 8 }
