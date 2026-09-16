@@ -10,6 +10,12 @@
 > how the rig works today. Two of its predictions were then tested by the re-render and both held:
 > every part of every socket went symmetric to the pixel, and `tools/check-socket-height.py`'s
 > +0.031 tile residual fell to +0.000.
+>
+> **The frames Truls accepted it on are beside this note**, in `socket-underside-cut/`: twelve
+> before-and-after pairs from `scripts/probe-socket-height.ps1`, one per plumbable socket on each
+> machine, `seam-*` at zoom 8 and `run-*` at zoom 1. The BEFORE half was shot with the pre-fix
+> sheets swapped back in and the working tree restored byte-identical afterwards, so the pair
+> differs in the render and in nothing else.
 
 
 Measured 2026-09-16 for [#366](https://github.com/trulsjo/realistic-fusion-refreshed/issues/366)
