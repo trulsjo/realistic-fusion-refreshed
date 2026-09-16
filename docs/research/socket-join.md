@@ -58,10 +58,18 @@ visible is at the size it is met at rather than twice it.
 map, and `pave` retiles the working area with `grass-1` but the tile VARIANT chosen is the map's,
 not ours — so 85 per cent of `pipe-alone`'s pixels differ between before and after, on a frame whose
 only subject is vanilla pipe that did not change. Measured by row band: bands of bare ground differ
-on 99 per cent of pixels at a mean channel delta of about 32, while the bands the pipe runs through
-differ on 38 to 44 per cent at about 10 — the pipe holds still and the grass under it does not.
-Decoratives outside the paved rectangle survive, which is the plant in the corner of one `run` frame
-and not the other.
+on 99 per cent of pixels at a mean delta of about 32, while the bands the pipe runs through differ
+on 38 to 44 per cent at about 10 — the pipe holds still and the grass under it does not. Decoratives
+outside the paved rectangle survive, which is the plant in the corner of one `run` frame and not the
+other.
+
+**SAY THE METRIC OR THE NUMBER IS NOT REPRODUCIBLE**, which is the same rule as `CONTEXT.md`'s
+**Proud** entry one layer down. The deltas above are the per-pixel SUM of absolute difference over
+all four RGBA channels, averaged over a band, with the 768-row frame cut into eight bands of 96.
+Read instead as a mean over the three colour channels, the same frames give 9.7 to 11.4 for bare
+ground and 3.0 to 3.8 where the pipe runs: the contrast survives, every figure changes, and a reader
+checking this note against the frames gets numbers that do not match it. One reviewer did exactly
+that and reported the statistics as not reproducing.
 
 So these pairs are for reading the SEAM. They do not support a pixel diff, and a whole-frame
 impression will be dominated by grass. A fixed map seed would fix it and is not in this ticket.
