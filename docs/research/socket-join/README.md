@@ -19,11 +19,13 @@ Thirteen frames, one pair per plumbable socket plus a shared reference. This is 
 | rf-heat-exchanger | east | water | `seam-heat-exchanger-east-water.png` | `run-…` |
 | rf-heat-exchanger | south | steam | `seam-heat-exchanger-south-steam.png` | `run-…` |
 
-A `seam-` frame is at zoom 8 — one tile on 256 px, eight times what a player sees — and is centred
-on the half-tile where the socket stops and the pipe starts. A `run-` frame is the same socket with
-a five-tile pipe run leaving it at zoom 1, which is 32 px to the tile and the size a player meets
-it at. `pipe-alone.png` is three tiles of vanilla pipe on the same floor at zoom 8, shot once, as
-the reference every seam frame is read against.
+A `seam-` frame is at zoom 8 — one tile on 256 px, eight times what a player sees — four tiles by
+three, centred on the half-tile where the socket stops and the pipe starts, so the machine's own
+edge is the only other thing in it. A `run-` frame is the same socket with a five-tile pipe run
+leaving it at zoom 1, which is 32 px to the tile and the size a player meets it at; its size comes
+off the machine's own footprint, so the exchanger's fifteen-tile body and the run past it both
+fit. `pipe-alone.png` is three tiles of vanilla pipe on the same floor at zoom 8, shot once, as the
+reference every seam frame is read against.
 
 The three sockets that are missing from the table are rf-heat-exchanger's reactor-energy
 connections. They are contained (ADR 0018), they meet a machine face and never a pipe, and the
