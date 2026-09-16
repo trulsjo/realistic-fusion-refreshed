@@ -58,6 +58,12 @@ pairs are outside this bench and are not silently dropped -- run tools/extract-g
 and it appears here. Of the machines in scope, those with no rendered sheet are listed with their
 pairs named as untestable, so the list is there the day a sheet arrives.
 
+TWO SELF-CHECKS, BESIDE IT, AND THEY GRADE DIFFERENT THINGS. tools/test_colour_distance.py grades
+the colour maths against Sharma, Wu and Dalal's published test data -- somebody else's answers, so a
+mistake shared with this repository cannot pass. tools/test_measure_accent_separation.py pins the
+two pieces of arithmetic that would be silently wrong rather than loudly wrong: the halved window's
+off-by-one, and the halving being done in light rather than in gamma-encoded bytes.
+
 Pure Python. Needs pillow and numpy -- the same pair tools/check-socket-height.py needs, and this
 repository's only third-party Python. A missing one is a failure with a message, not a skip. Run
 from the repository root.
