@@ -39,7 +39,7 @@ resampling, the window would stop being the window, and the figure would stop be
 a frame at another zoom is refused rather than scaled -- which is CONTEXT.md's Zoom entry applied to
 an instrument instead of to prose.
 
-THE TRANSLATION IS THE PART THAT IS WRONG SILENTLY, and `sheet_origin` below is all of it. A frame
+THE TRANSLATION IS THE PART THAT IS WRONG SILENTLY, and `sheet_to_frame` below is all of it. A frame
 whose window is off by ten pixels still returns a plausible green, because a socket is surrounded by
 a machine that is also greenish; off by fifty it returns grass, which at least looks wrong.
 tools/test_measure_frame_accents.py pins it against cases worked out by hand, including the one that
@@ -125,36 +125,61 @@ def sidecar_of(frame_path):
     return sidecar
 
 
-def sheet_origin(sidecar, machine, manifest):
-    """The frame pixel (col, row) that holds halved-sheet pixel (0, 0), as whole pixels.
+def sheet_to_frame(sidecar, machine, manifest):
+    """(col0, row0, scale), where a HALVED-SHEET coordinate u maps to the frame at col0 + u * scale.
 
-    THE WHOLE OF THE WORLD-TO-SCREEN MAPPING, in four lines, and the part that is wrong silently.
+    THE WHOLE OF THE WORLD-TO-SCREEN MAPPING, and the part that is wrong silently. A window ten
+    pixels out still returns a plausible green, because a socket is surrounded by a machine that is
+    also greenish.
 
     A screenshot puts the world position the camera was centred on at the middle of the image, and
-    draws `pixels_per_tile` pixels to the tile -- 32 at zoom 1. So the machine's own centre lands at
+    draws `pixels_per_tile` pixels to the tile -- 32 at zoom 1, 32 * zoom generally. So the machine's
+    own centre lands at
 
         W / 2 + (machine.x - centre.x) * pixels_per_tile
 
     pixels from the left. The sprite is drawn centred on that, with no shift (the margin is
-    symmetric on purpose), and the halved sheet is `sheet_w / 2` pixels wide -- so its own centre is
-    `sheet_w / 4` pixels in from its left edge, and its left edge is that far further left again.
+    symmetric on purpose), and the halved sheet is `sheet_w / 2` pixels wide at 32 px to the tile --
+    so its own left edge is `sheet_w / 4` of ITS pixels further left, each of which the frame draws
+    `zoom` pixels wide. That last factor is the whole of `scale`, and it is why the coordinate this
+    returns is fractional in general and whole at zoom 1.
 
-    IT MUST LAND ON A WHOLE PIXEL, AND IT IS CHECKED RATHER THAN ROUNDED. Every term is a multiple
-    of a half tile on these rigs, so it does; a rig that placed a machine at a third of a tile would
-    make the window a resampling, and a resampled window is not this bench's window. A fractional
-    origin is therefore refused, not rounded away.
+    `u` is a coordinate rather than an index: the centre of halved-sheet pixel j is j + 0.5, and a
+    fractional sheet position -- a socket's drawn axis, say -- goes in as it stands.
     """
     ppt = sidecar["pixels_per_tile"]
+    zoom = sidecar["zoom"]
     shift = manifest["frame"].get("shift", [0, 0])
     if tuple(shift) != (0, 0):
         raise socket_strip.Unmeasurable(
-            f"the sheet records frame.shift {shift}; this bench draws the sprite centred on the "
-            f"machine and does not model a shift")
+            f"the sheet records frame.shift {shift}; this draws the sprite centred on the machine "
+            f"and does not model a shift")
     sheet_w, sheet_h = manifest["frame"]["north"]
     col = sidecar["resolution"]["w"] / 2 \
-        + (machine["position"]["x"] - sidecar["centre"]["x"]) * ppt - sheet_w / 4
+        + (machine["position"]["x"] - sidecar["centre"]["x"]) * ppt - sheet_w / 4 * zoom
     row = sidecar["resolution"]["h"] / 2 \
-        + (machine["position"]["y"] - sidecar["centre"]["y"]) * ppt - sheet_h / 4
+        + (machine["position"]["y"] - sidecar["centre"]["y"]) * ppt - sheet_h / 4 * zoom
+    return col, row, zoom
+
+
+def sheet_origin(sidecar, machine, manifest):
+    """The frame pixel (col, row) that holds halved-sheet pixel (0, 0), as whole pixels.
+
+    THE ZOOM-1 CASE OF `sheet_to_frame`, which is where the arithmetic lives -- one copy, because
+    tools/measure-pipe-cover-miss.py needs the same mapping at zoom 8 and a second copy of a
+    world-to-screen mapping is what tools/socket_strip.py's header is about.
+
+    IT MUST LAND ON A WHOLE PIXEL, AND IT IS CHECKED RATHER THAN ROUNDED. At zoom 1 a halved-sheet
+    pixel and a frame pixel are the same size, so a window can be read off the frame by translation
+    alone -- but only if the two grids line up. Every term is a multiple of a half tile on these
+    rigs, so they do; a rig that placed a machine at a third of a tile would make the window a
+    resampling, and a resampled window is not this bench's window.
+    """
+    col, row, scale = sheet_to_frame(sidecar, machine, manifest)
+    if scale != 1:
+        raise socket_strip.Unmeasurable(
+            f"this frame is zoom {scale}; a window is read off the frame by translation only, which "
+            f"is true at zoom 1 alone")
     if col != int(col) or row != int(row):
         raise socket_strip.Unmeasurable(
             f"the sheet's own pixel grid lands at ({col}, {row}) in this frame, which is not a "

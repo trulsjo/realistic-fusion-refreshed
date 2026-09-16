@@ -330,6 +330,7 @@ function Invoke-ArtProbe {
         [Parameter(Mandatory)] [string] $Control,
         [Parameter(Mandatory)] [string] $OutputDirectory,
         [Parameter(Mandatory)] [string] $TempPrefix,
+        [string]   $DataFinalFixes,
         [int]      $TimeoutSeconds = 180,
         [Nullable[int]] $MapSeed,
         [switch]   $KeepTemp,
@@ -352,6 +353,12 @@ function Invoke-ArtProbe {
         dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $Control -Encoding utf8
+    # A PROBE THAT ASKS A QUESTION ABOUT PROTOTYPES NEEDS THE DATA STAGE (#390): whether Factorio
+    # loads a contained fluid box that declares no pipe_covers is not answerable from runtime, where
+    # the prototype is already built. Rigs that only build a map pass nothing here.
+    if ($DataFinalFixes) {
+        Set-Content -Path (Join-Path $rigDir 'data-final-fixes.lua') -Value $DataFinalFixes -Encoding utf8
+    }
 
     $proc = $null
     try {
