@@ -40,12 +40,17 @@ each linear row to sRGB first — `colour_distance.linear_to_srgb` then `colour_
 — because the rows are linear and `srgb_to_lab` expects encoded sRGB; skipping that step is the
 second way to get this wrong.
 
-| pair | palette dE00 | drawn dE00, closest two sockets | palette dE76 | drawn dE76 |
-|---|---:|---:|---:|---:|
-| helium-3 × tritium | 41.8 | **30.0** | 80.8 | 37.8 |
-| energy × water | 45.5 | **29.2** | 93.6 | 42.3 |
-| steam × water | 21.4 | **11.2** | 38.0 | 15.0 |
-| energy × steam | 29.4 | **19.3** | 62.9 | 29.0 |
+| pair | palette dE00 | drawn dE00, closest two sockets | palette dE76 | drawn dE76 | dE76/dE00, palette | dE76/dE00, drawn |
+|---|---:|---:|---:|---:|---:|---:|
+| helium-3 × tritium | 41.8 | **30.0** | 80.8 | 37.8 | 1.93 | 1.26 |
+| energy × water | 45.5 | **29.2** | 93.6 | 42.3 | 2.06 | 1.45 |
+| steam × water | 21.4 | **11.2** | 38.0 | 15.0 | 1.78 | 1.34 |
+| energy × steam | 29.4 | **19.3** | 62.9 | 29.0 | 2.14 | 1.50 |
+
+The last two columns are the first four divided, and they are there because the first version of
+this note quoted them as ranges a reader had to trust — "1.8 to 2.1" and "1.3 or less", the second
+of which was true of one pair in four. The review of #381 caught it. A figure that is a division of
+two others in the same table belongs in the table.
 
 **The drawn figure is never the palette figure**: each pair keeps between 52 and 72 per cent of its
 palette distance, so quoting the table over-states a pair by between a third and a factor of two.
@@ -53,7 +58,8 @@ The gap is not a constant either, so no single correction recovers it — `steam
 nearly half while `helium-3 × tritium` loses barely a quarter.
 
 **And the two formulas disagree by more on the palette than on the pixels.** dE76 calls the palette
-rows 1.8 to 2.1 times as far apart as dE00 does; on the drawn pixels the factor is 1.3 or less.
+rows 1.78 to 2.14 times as far apart as dE00 does, and the drawn pixels 1.26 to 1.50 -- every
+palette figure above every drawn one, pair by pair.
 dE76 is Euclidean in Lab, and it does not divide a chroma difference down as the chroma rises, so
 it parts company with the eye most at the high chroma the palette rows sit at and least at the
 chroma that survives to the sheet. That is why `tools/colour_distance.py` carries CIEDE2000 and the

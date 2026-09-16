@@ -2,11 +2,14 @@
 """The checks for measure-accent-separation.py that need no game, no Blender and no render:
 `python tools/test_measure_accent_separation.py` exits 0 or raises.
 
-Three pieces of arithmetic and two whole runs. The arithmetic is the part that is silently wrong if
-it is wrong -- a window off by one still returns a plausible colour, so does a filter guard off by
-one, and so does a halving done in the wrong space -- so each is pinned against a case where the
-right answer and the likely wrong one differ visibly. The runs are here because the parts can all
-be right while the tool reports nothing, or reports it off the wrong pixels.
+Two pieces of arithmetic and two whole runs. The arithmetic is the part that is silently wrong if
+it is wrong -- a window off by one still returns a plausible colour, and so does a halving done in
+the wrong space -- so each is pinned against a case where the right answer and the likely wrong one
+differ visibly. The runs are here because the parts can all be right while the tool reports nothing,
+or reports it off the wrong pixels.
+
+The filter guard is NOT one of them: it is socket_strip.clear_of, shared with that module's own two
+callers, and tools/test_socket_strip.py pins it there.
 
 tools/test_colour_distance.py grades the colour maths separately, against somebody else's table.
 """
@@ -38,19 +41,10 @@ assert mas.inside(4, 5) == (2, 2), mas.inside(4, 5)               # exactly one 
 assert mas.inside(5, 5) is None, mas.inside(5, 5)                 # one source pixel is never whole
 assert mas.inside(5, 6) is None, mas.inside(5, 6)                 # two, but straddling the pair
 
-# ---------------------------------------------------------------- the filter guard, both ways
-#
-# A column j covers [j, j+1), so it is clear of a boundary AHEAD of it only when its far side is,
-# which is one column short of where a plain floor lands. That is
-# socket_strip.Strip.columns_of's convention and `clear_of` has to agree with it; the bench's first
-# version floored instead, and put the column straddling the smear inside the window.
-# The collector's west band: front 202.88, back 216.96, inboard to the right.
-assert mas.clear_of(216.96, +1, inward=False) == 215, mas.clear_of(216.96, +1, inward=False)
-assert mas.clear_of(216.96, +1, inward=True) == 218, mas.clear_of(216.96, +1, inward=True)
-# The same boundary on a socket pointing the other way: inboard is to the LEFT, so the two answers
-# swap sides. A sign error here measures the machine instead of the band on half of every sheet.
-assert mas.clear_of(216.96, -1, inward=False) == 218, mas.clear_of(216.96, -1, inward=False)
-assert mas.clear_of(216.96, -1, inward=True) == 215, mas.clear_of(216.96, -1, inward=True)
+# NOT HERE: THE FILTER GUARD. `clear_of` was a fourth copy of arithmetic tools/socket_strip.py
+# already owned, and it had drifted from the original before it ever shipped. It now lives in that
+# module beside the two callers that always shared it, and tools/test_socket_strip.py pins it. A
+# copy of its assertions here would be the same mistake one layer down.
 
 # ---------------------------------------------------------------- the halving
 #

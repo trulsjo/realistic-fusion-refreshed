@@ -16,10 +16,11 @@ WHY CIEDE2000 AND NOT dE76. dE76 is a plain Euclidean distance in Lab, and the e
 in Lab: the same numeric gap in chroma looks smaller the more chroma both colours already carry.
 CIEDE2000's SC and SH terms divide by 1 + 0.045 C and 1 + 0.015 C T, so the two formulas part
 company most at HIGH chroma -- which is exactly where models/house-style.md's palette rows sit, and
-not where the pixels they produce end up. Measured in docs/research/accent-separation.md: on the
-palette rows dE76 is 1.93 times dE00, on the drawn pixels 1.25. A note that used dE76 for both would
-report the palette and the sheet as further apart than they are, and the palette worse than the
-sheet. The extra lines are the reason this file exists rather than a one-line subtraction.
+not where the pixels they produce end up. Measured over the four accent pairs in
+docs/research/accent-separation.md: dE76 is 1.78 to 2.14 times dE00 on the palette rows and 1.26 to
+1.50 on the pixels they draw, every palette figure above every drawn one. A note that used dE76 for
+both would report the palette and the sheet as further apart than they are, and the palette worse
+than the sheet. The extra lines are the reason this file exists rather than a one-line subtraction.
 
 D65, the sRGB white point, and the sRGB transfer function as IEC 61966-2-1 states it. Needs numpy.
 """

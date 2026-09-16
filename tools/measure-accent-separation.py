@@ -42,7 +42,8 @@ THREE THINGS IT HAS TO GET RIGHT, AND HOW EACH IS DONE HERE.
 THE WINDOW, AND WHY EVERY FIGURE CARRIES ONE. A column that straddles two pieces of a socket draws
 both, and one column either way moves a reading -- the leak tools/socket_strip.py's header sets out,
 which published two wrong rows into models/house-style.md and shipped them. So every boundary is
-pulled in by the width the renderer's filter smears an edge, and where a band ENDS is measured
+pulled in by the width the renderer's filter smears an edge -- through socket_strip.clear_of, which
+is that module's one copy and not a rounding of this file's own -- and where a band ENDS is measured
 rather than assumed: `follow_band` walks each column inboard and keeps it only while it is nearer
 the accent than the machine's own surface, both read off the same sheet. The first version of this
 file took the band's built span on trust and measured the heat exchanger's body on four of its six
@@ -65,9 +66,9 @@ pairs named as untestable, so the list is there the day a sheet arrives.
 TWO SELF-CHECKS, BESIDE IT, AND THEY GRADE DIFFERENT THINGS. tools/test_colour_distance.py grades
 the colour maths against Sharma, Wu and Dalal's published test data -- somebody else's answers, so a
 mistake shared with this repository cannot pass. tools/test_measure_accent_separation.py pins the
-three pieces of arithmetic that would be silently wrong rather than loudly wrong: the halved
-window's off-by-one, the filter guard's own off-by-one at a boundary, and the halving being done in
-light rather than in gamma-encoded bytes.
+two pieces of arithmetic that would be silently wrong rather than loudly wrong: the halved window's
+off-by-one, and the halving being done in light rather than in gamma-encoded bytes. The third,
+socket_strip.clear_of, is pinned in tools/test_socket_strip.py beside the module that owns it.
 
 Pure Python. Needs pillow and numpy -- the same pair tools/check-socket-height.py needs, and this
 repository's only third-party Python. A missing one is a failure with a message, not a skip. Run
@@ -76,7 +77,6 @@ from the repository root.
 import argparse
 import itertools
 import json
-import math
 import os
 import sys
 
@@ -180,21 +180,6 @@ def band_edges(s):
     return front, back, step
 
 
-def clear_of(edge, step, inward):
-    """The first whole sheet column on one side of a fractional boundary that the renderer's filter
-    does not smear across, walking in `step`.
-
-    socket_strip.Strip.columns_of's convention, and it has to be that one rather than a rounding of
-    its own: a column j covers [j, j+1), so it is clear of a boundary ahead of it only when its FAR
-    side is, which is one column short of where a plain floor lands. `inward` is True for the column
-    just past the boundary in the direction of travel, False for the last one before it.
-    """
-    guard = socket_strip.FILTER_HALF_PX
-    if (step > 0) == inward:
-        return int(math.ceil(edge + guard))
-    return int(math.floor(edge - guard)) - 1
-
-
 def follow_band(alpha_rgb, rows, s, clean):
     """How far inboard the accent is still what the sheet draws, as ((lo, hi), why it stopped).
 
@@ -228,7 +213,7 @@ def follow_band(alpha_rgb, rows, s, clean):
     # The machine's own surface, read three columns past the band's back edge. It has to exist: with
     # nothing to compare a column against, an inboard column cannot be told from the body and this
     # bench will not guess which it is.
-    off0 = clear_of(back, step, inward=True)
+    off0 = socket_strip.clear_of(back, step, inward=True)
     off1 = off0 + 2 * step
     if not (0 <= off0 < width and 0 <= off1 < width):
         raise socket_strip.Unmeasurable(
@@ -236,7 +221,7 @@ def follow_band(alpha_rgb, rows, s, clean):
             f"nothing to tell an inboard column of band from a column of machine")
     band_lab, body_lab = lab_of(*clean), lab_of(off0, off1)
 
-    last = clear_of(back, step, inward=False)
+    last = socket_strip.clear_of(back, step, inward=False)
     lo, hi = clean
     col = (hi if step > 0 else lo) + step
     while (last - col) * step >= 0 and 0 <= col < width:
