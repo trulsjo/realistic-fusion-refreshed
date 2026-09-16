@@ -147,10 +147,7 @@ $dataFinalFixes = @'
 -- ALONE rather than stripped -- stripping it would take the cover off a socket a player really does
 -- plumb, and the frame would then show two changes at once.
 
---- (all contained, mixed) for one box. MIXED MEANS BOTH KINDS IN ONE BOX, not "not all contained":
---- the first version of this returned `seen and not all` for the second value and so reported every
---- entirely-plumbable box in the tree as mixed -- forty of them, including rf-heat-exchanger's own
---- water box. A box with no contained connection at all is simply not this probe's business.
+-- Substituted by the caller from -Strip: true for "all", false for "contained".
 local STRIP_ALL = __STRIP_ALL__
 
 --- (all contained, mixed, has any connection) for one box. MIXED MEANS BOTH KINDS IN ONE BOX, not

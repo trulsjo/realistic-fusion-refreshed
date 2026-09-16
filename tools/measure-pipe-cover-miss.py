@@ -13,10 +13,10 @@ remedies and that is Truls's.
 
 THE COVER IS FOUND BY SUBTRACTION, NOT BY RECOGNITION (#390). The runs differ in one thing: which
 fluid boxes still declare `pipe_covers`. So the pixels that differ between two frames of the same
-machine on the same map seed ARE the cover,
-and nothing here has to know what one looks like, what colour it is, or how big it should be. That
-matters more than it sounds: a cover on a Krastorio 2 sprite, a cover on a mockup plate and a cover
-on a rendered sheet are three different pictures, and this finds all three the same way.
+machine on the same map seed ARE the cover, and nothing here has to know what one looks like, what
+colour it is, or how big it should be. That matters more than it sounds: a cover on a Krastorio 2
+sprite, a cover on a mockup plate and a cover on a rendered sheet are three different pictures, and
+this finds all three the same way.
 
 WHAT IT MEASURES, and why each half is a DIFFERENCE rather than a reading. #390 asks for the offset
 between a contained socket's drawn axis and its pipe cover, measured rather than derived from the
@@ -154,13 +154,26 @@ class Socket:
             return None
         return self.cover[4] - self.axis_row
 
+    # Which way is OUTBOARD along the screen's horizontal axis, per direction. A west socket points
+    # at the left of the screen, so outboard is a DECREASING column. North and south sockets do not
+    # run left-to-right at all, so they get no horizontal reach rather than a meaningless one.
+    OUTWARD = {"west": -1, "east": +1}
+
     @property
     def reach(self):
-        """How far outboard of the socket's mouth the cover's centre sits, in frame pixels, signed
-        away from the machine. None when the frame draws no mouth this tool can place."""
-        if self.cover is None or self.mouth_col is None:
+        """How far OUTBOARD of the socket's mouth the cover's centre sits, in frame pixels: positive
+        away from the machine, negative inboard of the mouth. None when the socket does not run
+        left-to-right on this frame, or when no mouth could be placed.
+
+        SIGNED, AND IT WAS NOT. This returned abs() under a docstring that said signed, so a cover
+        drawn INBOARD of the mouth read the same as one the same distance out -- on a probe whose
+        whole observation is a cover sitting "below and outboard", which is the one direction the
+        figure had to be able to contradict.
+        """
+        outward = self.OUTWARD.get(self.connection["direction"])
+        if self.cover is None or self.mouth_col is None or outward is None:
             return None
-        return abs(self.cover[5] - self.mouth_col)
+        return outward * (self.cover[5] - self.mouth_col)
 
 
 def sockets_in(frame_name, covers_dir, bare_dir, all_dir=None):
@@ -277,8 +290,8 @@ def report(covers_dir, bare_dir, all_dir):
           f"  contained stripped : {bare_dir}\n"
           f"  all stripped       : {all_dir or '(not given -- plumbable sockets read NO COVER)'}\n"
           f"Everything that differs between two runs is a cover. 'drop' is how far BELOW the "
-          f"socket's drawn\naxis the cover's centre sits and 'reach' how far OUTBOARD of its mouth, "
-          f"both in frame pixels\nat the frame's own zoom.")
+          f"socket's drawn\naxis the cover's centre sits and 'reach' how far OUTBOARD of its mouth "
+          f"-- both signed, both in\nframe pixels at the frame's own zoom.")
     total_frames = 0
     for frame in frames:
         try:
@@ -312,8 +325,9 @@ def report(covers_dir, bare_dir, all_dir):
                 print(f"  {name:28} {s.label:36} cover {size}; no rendered sheet, so this "
                       f"machine has no drawn axis to measure against")
             else:
+                reach = f"{s.reach:+.1f} px" if s.reach is not None else "n/a on this axis"
                 print(f"  {name:28} {s.label:36} cover {size}; "
-                      f"drop {s.drop:+.1f} px ({s.drop / ppt:+.3f} tiles), reach {s.reach:.1f} px")
+                      f"drop {s.drop:+.1f} px ({s.drop / ppt:+.3f} tiles), reach {reach}")
     print(f"\n{total_frames} frame(s) measured. Nothing above says what the miss OUGHT to be; "
           f"#391 weighs the remedies.")
     print(f"For reference and NOT as a source of any figure above: a contained socket is built at "
