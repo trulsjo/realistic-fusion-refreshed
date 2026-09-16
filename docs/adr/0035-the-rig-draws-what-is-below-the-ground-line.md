@@ -80,7 +80,7 @@ not nine.
 
 **The `+0.031` tile residual `tools/check-socket-height.py` carried is gone**, and that is the model
 checking itself rather than a separate win. With nothing cut, a socket's drawn centre should be
-`0.70804 × 0.033` = `+0.02336` tiles against the `+0.02337` that gate measures off vanilla's own
+`0.70804 × 0.033` = `+0.02337` tiles against the `+0.02337` that gate measures off vanilla's own
 pipe — a residual of zero. Measured after the re-render: **all six plumbable sockets read `+0.000`**,
 where every one read `+0.031` before. `docs/research/socket-underside-cut.md` stated that prediction
 before anything was re-rendered.

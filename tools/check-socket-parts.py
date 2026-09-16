@@ -37,10 +37,14 @@ manifest's `geometry` block is tools/extract-geometry.py's copy of the live prot
 Factorio prototype records no radius and no height at all. The `sockets` block models/render.py
 writes since #373 is the model's own statement of what it drew, and this pin is what checks it.
 
-A MISSING RECORD IS A FAILURE, NOT A SKIP. A manifest written before #373 carries no `sockets`
-block, and a gate that passed quietly on one would be the silent pass this repository has already
-paid for twice. Every connection the geometry records must have a socket record, and that record's
-own `plumbable` must agree with what the connection's `connection_category` says.
+A MISSING RECORD IS A FAILURE, NOT A SKIP, and the two have separate verdicts so that they cannot
+be confused again. A manifest written before #373 carries no `sockets` block, and a gate that passed
+quietly on one would be the silent pass this repository has already paid for twice. Every connection
+the geometry records must have a socket record, and that record's own `plumbable` must agree with
+what the connection's `connection_category` says; a connection failing either is reported NOT
+CHECKED and fails the run, where a part with no window of its own is reported UNMEASURABLE and does
+not. `failing` below is the one place that difference is decided, and every half of the self-test
+judges through it.
 """
 import argparse
 import json
@@ -61,6 +65,37 @@ import rf_blender as rf  # noqa: E402,F401  (no bpy at module level; imported fo
 import socket_strip  # noqa: E402
 
 Unmeasurable = socket_strip.Unmeasurable
+
+# THE TWO REASONS A ROW CARRIES NO NUMBER, AND THEY ARE NOT THE SAME KIND OF THING.
+#
+# A SKIP is expected and is not a finding: a plumbable socket's bare tube has no column of its own
+# on any shipped sheet, because the flange ribs leave 1.15 px between them, so every plumbable
+# socket reports one skipped part for ever and that is correct.
+#
+# NOT CHECKED is a FAILURE. It means this gate was asked about a socket and could not judge it at
+# all -- no record in the manifest, a record the prototype contradicts, a sheet that cannot be
+# opened, or every part of the socket skipped at once. The header's promise that "A MISSING RECORD
+# IS A FAILURE, NOT A SKIP" is this distinction and nothing else, and the first version of this
+# file did not have it: every unreadable row came back UNMEASURABLE, `failing` let UNMEASURABLE
+# through, and a manifest with no `sockets` block at all printed "ok" and exited 0. That is the
+# silent pass the header says this gate exists to refuse, and it shipped inside the gate that
+# refuses it.
+SKIP, NOT_CHECKED = "UNMEASURABLE", "NOT CHECKED"
+
+
+def skip(why):
+    return (SKIP, str(why))
+
+
+def unchecked(why):
+    return (NOT_CHECKED, str(why))
+
+
+def failing(verdicts):
+    """The verdicts that must fail a run. ONE DEFINITION, because `main` and every half of the
+    self-test have to mean the same thing by "fails" -- self-test 4 used to assert the row LABEL
+    instead, which is why it stayed green while `main` passed the very manifest it was named for."""
+    return [v for v in verdicts if v not in ("ok", SKIP)]
 
 # HOW FAR THE TWO EDGES OF ONE PART MAY DIFFER, in pixels of the sheet.
 #
@@ -146,7 +181,9 @@ def check(manifest_path, sheets, rows, sockets=None, cut=None):
                 strip = cut(strip)
             axis = strip.axis_row(record["z"])
         except Unmeasurable as why:
-            rows.append((geometry["name"], label, "-", None, None, None, None, str(why)))
+            # NOT CHECKED rather than skipped: a socket whose record or whose sheet cannot be read
+            # has not been judged, and saying so quietly would be the silent pass.
+            rows.append((geometry["name"], label, "-", None, None, None, None, unchecked(why)))
             continue
         measured = 0
         for name, radius, back_near, back_far in socket_strip.parts_of(record["radius"], declared):
@@ -154,16 +191,17 @@ def check(manifest_path, sheets, rows, sockets=None, cut=None):
             window = strip.columns_of(back_near, back_far)
             if window is None:
                 rows.append((geometry["name"], label, name, radius, uncut, None, None,
-                             "no column of this sheet draws it clear of its neighbours"))
+                             skip("no column of this sheet draws it clear of its neighbours")))
                 continue
             try:
                 above, below, unstable = strip.measure(axis, *window)
             except Unmeasurable as cannot:
-                rows.append((geometry["name"], label, name, radius, uncut, None, None, str(cannot)))
+                rows.append((geometry["name"], label, name, radius, uncut, None, None,
+                             skip(cannot)))
                 continue
             if unstable is not None:
                 rows.append((geometry["name"], label, name, radius, uncut, None, None,
-                             f"the reading moves with its column window: {unstable}"))
+                             skip(f"the reading moves with its column window: {unstable}")))
                 continue
             rows.append((geometry["name"], label, name, radius, uncut, above, below, None))
             measured += 1
@@ -173,7 +211,8 @@ def check(manifest_path, sheets, rows, sockets=None, cut=None):
             # unchecked, and a gate that let that through would check nothing at all on the day
             # tools/socket_strip.py's window guard tightened by one column.
             rows.append((geometry["name"], label, "(all of it)", None, None, None, None,
-                         "not one part of it could be measured; the rows above say why each"))
+                         unchecked("not one part of it could be measured; the rows above say why "
+                                   "each. The socket has been looked at and not judged")))
     return rows
 
 
@@ -182,8 +221,9 @@ def report(rows):
     verdicts = []
     for name, label, part, radius, uncut, above, below, why in rows:
         if why is not None:
-            print(f"  {name:22s} {label:22s} {part:12s} UNMEASURABLE: {why}")
-            verdicts.append("UNMEASURABLE")
+            verdict, text = why
+            print(f"  {name:22s} {label:22s} {part:12s} {verdict}: {text}")
+            verdicts.append(verdict)
             continue
         lopsided = above - below
         spread = (above + below) / 2 - uncut
@@ -257,7 +297,7 @@ def self_test(manifests):
         print("FAILED - self-test: not one part was measured at all, so the halves below would "
               "pass over an empty report.")
         return 1
-    bad = [v for v in verdicts if v not in ("ok", "UNMEASURABLE")]
+    bad = failing(verdicts)
     if bad:
         print(f"FAILED - self-test: {len(bad)} part(s) fail on the sheets as they stand, so this "
               f"gate cannot tell a regression from the state it was handed.")
@@ -289,16 +329,28 @@ def self_test(manifests):
               f"wider than the model drew and this gate called none of them narrow.")
         return 1
 
-    print("self-test 4/4: a manifest recording no socket at all must fail rather than pass "
-          "quietly.")
+    print("self-test 4/4: a manifest recording no socket at all must FAIL THE RUN, not merely be "
+          "labelled.")
     rows = []
     for manifest in manifests:
         check(manifest, load_sheet, rows, sockets=lambda m: [])
     empty = report(rows)
-    if not empty or not all(v == "UNMEASURABLE" for v in empty):
-        print("FAILED - self-test: a manifest recording no socket produced something other than "
-              "UNMEASURABLE on every row, so either it passed quietly or the reason a reader is "
-              "given is the wrong one.")
+    # THE ASSERTION IS `failing`, WHICH IS WHAT main() DECIDES ON. Asserting the row label instead
+    # is what this half used to do, and it passed while `main` exited 0 on the very manifest this
+    # half is named for: NOT CHECKED had not been separated from UNMEASURABLE, and UNMEASURABLE
+    # does not fail a run. A half that tests a layer the gate does not decide on proves nothing.
+    if not empty:
+        print("FAILED - self-test: a manifest recording no socket produced no rows at all, so "
+              "there was nothing to judge.")
+        return 1
+    if len(failing(empty)) != len(empty):
+        print(f"FAILED - self-test: {len(empty) - len(failing(empty))} row(s) of a manifest "
+              f"recording no socket did not fail the run, so this gate would report `ok` on a "
+              f"machine whose sockets it never checked.")
+        return 1
+    if not all(v == NOT_CHECKED for v in empty):
+        print("FAILED - self-test: those rows fail the run but are not reported as NOT CHECKED, "
+              "so the reason a reader is given is the wrong one.")
         return 1
 
     print("self-test: all four halves pass.")
@@ -320,13 +372,15 @@ def main(argv=None):
     print(f"check-socket-parts: {len(rows)} part(s) of "
           f"{len({(r[0], r[1]) for r in rows})} socket(s) on {len(a.manifests)} machine(s)")
     verdicts = report(rows)
-    bad = [v for v in verdicts if v not in ("ok", "UNMEASURABLE")]
-    skipped = [v for v in verdicts if v == "UNMEASURABLE"]
+    bad = failing(verdicts)
+    skipped = [v for v in verdicts if v == SKIP]
     if bad:
-        print(f"FAILED - check-socket-parts: {len(bad)} part(s) are not drawn the same distance "
-              f"either side of their axis, or are not the width the model recorded. Every piece of "
-              f"a socket is coaxial with its tube, so this is the TUBE missing vanilla's barrel "
-              f"(#373, models/house-style.md). The band is not the thing to move.")
+        print(f"FAILED - check-socket-parts: {len(bad)} row(s) failed. A part not drawn the same "
+              f"distance either side of its axis, or not the width the model recorded, is the TUBE "
+              f"missing vanilla's barrel -- every piece of a socket is coaxial with it (#373, "
+              f"models/house-style.md), and the band is not the thing to move. A row reported "
+              f"{NOT_CHECKED} is a socket this gate could not judge at all, which is a failure in "
+              f"its own right: see the reason on the row.")
         return 1
     print(f"check-socket-parts: ok ({len(verdicts) - len(skipped)} part(s) measured, "
           f"{len(skipped)} not measurable -- a plumbable socket's bare tube is never one of the "
