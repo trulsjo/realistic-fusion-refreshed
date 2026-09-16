@@ -67,10 +67,13 @@ Measurement words below, applied to a pixel rather than a map: say which one.
 **Composite** — a rendered sheet pasted beside something else so a person can judge it, by
 `models/post.py`: `vanilla` places it on a tile grid next to vanilla's own heat exchanger, boiler
 and chest; `compare` places any labelled sheets side by side. Made to be looked at and never
-shipped. **Not a probe frame**: a composite is sheets on a grid with no game running, where a probe
-photographs the machine in a real save with a pipe on it. `.claude/skills/render-machine/SKILL.md`
-turns on the difference — *"Acceptance by eye is Truls's: show him the composite"* — and #357 is
-where the two were read as one thing, so an acceptance was asked for with the wrong artefact.
+shipped. **Not a probe frame**: a composite is sheets pasted on a grid with no game running, where
+a frame from one of the ART probes is a screenshot of the machine built in a real save. (Most
+probes photograph nothing at all — `scripts/probe-connection-categories.ps1` dumps prototypes and
+`scripts/probe-native-heat.ps1` measures a rig. See **Probe** under Measurement words; a composite
+is not one of those either.) `.claude/skills/render-machine/SKILL.md` turns on the difference —
+*"Acceptance by eye is Truls's: show him the composite"* — and #357 is where the two were read as
+one thing, so an acceptance was asked for with the wrong artefact.
 
 ## The fuel chain
 
