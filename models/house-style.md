@@ -79,6 +79,32 @@ for it to agree with.
 the isotope collector does not have to resolve, since it carries no plasma. A machine that carries
 both will.
 
+**An accent is read against its neighbour** ([ADR 0034](../docs/adr/0034-an-accent-is-read-against-its-neighbour.md),
+Truls, #359). It tells one socket on the machine in front of the player from another, in one frame,
+under one light. It is **not** a name for a fluid that a player recognises on sight, and the table's
+"every surface that carries X" must not be read as one -- because a single palette row does not
+produce a single colour. On `rf-heat-exchanger` water's own two sockets land **33.0 dE00** apart,
+further than the **29.2** separating energy from water at their closest: the west socket stands in
+the open and the east is shaded by the machine's own body. Ask how far two accents ON ONE MACHINE
+land apart. Do not ask what colour an accent is.
+
+**Measured under that standard, nothing here needs changing, and #359 changed nothing.** The
+closest pair that can share a machine is 11.2 dE00 (steam against water) and the pale pair #359 was
+raised about is 23.6 as the game draws it, on two drums 24.5 screen pixels apart on the collector's
+own deck. Bands two screen pixels wide read at zoom 1 because they are 22 to 27 tall. The figures
+are in `docs/research/accent-separation.md` (the sheets) and
+`docs/research/accent-legibility-at-zoom-1.md` (both machines photographed in the game).
+**The standard binds machines not yet rendered**: a pair on a new machine is checked against it
+rather than reopening the question. **None of this is gated, deliberately** -- a threshold on
+legibility would be a decision wearing a check's clothes.
+
+**A socket whose fluid is set by its recipe carries no accent.** It is bare metal, like any other
+unpainted tube. This follows from the table's own "every surface that carries X" -- no fluid, no
+accent -- and is stated because one machine has such sockets: `rf-heater`'s input boxes are a
+chemical plant's, unfiltered and uncontained, so nothing names what flows in them and
+`tools/measure-accent-separation.py` reports them as the one connection it cannot derive. It wears
+Krastorio 2's sprites today, so nothing turns on it yet.
+
 **An accent belongs only to a machine that carries the fluid.** Obvious from the table's own "every
 surface that carries X", and stated because it was broken within a week of being written: the
 isotope collector's control cabinet took a blue panel from the heat exchanger's, which is right on

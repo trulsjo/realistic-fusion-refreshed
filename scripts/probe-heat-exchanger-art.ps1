@@ -6,7 +6,8 @@
 .DESCRIPTION
     A PROBE, NOT A CHECK. Exit 0 means it ran and wrote the pictures, never that the art is good.
     The question it answers is the one no gate can: does the rendered building read correctly in
-    the game, at the game's own camera, beside the machines it stands next to? load-check proves
+    the game, at zoom 1 -- 32 px to the tile, the game's own camera, the size a player meets it at
+    (CONTEXT.md, Zoom) -- and again magnified, beside the machines it stands next to? load-check proves
     the sheets exist and agree with the prototype's footprint (#250); nothing proves they look
     right. That is a person looking, and this is what puts the pictures in front of them (#252).
 
@@ -422,6 +423,15 @@ script.on_event(defines.events.on_tick, function()
   tiles_shot("working-night.png", solo.working_x, 0.5, solo.solo_w, solo.solo_h,  3, 0.5)
   tiles_shot("pipes.png",        solo.pipes_x,   0.5, solo.pipes_w, solo.pipes_h, 3, 0)
   tiles_shot("rotations.png", g.x, g.y, 2 * g.pitch + 4, 2 * g.pitch + 4, 1.5, 0)
+
+  -- ZOOM 1 -- 32 px to the tile, the size a player meets the machine at (CONTEXT.md, Zoom). Every
+  -- other frame above is magnification. #359 asks whether two accents can be told apart where they
+  -- are MET, and this machine is the hard case: docs/research/accent-separation.md measures its
+  -- steam and water accents 11.2 dE00 apart at their closest, the tightest pair on any sheet, and
+  -- draws two of its six bands at two screen pixels. game-alone.png is the bench's own window and
+  -- game-pipes.png is the condition #359 names -- on grass, with vanilla pipes plugged in.
+  tiles_shot("game-alone.png", solo.cold_x,  0.5, solo.solo_w,  solo.solo_h,  1, 0)
+  tiles_shot("game-pipes.png", solo.pipes_x, 0.5, solo.pipes_w, solo.pipes_h, 1, 0)
 
   game.set_wait_for_screenshots_to_finish()
   helpers.write_file(OUT .. "done.txt", "done\n")
