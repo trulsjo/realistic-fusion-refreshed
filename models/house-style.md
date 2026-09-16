@@ -240,6 +240,38 @@ loses more below it the wider it is, monotonically: 1.0 px at radius 0.249 throu
 So the band, which would stand 3.2 px proud of the stub at BOTH edges if nothing were cut, stands
 3.0 px proud at the top and 2.0 px at the bottom.
 
+**PROUD OF WHAT? THE FIGURE MEANS NOTHING WITHOUT ITS REFERENCE, AND THIS NOTE MEASURED AGAINST THE
+WRONG ONE FOR MONTHS.** The table above is every part against the STUB, which is what the geometry
+does. What a player looks at is every part against VANILLA'S PIPE, which is what the socket is bolted
+to -- and that pipe offers two references of its own, its barrel and its outer flange. Measured about
+the axis our socket and vanilla's pipe share (#356 made them coincide), on 2026-09-16:
+
+| | above | below | vs barrel | vs flange |
+|---|---|---|---|---|
+| vanilla's barrel | +19.5 | +19.5 | -- | -- |
+| vanilla's flange | +25.5 | +25.5 | -- | -- |
+| stub | +20.5 | +18.5 | +1.0 / -1.0 | -5.0 / -7.0 |
+| accent band | +23.5 | +20.5 | +4.0 / +1.0 | -2.0 / -5.0 |
+| flange ribs | +25.5 | +22.5 | +6.0 / +3.0 | +0.0 / -3.0 |
+| dark rim | +30.5 | +26.5 | +11.0 / +7.0 | +5.0 / +1.0 |
+
+**So the band's asymmetry is three pixels, not one.** Against the stub it is 3.0 above and 2.0 below;
+against the pipe it is 4.0 and 1.0, which is why it reads flush underneath and proud on top. The
+paragraph below called it "one pixel, not the gap the words suggest" -- that is true of the stub
+comparison and understates what is seen, and it is why Truls's remark was written down smaller than
+it is. Our flange ribs meet vanilla's flange exactly on top and fall 3 px short beneath.
+
+**AND THE RULE THAT CAME OUT OF IT** (Truls, 2026-09-16): *"I expect that the pipe inside line up
+with vanilla pipe both top and bottom (not including flange)."* A plumbable socket's TUBE draws
+vanilla's barrel extent above AND below. This binds what it DRAWS, where the rule further up binds
+its radius and its height -- different claims, and this is the one that fails today, by a pixel
+beneath. **The band is not to be thickened to hide it**: the tube is what moves.
+[#373](https://github.com/trulsjo/realistic-fusion-refreshed/issues/373) carries it.
+
+The tube's row came off a flange-free control render. On a shipped sheet no column of a plumbable
+socket shows bare tube -- the flange ribs leave 1.15 px between them and no column fits -- which is
+why none of this was visible until it was looked for.
+
 **THAT IS A ONE-PIXEL ASYMMETRY, WHICH IS SMALLER THAN WHAT IT WAS FIRST WRITTEN AS.** The first
 version of this note said 4 px and 1 px, and both were wrong: the 4 compared the band's MEASURED
 edge against the stub's PREDICTED one, and the stub's own row was measured through a column window

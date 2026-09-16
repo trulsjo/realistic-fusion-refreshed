@@ -56,6 +56,14 @@ reruns. Neither ships: a model is not a sprite, so ADR 0023 keeps it out of Asse
 **Regenerate** — rebuild a model from its look note, discarding the stored one. An explicit option,
 never the default: the default is to render the model that exists, so that hand edits survive.
 
+**Proud** — standing out past something else. **A proudness figure names what it is proud OF, or it
+means nothing**, and a socket offers three references that differ by pixels: its own stub, vanilla's
+pipe barrel, and vanilla's outer flange. The same accent band is 3.0 px proud above the stub and 4.0
+px proud above the barrel; below, it is 2.0 and 1.0. Quoting one where a reader assumes the other is
+how #357's asymmetry got written down as a one-pixel nothing when what is seen is three
+([#373](https://github.com/trulsjo/realistic-fusion-refreshed/issues/373)). The same rule as
+Measurement words below, applied to a pixel rather than a map: say which one.
+
 **Composite** — a rendered sheet pasted beside something else so a person can judge it, by
 `models/post.py`: `vanilla` places it on a tile grid next to vanilla's own heat exchanger, boiler
 and chest; `compare` places any labelled sheets side by side. Made to be looked at and never
