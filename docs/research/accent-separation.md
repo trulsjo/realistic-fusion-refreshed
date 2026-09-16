@@ -215,3 +215,12 @@ plus the sRGB-to-Lab anchors and the transfer function's round trip.
 ```
 python tools/test_colour_distance.py
 ```
+
+The bench's own arithmetic is pinned separately, by `tools/test_measure_accent_separation.py`: the
+halved window's off-by-one, and the halving being done in light rather than in gamma-encoded bytes.
+Both are cases where a wrong answer is still a plausible colour, which is why each is asserted
+against a case where the right answer and the likely wrong one differ visibly.
+
+```
+python tools/test_measure_accent_separation.py
+```
