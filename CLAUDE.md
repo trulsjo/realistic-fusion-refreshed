@@ -29,11 +29,16 @@ prototype's footprint or connections, by asking `tools/extract-geometry.py` agai
 when a socket a player can plumb is DRAWN at a height no vanilla pipe would meet, by reading the
 sheet with `tools/check-socket-height.py` — which since #356 also fails when `rf_blender.SOCKET_Z`
 itself stops predicting the height vanilla draws its pipe at, so a wrong constant is caught before
-anything is rendered from it. **Both need Python on PATH, and the second needs `pillow`
-and `numpy` in it** — the only third-party Python this repository's gates require, and the one
+anything is rendered from it. Since #373 a **second** sprite gate sits beside it:
+`tools/check-socket-parts.py` takes the same strip apart and fails when a piece of a socket is not
+drawn as far above its axis as below it, or is not the width the model recorded drawing it. It
+covers CONTAINED connections as well as plumbable ones, because that is a claim about the renderer
+rather than about meeting a pipe, and it reads no vanilla sheet — vanilla's barrel is symmetric, so
+"proud by the same amount above and below" is the same assertion. **All three need Python on PATH,
+and the two sprite gates need `pillow` and `numpy` in it** — the only third-party Python this repository's gates require, and the one
 prerequisite that is neither Factorio nor Blender. A missing one is a failure with a message, not a
-skip. **The categories on those connections are compared as a subset, not for equality**, and this
-is the only gate that looks at them: an addition is allowed because a coexisting mod writes one
+skip. **The categories on a manifest's connections are compared as a subset, not for equality**,
+and the #250 gate is the only one that looks at them: an addition is allowed because a coexisting mod writes one
 legitimately — Krastorio 2 puts `kr-steel-pipe` on machines it never heard of — while a category being
 taken away is reported. The containment floor covers only what carries a category; it skips any
 connection left `default`, which since #86 is three of the heat exchanger's six — its water pair and

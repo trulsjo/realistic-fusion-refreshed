@@ -248,27 +248,34 @@ stub at pipe height is a thin ring at the machine's edge, not the raised collar 
 accents are what tell a player which socket carries what. If that goes too far, the band can stay
 proud while the tube stays thin; they are separate numbers.
 
-**AND IT DRAWS A LITTLE MORE PROUD AT THE TOP THAN AT THE BOTTOM, WHICH IS NOT A MODELLING ERROR.**
-Truls saw it on the #353 frames, read it as "flush at the bottom, but not at the top", and put it
-down to perspective. The look is real and the cause is not perspective, which is why this is
-written down -- but the difference measures one pixel, not the gap the words suggest. Every piece of a socket is coaxial -- on rf-isotope-collector's west socket
-the stub, the band and the rim all sit at `y 0.0000, z 0.0330`, and the band is 0.578 tiles across
-against the stub's 0.498, so it stands 0.04 proud all the way round by construction. The projection
-is symmetric about that axis too, so perspective would take the same from both edges. What is
-asymmetric is how the UNDERSIDES are drawn. Measured on the shipped sheet, in pixels about the
-socket's axis:
+**IT USED TO DRAW MORE PROUD AT THE TOP THAN AT THE BOTTOM, AND SINCE ADR 0035 IT DOES NOT.**
+Truls saw the asymmetry on the #353 frames, read it as "flush at the bottom, but not at the top",
+and put it down to perspective. The look was real and the cause was not perspective. Every piece of
+a socket is coaxial -- on rf-isotope-collector's west socket the stub, the band and the rim all sit
+at `y 0.0000, z 0.0330`, and the band is 0.578 tiles across against the stub's 0.498, so it stands
+0.04 proud all the way round by construction. The projection is symmetric about that axis too, so
+perspective would take the same from both edges. What was asymmetric was how the UNDERSIDES were
+drawn, and the cause was the rig's shadow-catching ground plane -- see the mechanism paragraph
+below. Measured on the shipped sheets after the re-render, in pixels about the socket's axis:
 
-| part | radius | uncut prediction | measured above | measured below | gains | loses |
+| part | radius | uncut prediction | measured above | measured below | gains above | gains below |
 |---|---|---|---|---|---|---|
-| stub | 0.249 | ±19.5 | +20.5 | +18.5 | +1.0 | 1.0 |
-| accent band | 0.289 | ±22.7 | +23.5 | +20.5 | +0.8 | 2.2 |
-| flange ribs | 0.319 | ±25.0 | +25.5 | +22.5 | +0.5 | 2.5 |
-| dark rim | 0.379 | ±29.7 | +30.5 | +26.5 | +0.8 | 3.2 |
+| stub | 0.249 | ±19.5 | +20.5 | +20.5 | +1.0 | +1.0 |
+| accent band | 0.289 | ±22.7 | +23.5 | +23.5 | +0.8 | +0.8 |
+| flange ribs | 0.319 | ±25.0 | +25.5 | +25.5 | +0.5 | +0.5 |
+| dark rim | 0.379 | ±29.7 | +30.5 | +30.5 | +0.8 | +0.8 |
 
-Every part gains about a pixel above its uncut prediction -- the bevel and the anti-aliasing -- and
-loses more below it the wider it is, monotonically: 1.0 px at radius 0.249 through 3.2 px at 0.379.
-So the band, which would stand 3.2 px proud of the stub at BOTH edges if nothing were cut, stands
-3.0 px proud at the top and 2.0 px at the bottom.
+Every part stands about a pixel proud of its uncut prediction at BOTH edges -- the bevel and the
+anti-aliasing, which spread a drawn edge outward and never inward -- and by the same amount at each,
+to the tenth of a pixel the instrument prints. So the band stands 3.0 px proud of the stub at the
+top and 3.0 px at the bottom, which is what being 0.04 tiles proud all the way round looks like
+when nothing is cut off. `tools/check-socket-parts.py` is the gate that holds this table.
+
+**THE PREVIOUS VERSION OF THAT TABLE READ +18.5, +20.5, +22.5 AND +26.5 BELOW**, losing 1.0 px at
+radius 0.249 through 3.2 px at 0.379 -- monotonically with the radius, which is what a plane cutting
+at a fixed world height does to cylinders of different widths. It is recorded here because it is the
+defect [#373](https://github.com/trulsjo/realistic-fusion-refreshed/issues/373) was opened for and
+because the numbers appear in `docs/research/socket-underside-cut.md`, which is left as measured.
 
 **PROUD OF WHAT? THE FIGURE MEANS NOTHING WITHOUT ITS REFERENCE, AND THE TABLE ABOVE NAMES NONE.**
 It is every part against the STUB, which is what the geometry does. What a player looks at is every
@@ -286,51 +293,60 @@ made coincide. Measured 2026-09-16:
 |---|---|---|---|---|
 | vanilla's barrel | +19.5 | +19.5 | -- | -- |
 | vanilla's flange | +25.5 | +25.5 | -- | -- |
-| stub | +20.5 | +18.5 | +1.0 / -1.0 | -5.0 / -7.0 |
-| accent band | +23.5 | +20.5 | +4.0 / +1.0 | -2.0 / -5.0 |
-| flange ribs | +25.5 | +22.5 | +6.0 / +3.0 | +0.0 / -3.0 |
-| dark rim | +30.5 | +26.5 | +11.0 / +7.0 | +5.0 / +1.0 |
+| stub | +20.5 | +20.5 | +1.0 / +1.0 | -5.0 / -5.0 |
+| accent band | +23.5 | +23.5 | +4.0 / +4.0 | -2.0 / -2.0 |
+| flange ribs | +25.5 | +25.5 | +6.0 / +6.0 | +0.0 / +0.0 |
+| dark rim | +30.5 | +30.5 | +11.0 / +11.0 | +5.0 / +5.0 |
 
-**So the band's asymmetry is three pixels against the pipe and one against the stub.** Against the
-stub it is 3.0 above and 2.0 below; against the pipe it is 4.0 and 1.0, which is why it reads flush
-underneath and proud on top. Our flange ribs meet vanilla's flange exactly on top and fall 3 px
-short beneath.
+**Every row is now the same above and below**, which is the whole of what #373 asked for: the band
+stands 4.0 px proud of the barrel at each edge and 3.0 px proud of the stub at each, and our flange
+ribs meet vanilla's flange exactly, top and bottom. The 1.0 px by which the STUB stands over the
+barrel at each edge is the drawn edge -- the bevel and the filter, which spread an edge outward and
+never inward -- and not a difference in geometry: radius 0.249 was solved so that a tube of it draws
+the barrel's height, and 0.249 / sin(54.7 deg) x 64 is 19.53 px against the barrel's 19.5.
 
-**BOTH READINGS ARE RIGHT AND THE TWO PARAGRAPHS BELOW ARE ABOUT THE STUB ONE.** "THAT IS A
-ONE-PIXEL ASYMMETRY" and "the first version of this note said 4 px and 1 px, and both were wrong"
-still stand exactly as written, because they are about measuring against the STUB -- and the 4 they
-reject is a different subtraction from the 4 above, the band's measured edge minus the stub's
-PREDICTED one rather than minus vanilla's measured barrel. The two land on the same digit because
-radius 0.249 was solved so that a tube of it draws vanilla's barrel height, so the stub's prediction
-and the barrel's measurement are the same number by construction. **What the stub comparison
-understates is what a player sees**, because the stub is itself asymmetric -- 20.5 above and 18.5
-below -- so subtracting it cancels part of the very asymmetry being measured. A symmetric reference
-does not, which is why the pipe reading is the larger one and the one Truls was describing.
+**IT USED TO READ +1.0 / -1.0 ON THE STUB AND +4.0 / +1.0 ON THE BAND**, which is why the band read
+flush underneath and proud on top, and why our ribs met vanilla's flange on top and fell 3 px short
+beneath. That is the state #373 records.
+
+**WHY THE TWO REFERENCES USED TO DISAGREE ABOUT HOW BAD IT WAS.** While the plane cut, the stub was
+itself asymmetric -- 20.5 above and 18.5 below -- so subtracting it cancelled part of the very
+asymmetry being measured and reported the band as 1 px out where the pipe reported 3. A symmetric
+reference does not do that, which is why the pipe reading was the larger one and the one Truls was
+describing. With nothing cut the stub is symmetric too, so the two references now agree about the
+asymmetry: there is none. They still differ by a pixel about how PROUD the band is -- 3.0 over the
+stub and 4.0 over the barrel -- and that difference is the reason `CONTEXT.md` requires a proudness
+figure to name what it is proud of.
 
 **AND THE RULE THAT CAME OUT OF IT** (Truls, 2026-09-16): *"I expect that the pipe inside line up
 with vanilla pipe both top and bottom (not including flange)."* A plumbable socket's TUBE draws
 vanilla's barrel extent above AND below. This binds what it DRAWS, where the rule further up binds
-its radius and its height -- different claims, and this is the one that fails today: the tube is
-drawn a pixel PROUD above the barrel and a pixel SHORT beneath it, so it misses on both edges, by
-the same pixel, in opposite directions. **The band is not to be thickened to hide it**: the tube is
-what moves. [#373](https://github.com/trulsjo/realistic-fusion-refreshed/issues/373) carries it.
+its radius and its height -- different claims, and it is this one that
+[#373](https://github.com/trulsjo/realistic-fusion-refreshed/issues/373) was opened on: the tube was
+drawn a pixel PROUD above the barrel and a pixel SHORT beneath it, missing on both edges, by the
+same pixel, in opposite directions. **The band was not thickened to hide it**: the tube is what
+moved, by ADR 0035 taking the cut away. It now draws +20.5 either side, one pixel of drawn edge
+proud of the barrel at each.
 
-The tube's row came off a flange-free control render. On a shipped sheet no column of a plumbable
+The tube's row comes off a flange-free control render. On a shipped sheet no column of a plumbable
 socket shows bare tube -- the flange ribs leave 1.15 px between them and no column fits -- which is
-why none of this was visible until it was looked for.
+why none of this was visible until it was looked for, and why the gate that now holds it reads the
+band, the ribs and the rim rather than the tube.
 
-**THAT IS A ONE-PIXEL ASYMMETRY, WHICH IS SMALLER THAN WHAT IT WAS FIRST WRITTEN AS.** The first
-version of this note said 4 px and 1 px, and both were wrong: the 4 compared the band's MEASURED
-edge against the stub's PREDICTED one, and the stub's own row was measured through a column window
-that leaked the band's first column into it. Whether a one-pixel difference is the whole of what
-Truls saw is NOT established -- the lower edge also meets the slab and the ground shadow, where
-there is less contrast to read an edge against, and that is a second candidate this note does not
-separate.
+**AN EARLY VERSION OF THIS NOTE PUT THE BAND'S ASYMMETRY AT 4 px AND THEN AT 1 px, AND BOTH WERE
+WRONG.** The 4 compared the band's MEASURED edge against the stub's PREDICTED one; the 1 came from a
+stub row measured through a column window that leaked the band's first column into it. The figure
+that stood was 3 px against vanilla's barrel, and it is now 0.
+
+**WHETHER THE GEOMETRY WAS THE WHOLE OF WHAT TRULS SAW IS STILL NOT ESTABLISHED.** The lower edge
+also meets the slab and the ground shadow, where there is less contrast to read an edge against,
+and nothing here separates that from the cut -- these are alpha measurements and say nothing about
+contrast. The re-rendered frames are what answers it, and the answer is Truls's by eye.
 
 **THE MEASUREMENT IS SENSITIVE TO ITS COLUMN WINDOW, AND THAT IS THE METHOD NOTE #362 NEEDS.** Each
 part is read only in the columns where it is the widest thing present; one column too far either way
-picks up its neighbour and moves the answer by whole pixels. The stub reads +21.5/+19.5 over columns
-198..202 and +20.5/+18.5 over 198..201, because column 202 is the first that draws any of the accent
+picks up its neighbour and moves the answer by whole pixels. The stub reads +21.5/+21.5 over columns
+198..202 and +20.5/+20.5 over 198..201, because column 202 is the first that draws any of the accent
 band -- the band begins 0.88 px into it. Rim and ribs are stable across every window tried; the stub
 and the band are not, and the numbers above are the stable ones. The stub is measured on a
 flange-free control render, since on the shipped sheet no column shows bare tube.
@@ -361,22 +377,29 @@ without working it out again.
 Measure the result with `--no-flange`, which is the caller telling `tools/measure-socket-parts.py`
 that the ribs' span is bare tube -- without it the tool still works its windows out from the
 constants the model was built from, labels that span "flange ribs" and measures it at the ribs'
-radius. Through columns 198..201 the stub then measures +20.5/+18.5, which is the table's row, and
-nothing in the table is reported unstable; re-verified that way 2026-09-16. Widened to 198..202 it
-measures +21.5/+19.5, which is the leak that shipped, and the tool reports THAT one unstable rather
+radius. Through columns 198..201 the stub then measures +20.5/+20.5, which is the table's row, and
+nothing in the table is reported unstable; re-verified that way 2026-09-16, after the re-render, on
+the north socket as well. Widened to 198..202 it
+measures +21.5/+21.5, which is the leak that shipped, and the tool reports THAT one unstable rather
 than returning it. The same boundary shows on the shipped sheet without any render: the flange rib
 ends and the accent band begins at column 202.88, so column 203 starts a tenth of a pixel past it,
 and the band read through a window holding that column measures +24.5 above where its own columns
 give +23.5.
 
-**THE MECHANISM IS SETTLED, AND IT IS THE GROUND PLANE** (#366, #367, measured 2026-09-16).
-`rf_blender.build_rig`'s shadow-catching plane hides everything below world z 0, exactly as
-`tools/check-socket-height.py`'s header always claimed. Rendering this machine with that plane
-deleted puts every row above back symmetric to the pixel -- the band +23.5/+23.5, the ribs
-+25.5/+25.5, the rim +30.5/+30.5 -- and thirty-six bare cylinders across six radii and six heights
-agree with a model of it that fits nothing: below its axis a tube of radius `r` at height `z` draws
-`sqrt(r^2 - z^2) + z/tan(pitch)` tiles, until `z` reaches `r cos(pitch)` and the plane stops
-reaching it at all.
+**THE MECHANISM WAS THE GROUND PLANE, AND ADR 0035 TOOK IT AWAY** (#366, #367, #373, measured
+2026-09-16). `rf_blender.build_rig`'s shadow-catching plane hides everything below world z 0,
+exactly as `tools/check-socket-height.py`'s header always claimed. Rendering a machine with that
+plane deleted put every row above back symmetric to the pixel, and thirty-six bare cylinders across
+six radii and six heights agreed with a model of it that fits nothing: below its axis a tube of
+radius `r` at height `z` draws `sqrt(r^2 - z^2) + z/tan(pitch)` tiles, until `z` reaches
+`r cos(pitch)` and the plane stops reaching it at all.
+
+**SO `models/render.py` STOPPED LETTING IT OCCLUDE.** The structure sheet comes off a view layer
+that marks the plane INDIRECT ONLY -- it lights the machine and no longer stands in front of it --
+and the shadow sheet off a second layer where it still catches. No single render does both: making
+the plane invisible to camera rays, giving it a transparent material and deleting it outright each
+empty the Shadow Catcher pass, and the transparent one still occludes. ADR 0035 has the four
+measurements and the cost.
 
 **THE TWO THINGS THAT MADE IT LOOK UNFITTABLE WERE BOTH THE COMPARISON RATHER THAN THE CAUSE.** A
 plane at one world HEIGHT is not a cut at one screen ROW under a pitched camera: the lowest drawn

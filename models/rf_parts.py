@@ -39,6 +39,7 @@ re-rendering both machines and comparing sheets, never by reading the diff.
 Detail floors are checked here rather than in the build scripts, on the reasoning
 models/rf_blender.py's `check_detail` sets out: the read dimension, never the smallest.
 """
+import json
 import math
 import random
 import sys
@@ -328,6 +329,26 @@ def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
             cyl(f"Flange-Socket-{d}-{fluid}-{k}", radius + FLANGE_PROUD, thick,
                 at(edge - back * sign), "metal", axis=axis,
                 read=2 * (radius + FLANGE_PROUD), **mat_opts)
+
+    # WHAT WAS JUST DRAWN, STAMPED ON THE SCENE for models/render.py to put in the manifest (#373).
+    #
+    # THE MODEL IS THE ONLY PLACE THAT KNOWS. A manifest's `geometry` block is the PROTOTYPE's,
+    # copied by tools/extract-geometry.py, and a Factorio prototype records no radius and no height
+    # -- so until this nothing anywhere recorded what a socket was DRAWN at, and
+    # tools/check-socket-parts.py could not have been written. Typing the numbers into that gate
+    # instead is exactly the two-statements failure tools/measure-socket-parts.py's header names.
+    #
+    # A JSON STRING rather than a list of dicts, because a Blender custom property holds primitives
+    # and this has to survive being saved into the .blend and read back by another script. Keyed by
+    # POSITION, the one field unique to a connection: a machine can carry two on the same side and
+    # rf-heat-exchanger does.
+    #
+    # IT DRAWS NOTHING FROM `random`, so it cannot move an imperfection -- see the order contract
+    # in this function's docstring.
+    drawn = json.loads(bpy.context.scene.get("rf_sockets", "[]"))
+    drawn.append({"position": list(connection["position"]), "direction": d, "fluid": fluid,
+                  "radius": radius, "z": z, "plumbable": plumbable})
+    bpy.context.scene["rf_sockets"] = json.dumps(drawn, sort_keys=True)
 
 
 def _centreline(curve_obj):

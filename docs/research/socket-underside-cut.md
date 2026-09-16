@@ -1,5 +1,17 @@
 # What cuts a socket's underside
 
+> **WHAT WAS DONE ABOUT IT, 2026-09-16.** The plane no longer cuts anything.
+> [ADR 0035](../adr/0035-the-rig-draws-what-is-below-the-ground-line.md) renders the structure on a
+> view layer that marks the Ground plane INDIRECT ONLY and takes the shadow off a second layer where
+> it still catches, settling
+> [#373](https://github.com/trulsjo/realistic-fusion-refreshed/issues/373); both machines are
+> re-rendered and `tools/check-socket-parts.py` holds it. **Everything below is left exactly as it
+> was measured**, because it is the measurement this note exists to record and not a description of
+> how the rig works today. Two of its predictions were then tested by the re-render and both held:
+> every part of every socket went symmetric to the pixel, and `tools/check-socket-height.py`'s
+> +0.031 tile residual fell to +0.000.
+
+
 Measured 2026-09-16 for [#366](https://github.com/trulsjo/realistic-fusion-refreshed/issues/366)
 and [#367](https://github.com/trulsjo/realistic-fusion-refreshed/issues/367), two of the three
 probes [#362](https://github.com/trulsjo/realistic-fusion-refreshed/issues/362) suggested. They are

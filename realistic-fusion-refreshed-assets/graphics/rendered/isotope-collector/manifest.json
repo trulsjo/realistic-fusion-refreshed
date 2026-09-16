@@ -132,7 +132,7 @@
   },
   "machine": "isotope-collector",
   "model": "models/isotope-collector/isotope-collector.blend",
-  "model_sha256": "7734e9cc5195e05ce8c2a2f5161d2355c7b645e280523b892e65fd587d7dbc0b",
+  "model_sha256": "f3978f4462774ad49b934f6b279d193f5da0f024c3bdd8aa9850f75ffc9ef6a9",
   "render": {
     "blender": "5.2.0 LTS",
     "device": "CPU",
@@ -142,5 +142,40 @@
     "samples": 64,
     "seed": 0
   },
+  "sockets": [
+    {
+      "direction": "west",
+      "fluid": "rf-tritium",
+      "plumbable": true,
+      "position": [
+        -2,
+        0
+      ],
+      "radius": 0.249,
+      "z": 0.033
+    },
+    {
+      "direction": "east",
+      "fluid": "rf-tritium",
+      "plumbable": true,
+      "position": [
+        2,
+        0
+      ],
+      "radius": 0.249,
+      "z": 0.033
+    },
+    {
+      "direction": "north",
+      "fluid": "rf-helium-3",
+      "plumbable": true,
+      "position": [
+        0,
+        -2
+      ],
+      "radius": 0.249,
+      "z": 0.033
+    }
+  ],
   "source": "written by models/render.py"
 }

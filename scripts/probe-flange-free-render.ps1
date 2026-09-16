@@ -18,9 +18,10 @@
 
     WHY THE RECIPE IS COMMITTED AND THE RENDER IS NOT. Two things already rest on a measurement
     that was taken off a control render built by hand in a scratch directory and thrown away --
-    models/house-style.md's stub row (+20.5 above the axis, +18.5 below, 1.0 px lost beneath) and
-    #373's whole requirement, that the tube draw vanilla's barrel extent above and below. Neither
-    could be re-derived without somebody working the method out again. COMMITTING A RENDERED SHEET
+    models/house-style.md's stub row (+20.5 above the axis and +20.5 below since ADR 0035, where it
+    was +20.5 and +18.5 while the ground plane cut) and #373's whole requirement, that the tube draw
+    vanilla's barrel extent above and below. Neither could be re-derived without somebody working
+    the method out again, and #373 was CLOSED on a reading taken this way. COMMITTING A RENDERED SHEET
     WAS RULED OUT DELIBERATELY: an artefact whose only purpose is to be measured would need a home
     outside ADR 0023's Assets rule and a regeneration rule nobody wants to maintain. So what is
     committed is the recipe, which is what every probe here is -- kept so the next machine
@@ -46,8 +47,9 @@
     from, not from the sheet, so without it the ribs' span is still labelled "flange ribs" and
     measured at the ribs' radius, and the stub is still reported as having no window. --no-flange
     is the caller saying which kind of sheet this is. With it, rf-isotope-collector's west socket
-    reproduces models/house-style.md's stub row exactly: +20.5 above the axis, +18.5 below, 1.0 px
-    gained above and 1.0 px lost underneath, through columns 198..201. Verified 2026-09-16.
+    reproduces models/house-style.md's stub row exactly: +20.5 above the axis and +20.5 below, 1.0
+    px of drawn edge gained at each, through columns 198..201. Re-measured 2026-09-16 after ADR
+    0035, on the north socket as well, which reads the same off the -e sheet.
 
     Findings belong in docs/research/ or on the ticket.
 
@@ -171,6 +173,6 @@ if (-not $plumbable) {
 }
 Write-Host ''
 Write-Host "On rf-isotope-collector's west socket that reproduces models/house-style.md's stub row:"
-Write-Host '+20.5 above the axis, +18.5 below, 1.0 px lost underneath, through columns 198..201.'
+Write-Host '+20.5 above the axis and +20.5 below, a pixel of drawn edge at each, through columns 198..201.'
 Write-Host ''
 Write-Host 'Probe finished. Exit 0 means it rendered, never that a socket is right.'

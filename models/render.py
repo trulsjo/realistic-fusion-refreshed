@@ -101,9 +101,45 @@ scene.render.film_transparent = True
 scene.render.use_compositing = True
 rf.png_rgba(scene.render.image_settings)
 
+# ---- two view layers, because no one render gives both an uncut structure and a shadow --------
+# ADR 0035, and #373 is what forced it. rf_blender.build_rig's Ground is a shadow catcher, and a
+# shadow catcher occludes what is behind it: every socket a player can plumb is drawn at pipe
+# height, so the plane ate a pixel of its underside and the join with a vanilla pipe missed above
+# and below. Measured 2026-09-16, four ways on this rig -- `ground.visible_camera = False`, a
+# Transparent BSDF on the plane, and deleting the plane outright each empty the Shadow Catcher
+# pass, and the transparent one still occludes. Nothing does both, so the two sheets come off two
+# layers of one render.
+#
+# THE STRUCTURE LAYER MARKS THE GROUND INDIRECT ONLY, WHICH IS NOT DELETING IT. The plane still
+# lights the machine, so away from a socket the sheet is what it always was. Measured across both
+# machines and all eight direction sheets of the re-render: every pixel whose alpha moved sits in a
+# socket-sized cluster -- 19 columns by 14 rows for a socket seen side-on, 50 by 22 for one seen end
+# on -- except two pixels per sheet at the frame's own corners, which pick up 5 to 12 of alpha over
+# near-black, three tiles of margin away from the machine. Deleting the plane instead of hiding it
+# would take its bounce light away and re-shade every machine.
+#
+# IT IS ARRANGED HERE RATHER THAN IN build_rig BECAUSE THE MODELS ALREADY EXIST. A model is a saved
+# .blend whose rig was built long before this; arranging the layers at render time means no machine
+# has to be rebuilt to get it, and models/socket-variants.py's `groundless` treatment -- which
+# removes the plane outright -- still renders, on one layer, with the empty shadow sheet it has
+# always produced.
+GROUND_COLLECTION = "GroundPlane"
+ground = bpy.data.objects.get("Ground")
+shadow_layer = None
+if ground is not None:
+    ground_collection = bpy.data.collections.new(GROUND_COLLECTION)
+    scene.collection.children.link(ground_collection)
+    for held_by in list(ground.users_collection):
+        held_by.objects.unlink(ground)
+    ground_collection.objects.link(ground)
+    shadow_layer = scene.view_layers.new("shadow")
+    view_layer.layer_collection.children[GROUND_COLLECTION].indirect_only = True
+
 view_layer.use_pass_combined = True
 view_layer.use_pass_emit = True
-view_layer.cycles.use_pass_shadow_catcher = True
+# THE CATCHER PASS BELONGS TO WHICHEVER LAYER STILL SEES THE PLANE. On the structure layer it would
+# be empty by construction, since indirect-only takes the plane out of the camera's way.
+(shadow_layer or view_layer).cycles.use_pass_shadow_catcher = True
 
 # Compositor: the wiring docs/research/blender-headless-render.md verified. One File Output node
 # writes structure (combined), shadow (inverted shadow-catcher as alpha over black) and glow
@@ -117,9 +153,15 @@ scene.compositing_node_group = tree
 nodes, links = tree.nodes, tree.links
 rl = nodes.new("CompositorNodeRLayers")
 rl.layer = view_layer.name
+# THE SHADOW COMES OFF ITS OWN LAYER, structure and glow off the layer above. Two Render Layers
+# nodes rather than one, which is the whole of what the second layer costs the compositor.
+rl_shadow = rl
+if shadow_layer is not None:
+    rl_shadow = nodes.new("CompositorNodeRLayers")
+    rl_shadow.layer = shadow_layer.name
 inv = nodes.new("CompositorNodeInvert")
 inv.inputs["Factor"].default_value = 1.0
-links.new(rl.outputs["Shadow Catcher"], inv.inputs["Color"])
+links.new(rl_shadow.outputs["Shadow Catcher"], inv.inputs["Color"])
 floor = nodes.new("ShaderNodeMapRange")       # 5.x: the compositor shares the shader editor's node
 floor.clamp = True
 floor.inputs["From Min"].default_value = SHADOW_ALPHA_FLOOR
@@ -150,6 +192,12 @@ links.new(rl.outputs["Image"], out.inputs["Image"])
 def render(prefix, samples, lit):
     """One render; returns {pass name: path} of what the File Output node wrote for it."""
     emission(lit)
+    # THE SHADOW LAYER IS OFF FOR A LIT RENDER, and that is what keeps the second layer's cost to
+    # the four traces it is actually for. A lit render is the glow sheet or the icon, and neither
+    # takes anything off the shadow layer -- leaving it on would trace the whole scene again to
+    # write a file the caller throws away.
+    if shadow_layer is not None:
+        shadow_layer.use = not lit
     scene.cycles.samples = samples
     fo.file_name = prefix
     bpy.ops.render.render(write_still=False)
@@ -264,6 +312,16 @@ manifest = {
     "icon": {"file": f"{machine}-icon.png", "size": [120, ICON_SIDE],
              "centre": list(scene["rf_icon_centre"]), "tiles": float(scene["rf_icon_tiles"]),
              "yaw_deg": float(scene.get("rf_icon_yaw", 0.0))},
+    # WHAT THE MODEL DREW AT EACH CONNECTION, stamped by rf_parts.socket (#373). It is NOT part of
+    # `geometry`, which is tools/extract-geometry.py's copy of the live prototype and must stay
+    # one: a prototype records no radius and no height, so this is the model's own statement and
+    # the only record of it anywhere. tools/check-socket-parts.py reads it, and its width pin is
+    # what checks it -- a radius stamped here that the model did not draw fails that gate.
+    #
+    # EMPTY FOR A MODEL BUILT BEFORE THIS. That is not a silent pass: the gate refuses a manifest
+    # whose socket list does not account for every connection in `geometry`, contained ones
+    # included.
+    "sockets": json.loads(scene.get("rf_sockets", "[]")),
     "files": sorted(files),
     "source": "written by models/render.py",
 }
