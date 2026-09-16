@@ -1,7 +1,9 @@
 """The shared Factorio rig and frame, imported from inside Blender's Python by every build script
 and by render.py. Blender does not put a --python script's directory on sys.path; callers insert
-this file's directory themselves. Only `build_rig` and `accent` touch bpy, so the constants and the
-frame arithmetic import under system Python for models/test_rf_blender.py.
+this file's directory themselves. Only `build_rig` and `ground_report` touch bpy, and each
+imports it inside its own body, so the constants and the frame arithmetic import under system Python
+for models/test_rf_blender.py. (`accent` was named here until #366 and never touched bpy at all; it
+returns a string from a dict.)
 
 Camera and light follow docs/research/factorio-render-camera.md as #246 settled them: orthographic,
 pitched 54.7 deg below the horizontal, looking north (+Y); one hard sun from the west (-X) at 42 deg
