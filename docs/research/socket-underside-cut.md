@@ -60,33 +60,37 @@ comparison that works is the shortfall below MINUS the gain above, on the same c
 
 ## #366: the machine with the plane taken away
 
-`rf-isotope-collector`'s west socket, `models/socket-variants.py`'s new `groundless` treatment, one
-direction re-rendered to a scratch directory. Pixels about the socket's own axis:
+`rf-isotope-collector`'s west socket, rendered **four ways** into a scratch directory: as it ships,
+with `models/socket-variants.py`'s `groundless` treatment, with its `unflanged` one, and with both.
+Pixels above and below the socket's own axis.
 
-| part | radius | as shipped | with the plane gone | shipped loses | groundless loses |
-|---|---|---|---|---|---|
-| stub | 0.249 | *no window* | *no window* | — | — |
-| accent band | 0.289 | +23.5 / +20.5 | +23.5 / **+23.5** | 2.2 | **-0.8** |
-| flange ribs | 0.319 | +25.5 / +22.5 | +25.5 / **+25.5** | 2.5 | **-0.5** |
-| dark rim | 0.379 | +30.5 / +26.5 | +30.5 / **+30.5** | 3.2 | **-0.8** |
+**TWO VARIABLES AT TWO LEVELS, AND THE SECOND ONE IS NOT THE SUBJECT.** The ground plane is what
+#366 asks about. The flange ribs are in the table because they are what stops the STUB being
+measurable at all — they leave 1.15 px of tube between them, and no whole column of a sheet wearing
+them falls clear of both, so `tools/measure-socket-parts.py` reports the stub as NO WINDOW and is
+right to. Deleting them gives the stub a window; deleting them *and* the plane gives the row no
+shipped sheet can carry.
 
-**Every deficit goes to zero, and every part becomes exactly symmetric about its axis.** The top
-edge does not move at all at the tenth of a pixel the tool prints, which is the control: only the
-underside was ever being touched. A negative `loses` is the same sub-pixel spread the `gains` column carries, not a
-gain of material.
+| part | ribs on, plane on | ribs on, plane off | ribs off, plane on | **ribs off, plane off** |
+|---|---|---|---|---|
+| stub 0.249 | *no window* | *no window* | +20.5 / +18.5 | +20.5 / **+20.5** |
+| accent band 0.289 | +23.5 / +20.5 | +23.5 / **+23.5** | +23.5 / +20.5 | +23.5 / **+23.5** |
+| flange ribs 0.319 | +25.5 / +22.5 | +25.5 / **+25.5** | *deleted* | *deleted* |
+| dark rim 0.379 | +30.5 / +26.5 | +30.5 / **+30.5** | +30.5 / +26.5 | +30.5 / **+30.5** |
 
-The stub reports NO WINDOW on both, which is `tools/measure-socket-parts.py` being right rather than
-a gap in the answer: two flange ribs leave 1.15 px of tube between them and no whole column of a
-shipped sheet falls clear of both. Its row is the bare cylinder at radius 0.249 in the next section,
-which loses 1.0 px under the plane and nothing without it.
+**Every part goes symmetric when the plane goes, and the stub with them: 1.0 px lost under the
+plane, nothing without it.** The top edge never moves, at the tenth of a pixel the tool prints —
+only the underside was ever being touched. A `loses` of -0.8 or -1.0 is the same sub-pixel spread
+the `gains` column carries, not a gain of material.
 
-**IT COULD NOW BE READ ON THE MACHINE ITSELF, AND IT HAS NOT BEEN.** #376 landed
-`scripts/probe-flange-free-render.ps1` and `models/socket-variants.py`'s `unflanged` treatment while
-this work was in flight, so a render with the ribs deleted is one command and
-`measure-socket-parts.py --no-flange` reads the stub off it. A render that is BOTH `unflanged` and
-`groundless` would give the machine's own stub with the plane gone — but `socket-variants.py` takes
-one treatment, not two, so that needs a change to it and is not done here. The bare cylinder answers
-the same question and is what the verdict above rests on.
+**AND THE TABLE CARRIES A CONTROL NOBODY PUT IN IT.** Deleting the ribs is supposed to change
+nothing but the stub's window, and it does not: columns one and three agree on the band and the rim
+to the pixel, and so do columns two and four. If deleting geometry had moved a neighbouring
+reading, that is where it would show.
+
+The stub's two readings are exactly the bare cylinder at radius 0.249 in the next section — the
+same +20.5/+18.5 and +20.5/+20.5 — which is a machine's socket and a plain tube agreeing to the
+pixel.
 
 **AND IT IS TWO MACHINES, NOT ONE.** `rf-heat-exchanger`'s south steam socket is measured on the
 `-e` sheet, a different machine at a different place on a different frame, and it gives the same
