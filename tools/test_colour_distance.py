@@ -100,13 +100,26 @@ def test_transfer_round_trips():
     assert np.max(np.abs(back - c)) < 1e-9, f"worst round trip error {np.max(np.abs(back - c)):.2e}"
 
 
-def test_de76_over_reports_at_low_chroma():
+def test_de76_over_reports_a_chroma_difference_more_as_chroma_rises():
     """The reason tools/measure-accent-separation.py pays for CIEDE2000 rather than subtracting.
-    Sharma's row 17 is a pair 27.1 apart by dE00; plain dE76 calls the same pair half again as far.
-    This asserts the GAP exists, not how big it should be -- it is here so that swapping the formula
-    for a subtraction fails a test instead of quietly changing every figure in a research note."""
-    lab1, lab2, want = SHARMA[16]
-    assert cd.de76(lab1, lab2) > 1.3 * want, "dE76 no longer over-reports; check both formulas"
+
+    THREE PAIRS THAT ARE THE SAME DISTANCE APART BY dE76 AND NOT BY dE00. Each moves a* by ten at a
+    fixed L*, so dE76 calls all three exactly 10; dE00 calls them 11.2, 3.9 and 2.5 as the chroma
+    they sit at rises, because SC divides a chroma difference by 1 + 0.045 C. That is the whole
+    reason this module is not a subtraction, isolated from lightness and from hue -- which is why it
+    is built here rather than taken off a Sharma row, where a near-black pair produces a large ratio
+    for the unrelated reason that SL runs away at low L*.
+
+    The assertion is the ORDERING and the direction, not any one ratio, so swapping the formula for
+    a subtraction fails a test instead of quietly changing every figure in a research note.
+    """
+    ratios = []
+    for chroma in (0.0, 30.0, 60.0):
+        a, b = (50.0, chroma, 0.0), (50.0, chroma + 10, 0.0)
+        assert abs(cd.de76(a, b) - 10.0) < 1e-9, cd.de76(a, b)
+        ratios.append(cd.de76(a, b) / cd.ciede2000(a, b))
+    assert ratios[0] < 1 < ratios[1] < ratios[2], [round(r, 3) for r in ratios]
+    assert ratios[2] > 3, f"dE76/dE00 at chroma 60 is {ratios[2]:.3f}; it was 3.925"
 
 
 def main():
