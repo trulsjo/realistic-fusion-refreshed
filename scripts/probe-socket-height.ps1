@@ -485,8 +485,9 @@ try {
     # ON ITS OWN DEADLINE, not the marker's. Sharing one budget meant a done.txt that landed near
     # the end left this loop no iteration at all, so $sizes stayed empty and the throw below said
     # "the game wrote no bytes" about what was really a timeout -- a wrong diagnosis for the one
-    # failure a person would have to chase by hand. There are thirteen frames to write now, three
-    # of them 1024x768, where there were four.
+    # failure a person would have to chase by hand. There are thirteen frames to write now, seven
+    # of them 786,432 pixels -- five at 1024x768 and the two end-on seams at its transpose -- where
+    # there were four frames and three that size.
     $settleDeadline = (Get-Date).AddSeconds($TimeoutSeconds)
     $sizes = @{}
     while ((Get-Date) -lt $settleDeadline) {
