@@ -4,15 +4,17 @@
     s = strip.strip(alpha, manifest, connection)      # raises strip.Unmeasurable, never guesses
     top, bottom = s.extent()                          # row EDGES, the whole outboard silhouette
     top, bottom = s.extent(198, 201)                  # or through a narrower column window
+    above, below, why = s.measure(axis, 198, 201)     # about an axis, with the window guarded
 
-ONE COPY, SHARED BY A GATE AND AN INSTRUMENT, and the sharing is the point (#365).
+ONE COPY, SHARED BY A GATE, AN INSTRUMENT AND A PROBE, and the sharing is the point (#365, #367).
 tools/check-socket-height.py asks the ENVELOPE question -- where is the midpoint of everything
 standing clear of the body -- because a pipe meets a socket's whole silhouette and not one piece of
 it. tools/measure-socket-parts.py asks a narrower one, a piece at a time through a window it has
-worked out. Those are different questions off the same arithmetic: the same two cuts isolate the
-socket, the same alpha floor says what is drawn, and the same guard refuses a silhouette that
-touches the edge of its window. A second copy of that would disagree with the first, which is what
-models/rf_parts.py's own header records happening inside a week (#340).
+worked out. scripts/probe-socket-underside.py asks the same narrow one of a bare cylinder on a scene
+built to be measured. Those are different questions off the same arithmetic: the same two cuts
+isolate the socket, the same alpha floor says what is drawn, and the same guard refuses a silhouette
+that touches the edge of its window. A second copy of that would disagree with the first, which is
+what models/rf_parts.py's own header records happening inside a week (#340).
 
 THE TWO CUTS, and why neither is redundant. The COLUMNS are the outboard strip between the
 collision edge and the selection edge: the slab, the deck and the frame all stop at the footprint,
@@ -44,11 +46,13 @@ INSET_PX to one and every socket the gate measures becomes UNMEASURABLE. That is
 rather than a quiet wrong answer, which is the right way round, but it is a coupling and not a
 coincidence: the two numbers are trims at the same edge and the wider one has to be the envelope's.
 
-WHAT IS NOT HERE: the reference a gate judges against, and the parts an instrument names. Both
-callers keep their own, because both are judgements about what a measurement MEANS rather than
-arithmetic about where it is read.
+WHAT IS NOT HERE: the reference a gate judges against, the parts an instrument names, and the model
+a probe holds a reading against. Each caller keeps its own, because all three are judgements about
+what a measurement MEANS rather than arithmetic about where it is read. `measure`'s window guard is
+here rather than with them because it is the second kind: it says whether a reading can be believed,
+not what it implies.
 
-Needs numpy, which both callers already do. Run from the repository root.
+Needs numpy, which every caller already does. Run from the repository root.
 """
 import math
 import os
@@ -264,6 +268,44 @@ class Strip:
             raise Unmeasurable(f"what is drawn in columns {lo}..{hi - 1} reaches the edge of the "
                                f"search window, so its extent is cut off rather than measured")
         return self.row0 + int(rows[0]), self.row0 + int(rows[-1]) + 1
+
+    def measure(self, axis, col0, col1):
+        """(above, below, unstable) about `axis` through columns `col0`..`col1` inclusive, both in
+        pixels, `unstable` being why the reading may not be trusted or None when it may.
+
+        NARROWED BY ONE COLUMN AT EACH END, SEPARATELY, and both must give the same answer. A window
+        that has picked up a neighbour loses it when the end it came in at is dropped, and the
+        reading moves by whole pixels -- which is the defect this guard exists for. A window under
+        three columns cannot be narrowed both ways at all, so it is reported unstable too: a number
+        that cannot be checked is not a number this returns as sound.
+
+        IT IS HERE RATHER THAN IN ITS FIRST CALLER FOR THE HEADER'S OWN REASON (#367). It was
+        tools/measure-socket-parts.py's until a second instrument needed it, and a second copy of a
+        guard is a guard that stops guarding one of them. `extent` says what is drawn; this says
+        whether the window it was read through can be believed, which is the same question about
+        the same two cuts.
+
+        Raises Unmeasurable when the full window cannot be read at all. A narrowing that cannot be
+        read comes back as an unstable reason rather than as a raise: the number itself was got.
+        """
+        def read(lo, hi):
+            top, bottom = self.extent(lo, hi)
+            return axis - top, bottom - axis
+
+        full = read(col0, col1)
+        if col1 - col0 + 1 < 3:
+            return full + (f"a window of {col1 - col0 + 1} column(s) cannot be narrowed at both "
+                           f"ends, so this reading could not be checked",)
+        for lo, hi in ((col0 + 1, col1), (col0, col1 - 1)):
+            try:
+                narrowed = read(lo, hi)
+            except Unmeasurable as why:
+                return full + (f"narrowed to columns {lo}..{hi} it could not be read at all: {why}",)
+            if narrowed != full:
+                return full + (f"narrowed to columns {lo}..{hi} it reads "
+                               f"{narrowed[0]:+.1f}/{narrowed[1]:+.1f}, not "
+                               f"{full[0]:+.1f}/{full[1]:+.1f}",)
+        return full + (None,)
 
     def columns_of(self, back_near, back_far):
         """The columns that draw only what lies between `back_near` and `back_far` tiles inboard of
