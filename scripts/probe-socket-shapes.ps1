@@ -105,10 +105,17 @@
 .PARAMETER Treatments
     Which treatments to render and shoot. Names must be ones models/socket-variants.py knows.
 
-    DEFAULTS TO THREE OF THE FOUR, and `flanged` is the one left out. Since #353 both shipped
+    DEFAULTS TO THREE OF #350'S FOUR, and `flanged` is the one left out. Since #353 both shipped
     machines wear the flange pair, so `bare` IS the flanged machine and socket-variants.py refuses
     that treatment on either of them -- a run that asked for it would throw before shooting
     anything. Ask for it by name on a machine that has not been re-rendered; there is none today.
+
+    socket-variants.py ALSO KNOWS TWO TREATMENTS THAT ARE NOT #350'S AND ARE NOT CANDIDATES, and
+    neither belongs in a frame here. `unflanged` deletes the flange ribs so the bare tube can be
+    measured (#376); scripts/probe-flange-free-render.ps1 is what runs it. `groundless` deletes the
+    rig's ground plane so a socket's underside can be measured (#366); scripts/probe-socket-
+    underside.py is what runs it. Asking for either here would shoot a machine missing a part it
+    ships with, or floating over nothing, and answer no question about shape.
 
 .PARAMETER Samples
     Cycles samples per variant render. 64 is what the shipped sheets use, and lowering it makes the
