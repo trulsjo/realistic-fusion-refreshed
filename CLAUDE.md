@@ -74,10 +74,14 @@ own sprite.
 its own `-SelfTest` proves that a **git-ignored** file planted inside a mod cannot reach a zip —
 ignored specifically, since merely-untracked would be excluded for the wrong reason.
 
-`scripts/probe-*.ps1` are **not** in that list and are not gates. A probe builds a real map like a
-check does, but it asserts nothing and answers a question a decision is waiting on — exit 0 means it
-ran and reported, never that the answer was the hoped-for one. Its findings belong in
-`docs/research/`, and it stays committed so the next engine version can be asked the same question.
+`scripts/probe-*.ps1` are **not** in that list and are not gates. A probe asserts nothing and answers
+a question a decision is waiting on — exit 0 means it ran and reported, never that the answer was the
+hoped-for one. Its findings belong in `docs/research/`, and it stays committed so the next engine
+version can be asked the same question. Sixteen of the nineteen `probe-*.ps1` build a real map the
+way a check does and the other three dump prototypes out of the running game. **Two of them are
+Python and start no game at all**: `probe-sprite-geometry.py`, which measures where a sheet's opaque
+pixels land, and `probe-socket-underside.py` (#366, #367), which drives Blender and measures what it
+renders. A probe is a shape, not a language and not a map.
 
 ## The rule that matters most here
 
