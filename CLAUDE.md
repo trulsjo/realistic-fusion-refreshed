@@ -82,11 +82,11 @@ ignored specifically, since merely-untracked would be excluded for the wrong rea
 `scripts/probe-*.ps1` are **not** in that list and are not gates. A probe asserts nothing and answers
 a question a decision is waiting on — exit 0 means it ran and reported, never that the answer was the
 hoped-for one. Its findings belong in `docs/research/`, and it stays committed so the next engine
-version can be asked the same question. `scripts/` holds twenty-three of them: twenty-one `probe-*.ps1`
-and two `probe-*.py`. Sixteen of the PowerShell ones build a real map the way a check does, one
+version can be asked the same question. `scripts/` holds twenty-four of them: twenty-two `probe-*.ps1`
+and two `probe-*.py`. Seventeen of the PowerShell ones build a real map the way a check does, one
 LOADS one (`probe-borrowed-base-art.ps1`, #388, which stands our machines inside the borrowed base
 and creates a surface of its own for its control), and three more dump prototypes out of the running
-game -- so twenty of the twenty-three need Factorio.
+game -- so twenty-one of the twenty-four need Factorio.
 **Three need no game at all**, and they are the sprite ones: `probe-flange-free-render.ps1` (#376)
 and `probe-socket-underside.py` (#366, #367) drive Blender and measure what it renders, and
 `probe-sprite-geometry.py` measures where a committed sheet's opaque pixels land. A probe is a

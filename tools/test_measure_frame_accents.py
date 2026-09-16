@@ -2,12 +2,14 @@
 """The checks for measure-frame-accents.py that need no game and no render:
 `python tools/test_measure_frame_accents.py` exits 0 or raises.
 
-ONE PIECE OF ARITHMETIC AND ONE WHOLE RUN. The arithmetic is `sheet_origin`, the translation from a
-halved sheet's pixel grid onto a frame's, and it is the part of this bench that is WRONG SILENTLY: a
-window ten pixels out still returns a plausible green, because a socket is surrounded by a machine
-that is also greenish. So it is pinned against origins worked out by hand, and then against the
-thing that makes a wrong one detectable -- that a window nudged off the band reads a materially
-different colour, which is the only reason the arithmetic is worth pinning at all.
+ONE PIECE OF ARITHMETIC AND ONE WHOLE RUN. The arithmetic is `sheet_to_frame`, which maps a halved
+sheet's pixel grid onto a frame's, and its zoom-1 wrapper `sheet_origin`. It is the part of this
+bench that is WRONG SILENTLY: a window ten pixels out still returns a plausible green, because a
+socket is surrounded by a machine that is also greenish. Both are pinned here rather than only the
+wrapper, because tools/measure-pipe-cover-miss.py uses the general one at zoom 8 and would otherwise
+be resting on arithmetic nothing grades. Both are pinned against origins worked out by hand, and
+then against the thing that makes a wrong one detectable -- that a window nudged off the band reads
+a materially different colour, which is the only reason the arithmetic is worth pinning at all.
 
 The window itself is NOT pinned here. It is tools/measure-accent-separation.py's, borrowed whole
 through `read_band`, and tools/test_measure_accent_separation.py grades it beside the module that
@@ -40,8 +42,9 @@ import socket_strip  # noqa: E402
 FRAMES = os.path.join(ROOT, "docs", "research", "accent-legibility-at-zoom-1")
 
 
-def side(res_w, res_h, cx, cy):
-    return {"pixels_per_tile": 32, "resolution": {"w": res_w, "h": res_h}, "centre": {"x": cx, "y": cy}}
+def side(res_w, res_h, cx, cy, zoom=1):
+    return {"zoom": zoom, "pixels_per_tile": 32 * zoom,
+            "resolution": {"w": res_w, "h": res_h}, "centre": {"x": cx, "y": cy}}
 
 
 def mach(x, y):
@@ -77,6 +80,19 @@ assert mfa.sheet_origin(side(736, 416, 88.5, 0.5), mach(88.5, 0.5), man(1344, 70
 # camera has a larger row index -- the same sense as the sheet's own rows.
 assert mfa.sheet_origin(side(352, 352, 22, 0.5), mach(22, 2.5), man(704, 704)) == (0, 64)
 assert mfa.sheet_origin(side(352, 352, 22, 0.5), mach(22, -1.5), man(704, 704)) == (0, -64)
+
+# AT ANOTHER ZOOM IT IS A SCALE, NOT A TRANSLATION, and `sheet_to_frame` is what says so. At zoom 8
+# a halved-sheet pixel is eight frame pixels wide, so the origin moves by eight times the sheet's
+# own half-width and the scale comes back as 8 -- which is exactly what
+# tools/measure-pipe-cover-miss.py needs to put a socket's drawn axis on a 256-px-to-the-tile frame.
+assert mfa.sheet_to_frame(side(1536, 1536, 22, 0.5, zoom=8), mach(22.5, 0.5),
+                          man(704, 704)) == (768 + 128 - 1408, 768 - 1408, 8)
+# And the zoom-1 wrapper refuses it rather than rounding the scale away.
+try:
+    mfa.sheet_origin(side(1536, 1536, 22, 0.5, zoom=8), mach(22.5, 0.5), man(704, 704))
+    raise AssertionError("a zoom-8 frame was not refused by the zoom-1 wrapper")
+except socket_strip.Unmeasurable as why:
+    assert "zoom 1 alone" in str(why), why
 
 # A fractional origin is REFUSED, not rounded. Reading a window off a grid that does not line up
 # would be a resampling, and a resampled window is not the window this bench borrows.
