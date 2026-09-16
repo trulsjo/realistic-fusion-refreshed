@@ -1,7 +1,19 @@
-"""Draw one socket END TREATMENT onto a machine's stored model, into a throwaway .blend. For #350.
+"""Draw socket END TREATMENTS onto a machine's stored model, into a throwaway .blend. For #350.
 
     blender -b models/<machine>/<machine>.blend --python models/socket-variants.py \
-            -- <treatment> <out.blend>
+            -- <treatment>[,<treatment>...] <out.blend>
+
+MORE THAN ONE AT A TIME, AND THEY ARE APPLIED IN THIS FILE'S OWN ORDER RATHER THAN THE CALLER'S.
+`unflanged,groundless` and `groundless,unflanged` must give the same model, or two runs that asked
+for the same thing would differ -- and they would differ invisibly, because `random.seed` below
+makes the bevels deterministic per SET of treatments and nothing else would say which set was
+drawn. So the list is sorted into TREATMENTS order before anything is applied, and a name repeated
+is an error rather than a silent no-op.
+
+ONE PAIR IS REFUSED, and it is the only one: `flanged` with `unflanged`. One adds the rib pair and
+the other deletes it, so whichever ran second would decide, and the model would be whatever the
+order happened to be. Every other combination is independent -- a channel down the tube, a rim moved
+inboard, a ground plane removed, ribs deleted -- and stacking them is the point.
 
 NOTHING HERE SHIPS, and the one rule this file has is that it must not be able to make anything
 that does. It opens a model read-only and writes a DIFFERENT file, and the out path given on the
@@ -117,7 +129,7 @@ CORE_MATERIAL = "frame"
 # rf_parts.RIM_PROUD, which is how far the shipped rim's major radius stands past the tube.
 RIM_OUTBOARD = 0.03
 
-random.seed(350)                 # rf_parts' bevels draw from `random`; same treatment, same model
+random.seed(350)                 # rf_parts' bevels draw from `random`; same treatments, same model
 
 
 def fail(message):
@@ -126,10 +138,20 @@ def fail(message):
 
 args = rf.script_args()
 if len(args) != 2:
-    fail(f"usage: -- <{'|'.join(TREATMENTS)}> <out.blend>")
-treatment, out_path = args[0], os.path.abspath(args[1])
-if treatment not in TREATMENTS:
-    fail(f"unknown treatment {treatment!r}; known: {', '.join(TREATMENTS)}")
+    fail(f"usage: -- <{'|'.join(TREATMENTS)}>[,...] <out.blend>")
+asked, out_path = args[0].split(","), os.path.abspath(args[1])
+for name in asked:
+    if name not in TREATMENTS:
+        fail(f"unknown treatment {name!r}; known: {', '.join(TREATMENTS)}")
+if len(set(asked)) != len(asked):
+    fail(f"{args[0]!r} names a treatment twice. Each one either applies or it does not; asking "
+         f"for it again says nothing and hides a typo in the other name.")
+if {"flanged", "unflanged"} <= set(asked):
+    fail("`flanged` adds the rib pair and `unflanged` deletes it, so asking for both leaves the "
+         "model at whichever ran last. Pick the one you mean.")
+# SORTED INTO THIS FILE'S ORDER, NOT THE CALLER'S -- the header says why. `treatments` is a tuple
+# so nothing below can add to it while the model is being built.
+treatments = tuple(t for t in TREATMENTS if t in asked)
 
 model_path = bpy.data.filepath
 if not model_path:
@@ -245,8 +267,8 @@ def bare_span(stub, axis, sign, i, j, across, mouth):
         near = max(back(hi[i]), back(lo[i]))
     return near, far
 
-print(f"SOCKET-VARIANTS {treatment}: {len(sockets)} socket(s), {len(rims)} rim(s) in "
-      f"{os.path.basename(model_path)}")
+print(f"SOCKET-VARIANTS {'+'.join(treatments)}: {len(sockets)} socket(s), {len(rims)} rim(s) "
+      f"in {os.path.basename(model_path)}")
 
 # A SECOND PAIR ON A MACHINE THAT ALREADY WEARS ONE IS NOT A TREATMENT, it is a lie drawn over the
 # control. The shape shipped in #353, so on a re-rendered machine `bare` already has the ribs and
@@ -256,7 +278,7 @@ print(f"SOCKET-VARIANTS {treatment}: {len(sockets)} socket(s), {len(rims)} rim(s
 # ONCE, BEFORE THE LOOP, and that is the whole point of where it stands. Inside the per-socket loop
 # it saw the ribs it had itself drawn on the socket before and failed on every model -- flanged or
 # not, since every machine here has three sockets. The first version did exactly that.
-if treatment == "flanged" and any(o.name.startswith("Flange-") for o in bpy.data.objects):
+if "flanged" in treatments and any(o.name.startswith("Flange-") for o in bpy.data.objects):
     fail(f"{os.path.basename(model_path)} already carries a flange pair -- the shape shipped in "
          f"#353, so `bare` is now the flanged machine and there is nothing for this treatment to "
          f"add. Shoot `bare` instead.")
@@ -265,7 +287,7 @@ if treatment == "flanged" and any(o.name.startswith("Flange-") for o in bpy.data
 # above: `flanged` will not stack a second pair on a machine that already wears one, and this will
 # not strip a pair from a machine that wears none. Both say the model is not the one the caller
 # thinks it is.
-if treatment == "unflanged":
+if "unflanged" in treatments:
     ribs = [o for o in bpy.data.objects if o.name.startswith("Flange-")]
     if not ribs:
         fail(f"{os.path.basename(model_path)} carries no Flange-* object, so there is nothing to "
@@ -283,7 +305,7 @@ if treatment == "unflanged":
 # `visible_*` on the object, with `is_shadow_catcher` and `is_holdout` beside them, and the running
 # Blender's own description of each -- so the reading is the render's rather than a manual page
 # quoted from memory.
-if treatment == "groundless":
+if "groundless" in treatments:
     ground = bpy.data.objects.get("Ground")
     if ground is None:
         fail(f"{os.path.basename(model_path)} has no object named Ground, so there is no plane to "
@@ -305,7 +327,7 @@ for stub in sockets:
     z = stub.location.z
     material = stub.data.materials[0].name
 
-    if treatment == "flanged":
+    if "flanged" in treatments:
         near, far = bare_span(stub, axis, sign, i, j, across, mouth)
         thick = (far - near) * (1 - FLANGE_GAP) / 2
         if thick < FLANGE_MIN_THICK:
@@ -323,7 +345,7 @@ for stub in sockets:
         print(f"SOCKET-VARIANTS   {stub.name}: bare tube {near:.3f}..{far:.3f} back from the mouth, "
               f"two ribs {thick:.3f} thick in it")
 
-    elif treatment == "dark-cored":
+    if "dark-cored" in treatments:
         # WHICH LINE OF THE TUBE FACES THE CAMERA depends on the tube's direction, and getting it
         # wrong puts the channel on the tube's flank where it reads as a stripe rather than a core.
         # The camera looks down at rf_blender.CAMERA_PITCH_DEG from the south. For a tube running
@@ -347,7 +369,7 @@ for stub in sockets:
         box(f"Core-{stub.name}", size, tuple(centre), CORE_MATERIAL, rot=rot, bev=0,
             read=CORE_WIDTH)
 
-if treatment == "rimmed-inboard":
+if "rimmed-inboard" in treatments:
     if not rims:
         fail(f"{os.path.basename(model_path)} has no object named PortRim-*, so there is no rim to move")
     for rim in rims:

@@ -28,10 +28,14 @@ WHAT IT ANSWERS
               points off one machine, and bare tube rather than a socket with a rim, a band and two
               flange ribs crowding the thing being read.
 
-  machine     #366. models/socket-variants.py's `groundless` treatment over a shipped machine, and
-              tools/measure-socket-parts.py run over the shipped sheet and the groundless one. That
-              tool is run as a subprocess, unchanged, so the four rows it prints here are the four
-              rows models/house-style.md carries.
+  machine     #366. The shipped machine rendered four ways -- as it ships, with
+              models/socket-variants.py's `groundless` treatment, with its `unflanged` one, and
+              with both -- and tools/measure-socket-parts.py run over each. Two variables at two
+              levels, because the ground plane is the subject and the flange ribs are what stop the
+              STUB being measurable at all: they leave 1.15 px of tube between them, so a sheet
+              wearing them reports the stub as having NO WINDOW. The bottom row is the only sheet
+              that carries a machine's own stub with the plane gone. That tool is run as a
+              subprocess, unchanged.
 
 THE MODEL BEING TESTED, and it has NO FITTED PARAMETER. If the ground plane hides everything below
 world z 0, then a cylinder of radius r whose axis is at height z draws, below that axis:
@@ -68,6 +72,7 @@ import importlib.util
 import json
 import math
 import os
+import shutil
 import subprocess
 import sys
 
@@ -327,46 +332,79 @@ def scene_cylinders(a, blender):
 
 # ---- one machine, the plane taken away (#366) ---------------------------------------------------
 
+# THE FOUR SHEETS THE `machine` SCENE READS, as (heading, treatments, is the tube bare).
+#
+# TWO VARIABLES, TWO LEVELS EACH, AND ALL FOUR CELLS RENDERED -- which is why it is a table rather
+# than a pair. The ground plane answers #366, and it is measured on the band, the ribs and the rim.
+# The flange ribs answer nothing here, but they are what stops the STUB being measurable at all: on
+# a sheet that has them, they leave 1.15 px of tube between them and no whole column falls clear of
+# both, so tools/measure-socket-parts.py reports the stub as having NO WINDOW. Deleting them gives
+# the stub a window; deleting them AND the plane gives the stub with the plane gone, which is the
+# row #366 asks for and the row no shipped sheet can carry.
+#
+# THE THIRD ROW IS #376'S SHEET AND IS RENDERED AGAIN HERE ON PURPOSE. scripts/probe-flange-free-
+# render.ps1 already makes it, and a reader could run that and compare by hand -- but then the
+# with-plane and without-plane stub readings would come from two commands with two scratch
+# directories, and the whole point of a table is that every cell is rendered the same way in the
+# same run. One extra Blender pair of runs is cheaper than a comparison nobody can reproduce.
+MACHINE_SHEETS = (
+    ("AS SHIPPED: the ground plane in place, the flange ribs on.", None, False),
+    ("THE GROUND PLANE DELETED, the flange ribs still on.", "groundless", False),
+    ("THE FLANGE RIBS DELETED, the ground plane still in place.", "unflanged", True),
+    ("BOTH DELETED: no ground plane and no flange ribs.", "unflanged,groundless", True),
+)
+
+
 def scene_machine(a, blender):
-    """Render a shipped machine with `groundless` and measure the same four parts both ways."""
+    """Render a shipped machine four ways and measure its socket on each."""
     model = os.path.join(REPO, "models", a.machine, f"{a.machine}.blend")
     if not os.path.exists(model):
         sys.exit(f"probe-socket-underside: no stored model at {model}. "
                  f"Run /render-machine rf-{a.machine} --regenerate first.")
-    work = os.path.join(a.out, "groundless")
-    sheets = os.path.join(work, "sheets")
-    if not a.reuse:
-        print("\nbuilding and rendering the machine with its ground plane deleted ...")
-        os.makedirs(work, exist_ok=True)
-        # models/render.py reads geometry.json BESIDE the model it opens and refuses one whose hash
-        # has moved, so the throwaway copy needs the same file beside it.
-        import shutil
-        shutil.copy2(os.path.join(REPO, "models", a.machine, "geometry.json"), work)
-        run_blender(blender, "models/socket-variants.py",
-                    ["groundless", os.path.join(work, f"{a.machine}.blend")], blend=model)
-        # ONE DIRECTION FOR AN EAST-WEST SOCKET AND TWO FOR A NORTH-SOUTH ONE, because
-        # tools/socket_strip.py measures a connection on the sheet where its tube runs across the
-        # screen -- "" for east and west, "-e" for north and south, which is the second render.
-        # Hard-wiring 1 made --direction north fail on the groundless half alone, with the shipped
-        # half succeeding beside it off a manifest that has all four.
-        directions = "1" if a.direction in ("west", "east") else "2"
-        run_blender(blender, "models/render.py",
-                    ["--samples", str(a.samples), "--directions", directions, "--out", sheets],
-                    blend=os.path.join(work, f"{a.machine}.blend"))
+    # ONE DIRECTION FOR AN EAST-WEST SOCKET AND TWO FOR A NORTH-SOUTH ONE, because
+    # tools/socket_strip.py measures a connection on the sheet where its tube runs across the
+    # screen -- "" for east and west, "-e" for north and south, which is the second render.
+    # Hard-wiring 1 made --direction north fail on the rendered halves alone, with the shipped half
+    # succeeding beside them off a manifest that has all four.
+    directions = "1" if a.direction in ("west", "east") else "2"
 
-    shipped = os.path.join(REPO, "realistic-fusion-refreshed-assets", "graphics", "rendered",
-                           a.machine, "manifest.json")
+    manifests = []
+    for title, treatments, bare in MACHINE_SHEETS:
+        if treatments is None:
+            manifests.append((title, os.path.join(
+                REPO, "realistic-fusion-refreshed-assets", "graphics", "rendered", a.machine,
+                "manifest.json"), bare))
+            continue
+        work = os.path.join(a.out, treatments.replace(",", "+"))
+        sheets = os.path.join(work, "sheets")
+        if not a.reuse:
+            print(f"\nbuilding and rendering {treatments} ...")
+            os.makedirs(work, exist_ok=True)
+            # models/render.py reads geometry.json BESIDE the model it opens and refuses one whose
+            # hash has moved, so the throwaway copy needs the same file beside it.
+            shutil.copy2(os.path.join(REPO, "models", a.machine, "geometry.json"), work)
+            run_blender(blender, "models/socket-variants.py",
+                        [treatments, os.path.join(work, f"{a.machine}.blend")], blend=model)
+            run_blender(blender, "models/render.py",
+                        ["--samples", str(a.samples), "--directions", directions, "--out", sheets],
+                        blend=os.path.join(work, f"{a.machine}.blend"))
+        manifests.append((title, os.path.join(sheets, "manifest.json"), bare))
+
     failed = no_window = False
-    for title, manifest in (("AS SHIPPED, the ground plane in place:", shipped),
-                            ("THE SAME MACHINE WITH THE GROUND PLANE DELETED:",
-                             os.path.join(sheets, "manifest.json"))):
+    for title, manifest, bare in manifests:
         print(f"\n{title}")
         cmd = [sys.executable, os.path.join(TOOLS, "measure-socket-parts.py"), manifest,
                "--direction", a.direction, "--radius", str(a.radius)]
         if a.fluid:
             cmd += ["--fluid", a.fluid]
+        # --no-flange IS THE CALLER'S CLAIM ABOUT THE SHEET AND NEVER A READING OF IT (#376). Every
+        # window that tool opens comes from the constants the model was built from, so on a sheet
+        # that still has its ribs this flag would measure the ribs and label them the stub. It is
+        # passed for exactly the two rows this file rendered with `unflanged` in them.
+        if bare:
+            cmd.append("--no-flange")
         # FLUSHED FIRST, because this script's own stdout is block-buffered when it is piped and the
-        # subprocess's is not: without it the two tables print before the headings that say which is
+        # subprocess's is not: without it the tables print before the headings that say which is
         # which, which is worse than no headings.
         sys.stdout.flush()
         done = subprocess.run(cmd, capture_output=True, text=True)
@@ -375,20 +413,18 @@ def scene_machine(a, blender):
             failed = True
         elif "NO WINDOW" in (done.stdout or ""):
             no_window = True
-    # WHAT IS SAID HERE IS READ OFF WHAT WAS PRINTED, NOT TYPED. The paragraph below used to print
+    # WHAT IS SAID HERE IS READ OFF WHAT WAS PRINTED, NOT TYPED. This paragraph used to print
     # unconditionally, which made it a claim rather than a reading: it survived a bench that exited
     # non-zero, and it was wrong for a CONTAINED connection, where the socket wears neither rim nor
     # ribs and its stub runs from the mouth to the band with a window of its own.
     print("")
     if failed:
-        print("One of the two readings above failed. Nothing here is a finding until it does not.")
+        print("One of the readings above failed. Nothing here is a finding until it does not.")
     elif no_window:
-        print("The stub is reported NO WINDOW above, and that is the tool being right rather than a")
-        print("gap: on a plumbable socket the two flange ribs leave 1.15 px of tube between them and")
-        print("no whole column falls clear of both. Its row is the `cylinders` scene's bare tube at")
-        print("the same radius. scripts/probe-flange-free-render.ps1 (#376) renders a sheet whose")
-        print("ribs are deleted, which measure-socket-parts.py reads with --no-flange -- but that")
-        print("sheet keeps its ground plane, so it answers a different question from this one.")
+        print("A stub reported NO WINDOW above is the tool being right rather than a gap: on a")
+        print("sheet that still wears its flange ribs they leave 1.15 px of tube between them and")
+        print("no whole column falls clear of both. The two flange-free rows are where that stub")
+        print("is read, and the difference between them is what the ground plane takes off it.")
     else:
         print("Every part named by this socket was read through a window of its own.")
 
