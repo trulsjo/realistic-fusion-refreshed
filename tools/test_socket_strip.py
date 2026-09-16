@@ -104,4 +104,24 @@ refuses("reaches the edge of the search window",
 refuses("reach outside", lambda: drawn.extent(200, 210))
 refuses("reach outside", lambda: strip.strip(sheet(), MANIFEST, EAST).extent(490, 500))
 
+# THE FILTER GUARD, BOTH WAYS ROUND. `clear_of` is the one copy `reach`, `columns_of` and
+# tools/measure-accent-separation.py are all written on, so it is pinned here rather than beside any
+# one of them. The boundary used is rf-isotope-collector's accent band back edge, 216.96.
+#
+# The far side subtracts one and the near side does not, because a column j covers [j, j+1): it is
+# past a boundary at p once j >= p, and short of one once j + 1 <= p. A fourth copy of this in the
+# accent bench floored the far end instead, which put the column straddling the smear inside its own
+# window -- caught by the review of #379, and the reason the copies are now one.
+assert strip.clear_of(216.96, +1, inward=False) == 215, strip.clear_of(216.96, +1, inward=False)
+assert strip.clear_of(216.96, +1, inward=True) == 218, strip.clear_of(216.96, +1, inward=True)
+# Walking the other way the two answers swap sides. A sign error here measures the machine instead
+# of the band on every socket that points at the left of the sheet.
+assert strip.clear_of(216.96, -1, inward=False) == 218, strip.clear_of(216.96, -1, inward=False)
+assert strip.clear_of(216.96, -1, inward=True) == 215, strip.clear_of(216.96, -1, inward=True)
+# An INTEGER boundary is where the half-open interval is easiest to get wrong, because floor and
+# ceil stop disagreeing: column 216 begins exactly at 216, so with a guard of 0.75 the first column
+# past is 217 and the last one short is 214.
+assert strip.clear_of(216.0, +1, inward=True) == 217, strip.clear_of(216.0, +1, inward=True)
+assert strip.clear_of(216.0, +1, inward=False) == 214, strip.clear_of(216.0, +1, inward=False)
+
 print("socket_strip: ok")

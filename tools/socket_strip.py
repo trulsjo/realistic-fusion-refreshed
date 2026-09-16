@@ -118,6 +118,30 @@ class Unmeasurable(Exception):
     fault reported as a clean run is the shape every gate here is written against."""
 
 
+def clear_of(edge, step, inward):
+    """The first whole sheet column on one side of a fractional boundary that the renderer's filter
+    does not smear across, walking in `step` -- +1 towards the right of the sheet, -1 towards the
+    left. `inward` is True for the column just past the boundary in the direction of travel, False
+    for the last one before it.
+
+    THE ONE COPY OF THE ARITHMETIC THREE CALLERS NEED. `Strip.reach` and `Strip.columns_of` below
+    are both written on it, and so is tools/measure-accent-separation.py, which has to clear a
+    boundary neither of them exposes -- the accent band's own back edge, inboard of the collision
+    edge where `reach` refuses to go. That bench kept a fourth copy until the review of #379, and
+    the copy had already drifted: it floored the far end where the two here subtract one, so the
+    column straddling the smear fell inside its window. This module's header is about exactly that,
+    and #340 is where the same thing last cost something.
+
+    WHY THE FAR SIDE SUBTRACTS ONE AND THE NEAR SIDE DOES NOT. A column j covers [j, j+1). Walking
+    forwards, it is past a boundary at p once j >= p, which is ceil(p); it is short of one once
+    j + 1 <= p, which is floor(p) - 1 and not floor(p). The asymmetry is the half-open interval
+    rather than a fudge, and it is the whole of what the drifted copy got wrong.
+    """
+    if (step > 0) == inward:
+        return int(math.ceil(edge + FILTER_HALF_PX))
+    return int(math.floor(edge - FILTER_HALF_PX)) - 1
+
+
 def plumbable(connection):
     """True for a connection a player can put an ordinary pipe on.
 
@@ -201,9 +225,12 @@ class Strip:
         own edge on the mouth side up to the last column the machine's body does not smear into.
         Outboard of the footprint edge there is nothing to leak from -- the rim itself stands out
         there -- and inboard of the collision edge there is the whole machine."""
+        # Inboard is whichever way the socket does not point, and the last usable column is the one
+        # short of the collision edge on the mouth's side of it -- `clear_of` with inward False.
+        last = clear_of(self.body_col, -self.outward, inward=False)
         if self.outward < 0:                       # mouth at screen left, body to the right
-            return 0, int(math.floor(self.body_col - FILTER_HALF_PX)) - 1
-        return int(math.ceil(self.body_col + FILTER_HALF_PX)), self.alpha.shape[1] - 1
+            return 0, last
+        return last, self.alpha.shape[1] - 1
 
     def axis_row(self, z):
         """The socket's own axis as a fractional sheet row, for a socket built at world height `z`.
@@ -250,10 +277,11 @@ class Strip:
         """
         near = self.mouth_col - self.outward * back_near * self.px_per_tile
         far = self.mouth_col - self.outward * back_far * self.px_per_tile
-        lo, hi = min(near, far) + FILTER_HALF_PX, max(near, far) - FILTER_HALF_PX
+        # Sorted into sheet order first, so both ends are cleared walking rightwards whichever way
+        # the socket points. `clear_of` is the same primitive `reach` above is written on.
         first, last = self.reach()
-        col0 = max(int(math.ceil(lo)), first)
-        col1 = min(int(math.floor(hi)) - 1, last)
+        col0 = max(clear_of(min(near, far), +1, inward=True), first)
+        col1 = min(clear_of(max(near, far), +1, inward=False), last)
         return (col0, col1) if col1 >= col0 else None
 
 
