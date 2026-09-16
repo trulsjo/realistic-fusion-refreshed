@@ -1,5 +1,35 @@
 # How far apart two fluid accents land at zoom 1
 
+> **THE SHEETS MOVED UNDER THIS NOTE ON 2026-09-16, AFTER IT WAS WRITTEN.**
+> [ADR 0035](../adr/0035-the-rig-draws-what-is-below-the-ground-line.md) stopped the render rig
+> cutting a socket's underside, so every plumbable band is drawn **1.5 screen pixels taller at
+> zoom 1** — 23.5 where every figure below says 22.0 — and the extra pixels move each colour
+> median by a few tenths of a dE00. **Everything below is left exactly as it was measured**; what
+> follows is the same bench re-run on the re-rendered sheets, so the two can be told apart.
+>
+> | | measured below | after ADR 0035 |
+> |---|---:|---:|
+> | water, west vs east socket | 33.0 | **32.2** |
+> | tritium, west vs east socket | 26.3 | **26.0** |
+> | energy, west vs east socket | 3.9 | **3.9** |
+> | steam x water, closest / furthest | 11.2 / 39.2 | **11.7 / 38.9** |
+> | energy x steam, closest / furthest | 19.3 / 43.6 | **19.2 / 43.2** |
+> | energy x water, closest / furthest | 29.2 / 45.9 | **29.5 / 46.0** |
+> | helium-3 x tritium, closest / furthest | 30.0 / 46.3 | **29.4 / 45.7** |
+> | every plumbable band's drawn height | 22.0 px | **23.5 px** |
+>
+> A CONTAINED socket's band is untouched: all three energy ones stay 27.0 px tall, because they sit
+> at 0.55 and the plane never reached them. Only the six plumbable bands moved.
+>
+> **The standard ADR 0034 sets is unchanged in direction and narrower in margin.** It rests on
+> water's own two sockets landing further apart than energy from water at its closest: 33.0 against
+> 29.2 below, 32.2 against 29.5 now — 2.7 dE00 of margin where there was 3.8. Section 1's claim
+> about how much accent a player gets moves the same way and in the machine's favour: every
+> plumbable band gains about seven percent of area, 23.5 over 22.0. `models/house-style.md` and `CONTEXT.md` carry the
+> re-measured figures; this note carries the measurement it was written from.
+> Re-run it with `python tools/measure-accent-separation.py`.
+
+
 Measured 2026-09-16 for [#379](https://github.com/trulsjo/realistic-fusion-refreshed/issues/379),
 which is the measuring half of
 [#359](https://github.com/trulsjo/realistic-fusion-refreshed/issues/359). #359 asked whether two
@@ -8,8 +38,10 @@ nothing**, which is the property it was written to have and still has.
 
 **The decision has since been taken, and it moved nothing here.** Truls settled #359 on 2026-09-16:
 the standard is [ADR 0034](../adr/0034-an-accent-is-read-against-its-neighbour.md) and the rule is
-in `models/house-style.md`'s Palette. No colour and no geometry changed, so every figure below
-stands as measured. What the decision was taken on is a second note,
+in `models/house-style.md`'s Palette. No colour and no geometry changed for THAT decision, so every
+figure below stands as it was measured. **What did change afterwards was the RENDER**, on the same
+day and for a different ticket -- see the banner above, which is the only thing in this note that
+is later than its own measurement. What the decision was taken on is a second note,
 `docs/research/accent-legibility-at-zoom-1.md`, which photographs both machines in a real map — so
 this note says what the sheet holds and that one says what a player is shown. **Read this one for a
 distance and that one for a look**; its own figures come off a hand-placed hue cut and are not a
