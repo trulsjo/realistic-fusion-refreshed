@@ -23,11 +23,13 @@ between a contained socket's drawn axis and its pipe cover, measured rather than
 projection -- and for a plumbable socket on the same machine beside it as a control. A control is
 what turns one reading against a prediction into a difference between two readings:
 
-  - the socket's DRAWN AXIS comes off the rendered sheet through tools/socket_strip.py --
-    `Strip.axis_row`, the row a cylinder's silhouette is symmetric about -- mapped onto the frame by
-    tools/measure-frame-accents.py's `sheet_to_frame`. One copy of that mapping, borrowed rather
-    than rewritten; a second copy of a world-to-screen mapping is what socket_strip's own header is
-    about.
+  - the socket's DRAWN AXIS comes off the rendered sheet through tools/socket_strip.py -- its
+    `strip()` places the socket and `Strip.axis_row` gives the row a cylinder's silhouette is
+    symmetric about -- and tools/measure-frame-accents.py's `sheet_to_frame` maps that onto the
+    frame. Both are CALLED, not repeated: socket_strip's header asks for one copy of the arithmetic
+    that reads a socket off a sheet, and `sheet_to_frame` is the one copy of the separate
+    world-to-screen mapping, which this file would otherwise need at zoom 8 beside its own at
+    zoom 1.
   - the COVER comes off the subtraction, as the centroid and the bounding box of what stopped being
     drawn.
 
@@ -213,7 +215,8 @@ def sockets_in(frame_name, covers_dir, bare_dir, all_dir=None):
             # big it is, which is most of what #390 asks about a machine nobody has rendered.
             unplaced.append(machine["name"])
             continue
-        manifest_path = os.path.join(RENDERED_DIR, model, "manifest.json") if model else None
+        sheets_dir = os.path.join(RENDERED_DIR, model) if model else None
+        manifest_path = os.path.join(sheets_dir, "manifest.json") if sheets_dir else None
         manifest = (json.load(open(manifest_path, encoding="utf-8"))
                     if manifest_path and os.path.exists(manifest_path) else None)
         for c in geometry["connections"]:
@@ -240,7 +243,7 @@ def sockets_in(frame_name, covers_dir, bare_dir, all_dir=None):
             axis_row, mouth_col = None, None
             if manifest is not None and machine["direction"] == mfa.NORTH:
                 try:
-                    axis_row, mouth_col = _drawn_axis(sidecar, machine, manifest, c, zoom)
+                    axis_row, mouth_col = _drawn_axis(sidecar, machine, manifest, c, sheets_dir)
                 except socket_strip.Unmeasurable:
                     axis_row, mouth_col = None, None
             found.append((machine["name"],
@@ -249,31 +252,57 @@ def sockets_in(frame_name, covers_dir, bare_dir, all_dir=None):
     return sidecar, found, (sorted(set(unplaced)), whole)
 
 
-def _drawn_axis(sidecar, machine, manifest, connection, zoom):
+_ALPHA = {}
+
+
+def sheet_alpha(sheets_dir, manifest, suffix):
+    """The alpha channel of one direction's sheet, read once per file and kept.
+
+    Cached because `_drawn_axis` is called per connection and a machine's sockets share a sheet;
+    reading a 1344 x 704 PNG six times to ask it the same question would be silly.
+    """
+    path = os.path.join(sheets_dir, f"{manifest['machine']}{suffix}.png")
+    if path not in _ALPHA:
+        if not os.path.exists(path):
+            raise socket_strip.Unmeasurable(f"{os.path.basename(path)} is not there")
+        _ALPHA[path] = np.asarray(Image.open(path).convert("RGBA"))[..., 3]
+    return _ALPHA[path]
+
+
+def _drawn_axis(sidecar, machine, manifest, connection, sheets_dir):
     """(axis row, mouth column) of a socket as this frame draws it, in frame pixels.
 
-    THE SHEET SAYS WHERE THE SOCKET IS AND THE SIDECAR SAYS WHERE THE SHEET IS. `socket_edges` gives
-    the connection's ground line and the selection edge its stub stops at, in sheet tiles;
-    `Strip.axis_row` lifts the ground line by the socket's world height through the render camera;
-    and `sheet_to_frame` puts the result on the frame. Every step is somebody else's arithmetic.
+    THE SHEET SAYS WHERE THE SOCKET IS AND THE SIDECAR SAYS WHERE THE SHEET IS, AND NEITHER ANSWER
+    IS WORKED OUT HERE. `socket_strip.strip` builds the socket's own strip off the sheet -- which
+    places its ground line and the selection edge its stub stops at -- `Strip.axis_row` lifts that
+    ground line by the socket's world height through the render camera, and `sheet_to_frame` puts
+    the result on the frame. Every step is somebody else's arithmetic and every one of them is
+    CALLED rather than repeated.
+
+    IT USED TO REPEAT THEM, AND THE DOCSTRING ABOVE THIS ONE ALREADY SAID IT DID NOT. The first
+    version computed `ground_row`, the axis and the mouth by hand from `socket_edges` -- three
+    formulas `strip()` and `axis_row()` already own, byte for byte -- while claiming in prose to
+    borrow them. That is the second copy tools/socket_strip.py's header exists to refuse, and
+    models/rf_parts.py's header records one drifting from its original inside a week (#340).
+    Calling `strip()` also brings its validation: a sheet whose size disagrees with the manifest's
+    frame, or a selection box no wider than the collision box on that side, is now an Unmeasurable
+    rather than a number quietly read off the wrong pixels.
 
     Raises Unmeasurable for a connection whose socket this frame does not draw left-to-right --
     which is a north or south one, measured on the `-e` sheet the frame is not of.
     """
-    suffix, w_px, h_px = socket_strip.sheet_frame(manifest, connection)
+    suffix, _w_px, _h_px = socket_strip.sheet_frame(manifest, connection)
     if suffix != "":
         raise socket_strip.Unmeasurable(
             f"a {connection['direction']} socket is drawn on the '-e' sheet, which this frame is "
             f"not of")
-    ppt_sheet = manifest["frame"]["pixels_per_tile"]
-    mouth, _body, ground = socket_strip.socket_edges(manifest, connection)
-    ground_row = h_px / 2 - ground * ppt_sheet
+    s = socket_strip.strip(sheet_alpha(sheets_dir, manifest, suffix), manifest, connection)
     z = rf.SOCKET_Z if socket_strip.plumbable(connection) else CONTAINED_Z
-    axis_sheet = ground_row - z * SCREEN_PER_WORLD * ppt_sheet
-    mouth_sheet = w_px / 2 + mouth * ppt_sheet
 
+    # A halved-sheet coordinate is what `sheet_to_frame` maps, and `Strip` works in FULL sheet
+    # pixels -- 64 to the tile against the halved sheet's 32 -- so each is halved on the way out.
     col0, row0, scale = mfa.sheet_to_frame(sidecar, machine, manifest)
-    return row0 + (axis_sheet / 2) * scale, col0 + (mouth_sheet / 2) * scale
+    return row0 + (s.axis_row(z) / 2) * scale, col0 + (s.mouth_col / 2) * scale
 
 
 # The world height a CONTAINED socket is built at, from models/heat-exchanger/build.py's own

@@ -166,8 +166,10 @@ def sheet_origin(sidecar, machine, manifest):
     """The frame pixel (col, row) that holds halved-sheet pixel (0, 0), as whole pixels.
 
     THE ZOOM-1 CASE OF `sheet_to_frame`, which is where the arithmetic lives -- one copy, because
-    tools/measure-pipe-cover-miss.py needs the same mapping at zoom 8 and a second copy of a
-    world-to-screen mapping is what tools/socket_strip.py's header is about.
+    tools/measure-pipe-cover-miss.py needs the same mapping at zoom 8, and two copies of one mapping
+    is the shape tools/socket_strip.py's header records going wrong (#340). That header is about the
+    arithmetic which reads a socket off a SHEET rather than this one, which puts a sheet on a FRAME;
+    the hazard it names is the same either way, and neither module should grow a second copy.
 
     IT MUST LAND ON A WHOLE PIXEL, AND IT IS CHECKED RATHER THAN ROUNDED. At zoom 1 a halved-sheet
     pixel and a frame pixel are the same size, so a window can be read off the frame by translation
