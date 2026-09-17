@@ -29,6 +29,20 @@
 > re-measured figures; this note carries the measurement it was written from.
 > Re-run it with `python tools/measure-accent-separation.py`.
 
+> **AND THEY ARE ABOUT TO MOVE AGAIN, ON 2026-09-17.**
+> [ADR 0036](../adr/0036-every-socket-is-drawn-at-pipe-height.md) levels every CONTAINED socket to
+> vanilla's pipe height and thickness, which is the one thing the block above says did **not** move.
+> So the three energy bands stop being 27.0 px tall and stop standing clear of the machine, and the
+> explanation this note gives for energy's two sockets landing 3.9 apart while water's land 32.2 —
+> *"the energy sockets are contained and stand at 0.55 in the open"* — stops holding.
+>
+> **Nothing below is changed, and nothing below has been re-measured yet.** The art moves in
+> [#392](https://github.com/trulsjo/realistic-fusion-refreshed/issues/392), not here. Every figure
+> in this note that distinguishes a contained band from a plumbable one has to be re-taken then,
+> and this note is the thing to compare against. ADR 0034's standard is the one at risk: its margin
+> was 3.8 dE00 when this was written and 2.7 after ADR 0035, and the contained bands are moving into
+> the same shading and the same 0.249 radius as the water ones.
+
 
 Measured 2026-09-16 for [#379](https://github.com/trulsjo/realistic-fusion-refreshed/issues/379),
 which is the measuring half of

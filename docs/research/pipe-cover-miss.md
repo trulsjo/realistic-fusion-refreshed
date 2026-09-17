@@ -6,6 +6,12 @@ probe's findings.** It draws no threshold and proposes no remedy;
 [#391](https://github.com/trulsjo/realistic-fusion-refreshed/issues/391) weighs those and the choice
 is Truls's.
 
+> **Answered, 2026-09-17.** [ADR 0036](../adr/0036-every-socket-is-drawn-at-pipe-height.md) levels
+> every contained socket to vanilla's pipe height and thickness, which makes the cover concentric
+> and the miss below zero, and keeps the `pipe_covers` declaration **provisionally**. Nothing in
+> this note changes: it is the measurement the decision acts on, and the figures below are what a
+> re-measurement after #392 has to be compared against.
+
 ## What was seen, and what it turned out to be
 
 Truls saw it on the frames committed with #389: on `rf-heat-exchanger`'s short ends the
