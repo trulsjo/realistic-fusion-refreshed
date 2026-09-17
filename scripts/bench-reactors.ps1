@@ -216,7 +216,7 @@
     a benchmark of a map with different prototypes is a benchmark of a different map.
 
 .PARAMETER SelfTest
-    Prove the five pieces of machinery here that can fail quietly, and exit. Needs no Factorio and
+    Prove the six pieces of machinery here that can fail quietly, and exit. Needs no Factorio and
     no save. Four are -Save's. It parses a synthesised save header, including the wide encoding a
     version component only reaches at 255 and no real mod on hand has; it requires an unresolvable
     mod to be named rather than skipped; it requires a zip whose name merely BEGINS with the wanted
@@ -231,7 +231,17 @@
     stalling on one tick are both flagged, and neither 5.5 ms of real simulation nor a 108 ms spike
     repeating in every run is called a stall.
 
-    Those five and no more, because every one of them produces a confident wrong answer rather than
+    THE SIXTH IS THE CENSUS CADENCE GUARD (#235, #325), and it is the same shape once more: a rig
+    generated at a cadence nobody asked for reports a per-reactor figure carrying the harness's own
+    instrumentation -- 2.18 us per reactor, a quarter of the cost, when the collision was live --
+    and every other gate passes. It holds Assert-CensusCadence from both sides: a cadence of 5
+    against an asked-for 500 is refused and the refusal names the case trap that caused it, the
+    ablation ladder's one licensed rewrite to UPDATE_INTERVAL + 1 is allowed, nothing else under
+    -Ablate is, and the -Ticks halving is asserted to sit ABOVE the snapshot it would otherwise
+    trip. The guard was lifted out of Write-Rig to make this reachable at all; before #325 the only
+    proof it fires was a hand-edited copy of this script that was committed nowhere.
+
+    Those six and no more, because every one of them produces a confident wrong answer rather than
     an error, and three of the first four produce the SAME wrong answer by different routes: a
     run that loads the save without the mod the save names, reports a clean pass, and is believed. A
     mis-parsed header names the wrong mods. A mod list one entry short measures a map with a mod's
@@ -689,7 +699,7 @@ function Resolve-SaveMods {
         #
         # The -ccontains above is the same rule on the same grounds. Found in review, in the zip
         # branch; the directory branch had it too, because Test-Path folds case for a directory
-        # exactly as it does for a file. -SelfTest 4/5 holds both shut with one decoy each.
+        # exactly as it does for a file. -SelfTest 4/6 holds both shut with one decoy each.
         $found = $null
         $wantedDir = "$($mod.Name)_$($mod.Version)"
         # -LiteralPath because a mod directory's own path may contain brackets, which -Path would
@@ -716,7 +726,7 @@ function Resolve-SaveMods {
             # rather than trusted. `-Filter "LTN_*.zip"` matches LTN_Combinator_2.0.1.zip, so a save
             # wanting LTN on a machine that has only the Combinator would resolve LTN to the
             # Combinator's zip and be reported RESOLVED -- the same silent failure the case rule
-            # above describes, by a third route. Found in review; -SelfTest 3/5.
+            # above describes, by a third route. Found in review; -SelfTest 3/6.
             #
             # -Filter is the file system's own glob and folds case like the rest of NTFS, so it can
             # only ever return a superset here. The -cmatch is what narrows it back.
@@ -789,6 +799,36 @@ $rigOnly = @('Counts', 'Pooled', 'Mixed', 'Collectors', 'Blankets', 'Ablate', 'G
 # and PowerShell binds a function only when its definition has been executed. They were below
 # it when the stall half was written, and it failed with "'Find-StalledRuns' is not
 # recognized" -- the self-test catching its own first mistake.
+# Assert-CensusCadence is here for the same reason and learned it the same way (#325).
+#
+# IT IS A COMPARISON AND NOTHING ELSE, which is why it could be lifted at all: no rig, no game, no
+# file. It used to sit inside Write-Rig, where the only way to reach it was to generate a rig, and
+# that is why the proof that it fires lived in a hand-edited copy of this script rather than in
+# -SelfTest. `Actual` is the cadence the rig is about to be generated with, `Asked` the snapshot
+# taken below the -Ticks halving, and the pair being unequal means something reassigned the
+# parameter between the two -- which is #235: `$reportEvery` and `$ReportEvery` are ONE variable.
+function Assert-CensusCadence {
+    param(
+        [Parameter(Mandatory)] [int] $Actual,
+        [Parameter(Mandatory)] [int] $Asked,
+        [Parameter(Mandatory)] [string] $Ablate,
+        [Parameter(Mandatory)] [int] $Interval
+    )
+
+    # THE ONE LICENSED REWRITE, and it is licensed by its VALUE and not merely by -Ablate being on.
+    # on_nth_tick handlers are keyed by period, so an ablated run whose cadence lands on
+    # UPDATE_INTERVAL would replace the ladder's handler instead of adding one; the script rewrites
+    # it to INTERVAL + 1 and this is where that rewrite is forgiven. Forgiving the mode rather than
+    # the value would make the guard vacuous exactly where a rewrite happens.
+    if ($Ablate -ne 'none' -and $Actual -eq $Interval + 1 -and $Asked -eq $Interval) { return }
+
+    if ($Actual -ne $Asked) {
+        throw ("the rig's census cadence is $Actual but -ReportEvery asked for $Asked. " +
+               'Something reassigned it after the parameter block -- check for a variable whose ' +
+               'name differs only in case, which PowerShell does not distinguish.')
+    }
+}
+
 
 function Get-Median {
     param([System.Collections.Generic.List[double]] $Values)
@@ -872,7 +912,7 @@ function Find-StalledRuns {
 
     # No comma-wrapping on the returns. ",$out" exists to stop PowerShell unrolling a single-item
     # result, but on an EMPTY array it produces a one-item wrapper instead -- so @(Find-StalledRuns
-    # ...) counted a clean sitting as one stalled run, and -SelfTest 5/5 caught it. Callers wrap in
+    # ...) counted a clean sitting as one stalled run, and -SelfTest 5/6 caught it. Callers wrap in
     # @() instead, which gives 0 for nothing and 1 for one.
     $out = @()
     if ($Runs -lt 2) { return $out }
@@ -1007,11 +1047,11 @@ if ($SelfTest) {
         $try = Read-ModBlock -Buffer $buffer -Length $buffer.Length -Start $p
         if ($try -and $try[0].Name -ceq 'base') { $parsed = $try; break }
     }
-    if (-not $parsed) { throw '-SelfTest 1/5 FAILED: the parser found no mod list in a synthesised header.' }
+    if (-not $parsed) { throw '-SelfTest 1/6 FAILED: the parser found no mod list in a synthesised header.' }
     $got  = ($parsed | ForEach-Object { "$($_.Name) $($_.Version)" }) -join '; '
     $want = ($expected | ForEach-Object { "$($_.Name) $($_.Version -join '.')" }) -join '; '
-    if ($got -cne $want) { throw "-SelfTest 1/5 FAILED: parsed '$got', expected '$want'." }
-    Write-Host "  1/5 ok: parsed '$got', wide-encoded version included."
+    if ($got -cne $want) { throw "-SelfTest 1/6 FAILED: parsed '$got', expected '$want'." }
+    Write-Host "  1/6 ok: parsed '$got', wide-encoded version included."
 
     # And the refusal. An empty directory resolves nothing, so every name in the list must come
     # back named -- a resolver that skipped what it could not find would hand the benchmark a map
@@ -1024,18 +1064,18 @@ if ($SelfTest) {
             Resolve-SaveMods -Wanted $parsed -SourceDirectory $emptyDir -Bundled @{} -Ours (Get-RepoMods) |
                 Out-Null
         } catch { $refused = "$($_.Exception.Message)" }
-        if (-not $refused) { throw '-SelfTest 2/5 FAILED: two unresolvable mods were accepted rather than refused.' }
+        if (-not $refused) { throw '-SelfTest 2/6 FAILED: two unresolvable mods were accepted rather than refused.' }
         foreach ($name in @('a-third-mod', 'wide')) {
             if (-not $refused.Contains($name)) {
-                throw "-SelfTest 2/5 FAILED: the refusal does not name '$name': $refused"
+                throw "-SelfTest 2/6 FAILED: the refusal does not name '$name': $refused"
             }
         }
         # base is the engine's and is deliberately not a mod anybody installs, so naming it would
         # send the reader looking for something that cannot be found.
         if ($refused.Contains('base ')) {
-            throw "-SelfTest 2/5 FAILED: the refusal names base, which is not an installable mod: $refused"
+            throw "-SelfTest 2/6 FAILED: the refusal names base, which is not an installable mod: $refused"
         }
-        Write-Host '  2/5 ok: both unresolved mods named, base not among them.'
+        Write-Host '  2/6 ok: both unresolved mods named, base not among them.'
 
         # And the refusal again, against the near miss rather than the empty directory. A zip
         # whose name merely STARTS with the wanted name plus an underscore is a different mod:
@@ -1053,14 +1093,14 @@ if ($SelfTest) {
                     Out-Null
             } catch { $refused = "$($_.Exception.Message)" }
             if (-not $refused) {
-                throw ('-SelfTest 3/5 FAILED: wide_Combinator_2.0.1.zip was accepted as the mod ' +
+                throw ('-SelfTest 3/6 FAILED: wide_Combinator_2.0.1.zip was accepted as the mod ' +
                        '"wide", so a save could be benchmarked with the wrong mod loaded and ' +
                        'nothing would say so.')
             }
             if (-not $refused.Contains('wide 1.2.300')) {
-                throw "-SelfTest 3/5 FAILED: the refusal does not name 'wide 1.2.300': $refused"
+                throw "-SelfTest 3/6 FAILED: the refusal does not name 'wide 1.2.300': $refused"
             }
-            Write-Host '  3/5 ok: a name_suffix_version.zip is not accepted as name.'
+            Write-Host '  3/6 ok: a name_suffix_version.zip is not accepted as name.'
         } finally { Remove-TempDirectory -Path $decoyDir -Label 'bench-reactors -SelfTest' }
 
         # And the near miss that is only a difference of CASE, which NTFS does not distinguish and
@@ -1080,18 +1120,18 @@ if ($SelfTest) {
                     Out-Null
             } catch { $refused = "$($_.Exception.Message)" }
             if (-not $refused) {
-                throw ('-SelfTest 4/5 FAILED: a mod called "Wide" was accepted as the mod "wide". ' +
+                throw ('-SelfTest 4/6 FAILED: a mod called "Wide" was accepted as the mod "wide". ' +
                        'Factorio reads a mod name from its own info.json and does not fold case, so ' +
                        "the save's real mod would have been absent from a run reported as clean.")
             }
             if (-not $refused.Contains('wide 1.2.300')) {
-                throw "-SelfTest 4/5 FAILED: the refusal does not name 'wide 1.2.300': $refused"
+                throw "-SelfTest 4/6 FAILED: the refusal does not name 'wide 1.2.300': $refused"
             }
-            Write-Host '  4/5 ok: neither Wide/ nor Wide_1.2.300.zip is accepted as wide.'
+            Write-Host '  4/6 ok: neither Wide/ nor Wide_1.2.300.zip is accepted as wide.'
         } finally { Remove-TempDirectory -Path $caseDir -Label 'bench-reactors -SelfTest' }
     } finally { Remove-TempDirectory -Path $emptyDir -Label 'bench-reactors -SelfTest' }
 
-    # 5/5: the stall detector, on the run that actually produced #235's effect -- and on the
+    # 5/6: the stall detector, on the run that actually produced #235's effect -- and on the
     # reproducible spike that made the first version of it useless.
     #
     # A REGRESSION HERE IS SILENT AND EXPENSIVE. If the detector stops firing, a poisoned run
@@ -1104,16 +1144,16 @@ if ($SelfTest) {
     $stall[876] = 389341000.0     # the real one: dump label t876 of run 6, 389.3 ms
     $found = @(Find-StalledRuns -Samples ($clean + $stall) -Ticks 1000 -Runs 2)
     if ($found.Count -ne 1 -or $found[0].Run -ne 2) {
-        throw ('-SelfTest 5/5 FAILED: expected run 2 of two to be flagged, got ' +
+        throw ('-SelfTest 5/6 FAILED: expected run 2 of two to be flagged, got ' +
                "$($found.Count) run(s). A run carrying a 389 ms tick must be flagged and a clean " +
                'one must not, or #235 can recur unseen.')
     }
     if ([Math]::Abs($found[0].WorstMicroseconds - 389341.0) -gt 1.0) {
-        throw ("-SelfTest 5/5 FAILED: reported worst tick $($found[0].WorstMicroseconds) us, " +
+        throw ("-SelfTest 5/6 FAILED: reported worst tick $($found[0].WorstMicroseconds) us, " +
                'expected 389341 us.')
     }
     if ($found[0].Tick -ne 876) {
-        throw ("-SelfTest 5/5 FAILED: reported tick $($found[0].Tick), expected 876. Tick is the " +
+        throw ("-SelfTest 5/6 FAILED: reported tick $($found[0].Tick), expected 876. Tick is the " +
                "dump's own t<n> label, which is 0-based -- reporting an ordinal instead sends the " +
                'reader one row past the stall.')
     }
@@ -1128,7 +1168,7 @@ if ($SelfTest) {
     $twoB[400] = 118000000.0
     $two = @(Find-StalledRuns -Samples ($twoA + $twoB + $twoC) -Ticks 1000 -Runs 3)
     if ($two.Count -ne 2) {
-        throw ("-SelfTest 5/5 FAILED: two of three runs stalled on the same tick and $($two.Count) " +
+        throw ("-SelfTest 5/6 FAILED: two of three runs stalled on the same tick and $($two.Count) " +
                'were flagged. Comparing against the median of the peers lets one stalled run hide ' +
                'another; the fastest peer is the comparison that does not.')
     }
@@ -1138,7 +1178,7 @@ if ($SelfTest) {
     $dearA = & $flat; $dearA[500] = 5500000.0
     $dearB = & $flat; $dearB[500] = 5500000.0
     if (@(Find-StalledRuns -Samples ($dearA + $dearB) -Ticks 1000 -Runs 2).Count -ne 0) {
-        throw ('-SelfTest 5/5 FAILED: a 5.5 ms tick was called a stall. That is the simulation ' +
+        throw ('-SelfTest 5/6 FAILED: a 5.5 ms tick was called a stall. That is the simulation ' +
                'step at 200 reactors, so every blanketed sweep would report as poisoned.')
     }
 
@@ -1149,12 +1189,89 @@ if ($SelfTest) {
     $repA = & $flat; $repA[30] = 108000000.0
     $repB = & $flat; $repB[30] = 106000000.0
     if (@(Find-StalledRuns -Samples ($repA + $repB) -Ticks 1000 -Runs 2).Count -ne 0) {
-        throw ('-SelfTest 5/5 FAILED: a 108 ms tick present at the SAME index in every run was ' +
+        throw ('-SelfTest 5/6 FAILED: a 108 ms tick present at the SAME index in every run was ' +
                'called a stall. That is the rig''s own t = 30 spike, so every rig sweep would ' +
                'warn and the warning would stop being read.')
     }
-    Write-Host ('  5/5 ok: the 389 ms one-run stall is flagged at tick 876; two runs stalling ' +
+    Write-Host ('  5/6 ok: the 389 ms one-run stall is flagged at tick 876; two runs stalling ' +
                 'on one tick are both flagged; 5.5 ms of work is not, nor a 108 ms spike in every run.')
+
+    # 6/6 -- THE CENSUS CADENCE GUARD (#235, #325). The regression it stands against was a variable
+    # whose name differed from the -ReportEvery PARAMETER only in case, which PowerShell does not
+    # distinguish: the rig's census then ran every 5 ticks rather than every 500, putting 2.18 us
+    # per reactor of the harness's own instrumentation into every figure it published. The guard
+    # was proved to fire once, by hand, on a copy of this script -- and that proof was committed
+    # nowhere, which is what this half fixes.
+    #
+    # Assert-CensusCadence is a pure comparison and is called by Write-Rig; it was lifted out of
+    # that function precisely so a half could reach it without generating a rig or starting a game.
+    $cadenceFired = {
+        param($Actual, $Asked, $Ablate, $Interval)
+        try { Assert-CensusCadence -Actual $Actual -Asked $Asked -Ablate $Ablate -Interval $Interval; return $null }
+        catch { return $_.Exception.Message }
+    }
+
+    # a. The collision itself. This is #235 reintroduced: something wrote 5 over the 500 that was asked for.
+    $msg = & $cadenceFired 5 500 'none' 6
+    if (-not $msg) {
+        throw ('-SelfTest 6/6 FAILED: a census cadence of 5 against -ReportEvery 500 was accepted. ' +
+               'That is #235 exactly, and it is the hundredfold regression this guard exists to stop.')
+    }
+    foreach ($fragment in @('5', '500', 'case')) {
+        if ($msg -notmatch [regex]::Escape($fragment)) {
+            throw ("-SelfTest 6/6 FAILED: the refusal does not mention '$fragment', so a reader " +
+                   "would not know what collided or where to look: $msg")
+        }
+    }
+
+    # b. The ordinary case must stay silent, or every sweep would throw.
+    if (& $cadenceFired 500 500 'none' 6) {
+        throw '-SelfTest 6/6 FAILED: an untouched cadence of 500 was reported as reassigned.'
+    }
+
+    # c. THE ABLATION REWRITE IS LICENSED. -Ablate with -ReportEvery landing on UPDATE_INTERVAL is
+    # rewritten to INTERVAL + 1, because on_nth_tick handlers are keyed by period and the two would
+    # collide. The guard must not fire on the one rewrite the script makes on purpose.
+    if (& $cadenceFired 7 6 'collectorless' 6) {
+        throw ('-SelfTest 6/6 FAILED: the licensed -Ablate rewrite to UPDATE_INTERVAL + 1 was ' +
+               'called a reassignment. Every ablation run would throw.')
+    }
+
+    # d. AND THE LICENCE IS NARROW. Any other value under -Ablate is still a reassignment; a licence
+    # that admitted anything would make the guard vacuous exactly where the rewrite happens.
+    if (-not (& $cadenceFired 9 6 'collectorless' 6)) {
+        throw ('-SelfTest 6/6 FAILED: -Ablate licensed a cadence of 9 where only UPDATE_INTERVAL + 1 ' +
+               'is rewritten. The licence has to name the value, not the mode.')
+    }
+    # The same value WITHOUT -Ablate is not licensed either, or the check would be reading the
+    # number and ignoring the mode.
+    if (-not (& $cadenceFired 7 6 'none' 6)) {
+        throw '-SelfTest 6/6 FAILED: INTERVAL + 1 was licensed with -Ablate none, where nothing rewrites it.'
+    }
+
+    # e. THE -Ticks HALVING IS INVISIBLE TO THE GUARD, and that is a fact about ORDER rather than
+    # about this function: $reportAsked is snapshotted BELOW the halving, so a short run's rewritten
+    # cadence is what gets asked for. Moving the snapshot above the halving would make every
+    # -Ticks 1000 sweep throw, so the order is asserted here rather than trusted.
+    $src = Get-Content $PSCommandPath -Raw
+    $halve = $src.IndexOf('if ($ReportEvery -ge $Ticks)')
+    $snap  = $src.IndexOf('$reportAsked = $ReportEvery')
+    if ($halve -lt 0 -or $snap -lt 0) {
+        throw ('-SelfTest 6/6 FAILED: could not find the -Ticks halving or the $reportAsked ' +
+               'snapshot in this script, so their order could not be checked.')
+    }
+    if ($snap -lt $halve) {
+        throw ('-SelfTest 6/6 FAILED: $reportAsked is snapshotted ABOVE the -ReportEvery -ge -Ticks ' +
+               'halving, so every run short enough to be halved would trip the guard.')
+    }
+    # And the halved pair itself passes, which is what that order buys.
+    if (& $cadenceFired 500 500 'none' 6) {
+        throw '-SelfTest 6/6 FAILED: a halved cadence equal to what was asked was reported as reassigned.'
+    }
+
+    Write-Host ('  6/6 ok: a cadence of 5 against 500 is refused and the refusal names both and the ' +
+                'case hint; 500 against 500 is not; the -Ablate rewrite to INTERVAL + 1 is licensed ' +
+                'and nothing else is; the -Ticks halving is snapshotted below.')
 
     Write-Host '-SelfTest: PASS'
     return
@@ -1943,12 +2060,7 @@ end)
     # licensed change between the snapshot and here; anything else means something reassigned the
     # parameter, which is exactly how the census came to run a hundred times too often and put
     # 2.18 us per reactor of instrumentation into every figure the harness published.
-    $licensed = ($Ablate -ne 'none' -and $ReportEvery -eq $interval + 1)
-    if ($ReportEvery -ne $reportAsked -and -not $licensed) {
-        throw ("the rig's census cadence is $ReportEvery but -ReportEvery asked for $reportAsked. " +
-               'Something reassigned it after the parameter block -- check for a variable whose ' +
-               'name differs only in case, which PowerShell does not distinguish.')
-    }
+    Assert-CensusCadence -Actual $ReportEvery -Asked $reportAsked -Ablate $Ablate -Interval $interval
     $lua = $lua.Replace('__COUNT__', "$Count").Replace('__GRID__', "$grid").
                 Replace('__REPORT__', "$ReportEvery").Replace('__GAP__', "$Gap").
                 Replace('__PLASMAFEED__', (Write-PlasmaFeed -RigDirectory $rigDir)).
