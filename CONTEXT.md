@@ -56,6 +56,27 @@ reruns. Neither ships: a model is not a sprite, so ADR 0023 keeps it out of Asse
 **Regenerate** — rebuild a model from its look note, discarding the stored one. An explicit option,
 never the default: the default is to render the model that exists, so that hand edits survive.
 
+**Socket** — the drawn fitting where a pipe connection meets a machine: a bare-metal stub running
+from the body to the footprint edge on the connection's tile, carrying one **accent** band of the
+fluid it names. **A socket is a drawing and a connection is a declaration** — the prototype declares
+the connection, the model draws the socket, and a manifest is what holds the two together. Since
+[ADR 0036](docs/adr/0036-every-socket-is-drawn-at-pipe-height.md) every socket on every machine is
+drawn at one height and one thickness, vanilla's pipe's; `models/house-style.md` carries the
+figures.
+
+**Plumbable** — of a connection: one a player can put an ordinary pipe on. The exact negation of
+**contained** under Plumbing below, and read off the same field — `connection_category` — never off
+a list of fluids or of machines. It is the word the art side of that distinction is made in: a
+plumbable socket wears a dark rim and a flange pair at its mouth, a contained one wears neither, and
+since ADR 0036 that absence is the whole of what tells them apart on a machine.
+
+**Pipe cover** — vanilla's own sprite, drawn flat on the ground at a connection's tile by the engine
+from the `pipe_covers` a fluid box declares. **Not part of a socket, and not drawn by us**: a
+machine's model knows nothing about it, which is how a contained socket drawn at the machine's own
+height came to wear one 0.377 tiles below itself
+([#390](https://github.com/trulsjo/realistic-fusion-refreshed/issues/390)). A contained box keeps
+its declaration, provisionally (ADR 0036).
+
 **Accent** — the colour a fluid puts on a machine: a band on a socket, a ring on a drum, any
 surface `models/house-style.md`'s Palette gives a fluid's colour to. **It is read against its
 neighbour, not recognised on its own** ([ADR
@@ -473,6 +494,9 @@ defect, and telling the two apart is what
 can build joins them but plumbing that shares it. Three fluids take a category of their own —
 plasma, and the two reactor energies — and they are **separate** categories, so being contained is
 not one club: a plasma line and an energy line cannot join each other either.
+
+**Plumbable** under Art above is its exact negation, and is the word to reach for when the subject
+is how a connection is drawn rather than what can join it.
 
 Say it of the fluid or of the box, never of the entity. Containment is declared per box, and the
 entities carry a mixture: a reactor's plasma box and its energy box are contained under different

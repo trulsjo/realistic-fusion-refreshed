@@ -198,12 +198,13 @@ effects actually mean: how far the surface faces up. `mat` in
 
 Every pipe connection gets a **socket** baked into the structure: a bare-metal stub from the body
 to the footprint edge on the connection's tile, with one accent band of the fluid it carries, and
--- on a socket a player can plumb -- a flange pair at its mouth (#351, below).
+-- on a socket a player can plumb -- a dark rim and a flange pair at its mouth (#351, below). Those
+two are the whole of what tells a plumbable socket from a contained one (ADR 0036, below).
 
-**A SOCKET A PLAYER CAN PLUMB IS DRAWN LIKE THE PIPE THAT PLUGS INTO IT** -- height and thickness
-both, and both are measured rather than chosen (Truls, 2026-09-13 and 2026-09-14). It was radius
-0.3 at height 0.55 on both machines that had one, and the join was a visible step: the stub stood
-0.367 tiles higher on screen than the pipe and drew a quarter thicker.
+**EVERY SOCKET IS DRAWN LIKE A VANILLA PIPE** -- height and thickness both, and both are measured
+rather than chosen (Truls, 2026-09-13 and 2026-09-14). It was radius 0.3 at height 0.55 on both
+machines that had one, and the join was a visible step: the stub stood 0.367 tiles higher on screen
+than the pipe and drew a quarter thicker.
 `scripts/probe-socket-height.ps1` is the rig that showed it and took the numbers below.
 
 The arithmetic, stated because the easy version of it is wrong. This camera maps depth 1:1 and
@@ -228,6 +229,31 @@ measures the reference off vanilla's own sheet rather than carrying a number, an
 holds `rf_blender.SOCKET_Z` against that measurement to a quarter of a pixel. **The two can no
 longer part in silence, which is the part of this that outlives the number.**
 
+**A CONTAINED CONNECTION IS DRAWN THE SAME WAY, and is told apart by what it does not wear**
+(ADR 0036, #391). One height, one thickness, one constant, for every socket on every machine --
+`rf_blender.SOCKET_Z` and 0.249, whatever a connection's `connection_category` says. What a
+contained socket does NOT get is the dark rim and the flange pair, and since ADR 0036 that absence
+is the distinction rather than a side effect of there being no pipe to borrow a cue from. It draws
+a stub and an accent band and nothing else.
+
+**The height was never chosen, which is why it could be taken away.** Until #391 a contained socket
+sat at 0.55 with radius 0.3 -- the numbers every socket had before #349, kept rather than picked
+when the plumbable ones moved. The paragraph this replaced said the difference was recorded here
+*"because the obvious next thing anyone will want to do is level them"*, and that turned out to be
+exactly right.
+
+> **Superseded, 2026-09-17 (#391).** The reading this paragraph records is no longer true of the
+> machine, and it is kept rather than restated so the reasoning that stood on it can still be read.
+>
+> rf-heat-exchanger is the machine that shows what that costs, and **it has now been brought over**
+> (#343, at the height #356 corrected): its water pair and its steam outlet are at 0.033 and 0.249,
+> and its three reactor-energy connections kept the 0.55 and 0.3 they have always had. So that
+> machine carries a water socket and an energy socket two tiles apart on the same short end AT
+> DIFFERENT HEIGHTS AND DIFFERENT THICKNESSES. That is the rule working rather than a slip.
+>
+> Since ADR 0036 all six are at 0.033 and 0.249, and the two are told apart by the rim and the
+> flange pair instead.
+
 **THE SOCKET GOES THROUGH THE FLOOR, AND THE FLOOR GETS A HOLE.** At that height a socket's tube
 reaches below the plinth's top, so it enters the structure instead of floating over it. That trade
 is deliberate: *"Going below the floor is preferable to this look. If intersecting the floor, the
@@ -235,26 +261,28 @@ floor should have a modelled hole for the pipe"* (Truls, 2026-09-14). The openin
 rimmed, so it reads as a fitting rather than a bite out of the stone, and an internal run that
 would otherwise be buried turns down through its own rimmed opening in the deck instead.
 
-**A CONTAINED CONNECTION IS EXEMPT, and the exemption is the point.** ADR 0018's contained fluids
-meet a machine FACE, never a pipe -- no pipe, tank, wagon or pump a player can build will join one.
-Matching those to a vanilla pipe would match them to something that cannot exist. So the rule binds
-a connection left `default` and no other.
-
-rf-heat-exchanger is the machine that shows what that costs, and **it has now been brought over**
-(#343, at the height #356 corrected): its water pair and its steam outlet are at 0.033 and 0.249,
-and its three reactor-energy connections kept the 0.55 and 0.3 they have always had. So that machine carries a water socket and
-an energy socket two tiles apart on the same short end AT DIFFERENT HEIGHTS AND DIFFERENT
-THICKNESSES. That is the rule working rather than a slip, and it is written down here because the
-obvious next thing anyone will want to do is level them.
-
-**Exempt is not the same as bound by a different rule.** The contained three keep the machine's old
-numbers rather than taking new ones: nothing they meet is a pipe, so there is nothing to measure
-them against, and a look chosen for them would be a decision nobody has been asked for.
+**A CONTAINED SOCKET GETS THE HOLE AND NOT THE RIM** (ADR 0036, #391). At 0.55 with radius 0.3 its
+underside rested on the slab top at 0.25 and it needed no opening at all; at 0.033 with radius 0.249
+it reaches to -0.216 and needs the same one every other socket has. The rim does not come with it,
+because the rim is half the cue that says a socket is plumbable. **That is the one place where the
+paragraph above is knowingly not honoured**, and it is a bet: an unrimmed opening may read as a bite
+out of the stone, which is the defect the rim exists to prevent. If the frames show it, the fix is a
+rim in the tube's own metal rather than in `dark` -- one material argument, and an edit to
+`tools/check-socket-parts.py`, which expects a contained socket to wear neither rim nor ribs.
 
 **What it costs, recorded so it is not rediscovered as a surprise.** An accent band on a thinner
 stub at pipe height is a thin ring at the machine's edge, not the raised collar it was, and the
 accents are what tell a player which socket carries what. If that goes too far, the band can stay
-proud while the tube stays thin; they are separate numbers.
+proud while the tube stays thin; they are separate numbers. **Since ADR 0036 that bites hardest on
+a CONTAINED socket**, where the rim and the ribs are gone and the band is the only thing left naming
+the face. It is left to the frames rather than pre-empted, and #359 is the better home for it if it
+turns out to be a finding about accents generally.
+
+**THE COVER IS VANILLA'S, AND ON A CONTAINED BOX THAT IS PROVISIONAL.** A levelled socket is
+concentric with the `pipe_covers` the engine draws flat on the ground at its tile, so the 0.377-tile
+miss #390 measured -- 12.0 px at zoom 1 -- goes without anything being drawn. Keeping the
+declaration on a contained box is a decision Truls made on 2026-09-17 **and explicitly left open**;
+ADR 0036 says what would reopen it and what must be measured first.
 
 **IT USED TO DRAW MORE PROUD AT THE TOP THAN AT THE BOTTOM, AND SINCE ADR 0035 IT DOES NOT.**
 Truls saw the asymmetry on the #353 frames, read it as "flush at the bottom, but not at the top",
