@@ -244,10 +244,12 @@
     THE SEVENTH IS THE DISCARD ITSELF (#326, ADR 0037). Finding a stalled run and then pooling it
     into the figure anyway is the same silent failure one step later, and it is a different piece
     of machinery from the detector: Select-SurvivingSamples takes the run's ticks out of the pool,
-    Assert-SurvivingRuns decides whether what is left is worth reporting. Three directions -- a
+    Get-SurvivingRunsRefusal decides whether what is left is worth reporting. Three directions -- a
     stalled run's ticks are gone and the mean is the clean one, a sitting with nothing to discard is
-    returned untouched so no published figure moves, and a row reduced to one surviving run refuses
-    while two is allowed with a warning.
+    returned untouched so no published figure moves, and a row reduced to one surviving run is
+    refused while two is allowed with a warning. The refusal is RETURNED rather than thrown, and
+    that is asserted too: a throw from inside the sweep would take every count already measured
+    with it.
 
     Those seven and no more, because every one of them produces a confident wrong answer rather than
     an error, and three of the first four produce the SAME wrong answer by different routes: a
@@ -1014,33 +1016,42 @@ function Select-SurvivingSamples {
     return ,$out
 }
 
-function Assert-SurvivingRuns {
-    <#  Whether a row still rests on enough runs to be worth reporting once the stalled ones are
-        gone (#326, ADR 0037). Pure, and lifted out for the same reason as Assert-CensusCadence:
-        a -SelfTest half can reach it without a game, a save or a dump.
+function Get-SurvivingRunsRefusal {
+    <#  Why a row should not be reported once its stalled runs are gone, or $null when it should
+        (#326, ADR 0037). Pure, and lifted out for the same reason as Assert-CensusCadence: a
+        -SelfTest half can reach it without a game, a save or a dump.
 
         THE FLOOR IS TWO SURVIVING RUNS, AND IT APPLIES ONLY WHERE SOMETHING WAS TAKEN AWAY.
         -Runs 1 asks for one run and Find-StalledRuns cannot decide there -- it reports nothing
         rather than guessing -- so a single run nobody discarded from is the status quo and is left
         alone. What is refused is a sitting REDUCED to one run by discards: a mean over one
         surviving run has no peer left to judge it against, and printing it anyway is the quiet
-        pass this whole mechanism exists to stop.  #>
+        pass this whole mechanism exists to stop.
+
+        IT RETURNS THE REFUSAL RATHER THAN THROWING IT, AND THAT IS THE WHOLE REASON THIS IS NOT AN
+        Assert-. A refusal is discovered inside the per-count sweep, and a bare throw there takes
+        every count already measured with it -- the fault the $missingBaseline note below the
+        tables was written to stop, for a sweep that can run for tens of minutes. The caller drops
+        the refused row, keeps the rest, prints the tables, and raises the fault at the end. Which
+        is also what "the count refuses" was always meant to mean: that count reports nothing, not
+        that the sitting is destroyed.  #>
     param(
         [Parameter(Mandatory)] [int] $Reactors,
         [Parameter(Mandatory)] [int] $Runs,
         [Parameter(Mandatory)] [AllowEmptyCollection()] [int[]] $Drop
     )
-    if (-not $Drop.Count) { return }
+    if (-not $Drop.Count) { return $null }
     $surviving = $Runs - $Drop.Count
     if ($surviving -lt 2) {
-        throw ("n = $Reactors kept $surviving of $Runs runs -- run(s) $($Drop -join ', ') stalled. " +
-               'A pooled mean over one surviving run has nothing left to be judged against, so no ' +
-               'figure is reported for this count. Re-take it with more runs; see ADR 0037.')
+        return ("n = $Reactors kept $surviving of $Runs runs -- run(s) $($Drop -join ', ') stalled. " +
+                'A pooled mean over one surviving run has nothing left to be judged against, so no ' +
+                'figure is reported for this count. Re-take it with more runs; see ADR 0037.')
     }
     if ($surviving -eq 2) {
         Write-Warning ("n = $Reactors is pooled over 2 surviving runs of $Runs. That is the floor " +
                        'rather than a margin -- re-take this count if anything turns on it.')
     }
+    return $null
 }
 
 
@@ -1407,9 +1418,18 @@ if ($SelfTest) {
 
     # The floor. Four of five gone leaves one, which is refused; three of five leaves two, which is
     # allowed. And -Runs 1, where nothing was discarded, is not the same case and is not refused.
+    #
+    # THE REFUSAL IS RETURNED, NOT THROWN, AND THAT IS ASSERTED HERE RATHER THAN ASSUMED. A throw
+    # from inside the per-count sweep takes every count already measured with it, which is the
+    # fault the $missingBaseline note was written to stop; a regression to throwing would pass
+    # every other check in this file.
     $refusal = $null
-    try { Assert-SurvivingRuns -Reactors 200 -Runs 5 -Drop ([int[]] @(1, 2, 3, 4)) }
-    catch { $refusal = "$($_.Exception.Message)" }
+    try { $refusal = Get-SurvivingRunsRefusal -Reactors 200 -Runs 5 -Drop ([int[]] @(1, 2, 3, 4)) }
+    catch {
+        throw ('-SelfTest 7/7 FAILED: the floor THREW instead of returning its refusal. Inside the ' +
+               'sweep that throw takes every count already measured with it -- the fault the ' +
+               "missing-baseline note exists to stop. It said: $($_.Exception.Message)")
+    }
     if (-not $refusal) {
         throw ('-SelfTest 7/7 FAILED: a row reduced to ONE surviving run was reported. A mean over ' +
                'one run has no peer left to judge it against, which is the quiet pass ADR 0037 ' +
@@ -1418,10 +1438,16 @@ if ($SelfTest) {
     if (-not $refusal.Contains('200')) {
         throw "-SelfTest 7/7 FAILED: the refusal does not name the count it applies to: $refusal"
     }
-    Assert-SurvivingRuns -Reactors 200 -Runs 5 -Drop ([int[]] @(1, 2, 3)) -WarningAction SilentlyContinue
-    Assert-SurvivingRuns -Reactors 200 -Runs 1 -Drop ([int[]] @())
+    if (Get-SurvivingRunsRefusal -Reactors 200 -Runs 5 -Drop ([int[]] @(1, 2, 3)) -WarningAction SilentlyContinue) {
+        throw '-SelfTest 7/7 FAILED: two surviving runs were refused. Two is the floor, not below it.'
+    }
+    if (Get-SurvivingRunsRefusal -Reactors 200 -Runs 1 -Drop ([int[]] @())) {
+        throw ('-SelfTest 7/7 FAILED: -Runs 1 was refused. Nothing was discarded there and the ' +
+               'detector cannot decide with no peer, so it is the status quo rather than a floor breach.')
+    }
     Write-Host ('  7/7 ok: a stalled run leaves the pool and the mean is the clean one; a clean ' +
-                'sitting is untouched; one surviving run refuses and two does not.')
+                'sitting is untouched; one surviving run is refused by return rather than by ' +
+                'throw, and two is not refused.')
 
     Write-Host '-SelfTest: PASS'
     return
@@ -2310,7 +2336,9 @@ function New-TimingRow {
 
     $stalled = @(Find-StalledRuns -Samples $Columns['scriptUpdate'] -Ticks $Ticks -Runs $Runs)
     $drop    = [int[]] @($stalled | ForEach-Object { $_.Run })
-    Assert-SurvivingRuns -Reactors $Reactors -Runs $Runs -Drop $drop
+    # Carried on the row rather than thrown from here. The caller decides what to do with a row it
+    # cannot report, and a sweep drops it and carries on -- see Get-SurvivingRunsRefusal.
+    $refusal = Get-SurvivingRunsRefusal -Reactors $Reactors -Runs $Runs -Drop $drop
 
     $row = [ordered]@{
         # Samples is what the pooled figures below were actually taken over, which after a discard
@@ -2318,8 +2346,9 @@ function New-TimingRow {
         Reactors = $Reactors; Samples = ($Columns['scriptUpdate'].Count - $drop.Count * $Ticks)
         State = $State
         # The stalls themselves, not merely their run numbers, so the report can name the tick and
-        # the cost without running the detector a second time.
-        Stalls = $stalled; SurvivingRuns = ($Runs - $drop.Count)
+        # the cost without running the detector a second time. Refusal is $null on a row that may
+        # be reported and the reason on one that may not.
+        Stalls = $stalled; SurvivingRuns = ($Runs - $drop.Count); Refusal = $refusal
         CpuPerf = $Cpu; CpuLoad = $Load
         # Per run rather than pooled, because that is the axis drift lives on. The median for
         # wholeUpdate -- the machine's own indicator, and the one a load spike would otherwise
@@ -2338,6 +2367,16 @@ function New-TimingRow {
                         ForEach-Object { ($_ | Measure-Object -Average).Average })
     }
     foreach ($c in $REPORT) {
+        # NaN on a refused row, in the data as well as in the prose. Two reasons, and the second is
+        # not hypothetical: a figure over one surviving run is exactly what the floor exists to stop
+        # being quoted, and where EVERY run stalled -- possible, since stalls at different indices
+        # flag independently -- the surviving set is empty and Measure-Object averages it to $null,
+        # which prints as a mean of 0,00 us. A zero that looks measured is worse than no number.
+        if ($refusal) {
+            $row["$c.median"] = [double]::NaN
+            $row["$c.mean"]   = [double]::NaN
+            continue
+        }
         $kept = Select-SurvivingSamples -Values $Columns[$c] -Ticks $Ticks -Runs $Runs -Drop $drop
         $row["$c.median"] = (Get-Median $kept) / 1000.0   # ns -> us
         $row["$c.mean"]   = (($kept | Measure-Object -Average).Average) / 1000.0
@@ -2371,6 +2410,11 @@ function Write-RunLines {
 
     if (-not $Row.Stalls.Count) { return }
 
+    # A refused row prints its reason where a reportable one prints its figure. Deliberately not a
+    # number: the point of the refusal is that this count has no figure worth quoting, so printing
+    # one under a warning would put the thing being refused on the page anyway.
+    if ($Row.Refusal) { Write-Warning $Row.Refusal }
+
     foreach ($st in $Row.Stalls) {
         $msg = ("run {0} spent {1:N1} ms inside scriptUpdate on tick {2} alone, and no other " +
                 'run spends anything like it on that tick. That is the machine blocking, not ' +
@@ -2379,6 +2423,8 @@ function Write-RunLines {
         Write-Warning ($msg -f $st.Run, ($st.WorstMicroseconds / 1000.0), $st.Tick,
                               ($st.WorstMicroseconds / $Ticks))
     }
+
+    if ($Row.Refusal) { return }
 
     # What the row WOULD have said, so the size of the correction is on the record rather than
     # inferable only by someone who kept the old script. Pooling every run is what this harness did
@@ -2926,15 +2972,25 @@ if ($Save) {
 
         $row = New-TimingRow -Columns $cols -Reactors $reactorCount -State $census -Cpu $cpu -Load $load
         Write-Host ''
-        Write-Host ("scriptUpdate median {0,8:N2} us  mean {1,8:N2} us   whole median {2,8:N2} us" -f
-            $row.'scriptUpdate.median', $row.'scriptUpdate.mean', $row.'wholeUpdate.median')
+        # A refused row prints no figure here or in the tables below, for the same reason the sweep
+        # leaves one out: the floor exists to stop a mean over one surviving run being quoted, and
+        # printing it under a warning quotes it. -Save measures one map, so there is no other count
+        # whose figures deferring would protect -- the fault still waits until the end, so the
+        # machine note, the mod attribution and the pipeline row all reach the caller.
+        if ($row.Refusal) {
+            Write-Host ("NO FIGURE -- {0} surviving run(s) of {1}" -f $row.SurvivingRuns, $Runs)
+        }
+        else {
+            Write-Host ("scriptUpdate median {0,8:N2} us  mean {1,8:N2} us   whole median {2,8:N2} us" -f
+                $row.'scriptUpdate.median', $row.'scriptUpdate.mean', $row.'wholeUpdate.median')
+        }
         # The runs, and whichever of them the row left out (#235, #326).
         Write-RunLines -Row $row -Columns $cols
         Write-MachineNote -Label 'save' -Cpu $cpu -Load $load -Why (
             'Nothing here is a difference against a baseline, so there is no subtraction that ' +
             'could have cancelled it out -- it is simply added to every figure below.')
 
-        Write-StatTables -Results @($row)
+        if (-not $row.Refusal) { Write-StatTables -Results @($row) }
 
         # ---- what the run cannot say, said rather than left to be inferred
         Write-Host ''
@@ -2969,7 +3025,8 @@ if ($Save) {
                         "here can separate them -- Factorio's per-mod time usage is a debug view " +
                         'in the client, not a --benchmark column.') -f ($others + $ourMods.Count)))
         }
-        if ($row.'wholeUpdate.mean' -gt 0) {
+        # Two shares of a refused row's own figures, so they go with the figures.
+        if (-not $row.Refusal -and $row.'wholeUpdate.mean' -gt 0) {
             Write-Host ((("  Lua is {0:N1}% of the average tick here, and the whole tick is {1:N2}% " +
                         'of a 16.67 ms budget.') -f
                         (100.0 * $row.'scriptUpdate.mean' / $row.'wholeUpdate.mean'),
@@ -2977,6 +3034,9 @@ if ($Save) {
         }
 
         Write-Output $row
+
+        # Last, as in the sweep: everything the run did produce is already in the caller's hands.
+        if ($row.Refusal) { throw $row.Refusal }
     }
     finally { Complete-Run }
 
@@ -3040,6 +3100,7 @@ try {
     Write-Host ''
 
     $results = @()
+    $refused = @()          # counts the floor took away from us, raised once the tables are out
     foreach ($count in $Counts) {
         Write-Rig -Count $count
         # $rigSave, not $save: PowerShell variable names are case-insensitive, so $save IS the
@@ -3263,14 +3324,27 @@ try {
         }
 
         $row = New-TimingRow -Columns $cols -Reactors $count -State "$state" -Cpu $cpu -Load $load
-        $results += $row
 
-        Write-Host ("n={0,-5} scriptUpdate median {1,8:N2} us  mean {2,8:N2} us   whole median {3,8:N2} us   {4}" -f
-            # Dot-and-quote, not [], because New-TimingRow hands back a pscustomobject: the [] form
-            # worked while the row was still an ordered hashtable here and silently yields nothing
-            # on an object, which printed this line with the numbers blank and no error at all.
-            $count, $row.'scriptUpdate.median', $row.'scriptUpdate.mean', $row.'wholeUpdate.median',
-            ("$state" -replace '^.*BENCH-RIG ', ''))
+        # A count whose surviving runs fell below the floor contributes NO ROW: it is left out of
+        # the tables and out of every per-reactor subtraction, which is what "the count refuses"
+        # means (ADR 0037). The sweep carries on, because the other counts are measured and a
+        # sitting can run for tens of minutes -- the fault is raised after the tables, beside the
+        # missing-baseline one and for the same reason.
+        if ($row.Refusal) {
+            $refused += $row
+            Write-Host ("n={0,-5} NO FIGURE -- {1} surviving run(s) of {2}   {3}" -f
+                $count, $row.SurvivingRuns, $Runs, ("$state" -replace '^.*BENCH-RIG ', ''))
+        }
+        else {
+            $results += $row
+            Write-Host ("n={0,-5} scriptUpdate median {1,8:N2} us  mean {2,8:N2} us   whole median {3,8:N2} us   {4}" -f
+                # Dot-and-quote, not [], because New-TimingRow hands back a pscustomobject: the []
+                # form worked while the row was still an ordered hashtable here and silently yields
+                # nothing on an object, which printed this line with the numbers blank and no error
+                # at all.
+                $count, $row.'scriptUpdate.median', $row.'scriptUpdate.mean', $row.'wholeUpdate.median',
+                ("$state" -replace '^.*BENCH-RIG ', ''))
+        }
         # Each benchmark run on its own, and whichever of them the row left out, so a count that
         # came out slow can be attributed to the machine or cleared of it on the spot (#235, #326).
         # See Split-Runs and Write-RunLines.
@@ -3360,9 +3434,24 @@ try {
     # The tables above are Write-Host, which "> file" does not capture. The rows go to the
     # pipeline as well so a caller can sort, export or diff them; writing a CSV into $temp would
     # have been worse than useless, since the finally block deletes it.
-    Write-Output $results
+    # A refused row is not in $results, so it is not in the tables and not in any subtraction --
+    # but it did happen, and a caller sorting the pipeline should see it. Emitted after the good
+    # rows so a reader taking the last row of a sweep does not take a refused one.
+    if ($refused.Count) { Write-Output $refused }
 
     # And only now the fault, with everything the run did manage to measure already in hand.
+    #
+    # BEFORE the missing-baseline throw, and that order is load-bearing: a refused n = 0 removes
+    # the baseline as a side effect, and the baseline message would then blame -Counts parsing for
+    # something the floor did. Refusals explain themselves; a missing baseline with no refusal
+    # behind it does not.
+    if ($refused.Count) {
+        throw (("{0} count(s) reported no figure because too few runs survived: {1}. Everything " +
+                'above is from the counts that did report, and is good. Re-take the refused ' +
+                "count(s) with more runs; see ADR 0037.") -f
+               $refused.Count, (($refused | ForEach-Object { "n = $($_.Reactors)" }) -join ', '))
+    }
+
     if ($missingBaseline) {
         # Parenthesised as one string before -f: -f binds tighter than +, so without them the
         # format applies to the last fragment only, which has no placeholder -- and the message
