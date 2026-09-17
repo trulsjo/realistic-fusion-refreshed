@@ -216,7 +216,7 @@
     a benchmark of a map with different prototypes is a benchmark of a different map.
 
 .PARAMETER SelfTest
-    Prove the six pieces of machinery here that can fail quietly, and exit. Needs no Factorio and
+    Prove the seven pieces of machinery here that can fail quietly, and exit. Needs no Factorio and
     no save. Four are -Save's. It parses a synthesised save header, including the wide encoding a
     version component only reaches at 255 and no real mod on hand has; it requires an unresolvable
     mod to be named rather than skipped; it requires a zip whose name merely BEGINS with the wanted
@@ -241,7 +241,15 @@
     trip. The guard was lifted out of Write-Rig to make this reachable at all; before #325 the only
     proof it fires was a hand-edited copy of this script that was committed nowhere.
 
-    Those six and no more, because every one of them produces a confident wrong answer rather than
+    THE SEVENTH IS THE DISCARD ITSELF (#326, ADR 0037). Finding a stalled run and then pooling it
+    into the figure anyway is the same silent failure one step later, and it is a different piece
+    of machinery from the detector: Select-SurvivingSamples takes the run's ticks out of the pool,
+    Assert-SurvivingRuns decides whether what is left is worth reporting. Three directions -- a
+    stalled run's ticks are gone and the mean is the clean one, a sitting with nothing to discard is
+    returned untouched so no published figure moves, and a row reduced to one surviving run refuses
+    while two is allowed with a warning.
+
+    Those seven and no more, because every one of them produces a confident wrong answer rather than
     an error, and three of the first four produce the SAME wrong answer by different routes: a
     run that loads the save without the mod the save names, reports a clean pass, and is believed. A
     mis-parsed header names the wrong mods. A mod list one entry short measures a map with a mod's
@@ -257,7 +265,17 @@
 
 .PARAMETER Runs
     Benchmark runs per count; the map reloads between them, so this samples process-level
-    variation rather than tick-level. Samples from every run are pooled.
+    variation rather than tick-level. Samples from every SURVIVING run are pooled -- a run the
+    machine blocked in is discarded before the pool, per row, and the report names it and says what
+    the figure would have been. See ADR 0037, Select-SurvivingSamples and Find-StalledRuns.
+
+    DEFAULTS TO FIVE, RAISED FROM THREE BY #326. Three is too thin to lose one from: a discard
+    leaves two, which is the floor, and below two the count refuses to report rather than pool a
+    mean with no peer left to judge it against. Two of three runs stalling on one tick is also the
+    case the detector was rewritten for, so a default that survives it is worth the extra minutes.
+
+    -Runs 1 is left alone. Find-StalledRuns cannot decide with no peer to compare against and
+    reports nothing, so a single run nobody discarded from is the status quo rather than a refusal.
 
 .PARAMETER Pooled
     Connect each row of reactors with rf-pipe so they share one fluid segment, which is how they
@@ -467,7 +485,7 @@ param(
     [switch] $SelfTest,
     [ValidateRange(0, 100000)]        [int[]] $Counts = @(0, 1, 10, 50, 200),
     [ValidateRange(1, [int]::MaxValue)] [int] $Ticks  = 1000,
-    [ValidateRange(1, [int]::MaxValue)] [int] $Runs   = 3,
+    [ValidateRange(1, [int]::MaxValue)] [int] $Runs   = 5,
     [switch] $Pooled,
     [switch] $Mixed,
     [switch] $Collectors,
@@ -699,7 +717,7 @@ function Resolve-SaveMods {
         #
         # The -ccontains above is the same rule on the same grounds. Found in review, in the zip
         # branch; the directory branch had it too, because Test-Path folds case for a directory
-        # exactly as it does for a file. -SelfTest 4/6 holds both shut with one decoy each.
+        # exactly as it does for a file. -SelfTest 4/7 holds both shut with one decoy each.
         $found = $null
         $wantedDir = "$($mod.Name)_$($mod.Version)"
         # -LiteralPath because a mod directory's own path may contain brackets, which -Path would
@@ -726,7 +744,7 @@ function Resolve-SaveMods {
             # rather than trusted. `-Filter "LTN_*.zip"` matches LTN_Combinator_2.0.1.zip, so a save
             # wanting LTN on a machine that has only the Combinator would resolve LTN to the
             # Combinator's zip and be reported RESOLVED -- the same silent failure the case rule
-            # above describes, by a third route. Found in review; -SelfTest 3/6.
+            # above describes, by a third route. Found in review; -SelfTest 3/7.
             #
             # -Filter is the file system's own glob and folds case like the rest of NTFS, so it can
             # only ever return a superset here. The -cmatch is what narrows it back.
@@ -912,7 +930,7 @@ function Find-StalledRuns {
 
     # No comma-wrapping on the returns. ",$out" exists to stop PowerShell unrolling a single-item
     # result, but on an EMPTY array it produces a one-item wrapper instead -- so @(Find-StalledRuns
-    # ...) counted a clean sitting as one stalled run, and -SelfTest 5/6 caught it. Callers wrap in
+    # ...) counted a clean sitting as one stalled run, and -SelfTest 5/7 caught it. Callers wrap in
     # @() instead, which gives 0 for nothing and 1 for one.
     $out = @()
     if ($Runs -lt 2) { return $out }
@@ -925,12 +943,14 @@ function Find-StalledRuns {
             if ($us -lt $StallMicroseconds -or $us -le $worstUs) { continue }
             # The same tick index everywhere else, compared against the FASTEST of them.
             #
-            # THE MEDIAN WAS WRONG HERE AND THE DEFAULT IS WHERE IT BROKE. -Runs defaults to 3, so
-            # a median over two peers is their mean, and one other stalled run drags it up by half
-            # the stall. Measured: two of three runs stalling at the same index reported NOTHING,
-            # and so did two of two. That is not a corner -- stalls land on census ticks, and at
-            # -ReportEvery 500 with -Ticks 1000 a run has only two of those, so two stalls in a
-            # default sitting collide on one index about half the time and both vanish.
+            # THE MEDIAN WAS WRONG HERE AND THE DEFAULT IS WHERE IT BROKE. -Runs defaulted to 3
+            # when this was written, so a median over two peers is their mean, and one other
+            # stalled run drags it up by half the stall. Measured: two of three runs stalling at
+            # the same index reported NOTHING, and so did two of two. That is not a corner --
+            # stalls land on census ticks, and at -ReportEvery 500 with -Ticks 1000 a run has only
+            # two of those, so two stalls in a short sitting collide on one index about half the
+            # time and both vanish. (The default is 5 since #326, which widens the margin and does
+            # not close the hole: three of five peers stalling would do the same thing.)
             #
             # The minimum has no such hole: if ANY other run is fast at this index, the tick is not
             # work. It cannot cry wolf on reproducible work either, because work that repeats is
@@ -956,6 +976,71 @@ function Find-StalledRuns {
         }
     }
     return $out
+}
+
+function Select-SurvivingSamples {
+    <#  The pooled samples with every stalled run's ticks taken out of them (#326, ADR 0037).
+
+        THIS IS WHAT "POOLED MEAN" NOW MEANS HERE: the mean over every tick of every run the
+        machine did not block in. A stall is not a cost -- it is four tenths of a second of file
+        system, divided by a thousand ticks and reported as +389 us of per-tick work -- so it is
+        removed before anything is pooled rather than averaged in or medianed away. On a clean
+        sitting nothing is dropped and the figure is exactly what it always was, which is why no
+        previously published figure changes meaning.
+
+        PER ROW, NOT PER SWEEP. Run 3 at n = 0 and run 3 at n = 200 are separate processes with the
+        map reloaded between them and share nothing but an index, so a clean run is never thrown
+        away because a different count stalled.
+
+        A dump that cannot be split is left whole. Split-Runs returns nothing when the sample count
+        does not match Ticks * Runs, which is also the case where Find-StalledRuns finds nothing --
+        so $Drop is empty there anyway and this is belt and braces rather than a second policy.  #>
+    param(
+        [Parameter(Mandatory)] [System.Collections.Generic.List[double]] $Values,
+        [Parameter(Mandatory)] [int] $Ticks,
+        [Parameter(Mandatory)] [int] $Runs,
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [int[]] $Drop
+    )
+    if (-not $Drop.Count) { return ,$Values }
+    $byRun = @(Split-Runs $Values $Ticks $Runs)
+    if (-not $byRun.Count) { return ,$Values }
+    $out = [System.Collections.Generic.List[double]]::new()
+    for ($r = 0; $r -lt $byRun.Count; $r++) {
+        if ($Drop -notcontains ($r + 1)) { $out.AddRange($byRun[$r]) }
+    }
+    # Comma-wrapped, or PowerShell unrolls the list into the pipeline and the caller gets loose
+    # doubles instead of the collection -- the same shape of bug the ",$out" note in
+    # Find-StalledRuns records from the other direction.
+    return ,$out
+}
+
+function Assert-SurvivingRuns {
+    <#  Whether a row still rests on enough runs to be worth reporting once the stalled ones are
+        gone (#326, ADR 0037). Pure, and lifted out for the same reason as Assert-CensusCadence:
+        a -SelfTest half can reach it without a game, a save or a dump.
+
+        THE FLOOR IS TWO SURVIVING RUNS, AND IT APPLIES ONLY WHERE SOMETHING WAS TAKEN AWAY.
+        -Runs 1 asks for one run and Find-StalledRuns cannot decide there -- it reports nothing
+        rather than guessing -- so a single run nobody discarded from is the status quo and is left
+        alone. What is refused is a sitting REDUCED to one run by discards: a mean over one
+        surviving run has no peer left to judge it against, and printing it anyway is the quiet
+        pass this whole mechanism exists to stop.  #>
+    param(
+        [Parameter(Mandatory)] [int] $Reactors,
+        [Parameter(Mandatory)] [int] $Runs,
+        [Parameter(Mandatory)] [AllowEmptyCollection()] [int[]] $Drop
+    )
+    if (-not $Drop.Count) { return }
+    $surviving = $Runs - $Drop.Count
+    if ($surviving -lt 2) {
+        throw ("n = $Reactors kept $surviving of $Runs runs -- run(s) $($Drop -join ', ') stalled. " +
+               'A pooled mean over one surviving run has nothing left to be judged against, so no ' +
+               'figure is reported for this count. Re-take it with more runs; see ADR 0037.')
+    }
+    if ($surviving -eq 2) {
+        Write-Warning ("n = $Reactors is pooled over 2 surviving runs of $Runs. That is the floor " +
+                       'rather than a margin -- re-take this count if anything turns on it.')
+    }
 }
 
 
@@ -1047,11 +1132,11 @@ if ($SelfTest) {
         $try = Read-ModBlock -Buffer $buffer -Length $buffer.Length -Start $p
         if ($try -and $try[0].Name -ceq 'base') { $parsed = $try; break }
     }
-    if (-not $parsed) { throw '-SelfTest 1/6 FAILED: the parser found no mod list in a synthesised header.' }
+    if (-not $parsed) { throw '-SelfTest 1/7 FAILED: the parser found no mod list in a synthesised header.' }
     $got  = ($parsed | ForEach-Object { "$($_.Name) $($_.Version)" }) -join '; '
     $want = ($expected | ForEach-Object { "$($_.Name) $($_.Version -join '.')" }) -join '; '
-    if ($got -cne $want) { throw "-SelfTest 1/6 FAILED: parsed '$got', expected '$want'." }
-    Write-Host "  1/6 ok: parsed '$got', wide-encoded version included."
+    if ($got -cne $want) { throw "-SelfTest 1/7 FAILED: parsed '$got', expected '$want'." }
+    Write-Host "  1/7 ok: parsed '$got', wide-encoded version included."
 
     # And the refusal. An empty directory resolves nothing, so every name in the list must come
     # back named -- a resolver that skipped what it could not find would hand the benchmark a map
@@ -1064,18 +1149,18 @@ if ($SelfTest) {
             Resolve-SaveMods -Wanted $parsed -SourceDirectory $emptyDir -Bundled @{} -Ours (Get-RepoMods) |
                 Out-Null
         } catch { $refused = "$($_.Exception.Message)" }
-        if (-not $refused) { throw '-SelfTest 2/6 FAILED: two unresolvable mods were accepted rather than refused.' }
+        if (-not $refused) { throw '-SelfTest 2/7 FAILED: two unresolvable mods were accepted rather than refused.' }
         foreach ($name in @('a-third-mod', 'wide')) {
             if (-not $refused.Contains($name)) {
-                throw "-SelfTest 2/6 FAILED: the refusal does not name '$name': $refused"
+                throw "-SelfTest 2/7 FAILED: the refusal does not name '$name': $refused"
             }
         }
         # base is the engine's and is deliberately not a mod anybody installs, so naming it would
         # send the reader looking for something that cannot be found.
         if ($refused.Contains('base ')) {
-            throw "-SelfTest 2/6 FAILED: the refusal names base, which is not an installable mod: $refused"
+            throw "-SelfTest 2/7 FAILED: the refusal names base, which is not an installable mod: $refused"
         }
-        Write-Host '  2/6 ok: both unresolved mods named, base not among them.'
+        Write-Host '  2/7 ok: both unresolved mods named, base not among them.'
 
         # And the refusal again, against the near miss rather than the empty directory. A zip
         # whose name merely STARTS with the wanted name plus an underscore is a different mod:
@@ -1093,14 +1178,14 @@ if ($SelfTest) {
                     Out-Null
             } catch { $refused = "$($_.Exception.Message)" }
             if (-not $refused) {
-                throw ('-SelfTest 3/6 FAILED: wide_Combinator_2.0.1.zip was accepted as the mod ' +
+                throw ('-SelfTest 3/7 FAILED: wide_Combinator_2.0.1.zip was accepted as the mod ' +
                        '"wide", so a save could be benchmarked with the wrong mod loaded and ' +
                        'nothing would say so.')
             }
             if (-not $refused.Contains('wide 1.2.300')) {
-                throw "-SelfTest 3/6 FAILED: the refusal does not name 'wide 1.2.300': $refused"
+                throw "-SelfTest 3/7 FAILED: the refusal does not name 'wide 1.2.300': $refused"
             }
-            Write-Host '  3/6 ok: a name_suffix_version.zip is not accepted as name.'
+            Write-Host '  3/7 ok: a name_suffix_version.zip is not accepted as name.'
         } finally { Remove-TempDirectory -Path $decoyDir -Label 'bench-reactors -SelfTest' }
 
         # And the near miss that is only a difference of CASE, which NTFS does not distinguish and
@@ -1120,18 +1205,18 @@ if ($SelfTest) {
                     Out-Null
             } catch { $refused = "$($_.Exception.Message)" }
             if (-not $refused) {
-                throw ('-SelfTest 4/6 FAILED: a mod called "Wide" was accepted as the mod "wide". ' +
+                throw ('-SelfTest 4/7 FAILED: a mod called "Wide" was accepted as the mod "wide". ' +
                        'Factorio reads a mod name from its own info.json and does not fold case, so ' +
                        "the save's real mod would have been absent from a run reported as clean.")
             }
             if (-not $refused.Contains('wide 1.2.300')) {
-                throw "-SelfTest 4/6 FAILED: the refusal does not name 'wide 1.2.300': $refused"
+                throw "-SelfTest 4/7 FAILED: the refusal does not name 'wide 1.2.300': $refused"
             }
-            Write-Host '  4/6 ok: neither Wide/ nor Wide_1.2.300.zip is accepted as wide.'
+            Write-Host '  4/7 ok: neither Wide/ nor Wide_1.2.300.zip is accepted as wide.'
         } finally { Remove-TempDirectory -Path $caseDir -Label 'bench-reactors -SelfTest' }
     } finally { Remove-TempDirectory -Path $emptyDir -Label 'bench-reactors -SelfTest' }
 
-    # 5/6: the stall detector, on the run that actually produced #235's effect -- and on the
+    # 5/7: the stall detector, on the run that actually produced #235's effect -- and on the
     # reproducible spike that made the first version of it useless.
     #
     # A REGRESSION HERE IS SILENT AND EXPENSIVE. If the detector stops firing, a poisoned run
@@ -1144,31 +1229,32 @@ if ($SelfTest) {
     $stall[876] = 389341000.0     # the real one: dump label t876 of run 6, 389.3 ms
     $found = @(Find-StalledRuns -Samples ($clean + $stall) -Ticks 1000 -Runs 2)
     if ($found.Count -ne 1 -or $found[0].Run -ne 2) {
-        throw ('-SelfTest 5/6 FAILED: expected run 2 of two to be flagged, got ' +
+        throw ('-SelfTest 5/7 FAILED: expected run 2 of two to be flagged, got ' +
                "$($found.Count) run(s). A run carrying a 389 ms tick must be flagged and a clean " +
                'one must not, or #235 can recur unseen.')
     }
     if ([Math]::Abs($found[0].WorstMicroseconds - 389341.0) -gt 1.0) {
-        throw ("-SelfTest 5/6 FAILED: reported worst tick $($found[0].WorstMicroseconds) us, " +
+        throw ("-SelfTest 5/7 FAILED: reported worst tick $($found[0].WorstMicroseconds) us, " +
                'expected 389341 us.')
     }
     if ($found[0].Tick -ne 876) {
-        throw ("-SelfTest 5/6 FAILED: reported tick $($found[0].Tick), expected 876. Tick is the " +
+        throw ("-SelfTest 5/7 FAILED: reported tick $($found[0].Tick), expected 876. Tick is the " +
                "dump's own t<n> label, which is 0-based -- reporting an ordinal instead sends the " +
                'reader one row past the stall.')
     }
 
-    # TWO runs stalling at the SAME index, at the default -Runs 3. This is the case the first
-    # version missed: it compared against the MEDIAN of the peers, which over two peers is their
-    # mean, so one stalled peer hid the other and a default sitting reported nothing. Stalls land
-    # on census ticks and a default run has only two of those, so the collision is ordinary rather
-    # than exotic.
+    # TWO runs stalling at the SAME index, over three runs -- the default when this half was
+    # written, and kept as the fixture because three is where the hole is tightest. This is the
+    # case the first version missed: it compared against the MEDIAN of the peers, which over two
+    # peers is their mean, so one stalled peer hid the other and the sitting reported nothing.
+    # Stalls land on census ticks and a 1,000-tick run has only two of those at cadence 500, so the
+    # collision is ordinary rather than exotic.
     $twoA = & $flat; $twoB = & $flat; $twoC = & $flat
     $twoA[400] = 120000000.0
     $twoB[400] = 118000000.0
     $two = @(Find-StalledRuns -Samples ($twoA + $twoB + $twoC) -Ticks 1000 -Runs 3)
     if ($two.Count -ne 2) {
-        throw ("-SelfTest 5/6 FAILED: two of three runs stalled on the same tick and $($two.Count) " +
+        throw ("-SelfTest 5/7 FAILED: two of three runs stalled on the same tick and $($two.Count) " +
                'were flagged. Comparing against the median of the peers lets one stalled run hide ' +
                'another; the fastest peer is the comparison that does not.')
     }
@@ -1178,7 +1264,7 @@ if ($SelfTest) {
     $dearA = & $flat; $dearA[500] = 5500000.0
     $dearB = & $flat; $dearB[500] = 5500000.0
     if (@(Find-StalledRuns -Samples ($dearA + $dearB) -Ticks 1000 -Runs 2).Count -ne 0) {
-        throw ('-SelfTest 5/6 FAILED: a 5.5 ms tick was called a stall. That is the simulation ' +
+        throw ('-SelfTest 5/7 FAILED: a 5.5 ms tick was called a stall. That is the simulation ' +
                'step at 200 reactors, so every blanketed sweep would report as poisoned.')
     }
 
@@ -1189,14 +1275,14 @@ if ($SelfTest) {
     $repA = & $flat; $repA[30] = 108000000.0
     $repB = & $flat; $repB[30] = 106000000.0
     if (@(Find-StalledRuns -Samples ($repA + $repB) -Ticks 1000 -Runs 2).Count -ne 0) {
-        throw ('-SelfTest 5/6 FAILED: a 108 ms tick present at the SAME index in every run was ' +
+        throw ('-SelfTest 5/7 FAILED: a 108 ms tick present at the SAME index in every run was ' +
                'called a stall. That is the rig''s own t = 30 spike, so every rig sweep would ' +
                'warn and the warning would stop being read.')
     }
-    Write-Host ('  5/6 ok: the 389 ms one-run stall is flagged at tick 876; two runs stalling ' +
+    Write-Host ('  5/7 ok: the 389 ms one-run stall is flagged at tick 876; two runs stalling ' +
                 'on one tick are both flagged; 5.5 ms of work is not, nor a 108 ms spike in every run.')
 
-    # 6/6 -- THE CENSUS CADENCE GUARD (#235, #325). The regression it stands against was a variable
+    # 6/7 -- THE CENSUS CADENCE GUARD (#235, #325). The regression it stands against was a variable
     # whose name differed from the -ReportEvery PARAMETER only in case, which PowerShell does not
     # distinguish: the rig's census then ran every 5 ticks rather than every 500, putting 2.18 us
     # per reactor of the harness's own instrumentation into every figure it published. The guard
@@ -1214,39 +1300,39 @@ if ($SelfTest) {
     # a. The collision itself. This is #235 reintroduced: something wrote 5 over the 500 that was asked for.
     $msg = & $cadenceFired 5 500 'none' 6
     if (-not $msg) {
-        throw ('-SelfTest 6/6 FAILED: a census cadence of 5 against -ReportEvery 500 was accepted. ' +
+        throw ('-SelfTest 6/7 FAILED: a census cadence of 5 against -ReportEvery 500 was accepted. ' +
                'That is #235 exactly, and it is the hundredfold regression this guard exists to stop.')
     }
     foreach ($fragment in @('5', '500', 'case')) {
         if ($msg -notmatch [regex]::Escape($fragment)) {
-            throw ("-SelfTest 6/6 FAILED: the refusal does not mention '$fragment', so a reader " +
+            throw ("-SelfTest 6/7 FAILED: the refusal does not mention '$fragment', so a reader " +
                    "would not know what collided or where to look: $msg")
         }
     }
 
     # b. The ordinary case must stay silent, or every sweep would throw.
     if (& $cadenceFired 500 500 'none' 6) {
-        throw '-SelfTest 6/6 FAILED: an untouched cadence of 500 was reported as reassigned.'
+        throw '-SelfTest 6/7 FAILED: an untouched cadence of 500 was reported as reassigned.'
     }
 
     # c. THE ABLATION REWRITE IS LICENSED. -Ablate with -ReportEvery landing on UPDATE_INTERVAL is
     # rewritten to INTERVAL + 1, because on_nth_tick handlers are keyed by period and the two would
     # collide. The guard must not fire on the one rewrite the script makes on purpose.
     if (& $cadenceFired 7 6 'collectorless' 6) {
-        throw ('-SelfTest 6/6 FAILED: the licensed -Ablate rewrite to UPDATE_INTERVAL + 1 was ' +
+        throw ('-SelfTest 6/7 FAILED: the licensed -Ablate rewrite to UPDATE_INTERVAL + 1 was ' +
                'called a reassignment. Every ablation run would throw.')
     }
 
     # d. AND THE LICENCE IS NARROW. Any other value under -Ablate is still a reassignment; a licence
     # that admitted anything would make the guard vacuous exactly where the rewrite happens.
     if (-not (& $cadenceFired 9 6 'collectorless' 6)) {
-        throw ('-SelfTest 6/6 FAILED: -Ablate licensed a cadence of 9 where only UPDATE_INTERVAL + 1 ' +
+        throw ('-SelfTest 6/7 FAILED: -Ablate licensed a cadence of 9 where only UPDATE_INTERVAL + 1 ' +
                'is rewritten. The licence has to name the value, not the mode.')
     }
     # The same value WITHOUT -Ablate is not licensed either, or the check would be reading the
     # number and ignoring the mode.
     if (-not (& $cadenceFired 7 6 'none' 6)) {
-        throw '-SelfTest 6/6 FAILED: INTERVAL + 1 was licensed with -Ablate none, where nothing rewrites it.'
+        throw '-SelfTest 6/7 FAILED: INTERVAL + 1 was licensed with -Ablate none, where nothing rewrites it.'
     }
 
     # e. THE -Ticks HALVING IS INVISIBLE TO THE GUARD, and that is a fact about ORDER rather than
@@ -1257,21 +1343,85 @@ if ($SelfTest) {
     $halve = $src.IndexOf('if ($ReportEvery -ge $Ticks)')
     $snap  = $src.IndexOf('$reportAsked = $ReportEvery')
     if ($halve -lt 0 -or $snap -lt 0) {
-        throw ('-SelfTest 6/6 FAILED: could not find the -Ticks halving or the $reportAsked ' +
+        throw ('-SelfTest 6/7 FAILED: could not find the -Ticks halving or the $reportAsked ' +
                'snapshot in this script, so their order could not be checked.')
     }
     if ($snap -lt $halve) {
-        throw ('-SelfTest 6/6 FAILED: $reportAsked is snapshotted ABOVE the -ReportEvery -ge -Ticks ' +
+        throw ('-SelfTest 6/7 FAILED: $reportAsked is snapshotted ABOVE the -ReportEvery -ge -Ticks ' +
                'halving, so every run short enough to be halved would trip the guard.')
     }
     # And the halved pair itself passes, which is what that order buys.
     if (& $cadenceFired 500 500 'none' 6) {
-        throw '-SelfTest 6/6 FAILED: a halved cadence equal to what was asked was reported as reassigned.'
+        throw '-SelfTest 6/7 FAILED: a halved cadence equal to what was asked was reported as reassigned.'
     }
 
-    Write-Host ('  6/6 ok: a cadence of 5 against 500 is refused and the refusal names both and the ' +
+    Write-Host ('  6/7 ok: a cadence of 5 against 500 is refused and the refusal names both and the ' +
                 'case hint; 500 against 500 is not; the -Ablate rewrite to INTERVAL + 1 is licensed ' +
                 'and nothing else is; the -Ticks halving is snapshotted below.')
+
+    # 7/7 -- THE DISCARD (#326, ADR 0037). Half 5 proves the stalled run is FOUND; this one proves
+    # it is taken out of the figure, and that a row left standing on too little says so.
+    #
+    # A REGRESSION HERE IS THE #235 FAILURE ONE STEP LATER. The detector fires, the warning prints,
+    # and the published mean still carries four tenths of a second of file system divided by a
+    # thousand ticks. The second direction matters as much as the first and is easier to lose: a
+    # clean sitting must come back untouched, because ADR 0037 rests on the two statistics being
+    # identical where nothing stalled -- if this filter ever trimmed a clean sitting, every figure
+    # in reactor-runtime-cost.md would silently stop meaning what it says.
+    Write-Host '-SelfTest: the discard, on the same recorded stall.'
+    $five = [System.Collections.Generic.List[double]]::new()
+    for ($r = 1; $r -le 5; $r++) {
+        for ($i = 0; $i -lt 1000; $i++) { $five.Add(11600.0) }
+    }
+    $five[2 * 1000 + 876] = 389341000.0      # run 3 of five, the recorded t876 stall
+
+    $stalls = @(Find-StalledRuns -Samples $five -Ticks 1000 -Runs 5)
+    if ($stalls.Count -ne 1 -or $stalls[0].Run -ne 3) {
+        throw "-SelfTest 7/7 FAILED: expected run 3 of five to be flagged, got $($stalls.Count) run(s)."
+    }
+    $kept = Select-SurvivingSamples -Values $five -Ticks 1000 -Runs 5 -Drop ([int[]] @(3))
+    if ($kept.Count -ne 4000) {
+        throw ("-SelfTest 7/7 FAILED: kept $($kept.Count) samples of an expected 4000. A discarded " +
+               "run's ticks must leave the pool entirely, or the mean still carries the stall.")
+    }
+    $keptMean = ($kept | Measure-Object -Average).Average
+    if ([Math]::Abs($keptMean - 11600.0) -gt 0.001) {
+        throw ("-SelfTest 7/7 FAILED: the surviving mean is $keptMean ns, expected 11600. The " +
+               'stall is still inside the figure.')
+    }
+    # And what it would have been, which is the number three sittings of #235 published: one 389 ms
+    # tick spread over 5,000 ticks is about +77.9 us a tick, on a real mean of 11.6.
+    $allMean = ($five | Measure-Object -Average).Average
+    if ($allMean -lt 85000.0) {
+        throw ("-SelfTest 7/7 FAILED: pooling all five runs averages $allMean ns, which is not the " +
+               'inflated figure this test is built on -- the fixture is wrong, not the code.')
+    }
+
+    # Nothing to discard: the same samples back, untouched. Identity of COUNT and of MEAN, because
+    # a filter that returned a copy of the right size but the wrong contents would pass on count.
+    $clean5 = Select-SurvivingSamples -Values $five -Ticks 1000 -Runs 5 -Drop ([int[]] @())
+    if ($clean5.Count -ne 5000 -or ($clean5 | Measure-Object -Average).Average -ne $allMean) {
+        throw ('-SelfTest 7/7 FAILED: a sitting with nothing discarded came back changed. Every ' +
+               'figure this harness has published depends on that being a no-op.')
+    }
+
+    # The floor. Four of five gone leaves one, which is refused; three of five leaves two, which is
+    # allowed. And -Runs 1, where nothing was discarded, is not the same case and is not refused.
+    $refusal = $null
+    try { Assert-SurvivingRuns -Reactors 200 -Runs 5 -Drop ([int[]] @(1, 2, 3, 4)) }
+    catch { $refusal = "$($_.Exception.Message)" }
+    if (-not $refusal) {
+        throw ('-SelfTest 7/7 FAILED: a row reduced to ONE surviving run was reported. A mean over ' +
+               'one run has no peer left to judge it against, which is the quiet pass ADR 0037 ' +
+               'exists to stop.')
+    }
+    if (-not $refusal.Contains('200')) {
+        throw "-SelfTest 7/7 FAILED: the refusal does not name the count it applies to: $refusal"
+    }
+    Assert-SurvivingRuns -Reactors 200 -Runs 5 -Drop ([int[]] @(1, 2, 3)) -WarningAction SilentlyContinue
+    Assert-SurvivingRuns -Reactors 200 -Runs 1 -Drop ([int[]] @())
+    Write-Host ('  7/7 ok: a stalled run leaves the pool and the mean is the clean one; a clean ' +
+                'sitting is untouched; one surviving run refuses and two does not.')
 
     Write-Host '-SelfTest: PASS'
     return
@@ -2143,7 +2293,13 @@ function Get-ClockPercent {
 function New-TimingRow {
     <#  One result row from a parsed benchmark dump. Shared by the rig sweep and -Save, which is
         the whole of acceptance criterion one of #64: the two paths do not merely report the same
-        column NAMES, they compute them with the same code.  #>
+        column NAMES, they compute them with the same code.
+
+        EVERY POOLED FIGURE HERE IS OVER SURVIVING RUNS (#326, ADR 0037). A run the machine blocked
+        in is dropped before the pool, in both statistics and in every column, so the row is the
+        sitting minus its stalled runs rather than two different populations depending on which
+        number you read. The per-run columns below keep ALL runs on purpose -- the discarded one
+        has to stay visible, or the figure changes and the evidence for it does not.  #>
     param(
         [Parameter(Mandatory)] $Columns,
         [Parameter(Mandatory)] [int] $Reactors,
@@ -2152,8 +2308,18 @@ function New-TimingRow {
         [double] $Load = [double]::NaN
     )
 
+    $stalled = @(Find-StalledRuns -Samples $Columns['scriptUpdate'] -Ticks $Ticks -Runs $Runs)
+    $drop    = [int[]] @($stalled | ForEach-Object { $_.Run })
+    Assert-SurvivingRuns -Reactors $Reactors -Runs $Runs -Drop $drop
+
     $row = [ordered]@{
-        Reactors = $Reactors; Samples = $Columns['scriptUpdate'].Count; State = $State
+        # Samples is what the pooled figures below were actually taken over, which after a discard
+        # is not Ticks * Runs. Stated rather than left to be inferred from the run count.
+        Reactors = $Reactors; Samples = ($Columns['scriptUpdate'].Count - $drop.Count * $Ticks)
+        State = $State
+        # The stalls themselves, not merely their run numbers, so the report can name the tick and
+        # the cost without running the detector a second time.
+        Stalls = $stalled; SurvivingRuns = ($Runs - $drop.Count)
         CpuPerf = $Cpu; CpuLoad = $Load
         # Per run rather than pooled, because that is the axis drift lives on. The median for
         # wholeUpdate -- the machine's own indicator, and the one a load spike would otherwise
@@ -2172,10 +2338,57 @@ function New-TimingRow {
                         ForEach-Object { ($_ | Measure-Object -Average).Average })
     }
     foreach ($c in $REPORT) {
-        $row["$c.median"] = (Get-Median $Columns[$c]) / 1000.0   # ns -> us
-        $row["$c.mean"]   = (($Columns[$c] | Measure-Object -Average).Average) / 1000.0
+        $kept = Select-SurvivingSamples -Values $Columns[$c] -Ticks $Ticks -Runs $Runs -Drop $drop
+        $row["$c.median"] = (Get-Median $kept) / 1000.0   # ns -> us
+        $row["$c.mean"]   = (($kept | Measure-Object -Average).Average) / 1000.0
     }
     return [pscustomobject]$row
+}
+
+function Write-RunLines {
+    <#  Each benchmark run on its own, and then what was taken out of the row above them.
+
+        ONE FUNCTION FOR BOTH MODES ON PURPOSE. The rig sweep and -Save printed these two blocks
+        from two copies of the same code, which is how a row's figures and the note explaining
+        them could have drifted apart -- and the note is now the only place a reader learns that
+        the figure is over fewer runs than were asked for.
+
+        The per-run line shows EVERY run, discarded ones included. That is the evidence for the
+        discard, and a line that hid it would leave the reader with a number and no way to check
+        it. The pooled mean the row would have carried is printed beside it for the same reason:
+        this is a decision about a published figure (ADR 0037), so both figures are on the page.  #>
+    param(
+        [Parameter(Mandatory)] $Row,
+        [Parameter(Mandatory)] $Columns
+    )
+
+    if ($Row.WholeByRun.Count -gt 1) {
+        Write-Host ("        by run: whole median [{0}] us   script mean [{1}] us   gc mean [{2}] us" -f
+            (($Row.WholeByRun  | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
+            (($Row.ScriptByRun | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
+            (($Row.GcByRun     | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '))
+    }
+
+    if (-not $Row.Stalls.Count) { return }
+
+    foreach ($st in $Row.Stalls) {
+        $msg = ("run {0} spent {1:N1} ms inside scriptUpdate on tick {2} alone, and no other " +
+                'run spends anything like it on that tick. That is the machine blocking, not ' +
+                'work. It adds about {3:N0} us to that run''s own script mean, and it is EXCLUDED ' +
+                "from this row (n = $($Row.Reactors)). See #235 and docs/research/borrowed-base.md.")
+        Write-Warning ($msg -f $st.Run, ($st.WorstMicroseconds / 1000.0), $st.Tick,
+                              ($st.WorstMicroseconds / $Ticks))
+    }
+
+    # What the row WOULD have said, so the size of the correction is on the record rather than
+    # inferable only by someone who kept the old script. Pooling every run is what this harness did
+    # until ADR 0037, and it is the figure three sittings of #235 published.
+    $withStalls = (($Columns['scriptUpdate'] | Measure-Object -Average).Average) / 1000.0
+    # Concatenated first and formatted second. "-f" binds tighter than "+", so formatting a string
+    # built inline would format the last fragment alone and print the rest unsubstituted.
+    $line = ("        pooled over {0} surviving run(s) of {1}: scriptUpdate mean {2:N2} us. " +
+             'Pooling all {1} would report {3:N2} us.')
+    Write-Host ($line -f $Row.SurvivingRuns, $Runs, $Row.'scriptUpdate.mean', $withStalls)
 }
 
 function Write-StatTables {
@@ -2715,28 +2928,8 @@ if ($Save) {
         Write-Host ''
         Write-Host ("scriptUpdate median {0,8:N2} us  mean {1,8:N2} us   whole median {2,8:N2} us" -f
             $row.'scriptUpdate.median', $row.'scriptUpdate.mean', $row.'wholeUpdate.median')
-        if ($row.WholeByRun.Count -gt 1) {
-            Write-Host ("        by run: whole median [{0}] us   script mean [{1}] us   gc mean [{2}] us" -f
-                (($row.WholeByRun  | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
-                (($row.ScriptByRun | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
-                (($row.GcByRun     | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '))
-        }
-        # A run the machine blocked in rather than worked in, named on the spot (#235). The pooled
-        # mean cannot survive one of these and the median cannot see it, so neither statistic says
-        # anything useful without this line.
-        foreach ($st in @(Find-StalledRuns -Samples $cols['scriptUpdate'] -Ticks $Ticks -Runs $Runs)) {
-            $msg = ("run {0} spent {1:N1} ms inside scriptUpdate on tick {2} alone, and no other " +
-                    'run spends anything like it on that tick. That is the machine blocking, not ' +
-                    'work. It adds about {3:N0} us to that run''s own script mean and about ' +
-                    '{4:N0} us to this row''s pooled mean, and no median can see either. DISCARD ' +
-                    'THIS RUN and re-take the count. See #235 and docs/research/borrowed-base.md.')
-            # Two divisors, because the row's mean pools EVERY tick of EVERY run -- dividing the
-            # stall by $Ticks alone would overstate this row by a factor of $Runs, which is the
-            # same unit error that cost #235 three sittings.
-            Write-Warning ($msg -f $st.Run, ($st.WorstMicroseconds / 1000.0), $st.Tick,
-                                  ($st.WorstMicroseconds / $Ticks),
-                                  ($st.WorstMicroseconds / ($Ticks * $Runs)))
-        }
+        # The runs, and whichever of them the row left out (#235, #326).
+        Write-RunLines -Row $row -Columns $cols
         Write-MachineNote -Label 'save' -Cpu $cpu -Load $load -Why (
             'Nothing here is a difference against a baseline, so there is no subtraction that ' +
             'could have cancelled it out -- it is simply added to every figure below.')
@@ -3078,30 +3271,10 @@ try {
             # on an object, which printed this line with the numbers blank and no error at all.
             $count, $row.'scriptUpdate.median', $row.'scriptUpdate.mean', $row.'wholeUpdate.median',
             ("$state" -replace '^.*BENCH-RIG ', ''))
-        # Each benchmark run on its own, and the effective clock beside them, so a count that came
-        # out slow can be attributed to the machine or cleared of it on the spot. See Split-Runs.
-        if ($row.WholeByRun.Count -gt 1) {
-            Write-Host ("        by run: whole median [{0}] us   script mean [{1}] us   gc mean [{2}] us" -f
-                (($row.WholeByRun  | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
-                (($row.ScriptByRun | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '),
-                (($row.GcByRun     | ForEach-Object { '{0:N1}' -f ($_ / 1000.0) }) -join ' '))
-        }
-        # A run the machine blocked in rather than worked in, named on the spot (#235). The pooled
-        # mean cannot survive one of these and the median cannot see it, so neither statistic says
-        # anything useful without this line.
-        foreach ($st in @(Find-StalledRuns -Samples $cols['scriptUpdate'] -Ticks $Ticks -Runs $Runs)) {
-            $msg = ("run {0} spent {1:N1} ms inside scriptUpdate on tick {2} alone, and no other " +
-                    'run spends anything like it on that tick. That is the machine blocking, not ' +
-                    'work. It adds about {3:N0} us to that run''s own script mean and about ' +
-                    '{4:N0} us to this row''s pooled mean, and no median can see either. DISCARD ' +
-                    'THIS RUN and re-take the count. See #235 and docs/research/borrowed-base.md.')
-            # Two divisors, because the row's mean pools EVERY tick of EVERY run -- dividing the
-            # stall by $Ticks alone would overstate this row by a factor of $Runs, which is the
-            # same unit error that cost #235 three sittings.
-            Write-Warning ($msg -f $st.Run, ($st.WorstMicroseconds / 1000.0), $st.Tick,
-                                  ($st.WorstMicroseconds / $Ticks),
-                                  ($st.WorstMicroseconds / ($Ticks * $Runs)))
-        }
+        # Each benchmark run on its own, and whichever of them the row left out, so a count that
+        # came out slow can be attributed to the machine or cleared of it on the spot (#235, #326).
+        # See Split-Runs and Write-RunLines.
+        Write-RunLines -Row $row -Columns $cols
         Write-MachineNote -Label "n=$count" -Cpu $cpu -Load $load -Why (
             'Every figure from it is a difference against an n = 0 baseline measured at a ' +
             'different moment, so other work does not cancel out of it.')

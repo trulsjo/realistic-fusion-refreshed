@@ -172,6 +172,11 @@ build over one it did not create, because it landfills and clears everything in 
   20%. Until that is settled, **run more repeats rather than fewer**, and do not quote a figure
   from a count whose per-run spread is wide.
 
+  > **Settled 2026-09-17 — [ADR 0037][adr37].** "Until that is settled" is over: a figure is the
+  > pooled mean over surviving runs, and the stalled run is discarded rather than averaged in or
+  > medianed away. "Run more repeats rather than fewer" survives as advice and is now the default,
+  > `-Runs` having moved from 3 to 5.
+  >
   > **Superseded in two ways, 2026-09-13.** The "+500 µs in roughly one run in four, at every count"
   > this bullet described is **not a per-tick cost and not the borrowed base's Lua** — it is a
   > handful of multi-hundred-millisecond I/O stalls on the harness's own `log()` write, diluted by
@@ -391,12 +396,14 @@ sample-count warning says so.
 
 ### The statistic for a borrowed base
 
-**This is a recommendation and not a decision. The decision is [#326][326]'s, and it is open.**
-`CLAUDE.md` reserves calls of this kind for Truls, and changing the statistic would change what every
-figure in [`reactor-runtime-cost.md`](reactor-runtime-cost.md) means — so what follows is the
-argument, not the outcome. Read the table's third column as "what the recommendation rests on".
+**Settled 2026-09-13 as a recommendation, decided 2026-09-17 by Truls: a figure is the pooled mean
+over SURVIVING runs.** The choice is [ADR 0037][adr37]'s and [#326][326] is closed; what follows is
+the argument that led there, kept because the reasoning is what a future reader needs and the ADR
+carries only the outcome. The decision is not either option #326 offered — see the two notes at the
+foot of this section, which are what moved it.
 
-**Recommended: keep the pooled mean and raise `-Runs`.** Reasons, in order:
+**What was recommended, and what it rests on: keep the pooled mean and raise `-Runs`.** Reasons, in
+order:
 
 - The case for a median across runs was that one bad run in five moves the pooled mean by 20%. With
   the census at its intended cadence the baseline is 16.2 µs rather than 91.3, so a fixed excess is a
@@ -425,8 +432,25 @@ beside it and says whether collection explains it.
 > It is the median across *runs* that the ticket proposed, and that one is a blunter instrument than
 > naming the bad run.
 
-**Until #326 is settled, the script's behaviour is unchanged**, which is the pooled mean by default.
-That is the status quo rather than the recommendation being adopted in advance of the decision.
+> **Decided 2026-09-17 — [ADR 0037][adr37].** A figure `bench-reactors.ps1` reports is **the pooled
+> mean over surviving runs**: the stalled run's ticks leave the samples before anything is pooled.
+> That is the note above turned into behaviour rather than either option the ticket named.
+>
+> Five things follow, and the ADR carries the reasons. The discard is **per row**, since run 3 at
+> *n* = 0 and run 3 at *n* = 200 are separate processes sharing only an index. It applies to **every
+> map this harness measures**, rig included, because a stall belongs to the machine and not to the
+> map. Below **two surviving runs** a count refuses rather than reports, while `-Runs 1` — where
+> nothing was discarded and the detector cannot decide — is left alone. `-Runs` now defaults to
+> **5**, because three is too thin to lose one from. And the per-run line still prints **every** run,
+> with the excluded one named and the figure the row would otherwise have carried printed beside it.
+>
+> **No figure already published changes meaning**, which is why this option and not the median across
+> runs: where nothing stalled, the two are the same arithmetic.
+
+**"Pooled mean" keeps its name and now means one thing.** A figure is *the pooled mean over 4
+surviving runs*; the new term is **stalled run**, which `CONTEXT.md` defines and which is the thing
+removed. Beware the one word still doing two jobs in this note: the median across *ticks* is printed
+on every row and is immune to a stall, and the median across *runs* is the option that was declined.
 
 ## Reproducibility, and how it fails
 
@@ -455,5 +479,6 @@ unavailable.
 [235]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/235
 [230]: https://github.com/trulsjo/realistic-fusion-refreshed/pull/230
 [adr5]: ../adr/0005-real-time-fusion-simulation.md
+[adr37]: ../adr/0037-a-benchmark-figure-is-pooled-over-surviving-runs.md
 [327]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/327
 [326]: https://github.com/trulsjo/realistic-fusion-refreshed/issues/326
