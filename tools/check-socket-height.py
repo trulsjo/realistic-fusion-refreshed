@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail when a player-facing socket is drawn at a height a vanilla pipe would not meet.
+"""Fail when a socket is drawn at a height a vanilla pipe would not meet.
 
     python tools/check-socket-height.py --vanilla-pipe <pipe-straight-horizontal.png> \
            <manifest.json> [...]                                   # gate: exit 1 on a mismatch
@@ -13,11 +13,20 @@ scripts/ship-check.ps1 reads prose; the art probes photographed the machine alon
 reactor, and in four rotations, and never once put a pipe on it. This is a defect only a sprite
 shows, so this is the one thing here that looks at one (#344).
 
-NOT EVERY SOCKET, AND THE DIFFERENCE IS THE WHOLE CARE OF IT. A connection carrying a
-`connection_category` is CONTAINED (ADR 0018, #86): it meets a machine face, never a pipe, and
-matching it to a pipe would be wrong. A connection the manifest records as `default` -- null in the
-recorded geometry -- is one a player plumbs, and is the only kind in scope. The discriminator is the
-recorded field, never a list of fluids or machines.
+EVERY SOCKET SINCE ADR 0036, AND THE REASON IS WEAKER THAN THE ONE IT REPLACED. This gate used
+to skip a connection carrying a `connection_category` -- CONTAINED (ADR 0018, #86) -- on the
+reasoning that it meets a machine FACE and never a pipe, so matching it to a pipe would be wrong.
+That is still true of what a contained socket MEETS. It is no longer true of how one is DRAWN.
+
+So the reason here is now a convention rather than an argument: EVERY socket is drawn to ONE
+reference and that reference is vanilla's pipe. Nothing will ever plug into a contained one. What
+the measurement buys is that a socket cannot drift -- `tools/check-socket-parts.py` pins each part
+against the radius the MODEL recorded, which is internal consistency, so a contained socket left out
+of this check could sit at any height with both gates passing. That is the hole #356 was written
+about, one machine over.
+
+`plumbable()` is still imported and is still the discriminator for the rim and the ribs; it just no
+longer decides what gets measured.
 
 HOW THE MEASUREMENT WORKS, and why it needs no second camera model. models/rf_blender.py's rig is
 orthographic at CAMERA_PITCH_DEG with the pixel aspect squaring the ground, so on every sheet one
@@ -373,12 +382,17 @@ def drawn_centre(alpha, manifest, connection):
 
 
 def check(manifest_path, sheets, rows):
-    """Measure every plumbable connection one manifest records, appending a row per connection."""
+    """Measure EVERY connection one manifest records, appending a row per connection.
+
+    Contained ones included, since ADR 0036. The filter that used to stand here skipped them on the
+    reasoning that a contained connection meets a machine face and matching it to a pipe would be
+    wrong -- true of what it MEETS, and no longer true of how it is DRAWN. One reference draws every
+    socket now, and that reference is vanilla's pipe, so a socket left out of this measurement is a
+    socket that can drift to any height with nothing complaining.
+    """
     manifest = json.load(open(manifest_path, encoding="utf-8"))
     machine, geometry = manifest["machine"], manifest["geometry"]
     for connection in geometry["connections"]:
-        if not plumbable(connection):
-            continue
         label = f"{connection['direction']} {connection['fluid']}"
         try:
             suffix, _, _ = socket_strip.sheet_frame(manifest, connection)
@@ -644,8 +658,8 @@ def main(argv=None):
     for path in a.manifest:
         check(path, load_sheet, rows)
     if not rows:
-        print("FAILED - socket height: none of the manifests given records a connection a player "
-              "can plumb, so this check found nothing to measure rather than finding nothing wrong.")
+        print("FAILED - socket height: none of the manifests given records a connection at all, "
+              "so this check found nothing to measure rather than finding nothing wrong.")
         return 1
     # TWO KINDS OF FAILURE AND TWO REMEDIES, the way load-check's rendered-art gate separates a moved
     # socket from a lost category. A measured socket in the wrong place is fixed by building it
@@ -655,11 +669,12 @@ def main(argv=None):
     misdrawn = [v for v in verdicts if v in ("TOO HIGH", "TOO LOW")]
     unreadable = [v for v in verdicts if v == "UNMEASURABLE"]
     if misdrawn:
-        print(f"FAILED - socket height: {len(misdrawn)} socket(s) a player plumbs are not drawn "
-              "where a vanilla pipe is.")
-        print("         A pipe run into one of these meets the machine at a step. Build the socket "
-              "at models/rf_blender.SOCKET_Z and re-render; a CONTAINED connection belongs at the "
-              "machine's own height and should carry a connection_category instead.")
+        print(f"FAILED - socket height: {len(misdrawn)} socket(s) are not drawn where a vanilla "
+              "pipe is.")
+        print("         Build the socket at models/rf_blender.SOCKET_Z and re-render. On a socket a "
+              "player plumbs, a pipe run into it meets the machine at a step; on a CONTAINED one "
+              "nothing will ever meet it, and since ADR 0036 it is held to the same height anyway, "
+              "because one reference for every socket is what stops any of them drifting.")
     if unreadable:
         print(f"FAILED - socket height: {len(unreadable)} socket(s) could not be measured at all, "
               "which is an instrument fault and not a finding about the art.")
@@ -671,12 +686,12 @@ def main(argv=None):
         print("         Every machine built from it is drawn at the wrong height, whether or not "
               "the sheets above passed -- a sheet rendered before the constant moved still shows "
               "the old one. Solve SOCKET_Z against the measured reference on the line above, then "
-              "re-render every machine with a plumbable socket.")
+              "re-render every machine that has a socket.")
     if misdrawn or unreadable or not constant_ok:
         return 1
-    print(f"socket height: all {len(rows)} player-facing socket(s) meet a vanilla pipe "
-          f"(within {TOLERANCE} tiles of its measured {reference:+.3f}), and SOCKET_Z "
-          f"{rf.SOCKET_Z} is solved from that same measurement.")
+    print(f"socket height: all {len(rows)} socket(s), contained ones included, are drawn where a "
+          f"vanilla pipe is (within {TOLERANCE} tiles of its measured {reference:+.3f}), and "
+          f"SOCKET_Z {rf.SOCKET_Z} is solved from that same measurement.")
     return 0
 
 

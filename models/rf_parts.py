@@ -198,17 +198,29 @@ FLANGE_MIN_THICK = rf.FLANGE_MIN_THICK
 FLANGE_PROUD = rf.FLANGE_PROUD
 
 
-def port(body, axis, across, edge, sign, radius, z=SOCKET_Z, depth=0.7):
-    """Cut the hole a socket passes through, in `body`, and rim its mouth.
+def port(body, axis, across, edge, sign, radius, z=SOCKET_Z, depth=0.7, rim=True):
+    """Cut the hole a socket passes through, in `body`, and -- with `rim` -- ring its mouth.
 
     `axis` is the socket's own axis, "X" or "Y"; `across` is its position on the other ground axis;
     `edge` is the footprint edge it stops at and `sign` which way that lies (+1 east or north).
 
+    `rim` IS THE HALF THAT IS NOT ALWAYS DRAWN (ADR 0036, #392). Every socket passes through the
+    slab now, contained ones included, so every socket needs the hole; but the rim is one of the two
+    pieces of vanilla hardware whose ABSENCE is what says a socket cannot be plumbed, so a contained
+    one takes the opening and leaves the ring. `socket` passes its own `plumbable` straight through.
+
+    The two used to be one call and could not be had separately, which is what made a contained
+    socket at pipe height impossible to draw without either clipping the stone or wearing the rim.
+
+    IT IS A BET THAT AN UNRIMMED OPENING STILL READS AS A FITTING. models/house-style.md says the
+    rim is what makes the opening read as a fitting rather than a bite out of the stone, and this is
+    the one place that paragraph is knowingly not honoured. If the frames show a bite, the fix is a
+    rim in the tube's own metal rather than in `dark` (Truls, 2026-09-17: "Reopen if it looks bad").
+
     `z` IS THE SOCKET'S HEIGHT AND IS PASSED, not read from the constant. It defaults to SOCKET_Z
-    because a port is only ever cut for a socket a player plumbs, and those are all drawn there --
-    but `socket` hands its own `z` over rather than relying on that, since the alternative is a
-    machine that plumbs at some other height getting a hole and a rim floating at 0.033 with
-    nothing complaining.
+    because that is where every socket is drawn since ADR 0036 -- but `socket` hands its own `z`
+    over rather than relying on that, since the alternative is a machine that draws at some other
+    height getting a hole floating at 0.033 with nothing complaining.
 
     The cutter is a modifier rather than an applied boolean, the way `bevel` is: Blender evaluates
     BEVEL then BOOLEAN in the order they were added, so the hole is cut into the already-rounded
@@ -249,6 +261,8 @@ def port(body, axis, across, edge, sign, radius, z=SOCKET_Z, depth=0.7):
     # put it, and that is now a decision rather than an unasked question.
     # A RING, never a "collar": on a socket #351 gave that word to the accent band. (A FLOOR
     # collar, where a pipe turns down through the deck, is a different object and keeps its name.)
+    if not rim:
+        return
     rim_loc = [0.0, 0.0, z]
     rim_loc[0 if axis == "X" else 1] = edge - sign * RIM_BACK
     rim_loc[1 if axis == "X" else 0] = across
@@ -257,21 +271,29 @@ def port(body, axis, across, edge, sign, radius, z=SOCKET_Z, depth=0.7):
 
 
 def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
-    """Draw one connection's socket: the bare-metal stub, its accent band and -- on a socket a
-    player can plumb -- the port through `body` and the flange pair at its mouth.
+    """Draw one connection's socket: the bare-metal stub, its accent band, the opening it passes
+    through `body`, and -- on a socket a player can plumb -- the dark rim on that opening's mouth
+    and the flange pair just inboard of it.
 
     `connection` is one entry of the machine's geometry.json and `geo` the file it came from. The
     stub runs from half a tile inside the COLLISION edge out to the SELECTION edge, which is where
     both rendered machines put theirs; on both, those are a quarter tile apart, so the mouth stands
     clear of the body and the rim `port` puts on it reads as the flange a pipe bolts to.
 
-    WHAT IS THE CALLER'S BUSINESS AND MUST STAY THERE: `z`, `radius` and `plumbable`. A CONTAINED
-    connection (ADR 0018) meets a machine FACE and never a pipe, so it is drawn at the machine's own
-    height and thickness and gets no hole through the floor; a connection a player plumbs is drawn
-    like the pipe that plugs into it -- SOCKET_Z and 0.249, both measured (models/house-style.md).
-    rf-heat-exchanger carries both kinds and reads the difference off `connection_category`;
-    rf-isotope-collector has none. A helper that decided containment for its caller would sooner or
-    later put a socket at pipe height on a face that meets a reactor.
+    WHAT IS THE CALLER'S BUSINESS AND MUST STAY THERE: `plumbable`. SINCE ADR 0036 IT NO LONGER
+    DECIDES `z` OR `radius` -- every socket on every machine is drawn at SOCKET_Z and 0.249, both
+    measured against vanilla's pipe (models/house-style.md), whatever a connection's
+    `connection_category` says. What `plumbable` decides now is the two pieces of vanilla hardware
+    a contained socket does NOT wear: the dark rim on the opening's mouth, and the flange pair. That
+    absence is the cue, decided in ADR 0036 rather than inherited from ADR 0018's exemption.
+
+    It is still read off `connection_category` and never off a list of fluids or machines, so a
+    face added tomorrow is contained without this being touched. rf-heat-exchanger carries both
+    kinds; rf-isotope-collector has none.
+
+    `z` and `radius` stay PARAMETERS rather than becoming constants here, because a machine may
+    still draw a socket of some other size for a reason nobody has had yet, and the gates measure
+    what was drawn rather than what was meant.
 
     `mat_opts` reach the STUB AND ITS RIBS -- the collector frosts its tube and the flange is in
     the tube's own material -- and nothing else. An accent band must stay the colour of the fluid it
@@ -304,8 +326,12 @@ def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
         axis=axis, **mat_opts)
     cyl(f"Band-{d}-{fluid}", radius + BAND_PROUD, BAND_DEPTH, at(edge - BAND_BACK * sign),
         rf.accent(fluid), axis=axis)
+    # THE OPENING IS CUT FOR EVERY SOCKET AND THE RIM IS NOT (ADR 0036). At 0.033 with radius 0.249
+    # a contained socket's underside reaches -0.216, well below the slab top at 0.25, so it needs
+    # the same modelled opening a plumbable one has had since #349. The rim does not come with it:
+    # that ring and the flange pair below are the whole of what tells the two apart.
+    port(body, axis, across, edge, sign, radius + PORT_CLEARANCE, z=z, rim=plumbable)
     if plumbable:
-        port(body, axis, across, edge, sign, radius + PORT_CLEARANCE, z=z)
         # THE FLANGE PAIR, on a plumbable socket and no other. A contained connection meets a
         # machine face rather than a pipe, so a shape chosen to sit against vanilla's `pipe_cover`
         # has nothing to sit against on one -- the same exemption #343 made for the height.
