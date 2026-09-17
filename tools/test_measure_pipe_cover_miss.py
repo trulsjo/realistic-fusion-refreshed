@@ -60,9 +60,19 @@ assert mpc.box_of(mask, 20, 5000, 0, 60) == near
 # And one entirely outside it is None rather than an exception.
 assert mpc.box_of(mask, 200, 300, 0, 60) is None
 
-# The two heights this tool prints for reference come from the model and the build script, so a
-# change to either has to be a deliberate one. They are NOT what any measured figure rests on.
-assert mpc.CONTAINED_Z == 0.55, mpc.CONTAINED_Z
+# THE HEIGHT IS READ OFF THE MANIFEST AND NO LONGER TYPED HERE (#392). This used to assert
+# `mpc.CONTAINED_Z == 0.55`, a copy of a constant in models/heat-exchanger/build.py -- and when
+# ADR 0036 levelled every contained socket to SOCKET_Z and deleted that constant, the copy and this
+# assertion kept 0.55 alive for exactly the three sockets it applied to. A test pinning a duplicated
+# number is what made the duplicate survive, so what is pinned now is that socket_z ASKS.
+assert mpc.socket_z({"sockets": [{"position": [-7, -1], "z": 0.033}]},
+                    {"position": [-7, -1]}) == 0.033
+try:
+    mpc.socket_z({"sockets": []}, {"position": [-7, -1]})
+    raise AssertionError("socket_z accepted a manifest with no record for the connection")
+except mpc.socket_strip.Unmeasurable as why:
+    assert "-7" in str(why), why
+
 assert abs(mpc.SCREEN_PER_WORLD - 0.70804) < 1e-5, mpc.SCREEN_PER_WORLD
 
 print("measure-pipe-cover-miss: ok")
