@@ -79,8 +79,9 @@ parts, in the words `CONTEXT.md` fixes:
   set that writes its own category and drops `default` cuts the machine off from every ordinary pipe
   in the game, which is a functional break rather than a cosmetic one, and this is the only **gate**
   that would catch it — `probe-connection-categories.ps1` reports the same shape under its `REPLACED`
-  verdict, but a probe asserts nothing and exits 0 either way. Halves six and seven of `-SelfTest`
-  are the canaries, one for each direction; a gate that tolerated everything would pass six alone.
+  verdict, but a probe asserts nothing and exits 0 either way. The `added-category` and
+  `replaced-category` halves of `-SelfTest` are the canaries, one for each direction; a gate that
+  tolerated everything would pass `added-category` alone.
 
 `/render-machine rf-<machine>` runs it. **Render is the default and regenerate is explicit**, so a
 hand edit to a stored model survives an ordinary render; git is the only guard against a

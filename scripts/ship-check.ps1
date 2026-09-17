@@ -107,11 +107,14 @@
     one naming the wrong field, one quoting a fragment that greps to nothing -- so read that bet as
     a bet.
 
-    There is no -SelfTest here, unlike the checks that read a Factorio dump. Those need one because
-    they can pass by finding nothing; sections 1 to 4 name every file and string they require, so a
-    mistake in them fails rather than goes quiet.
+    -SelfTest here does NOT re-prove the sections, unlike the checks that read a Factorio dump.
+    Those need one because they can pass by finding nothing; sections 1 to 4 name every file and
+    string they require, so a mistake in them fails rather than goes quiet. What it proves is the
+    shared self-test runner in factorio-lib.ps1, which every other gate's -SelfTest now calls: a
+    runner that skipped a half, or counted one it never ran, would report a clean pass over a gate
+    that did not execute, in all of them at once. It lives here because this gate starts no game.
 
-    SECTIONS 5 TO 8 ARE THE EXCEPTION, and are stated here rather than left to be discovered.
+    SECTIONS 5 TO 9 ARE THE EXCEPTION, and are stated here rather than left to be discovered.
     Each selects by scanning and matching a predicate, so each is exactly the shape that can pass by
     finding nothing. What stands in for a self-test is a floor: section 5 fails when a script opens
     with a comment block but is not in scope, sections 6 and 7 fail when they find too few
@@ -119,6 +122,16 @@
     four: one on each of the three things it scans, and one on the pairing between two of them. That is narrower than a -SelfTest would be, because a floor
     cannot see a mistake in the scan itself -- break that and there is nothing left to check and so
     nothing left to fail.
+
+    SECTION 9 HAS NO FLOOR AND A -SelfTest INSTEAD (#416), because there is no count to hold it to:
+    prose that cites a self-test half by ordinal should be absent, and after #411 through #415 it is,
+    so a floor would have to be zero and would prove nothing. Two halves stand in for it, one per
+    direction: a planted document citing halves by ordinal four ways must be caught with its file
+    and line, and one naming its halves -- beside a measurement that follows the same word -- must
+    not be flagged. The second matters as much: a gate that fires on the sentences the rule asks
+    people to write is a gate that gets switched off. What section 9 cannot see is written out above
+    the section, not here: a citation in a trailing comment after code, the ways English points at a
+    half without the word, and any file outside the tracked list.
 
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
@@ -128,13 +141,25 @@
     renaming a build script's PALETTE key failed it for having no entry; and breaking
     Test-SameColour itself failed the pair above.
 
+.PARAMETER SelfTest
+    Run the checks as usual, then prove two things a green run cannot: the shared -SelfTest runner
+    in factorio-lib.ps1 -- that it numbers halves from the list it was given and refuses a half it
+    cannot show ran -- and section 9, in both directions, on documents planted in a temporary
+    directory. Nothing here plants anything in the repository; the runner's cases are built in
+    memory and the planted documents live in the scratch directory the run removes on its way out.
+
 .EXAMPLE
     pwsh -File scripts/ship-check.ps1
+
+.EXAMPLE
+    pwsh -File scripts/ship-check.ps1 -SelfTest
 #>
 
 #Requires -Version 7
 
-param()
+param(
+    [switch] $SelfTest
+)
 
 $ErrorActionPreference = 'Stop'
 
@@ -753,6 +778,147 @@ if ($inScope -lt 2) {
         'stopped matching rather than that no machine carries them'))
 }
 
+
+# ----------------------------------------------------------------- our own halves, by name
+# 9. NOTHING IN PROSE MAY CITE A -SelfTest HALF BY ORDINAL (#411, #416).
+#
+# The same shape as section 7 and the same failure: a claim about code that no other gate reads,
+# which goes wrong silently the moment the code changes in its ordinary way. A half inserted above
+# another renumbers every half after it, and a sentence naming one by position then points at a
+# different half and still reads as true. It is not hypothetical -- CLAUDE.md named two of
+# load-check.ps1's by number as the canaries, and bench-reactors.ps1's own .PARAMETER prose
+# numbered three of its own, so renumbering either gate edited prose nothing would have flagged.
+#
+# The halves carry names now (#411 through #415, Invoke-SelfTestHalves), so a citation has something
+# to point at that a later insertion cannot invalidate.
+#
+# WHAT COUNTS AS PROSE, and this is the whole of the discrimination: every line of a tracked .md,
+# and in code only the lines that are COMMENTS -- a line-comment, or a line inside a block comment.
+# A label a script PRINTS is not a citation; factorio-lib.ps1's runner canary holds numbered lines
+# as the output it expects, and fetch-mods.ps1 still writes its own labels by hand. Both are code
+# doing its job, and a gate that failed them would be asking prose rules of a string literal.
+#
+# WHAT IT CANNOT SEE, stated here rather than left to be discovered, exactly as section 7 states its
+# own gaps:
+#   - a citation in a TRAILING comment, after code on the same line. Only a line whose first
+#     non-blank text opens a comment is read, because deciding whether a `#` sits inside a string
+#     needs a parser and a wrong guess reports a citation nobody wrote.
+#   - every way English can point at a half without the word: an ordinal on its own, "the one
+#     before the stall detector", "the last of them". There is no handle in those a regex can
+#     trust, which is the same decision section 7 records for its third shape.
+#   - a half named in a file this check does not read -- anything outside the tracked .md, .lua,
+#     .ps1, .py and .js list, and anything not yet `git add`ed.
+#   - a citation inside a FENCED block in markdown, which is where a pasted run lives. Quoted output
+#     is not a citation, and telling a quoted one from a written one inside a fence would need a
+#     reader rather than a regex. An INDENTED markdown block is read, because telling one from a
+#     wrapped list item needs a markdown parser.
+# It catches the three forms that actually occur, and the patterns below are the statement of them:
+# the word half or halves followed by a word ordinal, the same followed by a small integer, and a
+# self-test named with the ordinal-over-total an unconverted gate's comments used to carry.
+#
+# THE SPECIMENS ARE WRITTEN AS DESCRIPTIONS RATHER THAN AS EXAMPLES, which is the opposite of what
+# section 7 does and for the same reason section 7 explains: a rule against a shape wants to show
+# the shape, but this one would then fail on its own comment. Exempting this file would hide a
+# genuine citation inside the document that bans them, so the prose here spells none of them out and
+# the regexes are the specimens.
+# ONE PATTERN RATHER THAN THREE APPLIED IN TURN, and the alternation is ordered longest-first. The
+# labelled form CONTAINS the integer form, so three separate scans reported such a citation twice --
+# two failures for one sentence, and any count taken over the result inflated by the overlap. One
+# scan takes the longest match at each position and carries on past it.
+$HALF_ORDINAL =
+    # The labelled form first -- what a gate's own comments carried before the runner numbered them.
+    '(?i)(?:self-test|-selftest)\s+(?:half\s+)?\d{1,2}(?:/\d{1,2})?\b' +
+    # The word form, which is what prose writes. BOTH SPELLINGS, because they share no prefix -- a
+    # pattern keyed on the singular misses the plural entirely, which this gate's own self-test
+    # caught on its first run.
+    '|(?i)\bhal(?:f|ves)\s+(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen)\b' +
+    # The integer form, and the one that can fire on something nobody wrote as a citation:
+    # check-brownout's rig has a supply level CALLED half, and its note tabulates a reading after
+    # that word. So a decimal is excluded, and so is a unit -- the ones this repository's notes
+    # actually tabulate, listed rather than guessed, because a whole-numbered row reads exactly like
+    # a citation otherwise. A unit outside the list is a false FAILURE, which is the cheap
+    # direction: a false failure is argued with, a false pass is not noticed.
+    '|(?i)\bhal(?:f|ves)\s+\d{1,2}(?![\d.])(?!\s*(?:[kMG]?W\b|[kM]?J\b|C\b|K\b|px\b|%|[mun]?s\b|tiles?\b|ticks?\b|files?\b))'
+
+function Get-ProseLines {
+    <#  The lines of a file that are PROSE: in markdown all of them but a fenced block, and in code
+        the comments.
+
+        Block comments are tracked because that is where the citations this gate exists for live: a
+        PowerShell comment-based help block carries no per-line marker, and bench-reactors.ps1's
+        .PARAMETER SelfTest numbered its halves from inside one.
+
+        A FENCED BLOCK IS NOT PROSE, for the same reason a printed label is not a citation: this
+        repository's notes record measurements by pasting the run that produced them, and a pasted
+        -SelfTest transcript is quoted output. An INDENTED code block is not excluded -- telling one
+        from a wrapped list item needs a markdown parser, and the fenced form is what the notes
+        here use.  #>
+    param([Parameter(Mandatory)] [string] $Path, [Parameter(Mandatory)] [string] $Extension)
+
+    $open, $close, $line = switch ($Extension) {
+        '.md'  { $null,   $null, $null }
+        '.ps1' { '<#',    '#>',  '#'   }
+        '.py'  { '"""',   '"""', '#'   }
+        '.lua' { '--[[',  ']]',  '--'  }
+        '.js'  { '/*',    '*/',  '//'  }
+        default { $null,  $null, $null }
+    }
+
+    $out    = [System.Collections.Generic.List[object]]::new()
+    $inside = $false
+    $fenced = $false
+    $n      = 0
+    foreach ($text in (Get-Content -LiteralPath $Path)) {
+        $n++
+        if ($Extension -eq '.md') {
+            if ($text.TrimStart() -match '^(?:```|~~~)') { $fenced = -not $fenced; continue }
+            if (-not $fenced) { $out.Add([pscustomobject]@{ Line = $n; Text = $text }) }
+            continue
+        }
+        $trimmed = $text.TrimStart()
+        if ($inside) {
+            $out.Add([pscustomobject]@{ Line = $n; Text = $text })
+            if ($text.Contains($close)) { $inside = $false }
+            continue
+        }
+        if ($open -and $trimmed.StartsWith($open)) {
+            $out.Add([pscustomobject]@{ Line = $n; Text = $text })
+            # A block opened and closed on one line is not a block.
+            if (-not $trimmed.Substring($open.Length).Contains($close)) { $inside = $true }
+            continue
+        }
+        if ($line -and $trimmed.StartsWith($line)) { $out.Add([pscustomobject]@{ Line = $n; Text = $text }) }
+    }
+    return $out
+}
+
+function Find-NumberedHalves {
+    <#  Every place the prose of these files cites a self-test half by ordinal.
+
+        Returns the file, the line and the citation as written, because a finding that does not
+        quote what it matched sends a reader hunting through a comment block for it.  #>
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Files, [string] $Root)
+
+    $found = [System.Collections.Generic.List[object]]::new()
+    foreach ($rel in $Files) {
+        $full = if ($Root) { Join-Path $Root $rel } else { $rel }
+        if (-not (Test-Path -LiteralPath $full)) { continue }   # tracked, deleted, not yet staged
+        foreach ($prose in (Get-ProseLines -Path $full -Extension ([IO.Path]::GetExtension($full)))) {
+            foreach ($m in [regex]::Matches($prose.Text, $HALF_ORDINAL)) {
+                $found.Add([pscustomobject]@{ File = $rel; Line = $prose.Line; Cited = $m.Value })
+            }
+        }
+    }
+    return $found
+}
+
+$checks++
+foreach ($cite in (Find-NumberedHalves -Files $citingCode -Root $repoRoot)) {
+    $failures.Add(("$($cite.File), line $($cite.Line), cites a self-test half by ordinal " +
+        "(`"$($cite.Cited)`"). Name the half instead -- the halves are declared by name where " +
+        'they run, and an ordinal points at a different half the moment one is inserted above it.'))
+}
+
 if ($failures.Count) {
     Write-Host ''
     foreach ($f in $failures) { Write-Host "FAIL  $f" -ForegroundColor Red }
@@ -764,8 +930,95 @@ if ($failures.Count) {
     exit 1
 }
 
+if ($SelfTest) {
+    # After the sections, not instead of them: a gate proved against a repository that is already
+    # failing tells nobody which of the two broke.
+    Write-Host ''
+    $planted = Join-Path ([IO.Path]::GetTempPath()) ('rf-shipcheck-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    New-Item -ItemType Directory -Path $planted -Force | Out-Null
+    try {
+        Invoke-SelfTestHalves -Halves @(
+            @{ Name = 'self-test-runner'; Body = { Test-SelfTestRunner } }
+
+            @{ Name = 'ordinal-citation-caught'; Body = {
+                # Section 9 passes by finding nothing, so nothing in a green run says the patterns
+                # still match. This plants one citation per form, in prose, and requires each to be
+                # reported with the file and the words it matched.
+                $doc = Join-Path $planted 'numbered.md'
+                # One line per form, and the last is the OVERLAP: the labelled form contains the
+                # integer form, so a scan that applied the patterns in turn reported that one line
+                # twice. One citation is one finding.
+                @(
+                    'The canary is half six, one for each direction.'
+                    'Halves six and seven are the pair.'
+                    'The stall detector is half 5 of this gate.'
+                    'It was proved by -SelfTest 3/7 before the runner.'
+                    'See self-test half 5 of the bench.'
+                ) | Set-Content -LiteralPath $doc -Encoding utf8
+
+                $caught = @(Find-NumberedHalves -Files @($doc))
+                if ($caught.Count -ne 5) {
+                    throw ("a document citing halves by ordinal five ways was reported " +
+                           "$($caught.Count) time(s): $(($caught | ForEach-Object { $_.Cited }) -join ', '). " +
+                           'Section 9 is not matching what it claims to, or it is matching one line twice.')
+                }
+                foreach ($row in $caught) {
+                    if ($row.File -cne $doc -or $row.Line -lt 1) {
+                        throw "a finding does not name the file and line it was found on: $($row | Out-String)"
+                    }
+                }
+                $perLine = @($caught | Group-Object Line | Where-Object { $_.Count -ne 1 })
+                if ($perLine) {
+                    throw ("line(s) $(($perLine | ForEach-Object { $_.Name }) -join ', ') produced more than " +
+                           'one finding, so one citation is being reported twice and any count over ' +
+                           'the result is inflated.')
+                }
+                "a document citing a half by ordinal is caught, five ways, each named with its file and line, each once."
+            } }
+
+            @{ Name = 'named-citation-not-flagged'; Body = {
+                # The other direction, and it is not decoration: a gate that fired on everything
+                # would be switched off, and it would fire on the very sentences this rule asks
+                # people to write. The measurement words are here too -- a supply level called half
+                # with a wattage after it is what check-brownout's note tabulates.
+                $doc = Join-Path $planted 'named.md'
+                @(
+                    'The added-category and replaced-category halves are the canaries.'
+                    'The stall-detector half holds all three directions.'
+                    'It cut the sheet in half a tile above the socket.'
+                    'full drew 55.17 MW, half 27.57 MW, blackout 0 MW'
+                    # The same row with whole numbers, which reads exactly like a citation once the
+                    # decimal is gone. The unit is what tells them apart.
+                    'full drew 55 MW, half 27 MW, blackout 0 MW'
+                    'The repo-loads half must pass or the halves after it prove nothing.'
+                    # A pasted transcript, which is how this repository records a measurement. It is
+                    # quoted output rather than a citation, and the fence is what says so.
+                    '```'
+                    'self-test 3/13: a prototype naming a file that is not there is caught.'
+                    '  5/7 ok: the stall is flagged at tick 876.'
+                    '```'
+                ) | Set-Content -LiteralPath $doc -Encoding utf8
+
+                $flagged = @(Find-NumberedHalves -Files @($doc))
+                if ($flagged.Count) {
+                    throw ('prose naming its halves, a measurement after the word half, or a run ' +
+                           'pasted inside a fence, were ' +
+                           "reported as ordinal citations: $(($flagged | ForEach-Object { $_.Cited }) -join ', '). " +
+                           'A gate that fires on the sentences the rule asks for gets switched off.')
+                }
+                ('prose that names its halves, a measurement after the same word whole or decimal, ' +
+                 'and a pasted transcript inside a fence, are all left alone.')
+            } }
+        )
+    } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
+    Write-Host ''
+    Write-Host '-SelfTest: PASS' -ForegroundColor Green
+    exit 0
+}
+
 Write-Host ("ship-check: {0} checks, 0 failures." -f $checks) -ForegroundColor Green
 Write-Host 'The clean break and the quality gap are stated in both code mods and in README.md; the'
 Write-Host 'licence and the scope rule ship inside all three; the assets floor matches, no code mod'
-Write-Host 'ships art, and every accent named for a fluid still carries that fluid''s own colour.'
+Write-Host 'ships art, every accent named for a fluid still carries that fluid''s own colour, and'
+Write-Host 'no prose cites a self-test half by position.'
 exit 0

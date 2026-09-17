@@ -395,7 +395,8 @@ function Get-FiredEdits {
 
         ITS OWN FUNCTION RATHER THAN AN EXPRESSION AT THE CALL SITE, for the reason Get-DerivedWiring
         is one: this file's rule is that a judgement printed to a human must be breakable in the
-        self-test, and an inline Where-Object cannot be. Half six poses it four questions a real run
+        self-test, and an inline Where-Object cannot be. The declared-edit-line half poses it four
+        questions a real run
         does not -- a declared edit that differs, one that does not, one absent from the baseline,
         and an undeclared name that differs -- and then checks the live answer as well.
 
@@ -1106,571 +1107,591 @@ try {
         -Exempt @($setDerived.Keys) -AlsoClaimed $inGame
 
     if ($SelfTest) {
-        # Half one: the repo as it stands must pass, or halves two and three prove nothing.
-        if ($failures) {
-            Write-Host 'FAILED - self-test: the repo as it stands does not pass, so a caught canary would prove nothing.'
-            foreach ($f in $failures) { Write-Host "    $f" }
-            exit 1
-        }
-        Write-Host 'self-test 1/6: the repo as it stands passes.'
+        # THE HALVES ARE DECLARED BY NAME and Invoke-SelfTestHalves numbers them as it runs them,
+        # so the total appears nowhere and a half added anywhere relabels no other. The names are
+        # what this file and the prose elsewhere refer to.
+        Invoke-SelfTestHalves -Halves @(
+            @{ Name = 'repo-passes'; Body = {
+                # The repo as it stands must pass, or unprefixed-name and borrowed-name prove nothing.
+                if ($failures) {
+                    Write-Host 'FAILED - self-test: the repo as it stands does not pass, so a caught canary would prove nothing.'
+                    foreach ($f in $failures) { Write-Host "    $f" }
+                    exit 1
+                }
+                "the repo as it stands passes."
+            } }
 
-        # Half two: an unprefixed name must be caught. Injected into the parsed set rather than into
-        # a canary mod, because what is being tested is this script's judgement, not Factorio's --
-        # and a real mod would cost two more dumps to say the same thing.
-        $canaryOurs = @{} + $ours
-        $canaryOurs['fusion-reactor'] = @('reactor')
-        $caught = Test-Names -Ours $canaryOurs -References $scanned
-        if (-not ($caught | Where-Object { $_ -like "unprefixed: 'fusion-reactor'*" })) {
-            Write-Host 'FAILED - self-test: an unprefixed prototype name was NOT caught.'
-            exit 1
-        }
-        Write-Host 'self-test 2/6: an unprefixed name is caught.'
+            @{ Name = 'unprefixed-name'; Body = {
+                # An unprefixed name must be caught. Injected into the parsed set rather than into
+                # a canary mod, because what is being tested is this script's judgement, not Factorio's --
+                # and a real mod would cost two more dumps to say the same thing.
+                $canaryOurs = @{} + $ours
+                $canaryOurs['fusion-reactor'] = @('reactor')
+                $caught = Test-Names -Ours $canaryOurs -References $scanned
+                if (-not ($caught | Where-Object { $_ -like "unprefixed: 'fusion-reactor'*" })) {
+                    Write-Host 'FAILED - self-test: an unprefixed prototype name was NOT caught.'
+                    exit 1
+                }
+                "an unprefixed name is caught."
+            } }
 
-        # Half three: a name a reference mod already uses must be caught, even when it is prefixed
-        # correctly. Takes a name from the harvest rather than inventing one, so the test breaks if
-        # the harvest ever comes back empty.
-        $borrowed = @($scanned.Values)[0] | Select-Object -First 1
-        if (-not $borrowed) { Write-Host 'FAILED - self-test: nothing harvested to borrow a name from.'; exit 1 }
-        $canaryOurs = @{} + $ours
-        $canaryOurs[$borrowed] = @('item')
-        $caught = Test-Names -Ours $canaryOurs -References $scanned
-        if (-not ($caught | Where-Object { $_ -like "collision: '$borrowed'*" })) {
-            Write-Host "FAILED - self-test: a name already used by a reference mod ('$borrowed') was NOT caught."
-            exit 1
-        }
-        Write-Host 'self-test 3/6: a name a reference mod already uses is caught.'
+            @{ Name = 'borrowed-name'; Body = {
+                # A name a reference mod already uses must be caught, even when it is prefixed
+                # correctly. Takes a name from the harvest rather than inventing one, so the test breaks if
+                # the harvest ever comes back empty.
+                $borrowed = @($scanned.Values)[0] | Select-Object -First 1
+                if (-not $borrowed) { Write-Host 'FAILED - self-test: nothing harvested to borrow a name from.'; exit 1 }
+                $canaryOurs = @{} + $ours
+                $canaryOurs[$borrowed] = @('item')
+                $caught = Test-Names -Ours $canaryOurs -References $scanned
+                if (-not ($caught | Where-Object { $_ -like "collision: '$borrowed'*" })) {
+                    Write-Host "FAILED - self-test: a name already used by a reference mod ('$borrowed') was NOT caught."
+                    exit 1
+                }
+                "a name a reference mod already uses is caught."
+            } }
 
-        # Half four: the DERIVATION itself, through a real mod and a real dump.
-        #
-        # Halves two and three inject into the parsed set, so they prove Test-Names judges a set it is
-        # handed -- and nothing about how that set is built. That is not good enough for the case this
-        # script exists to catch: a prototype we define under a name the game already uses is present
-        # in BOTH dumps and cancels out of the difference, so an injected canary would sail past a
-        # derivation that never sees it. This half builds the canary as a mod, dumps the game with it,
-        # and derives from scratch.
-        $canary = Join-Path $modDir 'rf-namecheck-canary'
-        New-Item -ItemType Directory -Path $canary -Force | Out-Null
-        @{
-            name = 'rf-namecheck-canary'; version = '0.0.1'; title = 'Name-check canary'
-            author = 'name-check.ps1'; factorio_version = '2.0'; dependencies = @('base >= 2.0.77')
-        } | ConvertTo-Json | Set-Content -Path (Join-Path $canary 'info.json') -Encoding utf8
-        # One of each failure: a NEW prototype with no prefix, and a REPLACED vanilla one. iron-plate
-        # is chosen because nothing in this repo touches it, so a hit is unambiguous.
-        'data:extend({{ type = "item", name = "fusion-canary-item", stack_size = 1,
-  icon = "__base__/graphics/icons/iron-plate.png", icon_size = 64 }})
-data.raw.item["iron-plate"].stack_size = 123' |
-            Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
+            @{ Name = 'real-mod-derivation'; Body = {
+                # The DERIVATION itself, through a real mod and a real dump.
+                #
+                # unprefixed-name and borrowed-name inject into the parsed set, so they prove Test-Names
+                # judges a set it is
+                # handed -- and nothing about how that set is built. That is not good enough for the case this
+                # script exists to catch: a prototype we define under a name the game already uses is present
+                # in BOTH dumps and cancels out of the difference, so an injected canary would sail past a
+                # derivation that never sees it. This half builds the canary as a mod, dumps the game with it,
+                # and derives from scratch.
+                $canary = Join-Path $modDir 'rf-namecheck-canary'
+                New-Item -ItemType Directory -Path $canary -Force | Out-Null
+                @{
+                    name = 'rf-namecheck-canary'; version = '0.0.1'; title = 'Name-check canary'
+                    author = 'name-check.ps1'; factorio_version = '2.0'; dependencies = @('base >= 2.0.77')
+                } | ConvertTo-Json | Set-Content -Path (Join-Path $canary 'info.json') -Encoding utf8
+                # One of each failure: a NEW prototype with no prefix, and a REPLACED vanilla one. iron-plate
+                # is chosen because nothing in this repo touches it, so a hit is unambiguous.
+                'data:extend({{ type = "item", name = "fusion-canary-item", stack_size = 1,
+          icon = "__base__/graphics/icons/iron-plate.png", icon_size = 64 }})
+        data.raw.item["iron-plate"].stack_size = 123' |
+                    Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
-        $withCanary = Get-PrototypeNames -Mods ($ourMods + 'rf-namecheck-canary') -Tag 'canary'
+                New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+                $withCanary = Get-PrototypeNames -Mods ($ourMods + 'rf-namecheck-canary') -Tag 'canary'
 
-        $canaryNames    = Get-OurNames -WithUs $withCanary -Baseline $withoutUs
-        $canaryReplaced = Get-Replaced -WithUs $withCanary -Baseline $withoutUs
+                $canaryNames    = Get-OurNames -WithUs $withCanary -Baseline $withoutUs
+                $canaryReplaced = Get-Replaced -WithUs $withCanary -Baseline $withoutUs
 
-        if (-not $canaryNames.ContainsKey('fusion-canary-item')) {
-            Write-Host 'FAILED - self-test: an unprefixed prototype added by a real mod was not derived at all,'
-            Write-Host '         so the difference this check rests on is not finding what it should.'
-            exit 1
-        }
-        if ($canaryReplaced -notcontains 'item/iron-plate') {
-            Write-Host 'FAILED - self-test: a REPLACED vanilla prototype was not detected. This is the silent'
-            Write-Host '         overwrite case -- present in both dumps, so a set difference alone cannot see'
-            Write-Host "         it -- and it is the one this check most needs to catch. Found: $($canaryReplaced -join ', ')"
-            exit 1
-        }
-        $caught = Test-Names -Ours $canaryNames -References $scanned -Replaced $canaryReplaced
-        if (-not ($caught | Where-Object { $_ -like "replaces: 'item/iron-plate'*" })) {
-            Write-Host 'FAILED - self-test: the replaced prototype was derived but not reported as a failure.'
-            exit 1
-        }
-        Write-Host 'self-test 4/6: a real mod adding an unprefixed name and replacing a vanilla prototype is caught.'
+                if (-not $canaryNames.ContainsKey('fusion-canary-item')) {
+                    Write-Host 'FAILED - self-test: an unprefixed prototype added by a real mod was not derived at all,'
+                    Write-Host '         so the difference this check rests on is not finding what it should.'
+                    exit 1
+                }
+                if ($canaryReplaced -notcontains 'item/iron-plate') {
+                    Write-Host 'FAILED - self-test: a REPLACED vanilla prototype was not detected. This is the silent'
+                    Write-Host '         overwrite case -- present in both dumps, so a set difference alone cannot see'
+                    Write-Host "         it -- and it is the one this check most needs to catch. Found: $($canaryReplaced -join ', ')"
+                    exit 1
+                }
+                $caught = Test-Names -Ours $canaryNames -References $scanned -Replaced $canaryReplaced
+                if (-not ($caught | Where-Object { $_ -like "replaces: 'item/iron-plate'*" })) {
+                    Write-Host 'FAILED - self-test: the replaced prototype was derived but not reported as a failure.'
+                    exit 1
+                }
+                "a real mod adding an unprefixed name and replacing a vanilla prototype is caught."
+            } }
 
-        # Half five: the two classifiers -AlsoModDirectory relies on, and specifically the LIMITS of
-        # what they excuse.
-        #
-        # These are the only code here that SUPPRESSES a finding, which makes them the code most
-        # worth pinning: an over-broad rule turns a real collision into a counted line and the run
-        # still exits 0. They are pure functions over parsed sets, so this half needs no third-party
-        # mod and no further dump -- the same reason halves two and three inject rather than build.
-        #
-        # The positive cases are taken from a REAL measurement rather than invented: Krastorio 2
-        # 2.0.19 generates kr-burn-<fluid> and kr-crush-<item> from this repo's prototypes and
-        # appends the unlocks into its own technology/kr-fluid-excess-handling. Four negatives sit
-        # beside them, one per way the rule could be too generous.
-        $ourName    = 'rf-brine'
-        $setName    = 'kr-burn-rf-brine'
-        # TWO of the set's, sharing a marker, because one is not a generator -- see Get-SetDerived.
-        # `fill-rf-brine-barrel` is the singleton that must NOT be excused: it is the shape one of
-        # OUR unprefixed names would have, and it embeds a name of ours exactly as the set's do.
-        $fake = @{
-            $ourName                = @('fluid')
-            'rf-deuterium'          = @('fluid')
-            $setName                = @('recipe')
-            'kr-burn-rf-deuterium'  = @('recipe')
-            'fill-rf-brine-barrel'  = @('recipe')
-            'fusion-reactor'        = @('reactor')
-        }
-        $classified = Get-SetDerived -Ours $fake
+            @{ Name = 'set-derivation-classifiers'; Body = {
+                # The two classifiers -AlsoModDirectory relies on, and specifically the LIMITS of
+                # what they excuse.
+                #
+                # These are the only code here that SUPPRESSES a finding, which makes them the code most
+                # worth pinning: an over-broad rule turns a real collision into a counted line and the run
+                # still exits 0. They are pure functions over parsed sets, so this half needs no third-party
+                # mod and no further dump -- the same reason unprefixed-name and borrowed-name inject
+                # rather than build.
+                #
+                # The positive cases are taken from a REAL measurement rather than invented: Krastorio 2
+                # 2.0.19 generates kr-burn-<fluid> and kr-crush-<item> from this repo's prototypes and
+                # appends the unlocks into its own technology/kr-fluid-excess-handling. Four negatives sit
+                # beside them, one per way the rule could be too generous.
+                $ourName    = 'rf-brine'
+                $setName    = 'kr-burn-rf-brine'
+                # TWO of the set's, sharing a marker, because one is not a generator -- see Get-SetDerived.
+                # `fill-rf-brine-barrel` is the singleton that must NOT be excused: it is the shape one of
+                # OUR unprefixed names would have, and it embeds a name of ours exactly as the set's do.
+                $fake = @{
+                    $ourName                = @('fluid')
+                    'rf-deuterium'          = @('fluid')
+                    $setName                = @('recipe')
+                    'kr-burn-rf-deuterium'  = @('recipe')
+                    'fill-rf-brine-barrel'  = @('recipe')
+                    'fusion-reactor'        = @('reactor')
+                }
+                $classified = Get-SetDerived -Ours $fake
 
-        if (-not $classified.ContainsKey($setName)) {
-            Write-Host "FAILED - self-test: '$setName' was not recognised as the set's own prototype built from ours."
-            exit 1
-        }
-        if ($classified[$setName] -ne $ourName) {
-            Write-Host "FAILED - self-test: '$setName' was attributed to '$($classified[$setName])', not '$ourName'."
-            exit 1
-        }
-        # THE NEGATIVE THAT MATTERS MOST. An unprefixed name of ours embeds no name of ours, so it
-        # must survive the classifier -- otherwise the ADR 0009 check has a hole exactly the width
-        # of this feature.
-        if ($classified.ContainsKey('fusion-reactor')) {
-            Write-Host 'FAILED - self-test: an unprefixed name of ours was excused as the set''s derivation,'
-            Write-Host '         which would hide the one failure this whole check exists to catch.'
-            exit 1
-        }
-        # THE NEGATIVE THE FIRST ONE DOES NOT REACH. `fusion-reactor` embeds no name of ours, so it
-        # would survive a classifier keyed on embedding alone. A singleton that DOES embed one is
-        # the case that separates "the set generated it" from "we misnamed it".
-        if ($classified.ContainsKey('fill-rf-brine-barrel')) {
-            Write-Host 'FAILED - self-test: a lone unprefixed name embedding one of ours was excused as the'
-            Write-Host '         set''s derivation. A generator generates more than one; this is the shape'
-            Write-Host '         one of OUR unprefixed names would have.'
-            exit 1
-        }
-        if (Test-Names -Ours $fake -References @{} -Exempt @($classified.Keys) |
-                Where-Object { $_ -like "unprefixed: '$setName'*" }) {
-            Write-Host "FAILED - self-test: '$setName' was classified but still reported as unprefixed."
-            exit 1
-        }
-        if (-not (Test-Names -Ours $fake -References @{} -Exempt @($classified.Keys) |
-                Where-Object { $_ -like "unprefixed: 'fill-rf-brine-barrel'*" })) {
-            Write-Host "FAILED - self-test: the lone 'fill-rf-brine-barrel' was not reported as unprefixed."
-            exit 1
-        }
+                if (-not $classified.ContainsKey($setName)) {
+                    Write-Host "FAILED - self-test: '$setName' was not recognised as the set's own prototype built from ours."
+                    exit 1
+                }
+                if ($classified[$setName] -ne $ourName) {
+                    Write-Host "FAILED - self-test: '$setName' was attributed to '$($classified[$setName])', not '$ourName'."
+                    exit 1
+                }
+                # THE NEGATIVE THAT MATTERS MOST. An unprefixed name of ours embeds no name of ours, so it
+                # must survive the classifier -- otherwise the ADR 0009 check has a hole exactly the width
+                # of this feature.
+                if ($classified.ContainsKey('fusion-reactor')) {
+                    Write-Host 'FAILED - self-test: an unprefixed name of ours was excused as the set''s derivation,'
+                    Write-Host '         which would hide the one failure this whole check exists to catch.'
+                    exit 1
+                }
+                # THE NEGATIVE THE FIRST ONE DOES NOT REACH. `fusion-reactor` embeds no name of ours, so it
+                # would survive a classifier keyed on embedding alone. A singleton that DOES embed one is
+                # the case that separates "the set generated it" from "we misnamed it".
+                if ($classified.ContainsKey('fill-rf-brine-barrel')) {
+                    Write-Host 'FAILED - self-test: a lone unprefixed name embedding one of ours was excused as the'
+                    Write-Host '         set''s derivation. A generator generates more than one; this is the shape'
+                    Write-Host '         one of OUR unprefixed names would have.'
+                    exit 1
+                }
+                if (Test-Names -Ours $fake -References @{} -Exempt @($classified.Keys) |
+                        Where-Object { $_ -like "unprefixed: '$setName'*" }) {
+                    Write-Host "FAILED - self-test: '$setName' was classified but still reported as unprefixed."
+                    exit 1
+                }
+                if (-not (Test-Names -Ours $fake -References @{} -Exempt @($classified.Keys) |
+                        Where-Object { $_ -like "unprefixed: 'fill-rf-brine-barrel'*" })) {
+                    Write-Host "FAILED - self-test: the lone 'fill-rf-brine-barrel' was not reported as unprefixed."
+                    exit 1
+                }
 
-        # AND THE COLLISION THE DIFFERENCE LOSES. A set that redefines one of our names
-        # unconditionally holds it in both dumps, so it is absent from $Ours -- passing it in
-        # $AlsoClaimed is the only reason the scan can still see it.
-        $harvest = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
-        [void] $harvest.Add('rf-eaten-by-the-set')
-        $swallowed = Test-Names -Ours @{} -References @{ 'the set' = $harvest } -AlsoClaimed @('rf-eaten-by-the-set')
-        if (-not ($swallowed | Where-Object { $_ -like "collision: 'rf-eaten-by-the-set'*" })) {
-            Write-Host 'FAILED - self-test: a name of ours that the set redefines in BOTH dumps -- so it never'
-            Write-Host '         reaches the difference -- was not caught by the scan. That is the direction'
-            Write-Host '         the dumps cannot see, and the only one the harvest is there for.'
-            exit 1
-        }
-        if (Test-Names -Ours @{} -References @{ 'the set' = $harvest }) {
-            Write-Host 'FAILED - self-test: a reference harvest with nothing claimed against it still reported.'
-            exit 1
-        }
+                # AND THE COLLISION THE DIFFERENCE LOSES. A set that redefines one of our names
+                # unconditionally holds it in both dumps, so it is absent from $Ours -- passing it in
+                # $AlsoClaimed is the only reason the scan can still see it.
+                $harvest = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+                [void] $harvest.Add('rf-eaten-by-the-set')
+                $swallowed = Test-Names -Ours @{} -References @{ 'the set' = $harvest } -AlsoClaimed @('rf-eaten-by-the-set')
+                if (-not ($swallowed | Where-Object { $_ -like "collision: 'rf-eaten-by-the-set'*" })) {
+                    Write-Host 'FAILED - self-test: a name of ours that the set redefines in BOTH dumps -- so it never'
+                    Write-Host '         reaches the difference -- was not caught by the scan. That is the direction'
+                    Write-Host '         the dumps cannot see, and the only one the harvest is there for.'
+                    exit 1
+                }
+                if (Test-Names -Ours @{} -References @{ 'the set' = $harvest }) {
+                    Write-Host 'FAILED - self-test: a reference harvest with nothing claimed against it still reported.'
+                    exit 1
+                }
 
-        # And the two wiring shapes, each with its negatives. The unlock half first.
-        $tech    = 'technology/kr-fluid-excess-handling'
-        $before  = @{ name = 'kr-fluid-excess-handling'; effects = @(@{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }) }
-        $wired   = @{ name = 'kr-fluid-excess-handling'; effects = @(
-                        @{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }
-                        @{ type = 'unlock-recipe'; recipe = $setName }) }
-        $foreign = @{ name = 'kr-fluid-excess-handling'; effects = @(
-                        @{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }
-                        @{ type = 'unlock-recipe'; recipe = 'kr-something-of-theirs' }) }
-        $renamed = @{ name = 'ours-now'; effects = @(@{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }) }
-        $dropped = @{ name = 'kr-fluid-excess-handling'; effects = @() }
+                # And the two wiring shapes, each with its negatives. The unlock half first.
+                $tech    = 'technology/kr-fluid-excess-handling'
+                $before  = @{ name = 'kr-fluid-excess-handling'; effects = @(@{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }) }
+                $wired   = @{ name = 'kr-fluid-excess-handling'; effects = @(
+                                @{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }
+                                @{ type = 'unlock-recipe'; recipe = $setName }) }
+                $foreign = @{ name = 'kr-fluid-excess-handling'; effects = @(
+                                @{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }
+                                @{ type = 'unlock-recipe'; recipe = 'kr-something-of-theirs' }) }
+                $renamed = @{ name = 'ours-now'; effects = @(@{ type = 'unlock-recipe'; recipe = 'kr-burn-water' }) }
+                $dropped = @{ name = 'kr-fluid-excess-handling'; effects = @() }
 
-        # THE TOOLTIP HALF (#129), and the fixtures are the shape SE really produced: a row per
-        # non-hidden fuel fluid, the name embedded in a localised string rather than in a field.
-        # $tipOurs is the measured case -- one row of theirs kept untouched, one row of ours appended.
-        $ourFluid   = 'rf-reactor-energy'
-        $gen        = 'generator/se-fluid-burner-generator'
-        $theirRow   = @{ name = 'description.fluid-consumption'; value = @('', '[fluid=se-antimatter-stream]', ' ', '60', 'per-second-suffix') }
-        $ourRow     = @{ name = 'description.fluid-consumption'; value = @('', "[fluid=$ourFluid]", ' ', '30', 'per-second-suffix') }
-        $tipBefore  = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($theirRow) }
-        $tipOurs    = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($theirRow, $ourRow) }
-        # A row naming a fluid of THEIRS that the baseline did not have. Nothing to do with us, so
-        # it must not be excused just because the field is the right one.
-        $tipTheirs  = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @(
-                        $theirRow
-                        @{ name = 'description.fluid-consumption'; value = @('', '[fluid=se-something-of-theirs]', ' ', '30', 'per-second-suffix') }) }
-        $tipDropped = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($ourRow) }
-        # THE ONE THAT MATTERS MOST: our row appended AND a row of theirs reworded in the same diff.
-        # An additions-only test that compared counts, or that stopped at "one of the added rows is
-        # ours", would wave this through -- and it is a real edit to a prototype of theirs.
-        $tipEdited  = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @(
-                        @{ name = 'description.fluid-consumption'; value = @('', '[fluid=se-antimatter-stream]', ' ', '99', 'per-second-suffix') }
-                        $ourRow) }
-        # And the field allow-list, from the tooltip side: rows identical, something else changed.
-        $tipOther   = @{ name = 'se-fluid-burner-generator'; efficiency = 0.5; custom_tooltip_fields = @($theirRow) }
-        # THE DE-DUPLICATION CASE (#129 review). Two identical rows of theirs, one deleted, one of
-        # ours appended. A presence test sees their row still there and excuses the lot; only a
-        # multiset sees the loss. The fixture is the whole reason the counting exists.
-        $tipDupBase = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($theirRow, $theirRow) }
-        $tipDeduped = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($theirRow, $ourRow) }
-        # A row of a KIND the prototype did not have. It names a fluid of ours, so condition 1 passes
-        # and condition 2 must reject it: an invented row on their entity is what this repo appending
-        # to a third-party prototype looks like, and it must not be excused as their generator.
-        $tipNewKind = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @(
-                        $theirRow
-                        @{ name = 'description.rf-something-of-ours'; value = @('', "[fluid=$ourFluid]") }) }
-        # No tooltip field at all in the baseline, so there is no kind to match and no generator of
-        # theirs demonstrably at work. Reported, and the run must reach that verdict on condition 2
-        # rather than on the phantom 'null' entry an absent field used to serialise to.
-        $tipNoBase  = @{ name = 'se-fluid-burner-generator'; efficiency = 1 }
-        # The same absent-field shape on the UNLOCK side, where it IS a wiring: a technology of
-        # theirs that had no effects at all gains one, for a recipe the set derived from us. This is
-        # the case the phantom entry silently reported, and it must be excused.
-        $techNoBase = @{ name = 'kr-fluid-excess-handling' }
-        $techGained = @{ name = 'kr-fluid-excess-handling'; effects = @(@{ type = 'unlock-recipe'; recipe = $setName }) }
+                # THE TOOLTIP HALF (#129), and the fixtures are the shape SE really produced: a row per
+                # non-hidden fuel fluid, the name embedded in a localised string rather than in a field.
+                # $tipOurs is the measured case -- one row of theirs kept untouched, one row of ours appended.
+                $ourFluid   = 'rf-reactor-energy'
+                $gen        = 'generator/se-fluid-burner-generator'
+                $theirRow   = @{ name = 'description.fluid-consumption'; value = @('', '[fluid=se-antimatter-stream]', ' ', '60', 'per-second-suffix') }
+                $ourRow     = @{ name = 'description.fluid-consumption'; value = @('', "[fluid=$ourFluid]", ' ', '30', 'per-second-suffix') }
+                $tipBefore  = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($theirRow) }
+                $tipOurs    = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($theirRow, $ourRow) }
+                # A row naming a fluid of THEIRS that the baseline did not have. Nothing to do with us, so
+                # it must not be excused just because the field is the right one.
+                $tipTheirs  = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @(
+                                $theirRow
+                                @{ name = 'description.fluid-consumption'; value = @('', '[fluid=se-something-of-theirs]', ' ', '30', 'per-second-suffix') }) }
+                $tipDropped = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($ourRow) }
+                # THE ONE THAT MATTERS MOST: our row appended AND a row of theirs reworded in the same diff.
+                # An additions-only test that compared counts, or that stopped at "one of the added rows is
+                # ours", would wave this through -- and it is a real edit to a prototype of theirs.
+                $tipEdited  = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @(
+                                @{ name = 'description.fluid-consumption'; value = @('', '[fluid=se-antimatter-stream]', ' ', '99', 'per-second-suffix') }
+                                $ourRow) }
+                # And the field allow-list, from the tooltip side: rows identical, something else changed.
+                $tipOther   = @{ name = 'se-fluid-burner-generator'; efficiency = 0.5; custom_tooltip_fields = @($theirRow) }
+                # THE DE-DUPLICATION CASE (#129 review). Two identical rows of theirs, one deleted, one of
+                # ours appended. A presence test sees their row still there and excuses the lot; only a
+                # multiset sees the loss. The fixture is the whole reason the counting exists.
+                $tipDupBase = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($theirRow, $theirRow) }
+                $tipDeduped = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @($theirRow, $ourRow) }
+                # A row of a KIND the prototype did not have. It names a fluid of ours, so condition 1 passes
+                # and condition 2 must reject it: an invented row on their entity is what this repo appending
+                # to a third-party prototype looks like, and it must not be excused as their generator.
+                $tipNewKind = @{ name = 'se-fluid-burner-generator'; efficiency = 1; custom_tooltip_fields = @(
+                                $theirRow
+                                @{ name = 'description.rf-something-of-ours'; value = @('', "[fluid=$ourFluid]") }) }
+                # No tooltip field at all in the baseline, so there is no kind to match and no generator of
+                # theirs demonstrably at work. Reported, and the run must reach that verdict on condition 2
+                # rather than on the phantom 'null' entry an absent field used to serialise to.
+                $tipNoBase  = @{ name = 'se-fluid-burner-generator'; efficiency = 1 }
+                # The same absent-field shape on the UNLOCK side, where it IS a wiring: a technology of
+                # theirs that had no effects at all gains one, for a recipe the set derived from us. This is
+                # the case the phantom entry silently reported, and it must be excused.
+                $techNoBase = @{ name = 'kr-fluid-excess-handling' }
+                $techGained = @{ name = 'kr-fluid-excess-handling'; effects = @(@{ type = 'unlock-recipe'; recipe = $setName }) }
 
-        # THE RE-HOMED HALF (#192, decided on #191), and the fixtures are the shape bobplates really
-        # produces: a technology of the SET's that already carries base Factorio's barrel unlocks,
-        # gaining the ones base Factorio generated from OUR fluids. Nothing here is named by us and
-        # nothing here is generated by the set -- which is exactly why the unlock predicate alone
-        # declines it, and why our own names cannot be the evidence that excuses it.
-        $bobTech    = 'technology/bob-fluid-barrel-processing'
-        # CONDITION 2'S OWN EVIDENCE, and since #200 it is the baseline dump's FLUID that carries it:
-        # `water` is what `water-barrel` and `empty-water-barrel` are constructed from, so a
-        # technology unlocking either is a host. No category anywhere -- the rule stopped reading
-        # them, because a set can swap the label on the whole set of recipes and Angel's does.
-        # `bob-alloy` is a non-barrel recipe of theirs, so a test that merely found SOME baseline
-        # unlock would not pass by accident.
-        #
-        # AND TWO FLUIDS OF THEIRS THE GAME BARRELS NOTHING FOR, one per gate, because a constructed
-        # name is not evidence the engine generated it on their side either. `bob-fake-fluid` sets
-        # `auto_barrel = false` and still has both halves of the pair in the dump, so only the
-        # engine's switch can decline it; `bob-hand-bottled` has a fill recipe and NO `empty-` half,
-        # which is what a hand-written one looks like. The cases below prove a technology whose only
-        # barrel unlock is one of these hosts nothing.
-        $theirSkipped   = 'bob-fake-fluid'    # auto_barrel = false, so the game barrels nothing
-        $theirHandMade  = 'bob-hand-bottled'  # no `empty-` half in the baseline at all
-        $barrelBase = @{
-            'fluid/water'               = '{"name":"water"}'
-            'recipe/water-barrel'       = '{"name":"water-barrel"}'
-            'recipe/empty-water-barrel' = '{"name":"empty-water-barrel"}'
-            'recipe/bob-alloy'          = '{"name":"bob-alloy"}'
-            "fluid/$theirSkipped"               = '{"name":"bob-fake-fluid","auto_barrel":false}'
-            "recipe/$theirSkipped-barrel"       = '{"name":"bob-fake-fluid-barrel"}'
-            "recipe/empty-$theirSkipped-barrel" = '{"name":"empty-bob-fake-fluid-barrel"}'
-            "fluid/$theirHandMade"              = '{"name":"bob-hand-bottled"}'
-            "recipe/$theirHandMade-barrel"      = '{"name":"bob-hand-bottled-barrel"}'
-        }
-        # CONDITION 1'S OWN EVIDENCE, and it has to live in the WITH-US dump rather than the
-        # baseline: the fluid, so its `auto_barrel` can be read, and the `empty-` recipe, whose
-        # appearance is what shows base Factorio actually barrelled it. Three fluids, because the
-        # rule has three answers -- one barrelled, one the game skips, and one that claims to be
-        # barrelled but whose recipe never appeared.
-        $ourFluidB    = 'rf-brine'
-        $ourPlasma    = 'rf-d-d-plasma'      # auto_barrel = false, so the game generates nothing
-        $ourUnbottled = 'rf-nothing-barrels' # no `empty-` recipe in the dump at all
-        $barrelWith = @{
-            "fluid/$ourFluidB"                 = '{"name":"rf-brine"}'
-            "recipe/empty-$ourFluidB-barrel"   = '{"name":"empty-rf-brine-barrel"}'
-            "recipe/$ourFluidB-barrel"         = '{"name":"rf-brine-barrel"}'
-            "fluid/$ourPlasma"                 = '{"name":"rf-d-d-plasma","auto_barrel":false}'
-            # PRESENT ON PURPOSE. The pair exists under the plasma's name -- which is what this repo
-            # hand-writing one would look like -- so only `auto_barrel` can decline it, and the case
-            # below proves that it does rather than the presence test doing the work.
-            "recipe/empty-$ourPlasma-barrel"   = '{"name":"empty-rf-d-d-plasma-barrel"}'
-            "recipe/$ourPlasma-barrel"         = '{"name":"rf-d-d-plasma-barrel"}'
-            "fluid/$ourUnbottled"              = '{"name":"rf-nothing-barrels"}'
-            "recipe/$ourUnbottled-barrel"      = '{"name":"rf-nothing-barrels-barrel"}'
-        }
-        $vanillaFill  = @{ type = 'unlock-recipe'; recipe = 'water-barrel' }
-        $vanillaEmpty = @{ type = 'unlock-recipe'; recipe = 'empty-water-barrel' }
-        $oursFill     = @{ type = 'unlock-recipe'; recipe = "$ourFluidB-barrel" }
-        $oursEmpty    = @{ type = 'unlock-recipe'; recipe = "empty-$ourFluidB-barrel" }
-        $bobBefore  = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill, $vanillaEmpty) }
-        $bobRehomed = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill, $vanillaEmpty, $oursFill, $oursEmpty) }
-        # MIXED, and it must pass reporting BOTH stories. A technology that both re-homes our barrel
-        # unlocks and wires in a recipe the set derived from us is fully explained; rejecting it
-        # because two explanations met in one prototype would be wrong, and printing only one of them
-        # would tell the reader half the truth on the single line they see.
-        $bobMixed   = @{ name = 'bob-fluid-barrel-processing'; effects = @(
-                        $vanillaFill, $vanillaEmpty, $oursFill
-                        @{ type = 'unlock-recipe'; recipe = $setName }) }
-        # A BARREL UNLOCK THAT IS NOT BUILT FROM A FLUID OF OURS. `bob-lubricant` is not in
-        # $OurFluids, so nothing here constructed that name and the row is a plain replacement.
-        $bobNotOurs = @{ name = 'bob-fluid-barrel-processing'; effects = @(
-                        $vanillaFill, $vanillaEmpty
-                        @{ type = 'unlock-recipe'; recipe = 'bob-lubricant-barrel' }) }
-        # CONDITION 2 SAYING NO. The same added unlocks, onto a technology whose baseline carried no
-        # barrel unlock of any kind -- so no pass of theirs is visibly already running, and the only
-        # thing left pointing at an author is our name, which #191 rejected as evidence.
-        $plainTech   = 'technology/bob-something-else'
-        $plainBefore = @{ name = 'bob-something-else'; effects = @(@{ type = 'unlock-recipe'; recipe = 'bob-alloy' }) }
-        $plainGained = @{ name = 'bob-something-else'; effects = @(
-                        @{ type = 'unlock-recipe'; recipe = 'bob-alloy' }
-                        $oursFill, $oursEmpty) }
-        # AND CONDITION 2 SAYING NO TO OURSELVES (#200), which is what proves the host list is built
-        # from the BASELINE dump. This technology's baseline unlock is a barrel named for a fluid of
-        # OURS -- a shape no real lane can produce, since the baseline is the game without us, and
-        # that is exactly the point: `rf-brine` is not in the baseline, so `rf-brine-barrel` cannot
-        # be constructed from it and this technology hosts nothing. Build the list from the with-us
-        # dump or from $OurFluids instead and the rule collapses into "our own name is the
-        # evidence", which #191 rejected and which no other case here would notice.
-        $ourTech    = 'technology/bob-only-ours'
-        $ourBefore  = @{ name = 'bob-only-ours'; effects = @($oursFill) }
-        $ourGained  = @{ name = 'bob-only-ours'; effects = @($oursFill, $oursEmpty) }
-        # AND CONDITION 2'S TWO GATES, which are condition 1's read on the other side of the diff.
-        # Each technology's only baseline barrel unlock is a name built from a fluid of THEIRS that
-        # the game barrels nothing for, so neither is a host and our unlocks landing there are still
-        # a replacement. Without these gates a set could hand-write one recipe under the name the
-        # generation would have used and buy an exemption for all 22 of ours.
-        $skipHost     = 'technology/bob-fake-barrelling'
-        $skipUnlock   = @{ type = 'unlock-recipe'; recipe = "$theirSkipped-barrel" }
-        $skipBefore   = @{ name = 'bob-fake-barrelling'; effects = @($skipUnlock) }
-        $skipGained   = @{ name = 'bob-fake-barrelling'; effects = @($skipUnlock, $oursFill, $oursEmpty) }
-        $handHost     = 'technology/bob-hand-barrelling'
-        $handUnlock   = @{ type = 'unlock-recipe'; recipe = "$theirHandMade-barrel" }
-        $handBefore   = @{ name = 'bob-hand-barrelling'; effects = @($handUnlock) }
-        $handGained   = @{ name = 'bob-hand-barrelling'; effects = @($handUnlock, $oursFill, $oursEmpty) }
-        # A DIFF THAT IS NOT ONLY ADDED UNLOCKS, on the re-homed shape rather than the wiring one:
-        # the barrel unlocks arrive AND a second field moves. The field allow-list must still bite.
-        $bobOther   = @{ name = 'bob-fluid-barrel-processing'; unit = 42; effects = @($vanillaFill, $vanillaEmpty, $oursFill, $oursEmpty) }
-        # AN EFFECT REMOVED beside the re-homed additions. Their own unlock disappears while ours
-        # arrive, which is an edit to their technology however well-explained the additions are.
-        $bobDropped = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill, $oursFill, $oursEmpty) }
-        # A FLUID THE GAME DOES NOT BARREL. `auto_barrel = false`, so nothing named
-        # `rf-d-d-plasma-barrel` can be base Factorio's however plausible the name looks -- and the
-        # fixture puts BOTH halves of the pair in the dump, so the presence test passes and only the
-        # engine's own switch is left to decline it. This is the case the first version of the rule
-        # got wrong for all six of our unbarrelled fluids.
-        $bobPlasma  = @{ name = 'bob-fluid-barrel-processing'; effects = @(
-                        $vanillaFill, $vanillaEmpty
-                        @{ type = 'unlock-recipe'; recipe = "$ourPlasma-barrel" }
-                        @{ type = 'unlock-recipe'; recipe = "empty-$ourPlasma-barrel" }) }
-        # AND THE OTHER HALF OF CONDITION 1: a fluid with no `empty-` recipe anywhere in the dump, so
-        # there is no evidence the game barrelled it, whatever its `auto_barrel` says. A lone fill
-        # recipe under a constructed name is what a hand-written one looks like.
-        $bobUnbot   = @{ name = 'bob-fluid-barrel-processing'; effects = @(
-                        $vanillaFill, $vanillaEmpty
-                        @{ type = 'unlock-recipe'; recipe = "$ourUnbottled-barrel" }) }
+                # THE RE-HOMED HALF (#192, decided on #191), and the fixtures are the shape bobplates really
+                # produces: a technology of the SET's that already carries base Factorio's barrel unlocks,
+                # gaining the ones base Factorio generated from OUR fluids. Nothing here is named by us and
+                # nothing here is generated by the set -- which is exactly why the unlock predicate alone
+                # declines it, and why our own names cannot be the evidence that excuses it.
+                $bobTech    = 'technology/bob-fluid-barrel-processing'
+                # CONDITION 2'S OWN EVIDENCE, and since #200 it is the baseline dump's FLUID that carries it:
+                # `water` is what `water-barrel` and `empty-water-barrel` are constructed from, so a
+                # technology unlocking either is a host. No category anywhere -- the rule stopped reading
+                # them, because a set can swap the label on the whole set of recipes and Angel's does.
+                # `bob-alloy` is a non-barrel recipe of theirs, so a test that merely found SOME baseline
+                # unlock would not pass by accident.
+                #
+                # AND TWO FLUIDS OF THEIRS THE GAME BARRELS NOTHING FOR, one per gate, because a constructed
+                # name is not evidence the engine generated it on their side either. `bob-fake-fluid` sets
+                # `auto_barrel = false` and still has both halves of the pair in the dump, so only the
+                # engine's switch can decline it; `bob-hand-bottled` has a fill recipe and NO `empty-` half,
+                # which is what a hand-written one looks like. The cases below prove a technology whose only
+                # barrel unlock is one of these hosts nothing.
+                $theirSkipped   = 'bob-fake-fluid'    # auto_barrel = false, so the game barrels nothing
+                $theirHandMade  = 'bob-hand-bottled'  # no `empty-` half in the baseline at all
+                $barrelBase = @{
+                    'fluid/water'               = '{"name":"water"}'
+                    'recipe/water-barrel'       = '{"name":"water-barrel"}'
+                    'recipe/empty-water-barrel' = '{"name":"empty-water-barrel"}'
+                    'recipe/bob-alloy'          = '{"name":"bob-alloy"}'
+                    "fluid/$theirSkipped"               = '{"name":"bob-fake-fluid","auto_barrel":false}'
+                    "recipe/$theirSkipped-barrel"       = '{"name":"bob-fake-fluid-barrel"}'
+                    "recipe/empty-$theirSkipped-barrel" = '{"name":"empty-bob-fake-fluid-barrel"}'
+                    "fluid/$theirHandMade"              = '{"name":"bob-hand-bottled"}'
+                    "recipe/$theirHandMade-barrel"      = '{"name":"bob-hand-bottled-barrel"}'
+                }
+                # CONDITION 1'S OWN EVIDENCE, and it has to live in the WITH-US dump rather than the
+                # baseline: the fluid, so its `auto_barrel` can be read, and the `empty-` recipe, whose
+                # appearance is what shows base Factorio actually barrelled it. Three fluids, because the
+                # rule has three answers -- one barrelled, one the game skips, and one that claims to be
+                # barrelled but whose recipe never appeared.
+                $ourFluidB    = 'rf-brine'
+                $ourPlasma    = 'rf-d-d-plasma'      # auto_barrel = false, so the game generates nothing
+                $ourUnbottled = 'rf-nothing-barrels' # no `empty-` recipe in the dump at all
+                $barrelWith = @{
+                    "fluid/$ourFluidB"                 = '{"name":"rf-brine"}'
+                    "recipe/empty-$ourFluidB-barrel"   = '{"name":"empty-rf-brine-barrel"}'
+                    "recipe/$ourFluidB-barrel"         = '{"name":"rf-brine-barrel"}'
+                    "fluid/$ourPlasma"                 = '{"name":"rf-d-d-plasma","auto_barrel":false}'
+                    # PRESENT ON PURPOSE. The pair exists under the plasma's name -- which is what this repo
+                    # hand-writing one would look like -- so only `auto_barrel` can decline it, and the case
+                    # below proves that it does rather than the presence test doing the work.
+                    "recipe/empty-$ourPlasma-barrel"   = '{"name":"empty-rf-d-d-plasma-barrel"}'
+                    "recipe/$ourPlasma-barrel"         = '{"name":"rf-d-d-plasma-barrel"}'
+                    "fluid/$ourUnbottled"              = '{"name":"rf-nothing-barrels"}'
+                    "recipe/$ourUnbottled-barrel"      = '{"name":"rf-nothing-barrels-barrel"}'
+                }
+                $vanillaFill  = @{ type = 'unlock-recipe'; recipe = 'water-barrel' }
+                $vanillaEmpty = @{ type = 'unlock-recipe'; recipe = 'empty-water-barrel' }
+                $oursFill     = @{ type = 'unlock-recipe'; recipe = "$ourFluidB-barrel" }
+                $oursEmpty    = @{ type = 'unlock-recipe'; recipe = "empty-$ourFluidB-barrel" }
+                $bobBefore  = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill, $vanillaEmpty) }
+                $bobRehomed = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill, $vanillaEmpty, $oursFill, $oursEmpty) }
+                # MIXED, and it must pass reporting BOTH stories. A technology that both re-homes our barrel
+                # unlocks and wires in a recipe the set derived from us is fully explained; rejecting it
+                # because two explanations met in one prototype would be wrong, and printing only one of them
+                # would tell the reader half the truth on the single line they see.
+                $bobMixed   = @{ name = 'bob-fluid-barrel-processing'; effects = @(
+                                $vanillaFill, $vanillaEmpty, $oursFill
+                                @{ type = 'unlock-recipe'; recipe = $setName }) }
+                # A BARREL UNLOCK THAT IS NOT BUILT FROM A FLUID OF OURS. `bob-lubricant` is not in
+                # $OurFluids, so nothing here constructed that name and the row is a plain replacement.
+                $bobNotOurs = @{ name = 'bob-fluid-barrel-processing'; effects = @(
+                                $vanillaFill, $vanillaEmpty
+                                @{ type = 'unlock-recipe'; recipe = 'bob-lubricant-barrel' }) }
+                # CONDITION 2 SAYING NO. The same added unlocks, onto a technology whose baseline carried no
+                # barrel unlock of any kind -- so no pass of theirs is visibly already running, and the only
+                # thing left pointing at an author is our name, which #191 rejected as evidence.
+                $plainTech   = 'technology/bob-something-else'
+                $plainBefore = @{ name = 'bob-something-else'; effects = @(@{ type = 'unlock-recipe'; recipe = 'bob-alloy' }) }
+                $plainGained = @{ name = 'bob-something-else'; effects = @(
+                                @{ type = 'unlock-recipe'; recipe = 'bob-alloy' }
+                                $oursFill, $oursEmpty) }
+                # AND CONDITION 2 SAYING NO TO OURSELVES (#200), which is what proves the host list is built
+                # from the BASELINE dump. This technology's baseline unlock is a barrel named for a fluid of
+                # OURS -- a shape no real lane can produce, since the baseline is the game without us, and
+                # that is exactly the point: `rf-brine` is not in the baseline, so `rf-brine-barrel` cannot
+                # be constructed from it and this technology hosts nothing. Build the list from the with-us
+                # dump or from $OurFluids instead and the rule collapses into "our own name is the
+                # evidence", which #191 rejected and which no other case here would notice.
+                $ourTech    = 'technology/bob-only-ours'
+                $ourBefore  = @{ name = 'bob-only-ours'; effects = @($oursFill) }
+                $ourGained  = @{ name = 'bob-only-ours'; effects = @($oursFill, $oursEmpty) }
+                # AND CONDITION 2'S TWO GATES, which are condition 1's read on the other side of the diff.
+                # Each technology's only baseline barrel unlock is a name built from a fluid of THEIRS that
+                # the game barrels nothing for, so neither is a host and our unlocks landing there are still
+                # a replacement. Without these gates a set could hand-write one recipe under the name the
+                # generation would have used and buy an exemption for all 22 of ours.
+                $skipHost     = 'technology/bob-fake-barrelling'
+                $skipUnlock   = @{ type = 'unlock-recipe'; recipe = "$theirSkipped-barrel" }
+                $skipBefore   = @{ name = 'bob-fake-barrelling'; effects = @($skipUnlock) }
+                $skipGained   = @{ name = 'bob-fake-barrelling'; effects = @($skipUnlock, $oursFill, $oursEmpty) }
+                $handHost     = 'technology/bob-hand-barrelling'
+                $handUnlock   = @{ type = 'unlock-recipe'; recipe = "$theirHandMade-barrel" }
+                $handBefore   = @{ name = 'bob-hand-barrelling'; effects = @($handUnlock) }
+                $handGained   = @{ name = 'bob-hand-barrelling'; effects = @($handUnlock, $oursFill, $oursEmpty) }
+                # A DIFF THAT IS NOT ONLY ADDED UNLOCKS, on the re-homed shape rather than the wiring one:
+                # the barrel unlocks arrive AND a second field moves. The field allow-list must still bite.
+                $bobOther   = @{ name = 'bob-fluid-barrel-processing'; unit = 42; effects = @($vanillaFill, $vanillaEmpty, $oursFill, $oursEmpty) }
+                # AN EFFECT REMOVED beside the re-homed additions. Their own unlock disappears while ours
+                # arrive, which is an edit to their technology however well-explained the additions are.
+                $bobDropped = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill, $oursFill, $oursEmpty) }
+                # A FLUID THE GAME DOES NOT BARREL. `auto_barrel = false`, so nothing named
+                # `rf-d-d-plasma-barrel` can be base Factorio's however plausible the name looks -- and the
+                # fixture puts BOTH halves of the pair in the dump, so the presence test passes and only the
+                # engine's own switch is left to decline it. This is the case the first version of the rule
+                # got wrong for all six of our unbarrelled fluids.
+                $bobPlasma  = @{ name = 'bob-fluid-barrel-processing'; effects = @(
+                                $vanillaFill, $vanillaEmpty
+                                @{ type = 'unlock-recipe'; recipe = "$ourPlasma-barrel" }
+                                @{ type = 'unlock-recipe'; recipe = "empty-$ourPlasma-barrel" }) }
+                # AND THE OTHER HALF OF CONDITION 1: a fluid with no `empty-` recipe anywhere in the dump, so
+                # there is no evidence the game barrelled it, whatever its `auto_barrel` says. A lone fill
+                # recipe under a constructed name is what a hand-written one looks like.
+                $bobUnbot   = @{ name = 'bob-fluid-barrel-processing'; effects = @(
+                                $vanillaFill, $vanillaEmpty
+                                @{ type = 'unlock-recipe'; recipe = "$ourUnbottled-barrel" }) }
 
-        # EXACTLY ONE QUALIFYING BASELINE UNLOCK, which is the case that pins the `0 -lt` in
-        # $barrelHost (#222). Every other re-homing case is built on $bobBefore, and that fixture
-        # carries TWO qualifying unlocks -- water-barrel and empty-water-barrel -- so it clears a
-        # threshold of one exactly as easily as a threshold of zero and distinguishes neither. The
-        # four condition-2 negatives all host NOTHING that qualifies, so they do not distinguish
-        # them either. This one hosts one: at `1 -lt` it stops being a host, its re-homed unlocks
-        # are rejected, and the case reports instead of being exempt.
-        #
-        # ONE FILL WITHOUT ITS empty- HALF IS DELIBERATE and is not the shape
-        # 'a barrel whose empty- half never appeared' tests. That case is about a fluid of OURS with
-        # no empty- recipe in the dump, which fails condition 1; this is about how much of THEIR
-        # barrelling has to be present before the destination counts as a host at all, which is
-        # condition 2. water-barrel still qualifies here because the baseline dump holds fluid/water
-        # and recipe/empty-water-barrel -- what changed is only how many of the pair this technology
-        # unlocks.
-        $bobLoneBefore = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill) }
-        $bobLoneAfter  = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill, $oursFill, $oursEmpty) }
+                # EXACTLY ONE QUALIFYING BASELINE UNLOCK, which is the case that pins the `0 -lt` in
+                # $barrelHost (#222). Every other re-homing case is built on $bobBefore, and that fixture
+                # carries TWO qualifying unlocks -- water-barrel and empty-water-barrel -- so it clears a
+                # threshold of one exactly as easily as a threshold of zero and distinguishes neither. The
+                # four condition-2 negatives all host NOTHING that qualifies, so they do not distinguish
+                # them either. This one hosts one: at `1 -lt` it stops being a host, its re-homed unlocks
+                # are rejected, and the case reports instead of being exempt.
+                #
+                # ONE FILL WITHOUT ITS empty- HALF IS DELIBERATE and is not the shape
+                # 'a barrel whose empty- half never appeared' tests. That case is about a fluid of OURS with
+                # no empty- recipe in the dump, which fails condition 1; this is about how much of THEIR
+                # barrelling has to be present before the destination counts as a host at all, which is
+                # condition 2. water-barrel still qualifies here because the baseline dump holds fluid/water
+                # and recipe/empty-water-barrel -- what changed is only how many of the pair this technology
+                # unlocks.
+                $bobLoneBefore = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill) }
+                $bobLoneAfter  = @{ name = 'bob-fluid-barrel-processing'; effects = @($vanillaFill, $oursFill, $oursEmpty) }
 
-        $j = { param($o) $o | ConvertTo-Json -Depth 100 -Compress }
+                $j = { param($o) $o | ConvertTo-Json -Depth 100 -Compress }
 
-        $cases = @(
-            @{ Label = 'the set wiring its own derivation in';       Key = $tech; Before = $before; After = $wired;   Exempt = $true; Shape = 'unlock' }
-            @{ Label = 'an unlock for a recipe that is NOT ours';    Key = $tech; Before = $before; After = $foreign; Exempt = $false }
-            @{ Label = 'a field other than effects changing';        Key = $tech; Before = $before; After = $renamed; Exempt = $false }
-            @{ Label = 'an effect being REMOVED';                    Key = $tech; Before = $before; After = $dropped; Exempt = $false }
-            @{ Label = 'a tooltip row naming a fluid of ours';       Key = $gen;  Before = $tipBefore; After = $tipOurs;    Exempt = $true; Shape = 'tooltip' }
-            @{ Label = 'a tooltip row naming nothing of ours';       Key = $gen;  Before = $tipBefore; After = $tipTheirs;  Exempt = $false }
-            @{ Label = 'a tooltip row being REMOVED';                Key = $gen;  Before = $tipBefore; After = $tipDropped; Exempt = $false }
-            @{ Label = 'a row of theirs REWORDED beside ours';       Key = $gen;  Before = $tipBefore; After = $tipEdited;  Exempt = $false }
-            @{ Label = 'a field other than the tooltips changing';   Key = $gen;  Before = $tipBefore; After = $tipOther;   Exempt = $false }
-            @{ Label = 'a DUPLICATE row of theirs de-duplicated';    Key = $gen;  Before = $tipDupBase; After = $tipDeduped; Exempt = $false }
-            @{ Label = 'a row of a kind the prototype did not have'; Key = $gen;  Before = $tipBefore;  After = $tipNewKind; Exempt = $false }
-            @{ Label = 'a tooltip field appearing from nothing';     Key = $gen;  Before = $tipNoBase;  After = $tipOurs;    Exempt = $false }
-            @{ Label = 'an effects field appearing from nothing';    Key = $tech; Before = $techNoBase; After = $techGained; Exempt = $true; Shape = 'unlock' }
-            @{ Label = 'our barrel unlocks re-homed onto their tech'; Key = $bobTech; Before = $bobBefore; After = $bobRehomed; Exempt = $true; Shape = 'rehomed' }
-            @{ Label = 'a re-homing AND a wiring in one technology';  Key = $bobTech; Before = $bobBefore; After = $bobMixed;   Exempt = $true; Shape = 'unlock+rehomed' }
-            @{ Label = 'a barrel unlock built from no fluid of ours'; Key = $bobTech;   Before = $bobBefore;   After = $bobNotOurs;  Exempt = $false }
-            @{ Label = 'our barrel unlocks onto a NON-barrel tech';   Key = $plainTech; Before = $plainBefore; After = $plainGained; Exempt = $false }
-            @{ Label = 'a tech hosting only OUR barrels';             Key = $ourTech;   Before = $ourBefore;   After = $ourGained;   Exempt = $false }
-            @{ Label = 'a host built from a fluid the game skips';    Key = $skipHost;  Before = $skipBefore;  After = $skipGained;  Exempt = $false }
-            @{ Label = 'a host whose empty- half is not the game''s'; Key = $handHost;  Before = $handBefore;  After = $handGained;  Exempt = $false }
-            @{ Label = 'a re-homing with another field changed';      Key = $bobTech;   Before = $bobBefore;   After = $bobOther;    Exempt = $false }
-            @{ Label = 'a re-homing with an effect REMOVED';          Key = $bobTech;   Before = $bobBefore;   After = $bobDropped;  Exempt = $false }
-            @{ Label = 'barrels named for a fluid the game skips';   Key = $bobTech;   Before = $bobBefore;   After = $bobPlasma;   Exempt = $false }
-            @{ Label = 'a barrel whose empty- half never appeared';  Key = $bobTech;   Before = $bobBefore;   After = $bobUnbot;    Exempt = $false }
-            @{ Label = 'a host carrying exactly ONE barrel unlock';  Key = $bobTech;   Before = $bobLoneBefore; After = $bobLoneAfter; Exempt = $true; Shape = 'rehomed' }
+                $cases = @(
+                    @{ Label = 'the set wiring its own derivation in';       Key = $tech; Before = $before; After = $wired;   Exempt = $true; Shape = 'unlock' }
+                    @{ Label = 'an unlock for a recipe that is NOT ours';    Key = $tech; Before = $before; After = $foreign; Exempt = $false }
+                    @{ Label = 'a field other than effects changing';        Key = $tech; Before = $before; After = $renamed; Exempt = $false }
+                    @{ Label = 'an effect being REMOVED';                    Key = $tech; Before = $before; After = $dropped; Exempt = $false }
+                    @{ Label = 'a tooltip row naming a fluid of ours';       Key = $gen;  Before = $tipBefore; After = $tipOurs;    Exempt = $true; Shape = 'tooltip' }
+                    @{ Label = 'a tooltip row naming nothing of ours';       Key = $gen;  Before = $tipBefore; After = $tipTheirs;  Exempt = $false }
+                    @{ Label = 'a tooltip row being REMOVED';                Key = $gen;  Before = $tipBefore; After = $tipDropped; Exempt = $false }
+                    @{ Label = 'a row of theirs REWORDED beside ours';       Key = $gen;  Before = $tipBefore; After = $tipEdited;  Exempt = $false }
+                    @{ Label = 'a field other than the tooltips changing';   Key = $gen;  Before = $tipBefore; After = $tipOther;   Exempt = $false }
+                    @{ Label = 'a DUPLICATE row of theirs de-duplicated';    Key = $gen;  Before = $tipDupBase; After = $tipDeduped; Exempt = $false }
+                    @{ Label = 'a row of a kind the prototype did not have'; Key = $gen;  Before = $tipBefore;  After = $tipNewKind; Exempt = $false }
+                    @{ Label = 'a tooltip field appearing from nothing';     Key = $gen;  Before = $tipNoBase;  After = $tipOurs;    Exempt = $false }
+                    @{ Label = 'an effects field appearing from nothing';    Key = $tech; Before = $techNoBase; After = $techGained; Exempt = $true; Shape = 'unlock' }
+                    @{ Label = 'our barrel unlocks re-homed onto their tech'; Key = $bobTech; Before = $bobBefore; After = $bobRehomed; Exempt = $true; Shape = 'rehomed' }
+                    @{ Label = 'a re-homing AND a wiring in one technology';  Key = $bobTech; Before = $bobBefore; After = $bobMixed;   Exempt = $true; Shape = 'unlock+rehomed' }
+                    @{ Label = 'a barrel unlock built from no fluid of ours'; Key = $bobTech;   Before = $bobBefore;   After = $bobNotOurs;  Exempt = $false }
+                    @{ Label = 'our barrel unlocks onto a NON-barrel tech';   Key = $plainTech; Before = $plainBefore; After = $plainGained; Exempt = $false }
+                    @{ Label = 'a tech hosting only OUR barrels';             Key = $ourTech;   Before = $ourBefore;   After = $ourGained;   Exempt = $false }
+                    @{ Label = 'a host built from a fluid the game skips';    Key = $skipHost;  Before = $skipBefore;  After = $skipGained;  Exempt = $false }
+                    @{ Label = 'a host whose empty- half is not the game''s'; Key = $handHost;  Before = $handBefore;  After = $handGained;  Exempt = $false }
+                    @{ Label = 'a re-homing with another field changed';      Key = $bobTech;   Before = $bobBefore;   After = $bobOther;    Exempt = $false }
+                    @{ Label = 'a re-homing with an effect REMOVED';          Key = $bobTech;   Before = $bobBefore;   After = $bobDropped;  Exempt = $false }
+                    @{ Label = 'barrels named for a fluid the game skips';   Key = $bobTech;   Before = $bobBefore;   After = $bobPlasma;   Exempt = $false }
+                    @{ Label = 'a barrel whose empty- half never appeared';  Key = $bobTech;   Before = $bobBefore;   After = $bobUnbot;    Exempt = $false }
+                    @{ Label = 'a host carrying exactly ONE barrel unlock';  Key = $bobTech;   Before = $bobLoneBefore; After = $bobLoneAfter; Exempt = $true; Shape = 'rehomed' }
+                )
+                # THE EMPTY CASE FIRST, because it is the one a real lane hits most and the one the K2 lane
+                # could never reach. Nothing replaced is what a clean coexistence result looks like.
+                $none = Get-DerivedWiring -Replaced @() -WithUs @{} -Baseline @{} -SetDerived @{} -OurNames @() -OurFluids @()
+                if ($none.Count -ne 0) {
+                    Write-Host "FAILED - self-test: an empty `$Replaced returned $($none.Count) exemption(s)."
+                    exit 1
+                }
+                # AND THE SHAPE THAT ACTUALLY BIT: Get-Replaced's empty result unrolls to $null on return,
+                # so the caller must hand this an array it made real itself. Proving the parameter tolerates
+                # @() while the real call site could still pass $null is how this was missed the first time.
+                $rawEmpty = Get-Replaced -WithUs @{} -Baseline @{}
+                if ($null -ne $rawEmpty) {
+                    Write-Host 'FAILED - self-test: Get-Replaced no longer unrolls an empty result to $null,'
+                    Write-Host '         so the @() at its call site may have been dropped as redundant. It is not.'
+                    exit 1
+                }
+                if ((@($rawEmpty)).Count -ne 0) {
+                    Write-Host 'FAILED - self-test: @() around an empty Get-Replaced result is not an empty array.'
+                    exit 1
+                }
+
+                foreach ($c in $cases) {
+                    $k   = $c.Key
+                    # THE BASELINE IS THE WHOLE DUMP, not just the prototype under test. The re-homed
+                    # predicate builds the destination's own barrel names out of the baseline's FLUID
+                    # entries, so a fixture holding only the technology would make condition 2 unsatisfiable
+                    # and every re-homing would report -- a green proving the opposite of what it claimed.
+                    $base = @{}
+                    foreach ($r in $barrelBase.GetEnumerator()) { $base[$r.Key] = $r.Value }
+                    $base[$k] = (& $j $c.Before)
+                    # THE WITH-US DUMP CARRIES CONDITION 1'S EVIDENCE, so it needs the same treatment the
+                    # baseline got: the fluids and their generated recipes, not just the prototype under
+                    # test. A fixture holding only the technology would make condition 1 unsatisfiable and
+                    # every re-homing would report -- green for the opposite of the stated reason.
+                    #
+                    # NOT $with: THAT IS THE SCRIPT'S OWN `-With` PARAMETER, and it is declared `[string[]]`.
+                    # PowerShell keeps a parameter's type constraint on the variable, so assigning a
+                    # hashtable to it does not shadow it -- it COERCES, and the dump silently became a string
+                    # array. The next line then indexed an array with a prototype key and died with "Cannot
+                    # convert value 'recipe/rf-d-d-plasma-barrel' to type System.Int32". Fourth time this
+                    # file has been bitten by a name already taken at script scope; see $REFERENCE_MODS,
+                    # $derivedNames and $derived above.
+                    $withDump = @{ $k = (& $j $c.After) }
+                    foreach ($r in $barrelWith.GetEnumerator()) { $withDump[$r.Key] = $r.Value }
+                    # AND IT CARRIES THE BASELINE'S CONTENTS TOO, because a real with-us dump is the game
+                    # WITH us: everything the baseline holds is in it, ours beside it. A fixture where the
+                    # set's own fluids were missing from this half made a rule that read the WRONG dump fail
+                    # the legitimate re-homing instead of the case written to catch it -- so the mutation
+                    # was caught by the wrong name, which is not evidence about the condition under test.
+                    # The prototype under test is written LAST, so a future case keyed on one of the shared
+                    # fixture entries overrides it rather than being silently overwritten by it.
+                    foreach ($r in $barrelBase.GetEnumerator()) { $withDump[$r.Key] = $r.Value }
+                    $withDump[$k] = (& $j $c.After)
+                    $got = Get-DerivedWiring -Replaced @($k) -WithUs $withDump `
+                                -Baseline $base -SetDerived $classified -OurNames @($ourFluid) `
+                                -OurFluids @($ourFluidB, $ourPlasma, $ourUnbottled)
+                    $was = [bool] $got.ContainsKey($k)
+                    if ($was -ne $c.Exempt) {
+                        Write-Host "FAILED - self-test: $($c.Label) was $(if ($was) { 'excused' } else { 'reported' }), expected the opposite."
+                        exit 1
+                    }
+                    # The SHAPE is asserted too, not just the verdict. Both shapes are excused by the same
+                    # loop, so a dispatch that fell through to the wrong predicate could excuse the right
+                    # key for the wrong reason -- and the per-key line the caller prints would then say
+                    # something untrue about what the set did.
+                    # DECLARED PER CASE rather than inferred from the key, since #192: one key now carries
+                    # three different right answers -- `rehomed`, `unlock+rehomed`, and reported -- so a
+                    # rule keyed on the prototype would assert the same thing for all three.
+                    if ($was -and $got[$k] -ne $c.Shape) {
+                        Write-Host "FAILED - self-test: $($c.Label) was excused as '$($got[$k])', expected '$($c.Shape)'."
+                        exit 1
+                    }
+                }
+                    ("an empty replacement list binds, and the set-derivation classifiers`n" +
+                     "               excuse what the set built from us and what base Factorio built from`n" +
+                     "               us that the set re-homed, and nothing else -- an unprefixed name of`n" +
+                     "               ours, a LONE one embedding one of ours, an unlock for a recipe that`n" +
+                     "               is not ours, a barrel unlock built from no fluid of ours, one named`n" +
+                     "               for a fluid the game does not barrel, one whose empty- half never`n" +
+                     "               appeared, our barrel unlocks onto a technology that carried none,`n" +
+                     "               the same onto one whose only barrels are named for a fluid of OURS`n" +
+                     "               -- so the host list is built from the baseline dump and not from`n" +
+                     "               us -- the same onto one whose only barrel unlock the game never`n" +
+                     "               generated, by either gate,`n" +
+                     "               a tooltip row naming nothing of ours, a row of theirs reworded`n" +
+                     "               beside ours, a duplicate row of theirs de-duplicated, a row of a`n" +
+                     "               kind the prototype did not have, a changed field and a removed`n" +
+                     "               entry all survive; an effects field appearing from nothing is`n" +
+                     "               still a wiring; a technology that both wires and re-homes passes`n" +
+                     "               and says so; each exemption is checked under the RIGHT label; and`n" +
+                 "               a name the set redefines in both dumps is still caught by the scan.")
+            } }
+
+            @{ Name = 'declared-edit-line'; Body = {
+                # ------------------------------------------------------- the declared-edit line (#133)
+                #
+                # THE DECLARED-EDIT LINE SAYS WHAT HAPPENED, NOT WHAT IS PERMITTED (#133). The number beside
+                # "declared" used to be $ALLOWED_EDITS.Count, so it was the same on every lane and true on
+                # none of them in particular. Get-FiredEdits replaced it, and a claim printed to a human is
+                # only worth what breaks when it is wrong.
+                #
+                # SYNTHETIC DUMPS FOR THE FOUR JUDGEMENT CASES, for the reason unprefixed-name and
+                # borrowed-name inject
+                # into the parsed set rather than building a canary mod: what is under test is this script's
+                # judgement, and a controlled pair of hashtables can pose questions a real run does not. Only
+                # one of the four -- "differs, so it fired" -- occurs on a clean run at all.
+                $fakeWith = @{
+                    'technology/differs'   = '{"effects":[1,2]}'   # declared, and changed: fired
+                    'technology/unchanged' = '{"effects":[1]}'     # declared, identical: the Bob's shape
+                    'technology/ours-only' = '{"effects":[1]}'     # declared, absent from the baseline
+                    'technology/undeclared' = '{"effects":[9]}'    # changed, but nobody declared it
+                }
+                $fakeBase = @{
+                    'technology/differs'   = '{"effects":[1]}'
+                    'technology/unchanged' = '{"effects":[1]}'
+                    'technology/undeclared' = '{"effects":[8]}'
+                }
+                $fakeDeclared = @('technology/differs', 'technology/unchanged', 'technology/ours-only')
+                $fired = @(Get-FiredEdits -Declared $fakeDeclared -WithUs $fakeWith -Baseline $fakeBase)
+
+                # Each case named, so a failure says WHICH judgement went wrong rather than that a count
+                # moved. A predicate comparing the wrong way round fails the first two together; one reading
+                # the wrong dump fails the third; one that forgot to restrict itself to the declared list
+                # fails the fourth.
+                $wantFired = @(
+                    @{ Key = 'technology/differs';    Want = $true;
+                       Why = 'a declared edit whose content changed really did fire' }
+                    @{ Key = 'technology/unchanged';  Want = $false;
+                       Why = 'a declared edit identical in both dumps did NOT fire -- the shape the Bob''s lane found' }
+                    @{ Key = 'technology/ours-only';  Want = $false;
+                       Why = 'a declared name the baseline does not have is not an edit to it' }
+                    @{ Key = 'technology/undeclared'; Want = $false;
+                       Why = 'a changed name nobody declared is Get-Replaced''s business, not this line''s' }
+                )
+                foreach ($case in $wantFired) {
+                    $got = $fired -contains $case.Key
+                    if ($got -ne $case.Want) {
+                        Write-Host ("FAILED - self-test: Get-FiredEdits {0} '{1}'. Expected: {2}." -f
+                            $(if ($got) { 'reported' } else { 'did not report' }), $case.Key, $case.Why)
+                        exit 1
+                    }
+                }
+
+                # THE EMPTY CASE, BOUND UNWRAPPED, which is the only place the unrolling is visible (#223).
+                # It pins the PRECONDITION that makes the @() at every call site load-bearing: this function
+                # hands an empty result back as $null, so a caller that binds it bare and asks for .Count
+                # gets 1 rather than 0. Wrapping here and counting -- which this did until #223 -- asserts
+                # only that @() over nothing is empty, which is true however the function returns.
+                #
+                # WHAT IT CANNOT CATCH, MEASURED RATHER THAN ASSUMED (#223). Dropping the @() INSIDE this
+                # function changes nothing a caller can see: on PowerShell 7 `return @($pipeline)` and
+                # `return $pipeline` are indistinguishable, both $null when the pipeline is empty and both a
+                # bare scalar when it emits one. #223 asked for an assertion that would fail on that edit;
+                # there is none to write, and the ticket records the measurement. This is the pair
+                # Get-Replaced gets in set-derivation-classifiers, and that pair has the same limit.
+                $rawNoneFired = Get-FiredEdits -Declared @() -WithUs $fakeWith -Baseline $fakeBase
+                if ($null -ne $rawNoneFired) {
+                    Write-Host 'FAILED - self-test: Get-FiredEdits no longer unrolls an empty result to $null,'
+                    Write-Host '         so a call site that binds it bare and counts would now be silently safe --'
+                    Write-Host '         and the @() this file puts at every such call site would read as redundant.'
+                    exit 1
+                }
+                if ((@($rawNoneFired)).Count -ne 0) {
+                    Write-Host 'FAILED - self-test: @() around an empty Get-FiredEdits result is not an empty array.'
+                    exit 1
+                }
+
+                # AND THE LIVE ANSWER, which is the half the synthetic cases cannot give: it is the only one
+                # that would catch the call site being wired to the wrong variables, since a self-test run
+                # loads no set and $ALLOWED_EDITS' own comment says exactly one edit is expected there.
+                if ($firedEdits.Count -ne 1 -or $firedEdits[0] -ne 'technology/fluid-handling') {
+                    Write-Host ("FAILED - self-test: on a run with no set loaded, exactly one declared edit " +
+                                "should fire and it should be technology/fluid-handling -- base Factorio's " +
+                                "barrel generation appending our fluids to it. Got {0}: {1}." -f
+                                $firedEdits.Count, ($firedEdits -join ', '))
+                    exit 1
+                }
+                    ("the declared-edit line reports what fired rather than what is`n" +
+                     "               permitted -- a declared edit that changed fires, one identical in`n" +
+                     "               both dumps does not, one the baseline lacks does not, an undeclared`n" +
+                     "               change is left to Get-Replaced, nothing declared binds as empty,`n" +
+                 "               and the live run names technology/fluid-handling and only it.")
+            } }
         )
-        # THE EMPTY CASE FIRST, because it is the one a real lane hits most and the one the K2 lane
-        # could never reach. Nothing replaced is what a clean coexistence result looks like.
-        $none = Get-DerivedWiring -Replaced @() -WithUs @{} -Baseline @{} -SetDerived @{} -OurNames @() -OurFluids @()
-        if ($none.Count -ne 0) {
-            Write-Host "FAILED - self-test: an empty `$Replaced returned $($none.Count) exemption(s)."
-            exit 1
-        }
-        # AND THE SHAPE THAT ACTUALLY BIT: Get-Replaced's empty result unrolls to $null on return,
-        # so the caller must hand this an array it made real itself. Proving the parameter tolerates
-        # @() while the real call site could still pass $null is how this was missed the first time.
-        $rawEmpty = Get-Replaced -WithUs @{} -Baseline @{}
-        if ($null -ne $rawEmpty) {
-            Write-Host 'FAILED - self-test: Get-Replaced no longer unrolls an empty result to $null,'
-            Write-Host '         so the @() at its call site may have been dropped as redundant. It is not.'
-            exit 1
-        }
-        if ((@($rawEmpty)).Count -ne 0) {
-            Write-Host 'FAILED - self-test: @() around an empty Get-Replaced result is not an empty array.'
-            exit 1
-        }
-
-        foreach ($c in $cases) {
-            $k   = $c.Key
-            # THE BASELINE IS THE WHOLE DUMP, not just the prototype under test. The re-homed
-            # predicate builds the destination's own barrel names out of the baseline's FLUID
-            # entries, so a fixture holding only the technology would make condition 2 unsatisfiable
-            # and every re-homing would report -- a green proving the opposite of what it claimed.
-            $base = @{}
-            foreach ($r in $barrelBase.GetEnumerator()) { $base[$r.Key] = $r.Value }
-            $base[$k] = (& $j $c.Before)
-            # THE WITH-US DUMP CARRIES CONDITION 1'S EVIDENCE, so it needs the same treatment the
-            # baseline got: the fluids and their generated recipes, not just the prototype under
-            # test. A fixture holding only the technology would make condition 1 unsatisfiable and
-            # every re-homing would report -- green for the opposite of the stated reason.
-            #
-            # NOT $with: THAT IS THE SCRIPT'S OWN `-With` PARAMETER, and it is declared `[string[]]`.
-            # PowerShell keeps a parameter's type constraint on the variable, so assigning a
-            # hashtable to it does not shadow it -- it COERCES, and the dump silently became a string
-            # array. The next line then indexed an array with a prototype key and died with "Cannot
-            # convert value 'recipe/rf-d-d-plasma-barrel' to type System.Int32". Fourth time this
-            # file has been bitten by a name already taken at script scope; see $REFERENCE_MODS,
-            # $derivedNames and $derived above.
-            $withDump = @{ $k = (& $j $c.After) }
-            foreach ($r in $barrelWith.GetEnumerator()) { $withDump[$r.Key] = $r.Value }
-            # AND IT CARRIES THE BASELINE'S CONTENTS TOO, because a real with-us dump is the game
-            # WITH us: everything the baseline holds is in it, ours beside it. A fixture where the
-            # set's own fluids were missing from this half made a rule that read the WRONG dump fail
-            # the legitimate re-homing instead of the case written to catch it -- so the mutation
-            # was caught by the wrong name, which is not evidence about the condition under test.
-            # The prototype under test is written LAST, so a future case keyed on one of the shared
-            # fixture entries overrides it rather than being silently overwritten by it.
-            foreach ($r in $barrelBase.GetEnumerator()) { $withDump[$r.Key] = $r.Value }
-            $withDump[$k] = (& $j $c.After)
-            $got = Get-DerivedWiring -Replaced @($k) -WithUs $withDump `
-                        -Baseline $base -SetDerived $classified -OurNames @($ourFluid) `
-                        -OurFluids @($ourFluidB, $ourPlasma, $ourUnbottled)
-            $was = [bool] $got.ContainsKey($k)
-            if ($was -ne $c.Exempt) {
-                Write-Host "FAILED - self-test: $($c.Label) was $(if ($was) { 'excused' } else { 'reported' }), expected the opposite."
-                exit 1
-            }
-            # The SHAPE is asserted too, not just the verdict. Both shapes are excused by the same
-            # loop, so a dispatch that fell through to the wrong predicate could excuse the right
-            # key for the wrong reason -- and the per-key line the caller prints would then say
-            # something untrue about what the set did.
-            # DECLARED PER CASE rather than inferred from the key, since #192: one key now carries
-            # three different right answers -- `rehomed`, `unlock+rehomed`, and reported -- so a
-            # rule keyed on the prototype would assert the same thing for all three.
-            if ($was -and $got[$k] -ne $c.Shape) {
-                Write-Host "FAILED - self-test: $($c.Label) was excused as '$($got[$k])', expected '$($c.Shape)'."
-                exit 1
-            }
-        }
-        Write-Host 'self-test 5/6: an empty replacement list binds, and the set-derivation classifiers'
-        Write-Host '               excuse what the set built from us and what base Factorio built from'
-        Write-Host '               us that the set re-homed, and nothing else -- an unprefixed name of'
-        Write-Host '               ours, a LONE one embedding one of ours, an unlock for a recipe that'
-        Write-Host '               is not ours, a barrel unlock built from no fluid of ours, one named'
-        Write-Host '               for a fluid the game does not barrel, one whose empty- half never'
-        Write-Host '               appeared, our barrel unlocks onto a technology that carried none,'
-        Write-Host '               the same onto one whose only barrels are named for a fluid of OURS'
-        Write-Host '               -- so the host list is built from the baseline dump and not from'
-        Write-Host '               us -- the same onto one whose only barrel unlock the game never'
-        Write-Host '               generated, by either gate,'
-        Write-Host '               a tooltip row naming nothing of ours, a row of theirs reworded'
-        Write-Host '               beside ours, a duplicate row of theirs de-duplicated, a row of a'
-        Write-Host '               kind the prototype did not have, a changed field and a removed'
-        Write-Host '               entry all survive; an effects field appearing from nothing is'
-        Write-Host '               still a wiring; a technology that both wires and re-homes passes'
-        Write-Host '               and says so; each exemption is checked under the RIGHT label; and'
-        Write-Host '               a name the set redefines in both dumps is still caught by the scan.'
-
-        # ---------------------------------------------------------------- half six
-        #
-        # THE DECLARED-EDIT LINE SAYS WHAT HAPPENED, NOT WHAT IS PERMITTED (#133). The number beside
-        # "declared" used to be $ALLOWED_EDITS.Count, so it was the same on every lane and true on
-        # none of them in particular. Get-FiredEdits replaced it, and a claim printed to a human is
-        # only worth what breaks when it is wrong.
-        #
-        # SYNTHETIC DUMPS FOR THE FOUR JUDGEMENT CASES, for the reason halves two and three inject
-        # into the parsed set rather than building a canary mod: what is under test is this script's
-        # judgement, and a controlled pair of hashtables can pose questions a real run does not. Only
-        # one of the four -- "differs, so it fired" -- occurs on a clean run at all.
-        $fakeWith = @{
-            'technology/differs'   = '{"effects":[1,2]}'   # declared, and changed: fired
-            'technology/unchanged' = '{"effects":[1]}'     # declared, identical: the Bob's shape
-            'technology/ours-only' = '{"effects":[1]}'     # declared, absent from the baseline
-            'technology/undeclared' = '{"effects":[9]}'    # changed, but nobody declared it
-        }
-        $fakeBase = @{
-            'technology/differs'   = '{"effects":[1]}'
-            'technology/unchanged' = '{"effects":[1]}'
-            'technology/undeclared' = '{"effects":[8]}'
-        }
-        $fakeDeclared = @('technology/differs', 'technology/unchanged', 'technology/ours-only')
-        $fired = @(Get-FiredEdits -Declared $fakeDeclared -WithUs $fakeWith -Baseline $fakeBase)
-
-        # Each case named, so a failure says WHICH judgement went wrong rather than that a count
-        # moved. A predicate comparing the wrong way round fails the first two together; one reading
-        # the wrong dump fails the third; one that forgot to restrict itself to the declared list
-        # fails the fourth.
-        $wantFired = @(
-            @{ Key = 'technology/differs';    Want = $true;
-               Why = 'a declared edit whose content changed really did fire' }
-            @{ Key = 'technology/unchanged';  Want = $false;
-               Why = 'a declared edit identical in both dumps did NOT fire -- the shape the Bob''s lane found' }
-            @{ Key = 'technology/ours-only';  Want = $false;
-               Why = 'a declared name the baseline does not have is not an edit to it' }
-            @{ Key = 'technology/undeclared'; Want = $false;
-               Why = 'a changed name nobody declared is Get-Replaced''s business, not this line''s' }
-        )
-        foreach ($case in $wantFired) {
-            $got = $fired -contains $case.Key
-            if ($got -ne $case.Want) {
-                Write-Host ("FAILED - self-test: Get-FiredEdits {0} '{1}'. Expected: {2}." -f
-                    $(if ($got) { 'reported' } else { 'did not report' }), $case.Key, $case.Why)
-                exit 1
-            }
-        }
-
-        # THE EMPTY CASE, BOUND UNWRAPPED, which is the only place the unrolling is visible (#223).
-        # It pins the PRECONDITION that makes the @() at every call site load-bearing: this function
-        # hands an empty result back as $null, so a caller that binds it bare and asks for .Count
-        # gets 1 rather than 0. Wrapping here and counting -- which this did until #223 -- asserts
-        # only that @() over nothing is empty, which is true however the function returns.
-        #
-        # WHAT IT CANNOT CATCH, MEASURED RATHER THAN ASSUMED (#223). Dropping the @() INSIDE this
-        # function changes nothing a caller can see: on PowerShell 7 `return @($pipeline)` and
-        # `return $pipeline` are indistinguishable, both $null when the pipeline is empty and both a
-        # bare scalar when it emits one. #223 asked for an assertion that would fail on that edit;
-        # there is none to write, and the ticket records the measurement. This is the pair
-        # Get-Replaced gets in half five, and that pair has the same limit.
-        $rawNoneFired = Get-FiredEdits -Declared @() -WithUs $fakeWith -Baseline $fakeBase
-        if ($null -ne $rawNoneFired) {
-            Write-Host 'FAILED - self-test: Get-FiredEdits no longer unrolls an empty result to $null,'
-            Write-Host '         so a call site that binds it bare and counts would now be silently safe --'
-            Write-Host '         and the @() this file puts at every such call site would read as redundant.'
-            exit 1
-        }
-        if ((@($rawNoneFired)).Count -ne 0) {
-            Write-Host 'FAILED - self-test: @() around an empty Get-FiredEdits result is not an empty array.'
-            exit 1
-        }
-
-        # AND THE LIVE ANSWER, which is the half the synthetic cases cannot give: it is the only one
-        # that would catch the call site being wired to the wrong variables, since a self-test run
-        # loads no set and $ALLOWED_EDITS' own comment says exactly one edit is expected there.
-        if ($firedEdits.Count -ne 1 -or $firedEdits[0] -ne 'technology/fluid-handling') {
-            Write-Host ("FAILED - self-test: on a run with no set loaded, exactly one declared edit " +
-                        "should fire and it should be technology/fluid-handling -- base Factorio's " +
-                        "barrel generation appending our fluids to it. Got {0}: {1}." -f
-                        $firedEdits.Count, ($firedEdits -join ', '))
-            exit 1
-        }
-        Write-Host 'self-test 6/6: the declared-edit line reports what fired rather than what is'
-        Write-Host '               permitted -- a declared edit that changed fires, one identical in'
-        Write-Host '               both dumps does not, one the baseline lacks does not, an undeclared'
-        Write-Host '               change is left to Get-Replaced, nothing declared binds as empty,'
-        Write-Host '               and the live run names technology/fluid-handling and only it.'
 
         Write-Host ''
         Write-Host 'OK - self-test passed: clean repo passes; unprefixed name, borrowed name and a real'

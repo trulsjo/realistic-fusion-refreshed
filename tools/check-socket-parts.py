@@ -93,8 +93,9 @@ def unchecked(why):
 
 def failing(verdicts):
     """The verdicts that must fail a run. ONE DEFINITION, because `main` and every half of the
-    self-test have to mean the same thing by "fails" -- self-test 4 used to assert the row LABEL
-    instead, which is why it stayed green while `main` passed the very manifest it was named for."""
+    self-test have to mean the same thing by "fails" -- the no-record half used to assert the row
+    LABEL instead, which is why it stayed green while `main` passed the very manifest it was named
+    for."""
     return [v for v in verdicts if v not in ("ok", SKIP)]
 
 # HOW FAR THE TWO EDGES OF ONE PART MAY DIFFER, in pixels of the sheet.
@@ -280,81 +281,136 @@ def scaled_records(factor):
     return sockets
 
 
+class SelfTestFailed(Exception):
+    """Why a half failed, in that half's own words.
+
+    Raised rather than returned so a half reads as a straight line of checks instead of a chain of
+    `return 1`s that every caller has to remember to propagate."""
+
+
+def run_halves(halves):
+    """Run declared halves in order, numbering them from the list itself.
+
+    The total is `len(halves)`, so it is written once instead of once per label, and a half added
+    anywhere changes no other half's line.
+
+    A half returns what it proved, and returning nothing is a failure rather than a pass -- "the
+    body never ran" and "the body ran and proved nothing" are the same silence from outside.
+
+    tools/check-socket-height.py carries this same runner, and the PowerShell gates call
+    Invoke-SelfTestHalves in scripts/factorio-lib.ps1. Two files in this language is not enough to
+    justify a library between them; a third would be.
+    """
+    total = len(halves)
+    for ordinal, (name, body) in enumerate(halves, 1):
+        try:
+            proved = body()
+        except SelfTestFailed as why:
+            print(f"FAILED - self-test half '{name}': {why}")
+            return 1
+        if not proved:
+            print(f"FAILED - self-test half '{name}': it returned nothing, so there is no evidence "
+                  "it ran. A half returns one line saying what it proved.")
+            return 1
+        print(f"self-test {ordinal}/{total}: {proved}")
+    return 0
+
+
 def self_test(manifests):
-    """Four halves: the shipped sheets pass; a shaved sheet is caught; a lying record is caught;
-    and a manifest with no record at all fails rather than passing quietly.
+    """The shipped sheets pass; a shaved sheet is caught; a lying record is caught; and a manifest
+    with no record at all fails rather than passing quietly.
 
     THE LAST TWO ARE NOT ONE HALF. A wrong radius is a record that disagrees with the pixels; an
     absent record is a manifest this gate cannot judge at all. The first must fail on the width pin
     and the second before a pixel is read, and a gate could get one right and the other wrong.
     """
-    print("self-test 1/4: every socket on the shipped sheets must pass.")
-    rows = []
-    for manifest in manifests:
-        check(manifest, load_sheet, rows)
-    verdicts = report(rows)
-    if not any(v == "ok" for v in verdicts):
-        print("FAILED - self-test: not one part was measured at all, so the halves below would "
-              "pass over an empty report.")
-        return 1
-    bad = failing(verdicts)
-    if bad:
-        print(f"FAILED - self-test: {len(bad)} part(s) fail on the sheets as they stand, so this "
-              f"gate cannot tell a regression from the state it was handed.")
-        return 1
-    was_ok = [i for i, v in enumerate(verdicts) if v == "ok"]
+    # Which parts passed on the sheets as they stand. The halves below judge themselves against
+    # those indices, so they read what the first half wrote rather than measuring again.
+    was_ok = []
 
-    shave = int(SYMMETRY_TOLERANCE_PX) + 2
-    print(f"self-test 2/4: every socket shaved {shave} px along its underside must be reported "
-          f"LOPSIDED on every part that passed above.")
-    rows = []
-    for manifest in manifests:
-        check(manifest, load_sheet, rows, cut=shaved_strip(shave))
-    shaved = report(rows)
-    missed = [i for i in was_ok if shaved[i] != "LOPSIDED"]
-    if missed:
-        print(f"FAILED - self-test: {len(missed)} part(s) had {shave} px taken off underneath and "
-              f"this gate called none of them lopsided.")
-        return 1
+    def shipped_sheets_half():
+        rows = []
+        for manifest in manifests:
+            check(manifest, load_sheet, rows)
+        verdicts = report(rows)
+        if not any(v == "ok" for v in verdicts):
+            raise SelfTestFailed("not one part was measured at all, so the halves below would pass "
+                                 "over an empty report.")
+        bad = failing(verdicts)
+        if bad:
+            raise SelfTestFailed(f"{len(bad)} part(s) fail on the sheets as they stand, so this "
+                                 "gate cannot tell a regression from the state it was handed.")
+        was_ok.extend(i for i, v in enumerate(verdicts) if v == "ok")
+        return f"every socket on the shipped sheets passes ({len(was_ok)} part(s))."
 
-    print("self-test 3/4: the same sheets against a record claiming a socket 20 percent thicker "
-          "must be reported TOO NARROW on every part that passed above.")
-    rows = []
-    for manifest in manifests:
-        check(manifest, load_sheet, rows, sockets=scaled_records(1.2))
-    lied = report(rows)
-    missed = [i for i in was_ok if lied[i] != "TOO NARROW"]
-    if missed:
-        print(f"FAILED - self-test: {len(missed)} part(s) were judged against a radius 20 percent "
-              f"wider than the model drew and this gate called none of them narrow.")
-        return 1
+    # What the halves below judge themselves against. A half that reads it has to say so out loud
+    # when it is empty: `[i for i in was_ok if ...]` over nothing is an empty list of misses, which
+    # is indistinguishable from a pass -- so reordering the declaration list at the bottom, or
+    # dropping shipped-sheets, would leave two halves reporting that they caught everything they
+    # were shown after being shown nothing.
+    def measured_or_fail(half):
+        if not was_ok:
+            raise SelfTestFailed("no part passed on the shipped sheets before this half ran, so "
+                                 f"{half} would judge an empty list and report a pass. It reads "
+                                 "what the shipped-sheets half leaves behind, and that half has to "
+                                 "run first.")
 
-    print("self-test 4/4: a manifest recording no socket at all must FAIL THE RUN, not merely be "
-          "labelled.")
-    rows = []
-    for manifest in manifests:
-        check(manifest, load_sheet, rows, sockets=lambda m: [])
-    empty = report(rows)
-    # THE ASSERTION IS `failing`, WHICH IS WHAT main() DECIDES ON. Asserting the row label instead
-    # is what this half used to do, and it passed while `main` exited 0 on the very manifest this
-    # half is named for: NOT CHECKED had not been separated from UNMEASURABLE, and UNMEASURABLE
-    # does not fail a run. A half that tests a layer the gate does not decide on proves nothing.
-    if not empty:
-        print("FAILED - self-test: a manifest recording no socket produced no rows at all, so "
-              "there was nothing to judge.")
-        return 1
-    if len(failing(empty)) != len(empty):
-        print(f"FAILED - self-test: {len(empty) - len(failing(empty))} row(s) of a manifest "
-              f"recording no socket did not fail the run, so this gate would report `ok` on a "
-              f"machine whose sockets it never checked.")
-        return 1
-    if not all(v == NOT_CHECKED for v in empty):
-        print("FAILED - self-test: those rows fail the run but are not reported as NOT CHECKED, "
-              "so the reason a reader is given is the wrong one.")
-        return 1
+    def shaved_sheets_half():
+        measured_or_fail("shaved-sheets")
+        shave = int(SYMMETRY_TOLERANCE_PX) + 2
+        rows = []
+        for manifest in manifests:
+            check(manifest, load_sheet, rows, cut=shaved_strip(shave))
+        shaved = report(rows)
+        missed = [i for i in was_ok if shaved[i] != "LOPSIDED"]
+        if missed:
+            raise SelfTestFailed(f"{len(missed)} part(s) had {shave} px taken off underneath and "
+                                 "this gate called none of them lopsided.")
+        return (f"every socket shaved {shave} px along its underside is reported LOPSIDED on every "
+                "part that passed above.")
 
-    print("self-test: all four halves pass.")
-    return 0
+    def lying_record_half():
+        measured_or_fail("lying-record")
+        rows = []
+        for manifest in manifests:
+            check(manifest, load_sheet, rows, sockets=scaled_records(1.2))
+        lied = report(rows)
+        missed = [i for i in was_ok if lied[i] != "TOO NARROW"]
+        if missed:
+            raise SelfTestFailed(f"{len(missed)} part(s) were judged against a radius 20 percent "
+                                 "wider than the model drew and this gate called none of them "
+                                 "narrow.")
+        return ("the same sheets against a record claiming a socket 20 percent thicker are reported "
+                "TOO NARROW on every part that passed above.")
+
+    def no_record_half():
+        rows = []
+        for manifest in manifests:
+            check(manifest, load_sheet, rows, sockets=lambda m: [])
+        empty = report(rows)
+        # THE ASSERTION IS `failing`, WHICH IS WHAT main() DECIDES ON. Asserting the row label
+        # instead is what this half used to do, and it passed while `main` exited 0 on the very
+        # manifest this half is named for: NOT CHECKED had not been separated from UNMEASURABLE, and
+        # UNMEASURABLE does not fail a run. A half that tests a layer the gate does not decide on
+        # proves nothing.
+        if not empty:
+            raise SelfTestFailed("a manifest recording no socket produced no rows at all, so there "
+                                 "was nothing to judge.")
+        if len(failing(empty)) != len(empty):
+            raise SelfTestFailed(f"{len(empty) - len(failing(empty))} row(s) of a manifest recording "
+                                 "no socket did not fail the run, so this gate would report `ok` on "
+                                 "a machine whose sockets it never checked.")
+        if not all(v == NOT_CHECKED for v in empty):
+            raise SelfTestFailed("those rows fail the run but are not reported as NOT CHECKED, so "
+                                 "the reason a reader is given is the wrong one.")
+        return "a manifest recording no socket at all fails the run, and says it was NOT CHECKED."
+
+    return run_halves([
+        ("shipped-sheets", shipped_sheets_half),
+        ("shaved-sheets", shaved_sheets_half),
+        ("lying-record", lying_record_half),
+        ("no-record", no_record_half),
+    ])
 
 
 def main(argv=None):

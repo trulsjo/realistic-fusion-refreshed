@@ -272,65 +272,73 @@
     references cross a mod boundary, so there is now a seam for one to fall through.
 
 .PARAMETER SelfTest
-    Verify the check can fail. TWELVE halves, and the run prints each one numbered as it passes, so
-    a reader can count them against this list: the repo as it stands must pass; a mod carrying an
-    invalid prototype must fail; a mod naming an icon file that does not exist must be caught; a
-    mod that reassigns one of our containment categories must be caught; a mod that moves a
-    pipe connection on a machine with rendered art must be caught; a mod that merely ADDS a
-    connection category to one must NOT be; a mod that REPLACES one must be; a reactor whose
-    input_flow_limit cannot cover its confinement heating must be refused; a mod that moves a
-    pipe connection on a machine wearing a MOCKUP must be caught; a mod that puts a plasma of its
-    own through our heating category must be refused; the isotope collector's two box filters
-    swapped must be refused; and the socket-height gate must measure its own reference off vanilla's
-    sheet, judge by the number it measured, pass the sheets as they stand, report a sheet lifted a
-    quarter tile, and report SOCKET_Z itself as PARTED when it does not predict that reference.
-    The first is
-    required or the others prove nothing, since Factorio also exits non-zero when the repo is
-    genuinely broken. Halves three through seven and nine are the ones Factorio exits 0 on, where
-    the check has to decide alone. THE OTHER FOUR ARE THE MOD REFUSING ITSELF -- two, eight, ten
-    and eleven all end with Factorio exiting non-zero, which is why each of the last three has to
-    match the refusal's own message as well as its exit code. TWELVE IS NEITHER: it runs no canary
-    mod at all, because the gate it proves (#344) needs no game RUN. It does read the install, for
-    one file: since #355 it measures where a vanilla pipe is drawn off the base game's own sheet
-    instead of carrying a number for it. See Test-SocketHeights. A reviewer read this list as stale
-    when ten and eleven were added; it is not, and they do not belong in it. Run this whenever the
-    script changes.
+    Verify the check can fail. Each half is declared by NAME where it runs and the runner numbers
+    them as it goes, so this list names them rather than counting them -- a half added or inserted
+    changes no other half's label and no sentence here. What they require: repo-loads, the repo as
+    it stands must pass; invalid-prototype, a mod carrying one must fail; missing-asset, a mod
+    naming an icon file that does not exist must be caught; reassigned-category, a mod that
+    reassigns one of our containment categories must be caught; slid-socket, a mod that moves a
+    pipe connection on a machine with rendered art must be caught; added-category, a mod that merely
+    ADDS a connection category to one must NOT be reported; replaced-category, a mod that REPLACES
+    one must be; starved-reactor, a reactor whose input_flow_limit cannot cover its confinement
+    heating must be refused; slid-mockup, a mod that moves a pipe connection on a machine wearing a
+    MOCKUP must be caught; unburnable-plasma, a mod that puts a plasma of its own through our
+    heating category must be refused; swapped-boxes, the isotope collector's two box filters
+    swapped must be refused; socket-height-gate, the socket-height gate must measure its own
+    reference off vanilla's sheet, judge by the number it measured, pass the sheets as they stand,
+    report a sheet lifted a quarter tile, and report SOCKET_Z itself as PARTED when it does not
+    predict that reference; and socket-parts-gate, the socket-parts gate over the same sheets.
 
-    TEN AND ELEVEN ARE #125's, and they take check_prototypes() coverage from one invariant to
-    three. Those are the checks that tie the simulation to the prototypes, and the reason this
-    script is the gate that matters in this repository. HALF EIGHT WAS ALREADY ONE OF THEM -- it
-    negatively tests check_input_flow(), which check_prototypes() calls -- so ten and eleven are
-    the second and third rather than the first two. The other ten are still asserted only
-    positively: they pass on a good tree, and nothing here would notice one that had quietly
+    repo-loads is required or the others prove nothing, since Factorio also exits non-zero when the
+    repo is genuinely broken. missing-asset, reassigned-category, slid-socket, added-category,
+    replaced-category and slid-mockup are the ones Factorio exits 0 on, where the check has to
+    decide alone. THE OTHERS ARE THE MOD REFUSING ITSELF -- invalid-prototype, starved-reactor,
+    unburnable-plasma and swapped-boxes all end with Factorio exiting non-zero, which is why each of
+    the last three has to match the refusal's own message as well as its exit code. THE TWO SPRITE
+    GATES ARE NEITHER: they run no canary mod at all, because the gates they prove (#344, #373) need
+    no game RUN. socket-height-gate does read the install, for one file: since #355 it measures
+    where a vanilla pipe is drawn off the base game's own sheet instead of carrying a number for it.
+    See Test-SocketHeights. A reviewer read this list as stale when unburnable-plasma and
+    swapped-boxes were added; it is not, and they do not belong in it. Run this whenever the script
+    changes.
+
+    UNBURNABLE-PLASMA AND SWAPPED-BOXES ARE #125's, and they take check_prototypes() coverage from
+    one invariant to three. Those are the checks that tie the simulation to the prototypes, and the
+    reason this script is the gate that matters in this repository. STARVED-REACTOR WAS ALREADY ONE
+    OF THEM -- it negatively tests check_input_flow(), which check_prototypes() calls -- so the two
+    are the second and third rather than the first two. The other ten invariants are still asserted
+    only positively: they pass on a good tree, and nothing here would notice one that had quietly
     stopped firing. Two of those ten have had their negative test done BY HAND and recorded only in
     a commit message (#55 and #119, both by temporarily editing the value under test), which is the
     shape these halves exist to replace.
 
-    Ten breaks its invariant by pure ADDITION -- the canary defines a fluid and a recipe of its own
-    in rf-plasma-heating and mutates nothing of ours -- and eleven by MUTATION, swapping
-    rf-isotope-collector's two box filters in `data-final-fixes`. Both must fail BY THE CHECK'S OWN
-    MESSAGE, as half eight does and for the same reason: a canary that fails to load for an
-    unrelated reason exits non-zero too, and would otherwise be recorded as the invariant firing.
+    unburnable-plasma breaks its invariant by pure ADDITION -- the canary defines a fluid and a
+    recipe of its own in rf-plasma-heating and mutates nothing of ours -- and swapped-boxes by
+    MUTATION, swapping rf-isotope-collector's two box filters in `data-final-fixes`. Both must fail
+    BY THE CHECK'S OWN MESSAGE, as starved-reactor does and for the same reason: a canary that fails
+    to load for an unrelated reason exits non-zero too, and would otherwise be recorded as the
+    invariant firing.
 
     AND THE WORKING TREE IS ASSERTED UNTOUCHED, in BOTH self-tests, against a fingerprint taken
-    before either does anything -- pack-mods.ps1 included. SEVEN of the thirteen canary halves mutate
-    one of our prototypes: four through nine, and eleven. Six of the seven do it to prove a gate
-    FIRES; half six mutates one to prove a gate stays QUIET, which is the same hazard to the tree.
+    before either does anything -- pack-mods.ps1 included. SEVEN of the canary halves mutate one of
+    our prototypes: reassigned-category, slid-socket, added-category, replaced-category,
+    starved-reactor, slid-mockup and swapped-boxes. Six of the seven do it to prove a gate FIRES;
+    added-category mutates one to prove a gate stays QUIET, which is the same hazard to the tree.
     Every one does it in memory; this is what says so rather than assuming it. The FINALLY
     BLOCK compares too, so a half that exits early still reports what it left behind, and the zip
     self-test compares on its own pass path -- which matters more there than here, because it is
     the only self-test that deletes a real file and the branch the sprite-deleting incident was
     in.
 
-    THE NINTH IS #275's, and it is the fifth again for the other kind of art. make-mockup-art.ps1
+    SLID-MOCKUP IS #275's, and it is slid-socket again for the other kind of art. make-mockup-art.ps1
     draws every mockup from a hand-copied table of footprints and connection tiles that, by its
     own header, nothing checked against entities.lua. The table now lives in mockup-machines.psd1
     and Test-MockupArt holds every row against the loaded dump; the canary slides the first
     connection of the first machine in that table one tile along its edge and requires the row.
 
-    THE EIGHTH IS #72's, and it is the odd one out: every other half is about another mod breaking
-    our prototypes, where this is about a developer edit to our own. check_input_flow() replaced
-    check_cadence() when per-tick confinement spending dissolved the coupling between
+    STARVED-REACTOR IS #72's, and it is the odd one out: every other half is about another mod
+    breaking our prototypes, where this is about a developer edit to our own. check_input_flow()
+    replaced check_cadence() when per-tick confinement spending dissolved the coupling between
     UPDATE_INTERVAL and buffer_capacity, and what became load-bearing in its place is
     input_flow_limit >= heating_power_w. The canary cuts rf-reactor's limit to 1 W from outside,
     because that is the only way to make the edit without editing the repo, and the assertion
@@ -338,15 +346,16 @@
     control.lua also fires from on_init while --create builds the map, so "it failed" alone would
     not say which check did it.
 
-    SIX AND SEVEN ARE ONE PAIR and neither is worth much without the other. Krastorio 2 writes
-    `kr-steel-pipe` onto the fluid boxes of machines it never heard of, which is ADR 0007's
-    coexistence working, not our art coming loose -- and until the categories were held out of the
-    geometry comparison the gate reported it as the latter, so `-AlsoModDirectory
+    ADDED-CATEGORY AND REPLACED-CATEGORY ARE ONE PAIR and neither is worth much without the other.
+    Krastorio 2 writes `kr-steel-pipe` onto the fluid boxes of machines it never heard of, which is
+    ADR 0007's coexistence working, not our art coming loose -- and until the categories were held
+    out of the geometry comparison the gate reported it as the latter, so `-AlsoModDirectory
     .mod-cache/krastorio2` failed on rf-heat-exchanger with four connections whose position,
     direction, flow and fluid all agreed.
-    Six requires that tolerance. Seven requires the gate to still catch a category being REPLACED
-    rather than added -- dropping `default` cuts a machine off from every ordinary pipe in the game
-    -- because a gate that tolerated everything would pass six just as happily.
+    added-category requires that tolerance. replaced-category requires the gate to still catch a
+    category being REPLACED rather than added -- dropping `default` cuts a machine off from every
+    ordinary pipe in the game -- because a gate that tolerated everything would pass added-category
+    just as happily.
 
     NO OTHER GATE WATCHES THOSE CONNECTIONS, which is why the pair is here rather than left to the
     containment floor. Get-ContainmentBreaches skips any connection we left `default`, by design and
@@ -354,19 +363,20 @@
     probe-connection-categories.ps1 reports on exactly this shape -- its REPLACED verdict is for it --
     but a probe asserts nothing and exits 0 either way.
 
-    Half six is the only half that asserts a check STAYS QUIET, and there are two ways to pass it
-    dishonestly. It rules out the first itself, by asking the extractor whether the added category
+    added-category is the only half that asserts a check STAYS QUIET, and there are two ways to pass
+    it dishonestly. It rules out the first itself, by asking the extractor whether the added category
     reached the live geometry at all -- a canary that missed and a gate that tolerated look identical
-    otherwise. The second, a gutted Get-RenderDisagreements, is ruled out by HALF FIVE, which runs
-    the same function first and requires a row. Do not delete five believing six covers it.
+    otherwise. The second, a gutted Get-RenderDisagreements, is ruled out by SLID-SOCKET, which runs
+    the same function first and requires a row. Do not delete slid-socket believing added-category
+    covers it.
 
-    The fifth is #250's. Its canary's `data-final-fixes` slides the first connection the first
+    SLID-SOCKET IS #250's. Its canary's `data-final-fixes` slides the first connection the first
     manifest records one tile along its own edge -- along, so the prototype stays valid and the
     extractor's edge check still passes, and the only thing that changed is where the socket is.
     The assertion requires the disagreement to be reported against that prototype and on
-    `connections`, for the same reason the fourth half compares names: the report is the value.
+    `connections`, for the same reason reassigned-category compares names: the report is the value.
 
-    The fourth is #209's, and it is the same shape the real breach had: a canary whose
+    REASSIGNED-CATEGORY IS #209's, and it is the same shape the real breach had: a canary whose
     `data-final-fixes` writes a literal over the first connection of ours carrying `rf-plasma` --
     whatever that connection is, since a hard-coded victim would fail on the day a pipe is renamed.
     The canary records which prototype it broke in its own item's `order` field, and the assertion
@@ -377,7 +387,8 @@
     while proving nothing. Wire the asset check's directory map back at the repository and every
     sprite resolves against the working tree, so the run reports a clean pass over an archive it
     never opened -- and it would keep doing so for as long as the repo and the zip agreed, which is
-    almost always. That half packs, then deletes one PNG from the UNPACKED archive and requires it
+    almost always. Its two halves are built-zips-load and deleted-from-archive: the second packs,
+    then deletes one PNG from the UNPACKED archive and requires it
     to be reported: invisible if the check is looking at the repository, caught if it is looking at
     the zip. The two self-tests do not overlap and both are worth running.
 
@@ -662,7 +673,7 @@ function Get-RenderDisagreements {
         # Krastorio 2 puts `kr-steel-pipe` on the fluid boxes of machines it never heard of, which had
         # this gate failing on rf-heat-exchanger with four connections agreeing on position,
         # direction, flow and fluid. That is ADR 0007's coexistence reported as ADR 0030's art being
-        # wrong. Half six is the canary for the tolerance.
+        # wrong. The added-category half of -SelfTest is the canary for the tolerance.
         $geometryOnly = { param($c) & $canon ($c | Select-Object -Property * -ExcludeProperty connection_category) }
         $mineSet   = @($recorded.connections | ForEach-Object { & $geometryOnly $_ })
         $theirSet  = @($live.connections     | ForEach-Object { & $geometryOnly $_ })
@@ -1286,100 +1297,109 @@ try {
     }
 
     if ($SelfTest -and $FromZips) {
-        # Zip mode can pass by finding nothing, which is the same reason the canary halves exist.
-        # The specific regression it guards: wire $ourDirectories back to $repoRoot and every sprite
-        # resolves against the working tree, so the check reports a clean pass over a zip it never
-        # opened. Deleting a file from the UNPACKED archive is what tells the two apart -- against
-        # the repository that deletion is invisible, against the archive it must be reported.
-        Write-Host 'self-test 1/2: the built zips must load and resolve every asset.'
-        $dump = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
-            -Arguments @('--dump-data') -OutputDirectory $temp -Tag 'zip-selftest-dump'
-        if ($dump.Code -ne 0) { Write-FactorioTail $dump; exit $dump.Code }
+        # Declared by name and numbered by Invoke-SelfTestHalves, as in plain mode. These two are a
+        # DIFFERENT self-test: the plain halves never open an archive, and this mode's way of
+        # passing while proving nothing is its own.
+        Invoke-SelfTestHalves -Halves @(
+            @{ Name = 'built-zips-load'; Body = {
+                # Zip mode can pass by finding nothing, which is the same reason the canary halves exist.
+                # The specific regression it guards: wire $ourDirectories back to $repoRoot and every sprite
+                # resolves against the working tree, so the check reports a clean pass over a zip it never
+                # opened. Deleting a file from the UNPACKED archive is what tells the two apart -- against
+                # the repository that deletion is invisible, against the archive it must be reported.
+                $dump = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
+                    -Arguments @('--dump-data') -OutputDirectory $temp -Tag 'zip-selftest-dump'
+                if ($dump.Code -ne 0) { Write-FactorioTail $dump; exit $dump.Code }
 
-        $dumpPath = Join-Path $temp 'write-data/script-output/data-raw-dump.json'
-        $dataDir  = Get-FactorioDataDirectory -FactorioExe $FactorioExe
-        $before = Find-MissingAssets -DumpPath $dumpPath -DataDir $dataDir -ModDirectories $ourDirectories
-        if ($before) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the built zips are already missing $($before.Count) asset(s),"
-            Write-Host '         so removing one would prove nothing.'
-            foreach ($m in $before) { Write-Host "    $($m.Reference)" }
-            exit 1
-        }
+                $script:dumpPath = Join-Path $temp 'write-data/script-output/data-raw-dump.json'
+                $script:dataDir  = Get-FactorioDataDirectory -FactorioExe $FactorioExe
+                $before = Find-MissingAssets -DumpPath $dumpPath -DataDir $dataDir -ModDirectories $ourDirectories
+                if ($before) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the built zips are already missing $($before.Count) asset(s),"
+                    Write-Host '         so removing one would prove nothing.'
+                    foreach ($m in $before) { Write-Host "    $($m.Reference)" }
+                    exit 1
+                }
+                'the built zips load and resolve every asset.'
+            } }
 
-        # Taken from the unpacked archive only. The repository keeps its copy, so a check that
-        # resolved against the repo would not notice and would report a pass here.
-        #
-        # The victim has to be a file the PROTOTYPES NAME, not merely one the zip contains. The
-        # first version of this took the first .png it found and drew
-        # aneutronic-reactor-animation-glow.png, which graphics/krastorio-2/NOTICE.txt records as
-        # currently unused -- kept deliberately, referenced by nothing. Deleting an unreferenced
-        # file is correctly not reported, so the self-test failed the check rather than the other
-        # way round. Candidates therefore come from the dump.
-        Write-Host 'self-test 2/2: a file removed from the unpacked zip must be reported missing.'
-        $dumpText = Get-Content -LiteralPath $dumpPath -Raw
-        $referenced = [regex]::Matches($dumpText, '__(?<mod>[A-Za-z0-9_ .-]+)__/(?<rel>[^"]+?\.png)') |
-            ForEach-Object { [pscustomobject]@{ Mod = $_.Groups['mod'].Value; Rel = $_.Groups['rel'].Value } } |
-            Where-Object { $ourDirectories.ContainsKey($_.Mod) } |
-            Sort-Object Mod, Rel -Unique
+            @{ Name = 'deleted-from-archive'; Body = {
+                # Taken from the unpacked archive only. The repository keeps its copy, so a check that
+                # resolved against the repo would not notice and would report a pass here.
+                #
+                # The victim has to be a file the PROTOTYPES NAME, not merely one the zip contains. The
+                # first version of this took the first .png it found and drew
+                # aneutronic-reactor-animation-glow.png, which graphics/krastorio-2/NOTICE.txt records as
+                # currently unused -- kept deliberately, referenced by nothing. Deleting an unreferenced
+                # file is correctly not reported, so the self-test failed the check rather than the other
+                # way round. Candidates therefore come from the dump.
+                $dumpText = Get-Content -LiteralPath $dumpPath -Raw
+                $referenced = [regex]::Matches($dumpText, '__(?<mod>[A-Za-z0-9_ .-]+)__/(?<rel>[^"]+?\.png)') |
+                    ForEach-Object { [pscustomobject]@{ Mod = $_.Groups['mod'].Value; Rel = $_.Groups['rel'].Value } } |
+                    Where-Object { $ourDirectories.ContainsKey($_.Mod) } |
+                    Sort-Object Mod, Rel -Unique
 
-        # More than one candidate on purpose. A sprite that declares `stripes` keeps a `filename`
-        # beside them that the engine never opens, and Find-MissingAssets skips those by design --
-        # picking one would fail this test for a reason that is not a fault. Trying a handful means
-        # a single such pick cannot decide the result.
-        $caught = $null
-        $tried  = @()
-        foreach ($candidate in ($referenced | Select-Object -First 5)) {
-            $path = Join-Path $ourDirectories[$candidate.Mod] $candidate.Rel
+                # More than one candidate on purpose. A sprite that declares `stripes` keeps a `filename`
+                # beside them that the engine never opens, and Find-MissingAssets skips those by design --
+                # picking one would fail this test for a reason that is not a fault. Trying a handful means
+                # a single such pick cannot decide the result.
+                $script:caught = $null
+                $tried  = @()
+                foreach ($candidate in ($referenced | Select-Object -First 5)) {
+                    $path = Join-Path $ourDirectories[$candidate.Mod] $candidate.Rel
 
-            # This self-test deletes files, so it refuses to delete one outside the scratch
-            # directory. Found the hard way: wiring $ourDirectories back at the repository -- the
-            # exact regression this test exists to catch -- made it delete the repository's own
-            # sprite while proving the point. A test that damages the working tree when it fails is
-            # not a test anyone will run twice.
-            $resolved = [IO.Path]::GetFullPath($path)
-            if (-not $resolved.StartsWith([IO.Path]::GetFullPath($unpackDir), [StringComparison]::OrdinalIgnoreCase)) {
-                Write-Host ''
-                Write-Host 'FAILED - self-test: the asset map does not point inside the unpacked archive.'
-                Write-Host "         $($candidate.Mod) resolves to $resolved"
-                Write-Host "         but the archive was unpacked to $unpackDir."
-                Write-Host '         Refusing to delete anything outside it; nothing was touched.'
-                exit 1
-            }
-            if (-not (Test-Path -LiteralPath $path)) { continue }
-            $tried += $candidate.Rel
-            $bytes = [IO.File]::ReadAllBytes($path)
-            Remove-Item -LiteralPath $path -Force
+                    # This self-test deletes files, so it refuses to delete one outside the scratch
+                    # directory. Found the hard way: wiring $ourDirectories back at the repository -- the
+                    # exact regression this test exists to catch -- made it delete the repository's own
+                    # sprite while proving the point. A test that damages the working tree when it fails is
+                    # not a test anyone will run twice.
+                    $resolved = [IO.Path]::GetFullPath($path)
+                    if (-not $resolved.StartsWith([IO.Path]::GetFullPath($unpackDir), [StringComparison]::OrdinalIgnoreCase)) {
+                        Write-Host ''
+                        Write-Host 'FAILED - self-test: the asset map does not point inside the unpacked archive.'
+                        Write-Host "         $($candidate.Mod) resolves to $resolved"
+                        Write-Host "         but the archive was unpacked to $unpackDir."
+                        Write-Host '         Refusing to delete anything outside it; nothing was touched.'
+                        exit 1
+                    }
+                    if (-not (Test-Path -LiteralPath $path)) { continue }
+                    $tried += $candidate.Rel
+                    $bytes = [IO.File]::ReadAllBytes($path)
+                    Remove-Item -LiteralPath $path -Force
 
-            $after = Find-MissingAssets -DumpPath $dumpPath -DataDir $dataDir -ModDirectories $ourDirectories
-            if ($after | Where-Object { $_.Reference -like "*/$($candidate.Rel)" }) {
-                $caught = $candidate
-                break
-            }
-            # Not reported: put it back before trying the next, so a run that ends up failing does
-            # not also leave the unpacked archive shredded behind it.
-            [IO.File]::WriteAllBytes($path, $bytes)
-        }
+                    $after = Find-MissingAssets -DumpPath $dumpPath -DataDir $dataDir -ModDirectories $ourDirectories
+                    if ($after | Where-Object { $_.Reference -like "*/$($candidate.Rel)" }) {
+                        $script:caught = $candidate
+                        break
+                    }
+                    # Not reported: put it back before trying the next, so a run that ends up failing does
+                    # not also leave the unpacked archive shredded behind it.
+                    [IO.File]::WriteAllBytes($path, $bytes)
+                }
 
-        if (-not $caught) {
-            Write-Host ''
-            Write-Host 'FAILED - self-test: removing a referenced file from the unpacked zip was NOT'
-            Write-Host '         reported missing. The asset check is resolving against something other'
-            Write-Host '         than the archive -- most likely the repository -- so a zip-mode pass'
-            Write-Host '         says nothing about what is in the zip.'
-            Write-Host "         Tried: $($tried -join ', ')"
-            exit 1
-        }
-        $victimRepoCopy = Join-Path $repoRoot (Join-Path $caught.Mod $caught.Rel)
-        # Asserted rather than mentioned: if the repository's copy were gone too, the deletion
-        # would have been caught by either resolution and this would prove nothing about which one
-        # the check used.
-        if (-not (Test-Path -LiteralPath $victimRepoCopy)) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the repository's copy of $($caught.Rel) is missing, so"
-            Write-Host '         catching the deletion does not show the check read the archive.'
-            exit 1
-        }
+                if (-not $caught) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: removing a referenced file from the unpacked zip was NOT'
+                    Write-Host '         reported missing. The asset check is resolving against something other'
+                    Write-Host '         than the archive -- most likely the repository -- so a zip-mode pass'
+                    Write-Host '         says nothing about what is in the zip.'
+                    Write-Host "         Tried: $($tried -join ', ')"
+                    exit 1
+                }
+                $victimRepoCopy = Join-Path $repoRoot (Join-Path $caught.Mod $caught.Rel)
+                # Asserted rather than mentioned: if the repository's copy were gone too, the deletion
+                # would have been caught by either resolution and this would prove nothing about which one
+                # the check used.
+                if (-not (Test-Path -LiteralPath $victimRepoCopy)) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the repository's copy of $($caught.Rel) is missing, so"
+                    Write-Host '         catching the deletion does not show the check read the archive.'
+                    exit 1
+                }
+                "a file removed from the unpacked zip was reported missing ($($caught.Rel))."
+            } }
+        )
 
         # AND NOT ONLY THAT ONE FILE. The check above proves the victim's repository copy survived,
         # which is the claim this half turns on; this proves nothing else moved either. It is the
@@ -1398,99 +1418,116 @@ try {
     }
 
     if ($SelfTest) {
-        # Half one: the repo as it stands must pass, or a non-zero exit in half two proves nothing.
-        Write-Host 'self-test 1/13: the repo as it stands must load.'
-        $clean = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'clean'
-        # Same pass criterion as a real run: exit 0 without a save is a failure there, so it must
-        # be a failure here too, or -SelfTest could certify a check a plain run would reject.
-        if ($clean.Code -ne 0 -or -not $clean.SaveExists) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the repo does not load cleanly (exit $($clean.Code), save produced: $($clean.SaveExists)),"
-            Write-Host '         so the canary result would be meaningless.'
-            Write-FactorioTail $clean
-            exit 1
-        }
-
-        # Half two: an invalid prototype must be rejected. The canary lives in the temp directory,
-        # never in the repo.
-        $canary = Join-Path $modDir 'rf-loadcheck-canary'
-        New-Item -ItemType Directory -Path $canary -Force | Out-Null
-        @{
-            name = 'rf-loadcheck-canary'; version = '0.0.1'; title = 'Load-check canary'
-            author = 'load-check.ps1'; factorio_version = '2.0'; dependencies = @('base >= 2.0.77')
-        } | ConvertTo-Json | Set-Content -Path (Join-Path $canary 'info.json') -Encoding utf8
-        # Valid Lua, invalid prototype: "stack_size" is mandatory on an item.
-        'data:extend({{ type = "item", name = "rf-loadcheck-canary-item" }})' |
-            Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
-
-        Write-Host 'self-test 2/13: an invalid prototype must be rejected.'
-        $broken = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'canary'
-        if ($broken.Code -eq 0) {
-            Write-Host ''
-            Write-Host 'FAILED - self-test: an invalid prototype did NOT fail the check.'
-            Write-Host '         The load-check is not proving anything; fix it before trusting a pass.'
-            exit 1
-        }
-
-        # Half three: a prototype naming a file that is not there must be caught. The first of the
-        # halves Factorio exits 0 on, where this check has to decide alone -- and it is checked by
-        # calling Find-MissingAssets directly rather than by running Test-Assets, which exits.
-        # The canary names its icon by concatenation, because that is the shape the source-text
-        # scan this replaced could not see.
-        'local D = "__rf-loadcheck-canary__/graphics/"
-data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
-  icon = D .. "no-such-icon" .. ".png", icon_size = 64 }})' |
-            Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
-
-        Write-Host 'self-test 3/13: a prototype naming a file that is not there must be caught.'
-        $withCanary = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'assets'
-        if ($withCanary.Code -ne 0) {
-            Write-Host ''
-            Write-Host 'FAILED - self-test: the missing-asset canary did not even load, so the'
-            Write-Host "         asset check was never reached (exit $($withCanary.Code))."
-            Write-FactorioTail $withCanary
-            exit 1
-        }
-
-        $dump = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
-            -Arguments @('--dump-data') -OutputDirectory $temp -Tag 'assets-dump'
-        if ($dump.Code -ne 0) { Write-FactorioTail $dump; exit $dump.Code }
-
-        $directories = @{ 'rf-loadcheck-canary' = $canary }
-        foreach ($mod in $ourMods) { $directories[$mod] = Join-Path $repoRoot $mod }
-        $found = Find-MissingAssets `
-            -DumpPath (Join-Path $temp 'write-data/script-output/data-raw-dump.json') `
-            -DataDir (Get-FactorioDataDirectory -FactorioExe $FactorioExe) `
-            -ModDirectories $directories
-        if (-not ($found | Where-Object { $_.Reference -like '*no-such-icon.png' })) {
-            Write-Host ''
-            Write-Host 'FAILED - self-test: a prototype naming a file that does not exist was NOT caught.'
-            Write-Host '         Factorio exits 0 on this and the player''s game does not; fix it before'
-            Write-Host '         trusting a pass.'
-            exit 1
-        }
-
-        # Half four: a set that reassigns one of our containment categories must be caught (#209).
-        # This is the half that proves the newest invariant, and it is the same shape the real breach
-        # had: `no-pipe-touching`'s data-final-fixes writes a literal over a connection of ours that
-        # qualifies BECAUSE it is contained. The canary does exactly that, in as few lines.
+        # THE HALVES ARE DECLARED BY NAME and Invoke-SelfTestHalves numbers them as it runs them,
+        # so the total is written nowhere and a half inserted in the middle renumbers nothing. The
+        # names are what everything else refers to: this file carried dozens of references numbering
+        # a half in prose a `sed` cannot safely rewrite, and CLAUDE.md named two of them by number,
+        # so renumbering this gate edited the repository's own instructions.
         #
-        # IT RECORDS WHAT IT BROKE, in its own item's `order` field, and the assertion below compares
-        # the reported breach against that name. Without it this half could only assert that SOME
-        # breach was reported, and a check that reported the wrong prototype would pass -- the report
-        # is the whole value of this gate, so "caught" has to mean "named correctly".
-        #
-        # THE VICTIM IS WHATEVER IS CONTAINED, not a prototype named here. A hard-coded victim would
-        # make this half fail on the day a pipe is renamed, which is the day it is least welcome.
-        #
-        # AND IT IS ANY OF THE THREE CATEGORIES, not rf-plasma alone (#86, #87). While plasma was the
-        # only contained family the two were the same thing; with three, a canary that hunts for
-        # rf-plasma proves the gate catches a lost plasma category and says nothing about the two
-        # energy ones -- and the sentence above would have been quietly false. The list is written in
-        # from $DECLARED_CATEGORIES so it cannot drift from what the floor requires, and the canary
-        # records WHICH category it took as well as from which prototype, because the assertion below
-        # compares both.
-        (@'
+        # WHAT ONE HALF LEAVES THE NEXT IS WRITTEN $script:, because a scriptblock assigning to a
+        # bare name writes its own local copy and the next half would read nothing -- the canary
+        # directory, the victims chosen off the manifests, and what the summary below reports.
+        Invoke-SelfTestHalves -Halves @(
+            @{ Name = 'repo-loads'; Body = {
+                # The repo as it stands must pass, or a non-zero exit in invalid-prototype proves nothing.
+                $clean = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'clean'
+                # Same pass criterion as a real run: exit 0 without a save is a failure there, so it must
+                # be a failure here too, or -SelfTest could certify a check a plain run would reject.
+                if ($clean.Code -ne 0 -or -not $clean.SaveExists) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the repo does not load cleanly (exit $($clean.Code), save produced: $($clean.SaveExists)),"
+                    Write-Host '         so the canary result would be meaningless.'
+                    Write-FactorioTail $clean
+                    exit 1
+                }
+                'the repo as it stands loads.'
+            } }
+
+            @{ Name = 'invalid-prototype'; Body = {
+                # An invalid prototype must be rejected. The canary lives in the temp directory,
+                # never in the repo.
+                $script:canary = Join-Path $modDir 'rf-loadcheck-canary'
+                New-Item -ItemType Directory -Path $canary -Force | Out-Null
+                @{
+                    name = 'rf-loadcheck-canary'; version = '0.0.1'; title = 'Load-check canary'
+                    author = 'load-check.ps1'; factorio_version = '2.0'; dependencies = @('base >= 2.0.77')
+                } | ConvertTo-Json | Set-Content -Path (Join-Path $canary 'info.json') -Encoding utf8
+                # Valid Lua, invalid prototype: "stack_size" is mandatory on an item.
+                'data:extend({{ type = "item", name = "rf-loadcheck-canary-item" }})' |
+                    Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
+
+                $script:broken = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'canary'
+                if ($broken.Code -eq 0) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: an invalid prototype did NOT fail the check.'
+                    Write-Host '         The load-check is not proving anything; fix it before trusting a pass.'
+                    exit 1
+                }
+                'an invalid prototype is rejected.'
+            } }
+
+            @{ Name = 'missing-asset'; Body = {
+                # A prototype naming a file that is not there must be caught. The first of the
+                # halves Factorio exits 0 on, where this check has to decide alone -- and it is checked by
+                # calling Find-MissingAssets directly rather than by running Test-Assets, which exits.
+                # The canary names its icon by concatenation, because that is the shape the source-text
+                # scan this replaced could not see.
+                'local D = "__rf-loadcheck-canary__/graphics/"
+        data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
+          icon = D .. "no-such-icon" .. ".png", icon_size = 64 }})' |
+                    Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
+
+                $withCanary = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'assets'
+                if ($withCanary.Code -ne 0) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: the missing-asset canary did not even load, so the'
+                    Write-Host "         asset check was never reached (exit $($withCanary.Code))."
+                    Write-FactorioTail $withCanary
+                    exit 1
+                }
+
+                $dump = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
+                    -Arguments @('--dump-data') -OutputDirectory $temp -Tag 'assets-dump'
+                if ($dump.Code -ne 0) { Write-FactorioTail $dump; exit $dump.Code }
+
+                $directories = @{ 'rf-loadcheck-canary' = $canary }
+                foreach ($mod in $ourMods) { $directories[$mod] = Join-Path $repoRoot $mod }
+                $found = Find-MissingAssets `
+                    -DumpPath (Join-Path $temp 'write-data/script-output/data-raw-dump.json') `
+                    -DataDir (Get-FactorioDataDirectory -FactorioExe $FactorioExe) `
+                    -ModDirectories $directories
+                if (-not ($found | Where-Object { $_.Reference -like '*no-such-icon.png' })) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: a prototype naming a file that does not exist was NOT caught.'
+                    Write-Host '         Factorio exits 0 on this and the player''s game does not; fix it before'
+                    Write-Host '         trusting a pass.'
+                    exit 1
+                }
+                'a prototype naming a file that is not there is caught.'
+            } }
+
+            @{ Name = 'reassigned-category'; Body = {
+                # A set that reassigns one of our containment categories must be caught (#209).
+                # This is the half that proves the newest invariant, and it is the same shape the real breach
+                # had: `no-pipe-touching`'s data-final-fixes writes a literal over a connection of ours that
+                # qualifies BECAUSE it is contained. The canary does exactly that, in as few lines.
+                #
+                # IT RECORDS WHAT IT BROKE, in its own item's `order` field, and the assertion below compares
+                # the reported breach against that name. Without it this half could only assert that SOME
+                # breach was reported, and a check that reported the wrong prototype would pass -- the report
+                # is the whole value of this gate, so "caught" has to mean "named correctly".
+                #
+                # THE VICTIM IS WHATEVER IS CONTAINED, not a prototype named here. A hard-coded victim would
+                # make this half fail on the day a pipe is renamed, which is the day it is least welcome.
+                #
+                # AND IT IS ANY OF THE THREE CATEGORIES, not rf-plasma alone (#86, #87). While plasma was the
+                # only contained family the two were the same thing; with three, a canary that hunts for
+                # rf-plasma proves the gate catches a lost plasma category and says nothing about the two
+                # energy ones -- and the sentence above would have been quietly false. The list is written in
+                # from $DECLARED_CATEGORIES so it cannot drift from what the floor requires, and the canary
+                # records WHICH category it took as well as from which prototype, because the assertion below
+                # compares both.
+                (@'
 local CATEGORIES = { __CATEGORIES__ }
 
 local function contained_as(cat)
@@ -1540,96 +1577,98 @@ end
 local victim = first_contained()
 if not victim then
   error("load-check canary: no connection carrying any of " .. table.concat(CATEGORIES, ", ")
-    .. " to reassign, so half four would prove nothing")
+    .. " to reassign, so the reassigned-category half would prove nothing")
 end
 -- Both halves of what it did, in one field, because an item has no second free string field and a
--- second prototype would be a second thing for half three's asset walk to trip over.
+-- second prototype would be a second thing for missing-asset's own asset walk to trip over.
 data.raw.item["rf-loadcheck-canary-item"].order = victim .. "|" .. taken
 '@).Replace('__CATEGORIES__',
-                (($DECLARED_CATEGORIES | ForEach-Object { "'$_'" }) -join ', ')) |
-            Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
-        # Valid, and with an icon that exists this time: half three's missing icon would fail the
-        # asset check rather than reaching this one.
-        'data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
-  icon = "__base__/graphics/icons/iron-plate.png", icon_size = 64 }})' |
-            Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
+                        (($DECLARED_CATEGORIES | ForEach-Object { "'$_'" }) -join ', ')) |
+                    Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
+                # Valid, and with an icon that exists this time: missing-asset's absent icon would fail the
+                # asset check rather than reaching this one.
+                'data:extend({{ type = "item", name = "rf-loadcheck-canary-item", stack_size = 1,
+          icon = "__base__/graphics/icons/iron-plate.png", icon_size = 64 }})' |
+                    Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        Write-Host 'self-test 4/13: a set reassigning one of our containment categories must be caught.'
-        $reassigned = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'contain'
-        if ($reassigned.Code -ne 0) {
-            Write-Host ''
-            Write-Host 'FAILED - self-test: the containment canary did not load, so the containment'
-            Write-Host "         check was never reached (exit $($reassigned.Code)). A canary that cannot"
-            Write-Host '         load proves nothing about a gate that runs after the load.'
-            Write-FactorioTail $reassigned
-            exit 1
-        }
+                $reassigned = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'contain'
+                if ($reassigned.Code -ne 0) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: the containment canary did not load, so the containment'
+                    Write-Host "         check was never reached (exit $($reassigned.Code)). A canary that cannot"
+                    Write-Host '         load proves nothing about a gate that runs after the load.'
+                    Write-FactorioTail $reassigned
+                    exit 1
+                }
 
-        $loadedDumpPath    = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'contain-loaded'
-        $loadedContainment = Get-ConnectionsFromDump -DumpPath $loadedDumpPath
-        $declaredContainment = Get-ConnectionsFromDump -DumpPath (
-            Invoke-DataDump -Mods $ourMods -Tag 'contain-declared' -Disabled @('rf-loadcheck-canary'))
+                $loadedDumpPath    = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'contain-loaded'
+                $loadedContainment = Get-ConnectionsFromDump -DumpPath $loadedDumpPath
+                $declaredContainment = Get-ConnectionsFromDump -DumpPath (
+                    Invoke-DataDump -Mods $ourMods -Tag 'contain-declared' -Disabled @('rf-loadcheck-canary'))
 
-        $recorded = (Get-Content -LiteralPath $loadedDumpPath -Raw |
-            ConvertFrom-Json).item.'rf-loadcheck-canary-item'.order
-        if (-not $recorded -or $recorded -notmatch '^(.+)\|(.+)$') {
-            Write-Host ''
-            Write-Host 'FAILED - self-test: the containment canary recorded no victim, so it never found'
-            Write-Host '         a contained connection to reassign and this half proves nothing.'
-            exit 1
-        }
-        $victim, $takenCategory = $Matches[1], $Matches[2]
+                $recorded = (Get-Content -LiteralPath $loadedDumpPath -Raw |
+                    ConvertFrom-Json).item.'rf-loadcheck-canary-item'.order
+                if (-not $recorded -or $recorded -notmatch '^(.+)\|(.+)$') {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: the containment canary recorded no victim, so it never found'
+                    Write-Host '         a contained connection to reassign and this half proves nothing.'
+                    exit 1
+                }
+                $script:victim, $takenCategory = $Matches[1], $Matches[2]
 
-        $breaches = @(Get-ContainmentBreaches -Declared $declaredContainment -Loaded $loadedContainment)
-        $named    = @($breaches | Where-Object { $_.Prototype -eq $victim })
-        if (-not $named) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the canary reassigned a contained connection on $victim and the"
-            Write-Host '         containment check did NOT report it. Nothing else in this repo notices a'
-            Write-Host '         category being overwritten -- name-check compares only prototypes present'
-            Write-Host '         in both dumps, and ours is in one.'
-            if ($breaches) {
-                Write-Host "         It reported $($breaches.Count) other breach(es):"
-                foreach ($b in $breaches) { Write-Host "           $($b.Prototype)  $($b.Connection)" }
-            }
-            exit 1
-        }
-        if (-not @($named | Where-Object { $_.Missing -ccontains $takenCategory })) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the breach reported on $victim does not name $takenCategory as"
-            Write-Host '         the category lost, so the row would not tell a reader what was taken.'
-            foreach ($b in $named) { Write-Host "           $($b.Connection): lost $($b.Missing -join ', ')" }
-            exit 1
-        }
+                $breaches = @(Get-ContainmentBreaches -Declared $declaredContainment -Loaded $loadedContainment)
+                $named    = @($breaches | Where-Object { $_.Prototype -eq $victim })
+                if (-not $named) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the canary reassigned a contained connection on $victim and the"
+                    Write-Host '         containment check did NOT report it. Nothing else in this repo notices a'
+                    Write-Host '         category being overwritten -- name-check compares only prototypes present'
+                    Write-Host '         in both dumps, and ours is in one.'
+                    if ($breaches) {
+                        Write-Host "         It reported $($breaches.Count) other breach(es):"
+                        foreach ($b in $breaches) { Write-Host "           $($b.Prototype)  $($b.Connection)" }
+                    }
+                    exit 1
+                }
+                if (-not @($named | Where-Object { $_.Missing -ccontains $takenCategory })) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the breach reported on $victim does not name $takenCategory as"
+                    Write-Host '         the category lost, so the row would not tell a reader what was taken.'
+                    foreach ($b in $named) { Write-Host "           $($b.Connection): lost $($b.Missing -join ', ')" }
+                    exit 1
+                }
+                "a set reassigning one of our containment categories is caught, on $victim, and the row names the category it lost."
+            } }
 
-        # Half five: a machine whose rendered art no longer fits it must be caught (#250). The victim
-        # is whatever the first manifest records -- a hard-coded machine would fail this half the day
-        # it was re-rendered under another name -- and the canary slides that machine's first
-        # connection one tile ALONG its edge, towards the centre. Along, because a connection off its
-        # edge is a prototype Factorio refuses, and a canary that cannot load proves nothing about a
-        # gate that runs after the load. Towards the centre, so it stays on the footprint whatever the
-        # machine's size.
-        $renderManifests = Get-RenderManifests -AssetsDirectory (Join-Path $repoRoot $ASSETS_MOD)
-        if (-not $renderManifests) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: no graphics/rendered/*/manifest.json under $ASSETS_MOD, so"
-            Write-Host '         half five has no render to disagree with.'
-            exit 1
-        }
-        $renderVictim = (Get-Content -LiteralPath $renderManifests[0].FullName -Raw | ConvertFrom-Json).geometry
-        $slid = $renderVictim.connections[0]
-        if (-not $slid) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: $($renderVictim.name)'s manifest records no connection to slide."
-            exit 1
-        }
-        # The manifest's box path is dotted with zero-based indices; Lua wants brackets and one-based.
-        $boxLua = ($slid.box -split '\.' | ForEach-Object {
-            if ($_ -match '^\d+$') { "[$([int]$_ + 1)]" } else { "[`"$_`"]" } }) -join ''
-        $axis  = if ($slid.direction -in @('north', 'south')) { 1 } else { 2 }
-        $named = if ($axis -eq 1) { 'x' } else { 'y' }
-        $delta = if ($slid.position[$axis - 1] -le 0) { 1 } else { -1 }
-        @"
+            @{ Name = 'slid-socket'; Body = {
+                # A machine whose rendered art no longer fits it must be caught (#250). The victim
+                # is whatever the first manifest records -- a hard-coded machine would fail this half the day
+                # it was re-rendered under another name -- and the canary slides that machine's first
+                # connection one tile ALONG its edge, towards the centre. Along, because a connection off its
+                # edge is a prototype Factorio refuses, and a canary that cannot load proves nothing about a
+                # gate that runs after the load. Towards the centre, so it stays on the footprint whatever the
+                # machine's size.
+                $script:renderManifests = Get-RenderManifests -AssetsDirectory (Join-Path $repoRoot $ASSETS_MOD)
+                if (-not $renderManifests) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: no graphics/rendered/*/manifest.json under $ASSETS_MOD, so"
+                    Write-Host '         this half has no render to disagree with.'
+                    exit 1
+                }
+                $script:renderVictim = (Get-Content -LiteralPath $renderManifests[0].FullName -Raw | ConvertFrom-Json).geometry
+                $slid = $renderVictim.connections[0]
+                if (-not $slid) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: $($renderVictim.name)'s manifest records no connection to slide."
+                    exit 1
+                }
+                # The manifest's box path is dotted with zero-based indices; Lua wants brackets and one-based.
+                $boxLua = ($slid.box -split '\.' | ForEach-Object {
+                    if ($_ -match '^\d+$') { "[$([int]$_ + 1)]" } else { "[`"$_`"]" } }) -join ''
+                $axis  = if ($slid.direction -in @('north', 'south')) { 1 } else { 2 }
+                $named = if ($axis -eq 1) { 'x' } else { 'y' }
+                $delta = if ($slid.position[$axis - 1] -le 0) { 1 } else { -1 }
+                @"
 local proto = data.raw["$($renderVictim.type)"]["$($renderVictim.name)"]
 local slid = false
 for _, c in pairs(proto$boxLua.pipe_connections) do
@@ -1640,69 +1679,71 @@ for _, c in pairs(proto$boxLua.pipe_connections) do
   end
 end
 if not slid then
-  error("load-check canary: no connection at ($($slid.position[0]), $($slid.position[1])) on $($renderVictim.name) to slide, so half five would prove nothing")
+  error("load-check canary: no connection at ($($slid.position[0]), $($slid.position[1])) on $($renderVictim.name) to slide, so the slid-socket half would prove nothing")
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 5/13: a machine whose rendered art no longer fits it must be caught."
-        $renderDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-loaded'
-        $disagreements = @(Get-RenderDisagreements -DumpPath $renderDump -Manifests $renderManifests)
-        $onVictim = @($disagreements | Where-Object { $_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connections' })
-        if (-not $onVictim) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the canary slid a connection on $($renderVictim.name) and the"
-            Write-Host '         rendered-art check did NOT report a disagreement on its connections.'
-            Write-Host '         The sprite would keep showing a socket where the pipe no longer is.'
-            if ($disagreements) {
-                Write-Host "         It reported $($disagreements.Count) other row(s):"
-                foreach ($d in $disagreements) { Write-Host "           $($d.Prototype)  $($d.Field)" }
-            }
-            exit 1
-        }
-        # Only the connections may disagree: the canary touched nothing else, so a footprint row here
-        # would mean the comparison is reading something other than the slide it was shown.
-        $stray = @($disagreements | Where-Object { -not ($_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connections') })
-        if ($stray) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the canary slid one connection but the check also reported:"
-            foreach ($d in $stray) { Write-Host "           $($d.Prototype)  $($d.Field)" }
-            exit 1
-        }
+                $renderDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-loaded'
+                $disagreements = @(Get-RenderDisagreements -DumpPath $renderDump -Manifests $renderManifests)
+                $onVictim = @($disagreements | Where-Object { $_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connections' })
+                if (-not $onVictim) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the canary slid a connection on $($renderVictim.name) and the"
+                    Write-Host '         rendered-art check did NOT report a disagreement on its connections.'
+                    Write-Host '         The sprite would keep showing a socket where the pipe no longer is.'
+                    if ($disagreements) {
+                        Write-Host "         It reported $($disagreements.Count) other row(s):"
+                        foreach ($d in $disagreements) { Write-Host "           $($d.Prototype)  $($d.Field)" }
+                    }
+                    exit 1
+                }
+                # Only the connections may disagree: the canary touched nothing else, so a footprint row here
+                # would mean the comparison is reading something other than the slide it was shown.
+                $stray = @($disagreements | Where-Object { -not ($_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connections') })
+                if ($stray) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the canary slid one connection but the check also reported:"
+                    foreach ($d in $stray) { Write-Host "           $($d.Prototype)  $($d.Field)" }
+                    exit 1
+                }
+                'a machine whose rendered art no longer fits it is caught.'
+            } }
 
-        # Half six: another mod ADDING a connection category must NOT be reported as the art having
-        # come loose. This is the coexistence half, and it is the inverse of half five: five requires
-        # a moved socket to be caught, six requires an untouched one to stay quiet while a third-party
-        # mod writes on it. Krastorio 2 does exactly this -- it puts `kr-steel-pipe` on the fluid
-        # boxes of machines it never heard of -- so before this half existed, `load-check.ps1
-        # -AlsoModDirectory .mod-cache/krastorio2` failed on rf-heat-exchanger with four connections
-        # whose position, direction, flow and fluid all matched and whose category did not. That is
-        # ADR 0007's coexistence reported as ADR 0030's art being wrong, and it made #18's story 35 --
-        # the same load-check runnable with Krastorio 2 present -- false.
-        #
-        # THE VICTIM IS AN UNCONTAINED CONNECTION, chosen rather than taken, and for a sharper reason
-        # than "that is what Krastorio 2 writes on". Uncontained is exactly the class
-        # Get-ContainmentBreaches does not cover -- its $contained predicate is false for a set that
-        # is only `default` -- so this is precisely where the rendered-art gate is the only one
-        # asserting anything, and precisely where a tolerance has to be demonstrated rather than
-        # assumed.
-        #
-        # It self-heals as the repo changes: $addable filters on the RECORDED category, so when
-        # ADR 0018's containment reaches this box (#86, #258) the half moves itself to a water
-        # connection, and bails loudly only when every recorded connection is contained. Do not
-        # replace the filter with a hard-coded box.
-        $addable = @($renderVictim.connections | Where-Object { -not $_.connection_category })
-        if (-not $addable) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: every connection $($renderVictim.name)'s manifest records is"
-            Write-Host '         already contained, so half six has no uncontained one to write a'
-            Write-Host '         category onto and would prove nothing.'
-            exit 1
-        }
-        $added    = $addable[0]
-        $addedCat = 'rf-loadcheck-coexist'
-        $addBoxLua = ($added.box -split '\.' | ForEach-Object {
-            if ($_ -match '^\d+$') { "[$([int]$_ + 1)]" } else { "[`"$_`"]" } }) -join ''
-        @"
+            @{ Name = 'added-category'; Body = {
+                # Another mod ADDING a connection category must NOT be reported as the art having
+                # come loose. This is the coexistence half, and it is slid-socket inverted: that one requires
+                # a moved socket to be caught, this one an untouched one to stay quiet while a third-party
+                # mod writes on it. Krastorio 2 does exactly this -- it puts `kr-steel-pipe` on the fluid
+                # boxes of machines it never heard of -- so before this half existed, `load-check.ps1
+                # -AlsoModDirectory .mod-cache/krastorio2` failed on rf-heat-exchanger with four connections
+                # whose position, direction, flow and fluid all matched and whose category did not. That is
+                # ADR 0007's coexistence reported as ADR 0030's art being wrong, and it made #18's story 35 --
+                # the same load-check runnable with Krastorio 2 present -- false.
+                #
+                # THE VICTIM IS AN UNCONTAINED CONNECTION, chosen rather than taken, and for a sharper reason
+                # than "that is what Krastorio 2 writes on". Uncontained is exactly the class
+                # Get-ContainmentBreaches does not cover -- its $contained predicate is false for a set that
+                # is only `default` -- so this is precisely where the rendered-art gate is the only one
+                # asserting anything, and precisely where a tolerance has to be demonstrated rather than
+                # assumed.
+                #
+                # It self-heals as the repo changes: $addable filters on the RECORDED category, so when
+                # ADR 0018's containment reaches this box (#86, #258) the half moves itself to a water
+                # connection, and bails loudly only when every recorded connection is contained. Do not
+                # replace the filter with a hard-coded box.
+                $addable = @($renderVictim.connections | Where-Object { -not $_.connection_category })
+                if (-not $addable) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: every connection $($renderVictim.name)'s manifest records is"
+                    Write-Host '         already contained, so this half has no uncontained one to write a'
+                    Write-Host '         category onto and would prove nothing.'
+                    exit 1
+                }
+                $script:added     = $addable[0]
+                $script:addedCat = 'rf-loadcheck-coexist'
+                $script:addBoxLua = ($added.box -split '\.' | ForEach-Object {
+                    if ($_ -match '^\d+$') { "[$([int]$_ + 1)]" } else { "[`"$_`"]" } }) -join ''
+                @"
 local proto = data.raw["$($renderVictim.type)"]["$($renderVictim.name)"]
 local touched = false
 for _, c in pairs(proto$addBoxLua.pipe_connections) do
@@ -1713,69 +1754,71 @@ for _, c in pairs(proto$addBoxLua.pipe_connections) do
   end
 end
 if not touched then
-  error("load-check canary: no connection at ($($added.position[0]), $($added.position[1])) on $($renderVictim.name) to add a category to, so half six would prove nothing")
+  error("load-check canary: no connection at ($($added.position[0]), $($added.position[1])) on $($renderVictim.name) to add a category to, so the added-category half would prove nothing")
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 6/13: another mod adding a connection category must NOT be reported."
-        $coexistDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-coexist'
+                $coexistDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-coexist'
 
-        # The canary reaching the GEOMETRY, proved rather than assumed. This half passes by finding
-        # nothing, and there are two ways to pass it dishonestly. This pre-check rules out the first:
-        # a canary that missed, leaving nothing for the gate to report. It does NOT rule out the
-        # second -- it calls the extractor directly and never touches Get-RenderDisagreements, so
-        # gutting that function to `return @()` would sail through here. **Half five is what stops
-        # that**, because it runs the same function first and requires a row. The two halves are load
-        # bearing for each other: do not delete five believing six covers a dead gate.
-        $coexistLines = @(& python (Join-Path $repoRoot 'tools/extract-geometry.py') $renderVictim.name `
-            --dump $coexistDump --stdout 2>&1 | ForEach-Object { "$_" })
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the extractor exited $LASTEXITCODE on $($renderVictim.name) under the"
-            Write-Host '         coexistence canary, so half six never saw the geometry it is about.'
-            Write-Host "         $($coexistLines | Select-Object -Last 1)"
-            exit 1
-        }
-        $coexistLive = ($coexistLines -join "`n") | ConvertFrom-Json
-        $carrying = @($coexistLive.connections | Where-Object {
-            $_.box -ceq $added.box -and
-            $_.position[0] -eq $added.position[0] -and $_.position[1] -eq $added.position[1] -and
-            $_.connection_category -ccontains $addedCat })
-        if (-not $carrying) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the canary's category '$addedCat' is not on the live"
-            Write-Host "         geometry of $($renderVictim.name) at ($($added.position[0]), $($added.position[1])), so a quiet"
-            Write-Host '         gate below would mean the canary missed rather than that the gate tolerated it.'
-            exit 1
-        }
+                # The canary reaching the GEOMETRY, proved rather than assumed. This half passes by finding
+                # nothing, and there are two ways to pass it dishonestly. This pre-check rules out the first:
+                # a canary that missed, leaving nothing for the gate to report. It does NOT rule out the
+                # second -- it calls the extractor directly and never touches Get-RenderDisagreements, so
+                # gutting that function to `return @()` would sail through here. **slid-socket is what stops
+                # that**, because it runs the same function first and requires a row. The two halves are load
+                # bearing for each other: do not delete slid-socket believing this one covers a dead gate.
+                $coexistLines = @(& python (Join-Path $repoRoot 'tools/extract-geometry.py') $renderVictim.name `
+                    --dump $coexistDump --stdout 2>&1 | ForEach-Object { "$_" })
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the extractor exited $LASTEXITCODE on $($renderVictim.name) under the"
+                    Write-Host '         coexistence canary, so this half never saw the geometry it is about.'
+                    Write-Host "         $($coexistLines | Select-Object -Last 1)"
+                    exit 1
+                }
+                $coexistLive = ($coexistLines -join "`n") | ConvertFrom-Json
+                $carrying = @($coexistLive.connections | Where-Object {
+                    $_.box -ceq $added.box -and
+                    $_.position[0] -eq $added.position[0] -and $_.position[1] -eq $added.position[1] -and
+                    $_.connection_category -ccontains $addedCat })
+                if (-not $carrying) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the canary's category '$addedCat' is not on the live"
+                    Write-Host "         geometry of $($renderVictim.name) at ($($added.position[0]), $($added.position[1])), so a quiet"
+                    Write-Host '         gate below would mean the canary missed rather than that the gate tolerated it.'
+                    exit 1
+                }
 
-        $coexistRows = @(Get-RenderDisagreements -DumpPath $coexistDump -Manifests $renderManifests)
-        if ($coexistRows) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: a third-party mod added a connection category to"
-            Write-Host "         $($renderVictim.name) and the rendered-art check reported it as a"
-            Write-Host '         disagreement. Nothing moved: a category says what may connect, not where'
-            Write-Host '         the socket is, so an addition is a coexisting mod working as intended.'
-            foreach ($d in $coexistRows) {
-                Write-Host "           $($d.Prototype)  $($d.Field)"
-                Write-Host "             recorded: $($d.Recorded)"
-                Write-Host "             live:     $($d.Live)"
-            }
-            exit 1
-        }
+                $coexistRows = @(Get-RenderDisagreements -DumpPath $coexistDump -Manifests $renderManifests)
+                if ($coexistRows) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: a third-party mod added a connection category to"
+                    Write-Host "         $($renderVictim.name) and the rendered-art check reported it as a"
+                    Write-Host '         disagreement. Nothing moved: a category says what may connect, not where'
+                    Write-Host '         the socket is, so an addition is a coexisting mod working as intended.'
+                    foreach ($d in $coexistRows) {
+                        Write-Host "           $($d.Prototype)  $($d.Field)"
+                        Write-Host "             recorded: $($d.Recorded)"
+                        Write-Host "             live:     $($d.Live)"
+                    }
+                    exit 1
+                }
+                'another mod adding a connection category is NOT reported.'
+            } }
 
-        # Half seven: another mod REPLACING a connection category must be caught. Six and seven are
-        # one pair and neither is worth much alone -- six alone is a gate that could tolerate
-        # everything, including a category being taken away, which is the change that would cut a
-        # machine off from every ordinary pipe in the game. Seven is what makes the subset semantics
-        # a check rather than a decoration, and it is their only canary: the containment floor does
-        # not reach these connections at all, and probe-connection-categories.ps1 reports on them
-        # without asserting anything.
-        #
-        # The same victim as half six, and deliberately so. `default` is what the engine reads an
-        # absent category as, so a set that writes a category of its own and drops `default` has
-        # removed something that was there without the manifest ever having recorded a word.
-        @"
+            @{ Name = 'replaced-category'; Body = {
+                # Another mod REPLACING a connection category must be caught. This and added-category are
+                # one pair and neither is worth much alone -- added-category alone is a gate that could tolerate
+                # everything, including a category being taken away, which is the change that would cut a
+                # machine off from every ordinary pipe in the game. This half is what makes the subset semantics
+                # a check rather than a decoration, and it is their only canary: the containment floor does
+                # not reach these connections at all, and probe-connection-categories.ps1 reports on them
+                # without asserting anything.
+                #
+                # The same victim as added-category, and deliberately so. `default` is what the engine reads an
+                # absent category as, so a set that writes a category of its own and drops `default` has
+                # removed something that was there without the manifest ever having recorded a word.
+                @"
 local proto = data.raw["$($renderVictim.type)"]["$($renderVictim.name)"]
 local touched = false
 for _, c in pairs(proto$addBoxLua.pipe_connections) do
@@ -1786,107 +1829,111 @@ for _, c in pairs(proto$addBoxLua.pipe_connections) do
   end
 end
 if not touched then
-  error("load-check canary: no connection at ($($added.position[0]), $($added.position[1])) on $($renderVictim.name) to replace the category of, so half seven would prove nothing")
+  error("load-check canary: no connection at ($($added.position[0]), $($added.position[1])) on $($renderVictim.name) to replace the category of, so the replaced-category half would prove nothing")
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host "self-test 7/13: another mod replacing a connection category must be caught."
-        $replacedDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-replaced'
-        $replacedRows = @(Get-RenderDisagreements -DumpPath $replacedDump -Manifests $renderManifests)
-        $onCategories = @($replacedRows | Where-Object {
-            $_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connection categories' })
-        if (-not $onCategories) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the canary took 'default' off a connection of"
-            Write-Host "         $($renderVictim.name) and the rendered-art check did NOT report it. Nothing"
-            Write-Host '         else GATES that connection -- the containment floor skips anything we'
-            Write-Host '         left `default` -- so the machine would quietly stop accepting every'
-            Write-Host '         ordinary pipe in the game.'
-            if ($replacedRows) {
-                Write-Host "         It reported $($replacedRows.Count) other row(s):"
-                foreach ($d in $replacedRows) { Write-Host "           $($d.Prototype)  $($d.Field)" }
-            }
-            exit 1
-        }
-        # Named, not merely counted, for the reason half four compares names: the row is the value.
-        if (-not @($onCategories | Where-Object { $_.Live -match 'lost .*\bdefault\b' })) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the row reported on $($renderVictim.name) does not name 'default'"
-            Write-Host '         as the category lost, so it would not tell a reader what was taken.'
-            foreach ($d in $onCategories) { Write-Host "           $($d.Recorded) -> $($d.Live)" }
-            exit 1
-        }
+                $replacedDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-replaced'
+                $replacedRows = @(Get-RenderDisagreements -DumpPath $replacedDump -Manifests $renderManifests)
+                $onCategories = @($replacedRows | Where-Object {
+                    $_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connection categories' })
+                if (-not $onCategories) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the canary took 'default' off a connection of"
+                    Write-Host "         $($renderVictim.name) and the rendered-art check did NOT report it. Nothing"
+                    Write-Host '         else GATES that connection -- the containment floor skips anything we'
+                    Write-Host '         left `default` -- so the machine would quietly stop accepting every'
+                    Write-Host '         ordinary pipe in the game.'
+                    if ($replacedRows) {
+                        Write-Host "         It reported $($replacedRows.Count) other row(s):"
+                        foreach ($d in $replacedRows) { Write-Host "           $($d.Prototype)  $($d.Field)" }
+                    }
+                    exit 1
+                }
+                # Named, not merely counted, for the reason reassigned-category compares names: the row is the value.
+                if (-not @($onCategories | Where-Object { $_.Live -match 'lost .*\bdefault\b' })) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the row reported on $($renderVictim.name) does not name 'default'"
+                    Write-Host '         as the category lost, so it would not tell a reader what was taken.'
+                    foreach ($d in $onCategories) { Write-Host "           $($d.Recorded) -> $($d.Live)" }
+                    exit 1
+                }
+                'another mod replacing a connection category is caught, and the row names ''default'' as what was lost.'
+            } }
 
-        # Half eight: a reactor whose network can never pay for its heating must be refused (#72).
-        #
-        # UNLIKE EVERY HALF ABOVE IT, this one is not about a mod breaking our prototypes from
-        # outside -- it is about a developer edit to our own. check_input_flow() replaced
-        # check_cadence() when per-tick spending dissolved the coupling between UPDATE_INTERVAL and
-        # buffer_capacity, and the invariant that became load-bearing is
-        # input_flow_limit >= heating_power_w. Break that and the reactor is starved for ever,
-        # silently, because underpowered is a legitimate state a reactor is meant to have. The
-        # canary makes the edit from outside because that is the only way to make it without
-        # editing the repo.
-        #
-        # IT MUST FAIL BY THE CHECK'S OWN WORDS, not merely fail. check_input_flow() runs from
-        # on_init, so it fires while --create builds the map -- but so does every other refusal in
-        # control.lua, and a canary that happened to break something else would look identical.
-        # The assertion therefore reads the captured output for the message this check alone emits.
-        '(function()
-  local source = data.raw.boiler["rf-reactor"].energy_source
-  if not source.input_flow_limit then
-    error("load-check canary: rf-reactor declares no input_flow_limit, so half eight would prove nothing")
-  end
-  source.input_flow_limit = "1W"
-end)()' | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
+            @{ Name = 'starved-reactor'; Body = {
+                # A reactor whose network can never pay for its heating must be refused (#72).
+                #
+                # UNLIKE EVERY HALF ABOVE IT, this one is not about a mod breaking our prototypes from
+                # outside -- it is about a developer edit to our own. check_input_flow() replaced
+                # check_cadence() when per-tick spending dissolved the coupling between UPDATE_INTERVAL and
+                # buffer_capacity, and the invariant that became load-bearing is
+                # input_flow_limit >= heating_power_w. Break that and the reactor is starved for ever,
+                # silently, because underpowered is a legitimate state a reactor is meant to have. The
+                # canary makes the edit from outside because that is the only way to make it without
+                # editing the repo.
+                #
+                # IT MUST FAIL BY THE CHECK'S OWN WORDS, not merely fail. check_input_flow() runs from
+                # on_init, so it fires while --create builds the map -- but so does every other refusal in
+                # control.lua, and a canary that happened to break something else would look identical.
+                # The assertion therefore reads the captured output for the message this check alone emits.
+                '(function()
+          local source = data.raw.boiler["rf-reactor"].energy_source
+          if not source.input_flow_limit then
+            error("load-check canary: rf-reactor declares no input_flow_limit, so the starved-reactor half would prove nothing")
+          end
+          source.input_flow_limit = "1W"
+        end)()' | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host 'self-test 8/13: a reactor that can never be paid its heating must be refused.'
-        $starved = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'flow'
-        if ($starved.Code -eq 0) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: rf-reactor's input_flow_limit was cut to 1 W and the mod loaded"
-            Write-Host '         anyway. check_input_flow() is not proving anything, so a reactor that can'
-            Write-Host '         never be paid its confinement heating would ship as a balance problem.'
-            exit 1
-        }
-        $starvedSaid = (Test-Path $starved.OutFile) -and
-            (Select-String -Path $starved.OutFile -SimpleMatch 'input_flow_limit admits only' -Quiet)
-        if (-not $starvedSaid) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the starved-reactor canary failed the load (exit $($starved.Code)) but"
-            Write-Host '         check_input_flow() did not say so, so the failure was something else and'
-            Write-Host '         this half proves nothing about the invariant it is named for.'
-            Write-FactorioTail $starved
-            exit 1
-        }
+                $starved = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'flow'
+                if ($starved.Code -eq 0) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: rf-reactor's input_flow_limit was cut to 1 W and the mod loaded"
+                    Write-Host '         anyway. check_input_flow() is not proving anything, so a reactor that can'
+                    Write-Host '         never be paid its confinement heating would ship as a balance problem.'
+                    exit 1
+                }
+                $starvedSaid = (Test-Path $starved.OutFile) -and
+                    (Select-String -Path $starved.OutFile -SimpleMatch 'input_flow_limit admits only' -Quiet)
+                if (-not $starvedSaid) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the starved-reactor canary failed the load (exit $($starved.Code)) but"
+                    Write-Host '         check_input_flow() did not say so, so the failure was something else and'
+                    Write-Host '         this half proves nothing about the invariant it is named for.'
+                    Write-FactorioTail $starved
+                    exit 1
+                }
+                'a reactor that can never be paid its heating is refused, in check_input_flow()''s own words.'
+            } }
 
-        # Half nine: a machine whose MOCKUP no longer fits it must be caught (#275). The render gate's
-        # twin for the other kind of art. The victim is the first machine in mockup-machines.psd1
-        # that has a connection -- read from the table, so it follows whatever wears a mockup -- and
-        # the canary slides that connection one tile along its edge towards the centre, for the same
-        # two reasons half five does: along keeps the prototype loadable, towards the centre keeps it
-        # on the footprint.
-        #
-        # The table records neither the box a connection belongs to nor its direction, so the canary
-        # walks every pipe_connections list in the prototype for the tile, and the edge is read off
-        # the table: a connection at x = +-(Width - 1) / 2 stands on a west or east edge and slides in
-        # y, anything else stands north or south and slides in x.
-        $mockupMachines = Get-MockupMachines
-        $mockupVictim = $mockupMachines | Where-Object { $_.Connections.Count -gt 0 } | Select-Object -First 1
-        if (-not $mockupVictim) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: no machine in $MOCKUP_TABLE has a connection to slide, so"
-            Write-Host '         half nine has no mockup to disagree with.'
-            exit 1
-        }
-        $mockupSlid = $mockupVictim.Connections[0]
-        $mockupName = "rf-$($mockupVictim.Name)"
-        $onSide     = [Math]::Abs($mockupSlid.X) -eq ($mockupVictim.Width - 1) / 2
-        $mAxis      = if ($onSide) { 2 } else { 1 }
-        $mNamed     = if ($mAxis -eq 1) { 'x' } else { 'y' }
-        $mCoord     = if ($mAxis -eq 1) { $mockupSlid.X } else { $mockupSlid.Y }
-        $mDelta     = if ($mCoord -le 0) { 1 } else { -1 }
-        @"
+            @{ Name = 'slid-mockup'; Body = {
+                # A machine whose MOCKUP no longer fits it must be caught (#275). The render gate's
+                # twin for the other kind of art. The victim is the first machine in mockup-machines.psd1
+                # that has a connection -- read from the table, so it follows whatever wears a mockup -- and
+                # the canary slides that connection one tile along its edge towards the centre, for the same
+                # two reasons slid-socket does: along keeps the prototype loadable, towards the centre keeps it
+                # on the footprint.
+                #
+                # The table records neither the box a connection belongs to nor its direction, so the canary
+                # walks every pipe_connections list in the prototype for the tile, and the edge is read off
+                # the table: a connection at x = +-(Width - 1) / 2 stands on a west or east edge and slides in
+                # y, anything else stands north or south and slides in x.
+                $mockupMachines = Get-MockupMachines
+                $mockupVictim = $mockupMachines | Where-Object { $_.Connections.Count -gt 0 } | Select-Object -First 1
+                if (-not $mockupVictim) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: no machine in $MOCKUP_TABLE has a connection to slide, so"
+                    Write-Host '         this half has no mockup to disagree with.'
+                    exit 1
+                }
+                $mockupSlid = $mockupVictim.Connections[0]
+                $script:mockupName = "rf-$($mockupVictim.Name)"
+                $onSide     = [Math]::Abs($mockupSlid.X) -eq ($mockupVictim.Width - 1) / 2
+                $mAxis      = if ($onSide) { 2 } else { 1 }
+                $mNamed     = if ($mAxis -eq 1) { 'x' } else { 'y' }
+                $mCoord     = if ($mAxis -eq 1) { $mockupSlid.X } else { $mockupSlid.Y }
+                $mDelta     = if ($mCoord -le 0) { 1 } else { -1 }
+                @"
 local proto = data.raw["$($mockupVictim.Prototype)"]["$mockupName"]
 local function walk(node, seen)
   if type(node) ~= "table" or seen[node] then return false end
@@ -1905,64 +1952,66 @@ local function walk(node, seen)
   return slid
 end
 if not walk(proto, {}) then
-  error("load-check canary: no connection at ($($mockupSlid.X), $($mockupSlid.Y)) on $mockupName to slide, so half nine would prove nothing")
+  error("load-check canary: no connection at ($($mockupSlid.X), $($mockupSlid.Y)) on $mockupName to slide, so the slid-mockup half would prove nothing")
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host 'self-test 9/13: a machine whose mockup no longer fits it must be caught.'
-        $mockupDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'mockup-loaded'
-        $mockupRows = @(Get-MockupDisagreements -DumpPath $mockupDump -Machines $mockupMachines)
-        $onMockup = @($mockupRows | Where-Object { $_.Prototype -eq $mockupName -and $_.Field -eq 'connections' })
-        if (-not $onMockup) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the canary slid a connection on $mockupName and the mockup"
-            Write-Host '         check did NOT report a disagreement on its connections. The mockup would'
-            Write-Host '         keep marking a pipe on a tile the machine no longer has one on.'
-            if ($mockupRows) {
-                Write-Host "         It reported $($mockupRows.Count) other row(s):"
-                foreach ($d in $mockupRows) { Write-Host "           $($d.Prototype)  $($d.Field)" }
-            }
-            exit 1
-        }
-        # Only that machine's connections may disagree: the canary touched nothing else.
-        $mockupStray = @($mockupRows | Where-Object { -not ($_.Prototype -eq $mockupName -and $_.Field -eq 'connections') })
-        if ($mockupStray) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the canary slid one connection but the mockup check also reported:"
-            foreach ($d in $mockupStray) { Write-Host "           $($d.Prototype)  $($d.Field)" }
-            exit 1
-        }
+                $mockupDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'mockup-loaded'
+                $mockupRows = @(Get-MockupDisagreements -DumpPath $mockupDump -Machines $mockupMachines)
+                $onMockup = @($mockupRows | Where-Object { $_.Prototype -eq $mockupName -and $_.Field -eq 'connections' })
+                if (-not $onMockup) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the canary slid a connection on $mockupName and the mockup"
+                    Write-Host '         check did NOT report a disagreement on its connections. The mockup would'
+                    Write-Host '         keep marking a pipe on a tile the machine no longer has one on.'
+                    if ($mockupRows) {
+                        Write-Host "         It reported $($mockupRows.Count) other row(s):"
+                        foreach ($d in $mockupRows) { Write-Host "           $($d.Prototype)  $($d.Field)" }
+                    }
+                    exit 1
+                }
+                # Only that machine's connections may disagree: the canary touched nothing else.
+                $mockupStray = @($mockupRows | Where-Object { -not ($_.Prototype -eq $mockupName -and $_.Field -eq 'connections') })
+                if ($mockupStray) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the canary slid one connection but the mockup check also reported:"
+                    foreach ($d in $mockupStray) { Write-Host "           $($d.Prototype)  $($d.Field)" }
+                    exit 1
+                }
+                'a machine whose mockup no longer fits it is caught.'
+            } }
 
-        # Half ten: a plasma no reactor can burn must be refused (#125). The SECOND half to prove one
-        # of check_prototypes()'s invariants -- the checks that tie the simulation to the prototypes
-        # and are the reason load-check is the gate that matters here. Half eight was already one of
-        # them, negatively testing check_input_flow(), which check_prototypes() calls; ten and eleven
-        # take the coverage from one invariant to three. The other ten are still asserted only
-        # positively: they pass on a good tree, and nothing here would notice one that had quietly
-        # stopped firing.
-        #
-        # WHY THIS INVARIANT, and it is not "whichever was easiest to break". It is the only one a
-        # canary can trip by pure ADDITION -- the canary defines a fluid and a recipe of its OWN in
-        # our heating category and mutates nothing of ours -- so it is the cheapest negative test in
-        # the set. And it is not a contrived break: check_every_plasma_burns's own docstring says a
-        # fluid another mod produces through our category "is genuinely a plasma a reactor cannot
-        # burn, which is worth refusing to load over whoever wrote it". This half is that sentence
-        # run rather than read.
-        #
-        # THE CATEGORY IS NAMED HERE, AND THE GUARD BELOW CHECKS THE PROTOTYPE, NOT THE CONSTANT.
-        # `rf-plasma-heating` is written down three times -- prototypes/categories.lua declares it,
-        # control.lua's HEATING_CATEGORY reads it, and this canary joins them -- and the canary can
-        # only see the first, because it runs in the data stage. So the guard catches the category
-        # prototype going away and CANNOT catch a rename of control.lua's constant alone.
-        #
-        # That rename is still caught, by the assertion rather than by the guard: with the constant
-        # renamed, check_every_plasma_burns looks at a category nothing produces, the canary loads
-        # clean, and the `Code -eq 0` branch fails the half. The message will blame the invariant
-        # for not firing rather than name the rename, which is the one direction this half reports
-        # imprecisely -- fixing it properly means the canary reading the constant, and it cannot.
-        @'
+            @{ Name = 'unburnable-plasma'; Body = {
+                # A plasma no reactor can burn must be refused (#125). The SECOND half to prove one
+                # of check_prototypes()'s invariants -- the checks that tie the simulation to the prototypes
+                # and are the reason load-check is the gate that matters here. starved-reactor was already one
+                # of them, negatively testing check_input_flow(), which check_prototypes() calls; this half and
+                # swapped-boxes take the coverage from one invariant to three. The other ten are still asserted only
+                # positively: they pass on a good tree, and nothing here would notice one that had quietly
+                # stopped firing.
+                #
+                # WHY THIS INVARIANT, and it is not "whichever was easiest to break". It is the only one a
+                # canary can trip by pure ADDITION -- the canary defines a fluid and a recipe of its OWN in
+                # our heating category and mutates nothing of ours -- so it is the cheapest negative test in
+                # the set. And it is not a contrived break: check_every_plasma_burns's own docstring says a
+                # fluid another mod produces through our category "is genuinely a plasma a reactor cannot
+                # burn, which is worth refusing to load over whoever wrote it". This half is that sentence
+                # run rather than read.
+                #
+                # THE CATEGORY IS NAMED HERE, AND THE GUARD BELOW CHECKS THE PROTOTYPE, NOT THE CONSTANT.
+                # `rf-plasma-heating` is written down three times -- prototypes/categories.lua declares it,
+                # control.lua's HEATING_CATEGORY reads it, and this canary joins them -- and the canary can
+                # only see the first, because it runs in the data stage. So the guard catches the category
+                # prototype going away and CANNOT catch a rename of control.lua's constant alone.
+                #
+                # That rename is still caught, by the assertion rather than by the guard: with the constant
+                # renamed, check_every_plasma_burns looks at a category nothing produces, the canary loads
+                # clean, and the `Code -eq 0` branch fails the half. The message will blame the invariant
+                # for not firing rather than name the rename, which is the one direction this half reports
+                # imprecisely -- fixing it properly means the canary reading the constant, and it cannot.
+                @'
 if not data.raw["recipe-category"]["rf-plasma-heating"] then
-  error("load-check canary: no rf-plasma-heating recipe category to add a plasma to, so half ten "
+  error("load-check canary: no rf-plasma-heating recipe category to add a plasma to, so this half "
     .. "would prove nothing -- control.lua's HEATING_CATEGORY has been renamed")
 end
 data:extend({
@@ -1977,125 +2026,136 @@ data:extend({
 })
 '@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host 'self-test 10/13: a plasma no reactor knows how to burn must be refused.'
-        $unburnable = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'plasma'
-        if ($unburnable.Code -eq 0) {
-            Write-Host ''
-            Write-Host 'FAILED - self-test: a canary put a fluid of its own through rf-plasma-heating and the'
-            Write-Host '         mod loaded anyway. check_every_plasma_burns() is not proving anything, so a'
-            Write-Host '         plasma with no fuel row would sit in a reactor for ever while the reactor'
-            Write-Host '         reported itself starved -- indistinguishable from an empty pipe.'
-            exit 1
-        }
-        # BY THE CHECK'S OWN WORDS, not merely non-zero, for the reason half eight matches: a canary
-        # that failed to load for an unrelated reason -- a typo, a prototype the engine rejects --
-        # exits non-zero too, and would be recorded here as the invariant firing.
-        $unburnableSaid = (Test-Path $unburnable.OutFile) -and
-            (Select-String -Path $unburnable.OutFile -SimpleMatch 'has no fuel entry for' -Quiet)
-        if (-not $unburnableSaid) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the unburnable-plasma canary failed the load (exit $($unburnable.Code)) but"
-            Write-Host '         check_every_plasma_burns() did not say so, so the failure was something else'
-            Write-Host '         and this half proves nothing about the invariant it is named for.'
-            Write-FactorioTail $unburnable
-            exit 1
-        }
+                $unburnable = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'plasma'
+                if ($unburnable.Code -eq 0) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: a canary put a fluid of its own through rf-plasma-heating and the'
+                    Write-Host '         mod loaded anyway. check_every_plasma_burns() is not proving anything, so a'
+                    Write-Host '         plasma with no fuel row would sit in a reactor for ever while the reactor'
+                    Write-Host '         reported itself starved -- indistinguishable from an empty pipe.'
+                    exit 1
+                }
+                # BY THE CHECK'S OWN WORDS, not merely non-zero, for the reason starved-reactor matches: a canary
+                # that failed to load for an unrelated reason -- a typo, a prototype the engine rejects --
+                # exits non-zero too, and would be recorded here as the invariant firing.
+                $unburnableSaid = (Test-Path $unburnable.OutFile) -and
+                    (Select-String -Path $unburnable.OutFile -SimpleMatch 'has no fuel entry for' -Quiet)
+                if (-not $unburnableSaid) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the unburnable-plasma canary failed the load (exit $($unburnable.Code)) but"
+                    Write-Host '         check_every_plasma_burns() did not say so, so the failure was something else'
+                    Write-Host '         and this half proves nothing about the invariant it is named for.'
+                    Write-FactorioTail $unburnable
+                    exit 1
+                }
+                'a plasma no reactor knows how to burn is refused, in check_every_plasma_burns()''s own words.'
+            } }
 
-        # Half eleven: a collector whose boxes are not what deposit() writes to must be refused
-        # (#125). Ten proves an invariant fires over a prototype the canary ADDED; this one proves
-        # one fires over a prototype the canary MOVED, which is the route the remaining invariants
-        # need. Half eight already mutates one of ours from outside, so the mechanism is not new
-        # here -- what is new is that the break is a swap of two declarations rather than a number,
-        # so there is no value to get wrong and the diagnostic names the box index.
-        #
-        # WHY THIS INVARIANT: control.lua calls it "the third trap of the same shape, and the one
-        # most likely to fire". deposit() writes tritium to box 1 and helium-3 to box 2 by index,
-        # because asking a fluidbox its filter ten times a second buys an answer that cannot change
-        # while the game runs -- so swapping the two declarations in prototypes/entities.lua loads
-        # clean, fills the collector, and carries helium-3 down a player's tritium pipe.
-        @'
+            @{ Name = 'swapped-boxes'; Body = {
+                # A collector whose boxes are not what deposit() writes to must be refused
+                # (#125). unburnable-plasma proves an invariant fires over a prototype the canary ADDED; this one
+                # proves one fires over a prototype the canary MOVED, which is the route the remaining
+                # invariants need. starved-reactor already mutates one of ours from outside, so the mechanism is not new
+                # here -- what is new is that the break is a swap of two declarations rather than a number,
+                # so there is no value to get wrong and the diagnostic names the box index.
+                #
+                # WHY THIS INVARIANT: control.lua calls it "the third trap of the same shape, and the one
+                # most likely to fire". deposit() writes tritium to box 1 and helium-3 to box 2 by index,
+                # because asking a fluidbox its filter ten times a second buys an answer that cannot change
+                # while the game runs -- so swapping the two declarations in prototypes/entities.lua loads
+                # clean, fills the collector, and carries helium-3 down a player's tritium pipe.
+                @'
 local collector = data.raw.boiler["rf-isotope-collector"]
 local first  = collector.fluid_box and collector.fluid_box.filter
 local second = collector.output_fluid_box and collector.output_fluid_box.filter
 if not first or not second or first == second then
   error("load-check canary: rf-isotope-collector does not declare two distinctly filtered boxes ("
-    .. tostring(first) .. ", " .. tostring(second) .. "), so half eleven would prove nothing")
+    .. tostring(first) .. ", " .. tostring(second) .. "), so the swapped-boxes half would prove nothing")
 end
 collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
 '@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-        Write-Host 'self-test 11/13: a collector whose two boxes are swapped must be refused.'
-        $swapped = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'boxes'
-        if ($swapped.Code -eq 0) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: rf-isotope-collector's two box filters were swapped and the mod"
-            Write-Host '         loaded anyway. check_collector_boxes() is not proving anything, so a'
-            Write-Host "         player's tritium pipe would quietly carry helium-3."
-            exit 1
-        }
-        $swappedSaid = (Test-Path $swapped.OutFile) -and
-            (Select-String -Path $swapped.OutFile -SimpleMatch 'would leave through the wrong pipe' -Quiet)
-        if (-not $swappedSaid) {
-            Write-Host ''
-            Write-Host "FAILED - self-test: the swapped-boxes canary failed the load (exit $($swapped.Code)) but"
-            Write-Host '         check_collector_boxes() did not say so, so the failure was something else'
-            Write-Host '         and this half proves nothing about the invariant it is named for.'
-            Write-FactorioTail $swapped
-            exit 1
-        }
+                $swapped = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'boxes'
+                if ($swapped.Code -eq 0) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: rf-isotope-collector's two box filters were swapped and the mod"
+                    Write-Host '         loaded anyway. check_collector_boxes() is not proving anything, so a'
+                    Write-Host "         player's tritium pipe would quietly carry helium-3."
+                    exit 1
+                }
+                $swappedSaid = (Test-Path $swapped.OutFile) -and
+                    (Select-String -Path $swapped.OutFile -SimpleMatch 'would leave through the wrong pipe' -Quiet)
+                if (-not $swappedSaid) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the swapped-boxes canary failed the load (exit $($swapped.Code)) but"
+                    Write-Host '         check_collector_boxes() did not say so, so the failure was something else'
+                    Write-Host '         and this half proves nothing about the invariant it is named for.'
+                    Write-FactorioTail $swapped
+                    exit 1
+                }
+                'a collector whose two boxes are swapped is refused, in check_collector_boxes()''s own words.'
+            } }
 
-        # THE ONE HALF THAT NEEDS NO CANARY MOD, because the gate it proves needs no game RUN
-        # (#344): tools/check-socket-height.py measures the committed sheets against the manifests
-        # beside them, so it can be made to fail by lifting a sheet in memory rather than by
-        # breaking a prototype. Its own three halves do that -- the reference tracking vanilla's
-        # sheet both ways and rejecting the shadow baked under it (#355), every socket right as it
-        # stands, and every socket reported wrong a quarter tile up -- and this runs them, so
-        # `-SelfTest` covers every gate the plain run does. It reads the install for the reference,
-        # like the plain run; what it needs no game FOR is a map.
-        Write-Host 'self-test 12/13: the socket-height gate must measure its own reference, pass the sheets, fail a lifted one, and fail a parted SOCKET_Z.'
-        $heightLines = @(& python (Join-Path $repoRoot 'tools/check-socket-height.py') --self-test `
-            --vanilla-pipe (Get-VanillaPipeSheet) `
-            @((Get-RenderManifests -AssetsDirectory $ourDirectories[$ASSETS_MOD]) | ForEach-Object { $_.FullName }) `
-            2>&1 | ForEach-Object { "$_" })
-        $heightFailed = $LASTEXITCODE -ne 0
-        if ($heightFailed) {
-            foreach ($line in $heightLines) { Write-Host $line }
-            Write-Host ''
-            Write-Host 'FAILED - self-test: the socket-height gate could not show that it measures its own'
-            Write-Host '         reference, that it passes the sheets as they stand, that it catches a socket'
-            Write-Host '         drawn too high, and that it catches a SOCKET_Z that has parted from the'
-            Write-Host '         reference.'
-            exit 1
-        }
+            @{ Name = 'socket-height-gate'; Body = {
+                # THE ONE HALF THAT NEEDS NO CANARY MOD, because the gate it proves needs no game RUN
+                # (#344): tools/check-socket-height.py measures the committed sheets against the manifests
+                # beside them, so it can be made to fail by lifting a sheet in memory rather than by
+                # breaking a prototype. Its own halves do that -- the reference tracking vanilla's sheet
+                # both ways and rejecting the shadow baked under it (#355), every socket right as it
+                # stands, the same sheets judged against a reference moved three tolerances, every socket
+                # reported wrong a quarter tile up, and SOCKET_Z held against the measured reference --
+                # and this runs them, so
+                # `-SelfTest` covers every gate the plain run does. It reads the install for the reference,
+                # like the plain run; what it needs no game FOR is a map.
+                $heightLines = @(& python (Join-Path $repoRoot 'tools/check-socket-height.py') --self-test `
+                    --vanilla-pipe (Get-VanillaPipeSheet) `
+                    @((Get-RenderManifests -AssetsDirectory $ourDirectories[$ASSETS_MOD]) | ForEach-Object { $_.FullName }) `
+                    2>&1 | ForEach-Object { "$_" })
+                $heightFailed = $LASTEXITCODE -ne 0
+                if ($heightFailed) {
+                    foreach ($line in $heightLines) { Write-Host $line }
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: the socket-height gate could not show that it measures its own'
+                    Write-Host '         reference, that it passes the sheets as they stand, that it catches a socket'
+                    Write-Host '         drawn too high, and that it catches a SOCKET_Z that has parted from the'
+                    Write-Host '         reference.'
+                    exit 1
+                }
+                'the socket-height gate measures its own reference, passes the sheets, fails a lifted one, and fails a parted SOCKET_Z.'
+            } }
 
-        # THE SECOND HALF THAT NEEDS NO CANARY MOD, and the second gate over the same sheets (#373).
-        # tools/check-socket-parts.py asks what the one above does not: whether each PIECE of a
-        # socket is drawn as far above its axis as below it, and whether it is the width the model
-        # recorded. Its four halves shave a sheet, lie in a record, and empty a record, so like the
-        # gate above it can be made to fail without breaking a prototype -- and unlike it, this one
-        # needs no game at all, not even for a reference.
-        Write-Host 'self-test 13/13: the socket-parts gate must pass the sheets, catch a shaved one, catch a lying record, and refuse a manifest with no record.'
-        $partsLines = @(& python (Join-Path $repoRoot 'tools/check-socket-parts.py') --self-test `
-            @((Get-RenderManifests -AssetsDirectory $ourDirectories[$ASSETS_MOD]) | ForEach-Object { $_.FullName }) `
-            2>&1 | ForEach-Object { "$_" })
-        if ($LASTEXITCODE -ne 0) {
-            foreach ($line in $partsLines) { Write-Host $line }
-            Write-Host ''
-            Write-Host 'FAILED - self-test: the socket-parts gate could not show that it passes the sheets as'
-            Write-Host '         they stand, that it catches a socket shaved underneath, that it catches a'
-            Write-Host '         recorded radius the model did not draw, and that it refuses a manifest'
-            Write-Host '         recording no socket at all.'
-            exit 1
-        }
+            @{ Name = 'socket-parts-gate'; Body = {
+                # THE SECOND HALF THAT NEEDS NO CANARY MOD, and the second gate over the same sheets (#373).
+                # tools/check-socket-parts.py asks what the one above does not: whether each PIECE of a
+                # socket is drawn as far above its axis as below it, and whether it is the width the model
+                # recorded. Its halves shave a sheet, lie in a record, and empty a record, so like the
+                # gate above it can be made to fail without breaking a prototype -- and unlike it, this one
+                # needs no game at all, not even for a reference.
+                $partsLines = @(& python (Join-Path $repoRoot 'tools/check-socket-parts.py') --self-test `
+                    @((Get-RenderManifests -AssetsDirectory $ourDirectories[$ASSETS_MOD]) | ForEach-Object { $_.FullName }) `
+                    2>&1 | ForEach-Object { "$_" })
+                if ($LASTEXITCODE -ne 0) {
+                    foreach ($line in $partsLines) { Write-Host $line }
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: the socket-parts gate could not show that it passes the sheets as'
+                    Write-Host '         they stand, that it catches a socket shaved underneath, that it catches a'
+                    Write-Host '         recorded radius the model did not draw, and that it refuses a manifest'
+                    Write-Host '         recording no socket at all.'
+                    exit 1
+                }
+                'the socket-parts gate passes the sheets, catches a shaved one, catches a lying record, and refuses a manifest recording no socket.'
+            } }
+        )
 
-        # THE WORKING TREE, ASSERTED RATHER THAN REASONED ABOUT (#125). SEVEN of the thirteen halves
-        # mutate one of our prototypes -- four, five, six, seven and nine move a connection or a
-        # category, eight cuts an input_flow_limit, eleven swaps two box filters -- and every one of
-        # them does it in `data-final-fixes`, in memory, at load, with nothing on disk touched. Six
-        # of the seven mutate to prove a gate FIRES; six is the one that mutates to prove a gate
-        # stays QUIET, which puts the same thing at risk. That is the design; this is the assertion. It is here because a
-        # self-test in this file once deleted the repository's own sprite, so "the mutation is in
-        # memory" is a claim to check rather than one to trust.
+        # THE WORKING TREE, ASSERTED RATHER THAN REASONED ABOUT (#125). SEVEN of the halves above
+        # mutate one of our prototypes -- reassigned-category, slid-socket, added-category,
+        # replaced-category and slid-mockup move a connection or a category, starved-reactor cuts an
+        # input_flow_limit, swapped-boxes swaps two box filters -- and every one of them does it in
+        # `data-final-fixes`, in memory, at load, with nothing on disk touched. Six of the seven
+        # mutate to prove a gate FIRES; added-category is the one that mutates to prove a gate stays
+        # QUIET, which puts the same thing at risk. That is the design; this is the assertion. It is
+        # here because a self-test in this file once deleted the repository's own sprite, so "the
+        # mutation is in memory" is a claim to check rather than one to trust.
         $treeChecked = $true
         if (Test-ModTreeUnchanged -Before $treeBefore -Mods $ourMods) { exit 1 }
 
@@ -2207,8 +2267,8 @@ finally {
     Remove-ModJunctions -ModDirectory $modDir
 
     # AND AFTER AN EARLY EXIT, the tree still gets its answer. Both self-tests compare on their pass
-    # path, where a moved file is a failure of its own -- but every half between one and eleven can
-    # `exit 1` before reaching that, and the half that failed is exactly the one most likely to have
+    # path, where a moved file is a failure of its own -- but every canary half can `exit 1` before
+    # reaching that, and the half that failed is exactly the one most likely to have
     # left something behind. Reported rather than exited on, because the code is already set: what
     # is missing at that point is not a verdict but the list. After the junctions, so a delete that
     # went through one is included.
