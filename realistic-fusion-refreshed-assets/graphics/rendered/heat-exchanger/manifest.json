@@ -175,7 +175,7 @@
   },
   "machine": "heat-exchanger",
   "model": "models/heat-exchanger/heat-exchanger.blend",
-  "model_sha256": "e1deeac1aa45864af6fc3431209fd913aa8617593554312aaeaa716bfe4a1fce",
+  "model_sha256": "d2ceb88fab5db8124a0e780fc9dbc6b4ad462832046e741c7783eb5d30498b40",
   "render": {
     "blender": "5.2.0 LTS",
     "device": "CPU",
@@ -194,8 +194,8 @@
         -7,
         -1
       ],
-      "radius": 0.3,
-      "z": 0.55
+      "radius": 0.249,
+      "z": 0.033
     },
     {
       "direction": "north",
@@ -205,8 +205,8 @@
         0,
         -2
       ],
-      "radius": 0.3,
-      "z": 0.55
+      "radius": 0.249,
+      "z": 0.033
     },
     {
       "direction": "east",
@@ -216,8 +216,8 @@
         7,
         -1
       ],
-      "radius": 0.3,
-      "z": 0.55
+      "radius": 0.249,
+      "z": 0.033
     },
     {
       "direction": "west",

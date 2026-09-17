@@ -490,23 +490,25 @@ else:
     # reads its boxes out of geometry.json, which is the DECLARED frame -- so they land after the
     # turn, where the prototype says, and nothing here is in the body's own HALF_W / HALF_L frame.
     #
-    # THIS MACHINE DRAWS ITS SOCKETS TWO WAYS, AND THE PAIR ON EACH SHORT END DIFFER BY HALF A TILE
-    # IN HEIGHT ON PURPOSE (#343). Read as a mistake it invites a "fix" that breaks the machine,
-    # so: water west, water east and steam south carry no `connection_category`, a player plumbs
-    # them with ordinary pipes, and models/house-style.md's rule binds them -- drawn at the height
-    # AND the thickness of the pipe that plugs in, both measured rather than chosen (Truls,
-    # 2026-09-13 and -14; #345 closed on the thickness). The three reactor-energy connections are
-    # CONTAINED (ADR 0018, #86): no pipe, tank, wagon or pump a player can build will ever join
-    # them, they bolt face to face against a reactor or the next exchanger in the row, and matching
-    # them to a pipe would match them to something that cannot exist. So water at [-7, 1] sits low
-    # and thin, and energy at [-7, -1] two tiles away on the same wall does neither -- that is the
-    # machine working rather than the machine wrong.
+    # THIS MACHINE DRAWS ITS SOCKETS ONE WAY AND DRESSES THEM TWO (ADR 0036, #391). Every socket
+    # here is at models/rf_blender.SOCKET_Z and 0.249, water and energy alike; what differs is the
+    # HARDWARE. Water west, water east and steam south carry no `connection_category`, a player
+    # plumbs them, and they wear the dark rim and the flange pair vanilla puts where a pipe bolts.
+    # The three reactor-energy connections are CONTAINED (ADR 0018, #86): no pipe, tank, wagon or
+    # pump a player can build will ever join them, they bolt face to face against a reactor or the
+    # next exchanger in the row, and they wear NEITHER piece. That absence is the whole of what
+    # tells them apart, and it is a decision rather than an inheritance -- ADR 0033 says of itself
+    # that it is "vacuous for those sockets", so nothing had chosen it before.
     #
-    # The three contained ones keep the 0.55 and the 0.3 this machine has always had: exempt from
-    # the rule is not the same as bound by a different one, and a look chosen for them would be a
-    # decision nobody has been asked for.
-    CONTAINED_Z, CONTAINED_R = 0.55, 0.3
-
+    # THE PAIR ON EACH SHORT END USED TO DIFFER BY HALF A TILE IN HEIGHT (#343), and the comment
+    # here said so at length because the difference invited a "fix". It was levelled instead.
+    #
+    # SINCE ADR 0036 THE THREE CONTAINED ONES ARE DRAWN LIKE THE OTHER THREE, and the pair of
+    # constants that used to sit here is gone rather than kept at equal values. They held 0.55 and
+    # 0.3 -- what every socket on this machine had before #349, kept when the plumbable ones moved.
+    # Keeping them was a choice and was written down as one; ADR 0036 reverses it. A separate name
+    # free to part from SOCKET_Z later is the fork #356 was written about, so there is no second
+    # name: one constant draws every socket, and `plumbable` now decides only the rim and the ribs.
     def plumbable(c):
         """Whether a player can put an ordinary pipe on this connection.
 
@@ -517,16 +519,11 @@ else:
         """
         return not c["connection_category"]
 
-    def socket_z(c):
-        """How high a connection's stub is drawn: the pipe's height, or the contained one."""
-        return rf_parts.SOCKET_Z if plumbable(c) else CONTAINED_Z
-
-    def socket_r(c):
-        """How thick it is drawn. 0.249 is solved the way the height is, and in the same place:
-        this camera draws a tube 2.449 r tall on screen, vanilla's pipe body draws 0.609 tiles, so
-        2.449 r = 0.609. models/house-style.md carries the arithmetic and rf-isotope-collector was
-        the first machine to wear it."""
-        return 0.249 if plumbable(c) else CONTAINED_R
+    # 0.249 is solved the way the height is, and in the same place: this camera draws a tube 2.449 r
+    # tall on screen, vanilla's pipe body draws 0.609 tiles, so 2.449 r = 0.609.
+    # models/house-style.md carries the arithmetic and rf-isotope-collector was the first machine to
+    # wear it. Both machines now draw every socket at these two numbers.
+    SOCKET_R = 0.249
 
     # ONE HELPER DRAWS THE STUB, THE BAND AND THE PORT (#352), because the collector had a second
     # copy of this loop and five more machines are coming. What stays here is the three functions
@@ -535,7 +532,7 @@ else:
     # modelled, rimmed opening rather than clipping the stone (Truls, 2026-09-14); a contained
     # socket stands clear above the slab and needs none, which is what passing `plumbable` decides.
     for c in geo["connections"]:
-        rf_parts.socket(bpy.data.objects["Slab"], c, geo, socket_z(c), socket_r(c),
+        rf_parts.socket(bpy.data.objects["Slab"], c, geo, rf_parts.SOCKET_Z, SOCKET_R,
                         plumbable=plumbable(c))
     # water header along the base between the two end sockets, wherever the prototype puts them:
     # since #275 they sit off the short-end centre (`_ e _ w _`), so the header is read off the
@@ -554,7 +551,7 @@ else:
         """
         ux, uy = UNIT[c["direction"]]
         px, py = c["position"]
-        return (px - back * ux, -(py - back * uy), socket_z(c) if z is None else z)
+        return (px - back * ux, -(py - back * uy), rf_parts.SOCKET_Z if z is None else z)
 
     # SINCE THE WATER SOCKETS DROPPED TO PIPE HEIGHT THIS HEADER ENDS IN THE SLAB, not on a stub
     # (#343), and it is the collector's lesson taken rather than relearnt. A header run at the
