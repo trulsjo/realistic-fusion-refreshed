@@ -107,3 +107,11 @@ pwsh -File scripts/probe-next-upgrade.ps1
 
 It loads twice: once with an ungrouped pair, whose refusal is the first finding and is caught rather
 than thrown, and once with a grouped pair for everything else. Exit 0 means it ran and reported.
+
+**The ungrouped load has three outcomes, not two, and the third is the one to watch for.** A run that
+throws has not necessarily been refused — `Invoke-FactorioStep` throws on any non-zero exit — so the
+probe reports `UNANSWERED` when it fails without the `next_upgrade target` text, and says nothing
+about `fast_replaceable_group` in that case. A Factorio already running is the usual cause;
+`scripts/factorio-lib.ps1`'s own header records that it once *"cost two wrong conclusions in a row
+before anyone noticed the game was simply running"*. If you see `UNANSWERED`, read the log the line
+names rather than re-running blind.
