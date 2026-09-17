@@ -447,9 +447,9 @@ beside it and says whether collection explains it.
 > **No figure already published changes meaning**, which is why this option and not the median across
 > runs: where nothing stalled, the two are the same arithmetic.
 
-**"Pooled mean" keeps its name and now means one thing.** A figure is *the pooled mean over 4
-surviving runs*; the new term is **stalled run**, which `CONTEXT.md` defines and which is the thing
-removed. Beware the one word still doing two jobs in this note: the median across *ticks* is printed
+**"Pooled mean" keeps its name and now means one thing.** A figure is *the pooled mean over N
+surviving runs*, with N written out — four of five where one stalled, five of five where none did.
+The new term is **stalled run**, which `CONTEXT.md` defines and which is the thing removed. Beware the one word still doing two jobs in this note: the median across *ticks* is printed
 on every row and is immune to a stall, and the median across *runs* is the option that was declined.
 
 ## Reproducibility, and how it fails
