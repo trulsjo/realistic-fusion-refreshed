@@ -236,11 +236,15 @@ contained socket does NOT get is the dark rim and the flange pair, and since ADR
 is the distinction rather than a side effect of there being no pipe to borrow a cue from. It draws
 a stub and an accent band and nothing else.
 
-**The height was never chosen, which is why it could be taken away.** Until #391 a contained socket
-sat at 0.55 with radius 0.3 -- the numbers every socket had before #349, kept rather than picked
-when the plumbable ones moved. The paragraph this replaced said the difference was recorded here
-*"because the obvious next thing anyone will want to do is level them"*, and that turned out to be
-exactly right.
+**The height was never chosen FOR a contained socket, though keeping it was.** Until #391 a
+contained socket sat at 0.55 with radius 0.3 -- the numbers every socket had before #349, kept
+rather than picked when the plumbable ones moved. Keeping them WAS a decision and is on the record
+as one: the commit that drew the plumbable sockets at pipe thickness says in its own message *"THE
+THREE CONTAINED ONES KEEP THE OLD 0.55 AND 0.3, which is a choice and is written down as one"*, and
+the build script carried *"a bolted face meets a machine, so this is a look, not a match"* beside
+the constant. **ADR 0036 reverses that choice rather than
+filling a gap.** The paragraph this replaced said the difference was recorded here *"because the
+obvious next thing anyone will want to do is level them"*, and that turned out to be exactly right.
 
 > **Superseded, 2026-09-17 (#391).** The reading this paragraph records is no longer true of the
 > machine, and it is kept rather than restated so the reasoning that stood on it can still be read.

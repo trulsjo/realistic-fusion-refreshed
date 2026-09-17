@@ -59,16 +59,19 @@ never the default: the default is to render the model that exists, so that hand 
 **Socket** — the drawn fitting where a pipe connection meets a machine: a bare-metal stub running
 from the body to the footprint edge on the connection's tile, carrying one **accent** band of the
 fluid it names. **A socket is a drawing and a connection is a declaration** — the prototype declares
-the connection, the model draws the socket, and a manifest is what holds the two together. Since
-[ADR 0036](docs/adr/0036-every-socket-is-drawn-at-pipe-height.md) every socket on every machine is
-drawn at one height and one thickness, vanilla's pipe's; `models/house-style.md` carries the
-figures.
+the connection, the model draws the socket, and a manifest is what holds the two together.
+[ADR 0036](docs/adr/0036-every-socket-is-drawn-at-pipe-height.md) **decides** that every socket on
+every machine is drawn at one height and one thickness, vanilla's pipe's; `models/house-style.md`
+carries the figures, and #392 is where the art catches up. Until it lands, `rf-heat-exchanger`'s
+three contained sockets still stand at the machine's own height — which is what the **pipe cover**
+entry below is describing.
 
 **Plumbable** — of a connection: one a player can put an ordinary pipe on. The exact negation of
 **contained** under Plumbing below, and read off the same field — `connection_category` — never off
 a list of fluids or of machines. It is the word the art side of that distinction is made in: a
 plumbable socket wears a dark rim and a flange pair at its mouth, a contained one wears neither, and
-since ADR 0036 that absence is the whole of what tells them apart on a machine.
+ADR 0036 decides that this absence is to be the whole of what tells them apart. It is not yet: until
+#392 lands, height and thickness still differ too.
 
 **Pipe cover** — vanilla's own sprite, drawn flat on the ground at a connection's tile by the engine
 from the `pipe_covers` a fluid box declares. **Not part of a socket, and not drawn by us**: a

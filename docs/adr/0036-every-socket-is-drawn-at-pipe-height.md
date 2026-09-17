@@ -39,18 +39,30 @@ with the plumbable one as the control — +0.0229 tiles at zoom 8 and −0.0138 
 say concentric with its own cover either way. The projection alone predicts 0.3661, and
 the residue of about 0.011 tiles is recorded in that note rather than rounded away.
 
-**The 0.55 and the 0.3 were never chosen.** They are the numbers every socket on the machine had
-before #349, kept when the plumbable ones moved. `models/house-style.md` said as much in its own
-words: *"the contained three keep the machine's old numbers rather than taking new ones… a look
+**The 0.55 and the 0.3 were never chosen FOR this.** They are the numbers every socket on the
+machine had before #349, kept when the plumbable ones moved. `models/house-style.md` said as much in
+its own words: *"the contained three keep the machine's old numbers rather than taking new ones… a look
 chosen for them would be a decision nobody has been asked for"*, and, a few lines earlier, that the
 difference was written down *"because the obvious next thing anyone will want to do is level
 them."*
 
-**There were already two candidate cues, and only one of them had ever been decided.** ADR 0033
-denies a contained socket the dark rim and the flange pair, on the reasoning that a shape chosen to
-sit against a pipe has nothing to sit against on a face that meets a reactor. That is a chosen cue.
-The height and the thickness were an inherited one. A reader meeting the machine could not tell the
-two apart, and neither could the prose.
+**Nothing about a contained socket's look had ever been decided, and that is the whole of the
+problem.** ADR 0033 is explicit that it decides nothing here — *"This ADR is vacuous for those
+sockets rather than exempting them: they borrow no cue because there is no pipe to borrow one
+from."* The rim's absence is older still: `rf_parts.port` has been gated on a player-facing socket
+since #343, citing ADR 0018, and that gate was written before ADR 0033 was decided. So the rim, the
+flange, the height and the thickness all fell out of **one** exemption — a contained face meets a
+machine, not a pipe — and not one of the four was ever weighed on its own.
+
+**What WAS decided was to keep them, and that is on the record twice.**
+`models/heat-exchanger/build.py` carried `CONTAINED_Z = 0.55  # a bolted face meets a machine, so
+this is a look, not a match`, and the commit that drew the plumbable sockets at pipe thickness said
+in its own message: *"THE THREE CONTAINED ONES KEEP THE OLD 0.55 AND 0.3, which is a choice and is
+written down as one… Each short end therefore carries two sockets drawn differently on purpose."*
+**So this ADR reverses a choice rather than filling a gap**, and the distinction is worth being
+plain about: the numbers were never picked for this purpose, but keeping them was picked,
+deliberately, by the same author on the same day. #390 and #391 both say "inherited rather than
+chosen" and are describing the numbers, not the retention.
 
 ## Decision
 
@@ -62,9 +74,10 @@ contained socket is told apart by the hardware it does not wear.**
    between them. They are not kept as separate names holding equal values: a name free to part later
    is a fork waiting to happen, and #356 is the ticket about a constant and the art built from it
    parting in silence.
-2. **The cue is the absent rim and the absent flange pair.** ADR 0033's exemption stops being a
-   side effect of there being no pipe to borrow from and becomes the distinction itself. A contained
-   socket draws a stub and an accent band and nothing else.
+2. **The cue is the absent rim and the absent flange pair — decided here, for the first time.**
+   ADR 0033 declines to decide it and ADR 0018 never addressed art at all, so this is a new rule
+   rather than the promotion of an existing one: a contained socket draws a stub and an accent band,
+   and the two pieces of vanilla hardware it does NOT draw are what say a pipe cannot bolt to it.
 3. **The accent band thins with the tube.** `BAND_PROUD` is unchanged and there is no
    contained-specific band rule.
 4. **The slab gets a hole and the hole gets no rim.** At 0.033 with radius 0.249 a contained
@@ -90,9 +103,9 @@ thing that could change:
 - A cover under a levelled socket reads as a fitting rather than a miss. Nobody has looked at that
   on a frame yet; #392's re-render is where it will be seen.
 - It is the only art on two machines' south energy face. `realistic-fusion-refreshed/prototypes/entities.lua`
-  says so at both `rf-reactor`'s and `rf-aneutronic-reactor`'s `output_fluid_box`: *"The south
-  socket is drawn by pipe_covers, the same as the north one has always been."* Both still wear
-  Krastorio 2 or mockup art.
+  says so at `rf-reactor`'s `output_fluid_box` — *"The south socket is drawn by pipe_covers, the
+  same as the north one has always been."* — and again, without the last three words, at
+  `rf-aneutronic-reactor`'s. Both still wear Krastorio 2 or mockup art.
 - Removing it is one line per box at `contain()` and is reversible; re-adding art to a machine that
   lost it is not.
 
@@ -111,8 +124,9 @@ times.
 
 **A sprite that lies is the rule this was weighed against, and it cuts both ways.** A contained
 socket at pipe height wearing a pipe cover invites a player to plumb something that will never join.
-Against that: the flange pair is the vanilla cue that says a pipe bolts here, ADR 0033 already
-withholds it, and a socket with no flange and no rim is not making vanilla's claim. The bet is that
+Against that: the flange pair is the vanilla cue that says a pipe bolts here, it has been withheld
+from a contained socket by accident of ADR 0018's exemption and is withheld on purpose from here on,
+and a socket with no flange and no rim is not making vanilla's claim. The bet is that
 the chosen cue carries more than the inherited one did — and it is a bet, because nobody has tested
 whether a player reads the absence of a flange at zoom 1. #350's own finding was that **no**
 treatment, the flange included, is distinguishable at zoom 1.
@@ -149,8 +163,11 @@ hole and rims the mouth in one call, and item 4 needs those separable. `rf_parts
 `plumbable` argument stops meaning "height, thickness, hole, rim and flanges" and starts meaning
 "hole with a rim, and flanges" — the hole itself now being drawn for every socket.
 
-**Whatever is chosen for the cover, all ten contained machines move together.** This is one
-convention, not a per-machine look (Truls, 2026-09-17).
+**Whatever is chosen for the cover, all nine contained prototypes move together.** This is one
+convention, not a per-machine look (Truls, 2026-09-17). Nine is the machine count; the ten
+`contain()` call sites and the twelve fluid boxes item 6 gives are different units of the same
+thing, and "ten machines" -- which #391 and #392 both say -- is the call-site count wearing the
+wrong noun.
 
 **#391 records; #392 builds.** This ADR, the `models/house-style.md` rewrite and the three terms
 added to `CONTEXT.md` close #391. The build-script change, the `port` split, the re-render and the
@@ -162,8 +179,9 @@ gate written in the same sitting as the art it gates has nothing to fail against
 **Keep 0.55 and 0.3, and draw our own cover art at the socket's own height.** The best-looking
 answer if the sockets stay where they are, and by a wide margin the most work: a cover shape decided
 against the house style, sprites per accent, a render path, a manifest record, a gate and acceptance
-by eye. Rejected because it spends all of that defending numbers nobody chose. It would be the right
-answer if the height difference were a designed cue; it is not.
+by eye. Rejected because it spends all of that on a look whose only argument is that it is the one
+we happen to have. It would be the right answer if the height difference were a designed cue; it was
+kept deliberately, but it was never designed.
 
 **Keep the height and declare no cover at all.** Arguably the honest reading of ADR 0018 — no pipe
 can ever arrive, so nothing should be drawn as though one might. #390 established that the engine
