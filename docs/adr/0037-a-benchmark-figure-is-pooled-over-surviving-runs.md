@@ -60,10 +60,10 @@ run the machine did not block in.**
    stalled run's ticks from the samples; `New-TimingRow` then computes both statistics, in every
    column, over what is left. The row is the sitting minus its stalled runs, rather than two
    different populations depending on which number a reader takes.
-2. **"Pooled mean" keeps its name.** A figure is *the pooled mean over 4 surviving runs*. **Stalled
-   run** is the new term and is the thing removed; it is in `CONTEXT.md`. No second name for the
-   statistic, because inventing one would make every figure already published ambiguous about which
-   one it was.
+2. **"Pooled mean" keeps its name.** A figure is *the pooled mean over N surviving runs*, with N
+   written out rather than left to be assumed from `-Runs`. **Stalled run** is the new term and is
+   the thing removed; it is in `CONTEXT.md`. No second name for the statistic, because inventing
+   one would make every figure already published ambiguous about which one it was.
 3. **Per row, not per sweep.** A stall in run 3 at *n* = 200 does not remove run 3 at *n* = 0. The
    runs are separate processes with the map reloaded between them and share nothing but an index,
    so dropping a clean run buys a symmetry that means nothing and throws away good data. The
@@ -103,10 +103,13 @@ invalidated the record.
 
 **Figures taken before `Find-StalledRuns` existed (2026-09-13) are not re-audited, and the condition
 for trusting one is stated rather than left to judgement.** A figure whose per-run spread was
-recorded and tight has no room for a stall inside it — the rig's five runs span 1.09×, and a 389 ms
-tick cannot hide in that. A figure quoted **without** its per-run line is unverifiable, and is
-re-taken only if something turns on it. The 2026-09-06 sitting is being re-taken anyway, under #327
-and for a different reason.
+recorded and tight has no room for a stall inside it, and a 389 ms tick cannot hide in that. The
+spread to compare against is
+[#235](https://github.com/trulsjo/realistic-fusion-refreshed/issues/235)'s own rig rows, five runs each, measured beside the
+borrowed base in the same sitting: **1.08× at *n* = 0** (38.0 to 36.3 µs), **1.08× at *n* = 50**
+(350.2 to 324.1), **1.09× at *n* = 200** (1,312.9 to 1,204.6). A figure quoted **without** its
+per-run line is unverifiable, and is re-taken only if something turns on it. The 2026-09-06 sitting
+is being re-taken anyway, under #327 and for a different reason.
 
 **A count can now report nothing, and the sitting survives it.** A count that loses four of five
 runs produces no row and says so. That is deliberate — it is the same shape as the rig refusing to
