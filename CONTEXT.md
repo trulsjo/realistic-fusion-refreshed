@@ -466,6 +466,31 @@ produced nothing for a fortnight after `c3abb81` resized the exchanger, and no g
 found it by hand while discharging
 [#190](https://github.com/trulsjo/realistic-fusion-refreshed/issues/190).
 
+**Stalled run** — a benchmark run the machine blocked in rather than worked in, and therefore not a
+measurement of anything. Named for what it is rather than for what it looks like: it looks like a
+run that cost more, and it is a run that spent four tenths of a second inside the file system on one
+tick. `bench-reactors.ps1`'s `Find-StalledRuns` names one — a tick both over 50 ms and at least 20×
+the same tick index in every other run, because reproducible work is not a stall however large it is
+— and the run is discarded before anything is pooled, per
+[ADR 0037](docs/adr/0037-a-benchmark-figure-is-pooled-over-surviving-runs.md).
+
+**Do not call it a spike.** That word cost
+[#235](https://github.com/trulsjo/realistic-fusion-refreshed/issues/235) three sittings: a "+500 µs
+spike at every count" sounds like a per-tick cost belonging to the map, and it was six ticks of a
+thousand in one run belonging to the disk. A stall is an event in a run; a cost is a property of a
+tick. Say which.
+
+**Pooled mean** — the mean over every tick of every **surviving** run of a count, and the statistic
+every per-reactor figure here is taken from. Surviving is the load-bearing word (ADR 0037): a
+stalled run's ticks leave the samples before the mean is taken, per row, and the report names what
+it dropped. **Say "the pooled mean over N surviving runs"** where N is not the run count asked for.
+
+**"Median" names two statistics in this project and they are not interchangeable.** The median
+across **ticks** is printed on every row and is what a tick feels like; it cannot see a stall and it
+understates throttled work, so no per-reactor figure comes from it. The median across **runs** is a
+statistic this project considered and declined (ADR 0037). Where a document says "median", it means
+the first unless it says otherwise.
+
 **Superseded block** — a passage that keeps an old reading rather than restating it, with a note
 saying what replaced it and why. The note carries a date, an issue number, or both: ADR 0015's is
 dated, ADR 0011's cites only #40. The house style for a figure that has moved: the old number

@@ -45,6 +45,13 @@ make the numbers mean something:
    per-tick work, because a run carries spikes an order of magnitude above the typical tick. They
    separate the moment the mod stops updating every tick, which is why per-reactor cost is taken
    from the mean.
+4. **The mean is pooled over surviving runs** — every tick of every run the machine did not block
+   in. Which statistic a figure here is reported in was an open question until 2026-09-17 and is
+   now settled: see
+   [ADR 0037](../adr/0037-a-benchmark-figure-is-pooled-over-surviving-runs.md). Every figure below
+   was taken before that decision and none of them changes because of it; where nothing stalled,
+   the two are the same arithmetic. What a figure taken from 2026-09-17 on carries that these do
+   not is the count of runs it survived on.
 
 The reactors are held at 6×10⁸ °C and full by an infinity pipe, which is what a reactor whose
 heater keeps up looks like. This matters more than it sounds: an **empty** reactor returns early
@@ -603,6 +610,20 @@ five invocations each way gave 1.21× at three runs and 1.33× at five, which is
 rig can see, for a sweep 60% longer. **`-Runs` stays at 3 and the pooled mean stays the statistic.**
 What did change is that each run is now printed separately, so an outlier is visible rather than
 buried in the mean it moved.
+
+> **Both halves of that sentence moved on 2026-09-17, and neither measurement above is withdrawn**
+> ([#326](https://github.com/trulsjo/realistic-fusion-refreshed/issues/326),
+> [ADR 0037](../adr/0037-a-benchmark-figure-is-pooled-over-surviving-runs.md)). `-Runs` now defaults
+> to **5** and a figure is the pooled mean over **surviving** runs — the runs the machine did not
+> block in.
+>
+> The reasons are different from the ones tested here, which is why the numbers stand. Five runs
+> still buy no tightening on a rig; what they buy is a sitting that can lose one run to a **stalled
+> run** and still rest on more than a single reading, since below two survivors a count now refuses
+> to report. And the statistic did not change into the median across runs — that option was declined
+> for the reasons the 1.31×-against-1.28× control here already hints at. What changed is that the
+> poisoned run leaves the samples before the mean is taken, which no statistic tested on this page
+> could do, because in 2026-08 nothing could name it.
 
 **So: treat 1.35× as the noise floor, and anything finer than about 1.4× as unmeasured.** That
 supersedes both the "around 20%" above and the 42% recorded for the 15×15 rig — neither of which was
