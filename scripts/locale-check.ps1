@@ -265,30 +265,36 @@ try {
     $report = Test-Locale -Dumps (Invoke-Dumps -Mods $ourMods -Tag 'run')
 
     if ($SelfTest) {
-        if ($report.Missing.Count -gt 0 -or $report.Unresolved.Count -gt 0) {
-            Write-Host ''
-            Write-Host 'FAILED - self-test: the repo as it stands already has a locale finding, so the'
-            Write-Host '         canary result would prove nothing. Fix the repo first.'
-            exit 1
-        }
-        Write-Host "self-test 1/2: the repo as it stands resolves ($($report.Checked) prototypes)."
+        # Declared by name and numbered by Invoke-SelfTestHalves, so the total is written nowhere
+        # and a half added later relabels neither of these.
+        Invoke-SelfTestHalves -Halves @(
+            @{ Name = 'repo-resolves'; Body = {
+                if ($report.Missing.Count -gt 0 -or $report.Unresolved.Count -gt 0) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: the repo as it stands already has a locale finding, so the'
+                    Write-Host '         canary result would prove nothing. Fix the repo first.'
+                    exit 1
+                }
+                "the repo as it stands resolves ($($report.Checked) prototypes)."
+            } }
 
-        # Three planted prototypes, one per failure this check claims to see. They live in the temp
-        # directory, never the repo.
-        #
-        # The two unresolved ones lean on __ITEM__...__ naming an item that does not exist, because
-        # that is the shape the engine answers with text rather than by refusing: a localised string
-        # that is structurally wrong -- too deep, too many parameters -- stops the data stage and
-        # never reaches a dump, and a localised_name pointing straight at a missing key is dropped
-        # from the dump entirely, which is the FIRST canary's case, not this one. Measured on 2.0.77.
-        $canary = Join-Path $modDir 'rf-localecheck-canary'
-        New-Item -ItemType Directory -Path (Join-Path $canary 'locale/en') -Force | Out-Null
-        @{
-            name = 'rf-localecheck-canary'; version = '0.0.1'; title = 'Locale-check canary'
-            author = 'locale-check.ps1'; factorio_version = '2.0'; dependencies = @('base >= 2.0.77')
-        } | ConvertTo-Json | Set-Content -Path (Join-Path $canary 'info.json') -Encoding utf8
+            @{ Name = 'planted-prototypes'; Body = {
+                # Three planted prototypes, one per failure this check claims to see. They live in the temp
+                # directory, never the repo.
+                #
+                # The two unresolved ones lean on __ITEM__...__ naming an item that does not exist, because
+                # that is the shape the engine answers with text rather than by refusing: a localised string
+                # that is structurally wrong -- too deep, too many parameters -- stops the data stage and
+                # never reaches a dump, and a localised_name pointing straight at a missing key is dropped
+                # from the dump entirely, which is the FIRST canary's case, not this one. Measured on 2.0.77.
+                $canary = Join-Path $modDir 'rf-localecheck-canary'
+                New-Item -ItemType Directory -Path (Join-Path $canary 'locale/en') -Force | Out-Null
+                @{
+                    name = 'rf-localecheck-canary'; version = '0.0.1'; title = 'Locale-check canary'
+                    author = 'locale-check.ps1'; factorio_version = '2.0'; dependencies = @('base >= 2.0.77')
+                } | ConvertTo-Json | Set-Content -Path (Join-Path $canary 'info.json') -Encoding utf8
 
-        @'
+                @'
 [item-name]
 rf-localecheck-canary-unresolved-name=Canary __ITEM__rf-localecheck-canary-no-such-item__
 rf-localecheck-canary-unresolved-desc=Canary
@@ -296,7 +302,7 @@ rf-localecheck-canary-unresolved-desc=Canary
 rf-localecheck-canary-unresolved-desc=Canary __ITEM__rf-localecheck-canary-no-such-item__
 '@ | Set-Content -Path (Join-Path $canary 'locale/en/canary.cfg') -Encoding utf8
 
-        @'
+                @'
 local function canary(name)
   return { type = "item", name = name, stack_size = 1,
            icon = "__base__/graphics/icons/pipe.png", icon_size = 64 }
@@ -308,34 +314,36 @@ data:extend({
 })
 '@ | Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-        $canaryReport = Test-Locale -Dumps (Invoke-Dumps -Mods ($ourMods + 'rf-localecheck-canary') -Tag 'canary')
+                $canaryReport = Test-Locale -Dumps (Invoke-Dumps -Mods ($ourMods + 'rf-localecheck-canary') -Tag 'canary')
 
-        # Caught is not enough: caught as the right kind. A run that reported the unresolved pair as
-        # missing would send someone to write a locale entry that is already there.
-        $wanted = @(
-            @{ Name = 'rf-localecheck-canary-item';             In = 'Missing';    Field = $null
-               What = 'a prototype with no locale entry' }
-            @{ Name = 'rf-localecheck-canary-unresolved-name';  In = 'Unresolved'; Field = 'name'
-               What = 'a name that does not resolve' }
-            @{ Name = 'rf-localecheck-canary-unresolved-desc';  In = 'Unresolved'; Field = 'description'
-               What = 'a description that does not resolve' }
+                # Caught is not enough: caught as the right kind. A run that reported the unresolved pair as
+                # missing would send someone to write a locale entry that is already there.
+                $wanted = @(
+                    @{ Name = 'rf-localecheck-canary-item';             In = 'Missing';    Field = $null
+                       What = 'a prototype with no locale entry' }
+                    @{ Name = 'rf-localecheck-canary-unresolved-name';  In = 'Unresolved'; Field = 'name'
+                       What = 'a name that does not resolve' }
+                    @{ Name = 'rf-localecheck-canary-unresolved-desc';  In = 'Unresolved'; Field = 'description'
+                       What = 'a description that does not resolve' }
+                )
+                $failed = $false
+                foreach ($w in $wanted) {
+                    $caught = @($canaryReport[$w.In] | Where-Object {
+                        $_.Name -eq $w.Name -and (-not $w.Field -or $_.Field -eq $w.Field) })
+                    if ($caught.Count -eq 0) {
+                        Write-Host ''
+                        Write-Host ("FAILED - self-test: {0} was NOT caught as {1}." -f $w.What, $w.In.ToLower())
+                        $failed = $true
+                    }
+                }
+                if ($failed) {
+                    Write-Host '         This check is not proving anything; fix it before trusting a pass.'
+                    exit 1
+                }
+                'all three planted prototypes were caught, each as its own kind.'
+            } }
         )
-        $failed = $false
-        foreach ($w in $wanted) {
-            $caught = @($canaryReport[$w.In] | Where-Object {
-                $_.Name -eq $w.Name -and (-not $w.Field -or $_.Field -eq $w.Field) })
-            if ($caught.Count -eq 0) {
-                Write-Host ''
-                Write-Host ("FAILED - self-test: {0} was NOT caught as {1}." -f $w.What, $w.In.ToLower())
-                $failed = $true
-            }
-        }
-        if ($failed) {
-            Write-Host '         This check is not proving anything; fix it before trusting a pass.'
-            exit 1
-        }
 
-        Write-Host 'self-test 2/2: all three planted prototypes were caught, each as its own kind.'
         Write-Host ''
         Write-Host 'OK - self-test passed.'
         exit 0

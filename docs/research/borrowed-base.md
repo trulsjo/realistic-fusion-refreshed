@@ -387,7 +387,7 @@ version and it was useless: a plain rig sweep spends about **108 ms at t = 30 of
 same index each time, and that is work rather than a stall. Reproducibility is what separates them,
 which also means `-Runs 1` cannot decide and reports nothing.
 
-`-SelfTest` half 5 holds all three directions — the 389 ms one-run stall is flagged, 5.5 ms of real
+`-SelfTest`'s `stall-detector` half holds all three directions — the 389 ms one-run stall is flagged, 5.5 ms of real
 simulation is not, and a 108 ms spike repeating in every run is not. Run against the recorded
 twenty-run dump it returns exactly `run 6, tick 876, 389.3 ms` and passes the other nineteen. The
 tick it reports is the dump's own `t<n>` label, so it can be grepped straight out of the file; on a

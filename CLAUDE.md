@@ -45,9 +45,11 @@ legitimately — Krastorio 2 puts `kr-steel-pipe` on machines it never heard of 
 taken away is reported. The containment floor covers only what carries a category; it skips any
 connection left `default`, which since #86 is three of the heat exchanger's six — its water pair and
 its steam outlet — where before it was all six. (`probe-connection-categories.ps1` reports on
-the same shape, but a probe asserts nothing.) Halves six and seven of `-SelfTest` are the
-canaries, one for each direction, and half six's victim is chosen as an UNCONTAINED connection for
-exactly that reason.
+the same shape, but a probe asserts nothing.) The `added-category` and `replaced-category` halves
+of `-SelfTest` are the canaries, one for each direction, and `added-category`'s victim is chosen as
+an UNCONTAINED connection for exactly that reason. **A half is cited by name, never by ordinal**
+(#411, #416): a half inserted above one renumbers every half after it, and a sentence pointing at
+the wrong half still reads as true.
 `scripts/locale-check.ps1` and `scripts/name-check.ps1` only dump prototypes and create no map, so a
 pass there says nothing about runtime. `scripts/ship-check.ps1` runs no game at all — it is the
 check about the claims the mods make about themselves: the two statements ADR 0003 and ADR 0006
@@ -58,6 +60,10 @@ floor fails only in a player's log.
 Since #151 it also asserts one thing that is not a claim about the mods at all: that every
 script in `scripts/` which declares a `.SYNOPSIS` answers `Get-Help`. It lives there because it
 has the same shape as the rest — prose no other gate can see, checkable without starting a game.
+Since #416 it has a `-SelfTest` of its own, which is new: it proves the shared self-test runner in
+`factorio-lib.ps1` and section 9's citation rule, in both directions. The other eight sections it
+runs on a plain invocation are unchanged and still have no self-test, for the reason its help block
+gives.
 Run them rather than reasoning about whether a change is safe.
 
 **`load-check.ps1` loads the mods two ways, and the default is not the player's.** Without arguments
@@ -250,6 +256,19 @@ other direction.
   path is on an earlier line, and to one written without backticks; and a **mod**-relative path like
   `prototypes/entities.lua:119` still names two files, so only a citation anchored at the repo root
   is actually gated. See `docs/adr/0032-prose-cites-code-by-symbol.md` and the script's section 7.
+- **Cite a `-SelfTest` half by its name, never by its position** (#411, #416). A gate declares its
+  halves by name where they run and `Invoke-SelfTestHalves` numbers them as it goes, so inserting
+  one moves the number printed for every half after it while the names stay put — and a sentence
+  pointing at a position still reads as true once it means a different half. (`fetch-mods.ps1` is
+  the one `-SelfTest` still writing its own numbered labels by hand; it is a fetch tool rather than
+  a gate, and its labels are output rather than a citation.) `ship-check.ps1` section 9 gates the
+  rule across the same tracked `.md`, `.lua`, `.ps1`, `.py` and `.js` files, and its own
+  `-SelfTest` proves it fires and that it
+  leaves a named citation alone. **It reads prose only** — a whole markdown file, and in code the
+  lines that are comments, minus a markdown fence, where a pasted run lives — so a citation in a
+  printed string, in a fenced block, in a trailing comment after code, or written without the word
+  ("the sixth", "the one before the stall detector") is not seen. The section comment carries the
+  full list of what it cannot see.
 
 ## Commit messages
 

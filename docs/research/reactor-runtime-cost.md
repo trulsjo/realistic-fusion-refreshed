@@ -2027,5 +2027,5 @@ baseline to subtract a later sitting from.**
 - The cross-version run above was taken by hand and is not a committed script. It is two Factorio
   invocations over one save with `control.lua` swapped between them; anyone repeating it can do the
   same, and there is nothing here worth a rig.
-- `scripts/load-check.ps1 -SelfTest` — half eight is `check_input_flow()`'s negative test.
+- `scripts/load-check.ps1 -SelfTest` — the `starved-reactor` half is `check_input_flow()`'s negative test.
 - What it discharges: item 4b of #37, and the whole of #72.

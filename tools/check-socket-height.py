@@ -426,7 +426,8 @@ def report(rows, reference):
 
     `reference` is where vanilla draws its pipe, measured by `vanilla_pipe_centre` rather than
     typed. It is passed rather than read from module state so the self-test can hand it a
-    deliberately wrong one and watch every verdict move, which is half one's third case."""
+    deliberately wrong one and watch every verdict move, which the judged-by-the-reference half
+    does."""
     verdicts = []
     for name, label, centre, why in rows:
         if why is not None:
@@ -478,34 +479,74 @@ def measured_from_array(a):
         return vanilla_pipe_centre(path)[0]
 
 
+class SelfTestFailed(Exception):
+    """Why a half failed, in that half's own words.
+
+    Raised rather than returned so a half reads as a straight line of checks instead of a chain of
+    `return 1`s that every caller has to remember to propagate."""
+
+
+def run_halves(halves):
+    """Run declared halves in order, numbering them from the list itself.
+
+    The total is `len(halves)`, so it is written once instead of once per label. That is the whole
+    point: this file printed "1/4" through "4/4" across five lines, one of them a "(cont.)"
+    continuation, so adding a fifth check edited all of them.
+
+    A half returns what it proved, and returning nothing is a failure rather than a pass -- "the
+    body never ran" and "the body ran and proved nothing" are the same silence from outside.
+
+    The PowerShell gates run their halves through Invoke-SelfTestHalves in scripts/factorio-lib.ps1,
+    which is the same idea and shares no code with this. Two files in a second language is not
+    enough to justify a library between them.
+    """
+    total = len(halves)
+    for ordinal, (name, body) in enumerate(halves, 1):
+        try:
+            proved = body()
+        except SelfTestFailed as why:
+            print(f"FAILED - self-test half '{name}': {why}")
+            return 1
+        if not proved:
+            print(f"FAILED - self-test half '{name}': it returned nothing, so there is no evidence "
+                  "it ran. A half returns one line saying what it proved.")
+            return 1
+        print(f"self-test {ordinal}/{total}: {proved}")
+    return 0
+
+
 def self_test(manifests, pipe_sheet):
     """Prove the check can fail, in every direction it can be wrong in, without a game or a render.
 
-    HALF ONE is the REFERENCE, and it is first because the other two are read against it. Vanilla's
-    sheet is rolled a known number of pixels down and then up, and the measured reference must
-    follow by exactly that much each way: an instrument that does not move with its input is not
-    measuring. Then two synthetic sheets whose answer is arithmetic prove the one judgement the
-    measurement makes -- that the black baked underneath is excluded, and excluded whether there is
-    none of it or a lot.
+    THE REFERENCE half is first because every half after it is read against it. Vanilla's sheet is
+    rolled a known number of pixels down and then up, and the measured reference must follow by
+    exactly that much each way: an instrument that does not move with its input is not measuring.
+    Then two synthetic sheets whose answer is arithmetic prove the one judgement the measurement
+    makes -- that the black baked underneath is excluded, and excluded whether there is none of it
+    or a lot.
 
-    HALF TWO: every socket on both machines as they stand must pass -- contained ones included
-    since ADR 0036, because this half runs the same `check` the gate does and that one stopped
-    filtering -- and then the same sheets, judged against a reference moved three tolerances each
-    way, must fail every socket and fail it the right way round. That second part is not decoration. Measuring a reference correctly
-    and JUDGING BY IT are different claims, and the first two attempts at this half proved only the
-    first: every verdict here holds under the old wrong 0.031 as well as the measured 0.023, so a
-    gate that quietly went on using a typed number would have passed its own self-test.
+    THE SHIPPED SHEETS half: every socket on both machines as they stand must pass -- contained
+    ones included since ADR 0036, because this half runs the same `check` the gate does and that one
+    stopped filtering.
 
-    HALF THREE: the same sheets lifted a quarter tile up the screen must be reported TOO HIGH on
-    every one of them. A gate that only ever passes and a gate that only ever fails look the same
-    from outside, so both are here.
+    THE JUDGED-BY-THE-REFERENCE half is not decoration, and it was a "(cont.)" line under the half
+    above until the halves were named. Measuring a reference correctly and JUDGING BY IT are
+    different claims, and the first two attempts proved only the first: every verdict in the halves
+    either side holds under the old wrong 0.031 as well as the measured 0.023, so a gate that
+    quietly went on using a typed number would have passed its own self-test. So the same sheets are
+    judged against a reference moved three tolerances each way, and every verdict must follow it.
 
-    HALF FOUR is the CONSTANT, and it is last because it reads the reference half one measures and
-    says nothing about the sheets halves two and three read. rf_blender.SOCKET_Z as it stands must
-    agree with that reference, and three constants that do not must all be reported PARTED: the old
-    0.044, which is the defect this cross-check exists for and the one thing here that is a real
-    number rather than an offset, and the constant moved three tolerances each way -- three rather
-    than two because two lands back on 0.044; the code below says so where it computes the offset.
+    THE LIFTED SHEETS half: the same sheets lifted a quarter tile up the screen must be reported
+    TOO HIGH on every one of them. A gate that only ever passes and a gate that only ever fails look
+    the same from outside, so both are here.
+
+    THE SOCKET_Z half is the CONSTANT, and it is last because it reads the reference the first half
+    measures and says nothing about the sheets the two before it read. rf_blender.SOCKET_Z as it
+    stands must agree with that reference, and three constants that do not must all be reported
+    PARTED: the old 0.044, which is the defect this cross-check exists for and the one thing here
+    that is a real number rather than an offset, and the constant moved three tolerances each way --
+    three rather than two because two lands back on 0.044; the code below says so where it computes
+    the offset.
 
     THE LIFT IS A QUARTER TILE RATHER THAN THE HALF THE REAL DEFECT WAS, and the reason is worth
     keeping: half a tile pushes a socket against the top of the search window, so the check reports
@@ -513,111 +554,128 @@ def self_test(manifests, pipe_sheet):
     the comparison this gate is for. A quarter tile is three times the tolerance and still well
     inside the window, so the verdict comes from the measurement.
     """
-    print("self-test 1/4: the reference must track vanilla's own sheet both ways, and must not be "
-          "dragged by the shadow baked under it.")
-    try:
-        reference, (low, high, kept, dropped) = vanilla_pipe_centre(pipe_sheet)
-    except Unmeasurable as why:
-        print(f"FAILED - self-test: the reference could not be measured at all: {why}")
-        return 1
-    print(f"  vanilla pipe              rows {low}..{high} of {2 * rf.PX_PER_TILE}, centre "
-          f"{reference:+.4f} tiles up (dimmest row kept peaks {kept}, brightest dropped {dropped}, "
-          f"floor {PIPE_COLOUR_FLOOR})")
-
-    original = np.asarray(Image.open(pipe_sheet).convert("RGBA"))
-    for shift in (5, -5):
-        # Rolling the sheet DOWN the screen by `shift` rows lowers the drawn centre by the same, so
-        # the reference must fall by shift / PX_PER_TILE tiles. Both signs, because an instrument
-        # that only tracks one way is half an instrument.
-        want = reference - shift / rf.PX_PER_TILE
-        got = measured_from_array(np.roll(original, shift, axis=0))
-        print(f"  rolled {shift:+d} px                measured {got:+.4f}, expected {want:+.4f}")
-        if abs(got - want) > 1e-9:
-            print(f"FAILED - self-test: rolling vanilla's sheet {shift:+d} px moved the measured "
-                  f"reference to {got:+.4f} where it should have been {want:+.4f}.")
-            return 1
-
-    # A band of known extent, with and without black under it. The right answer is the band's own
-    # edge-midpoint both times; a shadow leaking into the measurement would drag the second down.
-    top, tall = 40, 30
-    want = (rf.PX_PER_TILE - (top + top + tall) / 2) / rf.PX_PER_TILE
-    for shadow in (0, 20):
-        got = measured_from_array(synthetic_pipe_sheet(top, tall, shadow))
-        print(f"  synthetic, {shadow:2d} shadow rows   measured {got:+.4f}, expected {want:+.4f}")
-        if abs(got - want) > 1e-9:
-            print(f"FAILED - self-test: a band of {tall} rows from row {top} with {shadow} black "
-                  f"rows under it measured {got:+.4f} where the band's own centre is {want:+.4f}, "
-                  f"so the baked shadow is not being excluded.")
-            return 1
-
-    print("self-test 2/4: every socket on the shipped sheets must pass, contained ones included.")
+    # What the reference half measures and the halves below judge by. They are filled by the halves
+    # that produce them rather than declared with values, so a half that did not run leaves its
+    # successors with nothing to read instead of with a stale number.
+    measured = {}
     rows = []
-    for path in manifests:
-        check(path, load_sheet, rows)
-    if not rows:
-        print("FAILED - self-test: no connection was measured at all, so the halves after this "
-              "one prove nothing.")
-        return 1
-    bad = [v for v in report(rows, reference) if v != "ok"]
-    if bad:
-        print(f"FAILED - self-test: {len(bad)} socket(s) failed on the sheets as they stand, so "
-              "half three cannot tell a working check from a broken one.")
-        return 1
 
-    # AND THE REFERENCE MUST REACH THE VERDICTS, which measuring it correctly does not prove. This
-    # gate spent months comparing against a number that was wrong, and a self-test that measures a
-    # reference and then judges by something else would let exactly that happen again: the two
-    # halves above and below pass under either 0.023 or the old 0.031, because 0.055 is within
-    # tolerance of both and a lifted socket is TOO HIGH against both. So the same sheets are judged
-    # against a reference moved three tolerances each way, and every verdict must follow it.
-    print(f"self-test 2/4 (cont.): the same sheets judged against a reference {3 * TOLERANCE:+.2f} "
-          f"and {-3 * TOLERANCE:+.2f} out must fail every socket, and fail it the right way.")
-    for moved, expected in ((reference - 3 * TOLERANCE, "TOO HIGH"), (reference + 3 * TOLERANCE, "TOO LOW")):
-        wrong = [(row, verdict) for row, verdict in zip(rows, report(rows, moved))
-                 if verdict != expected]
-        if wrong:
-            print(f"FAILED - self-test: with the reference moved to {moved:+.3f}, "
-                  f"{len(wrong)} socket(s) were not reported {expected}, so the number this gate "
-                  f"measures is not the number it judges by:")
-            for (name, label, _, _), verdict in wrong:
+    def reference_half():
+        try:
+            reference, (low, high, kept, dropped) = vanilla_pipe_centre(pipe_sheet)
+        except Unmeasurable as why:
+            raise SelfTestFailed(f"the reference could not be measured at all: {why}")
+        measured["reference"] = reference
+        print(f"  vanilla pipe              rows {low}..{high} of {2 * rf.PX_PER_TILE}, centre "
+              f"{reference:+.4f} tiles up (dimmest row kept peaks {kept}, brightest dropped "
+              f"{dropped}, floor {PIPE_COLOUR_FLOOR})")
+
+        original = np.asarray(Image.open(pipe_sheet).convert("RGBA"))
+        for shift in (5, -5):
+            # Rolling the sheet DOWN the screen by `shift` rows lowers the drawn centre by the same,
+            # so the reference must fall by shift / PX_PER_TILE tiles. Both signs, because an
+            # instrument that only tracks one way is half an instrument.
+            want = reference - shift / rf.PX_PER_TILE
+            got = measured_from_array(np.roll(original, shift, axis=0))
+            print(f"  rolled {shift:+d} px                measured {got:+.4f}, expected {want:+.4f}")
+            if abs(got - want) > 1e-9:
+                raise SelfTestFailed(f"rolling vanilla's sheet {shift:+d} px moved the measured "
+                                     f"reference to {got:+.4f} where it should have been "
+                                     f"{want:+.4f}.")
+
+        # A band of known extent, with and without black under it. The right answer is the band's own
+        # edge-midpoint both times; a shadow leaking into the measurement would drag the second down.
+        top, tall = 40, 30
+        want = (rf.PX_PER_TILE - (top + top + tall) / 2) / rf.PX_PER_TILE
+        for shadow in (0, 20):
+            got = measured_from_array(synthetic_pipe_sheet(top, tall, shadow))
+            print(f"  synthetic, {shadow:2d} shadow rows   measured {got:+.4f}, expected {want:+.4f}")
+            if abs(got - want) > 1e-9:
+                raise SelfTestFailed(f"a band of {tall} rows from row {top} with {shadow} black rows "
+                                     f"under it measured {got:+.4f} where the band's own centre is "
+                                     f"{want:+.4f}, so the baked shadow is not being excluded.")
+        return ("the reference tracks vanilla's own sheet both ways, and is not dragged by the "
+                "shadow baked under it.")
+
+    def shipped_sheets_half():
+        for path in manifests:
+            check(path, load_sheet, rows)
+        if not rows:
+            raise SelfTestFailed("no connection was measured at all, so the halves after this one "
+                                 "prove nothing.")
+        bad = [v for v in report(rows, measured["reference"]) if v != "ok"]
+        if bad:
+            raise SelfTestFailed(f"{len(bad)} socket(s) failed on the sheets as they stand, so the "
+                                 "lifted-sheets half cannot tell a working check from a broken one.")
+        return "every socket on the shipped sheets passes, contained ones included."
+
+    def judged_by_the_reference_half():
+        # `rows` is what the shipped-sheets half left behind, and a zip over an empty list produces
+        # an empty list of wrong verdicts -- which reads exactly like every verdict following the
+        # reference. Reordering the declaration list at the bottom would otherwise leave this half
+        # reporting that the gate judges by the number it measured, having judged nothing.
+        if not rows:
+            raise SelfTestFailed("no socket was measured before this half ran, so it would judge an "
+                                 "empty report and pass. It reads what the shipped-sheets half "
+                                 "leaves behind, and that half has to run first.")
+        reference = measured["reference"]
+        for moved, expected in ((reference - 3 * TOLERANCE, "TOO HIGH"),
+                                (reference + 3 * TOLERANCE, "TOO LOW")):
+            wrong = [(row, verdict) for row, verdict in zip(rows, report(rows, moved))
+                     if verdict != expected]
+            if wrong:
+                for (name, label, _, _), verdict in wrong:
+                    print(f"           {name}  {label}: {verdict}")
+                raise SelfTestFailed(f"with the reference moved to {moved:+.3f}, {len(wrong)} "
+                                     f"socket(s) were not reported {expected}, so the number this "
+                                     "gate measures is not the number it judges by.")
+        return (f"the same sheets judged against a reference {3 * TOLERANCE:+.2f} and "
+                f"{-3 * TOLERANCE:+.2f} out fail every socket, and fail it the right way.")
+
+    def lifted_sheets_half():
+        shift = int(round(0.25 * rf.PX_PER_TILE))
+        lifted = []
+        for path in manifests:
+            check(path, rolled_sheet(shift), lifted)
+        if not lifted:
+            raise SelfTestFailed(f"lifting the sheets {shift} px measured no socket at all, so "
+                                 "reporting none of them too high proves nothing.")
+        missed = [(row, verdict) for row, verdict in zip(lifted, report(lifted, measured["reference"]))
+                  if verdict != "TOO HIGH"]
+        if missed:
+            for (name, label, _, _), verdict in missed:
                 print(f"           {name}  {label}: {verdict}")
-            return 1
+            raise SelfTestFailed(f"{len(missed)} socket(s) were lifted a quarter tile and this check "
+                                 "did not report them as drawn too high.")
+        return f"the same sheets lifted {shift} px are reported TOO HIGH on every one."
 
-    shift = int(round(0.25 * rf.PX_PER_TILE))
-    print(f"self-test 3/4: the same sheets lifted {shift} px must be reported TOO HIGH on every one.")
-    lifted = []
-    for path in manifests:
-        check(path, rolled_sheet(shift), lifted)
-    missed = [(row, verdict) for row, verdict in zip(lifted, report(lifted, reference))
-              if verdict != "TOO HIGH"]
-    if missed:
-        print(f"FAILED - self-test: {len(missed)} socket(s) were lifted a quarter tile and this "
-              "check did not report them as drawn too high:")
-        for (name, label, _, _), verdict in missed:
-            print(f"           {name}  {label}: {verdict}")
-        return 1
+    def socket_z_half():
+        reference = measured["reference"]
+        if not report_constant(reference):
+            raise SelfTestFailed(f"models/rf_blender.SOCKET_Z is {rf.SOCKET_Z}, which does not "
+                                 "predict the reference this run measured. The cross-check is "
+                                 "working; the constant is not.")
+        # 0.044 is the defect itself: SOCKET_Z solved against a reference read as 2.0 px where the
+        # sheet draws 1.5. The two offsets either side of it prove the check is a comparison rather
+        # than a hard-coded refusal of that one number -- THREE tolerances rather than two, because
+        # two lands on 0.044 again and a case that prints the same constant twice proves half as
+        # much as it appears to.
+        off = (CONSTANT_TOLERANCE_PX * 3) / (rf.PX_PER_TILE * SCREEN_PER_WORLD)
+        for wrong in (0.044, rf.SOCKET_Z + off, rf.SOCKET_Z - off):
+            if report_constant(reference, wrong):
+                raise SelfTestFailed(f"SOCKET_Z {wrong:.4f} was accepted against a reference of "
+                                     f"{reference:+.4f}, so this cross-check would not have caught "
+                                     "the height being solved from the wrong number.")
+        return ("SOCKET_Z agrees with the measured reference, and three constants that do not are "
+                "reported PARTED.")
 
-    print("self-test 4/4: SOCKET_Z must agree with the measured reference, and must be reported "
-          "PARTED when it does not.")
-    if not report_constant(reference):
-        print(f"FAILED - self-test: models/rf_blender.SOCKET_Z is {rf.SOCKET_Z}, which does not "
-              f"predict the reference this run measured. The cross-check is working; the constant "
-              f"is not.")
-        return 1
-    # 0.044 is the defect itself: SOCKET_Z solved against a reference read as 2.0 px where the
-    # sheet draws 1.5. The two offsets either side of it prove the check is a comparison rather
-    # than a hard-coded refusal of that one number -- THREE tolerances rather than two, because two
-    # lands on 0.044 again and a case that prints the same constant twice proves half as much as it
-    # appears to.
-    off = (CONSTANT_TOLERANCE_PX * 3) / (rf.PX_PER_TILE * SCREEN_PER_WORLD)
-    for wrong in (0.044, rf.SOCKET_Z + off, rf.SOCKET_Z - off):
-        if report_constant(reference, wrong):
-            print(f"FAILED - self-test: SOCKET_Z {wrong:.4f} was accepted against a reference of "
-                  f"{reference:+.4f}, so this cross-check would not have caught the height being "
-                  f"solved from the wrong number.")
-            return 1
-    print("self-test: all four halves pass.")
-    return 0
+    return run_halves([
+        ("reference", reference_half),
+        ("shipped-sheets", shipped_sheets_half),
+        ("judged-by-the-reference", judged_by_the_reference_half),
+        ("lifted-sheets", lifted_sheets_half),
+        ("socket-z", socket_z_half),
+    ])
 
 
 def main(argv=None):

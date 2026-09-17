@@ -216,23 +216,26 @@
     a benchmark of a map with different prototypes is a benchmark of a different map.
 
 .PARAMETER SelfTest
-    Prove the seven pieces of machinery here that can fail quietly, and exit. Needs no Factorio and
-    no save. Four are -Save's. It parses a synthesised save header, including the wide encoding a
-    version component only reaches at 255 and no real mod on hand has; it requires an unresolvable
-    mod to be named rather than skipped; it requires a zip whose name merely BEGINS with the wanted
-    name plus an underscore to be refused rather than taken for it; and it requires a mod differing
-    only in CASE to be refused too, planting one decoy in each of the two forms a mod can take on
-    disk.
+    Prove the machinery here that can fail quietly, and exit. Needs no Factorio and no save. Each
+    half is declared by name where it runs, and the runner numbers them as it goes, so this prose
+    names them rather than counting them.
 
-    THE FIFTH IS THE STALL DETECTOR (#235), and it is here for the same reason as the other four
-    rather than as an afterthought: a run the machine blocked in reports a per-reactor figure
-    inflated by an I/O stall, and every other gate passes. It holds Find-StalledRuns from both
-    sides -- the recorded 389 ms one-run stall is flagged and named at the right tick, two runs
+    THE SAVE HALVES are -Save's: save-header parses a synthesised save header, including the wide
+    encoding a version component only reaches at 255 and no real mod on hand has; unresolved-mods
+    requires an unresolvable mod to be named rather than skipped; name-suffix-decoy requires a zip
+    whose name merely BEGINS with the wanted name plus an underscore to be refused rather than taken
+    for it; and case-decoy requires a mod differing only in CASE to be refused too, planting one
+    decoy in each of the two forms a mod can take on disk.
+
+    THE STALL-DETECTOR HALF (#235) is here for the same reason as those rather than as an
+    afterthought: a run the machine blocked in reports a per-reactor figure inflated by an I/O
+    stall, and every other gate passes. It holds Find-StalledRuns from both sides -- the recorded
+    389 ms one-run stall is flagged and named at the right tick, two runs
     stalling on one tick are both flagged, and neither 5.5 ms of real simulation nor a 108 ms spike
     repeating in every run is called a stall.
 
-    THE SIXTH IS THE CENSUS CADENCE GUARD (#235, #325), and it is the same shape once more: a rig
-    generated at a cadence nobody asked for reports a per-reactor figure carrying the harness's own
+    THE CENSUS-CADENCE HALF (#235, #325) is the same shape once more: a rig generated at a cadence
+    nobody asked for reports a per-reactor figure carrying the harness's own
     instrumentation -- 2.18 us per reactor, a quarter of the cost, when the collision was live --
     and every other gate passes. It holds Assert-CensusCadence from both sides: a cadence of 5
     against an asked-for 500 is refused and the refusal names the case trap that caused it, the
@@ -241,8 +244,8 @@
     trip. The guard was lifted out of Write-Rig to make this reachable at all; before #325 the only
     proof it fires was a hand-edited copy of this script that was committed nowhere.
 
-    THE SEVENTH IS THE DISCARD ITSELF (#326, ADR 0037). Finding a stalled run and then pooling it
-    into the figure anyway is the same silent failure one step later, and it is a different piece
+    THE DISCARD HALF (#326, ADR 0037). Finding a stalled run and then pooling it into the figure
+    anyway is the same silent failure one step later, and it is a different piece
     of machinery from the detector: Select-SurvivingSamples takes the run's ticks out of the pool,
     Get-SurvivingRunsRefusal decides whether what is left is worth reporting. Three directions -- a
     stalled run's ticks are gone and the mean is the clean one, a sitting with nothing to discard is
@@ -251,8 +254,8 @@
     that is asserted too: a throw from inside the sweep would take every count already measured
     with it.
 
-    Those seven and no more, because every one of them produces a confident wrong answer rather than
-    an error, and three of the first four produce the SAME wrong answer by different routes: a
+    Those and no more, because every one of them produces a confident wrong answer rather than an
+    error, and three of the save halves produce the SAME wrong answer by different routes: a
     run that loads the save without the mod the save names, reports a clean pass, and is believed. A
     mis-parsed header names the wrong mods. A mod list one entry short measures a map with a mod's
     entities stripped out of it. LTN_Combinator resolving as LTN is that with a bonus mod loaded to
@@ -719,7 +722,8 @@ function Resolve-SaveMods {
         #
         # The -ccontains above is the same rule on the same grounds. Found in review, in the zip
         # branch; the directory branch had it too, because Test-Path folds case for a directory
-        # exactly as it does for a file. -SelfTest 4/7 holds both shut with one decoy each.
+        # exactly as it does for a file. -SelfTest's case-decoy half holds both shut, with one
+        # decoy each.
         $found = $null
         $wantedDir = "$($mod.Name)_$($mod.Version)"
         # -LiteralPath because a mod directory's own path may contain brackets, which -Path would
@@ -746,7 +750,7 @@ function Resolve-SaveMods {
             # rather than trusted. `-Filter "LTN_*.zip"` matches LTN_Combinator_2.0.1.zip, so a save
             # wanting LTN on a machine that has only the Combinator would resolve LTN to the
             # Combinator's zip and be reported RESOLVED -- the same silent failure the case rule
-            # above describes, by a third route. Found in review; -SelfTest 3/7.
+            # above describes, by a third route. Found in review; -SelfTest's name-suffix-decoy half.
             #
             # -Filter is the file system's own glob and folds case like the rest of NTFS, so it can
             # only ever return a superset here. The -cmatch is what narrows it back.
@@ -932,8 +936,8 @@ function Find-StalledRuns {
 
     # No comma-wrapping on the returns. ",$out" exists to stop PowerShell unrolling a single-item
     # result, but on an EMPTY array it produces a one-item wrapper instead -- so @(Find-StalledRuns
-    # ...) counted a clean sitting as one stalled run, and -SelfTest 5/7 caught it. Callers wrap in
-    # @() instead, which gives 0 for nothing and 1 for one.
+    # ...) counted a clean sitting as one stalled run, and -SelfTest's stall-detector half caught
+    # it. Callers wrap in @() instead, which gives 0 for nothing and 1 for one.
     $out = @()
     if ($Runs -lt 2) { return $out }
 
@@ -957,7 +961,8 @@ function Find-StalledRuns {
             # The minimum has no such hole: if ANY other run is fast at this index, the tick is not
             # work. It cannot cry wolf on reproducible work either, because work that repeats is
             # present in every peer, so the minimum is as large as the median would have been --
-            # the rig's 108 ms t = 30 spike is still correctly ignored, which half 5 asserts.
+            # the rig's 108 ms t = 30 spike is still correctly ignored, which the stall-detector
+            # half asserts.
             $peer = [double]::MaxValue
             for ($q = 0; $q -lt $byRun.Count; $q++) {
                 if ($q -eq $r) { continue }
@@ -1108,346 +1113,379 @@ if ($PlantInto) {
 }
 
 if ($SelfTest) {
-    # Four assertions, all pure, all on machinery that would otherwise fail by giving a
+    # Every half here is pure, and every one is on machinery that would otherwise fail by giving a
     # confident wrong answer rather than an error. See .PARAMETER SelfTest.
-    Write-Host '-SelfTest: the save-header parser and three ways a wrong mod could resolve.'
+    #
+    # THE HALVES ARE DECLARED BY NAME and Invoke-SelfTestHalves numbers them as it runs them, so the
+    # total is written nowhere. This block carried 41 labels reading `N/7` and #410's seventh half
+    # was a `sed` across 33 of them plus two the pattern missed -- a `3/6` inside a comment and a
+    # `5/6:` section header, neither matching the `/6 ` it looked for.
+    #
+    # What one half hands the next travels in $handoff, because a scriptblock assigning to a bare
+    # variable writes its own local copy and the next half would read nothing. NOT $selfTest: that
+    # differs from the -SelfTest PARAMETER only in case, which PowerShell does not distinguish, so
+    # the hashtable lands on the switch -- #235's fault exactly, in the block that tests for it.
+    $handoff = @{}
 
-    # A synthesised header: the leading bytes a real save has before its mod list -- whose contents
-    # do not matter, only that the scan has to get past them -- then three mods. The third is
-    # version 1.2.300, whose last component does not fit in a byte, so the wide encoding is
-    # exercised here rather than waiting for a mod to reach 255.
-    $bytes = [Collections.Generic.List[byte]]::new()
-    foreach ($b in @(2, 0, 0, 0, 77, 0, 0, 0, 0)) { $bytes.Add([byte]$b) }
-    $bytes.Add([byte]8); $bytes.AddRange([Text.Encoding]::ASCII.GetBytes('freeplay'))
-    $bytes.Add([byte]3)                                       # three mods follow
-    $expected = @(
-        @{ Name = 'base';        Version = @(2, 0, 77) }
-        @{ Name = 'a-third-mod'; Version = @(0, 16, 5) }
-        @{ Name = 'wide';        Version = @(1, 2, 300) }
+    Invoke-SelfTestHalves -Format '  {0}/{1} ok: {2}' -Halves @(
+        @{ Name = 'save-header'; Body = {
+            # A synthesised header: the leading bytes a real save has before its mod list -- whose
+            # contents do not matter, only that the scan has to get past them -- then three mods.
+            # The third is version 1.2.300, whose last component does not fit in a byte, so the wide
+            # encoding is exercised here rather than waiting for a mod to reach 255.
+            $bytes = [Collections.Generic.List[byte]]::new()
+            foreach ($b in @(2, 0, 0, 0, 77, 0, 0, 0, 0)) { $bytes.Add([byte]$b) }
+            $bytes.Add([byte]8); $bytes.AddRange([Text.Encoding]::ASCII.GetBytes('freeplay'))
+            $bytes.Add([byte]3)                                       # three mods follow
+            $expected = @(
+                @{ Name = 'base';        Version = @(2, 0, 77) }
+                @{ Name = 'a-third-mod'; Version = @(0, 16, 5) }
+                @{ Name = 'wide';        Version = @(1, 2, 300) }
+            )
+            foreach ($m in $expected) {
+                $bytes.Add([byte]$m.Name.Length); $bytes.AddRange([Text.Encoding]::ASCII.GetBytes($m.Name))
+                foreach ($component in $m.Version) {
+                    if ($component -lt 255) { $bytes.Add([byte]$component) }
+                    else {
+                        $bytes.Add([byte]0xFF)
+                        $bytes.AddRange([BitConverter]::GetBytes([uint16]$component))
+                    }
+                }
+                $bytes.AddRange([byte[]]@(0xDE, 0xAD, 0xBE, 0xEF))    # the entry's checksum
+            }
+
+            $buffer = $bytes.ToArray()
+            $parsed = $null
+            for ($p = 0; $p -lt $buffer.Length; $p++) {
+                $try = Read-ModBlock -Buffer $buffer -Length $buffer.Length -Start $p
+                if ($try -and $try[0].Name -ceq 'base') { $parsed = $try; break }
+            }
+            if (-not $parsed) { throw 'the parser found no mod list in a synthesised header.' }
+            $got  = ($parsed | ForEach-Object { "$($_.Name) $($_.Version)" }) -join '; '
+            $want = ($expected | ForEach-Object { "$($_.Name) $($_.Version -join '.')" }) -join '; '
+            if ($got -cne $want) { throw "parsed '$got', expected '$want'." }
+            # The unresolved-mods half resolves this list, so it is what a parse proves rather than
+            # a convenience: a header nobody parsed leaves that half nothing to refuse.
+            $handoff.Parsed = $parsed
+            "parsed '$got', wide-encoded version included."
+        } }
+
+        @{ Name = 'unresolved-mods'; Body = {
+            # The refusal. An empty directory resolves nothing, so every name in the list must come
+            # back named -- a resolver that skipped what it could not find would hand the benchmark
+            # a map with a mod's entities missing and report a clean run over it.
+            $emptyDir = Join-Path ([IO.Path]::GetTempPath()) ('rf-bench-selftest-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+            New-Item -ItemType Directory -Path $emptyDir -Force | Out-Null
+            try {
+                $refused = $null
+                try {
+                    Resolve-SaveMods -Wanted $handoff.Parsed -SourceDirectory $emptyDir -Bundled @{} -Ours (Get-RepoMods) |
+                        Out-Null
+                } catch { $refused = "$($_.Exception.Message)" }
+                if (-not $refused) { throw 'two unresolvable mods were accepted rather than refused.' }
+                foreach ($name in @('a-third-mod', 'wide')) {
+                    if (-not $refused.Contains($name)) {
+                        throw "the refusal does not name '$name': $refused"
+                    }
+                }
+                # base is the engine's and is deliberately not a mod anybody installs, so naming it
+                # would send the reader looking for something that cannot be found.
+                if ($refused.Contains('base ')) {
+                    throw "the refusal names base, which is not an installable mod: $refused"
+                }
+                'both unresolved mods named, base not among them.'
+            } finally { Remove-TempDirectory -Path $emptyDir -Label 'bench-reactors -SelfTest' }
+        } }
+
+        @{ Name = 'name-suffix-decoy'; Body = {
+            # The refusal again, against the near miss rather than the empty directory. A zip whose
+            # name merely STARTS with the wanted name plus an underscore is a different mod:
+            # LTN_Combinator is not LTN. Resolving it would report the save's mod set complete, load
+            # the map with the real mod's entities stripped out, and exit 0 -- so the near miss has
+            # to be refused exactly as loudly as nothing at all.
+            $decoyDir = Join-Path ([IO.Path]::GetTempPath()) ('rf-bench-selftest-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+            New-Item -ItemType Directory -Path $decoyDir -Force | Out-Null
+            try {
+                Set-Content -Path (Join-Path $decoyDir 'wide_Combinator_2.0.1.zip') -Value 'not a mod' -Encoding utf8
+                $wanted = @([pscustomobject]@{ Name = 'wide'; Version = '1.2.300' })
+                $refused = $null
+                try {
+                    Resolve-SaveMods -Wanted $wanted -SourceDirectory $decoyDir -Bundled @{} -Ours (Get-RepoMods) |
+                        Out-Null
+                } catch { $refused = "$($_.Exception.Message)" }
+                if (-not $refused) {
+                    throw ('wide_Combinator_2.0.1.zip was accepted as the mod "wide", so a save ' +
+                           'could be benchmarked with the wrong mod loaded and nothing would say so.')
+                }
+                if (-not $refused.Contains('wide 1.2.300')) {
+                    throw "the refusal does not name 'wide 1.2.300': $refused"
+                }
+                'a name_suffix_version.zip is not accepted as name.'
+            } finally { Remove-TempDirectory -Path $decoyDir -Label 'bench-reactors -SelfTest' }
+        } }
+
+        @{ Name = 'case-decoy'; Body = {
+            # And the near miss that is only a difference of CASE, which NTFS does not distinguish
+            # and Factorio does. Both decoys are planted at once deliberately: resolution reaching
+            # either one is a failure, so a single assertion catches a regression in the directory
+            # branch or in the zip branch without needing two.
+            $caseDir = Join-Path ([IO.Path]::GetTempPath()) ('rf-bench-selftest-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+            New-Item -ItemType Directory -Path (Join-Path $caseDir 'Wide') -Force | Out-Null
+            try {
+                Set-Content -Path (Join-Path $caseDir 'Wide_1.2.300.zip') -Value 'not a mod' -Encoding utf8
+                '{ "name": "Wide", "version": "1.2.300" }' |
+                    Set-Content -Path (Join-Path $caseDir 'Wide/info.json') -Encoding utf8
+                $wanted = @([pscustomobject]@{ Name = 'wide'; Version = '1.2.300' })
+                $refused = $null
+                try {
+                    Resolve-SaveMods -Wanted $wanted -SourceDirectory $caseDir -Bundled @{} -Ours (Get-RepoMods) |
+                        Out-Null
+                } catch { $refused = "$($_.Exception.Message)" }
+                if (-not $refused) {
+                    throw ('a mod called "Wide" was accepted as the mod "wide". Factorio reads a ' +
+                           'mod name from its own info.json and does not fold case, so the ' +
+                           "save's real mod would have been absent from a run reported as clean.")
+                }
+                if (-not $refused.Contains('wide 1.2.300')) {
+                    throw "the refusal does not name 'wide 1.2.300': $refused"
+                }
+                'neither Wide/ nor Wide_1.2.300.zip is accepted as wide.'
+            } finally { Remove-TempDirectory -Path $caseDir -Label 'bench-reactors -SelfTest' }
+        } }
+
+        @{ Name = 'stall-detector'; Body = {
+            # The stall detector, on the run that actually produced #235's effect -- and on the
+            # reproducible spike that made the first version of it useless.
+            #
+            # A REGRESSION HERE IS SILENT AND EXPENSIVE. If the detector stops firing, a poisoned
+            # run reports a per-reactor figure inflated by an I/O stall and every gate still passes
+            # -- exactly how #235 survived three sittings. Three directions are asserted, and the
+            # third cost a rewrite.
+            $flat  = { ,@(1..1000 | ForEach-Object { 11600.0 }) }
+            $clean = & $flat
+            $stall = & $flat
+            $stall[876] = 389341000.0     # the real one: dump label t876 of run 6, 389.3 ms
+            $found = @(Find-StalledRuns -Samples ($clean + $stall) -Ticks 1000 -Runs 2)
+            if ($found.Count -ne 1 -or $found[0].Run -ne 2) {
+                throw ("expected run 2 of two to be flagged, got $($found.Count) run(s). A run " +
+                       'carrying a 389 ms tick must be flagged and a clean one must not, or #235 ' +
+                       'can recur unseen.')
+            }
+            if ([Math]::Abs($found[0].WorstMicroseconds - 389341.0) -gt 1.0) {
+                throw "reported worst tick $($found[0].WorstMicroseconds) us, expected 389341 us."
+            }
+            if ($found[0].Tick -ne 876) {
+                throw ("reported tick $($found[0].Tick), expected 876. Tick is the dump's own t<n> " +
+                       'label, which is 0-based -- reporting an ordinal instead sends the reader ' +
+                       'one row past the stall.')
+            }
+
+            # TWO runs stalling at the SAME index, over three runs -- the default when this half was
+            # written, and kept as the fixture because three is where the hole is tightest. This is
+            # the case the first version missed: it compared against the MEDIAN of the peers, which
+            # over two peers is their mean, so one stalled peer hid the other and the sitting
+            # reported nothing. Stalls land on census ticks and a 1,000-tick run has only two of
+            # those at cadence 500, so the collision is ordinary rather than exotic.
+            $twoA = & $flat; $twoB = & $flat; $twoC = & $flat
+            $twoA[400] = 120000000.0
+            $twoB[400] = 118000000.0
+            $two = @(Find-StalledRuns -Samples ($twoA + $twoB + $twoC) -Ticks 1000 -Runs 3)
+            if ($two.Count -ne 2) {
+                throw ("two of three runs stalled on the same tick and $($two.Count) were flagged. " +
+                       'Comparing against the median of the peers lets one stalled run hide ' +
+                       'another; the fastest peer is the comparison that does not.')
+            }
+
+            # The honest ceiling stays under the absolute floor: the dearest real scriptUpdate tick
+            # this project has measured is the 200-reactor simulation step, about 5.5 ms.
+            $dearA = & $flat; $dearA[500] = 5500000.0
+            $dearB = & $flat; $dearB[500] = 5500000.0
+            if (@(Find-StalledRuns -Samples ($dearA + $dearB) -Ticks 1000 -Runs 2).Count -ne 0) {
+                throw ('a 5.5 ms tick was called a stall. That is the simulation step at 200 ' +
+                       'reactors, so every blanketed sweep would report as poisoned.')
+            }
+
+            # AND THE ONE THAT MATTERS. A huge tick repeating at the same index in every run is
+            # work, not a stall. A plain rig sweep really does spend about 108 ms at t = 30 of every
+            # run, and the first version of this detector -- which tested size alone -- flagged both
+            # runs of a healthy -Counts 10 -Ticks 300 sweep on that tick. Reproducibility is what
+            # separates the two.
+            $repA = & $flat; $repA[30] = 108000000.0
+            $repB = & $flat; $repB[30] = 106000000.0
+            if (@(Find-StalledRuns -Samples ($repA + $repB) -Ticks 1000 -Runs 2).Count -ne 0) {
+                throw ('a 108 ms tick present at the SAME index in every run was called a stall. ' +
+                       "That is the rig's own t = 30 spike, so every rig sweep would warn and the " +
+                       'warning would stop being read.')
+            }
+            ('the 389 ms one-run stall is flagged at tick 876; two runs stalling on one tick are ' +
+             'both flagged; 5.5 ms of work is not, nor a 108 ms spike in every run.')
+        } }
+
+        @{ Name = 'census-cadence'; Body = {
+            # THE CENSUS CADENCE GUARD (#235, #325). The regression it stands against was a variable
+            # whose name differed from the -ReportEvery PARAMETER only in case, which PowerShell does
+            # not distinguish: the rig's census then ran every 5 ticks rather than every 500, putting
+            # 2.18 us per reactor of the harness's own instrumentation into every figure it
+            # published. The guard was proved to fire once, by hand, on a copy of this script -- and
+            # that proof was committed nowhere, which is what this half fixes.
+            #
+            # Assert-CensusCadence is a pure comparison and is called by Write-Rig; it was lifted out
+            # of that function precisely so a half could reach it without generating a rig or
+            # starting a game.
+            $cadenceFired = {
+                param($Actual, $Asked, $Ablate, $Interval)
+                try { Assert-CensusCadence -Actual $Actual -Asked $Asked -Ablate $Ablate -Interval $Interval; return $null }
+                catch { return $_.Exception.Message }
+            }
+
+            # a. The collision itself. This is #235 reintroduced: something wrote 5 over the 500 that
+            # was asked for.
+            $msg = & $cadenceFired 5 500 'none' 6
+            if (-not $msg) {
+                throw ('a census cadence of 5 against -ReportEvery 500 was accepted. That is #235 ' +
+                       'exactly, and it is the hundredfold regression this guard exists to stop.')
+            }
+            foreach ($fragment in @('5', '500', 'case')) {
+                if ($msg -notmatch [regex]::Escape($fragment)) {
+                    throw ("the refusal does not mention '$fragment', so a reader would not know " +
+                           "what collided or where to look: $msg")
+                }
+            }
+
+            # b. The ordinary case must stay silent, or every sweep would throw.
+            if (& $cadenceFired 500 500 'none' 6) {
+                throw 'an untouched cadence of 500 was reported as reassigned.'
+            }
+
+            # c. THE ABLATION REWRITE IS LICENSED. -Ablate with -ReportEvery landing on
+            # UPDATE_INTERVAL is rewritten to INTERVAL + 1, because on_nth_tick handlers are keyed by
+            # period and the two would collide. The guard must not fire on the one rewrite the
+            # script makes on purpose.
+            if (& $cadenceFired 7 6 'collectorless' 6) {
+                throw ('the licensed -Ablate rewrite to UPDATE_INTERVAL + 1 was called a ' +
+                       'reassignment. Every ablation run would throw.')
+            }
+
+            # d. AND THE LICENCE IS NARROW. Any other value under -Ablate is still a reassignment; a
+            # licence that admitted anything would make the guard vacuous exactly where the rewrite
+            # happens.
+            if (-not (& $cadenceFired 9 6 'collectorless' 6)) {
+                throw ('-Ablate licensed a cadence of 9 where only UPDATE_INTERVAL + 1 is ' +
+                       'rewritten. The licence has to name the value, not the mode.')
+            }
+            # The same value WITHOUT -Ablate is not licensed either, or the check would be reading
+            # the number and ignoring the mode.
+            if (-not (& $cadenceFired 7 6 'none' 6)) {
+                throw 'INTERVAL + 1 was licensed with -Ablate none, where nothing rewrites it.'
+            }
+
+            # e. THE -Ticks HALVING IS INVISIBLE TO THE GUARD, and that is a fact about ORDER rather
+            # than about this function: $reportAsked is snapshotted BELOW the halving, so a short
+            # run's rewritten cadence is what gets asked for. Moving the snapshot above the halving
+            # would make every -Ticks 1000 sweep throw, so the order is asserted here rather than
+            # trusted.
+            $src = Get-Content $PSCommandPath -Raw
+            $halve = $src.IndexOf('if ($ReportEvery -ge $Ticks)')
+            $snap  = $src.IndexOf('$reportAsked = $ReportEvery')
+            if ($halve -lt 0 -or $snap -lt 0) {
+                throw ('could not find the -Ticks halving or the $reportAsked snapshot in this ' +
+                       'script, so their order could not be checked.')
+            }
+            if ($snap -lt $halve) {
+                throw ('$reportAsked is snapshotted ABOVE the -ReportEvery -ge -Ticks halving, so ' +
+                       'every run short enough to be halved would trip the guard.')
+            }
+            # And the halved pair itself passes, which is what that order buys.
+            if (& $cadenceFired 500 500 'none' 6) {
+                throw 'a halved cadence equal to what was asked was reported as reassigned.'
+            }
+
+            ('a cadence of 5 against 500 is refused and the refusal names both and the case hint; ' +
+             '500 against 500 is not; the -Ablate rewrite to INTERVAL + 1 is licensed and nothing ' +
+             'else is; the -Ticks halving is snapshotted below.')
+        } }
+
+        @{ Name = 'discard'; Body = {
+            # THE DISCARD (#326, ADR 0037). The stall-detector half proves the stalled run is FOUND;
+            # this one proves it is taken out of the figure, and that a row left standing on too
+            # little says so.
+            #
+            # A REGRESSION HERE IS THE #235 FAILURE ONE STEP LATER. The detector fires, the warning
+            # prints, and the published mean still carries four tenths of a second of file system
+            # divided by a thousand ticks. The second direction matters as much as the first and is
+            # easier to lose: a clean sitting must come back untouched, because ADR 0037 rests on the
+            # two statistics being identical where nothing stalled -- if this filter ever trimmed a
+            # clean sitting, every figure in reactor-runtime-cost.md would silently stop meaning
+            # what it says.
+            $five = [System.Collections.Generic.List[double]]::new()
+            for ($r = 1; $r -le 5; $r++) {
+                for ($i = 0; $i -lt 1000; $i++) { $five.Add(11600.0) }
+            }
+            $five[2 * 1000 + 876] = 389341000.0      # run 3 of five, the recorded t876 stall
+
+            $stalls = @(Find-StalledRuns -Samples $five -Ticks 1000 -Runs 5)
+            if ($stalls.Count -ne 1 -or $stalls[0].Run -ne 3) {
+                throw "expected run 3 of five to be flagged, got $($stalls.Count) run(s)."
+            }
+            $kept = Select-SurvivingSamples -Values $five -Ticks 1000 -Runs 5 -Drop ([int[]] @(3))
+            if ($kept.Count -ne 4000) {
+                throw ("kept $($kept.Count) samples of an expected 4000. A discarded run's ticks " +
+                       'must leave the pool entirely, or the mean still carries the stall.')
+            }
+            $keptMean = ($kept | Measure-Object -Average).Average
+            if ([Math]::Abs($keptMean - 11600.0) -gt 0.001) {
+                throw "the surviving mean is $keptMean ns, expected 11600. The stall is still inside the figure."
+            }
+            # And what it would have been, which is the number three sittings of #235 published: one
+            # 389 ms tick spread over 5,000 ticks is about +77.9 us a tick, on a real mean of 11.6.
+            $allMean = ($five | Measure-Object -Average).Average
+            if ($allMean -lt 85000.0) {
+                throw ("pooling all five runs averages $allMean ns, which is not the inflated " +
+                       'figure this test is built on -- the fixture is wrong, not the code.')
+            }
+
+            # Nothing to discard: the same samples back, untouched. Identity of COUNT and of MEAN,
+            # because a filter that returned a copy of the right size but the wrong contents would
+            # pass on count.
+            $clean5 = Select-SurvivingSamples -Values $five -Ticks 1000 -Runs 5 -Drop ([int[]] @())
+            if ($clean5.Count -ne 5000 -or ($clean5 | Measure-Object -Average).Average -ne $allMean) {
+                throw ('a sitting with nothing discarded came back changed. Every figure this ' +
+                       'harness has published depends on that being a no-op.')
+            }
+
+            # The floor. Four of five gone leaves one, which is refused; three of five leaves two,
+            # which is allowed. And -Runs 1, where nothing was discarded, is not the same case and is
+            # not refused.
+            #
+            # THE REFUSAL IS RETURNED, NOT THROWN, AND THAT IS ASSERTED HERE RATHER THAN ASSUMED. A
+            # throw from inside the per-count sweep takes every count already measured with it, which
+            # is the fault the $missingBaseline note was written to stop; a regression to throwing
+            # would pass every other check in this file.
+            $refusal = $null
+            try { $refusal = Get-SurvivingRunsRefusal -Reactors 200 -Runs 5 -Drop ([int[]] @(1, 2, 3, 4)) }
+            catch {
+                throw ('the floor THREW instead of returning its refusal. Inside the sweep that ' +
+                       'throw takes every count already measured with it -- the fault the ' +
+                       "missing-baseline note exists to stop. It said: $($_.Exception.Message)")
+            }
+            if (-not $refusal) {
+                throw ('a row reduced to ONE surviving run was reported. A mean over one run has ' +
+                       'no peer left to judge it against, which is the quiet pass ADR 0037 exists to stop.')
+            }
+            if (-not $refusal.Contains('200')) {
+                throw "the refusal does not name the count it applies to: $refusal"
+            }
+            if (Get-SurvivingRunsRefusal -Reactors 200 -Runs 5 -Drop ([int[]] @(1, 2, 3)) -WarningAction SilentlyContinue) {
+                throw 'two surviving runs were refused. Two is the floor, not below it.'
+            }
+            if (Get-SurvivingRunsRefusal -Reactors 200 -Runs 1 -Drop ([int[]] @())) {
+                throw ('-Runs 1 was refused. Nothing was discarded there and the detector cannot ' +
+                       'decide with no peer, so it is the status quo rather than a floor breach.')
+            }
+            ('a stalled run leaves the pool and the mean is the clean one; a clean sitting is ' +
+             'untouched; one surviving run is refused by return rather than by throw, and two is not refused.')
+        } }
     )
-    foreach ($m in $expected) {
-        $bytes.Add([byte]$m.Name.Length); $bytes.AddRange([Text.Encoding]::ASCII.GetBytes($m.Name))
-        foreach ($component in $m.Version) {
-            if ($component -lt 255) { $bytes.Add([byte]$component) }
-            else {
-                $bytes.Add([byte]0xFF)
-                $bytes.AddRange([BitConverter]::GetBytes([uint16]$component))
-            }
-        }
-        $bytes.AddRange([byte[]]@(0xDE, 0xAD, 0xBE, 0xEF))    # the entry's checksum
-    }
-
-    $buffer = $bytes.ToArray()
-    $parsed = $null
-    for ($p = 0; $p -lt $buffer.Length; $p++) {
-        $try = Read-ModBlock -Buffer $buffer -Length $buffer.Length -Start $p
-        if ($try -and $try[0].Name -ceq 'base') { $parsed = $try; break }
-    }
-    if (-not $parsed) { throw '-SelfTest 1/7 FAILED: the parser found no mod list in a synthesised header.' }
-    $got  = ($parsed | ForEach-Object { "$($_.Name) $($_.Version)" }) -join '; '
-    $want = ($expected | ForEach-Object { "$($_.Name) $($_.Version -join '.')" }) -join '; '
-    if ($got -cne $want) { throw "-SelfTest 1/7 FAILED: parsed '$got', expected '$want'." }
-    Write-Host "  1/7 ok: parsed '$got', wide-encoded version included."
-
-    # And the refusal. An empty directory resolves nothing, so every name in the list must come
-    # back named -- a resolver that skipped what it could not find would hand the benchmark a map
-    # with a mod's entities missing and report a clean run over it.
-    $emptyDir = Join-Path ([IO.Path]::GetTempPath()) ('rf-bench-selftest-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-    New-Item -ItemType Directory -Path $emptyDir -Force | Out-Null
-    try {
-        $refused = $null
-        try {
-            Resolve-SaveMods -Wanted $parsed -SourceDirectory $emptyDir -Bundled @{} -Ours (Get-RepoMods) |
-                Out-Null
-        } catch { $refused = "$($_.Exception.Message)" }
-        if (-not $refused) { throw '-SelfTest 2/7 FAILED: two unresolvable mods were accepted rather than refused.' }
-        foreach ($name in @('a-third-mod', 'wide')) {
-            if (-not $refused.Contains($name)) {
-                throw "-SelfTest 2/7 FAILED: the refusal does not name '$name': $refused"
-            }
-        }
-        # base is the engine's and is deliberately not a mod anybody installs, so naming it would
-        # send the reader looking for something that cannot be found.
-        if ($refused.Contains('base ')) {
-            throw "-SelfTest 2/7 FAILED: the refusal names base, which is not an installable mod: $refused"
-        }
-        Write-Host '  2/7 ok: both unresolved mods named, base not among them.'
-
-        # And the refusal again, against the near miss rather than the empty directory. A zip
-        # whose name merely STARTS with the wanted name plus an underscore is a different mod:
-        # LTN_Combinator is not LTN. Resolving it would report the save's mod set complete, load
-        # the map with the real mod's entities stripped out, and exit 0 -- so the near miss has to
-        # be refused exactly as loudly as nothing at all.
-        $decoyDir = Join-Path ([IO.Path]::GetTempPath()) ('rf-bench-selftest-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path $decoyDir -Force | Out-Null
-        try {
-            Set-Content -Path (Join-Path $decoyDir 'wide_Combinator_2.0.1.zip') -Value 'not a mod' -Encoding utf8
-            $wanted = @([pscustomobject]@{ Name = 'wide'; Version = '1.2.300' })
-            $refused = $null
-            try {
-                Resolve-SaveMods -Wanted $wanted -SourceDirectory $decoyDir -Bundled @{} -Ours (Get-RepoMods) |
-                    Out-Null
-            } catch { $refused = "$($_.Exception.Message)" }
-            if (-not $refused) {
-                throw ('-SelfTest 3/7 FAILED: wide_Combinator_2.0.1.zip was accepted as the mod ' +
-                       '"wide", so a save could be benchmarked with the wrong mod loaded and ' +
-                       'nothing would say so.')
-            }
-            if (-not $refused.Contains('wide 1.2.300')) {
-                throw "-SelfTest 3/7 FAILED: the refusal does not name 'wide 1.2.300': $refused"
-            }
-            Write-Host '  3/7 ok: a name_suffix_version.zip is not accepted as name.'
-        } finally { Remove-TempDirectory -Path $decoyDir -Label 'bench-reactors -SelfTest' }
-
-        # And the near miss that is only a difference of CASE, which NTFS does not distinguish and
-        # Factorio does. Both decoys are planted at once deliberately: resolution reaching either
-        # one is a failure, so a single assertion catches a regression in the directory branch or
-        # in the zip branch without needing two.
-        $caseDir = Join-Path ([IO.Path]::GetTempPath()) ('rf-bench-selftest-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-        New-Item -ItemType Directory -Path (Join-Path $caseDir 'Wide') -Force | Out-Null
-        try {
-            Set-Content -Path (Join-Path $caseDir 'Wide_1.2.300.zip') -Value 'not a mod' -Encoding utf8
-            '{ "name": "Wide", "version": "1.2.300" }' |
-                Set-Content -Path (Join-Path $caseDir 'Wide/info.json') -Encoding utf8
-            $wanted = @([pscustomobject]@{ Name = 'wide'; Version = '1.2.300' })
-            $refused = $null
-            try {
-                Resolve-SaveMods -Wanted $wanted -SourceDirectory $caseDir -Bundled @{} -Ours (Get-RepoMods) |
-                    Out-Null
-            } catch { $refused = "$($_.Exception.Message)" }
-            if (-not $refused) {
-                throw ('-SelfTest 4/7 FAILED: a mod called "Wide" was accepted as the mod "wide". ' +
-                       'Factorio reads a mod name from its own info.json and does not fold case, so ' +
-                       "the save's real mod would have been absent from a run reported as clean.")
-            }
-            if (-not $refused.Contains('wide 1.2.300')) {
-                throw "-SelfTest 4/7 FAILED: the refusal does not name 'wide 1.2.300': $refused"
-            }
-            Write-Host '  4/7 ok: neither Wide/ nor Wide_1.2.300.zip is accepted as wide.'
-        } finally { Remove-TempDirectory -Path $caseDir -Label 'bench-reactors -SelfTest' }
-    } finally { Remove-TempDirectory -Path $emptyDir -Label 'bench-reactors -SelfTest' }
-
-    # 5/7: the stall detector, on the run that actually produced #235's effect -- and on the
-    # reproducible spike that made the first version of it useless.
-    #
-    # A REGRESSION HERE IS SILENT AND EXPENSIVE. If the detector stops firing, a poisoned run
-    # reports a per-reactor figure inflated by an I/O stall and every gate still passes -- exactly
-    # how #235 survived three sittings. Three directions are asserted, and the third cost a rewrite.
-    Write-Host '-SelfTest: the stall detector, on the run that produced #235.'
-    $flat  = { ,@(1..1000 | ForEach-Object { 11600.0 }) }
-    $clean = & $flat
-    $stall = & $flat
-    $stall[876] = 389341000.0     # the real one: dump label t876 of run 6, 389.3 ms
-    $found = @(Find-StalledRuns -Samples ($clean + $stall) -Ticks 1000 -Runs 2)
-    if ($found.Count -ne 1 -or $found[0].Run -ne 2) {
-        throw ('-SelfTest 5/7 FAILED: expected run 2 of two to be flagged, got ' +
-               "$($found.Count) run(s). A run carrying a 389 ms tick must be flagged and a clean " +
-               'one must not, or #235 can recur unseen.')
-    }
-    if ([Math]::Abs($found[0].WorstMicroseconds - 389341.0) -gt 1.0) {
-        throw ("-SelfTest 5/7 FAILED: reported worst tick $($found[0].WorstMicroseconds) us, " +
-               'expected 389341 us.')
-    }
-    if ($found[0].Tick -ne 876) {
-        throw ("-SelfTest 5/7 FAILED: reported tick $($found[0].Tick), expected 876. Tick is the " +
-               "dump's own t<n> label, which is 0-based -- reporting an ordinal instead sends the " +
-               'reader one row past the stall.')
-    }
-
-    # TWO runs stalling at the SAME index, over three runs -- the default when this half was
-    # written, and kept as the fixture because three is where the hole is tightest. This is the
-    # case the first version missed: it compared against the MEDIAN of the peers, which over two
-    # peers is their mean, so one stalled peer hid the other and the sitting reported nothing.
-    # Stalls land on census ticks and a 1,000-tick run has only two of those at cadence 500, so the
-    # collision is ordinary rather than exotic.
-    $twoA = & $flat; $twoB = & $flat; $twoC = & $flat
-    $twoA[400] = 120000000.0
-    $twoB[400] = 118000000.0
-    $two = @(Find-StalledRuns -Samples ($twoA + $twoB + $twoC) -Ticks 1000 -Runs 3)
-    if ($two.Count -ne 2) {
-        throw ("-SelfTest 5/7 FAILED: two of three runs stalled on the same tick and $($two.Count) " +
-               'were flagged. Comparing against the median of the peers lets one stalled run hide ' +
-               'another; the fastest peer is the comparison that does not.')
-    }
-
-    # The honest ceiling stays under the absolute floor: the dearest real scriptUpdate tick this
-    # project has measured is the 200-reactor simulation step, about 5.5 ms.
-    $dearA = & $flat; $dearA[500] = 5500000.0
-    $dearB = & $flat; $dearB[500] = 5500000.0
-    if (@(Find-StalledRuns -Samples ($dearA + $dearB) -Ticks 1000 -Runs 2).Count -ne 0) {
-        throw ('-SelfTest 5/7 FAILED: a 5.5 ms tick was called a stall. That is the simulation ' +
-               'step at 200 reactors, so every blanketed sweep would report as poisoned.')
-    }
-
-    # AND THE ONE THAT MATTERS. A huge tick repeating at the same index in every run is work, not a
-    # stall. A plain rig sweep really does spend about 108 ms at t = 30 of every run, and the first
-    # version of this detector -- which tested size alone -- flagged both runs of a healthy
-    # -Counts 10 -Ticks 300 sweep on that tick. Reproducibility is what separates the two.
-    $repA = & $flat; $repA[30] = 108000000.0
-    $repB = & $flat; $repB[30] = 106000000.0
-    if (@(Find-StalledRuns -Samples ($repA + $repB) -Ticks 1000 -Runs 2).Count -ne 0) {
-        throw ('-SelfTest 5/7 FAILED: a 108 ms tick present at the SAME index in every run was ' +
-               'called a stall. That is the rig''s own t = 30 spike, so every rig sweep would ' +
-               'warn and the warning would stop being read.')
-    }
-    Write-Host ('  5/7 ok: the 389 ms one-run stall is flagged at tick 876; two runs stalling ' +
-                'on one tick are both flagged; 5.5 ms of work is not, nor a 108 ms spike in every run.')
-
-    # 6/7 -- THE CENSUS CADENCE GUARD (#235, #325). The regression it stands against was a variable
-    # whose name differed from the -ReportEvery PARAMETER only in case, which PowerShell does not
-    # distinguish: the rig's census then ran every 5 ticks rather than every 500, putting 2.18 us
-    # per reactor of the harness's own instrumentation into every figure it published. The guard
-    # was proved to fire once, by hand, on a copy of this script -- and that proof was committed
-    # nowhere, which is what this half fixes.
-    #
-    # Assert-CensusCadence is a pure comparison and is called by Write-Rig; it was lifted out of
-    # that function precisely so a half could reach it without generating a rig or starting a game.
-    $cadenceFired = {
-        param($Actual, $Asked, $Ablate, $Interval)
-        try { Assert-CensusCadence -Actual $Actual -Asked $Asked -Ablate $Ablate -Interval $Interval; return $null }
-        catch { return $_.Exception.Message }
-    }
-
-    # a. The collision itself. This is #235 reintroduced: something wrote 5 over the 500 that was asked for.
-    $msg = & $cadenceFired 5 500 'none' 6
-    if (-not $msg) {
-        throw ('-SelfTest 6/7 FAILED: a census cadence of 5 against -ReportEvery 500 was accepted. ' +
-               'That is #235 exactly, and it is the hundredfold regression this guard exists to stop.')
-    }
-    foreach ($fragment in @('5', '500', 'case')) {
-        if ($msg -notmatch [regex]::Escape($fragment)) {
-            throw ("-SelfTest 6/7 FAILED: the refusal does not mention '$fragment', so a reader " +
-                   "would not know what collided or where to look: $msg")
-        }
-    }
-
-    # b. The ordinary case must stay silent, or every sweep would throw.
-    if (& $cadenceFired 500 500 'none' 6) {
-        throw '-SelfTest 6/7 FAILED: an untouched cadence of 500 was reported as reassigned.'
-    }
-
-    # c. THE ABLATION REWRITE IS LICENSED. -Ablate with -ReportEvery landing on UPDATE_INTERVAL is
-    # rewritten to INTERVAL + 1, because on_nth_tick handlers are keyed by period and the two would
-    # collide. The guard must not fire on the one rewrite the script makes on purpose.
-    if (& $cadenceFired 7 6 'collectorless' 6) {
-        throw ('-SelfTest 6/7 FAILED: the licensed -Ablate rewrite to UPDATE_INTERVAL + 1 was ' +
-               'called a reassignment. Every ablation run would throw.')
-    }
-
-    # d. AND THE LICENCE IS NARROW. Any other value under -Ablate is still a reassignment; a licence
-    # that admitted anything would make the guard vacuous exactly where the rewrite happens.
-    if (-not (& $cadenceFired 9 6 'collectorless' 6)) {
-        throw ('-SelfTest 6/7 FAILED: -Ablate licensed a cadence of 9 where only UPDATE_INTERVAL + 1 ' +
-               'is rewritten. The licence has to name the value, not the mode.')
-    }
-    # The same value WITHOUT -Ablate is not licensed either, or the check would be reading the
-    # number and ignoring the mode.
-    if (-not (& $cadenceFired 7 6 'none' 6)) {
-        throw '-SelfTest 6/7 FAILED: INTERVAL + 1 was licensed with -Ablate none, where nothing rewrites it.'
-    }
-
-    # e. THE -Ticks HALVING IS INVISIBLE TO THE GUARD, and that is a fact about ORDER rather than
-    # about this function: $reportAsked is snapshotted BELOW the halving, so a short run's rewritten
-    # cadence is what gets asked for. Moving the snapshot above the halving would make every
-    # -Ticks 1000 sweep throw, so the order is asserted here rather than trusted.
-    $src = Get-Content $PSCommandPath -Raw
-    $halve = $src.IndexOf('if ($ReportEvery -ge $Ticks)')
-    $snap  = $src.IndexOf('$reportAsked = $ReportEvery')
-    if ($halve -lt 0 -or $snap -lt 0) {
-        throw ('-SelfTest 6/7 FAILED: could not find the -Ticks halving or the $reportAsked ' +
-               'snapshot in this script, so their order could not be checked.')
-    }
-    if ($snap -lt $halve) {
-        throw ('-SelfTest 6/7 FAILED: $reportAsked is snapshotted ABOVE the -ReportEvery -ge -Ticks ' +
-               'halving, so every run short enough to be halved would trip the guard.')
-    }
-    # And the halved pair itself passes, which is what that order buys.
-    if (& $cadenceFired 500 500 'none' 6) {
-        throw '-SelfTest 6/7 FAILED: a halved cadence equal to what was asked was reported as reassigned.'
-    }
-
-    Write-Host ('  6/7 ok: a cadence of 5 against 500 is refused and the refusal names both and the ' +
-                'case hint; 500 against 500 is not; the -Ablate rewrite to INTERVAL + 1 is licensed ' +
-                'and nothing else is; the -Ticks halving is snapshotted below.')
-
-    # 7/7 -- THE DISCARD (#326, ADR 0037). Half 5 proves the stalled run is FOUND; this one proves
-    # it is taken out of the figure, and that a row left standing on too little says so.
-    #
-    # A REGRESSION HERE IS THE #235 FAILURE ONE STEP LATER. The detector fires, the warning prints,
-    # and the published mean still carries four tenths of a second of file system divided by a
-    # thousand ticks. The second direction matters as much as the first and is easier to lose: a
-    # clean sitting must come back untouched, because ADR 0037 rests on the two statistics being
-    # identical where nothing stalled -- if this filter ever trimmed a clean sitting, every figure
-    # in reactor-runtime-cost.md would silently stop meaning what it says.
-    Write-Host '-SelfTest: the discard, on the same recorded stall.'
-    $five = [System.Collections.Generic.List[double]]::new()
-    for ($r = 1; $r -le 5; $r++) {
-        for ($i = 0; $i -lt 1000; $i++) { $five.Add(11600.0) }
-    }
-    $five[2 * 1000 + 876] = 389341000.0      # run 3 of five, the recorded t876 stall
-
-    $stalls = @(Find-StalledRuns -Samples $five -Ticks 1000 -Runs 5)
-    if ($stalls.Count -ne 1 -or $stalls[0].Run -ne 3) {
-        throw "-SelfTest 7/7 FAILED: expected run 3 of five to be flagged, got $($stalls.Count) run(s)."
-    }
-    $kept = Select-SurvivingSamples -Values $five -Ticks 1000 -Runs 5 -Drop ([int[]] @(3))
-    if ($kept.Count -ne 4000) {
-        throw ("-SelfTest 7/7 FAILED: kept $($kept.Count) samples of an expected 4000. A discarded " +
-               "run's ticks must leave the pool entirely, or the mean still carries the stall.")
-    }
-    $keptMean = ($kept | Measure-Object -Average).Average
-    if ([Math]::Abs($keptMean - 11600.0) -gt 0.001) {
-        throw ("-SelfTest 7/7 FAILED: the surviving mean is $keptMean ns, expected 11600. The " +
-               'stall is still inside the figure.')
-    }
-    # And what it would have been, which is the number three sittings of #235 published: one 389 ms
-    # tick spread over 5,000 ticks is about +77.9 us a tick, on a real mean of 11.6.
-    $allMean = ($five | Measure-Object -Average).Average
-    if ($allMean -lt 85000.0) {
-        throw ("-SelfTest 7/7 FAILED: pooling all five runs averages $allMean ns, which is not the " +
-               'inflated figure this test is built on -- the fixture is wrong, not the code.')
-    }
-
-    # Nothing to discard: the same samples back, untouched. Identity of COUNT and of MEAN, because
-    # a filter that returned a copy of the right size but the wrong contents would pass on count.
-    $clean5 = Select-SurvivingSamples -Values $five -Ticks 1000 -Runs 5 -Drop ([int[]] @())
-    if ($clean5.Count -ne 5000 -or ($clean5 | Measure-Object -Average).Average -ne $allMean) {
-        throw ('-SelfTest 7/7 FAILED: a sitting with nothing discarded came back changed. Every ' +
-               'figure this harness has published depends on that being a no-op.')
-    }
-
-    # The floor. Four of five gone leaves one, which is refused; three of five leaves two, which is
-    # allowed. And -Runs 1, where nothing was discarded, is not the same case and is not refused.
-    #
-    # THE REFUSAL IS RETURNED, NOT THROWN, AND THAT IS ASSERTED HERE RATHER THAN ASSUMED. A throw
-    # from inside the per-count sweep takes every count already measured with it, which is the
-    # fault the $missingBaseline note was written to stop; a regression to throwing would pass
-    # every other check in this file.
-    $refusal = $null
-    try { $refusal = Get-SurvivingRunsRefusal -Reactors 200 -Runs 5 -Drop ([int[]] @(1, 2, 3, 4)) }
-    catch {
-        throw ('-SelfTest 7/7 FAILED: the floor THREW instead of returning its refusal. Inside the ' +
-               'sweep that throw takes every count already measured with it -- the fault the ' +
-               "missing-baseline note exists to stop. It said: $($_.Exception.Message)")
-    }
-    if (-not $refusal) {
-        throw ('-SelfTest 7/7 FAILED: a row reduced to ONE surviving run was reported. A mean over ' +
-               'one run has no peer left to judge it against, which is the quiet pass ADR 0037 ' +
-               'exists to stop.')
-    }
-    if (-not $refusal.Contains('200')) {
-        throw "-SelfTest 7/7 FAILED: the refusal does not name the count it applies to: $refusal"
-    }
-    if (Get-SurvivingRunsRefusal -Reactors 200 -Runs 5 -Drop ([int[]] @(1, 2, 3)) -WarningAction SilentlyContinue) {
-        throw '-SelfTest 7/7 FAILED: two surviving runs were refused. Two is the floor, not below it.'
-    }
-    if (Get-SurvivingRunsRefusal -Reactors 200 -Runs 1 -Drop ([int[]] @())) {
-        throw ('-SelfTest 7/7 FAILED: -Runs 1 was refused. Nothing was discarded there and the ' +
-               'detector cannot decide with no peer, so it is the status quo rather than a floor breach.')
-    }
-    Write-Host ('  7/7 ok: a stalled run leaves the pool and the mean is the clean one; a clean ' +
-                'sitting is untouched; one surviving run is refused by return rather than by ' +
-                'throw, and two is not refused.')
 
     Write-Host '-SelfTest: PASS'
     return
