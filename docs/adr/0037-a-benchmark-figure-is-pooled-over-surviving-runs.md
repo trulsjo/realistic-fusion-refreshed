@@ -77,10 +77,17 @@ run the machine did not block in.**
    exists to stop. `-Runs 1` is not that case: nothing was discarded, `Find-StalledRuns` cannot
    decide with no peer and reports nothing, so a single run asked for is left alone. Two surviving
    runs is the floor and warns.
-6. **`-Runs` defaults to 5, raised from 3.** Three is too thin to lose one from, and two of three
+6. **The refusal takes the count, not the sitting.** `Get-SurvivingRunsRefusal` returns the reason
+   rather than throwing it. The refused count contributes no row — it is in no table and in no
+   subtraction — the sweep carries on and measures the rest, the tables print, and only then is
+   the fault raised. A sweep runs for tens of minutes, so a throw at the last count would destroy
+   every count before it. This is not a new rule: it is the one the `$missingBaseline` note
+   already states in `bench-reactors.ps1`, *"the absolute figures are worth having even when no
+   per-reactor figure can be computed from them"*, applied to a second fault of the same shape.
+7. **`-Runs` defaults to 5, raised from 3.** Three is too thin to lose one from, and two of three
    runs stalling at one index is the case the detector had to be rewritten for. Nothing invokes
    this script automatically — no gate, no CI — so the cost is minutes in a hand-run sitting.
-7. **The evidence stays on the page.** The per-run line prints **every** run, discarded ones
+8. **The evidence stays on the page.** The per-run line prints **every** run, discarded ones
    included, and the report names the excluded run, its tick, its cost, and what the row would have
    said had all runs been pooled. A figure that changes without its evidence changing is not
    checkable.
@@ -101,16 +108,19 @@ tick cannot hide in that. A figure quoted **without** its per-run line is unveri
 re-taken only if something turns on it. The 2026-09-06 sitting is being re-taken anyway, under #327
 and for a different reason.
 
-**A sitting can now fail instead of reporting.** A count that loses four of five runs produces no
-row and says so. That is deliberate — it is the same shape as the rig refusing to build over a
-surface it did not create, and as the refusal to report a mixed figure when the four reactions are
-not all present.
+**A count can now report nothing, and the sitting survives it.** A count that loses four of five
+runs produces no row and says so. That is deliberate — it is the same shape as the rig refusing to
+build over a surface it did not create, and as the refusal to report a mixed figure when the four
+reactions are not all present. What it is **not** is a failed sitting: every other count still
+reports, the tables still print, and the fault arrives after them.
 
-**`-SelfTest` grows a seventh half**, covering three directions: a stalled run's ticks leave the
+**`-SelfTest` grows a seventh half**, covering four directions: a stalled run's ticks leave the
 pool and the surviving mean is the clean one; a sitting with nothing to discard comes back
-untouched; a row reduced to one surviving run refuses while two is allowed. The second direction is
-the load-bearing one — if the filter ever trimmed a clean sitting, every figure in
-`reactor-runtime-cost.md` would silently stop meaning what it says.
+untouched; a row reduced to one surviving run is refused while two is allowed; and the refusal is
+returned rather than thrown. The second is the load-bearing one — if the filter ever trimmed a
+clean sitting, every figure in `reactor-runtime-cost.md` would silently stop meaning what it says.
+The fourth exists because a regression to throwing would pass every other check in the file and
+cost a caller a sweep.
 
 **What is not fixed.** *Why* the file system blocks for 389 ms — antivirus, a flush, disk contention
 — is outside this project and was not chased. And the write hypothesis predicts the stall rate

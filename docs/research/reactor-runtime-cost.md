@@ -28,7 +28,7 @@ path; the prediction held.
 Run it with no arguments for the throttled table; the unthrottled one needs `UPDATE_INTERVAL` set
 back to 1 first, and the pooled figures need `-Pooled`.
 
-It builds a rig of *n* reactors in a headless save and benchmarks it, for several *n*. Three things
+It builds a rig of *n* reactors in a headless save and benchmarks it, for several *n*. Four things
 make the numbers mean something:
 
 1. **`--benchmark-verbose` reports per-tick timings by category, in nanoseconds.** `scriptUpdate`
