@@ -488,9 +488,10 @@ def self_test(manifests, pipe_sheet):
     measurement makes -- that the black baked underneath is excluded, and excluded whether there is
     none of it or a lot.
 
-    HALF TWO: every plumbable socket on both machines as they stand must pass -- and then the same
-    sheets, judged against a reference moved three tolerances each way, must fail every socket and
-    fail it the right way round. That second part is not decoration. Measuring a reference correctly
+    HALF TWO: every socket on both machines as they stand must pass -- contained ones included
+    since ADR 0036, because this half runs the same `check` the gate does and that one stopped
+    filtering -- and then the same sheets, judged against a reference moved three tolerances each
+    way, must fail every socket and fail it the right way round. That second part is not decoration. Measuring a reference correctly
     and JUDGING BY IT are different claims, and the first two attempts at this half proved only the
     first: every verdict here holds under the old wrong 0.031 as well as the measured 0.023, so a
     gate that quietly went on using a typed number would have passed its own self-test.
@@ -549,13 +550,13 @@ def self_test(manifests, pipe_sheet):
                   f"so the baked shadow is not being excluded.")
             return 1
 
-    print("self-test 2/4: every plumbable socket on the shipped sheets must pass.")
+    print("self-test 2/4: every socket on the shipped sheets must pass, contained ones included.")
     rows = []
     for path in manifests:
         check(path, load_sheet, rows)
     if not rows:
-        print("FAILED - self-test: no plumbable connection was measured at all, so the halves "
-              "after this one prove nothing.")
+        print("FAILED - self-test: no connection was measured at all, so the halves after this "
+              "one prove nothing.")
         return 1
     bad = [v for v in report(rows, reference) if v != "ok"]
     if bad:

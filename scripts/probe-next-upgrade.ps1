@@ -422,24 +422,48 @@ try {
     Write-Host '=== 5. next_upgrade WITHOUT a shared fast_replaceable_group ==='
     Add-RigData -RigDirectory $rigDir -Lua (Get-ProbeData -Grouped $false)
     $ungroupedSave = Join-Path $temp 'ungrouped.zip'
+    # THREE OUTCOMES AND NOT TWO, which is the whole care of this block. Invoke-FactorioStep throws
+    # on ANY non-zero exit, so "it threw" does not mean "the prototype was refused" -- the run may
+    # simply have failed. scripts/factorio-lib.ps1's own Invoke-Factorio header records what that
+    # costs: the text is "Is another instance already running?" buried in the captured stdout, and
+    # it "cost two wrong conclusions in a row before anyone noticed the game was simply running".
+    #
+    # Collapsing the third case into the first is how a probe reports that an ungrouped pair LOADED
+    # when nothing loaded at all -- a confident wrong answer, which is the one thing a probe must
+    # never produce. So: no exception is `loaded`, the pattern is `refused`, and an exception
+    # WITHOUT the pattern is `unknown` and says so.
+    $verdict = 'loaded'
     $refusal = $null
+    $failure = $null
     try {
         Invoke-FactorioStep @step -Arguments @('--create', $ungroupedSave) -Tag 'create-ungrouped' | Out-Null
     } catch {
+        $failure = $_.Exception.Message
+        $verdict = 'unknown'
         $log = Join-Path $temp 'create-ungrouped-stdout.txt'
         if (Test-Path $log) {
             $refusal = (Get-Content $log | Select-String -Pattern 'next_upgrade target' |
                         Select-Object -First 1)
+            if ($refusal) { $verdict = 'refused' }
         }
     }
-    if ($refusal) {
-        Write-Host "  REFUSED AT THE DATA STAGE: $($refusal.ToString().Trim())"
-        Write-Host '  So next_upgrade is NOT enough on its own. The 2.0.77 EntityPrototype docs state'
-        Write-Host '  no such constraint; the engine enforces it anyway. With the field absent each'
-        Write-Host '  prototype defaults fast_replaceable_group to its own name, so the two differ.'
-    } else {
-        Write-Host '  NOT refused: an ungrouped pair loaded. next_upgrade alone is enough at the data'
-        Write-Host '  stage, and whether it SWAPS is then a runtime question this run did not ask.'
+    switch ($verdict) {
+        'refused' {
+            Write-Host "  REFUSED AT THE DATA STAGE: $($refusal.ToString().Trim())"
+            Write-Host '  So next_upgrade is NOT enough on its own. The 2.0.77 EntityPrototype docs state'
+            Write-Host '  no such constraint; the engine enforces it anyway. With the field absent each'
+            Write-Host '  prototype defaults fast_replaceable_group to its own name, so the two differ.'
+        }
+        'loaded' {
+            Write-Host '  NOT refused: an ungrouped pair loaded. next_upgrade alone is enough at the data'
+            Write-Host '  stage, and whether it SWAPS is then a runtime question this run did not ask.'
+        }
+        default {
+            Write-Host "  UNANSWERED: the run failed and not with a next_upgrade refusal -- $failure"
+            Write-Host '  This section reports NOTHING about fast_replaceable_group. The log is'
+            Write-Host "  $(Join-Path $temp 'create-ungrouped-stdout.txt') -- read it before re-running;"
+            Write-Host '  a Factorio already running is the usual cause and looks nothing like a refusal.'
+        }
     }
 
     # ------------------------------------------------------------- 1, 2, 3, 4, 6 on the grouped pair

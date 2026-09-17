@@ -60,24 +60,28 @@ never the default: the default is to render the model that exists, so that hand 
 from the body to the footprint edge on the connection's tile, carrying one **accent** band of the
 fluid it names. **A socket is a drawing and a connection is a declaration** — the prototype declares
 the connection, the model draws the socket, and a manifest is what holds the two together.
-[ADR 0036](docs/adr/0036-every-socket-is-drawn-at-pipe-height.md) **decides** that every socket on
-every machine is drawn at one height and one thickness, vanilla's pipe's; `models/house-style.md`
-carries the figures, and #392 is where the art catches up. Until it lands, `rf-heat-exchanger`'s
-three contained sockets still stand at the machine's own height — which is what the **pipe cover**
-entry below is describing.
+[ADR 0036](docs/adr/0036-every-socket-is-drawn-at-pipe-height.md) decides that every socket on
+every machine is drawn at one height and one thickness, vanilla's pipe's, and since #392 the art
+says so too: `rf-heat-exchanger`'s three contained sockets came down to join the other three.
+`models/house-style.md` carries the figures. **Six of the nine sockets on the two rendered machines
+used to be measured against vanilla's pipe and now all nine are**, which is the shortest way to see
+that the rule and the art agree.
 
 **Plumbable** — of a connection: one a player can put an ordinary pipe on. The exact negation of
 **contained** under Plumbing below, and read off the same field — `connection_category` — never off
 a list of fluids or of machines. It is the word the art side of that distinction is made in: a
 plumbable socket wears a dark rim and a flange pair at its mouth, a contained one wears neither, and
-ADR 0036 decides that this absence is to be the whole of what tells them apart. It is not yet: until
-#392 lands, height and thickness still differ too.
+since ADR 0036 and #392 that absence is the whole of what tells them apart — height and thickness no
+longer do, which is the point: they never carried the meaning, they were the numbers every socket
+had before #349.
 
 **Pipe cover** — vanilla's own sprite, drawn flat on the ground at a connection's tile by the engine
 from the `pipe_covers` a fluid box declares. **Not part of a socket, and not drawn by us**: a
 machine's model knows nothing about it, which is how a contained socket drawn at the machine's own
 height came to wear one 0.377 tiles below itself
-([#390](https://github.com/trulsjo/realistic-fusion-refreshed/issues/390)). A contained box keeps
+([#390](https://github.com/trulsjo/realistic-fusion-refreshed/issues/390)) — **a miss #392 closed by
+moving the socket rather than the cover**, and one nobody has re-measured since
+([#403](https://github.com/trulsjo/realistic-fusion-refreshed/issues/403)). A contained box keeps
 its declaration, provisionally (ADR 0036).
 
 **Accent** — the colour a fluid puts on a machine: a band on a socket, a ring on a drum, any
