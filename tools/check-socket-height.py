@@ -25,8 +25,9 @@ against the radius the MODEL recorded, which is internal consistency, so a conta
 of this check could sit at any height with both gates passing. That is the hole #356 was written
 about, one machine over.
 
-`plumbable()` is still imported and is still the discriminator for the rim and the ribs; it just no
-longer decides what gets measured.
+`plumbable()` IS NO LONGER USED HERE AT ALL, and the import went with the filter. It remains the
+discriminator for the rim and the flange pair -- but that is decided in models/rf_parts.py, which
+DRAWS them. This file only measures pixels in a sheet somebody else rendered.
 
 HOW THE MEASUREMENT WORKS, and why it needs no second camera model. models/rf_blender.py's rig is
 orthographic at CAMERA_PITCH_DEG with the pixel aspect squaring the ground, so on every sheet one
@@ -131,7 +132,6 @@ import socket_strip  # noqa: E402
 # gate measures -- off the same two cuts, and two copies of them would drift the way
 # models/rf_parts.py's header records two copies of the mesh helpers drifting inside a week.
 Unmeasurable = socket_strip.Unmeasurable
-plumbable = socket_strip.plumbable
 
 # A world height of 1 tile draws this many tiles up the screen -- 0.70804, taken from the camera the
 # sheets were rendered through rather than copied as a number. NOTHING HERE DIVIDES BY IT: the

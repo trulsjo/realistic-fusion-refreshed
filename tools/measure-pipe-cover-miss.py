@@ -297,7 +297,7 @@ def _drawn_axis(sidecar, machine, manifest, connection, sheets_dir):
             f"a {connection['direction']} socket is drawn on the '-e' sheet, which this frame is "
             f"not of")
     s = socket_strip.strip(sheet_alpha(sheets_dir, manifest, suffix), manifest, connection)
-    z = rf.SOCKET_Z if socket_strip.plumbable(connection) else CONTAINED_Z
+    z = socket_z(manifest, connection)
 
     # A halved-sheet coordinate is what `sheet_to_frame` maps, and `Strip` works in FULL sheet
     # pixels -- 64 to the tile against the halved sheet's 32 -- so each is halved on the way out.
@@ -305,11 +305,27 @@ def _drawn_axis(sidecar, machine, manifest, connection, sheets_dir):
     return row0 + (s.axis_row(z) / 2) * scale, col0 + (s.mouth_col / 2) * scale
 
 
-# The world height a CONTAINED socket is built at, from models/heat-exchanger/build.py's own
-# constant. It is INHERITED rather than chosen -- the height every socket had before #349 -- and
-# models/house-style.md records that a look chosen for them would be a decision nobody has been
-# asked for. Quoted here rather than imported because build.py needs bpy.
-CONTAINED_Z = 0.55
+def socket_z(manifest, connection):
+    """The world height this connection's socket was actually DRAWN at, read off the manifest.
+
+    READ RATHER THAN ASSUMED, AND THAT IS THE WHOLE POINT OF THIS FUNCTION (#392). It used to be
+    `rf.SOCKET_Z if plumbable else CONTAINED_Z`, with CONTAINED_Z a copy of 0.55 kept here because
+    models/heat-exchanger/build.py needs bpy and cannot be imported. ADR 0036 levelled every
+    contained socket to SOCKET_Z and deleted that constant from build.py -- and the copy here went
+    on predicting 0.55 for exactly the three sockets it applied to, with a test pinning it.
+
+    The `sockets` block models/render.py writes since #373 is the model's own statement of what it
+    drew, so asking it cannot go stale the way a second copy of a constant can. Matching is by
+    `position`, the same key tools/check-socket-parts.py matches on.
+    """
+    want = list(connection["position"])
+    for record in manifest.get("sockets", []):
+        if list(record["position"]) == want:
+            return record["z"]
+    raise socket_strip.Unmeasurable(
+        f"the manifest records no socket drawn at position {want}, so the height this frame should "
+        f"find its axis at is unknown. Either the model predates the `sockets` block (#373) and "
+        f"wants re-rendering, or models/rf_parts.socket was not what drew this connection")
 
 
 def report(covers_dir, bare_dir, all_dir):
@@ -359,11 +375,13 @@ def report(covers_dir, bare_dir, all_dir):
                       f"drop {s.drop:+.1f} px ({s.drop / ppt:+.3f} tiles), reach {reach}")
     print(f"\n{total_frames} frame(s) measured. Nothing above says what the miss OUGHT to be; "
           f"#391 weighs the remedies.")
-    print(f"For reference and NOT as a source of any figure above: a contained socket is built at "
-          f"world height {CONTAINED_Z}, a plumbable one at {rf.SOCKET_Z}, and this camera draws one "
-          f"tile of world height\n{SCREEN_PER_WORLD:.5f} tiles up the screen -- so the projection "
-          f"predicts drops of {CONTAINED_Z * SCREEN_PER_WORLD:.3f} and "
-          f"{rf.SOCKET_Z * SCREEN_PER_WORLD:.3f} tiles.")
+    print(f"For reference and NOT as a source of any figure above: EVERY socket is built at world "
+          f"height {rf.SOCKET_Z} since ADR 0036 -- contained ones included, where they stood at "
+          f"0.55 when #390 measured this -- and this camera draws one tile of world height "
+          f"{SCREEN_PER_WORLD:.5f} tiles up the screen, so the projection now predicts the SAME "
+          f"drop of {rf.SOCKET_Z * SCREEN_PER_WORLD:.3f} tiles for every socket. The 0.377-tile "
+          f"miss docs/research/pipe-cover-miss.md records is what it WAS; a re-run on today's "
+          f"sheets is a different measurement and should be read as one.")
     return 0
 
 

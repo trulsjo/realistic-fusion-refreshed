@@ -26,10 +26,12 @@ outside Factorio; `scripts/check-*.ps1` and `scripts/load-check.ps1` create real
 them, and `load-check.ps1` is where the invariants tying the simulation to the prototypes are enforced.
 Since #250 it also fails when a `graphics/rendered/<machine>/manifest.json` disagrees with the live
 prototype's footprint or connections, by asking `tools/extract-geometry.py` again, and since #344
-when a socket a player can plumb is DRAWN at a height no vanilla pipe would meet, by reading the
+when a socket is DRAWN at a height no vanilla pipe would meet, by reading the
 sheet with `tools/check-socket-height.py` — which since #356 also fails when `rf_blender.SOCKET_Z`
 itself stops predicting the height vanilla draws its pipe at, so a wrong constant is caught before
-anything is rendered from it. Since #373 a **second** sprite gate sits beside it:
+anything is rendered from it. **That gate covered only a socket a player can plumb until #392**,
+which levelled every contained socket to the same height (ADR 0036) and took the filter out; it now
+measures nine sockets across the two rendered machines where it measured six. Since #373 a **second** sprite gate sits beside it:
 `tools/check-socket-parts.py` takes the same strip apart and fails when a piece of a socket is not
 drawn as far above its axis as below it, or is not the width the model recorded drawing it. It
 covers CONTAINED connections as well as plumbable ones, because that is a claim about the renderer
@@ -82,11 +84,13 @@ ignored specifically, since merely-untracked would be excluded for the wrong rea
 `scripts/probe-*.ps1` are **not** in that list and are not gates. A probe asserts nothing and answers
 a question a decision is waiting on — exit 0 means it ran and reported, never that the answer was the
 hoped-for one. Its findings belong in `docs/research/`, and it stays committed so the next engine
-version can be asked the same question. `scripts/` holds twenty-four of them: twenty-two `probe-*.ps1`
-and two `probe-*.py`. Seventeen of the PowerShell ones build a real map the way a check does, one
-LOADS one (`probe-borrowed-base-art.ps1`, #388, which stands our machines inside the borrowed base
+version can be asked the same question. `scripts/` holds twenty-five of them: twenty-three `probe-*.ps1`
+and two `probe-*.py`. Eighteen of the PowerShell ones build a real map the way a check does — the
+eighteenth is `probe-next-upgrade.ps1` (#396), which is also the only one that LOADS TWICE, because
+the answer to half its question is a refusal at the prototype stage — one LOADS a save
+(`probe-borrowed-base-art.ps1`, #388, which stands our machines inside the borrowed base
 and creates a surface of its own for its control), and three more dump prototypes out of the running
-game -- so twenty-one of the twenty-four need Factorio.
+game -- so twenty-two of the twenty-five need Factorio.
 **Three need no game at all**, and they are the sprite ones: `probe-flange-free-render.ps1` (#376)
 and `probe-socket-underside.py` (#366, #367) drive Blender and measure what it renders, and
 `probe-sprite-geometry.py` measures where a committed sheet's opaque pixels land. A probe is a
