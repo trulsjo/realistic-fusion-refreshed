@@ -512,9 +512,10 @@ defect, and telling the two apart is what
 > two that must be refused — and `scripts/check-hc.ps1`'s plant section and
 > `scripts/check-aneutronic.ps1` build the bolted, chained shapes a player builds.
 > [ADR 0031](docs/adr/0031-energy-bolts-along-a-long-face.md) is which face bolts to what.
-> `rf-hc-exchanger` is contained on the declaration it already had and is one of those three pairs;
-> #276 gives it the ordinary exchanger's footprint for consistency and not because containment
-> waits on it.
+> `rf-hc-exchanger` was contained on the declaration it already had and is one of those three pairs;
+> #276 gave it the ordinary exchanger's footprint on 2026-09-18 for consistency and not because
+> containment waited on it, and its energy box carries the same category on three connections now
+> where it carried one before.
 >
 > **And the items say so in words now.** Both energy fluids, both reactors, both exchangers and the
 > converter carry descriptions naming the bolt and saying no pipe, tank or wagon holds the fluid —
@@ -607,10 +608,12 @@ bookkeeping. Containing them separately is what keeps the routes apart: a heat e
 bolted to an aneutronic reactor nor a direct energy converter to a neutronic one, and the engine
 refuses the connection rather than letting a player build something that would sit dry. Measured both
 ways in `scripts/check-containment.ps1`, on five bolted pairs: the three matching pairs join and the
-two crossed pairs do not. The third matching pair is `rf-hc-exchanger`, which is there because
-ADR 0031 rests on a plain `"input"` connection still *accepting* a bolt — the finding that took
-`rf-hc-exchanger`'s footprint off containment's critical path, and which nothing but a probe measured
-until then.
+two crossed pairs do not. The third matching pair is `rf-hc-exchanger`, which is there for #276's
+own criterion: that machine bolted to a reactor face with no pipe. It was there for a different
+reason until #276 — ADR 0031 rests on a plain `"input"` connection still *accepting* a bolt, the
+finding that took `rf-hc-exchanger`'s footprint off containment's critical path and that nothing but
+a probe measured until that row existed. No shipped machine declares a plain `"input"` energy
+connection any more, so that half of the row is history rather than coverage.
 
 See [ADR 0018](docs/adr/0018-energy-is-contained-and-no-pipe-carries-it.md) for why energy is plumbed
 this way rather than piped, and what was rejected.

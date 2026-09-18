@@ -201,6 +201,12 @@ measured). Running the probe over them shows what those numbers do:
 | composite-tank.png 256×256 | 3×3 | (0, 0) | x [−1.53, +1.53], y [−1.86, +1.73] | +0.23 |
 | deuterium-extractor.png 380×380 | 5×5 | (0, 0) | x [−2.53, +2.53], y [−2.86, +2.66] | +0.16 |
 
+`hc-exchanger.png` **is no longer in the tree.** #276 took `rf-hc-exchanger` from 7×7 to 15×5 and the
+Krastorio 2 matter plant sheets went with the footprint, so that row is a measurement of a file this
+repository deleted on 2026-09-18. It is kept because the regularities below are read off all seven
+rows and dropping one would change what they are read from — and because it is still a true
+measurement of Krastorio 2's own sheet, which is what the section is about.
+
 Three regularities:
 
 1. **Sheets are cropped tight to the alpha.** The aneutronic body is 660 × 706 px = 10.31 × 11.03

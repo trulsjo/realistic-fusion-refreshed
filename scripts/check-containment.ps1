@@ -84,11 +84,13 @@
                   controls, and they are why the refusals are about categories rather than about a
                   machine placed one tile out.
 
-                  THE THIRD MATCHING PAIR IS rf-hc-exchanger, and it is not decoration.
-                  ADR 0031 rests on the finding that a plain `"input"` connection still ACCEPTS a
-                  bolt -- which is why containment did not have to wait for #276's footprint -- and
-                  until #86 that was measured only by `probe-energy-containment.ps1`, which asserts
-                  nothing. This is the gate on it.
+                  THE THIRD MATCHING PAIR IS rf-hc-exchanger, and it is not decoration. It is
+                  #276's own criterion -- that machine bolted to a reactor face with no pipe -- on a
+                  prototype whose boxes are declared separately from rf-heat-exchanger's and can
+                  drift apart from them. Until #276 it asserted something else: that a plain
+                  `"input"` energy connection still ACCEPTS a bolt, which is what ADR 0031 rests on
+                  and why containment did not have to wait for that footprint. No shipped machine
+                  declares one any more, so that half of the row is history rather than coverage.
       ordinary    A vanilla infinity pipe feeding the heater its deuterium. Deuterium is an ordinary
                   fluid and must work exactly as before -- containment is per box, and this is what
                   says so.
@@ -288,7 +290,10 @@ script.on_init(function()
   -- was bitten by exactly that with a scratch entity at y = -400.
   --
   -- North to -70 for the crossed section's reactors at y -53..-38 and whatever bolts to a face of
-  -- one: rf-hc-exchanger takes the NORTH face and reaches y -60, which was the old edge exactly.
+  -- one. It was rf-hc-exchanger that set this edge, on the NORTH face at y -60; since #276 that
+  -- machine bolts SOUTH like the other two and nothing reaches past the reactors themselves. The
+  -- margin is kept rather than tightened: it costs landfill and it is what a face bolted to the
+  -- north again would need.
   -- South to 45 for the vessel rows, whose water pair sits at y 31-34 with a substation and an
   -- interface behind it at y 37-39. East to 170 for the crossed row's five-cell pitch, whose last
   -- reactor spans x 153-168.
@@ -428,24 +433,36 @@ script.on_init(function()
   -- them and control.lua never steps them. Nothing here is about fluid crossing a joint; it is
   -- about whether the joint forms, which is a question about geometry and categories only.
   --
-  -- EACH ROW NAMES THE FACE IT BOLTS BY, because the three machines do not agree on one. The two
-  -- 15x5 machines take energy on their NORTH long face and stand south of a reactor; rf-hc-exchanger
-  -- is still 7x7 with its one energy connection on the SOUTH face (#276 gives it the others'
-  -- footprint), so it stands north of a reactor instead. `face` is the reactor face the machine
-  -- meets and `side` is the machine's own connection that meets it -- opposite by construction.
+  -- EACH ROW NAMES THE FACE IT BOLTS BY. `face` is the reactor face the machine meets and `side` is
+  -- the machine's own connection that meets it -- opposite by construction.
+  --
+  -- ALL THREE MACHINES NOW AGREE ON ONE, AND THEY DID NOT UNTIL #276. rf-hc-exchanger was 7x7 with
+  -- its one energy connection on the SOUTH face and stood north of a reactor, where the two 15x5
+  -- machines take energy on their NORTH long face and stand south. #276 gave it the ordinary
+  -- exchanger's footprint, so every row below is `face = "south", side = "north"`. The fields stay
+  -- per row rather than collapsing into a constant: which face a machine bolts by is the prototype's
+  -- to say, and a row that stopped naming it would stop noticing when one changes.
   local crossed = {}
   for i, pair in ipairs({
     { reactor = "rf-reactor",            machine = "rf-heat-exchanger",
       face = "south", side = "north", join = true },
     { reactor = "rf-aneutronic-reactor", machine = "rf-direct-energy-converter",
       face = "south", side = "north", join = true },
-    -- THE HIGH-CAPACITY MACHINE BOLTS ON A PLAIN "input" CONNECTION, and that is the row nothing in
-    -- the gate set asserted until now. probe-energy-containment.ps1's AC 5 measured it -- 473 units
-    -- held, the reactor's box six and two thirds of a unit down every tick, which at 1 MJ a unit is
-    -- that machine's whole 400 MW -- and a probe asserts nothing. ADR 0031 rests on it: it is why
-    -- containment did not have to wait for #276.
+    -- THE HIGH-CAPACITY MACHINE, WHICH IS NOW THE ORDINARY ONE'S SHAPE AND PLUMBING (#276). This row
+    -- was the gate on a finding it no longer demonstrates: rf-hc-exchanger used to bolt on a plain
+    -- "input" connection, and ADR 0031 rests on that connection still ACCEPTING a bolt -- which is
+    -- why containment did not have to wait for this ticket. probe-energy-containment.ps1's AC 5
+    -- measured it (473 units held, the reactor's box six and two thirds of a unit down every tick,
+    -- which at 1 MJ a unit is that machine's whole 400 MW) and this row asserted it. #276 makes all
+    -- three of this machine's energy connections "input-output", so no shipped machine declares a
+    -- plain "input" energy connection any more and there is nothing left of that shape to gate.
+    --
+    -- THE ROW STAYS ANYWAY, and what it asserts now is this ticket's own criterion: an
+    -- rf-hc-exchanger BOLTED to a reactor face with no pipe between them. It is not a duplicate of
+    -- the rf-heat-exchanger row above -- same geometry, different prototype, and the machines have
+    -- separate box declarations that can drift apart.
     { reactor = "rf-reactor",            machine = "rf-hc-exchanger",
-      face = "north", side = "south", join = true },
+      face = "south", side = "north", join = true },
     { reactor = "rf-reactor",            machine = "rf-direct-energy-converter",
       face = "south", side = "north", join = false },
     { reactor = "rf-aneutronic-reactor", machine = "rf-heat-exchanger",

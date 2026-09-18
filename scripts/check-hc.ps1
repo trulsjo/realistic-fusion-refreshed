@@ -340,15 +340,22 @@ script.on_init(function()
   feed(surface, force, chain_exchanger, "water", nil)
   feed(surface, force, chain_exchanger, ENERGY, nil)
 
-  local steam_out = chain_exchanger.fluidbox.get_pipe_connections(box_of(chain_exchanger, "steam"))[1]
-  local chain_turbine = must(surface.create_entity({
-    name = HC_TURBINE,
-    -- The turbine's connections are symmetric about its centre, three tiles either way, so its
-    -- south connection lands on the exchanger's outlet when its centre is four tiles beyond it.
-    position = { steam_out.target_position.x, steam_out.target_position.y - 3 },
-    force = force,
-  }), HC_TURBINE)
-  local chain_pole = power(surface, force, { 78, 40 }, 500e6)
+  -- BOLTED BY THE SAME HELPER THE PLANT SECTION USES, rather than by an offset written down here
+  -- (#276). This used to place the turbine three tiles north of the outlet's target, on the arithmetic
+  -- that the turbine's connections are symmetric about its centre -- which was right, and silently
+  -- became wrong the moment rf-hc-exchanger's steam outlet moved from its north face to its south.
+  -- A rig that computes the offset from both prototypes cannot be broken that way again, and it is
+  -- how the plant section below has placed everything since #275.
+  local steam_out = connection_facing(chain_exchanger, "steam", "south")
+  if not steam_out then error(HC_EXCHANGER .. " has no south-facing steam outlet to plumb a turbine onto") end
+  local chain_turbine = bolt(surface, force, HC_TURBINE, "steam", "north",
+    steam_out.target_position, { 70.5, 60.5 })
+  -- SOUTH OF THE TURBINE, NOT EAST OF THE EXCHANGER (#276). At 7x7 the exchanger ended at x 74 and a
+  -- substation at x 77-79 stood clear of it; at fifteen wide it reaches x 78 and the two would share
+  -- tiles. create_entity collision-checks nothing (#215, and factorio-lib.ps1's rf_place_or_die
+  -- carries the finding), so that overlap would be BUILT rather than refused and this rig would go
+  -- on reporting a pass over a plant no player could place.
+  local chain_pole = power(surface, force, { 70, 54 }, 500e6)
 
   -- ------------------------------------------------------------------ the plant, bolted and chained
   --

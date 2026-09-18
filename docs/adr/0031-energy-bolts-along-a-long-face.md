@@ -25,11 +25,11 @@ was careful not to settle. Implemented by
 [#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276) and
 [#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87).
 
-**Items 1, 2, 4 and 5 are in the tree as of 2026-09-07.** #275 turned `rf-heat-exchanger` and gave
-`rf-reactor` its south output; #87 gave `rf-aneutronic-reactor` the same output and turned
-`rf-direct-energy-converter` fifteen wide by five tall with energy on both long faces. Item 3 —
-`rf-hc-exchanger` at the same size — is #276's and is the only part still outstanding; the
-measurement below means containment did not wait for it. Item 6 stands deferred.
+**Items 1, 2, 3, 4 and 5 are in the tree.** #275 turned `rf-heat-exchanger` and gave `rf-reactor`
+its south output on 2026-09-07; #87 gave `rf-aneutronic-reactor` the same output and turned
+`rf-direct-energy-converter` fifteen wide by five tall with energy on both long faces the same day.
+Item 3 — `rf-hc-exchanger` at the same size — landed in #276 on 2026-09-18, after the measurement
+below had already taken containment off its critical path. Item 6 stands deferred.
 
 ## Context
 
@@ -180,12 +180,25 @@ an energy box is `input-output`. And each tier chains on its own axis.**
   only in art. This is the same move ADR 0022 already made for the reactor-versus-exchanger pair, and
   it is a real loss, stated rather than absorbed. #277 is where the art pays it back, and the comment
   in the tree is amended rather than deleted.
+
+  > **And the art has NOT taken over yet.** #276 landed on 2026-09-18 and the Krastorio 2 matter
+  > plant sheets went with the 7×7 — nothing in that set is drawn at 15×5 — so the machine is on a
+  > labelled mockup and it is the LABEL telling the two apart on the ground, not the art. That is the
+  > honest state of this trade until #277, and it is what `probe-heat-exchanger-art.ps1`'s layout
+  > frame now shows.
 - **`rf-hc-exchanger` needs no geometry change to be contained**, measured above. So #86 waited on the
   ordinary exchanger's geometry (#275) and on nothing else — not on #276, and not on a Blender model.
-  Both landed on 2026-09-07, and `check-containment.ps1`'s crossed section now GATES that bolt:
-  `rf-hc-exchanger` is one of its three matching pairs, bolted to a reactor's north face, and the
-  engine has to form the joint. The 400 MW figure stays a probe measurement —
-  `probe-energy-containment.ps1`'s AC 5 row — because a rate is not what a gate here is for.
+  Both landed on 2026-09-07, and `check-containment.ps1`'s crossed section GATES that bolt:
+  `rf-hc-exchanger` is one of its three matching pairs and the engine has to form the joint. The
+  400 MW figure stays a probe measurement — `probe-energy-containment.ps1`'s AC 5 row — because a
+  rate is not what a gate here is for.
+
+  > **That row bolted to the reactor's NORTH face until #276**, because the 7×7 machine's one energy
+  > connection was on its south side. At 15×5 it bolts south like the other two, and what the row
+  > asserts is no longer the plain-`"input"` finding — item 3 makes all three of its energy
+  > connections `input-output`, so no shipped machine declares a plain `"input"` energy connection
+  > any more. The row now gates #276's own criterion: this machine bolted to a reactor face with no
+  > pipe.
 - **A converter placed backwards cannot be got wrong**, and that is why item 4 keeps both long faces
   rather than following item 2's one-sided shape. A `generator` declares only `vertical_animation`
   and `horizontal_animation`, so north and south draw identically — `graphics/mockup/` ships two
@@ -207,7 +220,10 @@ an energy box is `input-output`. And each tier chains on its own axis.**
   so its sha, so the model had to be rebuilt and the sheets re-rendered to keep the manifest honest —
   and every one of the thirteen PNGs came back byte-identical, which is this ADR's determinism claim
   paying for itself. #87 regenerated the converter's and the aneutronic reactor's mockups.
-  `rf-hc-exchanger` waits on #276.
+  `rf-hc-exchanger`'s came in #276, which is also where it LOST its Krastorio 2 art: the matter
+  plant sheets are drawn for a seven-tile square and ADR 0022 records that nothing in that set sits
+  at 15×5, so the two PNGs are deleted, their entry has left the NOTICE, and the machine is back on a
+  labelled box until #277 renders it. All four are done.
 - **`rf-reactor` keeps Krastorio 2's art and skips the mockup round.** Its art already fits its
   footprint, which is not the condition `make-mockup-art.ps1` exists for, and `entities.lua` records
   that the art is what tells the two 15×15 reactors apart. Its new south socket is drawn by

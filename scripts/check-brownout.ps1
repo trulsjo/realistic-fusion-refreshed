@@ -332,6 +332,55 @@ end
 local WESTMOST = function(a, b) return a.x < b.x end
 local EASTMOST = function(a, b) return a.x > b.x end
 
+--- Which way a runtime connection faces, read off the tile it targets rather than remembered.
+local function facing(c)
+  local dx = c.target_position.x - c.position.x
+  local dy = c.target_position.y - c.position.y
+  if dy < 0 then return "north" elseif dy > 0 then return "south" elseif dx < 0 then return "west" end
+  return "east"
+end
+
+--- The connection of `entity`'s box on `fluid` that faces `side`, or nil.
+local function connection_facing(entity, fluid, side)
+  local index = box_of(entity, fluid)
+  if not index then return nil end
+  for _, c in pairs(entity.fluidbox.get_pipe_connections(index)) do
+    if facing(c) == side then return c end
+  end
+  return nil
+end
+
+--- Place `name` turned to `direction` so that its `side`-facing connection on the box filtered to
+--- `fluid` STANDS ON `tile` -- which is the other machine's target_position. check-hc.ps1's bolt()
+--- with a direction added, and here for the reason #49 gave it there: a remembered offset is a
+--- hostage to the next prototype edit.
+---
+--- IT WAS REMEMBERED HERE UNTIL #276, and the comment at the call site claimed otherwise. The plant's
+--- three machines were placed at literal offsets from the reactor -- ry - 11 and ry - 18 - 7i -- while
+--- the comment above them said the positions were computed from each prototype's connection geometry.
+--- #276 turned rf-hc-exchanger's steam outlet from its north face to its south, which those literals
+--- could not follow and that comment would have gone on denying.
+---
+--- The machine is placed once as a probe at `seed`, asked where that connection is relative to itself,
+--- destroyed, and placed again by the difference. `direction` is given to BOTH, or the probe answers
+--- for an orientation the real one is not in.
+local function bolt(surface, force, name, direction, fluid, side, tile, seed, label)
+  local probe = must(surface.create_entity({
+    name = name, position = seed, direction = direction, force = force,
+  }), label .. ": probe " .. name)
+  local found = connection_facing(probe, fluid, side)
+  if not found then
+    probe.destroy()
+    error(string.format("%s: %s has no %s-facing %s connection", label, name, side, fluid))
+  end
+  local off = { x = found.position.x - probe.position.x, y = found.position.y - probe.position.y }
+  probe.destroy()
+  return must(surface.create_entity({
+    name = name, position = { tile.x - off.x, tile.y - off.y },
+    direction = direction, force = force,
+  }), string.format("%s: %s bolted at %g,%g", label, name, tile.x - off.x, tile.y - off.y))
+end
+
 --- A run of pipe along axis-aligned legs through `points`, laid inclusively.
 ---
 --- Legs rather than a straight line because a heater's plasma outlet and a reactor's plasma inlet are
@@ -543,22 +592,40 @@ local function build_cell(surface, force, o)
 
   -- ------------------------------------------------------------------ the plant's steam route
   --
-  -- Positions computed from each prototype's own connection geometry rather than written down, and
-  -- they come out adjacent: the reactor's energy outlet, the exchanger's fuel inlet, its steam
-  -- outlet and both turbines' inlets chain face to face with no pipe between them. If any of that is
-  -- wrong the turbine simply gets no steam, and the check at the end says so.
+  -- Positions computed from each prototype's own connection geometry, NOW THAT THEY ACTUALLY ARE
+  -- (#276). Three machines chain north off the reactor with no pipe between them: the reactor's north
+  -- energy outlet, the exchanger's fuel inlet, its steam outlet and both turbines' inlets, each
+  -- bolted onto the tile the one before it points at. If any of that is wrong the turbine gets no
+  -- steam, and the check at the end says so.
+  --
+  -- THE EXCHANGER IS TURNED 180 DEGREES, and that is what #276 made necessary. At fifteen by five it
+  -- takes energy on its north long face and vents steam on its south one -- the arrangement for a
+  -- machine standing SOUTH of a reactor. The plant grows north here, because the heater is south at
+  -- cy+16 and the substation grid climbs north, so the machine is turned rather than the cell being
+  -- rebuilt around it. A row on the reactor's north face is the same machine rotated (entities.lua
+  -- says so at rf-heat-exchanger's connections, and it is as true of this one).
   if o.plant then
-    local ry = first.position.y
-    local ex = must(surface.create_entity({
-      name = EXCHANGER, position = { first.position.x, ry - 11 }, force = force,
-    }), label .. ": " .. EXCHANGER)
+    -- Somewhere cleared and empty for bolt()'s throwaway probes. Sixty east and forty north of the
+    -- reactor is inside the landfilled rectangle (-25..375 by -45..95), north of every cell's own
+    -- build and west of "full" at ox = 100 -- the one stretch of this map that belongs to nobody.
+    local seed = { first.position.x + 60, first.position.y - 40 }
+    local out = connection_facing(first, ENERGY, "north")
+    if not out then error(label .. ": the reactor has no north-facing energy output") end
+    local ex = bolt(surface, force, EXCHANGER, defines.direction.south, ENERGY, "south",
+      out.target_position, seed, label)
     feed(surface, force, ex, "water", nil, 1, "at-least", label)
     cell.exchanger = ex
     cell.turbines = {}
+    -- Each turbine bolts onto whatever the machine before it points at: the exchanger's steam outlet
+    -- first, then the previous turbine's far connection. A turbine's two steam connections are both
+    -- input-output, which is what lets the second draw through the first.
+    local mouth = connection_facing(ex, "steam", "north")
+    if not mouth then error(label .. ": the turned exchanger vents steam nowhere north") end
     for i = 1, 2 do
-      cell.turbines[i] = must(surface.create_entity({
-        name = TURBINE, position = { first.position.x, ry - 18 - (i - 1) * 7 }, force = force,
-      }), string.format("%s: %s %d", label, TURBINE, i))
+      cell.turbines[i] = bolt(surface, force, TURBINE, defines.direction.north, "steam", "south",
+        mouth.target_position, seed, string.format("%s: %s %d", label, TURBINE, i))
+      mouth = connection_facing(cell.turbines[i], "steam", "north")
+      if not mouth then error(string.format("%s: %s %d has no north steam connection to chain through", label, TURBINE, i)) end
     end
     for i, turbine in ipairs(cell.turbines) do
       if turbine.electric_network_id ~= cell.poles[1].electric_network_id then

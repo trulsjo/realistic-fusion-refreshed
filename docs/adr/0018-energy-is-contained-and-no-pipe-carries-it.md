@@ -12,9 +12,10 @@ carry items 2, 3 and 5 with them. Twenty-four connections now declare a category
 pump are all refused by a live reactor-energy box, that a fluid wagon has no fluid box for a pump to
 be its only route into, and that a converter and a neutronic reactor refuse each other. Item 4's
 geometry came first, from [ADR 0031](0031-energy-bolts-along-a-long-face.md); item 6 was never
-touched. `rf-hc-exchanger` is contained on the declaration it already had, so
-[#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276) is about its footprint and
-not about this ADR.
+touched. `rf-hc-exchanger` was contained on the declaration it already had, so
+[#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276) was about its footprint and
+not about this ADR; when that landed on 2026-09-18 its energy box gained two connections, and
+`contain()` walks the box, so they carry the category with no change here.
 
 Accepted. Resolves
 [#44](https://github.com/trulsjo/realistic-fusion-refreshed/issues/44) — whether the reactor should
@@ -236,8 +237,9 @@ face.**
    shipped footprint — energy bolts along a long face, both reactors sell it north **and south**,
    exchangers chain through their short ends — and the coordinates above are its. Three connections
    is still the count, now by choice rather than by tile arithmetic: one to meet the reactor, and
-   one on each short end for the row. `rf-hc-exchanger` follows in
-   [#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276).
+   one on each short end for the row. `rf-hc-exchanger` followed in
+   [#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276) on 2026-09-18, at the
+   same footprint and on the same three tiles.
 
    **Item 2 no longer waits on this, and neither does item 1.** A reactor, an exchanger bolted to
    its south face and a second chained off the first's east end are built and asserted by

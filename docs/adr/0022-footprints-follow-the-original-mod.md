@@ -22,13 +22,14 @@ table and the paragraph after it: the two five-by-fifteen machines take the long
 rather than north–south, and `rf-hc-exchanger` joins the table at the same size. The rule itself —
 footprint first, from the original mod, art redrawn to fit — is applied there, not changed.
 
-**Declared so far by two of them.** `rf-heat-exchanger` is 15x5 in the tree since
+**Declared by all three.** `rf-heat-exchanger` is 15x5 in the tree since
 [#275](https://github.com/trulsjo/realistic-fusion-refreshed/issues/275) and
 `rf-direct-energy-converter` since
-[#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87), both on 2026-09-07.
-`rf-hc-exchanger` still declares 7x7 and is
-[#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276)'s. The table below is the
-decision, not a report of the tree.
+[#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87), both on 2026-09-07;
+`rf-hc-exchanger` since
+[#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276), 2026-09-18, which also
+dropped the Krastorio 2 matter plant sheets it wore at 7x7 and put it on a mockup. The table below
+is the decision, not a report of the tree.
 
 ## Context
 
@@ -69,7 +70,7 @@ has an opinion and deliberately where it does not, and art is then found or made
 |---|---|---|---|
 | `rf-heat-exchanger` | 3x2 | **15x5** | the original mod's 5x15, turned by ADR 0031 (#275) |
 | `rf-direct-energy-converter` | 3x5 | **15x5** | the original mod's 5x15, turned by ADR 0031 (#87 implements) |
-| `rf-hc-exchanger` | 7x7 | **15x5** | ADR 0031: the ordinary exchanger at a different scale (#276 implements) |
+| `rf-hc-exchanger` | 7x7 | **15x5** | ADR 0031: the ordinary exchanger at a different scale (#276) |
 | `rf-aneutronic-reactor` | 10x10 | **15x15** | the original mod |
 | `rf-isotope-collector` | 3x2 | **5x5** | chosen; no counterpart exists |
 | `rf-lithium-blanket` | 1x1 | **5x5** | chosen; no counterpart exists |

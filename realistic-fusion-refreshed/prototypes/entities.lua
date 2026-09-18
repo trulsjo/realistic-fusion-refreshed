@@ -801,26 +801,60 @@ local hc_exchanger = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "
 hc_exchanger.mode = "output-to-separate-pipe"
 hc_exchanger.energy_consumption = "400MW"
 hc_exchanger.target_temperature = 500
--- Seven tiles square, following Krastorio 2's matter plant the way rf-reactor follows its fusion
--- reactor (ADR 0013). The size IS the message: a player looking at a steam farm has to see which
+-- FIFTEEN WIDE BY FIVE TALL, rf-heat-exchanger's own footprint and its own six connections (#276).
+-- Truls's decision, 2026-09-07: the two machines are one machine at two scales, so the high-capacity
+-- one takes the ordinary one's shape and plumbing outright. What is left different, enumerated
+-- rather than waved at (ADR 0031 item 3): energy_consumption, all three box volumes, mining_time,
+-- and the art. mode and target_temperature already agreed -- both are inherited from the same
+-- vanilla heat exchanger. A player who has learnt the ordinary exchanger's row knows this one, and a
+-- blueprint of one is a blueprint of the other.
+--
+-- IT WAS SEVEN TILES SQUARE, FOLLOWING KRASTORIO 2's MATTER PLANT the way rf-reactor follows its
+-- fusion reactor (ADR 0013), AND THE ARGUMENT FOR THAT IS GIVEN UP RATHER THAN REFUTED. The comment
+-- here used to read: "The size IS the message: a player looking at a steam farm has to see which
 -- vessels are the big ones, and the predecessor's answer -- the ordinary exchanger tinted orange --
--- is the arrangement this repository already rejected between rf-reactor and rf-heat-exchanger.
-hc_exchanger.collision_box = { { -3.25, -3.25 }, { 3.25, 3.25 } }
-hc_exchanger.selection_box = { { -3.5, -3.5 }, { 3.5, 3.5 } }
-hc_exchanger.pictures = hc_graphics.exchanger_pictures
+-- is the arrangement this repository already rejected between rf-reactor and rf-heat-exchanger."
+-- That was true and it is now false, because nothing a player can SEE tells the two apart but the
+-- art. What is lost is a size difference readable across a whole steam farm at any zoom; what
+-- replaces it is a sprite difference that has to do the same job at every zoom a player builds at,
+-- and nothing here yet proves it can -- this machine wears a MOCKUP, so today it is told apart by a
+-- label. ADR 0022 gave up the same argument for the reactor-and-exchanger pair on the same terms.
+-- Truls took the trade knowingly. If the two do turn out to read alike on the ground, the fix is the
+-- model, not the footprint.
+--
+-- WHAT SURVIVES IS #32's REASON FOR THE PROTOTYPE EXISTING AT ALL. One machine instead of four is a
+-- blueprint chore avoided whatever its shape, and now it is also one fifteen-tile face instead of
+-- four.
+hc_exchanger.collision_box = { { -7.25, -2.25 }, { 7.25, 2.25 } }
+hc_exchanger.selection_box = { { -7.5, -2.5 }, { 7.5, 2.5 } }
+-- A MOCKUP, because Krastorio 2 has no building at this shape. ADR 0022 searched its set exhaustively
+-- and nothing sits at fifteen by five, so the matter plant sheets this machine wore -- drawn for a
+-- seven-tile square and unstretchable over an oblong -- are dropped rather than distorted, and their
+-- entry has left graphics/krastorio-2/NOTICE.txt. The ICON is unaffected and stays the matter
+-- plant's: an icon is not drawn at a footprint.
+--
+-- A labelled rectangle beside rf-heat-exchanger's rendered art is also what keeps the two tellable
+-- apart in the meantime, which is the honest state of the trade the comment above records.
+hc_exchanger.pictures = mockup.boiler("hc-exchanger", 15, 5)
 
 local hc_covers = table.deepcopy(hc_exchanger.fluid_box.pipe_covers)
 
 -- All three boxes are restated rather than inherited, because the footprint changed and vanilla's
--- connections are on a three-by-two building. Seven is odd, so the tile centres sit on integers and
--- the outermost either side is 3.
+-- connections are on a three-by-two building. Fifteen and five are both odd, so the tile centres sit
+-- on integers and the outermost is 7 across and 2 down.
+--
+-- THE SAME SIX TILES rf-heat-exchanger DECLARES (ADR 0031, #275): the long faces carry the big flows
+-- -- energy in along the north one, steam out along the south one -- and the short ends chain, each
+-- reading `_ e _ w _` from north to south. A row of these grows sideways along a reactor's face with
+-- the steam face left free for the turbine hall, and an ordinary exchanger's row and one of these
+-- are laid out identically.
 hc_exchanger.fluid_box = {
   production_type = "input-output",
   volume = 1000,
   pipe_covers = hc_covers,
   pipe_connections = {
-    { flow_direction = "input-output", direction = defines.direction.west, position = { -3, 0 } },
-    { flow_direction = "input-output", direction = defines.direction.east, position = { 3, 0 } },
+    { flow_direction = "input-output", direction = defines.direction.west, position = { -7, 1 } },
+    { flow_direction = "input-output", direction = defines.direction.east, position = { 7, 1 } },
   },
   filter = "water",
 }
@@ -829,7 +863,7 @@ hc_exchanger.output_fluid_box = {
   volume = 1000,
   pipe_covers = hc_covers,
   pipe_connections = {
-    { flow_direction = "output", direction = defines.direction.north, position = { 0, -3 } },
+    { flow_direction = "output", direction = defines.direction.south, position = { 0, 2 } },
   },
   filter = "steam",
 }
@@ -846,19 +880,26 @@ hc_exchanger.energy_source = {
     production_type = "input",
     volume = 500,
     pipe_covers = hc_covers,
+    -- ALL THREE input-output, FOR THE REASON rf-heat-exchanger's ARE (#111,
+    -- docs/research/exchanger-chaining.md): one connection on this box declared plain "input" stops
+    -- fuel LEAVING by the others, so a row of these would bolt and then starve from the second
+    -- machine on. production_type stays "input" -- what the machine does with the fluid has not
+    -- changed; flow_direction is what decides whether a connection forwards.
+    --
+    -- THE ONE IT HAD WAS PLAIN "input" AND STILL BOLTED, which is a measurement worth keeping now
+    -- that the declaration is gone: probe-energy-containment.ps1's AC 5 row bolted this machine to a
+    -- reactor's output on that connection and measured it drinking its full 400 MW. flow_direction
+    -- governs forwarding, not joining -- which is why containment (#86) never waited on this ticket.
     pipe_connections = {
-      { flow_direction = "input", direction = defines.direction.south, position = { 0, 3 } },
+      { flow_direction = "input-output", direction = defines.direction.north, position = { 0, -2 } },
+      { flow_direction = "input-output", direction = defines.direction.west, position = { -7, -1 } },
+      { flow_direction = "input-output", direction = defines.direction.east, position = { 7, -1 } },
     },
     filter = "rf-reactor-energy",
   },
 }
--- CONTAINED, on the declaration it already had, and that is a measurement rather than luck (#275,
--- ADR 0031). This machine's one energy connection is plain `"input"`, and exchanger-chaining.md had
--- established that such a connection stops fuel LEAVING a box -- whether it also stops fuel
--- ARRIVING through a bolt had no answer anywhere. It does not: probe-energy-containment.ps1's AC 5
--- row bolts this machine to a reactor's output and measures it drinking its full 400 MW.
--- flow_direction governs forwarding, not joining. So #276 gives it the ordinary exchanger's
--- footprint for consistency, not because containment waits on it.
+-- CONTAINED, the same as the ordinary exchanger's energy box and on the same category. The two extra
+-- connections this box gained are categorised by the same call, because contain() walks the box.
 contain(hc_exchanger.energy_source.fluid_box, REACTOR_ENERGY_CATEGORY)
 
 -- Ten units of steam a tick against vanilla's one.
