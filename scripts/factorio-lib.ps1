@@ -1325,8 +1325,14 @@ function Test-SelfTestRunner {
     if (-not $mine) { throw 'runner canary: cannot find this file on disk, so the floor cannot be exercised.' }
     $copy = Join-Path ([IO.Path]::GetTempPath()) ('rf-runner-floor-' + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.ps1')
     try {
+        # NORMALISED TO LF BEFORE ANYTHING IS MATCHED. `n here is a bare line feed and this file
+        # arrives CRLF on an ordinary clone -- core.autocrlf is Git for Windows' own default and
+        # there is no .gitattributes -- so the comparison below failed on every machine this
+        # repository is actually run on, and the case threw "could not be broken" instead of
+        # reaching the floor. Found in review of #417, on the one canary nobody would think to
+        # doubt: it had passed on a working tree whose files happened to be LF.
         $loop = "    `$ran   = 0`n    foreach (`$half in `$Halves) {"
-        $source = Get-Content -LiteralPath $mine -Raw
+        $source = (Get-Content -LiteralPath $mine -Raw) -replace "`r`n", "`n"
         if (-not $source.Contains($loop)) {
             throw 'runner canary: the run loop is not written the way the floor case expects, so it could not be broken.'
         }
