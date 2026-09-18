@@ -25,6 +25,40 @@ question that chaining creates. See [A row of eight](#a-row-of-eight).
    stops fuel leaving by the others, even though the boxes still join and the machine still burns
    what it is given.
 
+> **Condition 2 is narrower than that sentence, measured 2026-09-18 (#280).** The two rows that
+> measure it — `ends, fed by a pipe` and `all-io, fed by a pipe` — differ by the `flow_direction` of
+> the west connection, which is **the very connection the pipe feeds the machine through**. Both are
+> faithful to what they measured. What does not follow is the general sentence above, and it does
+> not hold for a face fed by a **bolt**.
+>
+> `scripts/check-hc.ps1 -SelfTest` built the shipped plant — an `rf-reactor`, an
+> `rf-heat-exchanger` bolted to its south face, a second chained off the first's east end — with a
+> canary mod declaring the first machine's **north** energy connection, the reactor contact, plain
+> `"input"`. The canary loaded and took that connection; its own guard would have refused the load
+> otherwise. What the plant section then reported, with that connection `"input"`:
+>
+> ```
+> ok    chained: the first exchanger's east energy connection joins the second's west  -- target rf-heat-exchanger
+> ok    both exchangers in the row are working  -- first working, second working
+> ok    energy reaches the second exchanger through the joint  -- first holds 199.0, second holds 199.0
+> ok    a turbine on each exchanger runs on its steam  -- flow 1.934e+06, first working, second working
+> PASS: 22 checks, 0 failures
+> ```
+>
+> A full box in the second machine, both turbines running, and not one row different from the
+> unbroken plant.
+>
+> So what an `"input"` connection is now known to stop is **fuel leaving by that connection**, not
+> fuel leaving by the box's other connections — at least where the fuel arrives by a bolt. The
+> `exchanger-input-only` half of that self-test therefore declares the **east** connection `"input"`,
+> which is the one the row chains out by, and the chain stops. **All three connections on the shipped
+> box stay `input-output`**, and this changes nothing about that: the case the table below measured
+> is a real one and still fails.
+>
+> **Not measured: whether the pipe-fed rows would behave differently today.** They were taken on the
+> pre-#276 geometry and have not been re-run; this observation is about a bolted feed and says
+> nothing about theirs.
+
 Neither condition is about the `connection_category`, and neither is about whether the engine forms
 the connection. All but one row below reports the pair joined.
 
@@ -241,8 +275,10 @@ supply with transport.
 
 **Also settled, in [`energy-containment-probe.md`](energy-containment-probe.md) rather than here: a
 plain `"input"` connection still accepts a bolt.** So `flow_direction` governs **forwarding**, not
-joining. Condition 2 above says what an `"input"` connection stops — fuel leaving by the other
-connections on the same box — and it stops nothing about fuel arriving. That is why
+joining. Condition 2 above says what an `"input"` connection stops — fuel leaving by that connection,
+and as this page originally read, by the other connections on the same box; the 2026-09-18 note
+under condition 2 narrows the second half of that. Either way it stops nothing about fuel arriving,
+which is why
 `rf-hc-exchanger`, which declared one `"input"` connection on a face that can meet a reactor, could be
 contained without changing its geometry at all.
 

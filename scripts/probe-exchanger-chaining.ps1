@@ -46,7 +46,9 @@
     through a connection -- fuel written into a fluid ENERGY SOURCE's box with fluidbox[i] = {...}
     never leaves it, which is specific to that kind of box and not true of an ordinary output box
     -- and every connection on that box has to be input-output, because one declared plain "input"
-    stops fuel leaving by the others. An earlier version of this probe met neither condition and
+    passes nothing on. (Recorded here in 2026-09-06's words as "stops fuel leaving by the others";
+    #280 narrowed that to the connection itself on 2026-09-18 -- see the note.) An earlier version
+    of this probe met neither condition and
     reported five ways that exchangers cannot chain, contradicting #82 and ADR 0018. They were
     wrong and the ADR was right.
 

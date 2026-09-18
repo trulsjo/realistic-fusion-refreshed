@@ -667,10 +667,17 @@ exchanger.energy_source = {
     -- sideways along the reactor's face and the steam face stays free for the turbine hall.
     --
     -- ALL THREE ARE input-output, AND THAT IS LOAD-BEARING. Measured in #111 and recorded in
-    -- docs/research/exchanger-chaining.md: one connection on this box declared plain "input" stops
-    -- fuel leaving by the others, even though the boxes still join and this machine still burns
-    -- what it is given. production_type stays "input" -- what the machine DOES with the fluid is
-    -- unchanged; flow_direction is what decides whether a connection will join another machine's.
+    -- docs/research/exchanger-chaining.md: a connection declared plain "input" passes nothing on,
+    -- even though the boxes still join and this machine still burns what it is given.
+    -- production_type stays "input" -- what the machine DOES with the fluid is unchanged;
+    -- flow_direction is what decides whether a connection FORWARDS.
+    --
+    -- HOW FAR ONE SUCH CONNECTION REACHES WAS NARROWED ON 2026-09-18 (#280). The note's condition 2
+    -- said one "input" connection stops fuel leaving by the OTHERS; against the bolted plant
+    -- check-hc.ps1 builds, declaring the NORTH one "input" stopped nothing and the row still
+    -- chained. What is measured is that the "input" connection itself passes nothing on. That is
+    -- reason enough for all three: the north one is where a reactor bolts and the two short ends
+    -- are what the row chains through, so every one of them has to forward.
     --
     -- The default orientation puts the energy face north, so the machine stands SOUTH of a reactor.
     -- A row on the reactor's north face is the same machine rotated 180 degrees.
@@ -892,10 +899,11 @@ hc_exchanger.energy_source = {
     volume = 500,
     pipe_covers = hc_covers,
     -- ALL THREE input-output, FOR THE REASON rf-heat-exchanger's ARE (#111,
-    -- docs/research/exchanger-chaining.md): one connection on this box declared plain "input" stops
-    -- fuel LEAVING by the others, so a row of these would bolt and then starve from the second
-    -- machine on. production_type stays "input" -- what the machine does with the fluid has not
-    -- changed; flow_direction is what decides whether a connection forwards.
+    -- docs/research/exchanger-chaining.md): a connection declared plain "input" passes nothing on,
+    -- so a row of these would bolt and then starve from the second machine on. production_type
+    -- stays "input" -- what the machine does with the fluid has not changed; flow_direction is what
+    -- decides whether a connection forwards. See rf-heat-exchanger's box for how far that reaches:
+    -- #280 narrowed it on 2026-09-18 to the "input" connection itself rather than the box.
     --
     -- THE ONE IT HAD WAS PLAIN "input" AND STILL BOLTED, which is a measurement worth keeping now
     -- that the declaration is gone: probe-energy-containment.ps1's AC 5 row bolted this machine to a

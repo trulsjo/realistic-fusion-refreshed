@@ -64,6 +64,15 @@ Since #416 it has a `-SelfTest` of its own, which is new: it proves the shared s
 `factorio-lib.ps1` and section 9's citation rule, in both directions. The other eight sections it
 runs on a plain invocation are unchanged and still have no self-test, for the reason its help block
 gives.
+**Since #280 `scripts/check-hc.ps1` carries a `-SelfTest` too, and it is the second gate here that
+starts the game to prove itself.** Its four halves are about the neutronic plant that section builds
+— `repo-plant-passes` is the floor, `exchanger-input-only` and `reactor-sells-south` are canary mods
+in the temp directory, and `pipe-in-plant-area` is **rig-side**, the first half in this repository
+that breaks the world a rig builds rather than a prototype, because "a pipe is standing where none
+should" is not something the data stage can say. It is **refused with `-Quality`**, the way
+`load-check.ps1` refuses `-SelfTest -AlsoModDirectory` and for the same reason. Its canary mod is
+duplicated from `load-check`'s rather than shared — decided 2026-09-07, because sharing means
+editing the repository's most load-bearing self-test to save about fifteen lines.
 Run them rather than reasoning about whether a change is safe.
 
 **`load-check.ps1` loads the mods two ways, and the default is not the player's.** Without arguments
