@@ -550,8 +550,9 @@ overwrote `rf-pipe-to-ground`'s underground connection with the literal `pipe-to
 twelve categories to its surface one, and a category is a whitelist, so both opened the box. Containment holds
 on the other twelve contained connections, so this is one pass over one prototype type rather than
 the guarantee failing in general. (Twelve of fourteen is that day's dump: containment was plasma-only
-then, and #86 and #87 took the count to twenty-four. The breaching pass is a `pipe-to-ground` pass
-and reaches no energy box, so the finding is unchanged and only the denominator moved.)
+then, and #86 and #87 took it to twenty-four; #276 took it to twenty-six on 2026-09-18. The
+breaching pass is a `pipe-to-ground` pass and reaches no energy box, so the finding is unchanged and
+only the denominator moved. `load-check` counts the live figure on every run.)
 `scripts/probe-connection-categories.ps1` is what measured it, and
 **since [#209](https://github.com/trulsjo/realistic-fusion-refreshed/issues/209) `load-check` fails
 on it**: on every lane it dumps the game twice, once with our mods alone for what our data stage

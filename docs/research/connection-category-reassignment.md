@@ -19,7 +19,8 @@ opened by finding that PR's central claim false. **Nothing here decides anything
 > **And "fourteen contained connections" is that day's count.** Containment was plasma-only on
 > 2026-09-01. [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) and
 > [#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87) categorised the two energy
-> fluids on 2026-09-07 and took the count to **twenty-four**. Every "twelve of the fourteen" below
+> fluids on 2026-09-07 and took the count to **twenty-four**; #276 took it to **twenty-six** on
+> 2026-09-18. Every "twelve of the fourteen" below
 > is a denominator rather than a finding: the pass that breached is a `pipe-to-ground` pass and
 > reaches no energy box, so nothing measured here changes. `load-check` counts the live figure.
 

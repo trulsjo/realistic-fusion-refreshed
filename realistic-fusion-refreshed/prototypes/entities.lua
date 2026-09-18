@@ -136,10 +136,11 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 -- merely inspects. Same category to the engine, nothing changed about what connects, and worth
 -- knowing anyway: it is not leaving our contained boxes alone, it is making twelve equivalent edits.
 --
--- FOURTEEN WAS THE COUNT ON 2026-09-01 AND THE TREE HAS MOVED. Containment was plasma-only then;
--- #86 and #87 took it to twenty-four by categorising the ten energy connections. The finding does
--- not change -- the pass that breached is a pipe-to-ground pass and reaches no energy box -- but
--- twelve of fourteen is that day's dump rather than today's, and load-check counts today's.
+-- FOURTEEN WAS THE COUNT ON 2026-09-01 AND THE TREE HAS MOVED TWICE. Containment was plasma-only
+-- then; #86 and #87 took it to twenty-four by categorising the ten energy connections, and #276 took
+-- it to twenty-six by giving rf-hc-exchanger's energy box two more. The finding does not change --
+-- the pass that breached is a pipe-to-ground pass and reaches no energy box -- but twelve of
+-- fourteen is that day's dump rather than today's, and load-check counts today's.
 --
 -- load-check FAILS on it since #209 (2026-09-02): it dumps the game twice on every lane, once with
 -- our mods alone for what this file declared and once with the set, and a category written here that

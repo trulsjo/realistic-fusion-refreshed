@@ -110,8 +110,8 @@ Checked against the installed 2.0.77 Space Age data
   whitelist, so both open a prototype a player builds. **One lane of fourteen does it**, and
   `no-pipe-touching` 1.1.28 is in no other lane's pin; containment holds on the other twelve of the
   fourteen contained connections *as they stood that day* -- containment was plasma-only then, and
-  #86 and #87 took the count to twenty-four. The breaching pass is a `pipe-to-ground` pass and
-  reaches no energy box, so only the denominator moved. See
+  #86 and #87 took it to twenty-four, #276 to twenty-six. The breaching pass is a `pipe-to-ground`
+  pass and reaches no energy box, so only the denominator moved. See
   [`connection-category-reassignment.md`](../research/connection-category-reassignment.md) for the
   mechanism and
   [`connection-categories-by-lane.md`](../research/connection-categories-by-lane.md) for the sweep.
