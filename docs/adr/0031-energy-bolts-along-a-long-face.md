@@ -147,6 +147,16 @@ an energy box is `input-output`. And each tier chains on its own axis.**
    three box volumes, `mining_time` (1 against 0.5), and the art. `mode` and `target_temperature`
    already agree, both inherited from the same vanilla heat exchanger.
 
+   > **"both inherited" is wrong, and only half wrong.** The two machines agree on the VALUE of
+   > `mode` and `target_temperature` — vanilla's, in both cases — which is what this item needed and
+   > what makes them not a difference to preserve. They do not agree on how they get there:
+   > `rf-heat-exchanger` assigns neither and inherits both, while `rf-hc-exchanger` assigns both
+   > explicitly, which is why `entities.lua`'s header lists the first among the prototypes that
+   > inherit and the second among the eight that set every balance stat. The enumeration stands; the
+   > word does not. Caught in the review of
+   > [#276](https://github.com/trulsjo/realistic-fusion-refreshed/issues/276) on 2026-09-18, after
+   > the tree's own comment had copied the phrasing from here.
+
    > **`400 MW against 40 MW` is now 400 against 90**, since
    > [#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227) took
    > `rf-heat-exchanger` to 90 MW on 2026-09-10. The enumeration is otherwise unaffected — the gap
