@@ -15,7 +15,8 @@ newer build.
 > [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) and
 > [#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87) shipped ADR 0018's item 1,
 > so the field this probe asked about is set on the real machines rather than on rig copies of them:
-> twenty-four connections carry a category and `scripts/check-containment.ps1` is the gate. The
+> twenty-six connections carry a category -- twenty-four until #276 -- and
+> `scripts/check-containment.ps1` is the gate. The
 > probe still runs and still measures its own variants -- that is what a probe is for, and its
 > "prototype read" line now prints the shipped categories beside them -- but the load-bearing
 > question it existed to answer is closed and asserted elsewhere. **AC 5 is what took the ordinary

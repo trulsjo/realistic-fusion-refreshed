@@ -217,11 +217,15 @@ script.on_nth_tick(60, function()
   --
   -- ITS GAP IS OFF BOTH FOOTPRINTS rather than written down. A literal offset kept a four-tile gap
   -- while the machine was 7x7 and left it flush against the reactor at fifteen wide.
+  --
+  -- HALF-WIDTHS, NOT CEILED ONES. Both machines are an odd number of tiles across, so each half is
+  -- a whole number plus a half and the two halves are exactly what stands between the two centres.
+  -- Ceiling them rounds each up by half a tile and quietly makes the gap five.
   local reactor = place(surface, "rf-reactor", 0.5, 0.5)
   local south = connection_facing(reactor, ENERGY, "south")
   bolt(surface, MACHINE, ENERGY, "north", south.target_position, { GRID_X, GRID_Y - 3 * PITCH })
   local hcW = footprint("rf-hc-exchanger")
-  local hc_x = 0.5 + math.ceil(W / 2) + 4 + math.ceil(hcW / 2)
+  local hc_x = 0.5 + W / 2 + 4 + hcW / 2
   place(surface, "rf-hc-exchanger", hc_x, 0.5)
 
   -- The three single-machine subjects, spaced off the widest frame so one cannot creep into

@@ -87,7 +87,7 @@ contained socket is told apart by the hardware it does not wear.**
 5. **`tools/check-socket-height.py` measures every socket, contained ones included.**
 6. **It binds every machine still to be built**, on ADR 0033's arithmetic: cheap to apply to a
    machine not yet modelled, expensive to reverse across machines already rendered. Nine prototypes
-   carry 24 contained connections across 12 fluid boxes, and exactly one of them —
+   carry 26 contained connections across 12 fluid boxes, and exactly one of them —
    `rf-heat-exchanger` — has rendered art today.
 
 ### The cover is kept, and that half is open

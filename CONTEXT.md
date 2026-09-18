@@ -505,7 +505,7 @@ defect, and telling the two apart is what
 > 2026-08-20 and item 1 shipped in
 > [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) and
 > [#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87). Every term below now names
-> something the tree builds: twenty-four connections carry a category, an ordinary pipe on a
+> something the tree builds: twenty-six connections carry a category, an ordinary pipe on a
 > reactor's energy output does not join and stays empty, no vanilla tank or pump joins one either,
 > and a converter and a neutronic reactor refuse each other outright.
 > `scripts/check-containment.ps1` asserts all of that — five bolted pairs, three that must join and
