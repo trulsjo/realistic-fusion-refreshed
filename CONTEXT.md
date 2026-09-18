@@ -253,6 +253,33 @@ DRAWS** — reactor, heater, two electrolysers, extractor and chemical plant —
 from the 56.1 MW the reactor sells. The near-collision is a coincidence of the balance rather than a
 relationship, and either number can move without the other.
 
+**Supply ratio** — how many **settled** D-D reactors it takes to supply one consumer of what they
+breed. It depends on **operating point** above and has no value without one, which is why it sits
+here: the D-D end is always the settled reactor, and the consumer has to be named. **It has two
+readings and they differ by a factor of ten, so always say which** (#290):
+
+- **Per heater** — one `rf-heater`'s worth of fuel. This is the reading a player meets, because a
+  heater is what they build. **9.1 D-D reactors per heater** on the D-T mix at the shipped
+  confinement time.
+- **Per saturated reactor** — what a settled consuming reactor burns flat out. **94.7 D-D reactors
+  per D-T reactor**, the figure [`d-t-ignition.md`](docs/research/d-t-ignition.md) tabulates against
+  the confinement ladder.
+
+**The heater count is what relates them**: a settled D-T reactor eats **10.4 heaters**, so the
+per-saturated-reactor reading is the per-heater one times that. All three are pinned in
+`tests/test-reactor-logic.lua`, from the rate the shipped recipes run at rather than from a literal
+2.5 — see `M.heater` in `realistic-fusion-refreshed/scripts/reactor-logic.lua`. **One input is not
+pinned and the block says so**: that a mix has the composition of the plasma made from it. The
+mixing recipes are Core prototypes and that suite runs outside Factorio, so retuning
+`rf-d-t-mixing` or `rf-d-he3-mixing` without retuning `fractions` moves a player's chain and moves
+nothing here.
+
+**Both tiers quote the same measurement.** A D-D reactor breeds tritium and helium-3 at the same
+rate, so a heater on the D-He3 mix costs the same 9.1 as one on the D-T mix, and a heater on bare
+helium-3 costs **18.2** because there is no second species to blend in. `prototypes/entities.lua`
+records those two where it sizes `rf-aneutronic-composite-tank`. Whether 9.1 is the right cost is a balance
+question and is settled nowhere — naming the quantity is not deciding it.
+
 **Ignited** — a plasma whose own fusion self-heating carries it without external confinement heating.
 Confinement heating gets an ignited plasma **to** a fusing temperature; it is not what keeps it at one.
 **D-T at this reactor's density and confinement time is ignited and D-D is not**, which is the tiers'

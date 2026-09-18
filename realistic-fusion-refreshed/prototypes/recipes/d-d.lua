@@ -1,5 +1,11 @@
 -- The D-D tier. Balance is provisional, as everywhere else in this repository: the chain has to
 -- work, not to be tuned. The one number here that is not free is the plasma rate -- see below.
+
+-- The plasma-heating rate is reactor-logic's rather than a literal (#290): one heater is one
+-- heater on every tier, and tests/test-reactor-logic.lua pins the supply ratio against that
+-- rate. See M.heater there.
+local logic = require("scripts.reactor-logic")
+
 data:extend({
   -- The machines themselves.
   {
@@ -99,11 +105,11 @@ data:extend({
     name = "rf-d-d-plasma",
     category = "rf-plasma-heating",
     enabled = false,
-    energy_required = 2,
-    ingredients = { { type = "fluid", name = "rf-deuterium", amount = 5 } },
+    energy_required = logic.heater.craft_seconds,
+    ingredients = { { type = "fluid", name = "rf-deuterium", amount = logic.heater.plasma_per_craft } },
     -- Injected hot enough to be a plasma and nowhere near hot enough to fuse. Fuelling a running
     -- reactor therefore cools it slightly, which is what fuelling a real plasma does.
-    results = { { type = "fluid", name = "rf-d-d-plasma", amount = 5, temperature = 1e6 } },
+    results = { { type = "fluid", name = "rf-d-d-plasma", amount = logic.heater.plasma_per_craft, temperature = 1e6 } },
     main_product = "rf-d-d-plasma",
     allow_productivity = false,
   },

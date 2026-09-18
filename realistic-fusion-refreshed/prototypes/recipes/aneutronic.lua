@@ -9,6 +9,12 @@
 -- plasma rate: 5 units in 2 seconds is what rf-d-d-plasma and rf-d-t-plasma already run at, and it
 -- is kept so that one heater still means one heater's worth of fuel however far down the chain a
 -- player is. A faster recipe here would hide the tier's step up inside a machine stat.
+
+-- The plasma-heating rate is reactor-logic's rather than a literal (#290): one heater is one
+-- heater on every tier, and tests/test-reactor-logic.lua pins the supply ratio against that
+-- rate. See M.heater there.
+local logic = require("scripts.reactor-logic")
+
 data:extend({
   -- Every ingredient below is reachable inside rf-aneutronic-fusion's own prerequisite closure --
   -- see technology/aneutronic.lua, which names processing-unit as a prerequisite for exactly this
@@ -61,9 +67,9 @@ data:extend({
     name = "rf-d-he3-plasma",
     category = "rf-plasma-heating",
     enabled = false,
-    energy_required = 2,
-    ingredients = { { type = "fluid", name = "rf-d-he3-mix", amount = 5 } },
-    results = { { type = "fluid", name = "rf-d-he3-plasma", amount = 5, temperature = 1e6 } },
+    energy_required = logic.heater.craft_seconds,
+    ingredients = { { type = "fluid", name = "rf-d-he3-mix", amount = logic.heater.plasma_per_craft } },
+    results = { { type = "fluid", name = "rf-d-he3-plasma", amount = logic.heater.plasma_per_craft, temperature = 1e6 } },
     main_product = "rf-d-he3-plasma",
     -- No productivity, for the reason every plasma recipe gives: plasma is energy, and a bonus
     -- here would conjure it -- along with the helium-3 that the whole D-D tier exists to breed.
@@ -78,9 +84,9 @@ data:extend({
     name = "rf-he3-he3-plasma",
     category = "rf-plasma-heating",
     enabled = false,
-    energy_required = 2,
-    ingredients = { { type = "fluid", name = "rf-helium-3", amount = 5 } },
-    results = { { type = "fluid", name = "rf-he3-he3-plasma", amount = 5, temperature = 1e6 } },
+    energy_required = logic.heater.craft_seconds,
+    ingredients = { { type = "fluid", name = "rf-helium-3", amount = logic.heater.plasma_per_craft } },
+    results = { { type = "fluid", name = "rf-he3-he3-plasma", amount = logic.heater.plasma_per_craft, temperature = 1e6 } },
     main_product = "rf-he3-he3-plasma",
     allow_productivity = false,
   },

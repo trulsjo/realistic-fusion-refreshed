@@ -777,6 +777,48 @@ M.blanket = {
   lithium_nuclei_per_item = 1e20,
 }
 
+-- ------------------------------------------------------------------------------ the heater (#290)
+
+--- What one rf-heater turns fuel into plasma at.
+--
+-- THE SIMULATION DOES NOT USE THIS. Nothing in step(), settle() or breed() reads it; the heater is
+-- an ordinary assembling machine and the model starts at the reactor's box. It is here because it
+-- is the denominator of the SUPPLY RATIO (CONTEXT.md) -- how many settled D-D reactors feed one
+-- consumer of what they breed -- and that ratio's smaller reading, the one a player actually meets,
+-- is per heater rather than per saturated reactor. Pinning it needs the rate, and a figure pinned
+-- against a literal 2.5 would go on reading 2.5 after someone retuned the recipe.
+--
+-- SO THE PROTOTYPES READ IT FROM HERE, the way rf-reactor's box reads box_volume (#153): all four
+-- rf-plasma-heating recipes take their energy_required and their amounts from these fields, and
+-- prototypes/entities.lua takes rf-heater's crafting_speed. A retune therefore moves the pinned
+-- figure in tests/test-reactor-logic.lua instead of silently falsifying it.
+--
+-- ONE HEATER IS ONE HEATER ON EVERY TIER, and that is a decision rather than an accident: D-D, D-T,
+-- D-He3 and He3-He3 all run at this one rate, so "a heater's worth of fuel" means the same thing
+-- however far down the chain a player is. The recipe comments say so in their own words; this is
+-- where the number they say it about lives.
+--
+-- Provisional, like every balance number here.
+M.heater = {
+  -- Plasma units one craft yields, and fuel units it consumes: the recipes are one-for-one.
+  plasma_per_craft = 5,
+  -- Seconds one craft takes at crafting_speed 1 -- the recipe's energy_required.
+  craft_seconds = 2,
+  -- The machine's own multiplier on that. Modules move it in game; this is the bare prototype, and
+  -- the ratio is quoted against a bare machine for the reason every other figure here is.
+  crafting_speed = 1,
+}
+
+--- Plasma units a bare rf-heater makes per second. 2.5 as shipped.
+--
+-- A function rather than a fourth field, for the reason M.blanket's capture energy is derived: a
+-- stored rate beside the three numbers it comes from would let a retune move one and leave the
+-- other contradicting it, silently.
+function M.heater_plasma_rate(heater)
+  heater = heater or M.heater
+  return heater.plasma_per_craft / heater.craft_seconds * heater.crafting_speed
+end
+
 --- One simulation step for one reactor.
 --
 -- @param spec           reactor constants -- M.reactor holds the shipped ones
