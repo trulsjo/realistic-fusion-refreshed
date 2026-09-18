@@ -215,7 +215,7 @@ an energy box is `input-output`. And each tier chains on its own axis.**
   `graphics/rendered/*/manifest.json` at all, so the directory cannot be deleted to escape the gate.
   `rf-hc-exchanger`, `rf-direct-energy-converter` and `rf-aneutronic-reactor` regenerate mockups.
 
-  **Three of the four are done, and the heat exchanger's re-render moved no pixel.** #275 rendered it
+  **All four are done, and the heat exchanger's re-render moved no pixel.** #275 rendered it
   for the turned footprint; #86 then added a connection category, which changes `geometry.json` and
   so its sha, so the model had to be rebuilt and the sheets re-rendered to keep the manifest honest —
   and every one of the thirteen PNGs came back byte-identical, which is this ADR's determinism claim

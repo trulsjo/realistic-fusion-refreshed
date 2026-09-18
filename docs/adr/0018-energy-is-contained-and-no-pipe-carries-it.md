@@ -7,7 +7,8 @@ Date: 2026-08-20
 **Accepted, and implemented in full on 2026-09-07.** Item 1 shipped in
 [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) (the neutronic fluid) and
 [#87](https://github.com/trulsjo/realistic-fusion-refreshed/issues/87) (the aneutronic one), which
-carry items 2, 3 and 5 with them. Twenty-four connections now declare a category, up from fourteen;
+carry items 2, 3 and 5 with them. Twenty-six connections now declare a category, up from fourteen
+(twenty-four until #276 gave `rf-hc-exchanger` two more energy connections on 2026-09-18);
 `scripts/check-containment.ps1` asserts that an ordinary pipe, a vanilla storage tank and a vanilla
 pump are all refused by a live reactor-energy box, that a fluid wagon has no fluid box for a pump to
 be its only route into, and that a converter and a neutronic reactor refuse each other. Item 4's

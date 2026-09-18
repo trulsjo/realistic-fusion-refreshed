@@ -93,8 +93,10 @@
                 the alternative it was on the 3x2: rf-reactor declares ONE energy output, north
                 {0, -7}, so exactly one machine can bolt to it however small that machine is.
 
-      hc        The refuse/accept pair again on rf-hc-exchanger's shape, which has the same energy
-                source on a seven-tile footprint. Chaining is not repeated for it: the mechanism is
+      hc        The refuse/accept pair again on rf-hc-exchanger's shape, which HAD the same energy
+                source on a seven-tile footprint -- #276 gave that machine 15x5 and three
+                "input-output" energy connections, so these rows sit on pre_276_frame's pinned copy
+                like the input-bolt row below. Chaining is not repeated for it: the mechanism is
                 the same one, and #82 allows establishing that one answer covers both.
 
       input-    THE BOLT IS repeated for it, and that is #275's doing rather than #82's. Everything
@@ -704,9 +706,14 @@ script.on_init(function()
   local hc_conn   = hc_reactor.fluidbox.get_pipe_connections(hc_out)[1]
   local hc_target = connection_tile(hc_reactor, hc_conn)
 
-  -- side = nil on purpose: rf-hc-exchanger's energy box has exactly ONE connection, and asking for
+  -- side = nil on purpose: rf-probe-hc-str's energy box has exactly ONE connection, and asking for
   -- it that way makes rf_place_facing error rather than guess if that ever stops being true. Naming a
   -- face here would assert a layout this rig does not own -- the mistake #45 already caused once.
+  --
+  -- THE SUBJECT IS THE RIG'S DECLARATION RATHER THAN THE TREE'S SINCE #276. The shipped
+  -- rf-hc-exchanger has THREE energy connections on a 15x5 box; pre_276_frame pins the one-connection
+  -- 7x7 shape onto the copy, which is what keeps "only" honest here and is the whole reason that
+  -- function exists.
   local hc_bolt = rf_place_facing(surface, force, {
     name = "rf-probe-hc-str", fluid = ENERGY, connection = "only",
     target = hc_target, seed = { 60.5, 40.5 },
