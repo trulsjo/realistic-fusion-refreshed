@@ -806,9 +806,19 @@ hc_exchanger.target_temperature = 500
 -- Truls's decision, 2026-09-07: the two machines are one machine at two scales, so the high-capacity
 -- one takes the ordinary one's shape and plumbing outright. What is left different, enumerated
 -- rather than waved at (ADR 0031 item 3): energy_consumption, all three box volumes, mining_time,
--- and the art. mode and target_temperature already agreed -- both are inherited from the same
--- vanilla heat exchanger. A player who has learnt the ordinary exchanger's row knows this one, and a
--- blueprint of one is a blueprint of the other.
+-- and the art. mode and target_temperature were never a difference to preserve -- both machines end
+-- up on vanilla's own values.
+--
+-- THEY AGREE ON THE VALUE AND NOT ON HOW THEY GOT IT, which ADR 0031 item 3 elides and this comment
+-- repeated until the review of #276 caught it. rf-heat-exchanger assigns NEITHER field and is in the
+-- inherited list at the top of this file for its target_temperature; the two lines above assign both
+-- on THIS machine, which is why it is in the other list -- one of the eight clone sites that set
+-- every balance stat. So "inherited" is true of one of the pair and false of the other, and deleting
+-- either line here as redundant would hand this machine's mode and temperature to whatever a mod
+-- sorting before us has done to vanilla's.
+--
+-- A player who has learnt the ordinary exchanger's row knows this one, and a blueprint of one is a
+-- blueprint of the other.
 --
 -- IT WAS SEVEN TILES SQUARE, FOLLOWING KRASTORIO 2's MATTER PLANT the way rf-reactor follows its
 -- fusion reactor (ADR 0013), AND THE ARGUMENT FOR THAT IS GIVEN UP RATHER THAN REFUTED. The comment
