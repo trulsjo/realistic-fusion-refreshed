@@ -423,11 +423,11 @@ script.on_init(function()
   -- been cheaper by one string and the box filters would still stop the wrong fluid moving -- but it
   -- would let a converter bolt onto a neutronic reactor and then sit dry, which is the same shape of
   -- silent failure as the water-in-the-header footgun ADR 0018 closes. So the engine refuses the
-  -- connection outright, and these four pairs are what says it does.
+  -- connection outright, and these five pairs are what says it does.
   --
   -- THE MATCHING PAIRS ARE THE CONTROLS. Two boxes one tile clear of each other look exactly like
   -- two boxes the engine refused to join, so a rig that only built the crossed pairs would pass with
-  -- containment removed and the arithmetic wrong. Same helper, same faces, same seed for all four.
+  -- containment removed and the arithmetic wrong. Same helper, same faces, same seed for all five.
   --
   -- The reactors are unregistered -- raise_built = false, so realistic-fusion-refreshed never hears of
   -- them and control.lua never steps them. Nothing here is about fluid crossing a joint; it is

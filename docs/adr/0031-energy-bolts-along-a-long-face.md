@@ -13,8 +13,8 @@ has been unimplementable since 2026-08-24 and says so in its own block quote. It
 — items 1, 2, 3, 5 and 6 stand exactly as written, and item 2's *"No pipe entity carries either, and
 none is added"* is what this ADR exists to make buildable.
 
-**Amends [ADR 0022](0022-footprints-follow-the-original-mod.md)'s footprint table** for two machines:
-`rf-hc-exchanger` goes from 7×7 to 15×5, and `rf-heat-exchanger` and
+**Amends [ADR 0022](0022-footprints-follow-the-original-mod.md)'s footprint table** for three
+machines: `rf-hc-exchanger` goes from 7×7 to 15×5, and `rf-heat-exchanger` and
 `rf-direct-energy-converter` keep their five-by-fifteen area with the long axis declared east–west
 rather than north–south. ADR 0022's rule — *the footprint is chosen first, from the original mod, and
 the art is redrawn to fit* — is applied here rather than changed.
@@ -223,7 +223,7 @@ an energy box is `input-output`. And each tier chains on its own axis.**
   `rf-hc-exchanger`'s came in #276, which is also where it LOST its Krastorio 2 art: the matter
   plant sheets are drawn for a seven-tile square and ADR 0022 records that nothing in that set sits
   at 15×5, so the two PNGs are deleted, their entry has left the NOTICE, and the machine is back on a
-  labelled box until #277 renders it. All four are done.
+  labelled box until #277 renders it.
 - **`rf-reactor` keeps Krastorio 2's art and skips the mockup round.** Its art already fits its
   footprint, which is not the condition `make-mockup-art.ps1` exists for, and `entities.lua` records
   that the art is what tells the two 15×15 reactors apart. Its new south socket is drawn by
