@@ -1419,6 +1419,25 @@ check(top_gain < 0.10 and unresearched_gain > 0.30,
 -- separately rather than a rate of change being asserted.
 local T_FRACTION = L.fuels["rf-d-t-plasma"].fractions[2]
 
+-- THE OTHER READING'S DENOMINATOR (#290). Read from M.heater rather than written as 2.5: all four
+-- rf-plasma-heating recipes take their energy_required and amounts from it and rf-heater takes its
+-- crafting_speed, so a retune moves the pinned figures below instead of silently falsifying them.
+local HEATER_RATE = L.heater_plasma_rate()
+near(HEATER_RATE, 2.5, 1e-9, "one rf-heater makes 2.5 units of plasma a second")
+
+-- Tritium one heater on rf-d-t-mix supplies, which is the consumer the per-heater reading is about.
+--
+-- ONE ASSUMPTION HERE IS NOT PINNED AND SAYS SO: that the MIX a heater eats has the same composition
+-- as the PLASMA it makes. `fractions` describes the plasma; what a heater draws from the tritium line
+-- is set by Core's rf-d-t-mixing (50 + 50 into 100) and by the plasma recipe being one-for-one. Those
+-- agree today, and they have to agree for the model to be coherent at all -- a 25/75 mix burnt as a
+-- 50/50 plasma would be step() disagreeing with the pipe about what is in the box, which is the
+-- same fault `fractions` was added to fix (#28). Nothing in the tree ENFORCES it: Core's recipes are
+-- prototypes and this suite runs outside Factorio, so it cannot read them. Retune a mixing recipe
+-- without retuning `fractions` and the figures below stay at 9.12 while a player's chain moves.
+-- Found in review of the commit that added this block.
+local HEATER_TRITIUM = HEATER_RATE * T_FRACTION
+
 --- Both ends of the chain at one confinement time.
 --
 -- BOTH ENDS AT SETTLE_S, and the D-T end especially. The D-T block above settles that tier for one
@@ -1435,6 +1454,11 @@ local function chain(spec)
   local sold_w = (dt.energy_units + dd.energy_units * ratio) / TICK * spec.energy_fluid_j_per_unit
   return {
     needed = needed, bred = bred, ratio = ratio,
+    -- The same quantity per heater instead of per saturated reactor, and the count that relates
+    -- them. Only the breeder end moves with the ladder here: a heater makes the same plasma
+    -- whatever a force has researched.
+    per_heater = HEATER_TRITIUM / bred,
+    heaters    = needed / HEATER_TRITIUM,
     -- What the whole chain sells, per reactor in it -- the figure the note quotes as the tier's
     -- step, and the one that says the step is per-reactor rather than per-plant.
     per_reactor_w = sold_w / (1 + ratio),
@@ -1458,11 +1482,17 @@ local TOPPED = RUNGS[#RUNGS]
 --
 -- The rows are d-t-ignition.md's, in its order: tritium bred, tritium needed, D-D reactors per
 -- D-T reactor, and megawatts per reactor across the whole chain.
+--
+-- SINCE #290 IT ALSO PINS THE OTHER READING OF THE SAME QUANTITY, per rung. `ratio` is the SUPPLY
+-- RATIO per saturated reactor -- what a settled D-T reactor burns -- and `per_heater` is what one
+-- rf-heater's worth costs, which is the reading a player meets because a heater is what they build.
+-- `heaters` is what relates them. CONTEXT.md defines all three under **supply ratio**; the note
+-- publishes all three; this table is where they are measured.
 local PUBLISHED = {
-  { tau = 30, bred = 0.137012, needed = 12.9747, ratio = 94.6969, mw = 88.457 },
-  { tau = 40, bred = 0.246974, needed = 12.3144, ratio = 49.8611, mw = 124.569 },
-  { tau = 50, bred = 0.406267, needed = 11.8952, ratio = 29.2794, mw = 175.662 },
-  { tau = 60, bred = 0.627339, needed = 11.6077, ratio = 18.5032, mw = 244.242 },
+  { tau = 30, bred = 0.137012, needed = 12.9747, ratio = 94.6969, mw = 88.457,  per_heater = 9.1233, heaters = 10.3798 },
+  { tau = 40, bred = 0.246974, needed = 12.3144, ratio = 49.8611, mw = 124.569, per_heater = 5.0613, heaters = 9.8515 },
+  { tau = 50, bred = 0.406267, needed = 11.8952, ratio = 29.2794, mw = 175.662, per_heater = 3.0768, heaters = 9.5162 },
+  { tau = 60, bred = 0.627339, needed = 11.6077, ratio = 18.5032, mw = 244.242, per_heater = 1.9926, heaters = 9.2862 },
 }
 check(#PUBLISHED == #RUNGS, "the published table has a row for every rung of the ladder",
   string.format("%d rows against %d rungs", #PUBLISHED, #RUNGS))
@@ -1476,6 +1506,19 @@ for i, want in ipairs(PUBLISHED) do
     string.format("at %d s it takes %.4g D-D reactors to feed one", want.tau, want.ratio))
   near(got.per_reactor_w / 1e6, want.mw, 0.01,
     string.format("at %d s the chain sells %.4g MW per reactor in it", want.tau, want.mw))
+  near(got.per_heater, want.per_heater, 0.01,
+    string.format("at %d s one heater on the D-T mix costs %.4g D-D reactors", want.tau, want.per_heater))
+  near(got.heaters, want.heaters, 0.01,
+    string.format("at %d s a settled D-T reactor eats %.4g heaters", want.tau, want.heaters))
+  -- THE THREE PUBLISHED FIGURES MULTIPLYING OUT, against each other rather than against the model.
+  -- Asserting it on `got` would be an identity and not a check -- per_heater is
+  -- HEATER_TRITIUM/bred and heaters is needed/HEATER_TRITIUM, so their product is needed/bred,
+  -- which is how ratio is computed in chain() and no retune could break it. This version has
+  -- something to say: the three literals on this row are transcribed into the note as three
+  -- separate figures, and a row whose columns no longer multiply out is exactly the drift a reader
+  -- would otherwise have to catch by hand. Found in review of the commit that added this block.
+  near(want.per_heater * want.heaters, want.ratio, 0.01,
+    string.format("at %d s the published per-heater figure times the published heater count is the published ratio", want.tau))
 end
 
 -- MONOTONE, which is a claim the four rows above cannot make on their own: every rung makes the
@@ -1500,6 +1543,39 @@ end
 check(BARE.ratio > 1 and TOPPED.ratio > 1,
   "the unblanketed chain always costs more than one D-D reactor per D-T reactor",
   string.format("%.4g unresearched, %.4g researched", BARE.ratio, TOPPED.ratio))
+
+-- ------------------------------------- the supply ratio, on the aneutronic tier too (#290)
+--
+-- THE SAME MEASUREMENT AS THE `per_heater` COLUMN ABOVE, FOR HELIUM-3 INSTEAD OF TRITIUM, and it is
+-- here because prototypes/entities.lua arrived at the same 9:1 while sizing the composite tank, in
+-- a different vocabulary, with nothing joining the two statements up. They are one quantity.
+--
+-- A D-D reactor breeds helium-3 and tritium at the same rate -- half a nucleus of each per reaction,
+-- which the by-products block above pins -- so the denominator is BARE.bred here too, and the
+-- numerator differs only in what share of a plasma unit is the bred isotope. That share is read off
+-- `fractions` rather than written down: 0.5 for the two 50/50 mixes, 1 for He3-He3, which burns a
+-- bare Core fluid and has no second species to blend in. The unpinned mix assumption noted at
+-- HEATER_TRITIUM applies to rf-d-he3-mixing in the same way.
+--
+-- NO BALANCE CHANGE IS DECIDED HERE, and #290 says so in as many words. Whether 9.1 is acceptable
+-- is #292's question; this block exists so that #292 argues about one figure.
+local function per_heater(plasma)
+  return HEATER_RATE * L.fuels[plasma].fractions[2] / BARE.bred
+end
+
+near(per_heater("rf-d-he3-plasma"), BARE.per_heater, 1e-9,
+  "per heater, the D-He3 mix costs exactly what the D-T mix costs -- one measurement, two tiers")
+near(per_heater("rf-he3-he3-plasma"), 2 * per_heater("rf-d-he3-plasma"), 1e-9,
+  "and a heater on bare helium-3 costs twice that, having no second species to blend in")
+near(per_heater("rf-d-he3-plasma"), 9.1233, 0.01,
+  "so nine settled D-D reactors feed one heater on the mix")
+near(per_heater("rf-he3-he3-plasma"), 18.2466, 0.01,
+  "and eighteen feed one on bare helium-3")
+
+-- THE PER-SATURATED-REACTOR READING EXISTS ON THIS TIER TOO and is deliberately NOT pinned: what a
+-- settled rf-aneutronic-reactor burns is a measurement this file does not take, and inventing one
+-- to fill the symmetry would put a figure on the record that nothing measured. Every aneutronic
+-- figure above is per heater and says so.
 
 -- ------------------------------------------------------------------------------- the guard (#53)
 --

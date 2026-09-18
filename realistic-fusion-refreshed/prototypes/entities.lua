@@ -215,7 +215,11 @@ local heater = pin(table.deepcopy(data.raw["assembling-machine"]["chemical-plant
   mining_time = 0.5,
 })
 heater.crafting_categories = { "rf-plasma-heating" }
-heater.crafting_speed = 1
+-- Taken from reactor-logic rather than typed, for the reason the reactor's box volume is (#153,
+-- #290): this is one of the three numbers the SUPPLY RATIO's per-heater reading is computed from,
+-- and tests/test-reactor-logic.lua pins that reading. Retune it there and the pinned figure moves;
+-- retune it here and the figure would go on saying 9.1 while the game said something else.
+heater.crafting_speed = logic.heater.crafting_speed
 heater.energy_usage = "5MW"
 heater.module_slots = 3
 -- No productivity: a productivity bonus on this recipe would conjure plasma, and plasma is
@@ -1549,7 +1553,8 @@ local tank = pin(table.deepcopy(data.raw["storage-tank"]["storage-tank"]), "rf-a
 -- SO THE FINDING IS THAT THE VALUE HOLDS AND ITS CHARACTER DOES NOT: 50 000 units is a warehouse by
 -- the struck-through sentence's own standard, and it is kept as one on purpose. Helium-3 is the
 -- scarcest fluid in the mod -- one heater on the mix eats what NINE D-D reactors breed, and one on
--- bare helium-3 what eighteen do -- so the vessel's job on this tier is to let a player accumulate a
+-- bare helium-3 what eighteen do (the SUPPLY RATIO, per heater; see below) -- so the vessel's job on
+-- this tier is to let a player accumulate a
 -- trickle and burn it in bursts, which is a stockpile's job and not a buffer's. Sizing it to the old
 -- eight minutes would put it at 1 200 units, a twentieth of a vanilla tank, and delete the entity's
 -- reason to exist.
@@ -1559,10 +1564,25 @@ local tank = pin(table.deepcopy(data.raw["storage-tank"]["storage-tank"]), "rf-a
 -- footprint cannot, and twice vanilla's volume is what that buys. See the paragraph on "composite"
 -- above.
 --
--- THAT 9:1 SUPPLY RATIO IS A BALANCE QUESTION AND IS NOT SETTLED HERE. Whether the aneutronic tier
--- should need nine breeders per heater is a decision about the tier, not about a tank, and nothing
--- in this comment may be read as having taken it. Provisional, like every other balance number in
--- this repository.
+-- THAT 9:1 IS THE SUPPLY RATIO, AND IT IS THE SAME MEASUREMENT THE NEUTRONIC TIER QUOTES (#290).
+-- CONTEXT.md defines it: how many SETTLED D-D reactors supply one consumer of what they breed, with
+-- two readings that differ by a factor of ten.
+--
+--   per heater             9.12 D-D reactors, which is the reading the table above is in
+--   per saturated reactor  94.7 D-D reactors, for a settled D-T reactor -- 10.4 heaters' worth
+--
+-- The table's two heater rows come out at 9.12 and 18.2 because a D-D reactor breeds tritium and helium-3 at the
+-- same rate and both mixes are 50/50: a heater on rf-d-he3-mix costs exactly what a heater on
+-- rf-d-t-mix costs, and a heater on bare helium-3 twice that. So this comment and
+-- docs/research/d-t-ignition.md's 94.7 are one quantity read two ways, not two numbers that happen
+-- to be near each other. Both readings and the heater count are pinned in
+-- tests/test-reactor-logic.lua's supply-ratio block, from what the recipes ship rather than from a
+-- literal 2.5.
+--
+-- AND IT IS A BALANCE QUESTION AND IS NOT SETTLED HERE. Whether the aneutronic tier should need
+-- nine breeders per heater is a decision about the tier, not about a tank, and nothing in this
+-- comment may be read as having taken it. Provisional, like every other balance number in this
+-- repository.
 tank.fluid_box.volume = 50000
 -- In-world it is Krastorio 2's big storage tank, which is where the icon already came from, so the
 -- thing in the hand and the thing on the ground are the same building (#45). It is a sprite swap and

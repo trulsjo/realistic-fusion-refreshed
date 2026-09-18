@@ -161,7 +161,39 @@ either way and does not double.
 
 ## Does the fuel chain support it?
 
-**Yes — with a lithium blanket.** Without one, ninety-five D-D reactors feed one D-T reactor.
+**Yes — with a lithium blanket.** Without one, ninety-five D-D reactors feed one D-T reactor — and
+that is the **per saturated reactor** reading of the **supply ratio**, which is not the number a
+player meets. See the two readings below before quoting anything from this section.
+
+### Both readings of the supply ratio
+
+`CONTEXT.md` defines **supply ratio**: how many settled D-D reactors supply one consumer of what
+they breed. **It has two readings and they differ by a factor of ten, so every figure in this
+section says which** (#290).
+
+| reading | what the consumer is | at the shipped 30 s |
+|---|---|---|
+| **per heater** | one `rf-heater` on `rf-d-t-mix`, 1.25 u/s of tritium | **9.12** D-D reactors |
+| **per saturated reactor** | a settled D-T reactor, 12.97 u/s of tritium | **94.7** D-D reactors |
+
+**The heater count is what relates them.** A settled D-T reactor burns 25.9 u/s of plasma and one
+`rf-heater` makes 2.5, so it is eating **10.4 heaters** — and 9.12 × 10.4 is 94.7. Everything in
+the rest of this section, the confinement table included, is the **per saturated reactor** reading.
+
+**The per-heater reading is what a player meets**, because a heater is what they build. It is also
+the operating point `prototypes/recipes/d-t.lua` was balanced at — *"Fed at that rate a D-T reactor
+settles around 320 MW against a D-D reactor's 86"*, a pre-#52 figure whose megawatts are
+radiation-free but whose operating point is the heater's.
+
+**And the aneutronic tier records the same measurement in a different vocabulary.** A D-D reactor
+breeds tritium and helium-3 at the same rate, so a heater on the D-He3 mix costs the same **9.12**
+and a heater on bare helium-3 **18.2**; `prototypes/entities.lua` states both where it sizes
+`rf-aneutronic-composite-tank`. All of this is pinned in `tests/test-reactor-logic.lua`'s
+supply-ratio block, from the rate the shipped recipes run at rather than from a literal 2.5.
+
+**Naming the quantity decides no balance.** Whether 9.12 is an acceptable cost is
+[#292](https://github.com/trulsjo/realistic-fusion-refreshed/issues/292)'s question; this section
+exists so that it argues about one figure.
 
 **Both tiers are quoted SETTLED here, and choosing that is what #117 was actually for.** Settled is
 box full and all the power the reactor asks for — the operating point `CONTEXT.md` names as the
@@ -181,7 +213,8 @@ and 26.0 u/s at a minute against 3.27×10⁹ and 25.9 settled.
 - A settled D-D reactor burns **0.548 u/s** of deuterium and breeds a quarter of that back as
   tritium: **0.137 u/s**.
 
-**94.7 D-D reactors feed one D-T reactor.** Together that is 8 465 MW from 95.7 reactors, **88.5 MW
+**94.7 D-D reactors feed one D-T reactor** — the supply ratio **per saturated reactor**; per heater
+it is 9.12. Together that is 8 465 MW from 95.7 reactors, **88.5 MW
 each**, against 56.1 MW for a D-D reactor on its own — a 58% step per reactor for ninety-five times
 the plumbing. The step per reactor is close to what this section always claimed, which said 61%. The
 plumbing is not.
@@ -192,6 +225,12 @@ the same time: D-D's tritium goes from 0.137 to 0.627 u/s, **4.6×**, while D-T 
 3.27×10⁹ to 3.92×10⁹ °C — past the peak of its own cross-section, so it burns 25.9 u/s down to 23.2.
 Both effects shorten the chain, and every rung does.
 
+Every cell of the **D-D per D-T** column is the supply ratio **per saturated reactor**. The
+per-heater reading is 1.25 divided by the **D-D breeds** cell on the same row — 9.12 at 30 s, 5.06
+at 40 s, 3.08 at 50 s and 1.99 at 60 s — because a heater makes 2.5 u/s of plasma whatever the
+research, so only the breeder end of the ratio moves. **The heater count therefore moves too**, from
+10.4 at 30 s to 9.29 at 60 s, since a settled D-T reactor burns less as it settles hotter.
+
 | confinement | technology | D-D breeds | D-T needs | D-D per D-T | MW per reactor |
 |---|---|---|---|---|---|
 | 30 s | none — shipped | 0.137 u/s | 12.97 u/s | **94.7** | 88.5 |
@@ -201,14 +240,17 @@ Both effects shorten the chain, and every rung does.
 
 **Every number above comes out of `tests/test-reactor-logic.lua`**, through the shipped `step()` and
 `settle()`, in the block headed *the fuel chain, at the settled point (#117)*. **Every cell of the
-table is pinned there to 1%, row by row** — not only the two ends, which is what the first version
+table is pinned there to 1%, row by row** — **and since #290 so are the other reading's figures for
+every row**: the per-heater ratios and heater counts quoted above the table, with their product
+required to come back to that row's own `D-D per D-T` cell, so the two readings cannot drift apart — not only the two ends, which is what the first version
 of that block did and would have let a retuned middle rung sit here wrong while the suite reported
 no failures. Each rung is additionally required to shorten the chain. So a rebalance moves these
 figures there before it moves them here, and nothing in this section is computed by hand — which is
 what let the previous version go a month with a numerator that had moved and a ratio that had not.
 
 **Whether ninety-five is the intended cost of the unblanketed route is a balance question, and it is
-not settled here.** What the measurement says is that the D-D by-product chain is not plumbing a
+not settled here** — nor is the nine a player meets on their first heater, which is the same question
+about the same quantity read the other way. What the measurement says is that the D-D by-product chain is not plumbing a
 player builds: ninety-five extra machines lift the average from 56.1 MW to 88.5 MW. That makes the
 blanket below the route rather than an optimisation of this one. Retuning it — or accepting it as the
 price of the tier before `rf-blanket-breeding` — is Truls's call.
