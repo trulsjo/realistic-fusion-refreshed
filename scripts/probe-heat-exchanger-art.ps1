@@ -24,14 +24,16 @@
     WHAT IT SHOOTS, and why each one:
 
       layout.png         rf-reactor, then rf-heat-exchanger BOLTED to the reactor's south face
-                         along all fifteen tiles, then rf-hc-exchanger to the east as a size
-                         comparison. The bolted pair is the arrangement the shape exists for
-                         (#108, ADR 0022) and the one ADR 0031 makes buildable (#275): energy
-                         sells north and south, so the exchanger stands south of the reactor with
-                         its north long face against it. The high-capacity machine is in frame
-                         because the tier's whole message is that the two are told apart at a
-                         glance -- it is beside the reactor rather than bolted to it, since east
-                         and west are plasma and no exchanger can meet them.
+                         along all fifteen tiles, then rf-hc-exchanger to the east. The bolted pair
+                         is the arrangement the shape exists for (#108, ADR 0022) and the one
+                         ADR 0031 makes buildable (#275): energy sells north and south, so the
+                         exchanger stands south of the reactor with its north long face against it.
+                         The high-capacity machine is in frame because the tier's whole message is
+                         that the two are told apart at a glance -- it is beside the reactor rather
+                         than bolted to it, since east and west are plasma and no exchanger can meet
+                         them. IT IS NOT A SIZE COMPARISON ANY MORE: #276 gave it this machine's own
+                         15x5, so what the frame now shows is whether the ART tells them apart, and
+                         while the high-capacity one wears a mockup the answer is a label.
       cold.png           The machine alone, not burning. What it looks like switched off.
       working-day.png    The machine alone, burning, at noon. The glow sheet is drawn additively
                          over the structure, so this is where #249's open question is settled:
@@ -206,12 +208,21 @@ script.on_nth_tick(60, function()
   --
   -- rf-hc-exchanger is to the EAST of the reactor and NOT bolted to it, which is the honest
   -- arrangement rather than a compromise: east and west are plasma (ADR 0011), so no exchanger can
-  -- meet them, and this machine is in the picture for its size rather than for its plumbing. It
-  -- follows the ordinary one to 15x5 in #276, and this rig will place it wherever it fits then.
+  -- meet them, and this machine is in the picture for its size rather than for its plumbing.
+  --
+  -- IT IS NO LONGER IN FRAME FOR ITS SIZE, AND #276 IS WHY. That machine was seven tiles square and
+  -- is now this one's own 15x5, so the picture compares two machines of the same shape -- which is
+  -- exactly the comparison the tier now has to win on ART ALONE, and today the high-capacity one is
+  -- wearing a labelled mockup. That is what this frame is for: it shows what a player would see.
+  --
+  -- ITS GAP IS OFF BOTH FOOTPRINTS rather than written down. A literal offset kept a four-tile gap
+  -- while the machine was 7x7 and left it flush against the reactor at fifteen wide.
   local reactor = place(surface, "rf-reactor", 0.5, 0.5)
   local south = connection_facing(reactor, ENERGY, "south")
   bolt(surface, MACHINE, ENERGY, "north", south.target_position, { GRID_X, GRID_Y - 3 * PITCH })
-  place(surface, "rf-hc-exchanger", 0.5 + math.ceil(W / 2) + 7, 0.5)
+  local hcW = footprint("rf-hc-exchanger")
+  local hc_x = 0.5 + math.ceil(W / 2) + 4 + math.ceil(hcW / 2)
+  place(surface, "rf-hc-exchanger", hc_x, 0.5)
 
   -- The three single-machine subjects, spaced off the widest frame so one cannot creep into
   -- another's when the footprint changes.
@@ -236,6 +247,8 @@ script.on_nth_tick(60, function()
   storage.grid = { x = GRID_X, y = GRID_Y, pitch = PITCH }
   storage.solo = { cold_x = COLD_X, working_x = WORKING_X, pipes_x = PIPES_X, h = H,
                    solo_w = SOLO_W, solo_h = SOLO_H, pipes_w = PIPES_W, pipes_h = PIPES_H }
+  -- What layout.png has to reach, so the frame below is sized off the build rather than guessed.
+  storage.pair = { west = 0.5 - W / 2, east = hc_x + hcW / 2 }
   storage.shoot_at = game.tick + 120
 end)
 
@@ -265,7 +278,13 @@ script.on_event(defines.events.on_tick, function()
   -- probe exists for. The sizes come from storage rather than being recomputed here: two
   -- expressions for one number is how the spacing above and the framing here would come apart.
 
-  tiles_shot("layout.png",       7.0, 0.5 + solo.h / 2, 30, pair_h, 2, 0)
+  -- LAYOUT'S FRAME IS SIZED OFF THE BUILD TOO, AND WAS THE LAST LITERAL LEFT (#276). It was
+  -- centred at x 7 and thirty tiles wide, which covered the reactor and a SEVEN-tile machine beside
+  -- it. At fifteen the high-capacity machine ran out of the right edge, and half of the comparison
+  -- this frame exists for went with it. Four tiles of margin on the pair's own extremes.
+  local pair = storage.pair
+  tiles_shot("layout.png", (pair.west + pair.east) / 2, 0.5 + solo.h / 2,
+    pair.east - pair.west + 4, pair_h, 2, 0)
   tiles_shot("cold.png",         solo.cold_x,    0.5, solo.solo_w,  solo.solo_h,  3, 0)
   tiles_shot("working-day.png",  solo.working_x, 0.5, solo.solo_w,  solo.solo_h,  3, 0)
   tiles_shot("working-night.png", solo.working_x, 0.5, solo.solo_w, solo.solo_h,  3, 0.5)

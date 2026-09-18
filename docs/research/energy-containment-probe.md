@@ -86,7 +86,7 @@ actually declares.
 | `control` | The **shipped** `rf-heat-exchanger`, untouched, with an ordinary infinity pipe on the tile its energy connection points at |
 | `str/refuse`, `str/accept` | The same exchanger with the category as a **bare string** — the form `contain()` already uses — offered an ordinary pipe, then a categorised one |
 | `list/refuse`, `list/accept` | The same pair with the category as a **one-element list**, the form Space Age writes |
-| `hc/refuse`, `hc/accept` | The same pair on `rf-hc-exchanger`'s shape, which has the same energy source on a seven-tile footprint |
+| `hc/refuse`, `hc/accept` | The same pair on `rf-hc-exchanger`'s shape, which had the same energy source on a seven-tile footprint — **that footprint is the rig's own since #276**, see the note below |
 | `bolt` | A categorised `rf-reactor` whose `output_fluid_box` carries the category, with a categorised exchanger placed so its own south energy connection lands face to face with it — **no pipe between them** |
 | `chain` | The `bolt` row with a second categorised exchanger fifteen tiles north, joined through energy connections on their south and north short ends |
 | `chain/control` | A third one of the same prototype, same plumbing, **joined to nothing**. It must hold nothing, or the `chain` row is the rig filling everything it can reach |
@@ -310,11 +310,23 @@ variant declares three `input-output` connections where the shipped machines dec
 stops fuel **leaving** a box. Whether it also stops fuel **arriving** through a direct bolt was a
 different question with no answer anywhere.
 
-**The subject is the real declaration.** `rf-probe-hc-str` is the shipped `rf-hc-exchanger` with its
-energy box categorised and nothing else changed: one connection, `flow_direction = "input"`, south
-`{0, 3}`. That face matters — it is the one shipped energy connection in the tree that **can** meet
+**The subject was the real declaration.** `rf-probe-hc-str` was the shipped `rf-hc-exchanger` with
+its energy box categorised and nothing else changed: one connection, `flow_direction = "input"`, south
+`{0, 3}`. That face matters — it was the one shipped energy connection in the tree that **can** meet
 `rf-reactor`'s north-facing output `{0, -7}`. The ordinary exchanger's west long face cannot meet it
 at all, which is a geometry problem and not a flow one.
+
+> **It is the rig's own declaration since #276**, which landed on 2026-09-18 and gave
+> `rf-hc-exchanger` the ordinary exchanger's 15×5 footprint with all three of its energy connections
+> `input-output`. Nothing this repository ships declares a plain `"input"` energy connection any
+> more, so `pre_276_frame` in the probe pins the 7×7 shape and the one `"input"` connection back onto
+> the copy — exactly as `pre_275_frame` already does for the ordinary exchanger. The measurement above
+> is unaffected and is not re-taken: it was taken on the shape the paragraph describes, which is the
+> shape the probe still builds. The `hc/refuse` and `hc/accept` rows sit on that same frame.
+>
+> `check-containment.ps1`'s third matching pair now gates #276's own criterion — that machine bolted
+> to a reactor face with no pipe — rather than the plain-`"input"` finding, because there is no longer
+> a shipped machine to gate it on.
 
 **The arithmetic corroborates it independently.** The reactor's output box is refilled to 1000 every
 tick and reads **993.333** going into the report tick — a shortfall of **6.667 units**, which at
@@ -363,8 +375,9 @@ one sentence neither this page nor `exchanger-chaining.md` could state before.
   what both probes build. **Truls settled the shipped shape on 2026-09-07** — #275, which also flips
   the machine's default orientation and moves water off the short-end centre — so read that ticket
   and the ADR it lands rather than this line.
-- **`rf-hc-exchanger` needs no change to be contained**, which is AC 5 above and is new. #276 gives
-  it the exchanger's footprint and connections for consistency, not because containment requires it.
+- **`rf-hc-exchanger` needs no change to be contained**, which is AC 5 above and is new. #276 gave
+  it the exchanger's footprint and connections on 2026-09-18 for consistency, not because containment
+  required it.
 - **Two shipped assertions invert.** `scripts/check-containment.ps1` asserts that an ordinary
   pipe still joins the reactor's energy output and carries reactor energy. Both are correct today and
   wrong afterwards.

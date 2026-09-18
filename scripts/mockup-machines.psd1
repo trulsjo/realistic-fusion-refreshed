@@ -43,6 +43,28 @@
             )
         },
         @{
+            # rf-heat-exchanger's own footprint and its own six connections since #276: the long north
+            # face bolts to a reactor, the long south face vents steam, and each short end reads
+            # `_ e _ w _` from north to south so a row chains through them (ADR 0031).
+            #
+            # IT IS HERE BECAUSE IT HAS NO ART AT THIS SHAPE. Krastorio 2's matter plant sheets were
+            # drawn for a seven-tile square and ADR 0022 records that nothing in that set sits at
+            # fifteen by five, so the machine drops to a mockup rather than wearing a stretched sprite.
+            # The label is also what tells it apart from rf-heat-exchanger, which is the same size on
+            # rendered art -- see entities.lua at this machine's footprint.
+            Mod = 'realistic-fusion-refreshed-assets'; Name = 'hc-exchanger'; Label = "HIGH-CAPACITY`nHEAT EXCHANGER"
+            Prototype = 'boiler'
+            Width = 15; Height = 5; Core = $false
+            Connections = @(
+                @{ X =  0; Y = -2; Kind = 'energy'; Text = 'energy' },
+                @{ X = -7; Y = -1; Kind = 'energy'; Text = 'energy' },
+                @{ X =  7; Y = -1; Kind = 'energy'; Text = 'energy' },
+                @{ X = -7; Y =  1; Kind = 'input';  Text = 'water'  },
+                @{ X =  7; Y =  1; Kind = 'input';  Text = 'water'  },
+                @{ X =  0; Y =  2; Kind = 'output'; Text = 'steam'  }
+            )
+        },
+        @{
             # A container: lithium arrives by inserter and the tritium it breeds leaves through the
             # reactor's own pipe, so it has no connections of its own to mark. See entities.lua.
             Mod = 'realistic-fusion-refreshed-assets'; Name = 'lithium-blanket'; Label = "LITHIUM`nBLANKET"

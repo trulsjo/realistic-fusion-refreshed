@@ -4,17 +4,23 @@
     with its pipe connections marked where they actually are.
 
 .DESCRIPTION
-    Three machines have no art of their own and each would otherwise wear a vanilla building of the
-    wrong size and the wrong machine: a steel chest, a heat exchanger and a steam turbine. A vanilla
-    sprite at the wrong footprint is worse than a plain box, because it looks finished and it lies
-    about where the pipes go.
+    Four machines have no art of their own and would otherwise wear a building of the wrong size and
+    the wrong machine: a steel chest, a heat exchanger and a steam turbine from vanilla, and since
+    #276 Krastorio 2's matter plant on rf-hc-exchanger. A sprite at the wrong footprint is worse than
+    a plain box, because it looks finished and it lies about where the pipes go.
 
     So these are mockups on purpose. They state the footprint, they mark every connection, and they
     carry the machine's name, and they are meant to be replaced. Two already were: #108 took the
     heat exchanger to rendered art in #252, with #275 removing its row and its sheets from here,
     and #262 did the isotope collector, switched over by #333. It was the one whose vanilla
     building -- a boiler -- was at least the right kind of machine, which is why the sentence above
-    no longer has an exception in it. What replaces the remaining three is whatever follows #252.
+    no longer has an exception in it. What replaces the remaining four is whatever follows #252.
+
+    rf-hc-exchanger CAME BACK THE OTHER WAY (#276) and is the only row here that did. It wore real
+    Krastorio 2 art and lost it by changing shape: at fifteen by five nothing in that set fits it
+    (ADR 0022), so a labelled box is the honest stand-in until its model is rendered. It is also the
+    only machine here whose label has a second job -- rf-heat-exchanger is now the same size on
+    rendered art, and on the ground the label is what tells the two apart.
 
     THE ART IS ORIGINAL AND THAT IS THE POINT. Rectangles drawn by this script are nobody else's
     work, so they carry the repository's own licence and raise no provenance question at all. That

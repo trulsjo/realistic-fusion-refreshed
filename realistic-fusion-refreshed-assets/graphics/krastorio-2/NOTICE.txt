@@ -295,10 +295,14 @@ Unmodified copies, renamed to the prototype they serve:
     icon read as the same technology drawn twice.
 
     This note used to add that Krastorio 2's matter chain was not otherwise used by this repository.
-    It is now: #32 takes the matter plant's building and icon for rf-hc-exchanger. They are a
-    technology icon and a building, drawn at different sizes and never seen side by side, so nothing
-    about that reads as the same thing twice -- but the claim of exclusivity is no longer true and
-    should not be left standing.
+    It is now: #32 takes the matter plant's ICON for rf-hc-exchanger. They are a technology icon and
+    an entity icon, drawn at different sizes and never seen side by side, so nothing about that reads
+    as the same thing twice -- but the claim of exclusivity is no longer true and should not be left
+    standing.
+
+    It took the matter plant's BUILDING too until #276, which gave rf-hc-exchanger a fifteen-by-five
+    footprint the seven-tile-square sheets cannot cover. Those two files are deleted and their entry
+    is gone from below; only the icon is left.
 
   entities/lithium-blanket.png  <- icons/entities/energy-storage.png
 
@@ -367,21 +371,24 @@ Unmodified copies, renamed to the prototype they serve:
     taken from Krastorio 2 in this repository does -- a generator's animations are played by the
     engine where a boiler's structure is a still.
 
-  buildings/hc-exchanger/hc-exchanger.png        <- buildings/matter-plant/matter-plant.png
-  buildings/hc-exchanger/hc-exchanger-shadow.png <- buildings/matter-plant/matter-plant-sh.png
   entities/hc-exchanger.png                      <- icons/entities/matter-plant.png
 
-    The high-capacity heat exchanger (#32). Renamed only. Seven tiles square against the vanilla
-    heat exchanger's three by two, which is the point: the predecessor's high-capacity pair is its
-    ordinary pair tinted orange, and two machines that differ only in tint is the arrangement this
-    repository already rejected between rf-reactor and rf-heat-exchanger. A player laying out a
-    steam farm has to see which vessels are the big ones.
+    The high-capacity heat exchanger (#32). Renamed only.
 
-    matter-plant-working.png and its glow are NOT taken -- see buildings/hc-pictures.lua for why a
-    boiler has nowhere to play a thirty-frame working animation.
+    THE BUILDING SHEETS WERE HERE AND ARE GONE (#276). This entry used to name
+    buildings/hc-exchanger/hc-exchanger.png and -shadow.png, taken from matter-plant.png and
+    matter-plant-sh.png, on the argument that seven tiles square against the vanilla heat exchanger's
+    three by two is what tells a player which vessels are the big ones. #276 gives rf-hc-exchanger
+    rf-heat-exchanger's own fifteen-by-five footprint, and a sheet drawn for a seven-tile square
+    cannot be stretched over an oblong -- ADR 0022 records that nothing in Krastorio 2's set sits at
+    this shape. The two files are deleted and the machine wears a mockup until its model exists, so
+    the size argument is given up and the art has to do that work alone. matter-plant-working.png and
+    its glow were never taken -- see buildings/hc-pictures.lua for why a boiler has nowhere to play a
+    thirty-frame working animation.
 
-    This is the second use of Krastorio 2's matter chain in this repository; technologies/d-t.png
-    below is the first, and the note there is corrected accordingly.
+    THE ICON IS UNAFFECTED and stays: an icon is not drawn at a footprint. So this is still the
+    second use of Krastorio 2's matter chain in this repository; technologies/d-t.png below is the
+    first, and the note there is corrected accordingly.
 
   entities/aneutronic-reactor.png       <- icons/entities/antimatter-reactor.png
   entities/aneutronic-composite-tank.png <- icons/entities/big-storage-tank.png

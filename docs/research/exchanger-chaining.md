@@ -243,5 +243,11 @@ supply with transport.
 plain `"input"` connection still accepts a bolt.** So `flow_direction` governs **forwarding**, not
 joining. Condition 2 above says what an `"input"` connection stops — fuel leaving by the other
 connections on the same box — and it stops nothing about fuel arriving. That is why
-`rf-hc-exchanger`, which declares one `"input"` connection on a face that can meet a reactor, can be
+`rf-hc-exchanger`, which declared one `"input"` connection on a face that can meet a reactor, could be
 contained without changing its geometry at all.
+
+> **That machine no longer declares one.** #276 gave it `rf-heat-exchanger`'s 15×5 footprint and all
+> three of its energy connections on 2026-09-18, every one `input-output`, so nothing this repository
+> ships declares a plain `"input"` energy connection. The finding stands — it is why containment did
+> not have to wait for that ticket — and its subject is now the rig's own declaration, which
+> [`energy-containment-probe.md`](energy-containment-probe.md) records.

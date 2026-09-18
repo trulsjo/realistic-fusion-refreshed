@@ -98,17 +98,24 @@
                 the same one, and #82 allows establishing that one answer covers both.
 
       input-    THE BOLT IS repeated for it, and that is #275's doing rather than #82's. Everything
-      bolt      above bolts with an "input-output" connection, and rf-hc-exchanger declares ONE
-                connection and declares it plain "input" -- south {0, 3} on its seven-tile face,
+      bolt      above bolts with an "input-output" connection, and the subject here declares ONE
+                connection and declares it plain "input" -- south {0, 3} on a seven-tile face,
                 which unlike the ordinary exchanger's west long face CAN meet a north-facing reactor
-                output. So the one machine in the tree whose declaration could already bolt is the
-                one whose bolt had never been measured, and exchanger-chaining.md establishes only
-                that a plain "input" connection stops fuel LEAVING a box.
+                output. So the one declaration in the tree that could already bolt was the one whose
+                bolt had never been measured, and exchanger-chaining.md establishes only that a plain
+                "input" connection stops fuel LEAVING a box.
 
-                It decides something concrete: whether #86 can contain that machine before #276
-                changes its geometry, which is what would take a Blender model off #86's critical
-                path. Its own reactor, because rf-reactor declares one energy output and the chain
-                row has already taken the one on that machine.
+                It decided something concrete: whether #86 could contain that machine before #276
+                changed its geometry, which is what took a Blender model off #86's critical path. Its
+                own reactor, because rf-reactor declares one energy output and the chain row has
+                already taken the one on that machine.
+
+                THE SUBJECT IS NO LONGER THE SHIPPED MACHINE. #276 gave rf-hc-exchanger the ordinary
+                exchanger's fifteen-by-five footprint and three "input-output" energy connections, so
+                nothing this repository ships declares a plain "input" energy connection any more.
+                pre_276_frame pins the old declaration onto the copy, exactly as pre_275_frame pins
+                the ordinary exchanger's -- the question stays askable of a future engine, which is
+                what a probe is kept for, and it is the rig's declaration rather than the tree's.
 
     WHERE THE CHAIN VARIANT'S CONNECTIONS HAD TO GO, AND WHY IT IS NOT A FREE CHOICE
 
@@ -272,8 +279,44 @@ local function categorised(name, category)
   return e
 end
 
+-- AND THE SAME FOR rf-hc-exchanger, WHICH #276 TOOK AWAY IN ITS TURN. pre_275_frame's note applies
+-- word for word: every coordinate the hc rows use is a seven-tile-square tile centre with ONE energy
+-- connection on the south face, and that is what the machine declared when those rows were written
+-- and their findings recorded. #276 gave it rf-heat-exchanger's fifteen-by-five footprint and made
+-- all three of its energy connections "input-output", so a plain copy fits neither the coordinates
+-- nor the question: `connection = "only"` would refuse three connections, and an "input-output" one
+-- is what the bolt rows above already measure.
+--
+-- THE QUESTION THESE ROWS EXIST FOR IS ONLY ASKABLE ON THIS FRAME. AC 5 asks whether a SINGLE plain
+-- "input" connection accepts a bolt from a reactor's output. No shipped machine declares one any
+-- more, so the subject is the rig's own declaration rather than the tree's -- which is the honest
+-- state of it, and the reason the finding is recorded in docs/research/energy-containment-probe.md
+-- rather than re-derived. scripts/check-containment.ps1 is the gate on what the shipped machine does.
+local function pre_276_frame(e)
+  e.collision_box = { { -3.25, -3.25 }, { 3.25, 3.25 } }
+  e.selection_box = { { -3.5, -3.5 }, { 3.5, 3.5 } }
+  e.fluid_box = table.deepcopy(e.fluid_box)
+  e.fluid_box.pipe_connections = {
+    { flow_direction = "input-output", direction = defines.direction.west, position = { -3, 0 } },
+    { flow_direction = "input-output", direction = defines.direction.east, position = { 3, 0 } },
+  }
+  e.output_fluid_box = table.deepcopy(e.output_fluid_box)
+  e.output_fluid_box.pipe_connections = {
+    { flow_direction = "output", direction = defines.direction.north, position = { 0, -3 } },
+  }
+  e.energy_source = table.deepcopy(e.energy_source)
+  e.energy_source.fluid_box = table.deepcopy(e.energy_source.fluid_box)
+  e.energy_source.fluid_box.pipe_connections = {
+    { flow_direction = "input", direction = defines.direction.south, position = { 0, 3 } },
+  }
+  -- The mockup #276 put on the shipped machine is drawn for fifteen by five and is left on this copy,
+  -- where it draws wrong. pre_275_frame leaves the rendered sheets on its copy for the same reason: a
+  -- probe does not look.
+  return e
+end
+
 local function categorised_hc(name, category)
-  local e = bare(table.deepcopy(hc), name)
+  local e = bare(pre_276_frame(table.deepcopy(hc)), name)
   for _, c in ipairs(e.energy_source.fluid_box.pipe_connections) do
     c.connection_category = category
   end
@@ -633,9 +676,10 @@ script.on_init(function()
 
   -- ------------------------------------------------ the ONE-CONNECTION, plain-"input" bolt (#275)
   --
-  -- rf-probe-hc-str is the shipped rf-hc-exchanger with its energy box categorised and nothing else
-  -- touched, so what it declares is the real declaration: ONE connection, flow_direction "input",
-  -- on the face that has to meet a reactor.
+  -- rf-probe-hc-str is rf-hc-exchanger with its pre-#276 frame pinned back on and its energy box
+  -- categorised: ONE connection, flow_direction "input", on the face that has to meet a reactor.
+  -- It WAS the shipped declaration when this row was written, and pre_276_frame says what happened
+  -- to it.
   --
   -- NOTHING HAS EVER MEASURED WHETHER THE ENGINE FORMS THAT BOLT. The bolt row above measures it on
   -- the chain variant, whose bolting connection is "input-output" -- CONTEXT.md says so out loud --
@@ -801,14 +845,15 @@ local function report()
     yesno(joins(b.aloof, rf_box_of(b.aloof, ENERGY), b.second)), storage.aloof_held or 0)
 
   -- AC 5 (#275). The chain rows above bolt with an "input-output" connection. rf-hc-exchanger
-  -- declares ONE connection and declares it plain "input", and no row anywhere had asked whether
-  -- that still bolts. If it does, containment (#86) does not have to wait for that machine's new
-  -- geometry (#276) or for its art.
+  -- declared ONE connection and declared it plain "input", and no row anywhere had asked whether
+  -- that still bolts. It does, so containment (#86) did not have to wait for that machine's new
+  -- geometry (#276) or for its art. #276 has since landed and the declaration is the rig's own;
+  -- pre_276_frame carries that.
   local h = storage.hc
   if h then
     say("== AC 5: does a single plain-\"input\" connection accept a bolt from a reactor's output ==")
-    say("input-bolt: the subject is rf-probe-hc-str -- the shipped rf-hc-exchanger, categorised,")
-    say("input-bolt: one energy connection, flow_direction \"input\", nothing else changed")
+    say("input-bolt: the subject is rf-probe-hc-str -- rf-hc-exchanger on its pre-#276 frame,")
+    say("input-bolt: categorised, one energy connection, flow_direction \"input\", nothing else")
     say("input-bolt: its box joins the reactor's output directly, no pipe: %s",
       yesno(joins(h.machine, rf_box_of(h.machine, ENERGY), h.reactor)))
     say("input-bolt: it holds %.6g units and reports %s",

@@ -93,6 +93,11 @@ prototypes** — `rf-aneutronic-reactor` (4), `rf-direct-energy-converter` (2), 
 `rf-heat-exchanger` (3), `rf-heater` (2), `rf-pipe` (4), `rf-pipe-to-ground` (2), `rf-pump` (2),
 `rf-reactor` (4).
 
+> **Twenty-six since #276**, 2026-09-18: `rf-hc-exchanger` went from one energy connection to three
+> when it took `rf-heat-exchanger`'s footprint, and `contain()` walks the box, so both new ones carry
+> the category. `load-check.ps1` counts the live figure on every run; the numbers above are this
+> probe's own dump and are left as taken.
+
 ## The north connection does not show it, because it has no cover to show
 
 `rf-heat-exchanger`'s north `rf-reactor-energy` connection is the reactor contact, and a player
