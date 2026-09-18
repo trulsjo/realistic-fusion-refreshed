@@ -200,6 +200,13 @@ Two conditions came out of it that this ADR did not state, and item 4 depends on
 **fuel has to arrive through a connection**, and **every connection on that energy box has to be
 `input-output`** — one connection declared `"input"` stops fuel leaving by the others.
 
+> **The second condition is narrower than that, measured 2026-09-18 (#280), and item 4 is
+> unaffected.** Against the bolted plant `scripts/check-hc.ps1` builds, declaring the first
+> exchanger's reactor-contact connection `"input"` stopped nothing and the row still chained. What
+> is measured is that the `"input"` connection itself passes nothing on. Every connection on that
+> box still has to be `input-output`, because every one of them is either a reactor contact or a
+> link the row chains through. See [`exchanger-chaining.md`](../research/exchanger-chaining.md).
+
 ## Decision
 
 **The two energy fluids are contained the way plasma is, and nothing carries them but a bolted

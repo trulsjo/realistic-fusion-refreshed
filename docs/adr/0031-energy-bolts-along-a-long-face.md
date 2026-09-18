@@ -58,8 +58,11 @@ not about the one in the tree."*
 
 **#111, 2026-09-06 — exchangers chain, under two conditions.** Fuel has to *arrive* through a
 connection, and **every** connection on that energy box has to be `input-output`: one declared plain
-`"input"` stops fuel leaving by the others. See
-[`exchanger-chaining.md`](../research/exchanger-chaining.md). That closed
+`"input"` passes nothing on. See
+[`exchanger-chaining.md`](../research/exchanger-chaining.md), which since #280 records that the
+condition reaches the `"input"` connection itself rather than the whole box — the decision this ADR
+records is unchanged, because each of the three is either a reactor contact or a link the row chains
+through. That closed
 [#258](https://github.com/trulsjo/realistic-fusion-refreshed/issues/258), which asked for a contained
 pipe family on the premise that bolting could not reach eight machines.
 

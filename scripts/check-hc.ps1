@@ -5,7 +5,8 @@
     asserted -- ten for the turbine, and since #227 took rf-heat-exchanger to 90 MW no longer ten
     for the exchanger. Discharges #32. Since #275 it also builds the
     neutronic plant the way a player does -- exchangers BOLTED to a reactor and CHAINED to each other,
-    no pipe carrying reactor energy -- and asserts that energy, water and steam all arrive.
+    no pipe carrying reactor energy -- and asserts that energy, water and steam all arrive. Since
+    #280 it carries a -SelfTest that proves the plant section can fail.
 
 .DESCRIPTION
     THE FAILURE THIS RIG EXISTS FOR is silent and is one field wide.
@@ -62,12 +63,70 @@
     this mod get insanely overpowered with quality" without naming them, and rfp-hc-turbine is the
     obvious suspect. Reported rather than asserted -- see the note in the rig.
 
+.PARAMETER SelfTest
+    Prove this rig can fail, and the plant section especially (#280, #281, #282).
+
+    THE PLANT SECTION IS WHY THIS SWITCH EXISTS. Its rows are about RUNTIME STATE rather than the
+    data stage, and load-check.ps1 -SelfTest -- the only other self-test here that starts the game --
+    breaks a PROTOTYPE in every one of its halves. A row like "energy reaches the second exchanger"
+    cannot be broken that way alone, and a row like "no pipe carries reactor energy" passes by
+    counting nothing, which is a check that says nothing until something has been counted.
+
+    REFUSED WITH -Quality, the way load-check refuses -SelfTest -AlsoModDirectory: quality changes
+    the mod set, and a half that reasons about what a broken prototype does to the plant would be
+    reasoning about a different game.
+
+    The halves, by name -- never by number, because a half inserted above one renumbers every half
+    after it while a sentence pointing at a position still reads as true:
+
+      repo-plant-passes      THE FLOOR. The tree as it stands must reach PASS, or a canary result
+                             below proves nothing: the rig also fails when the tree is genuinely
+                             broken, and the two look identical. load-check's repo-loads, and the
+                             same reasoning.
+      exchanger-input-only   A CANARY MOD declares ONE of rf-heat-exchanger's three energy
+                             connections plain "input" -- the EAST one, the short end the row chains
+                             out by -- and the run must report the energy-reaches row FAILED BY NAME.
+                             #111 is why the field matters at all
+                             (docs/research/exchanger-chaining.md): flow_direction governs
+                             FORWARDING and not joining, so the boxes still meet, the machine still
+                             burns what it is given, and only the pass-on stops. It is the edit a
+                             later change makes by accident, and it is asserted by name because a
+                             canary that broke something else would look identical.
+
+                             THE EAST ONE RATHER THAN THE NORTH ONE, AND THAT WAS MEASURED HERE.
+                             #280 specified the reactor-contact face on the strength of #111's
+                             condition 2 -- "one connection declared plain 'input' stops fuel leaving
+                             by the OTHERS". Run against this plant on 2026-09-18 it did not: the
+                             canary loaded, took the north connection, and the second exchanger still
+                             held a full box. That narrowing is recorded in
+                             docs/research/exchanger-chaining.md; what this half needs is a canary
+                             that breaks the chain, and the connection the chain leaves by is it.
+      pipe-in-plant-area     RIG-SIDE, AND THE ONLY HALF HERE THAT IS. The others break a prototype;
+                             this one breaks the WORLD THE RIG BUILDS, by standing an energy feed on
+                             the second exchanger's spare east connection -- which is what someone
+                             adds to get the plant "fed properly" without noticing they have voided
+                             the claim the section makes. The data stage cannot express that, so no
+                             canary mod could reach it. The tally row must fail by name AND report at
+                             least one energy pipe, or a half that planted nothing would pass.
+      reactor-sells-south    A CANARY MOD removes rf-reactor's south-facing energy output, leaving
+                             its north one and both plasma connections alone, and the run must fail
+                             BY THE RIG'S OWN MESSAGE about a missing south-facing energy output.
+                             It is ADR 0031's precondition for the whole section and the one thing
+                             on this leg nothing else in the tree asserts. By the message rather
+                             than by the exit code, as load-check's starved-reactor is: every other
+                             refusal here also aborts map creation.
+
+    Each canary asserts the connection was there to change, so a canary that matched nothing cannot
+    pass -- the guard load-check's canary halves carry. The canary mod is written into the temp
+    directory and never into the repository.
+
 .PARAMETER KeepTemp
     Keep the save, the rig mod and the captured output.
 
 .EXAMPLE
     pwsh -File scripts/check-hc.ps1
     pwsh -File scripts/check-hc.ps1 -Quality
+    pwsh -File scripts/check-hc.ps1 -SelfTest
 #>
 
 #Requires -Version 7
@@ -76,25 +135,37 @@ param(
     [string] $FactorioExe,
     [ValidateRange(600, 200000)] [int] $Ticks = 3600,
     [switch] $Quality,
+    [switch] $SelfTest,
     [switch] $KeepTemp
 )
 
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
-$repoRoot = Split-Path $PSScriptRoot -Parent
-$ourMods  = Get-RepoMods
-$rigName  = 'rf-hc-rig'
+# Refused rather than combined, the way load-check.ps1 refuses -SelfTest -AlsoModDirectory and for
+# the same reason: every half below reasons about what one broken prototype does to this plant, and
+# a second mod set changes what the plant is before the canary touches anything.
+if ($SelfTest -and $Quality) {
+    throw '-SelfTest and -Quality cannot be combined: the self-test needs the plain mod set to prove anything.'
+}
+
+$repoRoot   = Split-Path $PSScriptRoot -Parent
+$ourMods    = Get-RepoMods
+$rigName    = 'rf-hc-rig'
+$canaryName = 'rf-hc-canary'
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
 $bundled     = Get-BundledMods -FactorioExe $FactorioExe
 
-$temp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-hc-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-$modDir = Join-Path $temp 'mods'
-$rigDir = Join-Path $modDir $rigName
+$temp      = Join-Path ([IO.Path]::GetTempPath()) ('rf-hc-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+$modDir    = Join-Path $temp 'mods'
+$rigDir    = Join-Path $modDir $rigName
+$canaryDir = Join-Path $modDir $canaryName
 New-Item -ItemType Directory -Path $rigDir -Force | Out-Null
 
 function Write-Rig {
+    param([switch] $PlantPipe)
+
     @{
         name = $rigName; version = '0.0.1'; title = 'High-capacity generation check'
         author = 'check-hc.ps1'; factorio_version = '2.0'
@@ -106,6 +177,8 @@ function Write-Rig {
 
 local CHECK_AT = __TICKS__
 local WITH_QUALITY = __QUALITY__
+-- -SelfTest's pipe-in-plant-area half, and false in every ordinary run. See the plant section.
+local PLANT_PIPE = __PLANTPIPE__
 
 local HC_EXCHANGER = "rf-hc-exchanger"
 local HC_TURBINE   = "rf-hc-turbine"
@@ -422,6 +495,25 @@ script.on_init(function()
   }), "control " .. EXCHANGER)
   feed(surface, force, aloof, "water", nil)
 
+  -- THE ONE THING IN THIS RIG THAT EXISTS ONLY UNDER -SelfTest, and the reason it is here rather
+  -- than in a canary mod: the flaw it plants is in the WORLD THE RIG BUILDS, not in a prototype,
+  -- and the data stage cannot express it. The section's tally row says no pipe in the plant's area
+  -- carries reactor energy; it counted nothing until #281, because until ce0701e it filtered on the
+  -- NAME `infinity-pipe` while every energy feed here is Write-EnergyFeed's own prototype, so the
+  -- branch that trips the assertion was unreachable and `energy 0` was true by construction.
+  --
+  -- ON THE SECOND EXCHANGER'S SPARE EAST CONNECTION, because that is where a real regression puts
+  -- one: it is the free end of the row, and feeding it is what someone does to get the plant
+  -- "fed properly" without noticing the section's whole claim is that nothing needs feeding.
+  if PLANT_PIPE then
+    local spare = connection_facing(second, ENERGY, "east")
+    if not spare then error(EXCHANGER .. " has no east-facing energy connection on the row's free end to plant a pipe on") end
+    local planted = must(surface.create_entity({
+      name = ENERGY_FEED, position = spare.target_position, force = force,
+    }), "the self-test's planted energy pipe")
+    planted.set_infinity_pipe_filter({ name = ENERGY, percentage = 1, mode = "at-least" })
+  end
+
   storage.plant = {
     reactor = reactor, first = first, second = second, aloof = aloof,
     first_turbine = first_turbine, second_turbine = second_turbine, pole = plant_pole,
@@ -674,6 +766,7 @@ end)
     $energyFeed = Write-EnergyFeed -RigDirectory $rigDir
     $body = $lua.Replace('__TICKS__', "$Ticks").
         Replace('__QUALITY__', $(if ($Quality) { 'true' } else { 'false' })).
+        Replace('__PLANTPIPE__', $(if ($PlantPipe) { 'true' } else { 'false' })).
         Replace('__ENERGYFEED__', $energyFeed)
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') `
         -Value $body
@@ -681,24 +774,299 @@ end)
 
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }
 
+function Invoke-Rig {
+    <#  Build the rig, create a map with it, run it, and return what it reported.
+
+        ONE CALLABLE THING BECAUSE -SelfTest CALLS IT ONCE PER HALF. All of this was inline in the try
+        block below and could therefore run exactly once, which is why the plant section had no
+        self-test until #280.
+
+        A FAILED MAP CREATION IS A RESULT HERE, not a throw, because reactor-sells-south's whole
+        assertion is that the rig refuses to build. Invoke-FactorioStep is the wrong instrument for
+        that one run and the right one for the other four; the caller decides, the way load-check's
+        Invoke-LoadCheck leaves a non-zero exit to its caller.
+
+        The canary is named in $Disabled whenever it is not wanted, never merely left out:
+        Factorio AUTO-ENABLES a mod present on disk and absent from mod-list.json, so a half after
+        exchanger-input-only would otherwise still be running under its canary.  #>
+    param(
+        [Parameter(Mandatory)] [string] $Tag,
+        [switch] $WithCanary,
+        [switch] $PlantPipe
+    )
+
+    $enabledBundled = if ($Quality) { @('quality') } else { @() }
+    $mods     = $ourMods + $rigName + @(if ($WithCanary) { $canaryName })
+    $disabled = @(if (-not $WithCanary -and (Test-Path $canaryDir)) { $canaryName })
+    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled `
+        -Mods $mods -Disabled $disabled
+    Write-Rig -PlantPipe:$PlantPipe
+
+    $save   = Join-Path $temp "$Tag.zip"
+    $create = Invoke-Factorio @step -Arguments @('--create', $save) -Tag "$Tag-create"
+    if ($create.Code -ne 0) {
+        return @{ Created = $false; Create = $create; Rows = @(); Verdict = $null }
+    }
+
+    $run = Invoke-Factorio @step -Tag "$Tag-run" -Arguments @(
+        '--benchmark', $save, '--benchmark-ticks', "$($Ticks + 60)", '--benchmark-runs', '1', '--disable-audio')
+    if ($run.Code -ne 0) {
+        Write-FactorioTail $run
+        throw "Factorio exited $($run.Code) during '$Tag-run'."
+    }
+
+    $rows = @(Get-Content $run.OutFile | Select-String -Pattern 'HC-RIG (ok|FAIL|PASS|note)' |
+        ForEach-Object { ($_ -split 'HC-RIG ', 2)[1].TrimEnd() })
+    return @{
+        Created = $true; Create = $create; Run = $run; Rows = $rows
+        Verdict = ($rows | Where-Object { $_ -match '^(PASS|FAIL): ' } | Select-Object -Last 1)
+    }
+}
+
+function Get-RigRow {
+    <#  The one reported row whose name is $Name, verdict prefix and detail included, or $null.
+
+        BY NAME because that is what every half here asserts. A half that only required the run to
+        fail would pass on a canary that broke something else entirely -- which is the fault
+        load-check's starved-reactor half describes, one gate over.  #>
+    param(
+        [Parameter(Mandatory)] [hashtable] $Result,
+        [Parameter(Mandatory)] [string]    $Name
+    )
+    return $Result.Rows |
+        Where-Object { $_ -match ('^(ok|FAIL)\s+' + [regex]::Escape($Name)) } |
+        Select-Object -First 1
+}
+
+function Write-Canary {
+    <#  Write the self-test's canary mod, with $Lua as its data-final-fixes.
+
+        IN THE TEMP DIRECTORY AND NEVER IN THE REPOSITORY, as load-check's canary is, and
+        DUPLICATED FROM IT RATHER THAN SHARED -- decided 2026-09-07, because sharing means editing
+        the repository's most load-bearing self-test to save about fifteen lines. Revisit if a third
+        rig ever wants one.  #>
+    param([Parameter(Mandatory)] [string] $Lua)
+
+    New-Item -ItemType Directory -Path $canaryDir -Force | Out-Null
+    @{
+        name = $canaryName; version = '0.0.1'; title = 'High-capacity check canary'
+        author = 'check-hc.ps1'; factorio_version = '2.0'
+        dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed')
+    } | ConvertTo-Json | Set-Content -Path (Join-Path $canaryDir 'info.json') -Encoding utf8
+    $Lua | Set-Content -Path (Join-Path $canaryDir 'data-final-fixes.lua') -Encoding utf8
+}
+
 try {
     New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
-    $enabled = if ($Quality) { @('quality') } else { @() }
-    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabled -Mods ($ourMods + $rigName)
-    Write-Rig
 
-    $save = Join-Path $temp 'hc.zip'
-    Invoke-FactorioStep @step -Arguments @('--create', $save) -Tag 'create' | Out-Null
-    $runOut = Invoke-FactorioStep @step -Tag 'run' -Arguments @(
-        '--benchmark', $save, '--benchmark-ticks', "$($Ticks + 60)", '--benchmark-runs', '1', '--disable-audio')
+    if ($SelfTest) {
+        # THE HALVES ARE DECLARED BY NAME and Invoke-SelfTestHalves numbers them as it runs them, so
+        # the total is written nowhere and a half inserted in the middle renumbers nothing.
+        #
+        # NO HALF LEAVES STATE TO THE NEXT, unlike load-check's, and each therefore needs no
+        # $script: anywhere. What one half does leave behind is the canary DIRECTORY, which is why
+        # Invoke-Rig names it in $Disabled rather than merely leaving it out of $Mods.
+        Invoke-SelfTestHalves -Halves @(
+            @{ Name = 'repo-plant-passes'; Body = {
+                # The floor. Without it a failure in any later half proves nothing, because this rig
+                # also fails when the tree is genuinely broken and the two look identical.
+                $clean = Invoke-Rig -Tag 'clean'
+                if (-not $clean.Created) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: the rig could not even build its map on the tree as it'
+                    Write-Host "         stands (exit $($clean.Create.Code)), so no canary result below would mean anything."
+                    Write-FactorioTail $clean.Create
+                    exit 1
+                }
+                if ($clean.Verdict -notmatch '^PASS') {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: the rig does not pass on the tree as it stands, so a'
+                    Write-Host '         canary result taken against it would be meaningless.'
+                    foreach ($line in $clean.Rows) { Write-Host "           $line" }
+                    exit 1
+                }
+                'the repo as it stands builds the plant and reaches PASS.'
+            } }
 
-    $reported = @(Get-Content $runOut | Select-String -Pattern 'HC-RIG (ok|FAIL|PASS|note)' |
-        ForEach-Object { ($_ -split 'HC-RIG ', 2)[1].TrimEnd() })
+            @{ Name = 'exchanger-input-only'; Body = {
+                # ONE energy connection declared plain "input", which is the field #111 found the
+                # chain turns on: flow_direction governs FORWARDING and not joining, so the boxes
+                # still meet and the machine still burns what it is given
+                # (docs/research/exchanger-chaining.md). The east one is the short end the row
+                # chains out by.
+                #
+                # NOT THE NORTH ONE, THOUGH #280 ASKED FOR THE REACTOR CONTACT. That was written on
+                # #111's condition 2 -- one "input" connection stopping fuel leaving by the OTHERS --
+                # and against this plant on 2026-09-18 it did not hold: the canary loaded, took the
+                # north connection (its own guard would have errored otherwise), and the second
+                # exchanger still held 199.0. The note now records the narrowing. What this half
+                # needs is a canary that breaks the chain; east is the connection the chain leaves by
+                # and it does.
+                #
+                # The canary asserts it found a connection to change, or a canary that matched
+                # nothing would pass -- load-check's canary halves carry the same guard.
+                Write-Canary -Lua @'
+-- Generated by scripts/check-hc.ps1 -SelfTest. Nothing here ships.
+local box = data.raw["boiler"]["rf-heat-exchanger"].energy_source.fluid_box
+local touched = false
+for _, connection in pairs(box.pipe_connections) do
+  if connection.direction == defines.direction.east then
+    connection.flow_direction = "input"
+    touched = true
+  end
+end
+if not touched then
+  error("check-hc canary: rf-heat-exchanger has no east-facing energy connection to declare \"input\", "
+    .. "so the exchanger-input-only half would prove nothing")
+end
+'@
+                $broken = Invoke-Rig -Tag 'input' -WithCanary
+                if (-not $broken.Created) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: the exchanger-input-only canary stopped the map being built'
+                    Write-Host "         at all (exit $($broken.Create.Code)), so the plant was never measured. A plain"
+                    Write-Host '         "input" connection still JOINS; a canary that refuses to load is testing'
+                    Write-Host '         something other than forwarding.'
+                    Write-FactorioTail $broken.Create
+                    exit 1
+                }
+                $row = Get-RigRow -Result $broken -Name 'energy reaches the second exchanger through the joint'
+                if (-not $row) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: the run reported no row named "energy reaches the second'
+                    Write-Host '         exchanger through the joint", so this half asserted nothing.'
+                    foreach ($line in $broken.Rows) { Write-Host "           $line" }
+                    exit 1
+                }
+                if ($row -notmatch '^FAIL') {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: one of rf-heat-exchanger''s energy connections was declared'
+                    Write-Host '         plain "input" and the row that says energy reaches the second exchanger'
+                    Write-Host '         still passed. That edit stops a chained row being fed and nothing here'
+                    Write-Host '         would catch it.'
+                    Write-Host "           $row"
+                    exit 1
+                }
+                'declaring one energy connection "input" stops the chain, and the row naming it fails.'
+            } }
+
+            @{ Name = 'pipe-in-plant-area'; Body = {
+                # RIG-SIDE, AND THE FIRST HALF IN THIS REPOSITORY THAT IS. Every half in
+                # load-check's self-test and both above break a PROTOTYPE; this one breaks the world
+                # the rig builds, because "a pipe is standing where none should" is not something the
+                # data stage can say. See the PLANT_PIPE block in the rig for where it goes and why.
+                #
+                # THE TALLY MUST READ AT LEAST ONE, not merely fail: a half that planted its pipe
+                # outside the counted area, or planted nothing, would otherwise pass on some other
+                # row of the same name being false.
+                $planted = Invoke-Rig -Tag 'pipe' -PlantPipe
+                if (-not $planted.Created) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the rig could not build its map with the planted pipe (exit $($planted.Create.Code))."
+                    Write-FactorioTail $planted.Create
+                    exit 1
+                }
+                $row = Get-RigRow -Result $planted -Name 'one water feed serves the row, and no pipe carries reactor energy'
+                if (-not $row) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: the run reported no row named "one water feed serves the row,'
+                    Write-Host '         and no pipe carries reactor energy", so this half asserted nothing.'
+                    foreach ($line in $planted.Rows) { Write-Host "           $line" }
+                    exit 1
+                }
+                $counted = if ($row -match 'energy (\d+)') { [int]$Matches[1] } else { -1 }
+                if ($counted -lt 1) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: the planted pipe was not counted, so the tally was never'
+                    Write-Host '         shown the thing this half is about -- it landed outside the plant''s area,'
+                    Write-Host '         or the filter stopped seeing it.'
+                    Write-Host "           $row"
+                    exit 1
+                }
+                if ($row -notmatch '^FAIL') {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: a pipe carrying reactor energy stood inside the plant''s own'
+                    Write-Host '         area, the tally counted it, and the row still passed. The section''s claim'
+                    Write-Host '         that the plant needs no pipe would be decoration.'
+                    Write-Host "           $row"
+                    exit 1
+                }
+                'a pipe carrying reactor energy in the plant''s area is counted and fails the tally.'
+            } }
+
+            @{ Name = 'reactor-sells-south'; Body = {
+                # ADR 0031's precondition for the whole section: both reactors sell energy north AND
+                # south. Nothing else in the tree asserts the south output exists, so an edit or a
+                # coexisting mod takes it away and the plant section stops testing a bolt rather
+                # than reporting one.
+                #
+                # BY THE RIG'S OWN MESSAGE rather than by the exit code, as load-check's
+                # starved-reactor is: every other refusal here also aborts map creation, so "it
+                # failed" alone would not say which check did it.
+                Write-Canary -Lua @'
+-- Generated by scripts/check-hc.ps1 -SelfTest. Nothing here ships.
+-- The south connection only. North and both plasma connections are left alone, so the run fails on
+-- the south output being gone rather than on the reactor having no energy output at all.
+local box = data.raw["boiler"]["rf-reactor"].output_fluid_box
+local kept, removed = {}, 0
+for _, connection in pairs(box.pipe_connections) do
+  if connection.direction == defines.direction.south then
+    removed = removed + 1
+  else
+    kept[#kept + 1] = connection
+  end
+end
+-- DELIBERATELY WORDED SO IT SHARES NO SENTENCE WITH THE RIG'S OWN REFUSAL. The half asserts that
+-- the run failed AND that the output carries the rig's message about a missing south-facing energy
+-- output; a guard that said the same thing would satisfy that search by failing, so a canary that
+-- matched nothing would report a pass. Found in review.
+if removed == 0 then
+  error("check-hc canary: found no connection facing south on rf-reactor's output box, "
+    .. "so the reactor-sells-south half would prove nothing")
+end
+box.pipe_connections = kept
+'@
+                $noSouth = Invoke-Rig -Tag 'south' -WithCanary
+                if ($noSouth.Created) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: rf-reactor''s south-facing energy output was removed and the'
+                    Write-Host '         rig built its plant anyway. ADR 0031 says the reactor sells north and'
+                    Write-Host '         south, and the plant section rests on it.'
+                    foreach ($line in $noSouth.Rows) { Write-Host "           $line" }
+                    exit 1
+                }
+                $said = @($noSouth.Create.OutFile, $noSouth.Create.ErrFile) |
+                    Where-Object { $_ -and (Test-Path $_) } |
+                    Where-Object { Select-String -Path $_ -SimpleMatch 'has no south-facing energy output' -Quiet }
+                if (-not $said) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the reactor-sells-south canary failed the run (exit $($noSouth.Create.Code)) but"
+                    Write-Host '         the rig never said the south-facing energy output was missing, so this'
+                    Write-Host '         half cannot tell its own check from any other refusal.'
+                    Write-FactorioTail $noSouth.Create
+                    exit 1
+                }
+                'a reactor that stops selling energy south is caught by the rig''s own message.'
+            } }
+        )
+
+        Write-Host ''
+        Write-Host 'OK - the plant section can fail: a chain that stopped carrying, a pipe that should'
+        Write-Host '     not be there, and a reactor that stopped selling south are each caught by name.'
+        exit 0
+    }
+
+    $result = Invoke-Rig -Tag 'hc'
+    if (-not $result.Created) {
+        Write-FactorioTail $result.Create
+        throw "Factorio exited $($result.Create.Code) during 'hc-create'."
+    }
+    $reported = $result.Rows
     if ($reported.Count -eq 0) { throw 'the rig reported nothing; it never reached its check tick.' }
 
     foreach ($line in $reported) { Write-Host "  $line" }
 
-    $verdict = $reported | Where-Object { $_ -match '^(PASS|FAIL): ' } | Select-Object -Last 1
+    $verdict = $result.Verdict
     if (-not $verdict)              { throw 'the rig produced no verdict line.' }
     if ($verdict -notmatch '^PASS') { throw "the high-capacity pair or the bolted plant is broken: $verdict" }
 
