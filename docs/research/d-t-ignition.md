@@ -162,8 +162,10 @@ either way and does not double.
 ## Does the fuel chain support it?
 
 **Yes — with a lithium blanket.** Without one, ninety-five D-D reactors feed one D-T reactor — and
-that is the **per saturated reactor** reading of the **supply ratio**, which is not the number a
-player meets. See the two readings below before quoting anything from this section.
+that is the **per saturated reactor** reading of the **supply ratio**, at the **unresearched**
+state, which is neither the number a player meets first nor the one they end at. Nine is what one
+heater costs, and nine is also what a saturated reactor costs once both research ladders are done.
+See the two readings below before quoting anything from this section.
 
 ### Both readings of the supply ratio
 
@@ -171,14 +173,23 @@ player meets. See the two readings below before quoting anything from this secti
 they breed. **It has two readings and they differ by a factor of ten, so every figure in this
 section says which** (#290).
 
-| reading | what the consumer is | at the shipped 30 s |
-|---|---|---|
-| **per heater** | one `rf-heater` on `rf-d-t-mix`, 1.25 u/s of tritium | **9.12** D-D reactors |
-| **per saturated reactor** | a settled D-T reactor, 12.97 u/s of tritium | **94.7** D-D reactors |
+**And every figure says which RESEARCH STATE it is measured at** (#425, ADR 0038). There are two
+independent research ladders on `rf-reactor` now, so the supply ratio is a grid of twenty-four
+readings rather than a number. The two columns below are its corners.
 
-**The heater count is what relates them.** A settled D-T reactor burns 25.9 u/s of plasma and one
-`rf-heater` makes 2.5, so it is eating **10.4 heaters** — and 9.12 × 10.4 is 94.7. Everything in
-the rest of this section, the confinement table included, is the **per saturated reactor** reading.
+| reading | what the consumer is | unresearched — 30 s, 50 MW | fully researched — 60 s, 75 MW |
+|---|---|---|---|
+| **per heater** | one `rf-heater` on `rf-d-t-mix`, 1.25 u/s of tritium | **9.12** D-D reactors | **0.973** |
+| **per saturated reactor** | a settled D-T reactor, 12.97 u/s of tritium unresearched and 11.47 researched | **94.7** D-D reactors | **8.93** |
+
+**The heater count is what relates them.** A settled D-T reactor burns 25.9 u/s of plasma
+unresearched and one `rf-heater` makes 2.5, so it is eating **10.4 heaters** — and 9.12 × 10.4 is
+94.7. Fully researched it eats **9.18** heaters at **0.973** apiece, which is 8.93. Everything in
+the rest of this section, the grid included, is the **per saturated reactor** reading.
+
+**At the far corner one heater costs less than one reactor**, which is the qualitative change the
+ladders buy and not merely a smaller number: unresearched, a player plumbs nine breeder reactors
+to feed a single heater; fully researched, one breeder more than covers one heater.
 
 **The per-heater reading is what a player meets**, because a heater is what they build. It is also
 the operating point `realistic-fusion-refreshed/prototypes/recipes/d-t.lua` was balanced at — *"Fed at that rate a D-T reactor
@@ -208,6 +219,9 @@ and 26.0 u/s at a minute against 3.27×10⁹ and 25.9 settled.
 
 **And every figure in this section carries the radiation term**, unlike the note's default above.
 
+**The four figures in this sub-section are the UNRESEARCHED state** — 30 s of confinement and 50 MW
+of heating. The grid below carries the other twenty-three.
+
 - A settled D-T reactor burns **25.9 u/s of plasma**, so 25.9 u/s of `rf-d-t-mix`, so
   **13.0 u/s of tritium**.
 - A settled D-D reactor burns **0.548 u/s** of deuterium and breeds a quarter of that back as
@@ -219,15 +233,95 @@ each**, against 56.1 MW for a D-D reactor on its own — a 58% step per reactor 
 the plumbing. The step per reactor is close to what this section always claimed, which said 61%. The
 plumbing is not.
 
-**The confinement ladder moves both tiers, and in opposite directions** (#53, ADR 0024). It sits on
-the reactor rather than on a tier, so research speeds the breeder up and slows the burner down at
-the same time: D-D's tritium goes from 0.137 to 0.627 u/s, **4.6×**, while D-T settles hotter —
+### What research does to it: two ladders, and a grid rather than a line
+
+**There are two of them and neither is behind the other.** `rf-plasma-confinement-1..3` raises the
+energy confinement time (#53, ADR 0024) and `rf-plasma-heating-1..5` raises the confinement heating
+(#425, ADR 0038). Both root at `rf-d-d-fusion` and neither is a prerequisite of the other, which is
+ADR 0038 decision 2 and is why the readings below form a rectangle: a force can hold any pair of
+rungs, including all five heating rungs at the confinement time it started with.
+
+```mermaid
+graph LR
+  DD["rf-d-d-fusion"]
+  DD --> C1["rf-plasma-confinement-1<br/>40 s"] --> C2["rf-plasma-confinement-2<br/>50 s"] --> C3["rf-plasma-confinement-3<br/>60 s"]
+  DD --> H1["rf-plasma-heating-1<br/>55 MW"] --> H2["rf-plasma-heating-2<br/>60 MW"] --> H3["rf-plasma-heating-3<br/>65 MW"] --> H4["rf-plasma-heating-4<br/>70 MW"] --> H5["rf-plasma-heating-5<br/>75 MW"]
+```
+
+**The confinement ladder moves both tiers, and in opposite directions.** It sits on the reactor
+rather than on a tier, so research speeds the breeder up and slows the burner down at the same time:
+at base heating D-D's tritium goes from 0.137 to 0.627 u/s, **4.6×**, while D-T settles hotter —
 3.27×10⁹ to 3.92×10⁹ °C — past the peak of its own cross-section, so it burns 25.9 u/s down to 23.2.
 Both effects shorten the chain, and every rung does.
 
-Every cell of the **D-D per D-T** column is the supply ratio **per saturated reactor**. The
-per-heater reading is 1.25 divided by the **D-D breeds** cell on the same row — 9.12 at 30 s, 5.06
-at 40 s, 3.08 at 50 s and 1.99 at 60 s — because a heater makes 2.5 u/s of plasma whatever the
+**The heating ladder moves the breeder and almost nothing else.** At entry confinement D-D's tritium
+goes 0.137 to 0.393 u/s across the five rungs while D-T's demand falls only from 12.97 to 12.84 u/s.
+So the two ladders shorten the chain for different reasons, which is worth knowing before reading
+the grid as one effect measured twice.
+
+#### The grid
+
+Every cell is the supply ratio **per saturated reactor**, at that pair of rungs, settled and at full
+supply.
+
+| heating | 30 s — shipped | 40 s `confinement-1` | 50 s `confinement-2` | 60 s `confinement-3` |
+|---|---|---|---|---|
+| **50 MW — shipped** | **94.70** | 49.86 | 29.28 | 18.50 |
+| 55 MW `heating-1` | 71.73 | 37.75 | 22.41 | 14.70 |
+| 60 MW `heating-2` | 56.47 | 29.91 | 18.13 | 12.38 |
+| 65 MW `heating-3` | 45.87 | 24.59 | 15.31 | 10.85 |
+| 70 MW `heating-4` | 38.27 | 20.84 | 13.34 | 9.75 |
+| **75 MW `heating-5`** | 32.63 | 18.09 | 11.90 | **8.93** |
+
+**The top-left cell is the unresearched state and the bottom-right is the fully-researched one.**
+Everything between is a state some force can be in, and only the far corner is gated: #294 gates the
+fully-researched state against a ceiling of **15**, and the intermediate states are deliberately
+unbounded because top-confinement-only is 18.50 and is a legitimate build.
+
+The same twenty-four readings, on a log scale, as the heating ladder is climbed:
+
+```
+     D-D reactors per saturated D-T reactor
+100 +o.                                        o  30 s (shipped confinement)
+    |  ..                                      +  40 s
+    |    ..                                    x  50 s
+    |      .o.                                 *  60 s (top rung)
+    |         ....
+    |             .o...
+ 50 ++.                ...o.
+    |  ....                 ....
+    |      .+.                  .o...
+    |         ....                   ...o
+ 30 +x.           .+...
+    |  ....            ...+.
+    |      .x.              ....
+ 20 +         ....              .+...
+    |*.           .x...              ...+
+ 15 +--....------------...x...-----------  <- #294's ceiling
+    |      .*...              ...x...
+    |           ...*...              ...x
+    |                  ...*...
+ 10 +-------------------------...*...----  <- ADR 0038's target
+  9 +                                ...*
+    ++------+------+------+------+------+
+     50     55     60     65     70     75
+                confinement heating, MW
+```
+
+**The lines never cross and never turn back up**, which is the property ADR 0038 chose the lever for:
+heating power falls monotonically against the ratio with no interior optimum, where `volume_m3` has
+one and the shipped 1000 m³ is already on it. The lines also converge, and that is the cost: a
+heating rung is worth −24% at entry confinement and −8% at the top one.
+
+#### The 50 MW row, in full
+
+The top row of the grid is the confinement ladder at the shipped heating power, and it is what this
+section published before there was a second ladder. Every figure in it is **unchanged** — the heating
+ladder starts where the reactor already was (ADR 0038 decision 3) — and it carries four columns the
+grid does not.
+
+The per-heater reading is 1.25 divided by the **D-D breeds** cell on the same row — 9.12 at 30 s,
+5.06 at 40 s, 3.08 at 50 s and 1.99 at 60 s — because a heater makes 2.5 u/s of plasma whatever the
 research, so only the breeder end of the ratio moves. **The heater count therefore moves too**, from
 10.4 at 30 s to 9.29 at 60 s, since a settled D-T reactor burns less as it settles hotter.
 
@@ -239,14 +333,17 @@ research, so only the breeder end of the ratio moves. **The heater count therefo
 | 60 s | `rf-plasma-confinement-3` | 0.627 u/s | 11.61 u/s | **18.5** | 244.2 |
 
 **Every number above comes out of `tests/test-reactor-logic.lua`**, through the shipped `step()` and
-`settle()`, in the block headed *the fuel chain, at the settled point (#117)*. **Every cell of the
-table is pinned there to 1%, row by row** — **and since #290 so are the other reading's figures for
-every row**: the per-heater ratios and heater counts quoted above the table, with their product
-required to come back to that row's own `D-D per D-T` cell, so the two readings cannot drift apart — not only the two ends, which is what the first version
-of that block did and would have let a retuned middle rung sit here wrong while the suite reported
-no failures. Each rung is additionally required to shorten the chain. So a rebalance moves these
-figures there before it moves them here, and nothing in this section is computed by hand — which is
-what let the previous version go a month with a numerator that had moved and a ratio that had not.
+`settle()`, in the block headed *the fuel chain, at the settled point (#117)*. **Every cell of both
+tables is pinned there to 1%, cell by cell** — **and since #290 so are the other reading's figures
+for every row of the 50 MW one**: the per-heater ratios and heater counts quoted above it, with
+their product required to come back to that row's own `D-D per D-T` cell, so the two readings cannot
+drift apart — not only the two ends, which is what the first version of that block did and would
+have let a retuned middle rung sit here wrong while the suite reported no failures. Every rung of
+either ladder is additionally required to shorten the chain, at every rung of the other, and each
+row of the grid is required to carry the megawatt label the ladder actually ships. So a rebalance
+moves these figures there before it moves them here, and nothing in this section is computed by
+hand — which is what let the previous version go a month with a numerator that had moved and a ratio
+that had not.
 
 **Whether ninety-five is the intended cost of the unblanketed route is a balance question, and it is
 not settled here** — nor is the nine a player meets on their first heater, which is the same question

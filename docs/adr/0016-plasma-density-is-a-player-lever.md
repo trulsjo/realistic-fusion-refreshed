@@ -27,6 +27,14 @@ remainder — at τ 60 and 55 MW the optimum is 100% and the floor 0%, so there 
 itself: the mechanic was always expected to be researched away. At entry confinement it survives all
 five heating rungs, the optimum walking 65% → 90% and the floor 35% → 80%.
 
+> **Confirmed against what shipped, 2026-09-19 (#426).** Every figure in the paragraph above came
+> out of the shipped ladder unchanged: 90% over an 85% floor at τ 60 and 50 MW, worth 76.53 MW of
+> fusion power against a full reactor's 73.37; full supply and no floor at all at 55 MW; and the
+> 65% → 90% / 35% → 80% walk at entry confinement. Nothing was predicted here that came out
+> differently. All of it is pinned in `tests/test-reactor-logic.lua`'s density-curve block, which
+> gained the heating axis in #425 — the pair at τ 60 is what control.lua's density-curve cache key
+> now rests on.
+
 ## Context
 
 #37's item 3 recorded that a fluid box shares its contents with its segment in proportion to

@@ -41,6 +41,12 @@ researchable in five rungs, 50 MW to 75. Two things follow, and the first is the
   both arrive earlier — at 75 MW each crosses at **rung 1**, Q 1.050 at τ 40 whether the plasma is
   tuned or full, the two having converged because by then there is no interior peak left to tune to.
 
+  **Confirmed against what shipped, 2026-09-19 (#426):** Q 1.0495 full at τ 40 and 75 MW, with the
+  density optimum at full supply there, so the tuned and full readings are one number. This ADR's
+  own column — Q 0.320 / 0.578 / 0.950 / 1.467, break-even at rung 3 — is unmoved, and
+  `tests/test-reactor-logic.lua` still pins all four. What changed is that the sentences carry
+  "at base heating" now, and the suite pins the grid those figures are one row of.
+
   Had the two been folded into one ladder — considered and rejected by ADR 0038 — this ADR's Q
   column would have become 0.320 / 0.714 / 1.323 / 1.951 with break-even at rung 2. It was not, and
   it does not.
