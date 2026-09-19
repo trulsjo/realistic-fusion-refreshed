@@ -12,9 +12,13 @@ water-to-deuterium extraction chain, D-D reactors that breed their own tritium a
 fusion burning it, lithium blankets breeding more, and an aneutronic tier running D-He3 and He3-He3
 in a second reactor through a direct energy converter.
 **Every prototype ADR 0010 names for Power now exists** — thirteen entities and seven technologies,
-high-capacity steam equipment included — **plus two three-rung research ladders that ADR 0010 did
-not name**: confinement time (#53, ADR 0024) and plant efficiency (#96, ADR 0020). Both are neutronic
-only and both are per force. **All three fluid families are contained** as of 2026-09-07
+high-capacity steam equipment included — **plus three research ladders that ADR 0010 did
+not name**: confinement time in three rungs (#53, ADR 0024), plant efficiency in three (#96,
+ADR 0020) and plasma heating in five (#425, ADR 0038). All three are neutronic only and all three
+are per force. The heating ladder is the only one that costs a player anything to hold — it raises
+the reactor's draw as well as its output — and it is the only one that moves a spec field a
+density curve depends on, which is why `control.lua`'s curve cache is keyed on two fields rather
+than one. **All three fluid families are contained** as of 2026-09-07
 (#86, #87): plasma and the two reactor energies each carry a `connection_category` of their own, so
 no pipe, tank, wagon or pump a player can build touches any of them, and an exchanger or a converter
 bolts straight onto a reactor face and chains to its neighbours (ADR 0018, ADR 0031).
