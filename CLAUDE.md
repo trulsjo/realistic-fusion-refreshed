@@ -15,10 +15,12 @@ in a second reactor through a direct energy converter.
 high-capacity steam equipment included — **plus three research ladders that ADR 0010 did
 not name**: confinement time in three rungs (#53, ADR 0024), plant efficiency in three (#96,
 ADR 0020) and plasma heating in five (#425, ADR 0038). All three are neutronic only and all three
-are per force. The heating ladder is the only one that costs a player anything to hold — it raises
-the reactor's draw as well as its output — and it is the only one that moves a spec field a
-density curve depends on, which is why `control.lua`'s curve cache is keyed on two fields rather
-than one. **All three fluid families are contained** as of 2026-09-07
+are per force. **The heating ladder is the only one that costs a player anything to hold** — it
+raises the reactor's draw as well as its output, from a ~56 MW D-D line to ~81 MW. It is also the
+SECOND of the three to move a spec field a density curve depends on, which is why `control.lua`'s
+curve cache is keyed on confinement time AND heating power; the plant-efficiency ladder is the odd
+one out there, reaching `step()` as an argument and never as a spec field (ADR 0020 decision 5).
+All three resolve through one rung walk since #424. **All three fluid families are contained** as of 2026-09-07
 (#86, #87): plasma and the two reactor energies each carry a `connection_category` of their own, so
 no pipe, tank, wagon or pump a player can build touches any of them, and an exchanger or a converter
 bolts straight onto a reactor face and chains to its neighbours (ADR 0018, ADR 0031).

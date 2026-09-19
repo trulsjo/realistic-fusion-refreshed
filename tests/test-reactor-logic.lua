@@ -1454,14 +1454,20 @@ local function heating_rung(level, fill)
   }
 end
 
--- THE TOP RUNG'S TOOLTIP, which is the one that makes a claim about money: "a D-D reactor that
--- turns a real profit at last, selling 102.9 MW against the 75 MW it burns". Both halves, because
--- a rebalance that moved either would leave the sentence half true.
+-- THE TOP RUNG'S TOOLTIP, which is the one that makes a claim about money: "About 81 MW for the
+-- line against 56 unresearched, and a reactor selling 102.9 MW into it -- where unresearched it
+-- barely covered its own line at all."
+--
+-- THE COMPARISON IS AGAINST THE LINE AND NOT AGAINST THE REACTOR'S OWN HEATING, and getting that
+-- wrong is a defect this block caught in review. The first draft of that string said the reactor
+-- "turns a real profit at last, selling 102.9 MW against the 75 MW it burns" -- and a D-D reactor
+-- sells more than it burns at EVERY rung, unresearched included (1.122x at 50 MW, rising to
+-- 1.371x at 75), which is ADR 0015's engineering break-even and has nothing to do with this
+-- ladder. Against the whole LINE the sentence is true and is worth saying: 1.002x unresearched,
+-- which is barely covering it, against 1.270x at the top rung.
 local TOP_HEAT = heating_rung(#HEAT_LADDER)
 near(TOP_HEAT.mw, 102.9, 0.01, "at the top heating rung a full D-D reactor sells 102.9 MW", "MW")
 near(TOP_HEAT.heating_mw, 75, 0, "against the 75 MW it burns", "MW")
-check(TOP_HEAT.mw > TOP_HEAT.heating_mw, "so it turns a real profit, which is the claim",
-  string.format("%.1f MW sold against %.1f MW burnt", TOP_HEAT.mw, TOP_HEAT.heating_mw))
 
 -- AND THE HALF THE SAME SENTENCE REFUSES TO OVERSTATE: profitable is not break-even. ADR 0015's
 -- letter holds at every rung -- Q(D-D) never reaches 1 at any heating power, peaking at 0.968 near
@@ -1499,7 +1505,24 @@ for i, want in ipairs(LINE_MW) do
       want))
 end
 near(LINE_MW[#LINE_MW] / LINE_MW[1], 1.446, 0.01,
-  "and the ladder raises a D-D line's whole draw by about half, which every rung's tooltip warns about")
+  "and the ladder raises a D-D line's whole draw by 45%, which every rung's tooltip warns about")
+
+-- AND WHAT THE REACTOR SELLS AGAINST THAT LINE, which is the comparison the top rung's tooltip
+-- makes and the one the reactor-against-its-own-heating reading is so easily confused with. The
+-- ratio a player cares about is what one reactor returns against what its whole line costs: 1.002
+-- unresearched, which is barely covering it, and 1.270 at the top rung.
+near(heating_rung(0).mw / LINE_MW[1], 1.002, 0.01,
+  "unresearched, a D-D reactor barely covers its own line")
+near(TOP_HEAT.mw / LINE_MW[#LINE_MW], 1.270, 0.01,
+  "and at the top heating rung it covers it by 27%")
+-- Monotone across the ladder, which is what makes the line worth climbing at all: every rung adds
+-- 5 MW of draw and more than 5 MW of sale.
+for i = 2, #LINE_MW do
+  check(heating_rung(i - 1).mw / LINE_MW[i] > heating_rung(i - 2).mw / LINE_MW[i - 1],
+    string.format("heating rung %d pays for more of its own line than the rung below", i - 1),
+    string.format("%.4f against %.4f",
+      heating_rung(i - 1).mw / LINE_MW[i], heating_rung(i - 2).mw / LINE_MW[i - 1]))
+end
 
 -- ------------------------------------------------- the fuel chain, at the settled point (#117)
 --
