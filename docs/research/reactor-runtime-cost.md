@@ -474,7 +474,10 @@ radiation loss; which of them costs what was not isolated here, and attributing 
 > of them is chargeable. That leaves
 > [#66](https://github.com/trulsjo/realistic-fusion-refreshed/issues/66) — the fix ticket #63 was
 > blocking, opened to cut a D-D step's cost once its cause was known — waiting on a cause that does
-> not exist; what becomes of it is not this note's call. What #63 asked for that outlives it is the
+> not exist; what becomes of it is not this note's call. **#66 has since closed on its own last
+> criterion** — see *[Nothing to cut, and why the named lever is not
+> one (#66)](#nothing-to-cut-and-why-the-named-lever-is-not-one-66)* below — so this paragraph is
+> the state of things on 2026-09-03 and not an open question (#431). What #63 asked for that outlives it is the
 > guard, and #39 built it: `-BusyPercent`, and the instruction to grep for `BUSY` before quoting a
 > number.
 
