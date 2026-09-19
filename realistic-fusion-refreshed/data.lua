@@ -11,6 +11,10 @@ require("prototypes.technology.confinement")
 -- And of the plant-efficiency ladder beside it (#96, ADR 0020). Two lines off one technology, and
 -- deliberately: both are levers on the D-D tier, which is where a player first wants one.
 require("prototypes.technology.efficiency")
+-- And of the plasma-heating ladder (#425, ADR 0038), which makes three. Independent of the
+-- confinement ladder rather than behind it: the heating rungs are worth most at entry confinement,
+-- and ADR 0038 decision 2 means a player to be able to spend them there.
+require("prototypes.technology.heating")
 require("prototypes.recipes.d-t")
 -- Before technology.d-t, which unlocks these two (#32).
 require("prototypes.recipes.hc")

@@ -428,7 +428,62 @@ M.reactor = {
   -- Confinement heating. Spent out of the reactor's electric buffer by control.lua rather than
   -- declared on the prototype: the prototype's own energy_consumption is the boiler conversion
   -- this mod does not use, and is deliberately nearly zero.
+  --
+  -- IT IS THE STARTING VALUE SINCE #425, NOT THE ONLY ONE, exactly as confinement_time_s below is.
+  -- heating_ladder moves it per force through the M.spec_ladders row that names this field, and
+  -- control.lua's derive() is the only caller of that in the mod. Nothing in step() knows any of
+  -- it happened: it reads one number off the spec the caller handed it.
   heating_power_w = 50e6,
+  -- What research does to the number above (#425).
+  --
+  -- ADR 0038 places this ladder. It is the SECOND researchable lever on this reactor and it does
+  -- not replace the first: both ladders root at rf-d-d-fusion, neither is a prerequisite of the
+  -- other, and a player may take all five heating rungs at entry confinement -- which is exactly
+  -- where they are worth most.
+  --
+  -- WHY heating_power_w AND NOT SOMETHING ELSE, which ADR 0038 settled by measurement rather than
+  -- by taste. The supply ratio -- settled D-D reactors per saturated D-T reactor, CONTEXT.md
+  -- defines it -- falls monotonically with heating power and turns over nowhere. The intuitive
+  -- levers are backwards: lowering max_temperature_c parks the plasma nearer the peak of the
+  -- cross-section and it burns MORE, doubling density is far worse because bremsstrahlung goes as
+  -- n^2, and raising volume_m3 is at best flat because the shipped 1000 m^3 is already on its own
+  -- optimum. Read ADR 0038's table before proposing any of them again.
+  --
+  -- FIVE RUNGS AT 5 MW, AND NO NULL RUNG. Per rung the supply ratio falls 24%, 21%, 19%, 17% and
+  -- 15% at entry confinement, and 21%, 16%, 12%, 10% and 8% at the top of the confinement ladder.
+  -- A long shallow line is the right shape for a lever whose whole purpose is grinding a farm down.
+  --
+  -- ENTRY IS UNTOUCHED AND THAT IS THE POINT (ADR 0038 decision 3). At the shipped 50 MW nothing
+  -- moves: 94.70 D-D reactors per D-T reactor, Q(D-D) 0.320, 56.1 MW sold against a ~56 MW line.
+  -- A researchable lever leaves the unresearched machine exactly as ADR 0015 designed it.
+  --
+  -- WHAT IT COSTS A PLAYER, which is not a detail and is why each tooltip has to say so: a D-D
+  -- line's whole draw goes from ~56 MW to ~81 MW across the ladder. ADR 0015 records that a
+  -- brownout cools a D-D plasma and the climb back is minutes, so a player who researches heating
+  -- without growing their grid gets a deeper, slower brownout than before. That is the honest
+  -- shape of the lever -- a shorter fuel chain bought with a bigger grid bill -- and it is what
+  -- gives the five rungs a decision instead of a free ratchet.
+  --
+  -- NO CLAMP GUARD, AND THE CONFINEMENT LADDER'S REASONING DOES NOT TRANSFER. That one is bounded
+  -- partly to keep the plasma off max_temperature_c; D-T is ignited, so alpha heating and the
+  -- cross-section roll-off set its temperature rather than the heating power does. At the top of
+  -- both ladders D-T settles at 3.991e9 C, 79.8% of the clamp, against 78.4% at the top of the
+  -- confinement ladder alone. D-D reaches 1.18e9. Nothing here approaches it.
+  --
+  -- NEUTRONIC ONLY. M.aneutronic_reactor deliberately has no ladder of any kind: it already ships
+  -- 200 MW and 60 s, #52 settled that tier's balance, and ADR 0038 decision 5 refuses to retune it
+  -- as a side effect of a technology named for the machine below it -- the same shape ADR 0020 and
+  -- ADR 0024 give their own lines. Whether its ratio should move is #422.
+  --
+  -- Rungs are provisional, like every other balance number in this repository. The technology
+  -- prototypes read this table rather than restating it, so a rung and its tooltip cannot disagree.
+  heating_ladder = {
+    { technology = "rf-plasma-heating-1", heating_power_w = 55e6 },
+    { technology = "rf-plasma-heating-2", heating_power_w = 60e6 },
+    { technology = "rf-plasma-heating-3", heating_power_w = 65e6 },
+    { technology = "rf-plasma-heating-4", heating_power_w = 70e6 },
+    { technology = "rf-plasma-heating-5", heating_power_w = 75e6 },
+  },
   -- Energy confinement time: how long the plasma holds its heat. This is the reactor's defining
   -- statistic -- it decides the temperature the heating settles at, and therefore, through the
   -- cross-section data, everything else.
@@ -1209,6 +1264,8 @@ end
 M.spec_ladders = {
   { rungs = "confinement_ladder", field = "confinement_time_s",
     prototypes = "prototypes/technology/confinement.lua" },
+  { rungs = "heating_ladder", field = "heating_power_w",
+    prototypes = "prototypes/technology/heating.lua" },
 }
 
 --- Does any ladder above move a field on this spec?
