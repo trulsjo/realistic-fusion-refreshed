@@ -1247,10 +1247,9 @@ check(L.plasma_bounds_fault({ min_temperature_c = SHIPPED_MIN, max_temperature_c
 -- says otherwise, which ADR 0016 makes a load-bearing qualifier rather than a pedantic one: a
 -- player picks their own density, and at these temperatures full is not always the best pick.
 
+-- That this ladder exists on one reactor and not on the other is asserted with every other
+-- ladder's, in the resolution block below -- L.spec_ladders is what says which ladders there are.
 local LADDER = SPEC.confinement_ladder
-check(type(LADDER) == "table" and #LADDER > 0, "the neutronic reactor has a confinement ladder")
-check(ANEUTRONIC.confinement_ladder == nil,
-  "and the aneutronic reactor deliberately has none -- see the ladder's note in reactor-logic")
 -- The plasma the load guard is asked about. It lives on the spec so that a second reactor given a
 -- ladder names its own, and control.lua refuses to load a ladder that has none -- but it can only
 -- refuse over a spec it can see, and this is the earlier place.
@@ -1291,14 +1290,42 @@ end
 
 local TOP = LADDER[#LADDER]
 
-near(L.confinement_time(SPEC, researched()), SPEC.confinement_time_s, 0,
-  "a force with nothing researched runs the shipped confinement time")
-near(L.confinement_time(SPEC, researched(TOP.technology)), TOP.confinement_time_s, 0,
-  "a force holding only the top rung gets the top rung, not the base")
-near(L.confinement_time(ANEUTRONIC, researched(TOP.technology)), ANEUTRONIC.confinement_time_s, 0,
-  "and the ladder does not reach the aneutronic reactor however much is researched")
-near(L.confinement_time(SPEC, researched(LADDER[1].technology)), LADDER[1].confinement_time_s, 0,
-  "a force part way up gets the rung it has reached and no more")
+-- OVER EVERY SPEC LADDER, NOT OVER THE CONFINEMENT ONE (#424). The rung walk is one function now
+-- -- L.resolve_ladder, reached through the L.spec_ladders row that names each field -- so the same
+-- four questions are asked of every ladder the list carries, and a ladder added there is covered
+-- here without an edit. The capture ladder has its own block further down: it shares this walk and
+-- deliberately not the delivery, which is the asymmetry ADR 0020 decision 5 asks for.
+for _, ladder in ipairs(L.spec_ladders) do
+  local rungs = SPEC[ladder.rungs]
+  local field = ladder.field
+  check(type(rungs) == "table" and #rungs > 0,
+    string.format("the neutronic reactor has a %s", ladder.rungs))
+  check(ANEUTRONIC[ladder.rungs] == nil,
+    string.format("and the aneutronic reactor deliberately has no %s", ladder.rungs))
+  check(type(ladder.prototypes) == "string" and ladder.prototypes ~= "",
+    string.format("%s names the prototypes file a load refusal points at", ladder.rungs),
+    tostring(ladder.prototypes))
+
+  local top = rungs[#rungs]
+  near(L.resolve_ladder(SPEC, ladder.rungs, field, researched()), SPEC[field], 0,
+    string.format("a force with nothing researched runs the shipped %s", field))
+  near(L.resolve_ladder(SPEC, ladder.rungs, field, researched(top.technology)), top[field], 0,
+    string.format("a force holding only the top %s rung gets the top rung, not the base", ladder.rungs))
+  near(L.resolve_ladder(ANEUTRONIC, ladder.rungs, field, researched(top.technology)),
+    ANEUTRONIC[field], 0,
+    string.format("and %s does not reach the aneutronic reactor however much is researched",
+      ladder.rungs))
+  near(L.resolve_ladder(SPEC, ladder.rungs, field, researched(rungs[1].technology)), rungs[1][field], 0,
+    string.format("a force part way up %s gets the rung it has reached and no more", ladder.rungs))
+end
+
+-- AND THE SHORT-CIRCUIT control.lua's spec_for() MAKES, which is the whole reason a reactor with no
+-- ladder allocates nothing per force -- rf-aneutronic-reactor never reaches force_specs at all.
+-- Asked of the predicate rather than of one ladder's field, which is what #424 changed: spec_for
+-- used to read `base.confinement_ladder` and so meant "some ladder" while saying "this one".
+check(L.has_spec_ladder(SPEC), "the neutronic reactor has some ladder on its spec")
+check(not L.has_spec_ladder(ANEUTRONIC),
+  "the aneutronic reactor has none, so control.lua's per-force cache is never touched for it")
 
 --- The spec one rung up, as control.lua's derive() builds it.
 local function at_rung(level)
