@@ -248,11 +248,17 @@ tier, and the heater-fed figure MOVES: `brownout-rig.md`'s `dd` row read 70.58 M
 those moves is not on record**, which is why that note now names the repository revision it was
 rendered from; the settled figure has not moved at all over the same period.
 
-**Operating point is not the only thing a figure has to name, since #425.** Two research ladders move
-this reactor — confinement time and heating power — so a figure also has to say which **research
-state** it was measured in. The rule is the same shape: a figure that names none is the
-**unresearched** one, 30 s of confinement and 50 MW of heating. See **supply ratio** below, where
-the two corners are 94.7 and 8.93 and neither is a default.
+**Operating point is not the only thing a figure has to name, since #425.** Three research ladders
+move this reactor — confinement time, heating power and plant efficiency — so a figure also has to
+say which **research state** it was measured in. The rule is the same shape: a figure that names
+none is the **unresearched** one, 30 s of confinement, 50 MW of heating and 0.85 capture. See
+**supply ratio** below, where the two corners are 94.7 and 8.93 and neither is a default.
+
+**WHICH OF THE THREE APPLIES DEPENDS ON THE QUANTITY, and a figure names the ladders that move it
+rather than all three.** Plant efficiency scales what a reactor SELLS and nothing else: it is on
+every megawatt figure and on none of the breeding ones, which is why **supply ratio** below still
+has twenty-four readings and not ninety-six. A megawatt figure has ninety-six states, and
+`docs/research/exchanger-coverage.md` is where they are tabulated.
 
 **And do not read a "56 MW" as an output on sight.** ADR 0015's **~56 MW is what a whole D-D line
 DRAWS** — reactor, heater, two electrolysers, extractor and chemical plant — and it sits a table away

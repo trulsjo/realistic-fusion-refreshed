@@ -599,7 +599,8 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 --
 -- WHAT 90 COVERS. Which figures below are PINNED and which are only cited is stated per bullet
 -- rather than claimed once for all of them, because a draft of this comment said "every figure here
--- is pinned" and four of the nine were not:
+-- is pinned" and four of that draft's nine were not. The rule outlived the draft and #432 added
+-- bullets under it, so the count is that review's and not a description of what is below now:
 --
 --   * THE FED REACTOR, which is the case a player builds and the reason for the number.
 --     docs/research/d-t-ignition.md's feed table reads a D-D reactor at 86 MW on one heater's
@@ -635,20 +636,55 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 --   * SETTLED AND AT FULL SUPPLY -- ALL FOUR PINNED by tests/test-reactor-logic.lua's mw_at block.
 --     CONTEXT.md requires the operating point be named and ADR 0024 item 1 calls it a load-bearing
 --     qualifier: 56.1 MW unresearched, 67.1 at rf-plasma-confinement-1, 82.9 at rung 2 and 104.9 at
---     rung 3, so 90 covers the ladder to its second rung and not to its third.
+--     rung 3, so 90 covers the confinement ladder to its second rung and not to its third.
+--     AT SHIPPED HEATING AND SHIPPED CAPTURE, which is the qualifier #432 added: those four are one
+--     row of a grid and the other two ladders move every one of them.
 --   * TUNED DENSITY, which ADR 0016 makes a player lever and ADR 0024 tabulates. Held at its density
 --     optimum a reactor peaks at 61.6 MW unresearched, 73.7 at rung 1 and 88.8 at rung 2 -- all
 --     covered, the last of them by a little over a megawatt, and ALL THREE PINNED in the same block.
 --     Rung 3's optimum is about 107.6 and is NOT covered; it is the one figure in this bullet that
 --     is not pinned, because the assertion that matters at rung 3 is that full supply's 104.9
---     already exceeds 90 and the optimum only widens the gap.
+--     already exceeds 90 and the optimum only widens the gap. Same qualifier as the bullet above:
+--     these are the shipped-heating, shipped-capture row, and that "little over a megawatt" is
+--     what one rung of either other ladder eats. The same cell reads 93.8 MW at one rung of plant
+--     efficiency and 102.2 at one rung of heating.
 --
--- SO THE HONEST STATEMENT IS "one exchanger drains a D-D reactor through confinement rung 2, fed or
--- full, tuned or not", and at rung 3 a second machine is wanted whatever the operating point. Going
--- further is #315, which cannot be built the way the reactor's ladder is: a BoilerPrototype has no
--- module_slots, no allowed_effects and no effect_receiver in 2.0.77, so energy_consumption is
--- settled at start-up and cannot be handed out per force the way control.lua hands out
--- confinement_time_s.
+-- THE HONEST STATEMENT IS NOT ABOUT ONE LADDER ANY MORE (#432, closing #395 with it). It read "one
+-- exchanger drains a D-D reactor through confinement rung 2, fed or full, tuned or not", which was
+-- true when confinement was the only lever a player had. There are THREE independent per-force
+-- ladders on this reactor now and two of them arrived after 90 MW was chosen: plant efficiency
+-- multiplies what is sold by up to 0.9375/0.85 (#96, ADR 0020) and heating power raises the whole
+-- curve (#425, ADR 0038). Two tickets found the same sentence false for two different reasons, so
+-- it is re-anchored against all three at once rather than patched twice.
+--
+-- SO THE HONEST STATEMENT IS "ONE EXCHANGER DRAINS THE REACTOR A PLAYER FIRST BUILDS, AND EVERY
+-- LADDER WALKS AWAY FROM IT" -- the research state has to be named, and naming one ladder's rung
+-- no longer names a state. At the shipped state on all three, 90 MW clears the reactor with room:
+-- 56.1 MW full and 61.6 tuned. Where it stops, walking each ladder on its own from there:
+--
+--   * HEATING, on its own, breaks it at rung 4 -- 92.9 MW at full supply and 95.1 tuned, against
+--     83.2 and 86.3 at rung 3. So a reactor can outrun its exchanger with the confinement ladder
+--     untouched, which was not possible before ADR 0038. ALL FOUR PINNED.
+--   * CONFINEMENT, on its own, still breaks it at rung 3 -- 104.9 full, about 107.6 tuned -- which
+--     is the one statement the old sentence got right and it is unchanged. Pinned as the bullets
+--     above record: the 104.9 yes, the 107.6 no.
+--   * PLANT EFFICIENCY, on its own, NEVER breaks it. The whole ladder at entry confinement and
+--     shipped heating is 61.9 MW full and 68.0 tuned, and it is pinned for exactly that reason:
+--     #395 reports this ladder falsifying the sentence and it does, but only in COMBINATION --
+--     confinement rung 2 with plant-efficiency rung 1 is 93.8 MW tuned against 87.8 full, so the
+--     tuned half goes over and the full half does not. ALL FOUR OF THOSE PINNED.
+--   * AND THE FAR CORNER, every ladder at its top, is 211.2 MW at full supply -- 2.35 of these
+--     machines, so two of them and a third one a third used. PINNED.
+--
+-- THE WHOLE GRID IS docs/research/exchanger-coverage.md, which is where the ninety-six-cell
+-- measurement and its coverage map live; the cells above are the boundary of it and are the only
+-- ones a gate holds. Everything in that note is CITED here, not pinned.
+--
+-- Going further is #315, which cannot be built the way the reactor's ladder is: a BoilerPrototype
+-- has no module_slots, no allowed_effects and no effect_receiver in 2.0.77, so energy_consumption
+-- is settled at start-up and cannot be handed out per force the way control.lua hands out
+-- confinement_time_s. THE 90 MW IS UNCHANGED BY THIS TICKET and moving it is that one: it is
+-- Truls's call twice over, having been his on 2026-09-10 when it went from 70 to 90.
 --
 -- WHY 70 WAS NOT ENOUGH. It cleared the pure model's 56.1 MW equilibrium and nothing else: the
 -- designed one-heater plant is 86 MW and 70 does not reach it. The pure model's figure is the one to
