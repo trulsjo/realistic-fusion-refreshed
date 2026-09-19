@@ -248,25 +248,42 @@ tier, and the heater-fed figure MOVES: `brownout-rig.md`'s `dd` row read 70.58 M
 those moves is not on record**, which is why that note now names the repository revision it was
 rendered from; the settled figure has not moved at all over the same period.
 
+**Operating point is not the only thing a figure has to name, since #425.** Two research ladders move
+this reactor — confinement time and heating power — so a figure also has to say which **research
+state** it was measured in. The rule is the same shape: a figure that names none is the
+**unresearched** one, 30 s of confinement and 50 MW of heating. See **supply ratio** below, where
+the two corners are 94.7 and 8.93 and neither is a default.
+
 **And do not read a "56 MW" as an output on sight.** ADR 0015's **~56 MW is what a whole D-D line
 DRAWS** — reactor, heater, two electrolysers, extractor and chemical plant — and it sits a table away
 from the 56.1 MW the reactor sells. The near-collision is a coincidence of the balance rather than a
-relationship, and either number can move without the other.
+relationship, and either number can move without the other. **Both are unresearched figures and they
+move apart**: the heating ladder takes the line's draw to ~81 MW and what the reactor sells to
+102.9 MW, so the collision is a feature of the entry state alone.
 
 **Supply ratio** — how many **settled** D-D reactors it takes to supply one consumer of what they
 breed. It depends on **operating point** above and has no value without one, which is why it sits
 here: the D-D end is always the settled reactor, and the consumer has to be named. **It has two
-readings and they differ by a factor of ten, so always say which** (#290):
+readings and they differ by a factor of ten, so always say which** (#290) — **and it depends on
+RESEARCH, so always say which state too** (#425, ADR 0038). Two independent ladders move it, so
+there are twenty-four readings and no default one; the two named below are the corners.
 
 - **Per heater** — one `rf-heater`'s worth of fuel. This is the reading a player meets, because a
-  heater is what they build. **9.1 D-D reactors per heater** on the D-T mix at the shipped
-  confinement time.
+  heater is what they build. **9.1 D-D reactors per heater** on the D-T mix **unresearched**, and
+  **0.97 fully researched** — where one breeder more than covers one heater.
 - **Per saturated reactor** — what a settled consuming reactor burns flat out. **94.7 D-D reactors
-  per D-T reactor**, the figure [`d-t-ignition.md`](docs/research/d-t-ignition.md) tabulates against
-  the confinement ladder.
+  per D-T reactor unresearched**, and **8.93 fully researched**. The whole grid is in
+  [`d-t-ignition.md`](docs/research/d-t-ignition.md), heating power against confinement time.
 
-**The heater count is what relates them**: a settled D-T reactor eats **10.4 heaters**, so the
-per-saturated-reactor reading is the per-heater one times that. All three are pinned in
+**"Unresearched" and "fully researched" are the words to use**, and they name a pair of rungs rather
+than a tier: unresearched is 30 s of confinement and 50 MW of heating, fully researched is 60 s and
+75 MW. Anything between is a state some force is in, and the intermediate ones are not summarised by
+either corner — top-confinement-only is 18.5, which is nearer the unresearched figure than the
+researched one.
+
+**The heater count is what relates them**: a settled D-T reactor eats **10.4 heaters** unresearched
+and **9.18** fully researched, so the per-saturated-reactor reading is the per-heater one times
+that. All three are pinned in
 `tests/test-reactor-logic.lua`, from the rate the shipped recipes run at rather than from a literal
 2.5 — see `M.heater` in `realistic-fusion-refreshed/scripts/reactor-logic.lua`. **One input is not
 pinned and the block says so**: that a mix has the composition of the plasma made from it. The
@@ -276,10 +293,14 @@ nothing here.
 
 **Both tiers quote the same measurement.** A D-D reactor breeds tritium and helium-3 at the same
 rate, so a heater on the D-He3 mix costs the same 9.1 as one on the D-T mix, and a heater on bare
-helium-3 costs **18.2** because there is no second species to blend in.
+helium-3 costs **18.2** because there is no second species to blend in. Both are the
+**unresearched** figures, and they stay the unresearched figures: `rf-aneutronic-reactor` has no
+research ladder of any kind, but these two are readings of the D-D BREEDER, so a force that
+researches the neutronic ladders shortens the aneutronic chain as well.
 `realistic-fusion-refreshed/prototypes/entities.lua` records those two where it sizes
 `rf-aneutronic-composite-tank`. Whether 9.1 is the right cost is a balance
-question and is settled nowhere — naming the quantity is not deciding it.
+question; ADR 0038 answered it for the neutronic tier by making the researched figure about 9 per
+SATURATED reactor, and left the aneutronic tier's own ratio open as #422.
 
 **Ignited** — a plasma whose own fusion self-heating carries it without external confinement heating.
 Confinement heating gets an ignited plasma **to** a fusing temperature; it is not what keeps it at one.

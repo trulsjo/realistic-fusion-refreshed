@@ -26,6 +26,13 @@ data:extend({
   -- mix takes 1.25 u/s of tritium and a settled D-D reactor breeds 0.137, so a heater costs 9.12
   -- D-D reactors. The other reading, what a SATURATED D-T reactor costs, is 94.7 -- ten heaters'
   -- worth. Quote neither without saying which.
+  --
+  -- BOTH ARE THE UNRESEARCHED FIGURES (#426, ADR 0038), and that is the third thing to say when
+  -- quoting either. Two independent research ladders raise what a D-D reactor breeds, so at the top
+  -- of both a heater costs 0.973 D-D reactors and a saturated D-T reactor 8.93. THIS RECIPE'S RATE
+  -- IS UNCHANGED and is not what moved: a heater makes the same 2.5 u/s of plasma whatever a force
+  -- has researched, so only the breeder end of the ratio moves. The grid is in
+  -- docs/research/d-t-ignition.md.
   {
     type = "recipe",
     name = "rf-d-t-plasma",

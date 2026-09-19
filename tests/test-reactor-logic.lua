@@ -1754,6 +1754,15 @@ check(TOPPED.ratio < 15,
 -- player builds. 9.1233 unresearched is pinned in the table above; this is its far corner.
 near(TOPPED.per_heater, 0.9726, 0.01,
   "and one heater on the D-T mix costs 0.973 of a D-D reactor there -- under one")
+near(TOPPED.heaters, 9.1780, 0.01,
+  "while a settled D-T reactor eats 9.18 heaters there, against 10.4 unresearched")
+
+-- WHAT A REACTOR BREEDS AT THE FAR CORNER, which is a rate rather than a ratio and is pinned for a
+-- reader rather than for the grid: realistic-fusion-refreshed/prototypes/entities.lua sizes
+-- rf-isotope-collector's boxes against it, and the sentence there quotes all three of these.
+near(BARE.bred, 0.137012, 0.01, "unresearched, a D-D reactor breeds 0.137 u/s of tritium")
+near(TOP_TAU_ONLY.bred, 0.627339, 0.01, "at the top of the confinement ladder alone, 0.627 u/s")
+near(TOPPED.bred, 1.285164, 0.01, "and at the top of both ladders, 1.285 u/s")
 
 -- INTERMEDIATE STATES ARE DELIBERATELY UNGATED, and this is the cell that says why: a player who
 -- finishes the confinement ladder and researches no heating sits at 18.5, which is a legitimate

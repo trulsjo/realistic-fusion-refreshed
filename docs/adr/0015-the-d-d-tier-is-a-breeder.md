@@ -30,6 +30,28 @@ real profit, still below scientific break-even. Q(D-D) never crosses 1 at any he
 peaks at 0.968 near 180 MW and falls away either side. **So the whole-line table below is a figure ADR 0038
 falsifies for a researched force**, and #293 re-anchors it.
 
+**Confirmed and re-anchored 2026-09-19 (#425, #426).** The ladder shipped exactly as predicted and
+every figure in the paragraph above came out of it unchanged: Q 0.6135 and 102.9 MW sold at 75 MW
+and entry confinement, and a peak of 0.9677 at 182 MW on a 2 MW sweep, so break-even is never
+crossed. **The whole-line table below is the UNRESEARCHED figure and is left exactly as it is.**
+What a researched line draws is one arithmetic series over the heating ladder — the table's other
+~6 MW does not move — and it is published where a player meets it, in each rung's own technology
+description:
+
+| heating | technology | whole D-D line draws |
+|---|---:|---:|
+| 50 MW | none — shipped | **~56 MW** |
+| 55 MW | `rf-plasma-heating-1` | ~61 MW |
+| 60 MW | `rf-plasma-heating-2` | ~66 MW |
+| 65 MW | `rf-plasma-heating-3` | ~71 MW |
+| 70 MW | `rf-plasma-heating-4` | ~76 MW |
+| 75 MW | `rf-plasma-heating-5` | **~81 MW** |
+
+`tests/test-reactor-logic.lua` checks those six against the shipped rungs rather than against the
+model, and says why: that suite loads no recipes, so it cannot see the ~6 MW at all. What it can
+say is that the six published figures are one series over the ladder, which is the way they would
+drift.
+
 ## Context
 
 ADR 0014 left two things open in as many words: *whether the term actually goes in, and what the D-D

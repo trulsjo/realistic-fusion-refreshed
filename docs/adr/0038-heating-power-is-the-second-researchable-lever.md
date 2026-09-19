@@ -260,16 +260,32 @@ ungated.
 **Nothing here is struck yet.** On the day this ADR is signed every figure below is still true —
 nothing has been retuned. #293 strikes each as it re-anchors it, per this repository's habit.
 
-- **ADR 0015** — the ~56 MW whole-line table, and every downstream power claim that rests on it.
-- **ADR 0016** — the mechanic's survival at the top of the tree.
-- **ADR 0024** — the break-even-at-rung-3 claim, which needs the "at base heating" qualifier.
-- **`docs/research/d-t-ignition.md`** — the confinement ladder table and both supply-ratio readings.
-- **`CONTEXT.md`** — the **supply ratio** entry and the **operating point** entry.
-- **`realistic-fusion-refreshed/prototypes/entities.lua`** — the aneutronic 9:1 comment where it
-  sizes `rf-aneutronic-composite-tank`, which is cross-referenced to the neutronic figure.
-- **`realistic-fusion-refreshed/prototypes/recipes/d-t.lua`** — the balance comment quoting the
-  heater-fed operating point.
-- **`tests/test-reactor-logic.lua`** — the supply-ratio block, which pins every cell.
+**Worked 2026-09-19 by #425 and #426, and the word "falsifies" turned out to be too strong for
+every one of them.** Not one figure on this list came out differently; what each needed was the
+research state it was measured at, because the ladder starts where the reactor already was
+(decision 3). So each is marked EXTENDED rather than struck, and the entry state is republished
+unchanged beside the researched one.
+
+- **ADR 0015** — the ~56 MW whole-line table. **Extended**: unchanged as the unresearched figure,
+  with the other five rungs published beside it as one series, 61 / 66 / 71 / 76 / 81 MW. The Q
+  0.613 / 102.9 MW / 0.968-at-180-MW predictions all reproduced.
+- **ADR 0016** — the mechanic's survival at the top of the tree. **Confirmed, and it closes**, at
+  the first heating rung, exactly as predicted; 90%/85% worth 76.53 MW against 73.37 at τ 60 and
+  50 MW, full supply and no floor at 55 MW, and the 65% → 90% walk surviving at entry confinement.
+- **ADR 0024** — the break-even-at-rung-3 claim. **Confirmed**: it holds at base heating exactly as
+  written, and at 75 MW break-even arrives at rung 1 with Q 1.0495 tuned and full alike.
+- **`docs/research/d-t-ignition.md`** — **extended**: the confinement table is now visibly the
+  50 MW row of a 6×4 grid, and both supply-ratio readings carry their corners.
+- **`CONTEXT.md`** — **extended**: the **supply ratio** entry publishes both corners, and the
+  **operating point** entry gains the rule that a figure naming no research state is the
+  unresearched one.
+- **`realistic-fusion-refreshed/prototypes/entities.lua`** — the aneutronic 9:1 comment.
+  **Qualified, not moved.** The tank is still sized on the entry ratio, deliberately, and the
+  aneutronic tier is still untouched: what research moves is the D-D breeder feeding it.
+- **`realistic-fusion-refreshed/prototypes/recipes/d-t.lua`** — **qualified**. The recipe's own
+  rate is not what moved; a heater makes 2.5 u/s whatever a force has researched.
+- **`tests/test-reactor-logic.lua`** — **extended**: the supply-ratio block pins all twenty-four
+  cells, both monotonicities, and each row's megawatt label against the shipped ladder.
 
 ### Work this spawns
 

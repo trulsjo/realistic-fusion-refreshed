@@ -1121,15 +1121,27 @@ collector.target_temperature = 15
 
 -- Vanilla's boiler is three by two with water in on the west and east faces and steam out of the
 -- north one. Those positions are kept exactly as they are; only what the boxes carry changes. The
--- volumes are a buffer rather than storage: a reactor breeds about 0.137 units a second of each
--- by-product, so 500 is roughly an hour of production if nothing drains it, which is long enough
--- that a stalled pipe is a nuisance rather than an instant loss.
+-- volumes are a buffer rather than storage: an UNRESEARCHED reactor breeds about 0.137 units a
+-- second of each by-product, so 500 is roughly an hour of production if nothing drains it, which is
+-- long enough that a stalled pipe is a nuisance rather than an instant loss.
 --
 -- ~~about 0.6 units a second, so 500 is roughly fifteen minutes~~ was a PRE-#52 figure, taken when
 -- the model carried no radiation term and a D-D reactor settled at 8.8e8 C selling 133 MW. It
 -- settles at 2.42e8 C and 56.1 MW now, and the by-products came down with the reaction rate. The
 -- volume is unchanged and the conclusion is unchanged; only the margin was overstated, in the
 -- direction that would have made a stalled pipe look worse than it is.
+--
+-- THE HOUR IS THE UNRESEARCHED FIGURE AND THE WORD IS NEW (#426, ADR 0038). Breeding is what
+-- research moves, so the buffer is worth less the further a force has gone -- 0.627 u/s at the top
+-- of the confinement ladder is about thirteen minutes, and 1.285 u/s at the top of BOTH ladders is
+-- about six and a half. tests/test-reactor-logic.lua pins all three rates.
+--
+-- THE VOLUME IS STILL 500 AND THIS IS NOT A CASE FOR RAISING IT. Six minutes is still long enough
+-- that a stalled pipe is a nuisance rather than an instant loss, which is the whole claim the
+-- number was chosen against; and a player whose reactors breed nine times faster has nine times the
+-- reason to have plumbed them. What was stale was the sentence, not the figure: "roughly an hour"
+-- was published with no research state on it, and had stopped being true for anyone who had
+-- researched at all -- which since #53 has included every player who got as far as this machine.
 local function emit(box, fluid)
   box.production_type = "output"
   box.volume = 500
@@ -1593,6 +1605,19 @@ local tank = pin(table.deepcopy(data.raw["storage-tank"]["storage-tank"]), "rf-a
 -- to be near each other. Both readings and the heater count are pinned in
 -- tests/test-reactor-logic.lua's supply-ratio block, from what the recipes ship rather than from a
 -- literal 2.5.
+--
+-- EVERY FIGURE ABOVE IS THE UNRESEARCHED ONE (#426, ADR 0038), and the word is the only thing this
+-- comment gained: no number here moved. The denominator is the D-D BREEDER's rate, which two
+-- research ladders now raise -- so a force at the top of both breeds 1.285 u/s instead of 0.137 and
+-- a heater on rf-d-he3-plasma costs 0.973 D-D reactors instead of 9.12. THE TANK IS STILL SIZED ON
+-- THE 9:1, deliberately: it is the ratio a player meets when they first build this tier, and
+-- sizing a buffer on the best case a force can research into is sizing it for the player who needs
+-- it least.
+--
+-- THE ANEUTRONIC TIER ITSELF IS STILL UNTOUCHED, which is ADR 0038 decision 5 and is a different
+-- claim from the one above. rf-aneutronic-reactor has no research ladder of any kind and ships the
+-- same 200 MW and 60 s it always did; what moves these figures is research on the NEUTRONIC
+-- reactor that breeds the helium-3. Whether this tier's own ratio should move is #422.
 --
 -- AND IT IS A BALANCE QUESTION AND IS NOT SETTLED HERE. Whether the aneutronic tier should need
 -- nine breeders per heater is a decision about the tier, not about a tank, and nothing in this
