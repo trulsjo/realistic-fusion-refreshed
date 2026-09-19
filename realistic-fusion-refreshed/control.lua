@@ -53,6 +53,18 @@ local SPECS = {
 -- copy of the spec, so it has its own cache below, dropped by the same call and on the same events.
 local force_specs = {}
 
+-- Whether any ladder moves a field on this reactor's spec, per prototype name.
+--
+-- Computed once at load rather than asked per call, because spec_for() is on two per-tick paths --
+-- update()'s loop and, since #425, spend()'s -- and logic.has_spec_ladder() walks a list. One
+-- table index is what that walk collapses to for a reactor that has ladders, and it is the whole
+-- of what an aneutronic reactor pays to be told it has none.
+--
+-- SPECS is a module constant and reactor-logic's ladders are module constants, so there is nothing
+-- here that can go stale: a mod sorting after us cannot add a ladder to our spec table.
+local HAS_SPEC_LADDER = {}
+for name, spec in pairs(SPECS) do HAS_SPEC_LADDER[name] = logic.has_spec_ladder(spec) end
+
 --- This force's version of one reactor's constants.
 --
 -- EVERY SPEC LADDER, NOT ONE (#424). This resolved confinement time alone and named the field
@@ -127,7 +139,9 @@ local function spec_for(entity)
   -- `if not base.confinement_ladder`, which meant "this reactor has some ladder" and said
   -- "this reactor has the confinement one" -- correct while there was only one, and a reactor
   -- given a second while keeping no first would have been silently frozen at its base values.
-  if not logic.has_spec_ladder(base) then return base end
+  -- Through HAS_SPEC_LADDER rather than logic.has_spec_ladder() so the answer is a table index
+  -- rather than a list walk; this line runs once per reactor per tick.
+  if not HAS_SPEC_LADDER[entity.name] then return base end
 
   local index = entity.force_index
   local by_force = force_specs[index]
@@ -186,8 +200,11 @@ local function capture_for(entity, spec)
       local technology = entity.force.technologies[name]
       -- Guarded rather than indexed, the way derive() above guards the confinement ladder: a rung
       -- whose technology prototype is missing is a developer error, and the useful behaviour is
-      -- that the force simply has not researched it. check_plant_efficiency() below is what
-      -- refuses to load over it, once, with a message.
+      -- that the force simply has not researched it. check_ladder_prototypes() below is what
+      -- refuses to load over it, once, with a message -- for all three ladders since #424. This
+      -- sentence named check_plant_efficiency() until then, which is where that loop used to
+      -- live, and derive()'s identical one was updated while this sibling was missed. Found in
+      -- review.
       return technology ~= nil and technology.researched
     end)
     by_force[entity.name] = capture
@@ -886,9 +903,28 @@ end
 -- ~~SPECS rather than spec_for(): heating_power_w is the same for every force, because the
 -- confinement ladder moves confinement_time_s and nothing else, so this path never touches the
 -- per-force cache at all.~~ #425 made heating power the second researchable lever (ADR 0038), so
--- it is spec_for() here now and this IS a per-force path. It is the same two table lookups every
--- other cache hit is; what it buys is the whole visible half of the feature, because a rung a
--- player researches has to arrive as a bigger bill before it can arrive as a hotter plasma.
+-- it is spec_for() here now and this IS a per-force path. What it buys is the whole visible half
+-- of the feature: a rung a player researches has to arrive as a bigger bill before it can arrive
+-- as a hotter plasma.
+--
+-- WHAT IT COSTS IS NOT MEASURED, AND THAT SENTENCE IS THE POINT. An earlier draft of this note
+-- claimed it was "the same two table lookups every other cache hit is", which was wrong twice
+-- over and was caught in review. Against the SPECS index it replaced, a cache hit here is: one
+-- HAS_SPEC_LADDER index, one `entity.force_index` read -- a Lua-to-C++ boundary crossing that was
+-- NOT on this path before -- and two more table indexes. The boundary crossing is the one that
+-- matters and it is unavoidable: a per-force draw has to ask which force, once per reactor per
+-- tick, and nothing else here can answer it.
+--
+-- NOT MEASURED because #92 established what a measurement of this costs on this machine: ten
+-- alternated rounds of bench-reactors.ps1, read as a median, because per-round swings are +/-1.3
+-- microseconds and a ratio of aggregates reads 1.29x on CPU throttling alone. Two paired runs
+-- would not support a number. #63 and #66 are open on per-step cost and this belongs to them;
+-- what is recorded here is the shape of the addition, so nobody has to re-derive it from the diff.
+--
+-- WHAT WAS DONE INSTEAD OF MEASURING: the cheap half was removed. spec_for()'s short-circuit was
+-- a walk over logic.spec_ladders and is now one index into HAS_SPEC_LADDER, built at load. That
+-- is also what an rf-aneutronic-reactor now pays on this path in total, which is the case with the
+-- most reactors on a settled map and the one with nothing per force to look up.
 --
 -- SPENT OUT OF THE BUFFER RATHER THAN DECLARED AS A FIXED CONSUMPTION, which is the older decision
 -- this inherits and does not change: the network refills what was spent, so a brownout shows up as
@@ -1837,7 +1873,7 @@ end
 -- was written, which is a guard nobody can keep. Reading the fuel off the spec rather than naming
 -- it here is what stops a second reactor with a ladder being settled on a plasma it cannot burn.
 --
--- THE DECISION IS reactor-logic's, not this function's. logic.confinement_ladder_overruns settles
+-- THE DECISION IS reactor-logic's, not this function's. logic.ladders_overrun settles
 -- the top rung and answers; this supplies the operating point, the horizon and the message. That
 -- split is what lets tests/test-reactor-logic.lua negative-test the guard by breaking a ladder,
 -- which is not something a check that only exists inside on_init could be asked to prove.
@@ -1892,7 +1928,7 @@ local function check_confinement_ladder()
     if spec.confinement_ladder then
       -- Box 1 is the plasma box -- the same index update() reads the plasma out of, so the two
       -- cannot come to disagree about which box this is. Full, which is the reference operating
-      -- point rather than the hottest one: see the note on confinement_ladder_overruns, which is
+      -- point rather than the hottest one: see the note on ladders_overrun, which is
       -- where the argument for checking that one point lives.
       local volume = prototypes.entity[name].fluidbox_prototypes[1].volume
       local top = spec.confinement_ladder[#spec.confinement_ladder]
@@ -1908,7 +1944,7 @@ local function check_confinement_ladder()
           "settle it against and the ladder would go unguarded. Name one in " ..
           "scripts/reactor-logic.lua, beside the ladder.", name))
       end
-      local reached = logic.confinement_ladder_overruns(spec, fuel, volume,
+      local reached = logic.ladders_overrun(spec, fuel, volume,
         LADDER_GUARD_SECONDS, UPDATE_INTERVAL / 60)
       if reached then
         error(string.format(

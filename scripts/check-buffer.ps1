@@ -30,10 +30,16 @@
       flow-6        10 MJ buffer, input_flow_limit dropped to 6MW.
       flow-600      10 MJ buffer, input_flow_limit raised to 600MW.
       no-limit      10 MJ buffer, no input_flow_limit at all, which means unlimited.
-      buffer-1      1 MJ buffer at the shipped 60MW.
+      buffer-1      1 MJ buffer at the reactor's own flow limit.
       buffer-7      7 MJ, so the ratio is read off a capacity that is not a round multiple.
-      buffer-100    100 MJ buffer at the shipped 60MW.
-      tertiary      10 MJ at 60MW, usage_priority "tertiary" instead of "secondary-input".
+      buffer-100    100 MJ buffer at the reactor's own flow limit.
+      tertiary      10 MJ at that same limit, usage_priority "tertiary" instead of
+                    "secondary-input".
+
+    Every probe that is not ABOUT the flow limit takes the reactor's own, read off the
+    prototype rather than written down. They carried a literal 60MW until #425 raised
+    rf-reactor's to 90, which quietly left `same` differing from `driven` in two variables
+    instead of one.
       accumulator   Vanilla's own, untouched: a different type, a different priority, and a
                     capacity Wube declared and the wiki quotes.
       accum-10      That accumulator with buffer_capacity forced to 10MJ, so the two controls
@@ -147,19 +153,27 @@ function Write-Rig {
 local base = data.raw["boiler"]["rf-reactor"]
 if not base then error("rf-reactor is missing; the rig cannot clone it") end
 
+-- READ OFF THE REACTOR RATHER THAN WRITTEN DOWN, which is what `same` being a control requires.
+-- These probes carried a literal "60MW", and #425 took rf-reactor's own limit to 90 MW to cover
+-- the top of the heating ladder -- so `same` silently stopped being identical to the machine it is
+-- the control for, and differed from `driven` in two variables rather than one. Found in review.
+-- The probes that deliberately CHANGE the limit still name their own figure; only the ones that
+-- mean "whatever the reactor ships" read it from here.
+local SHIPPED_FLOW = base.energy_source.input_flow_limit
+
 for _, probe in ipairs({
-  { name = "rf-probe-same",       buffer = "10MJ",  flow = "60MW"  },
+  { name = "rf-probe-same",       buffer = "10MJ",  flow = SHIPPED_FLOW },
   { name = "rf-probe-flow-6",     buffer = "10MJ",  flow = "6MW"   },
   { name = "rf-probe-flow-600",   buffer = "10MJ",  flow = "600MW" },
-  { name = "rf-probe-buffer-1",   buffer = "1MJ",   flow = "60MW"  },
-  { name = "rf-probe-buffer-100", buffer = "100MJ", flow = "60MW"  },
-  { name = "rf-probe-buffer-7",   buffer = "7MJ",   flow = "60MW"  },
+  { name = "rf-probe-buffer-1",   buffer = "1MJ",   flow = SHIPPED_FLOW },
+  { name = "rf-probe-buffer-100", buffer = "100MJ", flow = SHIPPED_FLOW },
+  { name = "rf-probe-buffer-7",   buffer = "7MJ",   flow = SHIPPED_FLOW },
   -- flow = nil is not a typo: an omitted input_flow_limit is unlimited, which is the one case a
   -- ratio-versus-reservation argument cannot be made about from the others.
   { name = "rf-probe-no-limit",   buffer = "10MJ"                  },
   -- Same boiler, a different usage_priority: the accumulator control differs from these probes in
   -- both its type and its priority, and one probe each separates the two.
-  { name = "rf-probe-tertiary",   buffer = "10MJ",  flow = "60MW", priority = "tertiary" },
+  { name = "rf-probe-tertiary",   buffer = "10MJ",  flow = SHIPPED_FLOW, priority = "tertiary" },
 }) do
   local clone = table.deepcopy(base)
   clone.name = probe.name
