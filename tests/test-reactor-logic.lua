@@ -1547,7 +1547,8 @@ check(BARE.ratio > 1 and TOPPED.ratio > 1,
 -- ------------------------------------- the supply ratio, on the aneutronic tier too (#290)
 --
 -- THE SAME MEASUREMENT AS THE `per_heater` COLUMN ABOVE, FOR HELIUM-3 INSTEAD OF TRITIUM, and it is
--- here because prototypes/entities.lua arrived at the same 9:1 while sizing the composite tank, in
+-- here because realistic-fusion-refreshed/prototypes/entities.lua arrived at the same 9:1 while
+-- sizing the composite tank, in
 -- a different vocabulary, with nothing joining the two statements up. They are one quantity.
 --
 -- A D-D reactor breeds helium-3 and tritium at the same rate -- half a nucleus of each per reaction,

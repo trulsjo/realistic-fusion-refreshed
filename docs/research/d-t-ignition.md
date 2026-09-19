@@ -181,14 +181,14 @@ section says which** (#290).
 the rest of this section, the confinement table included, is the **per saturated reactor** reading.
 
 **The per-heater reading is what a player meets**, because a heater is what they build. It is also
-the operating point `prototypes/recipes/d-t.lua` was balanced at — *"Fed at that rate a D-T reactor
+the operating point `realistic-fusion-refreshed/prototypes/recipes/d-t.lua` was balanced at — *"Fed at that rate a D-T reactor
 settles around 320 MW against a D-D reactor's 86"*, a pre-#52 figure whose megawatts are
 radiation-free but whose operating point is the heater's.
 
 **And the aneutronic tier records the same measurement in a different vocabulary.** A D-D reactor
 breeds tritium and helium-3 at the same rate, so a heater on the D-He3 mix costs the same **9.12**
-and a heater on bare helium-3 **18.2**; `prototypes/entities.lua` states both where it sizes
-`rf-aneutronic-composite-tank`. All of this is pinned in `tests/test-reactor-logic.lua`'s
+and a heater on bare helium-3 **18.2**; `realistic-fusion-refreshed/prototypes/entities.lua`
+states both where it sizes `rf-aneutronic-composite-tank`. All of this is pinned in `tests/test-reactor-logic.lua`'s
 supply-ratio block, from the rate the shipped recipes run at rather than from a literal 2.5.
 
 **Naming the quantity decides no balance.** Whether 9.12 is an acceptable cost is
