@@ -1267,18 +1267,6 @@ for label, spec in pairs({ ["rf-reactor"] = SPEC, ["rf-aneutronic-reactor"] = AN
   end
 end
 
--- Strictly upward from the shipped value. A rung at or below the one before it is a technology that
--- does nothing, or undoes something, and neither would fail anything else here.
-local previous_tau = SPEC.confinement_time_s
-for level, rung in ipairs(LADDER) do
-  check(rung.confinement_time_s > previous_tau,
-    string.format("rung %d raises confinement time", level),
-    string.format("%g s after %g s", rung.confinement_time_s, previous_tau))
-  check(type(rung.technology) == "string" and rung.technology ~= "",
-    string.format("rung %d names a technology", level))
-  previous_tau = rung.confinement_time_s
-end
-
 -- Resolution. THE HIGHEST RESEARCHED RUNG WINS, not the count of them: the prerequisite chain is a
 -- player-facing ordering and the console does not respect it, so a force holding level 3 alone must
 -- get level 3's number rather than the base one.
@@ -1306,6 +1294,19 @@ for _, ladder in ipairs(L.spec_ladders) do
     string.format("%s names the prototypes file a load refusal points at", ladder.rungs),
     tostring(ladder.prototypes))
 
+  -- Strictly upward from the shipped value. A rung at or below the one before it is a technology
+  -- that does nothing, or undoes something, and neither would fail anything else here. Both spec
+  -- ladders climb -- confinement time and heating power alike -- so the claim is one loop.
+  local previous = SPEC[field]
+  for level, rung in ipairs(rungs) do
+    check(rung[field] > previous,
+      string.format("%s rung %d raises %s", ladder.rungs, level, field),
+      string.format("%g after %g", rung[field], previous))
+    check(type(rung.technology) == "string" and rung.technology ~= "",
+      string.format("%s rung %d names a technology", ladder.rungs, level))
+    previous = rung[field]
+  end
+
   local top = rungs[#rungs]
   near(L.resolve_ladder(SPEC, ladder.rungs, field, researched()), SPEC[field], 0,
     string.format("a force with nothing researched runs the shipped %s", field))
@@ -1327,13 +1328,26 @@ check(L.has_spec_ladder(SPEC), "the neutronic reactor has some ladder on its spe
 check(not L.has_spec_ladder(ANEUTRONIC),
   "the aneutronic reactor has none, so control.lua's per-force cache is never touched for it")
 
---- The spec one rung up, as control.lua's derive() builds it.
-local function at_rung(level)
+-- The second ladder on this reactor (#425, ADR 0038). Read from the spec rather than written out,
+-- for the reason LADDER is: every figure below has to move when a rung is retuned, and a literal
+-- here would leave the suite pinning a ladder the game does not ship.
+local HEAT_LADDER = SPEC.heating_ladder
+
+--- The spec at one rung of each ladder, as control.lua's derive() builds it.
+--
+-- LEVEL 0 IS THE SHIPPED VALUE on either axis, so at_rungs(0, 0) is a copy of SPEC itself and the
+-- grid below carries the unresearched state as a cell rather than beside one. The two ladders are
+-- independent (ADR 0038 decision 2), so every pair of levels is a state some force can be in.
+local function at_rungs(heat_level, tau_level)
   local spec = {}
   for k, v in pairs(SPEC) do spec[k] = v end
-  spec.confinement_time_s = LADDER[level].confinement_time_s
+  if tau_level > 0 then spec.confinement_time_s = LADDER[tau_level].confinement_time_s end
+  if heat_level > 0 then spec.heating_power_w = HEAT_LADDER[heat_level].heating_power_w end
   return spec
 end
+
+--- The spec one confinement rung up, at the shipped heating power.
+local function at_rung(level) return at_rungs(0, level) end
 
 --- Q at one rung and one fill of the input box.
 local function q_at(level, fill)
@@ -1423,6 +1437,70 @@ check(top_gain < 0.10 and unresearched_gain > 0.30,
   "and tuning the supply is worth under 10% there, against over 30% unresearched",
   string.format("%.1f%% at rung 3, %.1f%% unresearched", top_gain * 100, unresearched_gain * 100))
 
+-- -------------------------------------------- the heating ladder's own claims (#425, ADR 0038)
+--
+-- The same job the block above does for the confinement rungs: prototypes/technology/heating.lua
+-- quotes the megawatts from the ladder and cannot drift, and its PROSE cannot be derived from
+-- anything, so what the prose claims is pinned here.
+
+--- What a D-D reactor sells and what it costs, at one heating rung and entry confinement.
+local function heating_rung(level, fill)
+  local spec = at_rungs(level, 0)
+  local _, state = settle(spec, SETTLE_S, math.huge, nil, nil, FULL * (fill or 1))
+  return {
+    mw = state.energy_units * SPEC.energy_fluid_j_per_unit / TICK / 1e6,
+    q  = state.q_factor,
+    heating_mw = spec.heating_power_w / 1e6,
+  }
+end
+
+-- THE TOP RUNG'S TOOLTIP, which is the one that makes a claim about money: "a D-D reactor that
+-- turns a real profit at last, selling 102.9 MW against the 75 MW it burns". Both halves, because
+-- a rebalance that moved either would leave the sentence half true.
+local TOP_HEAT = heating_rung(#HEAT_LADDER)
+near(TOP_HEAT.mw, 102.9, 0.01, "at the top heating rung a full D-D reactor sells 102.9 MW", "MW")
+near(TOP_HEAT.heating_mw, 75, 0, "against the 75 MW it burns", "MW")
+check(TOP_HEAT.mw > TOP_HEAT.heating_mw, "so it turns a real profit, which is the claim",
+  string.format("%.1f MW sold against %.1f MW burnt", TOP_HEAT.mw, TOP_HEAT.heating_mw))
+
+-- AND THE HALF THE SAME SENTENCE REFUSES TO OVERSTATE: profitable is not break-even. ADR 0015's
+-- letter holds at every rung -- Q(D-D) never reaches 1 at any heating power, peaking at 0.968 near
+-- 180 MW, which is far past anything this ladder reaches. Asserted over the ladder here; the peak
+-- itself is ADR 0038's measurement and is not re-swept at every suite run.
+for h = 0, #HEAT_LADDER do
+  local rung = heating_rung(h)
+  check(rung.q < 1,
+    string.format("heating rung %d leaves D-D below scientific break-even at entry confinement", h),
+    string.format("Q %.4f", rung.q))
+end
+near(heating_rung(#HEAT_LADDER).q, 0.6135, 0.01,
+  "and the top rung reaches Q 0.613, which is ADR 0038's figure")
+
+-- THE MIDDLE RUNG'S TOOLTIP is a claim about the supply ratio and not about one reactor, so it is
+-- asserted where the ratio grid is built rather than here. See "the middle heating rung's tooltip"
+-- in the fuel-chain section below.
+
+-- WHAT THE LINE DRAWS, which is the figure every heating tooltip states and the one ADR 0038 makes
+-- mandatory. ADR 0015's line table is 50 MW of confinement heating plus about 6 MW of heater,
+-- electrolysers, extractor and chemical plant; none of that second part moves, so each rung's line
+-- figure is its own heating plus the same ~6 MW. The literals in locale/en/heating.cfg are checked
+-- against the ladder rather than against the model, because this suite loads no recipes and cannot
+-- see the ~6 MW at all -- what it CAN say is that the six published figures are one arithmetic
+-- series over the shipped rungs, which is the way they would drift.
+local LINE_MW = { 56, 61, 66, 71, 76, 81 }
+local LINE_AUXILIARY_MW = LINE_MW[1] - SPEC.heating_power_w / 1e6
+check(#LINE_MW == #HEAT_LADDER + 1,
+  "locale/en/heating.cfg publishes a line figure for the shipped state and one per rung",
+  string.format("%d figures against %d rungs", #LINE_MW, #HEAT_LADDER))
+for i, want in ipairs(LINE_MW) do
+  local heating = (i == 1) and SPEC.heating_power_w or HEAT_LADDER[i - 1].heating_power_w
+  near(want, heating / 1e6 + LINE_AUXILIARY_MW, 0.01,
+    string.format("the published %d MW line figure is this rung's heating plus the same auxiliaries",
+      want))
+end
+near(LINE_MW[#LINE_MW] / LINE_MW[1], 1.446, 0.01,
+  "and the ladder raises a D-D line's whole draw by about half, which every rung's tooltip warns about")
+
 -- ------------------------------------------------- the fuel chain, at the settled point (#117)
 --
 -- HOW MANY D-D REACTORS FEED ONE D-T REACTOR. Here rather than in a paragraph because
@@ -1492,14 +1570,29 @@ local function chain(spec)
   }
 end
 
--- One measurement per rung, the shipped confinement time first. Each rung is settled once and
--- every assertion below reads this table, which is also what keeps the suite's cost down: a
--- settled D-D reactor is 72 000 steps and there is no reason to pay for one twice.
-local RUNGS = { chain(SPEC) }
-for level = 1, #LADDER do RUNGS[#RUNGS + 1] = chain(at_rung(level)) end
+-- ONE MEASUREMENT PER CELL OF THE GRID, the unresearched state first on both axes. Each cell is
+-- settled once and every assertion below reads this table, which is what keeps the suite's cost
+-- down: a settled D-D reactor is 72 000 steps and there is no reason to pay for one twice.
+--
+-- A GRID RATHER THAN A ROW SINCE #425. There are two independent ladders on this reactor now
+-- (ADR 0038 decision 2), so a force can be at any pair of rungs and the supply ratio has 24
+-- readings rather than 4. The row this used to be is GRID[0] -- base heating, the whole confinement
+-- ladder -- and every figure it pinned is unchanged, which is the ADR's decision 3 arriving as an
+-- assertion rather than as a promise.
+--
+-- [heating level][confinement level], 0 meaning the shipped value on that axis.
+local GRID = {}
+for h = 0, #HEAT_LADDER do
+  GRID[h] = {}
+  for t = 0, #LADDER do GRID[h][t] = chain(at_rungs(h, t)) end
+end
 
-local BARE   = RUNGS[1]
-local TOPPED = RUNGS[#RUNGS]
+local RUNGS  = GRID[0]
+local BARE   = GRID[0][0]
+local TOPPED = GRID[#HEAT_LADDER][#LADDER]
+-- The top of the confinement ladder alone, which is what "researched" meant before #425 and is
+-- still a legitimate build a player stops at.
+local TOP_TAU_ONLY = GRID[0][#LADDER]
 
 -- EVERY CELL OF THE NOTE'S TABLE, not only the two ends. The first version of this block pinned
 -- rung 0 and rung 3 and asserted the rungs between only to fall, which left six published cells
@@ -1515,16 +1608,24 @@ local TOPPED = RUNGS[#RUNGS]
 -- rf-heater's worth costs, which is the reading a player meets because a heater is what they build.
 -- `heaters` is what relates them. CONTEXT.md defines all three under **supply ratio**; the note
 -- publishes all three; this table is where they are measured.
+--
+-- AND SINCE #425 IT IS ONE ROW OF A GRID RATHER THAN THE WHOLE STATEMENT. Every figure in it is
+-- measured at BASE HEATING -- the row ADR 0038's own grid heads with "(shipped)" -- and every one
+-- is unchanged by that ADR, because the heating ladder starts where the reactor already was. The
+-- other five rows are pinned as ratios by RATIO_GRID below; the four extra columns here are not
+-- republished per heating rung, because d-t-ignition.md publishes the grid as ratios alone.
 local PUBLISHED = {
   { tau = 30, bred = 0.137012, needed = 12.9747, ratio = 94.6969, mw = 88.457,  per_heater = 9.1233, heaters = 10.3798 },
   { tau = 40, bred = 0.246974, needed = 12.3144, ratio = 49.8611, mw = 124.569, per_heater = 5.0613, heaters = 9.8515 },
   { tau = 50, bred = 0.406267, needed = 11.8952, ratio = 29.2794, mw = 175.662, per_heater = 3.0768, heaters = 9.5162 },
   { tau = 60, bred = 0.627339, needed = 11.6077, ratio = 18.5032, mw = 244.242, per_heater = 1.9926, heaters = 9.2862 },
 }
-check(#PUBLISHED == #RUNGS, "the published table has a row for every rung of the ladder",
-  string.format("%d rows against %d rungs", #PUBLISHED, #RUNGS))
+check(#PUBLISHED == #LADDER + 1,
+  "the published table has a row for the shipped value and one for every rung of the ladder",
+  string.format("%d rows against %d rungs", #PUBLISHED, #LADDER))
 for i, want in ipairs(PUBLISHED) do
-  local got = RUNGS[i]
+  -- i - 1 because RUNGS is indexed by LEVEL, and level 0 is the unresearched state.
+  local got = RUNGS[i - 1]
   near(got.bred, want.bred, 0.01,
     string.format("at %d s a D-D reactor breeds %.4g u/s of tritium", want.tau, want.bred))
   near(got.needed, want.needed, 0.01,
@@ -1548,19 +1649,118 @@ for i, want in ipairs(PUBLISHED) do
     string.format("at %d s the published per-heater figure times the published heater count is the published ratio", want.tau))
 end
 
--- MONOTONE, which is a claim the four rows above cannot make on their own: every rung makes the
--- chain shorter, so there is no rung a player reaches and finds the plumbing got worse. Asserted
--- rather than argued because nothing else here would notice if a rung inverted it, and because it
--- has to keep holding when the rungs are retuned.
+-- ------------------------------------ the whole grid, at every research state (#425, ADR 0038)
 --
--- BOTH ENDS PULL THE SAME WAY, which is why it holds: the breeder breeds more (0.137 to 0.627 u/s)
--- and the burner needs less (12.97 to 11.61), because D-T settles past the peak of its own
--- cross-section and fuses slower there. Neither end works against the other.
-for level = 1, #LADDER do
-  check(RUNGS[level + 1].ratio < RUNGS[level].ratio,
-    string.format("rung %d shortens the fuel chain", level),
-    string.format("%.4g D-D per D-T after %.4g", RUNGS[level + 1].ratio, RUNGS[level].ratio))
+-- EVERY CELL A FORCE CAN BE IN, and there are twenty-four of them because the two ladders are
+-- independent. ADR 0038 decision 2 is what makes the grid rectangular rather than a path: neither
+-- line is a prerequisite of the other, so a player may hold five heating rungs at entry
+-- confinement, and that corner has to be a measured figure like every other.
+--
+-- WHY IT IS PINNED CELL BY CELL, which is the same argument the row above makes and one rung
+-- stronger. docs/research/d-t-ignition.md publishes all twenty-four and ADR 0038 argues from them;
+-- a version of this that pinned the two corners and asserted only that the interior fell would
+-- leave twenty-two published figures computed nowhere.
+--
+-- ROWS ARE HEATING, COLUMNS ARE CONFINEMENT, in ADR 0038's own order. The first row is PUBLISHED's
+-- ratio column, repeated here rather than derived from it: the two tables are read side by side by
+-- anyone checking the note, and a row that has silently stopped agreeing with the table above it is
+-- exactly what a reader cannot see.
+local RATIO_GRID = {
+  { heat = 50, 94.6969, 49.8611, 29.2794, 18.5032 },
+  { heat = 55, 71.7289, 37.7457, 22.4073, 14.6994 },
+  { heat = 60, 56.4655, 29.9051, 18.1325, 12.3848 },
+  { heat = 65, 45.8742, 24.5885, 15.3078, 10.8469 },
+  { heat = 70, 38.2695, 20.8354, 13.3389,  9.7503 },
+  { heat = 75, 32.6281, 18.0905, 11.8979,  8.9269 },
+}
+check(#RATIO_GRID == #HEAT_LADDER + 1,
+  "the published grid has a row for the shipped heating power and one for every heating rung",
+  string.format("%d rows against %d rungs", #RATIO_GRID, #HEAT_LADDER))
+for h, row in ipairs(RATIO_GRID) do
+  check(#row == #LADDER + 1,
+    string.format("the %d MW row has a cell for the shipped confinement time and one per rung", row.heat),
+    string.format("%d cells against %d rungs", #row, #LADDER))
+  -- The row's own label against the ladder it claims to be a row of, so a rung retuned in
+  -- reactor-logic cannot leave this table pinning the right ratio under the wrong megawatts.
+  local heat_w = (h == 1) and SPEC.heating_power_w or HEAT_LADDER[h - 1].heating_power_w
+  near(row.heat, heat_w / 1e6, 0,
+    string.format("the %d MW row is labelled with the heating power it was measured at", row.heat))
+  for t, want in ipairs(row) do
+    near(GRID[h - 1][t - 1].ratio, want, 0.01,
+      string.format("at %d MW and %d s it takes %.4g D-D reactors to feed one",
+        row.heat, PUBLISHED[t].tau, want))
+  end
 end
+
+-- MONOTONE ON BOTH AXES, which is a claim the cells above cannot make on their own: every rung of
+-- either ladder makes the chain shorter, whatever the other ladder is at, so there is no rung a
+-- player reaches and finds the plumbing got worse. Asserted rather than argued because nothing
+-- else here would notice if a rung inverted it, and because it has to keep holding when the rungs
+-- are retuned.
+--
+-- ON THE CONFINEMENT AXIS BOTH ENDS PULL THE SAME WAY, which is why it holds: the breeder breeds
+-- more (0.137 to 0.627 u/s at base heating) and the burner needs less (12.97 to 11.61), because
+-- D-T settles past the peak of its own cross-section and fuses slower there.
+--
+-- ON THE HEATING AXIS THEY DO NOT, and that is worth knowing before reading the figures as the same
+-- effect twice. More heating makes the burner need LESS too (12.97 to 12.84 at 30 s), but barely;
+-- essentially all of the fall is the breeder, which goes 0.137 to 0.393 u/s. ADR 0038 measured
+-- that the ratio falls with heating power monotonically and turns over nowhere, and this is where
+-- the claim is kept honest.
+for h = 0, #HEAT_LADDER do
+  for t = 1, #LADDER do
+    check(GRID[h][t].ratio < GRID[h][t - 1].ratio,
+      string.format("at heating level %d, confinement rung %d shortens the fuel chain", h, t),
+      string.format("%.4g D-D per D-T after %.4g", GRID[h][t].ratio, GRID[h][t - 1].ratio))
+  end
+end
+for t = 0, #LADDER do
+  for h = 1, #HEAT_LADDER do
+    check(GRID[h][t].ratio < GRID[h - 1][t].ratio,
+      string.format("at confinement level %d, heating rung %d shortens the fuel chain", t, h),
+      string.format("%.4g D-D per D-T after %.4g", GRID[h][t].ratio, GRID[h - 1][t].ratio))
+  end
+end
+
+-- THE MIDDLE HEATING RUNG'S TOOLTIP, and the qualifier in it is load-bearing. It claims that "at
+-- the confinement time you start with, three rungs have more than halved the number of breeder
+-- reactors one fusion plant needs", and that the rungs are worth less further up the other ladder.
+-- The first draft of that string said "under half the D-D reactors it needed unresearched" with no
+-- qualifier at all, and this loop is what caught it: the halving holds at entry confinement and at
+-- the first rung, and FAILS at the two above -- 15.31 against half of 29.28, and 10.85 against half
+-- of 18.50. The claim was narrowed to what the grid supports rather than the assertion widened.
+check(GRID[3][0].ratio < 0.5 * GRID[0][0].ratio,
+  "at entry confinement, heating rung 3 more than halves the fuel chain",
+  string.format("%.4g against %.4g", GRID[3][0].ratio, GRID[0][0].ratio))
+-- The second half of the same sentence: the rungs are worth less the further up the confinement
+-- ladder they are taken. Asserted as the fraction remaining, which rises across the row.
+for t = 1, #LADDER do
+  check(GRID[3][t].ratio / GRID[0][t].ratio > GRID[3][t - 1].ratio / GRID[0][t - 1].ratio,
+    string.format("and heating rung 3 is worth less at confinement level %d than at %d", t, t - 1),
+    string.format("%.3f of the chain left against %.3f",
+      GRID[3][t].ratio / GRID[0][t].ratio, GRID[3][t - 1].ratio / GRID[0][t - 1].ratio))
+end
+
+-- THE TARGET ADR 0038 SET, AND THE CEILING #294 WILL GATE. The stated target is about 9 settled
+-- D-D reactors per saturated D-T reactor at the fully-researched state; the ceiling is 15. Pinned
+-- here so #294 gates a figure this suite already measures rather than one it re-derives.
+near(TOPPED.ratio, 8.9269, 0.01,
+  "at the top of both ladders it takes 8.93 D-D reactors to feed one")
+check(TOPPED.ratio < 15,
+  "which is inside the ceiling ADR 0038 names for the fully-researched state",
+  string.format("%.4g against 15", TOPPED.ratio))
+
+-- AND THE OTHER READING OF IT, which is the one CONTEXT.md publishes because a heater is what a
+-- player builds. 9.1233 unresearched is pinned in the table above; this is its far corner.
+near(TOPPED.per_heater, 0.9726, 0.01,
+  "and one heater on the D-T mix costs 0.973 of a D-D reactor there -- under one")
+
+-- INTERMEDIATE STATES ARE DELIBERATELY UNGATED, and this is the cell that says why: a player who
+-- finishes the confinement ladder and researches no heating sits at 18.5, which is a legitimate
+-- build and is over the ceiling. #294 gates the fully-researched state alone.
+check(TOP_TAU_ONLY.ratio > 15,
+  "top-confinement-only is over the ceiling, which is why #294 gates the fully-researched state",
+  string.format("%.4g against 15", TOP_TAU_ONLY.ratio))
 
 -- AND THE BLANKET IS THE OTHER ROUTE ENTIRELY, not a discount on this one (#30, ADR 0019). The
 -- breeding block above proves a blanketed D-T reactor breeds back more tritium than it burns, so
@@ -1878,10 +2078,11 @@ check(L.capture_ceiling_fault({ capture_efficiency = 0.99, capture_ceiling = SPE
 -- independent routes to one answer -- which is the shape #51 was opened about and the reason the
 -- other suite exists.
 
-local function curve_at(tau, fuel)
+local function curve_at(tau, fuel, heating_w)
   local spec = {}
   for k, v in pairs(SPEC) do spec[k] = v end
   spec.confinement_time_s = tau
+  if heating_w then spec.heating_power_w = heating_w end
   return L.density_curve(spec, fuel or "rf-d-d-plasma", FULL)
 end
 
@@ -1952,6 +2153,60 @@ near(on_grid, math.floor(on_grid + 0.5), 1e-9,
 -- that gave both fuels the same answer would be reporting the sweep's shape rather than the fuel's.
 near(curve_at(30, "rf-d-t-plasma").optimum, 1.0, 1e-9,
   "D-T's best density is full supply at the shipped confinement time")
+
+-- ------------------------------ the curve moves with HEATING too (#425, ADR 0038)
+--
+-- THIS IS THE ASSERTION control.lua's DENSITY-CURVE CACHE KEY RESTS ON. That table was keyed
+-- [prototype][confinement_time_s][fluid] and its note said confinement time was the only field
+-- derive() moved -- true until ADR 0038 gave the reactor a second spec ladder. A curve is swept by
+-- settling the reactor at twenty fills and step() heats it at spec.heating_power_w, so two forces
+-- at ONE confinement time and different heating rungs have genuinely different optima. Without
+-- heating power in the key the second reads the first's answer and circuit-output.status reports
+-- the wrong one of lean / running / rich.
+--
+-- The pair below is the proof, and it is the sharpest pair there is: at the top of the confinement
+-- ladder one heating rung takes the optimum from an interior 90% straight to full supply.
+local TAU_TOP = LADDER[#LADDER].confinement_time_s
+local AT_TOP_BASE  = curve_at(TAU_TOP, nil, SPEC.heating_power_w)
+local AT_TOP_RUNG1 = curve_at(TAU_TOP, nil, HEAT_LADDER[1].heating_power_w)
+near(AT_TOP_BASE.optimum, 0.90, 1e-9,
+  "at the top confinement rung and base heating the best density is 90% fill")
+near(AT_TOP_BASE.floor, 0.85, 1e-9, "with the starved floor just under it at 85%")
+near(AT_TOP_RUNG1.optimum, 1.0, 1e-9,
+  "and one heating rung later, at the SAME confinement time, it is full supply")
+near(AT_TOP_RUNG1.floor, 0, 1e-9, "with no interior peak and so no starved band at all")
+check(AT_TOP_BASE.optimum ~= AT_TOP_RUNG1.optimum,
+  "so confinement time alone does not identify a curve, which is why the cache key carries heating power")
+
+-- ADR 0016'S MECHANIC CLOSES AT THAT RUNG, AND ADR 0038 ACCEPTS IT. ADR 0024 chose 60 s over 70 s
+-- specifically to leave the +4% that a 90%-over-85% choice is worth alive; the first heating rung
+-- spends it. Accepted on ADR 0016's own grounds -- the mechanic was always expected to be
+-- researched away -- and recorded here so the closure is a measured fact rather than a prediction.
+for h = 1, #HEAT_LADDER do
+  local curve = curve_at(TAU_TOP, nil, HEAT_LADDER[h].heating_power_w)
+  near(curve.optimum, 1.0, 1e-9,
+    string.format("at the top confinement rung, heating rung %d leaves nothing to tune", h))
+end
+
+-- AT ENTRY CONFINEMENT THE MECHANIC SURVIVES ALL FIVE RUNGS, which is the other half of ADR 0038's
+-- claim and the half that stops "the mechanic closes" being read as "the mechanic is gone". The
+-- optimum walks 65% to 90% and the floor 35% to 80%: still interior, still a choice, and still
+-- worth something at every rung a player can reach at the confinement time they start with.
+local entry_optima = {}
+for h = 0, #HEAT_LADDER do
+  local heating = (h == 0) and SPEC.heating_power_w or HEAT_LADDER[h].heating_power_w
+  entry_optima[h] = curve_at(SPEC.confinement_time_s, nil, heating)
+  check(entry_optima[h].optimum < 1.0,
+    string.format("at entry confinement, heating rung %d still has an interior optimum", h),
+    string.format("%.2f", entry_optima[h].optimum))
+  check(entry_optima[h].floor > 0,
+    string.format("and a starved floor under it at heating rung %d", h),
+    string.format("%.2f", entry_optima[h].floor))
+end
+near(entry_optima[0].optimum, 0.65, 1e-9, "the walk starts at ADR 0016's 65% fill")
+near(entry_optima[#HEAT_LADDER].optimum, 0.90, 1e-9, "and reaches 90% at the top heating rung")
+near(entry_optima[0].floor, 0.35, 1e-9, "the floor starts at 35%")
+near(entry_optima[#HEAT_LADDER].floor, 0.80, 1e-9, "and reaches 80%")
 
 -- The aneutronic tier has its own reactor, its own volume and no confinement ladder, and it gets
 -- its own curve for the same reason it gets its own spec.

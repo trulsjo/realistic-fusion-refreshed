@@ -362,14 +362,23 @@ reactor.energy_source = {
   -- control.lua pays per tick now, so no interval has to fit in here and that coupling is gone.
   -- The value is kept, deliberately, because reserve is what it was always worth.
   --
-  -- input_flow_limit is the one that is LOAD-BEARING. 60 MW against 50 MW of heating is the margin
-  -- that lets the network refill the reserve after a shortfall instead of merely keeping up with
-  -- it; drop it under 50 MW and the reactor can never be paid in full, which is starvation for
-  -- ever and looks like a balance problem. control.lua's check_input_flow() refuses to load over
-  -- that, for every reactor rather than for this one alone, so the two numbers cannot drift apart
-  -- in silence.
+  -- input_flow_limit is the one that is LOAD-BEARING. It is the margin that lets the network
+  -- refill the reserve after a shortfall instead of merely keeping up with it; drop it under the
+  -- heating and the reactor can never be paid in full, which is starvation for ever and looks like
+  -- a balance problem. control.lua's check_input_flow() refuses to load over that, for every
+  -- reactor rather than for this one alone, so the two numbers cannot drift apart in silence.
+  --
+  -- 90 MW SINCE #425, AND IT IS SIZED ON THE TOP OF THE HEATING LADDER RATHER THAN ON THE SHIPPED
+  -- 50 MW. It was 60 MW, which is 1.2x the shipped figure, and ADR 0038 makes heating power
+  -- researchable to 75 MW per force -- so the old value would have starved a fully-researched
+  -- reactor for ever and read as a balance problem. 90 MW is the same 1.2x over 75, and is the
+  -- margin rf-aneutronic-reactor already carries below (240 against 200).
+  --
+  -- NOTHING AN UNRESEARCHED FORCE CAN SEE MOVES. A reactor drawing 50 MW is paid in full under
+  -- either limit; what a bigger one changes is how fast the 10 MJ reserve refills after a
+  -- shortfall, which is the safe direction and the one quality already moves it in.
   buffer_capacity = "10MJ",
-  input_flow_limit = "60MW",
+  input_flow_limit = "90MW",
   drain = "0W",
 }
 

@@ -197,27 +197,41 @@ end
 
 --- WHERE A REACTOR WANTS ITS PLASMA HELD (#74, ADR 0016).
 --
--- [prototype name][confinement_time_s][fluid name] -> reactor-logic.density_curve's answer, or
--- false when that plasma has no curve.
+-- [prototype name][confinement_time_s][heating_power_w][fluid name] -> reactor-logic.density_curve's
+-- answer, or false when that plasma has no curve.
 --
 -- CACHED BECAUSE IT IS SWEPT, NOT COMPUTED. density_curve settles the reactor at twenty fills, so
 -- one answer is about fifty milliseconds -- out of the question on the reporting cadence, and the
 -- whole reason this table exists rather than a call in publish().
 --
--- KEYED ON TAU RATHER THAN ON A FORCE, AND NOT INVALIDATED AT ALL. It was keyed by force_index and
--- dropped alongside force_specs, which read as the obvious thing and was a performance defect:
--- forget_force_cache() is wired to on_research_finished, which fires for EVERY technology a force
--- completes rather than for the four confinement rungs. Rebuilding a spec is two table lookups;
--- rebuilding every curve is four sweeps and about two hundred milliseconds, inside update(), on the
--- first reporting tick after a player finishes anything -- including each level of an infinite
--- technology, for ever.
+-- KEYED ON THE SPEC FIELDS RESEARCH MOVES RATHER THAN ON A FORCE, AND NOT INVALIDATED AT ALL. It
+-- was keyed by force_index and dropped alongside force_specs, which read as the obvious thing and
+-- was a performance defect: forget_force_cache() is wired to on_research_finished, which fires for
+-- EVERY technology a force completes rather than for the rungs of one ladder. Rebuilding a spec is
+-- two table lookups; rebuilding every curve is four sweeps and about two hundred milliseconds,
+-- inside update(), on the first reporting tick after a player finishes anything -- including each
+-- level of an infinite technology, for ever.
 --
 -- The fix is to key on what the answer actually depends on. A curve is a function of the prototype,
--- the plasma and confinement time, and confinement time is the ONLY field derive() moves; nothing
--- about a force enters it. So research does not invalidate anything -- it looks up a different tau
--- -- and the table simply holds one entry per rung a force has passed through. Bounded by the
--- ladder's length times the reactors times the plasmas, which is a couple of dozen sweeps at the
--- absolute worst and in practice one per rung per tier.
+-- the plasma, and every spec field derive() moves; nothing about a force enters it. So research
+-- does not invalidate anything -- it looks up a different key -- and the table simply holds one
+-- entry per combination a force has passed through. Bounded by the product of the ladders' lengths
+-- times the reactors times the plasmas, which is a couple of dozen sweeps at the absolute worst.
+--
+-- THAT LIST GAINED A SECOND FIELD IN #425, AND THE REASONING IS WHY. This note used to say
+-- "confinement time is the ONLY field derive() moves", which was true and is the whole argument
+-- the key rests on -- so ADR 0038's heating ladder falsified the key and the sentence together. A
+-- curve is swept by settling the reactor at twenty fills, and M.step() heats it at
+-- spec.heating_power_w, so two forces at the same confinement time and different heating rungs
+-- have genuinely different optima: at tau 60 the optimum is 90% fill at 50 MW and full supply at
+-- 55 MW. Without heating power in the key the second force would read the first's answer and
+-- circuit-output.status would report the wrong one of lean / running / rich.
+--
+-- A THIRD LADDER ON A SPEC FIELD WOULD NEED A THIRD LEVEL HERE, and there is deliberately no loop
+-- over logic.spec_ladders doing it: this runs once per reactor per report, a nested index is the
+-- cheapest thing that can identify a key, and a generic walk would allocate. The load-bearing part
+-- is this paragraph rather than the code -- a ladder added without a level here is a stale optimum
+-- and no failure anywhere.
 --
 -- Keyed by fluid as well, because #28 removed the input box's filter: one rf-reactor burns D-D or
 -- D-T, and they have different curves. A plasma with no row in M.fuels stores `false` rather than
@@ -251,10 +265,15 @@ local function curve_for(entity, spec, fluid_name)
     by_tau = {}
     curves[entity.name] = by_tau
   end
-  local by_fluid = by_tau[spec.confinement_time_s]
+  local by_heating = by_tau[spec.confinement_time_s]
+  if not by_heating then
+    by_heating = {}
+    by_tau[spec.confinement_time_s] = by_heating
+  end
+  local by_fluid = by_heating[spec.heating_power_w]
   if not by_fluid then
     by_fluid = {}
-    by_tau[spec.confinement_time_s] = by_fluid
+    by_heating[spec.heating_power_w] = by_fluid
   end
   local curve = by_fluid[fluid_name]
   if curve == nil then
@@ -864,9 +883,12 @@ end
 -- sittings, and the absolute delta is what a paired design supports. See
 -- docs/research/reactor-runtime-cost.md.
 --
--- SPECS rather than spec_for(): heating_power_w is the same for every force, because the
+-- ~~SPECS rather than spec_for(): heating_power_w is the same for every force, because the
 -- confinement ladder moves confinement_time_s and nothing else, so this path never touches the
--- per-force cache at all.
+-- per-force cache at all.~~ #425 made heating power the second researchable lever (ADR 0038), so
+-- it is spec_for() here now and this IS a per-force path. It is the same two table lookups every
+-- other cache hit is; what it buys is the whole visible half of the feature, because a rung a
+-- player researches has to arrive as a bigger bill before it can arrive as a hotter plasma.
 --
 -- SPENT OUT OF THE BUFFER RATHER THAN DECLARED AS A FIXED CONSUMPTION, which is the older decision
 -- this inherits and does not change: the network refills what was spent, so a brownout shows up as
@@ -874,9 +896,14 @@ end
 -- scripts/check-brownout.ps1 measures that across the whole range from half supply to a blackout.
 --
 -- It does NOT make the draw "follow the simulation", and #37 recorded as much when it closed:
--- heating_power_w is a CONSTANT, so a supplied reactor draws the same 50 MW whether it is barely
--- fusing or sitting at the clamp. Only the SHORTFALL follows anything. #46 rested part of its case
--- on that retired claim, and this note is where it stays retired.
+-- heating_power_w does not depend on the plasma, so a supplied reactor draws the same whether it
+-- is barely fusing or sitting at the clamp. Only the SHORTFALL follows anything. #46 rested part
+-- of its case on that retired claim, and this note is where it stays retired.
+--
+-- WHAT IT DOES DEPEND ON, SINCE #425, IS RESEARCH, and the two are not the same thing. The figure
+-- is 50 MW for a force that has researched nothing and 75 MW at the top of ADR 0038's heating
+-- ladder; within one force it is still a constant the plasma cannot move. The sentence above used
+-- to say "the same 50 MW" and that literal is what stopped being general.
 --
 -- The joules actually paid are accumulated per reactor and handed to step() by update() below.
 -- Under this arrangement the buffer level is no longer the physically meaningful quantity: a
@@ -918,7 +945,7 @@ local function spend()
     -- than for what it holds: an entry means update() stepped this reactor.
     local paid = spent[unit_number]
     if paid and entity.valid then
-      local want = SPECS[entity.name].heating_power_w / 60
+      local want = spec_for(entity).heating_power_w / 60
       local energy = entity.energy
       -- Clamped to what is there, so the write can never take the buffer negative. This is where
       -- a brownout becomes a smaller payment: the engine hands the reactor its share of a short
@@ -1003,8 +1030,8 @@ local function update()
       -- Fill rather than an amount since #74: the status line's three density states are about how
       -- full the reactor is held and not how much it holds, and a reactor with a different box
       -- would otherwise be judged against another one's volume. The curve is swept once per
-      -- confinement rung per reactor and plasma, never per force; on the reporting cadence it is
-      -- three table lookups.
+      -- confinement rung per heating rung per reactor and plasma, never per force; on the
+      -- reporting cadence it is four table lookups.
       -- And what its blanket last sold, for the share signal (#95). Guarded on `result` for the
       -- same reason the accumulator below is: a reactor with nothing to simulate is not selling
       -- anything this step, so a stale number from before it ran dry would be a share of nothing.
@@ -1070,18 +1097,27 @@ end
 -- a figure this file could not check honestly -- the engine holds 16/15 of the declared value,
 -- exactly, measured at four capacities and four inflow limits by scripts/check-buffer.ps1 (#71),
 -- while the prototype reports the declared one. See docs/research/reactor-runtime-cost.md.
+-- AT THE TOP OF THE HEATING LADDER, NOT AT THE SHIPPED FIGURE (#425, ADR 0038). heating_power_w is
+-- per force now, so the worst case is the most researched force rather than the constant on the
+-- spec -- and the failure this guard exists for is exactly the one a player would meet by
+-- researching: a reactor that drew its 50 MW happily on Monday is starved for ever on Tuesday,
+-- silently, because underpowered is a state it is meant to have. Checked at load over a value no
+-- force may have reached yet, which is the whole point of checking it at load.
 local function check_input_flow()
   for name, spec in pairs(SPECS) do
     local source = prototypes.entity[name].electric_energy_source_prototype
-    local needed = spec.heating_power_w / 60
+    local top = spec.heating_ladder and spec.heating_ladder[#spec.heating_ladder]
+    local heating = top and top.heating_power_w or spec.heating_power_w
+    local needed = heating / 60
     local limit = source.get_input_flow_limit()
     if needed > limit then
       error(string.format(
-        "%s: control.lua spends %.3g J of confinement heating per tick but the prototype's " ..
-        "input_flow_limit admits only %.3g J per tick, so the reactor could never be paid in " ..
-        "full and would be starved for ever. Raise input_flow_limit in prototypes/entities.lua " ..
-        "to at least %.3g W, or lower heating_power_w in scripts/reactor-logic.lua.",
-        name, needed, limit, spec.heating_power_w))
+        "%s: control.lua spends %.3g J of confinement heating per tick at the top of its heating " ..
+        "ladder but the prototype's input_flow_limit admits only %.3g J per tick, so the reactor " ..
+        "could never be paid in full and a force that finished the ladder would be starved for " ..
+        "ever. Raise input_flow_limit in prototypes/entities.lua to at least %.3g W, or lower the " ..
+        "ladder's top rung in scripts/reactor-logic.lua.",
+        name, needed, limit, heating))
     end
   end
 end

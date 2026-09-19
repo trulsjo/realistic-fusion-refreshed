@@ -72,6 +72,16 @@ knowing about:
   supplied down a ladder one hundredth of their own flow limit at a time. This is the one place
   quality changes reactor *behaviour*, and it is the only entry on this list that a balance decision
   might want to keep.
+
+  **Both ends of that sentence moved on 2026-09-19 (#425, ADR 0038), and it is not re-measured here.**
+  `input_flow_limit` is 90 MW now, sized on the top of the heating ladder rather than on the shipped
+  50 MW, and the spend is no longer one number: it is 50 MW for a force that has researched nothing
+  and 75 MW at the top of that ladder. So the quality ladder starts higher *and* the thing it is
+  measured against is per force, which makes the single fraction below a family of them. Every
+  measured figure in this note describes the 60 MW prototype against a fixed 50 MW spend and is left
+  exactly as it was taken; what a re-measurement would say is not stated, because nothing has
+  re-measured it. The structural conclusion — quality raises the limit, which is the safe direction,
+  and `check_input_flow()` refuses to load if it ever stops covering the heating — is unaffected.
 - **`rf-reactor`'s own `energy_consumption` scales 1 W → 2.5 W, and 2.5× of nothing is still
   nothing.** That is the neutered boiler conversion the mod does not use, and **measured since #147
   it is exactly zero at four of the five levels** — the engine moves fluid in whole float32 ULPs per
@@ -364,7 +374,7 @@ read at all five levels; only the two ends are shown, and "flat" means all five 
 | `rf-reactor` | `boiler` | **fluid box 1 (plasma)** | 1000 | **1000** | **Yes — and it holds.** `volume_m3` and `particles_per_unit` are Lua constants; `control.lua` reads `box.get_capacity` |
 | | | **fluid box 2 (energy)** | 1000 | **1000** | `apply()` in `control.lua` reads `get_capacity(2)` to clamp the sale |
 | | | `buffer_capacity` | 10 MJ | **10 MJ** | No, since #72. Stated reserve; `check_cadence()` used to check `heating_power_w × interval` against it and is gone |
-| | | **`input_flow_limit`** | 60 MW | **150 MW** | **Yes, since #72 — and it holds.** `check_input_flow()` in `control.lua` requires it to cover `heating_power_w` at load. Legendary raises it, which is the safe direction |
+| | | **`input_flow_limit`** | 60 MW | **150 MW** | **Yes, since #72 — and it holds.** `check_input_flow()` in `control.lua` requires it to cover `heating_power_w` at load, and since #425 the TOP of the heating ladder rather than the shipped value. Legendary raises it, which is the safe direction. The 60 MW is what the prototype declared when this was measured; it is 90 MW now |
 | | | `energy_consumption` | 1 W | 2.5 W | No. The neutered boiler conversion |
 | `rf-aneutronic-reactor` | `boiler` | fluid boxes | 3000 / 1000 | **3000 / 1000** | Yes — and it holds. 3×10²⁰ m⁻³ stays 3×10²⁰ |
 | | | `buffer_capacity` | 40 MJ | **40 MJ** | No, since #72. Same reasoning as `rf-reactor`'s |
@@ -482,7 +492,7 @@ The inequality has exactly four inputs. Taking them one at a time:
 | Term | Where it lives | Quality-reachable? |
 |---|---|---|
 | **η** — `capture_efficiency` | Lua constant in `reactor-logic.lua`, 0.85 / 0.95. After ADR 0020, a per-force research value | **No.** Nothing outside that file assigns it, and no prototype in the chain exposes an efficiency quality could scale even if it did: `BoilerPrototype` and `GeneratorPrototype` have no quality property, and a fluid energy source's `effectivity` is a plain attribute |
-| **P_heat** — `heating_power_w` | Lua constant, 50e6 / 200e6. `control.lua` debits `entity.energy` by it directly | **No.** The prototype's own `energy_consumption` *does* scale — and is not what is spent |
+| **P_heat** — `heating_power_w` | Lua constant, 50e6 / 200e6, and since #425 a per-force research value on the neutronic reactor. `control.lua` debits `entity.energy` by it directly | **No.** The prototype's own `energy_consumption` *does* scale — and is not what is spent. Research moves it, quality still does not |
 | **P_fus** | `reactivity.rate(...) × volume_m3`, driven by `density = amount × particles_per_unit / volume_m3` | **No.** `particles_per_unit` and `volume_m3` are Lua constants, and `amount` is bounded by a fluid box capacity **measured flat**. Peak density is 1×10²⁰ m⁻³ at every level, 3×10²⁰ for the aneutronic reactor |
 | **The fluid→electricity factor** | `energy_fluid_j_per_unit = 1e6`, then `rf-heat-exchanger` (fluid energy source, `effectivity = 1`, `burns_fluid`) → steam → turbine; or the DEC directly | **No.** Measured out/in = 1.000000 at all five levels on both generators; both boilers' fluid energy source reports `effectivity = 1`, an attribute with no quality form, and `QualityPrototype` has no energy-source multiplier |
 
@@ -507,6 +517,11 @@ thing that moves the constant, and research is per force, not per entity.
 `input_flow_limit`. `rf-reactor` declares 60 MW against a 50 MW spend, and every consumer on the
 network is `secondary-input`, so in a brownout at supply fraction `f` a reactor receives `f × 60` MW
 and spends 50:
+
+**Read the whole of this section as dated 2026-08-31.** `rf-reactor` declares 90 MW since #425 and
+spends between 50 and 75 MW depending on research — see the `input_flow_limit` bullet in
+[The short version](#the-short-version) above. The measurements below are left as they were taken,
+against the prototype and the spend that existed then.
 
 | Quality | `input_flow_limit` | derived | **measured**, bracketed to 0.01 |
 |---|---|---|---|
@@ -631,6 +646,9 @@ measured is the path a player reads, not a Lua internal.
 Measured 2026-08-31 against Factorio 2.0.77. The table quotes the 2400 s run; the `energy_consumption`
 row is rounded, and comes back off the engine as 1.299999952 / 1.600000024 / 1.899999976 for the
 reason in [The floating point does not come back clean](#the-floating-point-does-not-come-back-clean):
+
+The `input_flow_limit` row is the one #425 moved: the prototype declares 90 MW now, so the whole row
+scales from there. Left as measured, for the reason the section above gives.
 
 | | normal | uncommon | rare | epic | legendary |
 |---|---|---|---|---|---|
@@ -786,7 +804,8 @@ longer, therefore runs hotter, therefore fuses harder.
 
 Pick a quantity where 2.5× is harmless and let quality have it. Two candidates the measurement
 suggests: the blanket's inventory (already scaling, 100 → 250, pure autonomy) and the reactor's
-`input_flow_limit` (already scaling, 60 → 150 MW, pure brownout resilience). Declare *those* the
+`input_flow_limit` (already scaling, 60 → 150 MW when this was measured and 90 MW at the base now,
+pure brownout resilience). Declare *those* the
 quality story, tidy the rest under B, and say so in `README.md`.
 
 - **For:** costs nothing to implement — both already happen. It converts an accident into a
