@@ -21,6 +21,15 @@ reactor's loss deepens the brownout that caused it — was measured and is false
 corrected in place rather than deleted. The two tiers' answers are stated together there, and the one
 question the correction left — the sub-ignition drain — is accepted in the same place, by Truls.
 
+**Narrowed 2026-09-19 (#292) by
+[ADR 0038](0038-heating-power-is-the-second-researchable-lever.md).** Nothing here is wrong and
+nothing at entry moves: the unresearched tier is still Q 0.320 selling 56.1 MW against a ~56 MW
+line. What narrows is the reach of the claim. `heating_power_w` becomes a five-rung researchable
+ladder, so a researched D-D reactor runs at Q 0.613 and sells 102.9 MW against a ~81 MW line — a
+real profit, still below scientific break-even. Q(D-D) never crosses 1 at any heating power; it
+peaks at 0.964 near 200 MW and falls again. **So the whole-line table below is a figure ADR 0038
+falsifies for a researched force**, and #293 re-anchors it.
+
 ## Context
 
 ADR 0014 left two things open in as many words: *whether the term actually goes in, and what the D-D

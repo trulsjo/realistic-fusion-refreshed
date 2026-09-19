@@ -176,6 +176,17 @@ loadable modules would have shown raw names like `rf-m-reactor` in game.
 > against the temperature clamp sits. This entry exists because this list is the record of what
 > Power contains; that ADR is the record of why.
 
+> **Extended 2026-09-19 (#292): five more, `rf-plasma-heating-1/2/3/4/5`.** They raise the reactor's
+> confinement heating power from 50 MW to 55, 60, 65, 70 and 75, which is what takes the **supply
+> ratio** from 18.5 to 8.93 at the top of both ladders. Like the confinement rungs they unlock
+> nothing, they are per force and neutronic only, and `control.lua` reads which of them a force
+> holds. They are a **second, independent ladder**: neither is a prerequisite of the other and both
+> root at `rf-d-d-fusion`.
+>
+> **The decision is [ADR 0038](0038-heating-power-is-the-second-researchable-lever.md)** — why
+> heating power and not the five alternatives, why five rungs rather than three, why a separate
+> ladder rather than folding it into the confinement rungs, and what it costs ADR 0015 and ADR 0016.
+
 Vanilla pipes must not carry plasma.
 
 > **Corrected 2026-08-17 (#26).** This said the original enforced that in `control.lua` and that v1

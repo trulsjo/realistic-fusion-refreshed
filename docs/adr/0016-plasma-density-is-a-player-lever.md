@@ -15,6 +15,15 @@ tree, this one governs what tooltips and status text have to say.
 
 Decided by Truls, 2026-08-19.
 
+**The mechanic closes at the top of the tree, 2026-09-19 (#292),** by
+[ADR 0038](0038-heating-power-is-the-second-researchable-lever.md). ADR 0024 chose a 60 s top rung
+partly to leave this mechanic alive there, narrowed to +4%: at τ 60 and the shipped 50 MW the D-D
+optimum is 90% fill over an 85% floor. The **first** rung of ADR 0038's heating ladder spends that
+remainder — at τ 60 and 55 MW the optimum is 100% and the floor 0%, so there is no interior peak and
+`circuit-output.status` collapses to `running`. Accepted deliberately, on the grounds this ADR gave
+itself: the mechanic was always expected to be researched away. At entry confinement it survives all
+five heating rungs, the optimum walking 65% → 90% and the floor 35% → 80%.
+
 ## Context
 
 #37's item 3 recorded that a fluid box shares its contents with its segment in proportion to
