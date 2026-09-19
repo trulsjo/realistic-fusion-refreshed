@@ -54,20 +54,32 @@ local SPECS = {
 local force_specs = {}
 
 --- This force's version of one reactor's constants.
+--
+-- EVERY SPEC LADDER, NOT ONE (#424). This resolved confinement time alone and named the field
+-- twice while doing it; it now walks logic.spec_ladders, so a ladder added there arrives here
+-- without an edit. The copy is still made once and only when something moved -- a force with
+-- nothing researched gets `base` itself back, which is what keeps a fresh save allocating nothing.
 local function derive(base, force)
-  local tau = logic.confinement_time(base, function(name)
+  local function researched(name)
     local technology = force.technologies[name]
     -- Guarded rather than indexed: a ladder rung whose technology prototype is missing is a
     -- developer error, and the useful behaviour is that the force simply has not researched it.
-    -- check_confinement_ladder() below is what refuses to load over it, once, with a message.
+    -- check_ladder_prototypes() below is what refuses to load over it, once, with a message.
     return technology ~= nil and technology.researched
-  end)
-  if tau == base.confinement_time_s then return base end
+  end
 
-  local spec = {}
-  for k, v in pairs(base) do spec[k] = v end
-  spec.confinement_time_s = tau
-  return spec
+  local spec = nil
+  for _, ladder in ipairs(logic.spec_ladders) do
+    local value = logic.resolve_ladder(base, ladder.rungs, ladder.field, researched)
+    if value ~= base[ladder.field] then
+      if not spec then
+        spec = {}
+        for k, v in pairs(base) do spec[k] = v end
+      end
+      spec[ladder.field] = value
+    end
+  end
+  return spec or base
 end
 
 -- WHAT ONE FORCE RECOVERS, per reactor prototype (#94, ADR 0020).
@@ -108,9 +120,14 @@ local force_capture = {}
 -- miss, which for a settled game is never.
 local function spec_for(entity)
   local base = SPECS[entity.name]
-  -- A reactor no technology moves -- rf-aneutronic-reactor, deliberately (see the ladder's note in
+  -- A reactor no technology moves -- rf-aneutronic-reactor, deliberately (see the ladders' note in
   -- scripts/reactor-logic.lua) -- never touches the cache at all.
-  if not base.confinement_ladder then return base end
+  --
+  -- ASKED OF EVERY SPEC LADDER RATHER THAN OF ONE BY NAME (#424). This read
+  -- `if not base.confinement_ladder`, which meant "this reactor has some ladder" and said
+  -- "this reactor has the confinement one" -- correct while there was only one, and a reactor
+  -- given a second while keeping no first would have been silently frozen at its base values.
+  if not logic.has_spec_ladder(base) then return base end
 
   local index = entity.force_index
   local by_force = force_specs[index]
@@ -1797,6 +1814,43 @@ end
 -- step settles hotter, which is the safe direction for a guard and the wrong one for a figure.
 local LADDER_GUARD_SECONDS = 1200
 
+--- Refuse to load over a ladder rung whose technology prototype no loaded mod defines (#424).
+--
+-- WHY IT IS AN ERROR AND NOT A SHRUG: derive() and capture_for() read force.technologies
+-- TOLERANTLY, so a missing prototype reads as "this force has not researched it" and the line
+-- quietly stops one rung short in a player's save, with nothing said anywhere. A mod that will not
+-- start names the rung and the file it is in.
+--
+-- ONE COPY FOR EVERY LADDER. check_confinement_ladder and check_plant_efficiency each carried this
+-- loop, byte-similar apart from the message, and ADR 0038's heating ladder would have been a
+-- third. The field name and the rung's own value go into the message so it stays as specific as
+-- the two it replaces.
+local function check_ladder_technologies(reactor, rungs, field, file)
+  for _, rung in ipairs(rungs or {}) do
+    if not prototypes.technology[rung.technology] then
+      error(string.format(
+        "%s: a ladder in scripts/reactor-logic.lua names the technology '%s', which no loaded mod " ..
+        "defines -- so no force could ever reach %s = %.6g. Reconcile that file with %s.",
+        reactor, rung.technology, field, rung[field], file))
+    end
+  end
+end
+
+--- Every ladder on every spec names technologies that exist (#424).
+--
+-- Over the capture ladder too, which is why this is its own function rather than a line inside
+-- either guard below: those two are about different things -- a temperature clamp and a
+-- perpetual-motion ceiling -- and this one question is asked of all three ladders alike.
+local function check_ladder_prototypes()
+  for name, spec in pairs(SPECS) do
+    for _, ladder in ipairs(logic.spec_ladders) do
+      check_ladder_technologies(name, spec[ladder.rungs], ladder.field, ladder.prototypes)
+    end
+    check_ladder_technologies(name, spec.capture_ladder, "capture_efficiency",
+      "prototypes/technology/efficiency.lua")
+  end
+end
+
 local function check_confinement_ladder()
   for name, spec in pairs(SPECS) do
     if spec.confinement_ladder then
@@ -1828,18 +1882,8 @@ local function check_confinement_ladder()
           "the ladder in scripts/reactor-logic.lua.",
           name, top.technology, top.confinement_time_s, fuel, reached, spec.max_temperature_c))
       end
-      -- The prototypes the ladder names have to exist, or the force cache above silently reads a
-      -- rung nobody can research and the line quietly stops one short. Cheap, and it catches a
-      -- rename in prototypes/technology/confinement.lua that nothing else would.
-      for _, rung in ipairs(spec.confinement_ladder) do
-        if not prototypes.technology[rung.technology] then
-          error(string.format(
-            "%s: the confinement ladder names the technology '%s', which no loaded mod defines -- " ..
-            "so no force could ever reach %g s of confinement. Reconcile " ..
-            "scripts/reactor-logic.lua with prototypes/technology/confinement.lua.",
-            name, rung.technology, rung.confinement_time_s))
-        end
-      end
+      -- The prototypes this ladder names have to exist too, and check_ladder_prototypes() above
+      -- is where that is asked -- of every ladder at once, since #424.
     end
   end
 end
@@ -1876,18 +1920,8 @@ local function check_plant_efficiency()
           or "the free loop a reactor with no ceiling is bounded by",
         ceiling))
     end
-    -- The prototypes the ladder names have to exist, for the reason check_confinement_ladder gives
-    -- about its own: capture_for() reads force.technologies tolerantly, so a rung nobody can
-    -- research is not an error there -- it is a line that quietly stops one short.
-    for _, rung in ipairs(spec.capture_ladder or {}) do
-      if not prototypes.technology[rung.technology] then
-        error(string.format(
-          "%s: the plant-efficiency ladder names the technology '%s', which no loaded mod defines " ..
-          "-- so no force could ever recover %.6g of what leaves its plasma. Reconcile " ..
-          "scripts/reactor-logic.lua with prototypes/technology/efficiency.lua.",
-          name, rung.technology, rung.capture_efficiency))
-      end
-    end
+    -- The prototypes this ladder names have to exist too, and check_ladder_prototypes() above is
+    -- where that is asked -- of every ladder at once, since #424.
   end
 end
 
@@ -1895,6 +1929,7 @@ local function check_prototypes()
   check_fuel_rows()
   check_reactor_specs()
   check_input_flow()
+  check_ladder_prototypes()
   check_confinement_ladder()
   check_plant_efficiency()
   check_plasma_bounds()

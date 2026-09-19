@@ -434,8 +434,8 @@ M.reactor = {
   -- cross-section data, everything else.
   --
   -- IT IS THE STARTING VALUE SINCE #53, NOT THE ONLY ONE. confinement_ladder below moves it per
-  -- force; M.confinement_time() is what resolves the two, and control.lua is the only caller of it
-  -- in the mod.
+  -- force; M.resolve_ladder() is what resolves the two, reached through the M.spec_ladders row
+  -- that names this field, and control.lua's derive() is the only caller of it in the mod.
   -- Nothing in step() knows any of that happened -- it reads one number off one spec, and the spec
   -- it reads is the one the caller handed it.
   confinement_time_s = 30,
@@ -1162,29 +1162,67 @@ function M.breed(spec, blanket, neutrons, charge)
 end
 
 -- ---------------------------------------------------------------------------------------------
--- The confinement ladder (#53).
+-- The research ladders (#53, #96, #424).
 --
--- Three functions, and the seam between them and control.lua is the point: everything below is
--- pure Lua over a spec, so the ladder's arithmetic, the equilibrium it settles at and the decision
--- the load guard makes can all be driven from tests/test-reactor-logic.lua. control.lua supplies
--- the force, the fluidbox and the error message, and owns none of the reasoning.
+-- Everything below is pure Lua over a spec, and the seam between it and control.lua is the point:
+-- a ladder's arithmetic, the equilibrium it settles at and the decision the load guard makes can
+-- all be driven from tests/test-reactor-logic.lua. control.lua supplies the force, the fluidbox
+-- and the error message, and owns none of the reasoning.
 
---- The confinement time a force actually runs this reactor at.
+--- What one force actually runs this reactor at, for one ladder.
 --
--- @param spec        reactor constants -- one without a confinement_ladder simply never moves
+-- @param spec        reactor constants -- one with no such ladder simply never moves
+-- @param rungs       the spec field holding the ladder, e.g. "confinement_ladder"
+-- @param field       the field each rung moves, named the same on the spec and on every rung
 -- @param researched  function(technology_name) -> truthy when that force has it
 --
--- The HIGHEST researched rung wins rather than the count of them, which matters for a force that
+-- ONE RUNG WALK FOR EVERY LADDER (#424), where there were two byte-similar copies of it and a
+-- third was about to be written. What makes them one function is that they ask the same question
+-- of the same shape: a list of { technology = ..., [field] = ... } against what a force holds,
+-- with the spec's own value as the rung below the first.
+--
+-- THE HIGHEST RESEARCHED RUNG WINS rather than the count of them, which matters for a force that
 -- was granted level 3 from the console without the two below it: the prerequisite chain is a
 -- player-facing ordering, not something the simulation may assume held.
-function M.confinement_time(spec, researched)
-  local tau = spec.confinement_time_s
-  if spec.confinement_ladder then
-    for _, rung in ipairs(spec.confinement_ladder) do
-      if researched(rung.technology) then tau = rung.confinement_time_s end
-    end
+function M.resolve_ladder(spec, rungs, field, researched)
+  local value = spec[field]
+  for _, rung in ipairs(spec[rungs] or {}) do
+    if researched(rung.technology) then value = rung[field] end
   end
-  return tau
+  return value
+end
+
+--- The ladders whose answer belongs ON a derived spec, and the field each one moves.
+--
+-- WHAT THIS LIST IS FOR is control.lua's derive(), which builds one force's copy of a spec by
+-- walking it. A fourth ladder of the same kind is a row here and no change there.
+--
+-- `prototypes` is the file a load refusal points a developer at when a rung names a technology no
+-- mod defines. It is a path in a message and nothing reads it as code, which is what keeps this
+-- file free of anything Factorio.
+--
+-- capture_ladder IS DELIBERATELY NOT IN IT, and the asymmetry is the decision rather than an
+-- omission. ADR 0020 decision 5 asks for capture efficiency to reach step() as an ARGUMENT, so two
+-- forces running one reactor prototype need no second constants table between them and this file
+-- never learns that a force exists. M.capture_efficiency below stays its own named resolver for
+-- exactly that reason: #424 generalised the rung WALK and deliberately left the DELIVERY alone.
+M.spec_ladders = {
+  { rungs = "confinement_ladder", field = "confinement_time_s",
+    prototypes = "prototypes/technology/confinement.lua" },
+}
+
+--- Does any ladder above move a field on this spec?
+--
+-- control.lua asks before touching its per-force cache at all: rf-aneutronic-reactor has no ladder
+-- of any kind (ADR 0020 decision 4, ADR 0024, ADR 0038 decision 5) and must go on allocating
+-- nothing per force. spec_for() used to ask `if not base.confinement_ladder`, which named ONE
+-- ladder where it meant "some ladder" and would have been wrong the moment a reactor had a second
+-- (#424).
+function M.has_spec_ladder(spec)
+  for _, ladder in ipairs(M.spec_ladders) do
+    if spec[ladder.rungs] then return true end
+  end
+  return false
 end
 
 --- What one force actually recovers of everything leaving this reactor's plasma (#96).
@@ -1192,23 +1230,15 @@ end
 -- @param spec        reactor constants -- one without a capture_ladder simply never moves
 -- @param researched  function(technology_name) -> truthy when that force has it
 --
--- The exact shape of M.confinement_time above, and the same reasoning applies line for line: the
--- HIGHEST researched rung wins rather than the count of them, because a force granted level 3 from
--- the console without the two below it has level 3, and the prerequisite chain is a player-facing
--- ordering rather than something the simulation may assume held.
---
--- WHAT IT DOES NOT DO is put the answer on a spec. ADR 0020 decision 5 asks for an argument to
--- step() instead, so that two forces running one reactor prototype do not need two copies of a
--- constants table between them -- and step() therefore takes `capture` and defaults to
--- spec.capture_efficiency, which keeps the unresearched value written down in exactly one place.
+-- The rung walk is M.resolve_ladder's, shared with every other ladder since #424. What this
+-- function is for is the half that is NOT shared: ADR 0020 decision 5 asks for an argument to
+-- step() rather than a field on a spec, so that two forces running one reactor prototype do not
+-- need two copies of a constants table between them -- and step() therefore takes `capture` and
+-- defaults to spec.capture_efficiency, which keeps the unresearched value written down in exactly
+-- one place. That is why capture_ladder is absent from M.spec_ladders above and why this named
+-- entry point survives the deduplication.
 function M.capture_efficiency(spec, researched)
-  local capture = spec.capture_efficiency
-  if spec.capture_ladder then
-    for _, rung in ipairs(spec.capture_ladder) do
-      if researched(rung.technology) then capture = rung.capture_efficiency end
-    end
-  end
-  return capture
+  return M.resolve_ladder(spec, "capture_ladder", "capture_efficiency", researched)
 end
 
 --- The first capture efficiency at or above this spec's ceiling, or nil when none is (#96).

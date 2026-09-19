@@ -42,22 +42,28 @@
                                   else would notice one moving without the other. It replaced
                                   check_cadence() in #72, when per-tick spending dissolved the
                                   coupling between UPDATE_INTERVAL and buffer_capacity.
+      check_ladder_prototypes()   Every rung of every research ladder names a technology some
+                                  loaded mod actually defines. control.lua reads a force's
+                                  technologies tolerantly, so a missing prototype is not an error
+                                  in the tick loop -- it is a research line that quietly stops one
+                                  rung short in a player's save. One check for all three ladders
+                                  since #424, where the confinement and plant-efficiency guards
+                                  each carried a copy of the loop.
       check_confinement_ladder()  The confinement ladder against the simulation's own temperature
-                                  clamp, and against the technology prototypes it names. Research
-                                  raises confinement time (#53), and a rung raised far enough
-                                  leaves D-D settled AT the clamp -- where its thermometer stops
-                                  moving and further research does nothing a player can see. It
-                                  settles a full reactor at the top rung to find out, which is why
-                                  it costs about 40 ms and why it is here rather than at the data
-                                  stage.
-      check_plant_efficiency()    The plant-efficiency ladder against its own ceiling, and against
-                                  the technology prototypes it names. capture_efficiency is the
-                                  only term standing between this mod and perpetual motion (#96,
-                                  ADR 0020), and a research line into it is permitted only because
-                                  each rung halves the remaining gap to a ceiling below 1.0 -- so
-                                  a rung that reaches the ceiling is not a number that is too big,
-                                  it is the guard being switched off. Four comparisons, where
-                                  check_confinement_ladder above has to settle a plasma.
+                                  clamp. Research raises confinement time (#53), and a rung raised
+                                  far enough leaves D-D settled AT the clamp -- where its
+                                  thermometer stops moving and further research does nothing a
+                                  player can see. It settles a full reactor at the top rung to
+                                  find out, which is why it costs about 40 ms and why it is here
+                                  rather than at the data stage.
+      check_plant_efficiency()    The plant-efficiency ladder against its own ceiling.
+                                  capture_efficiency is the only term standing between this mod
+                                  and perpetual motion (#96, ADR 0020), and a research line into
+                                  it is permitted only because each rung halves the remaining gap
+                                  to a ceiling below 1.0 -- so a rung that reaches the ceiling is
+                                  not a number that is too big, it is the guard being switched
+                                  off. Four comparisons, where check_confinement_ladder above has
+                                  to settle a plasma.
       check_plasma_bounds()       The simulation's temperature clamps against every plasma
                                   fluid's declared range, in BOTH directions. Widen the ceiling
                                   without the fluid and the mod loads perfectly, then throws on a
@@ -2257,7 +2263,7 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
     # docstring above used to make: creating the map ran control.lua's check_prototypes() too.
     $how = if ($FromZips) { 'built zips' } else { 'junctioned repo directories' }
     Write-Host "OK - prototypes valid, every referenced asset present, map created, the"
-    Write-Host "     simulation's thirteen load-time invariants hold, containment survived the"
+    Write-Host "     simulation's fourteen load-time invariants hold, containment survived the"
     Write-Host "     load and every render and mockup agrees with its machine, loading from $how."
     exit 0
 }
