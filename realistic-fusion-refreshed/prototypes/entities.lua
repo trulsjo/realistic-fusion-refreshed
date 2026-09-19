@@ -1568,12 +1568,18 @@ local tank = pin(table.deepcopy(data.raw["storage-tank"]["storage-tank"]), "rf-a
 -- CONTEXT.md defines it: how many SETTLED D-D reactors supply one consumer of what they breed, with
 -- two readings that differ by a factor of ten.
 --
---   per heater             9.12 D-D reactors, which is the reading the table above is in
+--   per heater             9.12 D-D reactors, and the reading every figure here is
 --   per saturated reactor  94.7 D-D reactors, for a settled D-T reactor -- 10.4 heaters' worth
 --
--- The table's two heater rows come out at 9.12 and 18.2 because a D-D reactor breeds tritium and helium-3 at the
--- same rate and both mixes are 50/50: a heater on rf-d-he3-mix costs exactly what a heater on
--- rf-d-t-mix costs, and a heater on bare helium-3 twice that. So this comment and
+-- DERIVED FROM THE TABLE ABOVE AND NOT LISTED IN IT: that table is in units a second, and the ratio
+-- is a heater's row divided by the by-product row. In the table's own order, bare helium-3 first:
+--
+--   2.5 / 0.137 = 18.2 D-D reactors per heater on rf-he3-he3-plasma
+--   1.25 / 0.137 = 9.12 D-D reactors per heater on rf-d-he3-plasma
+--
+-- The mix costs half what bare helium-3 does because the mix is 50/50. And it costs exactly what a
+-- heater on rf-d-t-mix costs, because a D-D reactor breeds tritium and helium-3 at the same rate
+-- and both mixes are 50/50 -- so this comment and
 -- docs/research/d-t-ignition.md's 94.7 are one quantity read two ways, not two numbers that happen
 -- to be near each other. Both readings and the heater count are pinned in
 -- tests/test-reactor-logic.lua's supply-ratio block, from what the recipes ship rather than from a

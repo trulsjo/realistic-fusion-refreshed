@@ -276,8 +276,9 @@ nothing here.
 
 **Both tiers quote the same measurement.** A D-D reactor breeds tritium and helium-3 at the same
 rate, so a heater on the D-He3 mix costs the same 9.1 as one on the D-T mix, and a heater on bare
-helium-3 costs **18.2** because there is no second species to blend in. `prototypes/entities.lua`
-records those two where it sizes `rf-aneutronic-composite-tank`. Whether 9.1 is the right cost is a balance
+helium-3 costs **18.2** because there is no second species to blend in.
+`realistic-fusion-refreshed/prototypes/entities.lua` records those two where it sizes
+`rf-aneutronic-composite-tank`. Whether 9.1 is the right cost is a balance
 question and is settled nowhere — naming the quantity is not deciding it.
 
 **Ignited** — a plasma whose own fusion self-heating carries it without external confinement heating.

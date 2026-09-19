@@ -67,10 +67,13 @@
     Prove this rig can fail, and the plant section especially (#280, #281, #282).
 
     THE PLANT SECTION IS WHY THIS SWITCH EXISTS. Its rows are about RUNTIME STATE rather than the
-    data stage, and load-check.ps1 -SelfTest -- the only other self-test here that starts the game --
-    breaks a PROTOTYPE in every one of its halves. A row like "energy reaches the second exchanger"
-    cannot be broken that way alone, and a row like "no pipe carries reactor energy" passes by
-    counting nothing, which is a check that says nothing until something has been counted.
+    data stage, and the only other self-test here that starts the game breaks a PROTOTYPE in every
+    half that breaks anything: load-check.ps1's canary halves are all data-stage, and its other
+    three break nothing at all -- repo-loads is its floor, and socket-height-gate and
+    socket-parts-gate run no canary mod because the gates they prove need no game RUN. So a row
+    like "energy reaches the second exchanger" cannot be reached from there, and a row like "no
+    pipe carries reactor energy" passes by counting nothing, which is a check that says nothing
+    until something has been counted.
 
     REFUSED WITH -Quality, the way load-check refuses -SelfTest -AlsoModDirectory: quality changes
     the mod set, and a half that reasons about what a broken prototype does to the plant would be
@@ -781,10 +784,15 @@ function Invoke-Rig {
         block below and could therefore run exactly once, which is why the plant section had no
         self-test until #280.
 
-        A FAILED MAP CREATION IS A RESULT HERE, not a throw, because reactor-sells-south's whole
-        assertion is that the rig refuses to build. Invoke-FactorioStep is the wrong instrument for
-        that one run and the right one for the other four; the caller decides, the way load-check's
-        Invoke-LoadCheck leaves a non-zero exit to its caller.
+        THE TWO STEPS USE DIFFERENT INSTRUMENTS, AND THAT IS THE POINT. A FAILED MAP CREATION IS A
+        RESULT here rather than a throw, because reactor-sells-south's whole assertion is that the
+        rig refuses to build -- so the create step calls Invoke-Factorio and hands the caller the
+        exit code, the way load-check's Invoke-LoadCheck does. The run step wants the opposite and
+        calls Invoke-FactorioStep, which throws and tails both streams: a rig that built its map and
+        then died is a broken rig in every half, and nothing here should be re-writing that. Found
+        in review, which caught this function claiming exactly that arrangement while inlining a
+        third copy of Invoke-FactorioStep's body -- the copy its own docstring in factorio-lib.ps1
+        exists to prevent.
 
         The canary is named in $Disabled whenever it is not wanted, never merely left out:
         Factorio AUTO-ENABLES a mod present on disk and absent from mod-list.json, so a half after
@@ -808,17 +816,13 @@ function Invoke-Rig {
         return @{ Created = $false; Create = $create; Rows = @(); Verdict = $null }
     }
 
-    $run = Invoke-Factorio @step -Tag "$Tag-run" -Arguments @(
+    $runOut = Invoke-FactorioStep @step -Tag "$Tag-run" -Arguments @(
         '--benchmark', $save, '--benchmark-ticks', "$($Ticks + 60)", '--benchmark-runs', '1', '--disable-audio')
-    if ($run.Code -ne 0) {
-        Write-FactorioTail $run
-        throw "Factorio exited $($run.Code) during '$Tag-run'."
-    }
 
-    $rows = @(Get-Content $run.OutFile | Select-String -Pattern 'HC-RIG (ok|FAIL|PASS|note)' |
+    $rows = @(Get-Content $runOut | Select-String -Pattern 'HC-RIG (ok|FAIL|PASS|note)' |
         ForEach-Object { ($_ -split 'HC-RIG ', 2)[1].TrimEnd() })
     return @{
-        Created = $true; Create = $create; Run = $run; Rows = $rows
+        Created = $true; Create = $create; Rows = $rows
         Verdict = ($rows | Where-Object { $_ -match '^(PASS|FAIL): ' } | Select-Object -Last 1)
     }
 }
