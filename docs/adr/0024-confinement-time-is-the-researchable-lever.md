@@ -31,11 +31,15 @@ solver.
 [ADR 0038](0038-heating-power-is-the-second-researchable-lever.md) makes `heating_power_w`
 researchable in five rungs, 50 MW to 75. Two things follow, and the first is the one to read.
 
-- **Every figure in this ADR still stands, exactly as written.** The two ladders are
+- **Every NUMBER in this ADR still stands, exactly as written.** The two ladders are
   **independent** — neither is a prerequisite of the other — so a force that researches confinement
-  alone still runs at the shipped 50 MW. The Q column below is measured there and is correct.
-- **The one claim needing a qualifier is break-even.** "A player who runs full crosses at rung 3"
-  holds **at base heating**. With heating rungs taken it arrives earlier.
+  alone still runs at the shipped 50 MW, which is where every figure below was measured.
+- **Both of this ADR's break-even SENTENCES need the same qualifier, and there are two of them.**
+  Decision 1 states them as a pair and requires them to travel together: *"A player who tunes
+  density crosses break-even at rung 2; a player who runs full crosses at rung 3. Both are intended
+  and both have to be said out loud."* Both hold **at base heating**, and with heating rungs taken
+  both arrive earlier — at 75 MW each crosses at **rung 1**, Q 1.050 at τ 40 whether the plasma is
+  tuned or full, the two having converged because by then there is no interior peak left to tune to.
 
   Had the two been folded into one ladder — considered and rejected by ADR 0038 — this ADR's Q
   column would have become 0.320 / 0.714 / 1.323 / 1.951 with break-even at rung 2. It was not, and

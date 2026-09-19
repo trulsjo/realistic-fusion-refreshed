@@ -194,7 +194,8 @@ is not taken here.
 Q(D-D) at entry is unchanged at 0.320, because entry heating is unchanged. What a researched player
 sees is different: at 75 MW and 30 s a D-D reactor runs at Q 0.613 and sells 102.9 MW against a
 ~81 MW line, so it turns a real profit. **It never crosses scientific break-even at any heating
-power** — Q(D-D) peaks at 0.964 around 200 MW and falls again past it, measured rather than
+power** — Q(D-D) peaks at **0.968, at about 180 MW**, and falls away on both sides of it; by 200 MW
+it is back to 0.964 and by 400 MW to 0.807. Measured on a 2 MW sweep at τ 30 rather than
 extrapolated. So ADR 0015's letter holds at every rung and its spirit is narrowed to where it was
 aimed: the *unresearched* tier.
 

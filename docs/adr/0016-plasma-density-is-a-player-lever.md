@@ -17,8 +17,11 @@ Decided by Truls, 2026-08-19.
 
 **The mechanic closes at the top of the tree, 2026-09-19 (#292),** by
 [ADR 0038](0038-heating-power-is-the-second-researchable-lever.md). ADR 0024 chose a 60 s top rung
-partly to leave this mechanic alive there, narrowed to +4%: at τ 60 and the shipped 50 MW the D-D
-optimum is 90% fill over an 85% floor. The **first** rung of ADR 0038's heating ladder spends that
+partly to leave this mechanic alive there, narrowed to +4% — **that being the fusion-power uplift at
+the optimum fill over full supply, not a span of fill**, which is a distinction worth making because
+the two are quoted side by side below. At τ 60 and the shipped 50 MW the D-D optimum sits at 90%
+fill with the floor at 85%, and running there is worth 76.53 MW of fusion power against a full
+reactor's 73.37. The **first** rung of ADR 0038's heating ladder spends that
 remainder — at τ 60 and 55 MW the optimum is 100% and the floor 0%, so there is no interior peak and
 `circuit-output.status` collapses to `running`. Accepted deliberately, on the grounds this ADR gave
 itself: the mechanic was always expected to be researched away. At entry confinement it survives all
