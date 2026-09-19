@@ -2033,3 +2033,121 @@ baseline to subtract a later sitting from.**
   same, and there is nothing here worth a rig.
 - `scripts/load-check.ps1 -SelfTest` — the `starved-reactor` half is `check_input_flow()`'s negative test.
 - What it discharges: item 4b of #37, and the whole of #72.
+
+
+## What a per-force heating draw costs per tick (#430)
+
+**+0.83 µs per reactor per tick**, taking the shipped D-D step from **4.42 to 5.26 µs**. Measured
+2026-09-20 against Factorio 2.0.77.
+
+[#425](https://github.com/trulsjo/realistic-fusion-refreshed/issues/425) made plasma heating
+researchable (ADR 0038), so `spend()` in `realistic-fusion-refreshed/control.lua` stopped reading
+`SPECS[entity.name].heating_power_w` and started reading `spec_for(entity)`. That runs once per
+reactor per tick, and on a cache hit it is one `HAS_SPEC_LADDER` index, one `entity.force_index`
+read — a Lua-to-C++ boundary crossing that was not on this path before — and two more table
+indexes. **#425 declined to guess at the figure and said so**; this is the measurement those
+sentences were waiting for.
+
+### The sitting
+
+`scripts/bench-reactors.ps1 -Counts 0,200`, D-D, no ablation. **Ten rounds alternating between the
+two arms in one sitting.** The arms are git worktrees rather than a checkout swapped in place, so
+neither tree could be edited mid-sitting:
+
+| arm | tree | what `spend()` reads |
+|---|---|---|
+| **with the lookup** | `227eb9d` | `spec_for(entity).heating_power_w` |
+| **without it** | `33ba491` — the parent of the #425 commit | `SPECS[entity.name].heating_power_w` |
+
+`scripts/bench-reactors.ps1` and `scripts/factorio-lib.ps1` are byte-identical across those two
+commits, so the rig itself is not a variable.
+
+**One round of ten flagged `BUSY`, and it was dropped in BOTH arms** rather than in the one that
+flagged, because dropping one arm of a round breaks the pairing the whole design rests on. The
+figure is the median of nine; the ten-round medians are given beside it and move the delta by
+0.02 µs.
+
+| arm | µs per reactor, nine rounds | median | median of all ten |
+|---|---|---:|---:|
+| without the lookup | 4.420  4.935  5.006  4.428  4.488  4.424  4.383  4.363  4.373 | **4.424** | 4.425 |
+| with it (#425) | 5.742  5.257  5.917  5.156  5.184  5.136  5.603  5.177  5.307 | **5.257** | 5.282 |
+
+```
+  µs per reactor       4.3     4.6     4.9     5.2     5.5     5.8     6.1
+                       |-------|-------|-------|-------|-------|-------|
+  without the lookup     #######        # #
+  with it (#425)                             ######       #  #    #
+```
+
+Each `#` is one round; ties are nudged one column right so all nine are visible, which widens a
+cluster very slightly and moves nothing else.
+
+**The two bands do not touch.** The fastest round with the lookup is 5.136 and the slowest without
+it is 5.006. Each arm's own spread is about 1.15×, which is the per-round swing #92 documented and
+the reason the median is the statistic rather than the mean of the rounds.
+
+**Quote +0.83 µs, not 1.19×.** That is the same care *[What it costs: about +0.9 µs per
+reactor](#what-it-costs-about-09-µs-per-reactor-and-the-ratio-is-under-this-pages-own-floor)* takes
+with #72's 1.28×: a ratio depends on a baseline that itself moves between sittings, and the absolute
+delta is what a paired alternating design supports. The baselines here are not this page's — 4.42 µs
+for an arm #72 measured at 3.99 µs, three weeks and many tickets apart — which is exactly why the
+control was taken fresh in the same sitting rather than subtracted from a number on this page.
+
+### Nothing allocates
+
+`luaGarbageIncremental`, per reactor, same nine rounds: **0.1108 µs with the lookup against
+0.1115 without**. Lower on the arm that added work, so there is no direction at all — the same
+reading #94's note reports for its own change, and the expected one: the addition is table indexes
+and a property read, and none of them builds a table.
+
+### The aneutronic floor is bounded, not measured
+
+`rf-aneutronic-reactor` has no research ladder on any axis (ADR 0020 decision 4, ADR 0038
+decision 5), so `spec_for()` short-circuits at `HAS_SPEC_LADDER` and never reaches a force. It is
+the case with the most reactors on a settled map and the one with nothing per force to look up, so
+it is the floor — and **`bench-reactors.ps1` cannot build an aneutronic-only fleet.** `-Mixed` is
+the only switch that puts those reactors on the rig and it mixes all four of ADR 0010's reactions.
+
+The same ten alternated rounds with `-Mixed`, same sitting, same one dropped round:
+
+| lane | census at n = 200 | delta, µs per reactor | ratio |
+|---|---|---:|---:|
+| plain | 200 `rf-reactor` | **+0.833** | 1.188× |
+| mixed | 110 `rf-reactor`, 90 `rf-aneutronic-reactor` | **+0.391** | 1.066× |
+
+The census is the rig's own: `burning=rf-d-d-plasma:60, rf-d-t-plasma:50, rf-d-he3-plasma:45,
+rf-he3-he3-plasma:45`, so 55% of the fleet is the reactor with a force to look up.
+
+**110 reactors at +0.833 would already account for +0.46 µs averaged over 200, and the mixed lane
+reads +0.391.** The residue for the ninety aneutronic reactors is therefore negative and inside the
+noise: their share is not distinguishable from zero. That is a bound and not a measurement — it
+assumes the neutronic per-reactor delta is the same on a four-plasma rig as on a one-plasma rig,
+which is plausible and is not tested. What it does support is the attribution: **the addition lands
+on the reactors that have a force to ask about, and not on the others.**
+
+### What is not taken
+
+**The draw could be hoisted onto `storage.heating_spent`'s entries**, so the per-tick loop reads a
+number it already holds instead of resolving a spec. That removes the boundary crossing and most of
+the 0.83 µs. It is **described and not taken**: it changes the shape of a table inside a save, so it
+needs a migration, and whether 0.83 µs is worth a migration is a decision rather than a measurement.
+#430 closes on the figure; the decision is a separate ticket if anyone wants it.
+
+**For scale**: +0.83 µs is the size of #72's own +0.88 µs addition, and at 200 reactors it is
+0.17 ms a tick — 1.0% of a 16.67 ms tick on top of whatever the fleet already costs.
+
+**And the cost is not attributed by ablation.** The two arms differ by the whole #425 commit and the
+four fix commits after it, and the argument that `spend()` is the only change with a per-tick cost
+is an argument. The `-Mixed` lane above is the closest thing to a test of it here.
+
+### Sources
+
+- `scripts/bench-reactors.ps1 -Counts 0,200`, twice ten invocations alternating arms in one sitting,
+  plain and `-Mixed`. The alternation was driven by a scratch loop and is not a committed script;
+  there is nothing in it worth a rig, in the same sense as the cross-version run under #72.
+- Two `git worktree` checkouts, `227eb9d` and `33ba491`, so neither working tree changed during the
+  sitting.
+- `realistic-fusion-refreshed/control.lua` — `spend()` and `spec_for()`, where the figure is
+  recorded, and `capture_for()`'s +0.12 µs note, which is the companion figure two pairs could only
+  place inside the noise.
+- What it discharges: #430, and the "#63 and #66 are open on per-step cost" sentence #431 corrected.

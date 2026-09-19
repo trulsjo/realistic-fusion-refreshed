@@ -181,6 +181,11 @@ end
 -- rounds; what two pairs support is that the delta is inside the noise, which is all the ticket
 -- asked. Nothing allocates, and that part IS clean: luaGarbageIncremental went 94.3/97.7 against
 -- 95.3/92.6 -- higher in one pair, lower in the other, so no direction at all.
+--
+-- THE COMPANION FIGURE IS spend()'s, AND IT IS THE ONE TAKEN THE FULL WAY. #430 ran the ten
+-- alternated rounds on the per-force lookup #425 put on the per-tick path and read +0.83
+-- microseconds per reactor, against this +0.12 that two pairs could only call inside the noise.
+-- Same machine, same script, same units; the difference is the sample.
 local function capture_for(entity, spec)
   -- A reactor no technology moves -- rf-aneutronic-reactor, deliberately (ADR 0020 decision 4) --
   -- never touches the cache at all, which is the same early return spec_for makes above and for
@@ -916,24 +921,48 @@ end
 -- of the feature: a rung a player researches has to arrive as a bigger bill before it can arrive
 -- as a hotter plasma.
 --
--- WHAT IT COSTS IS NOT MEASURED, AND THAT SENTENCE IS THE POINT. An earlier draft of this note
--- claimed it was "the same two table lookups every other cache hit is", which was wrong twice
--- over and was caught in review. Against the SPECS index it replaced, a cache hit here is: one
--- HAS_SPEC_LADDER index, one `entity.force_index` read -- a Lua-to-C++ boundary crossing that was
--- NOT on this path before -- and two more table indexes. The boundary crossing is the one that
--- matters and it is unavoidable: a per-force draw has to ask which force, once per reactor per
--- tick, and nothing else here can answer it.
+-- WHAT IT COSTS, AND IT IS THE SIZE OF #72'S OWN ADDITION. Against the SPECS index it
+-- replaced, a cache hit here is: one HAS_SPEC_LADDER index, one `entity.force_index` read -- a
+-- Lua-to-C++ boundary crossing that was NOT on this path before -- and two more table indexes.
+-- The boundary crossing is the one that matters and it is unavoidable: a per-force draw has to ask
+-- which force, once per reactor per tick, and nothing else here can answer it.
 --
--- NOT MEASURED because #92 established what a measurement of this costs on this machine: ten
--- alternated rounds of bench-reactors.ps1, read as a median, because per-round swings are +/-1.3
--- microseconds and a ratio of aggregates reads 1.29x on CPU throttling alone. Two paired runs
--- would not support a number. #63 and #66 are open on per-step cost and this belongs to them;
--- what is recorded here is the shape of the addition, so nobody has to re-derive it from the diff.
+-- MEASURED at +0.83 microseconds per reactor (#430, 2026-09-20, Factorio 2.0.77), taking the
+-- shipped D-D step from 4.42 to 5.26 microseconds. bench-reactors.ps1 -Counts 0,200, ten rounds
+-- alternating between this commit's tree and 33ba491 -- the parent of the #425 commit -- in one
+-- sitting, read as the median of nine after one round flagged BUSY and was dropped in both arms.
+-- The two bands do not touch: the fastest arm-with-the-lookup round is 5.14 and the slowest
+-- arm-without-it is 5.01. Read the DELTA and not the 1.19x ratio, for the reason
+-- docs/research/reactor-runtime-cost.md gives about the 1.28x of #72: a ratio depends on a
+-- baseline that itself moves between sittings, and the absolute delta is what a paired design
+-- supports.
 --
--- WHAT WAS DONE INSTEAD OF MEASURING: the cheap half was removed. spec_for()'s short-circuit was
--- a walk over logic.spec_ladders and is now one index into HAS_SPEC_LADDER, built at load. That
--- is also what an rf-aneutronic-reactor now pays on this path in total, which is the case with the
--- most reactors on a settled map and the one with nothing per force to look up.
+-- THAT SENTENCE USED TO READ "NOT MEASURED, AND THAT SENTENCE IS THE POINT", and #92's method is
+-- why it stood so long: ten alternated rounds read as a median, because per-round swings here are
+-- +/-1.3 microseconds and a ratio of aggregates reads 1.29x on CPU throttling alone. Two paired
+-- runs would not have supported a number. An earlier draft before that claimed the addition was
+-- "the same two table lookups every other cache hit is", which was wrong twice over and was caught
+-- in review.
+--
+-- NOTHING ALLOCATES, reported separately the way #94's note reports it: luaGarbageIncremental is
+-- 0.1108 microseconds per reactor against 0.1115, which is lower on the arm that added work and so
+-- has no direction at all.
+--
+-- AND THE CHEAP HALF WAS REMOVED ANYWAY: spec_for()'s short-circuit was a walk over
+-- logic.spec_ladders and is now one index into HAS_SPEC_LADDER, built at load. That is what an
+-- rf-aneutronic-reactor pays on this path in total, which is the case with the most reactors on a
+-- settled map and the one with nothing per force to look up. A MIXED RIG BOUNDS IT AND DOES NOT
+-- MEASURE IT: the same ten rounds with -Mixed put 110 rf-reactors beside 90 aneutronic ones and
+-- read +0.39 microseconds averaged over all 200, where 110 reactors at the figure above would
+-- already account for +0.46. The residue is negative and inside the noise, so the aneutronic
+-- share is not distinguishable from zero -- which is the floor, bounded rather than measured,
+-- because bench-reactors.ps1 cannot build an aneutronic-only fleet.
+--
+-- WHAT IS NOT TAKEN, and it is a decision rather than an oversight: the draw could be hoisted onto
+-- storage.heating_spent's entries, so the per-tick loop reads a number it already holds instead of
+-- resolving a spec. That changes the shape of a table inside a save, so it needs a migration, and
+-- whether 0.83 microseconds is worth a migration is a decision rather than a measurement. #430
+-- describes it and leaves it.
 --
 -- SPENT OUT OF THE BUFFER RATHER THAN DECLARED AS A FIXED CONSUMPTION, which is the older decision
 -- this inherits and does not change: the network refills what was spent, so a brownout shows up as
