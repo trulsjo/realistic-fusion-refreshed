@@ -66,22 +66,23 @@ knowing about:
   Throughput only; the ratio is unchanged, so a legendary exchanger needs 2.5× the turbines.
 - **`rf-lithium-blanket` holds 250 slots instead of 100.** Buffer, not rate: breeding is bounded by
   neutrons and by collector headroom, never by inventory.
-- **`rf-reactor`'s `input_flow_limit` goes from 60 MW to 150 MW against an unchanged 50 MW spend**, so
-  a legendary reactor rides out a brownout down to a third of supply where a normal one starts losing
-  heating at five-sixths. **Measured since #146**, not divided: five reactors on five networks,
-  supplied down a ladder one hundredth of their own flow limit at a time. This is the one place
-  quality changes reactor *behaviour*, and it is the only entry on this list that a balance decision
-  might want to keep.
+- **`rf-reactor`'s `input_flow_limit` goes from 90 MW to 225 MW against a spend of 50 to 75 MW**, so a
+  legendary reactor rides out a brownout to two ninths of supply where a normal one starts losing
+  heating at five-ninths — and at the top of the heating ladder those become a third and five-sixths.
+  **Measured since #146 and re-measured on 2026-09-20 against Factorio 2.0.77 (#429)**, not divided:
+  five reactors on five networks, supplied down a ladder one hundredth of their own flow limit at a
+  time. This is the one place quality changes reactor *behaviour*, and it is the only entry on this
+  list that a balance decision might want to keep.
 
-  **Both ends of that sentence moved on 2026-09-19 (#425, ADR 0038), and it is not re-measured here.**
-  `input_flow_limit` is 90 MW now, sized on the top of the heating ladder rather than on the shipped
-  50 MW, and the spend is no longer one number: it is 50 MW for a force that has researched nothing
-  and 75 MW at the top of that ladder. So the quality ladder starts higher *and* the thing it is
-  measured against is per force, which makes the single fraction below a family of them. Every
-  measured figure in this note describes the 60 MW prototype against a fixed 50 MW spend and is left
-  exactly as it was taken; what a re-measurement would say is not stated, because nothing has
-  re-measured it. The structural conclusion — quality raises the limit, which is the safe direction,
-  and `check_input_flow()` refuses to load if it ever stops covering the heating — is unaffected.
+  **Both ends of that sentence moved on 2026-09-19 (#425, ADR 0038), and #429 re-measured them on
+  2026-09-20.** `input_flow_limit` is 90 MW now, sized on the top of the heating ladder rather than on
+  the shipped 50 MW, and the spend is no longer one number: it is 50 MW for a force that has
+  researched nothing and 75 MW at the top of that ladder. So the single fraction this note used to
+  publish is a family of them, one per heating rung, and
+  [The one term quality does move](#the-one-term-quality-does-move-and-what-it-is-worth) below is
+  where the family is measured. The structural conclusion — quality raises the limit, which is the
+  safe direction, and `check_input_flow()` refuses to load if it ever stops covering the heating — is
+  unaffected, and the re-measurement is what now says so rather than an argument that it must be.
 - **`rf-reactor`'s own `energy_consumption` scales 1 W → 2.5 W, and 2.5× of nothing is still
   nothing.** That is the neutered boiler conversion the mod does not use, and **measured since #147
   it is exactly zero at four of the five levels** — the engine moves fluid in whole float32 ULPs per
@@ -374,7 +375,7 @@ read at all five levels; only the two ends are shown, and "flat" means all five 
 | `rf-reactor` | `boiler` | **fluid box 1 (plasma)** | 1000 | **1000** | **Yes — and it holds.** `volume_m3` and `particles_per_unit` are Lua constants; `control.lua` reads `box.get_capacity` |
 | | | **fluid box 2 (energy)** | 1000 | **1000** | `apply()` in `control.lua` reads `get_capacity(2)` to clamp the sale |
 | | | `buffer_capacity` | 10 MJ | **10 MJ** | No, since #72. Stated reserve; `check_cadence()` used to check `heating_power_w × interval` against it and is gone |
-| | | **`input_flow_limit`** | 60 MW | **150 MW** | **Yes, since #72 — and it holds.** `check_input_flow()` in `control.lua` requires it to cover `heating_power_w` at load, and since #425 the TOP of the heating ladder rather than the shipped value. Legendary raises it, which is the safe direction. The 60 MW is what the prototype declared when this was measured; it is 90 MW now |
+| | | **`input_flow_limit`** | 60 MW | **150 MW** | **Yes, since #72 — and it holds.** `check_input_flow()` in `control.lua` requires it to cover `heating_power_w` at load, and since #425 the TOP of the heating ladder rather than the shipped value. Legendary raises it, which is the safe direction. The 60 MW is what the prototype declared when this was measured; the row was re-read at 90 → 225 MW on 2026-09-20 (#429) |
 | | | `energy_consumption` | 1 W | 2.5 W | No. The neutered boiler conversion |
 | `rf-aneutronic-reactor` | `boiler` | fluid boxes | 3000 / 1000 | **3000 / 1000** | Yes — and it holds. 3×10²⁰ m⁻³ stays 3×10²⁰ |
 | | | `buffer_capacity` | 40 MJ | **40 MJ** | No, since #72. Same reasoning as `rf-reactor`'s |
@@ -514,31 +515,96 @@ thing that moves the constant, and research is per force, not per entity.
 
 ### The one term quality does move, and what it is worth
 
-`input_flow_limit`. `rf-reactor` declares 60 MW against a 50 MW spend, and every consumer on the
-network is `secondary-input`, so in a brownout at supply fraction `f` a reactor receives `f × 60` MW
-and spends 50:
+`input_flow_limit`. `rf-reactor` declares 90 MW, every consumer on the network is `secondary-input`,
+so in a brownout at supply fraction `f` a reactor receives `f × 90` MW and spends its heating power:
 
-**Read the whole of this section as dated 2026-08-31.** `rf-reactor` declares 90 MW since #425 and
-spends between 50 and 75 MW depending on research — see the `input_flow_limit` bullet in
-[The short version](#the-short-version) above. The measurements below are left as they were taken,
-against the prototype and the spend that existed then.
+**The numerator is per force and the denominator is not, which is why this is a grid.** ADR 0038 made
+heating power researchable on 2026-09-19, so the spend is 50 MW unresearched and 75 MW at the top of
+the five-rung ladder, while `input_flow_limit` is a prototype field and does not move with research
+at all. `f = heating_power_w / input_flow_limit`, so every rung of the heating ladder is a different
+table.
 
-| Quality | `input_flow_limit` | derived | **measured**, bracketed to 0.01 |
-|---|---|---|---|
-| normal | 60 MW | f = 0.833 | held at **0.84**, short at **0.83** |
-| uncommon | 78 MW | f = 0.641 | held at **0.65**, short at **0.64** |
-| rare | 96 MW | f = 0.521 | held at **0.53**, short at **0.52** |
-| epic | 114 MW | f = 0.439 | held at **0.44**, short at **0.43** |
-| legendary | **150 MW** | f = 0.333 | held at **0.34**, short at **0.33** |
+**Re-measured 2026-09-20 against Factorio 2.0.77 (#429), at three of the six heating states — the
+shipped value and five rungs.** The
+five-level flow-limit row is read off the placed entities with
+`get_input_flow_limit(quality)` in the same run, so the denominators below are the running game's and
+not a multiplier applied here:
 
-**Every derived fraction falls inside its own measured bracket.** The table is confirmed, and the
-assumption under it — that a shorted reactor asks for its whole `input_flow_limit` rather than for
-the 50 MW it spends — is confirmed with it. That assumption is what makes the flow limit worth
-anything: had a shorted reactor asked only for its spend, every level would have browned out at the
-same place and quality would have bought nothing here either.
+| Quality | level | `input_flow_limit` |
+|---|---|---|
+| normal | 0 | 90 MW |
+| uncommon | 1 | 117 MW |
+| rare | 2 | 144 MW |
+| epic | 3 | 171 MW |
+| legendary | 5 | **225 MW** |
+
+### The brackets, per heating rung
+
+Three rungs measured, three derived. Each cell is the last supply fraction at which full heating
+held, then the first at which it did not — the ladder's step is 0.01, so that pair *is* the
+resolution. **Every derived fraction falls inside its own measured bracket, in all fifteen measured
+cells**, which is the check that the derivation is the ledger the code implements:
+
+| heating | spend | normal (90) | uncommon (117) | rare (144) | epic (171) | legendary (225) |
+|---|---|---|---|---|---|---|
+| **none** | 50 MW | 0.56 / 0.55 · **0.5556** ✓ | 0.43 / 0.42 · **0.4274** ✓ | 0.35 / 0.34 · **0.3472** ✓ | 0.30 / 0.29 · **0.2924** ✓ | 0.23 / 0.22 · **0.2222** ✓ |
+| rung 1 | 55 MW | *0.611* | *0.470* | *0.382* | *0.322* | *0.244* |
+| **rung 2** | 60 MW | 0.67 / 0.66 · **0.6667** ✓ | 0.52 / 0.51 · **0.5128** ✓ | 0.42 / 0.41 · **0.4167** ✓ | 0.36 / 0.35 · **0.3509** ✓ | 0.27 / 0.26 · **0.2667** ✓ |
+| rung 3 | 65 MW | *0.722* | *0.556* | *0.451* | *0.380* | *0.289* |
+| rung 4 | 70 MW | *0.778* | *0.598* | *0.486* | *0.409* | *0.311* |
+| **rung 5** | 75 MW | 0.84 / 0.83 · **0.8333** ✓ | 0.65 / 0.64 · **0.6410** ✓ | 0.53 / 0.52 · **0.5208** ✓ | 0.44 / 0.43 · **0.4386** ✓ | 0.34 / 0.33 · **0.3333** ✓ |
+
+Bold rows are measured — *held / first short · derived* — and italic rows are `spend ÷ limit` and
+were not run. Three measured rows spread across the ladder rather than two ends is what makes the
+italic rows quotable at all: the derivation is checked at the bottom, the middle and the top and
+agrees at every one.
+
+**The 2026-08-31 table is not withdrawn, it has moved up the ladder.** It read 0.833 / 0.641 / 0.521 /
+0.439 / 0.333 against brackets of 0.84-0.83 / 0.65-0.64 / 0.53-0.52 / 0.44-0.43 / 0.34-0.33, taken at
+60 MW of flow limit against a 50 MW spend — and rung 5 above reproduces every one of them exactly,
+both the derived fractions and the brackets around them. That is not a coincidence and it is worth saying why: #425
+sized 90 MW at 1.2× the *top* of the heating ladder exactly as 60 MW had been 1.2× of the only spend
+there was, so the old table describes today's fully-researched reactor. What #425 actually added is
+everything *below* it — a normal reactor whose owner has researched no heating holds full heating
+down to 0.556 where the old table says 0.833, which is a third lower.
+
+Where full heating stops holding, as a fraction of full supply — shorter is more resilient. One
+character is 0.02, so the whole scale is `f = 1`:
+
+```
+                     0                        0.5                       1.0
+                     |------------------------|------------------------|
+normal     rung 5    ██████████████████████████████████████████          0.833
+           rung 2    █████████████████████████████████                   0.667
+           none      ████████████████████████████                        0.556
+legendary  rung 5    █████████████████                                   0.333
+           rung 2    █████████████                                       0.267
+           none      ███████████                                         0.222
+```
+
+Normal and legendary are the ends of the quality ladder; the three rungs under each are the three
+heating states measured. **Quality shortens a bar and heating lengthens it**, and the two sets do
+not overlap: a legendary reactor at the top of the heating ladder (0.333) is still more
+brownout-resilient than a normal one that has researched nothing (0.556).
+
+**The assumption under the whole table survives the re-measurement**: a shorted reactor asks for its
+whole `input_flow_limit` rather than for the heating it spends. Had it asked only for its spend,
+every level would have browned out at the same place and quality would have bought nothing here
+either. Fifteen cells at three different spends agreeing with `spend ÷ limit` is a stronger statement
+of it than the five cells at one spend that it replaces.
+
+**The structural conclusion is unchanged and now rests on more.** Quality raises the limit and never
+the spend, which is the safe direction on every rung of the heating ladder; `check_input_flow()` in
+`control.lua` refuses to load unless the limit covers the heating, and since #425 it checks the TOP
+of the ladder rather than the shipped value, which is the reason 90 MW is 90 and not 60.
 
 **`scripts/probe-quality-brownout.ps1` is the rig**, added under
-[#146](https://github.com/trulsjo/realistic-fusion-refreshed/issues/146). Five `rf-reactor`s, one per
+[#146](https://github.com/trulsjo/realistic-fusion-refreshed/issues/146) and given a
+`-HeatingRungs` switch by [#429](https://github.com/trulsjo/realistic-fusion-refreshed/issues/429),
+which is what makes a row of the grid above addressable: the rig researches that many rungs of
+`rf-plasma-heating-*` before the ladder starts, refuses a technology it cannot find rather than
+reporting a silently unresearched force, and prints the rungs it researched beside the rows they
+produced. Five `rf-reactor`s, one per
 level, each alone on its own electric network, supplied down a fixed ladder from full supply to a
 fifth of it one hundredth of the reactor's own flow limit at a time — so the resolution of every
 fraction above is 0.01 and the report prints the rung that held and the rung that did not rather than
@@ -559,11 +625,14 @@ browned out at all. The buffer is one tick of full production now, which is the 
 can still deliver what the rig sets. And flow statistics in 2.0 are keyed by name **and
 quality** — asked for the bare name, four of the five cells report having drawn nothing ever.
 
-The aneutronic reactor gives the same fractions by arithmetic — 240 MW against a 200 MW spend, so
-600 MW at legendary and the same 0.833 → 0.333 — and is **not** measured here. **It is not free
-energy**: the reactor still never spends more than `heating_power_w`, so the extra headroom buys
-resilience rather than power. It is also the only thing on the whole list that reads like a quality
-bonus somebody would have designed on purpose.
+The aneutronic reactor gives 0.833 → 0.333 by arithmetic — 240 MW against a 200 MW spend, so 600 MW
+at legendary — and is **not** measured here. **Those are still one row rather than a grid**, and
+that is the ADRs' doing rather than an omission: all three research ladders are neutronic only
+(ADR 0020 decision 4, ADR 0038 decision 5), so `rf-aneutronic-reactor` has no researchable spend
+and its fraction cannot move. They coincide with `rf-reactor`'s TOP heating rung, not with its shipped one.
+**It is not free energy**: the reactor still never spends more than `heating_power_w`, so the extra
+headroom buys resilience rather than power. It is also the only thing on the whole list that reads
+like a quality bonus somebody would have designed on purpose.
 
 What the rig does **not** cover is contention. Every cell is one reactor alone on a short supply, so
 what is measured is what a reactor gets when the supply itself is short — not how two
@@ -647,13 +716,22 @@ Measured 2026-08-31 against Factorio 2.0.77. The table quotes the 2400 s run; th
 row is rounded, and comes back off the engine as 1.299999952 / 1.600000024 / 1.899999976 for the
 reason in [The floating point does not come back clean](#the-floating-point-does-not-come-back-clean):
 
-The `input_flow_limit` row is the one #425 moved: the prototype declares 90 MW now, so the whole row
-scales from there. Left as measured, for the reason the section above gives.
+The `input_flow_limit` row is the one #425 moved: the prototype declares 90 MW now. **That row alone
+was re-read off the running game on 2026-09-20 against Factorio 2.0.77 (#429)** — by
+`probe-quality-brownout.ps1`, which places the same five entities and asks
+`get_input_flow_limit(quality)` of each — and it is the *re-read* row below. Every other row is the
+2026-08-31 equilibrium run and is untouched: nothing in the physics moved, and re-running that rig to
+confirm five identical temperatures again is not what this ticket asked for.
+
+The re-read row is also where the multiplier shows the same float residue as `energy_consumption`
+does: the engine answers 116.9999957 / 144.0000021 / 170.9999979 MW, rounded here for the same reason
+the `energy_consumption` row is rounded.
 
 | | normal | uncommon | rare | epic | legendary |
 |---|---|---|---|---|---|
 | level | 0 | 1 | 2 | 3 | 5 |
-| `input_flow_limit` | 60 MW | 78 MW | 96 MW | 114 MW | **150 MW** |
+| `input_flow_limit`, 2026-08-31 | 60 MW | 78 MW | 96 MW | 114 MW | **150 MW** |
+| `input_flow_limit`, **re-read 2026-09-20** | **90 MW** | **117 MW** | **144 MW** | **171 MW** | **225 MW** |
 | `energy_consumption` | 1 W | 1.3 W | 1.6 W | 1.9 W | **2.5 W** |
 | fluid box capacity | 1000 | 1000 | 1000 | 1000 | 1000 |
 | electric buffer capacity | 10.67 MJ | 10.67 MJ | 10.67 MJ | 10.67 MJ | 10.67 MJ |
@@ -697,12 +775,13 @@ the D-T tier and the confinement ladder are each another lane and none of them i
 Stated plainly, because this repository treats an unverified claim as a defect.
 
 - **The brownout table's contention case is not measured.** The fractions themselves now are, under
-  #146, and every derived one falls inside its measured bracket — but each cell in that rig is one
-  reactor alone on a short supply. How two `secondary-input` consumers split a short network between
+  #146 and again under #429 at three heating states, and every derived one falls inside its measured
+  bracket — but each cell in that rig is one reactor alone on a short supply. How two `secondary-input` consumers split a short network between
   them is the other half of the note's own sentence and has not been run.
 - **The aneutronic reactor's brownout fractions are still arithmetic.** #146 measured `rf-reactor`
-  only. 240 MW against a 200 MW spend gives the same 0.833 → 0.333 by division, and division is all
-  it is.
+  only, and #429 re-measured `rf-reactor` only. 240 MW against a 200 MW spend gives 0.833 → 0.333 by
+  division, and division is all it is. It is a ROW and not a grid, because no research ladder reaches
+  this tier — so unlike the neutronic table it does not need re-measuring per heating rung.
 - **Why the engine floors a fluid transfer to whole float32 ULPs per tick is inferred, not
   documented.** #147 measured the flooring — five levels, two run lengths, the legendary rate landing
   on 2⁻²⁴ units a tick to ten digits — and no 2.0.77 doc page found in this pass says the engine does
@@ -804,8 +883,8 @@ longer, therefore runs hotter, therefore fuses harder.
 
 Pick a quantity where 2.5× is harmless and let quality have it. Two candidates the measurement
 suggests: the blanket's inventory (already scaling, 100 → 250, pure autonomy) and the reactor's
-`input_flow_limit` (already scaling, 60 → 150 MW when this was measured and 90 MW at the base now,
-pure brownout resilience). Declare *those* the
+`input_flow_limit` (already scaling, 90 → 225 MW as re-read on 2026-09-20, pure brownout
+resilience). Declare *those* the
 quality story, tidy the rest under B, and say so in `README.md`.
 
 - **For:** costs nothing to implement — both already happen. It converts an accident into a

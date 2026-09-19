@@ -12,9 +12,10 @@
 
     WHAT IT CLOSES
 
-    docs/research/quality.md says a reactor keeps full heating down to a supply fraction of
-    f = 0.833 at normal and f = 0.333 at legendary, by way of five measured input_flow_limit values
-    against an unchanged 50 MW spend. Every one of those fractions is arithmetic, and the note says
+    docs/research/quality.md said, when this rig was written, that a reactor keeps full heating down
+    to a supply fraction of f = 0.833 at normal and f = 0.333 at legendary, by way of five measured
+    input_flow_limit values against an unchanged 50 MW spend -- 60 MW at normal then, 90 MW since
+    #425. Every one of those fractions is arithmetic, and the note says
     so: "The table is arithmetic off the measured flow limits, not an observed brownout."
     scripts/check-brownout.ps1 is the rig that measures the real thing and it runs at normal quality
     only, so a brownout has never been observed on anything but a normal reactor.
@@ -39,7 +40,11 @@
     So each cell is supplied at a set fraction of ITS OWN flow limit, and what the reactor actually
     draws is measured. Full heating holds while the draw stays at heating_power_w. The fraction at
     which it stops is the answer, and the note's table is right exactly if that fraction is
-    50 MW / input_flow_limit at every level.
+    heating_power_w / input_flow_limit at every level.
+
+    THAT NUMERATOR IS NOT A CONSTANT ANY MORE, which is what #429 re-measured. ADR 0038 made
+    heating power researchable, so the spend is 50 MW unresearched and 75 MW at the top of the
+    ladder while input_flow_limit stays where the prototype declares it -- see -HeatingRungs.
 
     HOW THE ANSWER IS FOUND: A FIXED DESCENDING LADDER, one hundredth of the flow limit per rung,
     from full supply down to a fifth of it. A ladder rather than a bisection because the whole curve
@@ -88,8 +93,10 @@
 
     WHAT IT DOES NOT COVER
 
-    Only rf-reactor, only D-D plasma, only with nothing researched. The aneutronic tier gives the
-    same fractions by arithmetic -- 240 MW against a 200 MW spend -- and is another lane.
+    Only rf-reactor, only D-D plasma, and only at the ONE heating rung -HeatingRungs names -- a run
+    is one row of the family, not the family. The aneutronic tier gives the same fractions by
+    arithmetic -- 240 MW against a 200 MW spend, and no heating ladder at all (ADR 0038 decision 5),
+    so it is one row where rf-reactor is now six -- and is another lane.
 
     AND IT DOES NOT EXERCISE CONTENTION. Every cell here is one reactor alone on its supply, so what
     is measured is what a reactor gets when the supply itself is short, not how two secondary-input
@@ -113,17 +120,39 @@
 
 .PARAMETER Low
     The bottom of the ladder, as a fraction of each reactor's own input_flow_limit. The default of
-    0.2 is below every fraction the note's table predicts, the lowest being 0.333 at legendary.
+    0.2 is below every fraction the note's grid predicts, and the margin got thinner with #425: the
+    lowest cell is legendary at -HeatingRungs 0, which is 50 MW over 225 and so 0.222 -- two rungs
+    of the default ladder above the floor, where before ADR 0038 the lowest was 0.333. Lowering the
+    heating ladder's base would want this lowered with it.
 
 .PARAMETER Step
     The ladder's step, and therefore the resolution of every fraction reported. The default of 0.01
     brackets each answer to a hundredth.
+
+.PARAMETER HeatingRungs
+    Rungs of ADR 0038's plasma-heating ladder to research before the ladder runs, 0 to 5. Added by
+    #429, and the reason it exists is that what a reactor SPENDS stopped being one number on
+    2026-09-19: 50 MW for a force that has researched nothing and 75 MW at the top of that ladder,
+    against an input_flow_limit that does not move. Every fraction this probe reports is a spend
+    over a flow limit, so the whole table is a different table per rung and a row that does not say
+    which rung it was taken at says nothing.
+
+    The rig researches rf-plasma-heating-1 up to the count asked for and refuses a technology it
+    cannot find, rather than reporting a force it silently failed to research as an unresearched
+    one. It touches NEITHER OTHER LADDER: confinement moves the density curve and plant efficiency
+    moves what is sold, and neither is on the numerator or the denominator of this fraction.
 
 .PARAMETER KeepTemp
     Keep the save, the rig mod and the captured output.
 
 .EXAMPLE
     pwsh -File scripts/probe-quality-brownout.ps1
+
+.EXAMPLE
+    pwsh -File scripts/probe-quality-brownout.ps1 -HeatingRungs 5
+
+    The top of the heating ladder: a 75 MW spend against the same flow limits, which is the other
+    end of the family #429 re-measured.
 
 .EXAMPLE
     pwsh -File scripts/probe-quality-brownout.ps1 -Step 0.05 -RungSeconds 40
@@ -142,6 +171,9 @@ param(
     [ValidateRange(2, 600)] [ValidateScript({ $_ % 2 -eq 0 })] [int] $RungSeconds = 20,
     [ValidateRange(0.0, 0.99)]   [double] $Low  = 0.20,
     [ValidateRange(0.001, 0.5)]  [double] $Step = 0.01,
+    # How many rungs of ADR 0038's heating ladder the force has researched. 0 is a force that has
+    # researched nothing, which is where this probe ran before #429 and is still the default.
+    [ValidateRange(0, 5)]           [int] $HeatingRungs = 0,
     [switch] $KeepTemp
 )
 
@@ -179,9 +211,10 @@ Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'data.lua') `
 $lua = @'
 -- Generated by probe-quality-brownout.ps1. Reports; asserts nothing.
 
-local RUNG_TICKS = __RUNG_TICKS__
-local LOW        = __LOW__
-local STEP       = __STEP__
+local RUNG_TICKS    = __RUNG_TICKS__
+local LOW           = __LOW__
+local STEP          = __STEP__
+local HEATING_RUNGS = __HEATING_RUNGS__
 
 local REACTOR = "rf-reactor"
 local PLASMA  = "rf-d-d-plasma"
@@ -246,9 +279,36 @@ local function assert_intact(cell)
   end
 end
 
+--- Research the heating rungs this run is measured at, and refuse what cannot be found (#429).
+--
+-- A force that silently failed to research is an UNRESEARCHED force, and it reports a perfectly
+-- clean table at the wrong spend -- which is the one failure that would look like a result here.
+-- So a missing technology is an error rather than a skip, and the rungs actually researched are
+-- printed in the report beside the rows they produced.
+local function research_heating(force)
+  local done = {}
+  for rung = 1, HEATING_RUNGS do
+    local name = "rf-plasma-heating-" .. rung
+    local technology = force.technologies[name]
+    if not technology then
+      error(string.format("%s does not exist, so this run cannot be taken at heating rung %d -- "
+        .. "the ladder was renamed or shortened and this probe is asking for a rung the mod no "
+        .. "longer ships", name, HEATING_RUNGS))
+    end
+    technology.researched = true
+    done[#done + 1] = name
+  end
+  return done
+end
+
 script.on_init(function()
   local surface = game.surfaces[1]
   local force   = game.forces.player
+
+  -- BEFORE ANY REACTOR IS BUILT. control.lua caches the derived spec per force and invalidates it
+  -- on on_research_finished, so the order does not actually matter -- but a reactor created into
+  -- its final research state is one fewer thing to have to argue about in the report.
+  storage.researched = research_heating(force)
 
   local levels = quality_levels()
   if #levels < 2 then
@@ -363,6 +423,11 @@ local function report()
     storage.fill, #cells)
   say("ladder            f from 1 down to %.10g in steps of %.10g, %d ticks a rung, the second "
     .. "half of each measured", LOW, STEP, RUNG_TICKS)
+  -- WHICH ROW OF THE FAMILY THIS IS. Every fraction below is a spend over a flow limit and ADR
+  -- 0038 made the spend researchable, so a table printed without this line is unreadable.
+  say("heating           %d rung(s) researched%s", #storage.researched,
+    #storage.researched > 0 and (": " .. table.concat(storage.researched, " ")) or
+      " -- the force has researched nothing")
 
   local ids, distinct = {}, {}
   for _, c in ipairs(cells) do
@@ -433,8 +498,15 @@ local function report()
   -- exact-looking number the rig cannot support. HELD is defined against the top rung rather than
   -- against a constant written here: a rung counts as holding if it drew within a thousandth of
   -- what the same cell drew at full supply.
-  say("%-10s %13s %13s %13s %13s", "quality", "held down to", "first short", "arithmetic", "note says")
-  local ARITHMETIC = { normal = 0.833, uncommon = 0.641, rare = 0.521, epic = 0.439, legendary = 0.333 }
+  --
+  -- THE "note says" COLUMN IS GONE (#429). It held docs/research/quality.md's five published
+  -- fractions as literals -- 0.833 down to 0.333 -- which were taken at a 60 MW flow limit against
+  -- a 50 MW spend, and both halves moved with #425. A literal table of a superseded note's figures
+  -- compared against a fresh run reports a disagreement in every row and means nothing by it. What
+  -- is left is the DERIVED column, which is computed per cell out of this run's own measured full
+  -- draw and this run's own flow limit, so it moves with the heating rung the way the note's table
+  -- now has to. The note is where the two are compared.
+  say("%-10s %13s %13s %13s", "quality", "held down to", "first short", "derived")
   for _, c in ipairs(cells) do
     local held, short = nil, nil
     for _, rung in ipairs(c.rungs) do
@@ -444,13 +516,15 @@ local function report()
         short = rung.f
       end
     end
-    -- 50 MW / input_flow_limit: the note's own formula, evaluated on the draw this rig measured at
-    -- full supply rather than on a constant retyped here.
+    -- heating_power_w / input_flow_limit: the note's own formula, evaluated on the draw this rig
+    -- measured at full supply rather than on a constant retyped here. That numerator is why this
+    -- is derived from the measurement instead of written down -- a rig cannot see heating_power_w,
+    -- and since #425 there is no single value to have written down anyway.
     local predicted = c.limit_w > 0 and (c.full_mw * 1e6 / c.limit_w) or -1
-    say("%-10s %13s %13s %13.4g %13s", c.quality,
+    say("%-10s %13s %13s %13.4g", c.quality,
       held and string.format("%.4f", held) or "(never held)",
       short and string.format("%.4f", short) or "(never fell)",
-      predicted, tostring(ARITHMETIC[c.quality] or "-"))
+      predicted)
   end
 
   say("done")
@@ -506,6 +580,7 @@ $lua = $lua.
     Replace('__QUIETMAP__', (Get-QuietMapLua)).
     Replace('__QUIETFN__', $script:QuietMapFunction).
     Replace('__RUNG_TICKS__', "$($RungSeconds * 60)").
+    Replace('__HEATING_RUNGS__', "$HeatingRungs").
     Replace('__LOW__', ([string]::Format([cultureinfo]::InvariantCulture, '{0}', $Low))).
     Replace('__STEP__', ([string]::Format([cultureinfo]::InvariantCulture, '{0}', $Step)))
 Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
