@@ -49,8 +49,9 @@ local SETTLE_S = 1200
 -- second copy. control.lua's confinement guard has to settle a reactor at load, and #51 is the
 -- record of what it costs to have one piece of arithmetic implemented twice. What stayed here is
 -- the argument order and the defaults, which every call below is written against.
-local function settle(spec, seconds, paid_j, dt, fluid, amount)
-  return L.settle(spec, fluid or "rf-d-d-plasma", amount or FULL, seconds, paid_j, dt or TICK)
+local function settle(spec, seconds, paid_j, dt, fluid, amount, capture)
+  return L.settle(spec, fluid or "rf-d-d-plasma", amount or FULL, seconds, paid_j, dt or TICK,
+    capture)
 end
 
 -- ---------------------------------------------------------------- nothing to do
@@ -1338,12 +1339,27 @@ local HEAT_LADDER = SPEC.heating_ladder
 -- LEVEL 0 IS THE SHIPPED VALUE on either axis, so at_rungs(0, 0) is a copy of SPEC itself and the
 -- grid below carries the unresearched state as a cell rather than beside one. The two ladders are
 -- independent (ADR 0038 decision 2), so every pair of levels is a state some force can be in.
+-- THE THIRD LADDER IS NOT ON THIS FUNCTION, and that is ADR 0020 decision 5 rather than an
+-- omission: plant efficiency reaches step() as an ARGUMENT and never as a spec field, so a fixture
+-- that wrote capture_efficiency onto this copy would be testing a shape the mod does not have.
+-- #432 needed to vary it, and what it added is the argument on M.settle() rather than a field
+-- here -- see capture_at below.
 local function at_rungs(heat_level, tau_level)
   local spec = {}
   for k, v in pairs(SPEC) do spec[k] = v end
   if tau_level > 0 then spec.confinement_time_s = LADDER[tau_level].confinement_time_s end
   if heat_level > 0 then spec.heating_power_w = HEAT_LADDER[heat_level].heating_power_w end
   return spec
+end
+
+--- The recovery a force at one rung of the plant-efficiency ladder gets, for M.settle's argument.
+--
+-- nil at level 0, not spec.capture_efficiency, because nil is what an unresearched force passes:
+-- step() falls back to the spec's own constant, which keeps the unresearched value written down in
+-- exactly one place. Returning the constant here would make a second place.
+local CAPTURE_LADDER = SPEC.capture_ladder
+local function capture_at(level)
+  return level > 0 and CAPTURE_LADDER[level].capture_efficiency or nil
 end
 
 --- The spec one confinement rung up, at the shipped heating power.
@@ -1387,12 +1403,23 @@ near(q_at(3), 1.4675, 0.01, "rung 3 reaches Q 1.468 at full supply")
 -- that can drift silently; the comparison against the machine lives beside the machine.
 --
 -- Capture is the spec's own unresearched 0.85 here. ADR 0020's ladder multiplies all of these by
--- 0.9375/0.85 at its top rung, which is a separate lever and is not pinned twice.
-local function mw_at(level, fill)
-  local spec = level > 0 and at_rung(level) or SPEC
-  local _, state = settle(spec, SETTLE_S, math.huge, nil, nil, FULL * (fill or 1))
+-- 0.9375/0.85 at its top rung, which is a separate lever; what it does to the exchanger's capacity
+-- is pinned once, in the block under "WHAT ONE EXCHANGER COVERS" below.
+
+--- What a D-D reactor sells, at one rung of each of the three ladders and one fill of its box.
+--
+-- ONE FUNCTION FOR ALL THREE LADDERS since #432. It was mw_at(level, fill) -- confinement only, at
+-- shipped heating and shipped capture -- and the block below needed the other two axes, so the
+-- general form is here and mw_at is the wrapper. Two near-identical settle-and-convert helpers
+-- eighty lines apart is exactly the drift this file's own comments keep warning about.
+local function sells_mw(heat_level, tau_level, capture_level, fill)
+  local _, state = settle(at_rungs(heat_level, tau_level), SETTLE_S, math.huge, nil, nil,
+    FULL * (fill or 1), capture_at(capture_level or 0))
   return state.energy_units * SPEC.energy_fluid_j_per_unit / TICK / 1e6
 end
+
+--- The confinement ladder alone, which is what every assertion in this block is about.
+local function mw_at(level, fill) return sells_mw(0, level, 0, fill) end
 
 near(mw_at(0), 56.1, 0.01, "unresearched, a full D-D reactor sells 56.1 MW", "MW")
 near(mw_at(1), 67.1, 0.01, "rung 1 sells 67.1 MW at full supply", "MW")
@@ -1412,6 +1439,69 @@ check(mw_at(2, 0.85) > mw_at(2) and mw_at(3) > mw_at(2, 0.85),
   "the optimum is above full supply at a rung, and below the NEXT rung run full",
   string.format("rung 2: %.1f full, %.1f tuned; rung 3 full %.1f",
     mw_at(2), mw_at(2, 0.85), mw_at(3)))
+
+-- -------------------------------------- WHAT ONE EXCHANGER COVERS, ON ALL THREE LADDERS (#432)
+--
+-- The block above pins ONE AXIS of what #227 sized rf-heat-exchanger against, and the sentence
+-- that sizing closes with -- "one exchanger drains a D-D reactor through confinement rung 2, fed
+-- or full, tuned or not" -- was measured when that axis was the only one there was. It is not any
+-- more, and two separate tickets found the same sentence false for two different reasons: #395
+-- because plant efficiency multiplies what a reactor sells (ADR 0020), and #432 because ADR 0038's
+-- heating ladder raises it again. The sentence is re-anchored against all three at once, here and
+-- in realistic-fusion-refreshed/prototypes/entities.lua, rather than patched twice.
+--
+-- WHAT IS PINNED HERE IS THE BOUNDARY, NOT THE GRID. The grid is 4 confinement states x 6 heating
+-- x 4 capture -- ninety-six cells -- at two operating points each, and the second of those is a
+-- twenty-fill sweep, so measuring the whole thing is about two thousand settles, where this whole
+-- suite runs in under thirty seconds today. Nobody needs it to know a capacity has been outrun. What the comment in entities.lua quotes
+-- is where 90 MW STOPS COVERING along each axis walked on its own from the shipped state, plus the
+-- far corner, and those are the cells pinned. Every other cell in that comment's grid is stated as
+-- cited rather than pinned, which is the distinction the comment already draws and #227's review
+-- established.
+--
+-- THE EXCHANGER'S 90 MW IS STILL NOT REPEATED HERE, for the reason the block above gives: it is a
+-- prototype field, this file loads no prototypes, and one balance number in two places with nothing
+-- keeping them in step is the defect ADR 0031's Consequences names. What is pinned is the REACTOR.
+
+-- THE HEATING AXIS ALONE, from the shipped state. Rung 3 is the last that one 90 MW machine
+-- covers and rung 4 is the first it does not, at BOTH operating points -- so the heating ladder
+-- can outrun the exchanger without a player touching confinement at all, which was not possible
+-- before ADR 0038. The fills are the density optimum at each cell, swept at the 5% resolution
+-- reactor-logic's own density_curve uses.
+near(sells_mw(3, 0, 0), 83.2, 0.01, "heating rung 3, entry confinement: 83.2 MW at full supply", "MW")
+near(sells_mw(3, 0, 0, 0.80), 86.3, 0.02, "and 86.3 MW tuned -- the last cell one exchanger covers", "MW")
+near(sells_mw(4, 0, 0), 92.9, 0.01, "heating rung 4: 92.9 MW at full supply, already over 90", "MW")
+near(sells_mw(4, 0, 0, 0.85), 95.1, 0.02, "and 95.1 MW tuned", "MW")
+
+-- THE PLANT-EFFICIENCY AXIS ALONE, which is the one that does NOT break the claim by itself and
+-- is pinned for exactly that reason: #395 reports the sentence failing at plant-efficiency rung 1,
+-- and it does -- but only in combination with confinement rung 2. So an
+-- entities.lua comment naming this ladder as a breaker on its own would be wrong in the other
+-- direction. Walked alone the whole ladder tops out at 68.0 MW tuned, comfortably inside 90.
+near(sells_mw(0, 0, #CAPTURE_LADDER), 61.9, 0.01,
+  "the whole plant-efficiency ladder, nothing else: 61.9 MW at full supply", "MW")
+near(sells_mw(0, 0, #CAPTURE_LADDER, 0.65), 68.0, 0.02,
+  "and 68.0 MW tuned -- this ladder alone never reaches 90", "MW")
+
+-- #395'S OWN CELL, pinned as that ticket asks: confinement rung 2 with ONE rung of plant
+-- efficiency, at the fill ADR 0024 tabulates as rung 2's optimum. 93.8 MW against 90 is the
+-- falsification, and the full-supply reading beside it is what says "fed or full" survives one
+-- rung further than "tuned or not" does.
+near(sells_mw(0, 2, 1), 87.8, 0.01,
+  "confinement rung 2 at plant-efficiency rung 1 sells 87.8 MW full -- still covered", "MW")
+near(sells_mw(0, 2, 1, 0.85), 93.8, 0.02,
+  "and 93.8 MW tuned -- #395's falsification of 'tuned or not'", "MW")
+
+-- AND THE FAR CORNER, so the comment's "a second machine is wanted" has a size rather than a
+-- direction: every ladder at its top is 211.2 MW, which is 2.35 exchangers -- two of them and a
+-- third machine a third used.
+near(sells_mw(#HEAT_LADDER, #LADDER, #CAPTURE_LADDER), 211.2, 0.01,
+  "all three ladders at their tops: 211.2 MW at full supply", "MW")
+check(sells_mw(#HEAT_LADDER, #LADDER, #CAPTURE_LADDER) > 2 * sells_mw(0, 0, 0),
+  "the corner of the grid is more than twice the shipped reactor, so one machine cannot be sized "
+  .. "for both",
+  string.format("%.1f MW against %.1f", sells_mw(#HEAT_LADDER, #LADDER, #CAPTURE_LADDER),
+    sells_mw(0, 0, 0)))
 
 -- THE PROGRESSION THE TICKET ASKS FOR, stated as the claim rather than as three numbers: below
 -- break-even unresearched, above it with the ladder done, and no rung wasted in between.

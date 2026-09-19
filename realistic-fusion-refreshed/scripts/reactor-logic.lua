@@ -1354,15 +1354,22 @@ end
 -- @param paid_j       electrical energy spent on heating per step, or math.huge for a reactor
 --                     that is never starved
 -- @param dt           step size in seconds
+-- @param capture       plant-efficiency recovery for the force being modelled, or nil for the
+--                      spec's own unresearched constant. Forwarded to M.step unchanged, which is
+--                      the whole of it: ADR 0020 decision 5 keeps capture_efficiency an ARGUMENT
+--                      and never a spec field, and a caller that wanted to vary it had to write
+--                      its own loop or overwrite the field on a copy of the spec -- which is the
+--                      thing that decision forbids. control.lua passes nothing here, because its
+--                      load guard is sited at the unresearched state on purpose.
 -- @return the settled temperature in celsius, and the last step's result table
 --
 -- A COARSER dt SETTLES HOTTER, by about 2% at dt = 1 s against a tick. That is the safe direction
 -- for the guard and the wrong one for a published figure, which is why the tests below run this at
 -- a tick and control.lua runs it at the cadence the game actually steps.
-function M.settle(spec, fluid_name, amount, seconds, paid_j, dt)
+function M.settle(spec, fluid_name, amount, seconds, paid_j, dt, capture)
   local t_c, last = spec.min_temperature_c, nil
   for _ = 1, math.floor(seconds / dt) do
-    local result = M.step(spec, fluid_name, amount, t_c, paid_j, dt)
+    local result = M.step(spec, fluid_name, amount, t_c, paid_j, dt, capture)
     if not result then break end
     last = result
     t_c = result.temperature_c
