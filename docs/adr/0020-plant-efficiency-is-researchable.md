@@ -92,7 +92,8 @@ the remaining gap to a ceiling of 0.95.**
    shares. Research is per force, so it becomes an argument to `step()` instead — which keeps
    `reactor-logic.lua` free of anything Factorio and allocates nothing per step, with
    [#63](https://github.com/trulsjo/realistic-fusion-refreshed/issues/63) and
-   [#66](https://github.com/trulsjo/realistic-fusion-refreshed/issues/66) open on per-step cost. The
+   [#66](https://github.com/trulsjo/realistic-fusion-refreshed/issues/66) open on per-step cost —
+   both of which are closed now, and the decision is left as it was written (#431). The
    level is cached per force and invalidated on `on_research_finished`, never read from
    `entity.force.technologies` inside the step loop.
 

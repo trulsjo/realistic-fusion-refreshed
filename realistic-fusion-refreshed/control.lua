@@ -166,7 +166,9 @@ end
 -- ladder walk would go, on a cache miss and never in the loop.
 --
 -- WHAT #94 COST: NOTHING THIS MACHINE CAN SEE, which is the honest form of the answer and not a
--- claim of zero. #63 and #66 are open on per-step cost, so it was measured rather than argued.
+-- claim of zero. #63 and #66 were open on per-step cost when this was taken, so it was measured
+-- rather than argued; both are closed now, and the sentence is kept because it records WHY the
+-- measurement below exists rather than pointing a reader at somewhere to take another one.
 -- bench-reactors.ps1 -Blankets -Collectors -Gap 6 -Counts @(0,200) -Runs 10, swapped against the
 -- parent commit and back in one sitting: 8.035 and 8.067 microseconds per reactor against 7.982 and
 -- 7.877, so +0.12 us nominal over TWO pairs, covering #93 and #94 together -- this lookup, the
