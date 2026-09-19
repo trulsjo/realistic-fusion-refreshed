@@ -1349,9 +1349,17 @@ end
 --- The spec one confinement rung up, at the shipped heating power.
 local function at_rung(level) return at_rungs(0, level) end
 
---- Q at one rung and one fill of the input box.
+--- Q at one confinement rung and one fill of the input box, at the shipped heating power.
 local function q_at(level, fill)
   local _, state = settle(at_rung(level), SETTLE_S, math.huge, nil, nil, FULL * (fill or 1))
+  return state.q_factor
+end
+
+--- Q at one rung of each ladder and one fill, for the claims a confinement tooltip makes about
+--- what a heating rung does to it.
+local function q_at_heated(tau_level, heat_level, fill)
+  local _, state = settle(at_rungs(heat_level, tau_level), SETTLE_S, math.huge, nil, nil,
+    FULL * (fill or 1))
   return state.q_factor
 end
 
@@ -1436,6 +1444,30 @@ check(q_at(3) > 1, "rung 3's tooltip is true: a FULL reactor is net positive",
 check(top_gain < 0.10 and unresearched_gain > 0.30,
   "and tuning the supply is worth under 10% there, against over 30% unresearched",
   string.format("%.1f%% at rung 3, %.1f%% unresearched", top_gain * 100, unresearched_gain * 100))
+
+-- AND THE QUALIFIER BOTH OF THOSE STRINGS GAINED (#425, found in review). Every claim in the two
+-- blocks above is measured at BASE HEATING, and each string used to state it unqualified -- which
+-- was complete while there was one ladder and became a tooltip sending a player to solve a problem
+-- they no longer have. Each now says "on base heating" and says what one heating rung does to it;
+-- these are those two sentences.
+--
+-- Rung 2: full supply misses break-even on base heating and clears it with one heating rung, so
+-- the density choice the string is about is settled for the player rather than posed to them.
+near(q_at_heated(2, 1, 1), 1.1263, 0.01,
+  "rung 2 with one heating rung clears break-even held FULL, which its tooltip now says")
+check(q_at(2) < 1 and q_at_heated(2, 1, 1) > 1,
+  "so the string's 'on base heating' is load-bearing rather than tidy",
+  string.format("Q %.4f at base heating, %.4f with one rung", q_at(2), q_at_heated(2, 1, 1)))
+
+-- Rung 3: "the four per cent left here" is base heating too, and one heating rung leaves nothing
+-- at all -- the curve block below measures the optimum going to full supply there. Asserted here
+-- as the GAIN rather than as the optimum, because the gain is what the string quotes.
+near(top_gain, 0.043, 0.02, "the four per cent the string quotes is 4.3% on base heating")
+check(q_at_heated(3, 1, 0.9) < q_at_heated(3, 1, 1),
+  "and one heating rung leaves full supply simply best, which is the clause it gained",
+  string.format("Q %.4f at 90%% against %.4f full -- tuning down COSTS %.1f%%",
+    q_at_heated(3, 1, 0.9), q_at_heated(3, 1, 1),
+    (1 - q_at_heated(3, 1, 0.9) / q_at_heated(3, 1, 1)) * 100))
 
 -- -------------------------------------------- the heating ladder's own claims (#425, ADR 0038)
 --
@@ -1850,7 +1882,7 @@ near(per_heater("rf-he3-he3-plasma"), 18.2466, 0.01,
 -- direction for a guard and the wrong one for a published figure.
 local GUARD_DT = 6 / 60
 
-check(L.confinement_ladder_overruns(SPEC, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT) == nil,
+check(L.ladders_overrun(SPEC, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT) == nil,
   "the shipped ladder does not reach the clamp",
   string.format("top rung %g s settles at %.4g C, clamp %.4g C", TOP.confinement_time_s,
     settle(at_rung(#LADDER), SETTLE_S, math.huge, GUARD_DT), SPEC.max_temperature_c))
@@ -1880,7 +1912,7 @@ end
 OVERRUN.confinement_ladder[#OVERRUN.confinement_ladder + 1] =
   { technology = "rf-plasma-confinement-4", confinement_time_s = 200 }
 
-local overrun_at = L.confinement_ladder_overruns(OVERRUN, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT)
+local overrun_at = L.ladders_overrun(OVERRUN, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT)
 check(overrun_at ~= nil, "a ladder that pins its own spec's clamp is caught",
   overrun_at and string.format("%.6g C", overrun_at) or "NOT CAUGHT")
 -- `or 0` follows this file's rule that a nil is a failure and not an error: H.near would throw on
@@ -1891,8 +1923,46 @@ near(overrun_at or 0, OVERRUN.max_temperature_c, 0,
 
 -- A spec with no ladder at all is not an overrun, it is nothing to check. The aneutronic reactor is
 -- exactly that case and passes through control.lua's loop untouched.
-check(L.confinement_ladder_overruns(ANEUTRONIC, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT) == nil,
+check(L.ladders_overrun(ANEUTRONIC, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT) == nil,
   "a reactor with no ladder has nothing to overrun")
+
+-- AND IT READS EVERY SPEC LADDER, NOT THE CONFINEMENT ONE (#425, found in review). This guard took
+-- the top confinement rung and left every other field shipped, which was sufficient while there
+-- was one ladder and silently insufficient the moment there were two: the ladders are independent,
+-- so a force can hold the top of both, and heating power raises the settled temperature as well.
+--
+-- THE CONFINEMENT LADDER IS LEFT SHIPPED IN THIS SPEC, which is what makes the check about the
+-- heating axis alone. Against the old one-axis guard this spec is safe -- 6.483e8 C at the top
+-- confinement rung and base heating, nowhere near a 2e9 clamp -- so the only thing that can catch
+-- it is the guard reading the heating ladder's top rung.
+local HEAT_OVERRUN = {}
+for k, v in pairs(SPEC) do HEAT_OVERRUN[k] = v end
+HEAT_OVERRUN.max_temperature_c = 2e9
+HEAT_OVERRUN.heating_ladder = {}
+for _, rung in ipairs(HEAT_LADDER) do
+  HEAT_OVERRUN.heating_ladder[#HEAT_OVERRUN.heating_ladder + 1] = rung
+end
+HEAT_OVERRUN.heating_ladder[#HEAT_OVERRUN.heating_ladder + 1] =
+  { technology = "rf-plasma-heating-6", heating_power_w = 2000e6 }
+
+-- The control, and it is what makes the line after it mean anything: with the heating ladder left
+-- exactly as it ships, this same spec and clamp are safe. So the catch below is the added rung and
+-- not the lowered ceiling.
+local HEAT_SAFE = {}
+for k, v in pairs(SPEC) do HEAT_SAFE[k] = v end
+HEAT_SAFE.max_temperature_c = 2e9
+check(L.ladders_overrun(HEAT_SAFE, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT) == nil,
+  "the shipped heating ladder does not pin a 2e9 clamp, so the next line is about the added rung",
+  string.format("%.6g C at the top of both shipped ladders",
+    settle(at_rungs(#HEAT_LADDER, #LADDER), SETTLE_S, math.huge, GUARD_DT)))
+
+local heat_overrun_at =
+  L.ladders_overrun(HEAT_OVERRUN, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT)
+check(heat_overrun_at ~= nil,
+  "a HEATING rung that pins the clamp is caught, on a spec whose confinement ladder is untouched",
+  heat_overrun_at and string.format("%.6g C", heat_overrun_at) or "NOT CAUGHT")
+near(heat_overrun_at or 0, HEAT_OVERRUN.max_temperature_c, 0,
+  "and it reports the clamp, the same reading the confinement half does")
 
 -- AND THE WAY THE GUARD USED TO LIE, which is worth a test of its own because it made every line
 -- above meaningless without failing any of them. Asked about a plasma with no fuel row, step()
@@ -1903,7 +1973,7 @@ check(L.confinement_ladder_overruns(ANEUTRONIC, SPEC.confinement_guard_fuel, FUL
 -- The SAME overrunning ladder is used for both halves deliberately: it is caught above with the
 -- fuel named correctly, so if this half stopped raising, the pair would disagree about a ladder
 -- that is definitely unsafe rather than about one that is definitely fine.
-local raised, message = pcall(L.confinement_ladder_overruns,
+local raised, message = pcall(L.ladders_overrun,
   OVERRUN, "rf-not-a-plasma", FULL, SETTLE_S, GUARD_DT)
 check(raised == false, "an unsimulatable guard fuel raises rather than reporting the ladder safe",
   raised and "RETURNED, so the guard can still be switched off silently" or "raised")
@@ -1914,10 +1984,10 @@ check(type(message) == "string" and message:find("rf%-not%-a%-plasma", 1, false)
 -- The other two ways to ask and get no answer. Neither can happen from control.lua -- it passes a
 -- prototype's own volume and a fixed horizon -- but they reach the same nil and must reach the same
 -- refusal, or the fix above is about one input rather than about the property.
-check(select(1, pcall(L.confinement_ladder_overruns,
+check(select(1, pcall(L.ladders_overrun,
     OVERRUN, SPEC.confinement_guard_fuel, 0, SETTLE_S, GUARD_DT)) == false,
   "an empty reactor raises too, rather than passing a ladder it never ran")
-check(select(1, pcall(L.confinement_ladder_overruns,
+check(select(1, pcall(L.ladders_overrun,
     OVERRUN, SPEC.confinement_guard_fuel, FULL, 0, GUARD_DT)) == false,
   "and so does a horizon too short for a single step")
 
@@ -1995,7 +2065,8 @@ near(L.capture_efficiency(SPEC, has("rf-plant-efficiency-1", "rf-plant-efficienc
   "rf-plant-efficiency-3")), 0.9375, 0, "and the whole line reaches the top rung")
 -- THE HIGHEST RUNG WINS, NOT THE COUNT, which matters for a force granted level 3 from the console
 -- without the two below it. The prerequisite chain is a player-facing ordering and the simulation
--- may not assume it held -- the same reasoning M.confinement_time is written under.
+-- may not assume it held -- the same reasoning M.resolve_ladder is written under, which is the one
+-- rung walk every ladder has shared since #424.
 near(L.capture_efficiency(SPEC, has("rf-plant-efficiency-3")), 0.9375, 0,
   "a force granted only the top rung gets the top rung, not one level of anything")
 near(L.capture_efficiency(SPEC, has("rf-plant-efficiency-2")), 0.925, 0, "and only the middle one, the middle one")

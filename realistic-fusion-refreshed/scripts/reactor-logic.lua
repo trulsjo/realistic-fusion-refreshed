@@ -537,7 +537,7 @@ M.reactor = {
   -- already has (docs/research/d-t-ignition.md) -- at about 175 s in this model, so 60 s is not
   -- near it. That is a bound rather than a target, and control.lua's check_confinement_ladder
   -- refuses to load a ladder whose top rung crosses it, because it is a developer edit that would
-  -- otherwise fail silently in a player's save. M.confinement_ladder_overruns below is the decision
+  -- otherwise fail silently in a player's save. M.ladders_overrun below is the decision
   -- it makes.
   --
   -- NEUTRONIC ONLY. M.aneutronic_reactor deliberately has no ladder: #52 settled that tier's
@@ -1344,7 +1344,7 @@ end
 -- Here rather than in a test file because control.lua's load guard needs the same answer the tests
 -- do, and #51 is the record of what two implementations of one piece of arithmetic cost. The
 -- reactor is held full and given all the power it asks for, which is the operating point the guard
--- is sited at -- see M.confinement_ladder_overruns.
+-- is sited at -- see M.ladders_overrun.
 --
 -- @param spec         reactor constants
 -- @param fluid_name   the plasma to run
@@ -1475,9 +1475,9 @@ function M.density_curve(spec, fluid_name, capacity)
   return { optimum = fills[best], floor = floor_fill, step = FILL_STEP }
 end
 
---- Does the top of this spec's ladder park the plasma against max_temperature_c?
+--- Does the top of this spec's ladders park the plasma against max_temperature_c?
 --
--- @return nil when the ladder is safe, otherwise the temperature its top rung settles at
+-- @return nil when the ladders are safe, otherwise the temperature their top rungs settle at
 --
 -- THE DEFECT THIS EXISTS FOR is a developer edit, not anything a player can do: a rung added or
 -- raised far enough leaves D-D settled at the clamp, where it inherits the pinned temperature
@@ -1486,8 +1486,21 @@ end
 -- loads perfectly with that ladder and only a player's save shows it, which is the same reason
 -- every other invariant in control.lua's check_prototypes is checked at load.
 --
--- THE TOP RUNG ALONE, because the settled temperature rises monotonically with confinement time --
--- every rung below the top is cooler than it by construction.
+-- THE TOP RUNG OF EVERY SPEC LADDER, because that is the hottest state a force can actually reach.
+-- This used to take the top of the CONFINEMENT ladder alone and leave every other field at its
+-- shipped value, on the argument that the settled temperature rises monotonically with confinement
+-- time so every lower rung is cooler by construction. The argument is still true and it stopped
+-- being sufficient the moment a second ladder existed (#425, ADR 0038): the ladders are
+-- independent, so a force can hold the top of both, and heating power raises the settled
+-- temperature too. Measured at the moment it was caught -- 6.483e8 C in the state this simulated
+-- against 1.183e9 C in the state a fully-researched force runs, 1.8x hotter. Found in review of
+-- #425; the same review found check_input_flow had been taught to read the heating ladder's top
+-- and this had not.
+--
+-- ONE STATE RATHER THAN THE WHOLE GRID, and the monotonicity is what buys that: every field
+-- M.spec_ladders moves raises the settled temperature, so the corner where all of them are at
+-- their top rung dominates all 24 states a force can be in. A sweep would settle the plasma
+-- twenty-four times for one answer.
 --
 -- AT FULL SUPPLY, WHICH IS THE REFERENCE OPERATING POINT AND NOT THE HOTTEST ONE. The distinction
 -- was got wrong once on the way here and is worth keeping: a thinner plasma settles HOTTER, and
@@ -1505,13 +1518,19 @@ end
 --
 -- IT RAISES RATHER THAN ANSWERING WHEN IT CANNOT SIMULATE, and that case is the whole reason this
 -- function has more than two lines in it. See the note on `last` below.
-function M.confinement_ladder_overruns(spec, fluid_name, amount, seconds, dt)
+function M.ladders_overrun(spec, fluid_name, amount, seconds, dt)
   local ladder = spec.confinement_ladder
   if not ladder or #ladder == 0 then return nil end
 
+  -- The corner where every spec ladder is at its top rung. Built by walking M.spec_ladders rather
+  -- than by naming confinement_time_s, so a third ladder is guarded without an edit here -- the
+  -- same generalisation #424 made to the rung walk itself, one level up.
   local top = {}
   for k, v in pairs(spec) do top[k] = v end
-  top.confinement_time_s = ladder[#ladder].confinement_time_s
+  for _, each in ipairs(M.spec_ladders) do
+    local rungs = spec[each.rungs]
+    if rungs and #rungs > 0 then top[each.field] = rungs[#rungs][each.field] end
+  end
 
   local t_c, last = M.settle(top, fluid_name, amount, seconds, math.huge, dt)
 
@@ -1548,8 +1567,8 @@ function M.confinement_ladder_overruns(spec, fluid_name, amount, seconds, dt)
   -- edited, where a nil is indistinguishable from an answer.
   if not last then
     error(string.format(
-      "confinement_ladder_overruns: nothing was simulated for the top rung (%s, %g s), so the " ..
-      "ladder cannot be guarded and must not be reported safe. The plasma asked for was '%s' -- " ..
+      "ladders_overrun: nothing was simulated for the top rung (%s, %g s), so the " ..
+      "ladders cannot be guarded and must not be reported safe. The plasma asked for was '%s' -- " ..
       "give confinement_guard_fuel the name of one M.fuels carries, beside the ladder itself.",
       tostring(ladder[#ladder].technology), ladder[#ladder].confinement_time_s,
       tostring(fluid_name)))
@@ -1680,7 +1699,7 @@ end
 -- @param fluid_max   the fluid's max_temperature
 -- @return nil, or one of "min-below-fluid", "min-above-fluid", "max-above-fluid"
 --
--- Here rather than in control.lua for the reason M.confinement_ladder_overruns is: the decision is
+-- Here rather than in control.lua for the reason M.ladders_overrun is: the decision is
 -- arithmetic over a spec and two numbers, so tests/test-reactor-logic.lua can drive it directly and
 -- watch it fire. control.lua supplies the prototypes and the wording and owns none of the reasoning.
 --
