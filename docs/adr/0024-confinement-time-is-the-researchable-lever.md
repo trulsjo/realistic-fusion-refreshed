@@ -142,6 +142,14 @@ load-time invariant; it settles a full reactor at the top rung — about 40 ms, 
 six-tick cadence — and refuses over the result. It also refuses if a rung names a technology no loaded
 mod defines, or if a spec carries a ladder but names no fuel to guard it with.
 
+> **Two corrections, 2026-09-19 (#425).** The function is `check_ladder_clamp()` now: heating power
+> raises the settled temperature too, so it settles the top of EVERY spec ladder at once rather than
+> this one's alone, and the old name had stopped describing it. And it was never the *eleventh*
+> invariant — it was the fourth of thirteen when this ADR was written and is the fifth of fourteen
+> now. The ordinal was wrong on the day and nothing turned on it; the rest of the sentence holds.
+> Separately, the technology-existence half moved out to `check_ladder_prototypes()` in #424, which
+> asks it of all three ladders at once.
+
 **7. The guard is sited at full supply as the *reference operating point*, not as the hottest one.**
 See the correction below; this is the half of the decision that changed under measurement.
 

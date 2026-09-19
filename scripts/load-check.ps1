@@ -49,20 +49,23 @@
                                   rung short in a player's save. One check for all three ladders
                                   since #424, where the confinement and plant-efficiency guards
                                   each carried a copy of the loop.
-      check_confinement_ladder()  The confinement ladder against the simulation's own temperature
-                                  clamp. Research raises confinement time (#53), and a rung raised
-                                  far enough leaves D-D settled AT the clamp -- where its
-                                  thermometer stops moving and further research does nothing a
-                                  player can see. It settles a full reactor at the top rung to
-                                  find out, which is why it costs about 40 ms and why it is here
-                                  rather than at the data stage.
+      check_ladder_clamp()        Every research ladder on a reactor against the simulation's own
+                                  temperature clamp. Research raises confinement time (#53) and
+                                  heating power (#425), and a rung raised far enough leaves D-D
+                                  settled AT the clamp -- where its thermometer stops moving and
+                                  further research does nothing a player can see. It settles a
+                                  full reactor at the top of EVERY ladder at once, which is the
+                                  hottest state a force can reach, and costs about 40 ms; that is
+                                  why it is here rather than at the data stage. It was named
+                                  check_confinement_ladder until #425's review, when it stopped
+                                  being about one ladder.
       check_plant_efficiency()    The plant-efficiency ladder against its own ceiling.
                                   capture_efficiency is the only term standing between this mod
                                   and perpetual motion (#96, ADR 0020), and a research line into
                                   it is permitted only because each rung halves the remaining gap
                                   to a ceiling below 1.0 -- so a rung that reaches the ceiling is
                                   not a number that is too big, it is the guard being switched
-                                  off. Four comparisons, where check_confinement_ladder above has
+                                  off. Four comparisons, where check_ladder_clamp above has
                                   to settle a plasma.
       check_plasma_bounds()       The simulation's temperature clamps against every plasma
                                   fluid's declared range, in BOTH directions. Widen the ceiling

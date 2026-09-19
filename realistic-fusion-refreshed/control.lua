@@ -886,10 +886,17 @@ end
 -- it delivered nothing. The average was a correct 50 MW and the peak was 60, so a plant had to be
 -- sized a fifth above what the reactor really consumes and the tooltip flickered at 10 Hz.
 --
--- That could not be tuned away in the prototype. input_flow_limit = "60MW" is the STRUCTURAL
+-- That could not be tuned away in the prototype. 60 MW of input_flow_limit was the STRUCTURAL
 -- MINIMUM for five delivering ticks to cover six ticks of heating -- 50 MW there gives 4.17 MJ
 -- against the 5 MJ wanted and starves the reactor for ever at 83% -- and anything above 60 flickers
 -- harder. Spending per tick is the only thing that removes the shape rather than moving it.
+--
+-- BOTH FIGURES IN THAT PARAGRAPH ARE THE ONES THE RETIRED DESIGN HAD, and the tense is the only
+-- thing that changed here. It read `input_flow_limit = "60MW" is the structural minimum`, present
+-- tense, which described the live prototype until #425 took it to 90 MW to cover the top of the
+-- heating ladder. The arithmetic is about per-STEP spending and is untouched by that -- nothing
+-- below spends per step any more -- but a sentence stating a prototype value in the present tense
+-- is read as the current one. Found in review of #425, which is the diff that moved the number.
 --
 -- WHAT IT COSTS is one energy read and one energy write per reactor per tick, against the nine
 -- boundary crossings a full step makes. The expensive fluidbox work stays on UPDATE_INTERVAL, so
@@ -1632,7 +1639,7 @@ local function check_plasma_bounds()
     end
     for reactor, spec in pairs(SPECS) do
       -- THE DECISION IS reactor-logic's, THE WORDING IS THIS FILE'S (#107), which is the same seam
-      -- check_confinement_ladder works over. Two faults share a message and one does not, because
+      -- check_ladder_clamp works over. Two faults share a message and one does not, because
       -- the third is a different failure with a different cause -- see below.
       local fault = logic.plasma_bounds_fault(spec, fluid.default_temperature, fluid.max_temperature)
       if fault == "min-above-fluid" then
@@ -1893,7 +1900,7 @@ local LADDER_GUARD_SECONDS = 1200
 -- quietly stops one rung short in a player's save, with nothing said anywhere. A mod that will not
 -- start names the rung and the file it is in.
 --
--- ONE COPY FOR EVERY LADDER. check_confinement_ladder and check_plant_efficiency each carried this
+-- ONE COPY FOR EVERY LADDER. check_ladder_clamp and check_plant_efficiency each carried this
 -- loop, byte-similar apart from the message, and ADR 0038's heating ladder would have been a
 -- third. The field name and the rung's own value go into the message so it stays as specific as
 -- the two it replaces.
@@ -1923,15 +1930,20 @@ local function check_ladder_prototypes()
   end
 end
 
-local function check_confinement_ladder()
+-- ~~check_confinement_ladder~~ RENAMED IN #425's REVIEW, because it had stopped being about one
+-- ladder. Heating power raises the settled temperature too, so the state this has to guard is the
+-- top of EVERY spec ladder at once -- and the gate on the way in has to admit every spec that has
+-- one, not the specs that happen to have the confinement one. It read `if spec.confinement_ladder`
+-- and so would have skipped a reactor carrying a heating ladder alone, silently, which is the
+-- #424 defect reappearing in the guard rather than in the resolver.
+local function check_ladder_clamp()
   for name, spec in pairs(SPECS) do
-    if spec.confinement_ladder then
+    if logic.has_spec_ladder(spec) then
       -- Box 1 is the plasma box -- the same index update() reads the plasma out of, so the two
       -- cannot come to disagree about which box this is. Full, which is the reference operating
       -- point rather than the hottest one: see the note on ladders_overrun, which is
       -- where the argument for checking that one point lives.
       local volume = prototypes.entity[name].fluidbox_prototypes[1].volume
-      local top = spec.confinement_ladder[#spec.confinement_ladder]
       -- Two questions, not one, and they are asked in two places on purpose. This one is whether
       -- the spec NAMED a fuel; reactor-logic's is whether the name WORKS, and it raises rather
       -- than answering when it cannot simulate -- which is what stops a mistyped name switching
@@ -1940,21 +1952,25 @@ local function check_confinement_ladder()
       local fuel = spec.confinement_guard_fuel
       if not fuel then
         error(string.format(
-          "%s: has a confinement ladder but no confinement_guard_fuel, so there is no plasma to " ..
+          "%s: has a research ladder but no confinement_guard_fuel, so there is no plasma to " ..
           "settle it against and the ladder would go unguarded. Name one in " ..
           "scripts/reactor-logic.lua, beside the ladder.", name))
       end
-      local reached = logic.ladders_overrun(spec, fuel, volume,
+      -- `corner` names the rungs that put the plasma where it is, rather than this file guessing
+      -- that the confinement ladder's top rung was responsible. It used to name that rung whatever
+      -- had actually overrun, which on a two-ladder reactor is a message pointing at the wrong
+      -- technology.
+      local reached, corner = logic.ladders_overrun(spec, fuel, volume,
         LADDER_GUARD_SECONDS, UPDATE_INTERVAL / 60)
       if reached then
         error(string.format(
-          "%s: the confinement ladder's top rung (%s, %g s) settles %s at %.6g C, which is the " ..
+          "%s: the top of its research ladders (%s) settles %s at %.6g C, which is the " ..
           "simulation's own clamp of %.6g C -- so the reactor's temperature would be pinned there " ..
-          "and further research would do nothing a player can see. Lower the top rung or shorten " ..
-          "the ladder in scripts/reactor-logic.lua.",
-          name, top.technology, top.confinement_time_s, fuel, reached, spec.max_temperature_c))
+          "and further research would do nothing a player can see. Lower a top rung or shorten a " ..
+          "ladder in scripts/reactor-logic.lua.",
+          name, corner, fuel, reached, spec.max_temperature_c))
       end
-      -- The prototypes this ladder names have to exist too, and check_ladder_prototypes() above
+      -- The prototypes these ladders name have to exist too, and check_ladder_prototypes() above
       -- is where that is asked -- of every ladder at once, since #424.
     end
   end
@@ -1962,7 +1978,7 @@ end
 
 --- Refuse to load a plant-efficiency ladder that reaches its own ceiling (#96, ADR 0020).
 --
--- THE SIBLING OF check_confinement_ladder ABOVE, and a much cheaper one: that guard has to settle
+-- THE SIBLING OF check_ladder_clamp ABOVE, and a much cheaper one: that guard has to settle
 -- a plasma for twenty minutes of game time to find out where a rung lands, and this one compares
 -- four numbers. They are here for the same reason, though, and it is not balance. ADR 0020 permits
 -- a research line into capture_efficiency ONLY because each rung halves the remaining gap to a
@@ -2002,7 +2018,7 @@ local function check_prototypes()
   check_reactor_specs()
   check_input_flow()
   check_ladder_prototypes()
-  check_confinement_ladder()
+  check_ladder_clamp()
   check_plant_efficiency()
   check_plasma_bounds()
   check_signal_ceiling()
