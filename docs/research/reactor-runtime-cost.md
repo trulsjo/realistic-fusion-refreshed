@@ -1567,7 +1567,8 @@ naming is `fluidbox.get_capacity`, which asks for a box's **declared volume** �
 constant. A vented reactor that is producing makes that call once a step (in `apply()`, inside
 the `MIN_FLUID` guard); a collected D-D reactor makes it **four** times, adding the blanket headroom
 read (`apply()` again, on every collected reactor whether or not a blanket exists) and one per by-product box
-inside `deposit()`. Caching them at load is the shape of the change, and `check_confinement_ladder()`
+inside `deposit()`. Caching them at load is the shape of the change, and `check_ladder_clamp()`
+(named `check_confinement_ladder()` when this was written; renamed in #425)
 already reads a box volume out of `prototypes.entity` at load, so the machinery exists.
 
 **It is a candidate and not a plan, for three reasons.** One call is at most about 0.18 µs — a

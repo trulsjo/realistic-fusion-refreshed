@@ -1871,7 +1871,7 @@ near(per_heater("rf-he3-he3-plasma"), 18.2466, 0.01,
 
 -- ------------------------------------------------------------------------------- the guard (#53)
 --
--- control.lua's check_confinement_ladder refuses to load a ladder whose top rung settles D-D
+-- control.lua's check_ladder_clamp refuses to load a ladder whose top rung settles D-D
 -- against max_temperature_c, where the reactor inherits the pinned temperature reading the D-T tier
 -- already has and further research stops doing anything a player can see. The DECISION is
 -- reactor-logic's so that it can be broken here; control.lua supplies only the operating point and
@@ -1956,13 +1956,40 @@ check(L.ladders_overrun(HEAT_SAFE, SPEC.confinement_guard_fuel, FULL, SETTLE_S, 
   string.format("%.6g C at the top of both shipped ladders",
     settle(at_rungs(#HEAT_LADDER, #LADDER), SETTLE_S, math.huge, GUARD_DT)))
 
-local heat_overrun_at =
+local heat_overrun_at, heat_corner =
   L.ladders_overrun(HEAT_OVERRUN, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT)
 check(heat_overrun_at ~= nil,
   "a HEATING rung that pins the clamp is caught, on a spec whose confinement ladder is untouched",
   heat_overrun_at and string.format("%.6g C", heat_overrun_at) or "NOT CAUGHT")
 near(heat_overrun_at or 0, HEAT_OVERRUN.max_temperature_c, 0,
   "and it reports the clamp, the same reading the confinement half does")
+
+-- AND IT NAMES THE RUNGS THAT PUT IT THERE, which is the half that makes the refusal actionable.
+-- control.lua used to print the CONFINEMENT ladder's top rung whatever had overrun, so a heating
+-- rung's fault was reported against a technology that was innocent of it.
+check(type(heat_corner) == "string" and heat_corner:find("rf%-plasma%-heating%-6") ~= nil,
+  "and it names the heating rung responsible rather than a confinement one",
+  tostring(heat_corner))
+
+-- THE GATE ON THE WAY IN, ASKED OF A SPEC WITH NO CONFINEMENT LADDER AT ALL. This is the case the
+-- whole generalisation is for and the one that was silently unguarded: ladders_overrun read
+-- `spec.confinement_ladder` and returned "safe" for anything without one, so a reactor carrying a
+-- heating ladder alone would have skipped the clamp guard entirely -- having simulated nothing.
+-- Found in review of #425, and it is #424's own defect reappearing one level down.
+local HEAT_ONLY = {}
+for k, v in pairs(HEAT_OVERRUN) do HEAT_ONLY[k] = v end
+HEAT_ONLY.confinement_ladder = nil
+check(L.has_spec_ladder(HEAT_ONLY),
+  "a spec with a heating ladder and no confinement ladder still has a spec ladder")
+local heat_only_at = L.ladders_overrun(HEAT_ONLY, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT)
+check(heat_only_at ~= nil,
+  "and it is still guarded, where the gate used to let it through unsimulated",
+  heat_only_at and string.format("%.6g C", heat_only_at) or "NOT CAUGHT")
+
+-- The other direction of the same gate: a spec with NO ladder of any kind is still nothing to
+-- check, which is the early return the aneutronic reactor relies on.
+check(L.ladders_overrun(ANEUTRONIC, SPEC.confinement_guard_fuel, FULL, SETTLE_S, GUARD_DT) == nil,
+  "while a spec with no ladder of any kind is still nothing to overrun")
 
 -- AND THE WAY THE GUARD USED TO LIE, which is worth a test of its own because it made every line
 -- above meaningless without failing any of them. Asked about a plasma with no fuel row, step()

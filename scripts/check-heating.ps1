@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
     Checks that the plasma-heating ladder is per force and that a rung arrives as a bigger bill:
-    four forces on one map, same reactor, same plasma, different research -- four different draws,
-    four different temperatures, four different breeding rates. Discharges #425.
+    four forces on one map, same reactor, same plasma -- and each one drawing exactly the megawatts
+    its own research says, a hotter plasma for it, and more tritium bred. Discharges #425.
 
 .DESCRIPTION
     ADR 0038 makes heating power the second researchable lever on rf-reactor. The Lua suite drives

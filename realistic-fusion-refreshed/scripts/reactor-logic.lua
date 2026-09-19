@@ -535,7 +535,7 @@ M.reactor = {
   -- WHY IT STOPS THERE, which is the half a future proposal has to read first. Taken far enough D-D
   -- settles against max_temperature_c and inherits the pinned temperature reading the D-T tier
   -- already has (docs/research/d-t-ignition.md) -- at about 175 s in this model, so 60 s is not
-  -- near it. That is a bound rather than a target, and control.lua's check_confinement_ladder
+  -- near it. That is a bound rather than a target, and control.lua's check_ladder_clamp
   -- refuses to load a ladder whose top rung crosses it, because it is a developer edit that would
   -- otherwise fail silently in a player's save. M.ladders_overrun below is the decision
   -- it makes.
@@ -1518,19 +1518,35 @@ end
 --
 -- IT RAISES RATHER THAN ANSWERING WHEN IT CANNOT SIMULATE, and that case is the whole reason this
 -- function has more than two lines in it. See the note on `last` below.
+-- @return nil when safe; otherwise the settled temperature AND a description of the corner it was
+--         settled at, so whoever reads the refusal is told which rungs put the plasma there.
+--
+-- ASKED OF EVERY SPEC LADDER, INCLUDING AT THE DOOR. This gated on `spec.confinement_ladder` and
+-- returned nil for anything without one, which was the #424 defect surviving inside the function
+-- #425 had just generalised: the body walked M.spec_ladders while the guard on the way in named a
+-- single ladder, so a spec carrying a heating ladder and no confinement ladder would have been
+-- reported safe without simulating anything. Latent rather than live -- rf-reactor carries both --
+-- and found in review of #425 by the same reading that caught the one-axis worst case.
 function M.ladders_overrun(spec, fluid_name, amount, seconds, dt)
-  local ladder = spec.confinement_ladder
-  if not ladder or #ladder == 0 then return nil end
+  if not M.has_spec_ladder(spec) then return nil end
 
-  -- The corner where every spec ladder is at its top rung. Built by walking M.spec_ladders rather
-  -- than by naming confinement_time_s, so a third ladder is guarded without an edit here -- the
-  -- same generalisation #424 made to the rung walk itself, one level up.
-  local top = {}
+  -- The corner where every spec ladder is at its top rung, and the words for it. Built by walking
+  -- M.spec_ladders rather than by naming confinement_time_s, so a third ladder is guarded -- and
+  -- NAMED in the refusal -- without an edit here. Both error messages below read `corner` rather
+  -- than the confinement ladder's top rung, which is what they used to name whatever had actually
+  -- overrun.
+  local top, named = {}, {}
   for k, v in pairs(spec) do top[k] = v end
   for _, each in ipairs(M.spec_ladders) do
     local rungs = spec[each.rungs]
-    if rungs and #rungs > 0 then top[each.field] = rungs[#rungs][each.field] end
+    if rungs and #rungs > 0 then
+      local rung = rungs[#rungs]
+      top[each.field] = rung[each.field]
+      named[#named + 1] = string.format("%s at %s %g",
+        tostring(rung.technology), each.field, rung[each.field])
+    end
   end
+  local corner = table.concat(named, ", and ")
 
   local t_c, last = M.settle(top, fluid_name, amount, seconds, math.huge, dt)
 
@@ -1567,14 +1583,13 @@ function M.ladders_overrun(spec, fluid_name, amount, seconds, dt)
   -- edited, where a nil is indistinguishable from an answer.
   if not last then
     error(string.format(
-      "ladders_overrun: nothing was simulated for the top rung (%s, %g s), so the " ..
-      "ladders cannot be guarded and must not be reported safe. The plasma asked for was '%s' -- " ..
+      "ladders_overrun: nothing was simulated at the top of this reactor's ladders (%s), so they " ..
+      "cannot be guarded and must not be reported safe. The plasma asked for was '%s' -- " ..
       "give confinement_guard_fuel the name of one M.fuels carries, beside the ladder itself.",
-      tostring(ladder[#ladder].technology), ladder[#ladder].confinement_time_s,
-      tostring(fluid_name)))
+      corner, tostring(fluid_name)))
   end
 
-  if t_c >= spec.max_temperature_c then return t_c end
+  if t_c >= spec.max_temperature_c then return t_c, corner end
   return nil
 end
 

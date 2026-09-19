@@ -278,8 +278,8 @@ there are twenty-four readings and no default one; the two named below are the c
 **"Unresearched" and "fully researched" are the words to use**, and they name a pair of rungs rather
 than a tier: unresearched is 30 s of confinement and 50 MW of heating, fully researched is 60 s and
 75 MW. Anything between is a state some force is in, and the intermediate ones are not summarised by
-either corner — top-confinement-only is 18.5, which is nearer the unresearched figure than the
-researched one.
+either corner — top-confinement-only is 18.5, a fifth of the unresearched figure and still twice
+the researched one.
 
 **The heater count is what relates them**: a settled D-T reactor eats **10.4 heaters** unresearched
 and **9.18** fully researched, so the per-saturated-reactor reading is the per-heater one times
