@@ -13,9 +13,12 @@ whose output goes straight to electricity through a direct energy converter, wit
 All balance is provisional and the mod is not published on the mod portal.
 
 **Every prototype ADR 0010 names for the Power module now exists** — all thirteen entities and all
-seven technologies, high-capacity steam equipment included, plus two three-rung research ladders that
+seven technologies, high-capacity steam equipment included, plus three research ladders that
 ADR 0010 did not name: a **confinement ladder** that takes a D-D reactor from below break-even to net
-positive, and a **plant efficiency ladder** that lets it sell more of what it already makes. That is a statement about coverage and not about balance: the numbers behind them are still
+positive, a **plant efficiency ladder** that lets it sell more of what it already makes, and a
+**plasma heating ladder** that shortens the fuel chain by raising what the reactor draws — the one
+upgrade here you can regret, because researching it without growing your grid is a deeper brownout.
+That is a statement about coverage and not about balance: the numbers behind them are still
 provisional, and nothing here has been played for longer than a test rig runs.
 
 ## Before you install
