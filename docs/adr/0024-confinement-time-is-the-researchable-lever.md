@@ -27,6 +27,26 @@ is what decides where the guard is sited. See [Consequences](#consequences).
 past 100 s" to about 175 s, measured through the shipped `step()` rather than through the equilibrium
 solver.
 
+**Joined 2026-09-19 (#292) by a second ladder on the same reactor:**
+[ADR 0038](0038-heating-power-is-the-second-researchable-lever.md) makes `heating_power_w`
+researchable in five rungs, 50 MW to 75. Two things follow, and the first is the one to read.
+
+- **Every figure in this ADR still stands, exactly as written.** The two ladders are
+  **independent** — neither is a prerequisite of the other — so a force that researches confinement
+  alone still runs at the shipped 50 MW. The Q column below is measured there and is correct.
+- **The one claim needing a qualifier is break-even.** "A player who runs full crosses at rung 3"
+  holds **at base heating**. With heating rungs taken it arrives earlier.
+
+  Had the two been folded into one ladder — considered and rejected by ADR 0038 — this ADR's Q
+  column would have become 0.320 / 0.714 / 1.323 / 1.951 with break-even at rung 2. It was not, and
+  it does not.
+
+Also relevant to decision 2 below: the reason given there for stopping at 60 s — that it leaves
+ADR 0016's density mechanic alive, narrowed to +4% — **does not survive the heating ladder**. Its
+first rung closes the mechanic at τ 60. ADR 0038 accepts that deliberately; the 60 s stop is
+unaffected, because its other reason (matching what `rf-aneutronic-reactor` already holds) is
+untouched.
+
 ## Context
 
 [ADR 0015](0015-the-d-d-tier-is-a-breeder.md) put the D-D tier below break-even on purpose: Q 0.320,
