@@ -1254,6 +1254,53 @@ local function check_reactor_specs()
   end
 end
 
+--- Refuse to run if a reactor's declared plasma capacity is not the box it was written from (#296).
+--
+-- IT IS A PHYSICS EDIT AND NOT A CAPACITY TWEAK, which is what makes silence expensive. The
+-- density a reactor runs at is box_volume * particles_per_unit / volume_m3, and reactor-logic.lua
+-- states in as many words that the box is the density lever: one particles_per_unit mod-wide
+-- "precisely so that this box is the lever". Measured on #291, halving rf-reactor's box takes a
+-- settled D-D reactor from 2.42e8 to 7.12e8 C, and doubling it collapses the tier to Q 0.011 --
+-- and the heating that would hold a temperature through such a change goes as the SQUARE of the
+-- capacity. None of that is visible from the spec, and until this guard none of it failed anything.
+--
+-- WHAT COULD MAKE THEM DISAGREE, now that prototypes/entities.lua writes each reactor's plasma box
+-- FROM spec.box_volume (#153). Not us: a developer editing one edits the other, because there is
+-- only one. What remains is a mod sorting after ours that rewrites the box in its own
+-- data-final-fixes -- which loads clean today, leaves every Lua suite passing with the figures it
+-- passes with now, and runs physics none of them describe. Refusing is the same answer
+-- check_collector_boxes and check_energy_outlets give to a foreign edit of the prototype they
+-- depend on, and it is deliberate: a plasma density is not a number this mod can be flexible about.
+--
+-- THE INPUT BOX SPECIFICALLY, because a reactor has two and only one holds plasma. Box 1 is the
+-- input-output box ADR 0011's fluid coupling rests on and the one update() reads the plasma out
+-- of; box 2 carries the reactor's energy fluid out and its volume means nothing to the
+-- simulation. Indexed by position the way check_ladder_clamp indexes it, and for the same reason:
+-- the two must not come to disagree about which box this is.
+local function check_plasma_capacity()
+  for name, spec in pairs(SPECS) do
+    local box = prototypes.entity[name].fluidbox_prototypes[1]
+    local found = box and box.volume
+    if found ~= spec.box_volume then
+      -- THE DENSITY EACH IMPLIES is the number a reader actually needs, because that is what the
+      -- disagreement changes -- a capacity in fluid units says nothing on its own about whether a
+      -- tier still ignites.
+      local function density(capacity)
+        return capacity * spec.particles_per_unit / spec.volume_m3
+      end
+      error(string.format(
+        "%s: scripts/reactor-logic.lua declares a plasma capacity of %s units (%.3g m^-3 in a " ..
+        "full reactor) but the loaded prototype's input fluid box holds %s (%s). " ..
+        "prototypes/entities.lua writes that box from the spec, so the two can only differ if " ..
+        "another mod rewrote it -- and the simulation would then run at a density nothing in this " ..
+        "mod describes. Reconcile box_volume in scripts/reactor-logic.lua with the box, or take " ..
+        "the other mod out.",
+        name, tostring(spec.box_volume), density(spec.box_volume),
+        tostring(found), found and string.format("%.3g m^-3", density(found)) or "no input box at all"))
+    end
+  end
+end
+
 --- Refuse to run if a reactor's output would be written into a box that will not take it (#31).
 --
 -- apply() writes spec.energy_fluid into box 2, and box 2 is filtered on the prototype. Those are
@@ -2047,6 +2094,7 @@ end
 local function check_prototypes()
   check_fuel_rows()
   check_reactor_specs()
+  check_plasma_capacity()
   check_input_flow()
   check_ladder_prototypes()
   check_ladder_clamp()

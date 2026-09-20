@@ -919,8 +919,9 @@ check(he3_best_q < 0.05,
 --
 -- NINE OF THE TEN ARE INDEXED AT RUNTIME, by step() or by control.lua. box_volume is the tenth and
 -- is indexed at the PROTOTYPE stage instead -- prototypes/entities.lua writes each reactor's plasma
--- box from it, and control.lua deliberately reads the LOADED box rather than this field, because a
--- mod sorting after us can change it. Missing it would fail the data stage and the two locals at the
+-- box from it, and since #296 control.lua's check_plasma_capacity() refuses to load when the box it
+-- finds is not this number, which is what closes the one route left for the two to disagree: a mod
+-- sorting after ours. Missing it would fail the data stage and the two locals at the
 -- head of this file rather than a runtime call, which is the same class of breakage and the reason
 -- it belongs in this list (#153).
 for label, spec in pairs({ ["rf-reactor"] = SPEC, ["rf-aneutronic-reactor"] = ANEUTRONIC }) do
@@ -936,6 +937,26 @@ check(SPEC.energy_fluid ~= ANEUTRONIC.energy_fluid,
 -- it, and a second value would make a fluid unit mean different things in different pipes.
 near(ANEUTRONIC.particles_per_unit, SPEC.particles_per_unit, 0,
   "both reactors count the same nuclei per fluid unit")
+
+-- THE TWO DENSITY CLAIMS, MULTIPLIED OUT RATHER THAN READ (#295). reactor-logic.lua says a full
+-- rf-reactor runs at 1e20 m^-3 and a full rf-aneutronic-reactor at 3e20, and those two sentences
+-- are the premise of every argument in that file about why the aneutronic tier ignites and the D-D
+-- tier does not. Until #153 put box_volume on the spec they were claims about a prototype the
+-- module could not open; they are arithmetic on three fields of one table now, and this is where
+-- the arithmetic is done. Nothing in step() reads a density -- it computes one the same way -- so
+-- these lines guard the PROSE, which is the thing no other gate here reads.
+--
+-- A TOLERANCE RATHER THAN EQUALITY, and it is floating point rather than slack: 1000 * 1e20 / 1000
+-- is not bit-identical to 1e20 in doubles, so the exact form of this check failed on the
+-- neutronic reactor while passing on the aneutronic one. 1e-12 is twelve orders below anything a
+-- retune would move and four above the error being tolerated.
+local function full_density(spec) return spec.box_volume * spec.particles_per_unit / spec.volume_m3 end
+near(full_density(SPEC), 1e20, 1e-12,
+  "a full rf-reactor runs at 1e20 m^-3, which is what its spec's own three fields multiply out to")
+near(full_density(ANEUTRONIC), 3e20, 1e-12,
+  "and a full rf-aneutronic-reactor at 3e20 -- the density lever, stated as its own arithmetic")
+near(full_density(ANEUTRONIC) / full_density(SPEC), ANEUTRONIC.box_volume / SPEC.box_volume, 1e-12,
+  "and the ratio between them is the box ratio alone, which is what makes the box the lever")
 
 -- ---------------------------------------------------------------- the shipped balance
 --

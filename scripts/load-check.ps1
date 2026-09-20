@@ -18,8 +18,10 @@
 
     IT DOES MORE THAN THE DATA STAGE, and the difference matters to anyone editing the
     simulation. Creating a map runs `on_init`, which is where control.lua's check_prototypes()
-    fires -- so this script enforces thirteen invariants that no amount of prototype validation
-    would catch:
+    fires -- so this script enforces fifteen invariants that no amount of prototype validation
+    would catch. (This count read THIRTEEN while check_prototypes() called fourteen, which is what
+    a number written in prose does when a check is added beside it; #296 is where it was corrected
+    as well as raised.)
 
       check_fuel_rows()           Every row of reactor-logic's fuel table declares the fields
                                   step() indexes without asking. M.fuels is the documented place
@@ -33,6 +35,15 @@
                                   file decides what a reactor IS, the other what one DOES -- and
                                   a missing spec is a nil index inside the tick loop rather than
                                   a refusal to load.
+      check_plasma_capacity()     Each reactor's declared plasma capacity against the input fluid
+                                  box the prototype actually loaded with. prototypes/entities.lua
+                                  writes that box FROM the spec (#153), so our own data stage
+                                  cannot make them differ -- a mod sorting after ours can, and the
+                                  box is the density lever rather than a capacity knob. Measured
+                                  on #291: halving rf-reactor's box takes a settled D-D reactor
+                                  from 2.42e8 to 7.12e8 C and doubling it collapses the tier to
+                                  Q 0.011, none of which fails anything else. The refusal names
+                                  both capacities and the density each implies (#296).
       check_input_flow()          Each reactor's input_flow_limit against the confinement heating
                                   control.lua spends per tick. A network that cannot deliver
                                   heating_power_w continuously starves the reactor for ever --
@@ -293,7 +304,8 @@
     heating must be refused; slid-mockup, a mod that moves a pipe connection on a machine wearing a
     MOCKUP must be caught; unburnable-plasma, a mod that puts a plasma of its own through our
     heating category must be refused; swapped-boxes, the isotope collector's two box filters
-    swapped must be refused; socket-height-gate, the socket-height gate must measure its own
+    swapped must be refused; widened-box, a reactor whose plasma fluid box is not the capacity its
+    spec declares must be refused; socket-height-gate, the socket-height gate must measure its own
     reference off vanilla's sheet, judge by the number it measured, pass the sheets as they stand,
     report a sheet lifted a quarter tile, and report SOCKET_Z itself as PARTED when it does not
     predict that reference; and socket-parts-gate, the socket-parts gate over the same sheets.
@@ -302,8 +314,8 @@
     repo is genuinely broken. missing-asset, reassigned-category, slid-socket, added-category,
     replaced-category and slid-mockup are the ones Factorio exits 0 on, where the check has to
     decide alone. THE OTHERS ARE THE MOD REFUSING ITSELF -- invalid-prototype, starved-reactor,
-    unburnable-plasma and swapped-boxes all end with Factorio exiting non-zero, which is why each of
-    the last three has to match the refusal's own message as well as its exit code. THE TWO SPRITE
+    unburnable-plasma, swapped-boxes and widened-box all end with Factorio exiting non-zero, which
+    is why each of the last four has to match the refusal's own message as well as its exit code. THE TWO SPRITE
     GATES ARE NEITHER: they run no canary mod at all, because the gates they prove (#344, #373) need
     no game RUN. socket-height-gate does read the install, for one file: since #355 it measures
     where a vanilla pipe is drawn off the base game's own sheet instead of carrying a number for it.
@@ -315,24 +327,28 @@
     one invariant to three. Those are the checks that tie the simulation to the prototypes, and the
     reason this script is the gate that matters in this repository. STARVED-REACTOR WAS ALREADY ONE
     OF THEM -- it negatively tests check_input_flow(), which check_prototypes() calls -- so the two
-    are the second and third rather than the first two. The other ten invariants are still asserted
-    only positively: they pass on a good tree, and nothing here would notice one that had quietly
-    stopped firing. Two of those ten have had their negative test done BY HAND and recorded only in
-    a commit message (#55 and #119, both by temporarily editing the value under test), which is the
-    shape these halves exist to replace.
+    are the second and third rather than the first two. WIDENED-BOX IS THE FOURTH, added with the
+    invariant it proves (#296) rather than after it, because shipping a new invariant without its
+    negative test is the failure #125 was opened about. The other eleven invariants are still
+    asserted only positively: they pass on a good tree, and nothing here would notice one that had
+    quietly stopped firing. Two of those eleven have had their negative test done BY HAND and
+    recorded only in a commit message (#55 and #119, both by temporarily editing the value under
+    test), which is the shape these halves exist to replace.
 
     unburnable-plasma breaks its invariant by pure ADDITION -- the canary defines a fluid and a
     recipe of its own in rf-plasma-heating and mutates nothing of ours -- and swapped-boxes by
-    MUTATION, swapping rf-isotope-collector's two box filters in `data-final-fixes`. Both must fail
+    MUTATION, swapping rf-isotope-collector's two box filters in `data-final-fixes`. widened-box is
+    a mutation too, doubling rf-reactor's plasma box there. All three must fail
     BY THE CHECK'S OWN MESSAGE, as starved-reactor does and for the same reason: a canary that fails
     to load for an unrelated reason exits non-zero too, and would otherwise be recorded as the
     invariant firing.
 
     AND THE WORKING TREE IS ASSERTED UNTOUCHED, in BOTH self-tests, against a fingerprint taken
-    before either does anything -- pack-mods.ps1 included. SEVEN of the canary halves mutate one of
+    before either does anything -- pack-mods.ps1 included. EIGHT of the canary halves mutate one of
     our prototypes: reassigned-category, slid-socket, added-category, replaced-category,
-    starved-reactor, slid-mockup and swapped-boxes. Six of the seven do it to prove a gate FIRES;
-    added-category mutates one to prove a gate stays QUIET, which is the same hazard to the tree.
+    starved-reactor, slid-mockup, swapped-boxes and widened-box. Seven of the eight do it to prove a
+    gate FIRES; added-category mutates one to prove a gate stays QUIET, which is the same hazard to
+    the tree.
     Every one does it in memory; this is what says so rather than assuming it. The FINALLY
     BLOCK compares too, so a half that exits early still reports what it left behind, and the zip
     self-test compares on its own pass path -- which matters more there than here, because it is
@@ -1995,7 +2011,8 @@ end
                 # of check_prototypes()'s invariants -- the checks that tie the simulation to the prototypes
                 # and are the reason load-check is the gate that matters here. starved-reactor was already one
                 # of them, negatively testing check_input_flow(), which check_prototypes() calls; this half and
-                # swapped-boxes take the coverage from one invariant to three. The other ten are still asserted only
+                # swapped-boxes take the coverage from one invariant to three, and widened-box to four (#296).
+                # The other eleven are still asserted only
                 # positively: they pass on a good tree, and nothing here would notice one that had quietly
                 # stopped firing.
                 #
@@ -2105,6 +2122,55 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
                 'a collector whose two boxes are swapped is refused, in check_collector_boxes()''s own words.'
             } }
 
+            @{ Name = 'widened-box'; Body = {
+                # A reactor whose plasma box is not the capacity its spec declares must be refused
+                # (#296). swapped-boxes is the worked example this copies: the canary reaches into one
+                # of our prototypes from data-final-fixes and moves it in memory, and the half
+                # requires the invariant's OWN words back rather than a non-zero exit.
+                #
+                # WHY THIS INVARIANT. The box IS the density lever -- reactor-logic keeps one
+                # particles_per_unit mod-wide "precisely so that this box is the lever" -- so a box
+                # moved from outside is a physics edit dressed as a capacity tweak. #291 measured
+                # what it does: halving rf-reactor's box takes a settled D-D reactor from 2.42e8 to
+                # 7.12e8 C, and doubling it collapses the tier to Q 0.011. Before this guard the mod
+                # loaded clean through all of that, the Lua suites passed with the figures they pass
+                # with today, and the game ran physics none of them described.
+                #
+                # EVERY REACTOR IN SPECS, not rf-reactor alone -- check_plasma_capacity() walks the
+                # table. rf-reactor is what the canary breaks because it is the one whose figures
+                # the rest of the repository quotes; the aneutronic reactor takes the same path
+                # through the same loop.
+                @'
+local reactor = data.raw.boiler["rf-reactor"]
+local box = reactor and reactor.fluid_box
+if not box or type(box.volume) ~= "number" then
+  error("load-check canary: rf-reactor declares no plasma fluid box volume ("
+    .. tostring(box and box.volume) .. "), so the widened-box half would prove nothing")
+end
+box.volume = box.volume * 2
+'@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
+
+                $widened = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'box'
+                if ($widened.Code -eq 0) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: rf-reactor's plasma box was doubled from outside and the mod"
+                    Write-Host '         loaded anyway. check_plasma_capacity() is not proving anything, so a'
+                    Write-Host '         reactor would run at twice the density every published figure assumes.'
+                    exit 1
+                }
+                $widenedSaid = (Test-Path $widened.OutFile) -and
+                    (Select-String -Path $widened.OutFile -SimpleMatch 'declares a plasma capacity of' -Quiet)
+                if (-not $widenedSaid) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the widened-box canary failed the load (exit $($widened.Code)) but"
+                    Write-Host '         check_plasma_capacity() did not say so, so the failure was something else'
+                    Write-Host '         and this half proves nothing about the invariant it is named for.'
+                    Write-FactorioTail $widened
+                    exit 1
+                }
+                'a reactor whose plasma box is not its declared capacity is refused, in check_plasma_capacity()''s own words.'
+            } }
+
             @{ Name = 'socket-height-gate'; Body = {
                 # THE ONE HALF THAT NEEDS NO CANARY MOD, because the gate it proves needs no game RUN
                 # (#344): tools/check-socket-height.py measures the committed sheets against the manifests
@@ -2156,11 +2222,12 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
             } }
         )
 
-        # THE WORKING TREE, ASSERTED RATHER THAN REASONED ABOUT (#125). SEVEN of the halves above
+        # THE WORKING TREE, ASSERTED RATHER THAN REASONED ABOUT (#125). EIGHT of the halves above
         # mutate one of our prototypes -- reassigned-category, slid-socket, added-category,
         # replaced-category and slid-mockup move a connection or a category, starved-reactor cuts an
-        # input_flow_limit, swapped-boxes swaps two box filters -- and every one of them does it in
-        # `data-final-fixes`, in memory, at load, with nothing on disk touched. Six of the seven
+        # input_flow_limit, swapped-boxes swaps two box filters, widened-box doubles a plasma box --
+        # and every one of them does it in
+        # `data-final-fixes`, in memory, at load, with nothing on disk touched. Seven of the eight
         # mutate to prove a gate FIRES; added-category is the one that mutates to prove a gate stays
         # QUIET, which puts the same thing at risk. That is the design; this is the assertion. It is
         # here because a self-test in this file once deleted the repository's own sprite, so "the
@@ -2176,8 +2243,9 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
         Write-Host '     a replaced one caught by name, a reactor whose input_flow_limit'
         Write-Host '     cannot cover its heating refused by check_input_flow(), a slid'
         Write-Host "     connection caught on $mockupName's mockup, an unburnable plasma"
-        Write-Host '     refused by check_every_plasma_burns() and a swapped collector box'
-        Write-Host '     refused by check_collector_boxes() -- both by their own words -- a'
+        Write-Host '     refused by check_every_plasma_burns(), a swapped collector box'
+        Write-Host '     refused by check_collector_boxes() and a doubled plasma box refused by'
+        Write-Host '     check_plasma_capacity() -- all three by their own words -- a'
         Write-Host '     socket-height gate that measures its own reference off vanilla, passes the'
         Write-Host '     sheets, catches a lifted one and catches a parted SOCKET_Z, a socket-parts'
         Write-Host '     gate that passes the sheets, catches one shaved underneath, catches a'
@@ -2266,7 +2334,7 @@ collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
     # docstring above used to make: creating the map ran control.lua's check_prototypes() too.
     $how = if ($FromZips) { 'built zips' } else { 'junctioned repo directories' }
     Write-Host "OK - prototypes valid, every referenced asset present, map created, the"
-    Write-Host "     simulation's fourteen load-time invariants hold, containment survived the"
+    Write-Host "     simulation's fifteen load-time invariants hold, containment survived the"
     Write-Host "     load and every render and mockup agrees with its machine, loading from $how."
     exit 0
 }
