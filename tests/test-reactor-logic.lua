@@ -1951,27 +1951,34 @@ local CEILING = 15
 -- the larger move in LOG space is the one reported. Log because a halving and a doubling are the
 -- same size of move and must count the same: on |shift - 1| a halved breeder scores 0.5 against a
 -- doubled burner's 1.0, and the burner would win a comparison it had no business winning.
-local function ceiling_fault(measured, reference, ceiling)
+--
+-- `at` IS THE CALLER'S, not a sentence baked in here. This function is asked about more than one
+-- cell of the grid -- the fully-researched corner it gates, and top-confinement-only just below,
+-- which is a DIFFERENT research state and a legitimate build. A message hardcoding "at the top of
+-- both ladders" would name the wrong state on the second caller and blame a breeder that had not
+-- moved, since the shift it reports is then one cell against another rather than drift.
+local function ceiling_fault(measured, reference, ceiling, at)
   if measured.ratio <= ceiling then return nil end
   local bred_shift   = measured.bred / reference.bred
   local needed_shift = measured.needed / reference.needed
   local which
   if math.abs(math.log(bred_shift)) >= math.abs(math.log(needed_shift)) then
-    which = string.format("the BREEDER end moved: %.4g u/s of tritium a reactor against %.4g (x%.3f)",
+    which = string.format("the BREEDER end differs: %.4g u/s of tritium a reactor against %.4g (x%.3f)",
       measured.bred, reference.bred, bred_shift)
   else
-    which = string.format("the BURNER end moved: a settled D-T reactor needs %.4g u/s against %.4g (x%.3f)",
+    which = string.format("the BURNER end differs: a settled D-T reactor needs %.4g u/s against %.4g (x%.3f)",
       measured.needed, reference.needed, needed_shift)
   end
   return string.format(
-    "the supply ratio at the top of both ladders is %.4g, over ADR 0038's ceiling of %.4g -- %s",
-    measured.ratio, ceiling, which)
+    "the supply ratio %s is %.4g, over ADR 0038's ceiling of %.4g -- %s",
+    at, measured.ratio, ceiling, which)
 end
 
 local RESEARCHED = { ratio = 8.9269, bred = 1.285164, needed = 11.4726 }
-check(ceiling_fault(TOPPED, RESEARCHED, CEILING) == nil,
+local TOPPED_AT  = "at the top of both ladders"
+check(ceiling_fault(TOPPED, RESEARCHED, CEILING, TOPPED_AT) == nil,
   "the fully-researched supply ratio is inside ADR 0038's ceiling",
-  ceiling_fault(TOPPED, RESEARCHED, CEILING)
+  ceiling_fault(TOPPED, RESEARCHED, CEILING, TOPPED_AT)
     or string.format("%.4g against %d", TOPPED.ratio, CEILING))
 
 -- THE NEGATIVE TEST, and it is the reason the check above is a function call rather than a
@@ -1985,7 +1992,7 @@ check(ceiling_fault(TOPPED, RESEARCHED, CEILING) == nil,
 do
   local slow_breeder = { ratio = RESEARCHED.ratio * 3, bred = RESEARCHED.bred / 3,
                          needed = RESEARCHED.needed }
-  local fault = ceiling_fault(slow_breeder, RESEARCHED, CEILING)
+  local fault = ceiling_fault(slow_breeder, RESEARCHED, CEILING, TOPPED_AT)
   check(type(fault) == "string",
     "a chain three times longer than the shipped one is over the ceiling and says so",
     tostring(fault))
@@ -1997,7 +2004,7 @@ do
 
   local fast_burner = { ratio = RESEARCHED.ratio * 3, bred = RESEARCHED.bred,
                         needed = RESEARCHED.needed * 3 }
-  local burner_fault = ceiling_fault(fast_burner, RESEARCHED, CEILING)
+  local burner_fault = ceiling_fault(fast_burner, RESEARCHED, CEILING, TOPPED_AT)
   check(burner_fault and burner_fault:find("BURNER", 1, true) ~= nil,
     "and it names the burner when the burner is what sped up", tostring(burner_fault))
 
@@ -2007,9 +2014,9 @@ do
   -- tenth, which is what says the boundary is where ADR 0038 put it and not somewhere nearby.
   local inside  = { ratio = CEILING - 0.1, bred = RESEARCHED.bred, needed = RESEARCHED.needed }
   local outside = { ratio = CEILING + 0.1, bred = RESEARCHED.bred, needed = RESEARCHED.needed }
-  check(ceiling_fault(inside, RESEARCHED, CEILING) == nil,
+  check(ceiling_fault(inside, RESEARCHED, CEILING, TOPPED_AT) == nil,
     "a rebalance that lands inside the ceiling passes, ratio and all -- this gates the bound, not the value")
-  check(ceiling_fault(outside, RESEARCHED, CEILING) ~= nil,
+  check(ceiling_fault(outside, RESEARCHED, CEILING, TOPPED_AT) ~= nil,
     "and one a tenth outside it does not")
 end
 
@@ -2030,9 +2037,13 @@ near(TOPPED.bred, 1.285164, 0.01, "and at the top of both ladders, 1.285 u/s")
 -- INTERMEDIATE STATES ARE DELIBERATELY UNGATED, and this is the cell that says why: a player who
 -- finishes the confinement ladder and researches no heating sits at 18.5, which is a legitimate
 -- build and is over the ceiling. #294 gates the fully-researched state alone.
-check(ceiling_fault(TOP_TAU_ONLY, RESEARCHED, CEILING) ~= nil,
+-- THE DETAIL IS THE FALLBACK AND NOT THE FAULT, which is the opposite way round from the check
+-- above and is why it is spelled out. `check` prints its detail only when it FAILS, and the only
+-- way this one fails is ceiling_fault returning nil -- so passing the fault would print nothing
+-- at all on the one run a reader needs it. Found in review of this commit.
+check(ceiling_fault(TOP_TAU_ONLY, RESEARCHED, CEILING, "at top confinement alone") ~= nil,
   "top-confinement-only is over the ceiling, which is why #294 gates the fully-researched state",
-  ceiling_fault(TOP_TAU_ONLY, RESEARCHED, CEILING))
+  string.format("%.4g against %d", TOP_TAU_ONLY.ratio, CEILING))
 
 -- AND THE BLANKET IS THE OTHER ROUTE ENTIRELY, not a discount on this one (#30, ADR 0019). The
 -- breeding block above proves a blanketed D-T reactor breeds back more tritium than it burns, so

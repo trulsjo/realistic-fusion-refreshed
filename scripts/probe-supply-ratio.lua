@@ -73,7 +73,18 @@ local function chain(spec, dt_fill, dd_fill, dt_spec)
   local dd_amount = spec.box_volume * (dd_fill or 1)
   local _, dt = L.settle(dt_spec, "rf-d-t-plasma", dt_amount, SETTLE_S, math.huge, TICK)
   local _, dd = L.settle(spec, "rf-d-d-plasma", dd_amount, SETTLE_S, math.huge, TICK)
-  if not dt or not dd then return nil end
+  -- RAISED RATHER THAN REPORTED, and the two are different answers. A tier that goes OUT is a
+  -- result and comes back as a ratio below; settle() handing back nothing means step() refused the
+  -- first call -- an empty box, a plasma with no fuel row, a zero horizon -- which is the rig
+  -- broken rather than the model answering. An earlier draft returned nil here and printed a "no
+  -- run" row, which no caller could reach: every one of them reads a field off this table to build
+  -- its own note. Found in review.
+  if not dt or not dd then
+    error(string.format(
+      "probe-supply-ratio: settling produced no step at all (D-T %s, D-D %s) on %g and %g units. "
+      .. "That is this rig broken rather than a lever priced.",
+      dt and "ok" or "nothing", dd and "ok" or "nothing", dt_amount, dd_amount))
+  end
 
   local t_fraction = L.fuels["rf-d-t-plasma"].fractions[2]
   local needed = dt.plasma_consumed / TICK * t_fraction
@@ -121,11 +132,8 @@ local function header(title)
   io.write(string.format(ROW, "point", "ratio", "per heater", "D-D Q", "note"))
 end
 
+--- One measured point. `m` is never nil -- chain() raises instead, see the note there.
 local function row(label, m, note)
-  if not m then
-    io.write(string.format(ROW, label, "no run", "-", "-", note or ""))
-    return
-  end
   io.write(string.format(ROW, label, fmt_ratio(m.ratio), fmt_ratio(m.per_heater),
     string.format("%.3f", m.dd_q), note or ""))
 end

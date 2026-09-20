@@ -114,7 +114,11 @@ local SHIPPED_C = 2.42e8
 -- this was written: 100 C is below it and everything above it is above.
 local INPUT_LADDER = { 100, 200, 1e6, SHIPPED_C, 2e9 }
 
-local FILL = 1000  -- the reactor's declared box volume, so every run starts from a full box
+-- The reactor's declared box volume, so every run starts from a full box. Read off the loaded
+-- prototype rather than written down (#295): control.lua's check_plasma_capacity() ties that box
+-- to reactor-logic's box_volume, and a literal here would go on seeding 1000 units into a box
+-- that had moved.
+local FILL = prototypes.entity["rf-reactor"].fluidbox_prototypes[1].volume
 
 local MEASURE_TICKS = __TICKS__
 
