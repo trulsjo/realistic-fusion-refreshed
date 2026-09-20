@@ -323,6 +323,19 @@ script.on_init(function()
     -- that stops being obviously sufficient the moment heating_power_w moves, and this rig exists
     -- precisely to keep supply out of the answer. Above every flow limit, it cannot come into it.
     --
+    -- BOTH FLOW LIMITS IN THAT PARAGRAPH ARE THE ONES THE PROTOTYPE HAD WHEN IT WAS WRITTEN, and
+    -- the paragraph is left as the record of why 240 MW was chosen rather than restated (#429,
+    -- 2026-09-20). #425 took input_flow_limit to 90 MW to cover the top of ADR 0038's heating
+    -- ladder, so the five limits are 90 / 117 / 144 / 171 / 225 MW -- measured, not divided; see
+    -- docs/research/quality.md. 240 MW is still above every one of them, so the CONCLUSION stands
+    -- and only the figures it was reached from have moved.
+    --
+    -- AND THE SENTENCE THAT PREDICTED THIS IS THE ONE ABOVE: heating_power_w did move. It is a
+    -- per-force research value since ADR 0038, 50 MW rising to 75 at the top of the ladder. This
+    -- rig researches nothing (see WHAT IT DOES NOT COVER), so its cells still spend 50 -- but a
+    -- future lane here that researched the heating ladder would have to re-check this supply
+    -- figure rather than inherit it.
+    --
     -- The report prints each reactor's buffer contents at the reading, which is what says a cell
     -- was actually powered rather than merely wired to something.
     local substation = must(
