@@ -102,19 +102,23 @@ own sprite.
 its own `-SelfTest` proves that a **git-ignored** file planted inside a mod cannot reach a zip —
 ignored specifically, since merely-untracked would be excluded for the wrong reason.
 
-`scripts/probe-*.ps1` are **not** in that list and are not gates. A probe asserts nothing and answers
+`scripts/probe-*` are **not** in that list and are not gates. A probe asserts nothing and answers
 a question a decision is waiting on — exit 0 means it ran and reported, never that the answer was the
 hoped-for one. Its findings belong in `docs/research/`, and it stays committed so the next engine
-version can be asked the same question. `scripts/` holds twenty-five of them: twenty-three `probe-*.ps1`
-and two `probe-*.py`. Eighteen of the PowerShell ones build a real map the way a check does — the
-eighteenth is `probe-next-upgrade.ps1` (#396), which is also the only one that LOADS TWICE, because
+version can be asked the same question. `scripts/` holds twenty-six of them: twenty-three
+`probe-*.ps1`, two `probe-*.py` and one `probe-*.lua`. Eighteen of the PowerShell ones build a real
+map the way a check does — the eighteenth is `probe-next-upgrade.ps1` (#396), which is also the
+only one that LOADS TWICE, because
 the answer to half its question is a refusal at the prototype stage — one LOADS a save
 (`probe-borrowed-base-art.ps1`, #388, which stands our machines inside the borrowed base
 and creates a surface of its own for its control), and three more dump prototypes out of the running
-game -- so twenty-two of the twenty-five need Factorio.
-**Three need no game at all**, and they are the sprite ones: `probe-flange-free-render.ps1` (#376)
+game -- so twenty-two of the twenty-six need Factorio.
+**Four need no game at all.** Three are the sprite ones: `probe-flange-free-render.ps1` (#376)
 and `probe-socket-underside.py` (#366, #367) drive Blender and measure what it renders, and
-`probe-sprite-geometry.py` measures where a committed sheet's opaque pixels land. A probe is a
+`probe-sprite-geometry.py` measures where a committed sheet's opaque pixels land. The fourth is
+`probe-supply-ratio.lua` (#291), which needs neither Factorio nor Blender: it prices every lever
+that moves the fuel-chain supply ratio through the same `reactor-logic.lua` the Lua suites drive,
+and it is the only probe here written in the language the mod itself is written in. A probe is a
 shape, not a language and not a map.
 
 ## The rule that matters most here
