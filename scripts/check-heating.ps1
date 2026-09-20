@@ -107,7 +107,12 @@ function Write-Rig {
 
 local PLASMA  = "rf-d-d-plasma"
 local TRITIUM = "rf-tritium"
-local FULL    = 1000
+-- READ OFF THE LOADED PROTOTYPE, not written down (#295). rf-reactor's plasma box is box 1, and
+-- prototypes/entities.lua writes it from reactor-logic's box_volume, which control.lua's
+-- check_plasma_capacity() then refuses to load without (#296). So this is the capacity the
+-- simulation is actually running -- a literal here would go on seeding 1000 units into a box that
+-- had moved, and the rig would report a full reactor while filling a fraction of one.
+local FULL    = prototypes.entity["rf-reactor"].fluidbox_prototypes[1].volume
 -- Where an unresearched D-D reactor settles, so every cell starts from one state and separates
 -- only because of research. tests/test-reactor-logic.lua pins it; if it moves, the control line
 -- below reports the drift and names the number, which is the right way round.

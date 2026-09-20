@@ -418,12 +418,28 @@ M.reactor = {
   -- The reactor's plasma fluid box, in fluid units. A PROTOTYPE number, and it lives here because
   -- three places need it and a second statement of it would be a second thing to keep in step: the
   -- prototype writes the box from it, tests/test-reactor-logic.lua runs a full reactor from it, and
-  -- density below is quoted against it. control.lua still reads the LOADED prototype rather than
-  -- this field, because a mod sorting after us can change the box and runtime has to honour what it
-  -- actually finds.
+  -- the density below is quoted against it.
+  --
+  -- GUARDED SINCE #296, where before it was the one spec field the simulation depends on with
+  -- nothing tying it to its prototype side. control.lua's check_plasma_capacity() refuses to load
+  -- when a reactor's input box is not this number. Our own data stage cannot make that happen --
+  -- entities.lua writes the box from here -- but a mod sorting after us can, and the disagreement
+  -- is a physics edit rather than a capacity tweak: the comment beside that check carries #291's
+  -- measurements of what a changed box does to the tier.
+  --
+  -- control.lua's RUNTIME read of the box is deliberately left alone, and #296 says so: it is the
+  -- denominator of the fill a status line is judged on rather than an input to step(), the guard
+  -- above makes the two provably equal at load, and collapsing them is a separate cleanup.
   box_volume = 1000,
-  -- Nuclei per unit of plasma fluid. At box_volume that is 1e20 m^-3 in a full reactor, which is
+  -- Nuclei per unit of plasma fluid. A full reactor therefore runs at
+  -- box_volume * particles_per_unit / volume_m3, which on the three fields above is 1e20 m^-3 --
   -- the density a real machine runs at.
+  --
+  -- THE ARITHMETIC RATHER THAN THE ANSWER, and that is #295's doing. This comment used to state
+  -- 1e20 as a fact about a fluid box declared in another file, which is a transcription: change
+  -- the box and the sentence goes on reading as true. All three terms are now on this table, the
+  -- density is one multiplication of them, and tests/test-reactor-logic.lua does that
+  -- multiplication rather than trusting this line.
   particles_per_unit = 1e20,
   -- Confinement heating. Spent out of the reactor's electric buffer by control.lua rather than
   -- declared on the prototype: the prototype's own energy_consumption is the boiler conversion
@@ -711,10 +727,13 @@ M.aneutronic_reactor = {
   -- blanket's one-item-one-unit identity rests on it (M.blanket), and a second value here would
   -- silently make a unit of plasma mean different things in different pipes.
   --
-  -- The density comes from the fluid box instead: rf-aneutronic-reactor holds 3000 units in the
-  -- same 1000 m^3, so a full one runs at 3e20 m^-3 where a full rf-reactor runs at 1e20. That is
-  -- the lever, and it is the right one -- fusion rate goes as n^2 while the transport loss goes as
-  -- n, so density is what buys ignition, and a denser machine is what the aneutronic tier is.
+  -- The density comes from the fluid box instead, by the same
+  -- box_volume * particles_per_unit / volume_m3 M.reactor states: this reactor holds three times
+  -- the plasma in the same volume, so a full one runs at 3e20 m^-3 where a full rf-reactor runs at
+  -- 1e20. That is the lever, and it is the right one -- fusion rate goes as n^2 while the transport
+  -- loss goes as n, so density is what buys ignition, and a denser machine is what the aneutronic
+  -- tier is. Both densities are multiplied out in tests/test-reactor-logic.lua rather than trusted
+  -- here (#295).
   --
   -- Which is why THIS is the field that differs and volume_m3 is not. Same note as M.reactor's on
   -- why a prototype number lives in this module.
