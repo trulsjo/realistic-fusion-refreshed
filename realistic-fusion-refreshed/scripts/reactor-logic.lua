@@ -1359,8 +1359,18 @@ end
 --                      the whole of it: ADR 0020 decision 5 keeps capture_efficiency an ARGUMENT
 --                      and never a spec field, and a caller that wanted to vary it had to write
 --                      its own loop or overwrite the field on a copy of the spec -- which is the
---                      thing that decision forbids. control.lua passes nothing here, because its
---                      load guard is sited at the unresearched state on purpose.
+--                      thing that decision forbids. BOTH CALLERS IN THIS FILE PASS NOTHING, and
+--                      they are the only two: M.density_curve, and M.ladders_overrun, which is
+--                      where control.lua's load guard reaches this function -- control.lua never
+--                      calls it directly, and logic.ladders_overrun has no capture parameter to
+--                      forward. NEITHER OMISSION COSTS ANYTHING, because capture cannot move what
+--                      either of them reads: it scales captured_j and therefore energy_units
+--                      alone, while the guard reads the temperature -- out of new_thermal_j, which
+--                      capture is not a term in -- and the curve reads fusion_power_w, which is
+--                      fusion_j before any recovery. That is also why capture_ladder is absent
+--                      from M.spec_ladders and so never reaches the corner M.ladders_overrun
+--                      builds. What capture DOES move is energy_units in the returned result,
+--                      which is the whole reason this parameter exists.
 -- @return the settled temperature in celsius, and the last step's result table
 --
 -- A COARSER dt SETTLES HOTTER, by about 2% at dt = 1 s against a tick. That is the safe direction
