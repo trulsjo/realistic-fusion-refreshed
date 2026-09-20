@@ -199,6 +199,15 @@ local SCALE = circuit.TEMPERATURE_SCALE
 -- itself whatever the sweep did. They are the figures ADR 0016 publishes -- an optimum near 65%
 -- fill and an n-squared crossing near 35% -- so this fails if the shipped curve ever stops
 -- reproducing them. tests/test-reactor-logic.lua pins the same two numbers from the other side.
+--
+-- THE FILLS ARE FRACTIONS OF THE LOADED BOX, not the 650 / 350 / 1000 they were written as (#295).
+-- ADR 0016's figures are PERCENTAGES -- an optimum near 65% and a crossing near 35% -- so a box
+-- that moved would leave those literals naming different fractions while every row went on
+-- passing, and "ignited-full" would quietly be a partly-filled reactor reporting a status this rig
+-- asserts. The box is not the thing under test, so reading it costs this rig none of the
+-- independence the paragraph above is about.
+local FULL = prototypes.entity["rf-reactor"].fluidbox_prototypes[1].volume
+
 local CASES = {
   -- Named for its arrangement, not for its answer: a full, hot, powered D-D reactor is PAST its
   -- best density and correctly reports "rich". See the note in .SYNOPSIS.
@@ -206,13 +215,13 @@ local CASES = {
   { name = "idle",    plasma = 1e6, powered = false, distinct = true },
   { name = "starved", plasma = nil, powered = true,  distinct = true },
   { name = "tuned",    powered = true, status = "running", distinct = true,
-    fuel = "rf-d-d-plasma", seed = 6e8, units = 650 },
+    fuel = "rf-d-d-plasma", seed = 6e8, units = 0.65 * FULL },
   { name = "too-thin", powered = true, status = "starved",
-    fuel = "rf-d-d-plasma", seed = 6e8, units = 150 },
+    fuel = "rf-d-d-plasma", seed = 6e8, units = 0.15 * FULL },
   { name = "ignited-full", powered = true, status = "running",
-    fuel = "rf-d-t-plasma", seed = 6e8, units = 1000 },
+    fuel = "rf-d-t-plasma", seed = 6e8, units = FULL },
   { name = "ignited-thin", powered = true, status = "lean",
-    fuel = "rf-d-t-plasma", seed = 6e8, units = 350 },
+    fuel = "rf-d-t-plasma", seed = 6e8, units = 0.35 * FULL },
 }
 
 local lines = {}
