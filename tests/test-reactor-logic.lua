@@ -1907,14 +1907,111 @@ for t = 1, #LADDER do
       GRID[3][t].ratio / GRID[0][t].ratio, GRID[3][t - 1].ratio / GRID[0][t - 1].ratio))
 end
 
--- THE TARGET ADR 0038 SET, AND THE CEILING #294 WILL GATE. The stated target is about 9 settled
--- D-D reactors per saturated D-T reactor at the fully-researched state; the ceiling is 15. Pinned
--- here so #294 gates a figure this suite already measures rather than one it re-derives.
+-- THE TARGET ADR 0038 SET, AND THE CEILING #294 GATES. The stated target is about 9 settled
+-- D-D reactors per saturated D-T reactor at the fully-researched state; the ceiling is 15.
 near(TOPPED.ratio, 8.9269, 0.01,
   "at the top of both ladders it takes 8.93 D-D reactors to feed one")
-check(TOPPED.ratio < 15,
-  "which is inside the ceiling ADR 0038 names for the fully-researched state",
-  string.format("%.4g against 15", TOPPED.ratio))
+-- The two ends of that ratio, pinned separately, because the ceiling's diagnostic below reports
+-- against them and a reference figure nothing measures is a reference figure that can rot.
+near(TOPPED.bred, 1.285164, 0.01, "breeding 1.285 u/s of tritium a reactor")
+near(TOPPED.needed, 11.4726, 0.01, "against a settled D-T reactor's 11.47 u/s")
+
+-- ------------------------------------------------------ the ceiling, gated rather than pinned (#294)
+--
+-- THE PINS ABOVE SAY WHAT THE NUMBER IS; THIS SAYS WHAT IT IS ALLOWED TO BE, and they are not the
+-- same assertion. A rebalance that deliberately moves a rung updates the pin and sails through,
+-- and the ratio it implies is then nobody's claim -- which is what happened to the figure 94.70
+-- replaced: it read 1.4 for a month after #52 moved its numerator, because it lived in a prose
+-- comment no gate could read (#117). ADR 0038 states a ceiling of 15
+-- at the fully-researched state, deliberately looser than its target of 10, because 10 is a pain
+-- budget and not a physics limit.
+--
+-- WHERE IT LIVES, AND WHY HERE. This suite already settles both ends of the chain at every cell of
+-- the grid, so the ceiling costs nothing to assert and runs in seconds outside Factorio. The
+-- alternative was control.lua's check_prototypes(), which sees the prototypes too and refuses to
+-- load -- the strongest form available -- at the cost of settling two reactors on every map
+-- creation and every configuration change, for a property that no prototype can move.
+--
+-- WHAT IT CANNOT SEE, which is the price of that choice and the reader needs it. It is the MODEL's
+-- ratio, not a plant's. It cannot see a heater keeping up, an exchanger draining a researched
+-- reactor, or a collector filling; it cannot see Core's rf-d-t-mixing, which sets the composition
+-- the per-heater reading assumes (see HEATER_TRITIUM above); and it cannot see a prototype at all.
+-- scripts/check-heating.ps1 is where the prototype side of this ladder is measured in a game.
+--
+-- INTERMEDIATE RESEARCH STATES ARE DELIBERATELY UNGATED and the cell below says why.
+-- THE ANEUTRONIC TIER IS OUT OF SCOPE, matching ADR 0038 decision 5; whether its ratio moves
+-- is #422. Its measurement is in the section below this one and carries no ceiling on purpose.
+local CEILING = 15
+
+--- The ceiling breach as a sentence, or nil when the chain is inside it.
+--
+-- IT NAMES WHICH END MOVED, which is the half that makes a failure actionable: "the fuel chain got
+-- longer" does not say whether the breeder slowed down or the burner sped up, and those are
+-- different bugs in different files. Both ends are compared against the pinned figures above, and
+-- the larger move in LOG space is the one reported. Log because a halving and a doubling are the
+-- same size of move and must count the same: on |shift - 1| a halved breeder scores 0.5 against a
+-- doubled burner's 1.0, and the burner would win a comparison it had no business winning.
+local function ceiling_fault(measured, reference, ceiling)
+  if measured.ratio <= ceiling then return nil end
+  local bred_shift   = measured.bred / reference.bred
+  local needed_shift = measured.needed / reference.needed
+  local which
+  if math.abs(math.log(bred_shift)) >= math.abs(math.log(needed_shift)) then
+    which = string.format("the BREEDER end moved: %.4g u/s of tritium a reactor against %.4g (x%.3f)",
+      measured.bred, reference.bred, bred_shift)
+  else
+    which = string.format("the BURNER end moved: a settled D-T reactor needs %.4g u/s against %.4g (x%.3f)",
+      measured.needed, reference.needed, needed_shift)
+  end
+  return string.format(
+    "the supply ratio at the top of both ladders is %.4g, over ADR 0038's ceiling of %.4g -- %s",
+    measured.ratio, ceiling, which)
+end
+
+local RESEARCHED = { ratio = 8.9269, bred = 1.285164, needed = 11.4726 }
+check(ceiling_fault(TOPPED, RESEARCHED, CEILING) == nil,
+  "the fully-researched supply ratio is inside ADR 0038's ceiling",
+  ceiling_fault(TOPPED, RESEARCHED, CEILING)
+    or string.format("%.4g against %d", TOPPED.ratio, CEILING))
+
+-- THE NEGATIVE TEST, and it is the reason the check above is a function call rather than a
+-- comparison. A guard that has quietly stopped firing exits 0 and reports OK, which is the failure
+-- #125 was opened about; shipping a ceiling without something that fails when it stops working
+-- would repeat it on the day it was closed. Broken here directly, the way the ladder guard is
+-- broken further down, because the fault is pure arithmetic on a measurement and needs no game.
+--
+-- BOTH ENDS, ONE EACH, because the diagnostic has two branches and a negative test that exercises
+-- one of them leaves the other free to name the wrong end for ever.
+do
+  local slow_breeder = { ratio = RESEARCHED.ratio * 3, bred = RESEARCHED.bred / 3,
+                         needed = RESEARCHED.needed }
+  local fault = ceiling_fault(slow_breeder, RESEARCHED, CEILING)
+  check(type(fault) == "string",
+    "a chain three times longer than the shipped one is over the ceiling and says so",
+    tostring(fault))
+  check(fault and fault:find("BREEDER", 1, true) ~= nil,
+    "and it names the breeder when the breeder is what slowed down", tostring(fault))
+  check(fault and fault:find(tostring(CEILING), 1, true) ~= nil,
+    "and it names the ceiling it broke, so the cause is placeable without a second run",
+    tostring(fault))
+
+  local fast_burner = { ratio = RESEARCHED.ratio * 3, bred = RESEARCHED.bred,
+                        needed = RESEARCHED.needed * 3 }
+  local burner_fault = ceiling_fault(fast_burner, RESEARCHED, CEILING)
+  check(burner_fault and burner_fault:find("BURNER", 1, true) ~= nil,
+    "and it names the burner when the burner is what sped up", tostring(burner_fault))
+
+  -- THE CEILING RATHER THAN THE VALUE, asserted in both directions. A deliberate rebalance that
+  -- lands inside the ceiling has to pass -- otherwise the gate is a second pin and #294 would have
+  -- changed nothing -- and one that lands outside it has to fail. The two rows straddle 15 by a
+  -- tenth, which is what says the boundary is where ADR 0038 put it and not somewhere nearby.
+  local inside  = { ratio = CEILING - 0.1, bred = RESEARCHED.bred, needed = RESEARCHED.needed }
+  local outside = { ratio = CEILING + 0.1, bred = RESEARCHED.bred, needed = RESEARCHED.needed }
+  check(ceiling_fault(inside, RESEARCHED, CEILING) == nil,
+    "a rebalance that lands inside the ceiling passes, ratio and all -- this gates the bound, not the value")
+  check(ceiling_fault(outside, RESEARCHED, CEILING) ~= nil,
+    "and one a tenth outside it does not")
+end
 
 -- AND THE OTHER READING OF IT, which is the one CONTEXT.md publishes because a heater is what a
 -- player builds. 9.1233 unresearched is pinned in the table above; this is its far corner.
@@ -1933,9 +2030,9 @@ near(TOPPED.bred, 1.285164, 0.01, "and at the top of both ladders, 1.285 u/s")
 -- INTERMEDIATE STATES ARE DELIBERATELY UNGATED, and this is the cell that says why: a player who
 -- finishes the confinement ladder and researches no heating sits at 18.5, which is a legitimate
 -- build and is over the ceiling. #294 gates the fully-researched state alone.
-check(TOP_TAU_ONLY.ratio > 15,
+check(ceiling_fault(TOP_TAU_ONLY, RESEARCHED, CEILING) ~= nil,
   "top-confinement-only is over the ceiling, which is why #294 gates the fully-researched state",
-  string.format("%.4g against 15", TOP_TAU_ONLY.ratio))
+  ceiling_fault(TOP_TAU_ONLY, RESEARCHED, CEILING))
 
 -- AND THE BLANKET IS THE OTHER ROUTE ENTIRELY, not a discount on this one (#30, ADR 0019). The
 -- breeding block above proves a blanketed D-T reactor breeds back more tritium than it burns, so
