@@ -302,68 +302,61 @@ prefix. One format, no exceptions:
 <footer>
 ```
 
-**Subject line**
+**The rules live in
+[`vendor/grado-factorio-tools/docs/commit-convention.md`](vendor/grado-factorio-tools/docs/commit-convention.md)**
+— the type table, the situational emoji, the subject and body limits, and what the check is blind
+to. That page is shared with `grado-factorio-modpack` and the tooling repo, so a rule change is one
+edit instead of three. If the submodule is not initialised, read it at
+<https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/commit-convention.md> — but that
+shows `main`, which may be ahead of the commit this repo has pinned.
 
-- Imperative mood, lowercase after the colon, no trailing period, whole line ≤ 72 characters.
-- `<scope>` is optional but preferred. Use the module (`core`, `power`, `weaponry`, `antimatter`) or the
-  area (`data`, `runtime`, `settings`, `locale`, `graphics`, `repo`).
-- The emoji is the *rendered* character, not the `:shortcode:`.
+Three things are this repository's own, because all three are its domain rather than shared
+mechanics:
 
-**Types, and the emoji that goes with each**
-
-| Type | Emoji | Use for |
-|---|---|---|
-| `feat` | ✨ | a new capability |
-| `fix` | 🐛 | a bug fix |
-| `docs` | 📝 | documentation only |
-| `refactor` | ♻️ | restructuring with no behaviour change |
-| `perf` | ⚡️ | performance |
-| `test` | ✅ | tests |
-| `build` | 📦 | packaging, mod zip, `info.json`, dependencies |
-| `chore` | 🔧 | tooling and config |
-| `style` | 🎨 | formatting and code structure only |
-| `revert` | ⏪️ | reverting a previous commit |
-
-A few situational ones worth knowing: 🎉 to begin a project, 🚚 to move or rename files, 🔥 to remove
-code or files, 🌐 for localisation, 💄 for icons and other visual assets, 🚧 for work in progress.
-
-**Body** — explain *why*, not what the diff already shows. Wrap at 72. Reference the Factorio API
-version when a change depends on one. When code is lifted from a predecessor mod, name the author and
-the mod there (see Upstream material above).
-
-**Breaking changes** — for anything that breaks an existing save or a mod's public interface, put `!`
-before the colon *and* a `BREAKING CHANGE:` footer explaining the migration. Save compatibility is the
-one that will bite: it breaks silently and players find out, not the build.
+- **Scope vocabulary.** Use the module (`core`, `power`, `weaponry`, `antimatter`) or the area
+  (`data`, `runtime`, `settings`, `locale`, `graphics`, `repo`).
+- **What counts as a breaking change.** Here it is anything that breaks an existing save or a mod's
+  public interface. **Save compatibility is the one that will bite: it breaks silently and players
+  find out, not the build.** The `!` and the `BREAKING CHANGE:` footer are the shared mechanism;
+  what triggers them is this repo's own.
+- **What a body has to name.** Reference the Factorio API version when a change depends on one, and
+  when code is lifted from a predecessor mod, name the author and the mod there (see Upstream
+  material above).
 
 Example:
 
 ```
 ✨ feat(power): add deuterium extraction from water
 
-Implements the first step of the fuel chain so the reactor prototypes have an
-input to consume. Recipe balance is provisional and not yet checked against the
-1.1 original's numbers.
+Implements the first step of the fuel chain so the reactor
+prototypes have an input to consume. Recipe balance is provisional
+and not yet checked against the 1.1 original's numbers.
 ```
 
-**A hook checks all of this, and it is not installed by default.** `.githooks/commit-msg` runs
-`scripts/commit-check.ps1` on the message before the commit is written, and git does not track
-`.git/hooks`, so every clone has to opt in once:
+**A hook checks all of this, and it is not installed by default.** `.githooks/commit-msg` runs the
+shared check on the message before the commit is written. Git tracks neither `.git/hooks` nor a
+submodule's contents, so every clone opts in twice:
 
 ```
+git submodule update --init
 git config core.hooksPath .githooks
 ```
 
-It checks the emoji-and-type pairing, the case after the colon, the trailing period, both 72-character
-limits, the blank line, and that a `!` carries a `BREAKING CHANGE:` footer. Imperative mood is not
-checkable and is not checked. Trailers like `Co-Authored-By:` are exempt, and so is a line whose
-longest word is itself over 72 — a bare URL cannot be wrapped, and failing it would only teach
-people to ignore the gate.
+**Skipping either step is loud rather than silent.** The hook says the message was not checked and
+lets the commit through, instead of passing everything quietly — the posture
+[ADR 0001](https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/adr/0001-siblings-consume-this-repo-as-a-submodule.md)
+in the tooling repo requires, and what makes the second step safe to ask for.
 
 **It exists because the wrap rule had rotted.** Measured on 2026-09-06 by
-`commit-check.ps1 -Range '-50 main'`: 21 of the last 50 commits fail, on 183 body lines and 5 subject
-lines over 72, the longest subject being 82. History is left alone; the hook stops it growing.
-`-Range origin/main..HEAD` checks a branch before a pull request, and `-SelfTest` proves the checker
-can still fail.
+`commit-check.ps1 -Range '-50 main'`: 21 of the last 50 commits fail, on 183 body lines and 5
+subject lines over 72, the longest subject being 82. History is left alone; the hook stops it
+growing. `-Range origin/main..HEAD` checks a branch before a pull request, and `-SelfTest` proves
+the check can still fail.
+
+**The check moved out of this repository on 2026-09-21** and is now resolved from the tooling repo
+as a pinned submodule. It was written here, and the copy that was here is deleted rather than left
+to drift. Bumping the pin is a deliberate commit, so a change there cannot alter this repo's gate
+until this repo opts in.
 
 ## Agent skills
 
