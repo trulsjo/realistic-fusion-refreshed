@@ -372,10 +372,12 @@ end
 -- --------------------------------------------------------------------------------- per tier
 
 -- WHICH LEVERS HAVE NOWHERE TO LIVE, which is #291's sixth acceptance criterion. Both neutronic
--- tiers are ONE spec -- M.reactor -- because a reactor is its constants and rf-reactor burns
--- whichever plasma it is fed (ADR 0005). So every row above moves both ends of the chain at once,
--- and a lever meant for the BURNER alone has no field to be written in. The rows below measure
--- what such a field would be worth if it existed, which is the argument for or against adding one.
+-- tiers are ONE spec -- M.reactor -- because rf-reactor burns whichever plasma it is fed (#28), and
+-- a machine differs from another only by its spec table (this repository's reading of ADR 0005, not
+-- its words). So every row above moves both ends of the chain at once, and a lever meant for the
+-- D-T tier alone has no field to be written in. The rows below measure what such a field would be
+-- worth if it existed. #446 priced them and decided against adding one: see "Decided against" in
+-- docs/research/supply-ratio-levers.md.
 header("PER-TIER -- levers with no home, measured on the D-T end alone")
 do
   local burner_only = {
