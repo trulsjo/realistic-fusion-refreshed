@@ -14,7 +14,8 @@ worse is a result here, not a failure — and three of them do. The probe stays 
 rebalance can be asked the same question instead of this note being trusted after the model has
 moved under it.
 
-**It decides nothing, and it must not.**
+**It decides nothing, and it must not.** *(One decision is recorded here, not taken here: Truls
+decided #446, and* Decided against *records it.)*
 [ADR 0038](../adr/0038-heating-power-is-the-second-researchable-lever.md) already chose the lever
 and Truls took that decision; this note is the pricing the choice was checked against, committed so
 it can be re-taken. Where a row disagrees with what is shipped, the shipped value is the decision.
@@ -292,22 +293,27 @@ the D-D end left at the researched spec:
 
 *Measured 2026-09-23 at revision `e5019a6`, with the probe's `chain()` arithmetic (`M.settle`,
 1200 s at one tick, box full). The same script reproduces 94.70, 8.93 and 54.54, so it measures
-the same quantity as the probe. `scripts/probe-supply-ratio.lua` does not print this table.*
+the same quantity as the probe. `scripts/probe-supply-ratio.lua` does not print this table, nor
+the entry-state output and Q figures in the bullets below; the same script measured them.*
 
 **Why the field stays unbuilt:**
 
-- **The ratio has nothing left to buy.** ADR 0038 decision 1 sets the target at about 10 and the
-  ceiling at 15. The shipped fully-researched figure is 8.93.
+- **The ratio has nothing left to buy.** ADR 0038 decision 1 states a target of 10 and a gate
+  ceiling of 15. The shipped fully-researched figure is 8.93.
 - **The one row that helps does so by making the D-T reactor burn less.** Volume ×2 lowers the
   ratio because the D-T reactor burns less fuel and sells less power: −45% output fully researched,
   −42% at entry. D-D breeding does not change. The lever is a cut to the D-T tier, not a cheaper
   breeder.
-- **It moves the entry state.** At unresearched, volume ×2 takes the D-T reactor from 3151 MW to
-  1833 MW and its Q from 73.1 to 42.1. ADR 0038 decision 3 keeps entry untouched, and ADR 0015 is
-  the design it keeps.
+- **It moves the D-T tier at entry.** At unresearched, volume ×2 takes the D-T reactor from
+  3151 MW to 1832 MW and its Q from 73.1 to 42.1. The heating ladder deliberately leaves entry
+  where it is (ADR 0038 decision 3). The D-D tier's entry state, which is ADR 0015's design, does
+  not move: breeding is 0.13701 u/s either way.
 - **A second prototype is outside ADR 0010's prototype set.** It would be a new machine to model,
   art, localise and place in the tech tree. One `rf-reactor` that a player switches from breeder to
   D-T by changing its feed is the intended game.
+- **It costs the shared-spec claim nothing.** One spec is what ships, so nothing that relies on it
+  changes. The claim is this repository's reading of ADR 0005, not ADR 0005's words (see the
+  paragraph above the first table).
 - **The other two rows make the ratio worse at both states.** Volume ×0.5 gives 171.39 and 16.99.
   The temperature clamp at ×0.4 gives 124.44 and 13.27. Its D-T burn is 17.05 u/s at both states,
   because the plasma sits against the clamp, where confinement time and heating power no longer
