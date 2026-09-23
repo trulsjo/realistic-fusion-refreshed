@@ -126,7 +126,7 @@ happened the first time it did.
 | RITEG ([#140](https://github.com/trulsjo/realistic-fusion-refreshed/issues/140)) | `riteg`, 1 mod | **red** | green | upstream's — `__base__/sound/car-metal-impact.ogg`, the 1.1-era path 2.0 removed, named by RITEG and not by this repo. ADR 0026 smoke-tested this and predicted it; the lane now has a row |
 | Advanced Fluid Handling ([#141](https://github.com/trulsjo/realistic-fusion-refreshed/issues/141)) | `fluid`, 1 mod | green | green | green on both halves — and `underground-pipe-pack` 2.0.6 still names the same `__base__/sound/car-metal-impact.ogg` in an unconditionally required file, without the asset check failing on it: 2.0 migrated `vehicle_impact_sound` to `impact_category` for `pump` and not for `electric-energy-interface`, so the string never reaches the dump the check walks. Measured 2026-08-31 against 2.0.77 — ADR 0026's contrary claim is corrected, this verdict stands, see finding 2 and [#196](https://github.com/trulsjo/realistic-fusion-refreshed/issues/196) |
 | Realistic Fusion Power Port ([#450](https://github.com/trulsjo/realistic-fusion-refreshed/issues/450)) | `rfp-port`, 1 mod | **red** | green | upstream's — one 1.1-era path, `__base__/sound/car-metal-impact.ogg`, named by the port's own `electric-boiler/`. A scratch copy with that one line removed is **green on every clause**: map created, all fifteen invariants hold. So nothing else hides behind the red. By default the port also edits two technologies of ours, `rf-heavy-water` and `rf-lithium-extraction`; see the seventh finding |
-| Space Exploration + Realistic Fusion Power Port + SE-Compat ([#451](https://github.com/trulsjo/realistic-fusion-refreshed/issues/451)) | `spaceex-rfp-port`, 19 mods | **red** | green | upstream's — exactly #129's five paths, all named by SE and the two AAI mods. The port names `car-metal-impact.ogg` again, which is already one of the five. `name-check` differs from #129 only by the port's two clones (the seventh finding). Nothing past SE's red was reached |
+| Space Exploration + Realistic Fusion Power Port + SE-Compat ([#451](https://github.com/trulsjo/realistic-fusion-refreshed/issues/451)) | `spaceex-rfp-port`, 19 mods | **red** | green | upstream's — exactly #129's five paths, all named by SE and the two AAI mods. The port names `car-metal-impact.ogg` again, which is already one of the five. `name-check` finds the same shapes SE produces alone (its delivery-cannon derivations and one tooltip), plus the port's two clones (the seventh finding). Nothing past SE's red was reached |
 | Space Exploration + Realistic Fusion Power Port SE ([#452](https://github.com/trulsjo/realistic-fusion-refreshed/issues/452)) | `spaceex-rfp-port-se`, 18 mods | **red** | green | upstream's — the same five paths. The fork names `car-metal-impact.ogg` too, from the same inherited `electric-boiler/` line, and carries the same depleted-water clones as the port. Nothing past SE's red was reached |
 
 **The run log is the lane's issue**, not this ADR — counts, prototype enumerations, which dumps were
@@ -157,8 +157,8 @@ the game refuses the selection outright and a run would produce the refusal and 
 2026-08-18 from the portal's then-current `factorio_version` 2.1 releases, and
 [ADR 0026](0026-third-party-mods-are-pinned-to-their-2-0-line.md) later confined this project to the
 2.0 line — where `SeaBlockWanne`'s dependency array is already known to differ from its 2.1 one.
-All six hold at the pinned releases, read from `info_json.dependencies` on the portal's `/full`
-endpoint. The seventh row was added and read at its pin the same way on 2026-09-23. `docs/research/mod-set-coexistence-targets.md` carries the derivation and the two textual
+All seven hold at the pinned releases, read from `info_json.dependencies` on the portal's `/full`
+endpoint — the first six on the date above, the seventh when it was added on 2026-09-23. `docs/research/mod-set-coexistence-targets.md` carries the derivation and the two textual
 corrections the re-read produced.
 
 Two consequences the table above depends on. There is **no `+ Space Age` variant of #129, #130 or
@@ -193,7 +193,8 @@ shapes. The sixth finding records a fourth that is ours, where a lane fails for 
 about the mod set at all.) **The
 asset shape** is the `load-check` half: `spaceex` and `k2-spaceex` in the table above, plus `riteg`,
 `seablock`, `rfp-port`, `spaceex-rfp-port` and `spaceex-rfp-port-se`, every one on a 1.1-era `__base__` path Factorio 2.0 removed —
-`sound/car-metal-impact.ogg`, named by RITEG, by `KS_Power` and by Durikkan's port and its SE fork, and the four
+`sound/car-metal-impact.ogg`, named by RITEG, by `KS_Power`, by `aai-industry` and `aai-signal-transmission`, and by Durikkan's port
+and its SE fork, and the four
 `nuclear-reactor/connection-patch-*.png` that 2.0 replaced with one combined sheet. **Not pin
 artefacts:** each mod is pinned at the last `factorio_version` 2.0 release its family has, so there
 is no later release to move to and the reference cannot be pinned away. This repo names none of them,
@@ -403,7 +404,8 @@ since #276 on 2026-09-18, neither of which has been re-swept — the four asset-
 which is the result
 [#207](https://github.com/trulsjo/realistic-fusion-refreshed/issues/207)'s sweep predicted and
 [#208](https://github.com/trulsjo/realistic-fusion-refreshed/issues/208)'s opt-out earned on
-`seablock`. **Green is the claim**: the gate exists to notice the fifteenth lane, and it is what #208
+`seablock`. **Green is the claim**: the gate exists to notice the next lane that reassigns a category
+— the fifteenth to seventeenth, #450 to #452, were green on it on 2026-09-23 — and it is what #208
 meant by *reassess if a second mod ever reassigns a containment category* — that mod now fails a run
 instead of waiting to be read out of somebody's `data-final-fixes`.
 
@@ -497,7 +499,7 @@ assets against the five this table records, matching in number rather than enume
 
 **7. A set can derive a prototype that keeps our prefix at the front, and `name-check` counts it as
 ours.** Durikkan's port ([#450](https://github.com/trulsjo/realistic-fusion-refreshed/issues/450)) turns on depleted-water recycling by default. It clones every
-recipe that takes `water` as `<recipe>-rfp-ddw`, and appends the clone's unlock to the same technology.
+recipe that takes `water`, unless one of its results is named for water, as `<recipe>-rfp-ddw`, and appends the clone's unlock to the same technology.
 Two of the clones are built from ours, `rf-brine-rfp-ddw` and `rf-hydrogen-from-water-rfp-ddw`, so the
 port edits **our** technologies `rf-lithium-extraction` and `rf-heavy-water`. The fourth finding says
 neither check sees that; the tree viewer's history attribution does. The clones start with `rf-`, so
