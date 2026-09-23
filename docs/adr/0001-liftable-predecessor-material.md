@@ -98,7 +98,8 @@ proof.
 
 > **The deferred check was done on 2026-08-17 (#38).** This ADR's text stands as what was true when it
 > was accepted; the answer is recorded in
-> [`predecessor-survey.md`](../research/predecessor-survey.md) and `CLAUDE.md`.
+> [`predecessor-survey.md`](../research/predecessor-survey.md). `CLAUDE.md` also stated it until #449
+> trimmed that file.
 >
 > Both mods mark two directories, on the same terms as each other: `graphics/particle-accelerator/`
 > (GPLv3, *"modified from Krastorio 2"*) and `electric-boiler/` (CC BY-NC-ND 4.0, *"from angels
