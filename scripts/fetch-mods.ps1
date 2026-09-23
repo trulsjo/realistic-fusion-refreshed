@@ -336,7 +336,8 @@ $MOD_SETS = @{
 # ---------------------------------------------------------------------------------------------
 # The combination lanes -- COMPOSED, NOT TRANSCRIBED.
 #
-# #61's table asks for three sets that are not families but unions of them. They are built from the
+# #61's table asks for three sets that are not families but unions of them, and #451 and #452 add two
+# more. They are built from the
 # family sets above rather than written out again, so a pin lives in exactly one place: refreshing
 # a family refreshes every lane it appears in, and there is no second copy to forget.
 #
@@ -358,6 +359,7 @@ $MOD_SETS = @{
 # CURRENT releases, which are factorio_version 2.1; ADR 0026 pins the 2.0 line, whose closures are
 # smaller -- Bob's is 12 mods at 2.0 and 18 at 2.1. So 22 / 20 / 21 here against the table's
 # 20 / 26 / 30. Neither number is wrong; they are different major versions of the same families.
+# The two port lanes are 19 and 18, which no table predated.
 function Join-ModSets {
     <#  One lane's mods from several family sets, deduplicated by name.
 
@@ -365,7 +367,7 @@ function Join-ModSets {
         `angels` carries too. A name pinned at two DIFFERENT versions is refused rather than
         resolved, because picking one would be a version decision made silently by a helper --
         `flib` is 0.16.2 in `krastorio2` and 0.16.5 in `seablock`, so the case exists today and
-        only stays out of these three unions by luck.  #>
+        only stays out of these five unions by luck.  #>
     param([Parameter(Mandatory)] [string[]] $Names)
 
     $byName = [ordered]@{}
@@ -825,7 +827,7 @@ function Invoke-SelfTest {
         # name has exactly one way to be quietly wrong: two families pinning the same mod at
         # different versions, where picking either is a version decision ADR 0026 says belongs in
         # the manifest rather than in a helper. `krastorio2` + `seablock` is that case today --
-        # flib at 0.16.2 and 0.16.5 -- and it is not one of the three lanes composed above, so
+        # flib at 0.16.2 and 0.16.5 -- and it is not one of the lanes composed above, so
         # without this the guard would never run.
         Write-Host 'self-test 1/6: a union of two sets pinning one mod at two versions must be refused.'
 
