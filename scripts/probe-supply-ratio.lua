@@ -391,7 +391,8 @@ do
   end
   io.write("\n  None of the three rows above is expressible in the shipped model: rf-reactor has one\n")
   io.write("  spec and burns both plasmas through it. Pulling any of them means a second spec, or a\n")
-  io.write("  per-fuel override on the first -- which is a decision, not a retune.\n")
+  io.write("  per-fuel override on the first -- which is a decision, not a retune. #446 decided\n")
+  io.write("  against it; see \"Decided against\" in docs/research/supply-ratio-levers.md.\n")
 end
 
 -- --------------------------------------------------------------------------------- non-levers

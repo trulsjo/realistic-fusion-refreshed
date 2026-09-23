@@ -463,7 +463,9 @@ M.reactor = {
   -- levers are backwards: lowering max_temperature_c parks the plasma nearer the peak of the
   -- cross-section and it burns MORE, doubling density is far worse because bremsstrahlung goes as
   -- n^2, and raising volume_m3 is at best flat because the shipped 1000 m^3 is already on its own
-  -- optimum. Read ADR 0038's table before proposing any of them again.
+  -- optimum. Read ADR 0038's table before proposing any of them again. (That is volume_m3 on
+  -- this spec, which both tiers share. On the D-T tier alone it is not flat; #446 priced that and
+  -- decided against it.)
   --
   -- FIVE RUNGS AT 5 MW, AND NO NULL RUNG. Per rung the supply ratio falls 24%, 21%, 19%, 17% and
   -- 15% at entry confinement, and 21%, 16%, 12%, 10% and 8% at the top of the confinement ladder.
@@ -716,8 +718,8 @@ M.reactor = {
 -- D-He3 and He3-He3 want conditions the first reactor does not reach. It is the same physics, the
 -- same step() and the same file -- a reactor is its constants. That is this file's reading of
 -- ADR 0005, not ADR 0005's words: what it decides is that reaction rate comes from cross-section
--- data rather than from recipe ratios, which leaves a spec table as the one thing a machine can
--- differ by (#446).
+-- data rather than from recipe ratios, which leaves a spec table as the main thing one machine's
+-- simulation differs by (#446).
 --
 -- WHAT IS DIFFERENT, and why each one:
 M.aneutronic_reactor = {

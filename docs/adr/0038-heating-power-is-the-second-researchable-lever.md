@@ -158,6 +158,9 @@ Recorded so nobody re-derives them.
 - **Doubling density** is far worse — bremsstrahlung goes as n² and D-D collapses.
 - **Halving D-T `volume_m3`** is worse; raising it is at best flat and then worse. The shipped
   1000 m³ is already on the optimum.
+  *Qualified by #446: this row changes the spec both tiers share. Raising `volume_m3` on the D-T
+  tier alone is not flat: it lowers the ratio by cutting D-T output, and #446 decided against it.
+  See* Decided against *in [`supply-ratio-levers.md`](../research/supply-ratio-levers.md).*
 - **The lithium blanket is not a lever.** It sets the ratio to zero and ends the question; it does
   not make it smaller. See Context.
 - **Moving `rf-blanket-breeding` earlier in the tech tree** has no room. Its prerequisites are
