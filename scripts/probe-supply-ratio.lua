@@ -12,8 +12,8 @@ answers were written down.
 WHY IT IS LUA AND NOT POWERSHELL. Twenty-two of the twenty-six probes in this directory need a
 running game -- eighteen of them build a map. This one needs the simulation and nothing else, and
 the simulation runs outside Factorio by design (ADR 0005): a map here would be minutes spent asking
-a question reactor-logic.lua answers in seconds. CLAUDE.md states the rule this rests on -- a probe
-is a shape, not a language and not a map -- and this is the first probe here to take it up.
+a question reactor-logic.lua answers in seconds. The rule this rests on is that a probe is
+a shape, not a language and not a map, and this is the first probe here to take it up.
 
 WHAT IT MEASURES. The supply ratio per saturated reactor -- settled D-D reactors per settled D-T
 reactor -- and its per-heater reading, at the same operating point tests/test-reactor-logic.lua

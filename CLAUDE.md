@@ -70,8 +70,8 @@ Since #416 it has a `-SelfTest` of its own, which is new: it proves the shared s
 `factorio-lib.ps1` and section 9's citation rule, in both directions. The other eight sections it
 runs on a plain invocation are unchanged and still have no self-test, for the reason its help block
 gives.
-Run them rather than reasoning about whether a change is safe. How each gate's `-SelfTest` is built,
-and the traps two of them already fell into, is in `scripts/CLAUDE.md`.
+Run them rather than reasoning about whether a change is safe. How three of the self-tests are
+built, and the two traps the `-FromZips` one already fell into, is in `scripts/CLAUDE.md`.
 
 **`load-check.ps1` loads the mods two ways, and the default is not the player's.** Without arguments
 it junctions the repository's directories in, so the game reads the working tree; `-FromZips` builds

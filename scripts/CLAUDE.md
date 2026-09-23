@@ -1,7 +1,8 @@
 # scripts/ — gate internals
 
 Loads when working under `scripts/`. The root `CLAUDE.md` says which gates exist and when to run
-them; this file says how their self-tests are built and where they already broke.
+them; this file says how three self-tests are built -- two gates' and one build tool's -- and
+the two traps one of them already fell into.
 
 **Since #280 `scripts/check-hc.ps1` carries a `-SelfTest` too, and it is the second gate here that
 starts the game to prove itself.** Its four halves are about the neutronic plant that section builds
