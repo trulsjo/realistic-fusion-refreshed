@@ -714,8 +714,10 @@ M.reactor = {
 --
 -- The second machine, and ADR 0010 names it separately for a reason this table is the whole of:
 -- D-He3 and He3-He3 want conditions the first reactor does not reach. It is the same physics, the
--- same step() and the same file -- a reactor is its constants, which is exactly what ADR 0005 set
--- out to make true.
+-- same step() and the same file -- a reactor is its constants. That is this file's reading of
+-- ADR 0005, not ADR 0005's words: what it decides is that reaction rate comes from cross-section
+-- data rather than from recipe ratios, which leaves a spec table as the one thing a machine can
+-- differ by (#446).
 --
 -- WHAT IS DIFFERENT, and why each one:
 M.aneutronic_reactor = {

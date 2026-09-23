@@ -5,7 +5,8 @@
 1200 s at one tick, box full and never starved unless a row says otherwise. No game is started.
 
 **Reproduce it with `lua scripts/probe-supply-ratio.lua`.** About seventeen seconds, and every
-table and chart below is pasted from that run.
+table and chart below is pasted from that run, except the fully-researched table under *Decided
+against*, which says where it came from.
 
 **It is a probe, so it asserts nothing and exits 0 whatever it finds**
 ([`CLAUDE.md`](../../CLAUDE.md)'s paragraph on probes is the contract). A lever that makes the ratio
@@ -256,8 +257,10 @@ much larger power bill.
 ## Levers with no home
 
 **Both neutronic tiers are one spec.** `M.reactor` is what `rf-reactor` runs on whichever plasma it
-is fed (ADR 0005), so every row above moves **both** ends of the chain at once. A lever meant for
-the burner alone has no field to be written in. Measured on the D-T end alone, to price the field
+is fed (#28), so every row above moves **both** ends of the chain at once. *(This said "(ADR 0005)"
+until #446. ADR 0005 decides that reaction rate comes from cross-section data. It says nothing about
+how many specs there are.)* A lever meant for the
+D-T tier alone has no field to be written in. Measured on the D-T end alone, to price the field
 that does not exist:
 
 | point | ratio | D-T burns |
@@ -266,9 +269,57 @@ that does not exist:
 | `volume_m3` ×2, D-T only | **54.54** | 7.5 u/s, was 13.0 |
 | `max_temperature_c` ×0.4, D-T only | 124.44 | 17.1 u/s, was 13.0 |
 
-**A bigger plasma volume on the burner alone is worth 94.70 → 54.54** and nothing in the shipped
-model can express it. Pulling it means a second spec, or a per-fuel override on the first. That is a
-decision rather than a retune, and this note does not take it.
+**A bigger plasma volume on the D-T tier alone is worth 94.70 → 54.54** and nothing in the shipped
+model can express it. Pulling it means a second spec, or a per-fuel override on the first. ~~That is a
+decision rather than a retune, and this note does not take it.~~ **#446 took that decision: the
+field stays unbuilt.** See *Decided against* below.
+
+### Decided against (#446, 2026-09-23)
+
+**`M.reactor` stays one spec for both neutronic tiers.** There is no second spec, no per-fuel
+override and no second prototype. Truls decided this on #446.
+
+**The rows above are measured at the unresearched state, which nothing gates.** ADR 0038 gates the
+fully-researched state. The same three rows, measured there with both ladders at their top rung and
+the D-D end left at the researched spec:
+
+| point | ratio | D-T burns | D-T output |
+|---|---|---|---|
+| shipped, fully researched | **8.93** | 11.47 u/s | 2812 MW |
+| `volume_m3` ×0.5, D-T only | 16.99 | 21.83 u/s | 5294 MW |
+| `volume_m3` ×2, D-T only | **4.84** | 6.22 u/s | 1553 MW |
+| `max_temperature_c` ×0.4, D-T only | 13.27 | 17.05 u/s | 4148 MW |
+
+*Measured 2026-09-23 at revision `e5019a6`, with the probe's `chain()` arithmetic (`M.settle`,
+1200 s at one tick, box full). The same script reproduces 94.70, 8.93 and 54.54, so it measures
+the same quantity as the probe. `scripts/probe-supply-ratio.lua` does not print this table.*
+
+**Why the field stays unbuilt:**
+
+- **The ratio has nothing left to buy.** ADR 0038 decision 1 sets the target at about 10 and the
+  ceiling at 15. The shipped fully-researched figure is 8.93.
+- **The one row that helps does so by making the D-T reactor burn less.** Volume ×2 lowers the
+  ratio because the D-T reactor burns less fuel and sells less power: −45% output fully researched,
+  −42% at entry. D-D breeding does not change. The lever is a cut to the D-T tier, not a cheaper
+  breeder.
+- **It moves the entry state.** At unresearched, volume ×2 takes the D-T reactor from 3151 MW to
+  1833 MW and its Q from 73.1 to 42.1. ADR 0038 decision 3 keeps entry untouched, and ADR 0015 is
+  the design it keeps.
+- **A second prototype is outside ADR 0010's prototype set.** It would be a new machine to model,
+  art, localise and place in the tech tree. One `rf-reactor` that a player switches from breeder to
+  D-T by changing its feed is the intended game.
+- **The other two rows make the ratio worse at both states.** Volume ×0.5 gives 171.39 and 16.99.
+  The temperature clamp at ×0.4 gives 124.44 and 13.27. Its D-T burn is 17.05 u/s at both states,
+  because the plasma sits against the clamp, where confinement time and heating power no longer
+  move the burn.
+
+**What reopens it:**
+
+1. A target below 8.93 fully researched, which means superseding ADR 0038 decision 1.
+2. A reason to separate the D-T tier that is not the ratio: its own art, its own tech step or its
+   own research ladder.
+3. A D-T-only lever that lowers the ratio **without** lowering D-T output. None of the three
+   measured here does that.
 
 **The aneutronic tier is the other side of the same statement, and it already has its own spec.**
 `M.aneutronic_reactor` declares 200 MW, 60 s and a 3000-unit box and carries **no ladder of any
