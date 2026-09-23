@@ -385,11 +385,25 @@ do
     { "volume_m3 x2 on D-T only",   { volume_m3 = SPEC.volume_m3 * 2 } },
     { "clamp x0.4 on D-T only",     { max_temperature_c = SPEC.max_temperature_c * 0.4 } },
   }
-  for _, entry in ipairs(burner_only) do
-    local m = chain(SPEC, 1, 1, with(SPEC, entry[2]))
-    row(entry[1], m, string.format("D-T burns %.1f u/s, was %.1f", m.needed, BASE.needed))
+  -- AT BOTH CORNERS (#446). The unresearched rows are #291's; ADR 0038 gates the fully-researched
+  -- state, so the decision was taken on the second set. D-T output and Q go in the note because the
+  -- one row that helps does so by cutting them, which is the reason #446 gives for not building it.
+  local topped = with(SPEC, {
+    heating_power_w    = SPEC.heating_ladder[#SPEC.heating_ladder].heating_power_w,
+    confinement_time_s = SPEC.confinement_ladder[#SPEC.confinement_ladder].confinement_time_s })
+  for _, corner in ipairs({ { "unresearched", SPEC }, { "fully researched", topped } }) do
+    local spec = corner[2]
+    local base = chain(spec)
+    io.write("\n  ", corner[1], ":\n")
+    row("shipped", base, string.format("D-T burns %.2f u/s, D-T %.0f MW, D-T Q %.1f",
+      base.needed, base.dt_mw, base.dt_q))
+    for _, entry in ipairs(burner_only) do
+      local m = chain(spec, 1, 1, with(spec, entry[2]))
+      row(entry[1], m, string.format("D-T burns %.2f u/s, D-T %.0f MW, D-T Q %.1f",
+        m.needed, m.dt_mw, m.dt_q))
+    end
   end
-  io.write("\n  None of the three rows above is expressible in the shipped model: rf-reactor has one\n")
+  io.write("\n  None of the three levers above is expressible in the shipped model: rf-reactor has one\n")
   io.write("  spec and burns both plasmas through it. Pulling any of them means a second spec, or a\n")
   io.write("  per-fuel override on the first -- which is a decision, not a retune. #446 decided\n")
   io.write("  against it; see \"Decided against\" in docs/research/supply-ratio-levers.md.\n")
