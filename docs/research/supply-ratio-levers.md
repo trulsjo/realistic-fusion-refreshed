@@ -5,8 +5,8 @@
 1200 s at one tick, box full and never starved unless a row says otherwise. No game is started.
 
 **Reproduce it with `lua scripts/probe-supply-ratio.lua`.** About seventeen seconds, and every
-table and chart below is pasted from that run, except the fully-researched table under *Decided
-against*, which says where it came from.
+table and chart below is pasted from that run. *Decided against* was added later, on #446, and
+says which revision it was measured at.
 
 **It is a probe, so it asserts nothing and exits 0 whatever it finds**
 ([`CLAUDE.md`](../../CLAUDE.md)'s paragraph on probes is the contract). A lever that makes the ratio
@@ -291,10 +291,10 @@ the D-D end left at the researched spec:
 | `volume_m3` ×2, D-T only | **4.84** | 6.22 u/s | 1553 MW |
 | `max_temperature_c` ×0.4, D-T only | 13.27 | 17.05 u/s | 4148 MW |
 
-*Measured 2026-09-23 at revision `e5019a6`, with the probe's `chain()` arithmetic (`M.settle`,
-1200 s at one tick, box full). The same script reproduces 94.70, 8.93 and 54.54, so it measures
-the same quantity as the probe. `scripts/probe-supply-ratio.lua` does not print this table, nor
-the entry-state output and Q figures in the bullets below; the same script measured them.*
+*Measured 2026-09-23 on the #446 branch, whose model is `e5019a6`'s (only comments changed). The
+probe's PER-TIER section prints this table since #446, beside the unresearched rows above, with
+D-T output and Q for both corners. The entry-state figures in the bullets below are that section's
+unresearched rows.*
 
 **Why the field stays unbuilt:**
 
