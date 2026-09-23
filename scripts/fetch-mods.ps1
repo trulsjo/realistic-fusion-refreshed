@@ -43,11 +43,13 @@
 .PARAMETER Set
     Which pinned set to fetch. Eight are one per overhaul family, because declared incompatibilities
     make a single combined list impossible: krastorio2, angels, bobs, madclowns, spaceex, seablock,
-    riteg, fluid. Pinned to each family's last factorio_version 2.0 release per ADR 0026 -- see the
-    manifest.
+    riteg, fluid. Three more are the Realistic Fusion Power Port and its two Space Exploration
+    routes: rfp-port, rfp-se-compat and rfp-port-se. Pinned to each family's last
+    factorio_version 2.0 release per ADR 0026 -- see the manifest.
 
-    Three more are UNIONS of those families, for the lanes #61 asks for that no single family covers:
-    k2-spaceex, angels-bobs and angels-bobs-madclowns. They are composed from the family pins rather
+    Five more are UNIONS of those families, for lanes no single family covers: k2-spaceex,
+    angels-bobs and angels-bobs-madclowns from #61, and spaceex-rfp-port and spaceex-rfp-port-se
+    from #451 and #452. They are composed from the family pins rather
     than written out again, so refreshing a family refreshes every lane it appears in. Which
     combinations are possible at all is a matter of declaration, not taste -- SE declares
     `! space-age` and `!` against fourteen Angel's and Bob's mods, SeaBlockWanne declares
@@ -303,6 +305,25 @@ $MOD_SETS = @{
         @{ Name = 'underground-pipe-pack'; Version = '2.0.6' }
     )
 
+    # Durikkan's Realistic Fusion Power Port (#450) -- the one published 2.0 port of the mod this
+    # project descends from. 1.9.2 declares `base >= 2.0` and nothing else, so it is one mod. No
+    # source repository, so it takes the portal route.
+    'rfp-port' = @(
+        @{ Name = 'RealisticFusionPowerPort'; Version = '1.9.2' }
+    )
+
+    # Starlark's SE add-on for the port (#451). It requires both the port and SE, so it is never
+    # loaded alone; it is a family only so the lane below composes it instead of restating it.
+    'rfp-se-compat' = @(
+        @{ Name = 'RealisticFusionPowerPort-SE-Compat'; Version = '1.0.0' }
+    )
+
+    # solar138's SE fork of the port (#452). It declares `! RealisticFusionPowerPort`, so it and
+    # 'rfp-port' can never share a lane -- ADR 0007 records that combination as closed.
+    'rfp-port-se' = @(
+        @{ Name = 'RealisticFusionPowerPortSE'; Version = '1.0.1' }
+    )
+
     # A FIXTURE, NOT A MOD. -SelfTest fetches this against a portal it starts itself, which is the
     # only way to drive the download path -- and therefore the token -- without real credentials, a
     # network, or a dependency on some third party's zip staying byte-identical. It has no Git entry
@@ -329,6 +350,9 @@ $MOD_SETS = @{
 #                          `seablock` too, so it is the isolation lane for that pair: a seablock
 #                          failure among these 20 mods lands here with 26 fewer suspects.
 #   angels-bobs-madclowns  The same plus `Clowns-Processing`, which no other lane pairs with Bob's.
+#   spaceex-rfp-port       SE, the port and Starlark's add-on: the route a player takes to run the
+#                          port under SE (#451). The add-on requires both, so it has no smaller lane.
+#   spaceex-rfp-port-se    SE and solar138's fork, the other route (#452). The fork requires SE.
 #
 # THE COUNTS DIFFER FROM #61's TABLE, and the pins are why. That table was computed from the
 # CURRENT releases, which are factorio_version 2.1; ADR 0026 pins the 2.0 line, whose closures are
@@ -374,6 +398,8 @@ $COMBINED_SETS = [ordered]@{
     'k2-spaceex'            = @('krastorio2', 'spaceex')
     'angels-bobs'           = @('angels', 'bobs')
     'angels-bobs-madclowns' = @('angels', 'bobs', 'madclowns')
+    'spaceex-rfp-port'      = @('spaceex', 'rfp-port', 'rfp-se-compat')
+    'spaceex-rfp-port-se'   = @('spaceex', 'rfp-port-se')
 }
 
 function Resolve-ModSet {

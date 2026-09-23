@@ -240,6 +240,13 @@ Durikkan's port work under Space Exploration.**
 Both are `factorio_version` 2.0, both Unlicense. They are evidence that the port's SE story is a live
 community concern; whether either is relevant to this project is a scope question, not a fact.
 
+> **Lanes since 2026-09-23.** Truls asked for both routes and for the port on its own:
+> [#450](https://github.com/trulsjo/realistic-fusion-refreshed/issues/450) (`rfp-port`),
+> [#451](https://github.com/trulsjo/realistic-fusion-refreshed/issues/451) (`spaceex-rfp-port`) and
+> [#452](https://github.com/trulsjo/realistic-fusion-refreshed/issues/452) (`spaceex-rfp-port-se`). All three are
+> red on upstream asset paths and green on `name-check`. Verdicts are in ADR 0007 and run logs in
+> the issues.
+
 ### Angel's — the core four are alive, Industries and Exploration are not
 
 This is the family where "which mods make up the set" genuinely has more than one answer, so both are
