@@ -54,8 +54,9 @@
     combinations are possible at all is a matter of declaration, not taste -- SE declares
     `! space-age` and `!` against fourteen Angel's and Bob's mods, SeaBlockWanne declares
     `! space-age` and `! Krastorio2`, and Krastorio2 declares `! Clowns-Nuclear`,
-    `! bobequipment` and `! bobvehicleequipment`. Those combinations have no set here and are not
-    meant to get one.
+    `! bobequipment` and `! bobvehicleequipment`, and RealisticFusionPowerPortSE declares
+    `! RealisticFusionPowerPort`. Those combinations have no set here and are not meant to get
+    one.
 
 .PARAMETER CacheDirectory
     Where the mods live between runs. Defaults to `.mod-cache/<set>/` beside the repository root,
