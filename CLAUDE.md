@@ -178,8 +178,8 @@ Two rules follow:
 
 **The exception to "no licence file means free": the predecessors' unmarked `graphics/`.** It is not one
 donor's art — the original's changelog credits at least three outside sources for material that is left
-unmarked, and says which files came from where for none of them. The changelog entries are
-quoted in ADR 0001.
+unmarked, and says which files came from where for none of them. ADR 0001 names
+the three and the releases that credit them.
 
 So: **do not take unmarked graphics from the predecessors on the assumption they are free.** Ask before
 using them, or use art with known provenance — which in practice means upstream Krastorio 2, and is why
