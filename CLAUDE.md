@@ -70,16 +70,8 @@ Since #416 it has a `-SelfTest` of its own, which is new: it proves the shared s
 `factorio-lib.ps1` and section 9's citation rule, in both directions. The other eight sections it
 runs on a plain invocation are unchanged and still have no self-test, for the reason its help block
 gives.
-**Since #280 `scripts/check-hc.ps1` carries a `-SelfTest` too, and it is the second gate here that
-starts the game to prove itself.** Its four halves are about the neutronic plant that section builds
-— `repo-plant-passes` is the floor, `exchanger-input-only` and `reactor-sells-south` are canary mods
-in the temp directory, and `pipe-in-plant-area` is **rig-side**, the first half in this repository
-that breaks the world a rig builds rather than a prototype, because "a pipe is standing where none
-should" is not something the data stage can say. It is **refused with `-Quality`**, the way
-`load-check.ps1` refuses `-SelfTest -AlsoModDirectory` and for the same reason. Its canary mod is
-duplicated from `load-check`'s rather than shared — decided 2026-09-07, because sharing means
-editing the repository's most load-bearing self-test to save about fifteen lines.
-Run them rather than reasoning about whether a change is safe.
+Run them rather than reasoning about whether a change is safe. How each gate's `-SelfTest` is built,
+and the traps two of them already fell into, is in `scripts/CLAUDE.md`.
 
 **`load-check.ps1` loads the mods two ways, and the default is not the player's.** Without arguments
 it junctions the repository's directories in, so the game reads the working tree; `-FromZips` builds
@@ -88,38 +80,10 @@ against the unpacked archive rather than against the repo. A file that resolves 
 and never reaches a zip passes the default and breaks a player's game. Use `-FromZips` before
 anything that ships.
 
-`-SelfTest -FromZips` is a **different** self-test from `-SelfTest` alone, because zip mode has its
-own way of passing while proving nothing: point the asset map back at the repository and every
-sprite resolves against the working tree, so the run reports a clean pass over an archive it never
-opened. That half deletes a referenced file from the unpacked archive and requires it to be caught.
-Two traps it already fell into, both fixed and both worth knowing before editing it — the victim
-must be a file the prototypes actually NAME (the `aneutronic-reactor/` sheets are shipped but
-unreferenced, so deleting one is correctly silent), and it refuses to delete anything outside the
-scratch directory, because the mis-wiring it exists to catch once made it delete the repository's
-own sprite.
-
-`pack-mods.ps1` is a build tool rather than a gate; it uploads nothing and changes no version, and
-its own `-SelfTest` proves that a **git-ignored** file planted inside a mod cannot reach a zip —
-ignored specifically, since merely-untracked would be excluded for the wrong reason.
-
 `scripts/probe-*` are **not** in that list and are not gates. A probe asserts nothing and answers
 a question a decision is waiting on — exit 0 means it ran and reported, never that the answer was the
 hoped-for one. Its findings belong in `docs/research/`, and it stays committed so the next engine
-version can be asked the same question. `scripts/` holds twenty-six of them: twenty-three
-`probe-*.ps1`, two `probe-*.py` and one `probe-*.lua`. Eighteen of the PowerShell ones build a real
-map the way a check does — the eighteenth is `probe-next-upgrade.ps1` (#396), which is also the
-only one that LOADS TWICE, because
-the answer to half its question is a refusal at the prototype stage — one LOADS a save
-(`probe-borrowed-base-art.ps1`, #388, which stands our machines inside the borrowed base
-and creates a surface of its own for its control), and three more dump prototypes out of the running
-game -- so twenty-two of the twenty-six need Factorio.
-**Four need no game at all.** Three are the sprite ones: `probe-flange-free-render.ps1` (#376)
-and `probe-socket-underside.py` (#366, #367) drive Blender and measure what it renders, and
-`probe-sprite-geometry.py` measures where a committed sheet's opaque pixels land. The fourth is
-`probe-supply-ratio.lua` (#291), which needs neither Factorio nor Blender: it prices every lever
-that moves the fuel-chain supply ratio through the same `reactor-logic.lua` the Lua suites drive,
-and it is the only probe here written in the language the mod itself is written in. A probe is a
-shape, not a language and not a map.
+version can be asked the same question.
 
 ## The rule that matters most here
 
@@ -191,19 +155,9 @@ it is committed, checked 2026-09-12 — the directory is present three times und
 
 **Every item in `C:\src\factorio\_reference\` — what it is, where it came from, when it was obtained
 and what terms it states — is inventoried in `docs/research/reference-provenance.md`** (#234). This
-section states the rules; that note says which file on disk is which. The zips this next paragraph
-names are no longer there — only the trees extracted from them — so a re-check works from those.
+section states the rules; that note says which file on disk is which.
 
-**Verified 2026-08-17 (#38)** against the zips in `C:\src\factorio\_reference\`, which the survey could
-not download and had to leave open. Both the 1.1 original (1.8.18) and Durikkan's port (1.9.0, 1.9.2)
-mark exactly two directories, with the same terms:
-
-| Directory | Licence | What its `legal-note.txt` says |
-|---|---|---|
-| `graphics/particle-accelerator/` | **GPLv3** | *"All textures in this directory are modified from Krastorio 2"* |
-| `electric-boiler/` | **CC BY-NC-ND 4.0** | *"All textures and code in this directory are from angels petrochem"* |
-
-Three things to take from that:
+Two things to know about how the predecessors mark material:
 
 - **Marking is by `legal-note.txt` as much as by `license.txt`.** The provenance lives in the legal note;
   the licence file is only the licence text. Searching for licence files alone finds the directory and
@@ -212,12 +166,6 @@ Three things to take from that:
   in both predecessors is in `particle-accelerator/`. Of the three older predecessors only the redesign has a
   directory actually called `krastorio-2/`, so not finding that name means nothing. (This repo has two of
   its own, which are its own doing and come from upstream — not from the redesign.)
-- **The two root licences differ, and one mod disagrees with itself.** The original's `license.txt` is
-  **WTFPL v2** (`Copyright (C) 2024 Romner`); the port's is **The Unlicense**. But the port also ships the
-  original's root `legal-note.txt` byte-for-byte, which still says WTFPL — so its two root files name
-  different licences. Both are permissive, so nothing downstream turns on it. Both mods state the
-  per-directory rule in that same note: *"Any file in a subdirectory of this mod that doesn't have a
-  license.txt and/or a legal-note.txt in its directory is licensed under the WTFPL."*
 
 Two rules follow:
 
@@ -230,23 +178,8 @@ Two rules follow:
 
 **The exception to "no licence file means free": the predecessors' unmarked `graphics/`.** It is not one
 donor's art — the original's changelog credits at least three outside sources for material that is left
-unmarked, and says which files came from where for none of them:
-
-| Release | What the changelog says |
-|---|---|
-| **0.2.0**, 2020-01-01 | *"Credit to YuokiTani for re-rendering some unused textures with changed colors from https://u.nu/factoriogfx"* — Wube's unused art, re-rendered by a third party |
-| **1.2.0**, 2020-09-05 | *"Others are modified from **angel's** discarded/unused thread"* |
-| **1.3.13**, 2020-12-06 | *"New antimatter reactor graphics, courtesy of **PreLeyZero**"* |
-| **1.8.0**, 2021-09-03 | *"**PreLeyZero** made completely new antimatter reactor graphics, and in turn doubled the mod size"* |
-
-That same 1.2.0 entry opens *"Some of the textures are modified from Krastorio 2 and licensed under GNU
-GPL v3"* — and those **are** marked, in `graphics/particle-accelerator/`. So the changelog is not evidence
-of GPL material hiding under a permissive root; it is evidence that Romner marked what he knew the terms
-for and left the rest bare. The bare remainder is the problem.
-
-A root licence only disposes of what its declarer had the right to license, and no record exists of the
-terms any of the three donated under. PreLeyZero's *own* mods generally carry GPL, which is a further
-reason not to read silence as a permissive donation.
+unmarked, and says which files came from where for none of them. The changelog entries are
+quoted in ADR 0001.
 
 So: **do not take unmarked graphics from the predecessors on the assumption they are free.** Ask before
 using them, or use art with known provenance — which in practice means upstream Krastorio 2, and is why
