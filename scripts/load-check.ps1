@@ -9,6 +9,12 @@
     resolves, and nothing references a prototype that does not exist -- broader coverage than a
     test suite, for the cost of this script.
 
+    THE HARNESS IS SHARED AND THE CHECKS ARE NOT (#457). Building the isolated mod directory,
+    mounting the mods, writing the mod list, creating the map and taking a --dump-data are
+    vendor/grado-factorio-tools/scripts/load-harness-lib.ps1's, which this script dot-sources; the
+    submodule must be initialised. Everything else here -- the invariants' self-test halves, the
+    asset, containment, render, socket and mockup gates -- is this repository's own and stays here.
+
     IT CAN LOAD THE MODS TWO WAYS, and -FromZips is the one a player is on. By default the
     repository's directories are junctioned in, so the game reads the working tree in place; that is
     fast and it is what every other check here does, but it cannot see a file that resolves through
@@ -214,15 +220,15 @@
     that failure out, so it has its own check: scripts/locale-check.ps1. A pass here says nothing
     about it.
 
-    The player's own mod directory is never touched: the repo's mods are junctioned into a
-    temporary directory and a mod-list.json is written there.
+    The player's own mod directory is never touched: the harness junctions the repo's mods into a
+    temporary directory and writes a mod-list.json there.
 
     Bundled mods (space-age, elevated-rails, quality) live in the game's data/ directory, so they
     load unless explicitly disabled. Disabled by default to get a genuine base-2.0 check
     (ADR 0003, ADR 0008); -With re-enables them.
 
     PowerShell 7 is required: 5.1's Remove-Item -Recurse follows junctions instead of skipping
-    them, which would delete the repo's own source through the links this script creates.
+    them, which would delete the repo's own source through the links the harness creates.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
@@ -235,16 +241,18 @@
 
 .PARAMETER AlsoModDirectory
     A directory of third-party mod directories to load alongside this repo's, e.g. an unpacked
-    Krastorio 2 and its dependencies. Every subdirectory holding an info.json is junctioned in and
-    enabled; anything else in there is ignored.
+    Krastorio 2 and its dependencies. Every subdirectory holding an info.json is junctioned in, every
+    mod zip is copied in, and all of them are enabled; anything else in there is ignored. The harness
+    reads each mod's name from its own info.json, and refuses a directory that holds no mods.
 
     This is ADR 0007's obligation -- coexistence with other mods, Krastorio 2 most of all -- and it
     takes a directory rather than a mod name because this script downloads nothing: enabling mods is
     the part it owns, and getting them onto disk is somebody else's job. Since #60 that somebody is
-    scripts/fetch-mods.ps1, which fills a directory at pinned versions -- by git where a source
-    exists, by the mod portal otherwise. Run it, then point this at what it wrote:
+    the shared fetcher, which fills a directory at the pins in scripts/mod-sets.psd1 -- by git where
+    a source exists, by the mod portal otherwise. Run it from the repository root, then point this
+    at what it wrote:
 
-        pwsh -File scripts/fetch-mods.ps1 -Set krastorio2
+        pwsh -File vendor/grado-factorio-tools/scripts/fetch-mods.ps1 -PinFile scripts/mod-sets.psd1 -Set krastorio2
         pwsh -File scripts/load-check.ps1 -AlsoModDirectory .mod-cache/krastorio2
 
     Putting the mods there by hand still works and always did.
@@ -441,10 +449,19 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-. "$PSScriptRoot/factorio-lib.ps1"
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-
 $repoRoot = Split-Path $PSScriptRoot -Parent
+. "$PSScriptRoot/factorio-lib.ps1"
+# THE HARNESS IS SHARED, and sourced AFTER factorio-lib.ps1 on purpose (#457). The two define
+# eleven functions under the same names, and New-ModJunctions takes different parameters in each:
+# the harness calls its own, so its definitions have to be the ones left standing. Nothing below
+# calls New-ModJunctions directly.
+$harnessLib = Join-Path $repoRoot 'vendor/grado-factorio-tools/scripts/load-harness-lib.ps1'
+if (-not (Test-Path -LiteralPath $harnessLib)) {
+    throw "The load harness is not at $harnessLib. Run: git submodule update --init"
+}
+. $harnessLib
+# Its own, although the harness loads it too: the zip mode below unpacks archives itself.
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 $ourMods  = Get-RepoMods
 
 # The categories contain() writes, which the containment floor below looks for.
@@ -474,58 +491,6 @@ if ($SelfTest -and $AlsoModDirectory) {
 # deliberately broken mod directories in, and those are not tracked, so pack-mods.ps1 cannot ship
 # them. What zip mode needs proving is its own thing anyway -- see Test-ZipModeSelfTest below.
 
-$alsoMods = @()
-if ($AlsoModDirectory) {
-    if (-not (Test-Path $AlsoModDirectory)) { throw "-AlsoModDirectory not found: $AlsoModDirectory" }
-    # ABSOLUTE, BECAUSE A JUNCTION TARGET MUST BE. New-ModJunctions hands the path to New-Item,
-    # which refuses a relative target -- so `-AlsoModDirectory .mod-cache/krastorio2`, the obvious
-    # thing to type after scripts/fetch-mods.ps1, failed inside the library rather than here (#60).
-    $AlsoModDirectory = (Resolve-Path -LiteralPath $AlsoModDirectory).Path
-    $alsoMods = @(Get-ChildItem -Path $AlsoModDirectory -Directory |
-        Where-Object { Test-Path (Join-Path $_.FullName 'info.json') } |
-        ForEach-Object { $_.Name } | Sort-Object)
-    # Empty is an error, not an empty run: it would otherwise report a coexistence pass for a set
-    # that was never loaded.
-    if (-not $alsoMods) {
-        throw "-AlsoModDirectory holds no mod directories (a directory with an info.json in it): $AlsoModDirectory"
-    }
-}
-
-$FactorioExe = Resolve-FactorioExe -Path $FactorioExe
-$bundled     = Get-BundledMods -FactorioExe $FactorioExe
-try {
-    $enabledBundled = Resolve-BundledSelection -Requested $With -Bundled $bundled
-}
-catch { throw "-With $($_.Exception.Message)" }
-
-$temp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-loadcheck-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-$modDir = Join-Path $temp 'mods'
-New-Item -ItemType Directory -Path $modDir -Force | Out-Null
-
-function Invoke-LoadCheck {
-    <#  One check: write the mod list, create a map, and report whether a save came out.
-
-        The running of Factorio itself lives in factorio-lib.ps1; what is here is the part that is
-        this script's own -- which mods to enable, and that "exit 0 but no save" is a failure.  #>
-    param([string] $Label, [string[]] $Enabled, [string] $Tag)
-
-    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled -Mods $Enabled
-
-    $bundledOn = if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.0 only)' }
-    Write-Host "$Label`: $($Enabled -join ', ')  |  bundled enabled: $bundledOn"
-
-    $save   = Join-Path $temp "$Tag.zip"
-    $result = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
-        -Arguments @('--create', $save) -OutputDirectory $temp -Tag $Tag
-
-    [pscustomobject]@{
-        Code       = $result.Code
-        SaveExists = Test-Path $save
-        OutFile    = $result.OutFile
-        ErrFile    = $result.ErrFile
-    }
-}
-
 function Test-Assets {
     <#  Every asset path the loaded prototypes name must exist on disk.
 
@@ -540,7 +505,7 @@ function Test-Assets {
 
         HANDED THE DUMP RATHER THAN TAKING ONE (#209). The containment gate reads the same loaded
         dump and then takes a second one of its own under a different mod list, so the dumping moved
-        out to Invoke-DataDump and both gates read the copy it keeps aside. One --dump-data per mod
+        out to Invoke-HarnessDump and both gates read the copy it keeps aside. One --dump-data per mod
         list, and neither gate can be looking at the other's.  #>
     param([Parameter(Mandatory)] [string] $DumpPath)
 
@@ -549,7 +514,7 @@ function Test-Assets {
     # follows the mods rather than always pointing at the repository.
     $missing = Find-MissingAssets `
         -DumpPath $DumpPath `
-        -DataDir (Get-FactorioDataDirectory -FactorioExe $FactorioExe) `
+        -DataDir (Get-FactorioDataDirectory -FactorioExe $harness.FactorioExe) `
         -ModDirectories $ourDirectories
     if ($missing) {
         Write-Host "FAILED - $($missing.Count) asset(s) referenced but not present:"
@@ -819,11 +784,11 @@ function Get-VanillaPipeSheet {
     # reference cannot be read -- and a raw terminating error would have said so in a different
     # voice from every other gate here.
     try {
-        $data = Get-FactorioDataDirectory -FactorioExe $FactorioExe
+        $data = Get-FactorioDataDirectory -FactorioExe $harness.FactorioExe
         $sheet = Join-Path $data $VANILLA_PIPE_SHEET
         $found = Test-Path -LiteralPath $sheet
     } catch {
-        $data, $sheet, $found = "the install at $FactorioExe", $null, $false
+        $data, $sheet, $found = "the install at $($harness.FactorioExe)", $null, $false
     }
     if (-not $found) {
         Write-Host ''
@@ -1027,57 +992,6 @@ function Test-MockupArt {
     Write-Host "mockup art: all $($machines.Count) mockup(s) agree with the live footprint and connection tiles."
 }
 
-function Invoke-DataDump {
-    <#  Dump the game with exactly $Mods enabled, and return the path of the dump kept aside for it.
-
-        The walk and the category semantics are factorio-lib.ps1's, shared with
-        scripts/probe-connection-categories.ps1 (#209); what is here is running the game the way the
-        rest of this script runs it -- Invoke-Factorio, and an explicit failure rather than a throw.
-
-        THE DUMP PATH IS DELETED FIRST, NOT MERELY OVERWRITTEN. Every dump in this run writes the one
-        path, so a Factorio run that exits 0 without writing would leave the PREVIOUS dump there for
-        the parse to find -- and the declared side would then be a copy of the loaded side, every
-        connection would compare equal, and the gate would report containment surviving. That is the
-        one way this check could pass by finding nothing that the floor cannot catch, because the
-        floor only inspects the declared side, which would be genuinely fine.  #>
-    param(
-        [Parameter(Mandatory)] [string[]] $Mods,
-        [Parameter(Mandatory)] [string] $Tag,
-        # WHAT MUST STAY OUT, NAMED. Leaving a mod unlisted does not disable it -- Factorio
-        # auto-enables anything in the mod directory that mod-list.json does not mention, and by the
-        # time this runs the set (or the self-test's canary) is junctioned in beside our mods. The
-        # first version of this omitted them and got a declared dump with the set loaded in it: both
-        # dumps identical, every category equal, containment reported as surviving. Write-ModList's
-        # own header carries the note now.
-        [string[]] $Disabled = @()
-    )
-
-    $rawPath = Join-Path $temp 'write-data/script-output/data-raw-dump.json'
-    Remove-Item -LiteralPath $rawPath -Force -ErrorAction SilentlyContinue
-
-    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled `
-        -Mods $Mods -Disabled $Disabled
-    $result = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
-        -Arguments @('--dump-data') -OutputDirectory $temp -Tag $Tag
-    if ($result.Code -ne 0) {
-        Write-Host "FAILED - Factorio exited $($result.Code) on --dump-data for the $Tag dump."
-        Write-FactorioTail $result
-        exit $result.Code
-    }
-    if (-not (Test-Path -LiteralPath $rawPath)) {
-        Write-Host "FAILED - Factorio exited 0 but wrote no data-raw-dump.json for the $Tag dump,"
-        Write-Host '         so containment could not be compared. Treating as a failure rather than'
-        Write-Host '         reporting a pass it did not earn.'
-        exit 1
-    }
-    # KEPT ASIDE UNDER THE TAG, and the copy is what every caller reads. All the dumps in a run
-    # write the one path, so a caller holding on to that path would be reading the NEXT dump by the
-    # time it looked. -KeepTemp leaves each of them to compare by hand.
-    $kept = Join-Path $temp "$Tag-data-raw.json"
-    Copy-Item -LiteralPath $rawPath -Destination $kept -Force
-    return $kept
-}
-
 function Get-ContainmentBreaches {
     <#  Connections our data stage contained that no longer hold what it declared, once the whole
         set is loaded. Returns a row per breach; empty means containment survived.
@@ -1271,6 +1185,8 @@ function Test-Containment {
     }
 }
 
+$harness = $null
+$zipTemp = $null
 try {
     # WHAT THE WORKING TREE LOOKS LIKE, before either self-test has done anything -- pack-mods.ps1
     # included, which the zip self-test runs and which walks every mod directory. Both self-tests
@@ -1288,9 +1204,15 @@ try {
     # sprite against the working tree and certify a zip it never opened.
     $ourDirectories = @{}
 
+    # What the harness mounts: our three mods as directories or as zips, then the set. The harness
+    # junctions a directory and copies a zip, and it reads each mod's name off its own info.json.
+    $sources = @()
     if ($FromZips) {
-        $zipDir    = Join-Path $temp 'zips'
-        $unpackDir = Join-Path $temp 'unpacked'
+        # A temp directory of this script's own, because the zips have to exist before the harness
+        # that mounts them does. Removed with it in the finally block.
+        $zipTemp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-loadcheck-zips-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        $zipDir    = Join-Path $zipTemp 'zips'
+        $unpackDir = Join-Path $zipTemp 'unpacked'
         Write-Host 'mods: from zips built by pack-mods.ps1 (the path a player installs)'
 
         & (Join-Path $PSScriptRoot 'pack-mods.ps1') -OutputDirectory $zipDir | Out-Host
@@ -1301,7 +1223,7 @@ try {
             $zip     = Join-Path $zipDir "${mod}_${version}.zip"
             if (-not (Test-Path -LiteralPath $zip)) { throw "pack-mods.ps1 produced no zip for $mod at $zip" }
 
-            Copy-Item -LiteralPath $zip -Destination $modDir
+            $sources += $zip
             $target = Join-Path $unpackDir $mod
             [IO.Compression.ZipFile]::ExtractToDirectory($zip, $unpackDir)
             if (-not (Test-Path -LiteralPath $target)) {
@@ -1312,14 +1234,20 @@ try {
     }
     else {
         Write-Host 'mods: junctioned from the repository (the dev loop, not the shipped zip)'
-        New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
-        foreach ($mod in $ourMods) { $ourDirectories[$mod] = Join-Path $repoRoot $mod }
+        foreach ($mod in $ourMods) {
+            $sources += Join-Path $repoRoot $mod
+            $ourDirectories[$mod] = Join-Path $repoRoot $mod
+        }
     }
+    # A directory of mods, taken whole. The harness refuses one holding no mods, rather than
+    # reporting a coexistence pass for a set that was never loaded.
+    if ($AlsoModDirectory) { $sources += $AlsoModDirectory }
 
-    if ($alsoMods) {
-        New-ModJunctions -ModDirectory $modDir -RepoRoot $AlsoModDirectory -Mods $alsoMods
-        Write-Host "also loading: $($alsoMods -join ', ')"
-    }
+    $harness  = New-LoadHarness -Mods $sources -FactorioExe $FactorioExe -With $With
+    $alsoMods = @($harness.Mods.Name | Where-Object { $_ -notin $ourMods })
+    $bundledOn = if ($harness.EnabledBundled) { $harness.EnabledBundled -join ', ' } else { 'none (base 2.0 only)' }
+    Write-Host "load-check: bundled enabled: $bundledOn"
+    if ($alsoMods) { Write-Host "also loading: $($alsoMods -join ', ')" }
 
     if ($SelfTest -and $FromZips) {
         # Declared by name and numbered by Invoke-SelfTestHalves, as in plain mode. These two are a
@@ -1332,12 +1260,8 @@ try {
                 # resolves against the working tree, so the check reports a clean pass over a zip it never
                 # opened. Deleting a file from the UNPACKED archive is what tells the two apart -- against
                 # the repository that deletion is invisible, against the archive it must be reported.
-                $dump = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
-                    -Arguments @('--dump-data') -OutputDirectory $temp -Tag 'zip-selftest-dump'
-                if ($dump.Code -ne 0) { Write-FactorioTail $dump; exit $dump.Code }
-
-                $script:dumpPath = Join-Path $temp 'write-data/script-output/data-raw-dump.json'
-                $script:dataDir  = Get-FactorioDataDirectory -FactorioExe $FactorioExe
+                $script:dumpPath = Invoke-HarnessDump -Harness $harness -Tag 'zip-selftest-dump'
+                $script:dataDir  = Get-FactorioDataDirectory -FactorioExe $harness.FactorioExe
                 $before = Find-MissingAssets -DumpPath $dumpPath -DataDir $dataDir -ModDirectories $ourDirectories
                 if ($before) {
                     Write-Host ''
@@ -1455,12 +1379,12 @@ try {
         Invoke-SelfTestHalves -Halves @(
             @{ Name = 'repo-loads'; Body = {
                 # The repo as it stands must pass, or a non-zero exit in invalid-prototype proves nothing.
-                $clean = Invoke-LoadCheck -Label 'load-check' -Enabled $ourMods -Tag 'clean'
+                $clean = Invoke-HarnessLoad -Harness $harness -Tag 'clean'
                 # Same pass criterion as a real run: exit 0 without a save is a failure there, so it must
                 # be a failure here too, or -SelfTest could certify a check a plain run would reject.
-                if ($clean.Code -ne 0 -or -not $clean.SaveExists) {
+                if (-not $clean.Loaded) {
                     Write-Host ''
-                    Write-Host "FAILED - self-test: the repo does not load cleanly (exit $($clean.Code), save produced: $($clean.SaveExists)),"
+                    Write-Host "FAILED - self-test: the repo does not load cleanly (exit $($clean.Code), save produced: $([bool]$clean.SavePath)),"
                     Write-Host '         so the canary result would be meaningless.'
                     Write-FactorioTail $clean
                     exit 1
@@ -1471,17 +1395,22 @@ try {
             @{ Name = 'invalid-prototype'; Body = {
                 # An invalid prototype must be rejected. The canary lives in the temp directory,
                 # never in the repo.
-                $script:canary = Join-Path $modDir 'rf-loadcheck-canary'
+                $script:canary = Join-Path $harness.ModDirectory 'rf-loadcheck-canary'
                 New-Item -ItemType Directory -Path $canary -Force | Out-Null
                 @{
                     name = 'rf-loadcheck-canary'; version = '0.0.1'; title = 'Load-check canary'
                     author = 'load-check.ps1'; factorio_version = '2.0'; dependencies = @('base >= 2.0.77')
                 } | ConvertTo-Json | Set-Content -Path (Join-Path $canary 'info.json') -Encoding utf8
+                # INTO THE HARNESS'S OWN LIST, or the harness could neither enable it nor name it
+                # disabled -- and a mod in the directory that mod-list.json leaves out is auto-enabled,
+                # so the declared dump in reassigned-category would load it. Every load and dump
+                # from here on enables it unless it is named in -Disabled.
+                $harness.Mods = @($harness.Mods) + @(Get-HarnessMods -Path $canary)
                 # Valid Lua, invalid prototype: "stack_size" is mandatory on an item.
                 'data:extend({{ type = "item", name = "rf-loadcheck-canary-item" }})' |
                     Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-                $script:broken = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'canary'
+                $script:broken = Invoke-HarnessLoad -Harness $harness -Tag 'canary'
                 if ($broken.Code -eq 0) {
                     Write-Host ''
                     Write-Host 'FAILED - self-test: an invalid prototype did NOT fail the check.'
@@ -1502,7 +1431,7 @@ try {
           icon = D .. "no-such-icon" .. ".png", icon_size = 64 }})' |
                     Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-                $withCanary = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'assets'
+                $withCanary = Invoke-HarnessLoad -Harness $harness -Tag 'assets'
                 if ($withCanary.Code -ne 0) {
                     Write-Host ''
                     Write-Host 'FAILED - self-test: the missing-asset canary did not even load, so the'
@@ -1511,15 +1440,13 @@ try {
                     exit 1
                 }
 
-                $dump = Invoke-Factorio -FactorioExe $FactorioExe -ModDirectory $modDir `
-                    -Arguments @('--dump-data') -OutputDirectory $temp -Tag 'assets-dump'
-                if ($dump.Code -ne 0) { Write-FactorioTail $dump; exit $dump.Code }
+                $assetsDump = Invoke-HarnessDump -Harness $harness -Tag 'assets-dump'
 
                 $directories = @{ 'rf-loadcheck-canary' = $canary }
                 foreach ($mod in $ourMods) { $directories[$mod] = Join-Path $repoRoot $mod }
                 $found = Find-MissingAssets `
-                    -DumpPath (Join-Path $temp 'write-data/script-output/data-raw-dump.json') `
-                    -DataDir (Get-FactorioDataDirectory -FactorioExe $FactorioExe) `
+                    -DumpPath $assetsDump `
+                    -DataDir (Get-FactorioDataDirectory -FactorioExe $harness.FactorioExe) `
                     -ModDirectories $directories
                 if (-not ($found | Where-Object { $_.Reference -like '*no-such-icon.png' })) {
                     Write-Host ''
@@ -1616,7 +1543,7 @@ data.raw.item["rf-loadcheck-canary-item"].order = victim .. "|" .. taken
           icon = "__base__/graphics/icons/iron-plate.png", icon_size = 64 }})' |
                     Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-                $reassigned = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'contain'
+                $reassigned = Invoke-HarnessLoad -Harness $harness -Tag 'contain'
                 if ($reassigned.Code -ne 0) {
                     Write-Host ''
                     Write-Host 'FAILED - self-test: the containment canary did not load, so the containment'
@@ -1626,10 +1553,10 @@ data.raw.item["rf-loadcheck-canary-item"].order = victim .. "|" .. taken
                     exit 1
                 }
 
-                $loadedDumpPath    = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'contain-loaded'
+                $loadedDumpPath    = Invoke-HarnessDump -Harness $harness -Tag 'contain-loaded'
                 $loadedContainment = Get-ConnectionsFromDump -DumpPath $loadedDumpPath
                 $declaredContainment = Get-ConnectionsFromDump -DumpPath (
-                    Invoke-DataDump -Mods $ourMods -Tag 'contain-declared' -Disabled @('rf-loadcheck-canary'))
+                    Invoke-HarnessDump -Harness $harness -Tag 'contain-declared' -Disabled @('rf-loadcheck-canary'))
 
                 $recorded = (Get-Content -LiteralPath $loadedDumpPath -Raw |
                     ConvertFrom-Json).item.'rf-loadcheck-canary-item'.order
@@ -1708,7 +1635,7 @@ if not slid then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-                $renderDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-loaded'
+                $renderDump = Invoke-HarnessDump -Harness $harness -Tag 'render-loaded'
                 $disagreements = @(Get-RenderDisagreements -DumpPath $renderDump -Manifests $renderManifests)
                 $onVictim = @($disagreements | Where-Object { $_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connections' })
                 if (-not $onVictim) {
@@ -1783,7 +1710,7 @@ if not touched then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-                $coexistDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-coexist'
+                $coexistDump = Invoke-HarnessDump -Harness $harness -Tag 'render-coexist'
 
                 # The canary reaching the GEOMETRY, proved rather than assumed. This half passes by finding
                 # nothing, and there are two ways to pass it dishonestly. This pre-check rules out the first:
@@ -1858,7 +1785,7 @@ if not touched then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-                $replacedDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'render-replaced'
+                $replacedDump = Invoke-HarnessDump -Harness $harness -Tag 'render-replaced'
                 $replacedRows = @(Get-RenderDisagreements -DumpPath $replacedDump -Manifests $renderManifests)
                 $onCategories = @($replacedRows | Where-Object {
                     $_.Prototype -eq $renderVictim.name -and $_.Field -eq 'connection categories' })
@@ -1910,7 +1837,7 @@ end
           source.input_flow_limit = "1W"
         end)()' | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-                $starved = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'flow'
+                $starved = Invoke-HarnessLoad -Harness $harness -Tag 'flow'
                 if ($starved.Code -eq 0) {
                     Write-Host ''
                     Write-Host "FAILED - self-test: rf-reactor's input_flow_limit was cut to 1 W and the mod loaded"
@@ -1981,7 +1908,7 @@ if not walk(proto, {}) then
 end
 "@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-                $mockupDump = Invoke-DataDump -Mods ($ourMods + 'rf-loadcheck-canary') -Tag 'mockup-loaded'
+                $mockupDump = Invoke-HarnessDump -Harness $harness -Tag 'mockup-loaded'
                 $mockupRows = @(Get-MockupDisagreements -DumpPath $mockupDump -Machines $mockupMachines)
                 $onMockup = @($mockupRows | Where-Object { $_.Prototype -eq $mockupName -and $_.Field -eq 'connections' })
                 if (-not $onMockup) {
@@ -2052,7 +1979,7 @@ data:extend({
 })
 '@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-                $unburnable = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'plasma'
+                $unburnable = Invoke-HarnessLoad -Harness $harness -Tag 'plasma'
                 if ($unburnable.Code -eq 0) {
                     Write-Host ''
                     Write-Host 'FAILED - self-test: a canary put a fluid of its own through rf-plasma-heating and the'
@@ -2101,7 +2028,7 @@ end
 collector.fluid_box.filter, collector.output_fluid_box.filter = second, first
 '@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-                $swapped = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'boxes'
+                $swapped = Invoke-HarnessLoad -Harness $harness -Tag 'boxes'
                 if ($swapped.Code -eq 0) {
                     Write-Host ''
                     Write-Host "FAILED - self-test: rf-isotope-collector's two box filters were swapped and the mod"
@@ -2150,7 +2077,7 @@ end
 box.volume = box.volume * 2
 '@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
 
-                $widened = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + 'rf-loadcheck-canary') -Tag 'box'
+                $widened = Invoke-HarnessLoad -Harness $harness -Tag 'box'
                 if ($widened.Code -eq 0) {
                     Write-Host ''
                     Write-Host "FAILED - self-test: rf-reactor's plasma box was doubled from outside and the mod"
@@ -2255,10 +2182,10 @@ box.volume = box.volume * 2
         exit 0
     }
 
-    $result = Invoke-LoadCheck -Label 'load-check' -Enabled ($ourMods + $alsoMods) -Tag 'run'
+    $result = Invoke-HarnessLoad -Harness $harness -Tag 'run'
 
     # After the load, not before: both gates below read a --dump-data written under the mod list
-    # Invoke-LoadCheck just put in place, and a repo that does not load has nothing to dump.
+    # Invoke-HarnessLoad just put in place, and a repo that does not load has nothing to dump.
     #
     # A missing capture file is a failure rather than a skip. It used to be one half of an `and`,
     # so if the redirection had failed or the temp directory had been reaped mid-run the asset
@@ -2276,7 +2203,7 @@ box.volume = box.volume * 2
         # under the load's own tag overwrote run-stdout.txt with the dump's -- and -KeepTemp, which
         # is how a red lane gets investigated, would then hand a reader the wrong log. Caught in
         # review of #209.
-        $loadedDump = Invoke-DataDump -Mods ($ourMods + $alsoMods) -Tag 'run-dump'
+        $loadedDump = Invoke-HarnessDump -Harness $harness -Tag 'run-dump'
 
         # CONTAINMENT BEFORE THE ASSET CHECK, DELIBERATELY, and the reason is which lanes each one
         # can reach. Both exit on failure, so the order decides only which failure a reader sees
@@ -2293,7 +2220,7 @@ box.volume = box.volume * 2
         $loadedConnections   = Get-ConnectionsFromDump -DumpPath $loadedDump
         $declaredConnections = if ($alsoMods) {
             Get-ConnectionsFromDump -DumpPath (
-                Invoke-DataDump -Mods $ourMods -Tag 'declared' -Disabled $alsoMods)
+                Invoke-HarnessDump -Harness $harness -Tag 'declared' -Disabled $alsoMods)
         } else { $loadedConnections }
         Test-Containment -Declared $declaredConnections -Loaded $loadedConnections -Against $alsoMods
 
@@ -2325,7 +2252,7 @@ box.volume = box.volume * 2
         Write-FactorioTail $result
         exit $result.Code
     }
-    if (-not $result.SaveExists) {
+    if (-not $result.SavePath) {
         Write-Host 'FAILED - Factorio exited 0 but produced no save; treating as a failure.'
         exit 1
     }
@@ -2339,9 +2266,9 @@ box.volume = box.volume * 2
     exit 0
 }
 finally {
-    # Junctions always go, even with -KeepTemp: leaving links to the repo in %TEMP% hands a
-    # delete-through-the-link hazard to whatever cleans it up later.
-    Remove-ModJunctions -ModDirectory $modDir
+    # Junctions always go, even with -KeepTemp -- Remove-LoadHarness removes them first whatever it
+    # is told about the rest. Null when the harness was never built: a -With typo, a pack failure.
+    if ($harness) { Remove-LoadHarness -Harness $harness -Keep:$KeepTemp }
 
     # AND AFTER AN EARLY EXIT, the tree still gets its answer. Both self-tests compare on their pass
     # path, where a moved file is a failure of its own -- but every canary half can `exit 1` before
@@ -2353,10 +2280,8 @@ finally {
         [void](Test-ModTreeUnchanged -Before $treeBefore -Mods $ourMods)
     }
 
-    if ($KeepTemp) {
-        Write-Host "temp kept at: $temp"
-    }
-    else {
-        Remove-TempDirectory -Path $temp -Label 'load-check'
+    if ($zipTemp) {
+        if ($KeepTemp) { Write-Host "zips kept at: $zipTemp" }
+        else { Remove-TempDirectory -Path $zipTemp -Label 'load-check' }
     }
 }
