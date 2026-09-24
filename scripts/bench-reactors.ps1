@@ -2874,7 +2874,7 @@ if ($Save) {
             else { $toJunction += (Split-Path $mod.Source -Leaf) }
         }
         if ($toJunction.Count -gt 0) {
-            New-ModJunctions -ModDirectory $modDir -RepoRoot $SaveModDirectory -Mods $toJunction
+            New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $SaveModDirectory -Mods $toJunction)
         }
         # Startup settings change prototypes, and a benchmark of a map with different prototypes is
         # a benchmark of a different map.
@@ -2884,7 +2884,7 @@ if ($Save) {
         # Ours last and from the repository, so the working tree wins over any installed copy of
         # the same name -- measuring a released zip while editing the repo is the one outcome
         # nobody wants.
-        New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+        New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
         Write-Survey
 
         $foreignNames = @($resolved.Foreign | ForEach-Object { $_.Name })
@@ -3114,7 +3114,7 @@ try {
             else { $toJunction += (Split-Path $mod.Source -Leaf) }
         }
         if ($toJunction.Count -gt 0) {
-            New-ModJunctions -ModDirectory $modDir -RepoRoot $SaveModDirectory -Mods $toJunction
+            New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $SaveModDirectory -Mods $toJunction)
         }
         # Startup settings change prototypes, and a benchmark of a map with different prototypes is
         # a benchmark of a different map. Identical at every count, so it cancels out of the
@@ -3125,7 +3125,7 @@ try {
 
     # Ours last and from the repository, so the working tree wins over any installed copy of the
     # same name -- measuring a released zip while editing the repo is the one outcome nobody wants.
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+    New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
     Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $plantBundled `
         -Mods ($plantForeign + $ourMods + $rigName)
 

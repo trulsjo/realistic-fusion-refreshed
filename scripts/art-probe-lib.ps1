@@ -362,7 +362,7 @@ function Invoke-ArtProbe {
 
     $proc = $null
     try {
-        New-ModJunctions -ModDirectory $modDir -RepoRoot $RepoRoot -Mods $ourMods
+        New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $RepoRoot -Mods $ourMods)
         $enabled = Resolve-BundledSelection -Requested @() -Bundled $bundled
         Write-Host "bundled enabled: $(if ($enabled) { $enabled -join ', ' } else { 'none (base 2.0 only)' })"
         Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabled -Mods ($ourMods + $RigName)

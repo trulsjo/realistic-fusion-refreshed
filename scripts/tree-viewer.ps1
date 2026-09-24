@@ -184,7 +184,7 @@ end)
 try {
     Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled `
         -Mods (@($setMods) + $rigName)
-    if (-not $NoRepoMods) { New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods }
+    if (-not $NoRepoMods) { New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods) }
     foreach ($sub in $alsoSubs) {
         New-Item -ItemType Junction -Path (Join-Path $modDir $sub.Name) -Target $sub.FullName | Out-Null
     }
