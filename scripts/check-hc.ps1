@@ -861,7 +861,7 @@ function Write-Canary {
 }
 
 try {
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+    New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
 
     if ($SelfTest) {
         # THE HALVES ARE DECLARED BY NAME and Invoke-SelfTestHalves numbers them as it runs them, so
