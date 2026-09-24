@@ -203,7 +203,7 @@ $dump = Join-Path $temp 'write-data/script-output/data-raw-dump.json'
 
 That path follows from `Invoke-Factorio` itself: it writes a `factorio-config.ini` moving `write-data`
 under `$OutputDirectory`, so the game's `script-output/` lands there rather than in the player's
-appdata (`scripts/factorio-lib.ps1`, `Invoke-Factorio`). Three callers already do exactly this —
+appdata (`Invoke-Factorio`, in `scripts/factorio-lib.ps1` then and in the shared harness since #458). Three callers already do exactly this —
 `Invoke-DataDump` in `scripts/load-check.ps1` (since #457 the shared harness's `Invoke-HarnessDump`),
 `Get-OurConnections` in
 `scripts/probe-connection-categories.ps1`, and the zip self-test — and each is script-local, not

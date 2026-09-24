@@ -291,7 +291,7 @@ left open.
 
 ## 7. Re-taking the measurements
 
-Pillow, from `data/` of the install (`Resolve-FactorioExe` in `scripts/factorio-lib.ps1` finds it):
+Pillow, from `data/` of the install (`Resolve-FactorioExe`, in the shared harness since #458, finds it):
 
 ```python
 from PIL import Image

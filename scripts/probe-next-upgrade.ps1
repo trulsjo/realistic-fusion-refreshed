@@ -424,7 +424,7 @@ try {
     $ungroupedSave = Join-Path $temp 'ungrouped.zip'
     # THREE OUTCOMES AND NOT TWO, which is the whole care of this block. Invoke-FactorioStep throws
     # on ANY non-zero exit, so "it threw" does not mean "the prototype was refused" -- the run may
-    # simply have failed. scripts/factorio-lib.ps1's own Invoke-Factorio header records what that
+    # simply have failed. The shared harness's Invoke-Factorio header (load-harness-lib.ps1) records what that
     # costs: the text is "Is another instance already running?" buried in the captured stdout, and
     # it "cost two wrong conclusions in a row before anyone noticed the game was simply running".
     #
