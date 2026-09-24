@@ -420,7 +420,7 @@ end)
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }
 
 try {
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+    New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
     $want = if ($SpaceAge) { @('space-age') } else { @('quality') }
     $enabled = Resolve-BundledSelection -Requested $want -Bundled $bundled
     Write-Host "bundled enabled: $($enabled -join ', ')"

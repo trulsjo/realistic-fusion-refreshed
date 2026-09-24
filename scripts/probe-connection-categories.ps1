@@ -226,7 +226,7 @@ try {
     Write-Host "bundled enabled: $(if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.0 only)' })"
 
     Write-Host 'dumping with our mods alone (declared)...'
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+    New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
     $declared = Get-OurConnections -Mods $ourMods -Tag 'declared'
 
     # Every rf- prototype is in $declared, most of them with no connections at all -- items, recipes,
@@ -250,7 +250,7 @@ try {
                 "$($carrying.Count) connection(s) carrying $PLASMA_CATEGORY")
 
     Write-Host 'dumping with the set loaded beside them (loaded)...'
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $AlsoModDirectory -Mods $alsoMods
+    New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $AlsoModDirectory -Mods $alsoMods)
     $loaded = Get-OurConnections -Mods ($ourMods + $alsoMods) -Tag 'loaded'
 
     # ------------------------------------------------------------------------------------- report
