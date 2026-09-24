@@ -42,23 +42,6 @@ function Get-ModLinks {
     return $links
 }
 
-# ponytail: the -RepoRoot/-Mods form lives only until #459-#461 move its callers to -Links;
-# #462 deletes this wrapper and the harness's New-ModJunctions is the only one left.
-${function:New-HarnessModJunctions} = ${function:New-ModJunctions}
-function New-ModJunctions {
-    <#  The harness's New-ModJunctions, which also still takes -RepoRoot and -Mods.  #>
-    [CmdletBinding(DefaultParameterSetName = 'Links')]
-    param(
-        [Parameter(Mandatory)] [string] $ModDirectory,
-        [Parameter(Mandatory, ParameterSetName = 'Links')] [hashtable] $Links,
-        [Parameter(Mandatory, ParameterSetName = 'Root')] [string]   $RepoRoot,
-        [Parameter(Mandatory, ParameterSetName = 'Root')] [string[]] $Mods
-    )
-
-    if ($PSCmdlet.ParameterSetName -eq 'Root') { $Links = Get-ModLinks -Root $RepoRoot -Mods $Mods }
-    New-HarnessModJunctions -ModDirectory $ModDirectory -Links $Links
-}
-
 function Get-RepoMods {
     <#  The mods this repository publishes, in dependency order.
 
