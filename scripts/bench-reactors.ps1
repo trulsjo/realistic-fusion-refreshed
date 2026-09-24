@@ -1103,8 +1103,8 @@ if ($Save -or $PlantInto) {
         throw ("-SaveModDirectory not found: $SaveModDirectory. That is where the save's own mods " +
                'are looked for; pass one explicitly if they live elsewhere.')
     }
-    # New-ModJunctions refuses a relative target, and a mod directory given relative to the
-    # repository is the obvious thing to type.
+    # Made absolute once, here. A mod directory given relative to the repository is the obvious
+    # thing to type, and nothing below should depend on the current directory to read it.
     $SaveModDirectory = (Resolve-Path -LiteralPath $SaveModDirectory).Path
 }
 if ($PlantInto) {

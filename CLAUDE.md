@@ -86,8 +86,9 @@ since #456 the third-party sets come from the shared `fetch-mods.ps1`, pinned in
 `scripts/mod-sets.psd1`. Both need the submodule initialised — `git submodule update --init`, the
 same step the commit hook already asks for — and the fetcher caches under `.mod-cache/<set>` of the
 directory it runs in, so run it from the repository root. Since #458 `factorio-lib.ps1` takes the
-same harness for every script that runs the game, so no gate here that starts Factorio runs without
-the submodule, and since #462 none of the harness's functions is defined a second time in this repo.
+same harness for every script that sources it, so every gate here needs the submodule, the ones that
+start no game (`ship-check.ps1`, `pack-mods.ps1`) included. Since #462 none of the harness's functions
+is defined a second time in this repo.
 
 `scripts/probe-*` are **not** in that list and are not gates. A probe asserts nothing and answers
 a question a decision is waiting on — exit 0 means it ran and reported, never that the answer was the
