@@ -1094,6 +1094,13 @@ function Test-SelfTestRunner {
             throw 'runner canary: the run loop is not written the way the floor case expects, so it could not be broken.'
         }
         $skips = "    `$ran   = 0`n    foreach (`$half in @(`$Halves | Select-Object -First ([Math]::Max(1, `$Halves.Count - 1)))) {"
+        # THE COPY RUNS FROM TEMP, so its $PSScriptRoot is temp and it would look for the harness
+        # submodule there (#458). It is told where this file really is instead.
+        $harnessAt = "Join-Path `$PSScriptRoot '../vendor/grado-factorio-tools/scripts/load-harness-lib.ps1'"
+        if (-not $source.Contains($harnessAt)) {
+            throw 'runner canary: the harness is not sourced the way the floor case expects, so the copy could not find it.'
+        }
+        $source = $source.Replace($harnessAt, $harnessAt.Replace('$PSScriptRoot', "'$(Split-Path -Parent $mine)'"))
         Set-Content -LiteralPath $copy -Value $source.Replace($loop, $skips) -Encoding utf8
 
         $pwsh = Join-Path $PSHOME $(if ($IsWindows) { 'pwsh.exe' } else { 'pwsh' })
