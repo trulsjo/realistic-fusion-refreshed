@@ -82,8 +82,8 @@ engine behaves differently in them.
 ## Re-running it
 
 ```powershell
-pwsh -File scripts/fetch-mods.ps1 -Set riteg
-pwsh -File scripts/fetch-mods.ps1 -Set fluid
+pwsh -File vendor/grado-factorio-tools/scripts/fetch-mods.ps1 -PinFile scripts/mod-sets.psd1 -Set riteg
+pwsh -File vendor/grado-factorio-tools/scripts/fetch-mods.ps1 -PinFile scripts/mod-sets.psd1 -Set fluid
 pwsh -File scripts/probe-dumped-reference.ps1 -AlsoModDirectory .mod-cache/riteg -Prototype electric-energy-interface/RITEG-1
 pwsh -File scripts/probe-dumped-reference.ps1 -AlsoModDirectory .mod-cache/fluid -Prototype pump/underground-mini-pump
 ```

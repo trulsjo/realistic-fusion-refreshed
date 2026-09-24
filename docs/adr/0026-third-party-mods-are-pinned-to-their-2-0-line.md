@@ -50,7 +50,8 @@ place. What the ticket priced as new machinery is now data entry.
 ## Decision
 
 **Third-party mods are pinned to the last `factorio_version` 2.0 release of each family**, and those
-pins live in `scripts/fetch-mods.ps1`'s `$MOD_SETS`. Moving this repository to
+pins live in `scripts/mod-sets.psd1` (in `scripts/fetch-mods.ps1`'s `$MOD_SETS` until #456 moved the
+fetcher to the tooling repo). Moving this repository to
 `factorio_version` 2.1 is **not** done, and is deferred to ADR 0008's existing trigger.
 
 **A passing coexistence lane proves coexistence with that family's 2.0 line, and nothing about the

@@ -799,7 +799,7 @@ is not one, however visible it is. Distinct from a **collision**, which is about
 the content, and from **set-derived** and **re-homed unlock** below, which name things a set does to
 us rather than the reverse.
 
-**Set** — a pinned list of third-party mods, defined in `scripts/fetch-mods.ps1`'s `$MOD_SETS` and
+**Set** — a pinned list of third-party mods, defined in `scripts/mod-sets.psd1` and
 named there (`krastorio2`, `spaceex`, `angels`). The pins are the definition; prose never re-derives
 them.
 

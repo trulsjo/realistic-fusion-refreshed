@@ -130,7 +130,7 @@
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
 .PARAMETER AlsoModDirectory
-    A directory of unpacked mods to load beside ours -- a lane's cache from `scripts/fetch-mods.ps1`,
+    A directory of unpacked mods to load beside ours -- a lane's cache from the shared `fetch-mods.ps1`,
     read the same way `load-check.ps1` and `name-check.ps1` read it. Mandatory: with no set loaded
     the two dumps are the same dump, and there is no question to answer.
 
@@ -142,7 +142,7 @@
     Keep the temp directory, which holds both dumps under their tags.
 
 .EXAMPLE
-    pwsh -File scripts/fetch-mods.ps1 -Set seablock
+    pwsh -File vendor/grado-factorio-tools/scripts/fetch-mods.ps1 -PinFile scripts/mod-sets.psd1 -Set seablock
     pwsh -File scripts/probe-connection-categories.ps1 -AlsoModDirectory .mod-cache/seablock -With quality
 #>
 
