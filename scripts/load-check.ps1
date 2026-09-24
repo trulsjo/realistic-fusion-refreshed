@@ -11,9 +11,10 @@
 
     THE HARNESS IS SHARED AND THE CHECKS ARE NOT (#457). Building the isolated mod directory,
     mounting the mods, writing the mod list, creating the map and taking a --dump-data are
-    vendor/grado-factorio-tools/scripts/load-harness-lib.ps1's, which this script dot-sources; the
-    submodule must be initialised. Everything else here -- the invariants' self-test halves, the
-    asset, containment, render, socket and mockup gates -- is this repository's own and stays here.
+    vendor/grado-factorio-tools/scripts/load-harness-lib.ps1's, which factorio-lib.ps1
+    dot-sources; the submodule must be initialised. Everything else here -- the invariants'
+    self-test halves, the asset, containment, render, socket and mockup gates -- is this
+    repository's own and stays here.
 
     IT CAN LOAD THE MODS TWO WAYS, and -FromZips is the one a player is on. By default the
     repository's directories are junctioned in, so the game reads the working tree in place; that is
@@ -450,16 +451,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
+# factorio-lib.ps1 dot-sources the shared load harness itself (#458).
 . "$PSScriptRoot/factorio-lib.ps1"
-# THE HARNESS IS SHARED, and sourced AFTER factorio-lib.ps1 on purpose (#457). The two define
-# eleven functions under the same names, and New-ModJunctions takes different parameters in each:
-# the harness calls its own, so its definitions have to be the ones left standing. Nothing below
-# calls New-ModJunctions directly.
-$harnessLib = Join-Path $repoRoot 'vendor/grado-factorio-tools/scripts/load-harness-lib.ps1'
-if (-not (Test-Path -LiteralPath $harnessLib)) {
-    throw "The load harness is not at $harnessLib. Run: git submodule update --init"
-}
-. $harnessLib
 # Its own, although the harness loads it too: the zip mode below unpacks archives itself.
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $ourMods  = Get-RepoMods
