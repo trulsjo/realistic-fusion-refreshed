@@ -67,7 +67,8 @@ availability rather than proof of it, and it should be re-checked immediately be
 ## Consequences
 
 - **The repository's mod directories are renamed with the mods, and that is forced rather than
-  chosen.** `New-ModJunctions` in `scripts/factorio-lib.ps1` links each mod into a temporary mod
+  chosen.** `New-ModJunctions` (in `scripts/factorio-lib.ps1` then, in the shared harness
+  `vendor/grado-factorio-tools/scripts/load-harness-lib.ps1` since #458) links each mod into a temporary mod
   directory *under its directory name*, and Factorio requires a mod folder to be named for the mod. So
   `RealisticFusion/` becomes `realistic-fusion-refreshed/` and `RealisticFusionCore/` becomes
   `realistic-fusion-refreshed-core/`, and the `$ourMods` list every rig carries changes with them.

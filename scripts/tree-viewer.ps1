@@ -135,7 +135,7 @@ if (-not $NoRepoMods) {
     }
 }
 # Enumerated here, junctioned inside the try below: a junction left behind by an early throw is
-# the delete-through-the-link hazard factorio-lib's Remove-ModJunctions exists to prevent.
+# the delete-through-the-link hazard the shared harness's Remove-ModJunctions exists to prevent.
 $alsoSubs = [System.Collections.Generic.List[object]]::new()
 foreach ($dir in $AlsoModDirectory) {
     $resolved = Resolve-Path -LiteralPath $dir   # junctions refuse relative targets
