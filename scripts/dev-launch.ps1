@@ -96,7 +96,7 @@ catch { throw "-With $($_.Exception.Message)" }
 New-Item -ItemType Directory -Path $ModDirectory -Force | Out-Null
 # Rebuilt every run, so a mod renamed or removed in the repo cannot linger as a stale link.
 Remove-ModJunctions -ModDirectory $ModDirectory
-New-ModJunctions -ModDirectory $ModDirectory -RepoRoot $repoRoot -Mods $ourMods
+New-ModJunctions -ModDirectory $ModDirectory -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
 Write-ModList -ModDirectory $ModDirectory -Bundled $bundled -EnabledBundled $enabled -Mods $ourMods
 
 # These junctions outlive the script -- the game needs them while it runs -- so leave a warning

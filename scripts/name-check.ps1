@@ -894,9 +894,9 @@ function Test-Names {
 }
 
 try {
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+    New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
     if ($alsoMods) {
-        New-ModJunctions -ModDirectory $modDir -RepoRoot $AlsoModDirectory -Mods $alsoMods
+        New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $AlsoModDirectory -Mods $alsoMods)
         Write-Host "also loading: $($alsoMods.Count) mod(s) -- $($alsoMods -join ', ')"
     }
 
@@ -969,7 +969,7 @@ try {
     # The baseline is the game WITH the set and WITHOUT us, so the difference is still exactly what
     # this repo adds, and $replaced becomes what this repo changes in the set as well as in vanilla.
     # That second half is the per-set collision check #61 asks for.
-    if ($alsoMods) { New-ModJunctions -ModDirectory $modDir -RepoRoot $AlsoModDirectory -Mods $alsoMods }
+    if ($alsoMods) { New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $AlsoModDirectory -Mods $alsoMods) }
     $withoutUs = Get-PrototypeNames -Mods $alsoMods -Tag 'without-us'
 
     # EVIDENCE THAT THE SET LOADED, WHICH IS NOT THE SAME AS A GUARD -- and it is worth saying why
@@ -1174,7 +1174,7 @@ try {
         data.raw.item["iron-plate"].stack_size = 123' |
                     Set-Content -Path (Join-Path $canary 'data.lua') -Encoding utf8
 
-                New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+                New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
                 $withCanary = Get-PrototypeNames -Mods ($ourMods + 'rf-namecheck-canary') -Tag 'canary'
 
                 $canaryNames    = Get-OurNames -WithUs $withCanary -Baseline $withoutUs

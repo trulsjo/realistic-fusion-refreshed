@@ -50,7 +50,7 @@ New-Item -ItemType Directory -Path $modDir -Force | Out-Null
 
 try {
     $ourMods = Get-RepoMods
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+    New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
     Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled -Mods $ourMods
 
     $rawPath = Join-Path $temp 'write-data/script-output/data-raw-dump.json'
