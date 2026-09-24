@@ -195,7 +195,7 @@ try {
     Write-Host "bundled enabled: $(if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.0 only)' })"
 
     Write-Host 'dumping with our mods alone (declared)...'
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+    New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
     $declared = Get-OurVisibility -Mods $ourMods -Tag 'declared'
     Remove-ModJunctions -ModDirectory $modDir
 
@@ -227,8 +227,8 @@ try {
         }
 
         Write-Host "dumping lane '$laneName' ($($mods.Count) mod(s))..."
-        New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
-        New-ModJunctions -ModDirectory $modDir -RepoRoot $lane -Mods $mods
+        New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
+        New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $lane -Mods $mods)
         $loaded = Get-OurVisibility -Mods ($ourMods + $mods) -Tag $laneName
         Remove-ModJunctions -ModDirectory $modDir
 

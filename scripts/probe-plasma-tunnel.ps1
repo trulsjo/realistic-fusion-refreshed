@@ -293,8 +293,8 @@ Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $contr
 # ------------------------------------------------------------------------------------------- run
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }
 try {
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $AlsoModDirectory -Mods $alsoMods
+    New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
+    New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $AlsoModDirectory -Mods $alsoMods)
     Write-Host "set: $($alsoMods.Count) mod(s) at $AlsoModDirectory"
     Write-Host "bundled enabled: $(if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.0 only)' })"
     Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled `

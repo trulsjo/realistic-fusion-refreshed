@@ -508,7 +508,7 @@ Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }
 
 try {
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
+    New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
     $enabled = Resolve-BundledSelection -Requested @('quality') -Bundled $bundled
     Write-Host "bundled enabled: $($enabled -join ', ')"
     Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabled -Mods ($ourMods + $rigName)

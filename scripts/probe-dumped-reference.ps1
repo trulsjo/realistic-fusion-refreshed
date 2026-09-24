@@ -304,8 +304,8 @@ $modDir = Join-Path $temp 'mods'
 New-Item -ItemType Directory -Path $modDir -Force | Out-Null
 
 try {
-    New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods $ourMods
-    if ($alsoMods) { New-ModJunctions -ModDirectory $modDir -RepoRoot $AlsoModDirectory -Mods $alsoMods }
+    New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
+    if ($alsoMods) { New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $AlsoModDirectory -Mods $alsoMods) }
     Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled `
         -Mods ($ourMods + $alsoMods)
 
