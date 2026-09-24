@@ -1178,6 +1178,13 @@ function Test-Containment {
     }
 }
 
+# -With CHECKED FIRST, before -FromZips builds a single zip (#463). New-LoadHarness checks it again
+# with the same function; this only moves the refusal ahead of the pack, as it was before #457.
+try {
+    [void](Resolve-BundledSelection -Requested $With -Bundled (Get-BundledMods -FactorioExe (Resolve-FactorioExe -Path $FactorioExe)))
+}
+catch { throw "-With $($_.Exception.Message)" }
+
 $harness = $null
 $zipTemp = $null
 try {
