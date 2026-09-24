@@ -787,7 +787,7 @@ function Invoke-Rig {
         THE TWO STEPS USE DIFFERENT INSTRUMENTS, AND THAT IS THE POINT. A FAILED MAP CREATION IS A
         RESULT here rather than a throw, because reactor-sells-south's whole assertion is that the
         rig refuses to build -- so the create step calls Invoke-Factorio and hands the caller the
-        exit code, the way load-check's Invoke-LoadCheck does. The run step wants the opposite and
+        exit code, the way the shared harness's Invoke-HarnessLoad does for load-check. The run step wants the opposite and
         calls Invoke-FactorioStep, which throws and tails both streams: a rig that built its map and
         then died is a broken rig in every half, and nothing here should be re-writing that. Found
         in review, which caught this function claiming exactly that arrangement while inlining a

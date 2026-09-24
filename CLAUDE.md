@@ -80,6 +80,13 @@ against the unpacked archive rather than against the repo. A file that resolves 
 and never reaches a zip passes the default and breaks a player's game. Use `-FromZips` before
 anything that ships.
 
+**The harness under it is shared; the checks are not.** Since #457 `load-check.ps1` builds its mod
+directory, loads and dumps through `vendor/grado-factorio-tools/scripts/load-harness-lib.ps1`, and
+since #456 the third-party sets come from the shared `fetch-mods.ps1`, pinned in
+`scripts/mod-sets.psd1`. Both need the submodule initialised — `git submodule update --init`, the
+same step the commit hook already asks for — and the fetcher caches under `.mod-cache/<set>` of the
+directory it runs in, so run it from the repository root.
+
 `scripts/probe-*` are **not** in that list and are not gates. A probe asserts nothing and answers
 a question a decision is waiting on — exit 0 means it ran and reported, never that the answer was the
 hoped-for one. Its findings belong in `docs/research/`, and it stays committed so the next engine
@@ -211,10 +218,8 @@ other direction.
 - **Cite a `-SelfTest` half by its name, never by its position** (#411, #416). A gate declares its
   halves by name where they run and `Invoke-SelfTestHalves` numbers them as it goes, so inserting
   one moves the number printed for every half after it while the names stay put — and a sentence
-  pointing at a position still reads as true once it means a different half. (`fetch-mods.ps1` is
-  the one `-SelfTest` still writing its own numbered labels by hand; it is a fetch tool rather than
-  a gate, and its labels are output rather than a citation.) `ship-check.ps1` section 9 gates the
-  rule across the same tracked `.md`, `.lua`, `.ps1`, `.py` and `.js` files, and its own
+  pointing at a position still reads as true once it means a different half. `ship-check.ps1`
+  section 9 gates the rule across the same tracked `.md`, `.lua`, `.ps1`, `.py` and `.js` files, and its own
   `-SelfTest` proves it fires and that it
   leaves a named citation alone. **It reads prose only** — a whole markdown file, and in code the
   lines that are comments, minus a markdown fence, where a pasted run lives — so a citation in a
