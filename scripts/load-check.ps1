@@ -1180,10 +1180,12 @@ function Test-Containment {
 
 # -With CHECKED FIRST, before -FromZips builds a single zip (#463). New-LoadHarness checks it again
 # with the same function; this only moves the refusal ahead of the pack, as it was before #457.
-try {
-    [void](Resolve-BundledSelection -Requested $With -Bundled (Get-BundledMods -FactorioExe (Resolve-FactorioExe -Path $FactorioExe)))
+# Only the selection is wrapped, as in New-LoadHarness: a missing Factorio.exe is not a -With fault.
+if ($With) {
+    $bundledNow = Get-BundledMods -FactorioExe (Resolve-FactorioExe -Path $FactorioExe)
+    try { [void](Resolve-BundledSelection -Requested $With -Bundled $bundledNow) }
+    catch { throw "-With $($_.Exception.Message)" }
 }
-catch { throw "-With $($_.Exception.Message)" }
 
 $harness = $null
 $zipTemp = $null

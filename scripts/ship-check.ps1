@@ -164,7 +164,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-. "$PSScriptRoot/factorio-lib.ps1"   # for Get-RepoMods only; this script still starts no game.
+. "$PSScriptRoot/factorio-lib.ps1"   # starts no game, but the library sources the harness submodule.
 
 $mods      = Get-RepoMods
 $assetsMod = 'realistic-fusion-refreshed-assets'

@@ -193,7 +193,7 @@ that runs the game, and every dump in the repo goes through it:
 . "$PSScriptRoot/factorio-lib.ps1"
 $exe = Resolve-FactorioExe                      # -Path, $env:FACTORIO_EXE, or the Steam install
 $bundled = Get-BundledMods -FactorioExe $exe    # space-age, quality, elevated-rails — discovered
-New-ModJunctions -ModDirectory $modDir -RepoRoot $repoRoot -Mods (Get-RepoMods)
+New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods (Get-RepoMods))
 Write-ModList    -ModDirectory $modDir -Bundled $bundled -EnabledBundled @() -Mods (Get-RepoMods)
 $r = Invoke-Factorio -FactorioExe $exe -ModDirectory $modDir -Arguments @('--dump-data') `
                      -OutputDirectory $temp -Tag 'geometry'
