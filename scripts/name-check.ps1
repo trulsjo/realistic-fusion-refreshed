@@ -97,10 +97,10 @@
 
 .PARAMETER AlsoModDirectory
     A directory of third-party mod directories to LOAD as well as scan, e.g. what
-    scripts/fetch-mods.ps1 wrote for one of #61's coexistence lanes. Same shape load-check.ps1 takes
+    the shared fetch-mods.ps1 wrote for one of #61's coexistence lanes. Same shape load-check.ps1 takes
     it in, and for the same reason: this script downloads nothing.
 
-        pwsh -File scripts/fetch-mods.ps1 -Set angels
+        pwsh -File vendor/grado-factorio-tools/scripts/fetch-mods.ps1 -PinFile scripts/mod-sets.psd1 -Set angels
         pwsh -File scripts/name-check.ps1 -AlsoModDirectory .mod-cache/angels
 
     THIS IS THE PER-SET COLLISION CHECK, and it is a stronger instrument than the scan. The set is
@@ -263,7 +263,7 @@ if (-not $ReferenceDirectory) {
 
 # The set to check against, if one was named. Read in the same shape load-check.ps1 reads it,
 # deliberately: both take a DIRECTORY of unpacked mods rather than a mod name, because neither
-# downloads anything -- scripts/fetch-mods.ps1 owns that half.
+# downloads anything -- the shared fetch-mods.ps1 owns that half.
 $alsoMods = @()
 if ($AlsoModDirectory) {
     if ($SelfTest) {

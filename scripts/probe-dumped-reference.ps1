@@ -55,9 +55,9 @@
 
 .PARAMETER AlsoModDirectory
     A directory of mod directories to load beside this repo's three, the same way load-check.ps1
-    takes one. scripts/fetch-mods.ps1 fills one per lane at the ADR 0026 pins:
+    takes one. The shared fetch-mods.ps1 fills one per lane at the ADR 0026 pins:
 
-        pwsh -File scripts/fetch-mods.ps1 -Set riteg
+        pwsh -File vendor/grado-factorio-tools/scripts/fetch-mods.ps1 -PinFile scripts/mod-sets.psd1 -Set riteg
         pwsh -File scripts/probe-dumped-reference.ps1 -AlsoModDirectory .mod-cache/riteg
 
     Omit it and the probe loads this repo's mods alone, which answers the same question about our

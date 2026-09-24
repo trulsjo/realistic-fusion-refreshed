@@ -62,7 +62,7 @@
     One lane's mod directory, e.g. .mod-cache/seablock. Omit it to walk EVERY lane cached under
     -ModCache, which is what the cross-lane question needs and is the default for that reason.
 
-    This script downloads nothing. `scripts/fetch-mods.ps1 -Set <name>` is what fills the cache.
+    This script downloads nothing. The shared `fetch-mods.ps1 -PinFile scripts/mod-sets.psd1 -Set <name>` is what fills the cache.
 
 .PARAMETER ModCache
     Where the lanes live. Defaults to .mod-cache at the repository root. Every subdirectory holding
@@ -138,7 +138,7 @@ if ($AlsoModDirectory) {
     $lanes = @((Resolve-Path -LiteralPath $AlsoModDirectory).Path)
 } else {
     if (-not (Test-Path $ModCache)) {
-        throw ("no mod cache at $ModCache. Run scripts/fetch-mods.ps1 -Set <name> first, or pass " +
+        throw ("no mod cache at $ModCache. Run vendor/grado-factorio-tools/scripts/fetch-mods.ps1 -PinFile scripts/mod-sets.psd1 -Set <name> first, or pass " +
                '-AlsoModDirectory to probe one lane.')
     }
     $lanes = @(Get-ChildItem -Path $ModCache -Directory | Sort-Object Name | ForEach-Object { $_.FullName })

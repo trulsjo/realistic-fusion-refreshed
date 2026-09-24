@@ -59,7 +59,7 @@
 
 .PARAMETER AlsoModDirectory
     Directories of unpacked third-party mods to load, e.g. .mod-cache/krastorio2 as populated by
-    scripts/fetch-mods.ps1. Every immediate subdirectory holding an info.json is loaded.
+    the shared fetch-mods.ps1. Every immediate subdirectory holding an info.json is loaded.
 
 .PARAMETER NoRepoMods
     Leave this repo's own mods out. The destination allows an arbitrary set; by default ours ride

@@ -86,7 +86,7 @@ That leaves exactly two routes, and choosing between them is a decision, not a f
 
 > **Decided 2026-08-26 (#59, [ADR 0026](../adr/0026-third-party-mods-are-pinned-to-their-2-0-line.md)):
 > the second route.** Pin the last `factorio_version` 2.0 release of each family; do not move to 2.1
-> while it is still the experimental branch. The pins live in `scripts/fetch-mods.ps1`'s `$MOD_SETS`
+> while it is still the experimental branch. The pins live in `scripts/mod-sets.psd1`
 > as data, derived from the portal API rather than transcribed from this table.
 
 | Route | What it costs | What it buys |
@@ -512,7 +512,7 @@ Cannot be combined with `-With space-age` (declared `!`).
 > dependency.** `space-exploration` 0.7.57 declares `space-exploration-menu-simulations >= 0.7.1`
 > **with no prefix**, which in Factorio's dependency syntax is a requirement and not a suggestion —
 > the same trap the `krastorio2` set records for `ChangeInserterDropLane`. The pin in
-> `scripts/fetch-mods.ps1` is therefore **17** mods and is the correct one; this section is the
+> `scripts/mod-sets.psd1` is therefore **17** mods and is the correct one; this section is the
 > derivation that missed it. Do not trim the set to match. All 17 fetch, and the game loads all
 > twenty mods and creates a map — but **`load-check.ps1` still exits 1**, on `__base__` paths SE and
 > the two AAI mods name and Factorio 2.0 removed. That red is recorded and it is upstream's; see

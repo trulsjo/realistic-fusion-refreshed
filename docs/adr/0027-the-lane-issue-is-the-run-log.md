@@ -52,8 +52,8 @@ lane's issue.** Anything in neither is posted to the issue first.
 **The run detail sits outside the clone.** This is the real cost and it is accepted deliberately. Three
 things make it tolerable:
 
-- A lane is **re-runnable**, and the pins that make it reproducible — `scripts/fetch-mods.ps1`'s
-  `$MOD_SETS` — are in the repo, as is every check it runs. The evidence is regenerable in a way a
+- A lane is **re-runnable**, and the pins that make it reproducible — `scripts/mod-sets.psd1`
+  — are in the repo, as is every check it runs. The evidence is regenerable in a way a
   design decision is not.
 - The repo already treats issues as citable record: ADR 0007, ADR 0026 and the research docs all link
   to them for context that has never been duplicated in-tree.

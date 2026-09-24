@@ -87,7 +87,7 @@ That is the silent overwrite, and it is the failure this ADR calls most likely.
 prototypes. Both scripts carry the method and its limits in their own docstrings; it is not restated
 here.
 
-**Pins live in `scripts/fetch-mods.ps1`'s `$MOD_SETS` and are never re-derived in prose**
+**Pins live in `scripts/mod-sets.psd1` and are never re-derived in prose**
 ([ADR 0026](0026-third-party-mods-are-pinned-to-their-2-0-line.md)). Krastorio 2's five-mod set is
 public git needing no mod-portal account, which is the assumption
 [#60](https://github.com/trulsjo/realistic-fusion-refreshed/issues/60) was written under and against.

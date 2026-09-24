@@ -86,7 +86,7 @@
     Keep the save, the rig mod and the captured output.
 
 .EXAMPLE
-    pwsh -File scripts/fetch-mods.ps1 -Set seablock
+    pwsh -File vendor/grado-factorio-tools/scripts/fetch-mods.ps1 -PinFile scripts/mod-sets.psd1 -Set seablock
     pwsh -File scripts/probe-plasma-tunnel.ps1
 #>
 
@@ -111,7 +111,7 @@ $rigName  = 'rf-tunnel-probe-rig'
 if (-not $AlsoModDirectory) { $AlsoModDirectory = Join-Path $repoRoot '.mod-cache/seablock' }
 if (-not (Test-Path $AlsoModDirectory)) {
     throw ("-AlsoModDirectory not found: $AlsoModDirectory. Fetch the lane first: " +
-           'pwsh -File scripts/fetch-mods.ps1 -Set seablock')
+           'pwsh -File vendor/grado-factorio-tools/scripts/fetch-mods.ps1 -PinFile scripts/mod-sets.psd1 -Set seablock')
 }
 $AlsoModDirectory = (Resolve-Path -LiteralPath $AlsoModDirectory).Path
 $alsoMods = @(Get-ChildItem -Path $AlsoModDirectory -Directory |

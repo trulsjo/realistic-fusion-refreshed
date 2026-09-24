@@ -795,7 +795,7 @@ if ($inScope -lt 2) {
 # WHAT COUNTS AS PROSE, and this is the whole of the discrimination: every line of a tracked .md,
 # and in code only the lines that are COMMENTS -- a line-comment, or a line inside a block comment.
 # A label a script PRINTS is not a citation; factorio-lib.ps1's runner canary holds numbered lines
-# as the output it expects, and fetch-mods.ps1 still writes its own labels by hand. Both are code
+# as the output it expects. That is code
 # doing its job, and a gate that failed them would be asking prose rules of a string literal.
 #
 # WHAT IT CANNOT SEE, stated here rather than left to be discovered, exactly as section 7 states its
