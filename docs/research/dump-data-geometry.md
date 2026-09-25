@@ -206,8 +206,9 @@ under `$OutputDirectory`, so the game's `script-output/` lands there rather than
 appdata (`Invoke-Factorio`, in `scripts/factorio-lib.ps1` then and in the shared harness since #458). Three callers already do exactly this —
 `Invoke-DataDump` in `scripts/load-check.ps1` (since #457 the shared harness's `Invoke-HarnessDump`),
 `Get-OurConnections` in
-`scripts/probe-connection-categories.ps1`, and the zip self-test — and each is script-local, not
-exported; each also deletes the dump path before the run so a silent non-write cannot hand back the
+`scripts/probe-connection-categories.ps1`, and the zip self-test. Since #457 the first and the
+third are one shared function, and `Get-OurConnections` is the one still script-local; each also
+deletes the dump path before the run so a silent non-write cannot hand back the
 previous dump, and copies the result aside under its tag. An extractor should copy both habits.
 `Write-ModList` must be told about the bundled mods; omitting one **enables** it, which is the fault
 the function's own header records. Observed: this run took about 30 s, most of it `base`'s data

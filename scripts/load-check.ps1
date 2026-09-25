@@ -1186,6 +1186,12 @@ if ($With) {
     try { [void](Resolve-BundledSelection -Requested $With -Bundled $bundledNow) }
     catch { throw "-With $($_.Exception.Message)" }
 }
+# And -AlsoModDirectory, for the same reason: a missing or empty directory is refused before the
+# pack, as it was before #457. Get-HarnessMods is what New-LoadHarness reads it with.
+if ($AlsoModDirectory) {
+    try { [void](Get-HarnessMods -Path $AlsoModDirectory) }
+    catch { throw "-AlsoModDirectory $($_.Exception.Message)" }
+}
 
 $harness = $null
 $zipTemp = $null
