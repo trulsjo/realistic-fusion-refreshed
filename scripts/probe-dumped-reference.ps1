@@ -130,9 +130,9 @@ $ourMods  = Get-RepoMods
 $alsoMods = @()
 if ($AlsoModDirectory) {
     if (-not (Test-Path $AlsoModDirectory)) { throw "-AlsoModDirectory not found: $AlsoModDirectory" }
-    # Absolute, because a junction target must be -- the same trap load-check.ps1 records: the
-    # obvious thing to type after fetch-mods.ps1 is a relative path, and New-Item refuses one.
-    $AlsoModDirectory = (Resolve-Path -LiteralPath $AlsoModDirectory).Path
+    # A relative path is fine and is left relative. A junction target must be absolute, but
+    # New-ModJunctions in the shared load-harness-lib.ps1 resolves every target itself, so the
+    # conversion this probe used to do here was dead once #462 made that function the harness's.
     $alsoMods = @(Get-ChildItem -Path $AlsoModDirectory -Directory |
         Where-Object { Test-Path (Join-Path $_.FullName 'info.json') } |
         ForEach-Object { $_.Name } | Sort-Object)
