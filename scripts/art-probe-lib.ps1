@@ -490,7 +490,7 @@ autosave-interval=0
         foreach ($l in $Epilogue) { Write-Host $l }
     }
     finally {
-        if ($proc -and -not $proc.HasExited) { $proc.Kill() ; $proc.WaitForExit(10000) | Out-Null }
+        Stop-LaunchedGame -Process $proc -Label $RigName
         if (-not $KeepTemp) {
             Remove-ModJunctions -ModDirectory $modDir
             Remove-TempDirectory -Path $temp -Label $RigName
