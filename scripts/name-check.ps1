@@ -130,6 +130,12 @@
     lanes and it applies to names as much as to loading: read what the check found before reading it
     as a bug.
 
+    A SET COSTS A THIRD DUMP, of this repo with no set, taken before the set is junctioned in. It
+    is how a set's derivation that keeps our prefix -- Durikkan's port makes `rf-brine-rfp-ddw` --
+    is told from a name of ours of the same shape (#453): a prefixed name missing from that dump
+    that starts with a name of ours, and shares its marker with at least one other, is the set's.
+    Without a set the third dump would repeat the first, so it is not taken.
+
     It does not guard against the set failing to load, because Factorio does that itself and does it
     by exiting: a mod declaring factorio_version 2.1 and a directory whose name disagrees with its
     info.json both stop --dump-data with an error naming the mod. The run reports how many of the
@@ -321,8 +327,9 @@ function Get-PrototypeNames {
     $rawPath = Join-Path $temp 'write-data/script-output/data-raw-dump.json'
     if (-not (Test-Path $rawPath)) { throw "no data-raw-dump.json at $rawPath." }
 
-    # Both runs write to the same path, so the second overwrites the first. Kept aside under the run's
-    # tag so -KeepTemp leaves both dumps to compare rather than only the baseline.
+    # Every run writes to the same path, so each overwrites the one before -- two runs, or three with
+    # a set loaded. Kept aside under the run's tag so -KeepTemp leaves every dump to compare rather
+    # than only the last.
     Copy-Item -LiteralPath $rawPath -Destination (Join-Path $temp "$Tag-data-raw.json") -Force
 
     $found = @{}
@@ -442,6 +449,21 @@ function Get-ReferenceNames {
     return ,$found
 }
 
+function Get-DerivedMarker {
+    <#  The set's marker around a name of ours, with ours as `<ours>`: `kr-burn-<ours>` for a
+        marker in front, `<ours>-rfp-ddw` for one after. Grouping by it is how a generator is told
+        from a one-off, and printing it is how a reader sees which one moved.
+
+        A FRONT MARKER DROPS WHAT FOLLOWS OUR NAME, as the grouping did before #453 added the
+        other side: `kr-crush-rf-brine-barrel` and `kr-crush-rf-pump` are one generator, and
+        keying them on the tail as well would split it into groups of one.  #>
+    param([string] $Name, [string] $From)
+
+    $before, $after = $Name -split [regex]::Escape($From), 2
+    if ($before) { return "$before<ours>" }
+    return "<ours>$after"
+}
+
 function Get-SetDerived {
     <#  Names in the difference that the LOADED SET built out of ours: name -> the name of ours it
         was built from.
@@ -464,9 +486,25 @@ function Get-SetDerived {
         is not a name Krastorio 2 could have chosen independently, because `rf-brine` is ours. A
         prototype of ours genuinely named without the prefix embeds no such name and is still caught.
 
+        THE MARKER CAN COME AFTER OUR NAME TOO (#453), and then the name keeps the prefix. Durikkan's
+        port clones every recipe taking water as `<recipe>-rfp-ddw`, so `rf-brine-rfp-ddw` starts with
+        `rf-` and was counted as one of ours. Embedding cannot settle this shape, because a name of
+        ours can genuinely be `rf-<ours>-<suffix>` -- `rf-brine-barrel` beside `rf-brine` is exactly
+        that, and there are several. So the evidence is a dump: $OursAlone is every name in the game
+        with this repo and NO set loaded. A prefixed name missing from it, starting with a name of
+        ours that is in it, is the set's -- subject to the generator rule below, like the front
+        shape. That keeps the classification off an unrelated flag: a name this repo defines is in
+        $OursAlone with or without a set, so loading one cannot move it. What it cannot tell apart is
+        a name base Factorio generates from ours only BECAUSE of the set -- a set turning auto_barrel
+        on for our plasmas would get `rf-<plasma>-barrel` attributed to it. That is attribution only:
+        the name carries the prefix, so the verdict is the same either way.
+
         ONLY WITH A SET LOADED. Without -AlsoModDirectory this never runs and nothing about the check
         changes, which is what keeps ADR 0007's existing discharge exactly as measured.  #>
-    param([Parameter(Mandatory)] [hashtable] $Ours)
+    param(
+        [Parameter(Mandatory)] [hashtable] $Ours,
+        [Parameter(Mandatory)] [string[]]  $OursAlone
+    )
 
     # Longest match wins, so `kr-crush-rf-brine-barrel` is attributed to `rf-brine-barrel` and not to
     # `rf-brine`. Only cosmetic -- both are ours -- but the report should name the right parent.
@@ -479,10 +517,17 @@ function Get-SetDerived {
     # time the loop below tried to match against it, so every barrel recipe would sail through as one
     # of the set's derivations. It did, and reported 58 where 47 was right. This file has been bitten
     # by the same trap twice before ($REFERENCE_MODS, $derivedNames); the comments there say so.
+    $alone = [System.Collections.Generic.HashSet[string]]::new($OursAlone, [StringComparer]::Ordinal)
     $fromSet = @{}
     foreach ($n in @($Ours.Keys)) {
-        if ($n.StartsWith($PREFIX, [StringComparison]::Ordinal) -or $n -match $DERIVED) { continue }
-        $from = $mine | Where-Object { $n.Contains($_) } | Select-Object -First 1
+        if ($n -match $DERIVED) { continue }
+        if ($n.StartsWith($PREFIX, [StringComparison]::Ordinal)) {
+            # The suffix shape: absent without the set, and our name at the front of it.
+            if ($alone.Contains($n)) { continue }
+            $from = $mine | Where-Object { $alone.Contains($_) -and $n.StartsWith("$_-", [StringComparison]::Ordinal) } |
+                Select-Object -First 1
+        }
+        else { $from = $mine | Where-Object { $n.Contains($_) } | Select-Object -First 1 }
         if ($from) { $fromSet[$n] = $from }
     }
 
@@ -500,7 +545,7 @@ function Get-SetDerived {
     # derives exactly ONE prototype from us fails and wants reading. That is the right way round:
     # it fails loudly and a human looks, rather than passing quietly and nobody does.
     $singletons = @($fromSet.Keys |
-        Group-Object { ($_ -split [regex]::Escape($fromSet[$_]), 2)[0] } |
+        Group-Object { Get-DerivedMarker -Name $_ -From $fromSet[$_] } |
         Where-Object { $_.Count -lt 2 } |
         ForEach-Object { $_.Group })
     foreach ($n in $singletons) { $fromSet.Remove($n) }
@@ -895,13 +940,9 @@ function Test-Names {
 
 try {
     New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
-    if ($alsoMods) {
-        New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $AlsoModDirectory -Mods $alsoMods)
-        Write-Host "also loading: $($alsoMods.Count) mod(s) -- $($alsoMods -join ', ')"
-    }
 
     # Read the neighbours first: it needs no Factorio and a missing directory should be reported
-    # before spending two dumps on it.
+    # before spending two dumps on it, or three with a set.
     if (-not (Test-Path $ReferenceDirectory)) {
         throw ("reference directory not found: $ReferenceDirectory. This check reads Krastorio 2 and the " +
                "predecessors from disk rather than shipping them; point -ReferenceDirectory or " +
@@ -953,6 +994,19 @@ try {
 
     # Ours by difference, not by prefix. See METHOD: deriving them from the prefix would assume the
     # thing being checked.
+    #
+    # A THIRD DUMP WITH A SET LOADED, and it comes first: this repo WITHOUT the set, before the
+    # set's junctions exist. It is the only evidence that can tell a set's `rf-<ours>-<suffix>`
+    # clone from a name of ours of the same shape -- see Get-SetDerived. Without a set it would be
+    # the with-us dump again, so it is not taken.
+    $oursAlone = @()
+    if ($alsoMods) {
+        Write-Host 'dumping with this repo and no set...'
+        $oursAlone = @((Get-PrototypeNames -Mods $ourMods -Tag 'us-alone').Keys |
+            ForEach-Object { ($_ -split '/', 2)[1] } | Sort-Object -Unique)
+        New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $AlsoModDirectory -Mods $alsoMods)
+        Write-Host "also loading: $($alsoMods.Count) mod(s) -- $($alsoMods -join ', ')"
+    }
     Write-Host 'dumping with this repo, then without it...'
     $withUs = Get-PrototypeNames -Mods ($ourMods + $alsoMods) -Tag 'with-us'
 
@@ -1051,13 +1105,18 @@ try {
     $setDerived    = @{}
     $derivedWiring = @{}
     if ($alsoMods) {
-        $setDerived = Get-SetDerived -Ours $ours
+        $setDerived = Get-SetDerived -Ours $ours -OursAlone $oursAlone
         if ($setDerived.Count) {
-            $byPrefix = $setDerived.Keys |
-                Group-Object { ($_ -split [regex]::Escape($setDerived[$_]), 2)[0] } |
+            $byMarker = $setDerived.Keys |
+                Group-Object { Get-DerivedMarker -Name $_ -From $setDerived[$_] } |
                 Sort-Object Count -Descending
             Write-Host ("of those, {0} are the SET's own prototypes generated from ours -- {1}" -f
-                $setDerived.Count, (($byPrefix | ForEach-Object { "$($_.Count)x '$($_.Name)<ours>'" }) -join ', '))
+                $setDerived.Count, (($byMarker | ForEach-Object { "$($_.Count)x '$($_.Name)'" }) -join ', '))
+            # The ones that KEEP our prefix are named as well as counted: nothing else about them says
+            # they are the set's, while `kr-burn-rf-brine` says so in its first three letters.
+            foreach ($n in @($setDerived.Keys | Where-Object { $_.StartsWith($PREFIX, [StringComparison]::Ordinal) } | Sort-Object)) {
+                Write-Host "  '$n' from '$($setDerived[$n])'"
+            }
         }
         # THE FLUIDS SEPARATELY FROM THE NAMES, because the re-homed predicate builds barrel recipe
         # names out of them and $ours.Keys has already thrown the type away. `fluid` is the type
@@ -1212,7 +1271,8 @@ try {
                 # The positive cases are taken from a REAL measurement rather than invented: Krastorio 2
                 # 2.0.19 generates kr-burn-<fluid> and kr-crush-<item> from this repo's prototypes and
                 # appends the unlocks into its own technology/kr-fluid-excess-handling. Four negatives sit
-                # beside them, one per way the rule could be too generous.
+                # beside them, one per way the rule could be too generous. The suffix shape (#453) is
+                # taken from Durikkan's port the same way, further down, with three negatives of its own.
                 $ourName    = 'rf-brine'
                 $setName    = 'kr-burn-rf-brine'
                 # TWO of the set's, sharing a marker, because one is not a generator -- see Get-SetDerived.
@@ -1226,7 +1286,7 @@ try {
                     'fill-rf-brine-barrel'  = @('recipe')
                     'fusion-reactor'        = @('reactor')
                 }
-                $classified = Get-SetDerived -Ours $fake
+                $classified = Get-SetDerived -Ours $fake -OursAlone @($fake.Keys | Where-Object { $_ -notlike 'kr-*' })
 
                 if (-not $classified.ContainsKey($setName)) {
                     Write-Host "FAILED - self-test: '$setName' was not recognised as the set's own prototype built from ours."
@@ -1261,6 +1321,44 @@ try {
                 if (-not (Test-Names -Ours $fake -References @{} -Exempt @($classified.Keys) |
                         Where-Object { $_ -like "unprefixed: 'fill-rf-brine-barrel'*" })) {
                     Write-Host "FAILED - self-test: the lone 'fill-rf-brine-barrel' was not reported as unprefixed."
+                    exit 1
+                }
+
+                # THE MARKER AFTER OUR NAME (#453), the shape Durikkan's port really produces: it clones
+                # every recipe taking water as `<recipe>-rfp-ddw`, two of them ours. The clones keep our
+                # prefix, so only the dump without the set can say they are not ours -- and the two
+                # `-barrel` names beside them are the guard: they share a marker after a name of ours
+                # exactly as the clones do, but they are in that dump, so they stay ours.
+                $suffixFake = @{
+                    $ourName                          = @('recipe')
+                    'rf-hydrogen-from-water'          = @('recipe')
+                    'rf-brine-barrel'                 = @('item', 'recipe')
+                    'rf-deuterium-barrel'             = @('item', 'recipe')
+                    'rf-deuterium'                    = @('fluid')
+                    'rf-brine-rfp-ddw'                = @('recipe')
+                    'rf-hydrogen-from-water-rfp-ddw'  = @('recipe')
+                    # A LONE one, absent without the set like the clones but sharing its marker with
+                    # nothing: the generator rule has to reach the suffix shape too.
+                    'rf-deuterium-rfp-once'           = @('recipe')
+                }
+                $suffixAlone = @($suffixFake.Keys | Where-Object { $_ -notlike '*-rfp-*' })
+                $suffixed = Get-SetDerived -Ours $suffixFake -OursAlone $suffixAlone
+                foreach ($pair in @(@('rf-brine-rfp-ddw', $ourName), @('rf-hydrogen-from-water-rfp-ddw', 'rf-hydrogen-from-water'))) {
+                    if ($suffixed[$pair[0]] -ne $pair[1]) {
+                        Write-Host ("FAILED - self-test: '$($pair[0])' was attributed to '$($suffixed[$pair[0]])', " +
+                                    "not to the set as derived from '$($pair[1])'.")
+                        exit 1
+                    }
+                }
+                foreach ($n in @('rf-brine-barrel', 'rf-deuterium-barrel')) {
+                    if ($suffixed.ContainsKey($n)) {
+                        Write-Host "FAILED - self-test: '$n' is ours without the set, and was attributed to the set."
+                        exit 1
+                    }
+                }
+                if ($suffixed.ContainsKey('rf-deuterium-rfp-once')) {
+                    Write-Host "FAILED - self-test: the lone 'rf-deuterium-rfp-once' was attributed to the set. A generator"
+                    Write-Host '         generates more than one, on this side of our name as on the other.'
                     exit 1
                 }
 

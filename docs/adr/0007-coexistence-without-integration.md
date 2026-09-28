@@ -497,16 +497,22 @@ confirmed by count and by name for SeaBlock and RITEG, which both name
 `__base__/sound/car-metal-impact.ogg`; for the Space Exploration pair the run reported five missing
 assets against the five this table records, matching in number rather than enumerated again.
 
-**7. A set can derive a prototype that keeps our prefix at the front, and `name-check` counts it as
-ours.** Durikkan's port ([#450](https://github.com/trulsjo/realistic-fusion-refreshed/issues/450)) turns on depleted-water recycling by default. It clones every
+**7. A set can derive a prototype that keeps our prefix at the front, and `name-check` counted it as
+ours until #453.** Durikkan's port ([#450](https://github.com/trulsjo/realistic-fusion-refreshed/issues/450)) turns on depleted-water recycling by default. It clones every
 recipe that takes `water`, unless one of its results is named for water, as `<recipe>-rfp-ddw`, and appends the clone's unlock to the same technology.
 Two of the clones are built from ours, `rf-brine-rfp-ddw` and `rf-hydrogen-from-water-rfp-ddw`, so the
 port edits **our** technologies `rf-lithium-extraction` and `rf-heavy-water`. The fourth finding says
 neither check sees that; the tree viewer's history attribution does. The clones start with `rf-`, so
-`name-check`'s "all N prototype names this repo defines" reads **97** with the port loaded against
-**95** without it. The verdict is still right: a name that embeds ours cannot collide with ours. The
-attribution is wrong. The third finding's derived shape puts the set's marker in front of our name,
-as in `kr-burn-rf-brine`; this puts it after. [#453](https://github.com/trulsjo/realistic-fusion-refreshed/issues/453) is the fix. Finding 1's claim that
+`name-check`'s "all N prototype names this repo defines" read **97** with the port loaded against
+**95** without it. The verdict was still right: a name that embeds ours cannot collide with ours. The
+attribution was wrong. The third finding's derived shape puts the set's marker in front of our name,
+as in `kr-burn-rf-brine`; this puts it after. [#453](https://github.com/trulsjo/realistic-fusion-refreshed/issues/453) fixed it with a
+third dump, taken only when a set is loaded: this repo with no set. A prefixed name missing from it,
+starting with a name of ours and sharing that marker with at least one other, is the set's, and
+`rf-brine-barrel` beside `rf-brine` stays ours. Measured on
+2.0.77 on 2026-09-28, the `rfp-port` lane reads **95** and names both clones as `2x '<ours>-rfp-ddw'`,
+from `rf-brine` and `rf-hydrogen-from-water`; `spaceex-rfp-port` and `spaceex-rfp-port-se` read 95
+too. Finding 1's claim that
 neither predecessor *defines* an `rf-` name still holds: the port writes these only when we are loaded.
 
 ## Alternatives considered
