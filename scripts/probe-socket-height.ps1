@@ -523,7 +523,7 @@ try {
     Write-Host 'the SHAPE of the join, on every side a player can plumb rather than only the west.'
 }
 finally {
-    if ($proc -and -not $proc.HasExited) { $proc.Kill() ; $proc.WaitForExit(10000) | Out-Null }
+    Stop-LaunchedGame -Process $proc -Label 'probe-socket-height'
     if (-not $KeepTemp) {
         Remove-ModJunctions -ModDirectory $modDir
         Remove-TempDirectory -Path $temp -Label 'probe-socket-height'

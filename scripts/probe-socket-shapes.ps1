@@ -566,7 +566,7 @@ try {
     }
 }
 finally {
-    if ($proc -and -not $proc.HasExited) { $proc.Kill() ; $proc.WaitForExit(10000) | Out-Null }
+    Stop-LaunchedGame -Process $proc -Label 'probe-socket-shapes'
     if (-not $KeepTemp) {
         Remove-ModJunctions -ModDirectory $modDir
         Remove-TempDirectory -Path $temp -Label 'probe-socket-shapes'

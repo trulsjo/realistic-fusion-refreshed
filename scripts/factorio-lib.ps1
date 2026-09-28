@@ -25,6 +25,32 @@ if (-not (Test-Path -LiteralPath $harnessLib)) {
 }
 . $harnessLib
 
+function Stop-LaunchedGame {
+    <#  Kill a game client a probe launched with Start-Process, and wait until it has really gone.
+        For the finally block of every probe that opens a game window, BEFORE Remove-ModJunctions
+        and Remove-TempDirectory: the order is kill, junctions, then the directory.  #>
+    param(
+        [System.Diagnostics.Process] $Process,
+        [Parameter(Mandatory)] [string] $Label
+    )
+
+    # A KILLED GAME IS NOT GONE WHEN Kill() RETURNS (#467), and until it has gone it holds
+    # write-data/.lock, the log and run-stdout.txt, so Remove-TempDirectory's second of retries
+    # loses and the run directory stays in %TEMP%. It happens on the timeout path with a second
+    # probe's game window open, which is also what makes the wait time out. Measured on 2.0.77
+    # on 2026-09-28: one such run on the old ten-second wait left exactly the ticket's launch,
+    # run-stdout.txt and write-data behind. In the seven that were timed the game took between
+    # 0.3 and 13.0 s to exit after the kill, and the 13-second one, on this wait, cleaned up.
+    #
+    # ponytail: a fixed two-minute bound, after which the directory is left and warned about
+    # as before. Raise it if a timed-out probe is ever seen to leave one again.
+    if (-not $Process -or $Process.HasExited) { return }
+    $Process.Kill()
+    if (-not $Process.WaitForExit(120000)) {
+        Write-Warning "${Label}: Factorio (pid $($Process.Id)) had not exited two minutes after it was killed."
+    }
+}
+
 function Get-ModLinks {
     <#  The -Links map New-ModJunctions takes, for mods that each sit in a directory named after
         them under one root: this repository's three, or a directory of third-party mods.  #>
