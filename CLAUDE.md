@@ -70,15 +70,28 @@ Since #416 it has a `-SelfTest` of its own, which is new: it proves the shared s
 `factorio-lib.ps1` and section 9's citation rule, in both directions. The other eight sections it
 runs on a plain invocation are unchanged and still have no self-test, for the reason its help block
 gives.
-Run them rather than reasoning about whether a change is safe. How three of the self-tests are
-built, and the two traps the `-FromZips` one already fell into, is in `scripts/CLAUDE.md`.
+Run them rather than reasoning about whether a change is safe. How two of the self-tests are
+built, where the packer's went, and the two traps the `-FromZips` one already fell into, is in
+`scripts/CLAUDE.md`.
 
 **`load-check.ps1` loads the mods two ways, and the default is not the player's.** Without arguments
 it junctions the repository's directories in, so the game reads the working tree; `-FromZips` builds
-the distributable zips with `scripts/pack-mods.ps1` and loads those instead, resolving every sprite
+the distributable zips with the shared packer and loads those instead, resolving every sprite
 against the unpacked archive rather than against the repo. A file that resolves through a junction
 and never reaches a zip passes the default and breaks a player's game. Use `-FromZips` before
 anything that ships.
+
+**The packer is not this repository's.** Since #466 it is
+`vendor/grado-factorio-tools/scripts/pack-mods.ps1`, and `scripts/pack-mods.ps1` is gone. It has no
+default mod list and no default output directory, so building the zips by hand names all three:
+
+```
+pwsh -File vendor/grado-factorio-tools/scripts/pack-mods.ps1 -OutputDirectory dist `
+    realistic-fusion-refreshed-assets realistic-fusion-refreshed-core realistic-fusion-refreshed
+```
+
+It deletes any other version's zip of the same mod in the output directory, which the old script
+did not.
 
 **The harness under it is shared; the checks are not.** Since #457 `load-check.ps1` builds its mod
 directory, loads and dumps through `vendor/grado-factorio-tools/scripts/load-harness-lib.ps1`, and
@@ -86,8 +99,8 @@ since #456 the third-party sets come from the shared `fetch-mods.ps1`, pinned in
 `scripts/mod-sets.psd1`. Both need the submodule initialised — `git submodule update --init`, the
 same step the commit hook already asks for — and the fetcher caches under `.mod-cache/<set>` of the
 directory it runs in, so run it from the repository root. Since #458 `factorio-lib.ps1` takes the
-same harness for every script that sources it, so every gate here needs the submodule, the ones that
-start no game (`ship-check.ps1`, `pack-mods.ps1`) included. Since #462 none of the harness's functions
+same harness for every script that sources it, so every gate here needs the submodule, the one that
+starts no game (`ship-check.ps1`) included. Since #462 none of the harness's functions
 is defined a second time in this repo.
 
 `scripts/probe-*` are **not** in that list and are not gates. A probe asserts nothing and answers
