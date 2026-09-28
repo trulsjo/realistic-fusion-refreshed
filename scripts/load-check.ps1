@@ -287,8 +287,9 @@
     both mods fail until then. A property a later version stops recording goes quiet the same way.
 
 .PARAMETER FromZips
-    Build the distributable zips with pack-mods.ps1 and load those, instead of junctioning the
-    repository's directories in. This is the packaging path a player installs, and until it is
+    Build the distributable zips with the shared packer, pack-mods.ps1 in
+    vendor/grado-factorio-tools/scripts/, and load those, instead of junctioning the repository's
+    directories in. This is the packaging path a player installs, and until it is
     exercised nothing here has ever opened one of these zips.
 
     The zips are built into the run's own temporary directory rather than taken from dist/, so the
@@ -353,7 +354,7 @@
     invariant firing.
 
     AND THE WORKING TREE IS ASSERTED UNTOUCHED, in BOTH self-tests, against a fingerprint taken
-    before either does anything -- pack-mods.ps1 included. EIGHT of the canary halves mutate one of
+    before either does anything -- the packer included. EIGHT of the canary halves mutate one of
     our prototypes: reassigned-category, slid-socket, added-category, replaced-category,
     starved-reactor, slid-mockup, swapped-boxes and widened-box. Seven of the eight do it to prove a
     gate FIRES; added-category mutates one to prove a gate stays QUIET, which is the same hazard to
@@ -481,7 +482,7 @@ if ($SelfTest -and $AlsoModDirectory) {
     throw '-SelfTest and -AlsoModDirectory cannot be combined: the self-test needs a clean mod set to prove anything.'
 }
 # -SelfTest -FromZips is a DIFFERENT self-test, not the canary one. The canary halves junction
-# deliberately broken mod directories in, and those are not tracked, so pack-mods.ps1 cannot ship
+# deliberately broken mod directories in, and those are not tracked, so the packer cannot ship
 # them. What zip mode needs proving is its own thing anyway -- see Test-ZipModeSelfTest below.
 
 function Test-Assets {
@@ -1196,7 +1197,7 @@ if ($AlsoModDirectory) {
 $harness = $null
 $zipTemp = $null
 try {
-    # WHAT THE WORKING TREE LOOKS LIKE, before either self-test has done anything -- pack-mods.ps1
+    # WHAT THE WORKING TREE LOOKS LIKE, before either self-test has done anything -- the packer
     # included, which the zip self-test runs and which walks every mod directory. Both self-tests
     # compare against this on their way out, and the finally block compares against it after an
     # early exit; a plain run never touches it.
@@ -1221,15 +1222,18 @@ try {
         $zipTemp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-loadcheck-zips-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
         $zipDir    = Join-Path $zipTemp 'zips'
         $unpackDir = Join-Path $zipTemp 'unpacked'
-        Write-Host 'mods: from zips built by pack-mods.ps1 (the path a player installs)'
+        Write-Host 'mods: from zips built by the shared pack-mods.ps1 (the path a player installs)'
 
-        & (Join-Path $PSScriptRoot 'pack-mods.ps1') -OutputDirectory $zipDir | Out-Host
-        if ($LASTEXITCODE -ne 0) { throw "pack-mods.ps1 exited $LASTEXITCODE; nothing to load." }
+        # The shared packer has no default mod list, so ours are named: every directory Get-RepoMods
+        # returns, which is the three this repository ships.
+        $packer = Join-Path $repoRoot 'vendor/grado-factorio-tools/scripts/pack-mods.ps1'
+        & $packer -OutputDirectory $zipDir @($ourMods | ForEach-Object { Join-Path $repoRoot $_ }) | Out-Host
+        if ($LASTEXITCODE -ne 0) { throw "the shared pack-mods.ps1 exited $LASTEXITCODE; nothing to load." }
 
         foreach ($mod in $ourMods) {
             $version = (Get-Content (Join-Path $repoRoot "$mod/info.json") -Raw | ConvertFrom-Json).version
             $zip     = Join-Path $zipDir "${mod}_${version}.zip"
-            if (-not (Test-Path -LiteralPath $zip)) { throw "pack-mods.ps1 produced no zip for $mod at $zip" }
+            if (-not (Test-Path -LiteralPath $zip)) { throw "the shared pack-mods.ps1 produced no zip for $mod at $zip" }
 
             $sources += $zip
             $target = Join-Path $unpackDir $mod

@@ -1,8 +1,8 @@
 # scripts/ — gate internals
 
 Loads when working under `scripts/`. The root `CLAUDE.md` says which gates exist and when to run
-them; this file says how three self-tests are built -- two gates' and one build tool's -- and
-the two traps one of them already fell into.
+them; this file says how two gates' self-tests are built, where the build tool's third one went
+(#466), and the two traps one of them already fell into.
 
 **Since #280 `scripts/check-hc.ps1` carries a `-SelfTest` too, and it is the second gate here that
 starts the game to prove itself.** Its four halves are about the neutronic plant that section builds
@@ -24,6 +24,8 @@ unreferenced, so deleting one is correctly silent), and it refuses to delete any
 scratch directory, because the mis-wiring it exists to catch once made it delete the repository's
 own sprite.
 
-`pack-mods.ps1` is a build tool rather than a gate; it uploads nothing and changes no version, and
-its own `-SelfTest` proves that a **git-ignored** file planted inside a mod cannot reach a zip —
-ignored specifically, since merely-untracked would be excluded for the wrong reason.
+The packer `-FromZips` runs is `vendor/grado-factorio-tools/scripts/pack-mods.ps1` since #466 — the
+copy that was here is deleted. It is a build tool rather than a gate; it uploads nothing and changes
+no version, and its own `-SelfTest` proves that a **git-ignored** file planted inside a mod cannot
+reach a zip — ignored specifically, since merely-untracked would be excluded for the wrong reason.
+The mod it plants in is a fixture in the self-test's own scratch repository, not one of ours.
