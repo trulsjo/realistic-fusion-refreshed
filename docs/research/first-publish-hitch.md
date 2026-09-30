@@ -1,11 +1,11 @@
-# The ~110 ms hitch on the first circuit publish
+# The hitch on the first circuit publish (~110 ms when first measured, ~260 to 340 ms now)
 
 > **2026-09-30: NAMED, AND AN ORDINARY GAME PAYS IT, ON EVERY LOAD.**
 > ([#400](https://github.com/trulsjo/realistic-fusion-refreshed/issues/400),
 > [#399](https://github.com/trulsjo/realistic-fusion-refreshed/issues/399), at `433cc4b`.)
 >
 > **The work is the density-curve sweep, `logic.density_curve`, reached through `curve_for` in
-> `realistic-fusion-refreshed/control.lua`**, the fourth argument at the `circuit.publish` call
+> `realistic-fusion-refreshed/control.lua`**, the fifth argument at the `circuit.publish` call
 > site. It is neither of the two candidates this note left: it sits beside them in the same
 > argument list, is evaluated before `publish` is entered for the same reason, and was missed for
 > the same reason. Disabled on its own, the spike goes: **341 340 µs → 301 µs**. Its cache,
@@ -116,7 +116,7 @@ Each candidate disabled on its own, at *n* = 1, 200 ticks, one run, with
 | nothing (the reproduction) | — | **341 340.1 µs** |
 | candidate 1, `M.status(...)` | in `M.publish` of `realistic-fusion-refreshed/scripts/circuit-output.lua`, `local status = M.status(...)` → `local status = { key = "running", diode = "green" }` | **271 793.7 µs** — still there |
 | candidate 2, `plasma_capacity(entity.name)` at the call site | in `realistic-fusion-refreshed/control.lua`, `plasma.amount / plasma_capacity(entity.name)` → `plasma.amount / 1000` | **291 295.2 µs** — still there |
-| **`curve_for(entity, spec, plasma and plasma.name)` at the call site** | same line, the argument → `nil` | **300.9 µs — gone** |
+| **`curve_for(entity, spec, plasma and plasma.name)` at the call site** | same statement, that argument → `nil` | **300.9 µs — gone** |
 
 **So the work is one `logic.density_curve` sweep**, which settles the reactor at twenty fills
 (`FILL_STEPS`) for `CURVE_SECONDS` each. At *n* = 1 with D-D there is exactly one key in the cache,
@@ -161,7 +161,10 @@ passing. What the code does today, and the options:
 ## Does an ordinary game pay it (2026-09-30, #399)
 
 **Yes. Every load pays it.** Three first runs, each loaded with `--benchmark` at *n* = 1, 200
-ticks, `--benchmark-verbose all`, against the same mods:
+ticks, `--benchmark-verbose all`, against the same mods. **All three still carry the bench rig**,
+because a reactor has to exist and be fed for a publish to happen at all; what separates them is
+the save's history, which is the question #399 asks. The load itself is the same `on_load` path a
+player's load takes, and that is where the cost comes from — see the next paragraph.
 
 | save | how it was made | worst tick | `scriptUpdate` there |
 |---|---|---:|---:|

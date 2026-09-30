@@ -229,15 +229,11 @@ end
 -- 2026-09-30, docs/research/first-publish-hitch.md) -- out of the question on the reporting
 -- cadence, and the whole reason this table exists rather than a call in publish().
 --
--- NOT IN storage, so it is empty in every fresh Lua state, and the first reporting tick after EVERY
--- load pays one sweep per key in use. That is the first-publish hitch (#330, #399, #400). Whether
--- to move it is open; the note above lists the options.
---
 -- KEYED ON THE SPEC FIELDS RESEARCH MOVES RATHER THAN ON A FORCE, AND NOT INVALIDATED AT ALL. It
 -- was keyed by force_index and dropped alongside force_specs, which read as the obvious thing and
 -- was a performance defect: forget_force_cache() is wired to on_research_finished, which fires for
 -- EVERY technology a force completes rather than for the rungs of one ladder. Rebuilding a spec is
--- two table lookups; rebuilding every curve is four sweeps and about two hundred milliseconds,
+-- two table lookups; rebuilding every curve is four sweeps -- about a second at the figure above,
 -- inside update(), on the first reporting tick after a player finishes anything -- including each
 -- level of an infinite technology, for ever.
 --
@@ -267,7 +263,10 @@ end
 -- nil, so a reactor holding one sweeps once and not on every report.
 --
 -- NOT IN `storage`, for the reason force_specs is not: the Lua state is rebuilt on every load, so
--- there is no stored number to go stale and no migration to write.
+-- there is no stored number to go stale and no migration to write. THE COST OF THAT is that the
+-- table is empty after EVERY load, so the first reporting tick after one pays a sweep per key in
+-- use: that is the first-publish hitch (#330, #399, #400). Whether to move it is open, and
+-- docs/research/first-publish-hitch.md lists the options.
 local curves = {}
 
 --- A reactor's plasma box volume, from the prototype. Memoised per prototype name.
@@ -325,7 +324,7 @@ end
 --
 -- THE DENSITY CURVES DELIBERATELY DO NOT GO WITH THEM (#74). They are keyed on confinement time
 -- rather than on a force, so research moves the lookup instead of invalidating it -- see the note
--- on `curves` above for why dropping them here was a two-hundred-millisecond stall on every
+-- on `curves` above for why dropping them here was a stall of four sweeps on every
 -- technology a player finished.
 local function forget_force_cache()
   force_specs = {}

@@ -62,17 +62,20 @@
 > | a plumbable band's drawn height | 22.0 px | 23.5 px | **23.5 px** |
 > | a contained band's drawn height | 27.0 px | 27.0 px | **23.5 px** |
 >
-> The two "after ADR 0035" dashes are pairs that block did not record. The energy pairs come off
-> the same run's medians; the bench prints only the span, 3.3 .. 38.6, so the three were read out
-> of it pairwise.
+> The two "after ADR 0035" dashes are pairs that block did not record. The bench prints only each
+> accent's span, 3.3 .. 38.6 for energy, so the three energy pairs were computed from the same
+> run's medians by calling the bench's own `colour_distance.ciede2000` on each pair, with
+> `measure-accent-separation.py` imported and its `itertools.combinations` wrapped to record them.
 >
-> The three energy bands, rf-heat-exchanger, levelled:
+> rf-heat-exchanger's energy and water bands, levelled:
 >
 > | socket | sheet | colour | L\* | a\* | b\* | wobble | w × h | area ≥ |
 > |---|---|---|---:|---:|---:|---:|---|---:|
 > | west rf-reactor-energy | `heat-exchanger.png` | `#cca57d` | 70.4 | +8.7 | +26.1 | 0.6 | 2.5 × 23.5 | 58.8 |
 > | north rf-reactor-energy | `heat-exchanger-e.png` | `#624522` | 31.6 | +8.2 | +25.7 | 0.9 | 2.0 × 23.5 | 47.0 |
 > | east rf-reactor-energy | `heat-exchanger.png` | `#6e4c28` | 35.4 | +9.9 | +27.0 | 0.4 | 6.0 × 23.5 | 141.0 |
+> | west water | `heat-exchanger.png` | `#8ea9c1` | 68.1 | −4.1 | −15.0 | 2.4 | 2.0 × 23.5 | 47.0 |
+> | east water | `heat-exchanger.png` | `#345777` | 35.7 | −2.3 | −22.2 | 0.6 | 6.0 × 23.5 | 141.0 |
 >
 > The largest wobble is now 2.4, water west's, against 2.0 in section "What the sheets draw". No
 > pair is refused.
@@ -82,9 +85,10 @@
 > after ADR 0035, 2.8 now. The levelling did not narrow it: water's figure comes off two
 > plumbable bands and moved by a tenth, and the closest energy-water pair did not move at all.
 >
-> **And it now holds twice.** Energy's own west and east sockets land **34.2** apart where they
-> landed 3.9, so a second accent on the same machine is now further from itself than from water
-> at their closest. The explanation section 2 gives for the old 3.9 — *"the energy sockets are
+> **The same comparison made for energy now comes out the same way.** Energy's own west and east
+> sockets land **34.2** apart where they landed 3.9, further than energy from water at their
+> closest. ADR 0034 states its standard on water's pair only; whether this second reading
+> strengthens it is Truls's to say, not this note's. The explanation section 2 gives for the old 3.9 — *"the energy sockets are
 > contained and stand at 0.55 in the open"* — named a height that no longer exists. **What the
 > levelled sheets show instead is the same thing the water pair always showed**: at pipe height
 > the east face is in the machine's own shading and the west face is not, so east energy

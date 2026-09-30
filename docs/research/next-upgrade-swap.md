@@ -101,6 +101,9 @@ BOLTED`, alongside the row's own `2 of 2`.
 | `row[2]`'s north energy connection reaches | the reactor (4) | **the reactor (4)** |
 | `row[1]`, `row[3]` reach | the old `row[2]` | **the new `row[2]`** |
 
+The unit numbers are one run's; a second run on the same commit read 4, 9 and 2 in their places,
+with every relation the same.
+
 **The joint #315's route most depends on — the one that carries energy into the row at all —
 re-forms in the same tick, from both sides.** And the reactor's own box is not emptied: it GAINS
 the swapped machine's energy, as the fluid section above records.

@@ -474,7 +474,7 @@ script.on_nth_tick(60, function(event)
     if bp and bp.stack and bp.stack.valid_for_read then
       -- The reactor and the whole row, read off their own boxes rather than typed.
       local l, t, r, b = math.huge, math.huge, -math.huge, -math.huge
-      for _, e in ipairs({ reactor, row[1], row[2], row[3] }) do
+      for _, e in ipairs(everyone) do
         local bb = e.bounding_box
         l, t = math.min(l, bb.left_top.x), math.min(t, bb.left_top.y)
         r, b = math.max(r, bb.right_bottom.x), math.max(b, bb.right_bottom.y)
