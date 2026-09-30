@@ -1,13 +1,26 @@
 # The ~110 ms hitch on the first circuit publish
 
+> **2026-09-30: NAMED, AND AN ORDINARY GAME PAYS IT, ON EVERY LOAD.**
+> ([#400](https://github.com/trulsjo/realistic-fusion-refreshed/issues/400),
+> [#399](https://github.com/trulsjo/realistic-fusion-refreshed/issues/399), at `433cc4b`.)
+>
+> **The work is the density-curve sweep, `logic.density_curve`, reached through `curve_for` in
+> `realistic-fusion-refreshed/control.lua`**, the fourth argument at the `circuit.publish` call
+> site. It is neither of the two candidates this note left: it sits beside them in the same
+> argument list, is evaluated before `publish` is entered for the same reason, and was missed for
+> the same reason. Disabled on its own, the spike goes: **341 340 µs → 301 µs**. Its cache,
+> `curves`, is a module-local table and not `storage`, so it is empty in every fresh Lua state —
+> **every time any save is loaded**, not only the first time the mod is added. See "Named" and
+> "Does an ordinary game pay it" below. The sections between here and there are left as they
+> were measured on 2026-09-17.
+
 Measured 2026-09-17 against Factorio 2.0.77, for
 [#330](https://github.com/trulsjo/realistic-fusion-refreshed/issues/330), with
 `scripts/bench-reactors.ps1 -KeepTemp` and the `--benchmark-verbose` per-tick dump read directly.
 
-**This note does not name the work.** It establishes what the hitch IS with two decisive
-experiments, eliminates four candidates by measurement, and leaves two. #330's first acceptance
-criterion allows either outcome; this is the second one, and what was tried is recorded so the next
-person does not repeat it.
+**As first written, this note did not name the work.** It established what the hitch IS with two
+decisive experiments, eliminated four candidates by measurement, and left two. The banner above
+and "Named" below are what came after.
 
 ## Reproduced
 
@@ -71,7 +84,9 @@ None of the four is the cause. Note what the third one rules out: **the combinat
 in that run and the hitch is unchanged**, so it is not the first `create_entity`, not the first
 constant-combinator, and not the first logistic section.
 
-## What is left, and it is two things
+## What was left, and it was two things — and a third nobody listed
+
+**Superseded by "Named" below**; kept as the reasoning the next experiment was built from.
 
 `circuit.publish` is the ONLY thing `control.lua` gates on the reporting tick — `reporting` guards
 that call and nothing else — so the cost is inside that statement. After the four eliminations, two
@@ -90,17 +105,102 @@ flat in reactor count — but **fitting the shape is not evidence**, and neither
 tested. That is the next experiment, and it should disable them one at a time the way the four above
 were.
 
+## Named: the density-curve sweep (2026-09-30, #400)
+
+Each candidate disabled on its own, at *n* = 1, 200 ticks, one run, with
+`scripts/bench-reactors.ps1 -Counts 1 -Ticks 200 -Runs 1 -KeepTemp`, and the edit reverted with
+`git checkout` straight after its run:
+
+| what was disabled | edit | tick 30 `scriptUpdate` |
+|---|---|---:|
+| nothing (the reproduction) | — | **341 340.1 µs** |
+| candidate 1, `M.status(...)` | in `M.publish` of `realistic-fusion-refreshed/scripts/circuit-output.lua`, `local status = M.status(...)` → `local status = { key = "running", diode = "green" }` | **271 793.7 µs** — still there |
+| candidate 2, `plasma_capacity(entity.name)` at the call site | in `realistic-fusion-refreshed/control.lua`, `plasma.amount / plasma_capacity(entity.name)` → `plasma.amount / 1000` | **291 295.2 µs** — still there |
+| **`curve_for(entity, spec, plasma and plasma.name)` at the call site** | same line, the argument → `nil` | **300.9 µs — gone** |
+
+**So the work is one `logic.density_curve` sweep**, which settles the reactor at twenty fills
+(`FILL_STEPS`) for `CURVE_SECONDS` each. At *n* = 1 with D-D there is exactly one key in the cache,
+so exactly one sweep, and that is the whole shape this note found: once, needs a reactor, flat in
+reactor count — every reactor of one prototype on one plasma at one spec shares the key.
+Neither ticket candidate was it. Candidate 2's memoised prototype lookup is also reached inside
+`curve_for`, but it cannot be the cost: with the call-site one disabled the spike stays.
+
+**Timed outside the game as a cross-check**, `density_curve(L.reactor, "rf-d-d-plasma",
+L.reactor.box_volume)` under plain Lua 5.4.6 took 190, 138 and 158 ms on three calls — the same
+order as the in-game figure.
+
+**It is bigger than it was.** The reproduction here is 341 ms against 122.5 ms on 2026-09-17, and
+the #399 runs below read 257 to 286 ms on the same commit, so run-to-run spread is itself tens of
+milliseconds. What grew it since 2026-09-17 was not measured. The comment on `curves` in
+`realistic-fusion-refreshed/control.lua` put one sweep at "about fifty milliseconds"; that figure is
+corrected alongside this note.
+
+**Whether to remove it is not settled here** — #400 asks for it to be weighed, not done in
+passing. What the code does today, and the options:
+
+- **Today.** `curves` is keyed on prototype, confinement time, heating power and plasma, and never
+  invalidated, so a sweep happens once per key per Lua state: at the first reporting tick after
+  every load, and again the first time a force reaches a new confinement or heating rung. The
+  comment on `curves` records why it is keyed that way: it used to be dropped on every
+  `on_research_finished`, and put the resulting rebuild at "four sweeps and about two hundred
+  milliseconds". At the figures above one sweep alone is past that.
+- **Keep it in `storage`.** Survives a load, so the load hitch goes; the research-rung case stays.
+  The cost is that it becomes save state: a physics change in a mod update would leave stale
+  optima, so it wants dropping in `on_configuration_changed`, which puts one hitch back after
+  every mod update.
+- **Sweep eagerly at load.** `on_load` can fill a module-local table, so the cost moves under the
+  loading screen instead of into the first reporting tick. It has to know which keys are in use,
+  and it does not help the research-rung case.
+- **Spread the sweep over ticks.** Twenty fills is twenty independent settles, so one per tick
+  would put roughly a twentieth of the cost on each of twenty ticks. The status line would have
+  no curve for that long, which `M.status` already handles (*"WITHOUT A CURVE the three density
+  states collapse back to "running""*). The cost is a small state machine in `control.lua`.
+- **Make the sweep cheaper** — fewer fills, a coarser `CURVE_DT`, a shorter `CURVE_SECONDS` —
+  which trades away the optimum's resolution, and `M.status` uses that resolution as its band width.
+
+## Does an ordinary game pay it (2026-09-30, #399)
+
+**Yes. Every load pays it.** Three first runs, each loaded with `--benchmark` at *n* = 1, 200
+ticks, `--benchmark-verbose all`, against the same mods:
+
+| save | how it was made | worst tick | `scriptUpdate` there |
+|---|---|---:|---:|
+| created with the mod, never run | `--create` with the mod and rig enabled | 30 | **257 238.1 µs** |
+| **already RUN with the mod, then started again** | that save served headless (`--start-server`, `auto_pause` off) for 1207 ticks, saved from inside with `game.server_save`, process killed, the saved file loaded | 22 after load | **285 807.7 µs** |
+| **never had the mod** | `--create` with only `base` enabled, then loaded with the mod and rig enabled, so `on_init` ran in an existing save | 30 | **268 539.1 µs** |
+
+The run-again save is the one that decides it. By tick 1207 it had published about forty times
+and had built its curve in that session; the curve did not survive the save, and the first
+reporting tick after load paid the full sweep again. That is what `curves` living outside
+`storage` predicts. **So it is not "only a freshly-added mod pays it": an ordinary game pays it
+on every load**, and #330's defect is real rather than a benchmark artefact.
+
+**What this does not establish is whether a player FEELS it.** At 60 UPS, 257 to 341 ms is 15 to
+20 frames, landing on the first reporting tick after a load — about half a second in. Nobody has
+played it to find out: every figure here is a dump. #399 asks for that once, by playing, and it
+is left for a human.
+
 ## What this does NOT answer
 
-- **Whether an ordinary game start pays it.** Every reading here is `--benchmark` with the rig mod
-  newly added. #330 is explicit that a player-visible hitch and a benchmark artefact are different
-  findings needing different responses, and this note does not distinguish them. **Until that is
-  answered, nothing here says there is a defect.**
-- **What the work actually is.** Two candidates, neither tested.
+- **Whether a player notices the load hitch** — see the section above. Measured, not played.
 - **Whether it scales with force count, technology state, surface count or map size.** Reactor count
   is now settled at both ends; the other four #330 lists are untouched.
 
 ## Reproducing it
+
+**The #400 experiments** are the three edits in the "Named" table, one at a time, each followed by
+the command below and a `git checkout` of the file it touched. **The #399 runs** reuse a directory
+kept by that command: junction the three mods back into its `mods/`, and for the run-again case
+append a handler to the rig's `control.lua` that, on `on_nth_tick(1207)` past tick 0 and only
+once, sets a `storage` flag and calls `game.server_save("ran")`. Serve a freshly created save with
+`--start-server <save> --bind 127.0.0.1 --server-settings <file>`, where the file is
+`data/server-settings.example.json` with `auto_pause` false — with no player connected the server
+otherwise pauses and never reaches the tick. Create `write-data/saves` first; the save fails
+without it. Kill the server once `write-data/saves/ran.zip` appears. Start every Factorio call
+with `Start-Process -Wait`: a bare `&` returns before the GUI binary exits, and the next call
+then hits the lock file.
+
+The original reproduction:
 
 ```
 pwsh -Command "& ./scripts/bench-reactors.ps1 -Counts 0,1 -Ticks 200 -Runs 1 -KeepTemp"

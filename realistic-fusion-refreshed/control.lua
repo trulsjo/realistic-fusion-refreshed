@@ -225,8 +225,13 @@ end
 -- answer, or false when that plasma has no curve.
 --
 -- CACHED BECAUSE IT IS SWEPT, NOT COMPUTED. density_curve settles the reactor at twenty fills, so
--- one answer is about fifty milliseconds -- out of the question on the reporting cadence, and the
--- whole reason this table exists rather than a call in publish().
+-- one answer takes a quarter to a third of a second in the game (257 to 341 ms at n = 1 on
+-- 2026-09-30, docs/research/first-publish-hitch.md) -- out of the question on the reporting
+-- cadence, and the whole reason this table exists rather than a call in publish().
+--
+-- NOT IN storage, so it is empty in every fresh Lua state, and the first reporting tick after EVERY
+-- load pays one sweep per key in use. That is the first-publish hitch (#330, #399, #400). Whether
+-- to move it is open; the note above lists the options.
 --
 -- KEYED ON THE SPEC FIELDS RESEARCH MOVES RATHER THAN ON A FORCE, AND NOT INVALIDATED AT ALL. It
 -- was keyed by force_index and dropped alongside force_specs, which read as the obvious thing and
