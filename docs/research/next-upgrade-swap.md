@@ -1,6 +1,6 @@
 # What an upgrade-planner swap does to a chained row of exchangers
 
-Measured 2026-09-17 with `scripts/probe-next-upgrade.ps1`, against Factorio 2.0.77, for
+Measured 2026-09-17, and the reactor face on 2026-09-30, with `scripts/probe-next-upgrade.ps1`, against Factorio 2.0.77, for
 [#396](https://github.com/trulsjo/realistic-fusion-refreshed/issues/396). **This note is a probe's
 findings.** It draws no threshold and proposes nothing;
 [#315](https://github.com/trulsjo/realistic-fusion-refreshed/issues/315) chose route 1 during triage
@@ -42,6 +42,23 @@ found to matter — fuel written into an energy source's box behaves unlike fuel
 Whether losing one buffer's worth of energy per swap matters is a balance question and is not this
 note's to answer.
 
+> **2026-09-30, [#401](https://github.com/trulsjo/realistic-fusion-refreshed/issues/401): "empties"
+> is what the swapped machine reads, and it is not where the energy went.** With the row bolted to
+> a reactor, the reactor's own box was filled to 500 and the swapped machine's to 100 in the same
+> tick, then the swap performed and both read again in that tick:
+>
+> | | before | after the swap |
+> |---|---:|---:|
+> | row[2] box 3, `rf-reactor-energy` | 100.0 | **empty** |
+> | the reactor's energy box | 500.0 | **600.0** |
+> | `rf-reactor-energy` across reactor + all three in the row | 600.0 | **600.0** |
+>
+> The hundred moved into the peer across the bolted face; nothing was destroyed, and neither
+> neighbour in the row took any of it. The 2026-09-17 run above read only the swapped machine, so
+> it could not tell an emptied box from a moved one — and its row's energy boxes were joined to
+> each other, so its "empty" may have been a move too. Whether a swap with NO peer on the energy
+> box loses the fluid is now the open half; see below.
+
 ## The joints survive, and the row re-joins the replacement
 
 The row is three exchangers chained short end to short end. **The control says the row was actually
@@ -64,6 +81,30 @@ system id: **`get_fluid_system_id` is not a 2.0.77 method**, and indexing it rai
 returning nil. `probe-exchanger-chaining.ps1` established that first and this probe borrows the
 idiom rather than rediscovering it.
 
+## The reactor face survives too
+
+**Answered 2026-09-30 for [#401](https://github.com/trulsjo/realistic-fusion-refreshed/issues/401).**
+Until then `reactor joins=-/-` in every run, because the row was laid east of the reactor and a
+reactor sells energy north and south (ADR 0031). The probe now bolts the row's MIDDLE machine —
+the one the swap is pointed at — by its north energy face onto the reactor's south output, placed
+by `check-hc.ps1`'s bolt arithmetic off the live connections rather than by typed offsets, and
+chains the other two off its short ends. The reactor's south output reads at `0.5,7.5` targeting
+`0.5,8.5`, and the row lands at `x = -14.5, 0.5, 15.5`, `y = 10.5`.
+
+**The control asks from both sides before any swap** — the reactor's south connection reaches the
+exchanger and the exchanger's north connection reaches the reactor — and both did: `REACTOR IS
+BOLTED`, alongside the row's own `2 of 2`.
+
+| | before the swap | after |
+|---|---|---|
+| reactor's south energy connection reaches | the old `row[2]` (6) | **the new `row[2]` (11)** |
+| `row[2]`'s north energy connection reaches | the reactor (4) | **the reactor (4)** |
+| `row[1]`, `row[3]` reach | the old `row[2]` | **the new `row[2]`** |
+
+**The joint #315's route most depends on — the one that carries energy into the row at all —
+re-forms in the same tick, from both sides.** And the reactor's own box is not emptied: it GAINS
+the swapped machine's energy, as the fluid section above records.
+
 ## A planner ORDERS the swap; it does not perform it
 
 `surface.upgrade_area` with an upgrade-planner stack returns ok and leaves `to_be_upgraded()` true,
@@ -81,17 +122,20 @@ because it surprised the run that produced it: **a blueprint taken while an upgr
 captures the upgrade TARGET, not the entity standing there.** An early run whose capture area
 covered the ordered machine returned `upgprobe-grouped-t1, rf-reactor, upgprobe-grouped-t2,
 upgprobe-grouped-t1` — a `t2` that exists nowhere on the map. Later runs with a narrower area
-captured `rf-reactor, upgprobe-grouped-t1`.
+captured `rf-reactor, upgprobe-grouped-t1`. Since #401 the capture area is the union of the
+reactor's and the row's own bounding boxes and is taken AFTER the swap, so it holds
+`rf-reactor, upgprobe-grouped-t1, upgprobe-grouped-t2, upgprobe-grouped-t1` — a `t2` that does
+exist this time — and says nothing more about the lead.
 
 **That reading is from one run and the capture areas differed, so it is a lead rather than a
 finding.** Anyone acting on it should re-take it deliberately.
 
 ## What this does NOT answer
 
-- **The reactor face.** `reactor joins=-/-` in every run: the row was never bolted to `rf-reactor`,
-  only to itself. The reactor sells energy north and south (ADR 0031) and the probe lays the row
-  east of it, so the two never met. **#396's "does the face bolted to `rf-reactor` survive" is
-  unanswered**, and the layout is what needs fixing rather than the conclusion.
+- **Whether energy is LOST when the swapped machine has no peer on its energy box.** Every reading
+  here had one — the reactor since #401, the row's own neighbours before it — and in the one run
+  that totalled it the energy moved rather than vanished. A lone exchanger, energy box full, swapped
+  with nothing to receive it, has not been measured.
 - **Whether the fluid loss matters.** One buffer of `rf-reactor-energy` per swap is a number without
   a threshold beside it.
 - **Anything about a real second tier.** The scratch pair differs in `energy_consumption` and in
