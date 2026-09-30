@@ -99,7 +99,7 @@ on two drums 24.5 screen pixels apart on the collector's own deck — a **hue-cu
 colours and not good enough to quote as a distance. Bands two screen pixels wide read at zoom 1
 because they are 23.5 tall.
 
-**THOSE FOUR FIGURES WERE RE-MEASURED AFTER ADR 0035** and are a little off the ones ADR 0034 and
+**THOSE FOUR FIGURES WERE RE-MEASURED AFTER ADR 0035, AND AGAIN AFTER ADR 0036** and are a little off the ones ADR 0034 and
 `docs/research/accent-separation.md` quote (33.0, 29.2, 11.2, and a band 22 tall). Taking the cut
 off a socket's underside gave every plumbable band 1.5 screen pixels more height at zoom 1, and the
 extra pixels moved each median a few tenths of a dE00. **The standard's own comparison is unchanged
