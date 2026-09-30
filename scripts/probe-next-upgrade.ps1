@@ -209,10 +209,66 @@ local function contents(e)
   return table.concat(out, ",")
 end
 
-local function place(surface, force, name, x, y, dir)
-  local e = surface.create_entity{ name = name, position = { x, y }, force = force,
-                                   direction = dir, raise_built = true }
-  if not e then error("probe-next-upgrade: could not place " .. name .. " at " .. x .. "," .. y) end
+-- Which way a runtime connection faces, read off the tile it targets rather than remembered.
+local function facing(c)
+  local dx = c.target_position.x - c.position.x
+  local dy = c.target_position.y - c.position.y
+  if dy < 0 then return "north" elseif dy > 0 then return "south" elseif dx < 0 then return "west" end
+  return "east"
+end
+
+local ENERGY = "rf-reactor-energy"
+
+-- The index of the box whose filter is `fluid`, found rather than numbered.
+local function box_for(e, fluid)
+  for i = 1, #e.fluidbox do
+    local f = e.fluidbox.get_filter(i)
+    if f and f.name == fluid then return i end
+  end
+end
+
+-- The connection of `e`'s `fluid` box that faces `side`, or nil.
+local function connection_facing(e, fluid, side)
+  for _, c in ipairs(e.fluidbox.get_pipe_connections(box_for(e, fluid))) do
+    if facing(c) == side then return c end
+  end
+end
+
+-- Who `e`'s `fluid` connection facing `side` reaches: a unit number, or "-".
+local function reaches(e, fluid, side)
+  if not (e and e.valid) then return "gone" end
+  local c = connection_facing(e, fluid, side)
+  if c and c.target and c.target.owner and c.target.owner.valid then
+    return tostring(c.target.owner.unit_number)
+  end
+  return "-"
+end
+
+-- rf-reactor-energy held across a set of entities, so "emptied" can be told from "moved".
+local function energy_total(es)
+  local t = 0
+  for _, e in ipairs(es) do
+    if e and e.valid then
+      local f = e.fluidbox[box_for(e, ENERGY)]
+      t = t + (f and f.amount or 0)
+    end
+  end
+  return t
+end
+
+-- BOLT, borrowed from check-hc.ps1: place `name` so its `fluid` connection facing `side` STANDS ON
+-- `tile`, the other machine's target_position. Placed once at `seed` to ask where that connection
+-- is, destroyed, and placed again by the difference -- a remembered offset is a hostage to the next
+-- prototype edit, and #275 and #276 both moved this one.
+local function bolt(surface, force, name, fluid, side, tile, seed)
+  local probe = surface.create_entity{ name = name, position = seed, force = force }
+  local c = connection_facing(probe, fluid, side)
+  if not c then error("probe-next-upgrade: " .. name .. " has no " .. side .. "-facing " .. fluid) end
+  local off = { x = c.position.x - probe.position.x, y = c.position.y - probe.position.y }
+  probe.destroy()
+  local e = surface.create_entity{ name = name, position = { tile.x - off.x, tile.y - off.y },
+                                   force = force, raise_built = true }
+  if not e then error("probe-next-upgrade: could not bolt " .. name) end
   return e
 end
 
@@ -236,12 +292,6 @@ script.on_nth_tick(60, function(event)
   end
   say("geometry: connection categories " .. table.concat(cats, ","))
 
-  -- THE LONG AXIS IS X, so a row chains along X and the pitch is the machine's own width. Read off
-  -- the live box rather than typed: #275 and #276 both moved this footprint, and
-  -- probe-exchanger-chaining.ps1 steps in Y because it pins a PRE-#275 frame, which is a trap for
-  -- anyone borrowing its geometry rather than its idiom.
-  local PITCH = math.floor(x2 - x1 + 0.5)
-
   -- Whichever pair actually loaded. The ungrouped one is refused at the DATA stage (section 5), so
   -- it never reaches here; asking the prototype table rather than assuming is what lets one
   -- control.lua serve both loads without knowing which it is in.
@@ -260,13 +310,30 @@ script.on_nth_tick(60, function(event)
     say("=== pair " .. suffix .. " (fast_replaceable_group " ..
         (suffix == "grouped" and "SET" or "ABSENT") .. ") ===")
 
-    -- A reactor, and a row of three chained short end to short end along its energy face.
-    local reactor = place(surface, force, "rf-reactor", ox, 0, defines.direction.north)
+    -- A reactor, and a row of three chained short end to short end, BOLTED TO IT (#401). The
+    -- reactor sells energy north and south (ADR 0031), so the row stands south of it: row[2] -- the
+    -- one the swap is pointed at -- bolts its north energy face onto the reactor's south output,
+    -- and row[1] and row[3] chain off its west and east short ends. Until #401 the row was laid
+    -- east of the reactor, where the two share no face, and `reactor joins=-/-` in every run.
+    --
+    -- NOT raise_built for the reactor: control.lua then never hears of it and nothing fills or
+    -- drains its box but this rig, as in check-hc.ps1's plant.
+    local reactor = surface.create_entity{ name = "rf-reactor", position = { ox + 0.5, 0.5 },
+                                           force = force }
+    local south = connection_facing(reactor, ENERGY, "south")
+    if not south then error("probe-next-upgrade: rf-reactor has no south-facing energy output") end
+    say(string.format("geometry: rf-reactor south energy output at %.1f,%.1f targets %.1f,%.1f",
+                      south.position.x, south.position.y,
+                      south.target_position.x, south.target_position.y))
+    local seed = { ox + 0.5, 60.5 }
     local row = {}
+    row[2] = bolt(surface, force, t1, ENERGY, "north", south.target_position, seed)
+    row[1] = bolt(surface, force, t1, ENERGY, "east",
+                  connection_facing(row[2], ENERGY, "west").target_position, seed)
+    row[3] = bolt(surface, force, t1, ENERGY, "west",
+                  connection_facing(row[2], ENERGY, "east").target_position, seed)
     for i = 1, 3 do
-      -- East of the reactor, short end to short end. The reactor is 15 square, so the first sits
-      -- one half-width of each clear of its centre and the rest follow at one machine width.
-      row[i] = place(surface, force, t1, ox + 15 + (i - 1) * PITCH, 0, defines.direction.north)
+      say(string.format("geometry: row[%d] at %.1f,%.1f", i, row[i].position.x, row[i].position.y))
     end
 
     -- 1 + 2. What the joints look like BEFORE anything is swapped, so the after-reading is a
@@ -294,6 +361,17 @@ script.on_nth_tick(60, function(event)
     say("control: neighbouring pairs actually joined = " .. chained .. " of 2 -- " ..
         (chained == 2 and "ROW IS CHAINED, the after-readings below are differences"
                        or "ROW IS NOT CHAINED, so sections 2 and 6 are UNANSWERED"))
+
+    -- THE REACTOR CONTROL, the same guard for the joint #401 is about: a reactor joint that was
+    -- never made would report a swap that broke nothing. Asked from BOTH sides, because a bolt is
+    -- one connection on each machine and either could report alone.
+    local r_to = reaches(reactor, ENERGY, "south")
+    local x_to = reaches(row[2], ENERGY, "north")
+    local bolted = r_to == tostring(row[2].unit_number) and x_to == tostring(reactor.unit_number)
+    say("control: reactor south reaches " .. r_to .. ", row[2] north reaches " .. x_to ..
+        " (row[2] is " .. row[2].unit_number .. ", reactor " .. reactor.unit_number .. ") -- " ..
+        (bolted and "REACTOR IS BOLTED to row[2], the reactor after-readings are differences"
+                 or "REACTOR IS NOT BOLTED, so the reactor-face question is UNANSWERED"))
 
     -- 1. THE SWAP, driven the way a player drives it: an upgrade planner over an area, with no
     -- configuration, which is exactly the case next_upgrade's own documentation describes.
@@ -359,6 +437,13 @@ script.on_nth_tick(60, function(event)
     end
     say("fill: row[2] contents now " .. contents(row[2]))
 
+    -- The reactor's OWN box, filled to a figure distinct from row[2]'s so the two can be told apart
+    -- in one total. Read in the same tick as the swap, so no flow can move it between readings.
+    reactor.fluidbox[box_for(reactor, ENERGY)] = { name = ENERGY, amount = 500 }
+    local everyone = { reactor, row[1], row[2], row[3] }
+    say("fill: reactor contents now " .. contents(reactor))
+    say(string.format("fill: rf-reactor-energy across reactor + row = %.1f", energy_total(everyone)))
+
     local before2 = joins(row[2])
     local swapped = surface.create_entity{ name = t2, position = row[2].position,
                                            direction = row[2].direction, force = force,
@@ -373,6 +458,13 @@ script.on_nth_tick(60, function(event)
         if c.target and c.target.owner and c.target.owner.valid then still = still + 1 end
       end
       say("perform: row[2] box 1 still reaches " .. still .. " neighbour(s) -- was 2 before")
+      say("perform: reactor south reaches " .. reaches(reactor, ENERGY, "south") ..
+          ", new row[2] north reaches " .. reaches(swapped, ENERGY, "north") ..
+          " (new row[2] is " .. swapped.unit_number .. ")")
+      say("perform: reactor contents after=" .. contents(reactor))
+      everyone[3] = swapped
+      say(string.format("perform: rf-reactor-energy across reactor + row = %.1f", energy_total(everyone)))
+      row[2] = swapped
     end
 
     -- 4. THE BLUEPRINT, both ways round: does a blueprint of the old row still place, and does a
@@ -380,8 +472,15 @@ script.on_nth_tick(60, function(event)
     local bp = surface.create_entity{ name = "item-on-ground", position = { ox, -64 },
                                       stack = { name = "blueprint" } }
     if bp and bp.stack and bp.stack.valid_for_read then
+      -- The reactor and the whole row, read off their own boxes rather than typed.
+      local l, t, r, b = math.huge, math.huge, -math.huge, -math.huge
+      for _, e in ipairs({ reactor, row[1], row[2], row[3] }) do
+        local bb = e.bounding_box
+        l, t = math.min(l, bb.left_top.x), math.min(t, bb.left_top.y)
+        r, b = math.max(r, bb.right_bottom.x), math.max(b, bb.right_bottom.y)
+      end
       local n = bp.stack.create_blueprint{ surface = surface, force = force,
-                                           area = { { ox + 4, -40 }, { ox + 20, 40 } } }
+                                           area = { { l, t }, { r, b } } }
       -- table_size, not table.size: the helper is a GLOBAL in 2.0 and the dotted spelling is nil.
       say("blueprint: captured " .. tostring(n and table_size(n) or 0) .. " entity/entities")
       local ents = bp.stack.get_blueprint_entities()
@@ -390,7 +489,7 @@ script.on_nth_tick(60, function(event)
       say("blueprint: holds " .. (#seen > 0 and table.concat(seen, ",") or "nothing"))
       local placed = pcall(function()
         bp.stack.build_blueprint{ surface = surface, force = force,
-                                  position = { ox, 80 }, force_build = true }
+                                  position = { ox, 120 }, force_build = true }
       end)
       say("blueprint: re-place ok=" .. tostring(placed))
     else
