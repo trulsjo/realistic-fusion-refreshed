@@ -43,6 +43,60 @@
 > was 3.8 dE00 when this was written and 2.7 after ADR 0035, and the contained bands are moving into
 > the same shading and the same 0.249 radius as the water ones.
 
+> **RE-MEASURED ON THE LEVELLED SHEETS, 2026-09-30**
+> ([#402](https://github.com/trulsjo/realistic-fusion-refreshed/issues/402)), at `433cc4b`, which
+> carries #392's levelling (`8f8e54e`). Same bench, `python tools/measure-accent-separation.py`,
+> no argument; the two blocks above and everything below are left as they were.
+>
+> | | measured below | after ADR 0035 | **levelled (ADR 0036)** |
+> |---|---:|---:|---:|
+> | water, west vs east socket | 33.0 | 32.2 | **32.3** |
+> | tritium, west vs east socket | 26.3 | 26.0 | **26.0** |
+> | energy, west vs east socket | 3.9 | 3.9 | **34.2** |
+> | energy, west vs north socket | 35.3 | — | **38.6** |
+> | energy, north vs east socket | 31.8 | — | **3.3** |
+> | steam x water, closest / furthest | 11.2 / 39.2 | 11.7 / 38.9 | **11.7 / 38.9** |
+> | energy x steam, closest / furthest | 19.3 / 43.6 | 19.2 / 43.2 | **19.0 / 45.4** |
+> | energy x water, closest / furthest | 29.2 / 45.9 | 29.5 / 46.0 | **29.5 / 46.8** |
+> | helium-3 x tritium, closest / furthest | 30.0 / 46.3 | 29.4 / 45.7 | **29.4 / 45.7** |
+> | a plumbable band's drawn height | 22.0 px | 23.5 px | **23.5 px** |
+> | a contained band's drawn height | 27.0 px | 27.0 px | **23.5 px** |
+>
+> The two "after ADR 0035" dashes are pairs that block did not record. The energy pairs come off
+> the same run's medians; the bench prints only the span, 3.3 .. 38.6, so the three were read out
+> of it pairwise.
+>
+> The three energy bands, rf-heat-exchanger, levelled:
+>
+> | socket | sheet | colour | L\* | a\* | b\* | wobble | w × h | area ≥ |
+> |---|---|---|---:|---:|---:|---:|---|---:|
+> | west rf-reactor-energy | `heat-exchanger.png` | `#cca57d` | 70.4 | +8.7 | +26.1 | 0.6 | 2.5 × 23.5 | 58.8 |
+> | north rf-reactor-energy | `heat-exchanger-e.png` | `#624522` | 31.6 | +8.2 | +25.7 | 0.9 | 2.0 × 23.5 | 47.0 |
+> | east rf-reactor-energy | `heat-exchanger.png` | `#6e4c28` | 35.4 | +9.9 | +27.0 | 0.4 | 6.0 × 23.5 | 141.0 |
+>
+> The largest wobble is now 2.4, water west's, against 2.0 in section "What the sheets draw". No
+> pair is refused.
+>
+> **ADR 0034's standard HOLDS.** It turns on water's own two sockets against energy from water at
+> its closest: **32.3 against 29.5**, a margin of **2.8 dE00** — 3.8 when the note was written, 2.7
+> after ADR 0035, 2.8 now. The levelling did not narrow it: water's figure comes off two
+> plumbable bands and moved by a tenth, and the closest energy-water pair did not move at all.
+>
+> **And it now holds twice.** Energy's own west and east sockets land **34.2** apart where they
+> landed 3.9, so a second accent on the same machine is now further from itself than from water
+> at their closest. The explanation section 2 gives for the old 3.9 — *"the energy sockets are
+> contained and stand at 0.55 in the open"* — named a height that no longer exists. **What the
+> levelled sheets show instead is the same thing the water pair always showed**: at pipe height
+> the east face is in the machine's own shading and the west face is not, so east energy
+> (`#6e4c28`, L\* 35.4) sits beside east water (L\* 35.7) and west energy (L\* 70.4) beside west
+> water (L\* 68.1). The close energy pair is now north against east, 3.3 — two sockets on
+> different sheets that both land in shade, which is the same lighting coincidence the old 3.9 was
+> and not a property of the colour.
+>
+> **Section 1's claim moves against the contained bands.** Every energy band is now 23.5 px tall,
+> not 27.0, and west energy is 2.5 px wide where it was 3.0, so its area floor drops from 81.0 to
+> 58.8. The narrowest bands on the machine are still north energy and west water at 2.0 px.
+
 
 Measured 2026-09-16 for [#379](https://github.com/trulsjo/realistic-fusion-refreshed/issues/379),
 which is the measuring half of
@@ -230,7 +284,10 @@ On `rf-heat-exchanger` water's own two sockets land **33.0** apart — further t
 separates energy from water at their closest. The compass face is not the whole story: the two
 energy sockets on the same sheet are 3.9 apart while the two water sockets on that same sheet are
 33.0. The water sockets are plumbable and sit low at `rf_blender.SOCKET_Z`, where the machine shades
-the eastern one; the energy sockets are contained and stand at 0.55 in the open.
+the eastern one. **The reason this paragraph used to give for energy — that its sockets stood at
+0.55 in the open — stopped being true with ADR 0036**, and on the levelled sheets energy's west and
+east sockets are 34.2 apart for the same reason water's are: see the third block at the head of
+this note.
 
 **3. The bands are narrow, and much taller than they are wide.** A band is 0.22 tiles along the
 tube, which is 7.04 screen px at zoom 1 before anything occludes it, against a drawn height of 22.0
