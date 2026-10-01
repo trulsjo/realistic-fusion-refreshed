@@ -36,7 +36,9 @@
 > explanation this note gives for energy's two sockets landing 3.9 apart while water's land 32.2 —
 > *"the energy sockets are contained and stand at 0.55 in the open"* — stops holding.
 >
-> **Nothing below is changed, and nothing below has been re-measured yet.** The art moves in
+> **Nothing below is changed, and nothing below has been re-measured yet** — as of 2026-09-17.
+> The block after this one is the re-measurement, and section 2's explanation of energy's 3.9 is
+> annotated in place. The art moves in
 > [#392](https://github.com/trulsjo/realistic-fusion-refreshed/issues/392), not here. Every figure
 > in this note that distinguishes a contained band from a plumbable one has to be re-taken then,
 > and this note is the thing to compare against. ADR 0034's standard is the one at risk: its margin
@@ -46,7 +48,8 @@
 > **RE-MEASURED ON THE LEVELLED SHEETS, 2026-09-30**
 > ([#402](https://github.com/trulsjo/realistic-fusion-refreshed/issues/402)), at `433cc4b`, which
 > carries #392's levelling (`8f8e54e`). Same bench, `python tools/measure-accent-separation.py`,
-> no argument; the two blocks above and everything below are left as they were.
+> no argument. The two blocks above and everything below are left as they were, except one
+> sentence in section 2 — its reason for energy's 3.9 — which is annotated in place.
 >
 > | | measured below | after ADR 0035 | **levelled (ADR 0036)** |
 > |---|---:|---:|---:|

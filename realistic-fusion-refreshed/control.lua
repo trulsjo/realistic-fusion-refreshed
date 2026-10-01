@@ -1108,8 +1108,9 @@ local function update()
       -- Fill rather than an amount since #74: the status line's three density states are about how
       -- full the reactor is held and not how much it holds, and a reactor with a different box
       -- would otherwise be judged against another one's volume. The curve is swept once per
-      -- confinement rung per heating rung per reactor and plasma, never per force; on the
-      -- reporting cadence it is four table lookups.
+      -- confinement rung per heating rung per reactor and plasma per LOAD, never per force -- see
+      -- the note on `curves` for what that sweep costs; on every other report it is four table
+      -- lookups.
       -- And what its blanket last sold, for the share signal (#95). Guarded on `result` for the
       -- same reason the accumulator below is: a reactor with nothing to simulate is not selling
       -- anything this step, so a stale number from before it ran dry would be a share of nothing.
