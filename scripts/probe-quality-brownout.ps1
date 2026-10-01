@@ -93,16 +93,16 @@
 
     WHAT IT DOES NOT COVER
 
-    Only rf-reactor, only D-D plasma, and only at the ONE heating rung -HeatingRungs names -- a run
-    is one row of the family, not the family. The aneutronic tier gives the same fractions by
-    arithmetic -- 240 MW against a 200 MW spend, and no heating ladder at all (ADR 0038 decision 5),
-    so it is one row where rf-reactor is now six -- and is another lane.
+    One reactor per run, at the ONE heating rung -HeatingRungs names -- a run is one row of the
+    family, not the family. -Reactor rf-aneutronic-reactor is the other tier (#438), and it is ONE
+    ROW AND NOT A FAMILY: no research ladder reaches it (ADR 0020 decision 4, ADR 0038 decision 5),
+    so its 200 MW spend cannot move and there is no -HeatingRungs family to walk.
 
     AND IT DOES NOT EXERCISE CONTENTION. Every cell here is one reactor alone on its supply, so what
     is measured is what a reactor gets when the supply itself is short, not how two secondary-input
     consumers split a short network between them. The note's sentence asserts both; this closes the
-    first. The second wants a rig with a competing load of a known priority and is not what #146
-    asks for.
+    first. The second is scripts/probe-brownout-contention.ps1 (#439), which is a rig of its own
+    because this one's isolation is exactly what keeps it from asking.
 
     NOTHING HERE CHANGES input_flow_limit or any other balance number. The note lists the flow limit
     as the one place quality changes reactor behaviour and as "the only entry a balance decision
@@ -142,11 +142,27 @@
     one. It touches NEITHER OTHER LADDER: confinement moves the density curve and plant efficiency
     moves what is sold, and neither is on the numerator or the denominator of this fraction.
 
+.PARAMETER Reactor
+    Which reactor the five cells are, rf-reactor (the default, burning D-D) or rf-aneutronic-reactor
+    (burning D-He3; #438). The plasma does not enter the fraction -- the spend is heating_power_w
+    whatever burns -- but a cell must have something to burn or control.lua never steps it.
+
+    Nothing else here is per reactor, and that is on purpose: the fill is read off each cell's own
+    box, so the aneutronic reactor's 3 000 units are held at 3 000 and not at a neutronic 1 000,
+    which would run it at a third of its density; and the supply's buffer is one tick of each
+    cell's own flow limit, so it scales with the aneutronic tier's 240 MW rather than inheriting a
+    neutronic figure. -HeatingRungs above 0 is refused with it, because no heating ladder reaches it.
+
 .PARAMETER KeepTemp
     Keep the save, the rig mod and the captured output.
 
 .EXAMPLE
     pwsh -File scripts/probe-quality-brownout.ps1
+
+.EXAMPLE
+    pwsh -File scripts/probe-quality-brownout.ps1 -Reactor rf-aneutronic-reactor
+
+    The aneutronic tier's one row: a 200 MW spend against its own five flow limits.
 
 .EXAMPLE
     pwsh -File scripts/probe-quality-brownout.ps1 -HeatingRungs 5
@@ -174,6 +190,7 @@ param(
     # How many rungs of ADR 0038's heating ladder the force has researched. 0 is a force that has
     # researched nothing, which is where this probe ran before #429 and is still the default.
     [ValidateRange(0, 5)]           [int] $HeatingRungs = 0,
+    [ValidateSet('rf-reactor', 'rf-aneutronic-reactor')] [string] $Reactor = 'rf-reactor',
     [switch] $KeepTemp
 )
 
@@ -183,6 +200,11 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $ourMods  = Get-RepoMods
 $rigName  = 'rf-quality-brownout-probe'
+
+if ($Reactor -eq 'rf-aneutronic-reactor' -and $HeatingRungs -gt 0) {
+    throw "-HeatingRungs $HeatingRungs with -Reactor rf-aneutronic-reactor: no heating ladder reaches that reactor (ADR 0038 decision 5), so it has one row and no rung to research."
+}
+$plasma = @{ 'rf-reactor' = 'rf-d-d-plasma'; 'rf-aneutronic-reactor' = 'rf-d-he3-plasma' }[$Reactor]
 
 $rungs = [int][math]::Floor((1.0 - $Low) / $Step) + 1
 if ($rungs -lt 3) {
@@ -216,8 +238,8 @@ local LOW           = __LOW__
 local STEP          = __STEP__
 local HEATING_RUNGS = __HEATING_RUNGS__
 
-local REACTOR = "rf-reactor"
-local PLASMA  = "rf-d-d-plasma"
+local REACTOR = "__REACTOR__"
+local PLASMA  = "__PLASMA__"
 
 -- Where reactor-logic.settle() starts, and the reactor spec's min_temperature_c. The plasma's own
 -- temperature does not enter the payment -- see the docstring on why there is no settle phase --
@@ -425,6 +447,7 @@ local function report()
     .. "half of each measured", LOW, STEP, RUNG_TICKS)
   -- WHICH ROW OF THE FAMILY THIS IS. Every fraction below is a spend over a flow limit and ADR
   -- 0038 made the spend researchable, so a table printed without this line is unreadable.
+  say("reactor           %s, burning %s", REACTOR, PLASMA)
   say("heating           %d rung(s) researched%s", #storage.researched,
     #storage.researched > 0 and (": " .. table.concat(storage.researched, " ")) or
       " -- the force has researched nothing")
@@ -581,6 +604,7 @@ $lua = $lua.
     Replace('__QUIETFN__', $script:QuietMapFunction).
     Replace('__RUNG_TICKS__', "$($RungSeconds * 60)").
     Replace('__HEATING_RUNGS__', "$HeatingRungs").
+    Replace('__REACTOR__', $Reactor).Replace('__PLASMA__', $plasma).
     Replace('__LOW__', ([string]::Format([cultureinfo]::InvariantCulture, '{0}', $Low))).
     Replace('__STEP__', ([string]::Format([cultureinfo]::InvariantCulture, '{0}', $Step)))
 Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
