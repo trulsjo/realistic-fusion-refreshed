@@ -197,8 +197,9 @@ to feed a single heater; fully researched, one breeder more than covers one heat
 
 **The per-heater reading is what a player meets**, because a heater is what they build. It is also
 the operating point `realistic-fusion-refreshed/prototypes/recipes/d-t.lua` was balanced at — *"Fed at that rate a D-T reactor
-settles around 320 MW against a D-D reactor's 86"*, a pre-#52 figure whose megawatts are
-radiation-free but whose operating point is the heater's.
+settles around 320 MW"*, a pre-#52 figure whose megawatts are radiation-free but whose operating
+point is the heater's. That comment also quoted a D-D reactor's 86 MW until #440 superseded it:
+48.9 – 58.6 MW, one heater, nothing researched (2026-10-01, Factorio 2.0.77).
 
 **And the aneutronic tier records the same measurement in a different vocabulary.** A D-D reactor
 breeds tritium and helium-3 at the same rate, so a heater on the D-He3 mix costs the same **9.12**

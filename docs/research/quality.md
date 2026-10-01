@@ -674,9 +674,9 @@ falls below its 50 MW spend.
 
 **A different priority class is not a share at all.** Against a `primary-input` load the reactor is
 served second, from what remains, and at half of the pair's spend and below it draws nothing. So the
-brownout fractions describe a reactor among `secondary-input` consumers — which is most of a factory
-— and say nothing for one sharing a network with `primary-input` loads, which take their whole ask
-first. Whether the mod should guarantee any of this is the scope decision above and Truls's; the
+brownout fractions describe a reactor among `secondary-input` consumers and say nothing for one
+sharing a network with `primary-input` loads, which take their whole ask first.
+Whether the mod should guarantee any of this is the scope decision above and Truls's; the
 probe asserts nothing about the answer.
 
 ### The residual boiler leak, since quality multiplies it
