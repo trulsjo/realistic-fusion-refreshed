@@ -625,19 +625,59 @@ browned out at all. The buffer is one tick of full production now, which is the 
 can still deliver what the rig sets. And flow statistics in 2.0 are keyed by name **and
 quality** — asked for the bare name, four of the five cells report having drawn nothing ever.
 
-The aneutronic reactor gives 0.833 → 0.333 by arithmetic — 240 MW against a 200 MW spend, so 600 MW
-at legendary — and is **not** measured here. **Those are still one row rather than a grid**, and
-that is the ADRs' doing rather than an omission: all three research ladders are neutronic only
-(ADR 0020 decision 4, ADR 0038 decision 5), so `rf-aneutronic-reactor` has no researchable spend
-and its fraction cannot move. They coincide with `rf-reactor`'s TOP heating rung, not with its shipped one.
+**The aneutronic reactor is measured too, since 2026-10-01 against Factorio 2.0.77 (#438)**, by the
+same rig with `-Reactor rf-aneutronic-reactor`, burning D-He3. **It is one row and not a grid, and
+nobody should look for a heating family:** all three research ladders are neutronic only (ADR 0020
+decision 4, ADR 0038 decision 5), so `rf-aneutronic-reactor` has no researchable spend and its
+fraction cannot move. One run is the whole of it:
+
+| | normal (240) | uncommon (312) | rare (384) | epic (456) | legendary (600) |
+|---|---|---|---|---|---|
+| **aneutronic**, 200 MW | 0.84 / 0.83 · **0.8333** ✓ | 0.65 / 0.64 · **0.6410** ✓ | 0.53 / 0.52 · **0.5208** ✓ | 0.44 / 0.43 · **0.4386** ✓ | 0.34 / 0.33 · **0.3333** ✓ |
+
+Same notation as the table above. The five flow limits were read off the running game — 240, 312,
+384, 456 and 600 MW, the middle three to within 1.2e-5 MW of those — and every cell's full-supply draw was 200
+MW exactly, so the spend in the fraction is measured rather than assumed. **Every derived fraction
+falls inside its own measured bracket.** The row coincides with `rf-reactor`'s TOP heating rung, not
+with its shipped one, because 240 ÷ 200 is the same 1.2 that 90 ÷ 75 is. Each box was held at its
+own 3 000 units, not at the neutronic 1 000, which would have run the reactor at a third of its
+density.
 **It is not free energy**: the reactor still never spends more than `heating_power_w`, so the extra
 headroom buys resilience rather than power. It is also the only thing on the whole list that reads
 like a quality bonus somebody would have designed on purpose.
 
-What the rig does **not** cover is contention. Every cell is one reactor alone on a short supply, so
-what is measured is what a reactor gets when the supply itself is short — not how two
-`secondary-input` consumers split a short network between them. The sentence above asserts both;
-only the first has been run.
+### Contention: how a short network is split
+
+**Measured 2026-10-01 against Factorio 2.0.77 (#439)** by `scripts/probe-brownout-contention.ps1`,
+a rig of its own because the one above isolates every reactor on purpose. Three cells, each one
+electric network holding exactly two consumers — the rig errors unless both are on one network and
+no two cells share one — supplied down a ladder from 1.2 to 0.2 of what the pair spends, in steps of
+0.05, with nothing researched (asserted, rung by rung):
+
+| cell | a | b | what the supply did below full |
+|---|---|---|---|
+| `pair` | `rf-reactor`, normal — asks 90 MW | `rf-reactor`, **legendary** — asks 225 MW | **a share of what each asks for**, at every rung |
+| `secondary` | `rf-reactor`, normal — asks 90 MW | a `secondary-input` load with the reactor's own electric source | an even split, which is the same rule at equal asks |
+| `primary` | `rf-reactor`, normal | the same load at **`primary-input`** | **the load first, in full**; the reactor gets what is left |
+
+"A share of what each asks for" is the model the table above assumes: the supply is divided in
+proportion to each consumer's `input_flow_limit`, and one handed more than it spends keeps its spend
+— its buffer is full and it stops asking — and the rest goes to the other. In `pair` that is the
+legendary reactor holding a full 50 MW while the normal one alone absorbs the shortfall, down to
+70% of supply, and then the two splitting 90 : 225 — at 50% of supply, 14.29 MW against 35.71.
+**Both `secondary-input` cells match it to within 2e-6 MW on every one of the 21 rungs.** So the assumption
+the table rests on holds with a second reactor on the network, and it says something a player can
+use: **a higher-quality reactor on a shared network does not merely brown out later, it takes the
+lower-quality one's share** — the normal reactor in `pair` goes short the moment the network supplies
+less than the pair spends (45 MW at 95 MW of supply), where alone it holds until its own supply
+falls below its 50 MW spend.
+
+**A different priority class is not a share at all.** Against a `primary-input` load the reactor is
+served second, from what remains, and at half of the pair's spend and below it draws nothing. So the
+brownout fractions describe a reactor among `secondary-input` consumers — which is most of a factory
+— and say nothing for one sharing a network with `primary-input` loads, which take their whole ask
+first. Whether the mod should guarantee any of this is the scope decision above and Truls's; the
+probe asserts nothing about the answer.
 
 ### The residual boiler leak, since quality multiplies it
 
@@ -774,14 +814,10 @@ the D-T tier and the confinement ladder are each another lane and none of them i
 
 Stated plainly, because this repository treats an unverified claim as a defect.
 
-- **The brownout table's contention case is not measured.** The fractions themselves now are, under
-  #146 and again under #429 at three heating states, and every derived one falls inside its measured
-  bracket — but each cell in that rig is one reactor alone on a short supply. How two `secondary-input` consumers split a short network between
-  them is the other half of the note's own sentence and has not been run.
-- **The aneutronic reactor's brownout fractions are still arithmetic.** #146 measured `rf-reactor`
-  only, and #429 re-measured `rf-reactor` only. 240 MW against a 200 MW spend gives 0.833 → 0.333 by
-  division, and division is all it is. It is a ROW and not a grid, because no research ladder reaches
-  this tier — so unlike the neutronic table it does not need re-measuring per heating rung.
+- **Contention is measured for two consumers, not for a factory.** #439 ran pairs: two reactors of
+  different quality, and a reactor against a `secondary-input` or a `primary-input` load. Three or
+  more, and a `tertiary` load, have not been run; the rule the pairs follow predicts them, and a
+  prediction is all it is.
 - **Why the engine floors a fluid transfer to whole float32 ULPs per tick is inferred, not
   documented.** #147 measured the flooring — five levels, two run lengths, the legendary rate landing
   on 2⁻²⁴ units a tick to ten digits — and no 2.0.77 doc page found in this pass says the engine does
