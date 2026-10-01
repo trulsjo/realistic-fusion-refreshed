@@ -226,17 +226,19 @@ end
 --
 -- CACHED BECAUSE IT IS SWEPT, NOT COMPUTED. density_curve settles the reactor at twenty fills, so
 -- one answer takes a tenth to a third of a second in the game, depending on the machine (104 to
--- 142 ms at n = 1 on 2026-10-01, 257 to 341 ms on 2026-09-30 with the same sweep,
--- docs/research/first-publish-hitch.md) -- out of the question on the reporting cadence, and the
--- whole reason this table exists rather than a call in publish().
+-- 127 ms at n = 1 on 2026-10-01 and up to 142 ms on a two-reactor rig that day, 257 to 341 ms
+-- on 2026-09-30 with the same sweep, docs/research/first-publish-hitch.md) -- out of the question
+-- on the reporting cadence, and the whole reason this table exists rather than a call in
+-- publish().
 --
 -- KEYED ON THE SPEC FIELDS RESEARCH MOVES RATHER THAN ON A FORCE, AND NOT INVALIDATED AT ALL. It
 -- was keyed by force_index and dropped alongside force_specs, which read as the obvious thing and
 -- was a performance defect: forget_force_cache() is wired to on_research_finished, which fires for
 -- EVERY technology a force completes rather than for the rungs of one ladder. Rebuilding a spec is
--- two table lookups; rebuilding every curve is four sweeps -- half a second to over a second at
--- the figures above, inside update(), on the first reporting tick after a player finishes
--- anything -- including each level of an infinite technology, for ever.
+-- two table lookups; rebuilding every curve is four sweeps -- about half a second at the
+-- 2026-10-01 figures above and over a second at the 2026-09-30 ones, inside update(), on the
+-- first reporting tick after a player finishes anything -- including each level of an infinite
+-- technology, for ever.
 --
 -- The fix is to key on what the answer actually depends on. A curve is a function of the prototype,
 -- the plasma, and every spec field derive() moves; nothing about a force enters it. So research
