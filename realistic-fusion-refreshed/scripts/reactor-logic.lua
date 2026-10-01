@@ -1446,8 +1446,8 @@ local FILL_STEP  = 1 / FILL_STEPS
 -- guard: every fill on the grid is settled the same way, so the bias is common to all twenty and
 -- cancels out of the comparison the sweep actually makes. What it buys is the sweep costing about
 -- 24 000 steps instead of 240 000. That is still a tenth to a third of a second in the game,
--- depending on the machine (docs/research/first-publish-hitch.md), paid once per cache key per load. control.lua caches it
--- under that rung's tau, so no force ever repeats another's sweep.
+-- depending on the machine (docs/research/first-publish-hitch.md), paid once per cache key per
+-- load. control.lua caches it under that rung's tau, so no force ever repeats another's sweep.
 local CURVE_SECONDS = 1200
 local CURVE_DT      = 1.0
 

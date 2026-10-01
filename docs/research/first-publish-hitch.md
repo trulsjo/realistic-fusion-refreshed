@@ -1,4 +1,4 @@
-# The hitch on the first circuit publish (~105 to 140 ms, re-measured 2026-10-01)
+# The hitch on the first circuit publish (104 to 142 ms, re-measured 2026-10-01)
 
 > **2026-10-01: NO COMMIT GREW IT. THE MACHINE DID.**
 > ([#479](https://github.com/trulsjo/realistic-fusion-refreshed/issues/479), at `98cab4c`.)
@@ -9,16 +9,18 @@
 >
 > | code | tick 30 `scriptUpdate`, five runs |
 > |---|---|
-> | `98cab4c` (HEAD, the code the 2026-09-30 runs measured: nothing after `1865815` changed the mod's Lua but comments) | 109.9, 111.2, 119.2, 109.7, 103.8 — **103.8 to 119.2 ms** |
+> | `98cab4c` (this work's base; its Lua differs from `433cc4b`, where the 2026-09-30 runs were taken, only in comments) | 109.9, 111.2, 119.2, 109.7, 103.8 — **103.8 to 119.2 ms** |
 > | `ab3ac29` (the commit that recorded the 2026-09-17 figure; its tree extracted with `git archive` and HEAD's `scripts/` and `vendor/` laid over it, so the same bench loaded the old mods) | 109.0, 127.2, 118.5, 108.0, 110.0 — **108.0 to 127.2 ms** |
 >
 > **Spread on one commit is about 15 to 20 ms**, and the two commits overlap inside it. Both sit at
 > the 2026-09-17 figure, not at 2026-09-30's.
 >
-> **Every commit between them was timed outside the game too**, since that is cheap enough to do
-> for the commit that took the first figure and the eleven after it that touch the mod's
-> `scripts/`: `density_curve(L.reactor, "rf-d-d-plasma", L.reactor.box_volume)` under Lua 5.4.6, five calls each. Fastest call per
-> commit: 54 to 68 ms, with no step anywhere — `ab3ac29`, `12eed76`, `33ba491`, `5d248ba` (the
+> **The sweep itself was also timed outside the game**, at the commit that took the first figure
+> and at each of the eleven after it that touch `realistic-fusion-refreshed/scripts/`, where
+> `density_curve` and everything it calls live: `density_curve(L.reactor, "rf-d-d-plasma",
+> L.reactor.box_volume)` under Lua 5.4.6, five calls each. Commits that touched only
+> `control.lua`, prototypes or locale were not timed this way; the two in-game rows above cover
+> the whole path, `control.lua` included, at both ends. Fastest call per commit: 54 to 68 ms, with no step anywhere — `ab3ac29`, `12eed76`, `33ba491`, `5d248ba` (the
 > heating ladder, #425), `96f7776`, `227eb9d`, `5b46a0a`, `d47055d`, `c3758f7`, `035b5f7`,
 > `1865815`, `98cab4c`. **The sweep is the same cost at every one.** It is fixed at 24 000
 > `M.step` calls by `FILL_STEPS` × `CURVE_SECONDS` / `CURVE_DT`, none of which moved, and the
@@ -52,11 +54,12 @@
 > | 541 | `rf-plasma-confinement-2`, second force — a key nobody has swept | 570 | **116 to 142 ms — a sweep** |
 >
 > **So:** a confinement rung and a heating rung each cost one full sweep, on the next reporting
-> tick, with no loading screen — the same size as the load hitch. **A technology that moves no
-> spec field costs nothing**, vanilla or ours, which is what keying `curves` on spec fields rather
-> than dropping it on `on_research_finished` was for. **A second force reaching a rung the first
-> already reached does not pay again** — the cache is shared across forces. The tick-541 row is
-> the control for that one: the second force's reactor sweeps as soon as it needs a key nobody
+> tick, with no loading screen — the same size as the load hitch. **Neither technology tried that
+> moves no spec field cost a sweep** — `automation`, and our own `rf-plant-efficiency-1` — which
+> is what keying `curves` on spec fields rather than dropping it on `on_research_finished` predicts
+> for every such technology; two were measured. **The second force reaching
+> `rf-plasma-confinement-1`, which the first already had, did not pay again** — the cache is shared
+> across forces, and one rung was measured. The tick-541 row is the control for that one: the second force's reactor sweeps as soon as it needs a key nobody
 > has, so its quiet tick 420 is a cache hit and not a reactor that never reported.
 >
 > One reading beside it that is not a sweep and was not chased: **the tick a technology finishes
@@ -211,7 +214,7 @@ passing. What the code does today, and the options:
   comment on `curves` records why it is keyed that way: it used to be dropped on every
   `on_research_finished`, and put the resulting rebuild at "four sweeps and about two hundred
   milliseconds". At the 2026-09-30 figures one sweep alone was past that; at the 2026-10-01 ones,
-  ~105 to 140 ms, four sweeps are about half a second.
+  104 to 142 ms, four sweeps are about half a second.
 - **Keep it in `storage`.** Survives a load, so the load hitch goes; the research-rung case stays.
   The cost is that it becomes save state: a physics change in a mod update would leave stale
   optima, so it wants dropping in `on_configuration_changed`, which puts one hitch back after
@@ -247,8 +250,9 @@ reporting tick after load paid the full sweep again. That is what `curves` livin
 on every load**. The cost is real and not a benchmark artefact; whether it is a defect a player
 perceives is the half that is still open, below.
 
-**What this does not establish is whether a player FEELS it.** At 60 UPS, 257 to 341 ms is 15 to
-20 frames, and the 2026-10-01 figures, 104 to 142 ms, are 6 to 9 — landing on the first reporting tick after a load — about half a second in. Nobody has
+**What this does not establish is whether a player FEELS it.** It lands on the first reporting
+tick after a load, about half a second in. At 60 UPS the 2026-10-01 figures, 104 to 142 ms across
+both rigs, are 6 to 9 frames; the 2026-09-30 ones, 257 to 341 ms, were 15 to 20. Nobody has
 played it to find out: every figure here is a dump. #399 asks for that once, by playing, and it
 is left for a human.
 

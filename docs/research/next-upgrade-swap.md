@@ -59,7 +59,7 @@ note's to answer.
 > neighbour in the row took any of it. The 2026-09-17 run above read only the swapped machine, so
 > it could not tell an emptied box from a moved one — and its row's energy boxes were joined to
 > each other, so its "empty" may have been a move too. Whether a swap with NO peer on the energy
-> box loses the fluid is now the open half; see below.
+> box loses the fluid was the open half, and the 2026-10-01 block below answers it.
 
 > **2026-10-01, [#478](https://github.com/trulsjo/realistic-fusion-refreshed/issues/478): with
 > nothing to receive it, the energy is LOST.** A lone exchanger stood clear of everything else the
