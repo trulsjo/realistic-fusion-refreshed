@@ -32,7 +32,7 @@
     engine swaps cleanly -- probe-native-heat.ps1's header records a reactor-as-crafting-machine
     that loaded perfectly and then moved no fluid at all.
 
-    WHAT IT MEASURES, one section each, matching #396's six questions:
+    WHAT IT MEASURES, one section each: #396's six questions, and a seventh from #478:
 
       1. DOES THE SWAP HAPPEN between two entities differing only in energy_consumption, driven by
          an upgrade planner over an area the way a player drives one.
@@ -50,6 +50,10 @@
          between two readings rather than one reading against an expectation.
       6. WHETHER A SWAP MID-ROW breaks the chain for the neighbours either side, which is the one
          that cannot be asked of a single machine.
+      7. WHETHER THE ENERGY IS LOST WITH NOTHING TO RECEIVE IT (#478). Every swap in 1-6 has a peer on
+         its energy box. A lone exchanger, energy box full and a control saying no energy face reaches
+         anything, is swapped, and the total across every holder is read before and after in one
+         tick, so the answer is kept, moved or lost from two readings.
 
     THE SCRATCH TIER IS SCRATCH. #315 owns the shipped second tier and its capacity is not decided
     here, so the pair this stands up differs from rf-heat-exchanger in energy_consumption and in
@@ -499,6 +503,56 @@ script.on_nth_tick(60, function(event)
       say("blueprint: re-place ok=" .. tostring(placed))
     else
       say("blueprint: NO blueprint stack could be made; section 4 is unanswered")
+    end
+
+    -- 7. A LONE EXCHANGER (#478). Every swap above had a peer on its energy box -- the reactor since
+    -- #401, the row's neighbours before it -- so none of them could see a loss even if one happens.
+    -- This one stands north of everything, clear of the row, the planner and the blueprint, with
+    -- its energy box filled to capacity and nothing on any energy face. The totals are read across
+    -- EVERY entity the rig built that holds this fluid, in the same tick, so "moved somewhere"
+    -- cannot pass as "kept" or as "lost".
+    local lone = surface.create_entity{ name = t1, position = { ox + 0.5, -120.5 }, force = force,
+                                        raise_built = true }
+    local lbox = box_for(lone, ENERGY)
+    local cap = lone.fluidbox.get_capacity(lbox)
+    lone.fluidbox[lbox] = { name = ENERGY, amount = cap }
+    say(string.format("lone: %s at %.1f,%.1f, energy box %d filled to capacity %.1f", lone.name,
+                      lone.position.x, lone.position.y, lbox, cap))
+
+    -- THE CONTROL, before the swap: a lone case that was accidentally joined would report a move
+    -- as a keep or a loss. Every energy connection is listed with what it reaches.
+    local touched = 0
+    local seen = {}
+    for _, c in ipairs(lone.fluidbox.get_pipe_connections(lbox)) do
+      local hit = (c.target and c.target.owner and c.target.owner.valid) and c.target.owner.unit_number
+      if hit then touched = touched + 1 end
+      seen[#seen + 1] = facing(c) .. "->" .. (hit and tostring(hit) or "-")
+    end
+    say("control: lone energy connections " .. table.concat(seen, " ") .. " -- " ..
+        (touched == 0 and "NOTHING JOINED, the lone reading below is a lone one"
+                       or "JOINED TO " .. touched .. ", so the lone question is UNANSWERED"))
+
+    local function all_holders()
+      return surface.find_entities_filtered{ name = { t1, t2, "rf-reactor" } }
+    end
+    local own_before = energy_total({ lone })
+    local all_before = energy_total(all_holders())
+    say(string.format("lone: before the swap, lone box %.1f, every holder on the surface %.1f",
+                      own_before, all_before))
+    local lone2 = surface.create_entity{ name = t2, position = lone.position, direction = lone.direction,
+                                         force = force, fast_replace = true, spill = false,
+                                         raise_built = true }
+    say("lone: fast_replace produced " .. (lone2 and lone2.name or "NOTHING"))
+    if lone2 then
+      local own_after = energy_total({ lone2 })
+      local all_after = energy_total(all_holders())
+      say(string.format("lone: after the swap, lone box %.1f, every holder on the surface %.1f",
+                        own_after, all_after))
+      local verdict
+      if math.abs(own_after - own_before) < 0.05 then verdict = "KEPT by the replacement"
+      elseif math.abs(all_after - all_before) < 0.05 then verdict = "MOVED to another holder"
+      else verdict = string.format("LOST, %.1f gone from the surface", all_before - all_after) end
+      say("lone: the energy was " .. verdict)
     end
   end
 

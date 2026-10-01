@@ -1,6 +1,6 @@
 # What an upgrade-planner swap does to a chained row of exchangers
 
-Measured 2026-09-17, and the reactor face on 2026-09-30, with `scripts/probe-next-upgrade.ps1`, against Factorio 2.0.77, for
+Measured 2026-09-17, the reactor face on 2026-09-30 and the lone swap on 2026-10-01, with `scripts/probe-next-upgrade.ps1`, against Factorio 2.0.77, for
 [#396](https://github.com/trulsjo/realistic-fusion-refreshed/issues/396). **This note is a probe's
 findings.** It draws no threshold and proposes nothing;
 [#315](https://github.com/trulsjo/realistic-fusion-refreshed/issues/315) chose route 1 during triage
@@ -29,8 +29,8 @@ rejected. **So #315's route needs both fields, and a tier-2 prototype that sets 
 will not load at all** — which is a loud failure rather than a quiet one, and is the good case.
 
 **The swap empties the contained energy box and keeps the other two** — on the swapped machine.
-Where that energy goes is the 2026-09-30 block below: with a reactor bolted on, it moves into the
-reactor rather than being lost.
+Where that energy goes is the two dated blocks below: with a reactor bolted on, it moves into the
+reactor (2026-09-30); with nothing joined, it is lost (2026-10-01).
 
 | box | filter | before | after the swap |
 |---|---|---:|---|
@@ -60,6 +60,25 @@ note's to answer.
 > it could not tell an emptied box from a moved one — and its row's energy boxes were joined to
 > each other, so its "empty" may have been a move too. Whether a swap with NO peer on the energy
 > box loses the fluid is now the open half; see below.
+
+> **2026-10-01, [#478](https://github.com/trulsjo/realistic-fusion-refreshed/issues/478): with
+> nothing to receive it, the energy is LOST.** A lone exchanger stood clear of everything else the
+> rig builds, its energy box filled to capacity — 200 — and a control read before the swap listed
+> each of its three energy connections, `north->- west->- east->-`: none reached anything. It was
+> swapped by the same `fast_replace` as the row, and the box and the total across every entity on
+> the surface that holds `rf-reactor-energy` were read before and after in that tick:
+>
+> | | before | after the swap |
+> |---|---:|---:|
+> | the lone machine's energy box | 200.0 | **0.0** |
+> | `rf-reactor-energy` across every holder on the surface | 800.0 | **600.0** |
+>
+> The 600 that stayed is what the bolted case above left in the reactor and row, which this run
+> does not touch. **So whether a swap loses the
+> box depends on whether anything is joined to it**: with a peer it moved (#401), with none it was
+> destroyed — a full buffer, 200 units of reactor energy, per machine. How the engine moves it is
+> not measured, only that the two cases differ. Whether the loss matters is a balance question, as
+> above. One run.
 
 ## The joints survive, and the row re-joins the replacement
 
@@ -137,10 +156,6 @@ finding.** Anyone acting on it should re-take it deliberately.
 
 ## What this does NOT answer
 
-- **Whether energy is LOST when the swapped machine has no peer on its energy box.** Every reading
-  here had one — the reactor since #401, the row's own neighbours before it — and in the one run
-  that totalled it the energy moved rather than vanished. A lone exchanger, energy box full, swapped
-  with nothing to receive it, has not been measured.
 - **Anything about a real second tier.** The scratch pair differs in `energy_consumption` and in
   nothing else, on purpose. #315 owns the shipped tier.
 - **Robots doing it.** Every swap here is a direct `fast_replace`. A robot-performed upgrade in a
