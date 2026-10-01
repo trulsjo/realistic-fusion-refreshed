@@ -900,6 +900,15 @@ predict the same ordering.
 | `bare` — three reactors bridged | 3 | 4000 | **57.6%** |
 | `piped` — the same three, +20 pipe | 3 | 6000 | **66.8%** |
 
+**Re-measured 2026-10-01 on Factorio 2.0.77 (#443), and the table stands:** 94.6%, 75.4%, 57.6% and
+67.0%, every row within 0.3 points of the one above. It needed re-measuring because between #425 and
+#443 the rig un-researched the confinement ladder and not the heating one, so every reactor in it
+ran at the top heating rung against a prediction made at the shipped spec. On that build the four
+rows read **175.1%, 116.3%, 91.2% and 104.4%**, and three of them failed the "most of it, and not
+all of it" check: energy appearing from nowhere, exactly as the rig's own comment warns it would
+look. Every ladder on the reactor — the two in `M.spec_ladders` and plant efficiency — is now off
+and asserted off, rung by rung.
+
 **`solo` against `solopipe` is the measurement that matters**, because the only thing that changes
 between them is whether there is a run to mix across. One writer both times, so no reactor can
 overwrite another. **Mixing alone costs about twenty points**, which is the same finding as §4 arrived
