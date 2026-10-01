@@ -134,7 +134,8 @@ local function record(ok, name, detail)
 end
 
 -- The shared map-building helpers: rf_place_or_die, rf_box_of, rf_unbound, rf_place_facing,
--- rf_pipe_run and rf_assert_segments. Get-RigBuildLua in scripts/factorio-lib.ps1 defines them.
+-- rf_pipe_run, rf_assert_segments, rf_ladders and rf_assert_research. Get-RigBuildLua in
+-- scripts/factorio-lib.ps1 defines them.
 --
 -- THIS RIG IS A GATE, WHICH IS WHY #226 REACHED IT. It decides whether a change to breeding is
 -- safe, and until now nothing in it checked that its own plumbing reached what it thought:
@@ -408,19 +409,9 @@ script.on_nth_tick(CHECK_AT, function()
   -- silently measuring the entry state instead, and reading exactly the same.
   --
   -- READ OFF THE SPEC'S OWN LADDERS through M.spec_ladders, so a third ladder is covered the day it
-  -- is added rather than the day someone remembers this line.
-  local force = r.reactor.force
-  for _, row in ipairs(LOGIC.spec_ladders) do
-    local rungs = LOGIC.reactor[row.rungs]
-    if rungs then
-      for level, rung in ipairs(rungs) do
-        local tech = force.technologies[rung.technology]
-        record(tech ~= nil and tech.researched,
-          string.format("this rig's force holds %s, rung %d of %s", rung.technology, level, row.field),
-          tech and tostring(tech.researched) or "no such technology")
-      end
-    end
-  end
+  -- is added rather than the day someone remembers this line. rf_assert_research does the walk
+  -- (#444); this rig was where it was written first, inline.
+  rf_assert_research(record, r.reactor.force, LOGIC, LOGIC.reactor, true)
 
   -- ------------------------------------------------------------ the reactor breeds
   local plasma = r.reactor.fluidbox[1]

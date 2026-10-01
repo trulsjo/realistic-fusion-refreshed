@@ -427,6 +427,10 @@ local function must(entity, what)
   return entity
 end
 
+-- The shared rig helpers, for rf_assert_research (#444). Get-RigBuildLua in scripts/factorio-lib.ps1
+-- defines them; the map-building ones go unused here.
+__RIGBUILD__
+
 -- Relative difference, which is the shape every tolerance here is written in so none of them is an
 -- absolute number that quietly stops meaning anything when a balance figure moves.
 local function rel(a, b)
@@ -969,22 +973,27 @@ script.on_init(function()
   local surface = game.surfaces[1]
   local force   = game.forces.player
   force.research_all_technologies()
-  -- AND THEN PUT THE CONFINEMENT LADDER BACK (#53), which is the one thing this rig must not have
+  -- AND THEN PUT EVERY LADDER BACK (#53, #443), which is the one thing this rig must not have
   -- researched. Every prediction below is computed with logic.reactor -- the module's own spec --
-  -- against a reactor the game is simulating, and #53 made confinement time a per-force number, so
-  -- a researched force runs a reactor this rig would be predicting the wrong physics for. It shows
-  -- up as the pool gaining MORE than the reactors were predicted to spend (102.5% of it, at the top
-  -- rung), which reads exactly like energy appearing from nowhere and is not.
+  -- against a reactor the game is simulating, and each ladder makes a spec field a per-force number,
+  -- so a researched force runs a reactor this rig would be predicting the wrong physics for. It
+  -- shows up as the pool gaining MORE than the reactors were predicted to spend (102.5% of it, at
+  -- the top confinement rung), which reads exactly like energy appearing from nowhere and is not.
   --
-  -- Held at the shipped value rather than followed, because this rig is a controlled experiment
-  -- about what the ENGINE does to a fluid segment, and confinement time is not one of its variables.
+  -- Held at the shipped values rather than followed, because this rig is a controlled experiment
+  -- about what the ENGINE does to a fluid segment, and no ladder's field is one of its variables.
   -- What research does to a reactor is scripts/check-confinement.ps1's subject.
   --
+  -- READ OFF rf_ladders, which is logic.spec_ladders plus plant efficiency. The loop here used to walk
+  -- confinement_ladder alone, and the heating ladder (#425) arrived afterwards and walked straight
+  -- past it -- every reactor here ran at the top heating rung until #443. Plant efficiency cannot
+  -- move a prediction here (it scales only what a reactor SELLS), and it goes off anyway so the
+  -- state asserted below is "nothing researched" and not a third exception to remember. Then
+  -- ASSERTED rather than arranged silently: a rung rf_unresearch missed fails rf_assert_research.
+  --
   -- The rungs unlock nothing, so nothing else here loses anything by their going.
-  for _, rung in ipairs(logic.reactor.confinement_ladder or {}) do
-    local technology = force.technologies[rung.technology]
-    if technology then technology.researched = false end
-  end
+  rf_unresearch(force, logic, logic.reactor)
+  rf_assert_research(record, force, logic, logic.reactor, false)
 
   local size = reactor_footprint()
   local span_x = 6 * (size + GAP) + TAIL + 40
@@ -2142,7 +2151,7 @@ script.on_nth_tick(CHECK_AT, function()
 end)
 '@
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') `
-        -Value $lua.Replace('__TICKS__', "$Ticks").Replace('__INTERVAL__', "$interval").Replace('__TAIL__', "$Tail")
+        -Value $lua.Replace('__RIGBUILD__', (Get-RigBuildLua)).Replace('__TICKS__', "$Ticks").Replace('__INTERVAL__', "$interval").Replace('__TAIL__', "$Tail")
 }
 
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }
