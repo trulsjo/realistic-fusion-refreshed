@@ -1,4 +1,68 @@
-# The hitch on the first circuit publish (~110 ms when first measured, ~260 to 340 ms now)
+# The hitch on the first circuit publish (~105 to 140 ms, re-measured 2026-10-01)
+
+> **2026-10-01: NO COMMIT GREW IT. THE MACHINE DID.**
+> ([#479](https://github.com/trulsjo/realistic-fusion-refreshed/issues/479), at `98cab4c`.)
+>
+> The 2026-09-17 figure was 122.5 ms and the 2026-09-30 ones 257 to 341 ms, at *n* = 1 with D-D.
+> Taken again today, five runs per invocation with `-Runs 5` — each run reloads the save, so
+> each pays its own sweep — and tick 30's `scriptUpdate` read per run:
+>
+> | code | tick 30 `scriptUpdate`, five runs |
+> |---|---|
+> | `98cab4c` (HEAD, the code the 2026-09-30 runs measured: nothing after `1865815` changed the mod's Lua but comments) | 109.9, 111.2, 119.2, 109.7, 103.8 — **103.8 to 119.2 ms** |
+> | `ab3ac29` (the commit that recorded the 2026-09-17 figure; its tree extracted with `git archive` and HEAD's `scripts/` and `vendor/` laid over it, so the same bench loaded the old mods) | 109.0, 127.2, 118.5, 108.0, 110.0 — **108.0 to 127.2 ms** |
+>
+> **Spread on one commit is about 15 to 20 ms**, and the two commits overlap inside it. Both sit at
+> the 2026-09-17 figure, not at 2026-09-30's.
+>
+> **Every commit between them was timed outside the game too**, since that is cheap enough to do
+> for the commit that took the first figure and the eleven after it that touch the mod's
+> `scripts/`: `density_curve(L.reactor, "rf-d-d-plasma", L.reactor.box_volume)` under Lua 5.4.6, five calls each. Fastest call per
+> commit: 54 to 68 ms, with no step anywhere — `ab3ac29`, `12eed76`, `33ba491`, `5d248ba` (the
+> heating ladder, #425), `96f7776`, `227eb9d`, `5b46a0a`, `d47055d`, `c3758f7`, `035b5f7`,
+> `1865815`, `98cab4c`. **The sweep is the same cost at every one.** It is fixed at 24 000
+> `M.step` calls by `FILL_STEPS` × `CURVE_SECONDS` / `CURVE_DT`, none of which moved, and the
+> heating ladder changed which spec it settles against but not how much work settling is.
+>
+> **What points at the machine** is this note's own cross-check: on 2026-09-30 the same
+> out-of-game call took 190, 138 and 158 ms, and today on identical code it takes 54 to 68 ms —
+> a factor of about 2 to 3.5, the same as the in-game figure moved by (about 2 to 3.3).
+> **What made the machine slow on 2026-09-30 is not known**: those runs' `machine:` line was not
+> recorded, and this one read `clock 147% of base`. So the growth was **not intended and not a
+> change at all**, and the 257-to-341 figures below are most likely readings of a slow machine. The options
+> further down should be weighed against ~110 ms, not ~300.
+
+> **2026-10-01: AND A RUNG PAYS IT MID-GAME, ONCE PER NEW KEY.**
+> ([#480](https://github.com/trulsjo/realistic-fusion-refreshed/issues/480), at `98cab4c`.)
+>
+> The second case "Today" below states from the code, now measured. A rig of two reactors
+> (`bench-reactors.ps1 -Counts 2 -KeepTemp`), one moved to a second force at tick 5, with research
+> finished on scheduled ticks by `researched = true` — see "Reproducing it". Five runs of 600
+> ticks; the report after a tick-*t* event lands on the next multiple of 30. Run medians 13.4 to
+> 14.5 µs.
+>
+> | tick | what finished | report tick | `scriptUpdate` there, five runs |
+> |---:|---|---:|---|
+> | — | nothing (the load sweep) | 30 | **108 to 141 ms** |
+> | 101 | `rf-plasma-confinement-1`, player | 120 | **109 to 137 ms — a sweep** |
+> | 201 | `automation`, player — moves no spec field | 210 | 98 to 116 µs — none |
+> | 301 | `rf-plasma-heating-1`, player | 330 | **109 to 125 ms — a sweep** |
+> | 401 | `rf-plasma-confinement-1`, **second force**, a key the player already swept at 120 | 420 | 98 to 145 µs — none |
+> | 501 | `rf-plant-efficiency-1`, player — a ladder, but not on a spec field (ADR 0020 decision 5) | 510 | 103 to 129 µs — none |
+> | 541 | `rf-plasma-confinement-2`, second force — a key nobody has swept | 570 | **116 to 142 ms — a sweep** |
+>
+> **So:** a confinement rung and a heating rung each cost one full sweep, on the next reporting
+> tick, with no loading screen — the same size as the load hitch. **A technology that moves no
+> spec field costs nothing**, vanilla or ours, which is what keying `curves` on spec fields rather
+> than dropping it on `on_research_finished` was for. **A second force reaching a rung the first
+> already reached does not pay again** — the cache is shared across forces. The tick-541 row is
+> the control for that one: the second force's reactor sweeps as soon as it needs a key nobody
+> has, so its quiet tick 420 is a cache hit and not a reactor that never reported.
+>
+> One reading beside it that is not a sweep and was not chased: **the tick a technology finishes
+> on is sometimes about 2 ms** of `scriptUpdate` — 1.9 to 2.1 ms in four runs of five at tick 101,
+> three at 201 and four at 401, a vanilla technology included, and 0.2 to 0.4 ms otherwise, which
+> is every run at 301, 501 and 541. It is about a fiftieth of a sweep.
 
 > **2026-09-30: NAMED, AND AN ORDINARY GAME PAYS IT, ON EVERY LOAD.**
 > ([#400](https://github.com/trulsjo/realistic-fusion-refreshed/issues/400),
@@ -132,7 +196,8 @@ order as the in-game figure.
 
 **It is bigger than it was.** The reproduction here is 341 ms against 122.5 ms on 2026-09-17, and
 the #399 runs below read 257 to 286 ms on the same commit, so run-to-run spread is itself tens of
-milliseconds. What grew it since 2026-09-17 was not measured. The comment on `curves` in
+milliseconds. What grew it since 2026-09-17 was not measured. *(2026-10-01, #479: nothing in the
+code grew it — see the banner at the top.)* The comment on `curves` in
 `realistic-fusion-refreshed/control.lua` put one sweep at "about fifty milliseconds"; that figure is
 corrected alongside this note.
 
@@ -141,10 +206,12 @@ passing. What the code does today, and the options:
 
 - **Today.** `curves` is keyed on prototype, confinement time, heating power and plasma, and never
   invalidated, so a sweep happens once per key per Lua state: at the first reporting tick after
-  every load, and again the first time a force reaches a new confinement or heating rung. The
+  every load, and again the first time a force reaches a new confinement or heating rung. Both
+  are measured (#399, #480); see the banners at the top. The
   comment on `curves` records why it is keyed that way: it used to be dropped on every
   `on_research_finished`, and put the resulting rebuild at "four sweeps and about two hundred
-  milliseconds". At the figures above one sweep alone is past that.
+  milliseconds". At the 2026-09-30 figures one sweep alone was past that; at the 2026-10-01 ones,
+  ~105 to 140 ms, four sweeps are about half a second.
 - **Keep it in `storage`.** Survives a load, so the load hitch goes; the research-rung case stays.
   The cost is that it becomes save state: a physics change in a mod update would leave stale
   optima, so it wants dropping in `on_configuration_changed`, which puts one hitch back after
@@ -181,7 +248,7 @@ on every load**. The cost is real and not a benchmark artefact; whether it is a 
 perceives is the half that is still open, below.
 
 **What this does not establish is whether a player FEELS it.** At 60 UPS, 257 to 341 ms is 15 to
-20 frames, landing on the first reporting tick after a load — about half a second in. Nobody has
+20 frames, and the 2026-10-01 figures, 104 to 142 ms, are 6 to 9 — landing on the first reporting tick after a load — about half a second in. Nobody has
 played it to find out: every figure here is a dump. #399 asks for that once, by playing, and it
 is left for a human.
 
@@ -204,6 +271,32 @@ otherwise pauses and never reaches the tick. Create `write-data/saves` first; th
 without it. Kill the server once `write-data/saves/ran.zip` appears. Start every Factorio call
 with `Start-Process -Wait`: a bare `&` returns before the GUI binary exits, and the next call
 then hits the lock file.
+
+**The #480 runs** reuse a directory kept by `pwsh -Command "& ./scripts/bench-reactors.ps1
+-Counts 2 -Ticks 600 -Runs 1 -KeepTemp"`. Append this to the kept `mods/rf-bench-rig/control.lua`,
+junction the three mods back into `mods/`, and run `--benchmark` on the kept `n2.zip` with
+`--benchmark-ticks 600 --benchmark-runs 5 --benchmark-verbose all`. The events are keyed on
+absolute `game.tick`, which holds only because the kept save was written at tick 0:
+
+```lua
+local function finish(force, name) force.technologies[name].researched = true end
+local EVENTS = {
+  [5] = function()
+    local second = game.forces["rf-second"] or game.create_force("rf-second")
+    for _, r in pairs(storage.reactors) do if r.valid then r.force = second; break end end
+  end,
+  [101] = function() finish(game.forces.player, "rf-plasma-confinement-1") end,
+  [201] = function() finish(game.forces.player, "automation") end,
+  [301] = function() finish(game.forces.player, "rf-plasma-heating-1") end,
+  [401] = function() finish(game.forces["rf-second"], "rf-plasma-confinement-1") end,
+  [501] = function() finish(game.forces.player, "rf-plant-efficiency-1") end,
+  [541] = function() finish(game.forces["rf-second"], "rf-plasma-confinement-2") end,
+}
+script.on_nth_tick(1, function(e) local f = EVENTS[e.tick]; if f then f() end end)
+```
+
+The runs that produced the table also logged each event with its tick and whether the technology
+was already researched — none was.
 
 The original reproduction:
 
