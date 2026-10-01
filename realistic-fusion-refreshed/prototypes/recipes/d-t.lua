@@ -19,8 +19,10 @@ data:extend({
   --
   -- 5 units in 2 seconds is D-D's rate, deliberately unchanged: a heater is a heater, and making
   -- this one faster would hide the tier's actual step up inside a machine stat. Fed at that rate a
-  -- D-T reactor settles around 320 MW against a D-D reactor's 86 -- see docs/research/d-t-ignition.md.
-  -- (A pre-#52 figure, so its megawatts are radiation-free; its OPERATING POINT is the heater's.)
+  -- D-T reactor settles around 320 MW -- see docs/research/d-t-ignition.md. (A pre-#52 figure, so
+  -- its megawatts are radiation-free; its OPERATING POINT is the heater's.) The D-D figure beside
+  -- it in that table, 86 MW, is superseded: #440 measured one heater, nothing researched, at 48.9
+  -- to 58.6 MW on 2026-10-01 against Factorio 2.0.77.
   --
   -- THIS RATE IS THE PER-HEATER READING OF THE SUPPLY RATIO (CONTEXT.md, #290): one heater on the
   -- mix takes 1.25 u/s of tritium and a settled D-D reactor breeds 0.137, so a heater costs 9.12
