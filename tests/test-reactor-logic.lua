@@ -1453,9 +1453,18 @@ near(mw_at(3), 104.9, 0.01, "rung 3 sells 104.9 MW at full supply", "MW")
 -- than the same reactor run full. Rung 2's is the tight one against #227's 90 MW, clearing it by
 -- barely a megawatt, so it is the figure most worth pinning: a 2% drift up falsifies the claim in
 -- realistic-fusion-refreshed/prototypes/entities.lua that one exchanger drains a rung-2 reactor.
-near(mw_at(0, 0.65), 61.6, 0.02, "unresearched, its density optimum sells 61.6 MW", "MW")
-near(mw_at(1, 0.75), 73.7, 0.02, "rung 1's density optimum sells 73.7 MW", "MW")
-near(mw_at(2, 0.85), 88.8, 0.02, "rung 2's density optimum sells 88.8 MW -- the tight one", "MW")
+--
+-- PINNED AT ADR 0024'S TABULATED FILL, NOT AT THE ARGMAX, and the two differ at rung 2 (#441). The
+-- model's peak there is 88.8 MW at 82% full; at the 85% this line asks for it is 88.6. This pin read
+-- 88.8 from 2026-09-10 until #441, which paired the peak's figure with the tabulated fill -- the
+-- model gave 88.6 here on the commit that wrote it, so nothing moved and the literal was the error.
+-- At rungs 0 and 1 the tabulated fill is within a point of the argmax and the two agree to 0.02 MW.
+--
+-- 1%, NOT THE 2% THESE CARRIED, because at rung 2 the budget is the claim: 2% up from 88.6 is 90.4,
+-- past the exchanger, so a 2% tolerance would let the model falsify entities.lua and stay green.
+near(mw_at(0, 0.65), 61.6, 0.01, "unresearched, its density optimum sells 61.6 MW", "MW")
+near(mw_at(1, 0.75), 73.7, 0.01, "rung 1's density optimum sells 73.7 MW", "MW")
+near(mw_at(2, 0.85), 88.6, 0.01, "rung 2 at its tabulated 85% optimum sells 88.6 MW -- the tight one", "MW")
 check(mw_at(2, 0.85) > mw_at(2) and mw_at(3) > mw_at(2, 0.85),
   "the optimum is above full supply at a rung, and below the NEXT rung run full",
   string.format("rung 2: %.1f full, %.1f tuned; rung 3 full %.1f",
