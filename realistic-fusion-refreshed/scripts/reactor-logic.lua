@@ -1445,9 +1445,9 @@ local FILL_STEP  = 1 / FILL_STEPS
 -- hotter, and that is acceptable here in a way it is not for a published figure or for a load
 -- guard: every fill on the grid is settled the same way, so the bias is common to all twenty and
 -- cancels out of the comparison the sweep actually makes. What it buys is the sweep costing about
--- 24 000 steps instead of 240 000 -- tens of milliseconds, once per confinement rung rather than
--- a visible hitch. control.lua caches it under that rung's tau, so no force ever repeats another's
--- sweep.
+-- 24 000 steps instead of 240 000. That is still a quarter to a third of a second in the game
+-- (docs/research/first-publish-hitch.md), paid once per cache key per load. control.lua caches it
+-- under that rung's tau, so no force ever repeats another's sweep.
 local CURVE_SECONDS = 1200
 local CURVE_DT      = 1.0
 

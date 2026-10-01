@@ -28,7 +28,9 @@ defaults it to its own name, so two prototypes that both omit it are *not* equal
 rejected. **So #315's route needs both fields, and a tier-2 prototype that sets only `next_upgrade`
 will not load at all** — which is a loud failure rather than a quiet one, and is the good case.
 
-**The swap empties the contained energy box and keeps the other two.**
+**The swap empties the contained energy box and keeps the other two** — on the swapped machine.
+Where that energy goes is the 2026-09-30 block below: with a reactor bolted on, it moves into the
+reactor rather than being lost.
 
 | box | filter | before | after the swap |
 |---|---|---:|---|
@@ -139,8 +141,6 @@ finding.** Anyone acting on it should re-take it deliberately.
   here had one — the reactor since #401, the row's own neighbours before it — and in the one run
   that totalled it the energy moved rather than vanished. A lone exchanger, energy box full, swapped
   with nothing to receive it, has not been measured.
-- **Whether the fluid loss matters.** One buffer of `rf-reactor-energy` per swap is a number without
-  a threshold beside it.
 - **Anything about a real second tier.** The scratch pair differs in `energy_consumption` and in
   nothing else, on purpose. #315 owns the shipped tier.
 - **Robots doing it.** Every swap here is a direct `fast_replace`. A robot-performed upgrade in a

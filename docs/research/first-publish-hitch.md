@@ -11,8 +11,9 @@
 > the same reason. Disabled on its own, the spike goes: **341 340 µs → 301 µs**. Its cache,
 > `curves`, is a module-local table and not `storage`, so it is empty in every fresh Lua state —
 > **every time any save is loaded**, not only the first time the mod is added. See "Named" and
-> "Does an ordinary game pay it" below. The sections between here and there are left as they
-> were measured on 2026-09-17.
+> "Does an ordinary game pay it" below. The measurements between here and there are left as
+> they were taken on 2026-09-17; only the opening paragraph and the "What was left" heading are
+> reworded, to mark them superseded.
 
 Measured 2026-09-17 against Factorio 2.0.77, for
 [#330](https://github.com/trulsjo/realistic-fusion-refreshed/issues/330), with
@@ -176,7 +177,8 @@ The run-again save is the one that decides it. By tick 1207 it had published abo
 and had built its curve in that session; the curve did not survive the save, and the first
 reporting tick after load paid the full sweep again. That is what `curves` living outside
 `storage` predicts. **So it is not "only a freshly-added mod pays it": an ordinary game pays it
-on every load**, and #330's defect is real rather than a benchmark artefact.
+on every load**. The cost is real and not a benchmark artefact; whether it is a defect a player
+perceives is the half that is still open, below.
 
 **What this does not establish is whether a player FEELS it.** At 60 UPS, 257 to 341 ms is 15 to
 20 frames, landing on the first reporting tick after a load — about half a second in. Nobody has
