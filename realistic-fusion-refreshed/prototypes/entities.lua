@@ -595,7 +595,8 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 -- ONE EXCHANGER DRAINS A D-D REACTOR, AND 90 IS SIZED ON THE FED REACTOR RATHER THAN THE SETTLED
 -- ONE (#227). Truls's calls, 2026-09-10. He asked first for one machine to be enough at ship and
 -- through the first confinement rung, which put the figure at 70; the measurements below then showed
--- 70 short of the rate a heater actually feeds a reactor at, and he took it to 90.
+-- 70 short of the rate a heater actually feeds a reactor at, and he took it to 90. #440 has since
+-- measured that rate under current physics and it is below 70 -- see the first bullet.
 --
 -- WHAT 90 COVERS. Which figures below are PINNED and which are only cited is stated per bullet
 -- rather than claimed once for all of them, because a draft of this comment said "every figure here
@@ -606,19 +607,35 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 --     docs/research/d-t-ignition.md's feed table reads a D-D reactor at 86 MW on one heater's
 --     2.5 units/s. That is the shipped rate and the designed ratio --
 --     realistic-fusion-refreshed/prototypes/recipes/d-t.lua keeps D-T on it precisely so "one heater
---     still feeds one reactor" -- so 86 MW is the plant this capacity is sized for, and 90 clears it
+--     still feeds one reactor" -- so 86 MW is the plant this capacity was sized for, and 90 cleared it
 --     by 4 MW, which is 4.7%.
 --
---     CITED, NOT PINNED, AND THE CITATION NEEDS A QUALIFIER. That feed table sits below the line in
---     its own note reading "Every figure in this note below this line is the radiation-free one
---     unless it says otherwise", so 86 MW is a PRE-#52 figure from before the radiation term
---     shipped. Nothing in the tree pins the current-physics one-heater output, because the pure
---     model cannot simulate a fuel line and the rigs that can do not run one heater. What makes 90
---     safe rather than lucky is the DIRECTION of the correction: radiation took the settled figure
---     from 133 MW to 56.1, so a radiation-free reading OVERSTATES, and the true one-heater output is
---     at or below 86. Whoever measures it should replace this bullet with the measurement.
+--     MEASURED, AND IT IS NOT 86 (#440, 2026-10-01, Factorio 2.0.77). That table is radiation-free
+--     -- it sits below its note's line reading "Every figure in this note below this line is the
+--     radiation-free one unless it says otherwise" -- so 86 MW was a PRE-#52 figure.
+--     `bench-mod-links.ps1 -Heaters 1 -Unresearched` runs exactly one rf-heater into a D-D reactor
+--     with every rung of all three ladders asserted OFF, and after 126 000 ticks it reads:
 --
---     THE SAME TABLE READS 103 MW AT TWO HEATERS AND IT SATURATES THERE, so a player who over-feeds
+--         48.9 MW sustained to 58.6 MW while flowing -- plasma 999.9 of 1 000, at 2.412e8 C
+--
+--     The two are the bench's lower bound and its mean-outflow reading (see below), so the plant
+--     sits between them. THE "RADIATION-FREE READING OVERSTATES" ARGUMENT HELD, and by more than it
+--     needed to: the true figure is at least 27 MW under 86, and 90 clears it by 31 MW or more.
+--
+--     AND AT THIS STATE THE FED REACTOR IS THE SETTLED ONE. One heater makes 2.5 units/s and this
+--     reactor burns about 0.55, so the box stays full and the operating point is the pure model's
+--     settled full-supply one -- 2.422e8 C and 56.1 MW, inside the bracket. That is what pins it:
+--     tests/test-reactor-logic.lua's mw_at(0) holds 56.1 to 1%, which is this plant for as long as
+--     one heater keeps the box full. The suite cannot check THAT half, because the pure model has
+--     no fuel line; this bench is what does.
+--
+--     THE OTHER CORNER, for scale: the same one heater with every ladder at its top reads 107.5 to
+--     129.0 MW, with the box at 611.6 of 1 000 and the plasma at 1.488e9 C -- there the fed reactor
+--     is NOT the settled one, which is the case the paragraph at the bottom of this block was
+--     written about. The other 94 research states are not measured on a fuel line.
+--
+--     THE SAME TABLE READS 103 MW AT TWO HEATERS AND IT SATURATES THERE -- radiation-free, like its
+--     one-heater cell, and unre-measured at two -- so a player who over-feeds
 --     one reactor outruns one exchanger. bench-mod-links.ps1 runs FOUR heaters by design -- its
 --     -Exchangers help says it over-provisions on purpose -- and measures that reactor at
 --     103.7 units-of-energy-per-tick-while-flowing against this machine's 90. Its box stays full at
@@ -640,8 +657,10 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 --     AT SHIPPED HEATING AND SHIPPED CAPTURE, which is the qualifier #432 added: those four are one
 --     row of a grid and the other two ladders move every one of them.
 --   * TUNED DENSITY, which ADR 0016 makes a player lever and ADR 0024 tabulates. Held at its density
---     optimum a reactor peaks at 61.6 MW unresearched, 73.7 at rung 1 and 88.8 at rung 2 -- all
---     covered, the last of them by a little over a megawatt, and ALL THREE PINNED in the same block.
+--     optimum a reactor peaks at 61.6 MW unresearched, 73.7 at rung 1 and 88.6 at rung 2 -- all
+--     covered, the last of them by a little over a megawatt, and ALL THREE PINNED in the same block,
+--     at ADR 0024's tabulated fills of 65, 75 and 85%. Rung 2's true peak is at 82% and reads 88.8,
+--     which is what this bullet quoted until #441; it is covered by the same margin, less 0.2 MW.
 --     Rung 3's optimum is about 107.6 and is NOT covered; it is the one figure in this bullet that
 --     is not pinned, because the assertion that matters at rung 3 is that full supply's 104.9
 --     already exceeds 90 and the optimum only widens the gap. Same qualifier as the bullet above:
@@ -686,14 +705,20 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 -- confinement_time_s. THE 90 MW IS UNCHANGED BY THIS TICKET and moving it is that one: it is
 -- Truls's call twice over, having been his on 2026-09-10 when it went from 70 to 90.
 --
--- WHY 70 WAS NOT ENOUGH. It cleared the pure model's 56.1 MW equilibrium and nothing else: the
--- designed one-heater plant is 86 MW and 70 does not reach it. The pure model's figure is the one to
--- be careful of, because a FED reactor never reaches it -- started hot and full the model is at
--- 2.422e8 C inside 30 000 ticks and does not move through 600 000, while the bench's reactor sits at
--- 5.507e8 C after 126 000, because a fed reactor burns and replaces plasma continuously and never
--- settles into a full box. That is what CONTEXT.md's operating-point vocabulary is for; this reactor
--- has been quoted at 56 and at 85 MW before (#109) and both were right. Sizing on the settled figure
--- alone is the trap, and the first attempt at this ticket fell in it.
+-- WHY 70 WAS NOT ENOUGH, AS ARGUED ON 2026-09-10. It cleared the pure model's 56.1 MW equilibrium
+-- and nothing else: the designed one-heater plant was taken to be 86 MW and 70 does not reach it.
+-- #440 MEASURED THAT PLANT AT 48.9 TO 58.6 MW with nothing researched -- under 70 -- so the premise
+-- this paragraph argues from does not hold at the unresearched state. 90 is not moved by that; what
+-- anyone does about it is #315's, and Truls's. The pure model's figure is the one to be careful of,
+-- because a FED reactor need not reach it -- started hot and full the model is at 2.422e8 C inside
+-- 30 000 ticks and does not move through 600 000, while the bench's reactor sat at 5.507e8 C after
+-- 126 000, because a fed reactor burns and replaces plasma continuously and need not settle into a
+-- full box. THAT BENCH RAN FOUR HEATERS AND RESEARCHED EVERYTHING, which nothing said at the time
+-- (#444); with one heater and nothing researched the box stays full and the two agree. That is
+-- what CONTEXT.md's operating-point vocabulary is for; this reactor has been quoted at 56 and at
+-- 85 MW before (#109) and both were right. Sizing on the settled figure alone is the trap, and the
+-- first attempt at this ticket fell in it -- and naming the operating point WITHOUT the research
+-- state and the heater count turned out to be a second one.
 exchanger.energy_consumption = "90MW"
 exchanger.energy_source = {
   type = "fluid",

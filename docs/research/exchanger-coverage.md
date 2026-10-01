@@ -96,12 +96,13 @@ Each cell is **full supply / density optimum**, in MW. **Bold is over 90.** The 
 in the sweep and not reproduced here; it walks from 65% at the shipped corner to 100% wherever the
 curve has no interior peak left, which is the behaviour `M.density_curve`'s note describes.
 
-**One cell reads 0.1 to 0.2 MW below a figure quoted elsewhere, and it is the sweep's grid rather
-than a disagreement.** `entities.lua` and `tests/test-reactor-logic.lua` both give confinement
-rung 2's tuned figure as **88.8 MW**, pinned at the 85% fill ADR 0024 tabulates as that rung's
-optimum. This sweep reads **88.6** at 85% and **88.7** at its own argmax of 80%, and the pin's
-tolerance is 2%, so nothing here falsifies it. The 88.7 in the table above is the argmax, because
-that is what every other cell in the table is.
+**Confinement rung 2's tuned cell reads 88.7 here and 88.6 in the suite, and both are right.**
+`tests/test-reactor-logic.lua` pins **88.6 MW** at the 85% fill ADR 0024 tabulates as that rung's
+optimum; this sweep's 5% grid puts its argmax at 80% and reads **88.7**; a 1% grid puts the true
+peak at 82% and reads **88.8**. The 88.7 in the table above is the argmax, because that is what every
+other cell in the table is. Until #441 (2026-10-01) the suite pinned 88.8 at 85% — the peak's
+figure at the tabulated fill, which the model had never produced there — and this paragraph is
+where the 0.2 MW gap was first written down.
 
 #### capture 0.85 — shipped, nothing researched
 
@@ -161,11 +162,21 @@ not add, and the grid above is where a combination is read rather than guessed a
 
 ## What this does not cover
 
-- **THE FED REACTOR.** Every figure here is a settled reactor on the pure model. What a reactor
-  actually reaches on a fuel line is `docs/research/d-t-ignition.md`'s feed table and
-  `bench-mod-links.ps1`'s measurement, and the `entities.lua` comment keeps both — a fed reactor
-  never reaches the settled figure. The three ladders move the fed reading too, and by how much is
-  not measured here or anywhere.
+- **THE FED REACTOR, at two of ninety-six states.** Every figure here is a settled reactor on the
+  pure model. On a fuel line, #440 measured a D-D reactor fed by exactly one `rf-heater` on
+  2026-10-01 against Factorio 2.0.77, with `bench-mod-links.ps1 -Heaters 1`:
+
+  | state | sustained – while flowing | plasma held | plasma °C |
+  |---|---|---|---|
+  | **nothing researched** (`-Unresearched`) | **48.9 – 58.6 MW** | 999.9 / 1000 | 2.412e8 |
+  | **every ladder at its top** | 107.5 – 129.0 MW | 611.6 / 1000 | 1.488e9 |
+
+  **At the unresearched state the fed reactor IS the settled one**: one heater keeps the box full,
+  and the pure model's 56.1 MW at 2.422e8 °C sits inside the bracket. So the shipped cell of the
+  tables above is also the one-heater plant. At the top corner it is not — the box runs at 61% and
+  the plasma far hotter — so a fed reading there is not this note's settled one. The other
+  ninety-four states are not measured on a fuel line, and nothing above is derived from these two.
+  The `entities.lua` comment keeps the full reading, and what it means for the old 86 MW figure.
 - **THE D-T TIER.** Only `rf-d-d-plasma`. A D-T reactor is a different sizing question and
   `rf-hc-exchanger` is the machine on the other end of it.
 - **THE ANEUTRONIC TIER**, which needs nothing measured: no research ladder reaches it at all —

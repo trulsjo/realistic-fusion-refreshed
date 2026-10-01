@@ -154,6 +154,10 @@ fed** and the output follows the fuel line:
 | 20 u/s | 2 297 MW | 20 u/s | | |
 | 40 u/s | 3 888 MW | 34 u/s — **fuel-saturated** | | |
 
+**The one-heater D-D cell is superseded (#440, 2026-10-01, Factorio 2.0.77).** Measured with
+radiation, one heater, nothing researched: **48.9 – 58.6 MW**, against the 86 above.
+`bench-mod-links.ps1 -Heaters 1 -Unresearched` is the rig; `exchanger-coverage.md` has the reading.
+
 So ignition removes temperature as a control input and hands the player a different throttle: the
 fuel line. Below saturation the relationship is affine and very nearly proportional — doubling the
 feed gives 1.87× the power, the shortfall being the 50 MW of confinement heating that is recovered

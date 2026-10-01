@@ -5,7 +5,7 @@
 -- seven and none of them is a high-capacity one, so adding an eighth would extend that list -- which
 -- is a decision about the shape of the tree rather than a consequence of building this, and belongs
 -- to Truls. They are unlocked by rf-d-t-fusion instead, which is not a fallback but the moment the
--- need appears: a D-D reactor sells around 86 MW and one exchanger absorbs it, while an ignited D-T
+-- need appears: a D-D reactor sells under 60 MW and one exchanger absorbs it, while an ignited D-T
 -- reactor sells on the order of 320 MW and needs four exchangers and fifty-five turbines. The tier
 -- that creates the problem is the tier that hands over the answer.
 --
@@ -13,11 +13,13 @@
 -- exchanger, 40 MW to 90, so this said "eight exchangers" and now says four; the turbine count is
 -- untouched because it divides the reactor's output by a TURBINE's appetite and an exchanger's
 -- rating cancels out. "Comfortably" left the D-D half too, and then #227 went to 90 MW and ONE
--- machine covers 86 MW, so the D-D half now names one exchanger rather than two.
+-- machine covers a one-heater D-D reactor, so the D-D half now names one exchanger rather than two.
 --
--- The 86 and the 320 both come from docs/research/d-t-ignition.md's feed table at the shipped
--- 2.5 units/s -- one heater, which is what a player has. Four heaters put the D-T reactor at 996 to
--- 1 195 MW instead (#89), so neither figure means anything without its heater count.
+-- The 320 comes from docs/research/d-t-ignition.md's feed table at the shipped 2.5 units/s -- one
+-- heater, which is what a player has. Four heaters put the D-T reactor at 996 to 1 195 MW instead
+-- (#89), so neither figure means anything without its heater count. The D-D half read 86 from the
+-- same table until #440 measured one heater under current physics, nothing researched: 48.9 to
+-- 58.6 MW. That table is radiation-free, so its D-T figure is likely high too; unmeasured.
 --
 -- If a separate technology is wanted later, moving these two effects is the whole change.
 --

@@ -141,6 +141,18 @@
     are no longer taken at the same separation and the report says so. Reported beside the result,
     because #47's ceiling depends on it.
 
+.PARAMETER Unresearched
+    Run with every research ladder on the reactor OFF -- confinement, heating and plant efficiency --
+    instead of at the top of all three, which is where research_all_technologies() leaves it (#440).
+
+    THE DEFAULT IS THE TOP OF EVERY LADDER, and every figure this bench produced before #440 was
+    taken at the top of every ladder that existed when it ran, whether or not it said so. Either
+    way the state is now asserted rung by rung through rf_assert_research and printed with the
+    result, so a figure from this bench names its state.
+
+    -Heaters 1 -Unresearched is the reactor a player first builds: the one rf-heat-exchanger's 90 MW
+    is sized on in realistic-fusion-refreshed/prototypes/entities.lua.
+
 .PARAMETER KeepTemp
     Keep the save, the rig mod and the captured output.
 
@@ -159,6 +171,7 @@ param(
     [ValidateSet('rf-d-d-plasma', 'rf-d-t-plasma')] [string] $Plasma = 'rf-d-d-plasma',
     [ValidateRange(1, 20)]        [int] $Pipes      = 3,
     [ValidateRange(1, 8)]         [int] $Heaters    = 4,
+    [switch] $Unresearched,
     [switch] $KeepTemp
 )
 
@@ -196,6 +209,9 @@ local WINDOW     = __WINDOW__
 local EXCHANGERS = __EXCHANGERS__
 local PIPES      = __PIPES__
 local HEATERS    = __HEATERS__
+local UNRESEARCHED = __UNRESEARCHED__
+-- For its ladders only, which -Unresearched turns off and every run asserts (#440).
+local logic = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
 
 local PLASMA = "__PLASMA__"
 local ENERGY = "rf-reactor-energy"
@@ -206,7 +222,8 @@ local ENERGY = "rf-reactor-energy"
 local ENERGY_FEED = "__ENERGYFEED__"
 
 -- The shared map-building helpers: rf_place_or_die, rf_box_of, rf_unbound, rf_place_facing,
--- rf_pipe_run and rf_assert_segments.
+-- rf_pipe_run and rf_assert_segments, and the research helpers rf_ladders, rf_unresearch and
+-- rf_assert_research (#444).
 --
 -- THIS RIG IS WHERE #215's TWO GUARDS WERE WRITTEN -- rf_place_or_die and rf_assert_segments -- and
 -- #226 moved all six out because that is exactly the problem: five scripts carried private copies of
@@ -555,6 +572,16 @@ script.on_init(function()
   -- only as a link that carries nothing. This is also the state the mod gets played in.
   force.research_all_technologies()
 
+  -- AND -Unresearched PUTS EVERY LADDER BACK (#440), so the reactor runs at the state a player first
+  -- builds. The ladders unlock nothing, so the recipes above stay enabled. Asserted in BOTH
+  -- directions, because until #440 this bench ran at the top of every ladder and said so nowhere
+  -- (#444): a mismatch is an error, and every rung is logged so the report can name the state.
+  if UNRESEARCHED then rf_unresearch(force, logic, logic.reactor) end
+  rf_assert_research(function(ok, name, detail)
+    if not ok then error(name .. " -- " .. detail) end
+    log("LINKRIG research " .. name)
+  end, force, logic, logic.reactor, not UNRESEARCHED)
+
   -- Cell pitch, derived rather than written down (#89). It was a literal 100, which is the room a
   -- four-machine row needs and no more: at eight exchangers it put the last machine straight through
   -- the drain cell's energy feed. The failure was loud -- rf_place_or_die() saw it -- and it is still
@@ -717,6 +744,7 @@ end)
         Replace('__QUIETFN__', $script:QuietMapFunction).
         Replace('__WINDOW__', "$Window").Replace('__EXCHANGERS__', "$Exchangers").
         Replace('__PIPES__', "$Pipes").Replace('__HEATERS__', "$Heaters").
+        Replace('__UNRESEARCHED__', $(if ($Unresearched) { 'true' } else { 'false' })).
         Replace('__PLASMA__', $Plasma).
         Replace('__ENERGYFEED__', (Write-EnergyFeed -RigDirectory $rigDir))
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $lua -Encoding utf8
@@ -853,6 +881,12 @@ try {
     Write-Host ("Factorio $version -- $Ticks ticks, $Window per window, $Pipes pipes on the plasma " +
                 "link and none on the energy leg, $Exchangers exchangers")
     Write-Host ("map quieted: pollution and enemy expansion off, peaceful mode, {0} enemy entities removed" -f $quieted)
+    # The research state, read back off the rig's own assertion rather than off the switch (#440).
+    $rungs = @(Get-Content $createOut | Select-String -Pattern 'LINKRIG research ' | ForEach-Object { "$_" -replace '^.*LINKRIG research ', '' })
+    Write-Host ("research: {0} rung(s), {1}; {2} heater(s) per cell" -f $rungs.Count,
+        $(if ($Unresearched) { 'every ladder OFF (-Unresearched)' } else { 'every ladder at its top rung' }),
+        $Heaters)
+    foreach ($r in $rungs) { Write-Host "  $r" }
     Write-Host ''
     Write-Host ('{0,-8}{1,16}{2,16}{3,14}{4,14}{5,16}{6,12}' -f
         'cell', 'plasma u/tick', 'energy u/tick', 'energy MW', 'plasma held', 'plasma degC', 'ticks met')
@@ -865,6 +899,18 @@ try {
             $s.Cell, $s.PlasmaPerTick, $s.EnergyPerTick, $s.MegawattsOut, $s.PlasmaAmount,
             $s.TempC, $s.EnergyCounted)
     }
+
+    # THE REACTOR'S OUTPUT, BRACKETED (#440). "energy MW" above is the sustained column: the meter
+    # excludes every sixth tick, when control.lua writes the reactor, so it is a lower bound. The
+    # while-flowing column is the reading if the writing tick carried the mean outflow. Truth is
+    # between; printed together so neither is quoted alone.
+    #
+    # A third reading off the force's steam statistics was tried and dropped: it read ten times what
+    # the row could make, and why was not chased.
+    $chainSum = $summary | Where-Object { $_.Cell -eq 'chain' }
+    Write-Host ''
+    Write-Host ('chain reactor, last window: {0:N1} MW sustained to {1:N1} MW while flowing' -f
+        $chainSum.MegawattsOut, (60 * $chainSum.EnergyWhileFlowing))
 
     # ------------------------------------------------------------------------------- headroom
     #
