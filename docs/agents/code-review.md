@@ -1,6 +1,6 @@
 # Code review — three rules this repository adds
 
-Both are conventions layered on the `/code-review` plugin rather than changes to it; see *Why it is
+All three are conventions layered on the `/code-review` plugin rather than changes to it; see *Why it is
 written here rather than fixed at source* at the foot.
 
 1. **[The threshold gates the comment, not the report](#the-threshold-gates-the-comment-not-the-report)** — decided by Truls, 2026-08-26, settling

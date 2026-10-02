@@ -212,16 +212,18 @@ answer on coverage: the bracket by itself cannot decide — 80.0 to 95.9 straddl
 rung 5's 88.5 to 106.3 — but the model's 92.9 sits inside it at a temperature the fed reactor
 matches to 1.8%, so 92.9 is the reading.
 
-**Confinement rung 3 is where one heater stops being enough, and the arithmetic says so before the
-bench does.** Settled at 60 s, the model's reactor burns **2.509 units of plasma a second**; one
-heater makes **2.5** (`M.heater`, five units every two seconds). It is the first single-ladder
-state whose settled point asks more than a heater makes — heating rung 5 asks 1.574 and rung 2 of
-confinement 1.625. What the fed reactor does about it is not the settled point: it holds a full box
-but settles at **5.349e8 °C, 17.5% colder than the model's 6.483e8**, and sells 76.1 to 91.3 MW where
-the settled reactor sells 104.9. **Why it lands there rather than at a part-full, hotter heater-fed
-point** — the shape the top corner takes — is recorded and not explained. Its run got there by
-draining to 865 units and refilling, which the window trace shows, and the 126 000-tick run that
-stopped at 865 was on its way down, not up.
+**Confinement rung 3 is the first single-ladder state the fed reactor does not reach the settled
+point at, and why is not established.** What the bench shows: a full box (999.8) at **5.349e8 °C,
+17.5% colder than the model's 6.483e8**, selling 76.1 to 91.3 MW where the settled reactor sells
+104.9. The 126 000-tick run of the same state ended at 865.0 units and 6.98e8 °C and failed the
+equilibrium gate; the bench prints plasma held for the last window only, so what the box did
+between is not on record. **One candidate, not a demonstrated cause:** settled at 60 s the model's
+reactor burns **2.509 units of plasma a second** and one heater makes **2.5** (`M.heater`, five
+units every two seconds) — the first single-ladder state whose settled demand exceeds a heater;
+heating rung 5 asks 1.574 and confinement rung 2 1.625. But a supply limit predicts a part-full box,
+the top corner's shape, and this box is full; the bench's sustained plasma meter reads 1.92 u/s,
+under the heater's 2.5, though that meter excludes the ticks a craft lands on and undercounts. So
+the measurement and the demand figure agree only on WHERE the settled point is lost, not on how.
 
 **So whether one exchanger covers confinement rung 3 on one heater is not decided by this
 measurement.** Its sustained bound is 13.9 MW under 90 and its flowing bound 1.3 MW over. The
@@ -235,15 +237,17 @@ and leaves the plasma alone, so all three rungs hold the unresearched 2.412e8 °
 researched, less the top corner: ninety-six, less the unresearched corner, the eleven single-ladder
 states and the far corner.
 
-**The model predicts which of them one heater can hold, and confinement rung 3 is the test it passed.**
+**The model's plasma demand gives a candidate split, and confinement rung 3 has not validated it.**
 Settled plasma demand depends on heating and confinement only — plant efficiency never touches the
 plasma — so it is a 6 × 4 table, and **eleven of its twenty-four cells ask more than 2.5 u/s**:
 confinement rung 3 at every heating rung, rung 2 from heating rung 2 up, and rung 1 at heating rung
 5 (2.692). Times four capture rungs, that is **forty-four of the ninety-six states predicted off the
 settled point on one heater**, two of them measured (confinement rung 3 alone, and the top corner)
-and forty-two not. The other forty-one unmeasured states ask 2.343 u/s or less and are predicted
-settled. A prediction from `M.settle`'s plasma demand, not a reading; the cases nearest the line —
-2.509 here, 2.612 at heating 2 with confinement 2 — are where it would be wrong first.
+and forty-two not. The other forty-one unmeasured states ask 2.343 u/s or less. Both measured states
+in the first group are off the settled point and all eleven measured in the second are on it, which
+is consistent with the split and does not explain the mechanism above; read it as where to measure
+next, not as a reading. The cases nearest the line — 2.509 here, 2.612 at heating 2 with
+confinement 2 — are where it would be wrong first.
 
 ## What this does not cover
 

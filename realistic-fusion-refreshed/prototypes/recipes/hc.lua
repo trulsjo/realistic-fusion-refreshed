@@ -7,7 +7,7 @@
 -- belongs to Truls. They are unlocked by rf-d-t-fusion instead, which is not a fallback but the
 -- moment the need appears: a D-D reactor on one heater with nothing researched sells under 60 MW
 -- and one exchanger absorbs it, while an ignited D-T reactor sells on the order of 320 MW and needs
--- four exchangers and fifty-five turbines. The tier that creates the problem is the tier that hands
+-- four exchangers and 49 to 59 turbines. The tier that creates the problem is the tier that hands
 -- over the answer.
 --
 -- BOTH REACTOR FIGURES ARE ONE-HEATER READINGS. #227 moved neither of them -- #440 has since
@@ -24,7 +24,7 @@
 -- same table until #440 measured one heater under current physics, nothing researched: 48.9 to 58.6
 -- MW, on 2026-10-01 against Factorio 2.0.77. The D-T figure was suspected high for the same reason
 -- and is not: #486 measured one heater, nothing researched, at 282.1 to 338.5 MW (2026-10-02,
--- Factorio 2.0.77), so four exchangers stands and the turbines are 49 to 59 rather than exactly
+-- Factorio 2.0.77), so four exchangers stands and the turbines are 49 to 59 where 320 implied
 -- fifty-five. Fully researched it is 321.0 to 385.2 MW -- four or five exchangers, 56 to 67
 -- turbines.
 --

@@ -775,10 +775,18 @@ end
 ---
 --- HELD MAY ALSO BE A TABLE of rungs held per ladder, keyed by the ladder's rungs name -- e.g.
 --- { heating_ladder = 3 } -- for a state between the two corners (#485). A ladder it does not name
---- holds none, and a count above the ladder's length is an error() rather than a quiet top rung.
+--- holds none; a key naming no ladder, or a count above the ladder's length, is an error() rather
+--- than a quiet zero or a quiet top rung.
 ---
 --- RECORD is the rig's own function(ok, name, detail); this one has no store of its own.
 local function $assertResearch(record, force, logic, spec, held)
+  if type(held) == "table" then
+    local known = {}
+    for _, row in ipairs($ladders(logic)) do known[row.rungs] = true end
+    for key in pairs(held) do
+      if not known[key] then error(string.format("%s names no ladder on this spec", key)) end
+    end
+  end
   for _, row in ipairs($ladders(logic)) do
     local rungs = spec[row.rungs] or {}
     local count = type(held) == "table" and (held[row.rungs] or 0) or nil
