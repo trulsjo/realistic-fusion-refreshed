@@ -62,12 +62,12 @@ data:extend({
       --
       -- ADR 0010 names seven Power technologies and none of them is a high-capacity one, so an
       -- eighth would extend that list -- a decision about the shape of the tree, and Truls's rather
-      -- than a side effect of building the machines. This is also the tier that creates the need:
-      -- a D-D reactor on one heater with nothing researched sells under 60 MW (#440, measured
-      -- 2026-10-01 against Factorio 2.0.77), which one ordinary exchanger absorbs, while an
-      -- ignited D-T reactor sells around 320 MW and would otherwise want four exchangers and
-      -- 49 to 59 turbines. Handing over the answer in the same technology as the problem is the
-      -- shape a player can act on.
+      -- than a side effect of building the machines. This is also the tier that creates the need: a
+      -- D-D reactor on one heater with nothing researched sells under 60 MW (#440, measured
+      -- 2026-10-01 against Factorio 2.0.77), which one ordinary exchanger absorbs, while an ignited
+      -- D-T reactor on one heater, nothing researched, sells around 320 MW and would otherwise want
+      -- four exchangers and 49 to 59 turbines. Handing over the answer in the same technology as
+      -- the problem is the shape a player can act on.
       --
       -- Both reactor figures are one-heater readings. #227 moved neither; #440 re-measured the D-D
       -- one, and #486 the D-T one: 282.1 to 338.5 MW with radiation, nothing researched

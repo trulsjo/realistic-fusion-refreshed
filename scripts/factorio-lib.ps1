@@ -742,7 +742,7 @@ local function $ladders(logic)
   return rows
 end
 
---- Turn every rung of every ladder on a spec OFF for this force (#443, #440).
+--- Turn every rung of every ladder on a spec OFF, or keep a chosen few ON (#443, #440, #485).
 ---
 --- The arranging half of the "none held" shape; ${assertResearch} below is the asserting half, and a
 --- rig calls both. A rung naming no technology is skipped here and refused there.

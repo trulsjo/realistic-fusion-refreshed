@@ -834,9 +834,9 @@ exchanger.output_fluid_box.filter = "steam"
 -- The steam route's problem is arithmetic rather than design. One rf-heat-exchanger turns 90 MW of
 -- reactor energy into 500 C steam, and a vanilla steam turbine drinks one unit of that a tick --
 -- 5.82 MW -- so an exchanger feeds about fifteen turbines. An ignited D-T reactor on the shipped
--- one-heater feed sells on the order of 320 MW, which is four exchangers and 49 to 59 turbines
--- PER REACTOR. That is not a difficulty curve, it is a blueprint chore, and it is what this pair
--- exists to remove.
+-- one-heater feed, nothing researched, sells on the order of 320 MW: four exchangers and 49 to 59
+-- turbines PER REACTOR. That is not a difficulty curve, it is a blueprint chore, and it is what
+-- this pair exists to remove.
 --
 -- ONLY THE EXCHANGER COUNT MOVED UNDER #227, from eight to four: the machine went from 40 MW to
 -- 90 and the reactor did not move at all. The turbine count is unchanged because it divides the

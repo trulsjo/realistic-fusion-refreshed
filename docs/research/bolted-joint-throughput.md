@@ -42,7 +42,8 @@ megawatts without a conversion, and this note uses both.
 > are not.** The ones that move, and where to:
 >
 > - **the 26.8% / 73.2% split** — a fixed 320 MW of demand against a scaling reactor — becomes
->   **24.27% / 75.73%**. It appears twice on this page, as the `chain`-against-`drain` ratio and as
+>   **24.27% / 75.73%** (both at 40 MW a machine; at 90 MW the share is 60% to 72%, per the next
+>   note). It appears twice on this page, as the `chain`-against-`drain` ratio and as
 >   "eight exchangers take a quarter of it", and those are the same quantity because the `chain`
 >   row's throughput IS the exchangers' demand. Both readings move together, and the finding they
 >   support gets **stronger**: the reactor discards more, not less.
@@ -51,7 +52,8 @@ megawatts without a conversion, and this note uses both.
 >   **4.55× to 18.8×**.
 >
 > The ones that do not move are `chain`'s 5.3% and 18.8×, and `rf-hc-exchanger`'s 15.0× — all three
-> taken against a figure that is not the reactor's.
+> taken against a figure that is not the reactor's. (`chain`'s two do move with the exchanger
+> rating: 12.0% and 8.3× at 90 MW, per the next note.)
 >
 > **No conclusion on this page turns over.** Every margin it argues from stays an order of magnitude
 > or better, and the balance finding it exists to record gets larger. The confinement ladder is not
@@ -62,7 +64,7 @@ megawatts without a conversion, and this note uses both.
 > [`fluid-link-throughput.md`](fluid-link-throughput.md) and
 > [#225](https://github.com/trulsjo/realistic-fusion-refreshed/issues/225).
 
-> **Every exchanger on this page is a 40 MW machine, and `rf-heat-exchanger` has been 90 MW since
+> **Every `rf-heat-exchanger` on this page is a 40 MW machine, and it has been 90 MW since
 > 2026-09-10** ([#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227); noted
 > 2026-10-02 under [#321](https://github.com/trulsjo/realistic-fusion-refreshed/issues/321)). Nothing
 > here was re-run for it, so what follows is arithmetic on the recorded figures, not measurement.
@@ -271,13 +273,13 @@ hardest-driven reactor measured here produces.
 
 Not a plumbing result, and #89 asks for it to be stated for a follow-up rather than acted on.
 
-`entities.lua`'s high-capacity steam pair block puts an ignited D-T reactor at "on the order of
-320 MW", and #89's own text reasons from it — *"an ignited D-T reactor sells on the order of 320 MW,
-which is eight ordinary exchangers"*. ADR 0018's throughput bullet quotes no number, and its "row
-of eight chained exchangers" is the same figure's consequence. **Measured, on four heaters, it
-sells between 996 and 1 195 MW.** Eight exchangers is therefore roughly a **quarter** of what it makes, not a match for it,
-and the `chain` cell throws away **73.2%** of the reactor's output — visible as its energy box
-sitting at 97.9% full for the whole run.
+`entities.lua`'s high-capacity steam pair block puts an ignited D-T reactor at "on the order of 320
+MW", and #89's own text reasons from it — *"an ignited D-T reactor sells on the order of 320 MW,
+which is eight ordinary exchangers"*. ADR 0018's throughput bullet quotes no number, and its "row of
+eight chained exchangers" is the same figure's consequence. **Measured, on four heaters, it sells
+between 996 and 1 195 MW.** Eight 40 MW exchangers — the rating before #227 — were therefore roughly
+a **quarter** of what it makes, not a match for it, and the `chain` cell threw away **73.2%** of the
+reactor's output — visible as its energy box sitting at 97.9% full for the whole run.
 
 **Why a range and not a number, and why the percentage is neither bound.** The meter cannot report
 one figure here. Its *sustained* rate (996 MW) divides the window's total by every tick, including
@@ -297,18 +299,20 @@ Two qualifications, both load-bearing:
   is more power, and where that stops was not measured. The figure is what THIS build produces, and
   the 320 MW it contradicts is a design intent rather than a measurement of a different build.
   (Since measured: one heater, nothing researched, 282.1 to 338.5 MW with radiation — #486,
-  2026-10-02, Factorio 2.0.77 — so 320 is the one-heater reactor, and four heaters is not it.)
+  2026-10-02, Factorio 2.0.77 — so 320 is within the one-heater reactor's measured range, and the
+  four-heater one is not.)
 - **It belongs to [#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227)**, which is
   already open on how much one exchanger should drain, and it makes that ticket's arithmetic worse
   rather than better: #227 reasons from the same 320 MW to conclude one high-capacity exchanger is
   enough for D-T. It is **three** of them, or two and a half on the lower bound.
 
-**The high-capacity tier's own justification survives it, and gets stronger.** The same block
-argues `rf-hc-exchanger` into existence because 320 MW is "eight exchangers and fifty-five turbines
-PER REACTOR ... not a difficulty curve, it is a blueprint chore". At 1 195 MW it is **thirty
-exchangers and about two hundred turbines** — twenty-five and a hundred and seventy on the lower
-bound. Nothing about that decision is at risk; only the number in front of it is wrong, and in the
-direction that made the case understated.
+**The high-capacity tier's own justification survives it, and gets stronger.** The same block argues
+`rf-hc-exchanger` into existence because 320 MW is "eight exchangers and fifty-five turbines PER
+REACTOR ... not a difficulty curve, it is a blueprint chore". At 1 195 MW it is **thirty exchangers
+and about two hundred turbines** — twenty-five and a hundred and seventy on the lower bound — at 40
+MW a machine; at 90 MW it is 11.1 to 13.3 exchangers, and the turbines do not move. Nothing about
+that decision is at risk; only the number in front of it is wrong, and in the direction that made
+the case understated.
 
 Nothing here is a decision. No number was changed.
 
