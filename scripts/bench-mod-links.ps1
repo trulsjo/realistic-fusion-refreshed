@@ -42,6 +42,12 @@
     last two windows agree on both the rate and the plasma temperature. That is the demonstration:
     a reactor still climbing does not produce two consecutive windows that agree.
 
+    THE WINDOW TRACE prints every window in three rows per cell: the energy rate, the plasma
+    temperature, and -- since #496 -- how much plasma the reactor holds. That third row gates
+    nothing -- the plasma check in the gate reads the last two windows like the others -- and is
+    there because a run that ends full says nothing about whether the box drained and refilled on
+    the way. #485 needed that trajectory and could not have it; this row makes it a reading.
+
     WHAT IS BUILT
 
     Two independent cells, because the honest answer needs both.
@@ -111,9 +117,10 @@
     EIGHT IS WHAT #89 ASKS FOR, and only on -Plasma rf-d-t-plasma. Eight is the number that ticket
     reasons to from the "on the order of 320 MW" that entities.lua's high-capacity steam pair block
     states for an ignited D-T reactor, and THAT FIGURE IS FOR ONE HEATER where this rig runs four:
-    on four it measured 996 to 1 195 MW. (On one, nothing researched, it is 282.1 to 338.5 MW with
-    radiation, which 320 sits inside -- #486, 2026-10-02.) So eight 90 MW exchangers take 60% (on the flowing bound)
-    to 72% (on the sustained one) of what this rig's reactor makes, rather than matching it. Eight is
+    on four it measured 996 to 1 195 MW, so eight 90 MW exchangers take 60% (on the flowing bound)
+    to 72% (on the sustained one) of what this rig's four-heater reactor makes, rather than matching
+    it. (On one heater, nothing researched, the reactor makes 282.1 to 338.5 MW with radiation,
+    which 320 sits inside -- #486, 2026-10-02.) Eight is
     kept as the number #89 asked about rather than raised to the eleven-to-thirteen those bounds
     imply, because the question is whether the eighth machine down a chain off ONE bolted connection
     is fed at all -- and it is (docs/research/bolted-joint-throughput.md). The per-exchanger table
@@ -1017,11 +1024,13 @@ try {
     }
 
     Write-Host ''
-    Write-Host 'window trace (energy units/tick, then plasma degC)'
+    # The third row, plasma held, gates nothing (#496); the help's WINDOW TRACE says why it exists.
+    Write-Host 'window trace (energy units/tick, then plasma degC, then plasma held)'
     foreach ($cell in @('chain', 'drain')) {
         $rows = @($windows | Where-Object { $_.Cell -eq $cell } | Sort-Object Window)
         Write-Host ('  {0,-6} {1}' -f $cell, (($rows | ForEach-Object { '{0:N2}' -f $_.EnergyTick }) -join '  '))
         Write-Host ('  {0,-6} {1}' -f '', (($rows | ForEach-Object { '{0:N3}e8' -f ($_.TempC / 1e8) }) -join '  '))
+        Write-Host ('  {0,-6} {1}' -f '', (($rows | ForEach-Object { '{0:N1}' -f $_.PlasmaAmt }) -join '  '))
     }
 
     if ($faults.Count -gt 0) {
