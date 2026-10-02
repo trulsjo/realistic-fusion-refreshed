@@ -32,8 +32,8 @@
     fluid breaks none of them. So the finding had no repeatable instrument until this one, the same
     gap `probe-connection-categories.ps1` was written to fill for categories.
 
-    WHICH MOD DOES IT IS NOT ANSWERED HERE, and cannot be. A dump records what a prototype ENDED UP
-    as, never who wrote it. It was answered by reading instead (#320): on `seablock` it is
+    WHICH MOD DOES IT IS NOT ANSWERED BY THIS PROBE, and cannot be. A dump records what a prototype
+    ENDED UP as, never who wrote it. It was answered by reading instead (#320): on `seablock` it is
     SeaBlockWanne's data-final-fixes reachability walk, which hides every item, fluid and recipe no
     recipe chain from water, fish or trees reaches. See docs/research/hidden-prototypes-by-lane.md.
 

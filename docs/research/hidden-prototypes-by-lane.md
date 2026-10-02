@@ -91,8 +91,9 @@ premise — a map with no ores — rather than for any other mod:
 1. **Seeds** (lines 30-43): `steam`, `angels-water-viscous-mud`, every fluid a tile offers (`water`
    and friends), and whatever fish and trees mine to.
 2. **`check_recipes()`** (lines 48-71), looped until nothing changes (lines 96-99): any recipe whose
-   ingredients are **all** already reached adds its results to the reached set. It looks at
-   ingredients and results only — never at `enabled`, a technology, a category or an entity.
+   ingredients are **all** already reached adds its results to the reached set. It never looks at
+   `enabled`, a technology or an entity. Its one other test is a category: a recipe in
+   `transport-drone-request` adds nothing (line 54), and none of ours is in it.
 3. **`hide_items("item", …)` and `hide_items("fluid", …)`** (lines 86-94, called at 100-101) set
    `hidden = true` on every item and every fluid not reached — `itm.hidden=true` at line 91, which is
    why a grep for a literal assignment *onto a fluid* found nothing: the fluid is a loop variable.
@@ -106,18 +107,25 @@ by an entity or a script rather than by a recipe. The `steam` seed is the tell: 
 boiler, not a recipe, so the walk would hide it too, and the author special-cased the one vanilla
 fluid that needed it. Nothing in the file special-cases anything else's.
 
-**Why exactly our nine.** Four of our fluids are never the result of any recipe: `rf-tritium` and
-`rf-helium-3` are bred by script (`realistic-fusion-refreshed/control.lua`, into the isotope
-collector's fluid boxes), and `rf-reactor-energy` and `rf-aneutronic-reactor-energy` are written by
-the reactor logic (`energy_fluid` in `realistic-fusion-refreshed/scripts/reactor-logic.lua`). The
-walk cannot reach any of them, so it cannot reach anything made from them either:
+**Why exactly our nine.** Four of our fluids are made in play by script, never by a recipe of
+ours: `rf-tritium` and `rf-helium-3` are bred into the isotope collector's boxes by `deposit` (the
+boxes named by `COLLECTOR_BOXES`), and `rf-reactor-energy` and `rf-aneutronic-reactor-energy` are
+written into the reactor's second box by `apply`, which takes the name from the spec's
+`energy_fluid` field — all in `realistic-fusion-refreshed/control.lua`. The walk cannot reach any
+of them, so it cannot reach anything made from them either.
+
+**The empty-barrel recipes do not change that.** Base Factorio generates an
+`empty-rf-<fluid>-barrel` recipe for each of the four barrelled fluids — `rf-tritium`,
+`rf-helium-3`, `rf-d-t-mix`, `rf-d-he3-mix` — and each does produce its fluid. But its ingredient
+is the barrel, whose only maker is the fill recipe, which needs the fluid. So the walk reaches none
+of the four by that route either:
 
 | hidden | why the walk never reaches it |
 |---|---|
-| `rf-tritium`, `rf-helium-3` | no recipe makes them — bred by script |
-| `rf-reactor-energy`, `rf-aneutronic-reactor-energy` | no recipe makes them — written by the reactor |
-| `rf-d-t-mix` | its only recipe, `rf-d-t-mixing`, needs `rf-tritium` |
-| `rf-d-he3-mix` | its only recipe, `rf-d-he3-mixing`, needs `rf-helium-3` |
+| `rf-tritium`, `rf-helium-3` | bred by script; the only recipe making either is its empty-barrel half |
+| `rf-reactor-energy`, `rf-aneutronic-reactor-energy` | written by script; no recipe makes them |
+| `rf-d-t-mix` | `rf-d-t-mixing` needs `rf-tritium`; its empty-barrel half needs its barrel |
+| `rf-d-he3-mix` | `rf-d-he3-mixing` needs `rf-helium-3`; its empty-barrel half needs its barrel |
 | `rf-d-t-plasma` | its only recipe needs `rf-d-t-mix` |
 | `rf-d-he3-plasma` | its only recipe needs `rf-d-he3-mix` |
 | `rf-he3-he3-plasma` | its only recipe needs `rf-helium-3` |
@@ -191,9 +199,8 @@ Both readings have something to stand on, and this note takes neither.
 
 - **For treating it as a defect:** #153's cases were *inherited* stats on prototypes cloned from
   vanilla, where `hidden` here is a set editing a prototype that is wholly ours; and the effect is
-  player-visible rather than a cost number. And the walk's premise is false for these nine: they
-  are made in play, by an entity or a script rather than a recipe, so what it hides is a chain a
-  player can build.
+  player-visible rather than a cost number. The nine are made in play, by script, which is a
+  route the walk does not follow.
 - **For letting it go:** whatever sets the field is a blanket pass over `data.raw` rather than
   anything aimed at us — SeaBlockWanne's reachability walk, identified above, iterates every
   item, fluid and recipe in the game and names none of ours — which is the same shape ADR 0007
