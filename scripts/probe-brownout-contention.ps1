@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
-    Measures how a short electric network is split between a reactor and a competing consumer on the
-    same network, so the contention half of docs/research/quality.md's brownout sentence is observed
+    Measures how a short electric network is split among the consumers on it -- a reactor and what
+    it competes with, up to four reactors to a network -- so the contention half of docs/research/quality.md's brownout sentence is observed
     rather than assumed. The rig #439 asks for, extended by #487 past pairs and to a tertiary load.
 
 .DESCRIPTION
@@ -39,11 +39,14 @@
                  and 225 MW, the same spend. A pair caps at most one member; this caps three, one
                  after another down the ladder, so the redistribution is exercised more than once.
       tertiary   A normal rf-reactor against the load at TERTIARY (#487). Its SUPPLY differs too, and
-                 has to: vanilla's interface is itself tertiary, and tertiary does not feed tertiary,
-                 so this cell's supply is a rig copy of it at secondary-output, what a turbine is.
+                 has to: vanilla's interface is itself tertiary, and the 2.0.77 docs for
+                 ElectricUsagePriority describe tertiary input as collecting "the overproduction",
+                 which a tertiary supply is not. So this cell's supply is a rig copy of it at
+                 secondary-output, the class those docs give steam generators. A tertiary load
+                 against a tertiary supply is not run.
 
     THE LADDER. Each cell's supply is set to a fraction f of what its consumers SPEND together,
-    from 1.2 (both satisfied, with room) down to LOW in steps of STEP. Every rung is twenty seconds,
+    from 1.2 (every consumer satisfied, with room) down to LOW in steps of STEP. Every rung is twenty seconds,
     the first half for the buffers to settle and the second measured, as in the sibling rig.
 
     WHAT IS PREDICTED, AND PRINTED BESIDE WHAT IS MEASURED. "A share of what it asks for": the supply
@@ -140,8 +143,9 @@ for _, priority in ipairs({ "secondary-input", "primary-input", "tertiary" }) do
   load.energy_usage = string.format("%.10gW", logic.reactor.heating_power_w)
   data:extend({ load })
 end
--- The tertiary cell's supply. Vanilla's interface is itself tertiary, and tertiary does not feed
--- tertiary, so against it a tertiary load would read zero for a reason that is the rig's.
+-- The tertiary cell's supply. Vanilla's interface is itself tertiary, and the 2.0.77 docs give
+-- tertiary input only "the overproduction", which a tertiary supply is not; secondary-output is
+-- the class they give steam generators.
 local supply = table.deepcopy(data.raw["electric-energy-interface"]["electric-energy-interface"])
 supply.name = "rf-probe-supply-secondary-output"
 supply.energy_source.usage_priority = "secondary-output"
