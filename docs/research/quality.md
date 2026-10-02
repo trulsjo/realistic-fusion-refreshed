@@ -698,12 +698,15 @@ fall on the right side of each — uncommon is full at 0.95 and 45.22 MW at 0.90
 what the four spend, **the normal reactor gets 40 MW of its 50**: the three that ask more are
 all still held at their spend there, and it absorbs the whole 10 MW shortfall alone.
 
-The `tertiary` cell's supply is not the rig's usual one, and has to differ: vanilla's
-`electric-energy-interface` is itself `tertiary`, and tertiary does not feed tertiary, so against it
-the load would read zero for a reason that is the rig's. Against a `secondary-output` supply — what a
-turbine is — the reactor holds its 50 MW down to 50 MW of supply and the load gets exactly what is
-left over (45 MW at 95, 5 at 55, nothing from 50 down). The load gave nothing back on any rung, but
-it spends its own buffer every tick and so has nothing to give; that is not an accumulator's case.
+The `tertiary` cell's supply is not the rig's usual one: vanilla's `electric-energy-interface` is
+itself `tertiary`, and the 2.0.77 docs for
+[`ElectricUsagePriority`](https://lua-api.factorio.com/2.0.77/types/ElectricUsagePriority.html)
+describe `tertiary` input as collecting "the overproduction", which a `tertiary` supply is not. So
+this cell's supply is at `secondary-output`, the class those docs give steam generators; a `tertiary`
+load against a `tertiary` supply was not run. Against it the reactor holds its 50 MW down to 50 MW of
+supply and the load gets exactly what is left over (45 MW at 95, 5 at 55, nothing from 50 down). The
+load gave nothing back on any rung. Why was not measured, so this says nothing about an accumulator
+discharging into a short network.
 Whether the mod should guarantee any of this is the scope decision above and Truls's; the
 probe asserts nothing about the answer.
 
