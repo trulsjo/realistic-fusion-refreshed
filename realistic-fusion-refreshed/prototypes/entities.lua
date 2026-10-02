@@ -853,6 +853,12 @@ exchanger.output_fluid_box.filter = "steam"
 -- either without saying which heater count it came from is the operating-point defect CONTEXT.md
 -- exists to prevent. One heater is what a player has, so one heater is what this block quotes.
 --
+-- AND IT IS NOW MEASURED WITH RADIATION (#486, 2026-10-02, Factorio 2.0.77): one heater, nothing
+-- researched, 282.1 to 338.5 MW across bench-mod-links.ps1's two bounds, heater-fed at 277.3 units.
+-- 320 is inside it, so "four exchangers" stands (3.1 to 3.8 machines' worth) and the turbines are
+-- 49 to 59 rather than exactly fifty-five. Every ladder reaches this reactor; fully researched it
+-- is 321.0 to 385.2 MW, four or five exchangers and 56 to 67 turbines.
+--
 -- The turbine is ten times its ordinary counterpart, which is the predecessor's factor and is kept
 -- because it is a round number rather than because it was tuned. THE EXCHANGER NO LONGER IS: #227
 -- took rf-heat-exchanger to 90 MW and left this at 400, so the pair's two halves now sit at 10x and

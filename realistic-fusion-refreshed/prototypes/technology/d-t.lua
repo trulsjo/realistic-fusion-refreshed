@@ -70,10 +70,12 @@ data:extend({
       -- shape a player can act on.
       --
       -- Both reactor figures are one-heater readings. #227 moved neither; #440 re-measured the D-D
-      -- one, and the D-T one is still radiation-free and unmeasured. #227 took the exchanger
-      -- from 40 MW to 90, so "eight exchangers" here became four; the turbine count divides the
-      -- reactor's output by a turbine's appetite and does not move at all. See
-      -- realistic-fusion-refreshed/prototypes/recipes/hc.lua for the same arithmetic and its source.
+      -- one, and #486 the D-T one: 282.1 to 338.5 MW with radiation, nothing researched
+      -- (2026-10-02, Factorio 2.0.77), so "around 320" and four exchangers stand; turbines are 49
+      -- to 59. #227 took the exchanger from 40 MW to 90, so "eight exchangers" here became four;
+      -- the turbine count divides the reactor's output by a turbine's appetite and did not move with
+      -- it. See realistic-fusion-refreshed/prototypes/recipes/hc.lua for the same arithmetic and
+      -- its source.
       --
       -- If they should have their own technology later, moving these two lines is the whole change.
       { type = "unlock-recipe", recipe = "rf-hc-exchanger" },

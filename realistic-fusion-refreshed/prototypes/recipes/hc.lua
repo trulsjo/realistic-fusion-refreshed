@@ -22,8 +22,11 @@
 -- heater, which is what a player has. Four heaters put the D-T reactor at 996 to 1 195 MW instead
 -- (#89), so neither figure means anything without its heater count. The D-D half read 86 from the
 -- same table until #440 measured one heater under current physics, nothing researched: 48.9 to 58.6
--- MW, on 2026-10-01 against Factorio 2.0.77. That table is radiation-free, so its D-T figure is
--- likely high too; unmeasured.
+-- MW, on 2026-10-01 against Factorio 2.0.77. The D-T figure was suspected high for the same reason
+-- and is not: #486 measured one heater, nothing researched, at 282.1 to 338.5 MW (2026-10-02,
+-- Factorio 2.0.77), so four exchangers stands and the turbines are 49 to 59 rather than exactly
+-- fifty-five. Fully researched it is 321.0 to 385.2 MW -- four or five exchangers, 56 to 67
+-- turbines.
 --
 -- If a separate technology is wanted later, moving these two effects is the whole change.
 --

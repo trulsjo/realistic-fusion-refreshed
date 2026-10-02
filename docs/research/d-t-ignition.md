@@ -158,6 +158,18 @@ fed** and the output follows the fuel line:
 radiation, one heater, nothing researched: **48.9 – 58.6 MW**, against the 86 above.
 `bench-mod-links.ps1 -Heaters 1 -Unresearched` is the rig; `exchanger-coverage.md` has the reading.
 
+**The one-heater D-T cell is not** ([#486](https://github.com/trulsjo/realistic-fusion-refreshed/issues/486),
+2026-10-02, Factorio 2.0.77). The same rig with `-Plasma rf-d-t-plasma -Exchangers 8 -Unresearched`,
+252 000 ticks: **282.1 – 338.5 MW** across the bench's two bounds, the reactor **heater-fed** at 277.3
+of 1000 units and 2.180×10⁹ °C. The 324 above sits inside that bracket, and so does the 320 the
+recipes quote: radiation took a third off the D-D cell and nothing measurable off this one, because
+an ignited D-T reactor burns what it is fed and bremsstrahlung is small beside its fusion power. As a
+cross-check, `M.settle` held at the measured 277.3 units gives 319.1 MW. **Fully researched** on the
+same heater it is **321.0 – 385.2 MW** at 313.9 units and 3.446×10⁹ °C (126 000 ticks) — every ladder
+reaches this tier, because the D-T reactor shares `M.reactor`'s spec. Four exchangers still cover it
+unresearched (3.1 to 3.8 machines' worth) and four or five researched (3.6 to 4.3); at 5.82 MW a
+turbine, 49 to 59 turbines unresearched and 56 to 67 researched, against the 55 that 320 implied.
+
 So ignition removes temperature as a control input and hands the player a different throttle: the
 fuel line. Below saturation the relationship is affine and very nearly proportional — doubling the
 feed gives 1.87× the power, the shortfall being the 50 MW of confinement heating that is recovered
@@ -198,7 +210,8 @@ to feed a single heater; fully researched, one breeder more than covers one heat
 **The per-heater reading is what a player meets**, because a heater is what they build. It is also
 the operating point `realistic-fusion-refreshed/prototypes/recipes/d-t.lua` was balanced at — *"Fed at that rate a D-T reactor
 settles around 320 MW"*, a pre-#52 figure whose megawatts are radiation-free but whose operating
-point is the heater's. That comment also quoted a D-D reactor's 86 MW until #440 superseded it:
+point is the heater's — and measured since at 282.1 – 338.5 MW with radiation, one heater, nothing
+researched (#486, 2026-10-02, Factorio 2.0.77), which 320 sits inside. That comment also quoted a D-D reactor's 86 MW until #440 superseded it:
 48.9 – 58.6 MW, one heater, nothing researched (2026-10-01, Factorio 2.0.77).
 
 **And the aneutronic tier records the same measurement in a different vocabulary.** A D-D reactor
