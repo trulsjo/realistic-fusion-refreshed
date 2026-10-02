@@ -846,9 +846,13 @@ exchanger.output_fluid_box.filter = "steam"
 -- AND 320 IS A REACTOR READING, WHICH A DRAFT OF THIS COMMENT DENIED. It is not eight 40 MW
 -- machines' nameplate, and the coincidence that 8 x 40 is 320 misled a reviewer of #227 badly
 -- enough to be worth naming here. docs/research/d-t-ignition.md's feed table puts a lit D-T reactor
--- at 324 MW on one heater's 2.5 units/s, check-brownout.ps1 measured its trailing-minute output
--- climbing to 322 MW at 1800 s and 324 at 2100 and flat after, and the pure-Lua model predicts the
--- same to three figures. What DOES depend on the feed is the figure itself: four heaters put the
+-- at 324 MW on one heater's 2.5 units/s, and check-brownout.ps1 measured its trailing-minute output
+-- climbing to 322 MW at 1800 s and 324 at 2100 and flat after -- both before radiation (#52). With
+-- radiation the pure-Lua model, FED 2.5 units/s of 15 C plasma rather than held at a fill, settles
+-- at 322.7 MW, 276.9 units and 2.183e9 C (#499), against the 277.3 units and 2.180e9 C the game
+-- measured on one heater, nothing researched (#486, 2026-10-02, Factorio 2.0.77). Held at the
+-- game's fill it runs 17% hotter, and its 319 MW agrees on megawatts only because two errors
+-- cancel. What DOES depend on the feed is the figure itself: four heaters put the
 -- same reactor at 996 to 1 195 MW (#89, docs/research/bolted-joint-throughput.md), and quoting
 -- either without saying which heater count it came from is the operating-point defect CONTEXT.md
 -- exists to prevent. One heater is what a player has, so one heater is what this block quotes.

@@ -164,9 +164,19 @@ radiation, one heater, nothing researched: **48.9 – 58.6 MW**, against the 86 
 of 1000 units and 2.180×10⁹ °C. The 324 above sits inside that bracket, and so does the 320 the
 recipes quote: radiation took a third off the D-D cell and less off this one than the bracket can
 resolve — it runs from 12% under 320 to 6% over — which fits an ignited D-T reactor burning what it
-is fed, with bremsstrahlung small beside its fusion power. The model does not corroborate it closely:
-`M.settle` held at the measured 277.3 units runs 17% hotter than the game and burns 2.31 u/s, short
-of the heater's 2.5, so it is not at this operating point. **Fully researched** on the
+is fed, with bremsstrahlung small beside its fusion power. **The model reproduces it once it is fed
+rather than held**
+([#499](https://github.com/trulsjo/realistic-fusion-refreshed/issues/499)). `M.settle` holds the
+amount fixed, so it never pays to heat the fuel coming in: held at the measured 277.3 units it runs
+17% hotter than the game, at 2.54×10⁹ °C, and burns 2.31 u/s, short of the heater's 2.5. Fed
+instead — 2.5 u/s of plasma arriving at 15 °C and mixed into the box by amount, as the engine mixes
+it, and stepped every 6 ticks as `control.lua` steps it — the same model settles at **276.9 units
+and 2.183×10⁹ °C, burning 2.500 u/s and selling 322.7 MW**, against the game's 277.3 units and
+2.180×10⁹ °C. So the ~320 MW agreement survives at the matched operating point. The held run's
+319.0 MW agreed only because two errors cancel: running hot, it fuses 27 MW less (325 MW against
+352), and it skips the 22.6 MW it takes to heat 2.5 u/s of fresh fuel to the operating
+temperature. `tests/test-reactor-logic.lua` pins the fed run against the game's fill and
+temperature, in the block headed "THE FED D-T REACTOR". **Fully researched** on the
 same heater it is **321.0 – 385.2 MW** at 313.9 units and 3.446×10⁹ °C (126 000 ticks) — every ladder
 reaches this tier, because the D-T reactor shares `M.reactor`'s spec. Four exchangers still cover it
 unresearched (3.1 to 3.8 machines' worth) and four or five researched (3.6 to 4.3); at 5.82 MW a
@@ -450,7 +460,10 @@ up. The measured curve of `full`'s trailing-minute output: 86 MW at 300 s, 204 a
 at 1200, 322 at 1800, 324 at 2100 and flat thereafter.
 
 **The reason it is slow is the pipe, not the plasma.** The equilibrium the game reaches — 324 MW at
-270 units — is the one the pure-Lua model predicts, to three figures. What the model has no concept of
+270 units — is the one the pure-Lua model predicts, to three figures. *(Both are pre-#52, from
+before radiation. With radiation, one heater and nothing researched, the game measured 282.1 – 338.5
+MW at 277.3 units (#486, 2026-10-02, Factorio 2.0.77), and the model fed at 2.5 u/s gives 322.7 MW
+at 276.9 units (#499).)* What the model has no concept of
 is the feed line: a cell's plasma segment is the reactor's 1000-unit box *plus every `rf-pipe` between
 it and the heater*, and the engine fills the whole segment rather than the box. The reactor's own box
 therefore approaches its share of a much larger volume. The rig now asserts that `full` has stopped

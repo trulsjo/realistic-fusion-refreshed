@@ -194,8 +194,11 @@ model's full-supply figure (the grid above) inside the bracket.
 | plant efficiency rung 3, 0.9375 | 53.9 – 64.7 MW | 999.9 | 2.412e8 | 61.9 at 2.422e8 | yes |
 | **every ladder at its top** (#440) | 107.5 – 129.0 MW | 611.6 / 1000 | 1.488e9 | 211.2 at 1.183e9 | **no** |
 
-Every row passed the bench's equilibrium gate at 126 000 ticks except confinement rung 3, which was
-still descending at 865.0 units and 6.98e8 °C there and is quoted from a 360 000-tick run, settled.
+Every row taken on 2026-10-02 passed the bench's equilibrium gate at 126 000 ticks except
+confinement rung 3, which had not settled there and is quoted from a 360 000-tick run that did. Of
+#440's two rows, nothing researched was read after 126 000 ticks —
+`realistic-fusion-refreshed/prototypes/entities.lua`'s exchanger block
+records the run — and the tick count of the every-ladder-at-its-top row is not on record.
 The model column is `M.settle` at the same state, 1200 s at one tick.
 
 **What each ladder does, walked alone:**
@@ -213,11 +216,31 @@ rung 5's 88.5 to 106.3 — but the model's 92.9 sits inside it at a temperature 
 matches to 1.8%, so 92.9 is the reading.
 
 **Confinement rung 3 is the first single-ladder state the fed reactor does not reach the settled
-point at, and why is not established.** What the bench shows: a full box (999.8) at **5.349e8 °C,
-17.5% colder than the model's 6.483e8**, selling 76.1 to 91.3 MW where the settled reactor sells
-104.9. The 126 000-tick run of the same state ended at 865.0 units and 6.98e8 °C and failed the
-equilibrium gate; the bench prints plasma held for the last window only, so what the box did
-between is not on record. **One candidate, not a demonstrated cause:** settled at 60 s the model's
+point at, and why is not established.** What the bench shows: a full box (999.8) at **5.349e8 °C, 17.5% colder than the model's
+6.483e8**, selling 76.1 to 91.3 MW where the settled reactor sells 104.9. The 126 000-tick run of
+the same state failed the equilibrium gate, its last report at 865.0 units and 6.98e8 °C.
+
+**The box filled once and never drained** (#496). The bench's window trace now prints plasma held
+at every window. Re-run on 2026-10-02 against Factorio 2.0.77, one heater, confinement rung 3 and
+every other ladder off, 360 000 ticks at 6 000 a window, it climbs every window from 108.8 units
+at the first report to 865.0 at 120 000 ticks — the reading the 126 000-tick run ended on, at the
+same 6.980e8 °C — and is full, at 999.8, from 168 000 ticks on. The temperature falls the whole
+way up, from 3.38e9 °C at the first report to 5.64e8 at 162 000 ticks, rises to 6.01e8 in the
+window after the box fills, and sinks to 5.348e8, moving 0.02% across the last two windows.
+Settled: 76.0 to 91.2 MW, the gate passed — a tenth under the table's 76.1 to 91.3, which is the
+earlier 360 000-tick run. "Drained and refilled" is ruled out.
+
+**A lead for [#497](https://github.com/trulsjo/realistic-fusion-refreshed/issues/497), not an
+answer.** The model column holds the box full and never pays to heat incoming fuel. Fed instead —
+one heater's 2.5 u/s arriving at 15 °C and mixed into the box by amount, the method
+`d-t-ignition.md` gives for #499 — the model at rung 3 settles full at 5.339e8 °C, 86.9 MW,
+burning 1.93 u/s, against this run's 5.348e8 and the bench's sustained plasma meter's 1.92. But
+the same fed model runs confinement rung 2 7.8% cold (4.257e8 against the
+game's 4.617e8 and the held model's 4.727e8), and the nothing-researched and heating rung 5 rows
+also sit between the two models; the other seven rows were not run fed. So the rung-3 match does
+not yet say the fuel sink is the cause, and nothing below is revised on it.
+
+**The earlier candidate:** settled at 60 s the model's
 reactor burns **2.509 units of plasma a second** and one heater makes **2.5** (`M.heater`, five
 units every two seconds) — the first single-ladder state whose settled demand exceeds a heater;
 heating rung 5 asks 1.574 and confinement rung 2 1.625. But a supply limit predicts a part-full box,
