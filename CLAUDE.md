@@ -337,7 +337,7 @@ vocabulary is `CONTEXT.md`'s Art section.
 
 ### Code review
 
-Two rules, both in `docs/agents/code-review.md`.
+Three rules, all in `docs/agents/code-review.md`.
 
 **The filter gates the comment, not the report.** `/code-review`'s 80-point threshold governs what
 gets posted to the PR. Its rubric only emits 0/25/50/75/100, so the filter admits 100 alone — a
@@ -351,6 +351,11 @@ instructions to enumerate; and when a change supersedes a number, grep the repos
 one and read every hit in a file that records a measurement, not only the file you edited. Three of
 the five defects found across two review rounds on #230 were claims rather than code,
 one of them contradicted by a table in the same commit.
+
+**A review that plants takes its own worktree** (#311). A pass that edits the tree to prove a gate
+fires does it in `git worktree add --detach`, never in a shared checkout, and keeps scratch files
+on a path no other agent will pick; `git checkout --` there reverts other agents' edits too. A gate
+that fails once and passes on every re-run is another agent's plant, not a flaky gate.
 
 ## graphify
 

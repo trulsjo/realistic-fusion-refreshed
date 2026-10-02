@@ -1,4 +1,4 @@
-# Code review — two rules this repository adds
+# Code review — three rules this repository adds
 
 Both are conventions layered on the `/code-review` plugin rather than changes to it; see *Why it is
 written here rather than fixed at source* at the foot.
@@ -8,6 +8,9 @@ written here rather than fixed at source* at the foot.
 2. **[Review the prose, not only the code](#review-the-prose-not-only-the-code)** — decided by Truls, 2026-09-03, after
    [#230](https://github.com/trulsjo/realistic-fusion-refreshed/pull/230); its third rule widened from
    the file to the repository on 2026-09-14, settling [#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331).
+3. **[A review that plants takes its own worktree](#a-review-that-plants-takes-its-own-worktree)** —
+   [#311](https://github.com/trulsjo/realistic-fusion-refreshed/issues/311), after the review of
+   [#309](https://github.com/trulsjo/realistic-fusion-refreshed/pull/309) on 2026-09-10.
 
 ## The threshold gates the comment, not the report
 
@@ -134,13 +137,56 @@ than code. This repository writes long prose deliberately — the reasoning is t
 unchecked prose the most likely place for a wrong thing to survive, because running the game cannot
 contradict it.
 
+## A review that plants takes its own worktree
+
+[#311](https://github.com/trulsjo/realistic-fusion-refreshed/issues/311), after five review agents
+ran in parallel over [#309](https://github.com/trulsjo/realistic-fusion-refreshed/pull/309) in one
+checkout on 2026-09-10.
+
+### The rule
+
+**Any review pass that modifies the working tree to test something does it in a worktree of its
+own**, made first with `git worktree add --detach <dir> <head>` and removed afterwards. Planting a
+violation to prove a gate fires is the usual case: the poison line goes into a tracked file, the
+gate runs, the line comes out. In a shared checkout every other agent's gate run sees that line too.
+
+**`git checkout -- <file>` on a shared checkout is unsafe while other agents are running.** It
+reverts the file to the index, which removes every agent's uncommitted edit to it, not only yours —
+a real fix in progress included. In your own worktree it is safe, which is the point of having one.
+
+**Scratch files get the same treatment.** A probe script or captured output goes in a directory that
+is yours alone — inside your worktree, or a temp directory with a unique name (`mktemp -d`, or the
+session's scratchpad) — never a fixed path such as `/tmp/probe.lua` that a parallel agent may pick
+too.
+
+### The symptom, so the next reviewer recognises it
+
+**A gate that fails once and then passes on every re-run, with nothing changed in between, is
+another agent's plant, not a flaky gate.** Check `git status` and `git worktree list` before
+investigating it. On #309 a third agent saw `1 of 178 checks failed` on its first run of
+`ship-check.ps1` and `178 checks, 0 failures` on the next three, and reported a transient,
+non-reproducible failure — it was a planted line-number citation of `ship-check.ps1` sitting
+uncommitted in an ADR for one run. Another agent found that same plant in the file it was editing and
+hand-reverted only its own two lines rather than `git checkout --` the file, so nothing was lost.
+Two agents also wrote probe scripts to the same `/tmp` path in that run. The one agent that had made
+its own worktree with `git worktree add --detach` saw none of it; that is the pattern.
+
+### Whether `/code-review` itself should carry it
+
+**No, and nothing there can.** The plugin's own instructions launch five reviewers that read the
+change, its blame, earlier pull requests and its comments; none of them is told to modify the tree,
+so the plugin never plants. The plugin is also not this repository's to edit, for the reason the
+next section gives. The rule binds whatever runs alongside it — a gate-poisoning pass, a review agent
+asked to prove a finding — and that is why it lives here.
+
 ## Why it is written here rather than fixed at source
 
 The workflow is a plugin, at `~/.claude/plugins/cache/claude-plugins-official/code-review/`. It is
 not this repository's to edit, and editing a cache would be undone by the next plugin update. So
 this is a convention, and `CLAUDE.md` points at it so a review session loads it before running.
 
-Nothing about the scoring, the rubric or the 80 is changed, and neither rule asks the workflow to
-do anything it does not already do. The first drops one assumption -- that a filtered finding is a
-discarded one. The second adds one obligation the rubric never mentions, because a plugin that
-reviews code cannot know that in this repository the prose is part of the deliverable.
+Nothing about the scoring, the rubric or the 80 is changed, and none of the three rules asks the
+workflow to do anything it does not already do. The first drops one assumption -- that a filtered
+finding is a discarded one. The second adds one obligation the rubric never mentions, because a
+plugin that reviews code cannot know that in this repository the prose is part of the deliverable.
+The third governs the passes that run beside the workflow rather than inside it.
