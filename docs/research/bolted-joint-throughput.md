@@ -34,7 +34,7 @@ megawatts without a conversion, and this note uses both.
 > |---|---|---|
 > | `drain`, 1 195.4 MW flowing / 996.0 sustained | supply-limited: the reactor | **1 318.5 / 1 098.5** |
 > | D-D control, 94.0 MW flowing / 78.3 sustained | supply-limited: the reactor | **103.7 / 86.4** |
-> | `chain`, 320.0 MW | **demand-limited**: eight 40 MW exchangers | **320.0, unchanged** |
+> | `chain`, 320.0 MW | **demand-limited**: eight 40 MW exchangers | **320.0, unchanged** by capture — 720 at 90 MW, see the next note |
 > | `rf-hc-exchanger`, 400.0 MW | a nameplate rating | **400.0, unchanged** |
 > | one bolted connection, 6 000 MW | the engine's ceiling | **6 000, unchanged** |
 >
@@ -62,6 +62,33 @@ megawatts without a conversion, and this note uses both.
 > [`fluid-link-throughput.md`](fluid-link-throughput.md) and
 > [#225](https://github.com/trulsjo/realistic-fusion-refreshed/issues/225).
 
+> **Every exchanger on this page is a 40 MW machine, and `rf-heat-exchanger` has been 90 MW since
+> 2026-09-10** ([#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227); noted
+> 2026-10-02 under [#321](https://github.com/trulsjo/realistic-fusion-refreshed/issues/321)). Nothing
+> here was re-run for it, so what follows is arithmetic on the recorded figures, not measurement.
+> **It moves only the DEMAND figures** — what a row of machines asks for — and the reactor rows,
+> the joint's ceiling and `rf-hc-exchanger`'s nameplate are untouched by it:
+>
+> | figure | at 40 MW, as measured | at 90 MW, today |
+> |---|---|---|
+> | four exchangers' demand, the D-D control | 160 MW | **360 MW** — still supply-limited against 94.0 |
+> | eight exchangers' demand, the `chain` row | 320.0 MW, 5.333 u/tick | **720 MW**, 12.0 u/tick |
+> | that row's share of the joint's ceiling | 5.3%, 18.8× headroom | **12.0%, 8.3× headroom** |
+> | that row's share of the four-heater D-T reactor | 26.8%, the reactor discarding 73.2% | **60% to 72%**, flowing to sustained bound |
+> | machines one four-heater D-T reactor needs | thirty, twenty-five on the lower bound | **11.1 to 13.3** machines' worth |
+>
+> The 60–72% is 720 against 1 195.4 and against 996.0 MW and is no longer the same on both bounds,
+> because the row is no longer measured on the same meter as the reactor. **No conclusion turns
+> over**: one connection still carries 8.3× what eight machines ask, and the four-heater D-T reactor
+> still outruns eight of them. The figures below are left as measured.
+
+> **The `chain` cell measured here is the one #86 rebuilt.** Before that, `bench-mod-links.ps1`'s
+> `chain` cell carried **no reactor energy at all** — its exchangers sat at `no_input_fluid` and it
+> reported zero — which [#215](https://github.com/trulsjo/realistic-fusion-refreshed/issues/215)
+> found and recorded. #86's `99733eb` (2026-09-07) replaced the pipe run with a bolt, and every run on
+> this page was taken on 2026-09-08 on that rebuilt rig. The date is "after the fix", not a
+> coincidence; #215 is the same instrument, before and after.
+
 ## The short answer
 
 **One bolted connection carries 6 000 MW, and the hardest-driven reactor measured here asks
@@ -79,7 +106,8 @@ gives; the figures below are the ones the rig measured, before that ladder exist
 **What the measurement did turn up is a balance finding rather than a plumbing one.** An ignited D-T
 reactor on this rig sells **996 to 1 195 MW** — the meter's two bounds, see below — not the "on the
 order of 320 MW" that `entities.lua`'s high-capacity steam pair block states, and that #89's own
-text and ADR 0018's eight-exchanger row both reason from. Eight ordinary 40 MW exchangers take
+text and ADR 0018's eight-exchanger row both reason from. Eight ordinary 40 MW exchangers — the
+rating before #227; eight 90 MW ones ask 60% to 72% of it, per the note at the top — took
 **26.8%** of it and the reactor **discards 73.2%**. Those two percentages are the same on either
 bound, which is why they are the form the finding is stated in. **On a researched force they are
 24.27% and 75.73%** — still the same on either bound, and the finding is larger rather than smaller;
@@ -175,15 +203,22 @@ case to the row above:
 |---|---:|---:|---:|---:|
 | `chain`, 4 exchangers on D-D | 1.567 | 94.0 | **0.3 to 0.4 — nearly EMPTY** | 1.6% |
 
-Its sustained figure is **78.3 MW**, which is the number ADR 0018's Consequences records from
+Its sustained figure is **78.3 MW** at **126 000 ticks**, which is the number ADR 0018's Consequences records from
 2026-09-07 — reproduced to the digit a day later, on a script this ticket edited. That is the
 regression check. It was reproduced a third time on 2026-09-11, deliberately, on a force held short
 of the plant-efficiency ladder: **78.3235 MW**, against **86.3862 MW** with the ladder. That pair is
 what pins the ×1.1029412 the note at the top applies to every figure here.
 
+**This D-D control is superseded by a longer run.** #215 re-ran the same `chain` cell at
+**360 000 ticks** on 2026-09-11 and got **83.8 MW sustained**, on a fully-researched force —
+[`fluid-link-throughput.md`](fluid-link-throughput.md) records it and says why every rate moved.
+Both are right for their run length; 78.3 MW is the 126 000-tick figure, and the 360 000-tick one is
+the one to quote.
+
 All four working, water full at 200, and **a shallow gradient the D-T row does not have**: 0.4 at the
 first machine down to 0.3 at the fourth. That is what supply-limited looks like — 94 MW of reactor
-against 160 MW of demand, so nothing accumulates anywhere and the boxes stay at a couple of tenths of
+against ~~160 MW~~ of demand (four 40 MW machines, before #227; **360 MW** of four 90 MW ones
+today, 2026-10-02), so nothing accumulates anywhere and the boxes stay at a couple of tenths of
 a unit. It is the same joint doing the same job at a sixty-fourth of its ceiling.
 
 **The gradient is worth naming because it is the shape a starved row would have, only much steeper.**
@@ -258,6 +293,8 @@ Two qualifications, both load-bearing:
   reactor's 3 000, fed by four `rf-heater`s at 2.5 units a second each. More heaters is more plasma
   is more power, and where that stops was not measured. The figure is what THIS build produces, and
   the 320 MW it contradicts is a design intent rather than a measurement of a different build.
+  (Since measured: one heater, nothing researched, 282.1 to 338.5 MW with radiation — #486,
+  2026-10-02, Factorio 2.0.77 — so 320 is the one-heater reactor, and four heaters is not it.)
 - **It belongs to [#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227)**, which is
   already open on how much one exchanger should drain, and it makes that ticket's arithmetic worse
   rather than better: #227 reasons from the same 320 MW to conclude one high-capacity exchanger is
