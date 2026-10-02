@@ -183,7 +183,8 @@ param(
     [ValidateRange(1, 20)]        [int] $Pipes      = 3,
     [ValidateRange(1, 8)]         [int] $Heaters    = 4,
     [switch] $Unresearched,
-    [ValidatePattern('^((confinement|heating|capture)_ladder=\d+)(,(confinement|heating|capture)_ladder=\d+)*$')]
+    # Case-sensitive: the names are Lua table keys, and Heating_Ladder would name no ladder at all.
+    [ValidatePattern('^((confinement|heating|capture)_ladder=\d+)(,(confinement|heating|capture)_ladder=\d+)*$', Options = 'None')]
     [string] $Rungs,
     [switch] $KeepTemp
 )
@@ -199,6 +200,8 @@ $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
 $bundled     = Get-BundledMods -FactorioExe $FactorioExe
 
 if ($Rungs -and $Unresearched) { throw '-Rungs already names the state; drop -Unresearched.' }
+$named = @($Rungs -split ',' | Where-Object { $_ } | ForEach-Object { ($_ -split '=')[0] })
+if ($named.Count -ne @($named | Sort-Object -Unique).Count) { throw "-Rungs names a ladder twice: $Rungs" }
 # The Lua table rf_unresearch and rf_assert_research take, or nil for the two corners.
 $rungsLua = if ($Rungs) { '{ ' + (($Rungs -split ',') -join ', ') + ' }' } else { 'nil' }
 

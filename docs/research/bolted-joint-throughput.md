@@ -86,8 +86,9 @@ megawatts without a conversion, and this note uses both.
 > `chain` cell carried **no reactor energy at all** — its exchangers sat at `no_input_fluid` and it
 > reported zero — which [#215](https://github.com/trulsjo/realistic-fusion-refreshed/issues/215)
 > found and recorded. #86's `99733eb` (2026-09-07) replaced the pipe run with a bolt, and every run on
-> this page was taken on 2026-09-08 on that rebuilt rig. The date is "after the fix", not a
-> coincidence; #215 is the same instrument, before and after.
+> this page — the 2026-09-08 ones and the 2026-09-11 reproductions alike — was taken on that rebuilt
+> rig. The 2026-09-08 date is "after the fix", not a coincidence; #215 is the same instrument, before
+> and after.
 
 ## The short answer
 
@@ -209,11 +210,13 @@ regression check. It was reproduced a third time on 2026-09-11, deliberately, on
 of the plant-efficiency ladder: **78.3235 MW**, against **86.3862 MW** with the ladder. That pair is
 what pins the ×1.1029412 the note at the top applies to every figure here.
 
-**This D-D control is superseded by a longer run.** #215 re-ran the same `chain` cell at
-**360 000 ticks** on 2026-09-11 and got **83.8 MW sustained**, on a fully-researched force —
-[`fluid-link-throughput.md`](fluid-link-throughput.md) records it and says why every rate moved.
-Both are right for their run length; 78.3 MW is the 126 000-tick figure, and the 360 000-tick one is
-the one to quote.
+**This D-D control is superseded by a longer run, and the two differ in research state as well as
+length.** #215 re-ran the same `chain` cell at **360 000 ticks** on 2026-09-11 and got **83.8 MW
+sustained** on a fully-researched force — [`fluid-link-throughput.md`](fluid-link-throughput.md)
+records it and says why every rate moved. 78.3 MW is base capture at 126 000 ticks; its
+like-for-like figures are **86.4 MW** researched at 126 000 ticks (this page) against 83.8 at
+360 000, and **about 76.0 MW** base capture at 360 000 — 83.8 ÷ 1.1029412, arithmetic, never run. So
+the longer run reads LOWER on equal research, and 83.8 is not a drop-in replacement for 78.3.
 
 All four working, water full at 200, and **a shallow gradient the D-T row does not have**: 0.4 at the
 first machine down to 0.3 at the fourth. That is what supply-limited looks like — 94 MW of reactor

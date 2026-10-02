@@ -834,7 +834,7 @@ exchanger.output_fluid_box.filter = "steam"
 -- The steam route's problem is arithmetic rather than design. One rf-heat-exchanger turns 90 MW of
 -- reactor energy into 500 C steam, and a vanilla steam turbine drinks one unit of that a tick --
 -- 5.82 MW -- so an exchanger feeds about fifteen turbines. An ignited D-T reactor on the shipped
--- one-heater feed sells on the order of 320 MW, which is four exchangers and fifty-five turbines
+-- one-heater feed sells on the order of 320 MW, which is four exchangers and 49 to 59 turbines
 -- PER REACTOR. That is not a difficulty curve, it is a blueprint chore, and it is what this pair
 -- exists to remove.
 --
@@ -856,7 +856,7 @@ exchanger.output_fluid_box.filter = "steam"
 -- AND IT IS NOW MEASURED WITH RADIATION (#486, 2026-10-02, Factorio 2.0.77): one heater, nothing
 -- researched, 282.1 to 338.5 MW across bench-mod-links.ps1's two bounds, heater-fed at 277.3 units.
 -- 320 is inside it, so "four exchangers" stands (3.1 to 3.8 machines' worth) and the turbines are
--- 49 to 59 rather than exactly fifty-five. Every ladder reaches this reactor; fully researched it
+-- 49 to 59 where 320 implied fifty-five. Every ladder reaches this reactor; fully researched it
 -- is 321.0 to 385.2 MW, four or five exchangers and 56 to 67 turbines.
 --
 -- The turbine is ten times its ordinary counterpart, which is the predecessor's factor and is kept

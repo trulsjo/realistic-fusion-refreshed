@@ -66,7 +66,7 @@ data:extend({
       -- a D-D reactor on one heater with nothing researched sells under 60 MW (#440, measured
       -- 2026-10-01 against Factorio 2.0.77), which one ordinary exchanger absorbs, while an
       -- ignited D-T reactor sells around 320 MW and would otherwise want four exchangers and
-      -- fifty-five turbines. Handing over the answer in the same technology as the problem is the
+      -- 49 to 59 turbines. Handing over the answer in the same technology as the problem is the
       -- shape a player can act on.
       --
       -- Both reactor figures are one-heater readings. #227 moved neither; #440 re-measured the D-D

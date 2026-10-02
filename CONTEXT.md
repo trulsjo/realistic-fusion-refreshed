@@ -235,10 +235,11 @@ each other (#109):
   `tests/test-reactor-logic.lua` pins it. **It is also where one heater holds that reactor**:
   #440 measured a D-D reactor fed by exactly one `rf-heater`, nothing researched, at 999.9 units and
   2.412×10⁸ °C, selling 48.9 to 58.6 MW across the bench's two bounds — 2026-10-01, Factorio
-  2.0.77 — so for the entry plant the settled and the fed reactor are the same one. #485 found the
-  same at every rung of the heating and plant-efficiency ladders and at confinement rungs 1 and 2,
-  and NOT at confinement rung 3, where the settled reactor wants more plasma than one heater makes
-  (2026-10-02; [`exchanger-coverage.md`](docs/research/exchanger-coverage.md)).
+  2.0.77 — so for the entry plant the settled and the fed reactor are the same one. #485 walked
+  each ladder ALONE from there and found the same at every rung of heating and of plant efficiency
+  and at confinement rungs 1 and 2, and NOT at confinement rung 3, for a reason not yet established
+  (2026-10-02; [`exchanger-coverage.md`](docs/research/exchanger-coverage.md)). Combinations of
+  rungs are unmeasured, and the model puts some of them past what one heater makes.
 - **Heater-fed** — a reactor its heater is still filling, held below full by the fuel line rather
   than by choice, and therefore **supply-limited**: the reactor and the heater both report
   `low_power`. A thinner plasma settles hotter (see **operating density** above), so a heater-fed
