@@ -676,6 +676,34 @@ falls below its 50 MW spend.
 served second, from what remains, and at half of the pair's spend and below it draws nothing. So the
 brownout fractions describe a reactor among `secondary-input` consumers and say nothing for one
 sharing a network with `primary-input` loads, which take their whole ask first.
+
+**Extended 2026-10-02 against Factorio 2.0.77 (#487)**, same rig, same ladder, nothing researched
+(asserted again), with two more cells and the prediction generalised. Within a class it is now a
+water-fill — share by ask, cap each at its spend, re-share the excess among the rest, repeat — and
+between classes it is the reading above, served in order: `primary-input`, `secondary-input`,
+`tertiary`. **All five cells match it to within 2e-6 MW on every one of the 21 rungs** (worst
+1.833e-6), the three #439 cells included, so the `primary` rows that deviated from a plain share
+are now predicted rather than read off.
+
+| cell | members | what the supply did below full |
+|---|---|---|
+| `four` | `rf-reactor` at normal, uncommon, rare and legendary — asks 90, 117, 144 and 225 MW, 50 MW spend each | the water-fill, **three caps deep** |
+| `tertiary` | `rf-reactor`, normal, against the load at **`tertiary`**; supply at `secondary-output` | **the reactor first, in full**; the load gets the surplus |
+
+In `four` the caps land where the arithmetic puts them: legendary is full above 128 MW of supply
+(f = 0.64), rare above 171.875 (0.859), uncommon above about 188.5 (0.942), and the measured rungs
+fall on the right side of each — uncommon is full at 0.95 and 45.22 MW at 0.90, rare full at 0.90 and
+49.23 at 0.85, legendary full at 0.65 and 46.88 at 0.60. Below 128 MW it is a plain 90 : 117 : 144 :
+225 share — at 100 MW, 15.63, 20.31, 25 and 39.06. The `pair` finding scales with it: at 95% of
+what the four spend, **the normal reactor gets 40 MW of its 50**: the three that ask more are
+all still held at their spend there, and it absorbs the whole 10 MW shortfall alone.
+
+The `tertiary` cell's supply is not the rig's usual one, and has to differ: vanilla's
+`electric-energy-interface` is itself `tertiary`, and tertiary does not feed tertiary, so against it
+the load would read zero for a reason that is the rig's. Against a `secondary-output` supply — what a
+turbine is — the reactor holds its 50 MW down to 50 MW of supply and the load gets exactly what is
+left over (45 MW at 95, 5 at 55, nothing from 50 down). The load gave nothing back on any rung, but
+it spends its own buffer every tick and so has nothing to give; that is not an accumulator's case.
 Whether the mod should guarantee any of this is the scope decision above and Truls's; the
 probe asserts nothing about the answer.
 
@@ -814,10 +842,12 @@ the D-T tier and the confinement ladder are each another lane and none of them i
 
 Stated plainly, because this repository treats an unverified claim as a defect.
 
-- **Contention is measured for two consumers, not for a factory.** #439 ran pairs: two reactors of
-  different quality, and a reactor against a `secondary-input` or a `primary-input` load. Three or
-  more, and a `tertiary` load, have not been run; the rule the pairs follow predicts them, and a
-  prediction is all it is.
+- **Contention is measured for small cells, not for a factory.** #439 ran pairs and #487 added four
+  reactors on one network and a reactor against a `tertiary` load; each cell holds at most two
+  priority classes and one reactor type. A network mixing all three input classes at once, an
+  accumulator that discharges into a short network, and the aneutronic reactor or researched rungs
+  as members have not been run. The class-ordered water-fill predicts them, and a prediction is all
+  it is.
 - **Why the engine floors a fluid transfer to whole float32 ULPs per tick is inferred, not
   documented.** #147 measured the flooring — five levels, two run lengths, the legendary rate landing
   on 2⁻²⁴ units a tick to ten digits — and no 2.0.77 doc page found in this pass says the engine does
