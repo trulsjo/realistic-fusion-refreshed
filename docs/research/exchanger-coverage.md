@@ -197,8 +197,8 @@ model's full-supply figure (the grid above) inside the bracket.
 Every row taken on 2026-10-02 passed the bench's equilibrium gate at 126 000 ticks except
 confinement rung 3, which had not settled there and is quoted from a 360 000-tick run that did. Of
 #440's two rows, nothing researched was read after 126 000 ticks —
-`realistic-fusion-refreshed/prototypes/entities.lua`'s exchanger block
-records the run — and the tick count of the every-ladder-at-its-top row is not on record.
+`realistic-fusion-refreshed/prototypes/entities.lua` records the run in its comment headed
+"MEASURED, AND IT IS NOT 86" — and the tick count of the every-ladder-at-its-top row is not on record.
 The model column is `M.settle` at the same state, 1200 s at one tick.
 
 **What each ladder does, walked alone:**
@@ -237,7 +237,7 @@ one heater's 2.5 u/s arriving at 15 °C and mixed into the box by amount, the me
 burning 1.93 u/s, against this run's 5.348e8 and the bench's sustained plasma meter's 1.92. But
 the same fed model runs confinement rung 2 7.8% cold (4.257e8 against the
 game's 4.617e8 and the held model's 4.727e8), and the nothing-researched and heating rung 5 rows
-also sit between the two models; the other seven rows were not run fed. So the rung-3 match does
+also sit between the two models; the other nine rows were not run fed. So the rung-3 match does
 not yet say the fuel sink is the cause, and nothing below is revised on it.
 
 **The earlier candidate:** settled at 60 s the model's
@@ -245,8 +245,10 @@ reactor burns **2.509 units of plasma a second** and one heater makes **2.5** (`
 units every two seconds) — the first single-ladder state whose settled demand exceeds a heater;
 heating rung 5 asks 1.574 and confinement rung 2 1.625. But a supply limit predicts a part-full box,
 the top corner's shape, and this box is full; the bench's sustained plasma meter reads 1.92 u/s,
-under the heater's 2.5, though that meter excludes the ticks a craft lands on and undercounts. So
-the measurement and the demand figure agree only on WHERE the settled point is lost, not on how.
+under the heater's 2.5. ~~though that meter excludes the ticks a craft lands on and undercounts~~
+— the fed model's 1.93 u/s above reads the 1.92 as what the reactor burns rather than as an
+undercount, though that rests on the same unvalidated lead. So the measurement and the demand
+figure agree only on WHERE the settled point is lost, not on how.
 
 **So whether one exchanger covers confinement rung 3 on one heater is not decided by this
 measurement.** Its sustained bound is 13.9 MW under 90 and its flowing bound 1.3 MW over. The

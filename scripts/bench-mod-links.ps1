@@ -39,12 +39,12 @@
     there understates by 40%.
 
     So the run is long and reports in windows, and the script refuses to quote a number unless the
-    last two windows agree on both the rate and the plasma temperature. That is the demonstration:
-    a reactor still climbing does not produce two consecutive windows that agree.
+    last two windows agree on the rate, the plasma temperature and the plasma held. That is the
+    demonstration: a reactor still climbing does not produce two consecutive windows that agree.
 
     THE WINDOW TRACE prints every window in three rows per cell: the energy rate, the plasma
-    temperature, and -- since #496 -- how much plasma the reactor holds. That third row gates
-    nothing -- the plasma check in the gate reads the last two windows like the others -- and is
+    temperature, and -- since #496 -- how much plasma the reactor holds. The gate reads only the
+    last two windows of each; the windows before them gate nothing, and the third row is
     there because a run that ends full says nothing about whether the box drained and refilled on
     the way. #485 needed that trajectory and could not have it; this row makes it a reading.
 

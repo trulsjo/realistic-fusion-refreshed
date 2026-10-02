@@ -633,7 +633,9 @@ script.on_nth_tick(CHECK_AT, function()
   --
   -- ONE HEATER'S WORTH, WHICH IS WHAT A PLAYER HAS. docs/research/d-t-ignition.md's feed table puts
   -- a lit D-T reactor at 324 MW on the shipped 2.5 units/s, and check-brownout.ps1 measured its
-  -- trailing-minute output reaching 322 MW at 1800 s and 324 at 2100. Four heaters would read 996
+  -- trailing-minute output reaching 322 MW at 1800 s and 324 at 2100 -- both before radiation
+  -- (#52). With it, one heater and nothing researched, the game measured 282.1 to 338.5 MW (#486,
+  -- 2026-10-02, Factorio 2.0.77) and the fed model gives 322.7 (#499). Four heaters would read 996
   -- to 1 195 MW instead (#89) and the counts below would quadruple; the switch is the feed, not the
   -- arithmetic.
   --
