@@ -6,9 +6,9 @@
 -- which is a decision about the shape of the tree rather than a consequence of building this, and
 -- belongs to Truls. They are unlocked by rf-d-t-fusion instead, which is not a fallback but the
 -- moment the need appears: a D-D reactor on one heater with nothing researched sells under 60 MW
--- and one exchanger absorbs it, while an ignited D-T reactor sells on the order of 320 MW and needs
--- four exchangers and 49 to 59 turbines. The tier that creates the problem is the tier that hands
--- over the answer.
+-- and one exchanger absorbs it, while an ignited D-T reactor on one heater, nothing researched,
+-- sells on the order of 320 MW and needs four exchangers and 49 to 59 turbines. The tier that
+-- creates the problem is the tier that hands over the answer.
 --
 -- BOTH REACTOR FIGURES ARE ONE-HEATER READINGS. #227 moved neither of them -- #440 has since
 -- re-measured the D-D one, below -- and what #227 moved was the exchanger, 40 MW to 90, so this

@@ -238,8 +238,9 @@ each other (#109):
   2.0.77 — so for the entry plant the settled and the fed reactor are the same one. #485 walked
   each ladder ALONE from there and found the same at every rung of heating and of plant efficiency
   and at confinement rungs 1 and 2, and NOT at confinement rung 3, for a reason not yet established
-  (2026-10-02; [`exchanger-coverage.md`](docs/research/exchanger-coverage.md)). Combinations of
-  rungs are unmeasured, and the model puts some of them past what one heater makes.
+  (2026-10-02; [`exchanger-coverage.md`](docs/research/exchanger-coverage.md)). Of the states
+  combining rungs, only the top corner is measured (#440, off the settled point at 611.6 units);
+  the model puts some of the rest past what one heater makes.
 - **Heater-fed** — a reactor its heater is still filling, held below full by the fuel line rather
   than by choice, and therefore **supply-limited**: the reactor and the heater both report
   `low_power`. A thinner plasma settles hotter (see **operating density** above), so a heater-fed
