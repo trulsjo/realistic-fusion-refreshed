@@ -33,11 +33,9 @@
     gap `probe-connection-categories.ps1` was written to fill for categories.
 
     WHICH MOD DOES IT IS NOT ANSWERED HERE, and cannot be. A dump records what a prototype ENDED UP
-    as, never who wrote it. Two leads, from reading the cached set by hand rather than from any run:
-    `angelsmods.functions.modify_barreling_recipes()` in angelsrefining loops over every fluid in
-    data.raw and hides both barrel recipes, which explains the hidden BARREL RECIPES and not the
-    hidden fluids; and no `hidden = true` assignment onto a fluid appears anywhere in the set's Lua
-    on a plain grep, so whatever sets it is indirect.
+    as, never who wrote it. It was answered by reading instead (#320): on `seablock` it is
+    SeaBlockWanne's data-final-fixes reachability walk, which hides every item, fluid and recipe no
+    recipe chain from water, fish or trees reaches. See docs/research/hidden-prototypes-by-lane.md.
 
     HOW IT MEASURES
 
