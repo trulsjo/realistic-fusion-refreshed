@@ -78,20 +78,78 @@ are all `rf-*-recycling` recipes that the **quality** mod generates from our mac
 itself; they appear only because this measurement passes `-With quality`. The probe subtracts them,
 so a prototype hidden on both sides is never reported as a set's doing.
 
-## Which mod does it is still unknown
+## Which mod does it: SeaBlockWanne's reachability walk
 
-**The dump cannot answer it.** It records what a prototype ended up as, never who wrote it. Two leads
-from reading the cached set by hand, neither of which closes the question:
+**Answered by reading on 2026-10-02**, against the `seablock` set at its pins — `SeaBlockWanne`
+**1.0.5** ("SeaBlock 2", by wanne and Yess, AGPLv3) and `angelsrefining` **2.0.4** — and checked
+against the 2026-09-12 measurement above rather than by a new run. No probe was re-run.
 
-- **The barrel recipes have a named mechanism.** `angelsmods.functions.modify_barreling_recipes()` in
-  `angelsrefining`, called from that mod's `data-final-fixes.lua`, loops over **every** fluid in
-  `data.raw.fluid` and, when `angelsmods.trigger.enable_auto_barreling` is set, hides both barrel
-  recipes and re-categorises them to `angels-barreling-pump`. That is a blanket pass over the whole
-  game rather than anything aimed at us. It explains the hidden **barrel recipes**. It does not
-  explain the hidden **fluids**.
-- **No `hidden = true` assignment onto a fluid appears anywhere in the set's Lua** on a plain grep,
-  so whatever sets it is indirect — a helper, a table-driven override, or a loop whose target is not
-  written literally. `angelsmods.functions.hide(...)` is the obvious thing to chase next.
+**All twenty-six come from one pass**: `SeaBlockWanne/data-final-fixes.lua`, under its `--Gui cleanup`
+comment. It is a reachability walk over the **recipe graph**, and it is written for SeaBlock's own
+premise — a map with no ores — rather than for any other mod:
+
+1. **Seeds** (lines 30-43): `steam`, `angels-water-viscous-mud`, every fluid a tile offers (`water`
+   and friends), and whatever fish and trees mine to.
+2. **`check_recipes()`** (lines 48-71), looped until nothing changes (lines 96-99): any recipe whose
+   ingredients are **all** already reached adds its results to the reached set. It looks at
+   ingredients and results only — never at `enabled`, a technology, a category or an entity.
+3. **`hide_items("item", …)` and `hide_items("fluid", …)`** (lines 86-94, called at 100-101) set
+   `hidden = true` on every item and every fluid not reached — `itm.hidden=true` at line 91, which is
+   why a grep for a literal assignment *onto a fluid* found nothing: the fluid is a loop variable.
+4. **`hide_recipes()`** (lines 73-84, called at 102) hides every recipe with any unreached ingredient
+   — `rec.hidden = true` at line 81.
+
+**It is general, not aimed at us.** The file names no prototype of ours — no `rf-`, no "fusion" —
+and iterates the whole of `data.raw.item`, `data.raw.fluid` and `data.raw.recipe`. The rule it
+applies is "no recipe chain from water, fish or trees makes this", and that hides any mod's fluid made
+by an entity or a script rather than by a recipe. The `steam` seed is the tell: steam is made by a
+boiler, not a recipe, so the walk would hide it too, and the author special-cased the one vanilla
+fluid that needed it. Nothing in the file special-cases anything else's.
+
+**Why exactly our nine.** Four of our fluids are never the result of any recipe: `rf-tritium` and
+`rf-helium-3` are bred by script (`realistic-fusion-refreshed/control.lua`, into the isotope
+collector's fluid boxes), and `rf-reactor-energy` and `rf-aneutronic-reactor-energy` are written by
+the reactor logic (`energy_fluid` in `realistic-fusion-refreshed/scripts/reactor-logic.lua`). The
+walk cannot reach any of them, so it cannot reach anything made from them either:
+
+| hidden | why the walk never reaches it |
+|---|---|
+| `rf-tritium`, `rf-helium-3` | no recipe makes them — bred by script |
+| `rf-reactor-energy`, `rf-aneutronic-reactor-energy` | no recipe makes them — written by the reactor |
+| `rf-d-t-mix` | its only recipe, `rf-d-t-mixing`, needs `rf-tritium` |
+| `rf-d-he3-mix` | its only recipe, `rf-d-he3-mixing`, needs `rf-helium-3` |
+| `rf-d-t-plasma` | its only recipe needs `rf-d-t-mix` |
+| `rf-d-he3-plasma` | its only recipe needs `rf-d-he3-mix` |
+| `rf-he3-he3-plasma` | its only recipe needs `rf-helium-3` |
+
+The four barrel items fall to the same `hide_items` call — a barrel's only maker is its fill recipe,
+which needs the unreached fluid. The thirteen recipes fall to `hide_recipes()`: the five above each
+take an unreached fluid, the four fills take an unreached fluid and the four empties take an
+unreached barrel. That is twenty-six, the measured figure, with nothing left over in either
+direction.
+
+**`rf-d-d-plasma` is explained.** Its one recipe, `rf-d-d-plasma`, takes only `rf-deuterium`, which
+the walk reaches from `water` through `rf-heavy-water`. So the walk reaches it, and the Core chain,
+the same way. The "at most one producer" correlation below was a coincidence of our chain's shape:
+the count of producers is not what the walk reads — whether any one of them has every ingredient
+reached is.
+
+### The barrel lead was wrong at the measured settings
+
+**The note used to say Angel's barrelling sweep explains the hidden barrel recipes.** It does not
+on the lane as measured. `angelsmods.functions.modify_barreling_recipes()` hides barrel recipes only
+inside `if angelsmods.trigger.enable_auto_barreling` (`angelsrefining/prototypes/angels-functions.lua`
+lines 1603-1611), and `angelsrefining/data.lua` line 39 sets that trigger only when the startup
+setting `angels-enable-auto-barreling` is `Enabled+Hidden` or `Enabled+Shown`. Its default is
+`Disabled` (`angelsrefining/settings.lua` line 14), no other mod in the set names the setting, and
+the probe sets no mod settings. The giveaway was there to read: had the sweep fired, it would hide
+the barrel recipes of **every** barrelled fluid, the seven visible Core fluids' included, and the measurement
+hides only four pairs.
+
+The other passes in the set that loop over `data.raw.fluid` were read for the same reason and set no
+`hidden` on a fluid: `angelsrefining/data-final-fixes.lua` (barrel recipes of `auto_barrel = false`
+fluids), `angelsrefining/prototypes/refining-override.lua` (barrel recipe categories) and
+`bobplates/data-final-fixes.lua` (barrel recipe colours).
 
 ### Two mechanisms ruled out by measurement
 
@@ -100,11 +158,12 @@ Recorded so nobody re-tests them.
 - **Not `auto_barrel`.** `rf-d-d-plasma` declares `auto_barrel = false` and stays **visible**;
   `rf-tritium` declares none and is **hidden**.
 - **Not "has no enabled producer".** **Every one of our seventeen fluids has zero enabled producing
-  recipes on that lane**, and only nine are hidden. Reachability alone cannot be the rule.
+  recipes on that lane**, and only nine are hidden. Reachability over *enabled* recipes cannot be the
+  rule — and it is not: the walk above ignores `enabled` entirely.
 
-One correlation survives and nothing has broken it: every hidden fluid has **at most one** recipe
-producing it and every visible one has **at least two**, with `rf-d-d-plasma` the single exception at
-one producer and visible. A lead, not a mechanism.
+The correlation this section used to carry — every hidden fluid has **at most one** producing recipe
+and every visible one **at least two**, with `rf-d-d-plasma` the exception — is superseded by the
+walk, which explains the exception.
 
 ## Why neither gate sees it
 
@@ -132,11 +191,13 @@ Both readings have something to stand on, and this note takes neither.
 
 - **For treating it as a defect:** #153's cases were *inherited* stats on prototypes cloned from
   vanilla, where `hidden` here is a set editing a prototype that is wholly ours; and the effect is
-  player-visible rather than a cost number.
+  player-visible rather than a cost number. And the walk's premise is false for these nine: they
+  are made in play, by an entity or a script rather than a recipe, so what it hides is a chain a
+  player can build.
 - **For letting it go:** whatever sets the field is a blanket pass over `data.raw` rather than
-  anything aimed at us — the one mechanism that *has* been identified, Angel's barrelling sweep,
-  touches every fluid in the game — which is the same shape ADR 0007 already accepts, and it is one
-  lane of eleven. A player who installs a 46-mod overhaul has accepted that it rearranges what the
+  anything aimed at us — SeaBlockWanne's reachability walk, identified above, iterates every
+  item, fluid and recipe in the game and names none of ours — which is the same shape ADR 0007
+  already accepts, and it is one lane of eleven. A player who installs a 46-mod overhaul has accepted that it rearranges what the
   crafting UI shows.
 
 **Nothing in this note is a recommendation.** It says what eleven lanes do.
@@ -151,6 +212,6 @@ above was fixed; the first run's 22 is superseded and no number from it survives
 `name-check.ps1 -AlsoModDirectory .mod-cache/seablock -With quality -KeepTemp` dump, fluid for fluid —
 that hand reading looked at fluids only, so it could not have caught the missing recipes either.
 
-The Angel's barrelling mechanism is read from `angelsrefining`'s own Lua in `.mod-cache/seablock`,
-which is that mod's source at its pinned version and is not this repository's to ship — see
-[ADR 0001](../adr/0001-liftable-predecessor-material.md).
+The mechanism is read, on 2026-10-02, from `SeaBlockWanne`'s and `angelsrefining`'s own Lua in
+`.mod-cache/seablock`, which is those mods' source at their pinned versions and is not this
+repository's to ship — see [ADR 0001](../adr/0001-liftable-predecessor-material.md).
