@@ -160,23 +160,96 @@ all three ladders at their tops   ##############################################
 The three ladders are drawn against the same line and not against each other: they multiply, they do
 not add, and the grid above is where a combination is read rather than guessed at from this picture.
 
+## The fed reactor, one heater
+
+Every figure above is a settled reactor on the pure model: box full, never starved. A player's
+reactor is fed by an `rf-heater`, and **one heater is the plant this note's 90 MW is sized on.**
+#440 measured that plant at two states and
+[#485](https://github.com/trulsjo/realistic-fusion-refreshed/issues/485) at eleven more — each
+ladder walked alone from the unresearched state — so thirteen of the ninety-six are now read off a
+fuel line. All thirteen: `bench-mod-links.ps1 -Heaters 1`, a D-D reactor, four exchangers so the
+reactor and not the row is what limits, Factorio 2.0.77 (build 84539). #440's two on 2026-10-01,
+the rest on 2026-10-02 with `-Rungs <ladder>=<n>`, which asserts every rung of all three ladders and
+prints them with the result.
+
+**Each figure is a bracket, not a number.** The bench's *sustained* column divides by every tick and
+so undercounts the tick the reactor writes energy on; its *while flowing* column assumes that tick
+carried the mean. The truth is between them. **Settled** in the last column means the fed reactor
+is at the settled point — box full, plasma within 2.5% of the model's settled temperature, and the
+model's full-supply figure (the grid above) inside the bracket.
+
+| research state | sustained – while flowing | plasma held | plasma °C | model, full supply | settled? |
+|---|---|---|---|---|---|
+| **nothing researched** (#440) | 48.9 – 58.6 MW | 999.9 / 1000 | 2.412e8 | 56.1 MW at 2.422e8 | **yes** |
+| heating rung 1, 55 MW | 56.2 – 67.4 MW | 999.9 | 2.808e8 | 64.7 at 2.829e8 | yes |
+| heating rung 2, 60 MW | 63.8 – 76.6 MW | 999.9 | 3.220e8 | 73.7 at 3.257e8 | yes |
+| heating rung 3, 65 MW | 71.7 – 86.1 MW | 999.9 | 3.647e8 | 83.2 at 3.701e8 | yes |
+| heating rung 4, 70 MW | 80.0 – **95.9** MW | 999.9 | 4.085e8 | **92.9** at 4.158e8 | yes |
+| heating rung 5, 75 MW | 88.5 – **106.3** MW | 999.8 | 4.541e8 | **102.9** at 4.623e8 | yes |
+| confinement rung 1, 40 s | 57.8 – 69.4 MW | 999.9 | 3.361e8 | 67.1 at 3.413e8 | yes |
+| confinement rung 2, 50 s | 71.0 – 85.2 MW | 999.8 | 4.617e8 | 82.9 at 4.727e8 | yes |
+| confinement rung 3, 60 s | 76.1 – **91.3** MW | 999.8 | 5.349e8 | **104.9** at 6.483e8 | **no** |
+| plant efficiency rung 1, 0.9 | 51.7 – 62.1 MW | 999.9 | 2.412e8 | 59.4 at 2.422e8 | yes |
+| plant efficiency rung 2, 0.925 | 53.2 – 63.8 MW | 999.9 | 2.412e8 | 61.1 at 2.422e8 | yes |
+| plant efficiency rung 3, 0.9375 | 53.9 – 64.7 MW | 999.9 | 2.412e8 | 61.9 at 2.422e8 | yes |
+| **every ladder at its top** (#440) | 107.5 – 129.0 MW | 611.6 / 1000 | 1.488e9 | 211.2 at 1.183e9 | **no** |
+
+Every row passed the bench's equilibrium gate at 126 000 ticks except confinement rung 3, which was
+still descending at 865.0 units and 6.98e8 °C there and is quoted from a 360 000-tick run, settled.
+The model column is `M.settle` at the same state, 1200 s at one tick.
+
+**What each ladder does, walked alone:**
+
+| ladder | first rung NOT at the settled point | first rung one 90 MW exchanger does not cover |
+|---|---|---|
+| **heating** | *none* — all five rungs hold it | **rung 4** on the model's reading; the bracket alone straddles 90 at rungs 4 and 5 |
+| **confinement** | **rung 3** | *none measured* — rung 3's bracket straddles 90, 76.1 to 91.3 |
+| **plant efficiency** | *none* | *none* — 64.7 MW at most |
+
+**Heating never moves the fed reactor off the settled point**, so for that ladder the model's grid
+IS the one-heater plant, and the bracket agrees with it at every rung. That is what makes rung 4 the
+answer on coverage: the bracket by itself cannot decide — 80.0 to 95.9 straddles 90, and so does
+rung 5's 88.5 to 106.3 — but the model's 92.9 sits inside it at a temperature the fed reactor
+matches to 1.8%, so 92.9 is the reading.
+
+**Confinement rung 3 is where one heater stops being enough, and the arithmetic says so before the
+bench does.** Settled at 60 s, the model's reactor burns **2.509 units of plasma a second**; one
+heater makes **2.5** (`M.heater`, five units every two seconds). It is the first single-ladder
+state whose settled point asks more than a heater makes — heating rung 5 asks 1.574 and rung 2 of
+confinement 1.625. What the fed reactor does about it is not the settled point: it holds a full box
+but settles at **5.349e8 °C, 17.5% colder than the model's 6.483e8**, and sells 76.1 to 91.3 MW where
+the settled reactor sells 104.9. **Why it lands there rather than at a part-full, hotter heater-fed
+point** — the shape the top corner takes — is recorded and not explained. Its run got there by
+draining to 865 units and refilling, which the window trace shows, and the 126 000-tick run that
+stopped at 865 was on its way down, not up.
+
+**So whether one exchanger covers confinement rung 3 on one heater is not decided by this
+measurement.** Its sustained bound is 13.9 MW under 90 and its flowing bound 1.3 MW over. The
+settled reactor's 104.9 does not apply to a plant one heater feeds, and a second heater would put the
+reactor back at it, which is the question #315 inherits.
+
+**Plant efficiency changes nothing about the operating point**, as it should: it scales what is sold
+and leaves the plasma alone, so all three rungs hold the unresearched 2.412e8 °C to four figures.
+
+**The eighty-three states still unmeasured on a fuel line** are every state with two or more ladders
+researched, less the top corner: ninety-six, less the unresearched corner, the eleven single-ladder
+states and the far corner.
+
+**The model predicts which of them one heater can hold, and confinement rung 3 is the test it passed.**
+Settled plasma demand depends on heating and confinement only — plant efficiency never touches the
+plasma — so it is a 6 × 4 table, and **eleven of its twenty-four cells ask more than 2.5 u/s**:
+confinement rung 3 at every heating rung, rung 2 from heating rung 2 up, and rung 1 at heating rung
+5 (2.692). Times four capture rungs, that is **forty-four of the ninety-six states predicted off the
+settled point on one heater**, two of them measured (confinement rung 3 alone, and the top corner)
+and forty-two not. The other forty-one unmeasured states ask 2.343 u/s or less and are predicted
+settled. A prediction from `M.settle`'s plasma demand, not a reading; the cases nearest the line —
+2.509 here, 2.612 at heating 2 with confinement 2 — are where it would be wrong first.
+
 ## What this does not cover
 
-- **THE FED REACTOR, at two of ninety-six states.** Every figure here is a settled reactor on the
-  pure model. On a fuel line, #440 measured a D-D reactor fed by exactly one `rf-heater` on
-  2026-10-01 against Factorio 2.0.77, with `bench-mod-links.ps1 -Heaters 1`:
-
-  | state | sustained – while flowing | plasma held | plasma °C |
-  |---|---|---|---|
-  | **nothing researched** (`-Unresearched`) | **48.9 – 58.6 MW** | 999.9 / 1000 | 2.412e8 |
-  | **every ladder at its top** | 107.5 – 129.0 MW | 611.6 / 1000 | 1.488e9 |
-
-  **At the unresearched state the fed reactor IS the settled one**: one heater keeps the box full,
-  and the pure model's 56.1 MW at 2.422e8 °C sits inside the bracket. So the shipped cell of the
-  tables above is also the one-heater plant. At the top corner it is not — the box runs at 61% and
-  the plasma far hotter — so a fed reading there is not this note's settled one. The other
-  ninety-four states are not measured on a fuel line, and nothing above is derived from these two.
-  The `entities.lua` comment keeps the full reading, and what it means for the old 86 MW figure.
+- **THE FED REACTOR, at thirteen of ninety-six states** — see
+  [The fed reactor, one heater](#the-fed-reactor-one-heater) above. Every other figure in this note is
+  the settled reactor on the pure model.
 - **THE D-T TIER.** Only `rf-d-d-plasma`. A D-T reactor is a different sizing question and
   `rf-hc-exchanger` is the machine on the other end of it.
 - **THE ANEUTRONIC TIER**, which needs nothing measured: no research ladder reaches it at all —

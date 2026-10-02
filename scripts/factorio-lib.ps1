@@ -746,11 +746,14 @@ end
 ---
 --- The arranging half of the "none held" shape; ${assertResearch} below is the asserting half, and a
 --- rig calls both. A rung naming no technology is skipped here and refused there.
-local function $unresearch(force, logic, spec)
+---
+--- KEEP, when given, is the same per-ladder table ${assertResearch} takes: the first KEEP[rungs]
+--- rungs of each ladder are put ON rather than off, so one call arranges a chosen state (#485).
+local function $unresearch(force, logic, spec, keep)
   for _, row in ipairs($ladders(logic)) do
-    for _, rung in ipairs(spec[row.rungs] or {}) do
+    for level, rung in ipairs(spec[row.rungs] or {}) do
       local technology = force.technologies[rung.technology]
-      if technology then technology.researched = false end
+      if technology then technology.researched = keep ~= nil and level <= (keep[row.rungs] or 0) end
     end
   end
 end
@@ -770,17 +773,28 @@ end
 --- A RUNG NAMING A TECHNOLOGY NO LOADED MOD DEFINES IS AN error(), NOT A FAILED record. In the
 --- "none held" direction a missing technology would otherwise read exactly like an unresearched one.
 ---
+--- HELD MAY ALSO BE A TABLE of rungs held per ladder, keyed by the ladder's rungs name -- e.g.
+--- { heating_ladder = 3 } -- for a state between the two corners (#485). A ladder it does not name
+--- holds none, and a count above the ladder's length is an error() rather than a quiet top rung.
+---
 --- RECORD is the rig's own function(ok, name, detail); this one has no store of its own.
 local function $assertResearch(record, force, logic, spec, held)
   for _, row in ipairs($ladders(logic)) do
-    for level, rung in ipairs(spec[row.rungs] or {}) do
+    local rungs = spec[row.rungs] or {}
+    local count = type(held) == "table" and (held[row.rungs] or 0) or nil
+    if count and count > #rungs then
+      error(string.format("%d rungs of %s asked for, and it has %d", count, row.rungs, #rungs))
+    end
+    for level, rung in ipairs(rungs) do
       local tech = force.technologies[rung.technology]
       if not tech then
         error(string.format("rung %d of %s names %s, which no loaded mod defines", level,
           row.field, rung.technology))
       end
-      record(tech.researched == held,
-        string.format("this rig's force %s %s, rung %d of %s", held and "holds" or "does not hold",
+      local want = held
+      if count then want = level <= count end
+      record(tech.researched == want,
+        string.format("this rig's force %s %s, rung %d of %s", want and "holds" or "does not hold",
           rung.technology, level, row.field),
         "researched = " .. tostring(tech.researched))
     end

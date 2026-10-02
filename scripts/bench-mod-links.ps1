@@ -111,7 +111,8 @@
     EIGHT IS WHAT #89 ASKS FOR, and only on -Plasma rf-d-t-plasma. Eight is the number that ticket
     reasons to from the "on the order of 320 MW" that entities.lua's high-capacity steam pair block
     states for an ignited D-T reactor, and THAT FIGURE IS FOR ONE HEATER where this rig runs four:
-    on four it measured 996 to 1 195 MW. So eight 90 MW exchangers take 60% (on the flowing bound)
+    on four it measured 996 to 1 195 MW. (On one, nothing researched, it is 282.1 to 338.5 MW with
+    radiation, which 320 sits inside -- #486, 2026-10-02.) So eight 90 MW exchangers take 60% (on the flowing bound)
     to 72% (on the sustained one) of what this rig's reactor makes, rather than matching it. Eight is
     kept as the number #89 asked about rather than raised to the eleven-to-thirteen those bounds
     imply, because the question is whether the eighth machine down a chain off ONE bolted connection
@@ -153,6 +154,16 @@
     -Heaters 1 -Unresearched is the reactor a player first builds: the one rf-heat-exchanger's 90 MW
     is sized on in realistic-fusion-refreshed/prototypes/entities.lua.
 
+.PARAMETER Rungs
+    Hold a chosen number of rungs per ladder instead of all or none (#485), as comma-separated
+    <ladder>=<rungs> pairs named by the ladder's rungs table on the spec: confinement_ladder,
+    heating_ladder, capture_ladder. A ladder not named holds NONE, so -Rungs heating_ladder=3 is the
+    unresearched reactor with the first three heating rungs and nothing else. Asserted rung by rung
+    and printed with the result, the same way the two corners are; a count past a ladder's top is an
+    error, not its top rung. Cannot be combined with -Unresearched.
+
+    pwsh -File scripts/bench-mod-links.ps1 -Heaters 1 -Rungs heating_ladder=3
+
 .PARAMETER KeepTemp
     Keep the save, the rig mod and the captured output.
 
@@ -172,6 +183,8 @@ param(
     [ValidateRange(1, 20)]        [int] $Pipes      = 3,
     [ValidateRange(1, 8)]         [int] $Heaters    = 4,
     [switch] $Unresearched,
+    [ValidatePattern('^((confinement|heating|capture)_ladder=\d+)(,(confinement|heating|capture)_ladder=\d+)*$')]
+    [string] $Rungs,
     [switch] $KeepTemp
 )
 
@@ -184,6 +197,10 @@ $rigName  = 'rf-links-rig'
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
 $bundled     = Get-BundledMods -FactorioExe $FactorioExe
+
+if ($Rungs -and $Unresearched) { throw '-Rungs already names the state; drop -Unresearched.' }
+# The Lua table rf_unresearch and rf_assert_research take, or nil for the two corners.
+$rungsLua = if ($Rungs) { '{ ' + (($Rungs -split ',') -join ', ') + ' }' } else { 'nil' }
 
 if ($Window -ge $Ticks) { throw "-Window ($Window) must be shorter than -Ticks ($Ticks)." }
 if ([int]($Ticks / $Window) -lt 3) {
@@ -210,6 +227,7 @@ local EXCHANGERS = __EXCHANGERS__
 local PIPES      = __PIPES__
 local HEATERS    = __HEATERS__
 local UNRESEARCHED = __UNRESEARCHED__
+local RUNGS      = __RUNGS__
 -- For its ladders only, which -Unresearched turns off and every run asserts (#440).
 local logic = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
 
@@ -576,11 +594,12 @@ script.on_init(function()
   -- builds. The ladders unlock nothing, so the recipes above stay enabled. Asserted in BOTH
   -- directions, because until #440 this bench ran at the top of every ladder and said so nowhere
   -- (#444): a mismatch is an error, and every rung is logged so the report can name the state.
-  if UNRESEARCHED then rf_unresearch(force, logic, logic.reactor) end
+  -- -Rungs holds a chosen count per ladder in between (#485), through the same two helpers.
+  if UNRESEARCHED or RUNGS then rf_unresearch(force, logic, logic.reactor, RUNGS) end
   rf_assert_research(function(ok, name, detail)
     if not ok then error(name .. " -- " .. detail) end
     log("LINKRIG research " .. name)
-  end, force, logic, logic.reactor, not UNRESEARCHED)
+  end, force, logic, logic.reactor, RUNGS or not UNRESEARCHED)
 
   -- Cell pitch, derived rather than written down (#89). It was a literal 100, which is the room a
   -- four-machine row needs and no more: at eight exchangers it put the last machine straight through
@@ -745,6 +764,7 @@ end)
         Replace('__WINDOW__', "$Window").Replace('__EXCHANGERS__', "$Exchangers").
         Replace('__PIPES__', "$Pipes").Replace('__HEATERS__', "$Heaters").
         Replace('__UNRESEARCHED__', $(if ($Unresearched) { 'true' } else { 'false' })).
+        Replace('__RUNGS__', $rungsLua).
         Replace('__PLASMA__', $Plasma).
         Replace('__ENERGYFEED__', (Write-EnergyFeed -RigDirectory $rigDir))
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $lua -Encoding utf8
@@ -882,11 +902,12 @@ try {
                 "link and none on the energy leg, $Exchangers exchangers")
     Write-Host ("map quieted: pollution and enemy expansion off, peaceful mode, {0} enemy entities removed" -f $quieted)
     # The research state, read back off the rig's own assertion rather than off the switch (#440).
-    $rungs = @(Get-Content $createOut | Select-String -Pattern 'LINKRIG research ' | ForEach-Object { "$_" -replace '^.*LINKRIG research ', '' })
-    Write-Host ("research: {0} rung(s), {1}; {2} heater(s) per cell" -f $rungs.Count,
-        $(if ($Unresearched) { 'every ladder OFF (-Unresearched)' } else { 'every ladder at its top rung' }),
+    $asserted = @(Get-Content $createOut | Select-String -Pattern 'LINKRIG research ' | ForEach-Object { "$_" -replace '^.*LINKRIG research ', '' })
+    Write-Host ("research: {0} rung(s), {1}; {2} heater(s) per cell" -f $asserted.Count,
+        $(if ($Rungs) { "-Rungs $Rungs, every other ladder OFF" }
+          elseif ($Unresearched) { 'every ladder OFF (-Unresearched)' } else { 'every ladder at its top rung' }),
         $Heaters)
-    foreach ($r in $rungs) { Write-Host "  $r" }
+    foreach ($r in $asserted) { Write-Host "  $r" }
     Write-Host ''
     Write-Host ('{0,-8}{1,16}{2,16}{3,14}{4,14}{5,16}{6,12}' -f
         'cell', 'plasma u/tick', 'energy u/tick', 'energy MW', 'plasma held', 'plasma degC', 'ticks met')
