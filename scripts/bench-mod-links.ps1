@@ -489,7 +489,9 @@ local function build(surface, force, ox, drain, power)
   -- Kept, reactor end first, so report() can read the plasma's temperature along the run (#503).
   local pipes = {}
   for i = 0, PIPES + 3 * (HEATERS - 1) - 1 do
+    -- A missing pipe would leave a hole ipairs() stops at, so it errors rather than trace short.
     pipes[#pipes + 1] = surface.find_entity("rf-pipe", { west[1] - i, west[2] })
+      or error(string.format("no rf-pipe at (%g, %g) on the plasma run", west[1] - i, west[2]))
   end
   local heater
   local heaters = {}

@@ -859,17 +859,19 @@ M.blanket = {
 
 --- What one rf-heater turns fuel into plasma at.
 --
--- THE SIMULATION BARELY USES THIS. Only M.settle_fed reads it -- step(), settle() and breed() do
--- not; the heater is an ordinary assembling machine and the model starts at the reactor's box. It
--- is here because it is the denominator of the SUPPLY RATIO (CONTEXT.md) -- how many settled D-D reactors feed one
--- consumer of what they breed -- and that ratio's smaller reading, the one a player actually meets,
--- is per heater rather than per saturated reactor. Pinning it needs the rate, and a figure pinned
+-- step(), settle() AND breed() DO NOT USE THIS: the heater is an ordinary assembling machine, and
+-- those start at the reactor's box. M.settle_fed is the one function here that models the heater,
+-- feeding the box at its rate and its temperature (#502). The rest is here because it is the
+-- denominator of the SUPPLY RATIO (CONTEXT.md) -- how many settled D-D reactors feed one consumer
+-- of what they breed -- and that ratio's smaller reading, the one a player actually meets, is per
+-- heater rather than per saturated reactor. Pinning it needs the rate, and a figure pinned
 -- against a literal 2.5 would go on reading 2.5 after someone retuned the recipe.
 --
 -- SO THE PROTOTYPES READ IT FROM HERE, the way rf-reactor's box reads box_volume (#153): all four
--- rf-plasma-heating recipes take their energy_required and their amounts from these fields, and
--- prototypes/entities.lua takes rf-heater's crafting_speed. A retune therefore moves the pinned
--- figure in tests/test-reactor-logic.lua instead of silently falsifying it.
+-- rf-plasma-heating recipes take their energy_required, their amounts and their output temperature
+-- from these fields, and prototypes/entities.lua takes rf-heater's crafting_speed. A retune
+-- therefore moves the pinned figure in tests/test-reactor-logic.lua instead of silently falsifying
+-- it.
 --
 -- ONE HEATER IS ONE HEATER ON EVERY TIER, and that is a decision rather than an accident: D-D, D-T,
 -- D-He3 and He3-He3 all run at this one rate, so "a heater's worth of fuel" means the same thing
@@ -886,8 +888,8 @@ M.heater = {
   -- the ratio is quoted against a bare machine for the reason every other figure here is.
   crafting_speed = 1,
   -- The temperature every plasma-heating recipe makes its plasma at, in celsius. M.settle_fed
-  -- mixes the arriving fuel in at this (#503), and by default feeds at M.heater_plasma_rate(), so
-  -- every field here moves that function's answer.
+  -- mixes the arriving fuel in at this (#502). It is not one of M.heater_plasma_rate()'s inputs;
+  -- the three fields above are, and through that rate they move M.settle_fed's answer too.
   plasma_temperature_c = 1e6,
 }
 
@@ -1422,11 +1424,17 @@ end
 -- control.lua's cadence the D-T reactor lands on the game's measured operating point, where held
 -- at the same fill it runs 17% hotter -- tests/test-reactor-logic.lua, "THE FED D-T REACTOR".
 --
+-- @param spec, fluid_name, paid_j, capture   as M.settle's
 -- @param feed     plasma units arriving a second; one rf-heater's M.heater_plasma_rate() if nil
+-- @param seconds  how long to run, from empty. NOT M.settle's 1200: filling from empty leaves the
+--                 D-D reactor at confinement rung 3 at 5.455e8 C and the top corner at 622.1 units
+--                 after 1200 s, where 3600 s and 14 400 s agree to four figures (#502). Run 7200.
+-- @param dt       step size in seconds. Coarser settles hotter here too, as M.settle's note says,
+--                 but by far less: against a tick, 6 ticks is 0.01% hotter on unresearched D-D and
+--                 0.055% on D-T, and 1 s is 0.14% and 0.65%. control.lua's 6 ticks is the one
+--                 to use.
 -- @param feed_c   the temperature they arrive at; M.heater's plasma_temperature_c if nil
--- Every other parameter is M.settle's, EXCEPT THAT 1200 s IS NOT CONVERGED HERE: filling from empty
--- leaves the D-D reactor at confinement rung 3 at 5.455e8 C and the top corner at 622.1 units
--- after 1200 s, where 3600 s and 14 400 s agree to four figures (#502). Run 7200.
+-- There is no `amount`: the box starts empty, and the fill is part of the answer.
 -- @return plasma held, its temperature in celsius after the last top-up, and the last step's result
 function M.settle_fed(spec, fluid_name, feed, seconds, paid_j, dt, capture, feed_c)
   feed, feed_c = feed or M.heater_plasma_rate(), feed_c or M.heater.plasma_temperature_c

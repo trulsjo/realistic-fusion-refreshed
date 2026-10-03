@@ -234,8 +234,10 @@ rows, 2026-10-02) measured the same rig on Factorio 2.0.77. Nothing researched w
 126 000 ticks, and the top corner after a tick count not on record. Of #485's eleven, ten were
 read after 126 000 ticks and passed the bench's equilibrium gate there: heating rungs 1 to 5,
 confinement rungs 1 and 2, and plant efficiency rungs 1 to 3. Confinement rung 3 had not settled
-at 126 000 ticks and was quoted from a 360 000-tick run that had. **Every row but that one was read
-mid-transient.** Their plasma temperatures, against the long runs above:
+at 126 000 ticks and was quoted from a 360 000-tick run that had. **The eleven read at 126 000
+ticks were mid-transient**: nothing researched and #485's ten. The top corner read 1.8% hotter
+than its long run too, but with no tick count on record it cannot be placed. Their plasma
+temperatures, against the long runs above:
 
 | research state | °C, earlier | °C, long | earlier over long |
 |---|---|---|---|
