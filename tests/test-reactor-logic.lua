@@ -2715,4 +2715,36 @@ do
     string.format("%g units at %g C", empty, empty_c))
 end
 
+-- THE FED D-D REACTOR ON ONE HEATER, AT THE BOUNDARY CELLS (#509). Since #502
+-- docs/research/exchanger-coverage.md reads one heater's plant off L.settle_fed, and the game sits
+-- on it at all thirteen measured states. These are the figures that note's one-heater coverage
+-- reading rests on: where one 90 MW exchanger stops covering, and the corner a heater cannot keep
+-- full. 7200 s, because 1200 leaves confinement rung 3 and the corner short of settled (the note's
+-- "Three readings, one method each"); the 6-tick step is the cadence control.lua steps at.
+do
+  local dt = 6 / 60
+  local function fed(heat_level, tau_level, capture_level)
+    local amount, t_c, last = L.settle_fed(at_rungs(heat_level, tau_level), "rf-d-d-plasma", nil,
+      7200, math.huge, dt, capture_at(capture_level))
+    return amount, t_c, last.energy_units * SPEC.energy_fluid_j_per_unit / dt / 1e6,
+      last.plasma_consumed / dt
+  end
+  local where = "one heater, fed model, 7200 s at the 6-tick step"
+
+  local _, t_c, mw = fed(0, 0, 0)
+  near(mw, 55.3, 0.001, "nothing researched, " .. where .. ": 55.3 MW", "MW")
+  near(t_c, 2.381e8, 0.001, "nothing researched, " .. where .. ": 2.381e8 C")
+  _, _, mw = fed(4, 0, 0)
+  near(mw, 88.9, 0.001,
+    "heating rung 4, " .. where .. ": 88.9 MW -- the last heating rung one exchanger covers", "MW")
+  _, _, mw = fed(5, 0, 0)
+  near(mw, 97.6, 0.001,
+    "heating rung 5, " .. where .. ": 97.6 MW -- the first heating rung it does not", "MW")
+  _, _, mw = fed(0, #LADDER, 0)
+  near(mw, 86.9, 0.001, "confinement rung 3, " .. where .. ": 86.9 MW -- the whole ladder covered", "MW")
+  local amount, _, _, burn = fed(#HEAT_LADDER, #LADDER, #CAPTURE_LADDER)
+  near(amount, 625.0, 0.001, "every ladder at its top, " .. where .. ": 625.0 units, never full")
+  near(burn, 2.5, 0.001, "every ladder at its top, " .. where .. ": burning all 2.5 u/s", "u/s")
+end
+
 H.finish()
