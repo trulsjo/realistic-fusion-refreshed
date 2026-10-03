@@ -109,7 +109,8 @@ data:extend({
     ingredients = { { type = "fluid", name = "rf-deuterium", amount = logic.heater.plasma_per_craft } },
     -- Injected hot enough to be a plasma and nowhere near hot enough to fuse. Fuelling a running
     -- reactor therefore cools it slightly, which is what fuelling a real plasma does.
-    results = { { type = "fluid", name = "rf-d-d-plasma", amount = logic.heater.plasma_per_craft, temperature = 1e6 } },
+    results = { { type = "fluid", name = "rf-d-d-plasma", amount = logic.heater.plasma_per_craft,
+      temperature = logic.heater.plasma_temperature_c } },
     main_product = "rf-d-d-plasma",
     allow_productivity = false,
   },

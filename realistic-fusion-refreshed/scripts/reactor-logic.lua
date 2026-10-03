@@ -859,9 +859,9 @@ M.blanket = {
 
 --- What one rf-heater turns fuel into plasma at.
 --
--- THE SIMULATION DOES NOT USE THIS. Nothing in step(), settle() or breed() reads it; the heater is
--- an ordinary assembling machine and the model starts at the reactor's box. It is here because it
--- is the denominator of the SUPPLY RATIO (CONTEXT.md) -- how many settled D-D reactors feed one
+-- THE SIMULATION BARELY USES THIS. Only M.settle_fed reads it -- step(), settle() and breed() do
+-- not; the heater is an ordinary assembling machine and the model starts at the reactor's box. It
+-- is here because it is the denominator of the SUPPLY RATIO (CONTEXT.md) -- how many settled D-D reactors feed one
 -- consumer of what they breed -- and that ratio's smaller reading, the one a player actually meets,
 -- is per heater rather than per saturated reactor. Pinning it needs the rate, and a figure pinned
 -- against a literal 2.5 would go on reading 2.5 after someone retuned the recipe.
@@ -885,6 +885,10 @@ M.heater = {
   -- The machine's own multiplier on that. Modules move it in game; this is the bare prototype, and
   -- the ratio is quoted against a bare machine for the reason every other figure here is.
   crafting_speed = 1,
+  -- The temperature every plasma-heating recipe makes its plasma at, in celsius. M.settle_fed
+  -- mixes the arriving fuel in at this (#503), and by default feeds at M.heater_plasma_rate(), so
+  -- every field here moves that function's answer.
+  plasma_temperature_c = 1e6,
 }
 
 --- Plasma units a bare rf-heater makes per second. 2.5 as shipped.
@@ -1408,6 +1412,38 @@ function M.settle(spec, fluid_name, amount, seconds, paid_j, dt, capture)
     t_c = result.temperature_c
   end
   return t_c, last
+end
+
+--- Run a reactor that a fuel line feeds, rather than one held full (#499, #502).
+--
+-- M.settle holds the amount fixed, so it never pays to heat the fuel arriving. A player's reactor
+-- starts empty and is topped up: each step it burns, then `feed` units a second arrive at `feed_c`
+-- and are mixed into the box by amount, never past box_volume. Driven that way at
+-- control.lua's cadence the D-T reactor lands on the game's measured operating point, where held
+-- at the same fill it runs 17% hotter -- tests/test-reactor-logic.lua, "THE FED D-T REACTOR".
+--
+-- @param feed     plasma units arriving a second; one rf-heater's M.heater_plasma_rate() if nil
+-- @param feed_c   the temperature they arrive at; M.heater's plasma_temperature_c if nil
+-- Every other parameter is M.settle's, EXCEPT THAT 1200 s IS NOT CONVERGED HERE: filling from empty
+-- leaves the D-D reactor at confinement rung 3 at 5.455e8 C and the top corner at 622.1 units
+-- after 1200 s, where 3600 s and 14 400 s agree to four figures (#502). Run 7200.
+-- @return plasma held, its temperature in celsius after the last top-up, and the last step's result
+function M.settle_fed(spec, fluid_name, feed, seconds, paid_j, dt, capture, feed_c)
+  feed, feed_c = feed or M.heater_plasma_rate(), feed_c or M.heater.plasma_temperature_c
+  local amount, t_c, last = 0, spec.min_temperature_c, nil
+  for _ = 1, math.floor(seconds / dt) do
+    if amount > 0 then
+      local result = M.step(spec, fluid_name, amount, t_c, paid_j, dt, capture)
+      if not result then break end
+      last = result
+      amount, t_c = amount - result.plasma_consumed, result.temperature_c
+    end
+    local add = math.min(feed * dt, spec.box_volume - amount)
+    -- Nothing in and nothing held is an empty reactor, not 0/0.
+    if amount + add > 0 then t_c = (amount * t_c + add * feed_c) / (amount + add) end
+    amount = amount + add
+  end
+  return amount, t_c, last
 end
 
 -- ---------------------------------------------------------------------------------------------
