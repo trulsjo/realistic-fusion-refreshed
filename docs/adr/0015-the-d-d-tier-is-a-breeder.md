@@ -192,6 +192,10 @@ claim.
   > Measured against a **settled** baseline, which took thirty minutes rather than the five the rig
   > first used: a cell's plasma segment is the reactor's box plus every pipe back to its heater, and
   > the engine fills the segment, so the reactor's own box takes about half an hour to reach its share.
+  > *(Annotated 2026-10-04, #525: #516 measured the box and the segment as two stores. The segment
+  > holds its plasma beside the box, and the box does not read a share of it;
+  > `docs/research/exchanger-coverage.md`, "Why the box fills slower than the fed model". The half
+  > hour is measured and stands.)*
   > The rig asserts the baseline has stopped climbing before it cuts anything.
   >
   > **At half supply** the cell stayed at 1.96×10⁹ °C and contributed **+178 MW net** — about half its
