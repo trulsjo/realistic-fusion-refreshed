@@ -403,6 +403,55 @@ The fed model agrees, at 1000 units, 5.341×10⁸ °C and 86.9 MW on 5 u/s as on
 takes only what it burns, 1.932 u/s, however much the line could bring. So the held model's
 settled point is not where any fuel line settles at this rung.
 
+### The default four-heater run, settled
+
+[#527](https://github.com/trulsjo/realistic-fusion-refreshed/issues/527). The bench's default
+invocation is D-D, four heaters, every ladder at its top, 126 000 ticks. #517 found it passes the
+gate narrowly, with its twelve pipes at 4.2×10⁷ °C. Run long here: `-Ticks 2000000 -Window 20000`
+and nothing else, so four heaters, twelve pipes, a 2200-unit segment, all eleven rungs asserted
+held, Factorio 2.0.77 (build 84539), 2026-10-04, passing the gate. The last report is at
+1 980 000 ticks.
+
+| ticks | pipes, °C | reactor, °C |
+|---|---|---|
+| 120 000 | 4.183e7 | 9.173e8 |
+| 240 000 | 2.262e6 | 9.086e8 |
+| 260 000, first within 2× the heater's 1×10⁶ | 1.708e6 | 9.083e8 |
+| 500 000 to 1 980 000, all 75 windows | 1.00069e6 | 9.080e8 to 9.083e8 |
+
+| reading | plasma held | °C | MW |
+|---|---|---|---|
+| default length, 126 000 ticks (#517, 2026-10-03) | 999.6 | 9.173e8 | 142.6 – 171.1 |
+| settled, 1 980 000 ticks | 999.6 | 9.083e8 | 141.0 – 169.3 |
+| fed model, four heaters' 10 u/s, 7200 s, capture 0.9375 | 1000 | 9.080e8 | 161.4, burning 3.812 u/s |
+
+**The default reading is 1.0% hot and 1.1% high.** 9.173×10⁸ against 9.083×10⁸ °C, and 142.6
+against 141.0 MW on the sustained bound, 171.1 against 169.3 on the flowing one. The plasma held
+does not differ. From 500 000 ticks the reactor repeats three readings, one a window: 9.080,
+9.083 and 9.082×10⁸ °C at 999.6, 999.8 and 1000.0 units. That is where a 20 000-tick window
+lands in the heaters' cycle, not a drift. The fed model's temperature is the lowest of the three,
+and its 161.4 MW is inside the bracket.
+
+**The line is settled 240 000 ticks after the default length ends**, by the 2× mark #511 used.
+A full box takes only what it burns, so four heaters settle where two do: the two-heater run
+under [The supply-limited cells on two heaters](#the-supply-limited-cells-on-two-heaters) reads
+the same point.
+
+**Notes that quote a default-length four-heater figure as settled.** None is the state above, and
+none is rewritten here. Each was taken at 126 000 ticks before the gate read the fuel line (#508).
+
+- `bolted-joint-throughput.md`: the D-D control's 94.0 MW flowing and 78.3 sustained, its 86.4 MW
+  with the plant-efficiency ladder, and the D-T reactor's 996 to 1 195 MW at 597.4 units.
+- `fluid-link-throughput.md`: the same 78.3235 and 86.3862 MW pair, and the 1 195.4 MW.
+- ADR 0018's Consequences: the 78.3 MW, and the 996 to 1 195 MW.
+- `bench-mod-links.ps1`'s help under `-Exchangers` and `-Plasma`: "the 94 MW this rig's D-D
+  reactor settles at", and 996 to 1 195 MW.
+- `entities.lua` and `recipes/hc.lua`, `check-hc.ps1` and `probe-exchanger-chaining.ps1`: the
+  996 to 1 195 MW for a D-T reactor on four heaters.
+
+The 94.0, 78.3 and 86.4 MW were read with fewer ladders than exist now, so they are not this
+state at an earlier tick. How far each is from settled was not measured.
+
 ### Five combination states, nearest the line
 
 [#498](https://github.com/trulsjo/realistic-fusion-refreshed/issues/498). The held model's demand
