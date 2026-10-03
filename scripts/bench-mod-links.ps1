@@ -209,11 +209,13 @@
     Keep the save, the rig mod and the captured output.
 
 .PARAMETER SelfTest
-    Prove the fuel-line gate can fail, and start no game (#515). Four halves, each handing
+    Prove the fuel-line gate can fail, and start no game (#515). Five halves, each handing
     Get-FuelLineFault a pair of windows written out by hand: pipe-count-mismatch and
-    no-pipe-comparable are the two pairs the gate used to skip and so pass; cooling-line-fails and
-    settled-line-passes are the two directions it already had. It proves that one function and
-    nothing else in this script -- the rig, the meter and the other three gate checks need a run.
+    no-pipe-comparable are the two pairs the gate used to skip and so pass; no-pipes-field is a
+    record with no pipes= field at all, read through ConvertFrom-LineRecord as a run's are (#524);
+    cooling-line-fails and settled-line-passes are the two directions it already had. It proves
+    those two functions and nothing else in this script -- the rig, the meter and the other three
+    gate checks need a run.
 
 .EXAMPLE
     pwsh -File scripts/bench-mod-links.ps1
@@ -249,11 +251,37 @@ $ErrorActionPreference = 'Stop'
 # line holds fluid in every one, so two windows with different pipe counts, or with no pipe readable
 # in both, mean the rig or its log is broken. It used to skip what it could not pair, and both cases
 # passed with nothing checked.
+#
+# A RECORD WITH NO PIPE READINGS IS ONE TOO (#524). The rig refuses to build fewer than three pipes,
+# so a record that carries none was cut short or written by something else.
+# One "LINKRIG line" record of the rig's log, as the gate and the report read it (#503).
+#
+# A RECORD WITH NO pipes= FIELD HAS NO PIPES (#524). Splitting the missing field used to yield one
+# empty string, which [double] reads as 0: one pipe at 0 degC in both windows, compared and passed.
+function ConvertFrom-LineRecord {
+    param([string] $Record)
+
+    $f = @{}
+    foreach ($m in [regex]::Matches($Record, '(\w+)=([^\s]+)')) { $f[$m.Groups[1].Value] = $m.Groups[2].Value }
+    # A pipe's temperature, or $null for a "-" box that held nothing on that tick.
+    $pipeTemps = @($f['pipes'] -split ',' | Where-Object { $_ } | ForEach-Object {
+        $t = ($_ -split '@')[0]; if ($t -eq '-') { $null } else { [double] $t } })
+    [pscustomobject]@{
+        Cell = $f['cell']; Window = [int] $f['window']; Heater = $f['heater']
+        Pipes = $f['pipes']; PipeTemps = $pipeTemps; Reactor = $f['reactor']
+        Segment = $f['segment']; HeaterBox = $f['heater_box']
+    }
+}
+
 function Get-FuelLineFault {
     param([string] $Cell, $Last, $Prev, [double] $ReactorTemp)
 
     if (-not ($Last -and $Prev)) {
         return "${Cell}: the fuel line was not reported for the last two windows, so it could not be gated."
+    }
+    if ($Last.PipeTemps.Count -eq 0 -or $Prev.PipeTemps.Count -eq 0) {
+        return ("{0}: a fuel-line record for the last two windows carried no pipe readings, so the " +
+                "fuel line was not gated -- the rig or its log is broken.") -f $Cell
     }
     if ($Last.PipeTemps.Count -ne $Prev.PipeTemps.Count) {
         return ("{0}: the fuel line reported {1} pipe(s) in the last window and {2} in the one before, " +
@@ -302,12 +330,15 @@ if ($SelfTest) {
             & $prove (& $line 1e6, 1e6, 1e6) (& $line 1e6, 1e6) '3 pipe\(s\) in the last window and 2 in the one before' } }
         @{ Name = 'no-pipe-comparable'; Body = {
             & $prove (& $line 1e6, $null, $null) (& $line $null, 1e6, 1e6) 'no pipe on the fuel line could be compared' } }
+        @{ Name = 'no-pipes-field'; Body = {
+            $bare = ConvertFrom-LineRecord 'LINKRIG line cell=chain window=9 heater=1e+06@nil reactor=2.4e+08@7'
+            & $prove $bare $bare 'carried no pipe readings' } }
         @{ Name = 'cooling-line-fails'; Body = {
             & $prove (& $line 1.78e8, 1.78e8, 1.78e8) (& $line 1.86e8, 1.86e8, 1.86e8) 'moved \D*3\D3\D* of the reactor' } }
         @{ Name = 'settled-line-passes'; Body = {
             & $prove (& $line 2.05e6, 2.05e6, $null) (& $line 2.06e6, 2.06e6, $null) $null } }
     )
-    Write-Host '-SelfTest passed: the fuel-line gate refuses the two window pairs it cannot compare.'
+    Write-Host '-SelfTest passed: the fuel-line gate refuses the three window pairs it cannot compare.'
     return
 }
 
@@ -1006,16 +1037,7 @@ try {
     # The fuel line, one record per cell per window (#503); the gate reads it since #508.
     $lineRecords = @()
     foreach ($record in (Get-Content $runOut | Select-String -Pattern 'LINKRIG line ')) {
-        $f = @{}
-        foreach ($m in [regex]::Matches("$record", '(\w+)=([^\s]+)')) { $f[$m.Groups[1].Value] = $m.Groups[2].Value }
-        # A pipe's temperature, or $null for a "-" box that held nothing on that tick.
-        $pipeTemps = @($f['pipes'] -split ',' | ForEach-Object {
-            $t = ($_ -split '@')[0]; if ($t -eq '-') { $null } else { [double] $t } })
-        $lineRecords += [pscustomobject]@{
-            Cell = $f['cell']; Window = [int] $f['window']; Heater = $f['heater']
-            Pipes = $f['pipes']; PipeTemps = $pipeTemps; Reactor = $f['reactor']
-            Segment = $f['segment']; HeaterBox = $f['heater_box']
-        }
+        $lineRecords += ConvertFrom-LineRecord "$record"
     }
 
     # ------------------------------------------------------- equilibrium, and the meter's own honesty
