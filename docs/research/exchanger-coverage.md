@@ -304,7 +304,8 @@ nothing researched, one heater, Factorio 2.0.77, 2026-10-03, passing the bench's
 its fuel-line check (#508). At 540 000 and 570 000 ticks alike the heater makes plasma at
 1×10⁶ °C, the three pipes hold **2.1901×10⁹ °C** and the reactor **2.193×10⁹ °C at 275.6 units**,
 all in one fluid segment, selling 282.1 – 338.5 MW across the bench's two bounds. The pipes sit
-0.13% under the reactor, as the D-D top corner's do (1.461×10⁹ against 1.462×10⁹). The box held
+0.13% under the reactor. The D-D top corner's pipes, also in its pool, sit 0.07% under it
+(1.461×10⁹ against 1.462×10⁹). The box held
 275.6 units from 90 000 ticks on and never filled. The fed model reads 276.9 units at
 2.183×10⁹ °C (`d-t-ignition.md`), 0.5% under this temperature; #486's 252 000-tick reading was
 277.3 units at 2.180×10⁹ °C.
@@ -343,23 +344,23 @@ one heater, nothing else researched, Factorio 2.0.77, 2026-10-03, passing the be
 including its fuel-line check. Four were run `-Ticks 600000 -Window 30000` and are quoted at
 570 000 ticks. Heating 3 + confinement 2 is quoted at 1 560 000 ticks, from `-Ticks 1600000
 -Window 40000`: at 600 000 its box was still filling and the gate refused it on the fuel line
-alone. Columns as in the table above. "Held asks" is `M.settle`'s burn at a full box, 1200 s at
-one tick.
+alone. Columns as in the table above. "Held asks" is `M.settle`'s burn at a full box, in u/s
+at its settled °C, 1200 s at one tick.
 
 | research state | game: MW | held | °C | fed model: held | °C | MW | u/s | held asks | held split said | fed model said |
 |---|---|---|---|---|---|---|---|---|---|---|
-| heating 4 + confinement 1 | 92.4 – 110.9 | 999.8 | 5.515e8 | 1000 | 5.514e8 | 105.8 | 2.019 | 2.343 | full, at 6.153e8 | full |
-| heating 2 + confinement 2 | 86.9 – 104.3 | 999.8 | 5.715e8 | 1000 | 5.714e8 | 99.4 | 2.120 | 2.612 | part-full | full |
-| heating 5 + confinement 1 | 101.3 – 121.5 | 999.8 | 6.056e8 | 1000 | 6.055e8 | 115.9 | 2.293 | 2.692 | part-full | full |
-| heating 3 + confinement 2 | 97.0 – 116.4 | 999.8 | 6.399e8 | 1000 | 6.397e8 | 111.0 | 2.466 | 3.087 | part-full | full |
-| heating 4 + confinement 2 | 99.0 – 118.8 | 788.6 | 9.489e8 | 789.8 | 9.476e8 | 113.3 | 2.500 | 3.534 | part-full | part-full |
+| heating 4 + confinement 1 | 92.4 – 110.9 | 999.8 | 5.515e8 | 1000 | 5.514e8 | 105.8 | 2.019 | 2.343 at 6.153e8 | full | full |
+| heating 2 + confinement 2 | 86.9 – 104.3 | 999.8 | 5.715e8 | 1000 | 5.714e8 | 99.4 | 2.120 | 2.612 at 6.685e8 | part-full | full |
+| heating 5 + confinement 1 | 101.3 – 121.5 | 999.8 | 6.056e8 | 1000 | 6.055e8 | 115.9 | 2.293 | 2.692 at 6.844e8 | part-full | full |
+| heating 3 + confinement 2 | 97.0 – 116.4 | 999.8 | 6.399e8 | 1000 | 6.397e8 | 111.0 | 2.466 | 3.087 at 7.626e8 | part-full | full |
+| heating 4 + confinement 2 | 99.0 – 118.8 | 788.6 | 9.489e8 | 789.8 | 9.476e8 | 113.3 | 2.500 | 3.534 at 8.520e8 | part-full | part-full |
 
-**The fed model's split survives at all five, and the held one fails at four.** Every box landed
+**The fed model's split survives at all five, and the held one fails at three.** Every box landed
 where the fed model put it: four full, one part-full at 788.6 against 789.8 units. Every
 temperature sits within 0.14% of the fed model's, and every fed MW figure is inside the game's
 bracket. The held split said heating 2 + confinement 2, heating 5 + confinement 1 and heating 3 +
-confinement 2 could not be kept full; all three were. The fourth miss is heating 4 + confinement 1,
-which it called full: it was, but at 5.515×10⁸ °C, 10% under the held model's settled 6.153×10⁸.
+confinement 2 could not be kept full; all three were. Heating 4 + confinement 1 it called full,
+and it was, but not at the held model's settled point: 5.515×10⁸ °C, 10% under its 6.153×10⁸.
 
 **This is #497's explanation tested where it was not measured.** The held model, which never heats
 the arriving fuel, runs 12% to 17% over the game at the three full states #498 named. The fed
