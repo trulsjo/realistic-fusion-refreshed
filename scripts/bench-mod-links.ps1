@@ -128,6 +128,12 @@
     against the 1% allowed, and the reactor 0.19%. That state is all the default length is known
     to pass.
 
+    AND THAT READING IS 1% FROM SETTLED (#527). The same state run -Ticks 2000000 -Window 20000 on
+    2026-10-04, Factorio 2.0.77, settles at 141.0 to 169.3 MW, 999.6 units and 9.083e8 degC: the
+    default length reads 1.0% hot and 1.1% high. Its pipes are within twice the heater's 1e6 degC
+    from 260 000 ticks and flat at 1.00069e6 from 500 000. The default is left where it is;
+    docs/research/exchanger-coverage.md has the run.
+
     A ONE-HEATER RUN NEEDS LONGER. -Heaters 1 -Unresearched fails the fuel-line check at 126 000
     ticks, at 3.1%, and passes at 900 000 with -Window 10000. The line cools at the rate the reactor
     drains the segment, about 146 000 ticks to fall by e at three pipes with nothing researched, so
