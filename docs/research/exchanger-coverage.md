@@ -557,12 +557,46 @@ stores.
   plus segment grew by 967.2, which leaves 282.8 burned, 0.57 u/s. The segment alone grew by
   530.6, which would leave 719.4 burned, 1.44 u/s. The fed model's reactor never burns more
   than 0.76 u/s in this fill.
-- **Tick by tick, the two add up to what was fed.** A per-tick log over one heater cycle, ticks
-  12 001 to 12 121: the reactor's step takes 0.030 units from the box every 6 ticks, so of the 5
-  units the heater made, 0.6 burned and 4.4 stayed. The box rose by 1.99 and the segment's
-  contents by 2.39, which is 4.37. Within the cycle the segment's contents jump when the heater
-  delivers and then fall while the box fills. That log came from a scratch copy of the bench and
-  is not committed; the first two readings are from the bench as it stands.
+- **Tick by tick, the two add up to what was fed.**
+  [#520](https://github.com/trulsjo/realistic-fusion-refreshed/issues/520):
+  `scripts/probe-plasma-segment.ps1` logs the line every tick and balances it over each heater
+  cycle. Run with no arguments on 2026-10-04, Factorio 2.0.77 (build 84539): D-D, one heater,
+  nothing researched (asserted), 100 000 ticks, a three-pipe cell and a six-pipe one. Burned is
+  read, not derived: the box is read before the mod's step and after it on the same tick, and
+  the two differ on every sixth tick and on no other. In plasma units, over the 120-tick cycle
+  ending on the tick named:
+
+  | pipes, segment capacity | cycle ends | fed | burned | box grew | segment grew | box + segment | fed − burned − both | fed − burned − segment |
+  |---|---|---|---|---|---|---|---|---|
+  | 3, 1300 | 12 002 | 5.0000 | 0.6211 | 1.9902 | 2.3887 | 4.3789 | 0.0000 | 1.9902 |
+  | 3, 1300 | 66 002 | 5.0000 | 1.2981 | 1.5145 | 2.1874 | 3.7019 | 0.0000 | 1.5145 |
+  | 6, 1600 | 12 002 | 5.0000 | 0.5375 | 1.7848 | 2.6777 | 4.4625 | 0.0000 | 1.7848 |
+  | 6, 1600 | 66 002 | 5.0000 | 1.4230 | 1.2878 | 2.2893 | 3.5770 | 0.0000 | 1.2878 |
+
+  With two stores the balance closes to four decimals in all twelve cycles the default spans
+  print, three at each of the four rows. With the segment's figure read as counting the box it
+  is short by the box's growth every time. Over the whole run each heater fed 2300 and 2600
+  units more than its reactor burned (3230.03 against 930.03, and 3530.03 against 930.03),
+  which is the box's 1000 and the segment's 1300 and 1600. Within a cycle the segment's
+  contents jump when the heater delivers and fall while the box fills. Each pipe's own amount
+  is its hundredth-of-capacity share of the segment's figure: 19.64 units in each of three
+  pipes while the segment reads 255.34 of 1300.
+
+**The split between the two moves through the fill**, from the same run. "Segment per 1000" is
+what the segment holds for every 1000 units in the box.
+
+| ticks | 3 pipes: box | segment | segment per 1000 | 6 pipes: box | segment | segment per 1000 |
+|---|---|---|---|---|---|---|
+| 3 002 | 54.22 | 68.82 | 1269 | 47.78 | 75.42 | 1579 |
+| 12 002 | 212.74 | 259.08 | 1218 | 188.90 | 287.15 | 1520 |
+| 30 002 | 483.48 | 584.01 | 1208 | 433.09 | 653.49 | 1509 |
+| 48 002 | 711.56 | 887.23 | 1247 | 647.53 | 977.29 | 1509 |
+| 66 002 | 930.81 | 1203.91 | 1293 | 837.63 | 1315.24 | 1570 |
+| full | 1000.00 | 1300.00 | 1300 | 1000.00 | 1600.00 | 1600 |
+
+The box first read 999 units in the cycle ending on tick 71 402 at three pipes and 80 642 at
+six. [What the pooled reading leaves over](#what-the-pooled-reading-leaves-over) turns the
+split into a rule.
 
 **The game's fill beside the model's**, at the same ticks. "Pooled" is the fed model's loop with
 that inventory added: the box steps its share of one pool, the result is mixed back, and the
