@@ -48,6 +48,12 @@
     there because a run that ends full says nothing about whether the box drained and refilled on
     the way. #485 needed that trajectory and could not have it; this row makes it a reading.
 
+    THE FUEL LINE (#503) follows the trace: on each window's last tick, the temperature in the
+    metered heater's plasma output, in every pipe of the run and in the reactor's box, each with
+    its fluid segment id, so a pipe pooled with the reactor's box can be told from one that is
+    not. The pipes and the reactor are read on one tick per window, not as a mean; the heater is
+    its last reading in the window, since its box drains the tick it fills. It gates nothing.
+
     WHAT IS BUILT
 
     Two independent cells, because the honest answer needs both.
@@ -480,6 +486,11 @@ local function build(surface, force, ox, drain, power)
   -- not.
   local west = { ox + 0.5 - 8, 0.5 }
   rf_pipe_run(surface, force, "rf-pipe", west, { -1, 0 }, PIPES + 3 * (HEATERS - 1))
+  -- Kept, reactor end first, so report() can read the plasma's temperature along the run (#503).
+  local pipes = {}
+  for i = 0, PIPES + 3 * (HEATERS - 1) - 1 do
+    pipes[#pipes + 1] = surface.find_entity("rf-pipe", { west[1] - i, west[2] })
+  end
   local heater
   local heaters = {}
   for i = 0, HEATERS - 1 do
@@ -580,6 +591,7 @@ local function build(surface, force, ox, drain, power)
     -- END of a link. One word for two things in one document (#215).
     name = drain and "drain" or "chain",
     reactor = reactor, heater = heater, heaters = heaters, exchangers = exchangers, power = power,
+    pipes = pipes,
     plasma_box = plasma_box, energy_box = energy_box,
     heater_box = rf_box_of(heater, PLASMA),
     -- Meter state. last_* is what the source box held at the previous sample.
@@ -704,6 +716,13 @@ script.on_init(function()
     #storage.cells, PIPES, EXCHANGERS, HEATERS, storage.quieted))
 end)
 
+-- One box on the fuel line as "degC@segment", or "-" for the temperature of an empty box (#503).
+local function line_reading(entity, index)
+  local fluid = entity.fluidbox[index]
+  return string.format("%s@%s", fluid and string.format("%.6g", fluid.temperature) or "-",
+    tostring(entity.fluidbox.get_fluid_segment_id(index)))
+end
+
 local function report(cell, window)
   local reactor = cell.reactor
   local plasma  = reactor.fluidbox[cell.plasma_box]
@@ -721,6 +740,18 @@ local function report(cell, window)
     amount_in(reactor, cell.energy_box),
     status_name(cell.heater.status), amount_in(cell.heater, cell.heater_box),
     amount_in(cell.heater, rf_box_of(cell.heater, feed_fluid()))))
+
+  -- THE FUEL LINE'S TEMPERATURE, heater to reactor (#503). The fed model mixes every arriving unit
+  -- in at the heater's own temperature, so this asks what the fuel is actually at when it reaches
+  -- the reactor's box. Each box's segment id beside it says which of them the engine pools, so a
+  -- pipe reading near the reactor's figure can be told from fuel still on its way in. Reports
+  -- only; gates nothing.
+  local along = {}
+  for i, pipe in ipairs(cell.pipes) do along[i] = line_reading(pipe, 1) end
+  log(string.format("LINKRIG line cell=%s window=%d heater=%s pipes=%s reactor=%s",
+    cell.name, window, cell.heater_line or "-@nil", table.concat(along, ","),
+    line_reading(reactor, cell.plasma_box)))
+  cell.heater_line = nil
 
   -- EVERY exchanger in the row, which is #89's whole instrument. This used to report
   -- cell.exchangers[1] alone -- the one bolted straight to the reactor, and therefore the one that
@@ -746,6 +777,9 @@ script.on_event(defines.events.on_tick, function()
     -- The meter. A fall in the source box is fluid that crossed; a rise is production, and that
     -- tick is dropped rather than netted, because the two cannot be separated afterwards.
     local plasma = amount_in(cell.heater, cell.heater_box)
+    -- The heater's output drains into the line within the tick it is made, so report() would
+    -- almost never catch it holding anything. Its last reading this window is kept instead (#503).
+    if plasma > 0 then cell.heater_line = line_reading(cell.heater, cell.heater_box) end
     if plasma < cell.last_plasma then
       cell.plasma_out   = cell.plasma_out + (cell.last_plasma - plasma)
       cell.plasma_ticks = cell.plasma_ticks + 1
@@ -1031,6 +1065,18 @@ try {
         Write-Host ('  {0,-6} {1}' -f $cell, (($rows | ForEach-Object { '{0:N2}' -f $_.EnergyTick }) -join '  '))
         Write-Host ('  {0,-6} {1}' -f '', (($rows | ForEach-Object { '{0:N3}e8' -f ($_.TempC / 1e8) }) -join '  '))
         Write-Host ('  {0,-6} {1}' -f '', (($rows | ForEach-Object { '{0:N1}' -f $_.PlasmaAmt }) -join '  '))
+    }
+
+    # The fuel line, heater to reactor, sampled on each window's last tick (#503). Gates nothing.
+    # Each entry is degC@segment; a "-" is a box that held nothing on that tick.
+    Write-Host ''
+    Write-Host 'fuel line at each window (heater output | pipes, heater end first | reactor box), degC@segment'
+    foreach ($record in (Get-Content $runOut | Select-String -Pattern 'LINKRIG line ')) {
+        $f = @{}
+        foreach ($m in [regex]::Matches("$record", '(\w+)=([^\s]+)')) { $f[$m.Groups[1].Value] = $m.Groups[2].Value }
+        $along = $f['pipes'] -split ','
+        [array]::Reverse($along)
+        Write-Host ('  {0,-6}{1,4}  {2} | {3} | {4}' -f $f['cell'], $f['window'], $f['heater'], ($along -join ' '), $f['reactor'])
     }
 
     if ($faults.Count -gt 0) {
