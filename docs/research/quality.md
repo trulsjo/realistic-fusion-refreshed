@@ -772,7 +772,8 @@ share by ask the supply's own 50 MW is split by: of 5.4 MW, 1.54 to the normal r
 to the legendary one, where an even split would be 2.7 each. Every one of the 33 rows is within
 1.8e-6 MW of the water-fill of the supply plus what the accumulators were measured giving. So
 the legendary reactor takes the larger part of a discharge as it takes the larger part of the
-supply. Neither reactor is capped at this supply; a discharge that lifts one to its spend was
+supply. Neither reactor is capped at this supply. #528's `acc-supply` cell, below, lifts a lone
+reactor to its spend; a discharge that caps one of two reactors, so the re-share is seen, was
 not run.
 
 **Members that spend differently are split by the same water-fill**
@@ -818,7 +819,12 @@ spends, so every supply is larger in MW than in the tables above.
 | `aneutronic` | 5e-6 | **the D-D reactor is no longer held at its spend below full supply** |
 | `discharge` | 1.1e-6, on 33 rows | 5.4 MW split 1.54 : 3.86 again, on 21.43 and 53.57 |
 
-Seven of the eight ladder cells match on all 21 rungs, and the discharge cell on all 33 rows.
+Seven of the eight ladder cells the rig then held match on all 21 rungs, and the discharge cell
+on all 33 rows. (#528's six cells came after this run. The same command now runs them at rung 5
+too: `acc-sec` matches, `acc-tert` misses by its 5.4 MW, and the reactor's first-second
+over-draw in the two `acc-spare` cells is 1.92 MJ where it is 4.83 unresearched. Its 0.4 MW
+over-draw in the two `acc-supply` cells is gone: 67.5 MW of supply and 5.4 of discharge is
+72.9, under the 75 MW spend. Run 2026-10-04, Factorio 2.0.77, heating rung 5 asserted.)
 `tert-tert` misses by the load's whole predicted draw, as it does with nothing researched: 75 MW
 on the top five rungs, 67.5 down to 7.5 on the next nine.
 
@@ -1032,14 +1038,15 @@ Stated plainly, because this repository treats an unverified claim as a defect.
 - **Contention is measured for small cells, not for a factory.** #439 ran pairs and #487 added four
   reactors on one network and a reactor against a `tertiary` load; #491 put all three input
   classes on one network, on a `secondary-output` supply only; #492 discharged accumulators into
-  one short network, at one supply, with neither reactor capped; #493 put the aneutronic
+  one short network, at one supply fraction, with neither of two reactors capped; #493 put the aneutronic
   reactor beside one D-D reactor, both at normal quality; #494 ran the whole rig once more
   at heating rung 5 and at no rung between. A network mixing researched and unresearched
   reactors needs two forces and has not been built. The class-ordered water-fill is a
   prediction, and it is wrong in two measured ways. A `tertiary`-class member draws nothing from
   a `tertiary`-class supply, by up to 50 MW unresearched (#490, and #528 with vanilla
   accumulators on either side); accumulator to accumulator was not run. And a reactor whose
-  buffer is not full draws past its spend, by 0.4 MW in #528's discharge cells. Why the engine
+  buffer is not full draws past its spend: by 0.4 MW for 16 s in #528's two `acc-supply` cells,
+  and by 4.83 MJ in the first second of its two `acc-spare` cells, unresearched. Why the engine
   does the first is read off one sentence of the docs and is not documented further.
 - **Why the engine floors a fluid transfer to whole float32 ULPs per tick is inferred, not
   documented.** #147 measured the flooring — five levels, two run lengths, the legendary rate landing

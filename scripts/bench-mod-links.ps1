@@ -250,16 +250,6 @@ param(
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
 
-# The fuel-line check of the equilibrium gate (#508): the fault for one cell's last two windows, or
-# nothing. $Last and $Prev are that cell's line records, $ReactorTemp its last plasma temperature.
-#
-# A PAIR IT CANNOT COMPARE IS A FAULT, NOT A PASS (#515). The rig builds its pipes once and a settled
-# line holds fluid in every one, so two windows with different pipe counts, or with no pipe readable
-# in both, mean the rig or its log is broken. It used to skip what it could not pair, and both cases
-# passed with nothing checked.
-#
-# A RECORD WITH NO PIPE READINGS IS ONE TOO (#524). The rig refuses to build fewer than three pipes,
-# so a record that carries none was cut short or written by something else.
 # One "LINKRIG line" record of the rig's log, as the gate and the report read it (#503).
 #
 # A RECORD WITH NO pipes= FIELD HAS NO PIPES (#524). Splitting the missing field used to yield one
@@ -279,6 +269,16 @@ function ConvertFrom-LineRecord {
     }
 }
 
+# The fuel-line check of the equilibrium gate (#508): the fault for one cell's last two windows, or
+# nothing. $Last and $Prev are that cell's line records, $ReactorTemp its last plasma temperature.
+#
+# A PAIR IT CANNOT COMPARE IS A FAULT, NOT A PASS (#515). The rig builds its pipes once and a settled
+# line holds fluid in every one, so two windows with different pipe counts, or with no pipe readable
+# in both, mean the rig or its log is broken. It used to skip what it could not pair, and both cases
+# passed with nothing checked.
+#
+# A RECORD WITH NO PIPE READINGS IS ONE TOO (#524). The rig refuses to build fewer than three pipes,
+# so a record that carries none was cut short or written by something else.
 function Get-FuelLineFault {
     param([string] $Cell, $Last, $Prev, [double] $ReactorTemp)
 

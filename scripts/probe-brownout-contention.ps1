@@ -53,8 +53,8 @@
                  rf-reactor and the load at tertiary, on the tertiary cell's secondary-output
                  supply. Every other cell holds at most two classes.
       aneutronic A normal rf-reactor and a normal rf-aneutronic-reactor (#493), each holding its own
-                 plasma at its own box's fill. Every other cell's members spend the same 50 MW;
-                 these ask 90 and 240 MW and spend 50 and 200, so the water-fill's caps fall where
+                 plasma at its own box's fill. Every other REACTOR here spends the same 50 MW
+                 unresearched; these ask 90 and 240 MW and spend 50 and 200, so the water-fill's caps fall where
                  two different spends put them.
       acc-tert   A normal rf-reactor and eighteen vanilla accumulators AS A LOAD (#528), on the
                  rig's usual tertiary supply: tert-tert with a real accumulator where the rig's
@@ -87,7 +87,7 @@
 
     THE LADDER. Each cell's supply is set to a fraction f of what its consumers SPEND together,
     from 1.2 (every consumer satisfied, with room) down to LOW in steps of STEP. Every rung is twenty seconds,
-    the first half for the buffers to settle and the second measured, as in the sibling rig. The
+    the first half for the buffers to settle and the second measured, as in the sibling rig. A
     discharge cell's supply does not move; its buffer is one tick of that one figure.
 
     WHAT IS PREDICTED, AND PRINTED BESIDE WHAT IS MEASURED. "A share of what it asks for": the supply
@@ -164,6 +164,11 @@ $rigName  = 'rf-brownout-contention-probe'
 $high     = 1.2
 
 $rungs = [int][math]::Floor(($high - $Low) / $Step + 1e-9) + 1
+# The report fires when the ladder ends, and the discharge series runs for 30 s after one rung's
+# length. A ladder shorter than that would print a series cut short, with nothing saying so.
+if (($rungs - 1) * $RungSeconds -lt 32) {
+    throw "the ladder is $rungs rung(s) of $RungSeconds s, which ends before the discharge series' 30 s; lower -Low or raise -RungSeconds."
+}
 Write-Host "ladder: $rungs rungs from f=$high down to f=$Low in steps of $Step, $RungSeconds s each"
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
@@ -270,7 +275,7 @@ local SHAPES = {
                                    { ACCUMULATOR, "normal", 18 } },
     supply = "rf-probe-supply-secondary-output", discharge = 1 },
 }
--- The discharge cell's clock: empty for one rung's length, then read every second for SERIES_S.
+-- The discharge cells' clock: empty for one rung's length, then read every second for SERIES_S.
 local CHARGE_TICK = RUNG_TICKS
 local SERIES_S    = 30
 local BEFORE_S    = 3
