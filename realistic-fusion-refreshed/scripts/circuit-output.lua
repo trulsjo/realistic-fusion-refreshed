@@ -185,7 +185,8 @@ end
 -- and not how much it holds, and a second reactor with a different box would otherwise be judged
 -- against the first one's volume. control.lua divides by the box's own capacity, which per #40 is
 -- also the fill of the whole segment: a box holds its share of its run in proportion to capacity,
--- so every reactor on a run sits at the same fill and tunes together.
+-- so every reactor on a run sits at the same fill and tunes together. (To a few percent while a
+-- line fills, and exactly once it is full: #520 read a box at 21.3% beside a segment at 19.9%.)
 --
 -- WHY THERE ARE THREE FUSING STATES AND NOT ONE (#74, ADR 0016). A reactor makes more power
 -- under-supplied than full at the entry tier -- 40% more fusion power for 35% less fuel at the

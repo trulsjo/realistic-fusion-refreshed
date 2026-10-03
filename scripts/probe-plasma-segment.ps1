@@ -19,7 +19,8 @@
 
     WHAT IS BUILT. One cell per entry of -Pipes: one rf-heater, that many rf-pipe, one rf-reactor.
     Deuterium in is unbounded and reactor energy is removed as it arrives, so nothing but the fuel
-    line limits the cell. NOTHING IS RESEARCHED, asserted rung by rung (rf_assert_research).
+    line limits the cell. NOTHING IS RESEARCHED unless -Rungs says otherwise, and either state is
+    asserted rung by rung (rf_assert_research).
 
     WHAT IS LOGGED, EVERY TICK OF A SPAN. -From names where each span starts and -Span how long it
     is. Per tick: the box's amount and temperature, each pipe's, the segment's contents and
@@ -43,8 +44,9 @@
     on either side of the step, with no flow between. There are therefore two rig mods: one with no
     dependency on ours and a name that sorts ahead of it, which reads the box first, and the rig
     proper, which depends on ours and so reads it last. The difference on a step tick is the burn.
-    On every other tick the two must agree, and the run fails if they do not: that is the
-    instrument checking its own ordering, not a claim about the answer.
+    On every other tick the two must agree, and the run fails if they do not; and a run in which
+    they never differ at all fails too, because that is the first mod running after ours. Both are
+    the instrument checking itself, not a claim about the answer.
 
     THE SPLIT. Each cycle also carries what the segment holds for every 1000 units in the box. The
     report thins that to every -Every cycles through the whole run, so the split is seen from an
@@ -54,11 +56,12 @@
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
 .PARAMETER Ticks
-    Ticks to run, from an empty line. Three pipes fill by about 80 000 and six by about 90 000.
+    Ticks to run, from an empty line. With nothing researched three pipes are full by about
+    72 000 and six by about 81 000.
 
 .PARAMETER Pipes
-    Pipe counts, comma-separated, one cell each. Three is the shortest line the bench builds, and
-    so is it here.
+    Pipe counts, comma-separated, one cell each, 3 to 12. Three is the shortest line the bench
+    builds, and so is it here.
 
 .PARAMETER From
     The first tick of each per-tick span, comma-separated. The defaults are early in the fill and
@@ -91,7 +94,7 @@ param(
     [ValidatePattern('^\d+(,\d+)*$')] [string] $Pipes = '3,6',
     [ValidatePattern('^\d+(,\d+)*$')] [string] $From  = '12000,66000',
     [ValidateRange(1, 6000)]      [int]   $Span  = 360,
-    [ValidateRange(1, 10000)]     [int]   $Every = 50,
+    [ValidateRange(1, 10000)]     [int]   $Every = 25,
     # Case-sensitive: the names are Lua table keys.
     [ValidatePattern('^((confinement|heating|capture)_ladder=\d+)(,(confinement|heating|capture)_ladder=\d+)*$', Options = 'None')]
     [string] $Rungs,
@@ -110,8 +113,13 @@ $pipeCounts = @($Pipes -split ',' | ForEach-Object { [int] $_ })
 $spans      = @($From -split ',' | ForEach-Object { [int] $_ })
 if (@($pipeCounts | Sort-Object -Unique).Count -ne $pipeCounts.Count) { throw "-Pipes names a count twice: $Pipes" }
 foreach ($count in $pipeCounts) {
-    if ($count -lt 3 -or $count -gt 12) { throw "-Pipes $count is outside 3 to 12, the line lengths the bench builds." }
+    if ($count -lt 3 -or $count -gt 12) { throw "-Pipes $count is outside 3 to 12." }
 }
+foreach ($start in $spans) {
+    if ($start -ge $Ticks) { throw "-From $start starts at or after -Ticks ($Ticks), so that span would print nothing." }
+}
+$named = @($Rungs -split ',' | Where-Object { $_ } | ForEach-Object { ($_ -split '=')[0] })
+if ($named.Count -ne @($named | Sort-Object -Unique).Count) { throw "-Rungs names a ladder twice: $Rungs" }
 $rungsLua = if ($Rungs) { '{ ' + (($Rungs -split ',') -join ', ') + ' }' } else { 'nil' }
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
@@ -388,6 +396,11 @@ try {
     $cycles = @(Read-Records $ran 'cycle')
     $ticked = @(Read-Records $ran 'tick')
     if ($cycles.Count -eq 0) { throw 'the rig reported no heater cycle; the heater never crafted.' }
+    # The other half of the instrument's check. Had the first mod run AFTER ours, the two readings
+    # would agree on every tick and every cycle would read a burn of zero.
+    if (-not ($cycles | Where-Object { (Num $_['burned']) -gt 0 })) {
+        throw 'no cycle read any burn: the reading before the step never differed from the one after, so the two mods are not in the order the probe needs.'
+    }
 
     Write-Host ''
     Write-Host "Factorio $version -- $Ticks ticks, one heater per cell, D-D"

@@ -127,9 +127,10 @@
     reproduce, #518), and the model FED at 2.5 u/s gives
     322.7 MW at 276.9 units (#499). What the model has no
     concept of is the feed line. The reactor's 1000-unit box joins the fluid segment its rf-pipe are
-    in, and the two are TWO STORES (#516): the segment's capacity counts the box's volume, 1300 at
-    three pipes, and the segment holds that plasma beside what the box reads, so the heater has a
-    line of 2300 units to fill there and not 1000. The box does not read a share of the segment.
+    in, and the two are TWO STORES (#516): the segment's capacity counts the box's volume, and the
+    segment holds that plasma beside what the box reads. On the link bench's three pipes that is
+    1300 beside the box's 1000; this rig's line is longer and was not measured. So the heater
+    fills the segment as well as the box, and the box does not read a share of the segment.
     docs/research/exchanger-coverage.md, "Why the box fills slower than the fed model", has the
     measurement. The half hour is the curve above, measured, and rests on neither reading.
 
