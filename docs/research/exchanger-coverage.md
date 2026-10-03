@@ -743,7 +743,8 @@ plant-efficiency rung 3 corner: 60.95 MW at full feed and 65.56 at 30% of it.
 other cell is at least 1.0 MW from the line, at full feed and tuned.
 
 **The six supply-limited heating × confinement cells are `X` at every capture**, 104.7 MW or
-more. What they sell on a second heater was not computed.
+more. [The supply-limited cells on two heaters](#the-supply-limited-cells-on-two-heaters) reads
+them on a second heater.
 
 Three of the twelve cells are measured in the game. Heating rung 4 alone and confinement rung 3
 alone are in the first table of this section: 77.7 – 93.2 MW and 76.0 – 91.1, both brackets
@@ -791,6 +792,50 @@ The fed grid, **full feed / tuned**, in MW. **Bold is over 90.** \* is supply-li
 
 This records readings. Whether 90 MW should move is #315 and Truls's.
 
+#### The supply-limited cells on two heaters
+
+[#526](https://github.com/trulsjo/realistic-fusion-refreshed/issues/526). The method of the
+one-heater map, at two heaters' feed: `M.settle_fed`, 7200 s at the 6-tick step, D-D, 5 u/s
+arriving at 1×10⁶ °C, computed 2026-10-04. 14 400 s reads the same to the digits quoted. Each
+cell was settled once at the shipped capture and its MW scaled; the top corner settled with
+capture 0.9375 passed instead agrees to six decimals. Held, °C and burn do not depend on
+capture. The tuned reading was not swept at this feed.
+
+| cell | one heater: held | °C | two heaters: held | °C | burn, u/s | MW at capture 0.85 / 0.9 / 0.925 / 0.9375 |
+|---|---|---|---|---|---|---|
+| τ 50 s, 70 MW — heating 4 + confinement 2 | 789.8 | 9.476e8 | 1000 | 7.047e8 | 2.795 | 122.0 / 129.2 / 132.8 / 134.6 |
+| τ 50 s, 75 MW — heating 5 + confinement 2 | 720.4 | 1.115e9 | 1000 | 7.663e8 | 3.105 | 132.6 / 140.4 / 144.3 / 146.2 |
+| τ 60 s, 60 MW — heating 2 + confinement 3 | 782.7 | 9.625e8 | 1000 | 7.005e8 | 2.773 | 113.1 / 119.8 / 123.1 / 124.7 |
+| τ 60 s, 65 MW — heating 3 + confinement 3 | 707.4 | 1.153e9 | 1000 | 7.746e8 | 3.147 | 124.9 / 132.2 / 135.9 / 137.7 |
+| τ 60 s, 70 MW — heating 4 + confinement 3 | 659.9 | 1.313e9 | 1000 | 8.435e8 | 3.492 | 135.9 / 143.9 / 147.9 / 149.9 |
+| τ 60 s, 75 MW — heating 5 + confinement 3 | 625.0 | 1.460e9 | 1000 | 9.080e8 | 3.812 | 146.3 / 154.9 / 159.2 / 161.4 |
+
+**A second heater fills all six.** The most any of them burns at a full box is 3.812 u/s, under
+two heaters' 5, so none is supply-limited on two and a third heater changes no figure: the
+model reads the same at 7.5 u/s. Filling the box cools it, by 26% to 38%, and raises what it
+sells by 7.7% at heating 4 + confinement 2 (113.3 to 122.0 MW at capture 0.85) and by 29.5% at
+the top of both ladders (113.0 to 146.3).
+
+**Each then needs two exchangers, at every capture.** All twenty-four figures are over one
+exchanger's 90 MW and under two's 180; the largest is 161.4. They needed two on one heater as
+well: the one-heater figures run from 104.7 to 128.0 MW.
+
+**Two of the six are measured in the game on two heaters.** `bench-mod-links.ps1 -Heaters 2
+-Ticks 1000000 -Window 20000`, with `-Rungs heating_ladder=4,confinement_ladder=2` or with
+nothing, which is every ladder at its top. D-D, six pipes, Factorio 2.0.77 (build 84539),
+2026-10-04, both passing the bench's gate, both read at 980 000 ticks.
+
+| research state | game: MW | held | °C | fed model: held | °C | MW | u/s |
+|---|---|---|---|---|---|---|---|
+| heating 4 + confinement 2, capture 0.85 | 106.7 – 128.0 | 999.9 | 7.047e8 | 1000 | 7.047e8 | 122.0 | 2.795 |
+| every ladder at its top, capture 0.9375 | 141.1 – 169.3 | 999.8 | 9.082e8 | 1000 | 9.080e8 | 161.4 | 3.812 |
+
+Both boxes are full where the model fills them, both temperatures are within 0.02% of it, and
+both fed MW figures are inside the game's bracket. On one heater the same two states held 788.6
+and 623.8 units. The four-heater run under
+[The default four-heater run, settled](#the-default-four-heater-run-settled) is the second
+state again, and reads the same point.
+
 **The seventy-six states still unmeasured on a fuel line** are every state with two or more
 ladders researched, less the top corner and the seven combination states measured above:
 ninety-six, less the unresearched corner, the eleven single-ladder states, the far corner and those
@@ -798,8 +843,8 @@ seven. The fed model reads all of them, and it has matched the game at all twent
 
 ## What this does not cover
 
-- **THE FED REACTOR, measured at twenty of ninety-six states** on one heater, and at one on
-  two — see [The fed reactor, one heater](#the-fed-reactor-one-heater) above. Every figure outside that
+- **THE FED REACTOR, measured at twenty of ninety-six states** on one heater, at three on
+  two and at one on four — see [The fed reactor, one heater](#the-fed-reactor-one-heater) above. Every figure outside that
   section is the held reactor on the pure model.
 - **THE D-T TIER.** Only `rf-d-d-plasma`. A D-T reactor is a different sizing question and
   `rf-hc-exchanger` is the machine on the other end of it.
