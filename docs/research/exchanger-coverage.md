@@ -228,7 +228,9 @@ confinement rung 3 at heating rungs 2 to 5. Plant efficiency never touches the p
 **twenty-four of the ninety-six states supply-limited on one heater**. Every other cell keeps its
 box full and burns at most 2.466 u/s. This replaces the earlier candidate split, which counted
 forty-four states off the settled point on one heater. That split read the held model's demand,
-and the held model is not the plant.
+and the held model is not the plant. Five cells either side of the fed model's line are measured
+under [Five combination states, nearest the line](#five-combination-states-nearest-the-line), and
+land where it puts them.
 
 ### What the earlier readings were
 
@@ -307,6 +309,69 @@ all in one fluid segment, selling 282.1 – 338.5 MW across the bench's two boun
 2.183×10⁹ °C (`d-t-ignition.md`), 0.5% under this temperature; #486's 252 000-tick reading was
 277.3 units at 2.180×10⁹ °C.
 
+### Confinement rung 3 on two heaters
+
+[#497](https://github.com/trulsjo/realistic-fusion-refreshed/issues/497). #485 read this state
+full but 17.5% colder than the held model, 5.349×10⁸ °C against `M.settle`'s 6.483×10⁸, the widest
+gap of any single-ladder state. The fed model closes it: 5.341×10⁸ °C against the game's 5.342×10⁸
+in the table above. The held model never pays to heat the arriving fuel up from the heater's
+1×10⁶ °C; a fuel line always does. Left open was whether more plasma could reach the held point.
+**It cannot.** `-Heaters 2 -Rungs confinement_ladder=3 -Ticks 600000 -Window 30000`, D-D,
+confinement rung 3 and nothing else researched, two heaters, Factorio 2.0.77, 2026-10-03, passing
+the bench's gate including its fuel-line check:
+
+| ticks | 30 000 | 60 000 | 90 000 | 150 000 | 270 000 | 360 000 | 570 000 |
+|---|---|---|---|---|---|---|---|
+| plasma held | 775.2 | 999.8 | 999.8 | 999.8 | 999.8 | 999.8 | 999.8 |
+| reactor, °C | 7.943e8 | 6.028e8 | 5.667e8 | 5.428e8 | 5.349e8 | 5.343e8 | 5.342e8 |
+
+At 570 000 ticks the six pipes hold 1.011×10⁶ °C and the reactor sells **76.0 – 91.1 MW**. That is
+the one-heater reading to every digit quoted: same temperature, same bracket. The box never drained
+after it filled. #501's one-heater run filled it by 168 000 ticks; two heaters fill it by 60 000.
+The fed model agrees, at 1000 units, 5.341×10⁸ °C and 86.9 MW on 5 u/s as on 2.5. A full box
+takes only what it burns, 1.932 u/s, however much the line could bring. So the held model's
+settled point is not where any fuel line settles at this rung.
+
+### Five combination states, nearest the line
+
+[#498](https://github.com/trulsjo/realistic-fusion-refreshed/issues/498). The held model's demand
+split said one heater keeps a box full when the settled reactor asks under 2.5 u/s, and #498 named
+the three cases nearest that line. The fed model draws the line elsewhere: it keeps all three full.
+Its own line runs between heating rung 3 with confinement rung 2, full at 2.466 u/s, and heating
+rung 4 with confinement rung 2, part-full at 2.5. Those two are measured as well. All five: D-D,
+one heater, nothing else researched, Factorio 2.0.77, 2026-10-03, passing the bench's gate
+including its fuel-line check. Four were run `-Ticks 600000 -Window 30000` and are quoted at
+570 000 ticks. Heating 3 + confinement 2 is quoted at 1 560 000 ticks, from `-Ticks 1600000
+-Window 40000`: at 600 000 its box was still filling and the gate refused it on the fuel line
+alone. Columns as in the table above. "Held asks" is `M.settle`'s burn at a full box, 1200 s at
+one tick.
+
+| research state | game: MW | held | °C | fed model: held | °C | MW | u/s | held asks | held split said | fed model said |
+|---|---|---|---|---|---|---|---|---|---|---|
+| heating 4 + confinement 1 | 92.4 – 110.9 | 999.8 | 5.515e8 | 1000 | 5.514e8 | 105.8 | 2.019 | 2.343 | full, at 6.153e8 | full |
+| heating 2 + confinement 2 | 86.9 – 104.3 | 999.8 | 5.715e8 | 1000 | 5.714e8 | 99.4 | 2.120 | 2.612 | part-full | full |
+| heating 5 + confinement 1 | 101.3 – 121.5 | 999.8 | 6.056e8 | 1000 | 6.055e8 | 115.9 | 2.293 | 2.692 | part-full | full |
+| heating 3 + confinement 2 | 97.0 – 116.4 | 999.8 | 6.399e8 | 1000 | 6.397e8 | 111.0 | 2.466 | 3.087 | part-full | full |
+| heating 4 + confinement 2 | 99.0 – 118.8 | 788.6 | 9.489e8 | 789.8 | 9.476e8 | 113.3 | 2.500 | 3.534 | part-full | part-full |
+
+**The fed model's split survives at all five, and the held one fails at four.** Every box landed
+where the fed model put it: four full, one part-full at 788.6 against 789.8 units. Every
+temperature sits within 0.14% of the fed model's, and every fed MW figure is inside the game's
+bracket. The held split said heating 2 + confinement 2, heating 5 + confinement 1 and heating 3 +
+confinement 2 could not be kept full; all three were. The fourth miss is heating 4 + confinement 1,
+which it called full: it was, but at 5.515×10⁸ °C, 10% under the held model's settled 6.153×10⁸.
+
+**This is #497's explanation tested where it was not measured.** The held model, which never heats
+the arriving fuel, runs 12% to 17% over the game at the three full states #498 named. The fed
+model, which does, is within 0.02% at each. The part-full state's pipes stay in the reactor's pool,
+at 9.478×10⁸ °C against its 9.489×10⁸, as the top corner's and the D-T reactor's do.
+
+**One thing the fed model does not reproduce is how long filling takes** at the line. At heating
+3 + confinement 2 it fills the box by 360 000 ticks (6000 s). The game first held 1000 units at
+880 000 ticks, running hotter than the model all the way up: 8.99×10⁸ °C at 120 000 ticks
+against the model's 7.42×10⁸. Why was not chased. The settled point is what this note quotes,
+and there the two agree.
+
 ### What that does to coverage, on one heater
 
 The coverage map and the grid above are the held model, and they stay so. **On one heater the plant
@@ -323,15 +388,15 @@ the whole confinement ladder. The bracket alone decides neither heating rung 4 n
 rung 3, because both straddle 90; the fed model's figure inside each bracket is the reading.
 Whether 90 should move is still #315.
 
-**The eighty-three states still unmeasured on a fuel line** are every state with two or more
-ladders researched, less the top corner: ninety-six, less the unresearched corner, the eleven
-single-ladder states and the far corner. The fed model reads all of them, and it has matched the
-game at all thirteen measured.
+**The seventy-eight states still unmeasured on a fuel line** are every state with two or more
+ladders researched, less the top corner and the five combination states measured above:
+ninety-six, less the unresearched corner, the eleven single-ladder states, the far corner and those
+five. The fed model reads all of them, and it has matched the game at all eighteen measured.
 
 ## What this does not cover
 
-- **THE FED REACTOR, measured at thirteen of ninety-six states** — see
-  [The fed reactor, one heater](#the-fed-reactor-one-heater) above. Every figure outside that
+- **THE FED REACTOR, measured at eighteen of ninety-six states** on one heater, and at one on
+  two — see [The fed reactor, one heater](#the-fed-reactor-one-heater) above. Every figure outside that
   section is the held reactor on the pure model.
 - **THE D-T TIER.** Only `rf-d-d-plasma`. A D-T reactor is a different sizing question and
   `rf-hc-exchanger` is the machine on the other end of it.

@@ -200,7 +200,7 @@
 [CmdletBinding()]
 param(
     [string] $FactorioExe,
-    [ValidateRange(600, 1000000)] [int] $Ticks      = 126000,
+    [ValidateRange(600, 2000000)] [int] $Ticks      = 126000,
     [ValidateRange(300, 100000)]  [int] $Window     = 6000,
     [ValidateRange(1, 12)]        [int] $Exchangers = 4,
     [ValidateSet('rf-d-d-plasma', 'rf-d-t-plasma')] [string] $Plasma = 'rf-d-d-plasma',

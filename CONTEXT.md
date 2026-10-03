@@ -237,8 +237,11 @@ each other (#109):
   does, and runs a little colder. Fed by exactly one heater, nothing researched, a D-D reactor
   settles at 999.9 units and 2.382×10⁸ °C, selling 48.3 to 58.0 MW across the bench's two bounds,
   at 870 000 ticks — 2026-10-03, Factorio 2.0.77. That is `M.settle_fed`'s 2.381×10⁸ °C and
-  55.3 MW, not settled's (#502). All thirteen one-heater states measured — the eleven single-ladder
-  walks and the two corners — sit on the fed model ([`exchanger-coverage.md`](docs/research/exchanger-coverage.md)).
+  55.3 MW, not settled's (#502). All eighteen one-heater states measured — the eleven single-ladder
+  walks, the two corners and five combination states — sit on the fed model
+  ([`exchanger-coverage.md`](docs/research/exchanger-coverage.md)). So does confinement rung 3 on
+  two heaters, which settles where one heater does: no fuel line reaches settled there,
+  because a fuel line pays to heat what it brings (#497).
   Readings taken at 126 000 ticks, such as #440's 2.412×10⁸ °C and 48.9 to 58.6 MW, were still
   cooling (#503).
 - **Heater-fed** — a reactor its heater is still filling, held below full by the fuel line rather
