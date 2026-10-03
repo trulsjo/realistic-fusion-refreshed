@@ -702,11 +702,34 @@ The `tertiary` cell's supply is not the rig's usual one: vanilla's `electric-ene
 itself `tertiary`, and the 2.0.77 docs for
 [`ElectricUsagePriority`](https://lua-api.factorio.com/2.0.77/types/ElectricUsagePriority.html)
 describe `tertiary` input as collecting "the overproduction", which a `tertiary` supply is not. So
-this cell's supply is at `secondary-output`, the class those docs give steam generators; a `tertiary`
-load against a `tertiary` supply was not run. Against it the reactor holds its 50 MW down to 50 MW of
+this cell's supply is at `secondary-output`, the class those docs give steam generators. Against it
+the reactor holds its 50 MW down to 50 MW of
 supply and the load gets exactly what is left over (45 MW at 95, 5 at 55, nothing from 50 down). The
 load gave nothing back on any rung. Why was not measured, so this says nothing about an accumulator
 discharging into a short network.
+
+**A `tertiary` load on a `tertiary` supply draws nothing at all**
+([#490](https://github.com/trulsjo/realistic-fusion-refreshed/issues/490)). Measured 2026-10-03
+against Factorio 2.0.77, same rig, same ladder, nothing researched (asserted again), in a sixth cell,
+`tert-tert`: the `tertiary` cell's two members on the rig's usual supply, vanilla's
+`electric-energy-interface`, alone on a network of its own.
+
+| supply, MW | reactor drew | load drew | class order predicted for the load |
+|---|---|---|---|
+| 120 to 100, five rungs | 50 | **0** | 50 |
+| 95 to 55, nine rungs | 50 | **0** | 45 down to 5 |
+| 50 to 20, seven rungs | all of the supply | 0 | 0 |
+
+The reactor is where class order puts it on all 21 rungs, to within 1.25e-6 MW. The load drew
+nothing where the prediction gave it the whole surplus: 50 MW on the top five rungs, 45 down to
+5 on the next nine. It gave nothing back on any rung. The supply's class is the only thing that
+differs from `tertiary`, where the same load drew the whole surplus. So the class-ordered
+prediction holds for a `tertiary` load on a `secondary-output` supply and not on a `tertiary`
+one. That fits the docs' wording,
+if what a `tertiary` supply makes does not count as overproduction, but the probe measured the
+draw and not the reason. The other five cells still match to within 2e-6 MW on every rung
+(worst 1.833e-6), so the sentence above about all five stands for those five.
+
 Whether the mod should guarantee any of this is the scope decision above and Truls's; the
 probe asserts nothing about the answer.
 
@@ -850,7 +873,8 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   priority classes and one reactor type. A network mixing all three input classes at once, an
   accumulator that discharges into a short network, and the aneutronic reactor or researched rungs
   as members have not been run. The class-ordered water-fill predicts them, and a prediction is all
-  it is.
+  it is: #490 measured one cell it gets wrong, a `tertiary` load on a `tertiary` supply, by up to
+  50 MW.
 - **Why the engine floors a fluid transfer to whole float32 ULPs per tick is inferred, not
   documented.** #147 measured the flooring — five levels, two run lengths, the legendary rate landing
   on 2⁻²⁴ units a tick to ten digits — and no 2.0.77 doc page found in this pass says the engine does
