@@ -796,6 +796,45 @@ way the normal reactor does beside a legendary one in `pair`. All 21 rungs are w
 of the prediction. That is wider than the 2e-6 of the cells above, on a member drawing four
 times as much. Neither gave anything back.
 
+**The prediction holds at the top heating rung, and it fails in the same one cell**
+([#494](https://github.com/trulsjo/realistic-fusion-refreshed/issues/494)). Measured 2026-10-04
+against Factorio 2.0.77 by `probe-brownout-contention.ps1 -HeatingRungs 5`: the whole rig, every
+cell above, with the rig's force holding `rf-plasma-heating-1` to `-5` and no other rung of any
+ladder, asserted rung by rung. Research is per force and the rig has one, so no network here
+mixes researched and unresearched reactors. Every `rf-reactor` then spends 75 MW against the
+same 90 MW ask at normal, the loads spend 75 with it, and `rf-aneutronic-reactor`, which no
+ladder reaches, still spends 200. The ladder is the same 1.2 down to 0.2 of what each cell
+spends, so every supply is larger in MW than in the tables above.
+
+| cell | worst deviation from the prediction, MW | what moved |
+|---|---|---|
+| `pair` | 3.2e-6 | legendary full above 105 MW of supply, where it was 70; 21.43 against 53.57 at 75 MW |
+| `secondary` | under 1e-13 | nothing: an even split |
+| `primary` | under 1e-13 | nothing: the load first |
+| `four` | 1.8e-6 | caps at 192, 257.8 and 282.7 MW, the same fractions of the cell's spend |
+| `tertiary` | under 1e-13 | nothing: the reactor first |
+| `tert-tert` | **75** | the load drew nothing on any rung, as in #490 |
+| `three` | 1.4e-13 | nothing: class order |
+| `aneutronic` | 5e-6 | **the D-D reactor is no longer held at its spend below full supply** |
+| `discharge` | 1.1e-6, on 33 rows | 5.4 MW split 1.54 : 3.86 again, on 21.43 and 53.57 |
+
+Seven of the eight ladder cells match on all 21 rungs, and the discharge cell on all 33 rows.
+`tert-tert` misses by the load's whole predicted draw, as it does with nothing researched: 75 MW
+on the top five rungs, 67.5 down to 7.5 on the next nine.
+
+**Where every member's spend moves together, the caps stay at the same fraction of supply.**
+`pair` and `four` cap at 0.70, and at 0.64, 0.859 and 0.942, of what the cell spends, as they do
+with nothing researched, because asks did not move and every spend rose by the same half.
+
+**Where one member's spend moves and the other's does not, the cap moves.** In `aneutronic` a
+90 : 240 share hands the D-D reactor 75 MW only at 275 MW of supply, which is exactly what the
+two spend. So at this rung there is no band where the aneutronic reactor absorbs the shortfall
+alone: at 95% of supply the two draw 71.25 and 190, both 5% short. With nothing researched that
+band ran from 250 MW down to 183.3.
+
+Only this rung was run. Rungs 1 to 4 are not measured, and neither is a state with the
+confinement or plant-efficiency ladder held, which move no electrical spend.
+
 Whether the mod should guarantee any of this is the scope decision above and Truls's; the
 probe asserts nothing about the answer.
 
@@ -938,8 +977,9 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   reactors on one network and a reactor against a `tertiary` load; #491 put all three input
   classes on one network, on a `secondary-output` supply only; #492 discharged accumulators into
   one short network, at one supply, with neither reactor capped; #493 put the aneutronic
-  reactor beside one D-D reactor, both at normal quality. Researched rungs as members have not
-  been run. The class-ordered water-fill predicts them, and a prediction is all
+  reactor beside one D-D reactor, both at normal quality; #494 ran the whole rig once more
+  at heating rung 5 and at no rung between. A network mixing researched and unresearched
+  reactors needs two forces and has not been built. The class-ordered water-fill predicts them, and a prediction is all
   it is: #490 measured one cell it gets wrong, a `tertiary` load on a `tertiary` supply, by up to
   50 MW.
 - **Why the engine floors a fluid transfer to whole float32 ULPs per tick is inferred, not
