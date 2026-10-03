@@ -775,6 +775,27 @@ the legendary reactor takes the larger part of a discharge as it takes the large
 supply. Neither reactor is capped at this supply; a discharge that lifts one to its spend was
 not run.
 
+**Members that spend differently are split by the same water-fill**
+([#493](https://github.com/trulsjo/realistic-fusion-refreshed/issues/493)). Measured 2026-10-04
+against Factorio 2.0.77, same rig, same ladder, nothing researched (asserted again), in a ninth
+cell, `aneutronic`: a normal `rf-reactor` and a normal `rf-aneutronic-reactor` on the rig's
+usual supply, alone on a network of its own. Every reactor in the other cells spends 50 MW.
+These ask 90 and 240 MW and spend 50 and 200, read off the prototypes and `reactor-logic`, and
+each is kept at its own box's fill of its own plasma, 1000 units of D-D and 3000 of D-He3.
+
+| supply, MW | `rf-reactor` drew | `rf-aneutronic-reactor` drew |
+|---|---|---|
+| 300 to 250, five rungs | 50 | 200 |
+| 237.5 to 187.5, five rungs | 50 | supply less 50: 187.5 down to 137.5 |
+| 175 to 50, eleven rungs | 90 parts in 330: 47.73 down to 13.64 | 240 parts in 330: 127.3 down to 36.36 |
+
+A 90 : 240 share hands the D-D reactor its 50 MW while the supply is above 183.3 MW, and the
+measured rungs fall on the right side of that: full at 187.5 and 47.73 at 175. So below what
+the two spend the aneutronic reactor absorbs the whole shortfall alone, down to 73% of it, the
+way the normal reactor does beside a legendary one in `pair`. All 21 rungs are within 7.3e-6 MW
+of the prediction. That is wider than the 2e-6 of the cells above, on a member drawing four
+times as much. Neither gave anything back.
+
 Whether the mod should guarantee any of this is the scope decision above and Truls's; the
 probe asserts nothing about the answer.
 
@@ -916,8 +937,9 @@ Stated plainly, because this repository treats an unverified claim as a defect.
 - **Contention is measured for small cells, not for a factory.** #439 ran pairs and #487 added four
   reactors on one network and a reactor against a `tertiary` load; #491 put all three input
   classes on one network, on a `secondary-output` supply only; #492 discharged accumulators into
-  one short network, at one supply, with neither reactor capped. Each cell holds one reactor
-  type. The aneutronic reactor and researched rungs as members have not been run. The class-ordered water-fill predicts them, and a prediction is all
+  one short network, at one supply, with neither reactor capped; #493 put the aneutronic
+  reactor beside one D-D reactor, both at normal quality. Researched rungs as members have not
+  been run. The class-ordered water-fill predicts them, and a prediction is all
   it is: #490 measured one cell it gets wrong, a `tertiary` load on a `tertiary` supply, by up to
   50 MW.
 - **Why the engine floors a fluid transfer to whole float32 ULPs per tick is inferred, not
