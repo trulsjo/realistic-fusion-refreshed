@@ -2701,6 +2701,8 @@ end
 -- cadence control.lua steps -- the
 -- model lands where #486 measured the game on 2026-10-02 (Factorio 2.0.77, one heater, nothing
 -- researched): 277.3 units at 2.180e9 C. Held at that fill instead it settles 17% hotter.
+-- #518 could not reproduce that reading: #486's command reads 275.6 units at 2.193e9 C, as #510
+-- did. The model's 276.9 and 2.183e9 are within this block's 1% of either, so the pins stand.
 do
   local dt, feed = 6 / 60, L.heater_plasma_rate()
   local amount, t_c, last = L.settle_fed(SPEC, "rf-d-t-plasma", nil, 1200, math.huge, dt)
@@ -2717,7 +2719,7 @@ end
 
 -- THE FED D-D REACTOR ON ONE HEATER, AT THE BOUNDARY CELLS (#509). Since #502
 -- docs/research/exchanger-coverage.md reads one heater's plant off L.settle_fed, and the game sits
--- on it at all eighteen one-heater states measured. These are the figures that note's one-heater
+-- on it at all twenty one-heater states measured. These are the figures that note's one-heater
 -- coverage reading rests on: where one 90 MW exchanger stops covering, and the corner a heater
 -- cannot keep full. 7200 s, because 1200 leaves confinement rung 3 and the corner short of settled (the note's
 -- "Three readings, one method each"); the 6-tick step is the cadence control.lua steps at.
