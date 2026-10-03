@@ -179,13 +179,13 @@ resolve — it runs from 12% under 320 to 6% over — which fits an ignited D-T 
 is fed, with bremsstrahlung small beside its fusion power. **The model reproduces it once it is fed
 rather than held**
 ([#499](https://github.com/trulsjo/realistic-fusion-refreshed/issues/499)). `M.settle` holds the
-amount fixed, so it never pays to heat the fuel coming in: held at the measured 277.3 units it runs
+amount fixed, so it never pays to heat the fuel coming in: held at #486's 277.3 units it runs
 17% hotter than the game, at 2.54×10⁹ °C, and burns 2.31 u/s, short of the heater's 2.5. Fed
 instead — 2.5 u/s of plasma arriving at the heater recipe's 1×10⁶ °C and mixed into the box by
 amount, and stepped every 6 ticks as `control.lua` steps it, which is `M.settle_fed` since
 [#502](https://github.com/trulsjo/realistic-fusion-refreshed/issues/502) — the same model settles at **276.9 units
-and 2.183×10⁹ °C, burning 2.500 u/s and selling 322.7 MW**, against the game's 277.3 units and
-2.180×10⁹ °C. (#499 mixed the fuel in at 15 °C; at 1×10⁶ °C every figure here is the same to
+and 2.183×10⁹ °C, burning 2.500 u/s and selling 322.7 MW**, against the 277.3 units and
+2.180×10⁹ °C #486 quoted for the game, and the 275.6 and 2.193×10⁹ it reads reproducibly (#518). (#499 mixed the fuel in at 15 °C; at 1×10⁶ °C every figure here is the same to
 the digits quoted.) So the ~320 MW agreement survives at the matched operating point. The held
 run's 319.0 MW, at the same 6-tick step — 319.1 at one tick, the figure #499 and `1df5855`
 quote — agreed only because two errors cancel: running hot, it fuses 27 MW less (325 MW against
@@ -478,8 +478,8 @@ at 1200, 322 at 1800, 324 at 2100 and flat thereafter.
 **The reason it is slow is the pipe, not the plasma.** The equilibrium the game reaches — 324 MW at
 270 units — is the one the pure-Lua model predicts, to three figures. *(Both are pre-#52, from
 before radiation. With radiation, one heater and nothing researched, the game measured 282.1 – 338.5
-MW at 277.3 units (#486, 2026-10-02, Factorio 2.0.77), and the model fed at 2.5 u/s gives 322.7 MW
-at 276.9 units (#499).)* What the model has no concept of
+MW (#486, 2026-10-02, Factorio 2.0.77) at 275.6 units (#510; #486's 277.3 does not reproduce,
+#518), and the model fed at 2.5 u/s gives 322.7 MW at 276.9 units (#499).)* What the model has no concept of
 is the feed line: a cell's plasma segment is the reactor's 1000-unit box *plus every `rf-pipe` between
 it and the heater*, and the engine fills the whole segment rather than the box. The reactor's own box
 therefore approaches its share of a much larger volume. The rig now asserts that `full` has stopped
