@@ -51,7 +51,8 @@
     between the last two windows is held under 1% of the REACTOR's temperature. Of the reactor's
     and not its own, because the question is how much heat it still carries in: a pipe settled near
     the heater's 1e6 degC can move by a third of itself and change nothing. That run fails the gate
-    on the fuel line at 3.1%; the same state at 870 000 ticks passes it.
+    on the fuel line at 3.1%; the same state run 900 000 ticks passes it, read at 870 000, its
+    last 30 000-tick window.
 
     THE WINDOW TRACE prints every window in three rows per cell: the energy rate, the plasma
     temperature, and -- since #496 -- how much plasma the reactor holds. The gate reads only the

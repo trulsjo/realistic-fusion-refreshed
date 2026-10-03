@@ -250,8 +250,8 @@ Factorio 2.0.77 (build 84539), one heater, nothing researched, every run passing
 The spread of all three quantities is zero, in each state. The three D-T reports are the same
 file, character for character: every window of the trace and every pipe of the fuel line, not
 only the last. So are the three D-D reports, except for one line. One of them was created on a
-different map and says so: 27 enemy entities removed where the other two say 14. Its 89 windows
-are the other two's.
+different map and says so: 27 enemy entities removed where the other two say 14. Its 89 windows,
+the last at 890 000 ticks, are the other two's.
 
 **So a difference between two readings of one state is a difference between the runs**: their
 length, their window, their arguments or the tree they ran on. An agreement quoted here at 0.02%
@@ -496,6 +496,24 @@ settled point.
 At 10 000 ticks the box holds 180.7 of the 416.7 units fed and the segment 216.8. That is 397.5
 between them, and the rest burned. A full line is 2300 units, and then the heater's own 200-unit
 output box backs up behind it. Six pipes report a capacity of 1600, nine 1900 and twelve 2200.
+
+**The box is not inside the segment's figure.** The segment's capacity counts the box's volume,
+so its contents could be read as already including the box. A full line would then be 1300
+units and the sums above a double count. Three readings from the same rig say they are two
+stores.
+
+- **The box does not read a share.** As 1000 of the segment's 1300 it would read 166.8 units at
+  10 000 ticks. It reads 180.7.
+- **The burn only fits the sum.** Between 10 000 and 40 000 ticks the heater fed 1250 units. Box
+  plus segment grew by 967.2, which leaves 282.8 burned, 0.57 u/s. The segment alone grew by
+  530.6, which would leave 719.4 burned, 1.44 u/s. The fed model's reactor never burns more
+  than 0.76 u/s in this fill.
+- **Tick by tick, the two add up to what was fed.** A per-tick log over one heater cycle, ticks
+  12 001 to 12 121: the reactor's step takes 0.030 units from the box every 6 ticks, so of the 5
+  units the heater made, 0.6 burned and 4.4 stayed. The box rose by 1.99 and the segment's
+  contents by 2.39, which is 4.37. Within the cycle the segment's contents jump when the heater
+  delivers and then fall while the box fills. That log came from a scratch copy of the bench and
+  is not committed; the first two readings are from the bench as it stands.
 
 **The game's fill beside the model's**, at the same ticks. "Pooled" is the fed model's loop with
 that inventory added: the box steps its share of one pool, the result is mixed back, and the

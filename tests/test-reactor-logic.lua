@@ -2706,8 +2706,8 @@ end
 do
   local dt, feed = 6 / 60, L.heater_plasma_rate()
   local amount, t_c, last = L.settle_fed(SPEC, "rf-d-t-plasma", nil, 1200, math.huge, dt)
-  near(amount, 277.3, 0.01, "a fed D-T reactor holds the fill the game measured")
-  near(t_c, 2.180e9, 0.01, "at the temperature the game measured")
+  near(amount, 277.3, 0.01, "a fed D-T reactor holds the fill #486 quoted for the game")
+  near(t_c, 2.180e9, 0.01, "at the temperature #486 quoted for it")
   near(last.plasma_consumed / dt, feed, 0.001, "burning exactly what one heater makes")
   local held = L.settle(SPEC, "rf-d-t-plasma", 277.3, 1200, math.huge, dt)
   check(held > 1.15 * 2.180e9, "held at that fill without the feed it runs over 15% hotter",
