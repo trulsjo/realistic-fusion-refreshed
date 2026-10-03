@@ -4,8 +4,8 @@
     it competes with, up to four reactors to a network -- so the contention half of docs/research/quality.md's brownout sentence is observed
     rather than assumed. The rig #439 asks for, extended by #487 past pairs and to a tertiary load,
     by #490 to that load on a tertiary supply, by #491 to all three input classes at once, by
-    #492 to an accumulator discharging into a short network, by #493 to the aneutronic reactor, and
-    by #494 to a researched heating rung.
+    #492 to an accumulator discharging into a short network, by #493 to the aneutronic reactor, by
+    #494 to a researched heating rung, and by #528 to a vanilla accumulator as load and as supply.
 
 .DESCRIPTION
     A PROBE, NOT A CHECK. Every line it prints is a measurement, and exit 0 means the probe ran and
@@ -22,7 +22,7 @@
     reactor. What a player builds is several consumers on one network, and whether the engine
     divides a short supply in proportion to what each ASKS for is what this measures.
 
-    WHAT IS BUILT. Eight ladder cells and one discharge cell, each ONE electric network, and each alone: the report prints every
+    WHAT IS BUILT. Ten ladder cells and five discharge cells, each ONE electric network, and each alone: the report prints every
     network id, and the rig errors if a cell's consumers are not all on one network or if two cells
     share one. Every consumer in a cell has a name+quality key of its own, for the reason below.
 
@@ -56,9 +56,16 @@
                  plasma at its own box's fill. Every other cell's members spend the same 50 MW;
                  these ask 90 and 240 MW and spend 50 and 200, so the water-fill's caps fall where
                  two different spends put them.
+      acc-tert   A normal rf-reactor and eighteen vanilla accumulators AS A LOAD (#528), on the
+                 rig's usual tertiary supply: tert-tert with a real accumulator where the rig's
+                 copy of an interface was. The accumulators are emptied every second, so they go
+                 on asking for their whole input_flow_limit and never fill; that limit is their
+                 spend. The engine reports their class as managed-accumulator, which the
+                 prediction serves last, after tertiary.
+      acc-sec    The same members on the secondary-output supply: the tertiary cell likewise.
 
-    AND ONE CELL THAT IS NOT ON THE LADDER, because a draining accumulator is not a steady state and
-    a rung's settle-then-measure cannot read it (#492):
+    AND FIVE CELLS THAT ARE NOT ON THE LADDER, because a draining accumulator is not a steady state
+    and a rung's settle-then-measure cannot read it (#492, #528):
 
       discharge  A NORMAL and a LEGENDARY rf-reactor and eighteen vanilla accumulators -- one
                  name+quality key between them, so they are read as one member -- on a
@@ -69,6 +76,14 @@
                  read EVERY SECOND for thirty: what each reactor drew, what the accumulators gave
                  and took, and what they still hold. The prediction beside each row is the
                  water-fill of the supply plus what the accumulators were measured giving.
+      acc-supply A normal rf-reactor and the eighteen accumulators on a secondary-output supply held
+                 at 0.9 of what the reactor spends (#528): charged accumulators as part of a supply
+                 that is short without them.
+      acc-supply-load  The same with the rig's tertiary load beside them.
+      acc-spare  acc-supply with the supply at exactly what the reactor spends, so that once the
+                 reactor's own buffer is full the accumulators have charge nobody but a tertiary
+                 load could ask for.
+      acc-spare-load  The same with the tertiary load: whether it draws what they have to spare.
 
     THE LADDER. Each cell's supply is set to a fraction f of what its consumers SPEND together,
     from 1.2 (every consumer satisfied, with room) down to LOW in steps of STEP. Every rung is twenty seconds,
@@ -239,6 +254,21 @@ local SHAPES = {
   { name = "discharge", m = { { REACTOR, "normal" }, { REACTOR, "legendary" },
                               { ACCUMULATOR, "normal", 18 } },
     supply = "rf-probe-supply-secondary-output", discharge = 0.5 },
+  -- A VANILLA ACCUMULATOR AS THE LOAD (#528), on each supply class; on the ladder.
+  { name = "acc-tert", m = { { REACTOR, "normal" }, { ACCUMULATOR, "normal", 18 } } },
+  { name = "acc-sec",  m = { { REACTOR, "normal" }, { ACCUMULATOR, "normal", 18 } },
+    supply = "rf-probe-supply-secondary-output" },
+  -- AND AS PART OF THE SUPPLY (#528), without the tertiary load and with it.
+  { name = "acc-supply", m = { { REACTOR, "normal" }, { ACCUMULATOR, "normal", 18 } },
+    supply = "rf-probe-supply-secondary-output", discharge = 0.9 },
+  { name = "acc-supply-load", m = { { REACTOR, "normal" }, { "rf-probe-load-tertiary", "normal" },
+                                    { ACCUMULATOR, "normal", 18 } },
+    supply = "rf-probe-supply-secondary-output", discharge = 0.9 },
+  { name = "acc-spare", m = { { REACTOR, "normal" }, { ACCUMULATOR, "normal", 18 } },
+    supply = "rf-probe-supply-secondary-output", discharge = 1 },
+  { name = "acc-spare-load", m = { { REACTOR, "normal" }, { "rf-probe-load-tertiary", "normal" },
+                                   { ACCUMULATOR, "normal", 18 } },
+    supply = "rf-probe-supply-secondary-output", discharge = 1 },
 }
 -- The discharge cell's clock: empty for one rung's length, then read every second for SERIES_S.
 local CHARGE_TICK = RUNG_TICKS
@@ -279,7 +309,9 @@ end
 
 --- The prediction: the classes served in order, each a water-fill of what the one before left.
 --- Within one class it is the by-ask rule; between classes it is "the earlier one first, in full".
-local CLASSES = { "primary-input", "secondary-input", "tertiary" }
+-- managed-accumulator is what the engine reports for a vanilla accumulator, whose prototype says
+-- tertiary. It is served last here: the docs give accumulators "the overproduction".
+local CLASSES = { "primary-input", "secondary-input", "tertiary", "managed-accumulator" }
 local function predict(s, members)
   local got = {}
   for _, m in ipairs(members) do got[m] = 0 end
@@ -337,8 +369,14 @@ script.on_init(function()
         m.spend_w = heating_w(REACTORS[name].spec)
         m.fill, m.plasma = entity.fluidbox.get_capacity(1), REACTORS[name].plasma
       elseif name == ACCUMULATOR then
-        -- A store, not a consumer: it spends nothing, and is charged once by the discharge clock.
-        m.spend_w, m.store, m.out_w = 0, true, source.get_output_flow_limit(quality) * 60
+        m.out_w = source.get_output_flow_limit(quality) * 60
+        if shape.discharge then
+          -- A store, not a consumer: it spends nothing, and is charged once by the discharge clock.
+          m.spend_w, m.store = 0, true
+        else
+          -- A load: emptied every second, so it asks for its whole flow limit for ever.
+          m.spend_w, m.drain = m.limit_w, true
+        end
       else
         -- A load spends what rf-reactor does at this run's rung, not what its prototype was given.
         entity.power_usage = per_tick(heating_w(logic.reactor))
@@ -355,6 +393,7 @@ script.on_init(function()
         if m then
           m.entities[#m.entities + 1] = one.entity
           m.limit_w, m.out_w = m.limit_w + one.limit_w, m.out_w + one.out_w
+          m.spend_w = m.spend_w + one.spend_w
         else m = one end
       end
       return m
@@ -362,12 +401,15 @@ script.on_init(function()
     -- One substation reaches every member and nothing else. A load sits in the strip between the
     -- first two reactor slots, because the corner slots past the first two only touch the supply
     -- area with a reactor's footprint.
-    local members, spend = {}, 0
+    -- `burn` is what the cell's REACTORS spend, which is what a discharge cell's supply is a
+    -- fraction of; `spend` is every member's, which is what the ladder is a fraction of.
+    local members, spend, burn = {}, 0, 0
     for i, spec in ipairs(shape.m) do
       local at = REACTORS[spec[1]] and SLOTS[i] or { 3 * i - 5, 10 }
       local m = spec[3] and group(spec[1], spec[2], spec[3], "consumer " .. i)
         or member(spec[1], spec[2], { ox + at[1], at[2] }, "consumer " .. i)
       members[i], spend = m, spend + m.spend_w
+      if REACTORS[spec[1]] then burn = burn + m.spend_w end
     end
     local substation = rf_place_or_die(surface,
       { name = "substation", position = { ox + 9, 10 }, force = force }, "substation in " .. shape.name)
@@ -376,9 +418,10 @@ script.on_init(function()
       "supply in " .. shape.name)
     -- One tick of the TOP rung's production: the sibling rig's lesson, both halves of it. A
     -- discharge cell has one rung, its own.
-    supply.electric_buffer_size = per_tick(spend * (shape.discharge or HIGH))
+    local top = shape.discharge and burn * shape.discharge or spend * HIGH
+    supply.electric_buffer_size = per_tick(top)
     supply.energy = 0
-    supply.power_production = per_tick(spend * (shape.discharge or HIGH))
+    supply.power_production = per_tick(top)
     cells[#cells + 1] = { name = shape.name, members = members, substation = substation,
       supply = supply, spend_w = spend, rungs = {}, discharge = shape.discharge }
   end
@@ -429,6 +472,9 @@ local function tend_cells(cells)
         end
         m.entity.fluidbox[2] = nil
       end
+      if m.drain then
+        for _, entity in ipairs(m.entities) do entity.energy = 0 end
+      end
     end
     if not (c.substation.valid and c.supply.valid) then error(c.name .. ": its supply is gone") end
   end
@@ -476,7 +522,8 @@ local function report()
     say("cell   %-10s network=%d  supply %s (%s)", c.name, c.network, c.supply.name,
       c.supply.prototype.electric_energy_source_prototype.usage_priority)
     for i, m in ipairs(c.members) do
-      say("         %d  %s/%s %s  limit %.6g MW  spend %.6g MW", i, m.entity.name, m.quality,
+      say("         %d  %s%s/%s %s  limit %.6g MW  spend %.6g MW", i,
+        #m.entities > 1 and (#m.entities .. " x ") or "", m.entity.name, m.quality,
         m.priority, m.limit_w / 1e6, m.spend_w / 1e6)
     end
   end

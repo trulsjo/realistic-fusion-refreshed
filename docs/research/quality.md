@@ -706,7 +706,7 @@ this cell's supply is at `secondary-output`, the class those docs give steam gen
 the reactor holds its 50 MW down to 50 MW of
 supply and the load gets exactly what is left over (45 MW at 95, 5 at 55, nothing from 50 down). The
 load gave nothing back on any rung. Why was not measured, so this says nothing about an accumulator
-discharging into a short network.
+discharging into a short network; #492 and #528 below measure one.
 
 **A `tertiary` load on a `tertiary` supply draws nothing at all**
 ([#490](https://github.com/trulsjo/realistic-fusion-refreshed/issues/490)). Measured 2026-10-03
@@ -834,6 +834,62 @@ band ran from 250 MW down to 183.3.
 
 Only this rung was run. Rungs 1 to 4 are not measured, and neither is a state with the
 confinement or plant-efficiency ladder held, which move no electrical spend.
+
+**The #490 result is the supply's class, not the rig's load: a real accumulator draws nothing
+from a `tertiary` supply either, and a `tertiary` load draws nothing from a charged accumulator**
+([#528](https://github.com/trulsjo/realistic-fusion-refreshed/issues/528)). Measured 2026-10-04
+against Factorio 2.0.77, same rig, nothing researched (asserted again), in six more cells, each
+alone on a network of its own. The accumulators are vanilla's, eighteen to a cell under one
+name+quality key: 5.4 MW in, 5.4 MW out and 90 MJ between them.
+
+*As the load*, on the ladder, beside a normal `rf-reactor`. The accumulators are emptied every
+second, so they ask for their whole 5.4 MW on every rung and never fill.
+
+| cell | supply | reactor drew | accumulators drew | predicted for them |
+|---|---|---|---|---|
+| `acc-tert` | vanilla's interface, `tertiary` | as predicted, all 21 rungs | **0 on all 21** | 5.4 on the top five rungs, 2.63 on the sixth, 0 on fifteen |
+| `acc-sec` | the rig's `secondary-output` | as predicted, all 21 rungs | 5.4 on the top five, 2.63 on the sixth, 0 on fifteen | the same |
+
+`acc-sec` is within 1.25e-6 MW of the prediction on every rung. `acc-tert` is `tert-tert` with a
+real accumulator where the rig's copied interface was, and it reads the same way: the reactor
+where class order puts it, the `tertiary`-class member with nothing.
+
+*As part of the supply*, off the ladder, read every second like `discharge`: a normal
+`rf-reactor` on a `secondary-output` supply, with the accumulators charged on one tick.
+
+| cell | supply | `tertiary` load | reactor drew, MW | accumulators gave | load drew |
+|---|---|---|---|---|---|
+| `acc-supply` | 45 MW, 0.9 of the reactor's spend | none | 50.4 for 16 s, 48.6 in the 17th, then 45 | 5.4 MW for 16 s, 3.6 MJ in the 17th | |
+| `acc-supply-load` | 45 MW | beside them | the same | the same | **0 on all 33 rows** |
+| `acc-spare` | 50 MW, the reactor's spend | none | 54.83 in the first second, then 50 | 4.83 MJ in the first second, then nothing; 85.17 MJ left | |
+| `acc-spare-load` | 50 MW | beside them | the same | the same | **0 on all 33 rows** |
+
+In `acc-spare-load` the accumulators stood at 85.17 MJ for 29 seconds beside a `tertiary` load
+asking 90 MW and getting nothing, and gave it nothing. So charged accumulators serve a
+`secondary-input` reactor and do not serve a `tertiary` load. With `tert-tert` and `acc-tert`
+that is three pairings of a `tertiary`-class source with a `tertiary`-class sink, and the sink
+drew nothing in each: interface to interface, interface to accumulator, accumulator to
+interface. Accumulator to accumulator was not run. The engine reports an accumulator's priority
+as `managed-accumulator`, not the `tertiary` its prototype declares, and the three pairings read
+alike all the same.
+
+**What the 2.0.77 docs say, quoted.** The whole of
+[`ElectricUsagePriority`](https://lua-api.factorio.com/2.0.77/types/ElectricUsagePriority.html)
+on the class is: `"tertiary"` — "As input/output used for accumulators, to collect the
+overproduction or provide energy when neither primary/secondary output can't." "Overproduction"
+is not defined there, and the word does not appear on the 2.0.77 pages for `ElectricEnergySource`,
+`AccumulatorPrototype`, `ElectricEnergyInterfacePrototype` or
+`LuaElectricEnergySourcePrototype`. `managed-accumulator` appears on none of the five. The
+measurements fit one reading of that sentence, that overproduction is what primary and
+secondary outputs make beyond demand, so nothing a `tertiary` source holds counts. That reading
+is this note's and not the docs'.
+
+**The discharge cells also show where the prediction's cap is wrong.** It hands a member no more
+than it spends, on the grounds that its buffer is full. A reactor that has been short has an
+empty buffer, and it took the accumulators' whole 5.4 MW in `acc-supply`: 50.4 MW against a
+50 MW spend, 0.4 MW over the prediction on 16 rows, in both cells at that supply. In `acc-spare`
+it took 4.83 MJ over its spend in the first second and then stopped. The ladder cells never
+show this, because each rung's first half lets the buffers settle.
 
 Whether the mod should guarantee any of this is the scope decision above and Truls's; the
 probe asserts nothing about the answer.
@@ -979,9 +1035,12 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   one short network, at one supply, with neither reactor capped; #493 put the aneutronic
   reactor beside one D-D reactor, both at normal quality; #494 ran the whole rig once more
   at heating rung 5 and at no rung between. A network mixing researched and unresearched
-  reactors needs two forces and has not been built. The class-ordered water-fill predicts them, and a prediction is all
-  it is: #490 measured one cell it gets wrong, a `tertiary` load on a `tertiary` supply, by up to
-  50 MW.
+  reactors needs two forces and has not been built. The class-ordered water-fill is a
+  prediction, and it is wrong in two measured ways. A `tertiary`-class member draws nothing from
+  a `tertiary`-class supply, by up to 50 MW unresearched (#490, and #528 with vanilla
+  accumulators on either side); accumulator to accumulator was not run. And a reactor whose
+  buffer is not full draws past its spend, by 0.4 MW in #528's discharge cells. Why the engine
+  does the first is read off one sentence of the docs and is not documented further.
 - **Why the engine floors a fluid transfer to whole float32 ULPs per tick is inferred, not
   documented.** #147 measured the flooring — five levels, two run lengths, the legendary rate landing
   on 2⁻²⁴ units a tick to ten digits — and no 2.0.77 doc page found in this pass says the engine does
