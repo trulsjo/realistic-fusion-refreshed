@@ -123,7 +123,8 @@
     THE REASON IT IS SLOW IS THE PIPE, NOT THE PLASMA. The equilibrium the game reaches -- 324 MW at
     270 units -- is the one the pure-Lua model predicts, to three figures. Both are pre-#52, from
     before radiation. With it, one heater and nothing researched, the game measured 282.1 to 338.5
-    MW at 277.3 units (#486, 2026-10-02, Factorio 2.0.77), and the model FED at 2.5 u/s gives
+    MW (#486, 2026-10-02, Factorio 2.0.77) at 275.6 units (#510; #486's 277.3 does not
+    reproduce, #518), and the model FED at 2.5 u/s gives
     322.7 MW at 276.9 units (#499). What the model has no
     concept of is the feed line: a cell's plasma segment is the reactor's 1000-unit box plus every
     rf-pipe between it and the heater, and the engine fills the whole segment, not the box. The

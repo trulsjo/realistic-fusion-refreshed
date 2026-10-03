@@ -165,7 +165,15 @@ above, and **48.3 – 58.0 MW** once its fuel line had finished cooling, at 870 
 252 000 ticks: **282.1 – 338.5 MW** across the bench's two bounds, the reactor **heater-fed** at 277.3
 of 1000 units and 2.180×10⁹ °C. (A 600 000-tick run of the same rig on 2026-10-03, Factorio
 2.0.77, one heater, nothing researched, #510, read the same bracket at 275.6 units and
-2.193×10⁹ °C; `exchanger-coverage.md` quotes its fuel line.) The 324 above sits inside that
+2.193×10⁹ °C; `exchanger-coverage.md` quotes its fuel line. **That difference is not inside the
+bench's run-to-run spread, which is zero** (#518): three runs of the #510 command on 2026-10-03
+printed the same report, character for character. #486's own command, run again that day, on
+today's tree and on an export of the commit that recorded it, also reads 275.6 units at
+2.193×10⁹ °C. So 277.3 and 2.180×10⁹ are not what that command reads, and what produced them is
+not on record; the bracket is unaffected. Wherever this note sets the model against "the game's
+277.3 units and 2.180×10⁹ °C", the game's reproducible figure is 275.6 and 2.193×10⁹: the fed
+model is 0.5% over it in plasma and 0.5% under it in temperature. See `exchanger-coverage.md`,
+"Repeated runs read the same".) The 324 above sits inside that
 bracket, and so does the 320 the recipes quote: radiation took a third off the D-D cell and less off this one than the bracket can
 resolve — it runs from 12% under 320 to 6% over — which fits an ignited D-T reactor burning what it
 is fed, with bremsstrahlung small beside its fusion power. **The model reproduces it once it is fed

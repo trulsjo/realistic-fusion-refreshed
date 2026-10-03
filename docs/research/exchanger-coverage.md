@@ -60,6 +60,9 @@ the optimum, so a player who tunes density outruns the machine and a player who 
 corner is the top-left one and it is comfortable; every direction out of it runs out of exchanger,
 and the heating axis runs out fastest.
 
+**This map is the held reactor.** One heater's plant is the fed one, and twelve more of its
+cells are `ok`: see [The fed map, all ninety-six states](#the-fed-map-all-ninety-six-states).
+
 ### Walking each ladder on its own, from the shipped state
 
 This is the part the `entities.lua` comment pins, because it is the part a reader needs before
@@ -230,7 +233,38 @@ box full and burns at most 2.466 u/s. This replaces the earlier candidate split,
 forty-four states off the settled point on one heater. That split read the held model's demand,
 and the held model is not the plant. Five cells either side of the fed model's line are measured
 under [Five combination states, nearest the line](#five-combination-states-nearest-the-line), and
-land where it puts them.
+two more under [Two more combination states](#two-more-combination-states). All seven land where
+it puts them.
+
+### Repeated runs read the same
+
+[#518](https://github.com/trulsjo/realistic-fusion-refreshed/issues/518). **The bench has no
+run-to-run spread.** Two states were each run three times at the same arguments, on 2026-10-03,
+Factorio 2.0.77 (build 84539), one heater, nothing researched, every run passing the gate:
+
+| state | arguments | plasma held | °C | MW | read at |
+|---|---|---|---|---|---|
+| D-T | `-Plasma rf-d-t-plasma -Exchangers 8 -Heaters 1 -Unresearched -Ticks 600000 -Window 30000` | 275.6, three times | 2.193e9, three times | 282.1 – 338.5, three times | 570 000 ticks |
+| D-D | `-Heaters 1 -Unresearched -Ticks 900000 -Window 10000` | 1000.0, three times | 2.382e8, three times | 48.3 – 58.0, three times | 890 000 ticks |
+
+The spread of all three quantities is zero, in each state. The three D-T reports are the same
+file, character for character: every window of the trace and every pipe of the fuel line, not
+only the last. So are the three D-D reports, except for one line. One of them was created on a
+different map and says so: 27 enemy entities removed where the other two say 14. Its 89 windows
+are the other two's.
+
+**So a difference between two readings of one state is a difference between the runs**: their
+length, their window, their arguments or the tree they ran on. An agreement quoted here at 0.02%
+is not inside the noise, because there is none.
+
+**The #486 and #510 D-T figures are not inside the spread, and #486's does not reproduce.** #486
+read 277.3 units at 2.180×10⁹ °C after 252 000 ticks; #510 read 275.6 at 2.193×10⁹ after
+600 000. #486's command is `-Plasma rf-d-t-plasma -Exchangers 8 -Heaters 1 -Unresearched -Ticks
+252000`. Run again on 2026-10-03, Factorio 2.0.77, it reads **275.6 units at 2.193×10⁹ °C**,
+282.1 – 338.5 MW, flat from 78 000 ticks. It reads the same on an export of `1df5855`, the
+commit that recorded #486. What produced 277.3 and 2.180×10⁹ is not on record. The game's figure
+is #510's, and the fed model's 276.9 units at 2.183×10⁹ °C is 0.5% over it in plasma and 0.5%
+under it in temperature, not between two readings.
 
 ### What the earlier readings were
 
@@ -265,7 +299,8 @@ tolerance. Its fuel line was still cooling, and the next section shows it.
 prints a fuel-line trace: the temperature in the metered heater's plasma output, in each pipe of
 the run and in the reactor's box, each with its fluid segment id. The pipes and the reactor are
 read on each window's last tick. The heater is its last non-empty reading in the window, because
-its box drains the tick it fills. The trace gates nothing. Quoted here: the 870 000-tick runs
+its box drains the tick it fills. Since #508 the bench's gate reads the pipes' last two windows
+of it; the rest gates nothing. Quoted here: the 870 000-tick runs
 above, nothing researched and confinement rung 2, one heater, three pipes, D-D, Factorio 2.0.77,
 2026-10-03, 30 000 ticks a window. A 126 000-tick pair at 6 000 a window, run the same day, gave
 the same readings at the ticks both report.
@@ -294,8 +329,42 @@ The 90 000- and 120 000-tick rows come from the 6 000-tick windows of the shorte
 report before the 126 000-tick readings above, it reached the reactor at 1.78×10⁸ °C unresearched
 and 3.50×10⁸ °C at confinement rung 2. That is 178 and 350 times the heater's 1×10⁶ °C. By
 870 000 ticks it arrives at 2.05× the heater's temperature unresearched and within 0.06% of it at
-rung 2. The hot inventory comes from the fill, so it should scale with the length of the pipe run.
-Only this rig's three pipes were measured.
+rung 2. The hot inventory comes from the fill, and the next section measures how it scales with
+the length of the pipe run.
+
+#### A longer line cools slower and settles in the same place
+
+[#511](https://github.com/trulsjo/realistic-fusion-refreshed/issues/511). Four pipe counts, each
+`-Heaters 1 -Unresearched -Pipes <n> -Window 10000`: D-D, one heater, nothing researched,
+Factorio 2.0.77 (build 84539), 2026-10-03. Three pipes ran `-Ticks 900000`, the others
+`-Ticks 2000000`, and all four passed the gate. Ticks are to the 10 000-tick window. "Falls by e"
+is the time the pipes' excess over the heater's 1×10⁶ °C takes to fall by a factor of e, fitted
+between the tenth and fortieth windows after the box fills.
+
+| pipes | segment capacity | box first full | pipes within 2× the heater's °C | falls by e in | reactor, last window | pipes, last window |
+|---|---|---|---|---|---|---|
+| 3 (default) | 1300 | 80 000 | 880 000 | 145 900 ticks | 2.38154e8 at 890 000 | 1.914e6 |
+| 6 | 1600 | 90 000 | 1 080 000 | 179 200 | 2.38139e8 at 1 990 000 | 1.006e6 |
+| 9 | 1900 | 90 000 | 1 270 000 | 212 300 | 2.38139e8 at 1 990 000 | 1.035e6 |
+| 12 | 2200 | 100 000 | 1 470 000 | 245 500 | 2.38139e8 at 1 990 000 | 1.120e6 |
+
+**The settled point does not move.** Six, nine and twelve pipes end on the same 2.38139×10⁸ °C,
+0.002% over `M.settle_fed`'s 2.38135×10⁸, each at 1000.0 units and 48.3 – 58.0 MW. Three pipes
+read 2.38154×10⁸ at 890 000 ticks with the line still at 1.9× the heater's temperature; the
+six-pipe run read 2.38181×10⁸ at that tick and fell to the common figure later.
+
+**The transient stretches by about 65 000 ticks a pipe**, measured to the 2× mark: 880 000 ticks
+at three pipes, 1 470 000 at twelve. Four times the pipe takes 1.7 times as long, not four
+times, because most of the hot inventory is not in the pipes. The reactor's box adds its own
+1000 units to the capacity of the segment it joins, so the line's inventory is 1000 + 100 per
+pipe. That is the "segment capacity" column, read from the bench's fuel-line trace on a short
+run at each count.
+[Why the box fills slower than the fed model](#why-the-box-fills-slower-than-the-fed-model)
+measures it. The fall-by-e times are that capacity over the 0.5311 u/s the settled reactor
+burns: 146 900, 180 800, 214 600 and 248 500 ticks, each within 1.3% of the fit.
+
+**Three is the shortest line the rig builds.** `-Pipes 1` and `-Pipes 2` put the heater on top of
+the reactor and the rig refuses them.
 
 **A D-T reactor on one heater never fills, and its pipes stay at its own temperature**
 ([#510](https://github.com/trulsjo/realistic-fusion-refreshed/issues/510)). Measured with
@@ -307,8 +376,9 @@ all in one fluid segment, selling 282.1 – 338.5 MW across the bench's two boun
 0.13% under the reactor. The D-D top corner's pipes, also in its pool, sit 0.07% under it
 (1.461×10⁹ against 1.462×10⁹). The box held
 275.6 units from 90 000 ticks on and never filled. The fed model reads 276.9 units at
-2.183×10⁹ °C (`d-t-ignition.md`), 0.5% under this temperature; #486's 252 000-tick reading was
-277.3 units at 2.180×10⁹ °C.
+2.183×10⁹ °C (`d-t-ignition.md`), 0.5% under this temperature. #486 quoted 277.3 units at
+2.180×10⁹ °C for the same rig; its command reads this run's figures when repeated, see
+[Repeated runs read the same](#repeated-runs-read-the-same).
 
 ### Confinement rung 3 on two heaters
 
@@ -367,11 +437,126 @@ the arriving fuel, runs 12% to 17% over the game at the three full states #498 n
 model, which does, is within 0.02% at each. The part-full state's pipes stay in the reactor's pool,
 at 9.478×10⁸ °C against its 9.489×10⁸, as the top corner's and the D-T reactor's do.
 
-**One thing the fed model does not reproduce is how long filling takes** at the line. At heating
-3 + confinement 2 it fills the box by 360 000 ticks (6000 s). The game first held 1000 units at
-880 000 ticks, running hotter than the model all the way up: 8.99×10⁸ °C at 120 000 ticks
-against the model's 7.42×10⁸. Why was not chased. The settled point is what this note quotes,
-and there the two agree.
+**One thing the fed model does not reproduce is how long filling takes.** At heating 3 +
+confinement 2 it fills the box by 300 000 ticks, and the game first held 1000 units at 880 000
+in that run, hotter than the model all the way up. The model fills a 1000-unit box. The game
+fills 2300 units: the box, and the segment its pipes are in.
+[Why the box fills slower than the fed model](#why-the-box-fills-slower-than-the-fed-model) has
+the measurement. The settled point is what this note quotes, and there the two agree.
+
+### Two more combination states
+
+[#512](https://github.com/trulsjo/realistic-fusion-refreshed/issues/512) named four states where
+the fed model is least certain. Two are in the table above: confinement 2 with heating 4, and
+confinement 2 with heating 3. These are the other two: D-D, one heater, nothing else researched,
+Factorio 2.0.77 (build 84539), 2026-10-03, both passing the bench's gate including its fuel-line
+check. Columns as in the first table of this section.
+
+| research state | run | game: MW | held | °C | fed model: held | °C | MW | u/s |
+|---|---|---|---|---|---|---|---|---|
+| confinement 3 + heating 2 | `-Ticks 600000 -Window 30000`, read at 570 000 | 91.5 – 109.8 | 781.5 | 9.638e8 | 782.7 | 9.625e8 | 104.7 | 2.500 |
+| plant efficiency 1 + confinement 2 | `-Ticks 900000 -Window 30000`, read at 870 000 | 69.4 – 83.3 | 999.9 | 4.258e8 | 1000 | 4.258e8 | 79.5 | 1.393 |
+
+**Both sit on the fed model.** Confinement 3 + heating 2 is part-full where the model puts it,
+1.2 units under its 782.7 and 0.14% over its temperature, with its three pipes in the reactor's
+pool at 9.627×10⁸ °C. The other two measured part-full cells show the same small offset.
+Plant efficiency 1 + confinement 2 holds a full box at the model's temperature to the four
+figures quoted. That is also confinement rung 2's own temperature in the first table: plant
+efficiency moved what is sold, 65.6 – 78.7 MW to 69.4 – 83.3, and not the plasma. Both fed MW
+figures are inside the game's bracket.
+
+**The 24-of-96 split survives.** Three of the six part-full heating × confinement cells are now
+measured part-full: the top corner, confinement 2 + heating 4, and confinement 3 + heating 2.
+The full cell nearest the line, confinement 2 + heating 3, is measured full. One state with
+plant efficiency beside another ladder is measured, and its plasma is that other ladder's.
+
+### Why the box fills slower than the fed model
+
+[#516](https://github.com/trulsjo/realistic-fusion-refreshed/issues/516). **There is more to
+fill than the box.** The reactor's plasma box is `input-output`, so it joins the fluid segment
+its pipes are in, and the engine counts the box's volume in that segment's capacity. Three
+`rf-pipe` are 300 units of pipe, and `LuaFluidBox.get_capacity` on any of them answers 1300.
+The segment holds that plasma itself, beside the 1000 the box reads. `M.settle_fed` fills the
+box alone.
+
+Since #516 the bench's fuel-line trace ends each row with what the segment holds of its capacity
+and what the heater's output box holds. Read there: D-D, one heater, three pipes, nothing
+researched, Factorio 2.0.77 (build 84539), 2026-10-03, `-Ticks 120000 -Window 10000`. That run is
+too short for the gate, which refuses it on the fuel line. It is quoted for the fill, not for a
+settled point.
+
+| ticks | fed so far, at 2.5 u/s | box | segment, of 1300 | heater's output box, of 200 |
+|---|---|---|---|---|
+| 10 000 | 416.7 | 180.7 | 216.8 | 0 |
+| 40 000 | 1666.7 | 617.3 | 747.4 | 0 |
+| 70 000 | 2916.7 | 983.3 | 1275.9 | 0 |
+| 80 000 | | 1000.0 | 1300.0 | 195.4 |
+| 110 000 | | 1000.0 | 1300.0 | 197.2 |
+
+At 10 000 ticks the box holds 180.7 of the 416.7 units fed and the segment 216.8. That is 397.5
+between them, and the rest burned. A full line is 2300 units, and then the heater's own 200-unit
+output box backs up behind it. Six pipes report a capacity of 1600, nine 1900 and twelve 2200.
+
+**The game's fill beside the model's**, at the same ticks. "Pooled" is the fed model's loop with
+that inventory added: the box steps its share of one pool, the result is mixed back, and the
+feed tops up the pool, not the box. It is arithmetic done for this note. `M.settle_fed` is
+unchanged, and no test pins the pooled figures. The pool is the box plus 1200 units or plus
+1300, because the game's split is not fixed: the box holds 1000 for every 1200 in the segment
+at 10 000 ticks, and 1000 for every 1298 at 70 000.
+
+Heating 3 + confinement 2, the full-box cell nearest the line, `-Ticks 1000000 -Window 20000`,
+same rig, same day. The gate refuses this run too, on the fuel line; the settled point is the
+1 600 000-tick run's, above.
+
+| ticks | game: held | °C | `M.settle_fed`: held | °C | pooled, +1300: held | °C |
+|---|---|---|---|---|---|---|
+| 120 000 | 774.5 | 8.991e8 | 904.6 | 7.424e8 | 776.9 | 8.973e8 |
+| 240 000 | 883.3 | 7.656e8 | 977.8 | 6.632e8 | 887.8 | 7.614e8 |
+| 360 000 | 928.7 | 7.147e8 | 1000 | 6.397e8 | 933.4 | 7.105e8 |
+| 480 000 | 957.5 | 6.837e8 | 1000 | 6.397e8 | 962.7 | 6.791e8 |
+| 600 000 | 980.8 | 6.596e8 | 1000 | 6.397e8 | 987.7 | 6.530e8 |
+| first holds 1000 | 820 000 | | 300 000 | | 660 000 | |
+
+After 820 000 ticks the game's box reads between 998.6 and 1000 from window to window, which is
+why the 40 000-tick windows of the longer run first saw 1000 at 880 000.
+
+Nothing researched, far from the line, `-Ticks 900000 -Window 10000`:
+
+| ticks | game: held | °C | `M.settle_fed`: held | °C | pooled, +1200: held | °C | pooled, +1300: held | °C |
+|---|---|---|---|---|---|---|---|---|
+| 10 000 | 180.7 | 1.784e9 | 371.1 | 9.405e8 | 181.3 | 1.782e9 | 173.9 | 1.840e9 |
+| 30 000 | 483.5 | 7.153e8 | 970.7 | 2.690e8 | 485.5 | 7.123e8 | 467.3 | 7.422e8 |
+| 50 000 | 736.1 | 4.227e8 | 1000 | 2.381e8 | 752.8 | 4.131e8 | 724.1 | 4.369e8 |
+| 70 000 | 983.3 | 2.608e8 | 1000 | 2.381e8 | 1000 | 2.478e8 | 984.3 | 2.617e8 |
+| first holds 1000 | 80 000 | | 40 000 | | 70 000 | | 80 000 | |
+
+Each "first holds 1000" is the first window that reads it, on the game's grid: 20 000 ticks in
+the first table, 10 000 in the second. Stepped finer, the model's box is full at 288 000 ticks
+at the line and at 31 000 with nothing researched.
+
+**The gap is not special to the line.** Nothing researched fills in 2.3 to 2.6 times the model's
+time, 31 000 ticks against somewhere between 70 000 and 80 000. Heating 3 + confinement 2 fills
+in 2.7 times, 300 000 against 820 000 by the window. And 2300 units is 2.3 times 1000. Near the line it
+shows more because the margin is thin: the heater makes 2.5 u/s and the full box burns 2.466.
+
+**The game ran hotter because it held less.** At 120 000 ticks the box held 774.5 units where
+the model held 904.6, and the same heating on less plasma is a hotter plasma. The pooled
+reading holds what the game holds, and is within 0.2% of its temperature there. A hotter
+reactor does burn more, which #516 asked about. That follows from the short box, not the other
+way round.
+
+**What the pooled reading leaves over.** At the line it follows the game to within 0.7% of
+plasma held and 1.0% of temperature through 600 000 ticks, and then fills 160 000 ticks before
+the game does. With nothing researched the game starts on the +1200 column and ends on the
++1300 one. It lies between them until the last window before it fills, where it is 1.0 unit
+under the +1300 column. Two things the pooled reading leaves out were not separated: the moving
+split between box and segment, and the heat the engine's mixing destroys (ADR 0011).
+
+**Tried against it: more pipe.** Heating 3 + confinement 2 at `-Pipes 12`, a 2200-unit segment,
+`-Ticks 2000000 -Window 20000`, passing the gate. The box first held 1000 units at 1 180 000
+ticks, against 820 000 at three pipes. It settled at 999.8 units, 6.400×10⁸ °C and
+97.0 – 116.4 MW, which is the three-pipe run's settled point and the fed model's. A shorter line
+could not be tried, because three pipes is the shortest the rig builds.
 
 ### What that does to coverage, on one heater
 
@@ -389,14 +574,130 @@ the whole confinement ladder. The bracket alone decides neither heating rung 4 n
 rung 3, because both straddle 90; the fed model's figure inside each bracket is the reading.
 Whether 90 should move is still #315.
 
-**The seventy-eight states still unmeasured on a fuel line** are every state with two or more
-ladders researched, less the top corner and the five combination states measured above:
+#### The fed map, all ninety-six states
+
+[#513](https://github.com/trulsjo/realistic-fusion-refreshed/issues/513). The held map's layout
+and symbols, on the fed model: one 90 MW exchanger against a reactor one heater feeds.
+
+**The method, once.** `M.settle_fed`, 7200 s at the 6-tick step, D-D, one heater's 2.5 u/s
+arriving at 1×10⁶ °C. MW is what the last step sells. The tuned reading is the most the reactor
+sells at any feed from 5% to 100% of the heater's 2.5 u/s, in 5% steps. That is the fed
+counterpart of the held map's density optimum: a player under-feeding the reactor on purpose.
+Plant efficiency scales what is sold and nothing else, so each heating × confinement cell was
+settled once at the shipped capture and scaled. Three cells settled with the capture passed
+instead agree with the scaled figure to six decimals.
+
+```
+                               50   55   60   65   70   75   MW of heating
+  capture 0.85   tau 30 s      ok   ok   ok   ok   ok   X
+                     40 s      ok   ok   ok   X    X    X
+                     50 s      ok   ok   X    X    X*   X*
+                     60 s      ok   X    X*   X*   X*   X*
+  capture 0.9    tau 30 s      ok   ok   ok   ok   X    X
+                     40 s      ok   ok   X    X    X    X
+                     50 s      ok   X    X    X    X*   X*
+                     60 s      X    X    X*   X*   X*   X*
+  capture 0.925  tau 30 s      ok   ok   ok   ok   X    X
+                     40 s      ok   ok   X    X    X    X
+                     50 s      ok   X    X    X    X*   X*
+                     60 s      X    X    X*   X*   X*   X*
+  capture 0.9375 tau 30 s      ok   ok   ok   ok   X    X
+                     40 s      ok   ok   X    X    X    X
+                     50 s      ok   X    X    X    X*   X*
+                     60 s      X    X    X*   X*   X*   X*
+```
+
+`ok` — covered at the heater's full feed *and* at every lower feed swept. `~` — covered at full
+feed and not at some lower one. `X` — not covered at full feed. `*` — **supply-limited**: the
+box is part-full and the reactor burns all 2.5 u/s.
+
+| | `ok` | `~` | `X` | of which supply-limited |
+|---|---|---|---|---|
+| held map | 20 | 4 | 72 | not a held reading |
+| fed map, one heater | **32** | **0** | **64** | 24, all `X` |
+
+**Twelve cells differ, and all twelve become `ok`.** Eight are `X` on the held map and four are
+`~`. Fed MW at full feed, then tuned:
+
+| capture | cell | held map | fed: full / tuned, MW |
+|---|---|---|---|
+| 0.85 | τ 30 s, 70 MW — heating rung 4 | `X` | 88.9 / 88.9 |
+| 0.85 | τ 40 s, 60 MW | `X` | 85.0 / 85.0 |
+| 0.85 | τ 50 s, 55 MW | `X` | 87.4 / 88.9 |
+| 0.85 | τ 60 s, 50 MW — confinement rung 3 | `X` | 86.9 / 86.9 |
+| 0.9 | τ 30 s, 65 MW | `~` | 84.9 / 85.4 |
+| 0.9 | τ 50 s, 50 MW — #395's cell | `~` | 79.5 / 80.1 |
+| 0.925 | τ 30 s, 65 MW | `X` | 87.3 / 87.8 |
+| 0.925 | τ 40 s, 55 MW | `~` | 81.1 / 82.9 |
+| 0.925 | τ 50 s, 50 MW | `X` | 81.7 / 82.3 |
+| 0.9375 | τ 30 s, 65 MW | `X` | 88.5 / 89.0 |
+| 0.9375 | τ 40 s, 55 MW | `~` | 82.2 / 84.0 |
+| 0.9375 | τ 50 s, 50 MW | `X` | 82.8 / 83.4 |
+
+**No cell is `~` on the fed map.** Under-feeding raises what a fed reactor sells in twenty-nine
+of the thirty-two `ok` cells, and in none of them past 90. The largest gain is 4.6 MW, at the
+plant-efficiency rung 3 corner: 60.95 MW at full feed and 65.56 at 30% of it.
+
+**One cell is `X` by a hair.** Capture 0.9, τ 40 s, 60 MW sells 90.02 MW at full feed. Every
+other cell is at least 1.0 MW from the line, at full feed and tuned.
+
+**The six supply-limited heating × confinement cells are `X` at every capture**, 104.7 MW or
+more. What they sell on a second heater was not computed.
+
+Three of the twelve cells are measured in the game. Heating rung 4 alone and confinement rung 3
+alone are in the first table of this section: 77.7 – 93.2 MW and 76.0 – 91.1, both brackets
+straddling 90 with the fed figure inside them under it. Capture 0.9 with τ 50 s is under
+[Two more combination states](#two-more-combination-states): 69.4 – 83.3 MW, under 90 at both
+bounds.
+
+The fed grid, **full feed / tuned**, in MW. **Bold is over 90.** \* is supply-limited.
+
+##### capture 0.85 — shipped, nothing researched
+
+| τ | 50 MW | 55 MW | 60 MW | 65 MW | 70 MW | 75 MW |
+|---|---|---|---|---|---|---|
+| **30 s** (ship) | 55.3 / 59.4 | 63.3 / 66.6 | 71.7 / 73.7 | 80.2 / 80.7 | 88.9 / 88.9 | **97.6** / **97.9** |
+| **40 s** | 64.2 / 67.9 | 74.5 / 76.1 | 85.0 / 85.0 | **95.5** / **95.5** | **105.8** / **105.8** | **115.9** / **115.9** |
+| **50 s** | 75.0 / 75.6 | 87.4 / 88.9 | **99.4** / **99.4** | **111.0** / **111.0** | **113.3** / **113.3** \* | **116.1** / **116.1** \* |
+| **60 s** | 86.9 / 86.9 | **100.4** / **100.4** | **104.7** / **104.7** \* | **107.2** / **107.2** \* | **110.1** / **110.1** \* | **113.0** / **113.0** \* |
+
+##### capture 0.9 — `rf-plant-efficiency-1`
+
+| τ | 50 MW | 55 MW | 60 MW | 65 MW | 70 MW | 75 MW |
+|---|---|---|---|---|---|---|
+| **30 s** (ship) | 58.5 / 62.9 | 67.0 / 70.6 | 75.9 / 78.1 | 84.9 / 85.4 | **94.1** / **94.1** | **103.4** / **103.6** |
+| **40 s** | 68.0 / 71.9 | 78.9 / 80.6 | **90.0** / **90.0** | **101.1** / **101.1** | **112.0** / **112.0** | **122.7** / **122.7** |
+| **50 s** | 79.5 / 80.1 | **92.5** / **94.1** | **105.3** / **105.3** | **117.5** / **117.5** | **120.0** / **120.0** \* | **122.9** / **122.9** \* |
+| **60 s** | **92.0** / **92.0** | **106.4** / **106.4** | **110.8** / **110.8** \* | **113.6** / **113.6** \* | **116.6** / **116.6** \* | **119.7** / **119.7** \* |
+
+##### capture 0.925 — `rf-plant-efficiency-2`
+
+| τ | 50 MW | 55 MW | 60 MW | 65 MW | 70 MW | 75 MW |
+|---|---|---|---|---|---|---|
+| **30 s** (ship) | 60.1 / 64.7 | 68.9 / 72.5 | 78.0 / 80.2 | 87.3 / 87.8 | **96.7** / **96.7** | **106.2** / **106.5** |
+| **40 s** | 69.9 / 73.9 | 81.1 / 82.9 | **92.5** / **92.5** | **103.9** / **103.9** | **115.1** / **115.1** | **126.1** / **126.1** |
+| **50 s** | 81.7 / 82.3 | **95.1** / **96.7** | **108.2** / **108.2** | **120.8** / **120.8** | **123.3** / **123.3** \* | **126.3** / **126.3** \* |
+| **60 s** | **94.6** / **94.6** | **109.3** / **109.3** | **113.9** / **113.9** \* | **116.7** / **116.7** \* | **119.8** / **119.8** \* | **123.0** / **123.0** \* |
+
+##### capture 0.9375 — `rf-plant-efficiency-3`
+
+| τ | 50 MW | 55 MW | 60 MW | 65 MW | 70 MW | 75 MW |
+|---|---|---|---|---|---|---|
+| **30 s** (ship) | 60.9 / 65.6 | 69.8 / 73.5 | 79.0 / 81.3 | 88.5 / 89.0 | **98.1** / **98.1** | **107.7** / **108.0** |
+| **40 s** | 70.8 / 74.9 | 82.2 / 84.0 | **93.8** / **93.8** | **105.3** / **105.3** | **116.7** / **116.7** | **127.8** / **127.8** |
+| **50 s** | 82.8 / 83.4 | **96.4** / **98.0** | **109.7** / **109.7** | **122.4** / **122.4** | **125.0** / **125.0** \* | **128.0** / **128.0** \* |
+| **60 s** | **95.8** / **95.8** | **110.8** / **110.8** | **115.4** / **115.4** \* | **118.3** / **118.3** \* | **121.4** / **121.4** \* | **124.7** / **124.7** \* |
+
+This records readings. Whether 90 MW should move is #315 and Truls's.
+
+**The seventy-six states still unmeasured on a fuel line** are every state with two or more
+ladders researched, less the top corner and the seven combination states measured above:
 ninety-six, less the unresearched corner, the eleven single-ladder states, the far corner and those
-five. The fed model reads all of them, and it has matched the game at all eighteen measured.
+seven. The fed model reads all of them, and it has matched the game at all twenty measured.
 
 ## What this does not cover
 
-- **THE FED REACTOR, measured at eighteen of ninety-six states** on one heater, and at one on
+- **THE FED REACTOR, measured at twenty of ninety-six states** on one heater, and at one on
   two — see [The fed reactor, one heater](#the-fed-reactor-one-heater) above. Every figure outside that
   section is the held reactor on the pure model.
 - **THE D-T TIER.** Only `rf-d-d-plasma`. A D-T reactor is a different sizing question and

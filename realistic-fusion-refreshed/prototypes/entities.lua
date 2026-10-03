@@ -632,8 +632,8 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 --     THE OTHER CORNER, for scale: the same one heater with every ladder at its top reads 109.0 to
 --     130.8 MW, with the box at 623.8 of 1 000 and the plasma at 1.462e9 C (570 000 ticks,
 --     2026-10-03). There a heater cannot keep the box full, which is the case the paragraph at the
---     bottom of this block was written about. Eleven single-ladder states are measured the same
---     way and the other 83 are not. All thirteen sit on the fed model:
+--     bottom of this block was written about. Eleven single-ladder states and seven combination
+--     states are measured the same way and the other 76 are not. All twenty sit on the fed model:
 --     docs/research/exchanger-coverage.md, "The fed reactor, one heater".
 --
 --     THE SAME TABLE READS 103 MW AT TWO HEATERS AND IT SATURATES THERE -- radiation-free, like its
@@ -858,8 +858,9 @@ exchanger.output_fluid_box.filter = "steam"
 -- climbing to 322 MW at 1800 s and 324 at 2100 and flat after -- both before radiation (#52). With
 -- radiation the pure-Lua model, FED 2.5 units/s of the heater's 1e6 C plasma rather than held at a
 -- fill (logic.settle_fed), settles at 322.7 MW, 276.9 units and 2.183e9 C (#499), against the
--- 277.3 units and 2.180e9 C the game measured on one heater, nothing researched (#486, 2026-10-02,
--- Factorio 2.0.77). Held at the game's fill it runs 17% hotter, and its 319 MW -- 319.0 at the
+-- 275.6 units and 2.193e9 C the game reads on one heater, nothing researched (#510, 2026-10-03,
+-- Factorio 2.0.77; #486 quoted 277.3 and 2.180e9, which its own command does not reproduce,
+-- #518). Held at the game's fill it runs 17% hotter, and its 319 MW -- 319.0 at the
 -- 6-tick step, 319.1 at one tick -- agrees on megawatts only because two errors cancel. What DOES
 -- depend on the feed is the figure itself: four heaters put the same reactor at 996 to 1 195 MW
 -- (#89, docs/research/bolted-joint-throughput.md), and quoting either without saying which heater
@@ -867,7 +868,7 @@ exchanger.output_fluid_box.filter = "steam"
 -- what a player has, so one heater is what this block quotes.
 --
 -- AND IT IS NOW MEASURED WITH RADIATION (#486, 2026-10-02, Factorio 2.0.77): one heater, nothing
--- researched, 282.1 to 338.5 MW across bench-mod-links.ps1's two bounds, heater-fed at 277.3 units.
+-- researched, 282.1 to 338.5 MW across bench-mod-links.ps1's two bounds, heater-fed at 275.6 units (#518).
 -- 320 is inside it, so "four exchangers" stands (3.1 to 3.8 machines' worth) and the turbines are
 -- 49 to 59 where 320 implied fifty-five. Every ladder reaches this reactor; fully researched it
 -- is 321.0 to 385.2 MW, four or five exchangers and 56 to 67 turbines.
