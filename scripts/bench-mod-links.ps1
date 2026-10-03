@@ -39,8 +39,9 @@
     there understates by 40%.
 
     So the run is long and reports in windows, and the script refuses to quote a number unless the
-    last two windows agree on the rate, the plasma temperature and the plasma held. That is the
-    demonstration: a reactor still climbing does not produce two consecutive windows that agree.
+    last two windows agree on the rate, the plasma temperature, the plasma held and -- since #508,
+    below -- the fuel line. That is the demonstration: a reactor still climbing does not produce
+    two consecutive windows that agree.
 
     SINCE #508 THE FUEL LINE HAS TO AGREE TOO, because a reactor cooling slowly enough passes the
     three above mid-transient. The plasma left in the pipes when the box fills is the next fuel the
@@ -757,8 +758,8 @@ local function report(cell, window)
   -- THE FUEL LINE'S TEMPERATURE, heater to reactor (#503). The fed model mixes every arriving unit
   -- in at the heater's own temperature, so this asks what the fuel is actually at when it reaches
   -- the reactor's box. Each box's segment id beside it says which of them the engine pools, so a
-  -- pipe reading near the reactor's figure can be told from fuel still on its way in. Reports
-  -- only; gates nothing.
+  -- pipe reading near the reactor's figure can be told from fuel still on its way in. The bench's
+  -- equilibrium gate reads the pipes' last two windows (#508).
   local along = {}
   for i, pipe in ipairs(cell.pipes) do along[i] = line_reading(pipe, 1) end
   log(string.format("LINKRIG line cell=%s window=%d heater=%s pipes=%s reactor=%s",
