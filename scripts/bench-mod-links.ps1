@@ -66,6 +66,11 @@
     its last reading in the window, since its box drains the tick it fills. Since #508 the gate
     reads the pipes' last two windows; the heater and the windows before them gate nothing.
 
+    SINCE #516 EACH ROW ENDS WITH THE INVENTORY: what the pipes' segment holds of its capacity, and
+    what the metered heater's output box holds, in plasma units on the window's last tick. The
+    reactor's box adds its volume to the segment it joins, so three pipes report a capacity of 1300,
+    and that plasma is held beside the 1000 the box reads. It gates nothing.
+
     WHAT IS BUILT
 
     Two independent cells, because the honest answer needs both.
@@ -113,9 +118,19 @@
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
 .PARAMETER Ticks
-    Ticks to run. The default is a little over half an hour of game time, which is comfortably past
-    the twenty minutes #37 measured the climb at -- and the equilibrium gate below is what actually
-    decides whether it was enough.
+    Ticks to run. The default, 126 000, is thirty-five minutes of game time, and the equilibrium gate
+    is what decides whether a run was long enough.
+
+    THE DEFAULT INVOCATION PASSES THE GATE, NARROWLY (#517). No arguments -- D-D, four heaters, every
+    ladder at its top -- on 2026-10-03, Factorio 2.0.77: 142.6 to 171.1 MW at 999.6 units and
+    9.173e8 degC. Across its last two windows the fuel line moved 0.85% of the reactor's temperature
+    against the 1% allowed, and the reactor 0.19%. That state is all the default length is known
+    to pass.
+
+    A ONE-HEATER RUN NEEDS LONGER. -Heaters 1 -Unresearched fails the fuel-line check at 126 000
+    ticks, at 3.1%, and passes at 900 000 with -Window 10000. The line cools at the rate the reactor
+    drains the segment, about 146 000 ticks to fall by e at three pipes with nothing researched, so
+    a slower burn or more pipe takes longer still (docs/research/exchanger-coverage.md).
 
 .PARAMETER Window
     Ticks per reported window. The last two are what the equilibrium gate compares.
@@ -192,9 +207,17 @@
 .PARAMETER KeepTemp
     Keep the save, the rig mod and the captured output.
 
+.PARAMETER SelfTest
+    Prove the fuel-line gate can fail, and start no game (#515). Four halves, each handing
+    Get-FuelLineFault a pair of windows written out by hand: pipe-count-mismatch and
+    no-pipe-comparable are the two pairs the gate used to skip and so pass; cooling-line-fails and
+    settled-line-passes are the two directions it already had. It proves that one function and
+    nothing else in this script -- the rig, the meter and the other three gate checks need a run.
+
 .EXAMPLE
     pwsh -File scripts/bench-mod-links.ps1
     pwsh -File scripts/bench-mod-links.ps1 -Ticks 24000 -Window 4000 -KeepTemp
+    pwsh -File scripts/bench-mod-links.ps1 -SelfTest
 #>
 
 #Requires -Version 7
@@ -211,11 +234,81 @@ param(
     # Case-sensitive: the names are Lua table keys, and Heating_Ladder would name no ladder at all.
     [ValidatePattern('^((confinement|heating|capture)_ladder=\d+)(,(confinement|heating|capture)_ladder=\d+)*$', Options = 'None')]
     [string] $Rungs,
-    [switch] $KeepTemp
+    [switch] $KeepTemp,
+    [switch] $SelfTest
 )
 
 $ErrorActionPreference = 'Stop'
 . "$PSScriptRoot/factorio-lib.ps1"
+
+# The fuel-line check of the equilibrium gate (#508): the fault for one cell's last two windows, or
+# nothing. $Last and $Prev are that cell's line records, $ReactorTemp its last plasma temperature.
+#
+# A PAIR IT CANNOT COMPARE IS A FAULT, NOT A PASS (#515). The rig builds its pipes once and a settled
+# line holds fluid in every one, so two windows with different pipe counts, or with no pipe readable
+# in both, mean the rig or its log is broken. It used to skip what it could not pair, and both cases
+# passed with nothing checked.
+function Get-FuelLineFault {
+    param([string] $Cell, $Last, $Prev, [double] $ReactorTemp)
+
+    if (-not ($Last -and $Prev)) {
+        return "${Cell}: the fuel line was not reported for the last two windows, so it could not be gated."
+    }
+    if ($Last.PipeTemps.Count -ne $Prev.PipeTemps.Count) {
+        return ("{0}: the fuel line reported {1} pipe(s) in the last window and {2} in the one before, " +
+                "so the two cannot be compared -- the rig is broken.") -f $Cell, $Last.PipeTemps.Count, $Prev.PipeTemps.Count
+    }
+    # A reactor out of plasma is the caller's fault to report; there is no temperature to divide by.
+    if ($ReactorTemp -le 0) { return }
+
+    # Each pipe's move is taken against the REACTOR's temperature rather than its own, because what
+    # matters is the heat it still carries in: a pipe settled near the heater's 1e6 C may move by a
+    # third and not matter.
+    $drift = 0.0; $compared = 0
+    for ($i = 0; $i -lt $Last.PipeTemps.Count; $i++) {
+        $a = $Last.PipeTemps[$i]; $b = $Prev.PipeTemps[$i]
+        if ($null -ne $a -and $null -ne $b) {
+            $compared++
+            $drift = [Math]::Max($drift, [Math]::Abs($a - $b) / $ReactorTemp)
+        }
+    }
+    if ($compared -eq 0) {
+        return ("{0}: no pipe on the fuel line could be compared -- none of its {1} held plasma in both " +
+                "of the last two windows -- so the fuel line was not gated.") -f $Cell, $Last.PipeTemps.Count
+    }
+    if ($drift -gt 0.01) {
+        return ("{0}: a pipe on the fuel line moved {1:P1} of the reactor's temperature " +
+                "between the last two windows, so the reactor was still drawing plasma " +
+                "left from the fill -- raise -Ticks.") -f $Cell, $drift
+    }
+}
+
+if ($SelfTest) {
+    $line = { param([object[]] $temps) [pscustomobject]@{ PipeTemps = $temps } }
+    # $want is a fragment the fault has to carry, or $null for a pair that has to pass.
+    $prove = {
+        param($last, $prev, $want)
+        $fault = Get-FuelLineFault -Cell 'chain' -Last $last -Prev $prev -ReactorTemp 2.4e8
+        if ($null -eq $want) {
+            if ($fault) { throw "a settled line was refused: $fault" }
+            return 'a line with two pipes that each moved under 1% of the reactor, and one empty in both windows, passes'
+        }
+        if ("$fault" -notmatch $want) { throw "expected a fault matching '$want', got '$fault'" }
+        "refused -- $fault"
+    }
+    Invoke-SelfTestHalves -Halves @(
+        @{ Name = 'pipe-count-mismatch'; Body = {
+            & $prove (& $line 1e6, 1e6, 1e6) (& $line 1e6, 1e6) '3 pipe\(s\) in the last window and 2 in the one before' } }
+        @{ Name = 'no-pipe-comparable'; Body = {
+            & $prove (& $line 1e6, $null, $null) (& $line $null, 1e6, 1e6) 'no pipe on the fuel line could be compared' } }
+        @{ Name = 'cooling-line-fails'; Body = {
+            & $prove (& $line 1.78e8, 1.78e8, 1.78e8) (& $line 1.86e8, 1.86e8, 1.86e8) 'moved \D*3\D3\D* of the reactor' } }
+        @{ Name = 'settled-line-passes'; Body = {
+            & $prove (& $line 2.05e6, 2.05e6, $null) (& $line 2.06e6, 2.06e6, $null) $null } }
+    )
+    Write-Host '-SelfTest passed: the fuel-line gate refuses the two window pairs it cannot compare.'
+    return
+}
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $ourMods  = Get-RepoMods
@@ -762,9 +855,17 @@ local function report(cell, window)
   -- equilibrium gate reads the pipes' last two windows (#508).
   local along = {}
   for i, pipe in ipairs(cell.pipes) do along[i] = line_reading(pipe, 1) end
-  log(string.format("LINKRIG line cell=%s window=%d heater=%s pipes=%s reactor=%s",
+  -- WHAT THE SEGMENT HOLDS, AND ITS CAPACITY, asked of the engine through a pipe (#516). The
+  -- reactor's box adds its own volume to the segment it joins, so three pipes report 1300 and not
+  -- 300, and the segment holds that plasma BESIDE the 1000 the box reads. Neither a pipe's share
+  -- nor the box's reading shows it; this does. The heater's output box is the third store.
+  local run = cell.pipes[1].fluidbox
+  local in_segment = 0
+  for _, amount in pairs(run.get_fluid_segment_contents(1) or {}) do in_segment = in_segment + amount end
+  log(string.format("LINKRIG line cell=%s window=%d heater=%s pipes=%s reactor=%s segment=%.6g/%g heater_box=%.6g",
     cell.name, window, cell.heater_line or "-@nil", table.concat(along, ","),
-    line_reading(reactor, cell.plasma_box)))
+    line_reading(reactor, cell.plasma_box), in_segment, run.get_capacity(1),
+    amount_in(cell.heater, cell.heater_box)))
   cell.heater_line = nil
 
   -- EVERY exchanger in the row, which is #89's whole instrument. This used to report
@@ -912,6 +1013,7 @@ try {
         $lineRecords += [pscustomobject]@{
             Cell = $f['cell']; Window = [int] $f['window']; Heater = $f['heater']
             Pipes = $f['pipes']; PipeTemps = $pipeTemps; Reactor = $f['reactor']
+            Segment = $f['segment']; HeaterBox = $f['heater_box']
         }
     }
 
@@ -947,27 +1049,11 @@ try {
         # THE FUEL LINE HAS TO HAVE SETTLED TOO (#508). Plasma left in the pipes when the box fills
         # is the next fuel the reactor draws, and it cools for hundreds of thousands of ticks; the
         # reactor follows it slowly enough to pass the 1% above mid-transient (#506: 0.055% at
-        # 126 000 ticks, while the pipes fell 1.86e8 to 1.78e8). Each pipe's move is taken against
-        # the REACTOR's temperature rather than its own, because what matters is the heat it still
-        # carries in: a pipe settled near the heater's 1e6 C may move by a third and not matter.
+        # 126 000 ticks, while the pipes fell 1.86e8 to 1.78e8). Get-FuelLineFault is the check.
         $lineLast = $lineRecords | Where-Object { $_.Cell -eq $cell -and $_.Window -eq $last.Window }
         $linePrev = $lineRecords | Where-Object { $_.Cell -eq $cell -and $_.Window -eq $prev.Window }
-        if (-not ($lineLast -and $linePrev)) {
-            $faults += "${cell}: the fuel line was not reported for the last two windows, so it could not be gated."
-        } elseif ($last.TempC -gt 0) {
-            $lineDrift = 0.0
-            for ($i = 0; $i -lt $lineLast.PipeTemps.Count; $i++) {
-                $a = $lineLast.PipeTemps[$i]; $b = $linePrev.PipeTemps[$i]
-                if ($null -ne $a -and $null -ne $b) {
-                    $lineDrift = [Math]::Max($lineDrift, [Math]::Abs($a - $b) / $last.TempC)
-                }
-            }
-            if ($lineDrift -gt 0.01) {
-                $faults += (("{0}: a pipe on the fuel line moved {1:P1} of the reactor's temperature " +
-                             "between the last two windows, so the reactor was still drawing plasma " +
-                             "left from the fill -- raise -Ticks.") -f $cell, $lineDrift)
-            }
-        }
+        $lineFault = Get-FuelLineFault -Cell $cell -Last $lineLast -Prev $linePrev -ReactorTemp $last.TempC
+        if ($lineFault) { $faults += $lineFault }
         if ($last.EnergyTick -le 0) { $faults += "${cell}: no reactor energy crossed the link at all." }
         if ($last.PlasmaAmt -le 0)  { $faults += "${cell}: the reactor was out of plasma, so it was starved rather than settled." }
 
@@ -1121,13 +1207,16 @@ try {
 
     # The fuel line, heater to reactor, sampled on each window's last tick (#503). The gate above
     # reads the last two windows of it (#508). Each entry is degC@segment; a "-" is a box that held
-    # nothing on that tick.
+    # nothing on that tick. The last column is plasma units, not degC (#516): what the segment holds
+    # of its capacity, and what the metered heater's output box holds.
     Write-Host ''
-    Write-Host 'fuel line at each window (heater output | pipes, heater end first | reactor box), degC@segment'
+    Write-Host ('fuel line at each window (heater output | pipes, heater end first | reactor box), ' +
+                'degC@segment | units in the segment/its capacity, units in the heater box')
     foreach ($l in $lineRecords) {
         $along = $l.Pipes -split ','
         [array]::Reverse($along)
-        Write-Host ('  {0,-6}{1,4}  {2} | {3} | {4}' -f $l.Cell, $l.Window, $l.Heater, ($along -join ' '), $l.Reactor)
+        Write-Host ('  {0,-6}{1,4}  {2} | {3} | {4} | {5}, {6}' -f $l.Cell, $l.Window, $l.Heater,
+            ($along -join ' '), $l.Reactor, $l.Segment, $l.HeaterBox)
     }
 
     if ($faults.Count -gt 0) {
