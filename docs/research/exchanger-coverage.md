@@ -187,7 +187,11 @@ at twelve, and 0.19% at the top corner.
   `control.lua` steps the reactor, for 7200 s. **1200 s is not enough here**: it leaves
   confinement rung 3 at 5.455×10⁸ °C and the top corner at 622.1 units, where 3600 s and
   14 400 s agree with 7200 to four figures. MW is what the last step sells, after capture. u/s is
-  what it burns.
+  what it burns. **Seven of its figures are pinned** (#509), in `tests/test-reactor-logic.lua`'s
+  block *THE FED D-D REACTOR ON ONE HEATER*: nothing researched's 55.3 MW and 2.381×10⁸ °C,
+  heating rung 4's 88.9 MW and rung 5's 97.6, confinement rung 3's 86.9, and the top corner's
+  625.0 units burning 2.500 u/s. Those are the figures the coverage reading below turns on. The
+  rest of the column is cited from this note.
 - **Held model.** `M.settle` at a full box, 1200 s at one tick: the grid above.
 
 | research state | game, long: MW | held | °C | fed model: held | °C | MW | u/s | held model |
@@ -344,7 +348,8 @@ game at all thirteen measured.
   passes it.
 - `tests/test-reactor-logic.lua` — `sells_mw` and the block under *WHAT ONE EXCHANGER COVERS, ON ALL
   THREE LADDERS*, which pins the boundary cells quoted above. The interior of the grid is not pinned
-  and is cited from this note.
+  and is cited from this note. *THE FED D-D REACTOR ON ONE HEATER* pins the fed model's one-heater
+  boundary the same way.
 - `realistic-fusion-refreshed/prototypes/entities.lua` — `exchanger.energy_consumption` and the
   sizing argument above it.
 - #227 (the 90 MW), #395 (the plant-efficiency lever), #425 and ADR 0038 (the heating ladder), #432
