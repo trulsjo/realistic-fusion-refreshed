@@ -295,9 +295,17 @@ and 3.50×10⁸ °C at confinement rung 2. That is 178 and 350 times the heater'
 rung 2. The hot inventory comes from the fill, so it should scale with the length of the pipe run.
 Only this rig's three pipes were measured.
 
-A D-T reactor on one heater never fills, at 277.3 units, so its pipes should stay in the
-reactor's pool, as the top corner's do. That was not measured here, and the fed model's match there
-(`d-t-ignition.md`) does not depend on it.
+**A D-T reactor on one heater never fills, and its pipes stay at its own temperature**
+([#510](https://github.com/trulsjo/realistic-fusion-refreshed/issues/510)). Measured with
+`-Plasma rf-d-t-plasma -Exchangers 8 -Heaters 1 -Unresearched -Ticks 600000 -Window 30000`:
+nothing researched, one heater, Factorio 2.0.77, 2026-10-03, passing the bench's gate including
+its fuel-line check (#508). At 540 000 and 570 000 ticks alike the heater makes plasma at
+1×10⁶ °C, the three pipes hold **2.1901×10⁹ °C** and the reactor **2.193×10⁹ °C at 275.6 units**,
+all in one fluid segment, selling 282.1 – 338.5 MW across the bench's two bounds. The pipes sit
+0.13% under the reactor, as the D-D top corner's do (1.461×10⁹ against 1.462×10⁹). The box held
+275.6 units from 90 000 ticks on and never filled. The fed model reads 276.9 units at
+2.183×10⁹ °C (`d-t-ignition.md`), 0.5% under this temperature; #486's 252 000-tick reading was
+277.3 units at 2.180×10⁹ °C.
 
 ### What that does to coverage, on one heater
 
