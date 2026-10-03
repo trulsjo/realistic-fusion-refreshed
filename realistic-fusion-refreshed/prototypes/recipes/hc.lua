@@ -16,13 +16,15 @@
 -- reactor's output by a TURBINE's appetite and an exchanger's rating cancels out. "Comfortably"
 -- left the D-D half too, and then #227 went to 90 MW and ONE machine covers an unresearched
 -- one-heater D-D reactor, so the D-D half names one exchanger rather than two. Researched, the same
--- reactor outruns it (107.5 to 129.0 MW at the top of every ladder).
+-- reactor outruns it (107.5 to 129.0 MW at the top of every ladder, #440; 109.0 to 130.8 at
+-- 570 000 ticks, 2026-10-03).
 --
 -- The 320 comes from docs/research/d-t-ignition.md's feed table at the shipped 2.5 units/s -- one
 -- heater, which is what a player has. Four heaters put the D-T reactor at 996 to 1 195 MW instead
 -- (#89), so neither figure means anything without its heater count. The D-D half read 86 from the
 -- same table until #440 measured one heater under current physics, nothing researched: 48.9 to 58.6
--- MW, on 2026-10-01 against Factorio 2.0.77. The D-T figure was suspected high for the same reason
+-- MW at 126 000 ticks, on 2026-10-01 against Factorio 2.0.77 -- and 48.3 to 58.0 at 870 000, once
+-- its fuel line had cooled (2026-10-03). The D-T figure was suspected high for the same reason
 -- and is not: #486 measured one heater, nothing researched, at 282.1 to 338.5 MW (2026-10-02,
 -- Factorio 2.0.77), so four exchangers stands and the turbines are 49 to 59 where 320 implied
 -- fifty-five. Fully researched it is 321.0 to 385.2 MW -- four or five exchangers, 56 to 67

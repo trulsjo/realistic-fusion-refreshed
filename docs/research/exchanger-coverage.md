@@ -71,6 +71,10 @@ deciding anything:
 | **confinement** | rung 2, 50 s — 82.9 MW full, 88.7 tuned | rung 3, 60 s — **104.9** full, **107.6** tuned |
 | **plant efficiency** | rung 3, the whole ladder — 61.9 MW full, 68.0 tuned | *none — this ladder never reaches 90 on its own* |
 
+**That table is the held reactor.** One heater's plant is the fed one, and it reads one heating rung
+further and the whole confinement ladder covered — see
+[What that does to coverage, on one heater](#what-that-does-to-coverage-on-one-heater).
+
 **The heating ladder is the new one and it is the sharp one.** Before ADR 0038 a reactor could only
 outgrow its exchanger by researching confinement; now four rungs of heating do it with confinement
 untouched, and a player meets those rungs earlier.
@@ -164,121 +168,157 @@ not add, and the grid above is where a combination is read rather than guessed a
 
 Every figure above is a settled reactor on the pure model: box full, never starved. A player's
 reactor is fed by an `rf-heater`, and **one heater is the plant this note's 90 MW is sized on.**
-#440 measured that plant at two states and
-[#485](https://github.com/trulsjo/realistic-fusion-refreshed/issues/485) at eleven more — each
-ladder walked alone from the unresearched state — so thirteen of the ninety-six are now read off a
-fuel line. All thirteen: `bench-mod-links.ps1 -Heaters 1`, a D-D reactor, four exchangers so the
-reactor and not the row is what limits, Factorio 2.0.77 (build 84539). #440's two on 2026-10-01,
-the rest on 2026-10-02 with `-Rungs <ladder>=<n>`, which asserts every rung of all three ladders and
-prints them with the result.
+The thirteen states below — each ladder walked alone, and the two corners — are read three ways,
+and **the game settles at the fed model in all thirteen**: to within 0.07% in plasma temperature
+at twelve, and 0.19% at the top corner.
 
-**Each figure is a bracket, not a number.** The bench's *sustained* column divides by every tick and
-so undercounts the tick the reactor writes energy on; its *while flowing* column assumes that tick
-carried the mean. The truth is between them. **Settled** in the last column means the fed reactor
-is at the settled point — box full, plasma within 2.5% of the model's settled temperature, and the
-model's full-supply figure (the grid above) inside the bracket.
+**Three readings, one method each.**
 
-| research state | sustained – while flowing | plasma held | plasma °C | model, full supply | settled? |
-|---|---|---|---|---|---|
-| **nothing researched** (#440) | 48.9 – 58.6 MW | 999.9 / 1000 | 2.412e8 | 56.1 MW at 2.422e8 | **yes** |
-| heating rung 1, 55 MW | 56.2 – 67.4 MW | 999.9 | 2.808e8 | 64.7 at 2.829e8 | yes |
-| heating rung 2, 60 MW | 63.8 – 76.6 MW | 999.9 | 3.220e8 | 73.7 at 3.257e8 | yes |
-| heating rung 3, 65 MW | 71.7 – 86.1 MW | 999.9 | 3.647e8 | 83.2 at 3.701e8 | yes |
-| heating rung 4, 70 MW | 80.0 – **95.9** MW | 999.9 | 4.085e8 | **92.9** at 4.158e8 | yes |
-| heating rung 5, 75 MW | 88.5 – **106.3** MW | 999.8 | 4.541e8 | **102.9** at 4.623e8 | yes |
-| confinement rung 1, 40 s | 57.8 – 69.4 MW | 999.9 | 3.361e8 | 67.1 at 3.413e8 | yes |
-| confinement rung 2, 50 s | 71.0 – 85.2 MW | 999.8 | 4.617e8 | 82.9 at 4.727e8 | yes |
-| confinement rung 3, 60 s | 76.1 – **91.3** MW | 999.8 | 5.349e8 | **104.9** at 6.483e8 | **no** |
-| plant efficiency rung 1, 0.9 | 51.7 – 62.1 MW | 999.9 | 2.412e8 | 59.4 at 2.422e8 | yes |
-| plant efficiency rung 2, 0.925 | 53.2 – 63.8 MW | 999.9 | 2.412e8 | 61.1 at 2.422e8 | yes |
-| plant efficiency rung 3, 0.9375 | 53.9 – 64.7 MW | 999.9 | 2.412e8 | 61.9 at 2.422e8 | yes |
-| **every ladder at its top** (#440) | 107.5 – 129.0 MW | 611.6 / 1000 | 1.488e9 | 211.2 at 1.183e9 | **no** |
+- **Game, long.** `bench-mod-links.ps1 -Heaters 1 -Ticks 600000 -Window 30000`, with
+  `-Rungs <ladder>=<n>`, `-Unresearched`, or neither for the top corner. It runs a D-D reactor with
+  four exchangers, so the reactor and not the row is what limits. Factorio 2.0.77 (build 84539),
+  2026-10-03. Quoted at the last report, 570 000 ticks. Nothing researched and confinement rung 2
+  ran 900 000 ticks at the same window and are quoted at 870 000. Every run passed the bench's
+  equilibrium gate. **Each MW figure is a bracket, not a number.** The bench's *sustained* column
+  divides by every tick and so undercounts the tick the reactor writes energy on. Its *while
+  flowing* column assumes that tick carried the mean. The truth is between them.
+- **Fed model.** `M.settle_fed`. The box starts empty, and one heater's 2.5 u/s arrives at the
+  recipe's 1×10⁶ °C and is mixed in by amount, never past 1000. It is stepped every 6 ticks, as
+  `control.lua` steps the reactor, for 7200 s. **1200 s is not enough here**: it leaves
+  confinement rung 3 at 5.455×10⁸ °C and the top corner at 622.1 units, where 3600 s and
+  14 400 s agree with 7200 to four figures. MW is what the last step sells, after capture. u/s is
+  what it burns.
+- **Held model.** `M.settle` at a full box, 1200 s at one tick: the grid above.
 
-Every row taken on 2026-10-02 passed the bench's equilibrium gate at 126 000 ticks except
-confinement rung 3, which had not settled there and is quoted from a 360 000-tick run that did. Of
-#440's two rows, nothing researched was read after 126 000 ticks —
-`realistic-fusion-refreshed/prototypes/entities.lua` records the run in its comment headed
-"MEASURED, AND IT IS NOT 86" — and the tick count of the every-ladder-at-its-top row is not on record.
-The model column is `M.settle` at the same state, 1200 s at one tick.
+| research state | game, long: MW | held | °C | fed model: held | °C | MW | u/s | held model |
+|---|---|---|---|---|---|---|---|---|
+| **nothing researched** | 48.3 – 58.0 | 999.9 | 2.382e8 | 1000 | 2.381e8 | 55.3 | 0.531 | 56.1 at 2.422e8 |
+| heating rung 1, 55 MW | 55.3 – 66.4 | 999.9 | 2.764e8 | 1000 | 2.763e8 | 63.3 | 0.693 | 64.7 at 2.829e8 |
+| heating rung 2, 60 MW | 62.6 – 75.2 | 999.9 | 3.159e8 | 1000 | 3.159e8 | 71.7 | 0.870 | 73.7 at 3.257e8 |
+| heating rung 3, 65 MW | 70.1 – 84.1 | 999.9 | 3.563e8 | 1000 | 3.562e8 | 80.2 | 1.058 | 83.2 at 3.701e8 |
+| heating rung 4, 70 MW | 77.7 – 93.2 | 999.9 | 3.971e8 | 1000 | 3.970e8 | **88.9** | 1.253 | 92.9 at 4.158e8 |
+| heating rung 5, 75 MW | 85.3 – 102.4 | 999.9 | 4.380e8 | 1000 | 4.379e8 | **97.6** | 1.453 | 102.9 at 4.623e8 |
+| confinement rung 1, 40 s | 56.1 – 67.4 | 999.9 | 3.259e8 | 1000 | 3.258e8 | 64.2 | 0.916 | 67.1 at 3.413e8 |
+| confinement rung 2, 50 s | 65.6 – 78.7 | 999.9 | 4.258e8 | 1000 | 4.258e8 | 75.0 | 1.393 | 82.9 at 4.727e8 |
+| confinement rung 3, 60 s | 76.0 – 91.1 | 999.8 | 5.342e8 | 1000 | 5.341e8 | **86.9** | 1.932 | 104.9 at 6.483e8 |
+| plant efficiency rung 1, 0.9 | 51.2 – 61.4 | 999.9 | 2.383e8 | 1000 | 2.381e8 | 58.5 | 0.531 | 59.4 at 2.422e8 |
+| plant efficiency rung 2, 0.925 | 52.6 – 63.1 | 999.9 | 2.383e8 | 1000 | 2.381e8 | 60.1 | 0.531 | 61.1 at 2.422e8 |
+| plant efficiency rung 3, 0.9375 | 53.3 – 64.0 | 999.9 | 2.383e8 | 1000 | 2.381e8 | 60.9 | 0.531 | 61.9 at 2.422e8 |
+| **every ladder at its top** | 109.0 – 130.8 | 623.8 | 1.462e9 | 625.0 | 1.460e9 | 124.7 | 2.500 | 211.2 at 1.183e9 |
 
-**What each ladder does, walked alone:**
+**Where the game sits, row by row: at the fed model, in every row.** The fed model's MW is inside
+the game's bracket in all thirteen. In plasma temperature the game runs 0.013% to 0.036% over the
+fed model in the nine rows that move heating or confinement, or move nothing. The three
+plant-efficiency rows run 0.062% over, at 570 000 ticks. The nothing-researched row read the same
+2.383×10⁸ at 570 000 ticks and 2.382×10⁸ at 870 000, so those three look like the same slow tail.
+The top corner runs 0.19% over at 0.19% less plasma. Its box never fills, so its pipes stay in the
+reactor's pool and hold hot plasma the fed model does not count. The held model is never inside
+0.07%: it runs 1.7% to 21% hot in the twelve full-box rows, and its MW is outside the bracket at
+heating rung 5, at confinement rungs 2 and 3, and at the top corner. Plant efficiency moves only what is sold, so its
+three rows hold the unresearched temperature.
 
-| ladder | first rung NOT at the settled point | first rung one 90 MW exchanger does not cover |
+**The top corner is the one measured row a heater cannot keep full**, at 623.8 units against the
+fed model's 625.0, burning all 2.5 u/s. Of the twenty-four heating × confinement cells, the fed
+model leaves six part-full and burning 2.5 u/s: confinement rung 2 at heating rungs 4 and 5, and
+confinement rung 3 at heating rungs 2 to 5. Plant efficiency never touches the plasma, so that is
+**twenty-four of the ninety-six states supply-limited on one heater**. Every other cell keeps its
+box full and burns at most 2.466 u/s. This replaces the earlier candidate split, which counted
+forty-four states off the settled point on one heater. That split read the held model's demand,
+and the held model is not the plant.
+
+### What the earlier readings were
+
+#440 (nothing researched and the top corner, 2026-10-01) and
+[#485](https://github.com/trulsjo/realistic-fusion-refreshed/issues/485) (the eleven single-ladder
+rows, 2026-10-02) measured the same rig on Factorio 2.0.77. Nothing researched was read after
+126 000 ticks, and the top corner after a tick count not on record. Of #485's eleven, ten were
+read after 126 000 ticks and passed the bench's equilibrium gate there: heating rungs 1 to 5,
+confinement rungs 1 and 2, and plant efficiency rungs 1 to 3. Confinement rung 3 had not settled
+at 126 000 ticks and was quoted from a 360 000-tick run that had. **Every row but that one was read
+mid-transient.** Their plasma temperatures, against the long runs above:
+
+| research state | °C, earlier | °C, long | earlier over long |
+|---|---|---|---|
+| nothing researched (#440), 126 000 ticks | 2.412e8 | 2.382e8 | +1.3% |
+| heating rungs 1 / 2 / 3 / 4 / 5, 126 000 ticks | 2.808 / 3.220 / 3.647 / 4.085 / 4.541 e8 | 2.764 / 3.159 / 3.563 / 3.971 / 4.380 e8 | +1.6 / +1.9 / +2.4 / +2.9 / +3.7% |
+| confinement rungs 1 / 2, 126 000 ticks | 3.361 / 4.617 e8 | 3.259 / 4.258 e8 | +3.1 / +8.4% |
+| confinement rung 3, 360 000 ticks | 5.349e8 | 5.342e8 | +0.1% |
+| plant efficiency rungs 1 – 3, 126 000 ticks | 2.412e8 each | 2.383e8 each | +1.2% |
+| every ladder at its top (#440), ticks not on record | 1.488e9, 611.6 units | 1.462e9, 623.8 units | +1.8% |
+
+Those readings sat between the held and fed models, which is what #501 found at four of them and
+could not explain. **The gate passed them because the reactor was cooling too slowly to fail it.**
+Nothing researched moved 0.055% between its last two windows at 126 000 ticks, against a 1%
+tolerance. Its fuel line was still cooling, and the next section shows it.
+
+### The fuel line, measured
+
+[#503](https://github.com/trulsjo/realistic-fusion-refreshed/issues/503). The bench's report now
+prints a fuel-line trace: the temperature in the metered heater's plasma output, in each pipe of
+the run and in the reactor's box, each with its fluid segment id. The pipes and the reactor are
+read on each window's last tick. The heater is its last non-empty reading in the window, because
+its box drains the tick it fills. The trace gates nothing. Quoted here: the 870 000-tick runs
+above, nothing researched and confinement rung 2, one heater, three pipes, D-D, Factorio 2.0.77,
+2026-10-03, 30 000 ticks a window. A 126 000-tick pair at 6 000 a window, run the same day, gave
+the same readings at the ticks both report.
+
+- **The heater makes plasma at 1×10⁶ °C**, the recipe's `temperature`, at every window of both
+  runs. Its box reports no segment id. #499 and #501 mixed the fuel in at 15 °C; at 1×10⁶ °C the
+  fed model moves by under 0.05%.
+- **While the box fills, the pipes run at the reactor's temperature**, in its segment. Nothing
+  researched at 60 000 ticks: 3.344×10⁸ °C in all three pipes, 3.344×10⁸ in the reactor.
+- **Once the box is full, the pipes cool toward the heater's 1×10⁶ °C, and the reactor follows.**
+  The plasma left in the pipes when the box filled is what the reactor draws next. So the fuel
+  arrives far warmer than the heater made it, for hundreds of thousands of ticks.
+
+| state, ticks | pipes, °C | reactor, °C |
 |---|---|---|
-| **heating** | *none* — all five rungs hold it | **rung 4** on the model's reading; the bracket alone straddles 90 at rungs 4 and 5 |
-| **confinement** | **rung 3** | *none measured* — rung 3's bracket straddles 90, 76.1 to 91.3 |
-| **plant efficiency** | *none* | *none* — 64.7 MW at most |
+| nothing researched, 90 000 (box full from 72 000) | 2.193e8 | 2.419e8 |
+| nothing researched, 120 000 | 1.780e8 | 2.412e8 |
+| nothing researched, 870 000 | 2.05e6 | 2.382e8 |
+| confinement rung 2, 120 000 (box full from 114 000) | 3.497e8 | 4.617e8 |
+| confinement rung 2, 870 000 | 1.0006e6 | 4.258e8 |
 
-**Heating never moves the fed reactor off the settled point**, so for that ladder the model's grid
-IS the one-heater plant, and the bracket agrees with it at every rung. That is what makes rung 4 the
-answer on coverage: the bracket by itself cannot decide — 80.0 to 95.9 straddles 90, and so does
-rung 5's 88.5 to 106.3 — but the model's 92.9 sits inside it at a temperature the fed reactor
-matches to 1.8%, so 92.9 is the reading.
+The 90 000- and 120 000-tick rows come from the 6 000-tick windows of the shorter pair, because a
+30 000-tick window does not land on the moment the box fills.
 
-**Confinement rung 3 is the first single-ladder state the fed reactor does not reach the settled
-point at, and why is not established.** What the bench shows: a full box (999.8) at **5.349e8 °C, 17.5% colder than the model's
-6.483e8**, selling 76.1 to 91.3 MW where the settled reactor sells 104.9. The 126 000-tick run of
-the same state failed the equilibrium gate, its last report at 865.0 units and 6.98e8 °C.
+**So yes: the fuel was warmer than the heater makes it, and by a lot.** At 120 000 ticks, the last
+report before the 126 000-tick readings above, it reached the reactor at 1.78×10⁸ °C unresearched
+and 3.50×10⁸ °C at confinement rung 2. That is 178 and 350 times the heater's 1×10⁶ °C. By
+870 000 ticks it arrives at 2.05× the heater's temperature unresearched and within 0.06% of it at
+rung 2. The hot inventory comes from the fill, so it should scale with the length of the pipe run.
+Only this rig's three pipes were measured.
 
-**The box filled once and never drained** (#496). The bench's window trace now prints plasma held
-at every window. Re-run on 2026-10-02 against Factorio 2.0.77, one heater, confinement rung 3 and
-every other ladder off, 360 000 ticks at 6 000 a window, it climbs every window from 108.8 units
-at the first report to 865.0 at 120 000 ticks — the reading the 126 000-tick run ended on, at the
-same 6.980e8 °C — and is full, at 999.8, from 168 000 ticks on. The temperature falls the whole
-way up, from 3.38e9 °C at the first report to 5.64e8 at 162 000 ticks, rises to 6.01e8 in the
-window after the box fills, and sinks to 5.348e8, moving 0.02% across the last two windows.
-Settled: 76.0 to 91.2 MW, the gate passed — a tenth under the table's 76.1 to 91.3, which is the
-earlier 360 000-tick run. "Drained and refilled" is ruled out.
+A D-T reactor on one heater never fills, at 277.3 units, so its pipes should stay in the
+reactor's pool, as the top corner's do. That was not measured here, and the fed model's match there
+(`d-t-ignition.md`) does not depend on it.
 
-**A lead for [#497](https://github.com/trulsjo/realistic-fusion-refreshed/issues/497), not an
-answer.** The model column holds the box full and never pays to heat incoming fuel. Fed instead —
-one heater's 2.5 u/s arriving at 15 °C and mixed into the box by amount, the method
-`d-t-ignition.md` gives for #499 — the model at rung 3 settles full at 5.339e8 °C, 86.9 MW,
-burning 1.93 u/s, against this run's 5.348e8 and the bench's sustained plasma meter's 1.92. But
-the same fed model runs confinement rung 2 7.8% cold (4.257e8 against the
-game's 4.617e8 and the held model's 4.727e8), and the nothing-researched and heating rung 5 rows
-also sit between the two models; the other nine rows were not run fed. So the rung-3 match does
-not yet say the fuel sink is the cause, and nothing below is revised on it.
+### What that does to coverage, on one heater
 
-**The earlier candidate:** settled at 60 s the model's
-reactor burns **2.509 units of plasma a second** and one heater makes **2.5** (`M.heater`, five
-units every two seconds) — the first single-ladder state whose settled demand exceeds a heater;
-heating rung 5 asks 1.574 and confinement rung 2 1.625. But a supply limit predicts a part-full box,
-the top corner's shape, and this box is full; the bench's sustained plasma meter reads 1.92 u/s,
-under the heater's 2.5. ~~though that meter excludes the ticks a craft lands on and undercounts~~
-— the fed model's 1.93 u/s above reads the 1.92 as what the reactor burns rather than as an
-undercount, though that rests on the same unvalidated lead. So the measurement and the demand
-figure agree only on WHERE the settled point is lost, not on how.
+The coverage map and the grid above are the held model, and they stay so. **On one heater the plant
+is the fed reactor.** Walked alone from the shipped state, its readings are:
 
-**So whether one exchanger covers confinement rung 3 on one heater is not decided by this
-measurement.** Its sustained bound is 13.9 MW under 90 and its flowing bound 1.3 MW over. The
-settled reactor's 104.9 does not apply to a plant one heater feeds, and a second heater would put the
-reactor back at it, which is the question #315 inherits.
+| ladder | first rung NOT covered on the fed model | the game's bracket there |
+|---|---|---|
+| **heating** | **rung 5**, 97.6 MW. Rung 4 is 88.9 | rung 4 77.7 – 93.2 and rung 5 85.3 – 102.4, both straddling 90 |
+| **confinement** | *none*. Rung 3 is 86.9 | rung 3 76.0 – 91.1, straddling 90 |
+| **plant efficiency** | *none*. 60.9 at most | 64.0 at most |
 
-**Plant efficiency changes nothing about the operating point**, as it should: it scales what is sold
-and leaves the plasma alone, so all three rungs hold the unresearched 2.412e8 °C to four figures.
+So one heater's plant is covered one heating rung further than the held grid says, and through
+the whole confinement ladder. The bracket alone decides neither heating rung 4 nor confinement
+rung 3, because both straddle 90; the fed model's figure inside each bracket is the reading.
+Whether 90 should move is still #315.
 
-**The eighty-three states still unmeasured on a fuel line** are every state with two or more ladders
-researched, less the top corner: ninety-six, less the unresearched corner, the eleven single-ladder
-states and the far corner.
-
-**The model's plasma demand gives a candidate split, and confinement rung 3 has not validated it.**
-Settled plasma demand depends on heating and confinement only — plant efficiency never touches the
-plasma — so it is a 6 × 4 table, and **eleven of its twenty-four cells ask more than 2.5 u/s**:
-confinement rung 3 at every heating rung, rung 2 from heating rung 2 up, and rung 1 at heating rung
-5 (2.692). Times four capture rungs, that is **forty-four of the ninety-six states predicted off the
-settled point on one heater**, two of them measured (confinement rung 3 alone, and the top corner)
-and forty-two not. The other forty-one unmeasured states ask 2.343 u/s or less. Both measured states
-in the first group are off the settled point and all eleven measured in the second are on it, which
-is consistent with the split and does not explain the mechanism above; read it as where to measure
-next, not as a reading. The cases nearest the line — 2.509 here, 2.612 at heating 2 with
-confinement 2 — are where it would be wrong first.
+**The eighty-three states still unmeasured on a fuel line** are every state with two or more
+ladders researched, less the top corner: ninety-six, less the unresearched corner, the eleven
+single-ladder states and the far corner. The fed model reads all of them, and it has matched the
+game at all thirteen measured.
 
 ## What this does not cover
 
-- **THE FED REACTOR, at thirteen of ninety-six states** — see
-  [The fed reactor, one heater](#the-fed-reactor-one-heater) above. Every other figure in this note is
-  the settled reactor on the pure model.
+- **THE FED REACTOR, measured at thirteen of ninety-six states** — see
+  [The fed reactor, one heater](#the-fed-reactor-one-heater) above. Every figure outside that
+  section is the held reactor on the pure model.
 - **THE D-T TIER.** Only `rf-d-d-plasma`. A D-T reactor is a different sizing question and
   `rf-hc-exchanger` is the machine on the other end of it.
 - **THE ANEUTRONIC TIER**, which needs nothing measured: no research ladder reaches it at all —
@@ -294,10 +334,12 @@ confinement 2 — are where it would be wrong first.
 ## Sources
 
 - `realistic-fusion-refreshed/scripts/reactor-logic.lua` — `M.reactor` (the three ladders live on
-  the spec), `M.settle`, and `M.density_curve` for the fill resolution. The capture rung is written
-  into the spec's own `capture_efficiency` rather than passed as `M.step`'s `capture` argument,
-  because `M.settle` takes no such argument; `M.step` falls back to the spec field, so the two
-  routes compute the identical number.
+  the spec), `M.settle`, `M.settle_fed` for the fed reactor, and `M.density_curve` for the fill
+  resolution. The grid was computed with the capture rung written into the spec's own
+  `capture_efficiency` rather than passed as the `capture` argument `M.settle` forwards to
+  `M.step`. `M.step` falls back to the spec field, so the two routes compute the identical number,
+  and passing the argument is the route ADR 0020 decision 5 asks for. The fed-reactor section
+  passes it.
 - `tests/test-reactor-logic.lua` — `sells_mw` and the block under *WHAT ONE EXCHANGER COVERS, ON ALL
   THREE LADDERS*, which pins the boundary cells quoted above. The interior of the grid is not pinned
   and is cited from this note.

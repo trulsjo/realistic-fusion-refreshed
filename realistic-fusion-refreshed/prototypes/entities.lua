@@ -622,17 +622,19 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 --     sits between them. THE "RADIATION-FREE READING OVERSTATES" ARGUMENT HELD, and by more than it
 --     needed to: the true figure is at least 27 MW under 86, and 90 clears it by 31 MW or more.
 --
---     AND AT THIS STATE THE FED REACTOR IS THE SETTLED ONE. One heater makes 2.5 units/s and this
---     reactor burns about 0.55, so the box stays full and the operating point is the pure model's
---     settled full-supply one -- 2.422e8 C and 56.1 MW, inside the bracket. That is what pins it:
---     tests/test-reactor-logic.lua's mw_at(0) holds 56.1 to 1%, which is this plant for as long as
---     one heater keeps the box full. The suite cannot check THAT half, because the pure model has
---     no fuel line; this bench is what does.
+--     BUT 126 000 TICKS WAS MID-TRANSIENT (#502, #503). The plasma left in the pipe when the box
+--     fills is the next fuel the reactor draws, and it cools for hundreds of thousands of ticks.
+--     Run to 870 000 ticks (2026-10-03, Factorio 2.0.77) the same plant reads 48.3 to 58.0 MW at
+--     2.382e8 C. That is logic.settle_fed's 2.381e8 C and 55.3 MW, not M.settle's full-supply
+--     2.422e8 C and 56.1 MW: the full-supply model never pays to heat the fuel arriving. So
+--     mw_at(0)'s 56.1 is the held reactor and runs 0.8 MW over the fed one.
 --
---     THE OTHER CORNER, for scale: the same one heater with every ladder at its top reads 107.5 to
---     129.0 MW, with the box at 611.6 of 1 000 and the plasma at 1.488e9 C -- there the fed reactor
---     is NOT the settled one, which is the case the paragraph at the bottom of this block was
---     written about. The other 94 research states are not measured on a fuel line.
+--     THE OTHER CORNER, for scale: the same one heater with every ladder at its top reads 109.0 to
+--     130.8 MW, with the box at 623.8 of 1 000 and the plasma at 1.462e9 C (570 000 ticks,
+--     2026-10-03). There a heater cannot keep the box full, which is the case the paragraph at the
+--     bottom of this block was written about. Eleven single-ladder states are measured the same
+--     way and the other 83 are not. All thirteen sit on the fed model:
+--     docs/research/exchanger-coverage.md, "The fed reactor, one heater".
 --
 --     THE SAME TABLE READS 103 MW AT TWO HEATERS AND IT SATURATES THERE -- radiation-free, like its
 --     one-heater cell, and unre-measured at two -- so a player who over-feeds
@@ -695,6 +697,11 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 --   * AND THE FAR CORNER, every ladder at its top, is 211.2 MW at full supply -- 2.35 of these
 --     machines, so two of them and a third one a third used. PINNED.
 --
+-- EVERY BULLET ABOVE IS THE HELD REACTOR, full and never paying to heat its fuel. One heater's plant
+-- is the fed one (#502), and walked alone it first outruns this machine at heating rung 5 (97.6 MW;
+-- rung 4 is 88.9) and never on the confinement ladder (rung 3 is 86.9). The one-heater figures are
+-- in docs/research/exchanger-coverage.md and are cited, not pinned.
+--
 -- THE WHOLE GRID IS docs/research/exchanger-coverage.md, which is where the ninety-six-cell
 -- measurement and its coverage map live; the cells above are the boundary of it and are the only
 -- ones a gate holds. Everything in that note is CITED here, not pinned.
@@ -714,8 +721,9 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 -- 30 000 ticks and does not move through 600 000, while the bench's reactor sat at 5.507e8 C after
 -- 126 000, because a fed reactor burns and replaces plasma continuously and need not settle into a
 -- full box. THAT BENCH RAN FOUR HEATERS AND RESEARCHED EVERYTHING, which nothing said at the time
--- (#444); with one heater and nothing researched the box stays full and the two agree. That is
--- what CONTEXT.md's operating-point vocabulary is for; this reactor has been quoted at 56 and at
+-- (#444). With one heater and nothing researched the box stays full, and the two still differ:
+-- the fed reactor pays to heat its fuel and settles at 2.381e8 C and 55.3 MW, against the pure
+-- model's 2.422e8 and 56.1 (#502). That is what CONTEXT.md's operating-point vocabulary is for; this reactor has been quoted at 56 and at
 -- 85 MW before (#109) and both were right. Sizing on the settled figure alone is the trap, and the
 -- first attempt at this ticket fell in it -- and naming the operating point WITHOUT the research
 -- state and the heater count turned out to be a second one.
@@ -848,14 +856,15 @@ exchanger.output_fluid_box.filter = "steam"
 -- enough to be worth naming here. docs/research/d-t-ignition.md's feed table puts a lit D-T reactor
 -- at 324 MW on one heater's 2.5 units/s, and check-brownout.ps1 measured its trailing-minute output
 -- climbing to 322 MW at 1800 s and 324 at 2100 and flat after -- both before radiation (#52). With
--- radiation the pure-Lua model, FED 2.5 units/s of 15 C plasma rather than held at a fill, settles
--- at 322.7 MW, 276.9 units and 2.183e9 C (#499), against the 277.3 units and 2.180e9 C the game
--- measured on one heater, nothing researched (#486, 2026-10-02, Factorio 2.0.77). Held at the
--- game's fill it runs 17% hotter, and its 319 MW agrees on megawatts only because two errors
--- cancel. What DOES depend on the feed is the figure itself: four heaters put the
--- same reactor at 996 to 1 195 MW (#89, docs/research/bolted-joint-throughput.md), and quoting
--- either without saying which heater count it came from is the operating-point defect CONTEXT.md
--- exists to prevent. One heater is what a player has, so one heater is what this block quotes.
+-- radiation the pure-Lua model, FED 2.5 units/s of the heater's 1e6 C plasma rather than held at a
+-- fill (logic.settle_fed), settles at 322.7 MW, 276.9 units and 2.183e9 C (#499), against the
+-- 277.3 units and 2.180e9 C the game measured on one heater, nothing researched (#486, 2026-10-02,
+-- Factorio 2.0.77). Held at the game's fill it runs 17% hotter, and its 319 MW -- 319.0 at the
+-- 6-tick step, 319.1 at one tick -- agrees on megawatts only because two errors cancel. What DOES
+-- depend on the feed is the figure itself: four heaters put the same reactor at 996 to 1 195 MW
+-- (#89, docs/research/bolted-joint-throughput.md), and quoting either without saying which heater
+-- count it came from is the operating-point defect CONTEXT.md exists to prevent. One heater is
+-- what a player has, so one heater is what this block quotes.
 --
 -- AND IT IS NOW MEASURED WITH RADIATION (#486, 2026-10-02, Factorio 2.0.77): one heater, nothing
 -- researched, 282.1 to 338.5 MW across bench-mod-links.ps1's two bounds, heater-fed at 277.3 units.

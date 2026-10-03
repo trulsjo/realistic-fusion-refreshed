@@ -232,15 +232,15 @@ each other (#109):
 - **Settled** — box full, plasma at the temperature its own heating and losses balance at, all the
   power it asks for. A bare, unresearched D-D reactor is **1000 units at 2.42×10⁸ °C, selling
   56.1 MW**. This is the reference point: a figure that names no operating point is this one, and
-  `tests/test-reactor-logic.lua` pins it. **It is also where one heater holds that reactor**:
-  #440 measured a D-D reactor fed by exactly one `rf-heater`, nothing researched, at 999.9 units and
-  2.412×10⁸ °C, selling 48.9 to 58.6 MW across the bench's two bounds — 2026-10-01, Factorio
-  2.0.77 — so for the entry plant the settled and the fed reactor are the same one. #485 walked
-  each ladder ALONE from there and found the same at every rung of heating and of plant efficiency
-  and at confinement rungs 1 and 2, and NOT at confinement rung 3, for a reason not yet established
-  (2026-10-02; [`exchanger-coverage.md`](docs/research/exchanger-coverage.md)). Of the states
-  combining rungs, only the top corner is measured (#440, off the settled point at 611.6 units);
-  the model puts some of the rest past what one heater makes.
+  `tests/test-reactor-logic.lua` pins it. **It is not quite where one heater holds that
+  reactor.** Settled never pays to heat the fuel arriving; a reactor one `rf-heater` keeps full
+  does, and runs a little colder. Fed by exactly one heater, nothing researched, a D-D reactor
+  settles at 999.9 units and 2.382×10⁸ °C, selling 48.3 to 58.0 MW across the bench's two bounds,
+  at 870 000 ticks — 2026-10-03, Factorio 2.0.77. That is `M.settle_fed`'s 2.381×10⁸ °C and
+  55.3 MW, not settled's (#502). All thirteen one-heater states measured — the eleven single-ladder
+  walks and the two corners — sit on the fed model ([`exchanger-coverage.md`](docs/research/exchanger-coverage.md)).
+  Readings taken at 126 000 ticks, such as #440's 2.412×10⁸ °C and 48.9 to 58.6 MW, were still
+  cooling (#503).
 - **Heater-fed** — a reactor its heater is still filling, held below full by the fuel line rather
   than by choice, and therefore **supply-limited**: the reactor and the heater both report
   `low_power`. A thinner plasma settles hotter (see **operating density** above), so a heater-fed
