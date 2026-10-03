@@ -749,6 +749,32 @@ MW of the prediction. No member gave anything back. The supply is `secondary-out
 says nothing about three classes on a `tertiary` supply, where `tert-tert` above shows the
 `tertiary` member is not served.
 
+**An accumulator discharging into a short network gives by ask, like any other supply**
+([#492](https://github.com/trulsjo/realistic-fusion-refreshed/issues/492)). Measured 2026-10-04
+against Factorio 2.0.77, same rig, nothing researched (asserted again), in an eighth cell,
+`discharge`, alone on a network of its own. It is not on the ladder: a draining accumulator is
+not a steady state, so the cell is read every second instead. A normal and a legendary
+`rf-reactor`, asking 90 and 225 MW and spending 50 each, on a `secondary-output` supply held at
+50 MW, half of what the two spend. Beside them stand eighteen vanilla accumulators, 5.4 MW of
+output and 90 MJ between them, empty for 1200 ticks and then charged to their full buffer on one
+tick. The engine reports their priority as `managed-accumulator`, not `tertiary`.
+
+| seconds after the charge | accumulators gave, MW | normal reactor drew | legendary reactor drew |
+|---|---|---|---|
+| the three before it | 0 | 14.29 | 35.71 |
+| 1 to 16 | 5.4 | 15.83 | 39.57 |
+| 17 | 3.6 | 15.31 | 38.29 |
+| 18 to 30 | 0 | 14.29 | 35.71 |
+
+The accumulators gave their full 5.4 MW for sixteen seconds and the last 3.6 MJ in the
+seventeenth, 90 MJ in all, and took nothing back. What they gave was split 90 : 225, the same
+share by ask the supply's own 50 MW is split by: of 5.4 MW, 1.54 to the normal reactor and 3.86
+to the legendary one, where an even split would be 2.7 each. Every one of the 33 rows is within
+1.8e-6 MW of the water-fill of the supply plus what the accumulators were measured giving. So
+the legendary reactor takes the larger part of a discharge as it takes the larger part of the
+supply. Neither reactor is capped at this supply; a discharge that lifts one to its spend was
+not run.
+
 Whether the mod should guarantee any of this is the scope decision above and Truls's; the
 probe asserts nothing about the answer.
 
@@ -889,9 +915,9 @@ Stated plainly, because this repository treats an unverified claim as a defect.
 
 - **Contention is measured for small cells, not for a factory.** #439 ran pairs and #487 added four
   reactors on one network and a reactor against a `tertiary` load; #491 put all three input
-  classes on one network, on a `secondary-output` supply only. Each cell holds one reactor type.
-  An accumulator that discharges into a short network, and the aneutronic reactor or researched
-  rungs as members have not been run. The class-ordered water-fill predicts them, and a prediction is all
+  classes on one network, on a `secondary-output` supply only; #492 discharged accumulators into
+  one short network, at one supply, with neither reactor capped. Each cell holds one reactor
+  type. The aneutronic reactor and researched rungs as members have not been run. The class-ordered water-fill predicts them, and a prediction is all
   it is: #490 measured one cell it gets wrong, a `tertiary` load on a `tertiary` supply, by up to
   50 MW.
 - **Why the engine floors a fluid transfer to whole float32 ULPs per tick is inferred, not
