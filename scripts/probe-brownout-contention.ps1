@@ -3,7 +3,7 @@
     Measures how a short electric network is split among the consumers on it -- a reactor and what
     it competes with, up to four reactors to a network -- so the contention half of docs/research/quality.md's brownout sentence is observed
     rather than assumed. The rig #439 asks for, extended by #487 past pairs and to a tertiary load,
-    and by #490 to that load on a tertiary supply.
+    by #490 to that load on a tertiary supply, and by #491 to all three input classes at once.
 
 .DESCRIPTION
     A PROBE, NOT A CHECK. Every line it prints is a measurement, and exit 0 means the probe ran and
@@ -20,7 +20,7 @@
     reactor. What a player builds is several consumers on one network, and whether the engine
     divides a short supply in proportion to what each ASKS for is what this measures.
 
-    WHAT IS BUILT. Six cells, each ONE electric network, and each alone: the report prints every
+    WHAT IS BUILT. Seven cells, each ONE electric network, and each alone: the report prints every
     network id, and the rig errors if a cell's consumers are not all on one network or if two cells
     share one. Every consumer in a cell has a name+quality key of its own, for the reason below.
 
@@ -47,6 +47,9 @@
       tert-tert  The tertiary cell again on the rig's USUAL supply, vanilla's tertiary interface
                  (#490): the case those docs do not settle. The two cells differ in the supply's
                  class and in nothing else, and are predicted the same.
+      three      ALL THREE INPUT CLASSES ON ONE NETWORK (#491): the load at primary-input, a normal
+                 rf-reactor and the load at tertiary, on the tertiary cell's secondary-output
+                 supply. Every other cell holds at most two classes.
 
     THE LADDER. Each cell's supply is set to a fraction f of what its consumers SPEND together,
     from 1.2 (every consumer satisfied, with room) down to LOW in steps of STEP. Every rung is twenty seconds,
@@ -187,6 +190,9 @@ local SHAPES = {
   { name = "tertiary",  m = { { REACTOR, "normal" }, { "rf-probe-load-tertiary", "normal" } },
     supply = "rf-probe-supply-secondary-output" },
   { name = "tert-tert", m = { { REACTOR, "normal" }, { "rf-probe-load-tertiary", "normal" } } },
+  { name = "three",     m = { { REACTOR, "normal" }, { "rf-probe-load-primary-input", "normal" },
+                              { "rf-probe-load-tertiary", "normal" } },
+    supply = "rf-probe-supply-secondary-output" },
 }
 -- Where member i sits relative to the cell's substation: the four corners of its supply area.
 local SLOTS = { { 0.5, 0.5 }, { 0.5, 20.5 }, { 20.5, 0.5 }, { 20.5, 20.5 } }
@@ -277,10 +283,12 @@ script.on_init(function()
       end
       return m
     end
-    -- One substation reaches every member and nothing else; a load sits where its reactor would.
+    -- One substation reaches every member and nothing else. A load sits in the strip between the
+    -- first two reactor slots, because the corner slots past the first two only touch the supply
+    -- area with a reactor's footprint.
     local members, spend = {}, 0
     for i, spec in ipairs(shape.m) do
-      local at = spec[1] == REACTOR and SLOTS[i] or { SLOTS[i][1] + 0.5, SLOTS[i][2] - 1.5 }
+      local at = spec[1] == REACTOR and SLOTS[i] or { 3 * i - 5, 10 }
       local m = member(spec[1], spec[2], { ox + at[1], at[2] }, "consumer " .. i)
       members[i], spend = m, spend + m.spend_w
     end
