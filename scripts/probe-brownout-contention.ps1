@@ -3,8 +3,8 @@
     Measures how a short electric network is split among the consumers on it -- a reactor and what
     it competes with, up to four reactors to a network -- so the contention half of docs/research/quality.md's brownout sentence is observed
     rather than assumed. The rig #439 asks for, extended by #487 past pairs and to a tertiary load,
-    by #490 to that load on a tertiary supply, by #491 to all three input classes at once, and by
-    #492 to an accumulator discharging into a short network.
+    by #490 to that load on a tertiary supply, by #491 to all three input classes at once, by
+    #492 to an accumulator discharging into a short network, and by #493 to the aneutronic reactor.
 
 .DESCRIPTION
     A PROBE, NOT A CHECK. Every line it prints is a measurement, and exit 0 means the probe ran and
@@ -21,7 +21,7 @@
     reactor. What a player builds is several consumers on one network, and whether the engine
     divides a short supply in proportion to what each ASKS for is what this measures.
 
-    WHAT IS BUILT. Seven ladder cells and one discharge cell, each ONE electric network, and each alone: the report prints every
+    WHAT IS BUILT. Eight ladder cells and one discharge cell, each ONE electric network, and each alone: the report prints every
     network id, and the rig errors if a cell's consumers are not all on one network or if two cells
     share one. Every consumer in a cell has a name+quality key of its own, for the reason below.
 
@@ -51,6 +51,10 @@
       three      ALL THREE INPUT CLASSES ON ONE NETWORK (#491): the load at primary-input, a normal
                  rf-reactor and the load at tertiary, on the tertiary cell's secondary-output
                  supply. Every other cell holds at most two classes.
+      aneutronic A normal rf-reactor and a normal rf-aneutronic-reactor (#493), each holding its own
+                 plasma at its own box's fill. Every other cell's members spend the same 50 MW;
+                 these ask 90 and 240 MW and spend 50 and 200, so the water-fill's caps fall where
+                 two different spends put them.
 
     AND ONE CELL THAT IS NOT ON THE LADDER, because a draining accumulator is not a steady state and
     a rung's settle-then-measure cannot read it (#492):
@@ -85,7 +89,8 @@
         hides the knee and a ceiling on what it can deliver. It is one tick of the ladder's TOP rung.
       * Flow statistics in 2.0 are keyed by name and quality; asked for the bare name, they answer
         zero for everything but normal.
-      * Every reactor is topped back up to one fill and has its energy box emptied every second, so
+      * Every reactor is topped back up to one fill of its own plasma -- D-D for rf-reactor, D-He3
+        for rf-aneutronic-reactor -- and has its energy box emptied every second, so
         none drops out of the simulation -- a reactor control.lua does not step is not charged,
         and that would read as a brownout and is not one.
 
@@ -182,7 +187,7 @@ local LOW        = __LOW__
 local STEP       = __STEP__
 
 local REACTOR = "rf-reactor"
-local PLASMA  = "rf-d-d-plasma"
+local ANEUTRONIC = "rf-aneutronic-reactor"
 local SPACING = 60
 local ACCUMULATOR = "accumulator"
 
@@ -194,6 +199,12 @@ local function per_tick(w) return w / 60 end
 __RIGBUILD__
 
 __QUIETMAP__
+
+-- Every reactor the rig can place: the spec its spend is read off, and the plasma it is kept in.
+local REACTORS = {
+  [REACTOR]    = { spec = logic.reactor,            plasma = "rf-d-d-plasma" },
+  [ANEUTRONIC] = { spec = logic.aneutronic_reactor, plasma = "rf-d-he3-plasma" },
+}
 
 -- The first member of every cell is a normal rf-reactor; the rest are what it competes with. Every
 -- member of a cell has a distinct name+quality key, because that is what the statistics read.
@@ -209,6 +220,7 @@ local SHAPES = {
   { name = "three",     m = { { REACTOR, "normal" }, { "rf-probe-load-primary-input", "normal" },
                               { "rf-probe-load-tertiary", "normal" } },
     supply = "rf-probe-supply-secondary-output" },
+  { name = "aneutronic", m = { { REACTOR, "normal" }, { ANEUTRONIC, "normal" } } },
   -- NOT ON THE LADDER: `discharge` is the fixed fraction of the reactors' spend its supply is held
   -- at. A third field on a member is how many of it there are, read as one member.
   { name = "discharge", m = { { REACTOR, "normal" }, { REACTOR, "legendary" },
@@ -300,9 +312,9 @@ script.on_init(function()
       local source = entity.prototype.electric_energy_source_prototype
       local m = { entity = entity, entities = { entity }, quality = quality,
         priority = source.usage_priority, limit_w = source.get_input_flow_limit(quality) * 60 }
-      if name == REACTOR then
-        m.spend_w = logic.reactor.heating_power_w
-        m.fill = entity.fluidbox.get_capacity(1)
+      if REACTORS[name] then
+        m.spend_w = REACTORS[name].spec.heating_power_w
+        m.fill, m.plasma = entity.fluidbox.get_capacity(1), REACTORS[name].plasma
       elseif name == ACCUMULATOR then
         -- A store, not a consumer: it spends nothing, and is charged once by the discharge clock.
         m.spend_w, m.store, m.out_w = 0, true, source.get_output_flow_limit(quality) * 60
@@ -329,7 +341,7 @@ script.on_init(function()
     -- area with a reactor's footprint.
     local members, spend = {}, 0
     for i, spec in ipairs(shape.m) do
-      local at = spec[1] == REACTOR and SLOTS[i] or { 3 * i - 5, 10 }
+      local at = REACTORS[spec[1]] and SLOTS[i] or { 3 * i - 5, 10 }
       local m = spec[3] and group(spec[1], spec[2], spec[3], "consumer " .. i)
         or member(spec[1], spec[2], { ox + at[1], at[2] }, "consumer " .. i)
       members[i], spend = m, spend + m.spend_w
@@ -389,7 +401,7 @@ local function tend_cells(cells)
       if m.fill then
         local plasma = m.entity.fluidbox[1]
         if not plasma or plasma.amount < m.fill then
-          m.entity.fluidbox[1] = { name = PLASMA, amount = m.fill,
+          m.entity.fluidbox[1] = { name = m.plasma, amount = m.fill,
             temperature = plasma and plasma.temperature or 15 }
         end
         m.entity.fluidbox[2] = nil
