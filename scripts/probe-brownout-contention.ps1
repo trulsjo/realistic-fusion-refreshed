@@ -3,7 +3,8 @@
     Measures how a short electric network is split among the consumers on it -- a reactor and what
     it competes with, up to four reactors to a network -- so the contention half of docs/research/quality.md's brownout sentence is observed
     rather than assumed. The rig #439 asks for, extended by #487 past pairs and to a tertiary load,
-    by #490 to that load on a tertiary supply, and by #491 to all three input classes at once.
+    by #490 to that load on a tertiary supply, by #491 to all three input classes at once, and by
+    #492 to an accumulator discharging into a short network.
 
 .DESCRIPTION
     A PROBE, NOT A CHECK. Every line it prints is a measurement, and exit 0 means the probe ran and
@@ -20,7 +21,7 @@
     reactor. What a player builds is several consumers on one network, and whether the engine
     divides a short supply in proportion to what each ASKS for is what this measures.
 
-    WHAT IS BUILT. Seven cells, each ONE electric network, and each alone: the report prints every
+    WHAT IS BUILT. Seven ladder cells and one discharge cell, each ONE electric network, and each alone: the report prints every
     network id, and the rig errors if a cell's consumers are not all on one network or if two cells
     share one. Every consumer in a cell has a name+quality key of its own, for the reason below.
 
@@ -51,9 +52,23 @@
                  rf-reactor and the load at tertiary, on the tertiary cell's secondary-output
                  supply. Every other cell holds at most two classes.
 
+    AND ONE CELL THAT IS NOT ON THE LADDER, because a draining accumulator is not a steady state and
+    a rung's settle-then-measure cannot read it (#492):
+
+      discharge  A NORMAL and a LEGENDARY rf-reactor and eighteen vanilla accumulators -- one
+                 name+quality key between them, so they are read as one member -- on a
+                 secondary-output supply held at HALF of what the two reactors spend. Short enough
+                 that neither reactor is capped, so "by ask" (90 : 225) and "even" predict different
+                 things for what the accumulators add. The accumulators stand empty for one rung's
+                 length, are charged to their full buffer on one tick, and every member is then
+                 read EVERY SECOND for thirty: what each reactor drew, what the accumulators gave
+                 and took, and what they still hold. The prediction beside each row is the
+                 water-fill of the supply plus what the accumulators were measured giving.
+
     THE LADDER. Each cell's supply is set to a fraction f of what its consumers SPEND together,
     from 1.2 (every consumer satisfied, with room) down to LOW in steps of STEP. Every rung is twenty seconds,
-    the first half for the buffers to settle and the second measured, as in the sibling rig.
+    the first half for the buffers to settle and the second measured, as in the sibling rig. The
+    discharge cell's supply does not move; its buffer is one tick of that one figure.
 
     WHAT IS PREDICTED, AND PRINTED BESIDE WHAT IS MEASURED. "A share of what it asks for": the supply
     is divided in proportion to each consumer's input_flow_limit, and a consumer handed more than it
@@ -169,6 +184,7 @@ local STEP       = __STEP__
 local REACTOR = "rf-reactor"
 local PLASMA  = "rf-d-d-plasma"
 local SPACING = 60
+local ACCUMULATOR = "accumulator"
 
 local logic = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
 
@@ -193,7 +209,16 @@ local SHAPES = {
   { name = "three",     m = { { REACTOR, "normal" }, { "rf-probe-load-primary-input", "normal" },
                               { "rf-probe-load-tertiary", "normal" } },
     supply = "rf-probe-supply-secondary-output" },
+  -- NOT ON THE LADDER: `discharge` is the fixed fraction of the reactors' spend its supply is held
+  -- at. A third field on a member is how many of it there are, read as one member.
+  { name = "discharge", m = { { REACTOR, "normal" }, { REACTOR, "legendary" },
+                              { ACCUMULATOR, "normal", 18 } },
+    supply = "rf-probe-supply-secondary-output", discharge = 0.5 },
 }
+-- The discharge cell's clock: empty for one rung's length, then read every second for SERIES_S.
+local CHARGE_TICK = RUNG_TICKS
+local SERIES_S    = 30
+local BEFORE_S    = 3
 -- Where member i sits relative to the cell's substation: the four corners of its supply area.
 local SLOTS = { { 0.5, 0.5 }, { 0.5, 20.5 }, { 20.5, 0.5 }, { 20.5, 20.5 } }
 
@@ -273,13 +298,29 @@ script.on_init(function()
         { name = name, position = position, force = force, quality = quality, raise_built = true },
         what .. " in " .. shape.name)
       local source = entity.prototype.electric_energy_source_prototype
-      local m = { entity = entity, quality = quality, priority = source.usage_priority,
-        limit_w = source.get_input_flow_limit(quality) * 60 }
+      local m = { entity = entity, entities = { entity }, quality = quality,
+        priority = source.usage_priority, limit_w = source.get_input_flow_limit(quality) * 60 }
       if name == REACTOR then
         m.spend_w = logic.reactor.heating_power_w
         m.fill = entity.fluidbox.get_capacity(1)
+      elseif name == ACCUMULATOR then
+        -- A store, not a consumer: it spends nothing, and is charged once by the discharge clock.
+        m.spend_w, m.store, m.out_w = 0, true, source.get_output_flow_limit(quality) * 60
       else
         m.spend_w = entity.power_usage * 60
+      end
+      return m
+    end
+    -- COUNT of one thing as ONE member: two columns down the east edge of the supply area. They
+    -- share a name+quality key, so the statistics could not tell them apart anyway.
+    local function group(name, quality, count, what)
+      local m
+      for k = 0, count - 1 do
+        local one = member(name, quality, { ox + 15 + 2 * (k % 2), 2 + 2 * math.floor(k / 2) }, what)
+        if m then
+          m.entities[#m.entities + 1] = one.entity
+          m.limit_w, m.out_w = m.limit_w + one.limit_w, m.out_w + one.out_w
+        else m = one end
       end
       return m
     end
@@ -289,7 +330,8 @@ script.on_init(function()
     local members, spend = {}, 0
     for i, spec in ipairs(shape.m) do
       local at = spec[1] == REACTOR and SLOTS[i] or { 3 * i - 5, 10 }
-      local m = member(spec[1], spec[2], { ox + at[1], at[2] }, "consumer " .. i)
+      local m = spec[3] and group(spec[1], spec[2], spec[3], "consumer " .. i)
+        or member(spec[1], spec[2], { ox + at[1], at[2] }, "consumer " .. i)
       members[i], spend = m, spend + m.spend_w
     end
     local substation = rf_place_or_die(surface,
@@ -297,12 +339,13 @@ script.on_init(function()
     local supply = rf_place_or_die(surface,
       { name = shape.supply or "electric-energy-interface", position = { ox + 12, 10 }, force = force },
       "supply in " .. shape.name)
-    -- One tick of the TOP rung's production: the sibling rig's lesson, both halves of it.
-    supply.electric_buffer_size = per_tick(spend * HIGH)
+    -- One tick of the TOP rung's production: the sibling rig's lesson, both halves of it. A
+    -- discharge cell has one rung, its own.
+    supply.electric_buffer_size = per_tick(spend * (shape.discharge or HIGH))
     supply.energy = 0
-    supply.power_production = per_tick(spend * HIGH)
+    supply.power_production = per_tick(spend * (shape.discharge or HIGH))
     cells[#cells + 1] = { name = shape.name, members = members, substation = substation,
-      supply = supply, spend_w = spend, rungs = {} }
+      supply = supply, spend_w = spend, rungs = {}, discharge = shape.discharge }
   end
 
   -- ONE NETWORK PER CELL, AND ONLY ONE CELL PER NETWORK. Proven off the entities, not the layout.
@@ -310,10 +353,12 @@ script.on_init(function()
   for _, c in ipairs(cells) do
     local ia = c.members[1].entity.electric_network_id
     for i, m in ipairs(c.members) do
-      local ib = m.entity.electric_network_id
-      if not ia or ia ~= ib then
-        error(string.format("%s: consumers 1 and %d are on networks %s and %s, so nothing here is "
-          .. "contention", c.name, i, tostring(ia), tostring(ib)))
+      for _, entity in ipairs(m.entities) do
+        local ib = entity.electric_network_id
+        if not ia or ia ~= ib then
+          error(string.format("%s: consumers 1 and %d are on networks %s and %s, so nothing here is "
+            .. "contention", c.name, i, tostring(ia), tostring(ib)))
+        end
       end
     end
     if c.supply.electric_network_id ~= ia then
@@ -324,16 +369,23 @@ script.on_init(function()
     c.network = ia
   end
 
-  storage.cells = cells
+  -- The ladder's cells and the discharge clock's, apart: neither loop reads the other's.
+  storage.cells, storage.series = {}, {}
+  for _, c in ipairs(cells) do
+    local into = c.discharge and storage.series or storage.cells
+    into[#into + 1] = c
+  end
   storage.f = HIGH
   log("BCRIG built")
 end)
 
 --- Keep every reactor fed and drained so none drops out of the simulation.
-local function tend()
-  for _, c in ipairs(storage.cells) do
+local function tend_cells(cells)
+  for _, c in ipairs(cells) do
     for _, m in ipairs(c.members) do
-      if not m.entity.valid then error(c.name .. ": a consumer is gone mid-run") end
+      for _, entity in ipairs(m.entities) do
+        if not entity.valid then error(c.name .. ": a consumer is gone mid-run") end
+      end
       if m.fill then
         local plasma = m.entity.fluidbox[1]
         if not plasma or plasma.amount < m.fill then
@@ -344,6 +396,39 @@ local function tend()
       end
     end
     if not (c.substation.valid and c.supply.valid) then error(c.name .. ": its supply is gone") end
+  end
+end
+local function tend() tend_cells(storage.cells) tend_cells(storage.series) end
+
+--- What a store holds, in joules, over every entity of it.
+local function stored(m)
+  local j = 0
+  for _, entity in ipairs(m.entities) do j = j + entity.energy end
+  return j
+end
+
+--- The discharge clock (#492), once a second: empty until CHARGE_TICK, charged on it, and every
+--- member read each second from BEFORE_S before to SERIES_S after.
+local function discharge(tick)
+  local t = (tick - CHARGE_TICK) / 60
+  if t < -BEFORE_S or t > SERIES_S then return end
+  for _, c in ipairs(storage.series) do
+    if c.mark_in then
+      local r = { t = t, supply = c.supply.power_production * 60, drew = {}, gave = {}, held = {} }
+      for i, m in ipairs(c.members) do
+        r.drew[i] = (drawn(c, m) - c.mark_in[i]) / 1e6
+        r.gave[i] = (given(c, m) - c.mark_out[i]) / 1e6
+        r.held[i] = m.store and stored(m) / 1e6
+      end
+      c.rungs[#c.rungs + 1] = r
+    end
+    c.mark_in, c.mark_out = {}, {}
+    for i, m in ipairs(c.members) do
+      c.mark_in[i], c.mark_out[i] = drawn(c, m), given(c, m)
+      if m.store and t == 0 then
+        for _, entity in ipairs(m.entities) do entity.energy = entity.electric_buffer_size end
+      end
+    end
   end
 end
 
@@ -358,6 +443,21 @@ local function report()
     for i, m in ipairs(c.members) do
       say("         %d  %s/%s %s  limit %.6g MW  spend %.6g MW", i, m.entity.name, m.quality,
         m.priority, m.limit_w / 1e6, m.spend_w / 1e6)
+    end
+  end
+  for _, c in ipairs(storage.series) do
+    say("cell   %-10s network=%d  supply %s (%s), held at %.10g of the reactors' spend", c.name,
+      c.network, c.supply.name, c.supply.prototype.electric_energy_source_prototype.usage_priority,
+      c.discharge)
+    for i, m in ipairs(c.members) do
+      if m.store then
+        say("         %d  %d x %s/%s %s  takes up to %.6g MW  gives up to %.6g MW  holds %.6g MJ", i,
+          #m.entities, m.entity.name, m.quality, m.priority, m.limit_w / 1e6, m.out_w / 1e6,
+          m.entity.electric_buffer_size * #m.entities / 1e6)
+      else
+        say("         %d  %s/%s %s  limit %.6g MW  spend %.6g MW", i, m.entity.name, m.quality,
+          m.priority, m.limit_w / 1e6, m.spend_w / 1e6)
+      end
     end
   end
   for _, c in ipairs(storage.cells) do
@@ -377,6 +477,25 @@ local function report()
     say("  worst deviation from the prediction: %.4g MW; most any member gave back: %.4g MW",
       worst, worst_out)
   end
+  -- THE DISCHARGE, second by second. t is the END of the second read, counted from the tick the
+  -- stores were charged on; the prediction is the water-fill of the supply plus what the stores
+  -- were measured giving in that second.
+  for _, c in ipairs(storage.series) do
+    say("%s    (per consumer: drew | predicted | deviation, MW; per store: gave, drew, MW | holds, MJ)",
+      c.name)
+    for _, r in ipairs(c.rungs) do
+      local extra = 0
+      for i, m in ipairs(c.members) do if m.store then extra = extra + r.gave[i] end end
+      local got = predict(r.supply + extra * 1e6, c.members)
+      local cols = {}
+      for i, m in ipairs(c.members) do
+        cols[#cols + 1] = m.store
+          and string.format("%8.4g %8.4g | %8.4g", r.gave[i], r.drew[i], r.held[i])
+          or string.format("%8.4g %8.4g %9.3g", r.drew[i], got[m] / 1e6, r.drew[i] - got[m] / 1e6)
+      end
+      say("  t=%+4d s supply %8.4g | %s", r.t, r.supply / 1e6, table.concat(cols, " | "))
+    end
+  end
   say("done")
 end
 
@@ -384,6 +503,7 @@ script.on_nth_tick(60, function()
   local tick = game.tick
   if storage.reported then return end
   tend()
+  discharge(tick)
   local into = tick % RUNG_TICKS
   if into == RUNG_TICKS / 2 then
     for _, c in ipairs(storage.cells) do
