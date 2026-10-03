@@ -2,7 +2,8 @@
 .SYNOPSIS
     Measures how a short electric network is split among the consumers on it -- a reactor and what
     it competes with, up to four reactors to a network -- so the contention half of docs/research/quality.md's brownout sentence is observed
-    rather than assumed. The rig #439 asks for, extended by #487 past pairs and to a tertiary load.
+    rather than assumed. The rig #439 asks for, extended by #487 past pairs and to a tertiary load,
+    and by #490 to that load on a tertiary supply.
 
 .DESCRIPTION
     A PROBE, NOT A CHECK. Every line it prints is a measurement, and exit 0 means the probe ran and
@@ -19,7 +20,7 @@
     reactor. What a player builds is several consumers on one network, and whether the engine
     divides a short supply in proportion to what each ASKS for is what this measures.
 
-    WHAT IS BUILT. Five cells, each ONE electric network, and each alone: the report prints every
+    WHAT IS BUILT. Six cells, each ONE electric network, and each alone: the report prints every
     network id, and the rig errors if a cell's consumers are not all on one network or if two cells
     share one. Every consumer in a cell has a name+quality key of its own, for the reason below.
 
@@ -42,8 +43,10 @@
                  has to: vanilla's interface is itself tertiary, and the 2.0.77 docs for
                  ElectricUsagePriority describe tertiary input as collecting "the overproduction",
                  which a tertiary supply is not. So this cell's supply is a rig copy of it at
-                 secondary-output, the class those docs give steam generators. A tertiary load
-                 against a tertiary supply is not run.
+                 secondary-output, the class those docs give steam generators.
+      tert-tert  The tertiary cell again on the rig's USUAL supply, vanilla's tertiary interface
+                 (#490): the case those docs do not settle. The two cells differ in the supply's
+                 class and in nothing else, and are predicted the same.
 
     THE LADDER. Each cell's supply is set to a fraction f of what its consumers SPEND together,
     from 1.2 (every consumer satisfied, with room) down to LOW in steps of STEP. Every rung is twenty seconds,
@@ -183,6 +186,7 @@ local SHAPES = {
                               { REACTOR, "rare" },   { REACTOR, "uncommon" } } },
   { name = "tertiary",  m = { { REACTOR, "normal" }, { "rf-probe-load-tertiary", "normal" } },
     supply = "rf-probe-supply-secondary-output" },
+  { name = "tert-tert", m = { { REACTOR, "normal" }, { "rf-probe-load-tertiary", "normal" } } },
 }
 -- Where member i sits relative to the cell's substation: the four corners of its supply area.
 local SLOTS = { { 0.5, 0.5 }, { 0.5, 20.5 }, { 20.5, 0.5 }, { 20.5, 20.5 } }
