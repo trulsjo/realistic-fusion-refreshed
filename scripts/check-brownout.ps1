@@ -126,10 +126,12 @@
     MW (#486, 2026-10-02, Factorio 2.0.77) at 275.6 units (#510; #486's 277.3 does not
     reproduce, #518), and the model FED at 2.5 u/s gives
     322.7 MW at 276.9 units (#499). What the model has no
-    concept of is the feed line: a cell's plasma segment is the reactor's 1000-unit box plus every
-    rf-pipe between it and the heater, and the engine fills the whole segment, not the box. The
-    reactor's own box therefore approaches its share of a much larger volume, which takes about half
-    an hour rather than five minutes.
+    concept of is the feed line. The reactor's 1000-unit box joins the fluid segment its rf-pipe are
+    in, and the two are TWO STORES (#516): the segment's capacity counts the box's volume, 1300 at
+    three pipes, and the segment holds that plasma beside what the box reads, so the heater has a
+    line of 2300 units to fill there and not 1000. The box does not read a share of the segment.
+    docs/research/exchanger-coverage.md, "Why the box fills slower than the fed model", has the
+    measurement. The half hour is the curve above, measured, and rests on neither reading.
 
     The default is 1800 s, where the trailing minute is within 0.6% of the asymptote and drifting
     0.26% a minute. That is asserted rather than claimed -- see the "its output had stopped climbing"

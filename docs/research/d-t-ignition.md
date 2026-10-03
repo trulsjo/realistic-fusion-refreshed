@@ -483,9 +483,12 @@ at 1200, 322 at 1800, 324 at 2100 and flat thereafter.
 before radiation. With radiation, one heater and nothing researched, the game measured 282.1 – 338.5
 MW (#486, 2026-10-02, Factorio 2.0.77) at 275.6 units (#510; #486's 277.3 does not reproduce,
 #518), and the model fed at 2.5 u/s gives 322.7 MW at 276.9 units (#499).)* What the model has no concept of
-is the feed line: a cell's plasma segment is the reactor's 1000-unit box *plus every `rf-pipe` between
-it and the heater*, and the engine fills the whole segment rather than the box. The reactor's own box
-therefore approaches its share of a much larger volume. The rig now asserts that `full` has stopped
+is the feed line. The reactor's 1000-unit box joins the fluid segment its `rf-pipe` are in, and the
+two are **two stores** (#516): the segment's capacity counts the box's volume, 1300 at three pipes,
+and the segment holds that plasma *beside* what the box reads. So the heater fills a line of 2300
+units there and not 1000, and the box does not read a share of the segment.
+[`exchanger-coverage.md`](exchanger-coverage.md#why-the-box-fills-slower-than-the-fed-model) has
+the measurement. The settle curve above is measured and rests on neither reading. The rig now asserts that `full` has stopped
 climbing before the shortfall begins, so a settle too short to have converged fails the run instead of
 quietly rebasing every figure in the report.
 
