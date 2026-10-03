@@ -2696,28 +2696,23 @@ for _, value in ipairs({ 15, 2e9, 5e9 }) do
 end
 
 -- THE FED D-T REACTOR, AT THE GAME'S OPERATING POINT (#499). M.settle holds the amount fixed, so it
--- never pays to heat the fuel arriving: one heater's plasma comes in at 15 C and the engine mixes it
--- into the box by amount. Driven that way -- 2.5 u/s in, at the cadence control.lua steps -- the
+-- never pays to heat the fuel arriving: one heater's plasma comes in at the recipe's 1e6 C and is
+-- mixed into the box by amount -- L.settle_fed since #502. Driven that way -- 2.5 u/s in, at the
+-- cadence control.lua steps -- the
 -- model lands where #486 measured the game on 2026-10-02 (Factorio 2.0.77, one heater, nothing
 -- researched): 277.3 units at 2.180e9 C. Held at that fill instead it settles 17% hotter.
 do
   local dt, feed = 6 / 60, L.heater_plasma_rate()
-  local amount, t_c, last = 0, SPEC.min_temperature_c, nil
-  for _ = 1, 1200 / dt do
-    if amount > 0 then
-      last = L.step(SPEC, "rf-d-t-plasma", amount, t_c, math.huge, dt)
-      amount, t_c = amount - last.plasma_consumed, last.temperature_c
-    end
-    local add = math.min(feed * dt, SPEC.box_volume - amount)
-    t_c = (amount * t_c + add * SPEC.min_temperature_c) / (amount + add)
-    amount = amount + add
-  end
+  local amount, t_c, last = L.settle_fed(SPEC, "rf-d-t-plasma", nil, 1200, math.huge, dt)
   near(amount, 277.3, 0.01, "a fed D-T reactor holds the fill the game measured")
   near(t_c, 2.180e9, 0.01, "at the temperature the game measured")
   near(last.plasma_consumed / dt, feed, 0.001, "burning exactly what one heater makes")
   local held = L.settle(SPEC, "rf-d-t-plasma", 277.3, 1200, math.huge, dt)
   check(held > 1.15 * 2.180e9, "held at that fill without the feed it runs over 15% hotter",
     string.format("%.4g", held))
+  local empty, empty_c = L.settle_fed(SPEC, "rf-d-t-plasma", 0, 10, math.huge, dt)
+  check(empty == 0 and empty_c == SPEC.min_temperature_c, "fed nothing, it stays an empty, cold box",
+    string.format("%g units at %g C", empty, empty_c))
 end
 
 H.finish()

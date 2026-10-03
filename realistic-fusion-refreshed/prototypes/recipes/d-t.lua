@@ -44,7 +44,8 @@ data:extend({
     enabled = false,
     energy_required = logic.heater.craft_seconds,
     ingredients = { { type = "fluid", name = "rf-d-t-mix", amount = logic.heater.plasma_per_craft } },
-    results = { { type = "fluid", name = "rf-d-t-plasma", amount = logic.heater.plasma_per_craft, temperature = 1e6 } },
+    results = { { type = "fluid", name = "rf-d-t-plasma", amount = logic.heater.plasma_per_craft,
+      temperature = logic.heater.plasma_temperature_c } },
     main_product = "rf-d-t-plasma",
     -- No productivity, for the reason rf-d-d-plasma gives: plasma is energy, and a bonus here would
     -- conjure it. Worse on this tier than the last, since it would conjure tritium with it.
