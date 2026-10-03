@@ -730,6 +730,25 @@ if what a `tertiary` supply makes does not count as overproduction, but the prob
 draw and not the reason. The other five cells still match to within 2e-6 MW on every rung
 (worst 1.833e-6), so the sentence above about all five stands for those five.
 
+**All three input classes on one network are served in class order**
+([#491](https://github.com/trulsjo/realistic-fusion-refreshed/issues/491)). Measured 2026-10-04
+against Factorio 2.0.77, same rig, same ladder, nothing researched (asserted again), in a seventh
+cell, `three`: the load at `primary-input`, a normal `rf-reactor` and the load at `tertiary`, each
+asking 90 MW and spending 50, on the `tertiary` cell's `secondary-output` supply, alone on a
+network of its own.
+
+| supply, MW | `primary-input` load drew | reactor drew | `tertiary` load drew |
+|---|---|---|---|
+| 180 to 150, five rungs | 50 | 50 | 50 |
+| 142.5 to 105, six rungs | 50 | 50 | supply less 100: 42.5 down to 5 |
+| 97.5 to 52.5, seven rungs | 50 | supply less 50: 47.5 down to 2.5 | 0 |
+| 45 to 30, three rungs | all of the supply | 0 | 0 |
+
+Each class is served in full from what the one before left, on all 21 rungs, to within 1.25e-6
+MW of the prediction. No member gave anything back. The supply is `secondary-output`, so this
+says nothing about three classes on a `tertiary` supply, where `tert-tert` above shows the
+`tertiary` member is not served.
+
 Whether the mod should guarantee any of this is the scope decision above and Truls's; the
 probe asserts nothing about the answer.
 
@@ -869,10 +888,10 @@ the D-T tier and the confinement ladder are each another lane and none of them i
 Stated plainly, because this repository treats an unverified claim as a defect.
 
 - **Contention is measured for small cells, not for a factory.** #439 ran pairs and #487 added four
-  reactors on one network and a reactor against a `tertiary` load; each cell holds at most two
-  priority classes and one reactor type. A network mixing all three input classes at once, an
-  accumulator that discharges into a short network, and the aneutronic reactor or researched rungs
-  as members have not been run. The class-ordered water-fill predicts them, and a prediction is all
+  reactors on one network and a reactor against a `tertiary` load; #491 put all three input
+  classes on one network, on a `secondary-output` supply only. Each cell holds one reactor type.
+  An accumulator that discharges into a short network, and the aneutronic reactor or researched
+  rungs as members have not been run. The class-ordered water-fill predicts them, and a prediction is all
   it is: #490 measured one cell it gets wrong, a `tertiary` load on a `tertiary` supply, by up to
   50 MW.
 - **Why the engine floors a fluid transfer to whole float32 ULPs per tick is inferred, not
