@@ -860,8 +860,8 @@ exchanger.output_fluid_box.filter = "steam"
 -- fill (logic.settle_fed), settles at 322.7 MW, 276.9 units and 2.183e9 C (#499), against the
 -- 275.6 units and 2.193e9 C the game reads on one heater, nothing researched (#510, 2026-10-03,
 -- Factorio 2.0.77; #486 quoted 277.3 and 2.180e9, which its own command does not reproduce,
--- #518). Held at the game's fill it runs 17% hotter, and its 319 MW -- 319.0 at the
--- 6-tick step, 319.1 at one tick -- agrees on megawatts only because two errors cancel. What DOES
+-- #518). Held at the game's fill it runs 16% hotter, and its 316 MW -- 315.7 at the 6-tick step,
+-- and 319.0 at the 277.3 units #486 quoted -- agrees on megawatts only because two errors cancel. What DOES
 -- depend on the feed is the figure itself: four heaters put the same reactor at 996 to 1 195 MW
 -- (#89, docs/research/bolted-joint-throughput.md), and quoting either without saying which heater
 -- count it came from is the operating-point defect CONTEXT.md exists to prevent. One heater is

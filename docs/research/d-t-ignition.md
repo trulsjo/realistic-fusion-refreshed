@@ -179,16 +179,19 @@ resolve — it runs from 12% under 320 to 6% over — which fits an ignited D-T 
 is fed, with bremsstrahlung small beside its fusion power. **The model reproduces it once it is fed
 rather than held**
 ([#499](https://github.com/trulsjo/realistic-fusion-refreshed/issues/499)). `M.settle` holds the
-amount fixed, so it never pays to heat the fuel coming in: held at #486's 277.3 units it runs
-17% hotter than the game, at 2.54×10⁹ °C, and burns 2.31 u/s, short of the heater's 2.5. Fed
+amount fixed, so it never pays to heat the fuel coming in: held at the game's 275.6 units it runs
+16% hotter than the game's 2.193×10⁹ °C, at 2.543×10⁹ °C, and burns 2.28 u/s, short of the
+heater's 2.5. (Held at the 277.3 units #486 quoted it is 2.543×10⁹ °C and 2.31 u/s, 17% over
+#486's 2.180×10⁹; that was this sentence until #523.) Fed
 instead — 2.5 u/s of plasma arriving at the heater recipe's 1×10⁶ °C and mixed into the box by
 amount, and stepped every 6 ticks as `control.lua` steps it, which is `M.settle_fed` since
 [#502](https://github.com/trulsjo/realistic-fusion-refreshed/issues/502) — the same model settles at **276.9 units
-and 2.183×10⁹ °C, burning 2.500 u/s and selling 322.7 MW**, against the 277.3 units and
-2.180×10⁹ °C #486 quoted for the game, and the 275.6 and 2.193×10⁹ it reads reproducibly (#518). (#499 mixed the fuel in at 15 °C; at 1×10⁶ °C every figure here is the same to
+and 2.183×10⁹ °C, burning 2.500 u/s and selling 322.7 MW**, against the 275.6 units and
+2.193×10⁹ °C the game reads reproducibly (#510, #518); #486 quoted 277.3 and 2.180×10⁹. (#499 mixed the fuel in at 15 °C; at 1×10⁶ °C every figure here is the same to
 the digits quoted.) So the ~320 MW agreement survives at the matched operating point. The held
-run's 319.0 MW, at the same 6-tick step — 319.1 at one tick, the figure #499 and `1df5855`
-quote — agreed only because two errors cancel: running hot, it fuses 27 MW less (325 MW against
+run's 319.0 MW at #486's 277.3 units, at the same 6-tick step — 319.1 at one tick, the figure
+#499 and `1df5855` quote, and 315.7 MW held at 275.6 — agreed only because two errors cancel, and
+the split that follows is the 277.3-unit run's: running hot, it fuses 27 MW less (325 MW against
 352), and it skips the 22.6 MW it takes to heat 2.5 u/s of fresh fuel to the operating
 temperature. `tests/test-reactor-logic.lua` pins the fed run against the game's fill and
 temperature, in the block headed "THE FED D-T REACTOR". **Fully researched** on the

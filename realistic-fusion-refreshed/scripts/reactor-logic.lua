@@ -1422,7 +1422,7 @@ end
 -- starts empty and is topped up: each step it burns, then `feed` units a second arrive at `feed_c`
 -- and are mixed into the box by amount, never past box_volume. Driven that way at
 -- control.lua's cadence the D-T reactor lands on the game's measured operating point, where held
--- at the same fill it runs 17% hotter -- tests/test-reactor-logic.lua, "THE FED D-T REACTOR".
+-- at the same fill it runs 16% hotter -- tests/test-reactor-logic.lua, "THE FED D-T REACTOR".
 --
 -- @param spec, fluid_name, paid_j, capture   as M.settle's
 -- @param feed     plasma units arriving a second; one rf-heater's M.heater_plasma_rate() if nil
