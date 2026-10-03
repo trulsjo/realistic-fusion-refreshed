@@ -2699,18 +2699,20 @@ end
 -- never pays to heat the fuel arriving: one heater's plasma comes in at the recipe's 1e6 C and is
 -- mixed into the box by amount -- L.settle_fed since #502. Driven that way -- 2.5 u/s in, at the
 -- cadence control.lua steps -- the
--- model lands where #486 measured the game on 2026-10-02 (Factorio 2.0.77, one heater, nothing
--- researched): 277.3 units at 2.180e9 C. Held at that fill instead it settles 17% hotter.
--- #518 could not reproduce that reading: #486's command reads 275.6 units at 2.193e9 C, as #510
--- did. The model's 276.9 and 2.183e9 are within this block's 1% of either, so the pins stand.
+-- model lands where the game reproducibly reads on one heater, nothing researched: 275.6 units at
+-- 2.193e9 C (#510 and three more runs under #518, 2026-10-03, Factorio 2.0.77). Held at that fill
+-- instead it settles at 2.543e9 C, 16% hotter.
+-- SUPERSEDED: #486 quoted 277.3 units at 2.180e9 C on 2026-10-02 and this block pinned those until
+-- #523. #518 ran #486's own command again and read 275.6 and 2.193e9, so what produced the earlier
+-- pair is not on record. The model's 276.9 and 2.183e9 are 0.5% from the reproducible pair.
 do
   local dt, feed = 6 / 60, L.heater_plasma_rate()
   local amount, t_c, last = L.settle_fed(SPEC, "rf-d-t-plasma", nil, 1200, math.huge, dt)
-  near(amount, 277.3, 0.01, "a fed D-T reactor holds the fill #486 quoted for the game")
-  near(t_c, 2.180e9, 0.01, "at the temperature #486 quoted for it")
+  near(amount, 275.6, 0.01, "a fed D-T reactor holds the fill the game reads (#510, #518)")
+  near(t_c, 2.193e9, 0.01, "at the temperature the game reads there (#510, #518)")
   near(last.plasma_consumed / dt, feed, 0.001, "burning exactly what one heater makes")
-  local held = L.settle(SPEC, "rf-d-t-plasma", 277.3, 1200, math.huge, dt)
-  check(held > 1.15 * 2.180e9, "held at that fill without the feed it runs over 15% hotter",
+  local held = L.settle(SPEC, "rf-d-t-plasma", 275.6, 1200, math.huge, dt)
+  check(held > 1.15 * 2.193e9, "held at that fill without the feed it runs over 15% hotter",
     string.format("%.4g", held))
   local empty, empty_c = L.settle_fed(SPEC, "rf-d-t-plasma", 0, 10, math.huge, dt)
   check(empty == 0 and empty_c == SPEC.min_temperature_c, "fed nothing, it stays an empty, cold box",
