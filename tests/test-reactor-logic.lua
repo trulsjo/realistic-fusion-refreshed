@@ -2717,9 +2717,9 @@ end
 
 -- THE FED D-D REACTOR ON ONE HEATER, AT THE BOUNDARY CELLS (#509). Since #502
 -- docs/research/exchanger-coverage.md reads one heater's plant off L.settle_fed, and the game sits
--- on it at all thirteen measured states. These are the figures that note's one-heater coverage
--- reading rests on: where one 90 MW exchanger stops covering, and the corner a heater cannot keep
--- full. 7200 s, because 1200 leaves confinement rung 3 and the corner short of settled (the note's
+-- on it at all eighteen one-heater states measured. These are the figures that note's one-heater
+-- coverage reading rests on: where one 90 MW exchanger stops covering, and the corner a heater
+-- cannot keep full. 7200 s, because 1200 leaves confinement rung 3 and the corner short of settled (the note's
 -- "Three readings, one method each"); the 6-tick step is the cadence control.lua steps at.
 do
   local dt = 6 / 60
