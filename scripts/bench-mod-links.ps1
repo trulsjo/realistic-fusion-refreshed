@@ -42,6 +42,16 @@
     last two windows agree on the rate, the plasma temperature and the plasma held. That is the
     demonstration: a reactor still climbing does not produce two consecutive windows that agree.
 
+    SINCE #508 THE FUEL LINE HAS TO AGREE TOO, because a reactor cooling slowly enough passes the
+    three above mid-transient. The plasma left in the pipes when the box fills is the next fuel the
+    reactor draws, and it cools for hundreds of thousands of ticks: one heater, nothing researched,
+    126 000 ticks, the reactor moved 0.055% between its last two windows while the pipes fell from
+    1.86e8 to 1.78e8 degC, and it settled 1.3% colder than it read there (#506). So each pipe's move
+    between the last two windows is held under 1% of the REACTOR's temperature. Of the reactor's
+    and not its own, because the question is how much heat it still carries in: a pipe settled near
+    the heater's 1e6 degC can move by a third of itself and change nothing. That run fails the gate
+    on the fuel line at 3.1%; the same state at 870 000 ticks passes it.
+
     THE WINDOW TRACE prints every window in three rows per cell: the energy rate, the plasma
     temperature, and -- since #496 -- how much plasma the reactor holds. The gate reads only the
     last two windows of each; the windows before them gate nothing, and the third row is
@@ -52,7 +62,8 @@
     metered heater's plasma output, in every pipe of the run and in the reactor's box, each with
     its fluid segment id, so a pipe pooled with the reactor's box can be told from one that is
     not. The pipes and the reactor are read on one tick per window, not as a mean; the heater is
-    its last reading in the window, since its box drains the tick it fills. It gates nothing.
+    its last reading in the window, since its box drains the tick it fills. Since #508 the gate
+    reads the pipes' last two windows; the heater and the windows before them gate nothing.
 
     WHAT IS BUILT
 
@@ -889,6 +900,20 @@ try {
         }
     }
 
+    # The fuel line, one record per cell per window (#503); the gate reads it since #508.
+    $lineRecords = @()
+    foreach ($record in (Get-Content $runOut | Select-String -Pattern 'LINKRIG line ')) {
+        $f = @{}
+        foreach ($m in [regex]::Matches("$record", '(\w+)=([^\s]+)')) { $f[$m.Groups[1].Value] = $m.Groups[2].Value }
+        # A pipe's temperature, or $null for a "-" box that held nothing on that tick.
+        $pipeTemps = @($f['pipes'] -split ',' | ForEach-Object {
+            $t = ($_ -split '@')[0]; if ($t -eq '-') { $null } else { [double] $t } })
+        $lineRecords += [pscustomobject]@{
+            Cell = $f['cell']; Window = [int] $f['window']; Heater = $f['heater']
+            Pipes = $f['pipes']; PipeTemps = $pipeTemps; Reactor = $f['reactor']
+        }
+    }
+
     # ------------------------------------------------------- equilibrium, and the meter's own honesty
     $faults = @()
     $summary = @()
@@ -917,6 +942,30 @@ try {
         if ($plasmaDrift -gt 0.01) {
             $faults += (("{0}: the reactor's plasma moved {1:P1} between the last two windows, so it " +
                          "was still filling rather than running -- raise -Ticks.") -f $cell, $plasmaDrift)
+        }
+        # THE FUEL LINE HAS TO HAVE SETTLED TOO (#508). Plasma left in the pipes when the box fills
+        # is the next fuel the reactor draws, and it cools for hundreds of thousands of ticks; the
+        # reactor follows it slowly enough to pass the 1% above mid-transient (#506: 0.055% at
+        # 126 000 ticks, while the pipes fell 1.86e8 to 1.78e8). Each pipe's move is taken against
+        # the REACTOR's temperature rather than its own, because what matters is the heat it still
+        # carries in: a pipe settled near the heater's 1e6 C may move by a third and not matter.
+        $lineLast = $lineRecords | Where-Object { $_.Cell -eq $cell -and $_.Window -eq $last.Window }
+        $linePrev = $lineRecords | Where-Object { $_.Cell -eq $cell -and $_.Window -eq $prev.Window }
+        if (-not ($lineLast -and $linePrev)) {
+            $faults += "${cell}: the fuel line was not reported for the last two windows, so it could not be gated."
+        } elseif ($last.TempC -gt 0) {
+            $lineDrift = 0.0
+            for ($i = 0; $i -lt $lineLast.PipeTemps.Count; $i++) {
+                $a = $lineLast.PipeTemps[$i]; $b = $linePrev.PipeTemps[$i]
+                if ($null -ne $a -and $null -ne $b) {
+                    $lineDrift = [Math]::Max($lineDrift, [Math]::Abs($a - $b) / $last.TempC)
+                }
+            }
+            if ($lineDrift -gt 0.01) {
+                $faults += (("{0}: a pipe on the fuel line moved {1:P1} of the reactor's temperature " +
+                             "between the last two windows, so the reactor was still drawing plasma " +
+                             "left from the fill -- raise -Ticks.") -f $cell, $lineDrift)
+            }
         }
         if ($last.EnergyTick -le 0) { $faults += "${cell}: no reactor energy crossed the link at all." }
         if ($last.PlasmaAmt -le 0)  { $faults += "${cell}: the reactor was out of plasma, so it was starved rather than settled." }
@@ -1069,16 +1118,15 @@ try {
         Write-Host ('  {0,-6} {1}' -f '', (($rows | ForEach-Object { '{0:N1}' -f $_.PlasmaAmt }) -join '  '))
     }
 
-    # The fuel line, heater to reactor, sampled on each window's last tick (#503). Gates nothing.
-    # Each entry is degC@segment; a "-" is a box that held nothing on that tick.
+    # The fuel line, heater to reactor, sampled on each window's last tick (#503). The gate above
+    # reads the last two windows of it (#508). Each entry is degC@segment; a "-" is a box that held
+    # nothing on that tick.
     Write-Host ''
     Write-Host 'fuel line at each window (heater output | pipes, heater end first | reactor box), degC@segment'
-    foreach ($record in (Get-Content $runOut | Select-String -Pattern 'LINKRIG line ')) {
-        $f = @{}
-        foreach ($m in [regex]::Matches("$record", '(\w+)=([^\s]+)')) { $f[$m.Groups[1].Value] = $m.Groups[2].Value }
-        $along = $f['pipes'] -split ','
+    foreach ($l in $lineRecords) {
+        $along = $l.Pipes -split ','
         [array]::Reverse($along)
-        Write-Host ('  {0,-6}{1,4}  {2} | {3} | {4}' -f $f['cell'], $f['window'], $f['heater'], ($along -join ' '), $f['reactor'])
+        Write-Host ('  {0,-6}{1,4}  {2} | {3} | {4}' -f $l.Cell, $l.Window, $l.Heater, ($along -join ' '), $l.Reactor)
     }
 
     if ($faults.Count -gt 0) {
@@ -1088,8 +1136,9 @@ try {
     }
 
     Write-Host ''
-    Write-Host 'Both cells settled: rate and temperature each moved less than their tolerance across'
-    Write-Host 'the last two windows, and the meter counted the ticks the update cadence predicts.'
+    Write-Host 'Both cells settled: rate, temperature, plasma held and every fuel-line pipe each moved'
+    Write-Host 'less than their tolerance across the last two windows, and the meter counted the ticks'
+    Write-Host 'the update cadence predicts.'
 
     Write-Output $summary
 }
