@@ -646,12 +646,100 @@ reading holds what the game holds, and is within 0.2% of its temperature there. 
 reactor does burn more, which #516 asked about. That follows from the short box, not the other
 way round.
 
-**What the pooled reading leaves over.** At the line it follows the game to within 0.7% of
-plasma held and 1.0% of temperature through 600 000 ticks, and then fills 160 000 ticks before
-the game does. With nothing researched the game starts on the +1200 column and ends on the
-+1300 one. It lies between them until the last window before it fills, where it is 1.0 unit
-under the +1300 column. Two things the pooled reading leaves out were not separated: the moving
-split between box and segment, and the heat the engine's mixing destroys (ADR 0011).
+#### What the pooled reading leaves over
+
+[#521](https://github.com/trulsjo/realistic-fusion-refreshed/issues/521). The pooled reading
+above filled the line cell 160 000 ticks before the game, and left two things unseparated: the
+moving split, and the heat the engine's mixing destroys (ADR 0011). **The split is now
+measured, and it is a rule. It closes the gap with nothing researched and not at the line.**
+
+**The split, measured through two whole fills** by `scripts/probe-plasma-segment.ps1`, at each
+heater cycle's end. D-D, one heater, three pipes, Factorio 2.0.77 (build 84539), 2026-10-04:
+nothing researched over 100 000 ticks (the #520 run, which also has six pipes), and heating
+rung 3 + confinement rung 2 with `-Pipes 3 -Rungs heating_ladder=3,confinement_ladder=2 -Ticks
+1000000`. "Capacity" is the segment's: 1300 at three pipes, 1600 at six.
+
+- **Low branch, to about 520 units in the box:** segment = box × (capacity − 100) / 1000 + 3.8.
+  At three pipes that is 1.2 × box + 3.8. The constant read 3.8 to 3.9 in the nine cycles
+  checked, across both states and both pipe counts.
+- **High branch, from about 530 units:** box = 97.3 + 900 × segment / capacity. The constant
+  read 97.2 to 97.3 at three pipes in both states and 97.8 at six.
+- **The switch is a step.** With nothing researched the box read 518.21 at 32 522 ticks and
+  530.51 at 33 002, while the segment stood at 627.75 for two cycles. At six pipes it fell
+  between 506.92 and 552.35 units, and at the line state between 473.67 and 559.39.
+- **The high branch drifts at the very end.** At the line the box ran 1.1 to 2.2 units over it
+  from 660 000 ticks, when the segment was past 99% full.
+
+Why the engine splits this way was not found. `quality.md` records a lone 1000-unit box
+relaxing to 526.3158 units, which is where the switch falls; the two were not connected.
+
+**The pooled reading, re-run with that split.** The same arithmetic as above with the pool's
+split read off the two branches, switching at 526 units, in place of a fixed +1200 or +1300.
+Computed 2026-10-04, 6-tick step, 2.5 u/s at 1×10⁶ °C, three pipes. It is still arithmetic for
+this note: `M.settle_fed` is unchanged and no test pins it. The game column is the probe's
+reading at the cycle ending 2 ticks after the tick named.
+
+Heating 3 + confinement 2:
+
+| ticks | game: held | °C | pooled, +1300: held | °C | pooled, measured split: held | °C |
+|---|---|---|---|---|---|---|
+| 120 000 | 774.5 | 8.991e8 | 776.9 | 8.973e8 | 775.5 | 8.981e8 |
+| 240 000 | 883.3 | 7.656e8 | 887.8 | 7.614e8 | 884.4 | 7.650e8 |
+| 360 000 | 928.8 | 7.147e8 | 933.4 | 7.105e8 | 930.0 | 7.141e8 |
+| 480 000 | 957.6 | 6.837e8 | 962.7 | 6.791e8 | 959.0 | 6.829e8 |
+| 600 000 | 980.8 | 6.595e8 | 987.7 | 6.530e8 | 983.1 | 6.577e8 |
+| first reads 998 units | 780 000 | | 648 150 | | 671 964 | |
+
+Nothing researched:
+
+| ticks | game: held | °C | pooled, +1300: held | °C | pooled, measured split: held | °C |
+|---|---|---|---|---|---|---|
+| 12 000 | 212.7 | 1.566e9 | 206.2 | 1.607e9 | 213.3 | 1.565e9 |
+| 30 000 | 483.5 | 7.153e8 | 467.3 | 7.422e8 | 484.1 | 7.149e8 |
+| 48 000 | 711.6 | 4.433e8 | 698.9 | 4.590e8 | 712.0 | 4.433e8 |
+| 66 000 | 930.8 | 2.886e8 | 930.2 | 2.917e8 | 931.2 | 2.888e8 |
+| first reads 999 units | 71 400 | | 71 070 | | 71 208 | |
+
+The game's "first reads" are the probe's: the cycle ending on tick 71 402 with nothing
+researched, and the first of the cycles printed, one in a hundred, at the line, so 780 000 is
+somewhere in the 12 000 ticks before 780 002. The bench's coarser windows gave 80 000 and
+820 000 above for the same two fills.
+
+**With nothing researched the split is the whole gap.** The measured split is within 0.3% of
+the game's plasma and 0.1% of its temperature at all four ticks, where +1300 was 3.4% and
+3.8% out, and it fills 200 ticks before the game.
+
+**At the line the split is a fifth of the gap.** It is within 0.23% of plasma and 0.27% of
+temperature through 600 000 ticks, against 0.70% and 0.99% before. It then reads 998 units
+108 000 ticks before the game, where +1300 was 132 000 early.
+
+**What is left is in the last ten units, and it is not explained.** The game takes 126 000
+ticks to go from 990 units to 998, about 654 000 to 780 000. The pooled reading takes 37 000.
+One difference is measured: in the cycle ending on tick 780 002 the reactor burned 4.9945 of
+the 4.9995 units fed, 2.4973 u/s. `M.step` at the state that cycle ends on, 998.01 units and
+6.4712×10⁸ °C, burns 2.4935 u/s. That is 0.15% less, and it more than doubles what is left
+over to fill the line: 0.0063 u/s against the game's 0.0025. The box is not at one state
+through a cycle. It read 998.86 units sixty ticks in. At 120 002 ticks the same comparison
+is 2.2634 u/s read against 2.2605, 0.13%, and there the margin is wide and it does not show.
+
+Candidates tried against the 108 000 ticks, each as a variant of the pooled arithmetic, with
+the tick it first reads 998 units:
+
+| variant | first reads 998 |
+|---|---|
+| measured split, one temperature in box and segment | 671 964 |
+| measured split, fed in the heater's 5-unit bursts every 120 ticks | 667 320 |
+| measured split, the segment keeping its own temperature and giving no heat back | 658 428 |
+| the game | 780 000 |
+
+None reaches the game, and the two that change the mixing fill sooner, not later. In the game
+the pipes read 4.80×10⁸ °C at 780 000 ticks beside a box at 6.47×10⁸, so it lies between the
+first row and the third. **Mixing loss is not the cause, by its sign.** Heat destroyed is a
+colder box, a colder box burns less here, and a reactor that burns less fills sooner. The game
+is also not colder than the arithmetic: at 600 000 ticks it holds less plasma and is 0.27%
+hotter. What makes the game burn 0.15% more over a cycle than its end state implies was not
+found. The settled point is unaffected: the 1 600 000-tick bench run of this state reads
+999.8 units and 6.399×10⁸ °C, which is the fed model's.
 
 **Tried against it: more pipe.** Heating 3 + confinement 2 at `-Pipes 12`, a 2200-unit segment,
 `-Ticks 2000000 -Window 20000`, passing the gate. The box first held 1000 units at 1 180 000
