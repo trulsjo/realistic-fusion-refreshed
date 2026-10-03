@@ -155,7 +155,9 @@ fed** and the output follows the fuel line:
 | 40 u/s | 3 888 MW | 34 u/s — **fuel-saturated** | | |
 
 **The one-heater D-D cell is superseded (#440, 2026-10-01, Factorio 2.0.77).** Measured with
-radiation, one heater, nothing researched: **48.9 – 58.6 MW**, against the 86 above.
+radiation, one heater, nothing researched: **48.9 – 58.6 MW** at 126 000 ticks, against the 86
+above, and **48.3 – 58.0 MW** once its fuel line had finished cooling, at 870 000 ticks (#503,
+2026-10-03).
 `bench-mod-links.ps1 -Heaters 1 -Unresearched` is the rig; `exchanger-coverage.md` has the reading.
 
 **The one-heater D-T cell is not** ([#486](https://github.com/trulsjo/realistic-fusion-refreshed/issues/486),
@@ -169,11 +171,14 @@ rather than held**
 ([#499](https://github.com/trulsjo/realistic-fusion-refreshed/issues/499)). `M.settle` holds the
 amount fixed, so it never pays to heat the fuel coming in: held at the measured 277.3 units it runs
 17% hotter than the game, at 2.54×10⁹ °C, and burns 2.31 u/s, short of the heater's 2.5. Fed
-instead — 2.5 u/s of plasma arriving at 15 °C and mixed into the box by amount, as the engine mixes
-it, and stepped every 6 ticks as `control.lua` steps it — the same model settles at **276.9 units
+instead — 2.5 u/s of plasma arriving at the heater recipe's 1×10⁶ °C and mixed into the box by
+amount, and stepped every 6 ticks as `control.lua` steps it, which is `M.settle_fed` since
+[#502](https://github.com/trulsjo/realistic-fusion-refreshed/issues/502) — the same model settles at **276.9 units
 and 2.183×10⁹ °C, burning 2.500 u/s and selling 322.7 MW**, against the game's 277.3 units and
-2.180×10⁹ °C. So the ~320 MW agreement survives at the matched operating point. The held run's
-319.0 MW agreed only because two errors cancel: running hot, it fuses 27 MW less (325 MW against
+2.180×10⁹ °C. (#499 mixed the fuel in at 15 °C; at 1×10⁶ °C every figure here is the same to
+the digits quoted.) So the ~320 MW agreement survives at the matched operating point. The held
+run's 319.0 MW, at the same 6-tick step — 319.1 at one tick, the figure #499 and `1df5855`
+quote — agreed only because two errors cancel: running hot, it fuses 27 MW less (325 MW against
 352), and it skips the 22.6 MW it takes to heat 2.5 u/s of fresh fuel to the operating
 temperature. `tests/test-reactor-logic.lua` pins the fed run against the game's fill and
 temperature, in the block headed "THE FED D-T REACTOR". **Fully researched** on the
@@ -224,7 +229,8 @@ the operating point `realistic-fusion-refreshed/prototypes/recipes/d-t.lua` was 
 settles around 320 MW"*, a pre-#52 figure whose megawatts are radiation-free but whose operating
 point is the heater's — and measured since at 282.1 – 338.5 MW with radiation, one heater, nothing
 researched (#486, 2026-10-02, Factorio 2.0.77), which 320 sits inside. That comment also quoted a D-D reactor's 86 MW until #440 superseded it:
-48.9 – 58.6 MW, one heater, nothing researched (2026-10-01, Factorio 2.0.77).
+48.9 – 58.6 MW, one heater, nothing researched (2026-10-01, Factorio 2.0.77, 126 000 ticks;
+48.3 – 58.0 at 870 000, 2026-10-03).
 
 **And the aneutronic tier records the same measurement in a different vocabulary.** A D-D reactor
 breeds tritium and helium-3 at the same rate, so a heater on the D-He3 mix costs the same **9.12**
