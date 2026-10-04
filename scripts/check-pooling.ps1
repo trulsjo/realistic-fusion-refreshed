@@ -218,6 +218,12 @@
     Bundled mods to enable, e.g. -With space-age. Off by default, so the rig keeps checking base 2.0
     unless asked otherwise (ADR 0003, ADR 0008).
 
+.PARAMETER AlsoModDirectory
+    A directory of mod directories or mod zips to load alongside this repo's, read the way
+    load-check.ps1's parameter of the same name reads it. Off by default, and the shipped run never
+    uses it. It exists so a canary can be run through this rig: #549 loaded the plasma input-box
+    canary here, recorded in docs/research/plasma-input-box.md.
+
 .PARAMETER KeepTemp
     Keep the save, the rig mod and the captured output.
 
@@ -233,6 +239,7 @@ param(
     [ValidateRange(1267, 200000)] [int] $Ticks = 1800,
     [ValidateRange(1, 500)]      [int] $Tail  = 20,
     [string[]] $With = @(),
+    [string]   $AlsoModDirectory,
     [switch] $KeepTemp
 )
 
@@ -266,6 +273,11 @@ try {
     $enabledBundled = Resolve-BundledSelection -Requested $With -Bundled $bundled
 }
 catch { throw "-With $($_.Exception.Message)" }
+$alsoMods = @()
+if ($AlsoModDirectory) {
+    try { $alsoMods = @(Get-HarnessMods -Path $AlsoModDirectory) }
+    catch { throw "-AlsoModDirectory $($_.Exception.Message)" }
+}
 
 $temp   = Join-Path ([IO.Path]::GetTempPath()) ('rf-pool-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
 $modDir = Join-Path $temp 'mods'
@@ -2158,7 +2170,12 @@ $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory =
 
 try {
     New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
-    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled -Mods ($ourMods + $rigName)
+    foreach ($m in $alsoMods) {
+        if ($m.Kind -eq 'zip') { Copy-Item -LiteralPath $m.Path -Destination $modDir }
+        else { New-ModJunctions -ModDirectory $modDir -Links @{ $m.Name = $m.Path } }
+    }
+    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled -Mods ($ourMods + $rigName + $alsoMods.Name)
+    if ($alsoMods) { Write-Host "also loading: $($alsoMods.Name -join ', ')" }
     $bundledOn = if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.0 only)' }
     Write-Host "bundled enabled: $bundledOn  |  interval $interval ticks, tail $Tail pipes, check at tick $Ticks"
     Write-Rig
