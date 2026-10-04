@@ -1123,11 +1123,60 @@ figure to the digit, at every quality and in both temperature regimes — so `ge
 a box will actually hold are not the same number. *(#531 found why:
 [`exchanger-coverage.md`](exchanger-coverage.md#the-rule-behind-the-split).)* And the input and output readings of the same
 conversion **disagree by a factor of 1.887** in the one cell where there is anything to compare —
-close to the 1.900 the seeded box relaxes by, and not equal to it.
+close to the 1.900 the seeded box relaxes by, and not equal to it. *(#541 found that it is the
+same trade, seen from the input box alone: [The 1.887 is the box's share](#the-1887-is-the-boxs-share).)*
 
 And it is a *fuel* leak rather than an energy exploit: the boiler consumes a unit of plasma —
 10²⁰ nuclei — to make 1 MJ, where fusing the same 10²⁰ D-D nuclei releases about 58 MJ. At the one
 level where it runs at all, 3.576 W against 50 MW of heating is one part in fourteen million.
+
+#### The 1.887 is the box's share
+
+([#541](https://github.com/trulsjo/realistic-fusion-refreshed/issues/541).) The rig now reads
+each box's segment beside the box. `pwsh -File scripts/probe-quality-leak.ps1` and again with
+`-Seconds 10000`, Factorio 2.0.77, 2026-10-04. Only the legendary cold cell moves; the other
+nine read box and segment unchanged to ten digits.
+
+| legendary, cold | 1000 s | 10 000 s |
+|---|---|---|
+| input box, baseline → end | 526.3157905 → 526.313895 | 526.3157905 → 526.2969435 |
+| its segment, of 1000 | 473.6841917 → 473.6825109 | 473.6841917 → 473.6672759 |
+| input box and segment, taken | 0.003576278687 | 0.03576278687 |
+| output box, made | 0.003576278687 | 0.03576278687 |
+| output's segment | 0 throughout | 0 throughout |
+| made / taken off the box alone | 1.886792453 | 1.897533207 |
+
+**Box plus segment on the input side is what the output gains, to ten digits, at both
+lengths.** The output's segment holds nothing, so the output box shows everything made. The
+input box shows only its share, and the segment gave the rest. So the 1.887 is the box/segment
+split seen from the input box. It is the same split as the 526.3158.
+
+**Where it lands is not a constant, and the rule does not give 1.887.** Counted in float32 ULPs
+at 1.0, 2⁻²⁴ units, the conversion moved 60 000 of them in 1000 s and the box gave 31 800,
+an exact 53%. That is why the factor reads 100/53. Over 10 000 s it moved 600 000 and the box
+gave 316 200. The factor climbs toward the 1.900 that the rule's low branch gives a lone 1000-unit
+box: segment = 0.9 × box, so the box gives 1/1.9 of anything drained. The rule run as arithmetic
+for this note, draining 2⁻²⁴ a tick from the box, computed 2026-10-04:
+
+| variant | the box gives in 1000 s, of 60 000 ULPs | factor |
+|---|---|---|
+| the game | 31 800 | 1.887 |
+| the rule from the seed, 1000 units at tick 0, draining from tick 0 | 31 579 | 1.900 |
+| the rule from the game's baseline, in doubles | 31 755 | 1.889 |
+| the same, each transfer rounded or floored or ceiled to 2⁻²⁴, nine combinations | 31 752 – 31 762 | 1.889 – 1.890 |
+| the same, each transfer rounded to float32 | 32 032 | 1.873 |
+
+From the game's baseline over 10 000 s the double-precision rule reads 1.899, against the
+game's 1.898. Every variant that starts where the game starts lands within 0.2% of the game,
+or 0.7% with float32 transfers. None reproduces the 31 800: the nearest gives 45 ULPs less,
+2.7×10⁻⁶ units. Where the box sits is off the rule by more than that.
+The game's baseline box is 1.04×10⁻⁵ above the low branch for what box and segment hold
+between them. At the end of the 1000 s run it is 2.8×10⁻⁶ below that branch, and at the end
+of 10 000 s it is 1.41×10⁻⁵ below. A box nothing drains settles at 526.3158023 in the game,
+in every cell but the legendary cold one, where the rule settles at 1×10⁶ / 1900 =
+526.3157895, so 1.28×10⁻⁵ apart. The rule matches the game to four decimals and does not
+match it to the tenth significant figure. What sets that offset was not found, so the arithmetic
+that gives 1.887 rather than 1.889 was not found either.
 
 ## The equilibrium, measured
 
@@ -1228,12 +1277,17 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   documented.** #147 measured the flooring — five levels, two run lengths, the legendary rate landing
   on 2⁻²⁴ units a tick to ten digits — and no 2.0.77 doc page found in this pass says the engine does
   that. The measurement stands on its own; the mechanism named for it is a reading of the numbers.
-- **One of the two oddities #147 turned up on the way is still not explained.** The input and
-  output sides of the same conversion disagree by a factor of about 1.887; that is reproducible
-  and has not been chased. The other, a fluid box seeded to its declared `volume` settling at
-  526.3158 of 1000, is explained since #531: the box trades with the segment it is in, and
-  526.3158 is where that trade balances with no pipes. See
-  [`exchanger-coverage.md`](exchanger-coverage.md#the-rule-behind-the-split).
+- **Both oddities #147 turned up are the box/segment trade, and neither is matched past about
+  10⁻⁵ units.** A fluid box seeded to its declared `volume` settling at 526.3158 of 1000 is
+  where that trade balances with no pipes (#531, see
+  [`exchanger-coverage.md`](exchanger-coverage.md#the-rule-behind-the-split)). The 1.887
+  between the input and output readings is the input box's share of what it and its segment
+  gave, and box plus segment equals what was made, to ten digits (#541,
+  [The 1.887 is the box's share](#the-1887-is-the-boxs-share)). What is not explained is the
+  exact figure. The game's lone box settles 1.28×10⁻⁵ units above the rule's 526.3157895, and
+  the rule run from the game's baseline gives 1.889 or 1.890 over 1000 s, or 1.873 with float32
+  transfers, where the game gives 1.887. The factor is not a constant: it is 1.8975 over
+  10 000 s, legendary, 2026-10-04.
 - **Whether a mod may add a sixth quality level is unknown.** FFF #375 refers to restrictions without
   stating them and no 2.0.77 doc page found in this pass covers it. Narrowed but not measured by
   [`inverted-quality.md`](inverted-quality.md).
