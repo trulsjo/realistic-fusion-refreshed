@@ -57,8 +57,8 @@
                  supply. Every other cell holds at most two classes.
       aneutronic A normal rf-reactor and a normal rf-aneutronic-reactor (#493), each holding its own
                  plasma at its own box's fill. Every other REACTOR here spends the same 50 MW
-                 unresearched; these ask 90 and 240 MW and spend 50 and 200, so the water-fill's caps fall where
-                 two different spends put them.
+                 unresearched; these ask 90 and 240 MW and spend 50 and 200, so each is held at its spend
+                 where two different spends put that.
       acc-tert   A normal rf-reactor and eighteen vanilla accumulators AS A LOAD (#528), on the
                  rig's usual tertiary supply: tert-tert with a real accumulator where the rig's
                  copy of an interface was. The accumulators are emptied every second, so they go
@@ -473,7 +473,7 @@ script.on_init(function()
       return m
     end
     -- COUNT of one thing as ONE member: two columns down the east edge of the supply area, or,
-    -- for a load, south of the substation, where a second reactor would stand. They share a
+    -- for a load, south of the substation, clear of the one reactor its cell has. They share a
     -- name+quality key, so the statistics could not tell them apart anyway.
     local function group(name, quality, count, what, role)
       local m
@@ -488,8 +488,8 @@ script.on_init(function()
       end
       return m
     end
-    -- One substation reaches every member and nothing else. A load sits in the strip between the
-    -- first two reactor slots, because the corner slots past the first two only touch the supply
+    -- One substation reaches every member and nothing else. A single load sits in the strip
+    -- between the first two reactor slots, because the corner slots past the first two only touch the supply
     -- area with a reactor's footprint.
     -- `burn` is what the cell's REACTORS spend, which is what a discharge cell's supply is a
     -- fraction of; `spend` is every member's, which is what the ladder is a fraction of.

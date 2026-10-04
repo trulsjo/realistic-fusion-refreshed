@@ -14,7 +14,7 @@
     WHAT IT CLOSES
 
     #516 found that three rf-pipe report a segment capacity of 1300, and that the segment holds that
-    plasma BESIDE the 1000 the reactor's box reads. Two of the three readings behind that come from
+    plasma BESIDE the 1000 rf-reactor's box reads. Two of the three readings behind that come from
     scripts/bench-mod-links.ps1. The third, a tick-by-tick balance over one heater cycle, came from a
     scratch copy of the bench that was thrown away. This is that reading, committed.
 
@@ -56,14 +56,15 @@
     ending inside -Dense (#530). It also names the cycle the box grew most in, and the first
     cycle to end at -FullAt of the box. On a fill that burns little of its feed the first of
     those is where the split steps from one branch to the other (#531). On one that burns most
-    of it, a D-T cell or a researched D-D one, it is the first cycle of the run.
+    of it, a D-T cell or a researched D-D one, it is the first cycle to put plasma in the box.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
 .PARAMETER Ticks
-    Ticks to run, from an empty line. With nothing researched three pipes are full by about
-    72 000 and six by about 81 000.
+    Ticks to run, from an empty line. On D-D with nothing researched three pipes are full by
+    about 72 000 and six by about 81 000. Helium-3 fills its 3000-unit box by about 152 000 and
+    159 000, and a D-T line never fills: it has settled by about 108 000.
 
 .PARAMETER Pipes
     Pipe counts, comma-separated, one cell each, 3 to 12. Three is the shortest line the bench
@@ -77,7 +78,7 @@
 
 .PARAMETER From
     The first tick of each per-tick span, comma-separated. The defaults are early in the fill and
-    near its end at three pipes.
+    near its end at three pipes, on D-D with nothing researched.
 
 .PARAMETER Span
     Ticks in each span. A heater cycle is 120 ticks.
@@ -502,7 +503,8 @@ try {
             }
         }
         # WHERE THE SPLIT STEPS (#531), on a fill that burns little: the cycle the box grew most
-        # in. Reported, not judged; a cell that burns most of its feed names its first cycle.
+        # in. Reported, not judged; a cell that burns most of its feed names the first cycle to
+        # put plasma in the box.
         $step = 0
         for ($i = 1; $i -lt $mine.Count; $i++) { if ((Num $mine[$i]['dbox']) -gt (Num $mine[$step]['dbox'])) { $step = $i } }
         if ($step -gt 0) {
