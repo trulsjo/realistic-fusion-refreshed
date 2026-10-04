@@ -130,16 +130,131 @@ report **one segment id in both variants**: 9 = 9 = 9 = 9. The segment reports a
 - At tick 52 000, the canary segment read 0.96 where every other row before 64 000 read 0. That
   single reading is not explained.
 
+## The repository's gates under the canary
+
+[#549](https://github.com/trulsjo/realistic-fusion-refreshed/issues/549). 2026-10-04, Factorio
+2.0.77, base game only. Each gate was run twice from the same working tree: once as it ships and
+once with the canary loaded.
+
+**How the canary was loaded.** It is the mod `probe-plasma-input-box.ps1` writes, copied out by
+hand: a directory `rf-input-box-canary/` holding that script's `info.json` fields and its
+`data-final-fixes.lua` text, unchanged. Its parent directory was passed to both gates:
+
+```
+pwsh -File scripts/check-pooling.ps1 -AlsoModDirectory <dir>
+pwsh -File scripts/load-check.ps1    -AlsoModDirectory <dir>
+```
+
+`load-check.ps1` already took `-AlsoModDirectory`. `check-pooling.ps1` took no extra mod, so #549
+gave it the same parameter, read the same way through `Get-HarnessMods`. It is off by default, and
+the run without it is the shipped run. Both gates printed `also loading: rf-input-box-canary`.
+The canary refuses to load unless the box is `input-output` before it changes it. Neither gate
+reads the plasma box's production type back, so the change itself is the canary's own assertion plus
+#542's runtime reading above.
+
+### The pooling check: 23 of 125 checks fail
+
+Defaults: 1801 ticks, a simulation step every 6, a 20-pipe tail on `piped`. Nothing researched:
+the rig asserted all 11 rungs off in both runs. The rig has no heater; every cell is seeded and
+left to burn down.
+
+**Shipped: `PASS: 125 checks, 0 failures`, exit 0. Canary: `FAIL: 125 checks, 23 failures`,
+exit 1.** The rig printed 135 rows, 125 checks and 10 notes. 57 checks and one note read
+identically in both runs, including the 11 research rows and every `get_capacity` row: a pipe
+still reports the whole run, and a reactor its own box of 1000. 68 checks and 9 notes read
+differently. These are the 23 that fail:
+
+| row | shipped | canary |
+|---|---|---|
+| mix, pair, trio, five, solopipe, bare, piped: every box holds its share of one pool, not its own contents | worst box off its share by 1.89%, 3.23%, 1.89%, 1.02%, 2.22%, 1.88%, 0.839% | 96.7%, 95.2%, 96.8%, 98.1%, 90.9%, 97%, 97%, each worst at an `rf-pipe` |
+| mix: and with nothing driving it, the run flattens to one temperature | spread 0.000119% after 180 ticks | 5×10⁷ against 1×10⁶ °C, spread 98% |
+| pair, trio, five: and far above the seed, so the pool carried heat to them | 1.18592×10⁸, 7.99052×10⁷, 4.77436×10⁷ °C; 118.6, 79.9, 47.7 times the seed | 15 °C in all three, against a seed of 1×10⁶ |
+| pair, trio, five: the powered reactor runs a little above the run, not away from it | 4.1%, 6.5%, 11.4% above | 1.59768×10⁸ against 15 °C in all three |
+| idle: and it flattened, so the mixing had finished when the loss was read | 0.000819% apart | 4×10⁶ against 1×10⁶ °C, 75% apart |
+| idle: BUT MIXING DOES NOT CONSERVE HEAT | 0.8177 survived, 18.2% destroyed | 1 survived, 0% destroyed |
+| over one interval, where the heat enters DOES matter, and monotonically along the run | west 72.19%, middle 71.65%, east 71.10% | 100.00% at all three |
+| and the rows had stopped moving before the longest window closed | worst flat to 9.05×10⁻⁷ | worst flat to 0.557 |
+| so the gap #40 attributed to writer count is not writer count and not position either | 1.09-point ramp against a 17.8-point gap | -0.00 against -0.0 |
+| probe: and the SAME instrument sees the run move once ticks have passed | 12 of 12 other boxes changed 6 ticks later | 0 of 12 |
+| solopipe: the SAME single writer loses materially once there is a run to mix across | 75.4% against 94.6% | 100.0% against 100.0% |
+| and the three-reactor run loses MORE than mixing alone accounts for | 57.6% against 75.4% | 100.0% against 100.0% |
+| and what reaches the pool DEPENDS on what else is plumbed into the run | 57.6% against 67.0% | 100.0% against 100.0% |
+
+These 45 checks still pass, with different figures:
+
+| row | shipped | canary |
+|---|---|---|
+| solo, solopipe, bare, piped: the run gains most of what its reactors spent, and not all of it | 94.6%, 75.4%, 57.6%, 67.0% arrived | 100.0% in all four; the check's bound is above 0.4 and below 1.02 |
+| solo: one reactor with no run to share into keeps nearly all of what it spent | 94.6% | 100.0% |
+| pair, trio, five: the pool ran down | 47.33%, 44.64%, 42.68% of capacity left | 80.78%, 75.61%, 71.82% |
+| trio, five: every unpowered reactor on the run is at one temperature | 7.99052×10⁷ °C, spread 0.0329%; 4.77436×10⁷, spread 0.059% | 15 °C, spread 0%, in both |
+| idle: left flat and alone, the run holds its heat | 0.000898% apart | 0% apart |
+| idle: no plasma entered or left the untouched run | 1785.8695 units | 3025 units |
+| twopass, onepass, rebased: started from the same state as the other shapes | 1.17974×10⁹ unit-K predicted | 1.08356×10⁹ |
+| twopass, onepass, rebased: the three write shapes | 72.2% arrived in each | 100.0% in each |
+| onepass, and rebased, against the shipped shape | 72.19% against 72.19% | 100.00% against 100.00% |
+| writers1, writers2, writers3, middle, east, reversed: same segment, same fill, same temperature, same total heating | 1785.87 of 4000 units, 44.6% full | 3025 of 4000, 75.6% full |
+| the same six: the shipped physics predicts the same gain as every other row | 1.17974×10⁹ unit-K | 1.08356×10⁹ |
+| the same six: what arrived | 72.19%, 71.92%, 71.64%, 71.65%, 71.10%, 71.10% | 100.00% in each |
+| write order does not matter | 71.10% against 71.10% | 100.00% against 100.00% |
+| 2 writers, and 3 writers, keep the MEAN of the positions they occupy | 71.92%, 71.64% | 100.00% in both |
+| the shape rows, and the one-writer row, were uneven the instant the writes landed | 3.667×10⁶ against 9.797×10⁵ °C, spread 73.28% | 2.166×10⁶ against 9.588×10⁵, spread 55.73% |
+| writer count: and the three-writer row was flat | 1.875×10⁶ °C, spread 0.0000% | 1.361×10⁶, spread 0.0000% |
+| seedonce: one seeding pass leaves the run as full as sixty do | 44.6% against 44.6% | 75.6% against 75.6% |
+
+The nine notes are the positional ramp at 6, 12, 30, 60, 120, 240, 480 and 960 ticks, and its
+summary. Shipped, the ramp reads +1.089, +0.944, +0.214 and +0.010 points to 60 ticks and -0.000
+from 120. Canary, every window reads 100.000% at west, middle and east, a ramp of -0.000.
+
+**What the readings say, and what they do not.** Under the canary the seeded plasma stays in the
+reactors' boxes: every row's worst box is a pipe, far off its share, and the seeded runs read
+fuller (75.6% where they read 44.6%). Every bookkeeping row reads 100% arrived, because no heat
+leaves a box to be lost in mixing. The unpowered reactors read the 15 °C floor, which is #542's
+pair reading again, on three row lengths. Whether the seed ever reached the pipes, or the boxes
+emptied into them, was not separated: the rig reads totals, not the order things moved in.
+
+### The load check: everything holds
+
+**Shipped and canary both exit 0** and print the same verdict: "prototypes valid, every referenced
+asset present, map created, the simulation's fifteen load-time invariants hold". By name, all
+fifteen hold under the canary: `check_fuel_rows`, `check_reactor_specs`, `check_plasma_capacity`,
+`check_input_flow`, `check_ladder_prototypes`, `check_ladder_clamp`, `check_plant_efficiency`,
+`check_plasma_bounds`, `check_signal_ceiling`, `check_every_plasma_burns`,
+`check_collector_boxes`, `check_blanket_feed`, `check_energy_outlets`,
+`check_reactor_companions` and `check_steam_sinks`. They run in `check_prototypes()` in
+`realistic-fusion-refreshed/control.lua`, which refuses to create a map when one fails.
+
+The rest of the gate also read the same in both runs. All 26 contained connections still hold
+what the data stage declared, both manifests agree, 9 sockets are at vanilla pipe height,
+`check-socket-parts` measured 24 parts and could not measure 6, 4 mockups agree, and no asset is
+missing.
+
+**By reading, none of the fifteen looks at the plasma box's production type.** The only
+`production_type` test in `control.lua` picks a boiler's steam box by `"output"`.
+`check_plasma_capacity` reads box 1's `volume` and nothing else. So the gate holds the prototypes
+to the simulation's numbers, and the mixing the simulation relies on is outside what it checks.
+
+### The Lua suites: the canary cannot reach them
+
+**Run:** all six suites under Lua 5.4.6, 962 checks, 0 failures: blanket-energy 49, bremsstrahlung
+31, circuit-output 116, further-reactions 44, reactivity 57, reactor-logic 665. The suites load
+no prototype, so there is no way to load the canary into them. One run serves both variants.
+
+**Reading:** no module under `realistic-fusion-refreshed/scripts/` names `production_type`.
+`M.step` and `M.settle_fed` in `realistic-fusion-refreshed/scripts/reactor-logic.lua` take what a
+box holds, not what kind of box it is. One function depends on the shipped box all the same:
+`M.settle_segment` hard-codes the `input-output` box's push into the segment and pull back, and
+`tests/test-reactor-logic.lua` pins its figures. Under the canary, #542 read a segment at 0 until
+the box was full, which `M.settle_segment` does not describe. Nothing the mod runs calls it. So
+the pure simulation the mod runs does not depend on the box's production type. The arithmetic the
+notes use does, through `M.settle_segment`, and the suites would not notice the change.
+
 ## What was not measured
 
 - `rf-aneutronic-reactor`, D-T, the helium-3 plasmas, and any researched state. The canary
   changes `rf-reactor` alone.
 - A pair with both reactors powered under the canary. That would show whether two `input` boxes
   that are each heated still converge.
-- `scripts/check-pooling.ps1`, `scripts/load-check.ps1` and the Lua suites under the canary.
-  `check-pooling.ps1`'s bookkeeping rows test the mixing semantics that `apply()` in
-  `realistic-fusion-refreshed/control.lua` is written against. The pair above suggests those
-  rows would read differently, but they were not run.
 - An existing save loaded under a changed box. Save compatibility is the one place a change
   here breaks silently.
 - Where the shipped box's temperature settles. It was still cooling when the run ended at
@@ -162,7 +277,9 @@ Each option lists what it changes. None is chosen.
    2.381×10⁸, with no dependence on pipe count. The segment becomes a queue in front of the box
    rather than a second store. **It ends ADR 0011's heat pooling.** Reactors on one run share
    feed plasma but not heat, and a reactor without power sits at the 15 °C floor beside a hot
-   one. ADR 0011 would need superseding. The pooling rows of `check-pooling.ps1`, and the
+   one. ADR 0011 would need superseding. The pooling rows of `check-pooling.ps1`, 23 of whose
+   125 checks fail under the canary (see
+   [The repository's gates under the canary](#the-repositorys-gates-under-the-canary)), and the
    comments in `control.lua` that describe box 1 as "the input-output box ADR 0011's fluid
    coupling rests on", would need rewriting. Save compatibility is untested. The aneutronic
    reactor is unmeasured, but carries the same box.
