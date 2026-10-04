@@ -442,7 +442,8 @@ the same point.
 none is rewritten here. Each was taken at 126 000 ticks before the gate read the fuel line (#508).
 
 - `bolted-joint-throughput.md`: the D-D control's 94.0 MW flowing and 78.3 sustained, its 86.4 MW
-  with the plant-efficiency ladder, and the D-T reactor's 996 to 1 195 MW at 597.4 units.
+  with the plant-efficiency ladder, and the D-T reactor's 996 to 1 195 MW at 597.4 units. The
+  D-T figure is settled, at confinement rung 3 and no other rung (#533, below).
 - `fluid-link-throughput.md`: the same 78.3235 and 86.3862 MW pair, and the 1 195.4 MW.
 - ADR 0018's Consequences: the 78.3 MW, and the 996 to 1 195 MW.
 - `bench-mod-links.ps1`'s help under `-Exchangers` and `-Plasma`: "the 94 MW this rig's D-D
@@ -453,7 +454,52 @@ none is rewritten here. Each was taken at 126 000 ticks before the gate read the
   reactor at 103.7 MW while flowing and 86.4 sustained.
 
 The 94.0, 78.3 and 86.4 MW were read with fewer ladders than exist now, so they are not this
-state at an earlier tick. How far each is from settled was not measured.
+state at an earlier tick. How far those three are from settled was not measured. **The D-T
+figure is settled**: the next section has the run.
+
+### The four-heater D-T reactor, settled
+
+[#533](https://github.com/trulsjo/realistic-fusion-refreshed/issues/533). The 996 to 1 195 MW
+at 597.4 units is `bolted-joint-throughput.md`'s run, `-Plasma rf-d-t-plasma -Exchangers 8
+-Ticks 252000 -Window 14000`, taken before the plant-efficiency and heating ladders existed. It
+reproduces at `-Rungs confinement_ladder=3`, which is run here at the default length and long, and so is
+the state the bench's default invocation holds today, every ladder at its top. All four runs:
+D-T, four heaters, twelve pipes, a 2200-unit segment, eight exchangers on the chain cell,
+Factorio 2.0.77 (build 84539), 2026-10-04, the research state asserted rung by rung, passing
+the gate including its fuel-line check. MW is the drain cell's, sustained – flowing. The fed
+model is `M.settle_fed` on four heaters' 10 u/s, 7200 s at the 6-tick step; 14 400 s reads the
+same to the digits quoted.
+
+| research state | run | last report, ticks | plasma held | °C | MW |
+|---|---|---|---|---|---|
+| confinement rung 3 only | default length, 126 000 ticks | 120 000 | 592.9 | 2.870e9 | 996.2 – 1 195.5 |
+| confinement rung 3 only | `-Ticks 600000 -Window 20000` | 580 000 | 597.4 | 2.846e9 | 996.2 – 1 195.4 |
+| confinement rung 3 only | fed model, capture 0.85 | | 596.3 | 2.852e9 | 1 139.9, burning 10 u/s |
+| every ladder at its top | default length, 126 000 ticks | 120 000 | 602.0 | 3.022e9 | 1 114.1 – 1 336.9 |
+| every ladder at its top | `-Ticks 2000000 -Window 20000` | 1 980 000 | 602.0 | 3.022e9 | 1 114.1 – 1 336.9 |
+| every ladder at its top | fed model, capture 0.9375 | | 605.4 | 3.004e9 | 1 274.8, burning 10 u/s |
+
+**The quoted figure is the settled one, and the default length reads the same MW.** At
+confinement rung 3 the sustained bound is 996.2 MW at both lengths and the flowing bound
+differs by 0.01 MW. `bolted-joint-throughput.md` quotes the sustained bound as 996.0. A D-T box on four heaters never fills. It burns all 10 u/s, so what it sells
+is set by the feed and not by where the plasma sits. The pipes are in the reactor's pool and
+read 2.8602×10⁹ to 2.8603×10⁹ °C at every window from 84 000 ticks of the default run.
+
+**The plasma differs by where the window ends, not by drift.** The long runs repeat three
+readings, one a window: 592.9 units at 2.870×10⁹ °C, 595.2 at 2.858×10⁹ and 597.4 at
+2.846×10⁹ at confinement rung 3, and 602.0 at 3.022×10⁹, 604.3 at 3.009×10⁹ and 606.5 at
+2.997×10⁹ with every ladder at its top. A 20 000-tick window ends at one of three points in
+the heaters' 120-tick cycle, as #527 found on D-D. A 6000-tick window always ends at the same
+one, so the default length reads 592.9 and 602.0 at every window from 90 000 and from 78 000.
+`bolted-joint-throughput.md`'s 597.4 units and 2.846×10⁹ °C are the third reading. The spread
+is 0.8% in plasma and in temperature. The fed model's plasma, temperature and MW are inside
+the game's at both states.
+
+**Eight exchangers' 60% to 72% share does not move at the state it was quoted for.** 720 MW is
+72% of 996.2 and 60% of 1 195.4. It does move with the research state. On the bench's default
+invocation today the reactor sells 1 114.1 – 1 336.9 MW, and 720 is 65% and 54% of that. The
+bench's help under `-Exchangers` quotes 60% to 72% beside a default that now holds the other
+state. It is not rewritten here.
 
 ### Five combination states, nearest the line
 
@@ -677,8 +723,10 @@ ticks (the #520 run, which also has six pipes), and heating rung 3 + confinement
   530.51 at 33 002, while the segment stood at 627.75 for two cycles. At six pipes it fell
   between 506.92 and 552.35 units, and at the line state between 473.67 and 559.39.
 
-Why the engine splits this way was not found. `quality.md` records a lone 1000-unit box
-relaxing to 526.3158 units, which is where the switch falls; the two were not connected.
+[The rule behind the split](#the-rule-behind-the-split) is why
+([#531](https://github.com/trulsjo/realistic-fusion-refreshed/issues/531)). The step is a
+stand-still of the segment, not a jump, and the 526.3158 units `quality.md` records for a
+lone box are the same rule with no pipes.
 
 **The pooled reading, re-run with that split and fed as the heater feeds.** The same
 arithmetic as above with two changes: the pool's split is read off the two branches, switching
@@ -712,7 +760,8 @@ Nothing researched:
 | a cycle first ends on 999 units | 71 402 | | 71 070 | | 71 394 | |
 
 At the line the probe printed one cycle in a hundred, so the game's figure is a bracket: the
-cycle ending on 768 002 read 997.79 units and the one on 780 002 read 998.01. The bench's
+cycle ending on 768 002 read 997.79 units and the one on 780 002 read 998.01. #530 resolved it
+to one cycle, the one ending on 779 282. The bench's
 coarser windows gave 80 000 and 820 000 above for the same two fills.
 
 **With nothing researched the split is the whole gap.** The re-run is within 0.05% of the
@@ -721,7 +770,8 @@ out, and its cycle first ends on 999 units 8 ticks before the game's.
 
 **At the line it holds to 600 000 ticks and not after.** Through 600 000 it is within 0.14%
 of plasma and 0.18% of temperature, against 0.70% and 0.99% for +1300. It then ends a cycle
-on 998 units at 678 354 ticks, 90 000 to 102 000 before the game.
+on 998 units at 678 354 ticks, 90 000 to 102 000 before the game. *(100 928 before, since
+#530 resolved the game's figure.)*
 
 **The reactor model is not what is off.** In the cycle ending on tick 780 002 the probe read
 4.9945 units burned of the 4.9995 fed. `M.step`, run at each of the twenty states the box was
@@ -730,7 +780,8 @@ against 4.99452 read: 0.005% apart. A cycle's end is its low point. The box read
 there and up to 999.58 before a step, so `M.step` at the end state alone gives 2.4935 u/s
 where the cycle burned 2.4973, and that 0.15% is the swing and not a residual.
 
-**What is left is where the heat sits, and it is not explained.** At 720 000 ticks the game
+**What is left is where the heat sits.** #521 left it unexplained;
+[The rule behind the split](#the-rule-behind-the-split) explains it. At 720 000 ticks the game
 holds 996.4 units at 6.478×10⁸ °C and the re-run 998.1 at 6.414×10⁸: the game's box is 1.0%
 hotter with less in it, so it burns nearer the 2.5 u/s fed and the last units come slowly. At
 780 000 its pipes read 4.80×10⁸ °C beside a box at 6.47×10⁸, where the pooled arithmetic
@@ -747,7 +798,8 @@ None reaches the game. The game's pipes are colder than its box and warmer than 
 it lies between the first row and the third, and both fill sooner. **Mixing loss is not the
 cause, by its sign.** Heat destroyed is a colder box, a colder box burns less here, and a
 reactor that burns less fills sooner; the game's box is hotter than the arithmetic's, not
-colder. What keeps it hotter over the last ten units was not found. The settled point is
+colder. What keeps it hotter over the last ten units is that a nearly full box and segment
+stop trading, under the rule below. The settled point is
 unaffected: the 1 600 000-tick bench run of this state reads 999.8 units and 6.399×10⁸ °C,
 which is the fed model's.
 
@@ -756,6 +808,202 @@ which is the fed model's.
 ticks, against 820 000 at three pipes. It settled at 999.8 units, 6.400×10⁸ °C and
 97.0 – 116.4 MW, which is the three-pipe run's settled point and the fed model's. A shorter line
 could not be tried, because three pipes is the shortest the rig builds.
+
+#### The rule behind the split
+
+[#531](https://github.com/trulsjo/realistic-fusion-refreshed/issues/531),
+[#530](https://github.com/trulsjo/realistic-fusion-refreshed/issues/530) and
+[#532](https://github.com/trulsjo/realistic-fusion-refreshed/issues/532). **The box and the
+segment trade through the box's one connection, at most 100 units a tick each way. Both
+branches, the step, the lone box's 526.3158 and the hot tail at the line follow from that.**
+It is read off the segment probe's tick rows and then run as arithmetic beside seven fills.
+
+**The rule.** Every tick, after the mod's step and before the heater delivers:
+
+1. the box pushes 100 × min(box fill, 1 − segment fill) units into the segment;
+2. the box pulls 100 × min(segment fill, 1 − box fill) units back, on the fills as the push
+   left them.
+
+"Fill" is contents over volume: the box over its own volume V, the segment over the capacity C
+it reports. 100 units a tick is what one flush connection passes
+(`fluid-link-throughput.md`, #47). Each transfer carries its source's temperature and is mixed
+in by amount.
+
+**Where it was read.** `scripts/probe-plasma-segment.ps1 -Pipes 3,6 -Ticks 42000 -From
+32760,36840 -Span 126 -Every 100 -Dense 31500,38500`: D-D, one heater a cell, three pipes and
+six, nothing researched (asserted), Factorio 2.0.77 (build 84539), 2026-10-04. At three pipes
+after tick 32 766 the box held 525.48795 units and the segment 626.79065 of 1300. The push is
+100 × (1 − 0.482147) = 51.7853. The pull is 100 × (626.79065 + 51.7853) / 1300 = 52.1981. That
+is 0.4128 net into the box, and one tick later the probe read the segment 0.41281 lower, at
+626.37784. On the ticks between a delivery and the next step the segment's loss is 0.14793 of
+what it holds over 624.00, whatever the box holds, which is the same two lines.
+
+**What follows from it.** Setting push equal to pull:
+
+| the box holds | the push is limited by | the pull by | the two settle on |
+|---|---|---|---|
+| under V × C / (2C − 100) | the box's fill | the segment's fill | segment = box × (C − 100) / V. The low branch. |
+| between that and 100 + (V − 100) × (C − 100) / (2C − 100) | the segment's room | the segment's fill | segment = C × (C − 100) / (2C − 100), whatever the box holds. The step. |
+| over that | the segment's room | the box's room | box = 100 + (V − 100) × segment / C. The high branch. |
+
+At V = 1000 these are #521's two branches. **The step is a stand-still.** While the box
+crosses from the first level to the second the segment gives it everything the heater
+delivers and holds one figure, one tick before each delivery. A cycle's end reads 3.75 units
+over it, the delivery just landed.
+
+| box V, pipes, C | the rule: segment stands at | while the box goes from – to | the game: segment at a cycle's end | through the cycles ending | the game: box at those cycle ends |
+|---|---|---|---|---|---|
+| 1000, three, 1300 | 624.00 | 520.00 – 532.00 | 627.75 | 32 762, 32 882, 33 002 | 519.85 the cycle before; 523.35, 526.93, 530.51; 532.80 the cycle after |
+| 1000, six, 1600 | 774.19 | 516.13 – 535.48 | 777.94 | 36 842 to 37 322, five | 515.61 before; 518.55, 522.14, 525.72, 529.29, 532.84; 535.76 after |
+| 3000, three, 3300 | 1624.62 | 1523.08 – 1527.69 | 1628.37 | 76 082, the cycle the box grew most in | 1521.76 before; 1525.35 |
+| 3000, six, 3600 | 1774.65 | 1521.13 – 1529.58 | 1778.40 | 79 802, likewise, and the one before | 1524.59 before; 1529.58 |
+
+So #521's "about ten units" is twelve at three pipes and nineteen at six, taken over three
+cycles and five. Inside the stand-still the 1000-unit box grew by up to 3.6 units a cycle,
+against 1.3 to 1.6 on either side. The three-pipe tick rows read the segment at 624.00005 on every tick
+from 32 844 to 32 881.
+
+**The 3000-unit box.** `-Pipes 3,6 -Plasma rf-he3-he3-plasma -Ticks 300000 -From 12000 -Span
+240 -Every 50`: helium-3 plasma, one heater a cell, `rf-aneutronic-reactor`, which no ladder
+reaches, Factorio 2.0.77 (build 84539), 2026-10-04. Each reactor burned under 16 units in the
+whole run, so the line fills: the box first read 2997 units at the cycle ending on tick 151 562 at
+three pipes and 158 762 at six. **Both branches scale with the box, and the 100 in them does
+not.** At three pipes the cycle ending on 60 002 read 1199.98 in the box and 1283.73 in the
+segment, which is 3.75 over 1199.98 × 3200 / 3000 = 1279.98. The one ending on 120 002 read
+2382.56 and 2601.15, and 100 + 2900 × (2601.15 − 3.75) / 3300 is 2382.56. The step does not
+sit at one fraction of the box: 52.0% and 51.6% of 1000 units at three pipes and six, 50.8% and
+50.7% of 3000.
+
+**The step is the 526.3158 relaxation: the same rule with no pipes.** A lone box is a segment
+whose capacity is the box's volume. At V = C = 1000 the step's two ends meet, at
+1000 × 1000 / 1900 and at 100 + 900 × 900 / 1900, and both are 526.3158. A box seeded with 1000
+units keeps 1000 between itself and that segment. The rule run on it reads 527.17 units
+after 30 ticks, 526.3173 after 60 and 526.3157895 from 120 on. `quality.md` measured 526.3158,
+reached "over about two seconds". With pipes on, the step starts lower: 520.00 at three, 516.13
+at six.
+
+**What the 2.0.77 docs say, quoted.** Nothing about how the two share.
+[`LuaFluidBox`](https://lua-api.factorio.com/2.0.77/classes/LuaFluidBox.html) gives
+`get_capacity` as "The capacity of the given fluidbox segment." and `get_fluid_segment_contents`
+as "Gets counts of all fluids in the fluid segment." Neither says whether a machine's box is
+counted in the contents.
+[`FluidBox`](https://lua-api.factorio.com/2.0.77/types/FluidBox.html) says of
+`production_type`: "Specifies how the entity will utilize this fluidbox. input-output should
+only be used for boilers in fluid heating mode." Of `volume_reservation_fraction` it says: "A
+fraction of the volume that will be "reserved" and cannot be removed by flow operations. This
+does nothing if the fluidbox is part of a fluid segment." No rate, no order of transfer and no
+share appears there, on
+[`BoilerPrototype`](https://lua-api.factorio.com/2.0.77/prototypes/BoilerPrototype.html) or on
+[`PipeConnectionDefinition`](https://lua-api.factorio.com/2.0.77/types/PipeConnectionDefinition.html).
+Checked 2026-10-04. `rf-reactor`'s plasma box is `input-output` on a boiler in
+`output-to-separate-pipe` mode. The rule above is this note's reading of the game, not the
+docs'.
+
+**Run as arithmetic beside the game.** Tick by tick: `M.step` on the box every sixth tick,
+the two transfers, then the heater. A craft's 5 units land every 120 ticks and leave the
+heater's output box at three quarters of what it holds a tick, 3.75 and then 0.9375, as the
+probe reads it at every fill it printed up to 78% of the box. Computed 2026-10-04. Like the pooled reading it is
+arithmetic for this note: `M.settle_fed` is unchanged and no test pins it. Every game figure
+is the segment probe's, one heater, Factorio 2.0.77 (build 84539), 2026-10-04.
+
+| fill | reading | game | arithmetic |
+|---|---|---|---|
+| D-D, nothing researched, three pipes, 100 000 ticks | box, segment at the cycle ending on 12 002 | 212.74, 259.08 | 212.75, 259.08 |
+| | at 66 002 | 930.81, 1203.91 | 930.82, 1203.91 |
+| | box, pipes °C at 33 002 | 6.5283e8, 6.4890e8 | 6.5283e8, 6.4890e8 |
+| | a cycle first ends on 999 units | 71 402 | 71 402 |
+| D-D, nothing researched, six pipes, 100 000 ticks | box, segment at 12 002 | 188.90, 287.15 | 188.91, 287.15 |
+| | at 66 002 | 837.63, 1315.24 | 837.64, 1315.23 |
+| | a cycle first ends on 999 units | 80 642 | 80 642 |
+| helium-3, 3000-unit box, three pipes, 300 000 ticks | the cycle the box grew most in | 76 082 | 76 082 |
+| | a cycle first ends on 2997 units | 151 562 | 151 562 |
+| helium-3, 3000-unit box, six pipes | the cycle the box grew most in | 79 802 | 79 802 |
+| | a cycle first ends on 2997 units | 158 762 | 158 762 |
+| D-T, nothing researched, three pipes, 300 000 ticks | box, segment at 240 002 | 275.71, 334.90 | 275.75, 334.90 |
+| D-T, nothing researched, six pipes | box, segment at 240 002 | 275.84, 417.92 | 275.88, 417.92 |
+
+The four fills that end reach their last unit on the game's own heater cycle.
+
+**A D-T line never fills, and sits on the low branch with the burn's draw on top**
+([#532](https://github.com/trulsjo/realistic-fusion-refreshed/issues/532)). `-Pipes 3,6
+-Plasma rf-d-t-plasma -Ticks 300000 -From 12000,240000 -Span 240 -Every 100`: D-T, one heater
+a cell, nothing researched (asserted), Factorio 2.0.77 (build 84539), 2026-10-04. **The
+balance closes with two stores**, to four decimals in all eight cycles the spans print. At
+three pipes over the cycle ending on 12 002 the heater fed 5.0000, the reactor burned 2.2891,
+the box grew 1.2314 and the segment 1.4795; read as one store it is short by the box's
+1.2314. Over the one ending on 240 002 it fed 5.0000 and the reactor burned 5.0000. Both
+cells read one figure at every hundredth cycle from 108 002 to 288 002:
+
+| pipes | box at a cycle's end | °C | segment | pipes, °C | one tick before a delivery: box | segment | the low branch gives |
+|---|---|---|---|---|---|---|---|
+| three | 275.71 | 2.1925e9 | 334.90 of 1300 | 2.1660e9 | 275.68 | 331.18 | 330.81 |
+| six | 275.84 | 2.1915e9 | 417.92 of 1600 | 2.1697e9 | 275.81 | 414.20 | 413.71 |
+
+So one tick before a delivery a D-T line holds 1.2 times the settled box at three pipes and
+1.5 times at six, and 0.37 and 0.49 units more. The excess is what moves the fuel: the box burns the 5 units
+a cycle the heater makes, and on the low branch the net flow into it is 100 × (segment − box
+× (C − 100) / V) / C a tick. The arithmetic reproduces both cells. The pipes run 1.2% and 1.0%
+colder than the box. The bench reads this box at 275.6 units at its window's tick.
+
+**At the line, the tail is the box and the segment ceasing to trade**
+([#530](https://github.com/trulsjo/realistic-fusion-refreshed/issues/530)). `-Pipes 3 -Rungs
+heating_ladder=3,confinement_ladder=2 -Ticks 801000 -From 120000,780000 -Span 240 -Every 100
+-Dense 640000,800000 -FullAt 0.998`: D-D, one heater, three pipes, heating rung 3 and
+confinement rung 2 and nothing else (asserted), Factorio 2.0.77 (build 84539), 2026-10-04.
+Every one of the 1333 cycles ending from 640 000 to 800 000 ticks is printed, and the pipes'
+temperature is on every cycle of the run. **A cycle first ends on 998 units at tick 779 282**,
+at 998.0012; the cycle before, ending on 779 162, read 997.9990. The "drip" column is the
+arithmetic with the heater variant described under the table.
+
+| ticks | game: box | box, °C | pipes, °C | arithmetic: box | box, °C | pipes, °C | with the drip: box | pipes, °C |
+|---|---|---|---|---|---|---|---|---|
+| 120 002 | 774.53 | 8.9905e8 | 8.9482e8 | 774.57 | 8.9901e8 | 8.9482e8 | 774.57 | 8.9482e8 |
+| 240 002 | 883.32 | 7.6558e8 | 7.6153e8 | 883.36 | 7.6554e8 | 7.6153e8 | 883.36 | 7.6153e8 |
+| 360 002 | 928.76 | 7.1467e8 | 7.0973e8 | 928.80 | 7.1465e8 | 7.0974e8 | 928.80 | 7.0974e8 |
+| 480 002 | 957.57 | 6.8365e8 | 6.7661e8 | 957.61 | 6.8362e8 | 6.7661e8 | 957.61 | 6.7661e8 |
+| 600 002 | 980.82 | 6.5952e8 | 6.4552e8 | 980.86 | 6.5948e8 | 6.4541e8 | 980.86 | 6.4541e8 |
+| 648 002 | 989.10 | 6.5171e8 | 6.2779e8 | 989.15 | 6.5168e8 | 6.2705e8 | 989.15 | 6.2776e8 |
+| 696 002 | 995.02 | 6.4810e8 | 5.9178e8 | 995.05 | 6.4808e8 | 5.9036e8 | 995.07 | 5.9174e8 |
+| 720 002 | 996.43 | 6.4775e8 | 5.6318e8 | 996.42 | 6.4772e8 | 5.6151e8 | 996.47 | 5.6313e8 |
+| 744 002 | 997.23 | 6.4744e8 | 5.3097e8 | 997.16 | 6.4744e8 | 5.2891e8 | 997.25 | 5.3071e8 |
+| 780 002 | 998.01 | 6.4712e8 | 4.7991e8 | 997.78 | 6.4711e8 | 4.7732e8 | 997.88 | 4.7877e8 |
+| 792 002 | 998.23 | 6.4695e8 | 4.6267e8 | 997.92 | 6.4703e8 | 4.5967e8 | 998.03 | 4.6101e8 |
+| a cycle first ends on 998 units | 779 282 | | | 799 202 | | | 789 722 | |
+
+**The box stays hot because it stops sharing its heat.** Both transfers shrink as the two
+fill. At 120 002 the segment is 75.3% full and the box 77.5%, and about 25 units cross each
+way every tick: the pipes sit 0.5% under the box. At 780 002 the segment is 99.84% full, and
+100 × (1 − 0.99836) is 0.16 units a tick. The heater's 1×10⁶ °C fuel then lands in a segment
+the box barely stirs. The pipes fall from 6.455×10⁸ °C at 600 002 to 4.799×10⁸ at 780 002
+while the box holds 6.47×10⁸. The pooled arithmetic mixed all 2300 units to one temperature
+every step, so its box was colder, burned less and filled 100 000 ticks early. With the rule
+the box's temperature is within 0.02% of the game's at every row above, and the pipes' within
+0.7%.
+
+**What is left is 2.6% the other way, and it is the heater's output box.** The arithmetic
+ends a cycle on 998 units 19 920 ticks after the game, where the pooled one was 100 928
+before it. Its segment reads 1300.00 at 780 002 against the game's 1297.87. In the game the
+heater's box backs up against a filling segment. It was read where the segment had 2.5 units
+of room: at tick 780 002 the box still held 4.63 of the craft's 5 units, having given 0.37. It
+gave 0.32, 0.28, 0.25, 0.23 and 0.21 on the ticks after, then 0.20 a tick to 780 016, then
+0.15 falling to 0.10 once the segment read 1300.00, and was empty at 780 030. It starts
+earlier than that: at 648 002, with 13 units of room, the game's segment already reads 1.5
+under the arithmetic's. The arithmetic's heater empties in four ticks whatever the segment
+holds. A variant that gives no more than 0.15 of the
+segment's room a tick, and never under 0.2, was fitted to the first ten of those ticks: the
+drip column. It has no 0.10-a-tick phase.
+Its segment reads 1297.66 at 780 002 and its pipes are within 0.4% of the game's at every
+row, and it ends a cycle on 998 units 10 440 ticks late, 1.3%. The curve is flat there. The
+game's box gains 0.0022 units a cycle at 780 002, so the 0.13 units the drip variant is short
+is worth thousands of ticks. What the heater's output box does against a nearly full segment
+was fitted and not found.
+
+| variant | a cycle first ends on 998 units | against the game |
+|---|---|---|
+| pooled, measured split, fed in bursts (#521) | 678 354 | 100 928 ticks early, 13.0% |
+| two stores trading by the rule, the heater emptying in four ticks | 799 202 | 19 920 late, 2.6% |
+| the same, the heater's box dripping near a full segment | 789 722 | 10 440 late, 1.3% |
+| the game | 779 282 | |
 
 ### What that does to coverage, on one heater
 
@@ -897,7 +1145,7 @@ one-heater map, at two heaters' feed: `M.settle_fed`, 7200 s at the 6-tick step,
 arriving at 1×10⁶ °C, computed 2026-10-04. 14 400 s reads the same to the digits quoted. Each
 cell was settled once at the shipped capture and its MW scaled; the top corner settled with
 capture 0.9375 passed instead agrees to six decimals. Held, °C and burn do not depend on
-capture. The tuned reading was not swept at this feed.
+capture. The tuned reading is swept under the table (#535).
 
 | cell | one heater: held | °C | two heaters: held | °C | burn, u/s | MW at capture 0.85 / 0.9 / 0.925 / 0.9375 |
 |---|---|---|---|---|---|---|
@@ -917,6 +1165,31 @@ the top of both ladders (113.0 to 146.3).
 **Each then needs two exchangers, at every capture.** All twenty-four figures are over one
 exchanger's 90 MW and under two's 180; the largest is 161.4. They needed two on one heater as
 well: the one-heater figures run from 104.7 to 128.0 MW.
+
+**Tuned, each of the six sells what it sells at full feed**
+([#535](https://github.com/trulsjo/realistic-fusion-refreshed/issues/535)). Swept on
+`M.settle_fed` from 5% to 100% of two heaters' 5 u/s in 5% steps, 7200 s at the 6-tick step,
+D-D, heating × confinement as named, computed 2026-10-04: the one-heater map's method. Each
+cell was swept at the shipped capture and scaled; all six tuned figures settled with capture
+0.9375 passed instead agree to six decimals. In every cell MW rises with the feed until the
+box fills and is the same to four decimals from there to full feed. So the tuned reading is
+the full-feed reading, at every swept feed from the one named.
+
+| cell | full / tuned, MW, at capture 0.85 | 0.9 | 0.925 | 0.9375 | tuned from |
+|---|---|---|---|---|---|
+| τ 50 s, 70 MW — heating 4 + confinement 2 | 122.0 / 122.0 | 129.2 / 129.2 | 132.8 / 132.8 | 134.6 / 134.6 | 60% of the feed, 3.00 u/s |
+| τ 50 s, 75 MW — heating 5 + confinement 2 | 132.6 / 132.6 | 140.4 / 140.4 | 144.3 / 144.3 | 146.2 / 146.2 | 65%, 3.25 u/s |
+| τ 60 s, 60 MW — heating 2 + confinement 3 | 113.1 / 113.1 | 119.8 / 119.8 | 123.1 / 123.1 | 124.7 / 124.7 | 60%, 3.00 u/s |
+| τ 60 s, 65 MW — heating 3 + confinement 3 | 124.9 / 124.9 | 132.2 / 132.2 | 135.9 / 135.9 | 137.7 / 137.7 | 65%, 3.25 u/s |
+| τ 60 s, 70 MW — heating 4 + confinement 3 | 135.9 / 135.9 | 143.9 / 143.9 | 147.9 / 147.9 | 149.9 / 149.9 | 70%, 3.50 u/s |
+| τ 60 s, 75 MW — heating 5 + confinement 3 | 146.3 / 146.3 | 154.9 / 154.9 | 159.2 / 159.2 | 161.4 / 161.4 | 80%, 4.00 u/s |
+
+"Tuned from" is the first swept feed over what the full box burns in the table above. **No
+cell's exchanger count changes when tuned**: every tuned figure is its full-feed figure, over
+90 MW and under 180. Under-feeding these six only costs. On the one-heater map it raised what
+twenty-nine of the thirty-two `ok` cells sell; here a part-full box sells less at every swept
+feed, down to 52.8 to 65.6 MW at 5% of the feed and capture 0.85. This records readings.
+Whether 90 MW should move is #315 and Truls's.
 
 **Two of the six are measured in the game on two heaters.** `bench-mod-links.ps1 -Heaters 2
 -Ticks 1000000 -Window 20000`, with `-Rungs heating_ladder=4,confinement_ladder=2` or with
@@ -944,8 +1217,10 @@ seven. The fed model reads all of them, and it has matched the game at all twent
 - **THE FED REACTOR, measured at twenty of ninety-six states** on one heater, at three on
   two and at one on four — see [The fed reactor, one heater](#the-fed-reactor-one-heater) above. Every figure outside that
   section is the held reactor on the pure model.
-- **THE D-T TIER.** Only `rf-d-d-plasma`. A D-T reactor is a different sizing question and
-  `rf-hc-exchanger` is the machine on the other end of it.
+- **THE D-T TIER.** The coverage question is asked of `rf-d-d-plasma` only. A D-T reactor is a
+  different sizing question and `rf-hc-exchanger` is the machine on the other end of it. D-T
+  appears above twice, for a fuel line and not for sizing: the four-heater run (#533) and the
+  split on one heater (#532).
 - **THE ANEUTRONIC TIER**, which needs nothing measured: no research ladder reaches it at all —
   `M.aneutronic_reactor` carries none of the three, which `tests/test-reactor-logic.lua` asserts
   through `L.has_spec_ladder(ANEUTRONIC)`, and the decisions behind that are ADR 0020 decision 4

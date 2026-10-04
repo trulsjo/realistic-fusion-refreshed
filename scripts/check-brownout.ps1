@@ -129,10 +129,13 @@
     concept of is the feed line. The reactor's 1000-unit box joins the fluid segment its rf-pipe are
     in, and the two are TWO STORES (#516): the segment's capacity counts the box's volume, and the
     segment holds that plasma beside what the box reads. On the link bench's three pipes that is
-    1300 beside the box's 1000; this rig's line is longer and was not measured. So the heater
-    fills the segment as well as the box, and the box does not read a share of the segment.
-    docs/research/exchanger-coverage.md, "Why the box fills slower than the fed model", has the
-    measurement. The half hour is the curve above, measured, and rests on neither reading.
+    1300 beside the box's 1000. So the heater fills the segment as well as the box, and the box
+    does not read a share of the segment. A D-T line on one heater, nothing researched, settles
+    at 334.9 units in three pipes beside 275.7 in the box, and at 417.9 in six beside 275.8
+    (probe-plasma-segment.ps1 -Plasma rf-d-t-plasma, #532, 2026-10-04, Factorio 2.0.77, 300 000
+    ticks). This rig's own line is still not read: that probe builds a straight run of 3 to 12
+    pipes and this rig routes its own round a corner.
+    docs/research/exchanger-coverage.md, "The rule behind the split", has the measurement. The half hour is the curve above, measured, and rests on neither reading.
 
     The default is 1800 s, where the trailing minute is within 0.6% of the asymptote and drifting
     0.26% a minute. That is asserted rather than claimed -- see the "its output had stopped climbing"
