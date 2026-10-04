@@ -1047,8 +1047,14 @@ The 0.10 phase is one push floored at 0.1, into the room the box's pull makes.
 `scripts/probe-plasma-segment.ps1 -Heater` follows the heater's output box in each cell. It
 starts on the first tick the box gives under three quarters of what it held. From there it
 prints every tick the box holds anything, to the end of the first heater cycle in which the
-segment reads full, within 0.005 units. Two runs, Factorio 2.0.77 (build 84539), 2026-10-04,
-D-D, one heater a cell, research asserted:
+segment reads full, within 0.005 units. **Since
+[#552](https://github.com/trulsjo/realistic-fusion-refreshed/issues/552) "under three quarters"
+is tested as under 0.74999 of what the box held; #540's runs tested under 0.74.** The engine's
+amounts are single precision: the first craft's exact three quarters, 3.75 of 5 on tick 122,
+reads 3.74999642 at three pipes and six with nothing researched, which a test of under 0.75
+takes. So the test misses a tick that gives under three quarters by less than 1×10⁻⁵ of what
+the box held, 14 times the noise on tick 122.
+Two runs, Factorio 2.0.77 (build 84539), 2026-10-04, D-D, one heater a cell, research asserted:
 
 - `-Pipes 3,6 -Heater -From 12000 -Span 1`: nothing researched, 100 000 ticks.
 - `-Pipes 3,6 -Heater -Rungs heating_ladder=3,confinement_ladder=2 -Ticks 801000 -From 648000
@@ -1058,6 +1064,8 @@ Each tick pair was checked against steps 1 to 3 and the floor: the rule run from
 reading, compared with the next tick's held, segment and box before the mod's step. Pairs over
 a step tick are left out, because the probe reads the box before the mod steps it.
 
+#540's runs, rows from the first tick under 0.74:
+
 | research, pipes | first gives under three quarters | rows end | tick pairs | worst miss | without the floor |
 |---|---|---|---|---|---|
 | nothing, three | 69 842: 3.61696 of 5 | 71 401, segment full | 153 | 1.8e-5 | 0.22 |
@@ -1065,7 +1073,26 @@ a step tick are left out, because the probe reads the box before the mod steps i
 | heating 3 + confinement 2, three | 585 482: 3.69925 of 5 | 753 861, segment 1299.997 | 8780 | 2.2e-5 | 0.22 |
 | heating 3 + confinement 2, six | 663 362: 3.69934 of 5 | 800 890, the run's end; segment never full | 4348 | 2.1e-5 | 0.05 |
 
-The worst misses are two units in the fifth decimal the probe prints. Five orders were tried for one
+**Run again from the first tick under 0.74999 (#552), the rule predicts every pair the gained
+rows add, to the same single-precision noise.** One cell's worst miss moves: at six pipes with
+nothing researched, from 1.5e-5 to 1.7e-5, on a gained pair. Same two commands, Factorio 2.0.77
+(build 84539), 2026-10-04, one heater a cell, research asserted. The rows on #540's start ticks
+read #540's figures, and the rows end on the same ticks.
+
+| research, pipes | first gives under three quarters | heater cycles earlier | tick pairs | gained | worst miss, all pairs | over #540's pairs alone |
+|---|---|---|---|---|---|---|
+| nothing, three, 100 000 ticks | 69 722: 3.70299 of 5 | 1 | 156 | 3 | 1.5e-5 | 1.5e-5 |
+| nothing, six, 100 000 ticks | 78 722: 3.73208 of 5 | 1 | 94 | 3 | 1.7e-5, on gained tick 78 723 | 1.5e-5 |
+| heating 3 + confinement 2, three, 801 000 ticks | 580 562: 3.74986 of 5 | 41 | 8903 | 123 | 2.0e-5 | 2.0e-5 |
+| heating 3 + confinement 2, six, 801 000 ticks | 657 842: 3.74915 of 5 | 46 | 4486 | 138 | 2.1e-5 | 2.1e-5 |
+
+The pairs were checked by scratch arithmetic rebuilt for #552, because #540's was not
+committed. Over #540's own rows it gives the same four pair counts and the same "without the
+floor" column, 0.22, 0.22, 0.22 and 0.05. Its worst misses are 1.5e-5, 1.5e-5, 2.0e-5 and 2.1e-5
+where #540's table reads 1.8e-5, 1.8e-5, 2.2e-5 and 2.1e-5. Neither checker is committed, so the
+difference is not traced; every one of those figures is under 6.1e-5, the single-precision step
+of an amount between 512 and 1024 units, which is what the box holds on these rows. The worst
+misses are two units in the fifth decimal the probe prints. Five orders were tried for one
 tick: the box's push and pull, then the heater's two pushes; the heater's two first; the box's
 push, the heater's two, then the pull; and two that alternate them. Only the first fits. The others miss by 0.06 to 0.15 at both pipe counts with
 nothing researched.
@@ -1085,9 +1112,18 @@ two pushes of 0.1 where the room would have allowed under 0.1 each. After the se
 1300.00, from 71 296 to 71 305, the box gained exactly 0.10000 on every tick the mod did not
 step it. 100 × (1 − box fill) was
 0.084 at 71 296, so the floor sets that pull. The heater gave the same 0.10000, one push into
-the room the pull made. The third tick after a craft early in a fill carries it too: 0.34577
-held gave 0.27288, which is 0.17289 by the heater's fill and then 0.1. The four fills the
-arithmetic reproduces above are unchanged by it.
+the room the pull made. The third tick of a craft carries it too, late in a fill as well as
+early. **The row that shows it late is tick 69 844**, three pipes with nothing researched,
+100 000 ticks: the third tick of the craft that landed on 69 842, with the box at 980.37 units
+and the segment 24.66 short of full, 1558 ticks before a cycle first ended on 999 units. There
+0.34577 held gave 0.27288, which is 0.17288 by the heater's fill and then 0.1. Until #552 this
+note put that row early in a fill and its first figure at 0.17289, a rounding slip; the review
+of #547 put it near a full box, which it is, on tick 69 842, which is the craft's own tick.
+Early in a fill the same tick is 124: 0.31251 held gave 0.25625, 0.15625 by the fill and then
+0.1, at three pipes and six. That row was read in a scratch run of the first command above with
+the test at under 0.75, which began its rows on tick 122 (Factorio 2.0.77, 2026-10-04, nothing
+researched, one heater, 100 000 ticks). The four fills the arithmetic reproduces above are
+unchanged by it.
 
 What the 2.0.77 docs say is unchanged from above: no rate, order or minimum for a fluidbox's
 flow appears on [`FluidBox`](https://lua-api.factorio.com/2.0.77/types/FluidBox.html) or

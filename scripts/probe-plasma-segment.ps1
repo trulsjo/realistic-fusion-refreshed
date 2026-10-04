@@ -99,10 +99,17 @@
 
 .PARAMETER Heater
     Follow the heater's output box against the filling segment (#540). In each cell, from the
-    first tick its output box gives under three quarters of what it held (tested as under 0.74), print every tick on
+    first tick its output box gives under three quarters of what it held, print every tick on
     which it holds anything, through the end of the first heater cycle in which the segment read
-    full, within 0.005 units. Each row carries what the box held, what it gave, the segment's room and the reactor's
-    box before the mod's step, so a rule for the delivery can be checked against it.
+    full, within 0.005 units. Each row carries what the box held, what it gave, the segment's
+    room and the reactor's box before the mod's step, so a rule for the delivery can be checked
+    against it.
+
+    "Under three quarters" is tested as under 0.74999 of what it held (#552). The engine's
+    amounts are single precision: the first craft's exact three quarters, 3.75 of 5 on tick 122,
+    reads 3.74999642, which a test of under 0.75 takes. Until #552 the test was under 0.74, which
+    began the rows later: by one heater cycle with nothing researched, and by 41 and 46 at three
+    pipes and six on heating rung 3 and confinement rung 2.
 
 .PARAMETER KeepTemp
     Keep the save, the rig mods and the captured output.
@@ -385,8 +392,9 @@ script.on_event(defines.events.on_tick, function()
       local had = (cell.drip_held or 0) + (crafts - (cell.drip_crafts or crafts)) * storage.per_craft
       local gave = had - held
       -- `had > 0` keeps a box that held something on the probe's first tick, with nothing read
-      -- before, from starting it.
-      if not cell.drip and had > 0 and held > 0 and gave < 0.74 * had then cell.drip = "on" end
+      -- before, from starting it. 0.74999 is three quarters less single-precision noise (#552):
+      -- see .PARAMETER Heater.
+      if not cell.drip and had > 0 and held > 0 and gave < 0.74999 * had then cell.drip = "on" end
       if cell.drip == "on" then
         local capacity = cell.pipes[1].fluidbox.get_capacity(1)
         if cell.drip_full and crafts > cell.drip_crafts then
