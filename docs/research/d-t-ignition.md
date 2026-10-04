@@ -486,11 +486,15 @@ MW (#486, 2026-10-02, Factorio 2.0.77) at 275.6 units (#510; #486's 277.3 does n
 is the feed line. The reactor's 1000-unit box joins the fluid segment its `rf-pipe` are in, and the
 two are **two stores** (#516): the segment's capacity counts the box's volume, and the segment
 holds that plasma *beside* what the box reads. On the link bench's three pipes that is a segment
-of 1300 beside the box's 1000; this rig's line is longer and was not measured. A D-T box on one
-heater never fills, so here the heater fills the segment beside some 276 units in the box, and
-the box does not read a share of the segment.
-[`exchanger-coverage.md`](exchanger-coverage.md#why-the-box-fills-slower-than-the-fed-model) has
-the measurement. The settle curve above is measured and rests on neither reading. The rig now asserts that `full` has stopped
+of 1300 beside the box's 1000. A D-T box on one heater never fills, so the heater fills the
+segment beside some 276 units in the box, and the box does not read a share of the segment.
+Measured by `probe-plasma-segment.ps1 -Plasma rf-d-t-plasma` (#532, 2026-10-04, Factorio
+2.0.77, one heater, nothing researched, 300 000 ticks): three pipes settle at 334.9 units
+beside 275.7 in the box, and six at 417.9 beside 275.8. A longer line holds more beside the
+same box. This rig's own line is still not read: the probe builds a straight run of 3 to 12
+pipes, and the rig routes its own round a corner.
+[`exchanger-coverage.md`](exchanger-coverage.md#the-rule-behind-the-split) has the measurement
+and the rule that sets the split. The settle curve above is measured and rests on neither reading. The rig now asserts that `full` has stopped
 climbing before the shortfall begins, so a settle too short to have converged fails the run instead of
 quietly rebasing every figure in the report.
 

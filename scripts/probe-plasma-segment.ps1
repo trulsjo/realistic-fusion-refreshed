@@ -2,7 +2,8 @@
 .SYNOPSIS
     Logs one heater's fuel line tick by tick -- the reactor's plasma box, every pipe, the segment
     they are in and the heater's output box -- and balances it over each heater cycle, so the
-    reading that the box and the segment are two stores (#516) can be taken again (#520).
+    reading that the box and the segment are two stores (#516) can be taken again (#520), on any
+    of the four plasmas (#531, #532).
 
 .DESCRIPTION
     A PROBE, NOT A CHECK. Every line it prints is a measurement, and exit 0 means the probe ran and
@@ -17,9 +18,10 @@
     scripts/bench-mod-links.ps1. The third, a tick-by-tick balance over one heater cycle, came from a
     scratch copy of the bench that was thrown away. This is that reading, committed.
 
-    WHAT IS BUILT. One cell per entry of -Pipes: one rf-heater, that many rf-pipe, one rf-reactor.
-    Deuterium in is unbounded and reactor energy is removed as it arrives, so nothing but the fuel
-    line limits the cell. NOTHING IS RESEARCHED unless -Rungs says otherwise, and either state is
+    WHAT IS BUILT. One cell per entry of -Pipes: one rf-heater, that many rf-pipe, and the reactor
+    that burns -Plasma: rf-reactor, or rf-aneutronic-reactor and its 3000-unit box for the two
+    helium-3 plasmas. The heater's feed is unbounded and reactor energy is removed as it arrives,
+    so nothing but the fuel line limits the cell. NOTHING IS RESEARCHED unless -Rungs says otherwise, and either state is
     asserted rung by rung (rf_assert_research).
 
     WHAT IS LOGGED, EVERY TICK OF A SPAN. -From names where each span starts and -Span how long it
@@ -48,9 +50,13 @@
     they never differ at all fails too, because that is the first mod running after ours. Both are
     the instrument checking itself, not a claim about the answer.
 
-    THE SPLIT. Each cycle also carries what the segment holds for every 1000 units in the box. The
-    report thins that to every -Every cycles through the whole run, so the split is seen from an
-    empty line to a full one.
+    THE SPLIT. Each cycle also carries what the segment holds for every 1000 units in the box, and
+    the pipes' temperature beside the box's. The report thins that to every -Every cycles through
+    the whole run, so the split is seen from an empty line to a full one, and prints EVERY cycle
+    ending inside -Dense (#530). It also names the cycle the box grew most in, and the first
+    cycle to end at -FullAt of the box. On a fill that burns little of its feed the first of
+    those is where the split steps from one branch to the other (#531). On one that burns most
+    of it, a D-T cell or a researched D-D one, it is the first cycle of the run.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
@@ -63,6 +69,12 @@
     Pipe counts, comma-separated, one cell each, 3 to 12. Three is the shortest line the bench
     builds, and so is it here.
 
+.PARAMETER Plasma
+    Which plasma the heater makes, and so which reactor burns it, as bench-mod-links.ps1's -Plasma
+    picks a tier. rf-d-d-plasma, the default, and rf-d-t-plasma go to rf-reactor and its 1000-unit
+    box; rf-d-he3-plasma and rf-he3-he3-plasma go to rf-aneutronic-reactor and its 3000. The
+    heater's input is read off the recipe.
+
 .PARAMETER From
     The first tick of each per-tick span, comma-separated. The defaults are early in the fill and
     near its end at three pipes.
@@ -72,6 +84,13 @@
 
 .PARAMETER Every
     Print the split at every this-many cycles through the run.
+
+.PARAMETER Dense
+    A tick range, from,to: every cycle ending inside it is printed as well, whatever -Every says.
+
+.PARAMETER FullAt
+    The fraction of the box the report looks for the first cycle to end at. 0.999 by default; a
+    box that burns nearly all it is fed ends its cycles lower than that for a long time.
 
 .PARAMETER Rungs
     Hold a chosen number of rungs per ladder instead of none, as bench-mod-links.ps1's -Rungs does:
@@ -83,6 +102,7 @@
 .EXAMPLE
     pwsh -File scripts/probe-plasma-segment.ps1
     pwsh -File scripts/probe-plasma-segment.ps1 -Pipes 3,12 -Ticks 120000 -From 12000,96000
+    pwsh -File scripts/probe-plasma-segment.ps1 -Pipes 3 -Plasma rf-d-t-plasma
 #>
 
 #Requires -Version 7
@@ -92,9 +112,13 @@ param(
     [ValidateRange(600, 2000000)] [int]   $Ticks = 100000,
     # Comma-separated strings, not [int[]]: pwsh -File hands "3,6" over as one string.
     [ValidatePattern('^\d+(,\d+)*$')] [string] $Pipes = '3,6',
+    [ValidateSet('rf-d-d-plasma', 'rf-d-t-plasma', 'rf-d-he3-plasma', 'rf-he3-he3-plasma')]
+    [string] $Plasma = 'rf-d-d-plasma',
     [ValidatePattern('^\d+(,\d+)*$')] [string] $From  = '12000,66000',
     [ValidateRange(1, 6000)]      [int]   $Span  = 360,
     [ValidateRange(1, 10000)]     [int]   $Every = 25,
+    [ValidatePattern('^\d+,\d+$')] [string] $Dense,
+    [ValidateRange(0.5, 1.0)]     [double] $FullAt = 0.999,
     # Case-sensitive: the names are Lua table keys.
     [ValidatePattern('^((confinement|heating|capture)_ladder=\d+)(,(confinement|heating|capture)_ladder=\d+)*$', Options = 'None')]
     [string] $Rungs,
@@ -118,6 +142,8 @@ foreach ($count in $pipeCounts) {
 foreach ($start in $spans) {
     if ($start -ge $Ticks) { throw "-From $start starts at or after -Ticks ($Ticks), so that span would print nothing." }
 }
+$denseFrom, $denseTo = if ($Dense) { $Dense -split ',' | ForEach-Object { [int] $_ } } else { 0, -1 }
+if ($Dense -and $denseTo -lt $denseFrom) { throw "-Dense $Dense ends before it starts." }
 $named = @($Rungs -split ',' | Where-Object { $_ } | ForEach-Object { ($_ -split '=')[0] })
 if ($named.Count -ne @($named | Sort-Object -Unique).Count) { throw "-Rungs names a ladder twice: $Rungs" }
 $rungsLua = if ($Rungs) { '{ ' + (($Rungs -split ',') -join ', ') + ' }' } else { 'nil' }
@@ -168,8 +194,7 @@ local FROM  = { __FROM__ }
 local SPAN  = __SPAN__
 local RUNGS = __RUNGS__
 
-local PLASMA = "rf-d-d-plasma"
-local ENERGY = "rf-reactor-energy"
+local PLASMA = "__PLASMA__"
 local ENERGY_FEED = "__ENERGYFEED__"
 local PITCH = 100
 -- control.lua's UPDATE_INTERVAL. Only the instrument's own check reads it: the box may differ
@@ -177,6 +202,11 @@ local PITCH = 100
 local STEP_TICKS = 6
 
 local logic = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
+
+-- The reactor that burns PLASMA, and the spec its energy fluid is read off.
+local ANEUTRONIC = { ["rf-d-he3-plasma"] = true, ["rf-he3-he3-plasma"] = true }
+local REACTOR = ANEUTRONIC[PLASMA] and "rf-aneutronic-reactor" or "rf-reactor"
+local ENERGY = (ANEUTRONIC[PLASMA] and logic.aneutronic_reactor or logic.reactor).energy_fluid
 
 local function say(fmt, ...) log("SEGPROBE " .. string.format(fmt, ...)) end
 
@@ -210,14 +240,14 @@ local function build(surface, force, ox, pipe_count)
       "a substation")
     local eei = rf_place_or_die(surface, { name = "electric-energy-interface",
       position = { ox + dx + (dx > 0 and 2.5 or -2.5), 5.5 }, force = force }, "a power source")
-    eei.power_production = 4e6   -- J/tick, 240 MW against a reactor's 50 and a heater's 5
+    eei.power_production = 8e6   -- J/tick, 480 MW a side against a reactor's 200 at most and a heater's 5
   end
   local reactor = rf_place_or_die(surface,
-    { name = "rf-reactor", position = { ox + 0.5, 0.5 }, force = force, raise_built = true },
-    "rf-reactor")
-  if rf_box_of(reactor, ENERGY) ~= 2 then error("rf-reactor's boxes are not where they were") end
+    { name = REACTOR, position = { ox + 0.5, 0.5 }, force = force, raise_built = true }, REACTOR)
+  if rf_box_of(reactor, ENERGY) ~= 2 then error(REACTOR .. "'s boxes are not where they were") end
 
   -- The plasma run leaves the reactor's west connection, reactor end first, as the bench's does.
+  -- Both reactors' west plasma connection is 7 tiles out, so the first pipe is 8.
   local west = { ox + 0.5 - 8, 0.5 }
   rf_pipe_run(surface, force, "rf-pipe", west, { -1, 0 }, pipe_count)
   local pipes = {}
@@ -325,11 +355,12 @@ script.on_event(defines.events.on_tick, function()
 
     if cell.mark and crafts > cell.mark.crafts then
       local m = cell.mark
+      local piped = cell.pipes[1].fluidbox[1]
       say("cycle pipes=%d tick=%d ticks=%d fed=%.9g burned=%.9g dbox=%.9g dseg=%.9g dpipes=%.9g "
-        .. "box=%.9g seg=%.9g temp=%.9g", cell.pipe_count, tick, tick - m.tick,
+        .. "box=%.9g seg=%.9g temp=%.9g ptemp=%.9g", cell.pipe_count, tick, tick - m.tick,
         (crafts - m.crafts) * storage.per_craft - (held - m.held), cell.burned,
         box - m.box, segment - m.segment, pipes - m.pipes, box, segment,
-        plasma and plasma.temperature or 0)
+        plasma and plasma.temperature or 0, piped and piped.temperature or 0)
       cell.mark = nil
     end
     if not cell.mark then
@@ -356,6 +387,7 @@ $lua = $lua.
     Replace('__RIGBUILD__', (Get-RigBuildLua)).
     Replace('__QUIETMAP__', (Get-QuietMapLua)).
     Replace('__QUIETFN__', $script:QuietMapFunction).
+    Replace('__PLASMA__', $Plasma).
     Replace('__PIPES__', ($pipeCounts -join ', ')).
     Replace('__FROM__', ($spans -join ', ')).
     Replace('__SPAN__', "$Span").
@@ -396,6 +428,12 @@ try {
     $cycles = @(Read-Records $ran 'cycle')
     $ticked = @(Read-Records $ran 'tick')
     if ($cycles.Count -eq 0) { throw 'the rig reported no heater cycle; the heater never crafted.' }
+    # ONE CELL'S HEATER STANDING STILL BESIDE ANOTHER'S RUNNING (#536). The summary below indexes
+    # each cell's last cycle, and on a cell with none that failed without saying which.
+    $idle = @($pipeCounts | Where-Object { $n = "$_"; -not ($cycles | Where-Object { $_['pipes'] -eq $n }) })
+    if ($idle.Count -gt 0) {
+        throw "the $($idle -join '- and the ')-pipe cell recorded no heater cycle; its heater never crafted."
+    }
     # The other half of the instrument's check. Had the first mod run AFTER ours, the two readings
     # would agree on every tick and every cycle would read a burn of zero.
     if (-not ($cycles | Where-Object { (Num $_['burned']) -gt 0 })) {
@@ -403,7 +441,7 @@ try {
     }
 
     Write-Host ''
-    Write-Host "Factorio $version -- $Ticks ticks, one heater per cell, D-D"
+    Write-Host "Factorio $version -- $Ticks ticks, one heater per cell, $Plasma"
     $research = @($created | Select-String -Pattern 'SEGPROBE research ' | ForEach-Object { "$_" -replace '^.*SEGPROBE research ', '' })
     Write-Host ("research: {0} rung(s) asserted, {1}" -f $research.Count,
         $(if ($Rungs) { "-Rungs $Rungs, every other ladder OFF" } else { 'every ladder OFF' }))
@@ -441,19 +479,40 @@ try {
             Write-Host '  "two stores" is fed - burned - box - segment; "one store" is fed - burned - segment.'
         }
 
+        $capacity = Num $cell['capacity']; $boxCap = Num $cell['box']
+        $splitHead = '  {0,8}{1,11}{2,11}{3,11}{4,13}{5,13}{6,11}{7,11}' -f
+            'tick', 'box', 'segment', 'seg/1000', 'box degC', 'pipes degC', 'box fill', 'seg fill'
+        $splitRow = {
+            param($c)
+            $box = Num $c['box']; $seg = Num $c['seg']
+            '  {0,8}{1,11:F2}{2,11:F2}{3,11:F1}{4,13:E4}{5,13:E4}{6,11:P2}{7,11:P2}' -f
+                [int]$c['tick'], $box, $seg, $(if ($box -gt 0) { 1000 * $seg / $box } else { 0 }),
+                (Num $c['temp']), (Num $c['ptemp']), ($box / $boxCap), ($seg / $capacity)
+        }
         Write-Host ''
         Write-Host "  the split through the fill, every $Every cycles: what the segment holds for every 1000 in the box"
-        Write-Host ('  {0,8}{1,11}{2,11}{3,11}{4,13}{5,11}{6,11}' -f 'tick', 'box', 'segment', 'seg/1000', 'box degC', 'box fill', 'seg fill')
-        $capacity = Num $cell['capacity']; $boxCap = Num $cell['box']
-        for ($i = $Every - 1; $i -lt $mine.Count; $i += $Every) {
-            $c = $mine[$i]; $box = Num $c['box']; $seg = Num $c['seg']
-            Write-Host ('  {0,8}{1,11:F2}{2,11:F2}{3,11:F1}{4,13:E4}{5,11:P2}{6,11:P2}' -f
-                [int]$c['tick'], $box, $seg, $(if ($box -gt 0) { 1000 * $seg / $box } else { 0 }),
-                (Num $c['temp']), ($box / $boxCap), ($seg / $capacity))
+        Write-Host $splitHead
+        for ($i = $Every - 1; $i -lt $mine.Count; $i += $Every) { Write-Host (& $splitRow $mine[$i]) }
+        if ($Dense) {
+            Write-Host ''
+            Write-Host "  every cycle ending from tick $denseFrom to tick $denseTo"
+            Write-Host $splitHead
+            foreach ($c in ($mine | Where-Object { [int]$_['tick'] -ge $denseFrom -and [int]$_['tick'] -le $denseTo })) {
+                Write-Host (& $splitRow $c)
+            }
         }
-        $full = $mine | Where-Object { (Num $_['box']) -ge 0.999 * $boxCap } | Select-Object -First 1
-        Write-Host $(if ($full) { "  the box first read 99.9% of its capacity at the cycle ending on tick $($full['tick'])" }
-                     else { '  the box never read 99.9% of its capacity in this run' })
+        # WHERE THE SPLIT STEPS (#531), on a fill that burns little: the cycle the box grew most
+        # in. Reported, not judged; a cell that burns most of its feed names its first cycle.
+        $step = 0
+        for ($i = 1; $i -lt $mine.Count; $i++) { if ((Num $mine[$i]['dbox']) -gt (Num $mine[$step]['dbox'])) { $step = $i } }
+        if ($step -gt 0) {
+            $a = $mine[$step - 1]; $b = $mine[$step]
+            Write-Host ("  the box grew most, by {0:F4}, in the cycle ending on tick {1}: box {2:F4} to {3:F4}, segment {4:F4} to {5:F4}" -f
+                (Num $b['dbox']), [int]$b['tick'], (Num $a['box']), (Num $b['box']), (Num $a['seg']), (Num $b['seg']))
+        }
+        $full = $mine | Where-Object { (Num $_['box']) -ge $FullAt * $boxCap } | Select-Object -First 1
+        Write-Host $(if ($full) { "  the box first read {0:P1} of its capacity, {1:F2} units, at the cycle ending on tick {2}" -f $FullAt, (Num $full['box']), $full['tick'] }
+                     else { "  the box never read {0:P1} of its capacity at a cycle's end in this run" -f $FullAt })
         $sum = @{ fed = 0.0; burned = 0.0 }
         foreach ($c in $mine) { $sum.fed += Num $c['fed']; $sum.burned += Num $c['burned'] }
         Write-Host ('  over all {0} cycles: fed {1:F2}, burned {2:F2}; the box ended at {3:F2} and the segment at {4:F2}' -f
