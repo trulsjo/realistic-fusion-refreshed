@@ -904,7 +904,7 @@ every member's buffer where each measured period starts, and predicts tick by ti
 member asks for its `input_flow_limit` or for the room left in its buffer, whichever is less.
 Each class's supply is divided in proportion to those asks. The member then spends out of its
 buffer. What charged accumulators give is still read and not predicted: it is added to the
-supply at their output limit until the second's reading is spent.
+supply at their output limit until the second's reading is spent. *(#544, below, predicts it.)*
 
 **Raising the water-fill's cap by the buffer's room was tried first, and it was wrong.** It
 matched the four over-draw cells and broke every ladder cell that had matched, by up to
@@ -930,7 +930,8 @@ cell that matched before still match. In those four the test is one-sided. A lon
 ask is over the supply and the measured discharge together on every tick, so its prediction
 is their sum, and it could only miss if the accumulators had given more than the buffer had
 room for. The rule is tested where a supply is split: the ladder cells, and #538's
-`discharge-cap` below. In `acc-spare` the reactor's buffer had 5.667 MJ of room
+`discharge-cap` below. *(#544, below, predicts the discharge too, so the four are no longer
+one-sided.)* In `acc-spare` the reactor's buffer had 5.667 MJ of room
 when the accumulators were charged. It took 4.833 MJ of that in the first second and stood at
 0.833 MJ of room on every row after. 0.833 MJ is one tick's spend: `spend` in
 `realistic-fusion-refreshed/control.lua` takes it out of the buffer before the rig reads, so
@@ -1000,8 +1001,9 @@ are emptied every second so they never stop asking. The engine reports them
 
 Rungs 1 to 4 read the same way. The reactor's rows are `acc-spare`'s. So with `tert-tert`,
 `acc-tert` and `acc-spare-load` that is all four pairings of a `tertiary`-class source with a
-`tertiary`-class sink, and the sink drew nothing in each. The prediction cannot miss in this
-cell: what the charged accumulators give is read, and they gave the empty ones nothing.
+`tertiary`-class sink, and the sink drew nothing in each. The prediction could not miss in this
+cell while what the charged accumulators give was read. *(#544, below, predicts it, and the
+cell misses.)*
 
 **A discharge that caps one of two reactors re-shares the excess as the prediction says**
 ([#538](https://github.com/trulsjo/realistic-fusion-refreshed/issues/538)). Same runs, a cell
@@ -1026,6 +1028,46 @@ the fifth second, against 20.97 by ask alone. The legendary reactor's buffer sto
 short of full. All 33 rows are within 1.5e-6 MW of the prediction unresearched, and within
 3.3e-6 at every rung to 5, where the supply is 102 MW and the re-share lifts the normal
 reactor from 30.69 to 32.40.
+
+**What a charged accumulator gives is predicted, and it misses only where #490 does**
+([#544](https://github.com/trulsjo/realistic-fusion-refreshed/issues/544)). Measured 2026-10-04
+against Factorio 2.0.77 by `probe-brownout-contention.ps1` with nothing researched and with
+`-HeatingRungs 5`, each asserted rung by rung. The prediction no longer takes the accumulators'
+discharge as an input. It carries each store: what it holds where the second starts, its
+output limit, and when it gives. It gives when the supply does not cover what the consumers
+ask, which is the docs' "provide energy when neither primary/secondary output can", and only
+the part not covered. The docs do not say whose asks count. The prediction counts every
+class's, as its class order serves every class, so a store is predicted to serve a
+`tertiary`-class member. Each store's predicted discharge is printed beside what it gave, with
+the deviation. Its room is now read after the rig charges it, so the first second starts from
+the charge.
+
+| cell | consumers' worst deviation, MW, rung 0 / rung 5 | stores' worst deviation, MW, rung 0 / rung 5 | |
+|---|---|---|---|
+| `discharge` | 1.8e-6 / 1.1e-6 | 0 / 0 | matched |
+| `acc-supply` | 7.1e-15 / 0 | 0 / 0 | matched |
+| `acc-supply-load` | 7.1e-15 / 0 | 0 / 0 | matched |
+| `acc-spare` | 1.25e-6 / 2.5e-8 | 1.0e-9 / 3.9e-10 | matched |
+| `discharge-cap` | 1.4e-6 / 3.2e-6 | 0 / 0 | matched |
+| `acc-spare-load` | **5.4 / 5.4**, the `tertiary` load | **5.4 / 5.4** | the class miss |
+| `acc-acc` | **4.5 / 4.5**, the six empty accumulators | **4.5 / 4.5** | the class miss |
+
+All 33 rows of the five that match are within those figures, and those five matched before.
+In `acc-supply-load` the `tertiary` load is predicted 0 and draws 0, but that does not test the
+class: the supply and the discharge together are under the reactor's ask on every row, so
+nothing is left for the load in any reading.
+
+In the two that miss, the reactor still matches on every row, within 1.25e-6 MW unresearched
+and 2.5e-8 at rung 5. The miss is the `tertiary`-class sink. From the second second on, the
+reactor asks exactly its spend, which the supply covers, and the store is predicted to give
+the sink its whole ask: 5.4 MW to the `tertiary` load and 4.5 to the six empty accumulators,
+on rows 2 to 30 at both rungs. In the first second the reactor's buffer fills first and the
+sink is predicted the rest: 0.567 and 0.477 MW unresearched, and 3.48 and 2.91 at rung 5. The
+sink drew nothing on any row, and the store gave nothing past what the reactor took. This is
+the class miss #490 found, a `tertiary`-class sink drawing nothing from a `tertiary`-class
+source, and not a new one. Excluding `tertiary`-class asks from what a store covers would make
+both cells match. It would also model the miss away rather than show it, and why the engine
+does this is still read off one sentence of the docs.
 
 Whether the mod should guarantee any of this is the scope decision above and Truls's; the
 probe asserts nothing about the answer.
@@ -1180,8 +1222,8 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   #538, with vanilla accumulators on either side and on both). Why the engine does that is read
   off one sentence of the docs and is not documented further. A reactor whose buffer is not
   full draws past its spend, and since #534 the prediction says by how much, to within 1.3e-6
-  MW in the four cells that showed it. What a charged accumulator gives is read and not
-  predicted.
+  MW in the four cells that showed it. Since #544 what a charged accumulator gives is
+  predicted too, and it misses only where a `tertiary`-class member is the sink.
 - **Why the engine floors a fluid transfer to whole float32 ULPs per tick is inferred, not
   documented.** #147 measured the flooring — five levels, two run lengths, the legendary rate landing
   on 2⁻²⁴ units a tick to ten digits — and no 2.0.77 doc page found in this pass says the engine does

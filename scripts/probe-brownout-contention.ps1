@@ -6,8 +6,9 @@
     by #490 to that load on a tertiary supply, by #491 to all three input classes at once, by
     #492 to an accumulator discharging into a short network, by #493 to the aneutronic reactor, by
     #494 to a researched heating rung, by #528 to a vanilla accumulator as load and as supply, by
-    #534 to a prediction that carries each member's buffer, and by #538 to a discharge that caps
-    one of two reactors and to accumulators feeding accumulators.
+    #534 to a prediction that carries each member's buffer, by #538 to a discharge that caps
+    one of two reactors and to accumulators feeding accumulators, and by #544 to a prediction
+    that carries what each store holds and gives.
 
 .DESCRIPTION
     A PROBE, NOT A CHECK. Every line it prints is a measurement, and exit 0 means the probe ran and
@@ -78,7 +79,7 @@
                  length, are charged to their full buffer on one tick, and every member is then
                  read EVERY SECOND for thirty: what each reactor drew, what the accumulators gave
                  and took, and what they still hold. The prediction beside each row is made
-                 from the supply plus what the accumulators were measured giving.
+                 from the supply and from what every buffer held when the second began.
       acc-supply A normal rf-reactor and the eighteen accumulators on a secondary-output supply held
                  at 0.9 of what the reactor spends (#528): charged accumulators as part of a supply
                  that is short without them.
@@ -117,9 +118,13 @@
     reports for a vanilla accumulator. The report prints, per member, what it drew and gave back,
     the prediction and the deviation, so a class rule that is wrong shows up as one, not as a pass.
 
-    WHAT A STORE GIVES IS READ, NOT PREDICTED. A discharge cell's supply is its interface plus what
-    its charged accumulators were measured giving in that second, handed over at their output
-    limit until it is spent.
+    WHAT A STORE GIVES IS PREDICTED TOO (#544), and printed beside what it gave. Until then it was
+    read: a discharge cell's supply was its interface plus what its charged accumulators were
+    measured giving. Now a store holds what its buffer held where the second starts, gives at most
+    its output limit a tick, and gives only what the supply leaves unmet -- the 2.0.77 docs' "provide
+    energy when neither primary/secondary output can". Unmet counts EVERY class's ask, so a store is
+    predicted to serve a tertiary-class member, and #490's class miss shows as a deviation rather
+    than being modelled away.
 
     THE LESSONS THE SIBLING RIG PAID FOR, KEPT HERE
 
@@ -352,20 +357,26 @@ end
 --- rule's steady state: a member handed more than it spends fills its buffer until the room left
 --- asks for exactly its spend.
 ---
+--- A STORE (#544) is carried too: it holds what its buffer held where the period starts, gives at
+--- most its output limit a tick, and gives only what the supply leaves unmet, the docs' "provide
+--- energy when neither primary/secondary output can". Unmet counts every class's ask, as the
+--- class order below serves every class, so a store is predicted to serve a `tertiary`-class
+--- member and #490's class miss shows up as a deviation rather than being modelled away. A store
+--- takes nothing here: no discharge cell's supply leaves a surplus.
+---
 --- @param supply_w  the supply interface's production
 --- @param members   the cell's
 --- @param room      rooms()' reading where the period starts
 --- @param ticks     the period's length
---- @param extra_j   what the cell's stores were measured giving over the period, handed over at
----                  OUT_W, their output limit, until it is spent; nil on the ladder
---- @return what each member draws, in watts over the period, keyed by member
+--- @return what each member draws, and what each store gives, in watts over the period, keyed by member
 -- managed-accumulator is what the engine reports for a vanilla accumulator, whose prototype says
 -- tertiary. It is served last here: the docs give accumulators "the overproduction".
 local CLASSES = { "primary-input", "secondary-input", "tertiary", "managed-accumulator" }
-local function predict(supply_w, members, room, ticks, extra_j, out_w)
-  local got, held = {}, {}
-  for i, m in ipairs(members) do got[m], held[m] = 0, m.buffer_j - math.max(room[i], 0) end
-  extra_j = extra_j or 0
+local function predict(supply_w, members, room, ticks)
+  local got, gave, held = {}, {}, {}
+  for i, m in ipairs(members) do
+    got[m], gave[m], held[m] = 0, 0, m.buffer_j - math.max(room[i], 0)
+  end
   -- WHEN A MEMBER SPENDS. control.lua charges a reactor in on_tick, ahead of the rig's reading,
   -- so the reading already has this tick's spend out of it. A load is an interface the engine
   -- charges, and its reading does not. Taken the same way for both, a 600-tick rung is one
@@ -379,20 +390,30 @@ local function predict(supply_w, members, room, ticks, extra_j, out_w)
   end
   for tick = 1, ticks do
     spend(false)
-    local give = math.min(extra_j, (out_w or 0) / 60)
-    local left = supply_w / 60 + give
-    extra_j = extra_j - give
+    local ask, unmet = {}, -supply_w / 60
+    for _, m in ipairs(members) do
+      if not m.store then
+        ask[m] = math.min(m.limit_w / 60, m.buffer_j - held[m])
+        unmet = unmet + ask[m]
+      end
+    end
+    local left = supply_w / 60
+    for _, m in ipairs(members) do
+      if m.store and unmet > 0 then
+        local give = math.min(held[m], m.out_w / 60, unmet)
+        gave[m], held[m], unmet, left = gave[m] + give, held[m] - give, unmet - give, left + give
+      end
+    end
     for _, class in ipairs(CLASSES) do
-      local asks, ask = 0, {}
+      local asks = 0
       for _, m in ipairs(members) do
-        if m.priority == class and not m.store then
-          ask[m] = math.min(m.limit_w / 60, m.buffer_j - held[m])
-          asks = asks + ask[m]
-        end
+        if m.priority == class and ask[m] then asks = asks + ask[m] end
       end
       local share = asks > 0 and math.min(1, left / asks) or 0
       for _, m in ipairs(members) do
-        if ask[m] then got[m], held[m] = got[m] + ask[m] * share, held[m] + ask[m] * share end
+        if m.priority == class and ask[m] then
+          got[m], held[m] = got[m] + ask[m] * share, held[m] + ask[m] * share
+        end
       end
       left = left - asks * share
     end
@@ -402,8 +423,8 @@ local function predict(supply_w, members, room, ticks, extra_j, out_w)
       for _, m in ipairs(members) do if m.drain then held[m] = 0 end end
     end
   end
-  for _, m in ipairs(members) do got[m] = got[m] * 60 / ticks end
-  return got
+  for _, m in ipairs(members) do got[m], gave[m] = got[m] * 60 / ticks, gave[m] * 60 / ticks end
+  return got, gave
 end
 
 script.on_init(function()
@@ -598,13 +619,15 @@ local function discharge(tick)
       end
       c.rungs[#c.rungs + 1] = r
     end
-    c.mark_in, c.mark_out, c.mark_room = {}, {}, rooms(c)
+    c.mark_in, c.mark_out = {}, {}
     for i, m in ipairs(c.members) do
       c.mark_in[i], c.mark_out[i] = drawn(c, m), given(c, m)
       if m.store and t == 0 then
         for _, entity in ipairs(m.entities) do entity.energy = entity.electric_buffer_size end
       end
     end
+    -- After the charge, so a store's first second starts from what it was charged to (#544).
+    c.mark_room = rooms(c)
   end
 end
 
@@ -659,22 +682,21 @@ local function report()
       most_room / 1e6)
   end
   -- THE DISCHARGE, second by second. t is the END of the second read, counted from the tick the
-  -- stores were charged on; the prediction is made from the supply plus what the stores
-  -- were measured giving in that second, from the room each buffer had when the second began (#534).
+  -- stores were charged on; the prediction is made from the supply and from what every buffer,
+  -- the stores' included, held when the second began (#534, #544).
   for _, c in ipairs(storage.series) do
     say("%s    (per consumer: drew | predicted | deviation, MW, room in its buffer when the second "
-      .. "began, MJ; per store: gave, drew, MW | holds, MJ)", c.name)
-    local worst = 0
+      .. "began, MJ; per store: gave | predicted | deviation, drew, MW | holds, MJ)", c.name)
+    local worst, worst_store = 0, 0
     for _, r in ipairs(c.rungs) do
-      local extra, out_w = 0, 0
-      for i, m in ipairs(c.members) do
-        if m.store then extra, out_w = extra + r.gave[i], out_w + m.out_w end
-      end
-      local got = predict(r.supply, c.members, r.room, 60, extra * 1e6, out_w)
+      local got, gave = predict(r.supply, c.members, r.room, 60)
       local cols = {}
       for i, m in ipairs(c.members) do
         if m.store then
-          cols[#cols + 1] = string.format("%8.4g %8.4g | %8.4g", r.gave[i], r.drew[i], r.held[i])
+          local d = r.gave[i] - gave[m] / 1e6
+          worst_store = math.max(worst_store, math.abs(d))
+          cols[#cols + 1] = string.format("%8.4g %8.4g %9.3g %8.4g | %8.4g", r.gave[i],
+            gave[m] / 1e6, d, r.drew[i], r.held[i])
         else
           local d = r.drew[i] - got[m] / 1e6
           worst = math.max(worst, math.abs(d))
@@ -684,7 +706,8 @@ local function report()
       end
       say("  t=%+4d s supply %8.4g | %s", r.t, r.supply / 1e6, table.concat(cols, " | "))
     end
-    say("  worst deviation from the prediction: %.4g MW", worst)
+    say("  worst deviation from the prediction: %.4g MW for a consumer, %.4g MW for a store",
+      worst, worst_store)
   end
   say("done")
 end
