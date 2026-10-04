@@ -215,11 +215,13 @@
     Keep the save, the rig mod and the captured output.
 
 .PARAMETER SelfTest
-    Prove the fuel-line gate can fail, and start no game (#515). Five halves, each handing
+    Prove the fuel-line gate can fail, and start no game (#515). Six halves, each handing
     Get-FuelLineFault a pair of windows written out by hand: pipe-count-mismatch and
     no-pipe-comparable are the two pairs the gate used to skip and so pass; no-pipes-field is a
     record with no pipes= field at all, read through ConvertFrom-LineRecord as a run's are (#524);
-    cooling-line-fails and settled-line-passes are the two directions it already had. It proves
+    pipe-without-temperature is a record whose second pipe entry is a bare @segment, read the
+    same way (#536); cooling-line-fails and settled-line-passes are the two directions it already
+    had. It proves
     those two functions and nothing else in this script -- the rig, the meter and the other three
     gate checks need a run.
 
@@ -254,14 +256,19 @@ $ErrorActionPreference = 'Stop'
 #
 # A RECORD WITH NO pipes= FIELD HAS NO PIPES (#524). Splitting the missing field used to yield one
 # empty string, which [double] reads as 0: one pipe at 0 degC in both windows, compared and passed.
+#
+# A PIPE ENTRY WITH NO TEMPERATURE IS NaN, NOT 0 (#536). "@7" split the same way, and a pipe at
+# 0 degC in both windows compares equal. The rig cannot write that entry today; Get-FuelLineFault
+# refuses a record that carries one.
 function ConvertFrom-LineRecord {
     param([string] $Record)
 
     $f = @{}
     foreach ($m in [regex]::Matches($Record, '(\w+)=([^\s]+)')) { $f[$m.Groups[1].Value] = $m.Groups[2].Value }
-    # A pipe's temperature, or $null for a "-" box that held nothing on that tick.
+    # A pipe's temperature, $null for a "-" box that held nothing on that tick, or NaN for none.
     $pipeTemps = @($f['pipes'] -split ',' | Where-Object { $_ } | ForEach-Object {
-        $t = ($_ -split '@')[0]; if ($t -eq '-') { $null } else { [double] $t } })
+        $t = ($_ -split '@')[0]
+        if ($t -eq '-') { $null } elseif ($t -eq '') { [double]::NaN } else { [double] $t } })
     [pscustomobject]@{
         Cell = $f['cell']; Window = [int] $f['window']; Heater = $f['heater']
         Pipes = $f['pipes']; PipeTemps = $pipeTemps; Reactor = $f['reactor']
@@ -288,6 +295,10 @@ function Get-FuelLineFault {
     if ($Last.PipeTemps.Count -eq 0 -or $Prev.PipeTemps.Count -eq 0) {
         return ("{0}: a fuel-line record for the last two windows carried no pipe readings, so the " +
                 "fuel line was not gated -- the rig or its log is broken.") -f $Cell
+    }
+    if (@(@($Last.PipeTemps) + @($Prev.PipeTemps) | Where-Object { $_ -is [double] -and [double]::IsNaN($_) })) {
+        return ("{0}: a pipe entry in a fuel-line record for the last two windows carried no " +
+                "temperature, so the fuel line was not gated -- the rig or its log is broken.") -f $Cell
     }
     if ($Last.PipeTemps.Count -ne $Prev.PipeTemps.Count) {
         return ("{0}: the fuel line reported {1} pipe(s) in the last window and {2} in the one before, " +
@@ -339,12 +350,15 @@ if ($SelfTest) {
         @{ Name = 'no-pipes-field'; Body = {
             $bare = ConvertFrom-LineRecord 'LINKRIG line cell=chain window=9 heater=1e+06@nil reactor=2.4e+08@7'
             & $prove $bare $bare 'carried no pipe readings' } }
+        @{ Name = 'pipe-without-temperature'; Body = {
+            $gap = ConvertFrom-LineRecord 'LINKRIG line cell=chain window=9 heater=1e+06@nil pipes=1e+06@7,@7,1e+06@7 reactor=2.4e+08@7'
+            & $prove $gap $gap 'a pipe entry .* carried no temperature' } }
         @{ Name = 'cooling-line-fails'; Body = {
             & $prove (& $line 1.78e8, 1.78e8, 1.78e8) (& $line 1.86e8, 1.86e8, 1.86e8) 'moved \D*3\D3\D* of the reactor' } }
         @{ Name = 'settled-line-passes'; Body = {
             & $prove (& $line 2.05e6, 2.05e6, $null) (& $line 2.06e6, 2.06e6, $null) $null } }
     )
-    Write-Host '-SelfTest passed: the fuel-line gate refuses the three window pairs it cannot compare.'
+    Write-Host '-SelfTest passed: the fuel-line gate refuses the four window pairs it cannot compare.'
     return
 }
 
