@@ -249,14 +249,84 @@ the box was full, which `M.settle_segment` does not describe. Nothing the mod ru
 the pure simulation the mod runs does not depend on the box's production type. The arithmetic the
 notes use does, through `M.settle_segment`, and the suites would not notice the change.
 
+## An existing save loaded under the canary
+
+[#550](https://github.com/trulsjo/realistic-fusion-refreshed/issues/550).
+`scripts/probe-plasma-box-save.ps1`, run with no arguments on 2026-10-04 against Factorio
+2.0.77 (build 84539). It builds two cells on the shipped box: **solo** (one `rf-heater`, three
+`rf-pipe`, one `rf-reactor`) and **pair** (the same, then twelve `rf-pipe` to a second,
+unpowered `rf-reactor`). That is two heaters, three reactors and eighteen pipes, D-D, with
+nothing researched: all 11 rungs were asserted off at build and again at the canary load. The
+map is ticked to 80 000 on a headless server, saved with `game.server_save`, and the save is
+loaded twice with `--benchmark` for 40 000 ticks each. In the **control** load the canary is
+named disabled; in the **canary** load it is named enabled. `--benchmark` never writes a save,
+and `game.auto_save` under it wrote nothing, which is why the fill runs as a server.
+
+**The save holds tick 80 001.** `server_save` was called on tick 80 000 and lands a few ticks
+later. The server read every tick after it, and its reading on tick 80 001 equals the first
+reading of both loads in every figure. `on_tick` runs before the tick's entity update, so a
+load's first reading is the state as saved, and its second is the first tick the engine has
+moved fluid under the box that run has.
+
+**It loads without complaint.** Both loads exited 0. Neither printed a line naming a warning,
+an error, a fluid, the reactor, plasma, a migration or production, so there is no log line about
+the box to quote. The canary load's `on_configuration_changed` saw `rf-input-box-canary` added,
+and the runtime prototype's `production_type` read `input` there and on its first tick. The
+control load read `input-output`.
+
+**The control load reproduces the server's run exactly.** Its first two readings equal the
+server's at 80 001 and 80 002 in every figure. Its pair read 656.50 per box and 2164.29 in the
+segment at tick 96 000, the figures the pair above recorded at 96 000 from an unsaved run.
+Anything that differs in the canary load is the box, not the save.
+
+The segment is read through the first pipe beside each box. Its reading never includes the
+box's contents, in either variant: a full solo line reads 1000 in the box and 1300 in the
+segment.
+
+| reading | tick | solo box | solo segment | pair box 1 | °C | pair box 2 | °C | pair segment |
+|---|---|---|---|---|---|---|---|---|
+| saved (server) | 80 001 | 1000 | 1300 | 560.2678 | 2.7088×10⁸ | 560.2678 | 2.6695×10⁸ | 1790.0104 |
+| control, next tick | 80 002 | 1000 | 1300 | 560.2699 | 2.7071×10⁸ | 560.2698 | 2.6712×10⁸ | 1790.0063 |
+| canary, next tick | 80 002 | 1000 | 1300 | 604.2410 | 2.7074×10⁸ | 604.2411 | 2.6709×10⁸ | 1702.0640 |
+| control | 82 000 | 1000 | 1300 | 572.3986 | 2.5899×10⁸ | 572.4000 | 2.5528×10⁸ | 1837.1844 |
+| canary | 82 000 | 1000 | 1300 | 1000 | 2.5276×10⁸ | 1000 | 2.5016×10⁷ | 969.1249 |
+| canary | 84 000 | 999.9453 | 1300 | 999.9437 | 2.4588×10⁸ | 1000 | 15 | 1029.9657 |
+| control | 120 000 | 999.9456 | 1300 | 807.7247 | 1.3966×10⁸ | 807.7276 | 1.2979×10⁸ | 2752.3364 |
+| canary | 120 000 | 999.9456 | 1300 | 999.9463 | 2.3962×10⁸ | 1000 | 15 | 2204.7909 |
+
+- **A full solo line is untouched.** All 20 sampled rows from 82 000 to 120 000 read the same in
+  both loads, to every printed digit, except the segment id. The solo box at 120 000 reads
+  2.4117×10⁸ °C in both, still cooling on the shipped trajectory. A full `input` box and a full
+  segment trade nothing, so this says nothing about a line that is not full.
+- **The engine rebuilds the segments on load.** The canary load's segment ids are 3 and 7 where
+  the save's were 1 and 5. The pair's two boxes and its bridge still share one id.
+- **The plasma the pair held in common goes into its boxes, and none is lost.** In the first
+  tick under the canary, each box took 43.9732 and the segment gave up 87.9464. The cell's
+  total, both boxes and the segment, reads 2910.5460 at 80 001 and 2910.5461 at 80 002 in both
+  loads. By tick 82 000 both canary boxes are full and the segment is down to 969.12. After that
+  the segment refills behind them, as it does in the fresh canary runs above.
+- **The heat the unpowered box held does not survive.** Pair box 2 read 2.6695×10⁸ °C when
+  saved, 2.5016×10⁷ at 82 000, and 15 °C, the floor, at every row from 84 000 to 120 000. In
+  the control load the same box stays within 7.1% of the powered one's temperature (1.2979
+  against 1.3966×10⁸ at 120 000). This is the pooling loss the fresh canary pair showed,
+  reached from a running save.
+- **Settled:** the canary's powered box 1 is still cooling at 120 000, at 2.3962×10⁸ °C, moving
+  toward the 2.3815×10⁸ a fresh canary box settles at. It moved 0.0026×10⁸ in the last 8000
+  ticks. Box 2 has read 15 °C since 84 000.
+
+**Under this repository's rule, the change would count as breaking.** Root `CLAUDE.md` defines
+a breaking change as "anything that breaks an existing save", and warns that this kind "breaks
+silently and players find out, not the build". The save loads, no plasma is lost, and a full
+solo reactor runs as before. But a reactor that a saved plant heats only through the pipe goes
+from 2.6695×10⁸ °C to the 15 °C floor within 4000 ticks of loading, and the game logs nothing.
+That is a reading of the rule, not a choice between the options below.
+
 ## What was not measured
 
 - `rf-aneutronic-reactor`, D-T, the helium-3 plasmas, and any researched state. The canary
   changes `rf-reactor` alone.
 - A pair with both reactors powered under the canary. That would show whether two `input` boxes
   that are each heated still converge.
-- An existing save loaded under a changed box. Save compatibility is the one place a change
-  here breaks silently.
 - Where the shipped box's temperature settles. It was still cooling when the run ended at
   96 000 ticks, so only the canary has a settled temperature here.
 - A lone box with no pipes, to see what becomes of the 526.3158 that `quality.md` records.
@@ -281,8 +351,10 @@ Each option lists what it changes. None is chosen.
    125 checks fail under the canary (see
    [The repository's gates under the canary](#the-repositorys-gates-under-the-canary)), and the
    comments in `control.lua` that describe box 1 as "the input-output box ADR 0011's fluid
-   coupling rests on", would need rewriting. Save compatibility is untested. The aneutronic
-   reactor is unmeasured, but carries the same box.
+   coupling rests on", would need rewriting. An existing save loads without complaint and loses
+   no plasma, but a reactor heated only through the pipe falls to 15 °C, so the change would be
+   breaking; see [An existing save loaded under the canary](#an-existing-save-loaded-under-the-canary).
+   The aneutronic reactor is unmeasured, but carries the same box.
 3. **Make only one reactor `input`.** This splits the fuel-line behaviour by tier, and it is
    possible because the two reactors are separate prototypes. Only `rf-reactor` was measured.
 4. **Keep `input-output` and make the model match the game.** This changes no prototype. It
@@ -293,6 +365,7 @@ Each option lists what it changes. None is chosen.
 ## Sources
 
 - `scripts/probe-plasma-input-box.ps1`, run as described above.
+- `scripts/probe-plasma-box-save.ps1`, for the save section.
 - [`exchanger-coverage.md`](exchanger-coverage.md): #516, #520 and #531's readings of the
   shipped box and the fed model's figures.
 - `docs/adr/0011-per-reactor-simulation-fluid-coupled.md` and `scripts/check-pooling.ps1`, for
