@@ -265,7 +265,7 @@ by rung — once at the default 126 000 ticks and once at `-Ticks 1000000 -Windo
 reactor is 3.1% hot, drawing plasma left in the pipes from the fill, which is the transient #508's
 fuel-line check exists to refuse. The pipes are within twice the heater's 1×10⁶ °C from 440 000
 ticks and at 1.00069×10⁶ °C by 960 000. The settled points are #497's two-heater ones to every
-digit quoted — 5.342×10⁸ there against 5.341×10⁸ here, 76.0 – 91.1 MW at both — as a full box
+MW digit quoted — 76.0 – 91.1 MW at both, with 5.342×10⁸ there against 5.341×10⁸ here — as a full box
 taking only what it burns predicts. **So the 76.0 above is no longer arithmetic**, and 83.8 is
 #215's 360 000-tick figure. None of these is the bench's default today: every ladder at its top, it
 settles at 141.0 – 169.3 MW (#527). Four 90 MW exchangers ask 360 MW, over all of them, so the row

@@ -142,6 +142,8 @@ report **one segment id in both variants**: 9 = 9 = 9 = 9. The segment reports a
   rows would read differently, but they were not run.
 - An existing save loaded under a changed box. Save compatibility is the one place a change
   here breaks silently.
+- Where the shipped box's temperature settles. It was still cooling when the run ended at
+  96 000 ticks, so only the canary has a settled temperature here.
 - A lone box with no pipes, to see what becomes of the 526.3158 that `quality.md` records.
 
 ## Options

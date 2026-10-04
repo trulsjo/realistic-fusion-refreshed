@@ -497,9 +497,9 @@ tick 108 001 of the default run (2026-10-04, Factorio 2.0.77, everything researc
 heater): 32 `rf-pipe`, a segment capacity of 4200 holding 1282.82 units, beside 312.48 in the
 box. **That is the low branch.** The low branch holds while the box is under
 V × C / (2C − 100) = 1000 × 4200 / 8300 = 506.0 units, and 312.48 is under it. There the
-branch gives segment = box × (C − 100) / V = 312.48 × 4100 / 1000 = 1281.18; the rig read 1.64
+branch gives segment = box × (C − 100) / V = 312.48 × 4100 / 1000 = 1281.17; the rig read 1.65
 more, 0.13% over the branch, on the same side as #532's excess. Where in the heater's cycle
-tick 108 001 falls is not read, so this note does not split that 1.64 into delivery and draw.
+tick 108 001 falls is not read, so this note does not split that 1.65 into delivery and draw.
 [`exchanger-coverage.md`](exchanger-coverage.md#the-rule-behind-the-split) has the measurement
 and the rule that sets the split. The settle curve above is measured and rests on neither reading. The rig now asserts that `full` has stopped
 climbing before the shortfall begins, so a settle too short to have converged fails the run instead of
