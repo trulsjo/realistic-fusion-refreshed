@@ -1054,6 +1054,30 @@ the charge.
 | `acc-acc` | **4.5 / 4.5**, the six empty accumulators | **4.5 / 4.5** | the class miss |
 
 All 33 rows of the five that match are within those figures, and those five matched before.
+
+**The ten ladder cells read as they did before #544**
+([#554](https://github.com/trulsjo/realistic-fusion-refreshed/issues/554)). Re-run 2026-10-04
+against Factorio 2.0.77 by `probe-brownout-contention.ps1` with nothing researched and with
+`-HeatingRungs 5`, each asserted rung by rung, every cell reporting all 21 rungs. No ladder cell
+holds a store, so the store prediction should leave them alone, and it does. No reactor here is
+fed by a heater: the rig holds each one's plasma at its box's fill.
+
+| cell | worst deviation from the prediction, MW, rung 0 / rung 5 | |
+|---|---|---|
+| `pair` | 1.8e-6 / 3.2e-6 | matched |
+| `secondary` | 1.25e-6 / 1.4e-14 | matched |
+| `primary` | 1.25e-6 / 2.4e-14 | matched |
+| `four` | 1.8e-6 / 1.8e-6 | matched |
+| `tertiary` | 1.25e-6 / 2.4e-14 | matched |
+| `three` | 1.25e-6 / 1.5e-13 | matched |
+| `aneutronic` | 7.3e-6 / 5.0e-6 | matched |
+| `acc-sec` | 1.25e-6 / 1.4e-14 | matched |
+| `tert-tert` | **50.92 / 75.88** | the class miss |
+| `acc-tert` | **5.4 / 5.4** | the class miss |
+
+The eight that matched under #534 still match, and the worst of them is `aneutronic`'s at both
+rungs, 7.3e-6 and 5.0e-6 MW, the figures #534's and #538's tables give. The two that missed
+miss by what they did.
 In `acc-supply-load` the `tertiary` load is predicted 0 and draws 0, but that does not test the
 class: the supply and the discharge together are under the reactor's ask on every row, so
 nothing is left for the load in any reading.
