@@ -915,27 +915,34 @@ Checked 2026-10-04. `rf-reactor`'s plasma box is `input-output` on a boiler in
 docs'.
 
 **Run as arithmetic beside the game.** Tick by tick: `M.step` on the box every sixth tick,
-the two transfers, then the heater. A craft's 5 units land every 120 ticks and leave the
-heater's output box at three quarters of what it holds a tick, 3.75 and then 0.9375, as the
-probe reads it at every fill it printed up to 78% of the box. Computed 2026-10-04. Like the pooled reading it is
-arithmetic for this note: `M.settle_fed` is unchanged and no test pins it. Every game figure
-is the segment probe's, one heater, Factorio 2.0.77 (build 84539), 2026-10-04.
+the two transfers, then the heater. A craft's 5 units land every 120 ticks, the first on tick
+121, and leave the heater's output box at three quarters of what it holds a tick, 3.75 and
+then 0.9375, as the probe reads it at every fill it printed up to 78% of the box; the last
+0.3125 goes on the third tick. Since
+[#543](https://github.com/trulsjo/realistic-fusion-refreshed/issues/543) that is
+`M.settle_segment` in `realistic-fusion-refreshed/scripts/reactor-logic.lua`, and
+`tests/test-reactor-logic.lua` pins its four fill ticks, the step's levels, the lone box's
+526.3158 and the D-T line's settled box and segment. `M.settle_fed` is unchanged and nothing
+the mod runs calls it. Computed 2026-10-04. Every game figure is the segment probe's, one
+heater, Factorio 2.0.77 (build 84539), 2026-10-04. Before #543 this column came from scratch
+arithmetic that read 0.01 to 0.05 units higher in the box than the committed function, on the
+rows where the two differ; the committed one is the nearer to the game on every one of them.
 
 | fill | reading | game | arithmetic |
 |---|---|---|---|
-| D-D, nothing researched, three pipes, 100 000 ticks | box, segment at the cycle ending on 12 002 | 212.74, 259.08 | 212.75, 259.08 |
-| | at 66 002 | 930.81, 1203.91 | 930.82, 1203.91 |
+| D-D, nothing researched, three pipes, 100 000 ticks | box, segment at the cycle ending on 12 002 | 212.74, 259.08 | 212.74, 259.08 |
+| | at 66 002 | 930.81, 1203.91 | 930.81, 1203.91 |
 | | box, pipes °C at 33 002 | 6.5283e8, 6.4890e8 | 6.5283e8, 6.4890e8 |
 | | a cycle first ends on 999 units | 71 402 | 71 402 |
-| D-D, nothing researched, six pipes, 100 000 ticks | box, segment at 12 002 | 188.90, 287.15 | 188.91, 287.15 |
-| | at 66 002 | 837.63, 1315.24 | 837.64, 1315.23 |
+| D-D, nothing researched, six pipes, 100 000 ticks | box, segment at 12 002 | 188.90, 287.15 | 188.90, 287.15 |
+| | at 66 002 | 837.63, 1315.24 | 837.63, 1315.23 |
 | | a cycle first ends on 999 units | 80 642 | 80 642 |
 | helium-3, 3000-unit box, three pipes, 300 000 ticks | the cycle the box grew most in | 76 082 | 76 082 |
 | | a cycle first ends on 2997 units | 151 562 | 151 562 |
 | helium-3, 3000-unit box, six pipes | the cycle the box grew most in | 79 802 | 79 802 |
 | | a cycle first ends on 2997 units | 158 762 | 158 762 |
-| D-T, nothing researched, three pipes, 300 000 ticks | box, segment at 240 002 | 275.71, 334.90 | 275.75, 334.90 |
-| D-T, nothing researched, six pipes | box, segment at 240 002 | 275.84, 417.92 | 275.88, 417.92 |
+| D-T, nothing researched, three pipes, 300 000 ticks | box, segment at 240 002 | 275.71, 334.90 | 275.70, 334.90 |
+| D-T, nothing researched, six pipes | box, segment at 240 002 | 275.84, 417.92 | 275.84, 417.92 |
 
 The four fills that end reach their last unit on the game's own heater cycle.
 
@@ -972,18 +979,18 @@ arithmetic with the heater variant described under the table.
 
 | ticks | game: box | box, °C | pipes, °C | arithmetic: box | box, °C | pipes, °C | with the drip: box | pipes, °C |
 |---|---|---|---|---|---|---|---|---|
-| 120 002 | 774.53 | 8.9905e8 | 8.9482e8 | 774.57 | 8.9901e8 | 8.9482e8 | 774.57 | 8.9482e8 |
-| 240 002 | 883.32 | 7.6558e8 | 7.6153e8 | 883.36 | 7.6554e8 | 7.6153e8 | 883.36 | 7.6153e8 |
-| 360 002 | 928.76 | 7.1467e8 | 7.0973e8 | 928.80 | 7.1465e8 | 7.0974e8 | 928.80 | 7.0974e8 |
-| 480 002 | 957.57 | 6.8365e8 | 6.7661e8 | 957.61 | 6.8362e8 | 6.7661e8 | 957.61 | 6.7661e8 |
-| 600 002 | 980.82 | 6.5952e8 | 6.4552e8 | 980.86 | 6.5948e8 | 6.4541e8 | 980.86 | 6.4541e8 |
-| 648 002 | 989.10 | 6.5171e8 | 6.2779e8 | 989.15 | 6.5168e8 | 6.2705e8 | 989.15 | 6.2776e8 |
-| 696 002 | 995.02 | 6.4810e8 | 5.9178e8 | 995.05 | 6.4808e8 | 5.9036e8 | 995.07 | 5.9174e8 |
-| 720 002 | 996.43 | 6.4775e8 | 5.6318e8 | 996.42 | 6.4772e8 | 5.6151e8 | 996.47 | 5.6313e8 |
-| 744 002 | 997.23 | 6.4744e8 | 5.3097e8 | 997.16 | 6.4744e8 | 5.2891e8 | 997.25 | 5.3071e8 |
-| 780 002 | 998.01 | 6.4712e8 | 4.7991e8 | 997.78 | 6.4711e8 | 4.7732e8 | 997.88 | 4.7877e8 |
-| 792 002 | 998.23 | 6.4695e8 | 4.6267e8 | 997.92 | 6.4703e8 | 4.5967e8 | 998.03 | 4.6101e8 |
-| a cycle first ends on 998 units | 779 282 | | | 799 202 | | | 789 722 | |
+| 120 002 | 774.53 | 8.9905e8 | 8.9482e8 | 774.53 | 8.9905e8 | 8.9482e8 | 774.57 | 8.9482e8 |
+| 240 002 | 883.32 | 7.6558e8 | 7.6153e8 | 883.32 | 7.6558e8 | 7.6153e8 | 883.36 | 7.6153e8 |
+| 360 002 | 928.76 | 7.1467e8 | 7.0973e8 | 928.76 | 7.1468e8 | 7.0974e8 | 928.80 | 7.0974e8 |
+| 480 002 | 957.57 | 6.8365e8 | 6.7661e8 | 957.57 | 6.8365e8 | 6.7661e8 | 957.61 | 6.7661e8 |
+| 600 002 | 980.82 | 6.5952e8 | 6.4552e8 | 980.82 | 6.5951e8 | 6.4541e8 | 980.86 | 6.4541e8 |
+| 648 002 | 989.10 | 6.5171e8 | 6.2779e8 | 989.11 | 6.5171e8 | 6.2705e8 | 989.15 | 6.2776e8 |
+| 696 002 | 995.02 | 6.4810e8 | 5.9178e8 | 995.00 | 6.4810e8 | 5.9036e8 | 995.07 | 5.9174e8 |
+| 720 002 | 996.43 | 6.4775e8 | 5.6318e8 | 996.37 | 6.4775e8 | 5.6150e8 | 996.47 | 5.6313e8 |
+| 744 002 | 997.23 | 6.4744e8 | 5.3097e8 | 997.12 | 6.4747e8 | 5.2891e8 | 997.25 | 5.3071e8 |
+| 780 002 | 998.01 | 6.4712e8 | 4.7991e8 | 997.74 | 6.4714e8 | 4.7733e8 | 997.88 | 4.7877e8 |
+| 792 002 | 998.23 | 6.4695e8 | 4.6267e8 | 997.88 | 6.4706e8 | 4.5968e8 | 998.03 | 4.6101e8 |
+| a cycle first ends on 998 units | 779 282 | | | 803 522 | | | 789 722 | |
 
 **The box stays hot because it stops sharing its heat.** Both transfers shrink as the two
 fill. At 120 002 the segment is 75.3% full and the box 77.5%, and about 25 units cross each
@@ -995,18 +1002,19 @@ every step, so its box was colder, burned less and filled 100 000 ticks early. W
 the box's temperature is within 0.02% of the game's at every row above, and the pipes' within
 0.7%.
 
-**What is left is 2.6% the other way, and it is the heater's output box.** The arithmetic
-ends a cycle on 998 units 19 920 ticks after the game, where the pooled one was 100 928
+**What is left is 3.1% the other way, and it is the heater's output box.** The arithmetic
+ends a cycle on 998 units 24 240 ticks after the game, where the pooled one was 100 928
 before it. Its segment reads 1300.00 at 780 002 against the game's 1297.87. In the game the
 heater's box backs up against a filling segment. It was read where the segment had 2.5 units
 of room: at tick 780 002 the box still held 4.63 of the craft's 5 units, having given 0.37. It
 gave 0.32, 0.28, 0.25, 0.23 and 0.21 on the ticks after, then 0.20 a tick to 780 016, then
 0.15 falling to 0.10 once the segment read 1300.00, and was empty at 780 030. It starts
 earlier than that: at 648 002, with 13 units of room, the game's segment already reads 1.5
-under the arithmetic's. The arithmetic's heater empties in four ticks whatever the segment
+under the arithmetic's. The arithmetic's heater empties in three ticks whatever the segment
 holds. A variant that gives no more than 0.15 of the
 segment's room a tick, and never under 0.2, was fitted to the first ten of those ticks: the
-drip column. It has no 0.10-a-tick phase.
+drip column. It has no 0.10-a-tick phase, and it was run on the scratch arithmetic
+before #543, not on `M.settle_segment`.
 Its segment reads 1297.66 at 780 002 and its pipes are within 0.4% of the game's at every
 row, and it ends a cycle on 998 units 10 440 ticks late, 1.3%. The curve is flat there. The
 game's box gains 0.0022 units a cycle at 780 002, so the 0.13 units the drip variant is short
@@ -1016,7 +1024,7 @@ was fitted and not found.
 | variant | a cycle first ends on 998 units | against the game |
 |---|---|---|
 | pooled, measured split, fed in bursts (#521) | 678 354 | 100 928 ticks early, 13.0% |
-| two stores trading by the rule, the heater emptying in four ticks | 799 202 | 19 920 late, 2.6% |
+| two stores trading by the rule, the heater emptying in three ticks | 803 522 | 24 240 late, 3.1% |
 | the same, the heater's box dripping near a full segment | 789 722 | 10 440 late, 1.3% |
 | the game | 779 282 | |
 

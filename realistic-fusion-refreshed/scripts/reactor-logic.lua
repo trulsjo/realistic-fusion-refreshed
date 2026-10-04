@@ -1454,6 +1454,69 @@ function M.settle_fed(spec, fluid_name, feed, seconds, paid_j, dt, capture, feed
   return amount, t_c, last
 end
 
+--- Run a reactor's box and the fluid segment its pipes make, tick by tick from empty (#543).
+--
+-- docs/research/exchanger-coverage.md, "The rule behind the split": the game holds the line's
+-- plasma in TWO stores, the box and a segment of capacity box_volume + 100 per pipe, and they
+-- trade through the box's one connection. Every tick, after the mod's step and before the heater
+-- delivers, the box pushes 100 x min(box fill, 1 - segment fill) into the segment and then pulls
+-- 100 x min(segment fill, 1 - box fill) back. Each transfer carries its source's temperature.
+--
+-- ARITHMETIC FOR THE NOTE, NOT THE MOD. Nothing the mod runs calls this, and M.settle_fed is not
+-- changed by it: whether the fed model should count the segment is #522, and open.
+--
+-- @param spec, fluid_name  as M.step's. A nil fluid_name burns nothing.
+-- @param pipes    rf-pipe in the segment. 0 is a lone box: a segment of the box's own volume.
+-- @param ticks    how long to run. M.step runs on every sixth, at control.lua's cadence.
+-- @param paid_j, capture  as M.settle's; math.huge if paid_j is nil
+-- @param heater   M.heater if nil. A craft lands on tick period + 1, then every period, and its
+--                 output box gives three quarters of what it holds a tick, or all of it once that
+--                 is under a quarter of a craft, never past the segment's room.
+-- @param start    units in the box at tick 0, at the heater's temperature; 0 if nil
+-- @return { box, box_c, segment, segment_c, held, cycles }. One entry in cycles per heater
+--         cycle, read where the segment probe reads it: `tick` is the cycle's end, with the
+--         delivery just landed in the segment, and `before` the reading one tick earlier.
+function M.settle_segment(spec, fluid_name, pipes, ticks, paid_j, capture, heater, start)
+  heater = heater or M.heater
+  local V, feed_c = spec.box_volume, heater.plasma_temperature_c
+  local C = V + 100 * pipes
+  local period = math.floor(60 * heater.craft_seconds / heater.crafting_speed + 0.5)
+  local s = { box = start or 0, box_c = feed_c, segment = 0, segment_c = feed_c, held = 0, cycles = {} }
+  local function reading() return { box = s.box, box_c = s.box_c, segment = s.segment, segment_c = s.segment_c } end
+  local function mix(amount, t_c, add, add_c) return (amount * t_c + add * add_c) / (amount + add) end
+  local before
+  for t = 1, ticks do
+    if t % 6 == 0 and s.box > 0 then
+      local result = M.step(spec, fluid_name, s.box, s.box_c, paid_j or math.huge, 0.1, capture)
+      if result then s.box, s.box_c = s.box - result.plasma_consumed, result.temperature_c end
+    end
+    local push = 100 * math.min(s.box / V, 1 - s.segment / C)
+    if push > 0 then
+      s.segment_c, s.segment, s.box = mix(s.segment, s.segment_c, push, s.box_c), s.segment + push, s.box - push
+    end
+    local pull = 100 * math.min(s.segment / C, 1 - s.box / V)
+    if pull > 0 then
+      s.box_c, s.box, s.segment = mix(s.box, s.box_c, pull, s.segment_c), s.box + pull, s.segment - pull
+    end
+    local landing = t > period and t % period == 1
+    if landing then s.held = s.held + heater.plasma_per_craft end
+    if s.held > 0 then
+      local give = s.held > heater.plasma_per_craft / 4 and 0.75 * s.held or s.held
+      give = math.min(give, C - s.segment)
+      if give > 0 then
+        s.segment_c, s.segment, s.held = mix(s.segment, s.segment_c, give, feed_c), s.segment + give, s.held - give
+      end
+    end
+    if t % period == 0 then before = reading() end
+    if landing then
+      local cycle = reading()
+      cycle.tick, cycle.before = t + 1, before
+      s.cycles[#s.cycles + 1] = cycle
+    end
+  end
+  return s
+end
+
 -- ---------------------------------------------------------------------------------------------
 -- The density curve (#74, ADR 0016).
 --
