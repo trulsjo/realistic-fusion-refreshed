@@ -1455,9 +1455,21 @@ function M.settle_fed(spec, fluid_name, feed, seconds, paid_j, dt, capture, feed
   return amount, t_c, last
 end
 
+-- THREE NUMBERS M.settle_segment TAKES FROM THE GAME rather than from a spec, named so the load
+-- check can hold them to it (#555): control.lua's check_segment_constants() refuses to load when
+-- rf-heater or rf-pipe stops agreeing with its number, and control.lua's UPDATE_INTERVAL is
+-- M.step_ticks, so the third has nothing to disagree with.
+--
 -- The capacity LuaFluidBox.get_capacity reports on rf-heater's output box, as
--- scripts/probe-plasma-segment.ps1 prints it. Its fill is what the heater's pushes go by.
-local HEATER_BOX = 200
+-- scripts/probe-plasma-segment.ps1 prints it. Its fill is what the heater's pushes go by. It is the
+-- two output boxes' volumes together, 100 each in the prototype: a crafting machine merges boxes
+-- "due to recipe" (LuaFluidBox.get_prototype, 2.0.77), and every rf-plasma-heating recipe makes one
+-- fluid.
+M.heater_output_box = 200
+-- What one rf-pipe adds to a segment's capacity: its fluid box's volume.
+M.pipe_volume = 100
+-- The ticks between two of control.lua's simulation steps. control.lua's UPDATE_INTERVAL reads it.
+M.step_ticks = 6
 
 --- One transfer between two stores (#540): the rule M.settle_segment's note gives, floored at 0.1 and bounded by what
 -- the source holds and the room the destination has.
@@ -1484,7 +1496,7 @@ end
 -- @param ticks    how long to run. M.step runs on every sixth, at control.lua's cadence.
 -- @param paid_j, capture  as M.settle's; math.huge if paid_j is nil
 -- @param heater   M.heater if nil. A craft lands on tick period + 1, then every period, in an
---                 output box of HEATER_BOX units.
+--                 output box of M.heater_output_box units.
 -- @param start    units in the box at tick 0, at the heater's temperature; 0 if nil
 -- @return { box, box_c, segment, segment_c, held, cycles }. One entry in cycles per heater
 --         cycle, read where the segment probe reads it: `tick` is the cycle's end, with the
@@ -1492,15 +1504,15 @@ end
 function M.settle_segment(spec, fluid_name, pipes, ticks, paid_j, capture, heater, start)
   heater = heater or M.heater
   local V, feed_c = spec.box_volume, heater.plasma_temperature_c
-  local C = V + 100 * pipes
+  local C = V + M.pipe_volume * pipes
   local period = math.floor(60 * heater.craft_seconds / heater.crafting_speed + 0.5)
   local s = { box = start or 0, box_c = feed_c, segment = 0, segment_c = feed_c, held = 0, cycles = {} }
   local function reading() return { box = s.box, box_c = s.box_c, segment = s.segment, segment_c = s.segment_c } end
   local function mix(amount, t_c, add, add_c) return (amount * t_c + add * add_c) / (amount + add) end
   local before
   for t = 1, ticks do
-    if t % 6 == 0 and s.box > 0 then
-      local result = M.step(spec, fluid_name, s.box, s.box_c, paid_j or math.huge, 0.1, capture)
+    if t % M.step_ticks == 0 and s.box > 0 then
+      local result = M.step(spec, fluid_name, s.box, s.box_c, paid_j or math.huge, M.step_ticks / 60, capture)
       if result then s.box, s.box_c = s.box - result.plasma_consumed, result.temperature_c end
     end
     local push = flow(s.box, V, s.segment, C)
@@ -1514,7 +1526,7 @@ function M.settle_segment(spec, fluid_name, pipes, ticks, paid_j, capture, heate
     local landing = t > period and t % period == 1
     if landing then s.held = s.held + heater.plasma_per_craft end
     for _ = 1, 2 do
-      local give = flow(s.held, HEATER_BOX, s.segment, C)
+      local give = flow(s.held, M.heater_output_box, s.segment, C)
       if give > 0 then
         s.segment_c, s.segment, s.held = mix(s.segment, s.segment_c, give, feed_c), s.segment + give, s.held - give
       end

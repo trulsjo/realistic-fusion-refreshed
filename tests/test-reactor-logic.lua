@@ -2822,6 +2822,22 @@ do
   local got = fills_at(L.settle_segment(at_rungs(3, 2), "rf-d-d-plasma", 3, 800000), 998)
   check(got == 779282, "the line cell first ends a cycle on 998 units at 779 282, as in the game",
     tostring(got))
+
+  -- THE THREE GAME NUMBERS ARE NAMED, AND READ (#555). control.lua's check_segment_constants()
+  -- holds two to rf-heater and rf-pipe at load, and its UPDATE_INTERVAL is the third, which
+  -- proves nothing if the arithmetic carries a literal beside them. Each is moved here and has to
+  -- move the answer.
+  for _, case in ipairs({ { "heater_output_box", 200 }, { "pipe_volume", 100 }, { "step_ticks", 6 } }) do
+    local name, value = case[1], case[2]
+    check(L[name] == value, "reactor-logic exposes " .. name .. " = " .. value, tostring(L[name]))
+    local function run() return L.settle_segment(SPEC, "rf-d-d-plasma", 3, 600).box end
+    local shipped = run()
+    L[name] = value * 2
+    local moved = run()
+    L[name] = value
+    check(moved ~= shipped, "M.settle_segment reads " .. name .. " rather than a literal",
+      string.format("%.6f both ways", shipped))
+  end
 end
 
 H.finish()

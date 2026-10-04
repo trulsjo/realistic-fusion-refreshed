@@ -354,8 +354,9 @@ local function energy_temperature(name)
 end
 
 -- ADR 0005 pre-authorises throttling the simulation to a coarser cadence and requires that doing
--- so be a change in one place. This is that place: nothing else in the mod knows how often the
--- simulation steps, and the step itself is written in terms of elapsed seconds.
+-- so be a change in one place. This is that place: nothing else the mod runs knows how often the
+-- simulation steps, and the step itself is written in terms of elapsed seconds. The number is
+-- reactor-logic's M.step_ticks since #555; see below.
 --
 -- Ten steps a second, not sixty, on the strength of #24's measurement. Not because the per-tick
 -- cost was unaffordable -- #24 put it at nine to eleven microseconds per reactor before throttling,
@@ -387,7 +388,11 @@ end
 -- heating_power_w can never be paid in full, whatever this line says.
 --
 -- See docs/research/reactor-runtime-cost.md; scripts/bench-reactors.ps1 takes the measurement.
-local UPDATE_INTERVAL = 6
+--
+-- The number itself lives in scripts/reactor-logic.lua as M.step_ticks since #555, so that
+-- M.settle_segment's arithmetic and this cadence are one definition and cannot disagree. It is
+-- still changed in one place; that place is the line there.
+local UPDATE_INTERVAL = logic.step_ticks
 
 -- How many simulation steps pass between reports. The reactor is simulated ten times a second and
 -- reports itself twice, because those two numbers answer different questions.
@@ -2099,6 +2104,35 @@ local function check_plant_efficiency()
   end
 end
 
+--- Refuse to run if rf-heater or rf-pipe stops matching the numbers M.settle_segment assumes (#555).
+--
+-- That arithmetic is for a note rather than for the mod -- nothing here calls it -- but its tests
+-- pin the game's own readings, so a prototype that moved under it would leave them green and the
+-- note's figures wrong. The heater's output box is the two output boxes together: a crafting
+-- machine merges them for a recipe making one fluid, which every rf-plasma-heating recipe is, and
+-- 2 x 100 is the 200 LuaFluidBox.get_capacity reports. The step interval needs no check here,
+-- because UPDATE_INTERVAL above IS logic.step_ticks.
+local function check_segment_constants()
+  local heater = 0
+  for _, box in ipairs(prototypes.entity["rf-heater"].fluidbox_prototypes) do
+    if box.production_type == "output" then heater = heater + box.volume end
+  end
+  local pipe = prototypes.entity["rf-pipe"].fluidbox_prototypes[1]
+  for _, row in ipairs({
+    { "heater_output_box", heater, "rf-heater's output fluid boxes hold" },
+    { "pipe_volume", pipe and pipe.volume, "rf-pipe's fluid box holds" },
+  }) do
+    local field, found, what = row[1], row[2], row[3]
+    if found ~= logic[field] then
+      error(string.format(
+        "scripts/reactor-logic.lua's M.%s is %s, but %s %s. M.settle_segment's arithmetic, and the " ..
+        "readings its tests pin, assume the first. Reconcile M.%s with the prototype, or take " ..
+        "out the mod that moved it.",
+        field, tostring(logic[field]), what, tostring(found), field))
+    end
+  end
+end
+
 local function check_prototypes()
   check_fuel_rows()
   check_reactor_specs()
@@ -2115,6 +2149,7 @@ local function check_prototypes()
   check_energy_outlets()
   check_reactor_companions()
   check_steam_sinks()
+  check_segment_constants()
 end
 
 -- The register is rebuilt in the same breath as the prototype checks because both are answers to

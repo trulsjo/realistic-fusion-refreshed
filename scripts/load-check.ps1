@@ -25,10 +25,10 @@
 
     IT DOES MORE THAN THE DATA STAGE, and the difference matters to anyone editing the
     simulation. Creating a map runs `on_init`, which is where control.lua's check_prototypes()
-    fires -- so this script enforces fifteen invariants that no amount of prototype validation
+    fires -- so this script enforces sixteen invariants that no amount of prototype validation
     would catch. (This count read THIRTEEN while check_prototypes() called fourteen, which is what
     a number written in prose does when a check is added beside it; #296 is where it was corrected
-    as well as raised.)
+    as well as raised, and #555 raised it from fifteen.)
 
       check_fuel_rows()           Every row of reactor-logic's fuel table declares the fields
                                   step() indexes without asking. M.fuels is the documented place
@@ -138,6 +138,14 @@
                                   answer -- rf-d-d-fusion unlocks the turbine itself -- is what
                                   this holds in place. Indifferent to which answer: it wants a
                                   reachable sink, not a particular one.
+      check_segment_constants()   The two prototype numbers M.settle_segment's arithmetic
+                                  assumes: rf-heater's two output boxes together against
+                                  M.heater_output_box, and rf-pipe's box against M.pipe_volume
+                                  (#555). The third, the step interval, is one definition --
+                                  control.lua's UPDATE_INTERVAL is M.step_ticks -- so it is
+                                  not checked. Nothing the mod runs calls that arithmetic; its
+                                  tests pin the game's readings, so a moved prototype would leave
+                                  them green and the readings unexplained.
 
     The Lua tests cannot see any of these: they know the physics but not the prototypes. So
     editing input_flow_limit, a plasma's max_temperature, reactor-logic's fuel table, the
@@ -315,7 +323,8 @@
     MOCKUP must be caught; unburnable-plasma, a mod that puts a plasma of its own through our
     heating category must be refused; swapped-boxes, the isotope collector's two box filters
     swapped must be refused; widened-box, a reactor whose plasma fluid box is not the capacity its
-    spec declares must be refused; socket-height-gate, the socket-height gate must measure its own
+    spec declares must be refused; widened-heater-box, a heater whose output boxes are not the
+    capacity M.heater_output_box declares must be refused; socket-height-gate, the socket-height gate must measure its own
     reference off vanilla's sheet, judge by the number it measured, pass the sheets as they stand,
     report a sheet lifted a quarter tile, and report SOCKET_Z itself as PARTED when it does not
     predict that reference; and socket-parts-gate, the socket-parts gate over the same sheets.
@@ -324,8 +333,8 @@
     repo is genuinely broken. missing-asset, reassigned-category, slid-socket, added-category,
     replaced-category and slid-mockup are the ones Factorio exits 0 on, where the check has to
     decide alone. THE OTHERS ARE THE MOD REFUSING ITSELF -- invalid-prototype, starved-reactor,
-    unburnable-plasma, swapped-boxes and widened-box all end with Factorio exiting non-zero, which
-    is why each of the last four has to match the refusal's own message as well as its exit code. THE TWO SPRITE
+    unburnable-plasma, swapped-boxes, widened-box and widened-heater-box all end with Factorio
+    exiting non-zero, which is why each of the last five has to match the refusal's own message as well as its exit code. THE TWO SPRITE
     GATES ARE NEITHER: they run no canary mod at all, because the gates they prove (#344, #373) need
     no game RUN. socket-height-gate does read the install, for one file: since #355 it measures
     where a vanilla pipe is drawn off the base game's own sheet instead of carrying a number for it.
@@ -339,7 +348,8 @@
     OF THEM -- it negatively tests check_input_flow(), which check_prototypes() calls -- so the two
     are the second and third rather than the first two. WIDENED-BOX IS THE FOURTH, added with the
     invariant it proves (#296) rather than after it, because shipping a new invariant without its
-    negative test is the failure #125 was opened about. The other eleven invariants are still
+    negative test is the failure #125 was opened about. WIDENED-HEATER-BOX IS THE FIFTH, added with
+    check_segment_constants() for the same reason (#555). The other eleven invariants are still
     asserted only positively: they pass on a good tree, and nothing here would notice one that had
     quietly stopped firing. Two of those eleven have had their negative test done BY HAND and
     recorded only in a commit message (#55 and #119, both by temporarily editing the value under
@@ -354,9 +364,10 @@
     invariant firing.
 
     AND THE WORKING TREE IS ASSERTED UNTOUCHED, in BOTH self-tests, against a fingerprint taken
-    before either does anything -- the packer included. EIGHT of the canary halves mutate one of
+    before either does anything -- the packer included. NINE of the canary halves mutate one of
     our prototypes: reassigned-category, slid-socket, added-category, replaced-category,
-    starved-reactor, slid-mockup, swapped-boxes and widened-box. Seven of the eight do it to prove a
+    starved-reactor, slid-mockup, swapped-boxes, widened-box and widened-heater-box. Eight of the
+    nine do it to prove a
     gate FIRES; added-category mutates one to prove a gate stays QUIET, which is the same hazard to
     the tree.
     Every one does it in memory; this is what says so rather than assuming it. The FINALLY
@@ -1950,8 +1961,8 @@ end
                 # of check_prototypes()'s invariants -- the checks that tie the simulation to the prototypes
                 # and are the reason load-check is the gate that matters here. starved-reactor was already one
                 # of them, negatively testing check_input_flow(), which check_prototypes() calls; this half and
-                # swapped-boxes take the coverage from one invariant to three, and widened-box to four (#296).
-                # The other eleven are still asserted only
+                # swapped-boxes take the coverage from one invariant to three, widened-box to four (#296)
+                # and widened-heater-box to five (#555). The other eleven are still asserted only
                 # positively: they pass on a good tree, and nothing here would notice one that had quietly
                 # stopped firing.
                 #
@@ -2110,6 +2121,49 @@ box.volume = box.volume * 2
                 'a reactor whose plasma box is not its declared capacity is refused, in check_plasma_capacity()''s own words.'
             } }
 
+            @{ Name = 'widened-heater-box'; Body = {
+                # rf-heater's output boxes moved from outside must be refused (#555), by
+                # check_segment_constants() in its own words. widened-box is the worked example this
+                # copies. The invariant holds M.settle_segment's three game numbers -- the heater's
+                # output box, a pipe's volume, the step interval -- to the prototypes; the heater's is
+                # the one broken here because it is the one read as a SUM of two boxes, and a check
+                # that summed the wrong boxes would pass a plain run and fail only here. The step
+                # interval has no half: control.lua's UPDATE_INTERVAL is reactor-logic's step_ticks,
+                # so there is nothing to make disagree.
+                @'
+local heater = data.raw["assembling-machine"]["rf-heater"]
+local widened = false
+for _, box in ipairs(heater and heater.fluid_boxes or {}) do
+  if box.production_type == "output" and not widened then
+    box.volume, widened = box.volume + 100, true
+  end
+end
+if not widened then
+  error("load-check canary: rf-heater declares no output fluid box, so the widened-heater-box half would prove nothing")
+end
+'@ | Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
+
+                $heater = Invoke-HarnessLoad -Harness $harness -Tag 'heater-box'
+                if ($heater.Code -eq 0) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: one of rf-heater's output boxes was widened from outside and the"
+                    Write-Host '         mod loaded anyway. check_segment_constants() is not proving anything, so'
+                    Write-Host "         M.settle_segment's heater_output_box could drift from the game unseen."
+                    exit 1
+                }
+                $heaterSaid = (Test-Path $heater.OutFile) -and
+                    (Select-String -Path $heater.OutFile -SimpleMatch 'M.heater_output_box is' -Quiet)
+                if (-not $heaterSaid) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the widened-heater-box canary failed the load (exit $($heater.Code)) but"
+                    Write-Host '         check_segment_constants() did not say so, so the failure was something else'
+                    Write-Host '         and this half proves nothing about the invariant it is named for.'
+                    Write-FactorioTail $heater
+                    exit 1
+                }
+                'a heater whose output boxes are not M.heater_output_box is refused, in check_segment_constants()''s own words.'
+            } }
+
             @{ Name = 'socket-height-gate'; Body = {
                 # THE ONE HALF THAT NEEDS NO CANARY MOD, because the gate it proves needs no game RUN
                 # (#344): tools/check-socket-height.py measures the committed sheets against the manifests
@@ -2161,12 +2215,12 @@ box.volume = box.volume * 2
             } }
         )
 
-        # THE WORKING TREE, ASSERTED RATHER THAN REASONED ABOUT (#125). EIGHT of the halves above
+        # THE WORKING TREE, ASSERTED RATHER THAN REASONED ABOUT (#125). NINE of the halves above
         # mutate one of our prototypes -- reassigned-category, slid-socket, added-category,
         # replaced-category and slid-mockup move a connection or a category, starved-reactor cuts an
-        # input_flow_limit, swapped-boxes swaps two box filters, widened-box doubles a plasma box --
-        # and every one of them does it in
-        # `data-final-fixes`, in memory, at load, with nothing on disk touched. Seven of the eight
+        # input_flow_limit, swapped-boxes swaps two box filters, widened-box doubles a plasma box,
+        # widened-heater-box widens a heater output box -- and every one of them does it in
+        # `data-final-fixes`, in memory, at load, with nothing on disk touched. Eight of the nine
         # mutate to prove a gate FIRES; added-category is the one that mutates to prove a gate stays
         # QUIET, which puts the same thing at risk. That is the design; this is the assertion. It is
         # here because a self-test in this file once deleted the repository's own sprite, so "the
@@ -2273,7 +2327,7 @@ box.volume = box.volume * 2
     # docstring above used to make: creating the map ran control.lua's check_prototypes() too.
     $how = if ($FromZips) { 'built zips' } else { 'junctioned repo directories' }
     Write-Host "OK - prototypes valid, every referenced asset present, map created, the"
-    Write-Host "     simulation's fifteen load-time invariants hold, containment survived the"
+    Write-Host "     simulation's sixteen load-time invariants hold, containment survived the"
     Write-Host "     load and every render and mockup agrees with its machine, loading from $how."
     exit 0
 }
