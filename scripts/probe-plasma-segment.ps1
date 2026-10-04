@@ -99,7 +99,7 @@
 
 .PARAMETER Heater
     Follow the heater's output box against the filling segment (#540). In each cell, from the
-    first tick its output box gives under three quarters of what it held, print every tick on
+    first tick its output box gives under three quarters of what it held (tested as under 0.74), print every tick on
     which it holds anything, through the end of the first heater cycle in which the segment read
     full, within 0.005 units. Each row carries what the box held, what it gave, the segment's room and the reactor's
     box before the mod's step, so a rule for the delivery can be checked against it.

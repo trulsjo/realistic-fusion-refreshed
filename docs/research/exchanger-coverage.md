@@ -984,7 +984,7 @@ confinement rung 2 and nothing else (asserted), Factorio 2.0.77 (build 84539), 2
 Every one of the 1333 cycles ending from 640 000 to 800 000 ticks is printed, and the pipes'
 temperature is on every cycle of the run. **A cycle first ends on 998 units at tick 779 282**,
 at 998.0012; the cycle before, ending on 779 162, read 997.9990. "Arithmetic" is
-`M.settle_segment` as #543 committed it, with the heater giving three quarters of what it holds
+`M.settle_segment` as #543 committed it (commit c76cbb8; HEAD no longer runs that version), with the heater giving three quarters of what it holds
 a tick; "the heater's rule" is the same function since #540, with step 3 and the floor above.
 
 | ticks | game: box | box, °C | pipes, °C | arithmetic: box | box, °C | pipes, °C | the heater's rule: box | pipes, °C |
@@ -1065,7 +1065,7 @@ a step tick are left out, because the probe reads the box before the mod steps i
 | heating 3 + confinement 2, three | 585 482: 3.69925 of 5 | 753 861, segment 1299.997 | 8780 | 2.2e-5 | 0.22 |
 | heating 3 + confinement 2, six | 663 362: 3.69934 of 5 | 800 890, the run's end; segment never full | 4348 | 2.1e-5 | 0.05 |
 
-The worst misses are within the five decimals the probe prints. Five orders were tried for one
+The worst misses are two units in the fifth decimal the probe prints. Five orders were tried for one
 tick: the box's push and pull, then the heater's two pushes; the heater's two first; the box's
 push, the heater's two, then the pull; and two that alternate them. Only the first fits. The others miss by 0.06 to 0.15 at both pipe counts with
 nothing researched.

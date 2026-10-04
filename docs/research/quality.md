@@ -1168,8 +1168,8 @@ for this note, draining 2⁻²⁴ a tick from the box, computed 2026-10-04:
 
 From the game's baseline over 10 000 s the double-precision rule reads 1.899, against the
 game's 1.898. Every variant that starts where the game starts lands within 0.2% of the game,
-or 0.7% with float32 transfers. None reproduces the 31 800: the nearest gives 45 ULPs less,
-2.7×10⁻⁶ units. Where the box sits is off the rule by more than that.
+or 0.7% with float32 transfers. None reproduces the 31 800: the nearest gives 38 ULPs less,
+2.3×10⁻⁶ units. Where the box sits is off the rule by more than that.
 The game's baseline box is 1.04×10⁻⁵ above the low branch for what box and segment hold
 between them. At the end of the 1000 s run it is 2.8×10⁻⁶ below that branch, and at the end
 of 10 000 s it is 1.41×10⁻⁵ below. A box nothing drains settles at 526.3158023 in the game,

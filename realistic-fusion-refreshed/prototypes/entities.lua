@@ -646,7 +646,7 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 --     state reads 100.5 at 980 000 ticks (#545, 2026-10-04, Factorio 2.0.77), and the bench's
 --     default, every ladder at its top, settles at 169.3 (#527). Its box stays full at
 --     1 000 of 1 000 with one exchanger bolted on, at 90 MW as at 70. Covering the saturated
---     multi-heater reactor would want about 105 MW; covering the designed one-heater plant wants 90,
+--     multi-heater reactor would want about 105 MW (the 103.7 above, not the settled default); covering the designed one-heater plant wants 90,
 --     and 90 is what Truls chose.
 --
 --     READ THAT BENCH'S TWO COLUMNS AND NOT ONE. Its "energy MW" column is a 5/6 UNDERCOUNT of both
