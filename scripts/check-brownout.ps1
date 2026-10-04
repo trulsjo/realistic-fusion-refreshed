@@ -133,8 +133,10 @@
     does not read a share of the segment. A D-T line on one heater, nothing researched, settles
     at 334.9 units in three pipes beside 275.7 in the box, and at 417.9 in six beside 275.8
     (probe-plasma-segment.ps1 -Plasma rf-d-t-plasma, #532, 2026-10-04, Factorio 2.0.77, 300 000
-    ticks). This rig's own line is still not read: that probe builds a straight run of 3 to 12
-    pipes and this rig routes its own round a corner.
+    ticks). That probe builds a straight run of 3 to 12 pipes; this rig routes its own round a
+    corner, and `full` now reports it at the end of the settle (#546): 32 rf-pipe, a segment
+    capacity of 4200 holding 1282.82 beside 312.48 in the box (2026-10-04, Factorio 2.0.77,
+    everything researched, one heater, tick 108 001 of the default run).
     docs/research/exchanger-coverage.md, "The rule behind the split", has the measurement. The half hour is the curve above, measured, and rests on neither reading.
 
     The default is 1800 s, where the trailing minute is within 0.6% of the asymptote and drifting
@@ -598,6 +600,7 @@ local function build_cell(surface, force, o)
     if #heater.fluidbox.get_connections(box_of(heater, o.plasma)) == 0 then
       error(label .. ": the heater's plasma outlet is not connected to the feed line")
     end
+    cell.line = line
   end
 
   -- ------------------------------------------------------------------ the plant's steam route
@@ -706,6 +709,15 @@ local function sample(cell)
   if cell.heater  then s.heater  = status_name(cell.heater.status) end
   if cell.turbines then s.turbine = status_name(cell.turbines[1].status) end
   if cell.load    then s.load    = cell.load.power_usage * 60 end
+  -- The feed line's segment, read through its first pipe the way probe-plasma-segment.ps1 reads it:
+  -- the box and the segment are two stores (#516), so the box's amount says nothing about this.
+  if cell.line then
+    local held = 0
+    for _, amount in pairs(cell.line[1].fluidbox.get_fluid_segment_contents(1) or {}) do
+      held = held + amount
+    end
+    s.line = { pipes = #cell.line, capacity = cell.line[1].fluidbox.get_capacity(1), held = held }
+  end
   -- What the cell is actually being supplied at the moment of the reading. Sampled rather than
   -- assumed from the schedule: the first version of this rig scheduled cuts that never landed, and
   -- every cell's numbers came out identical to the uncut one with nothing to say why.
@@ -1070,6 +1082,11 @@ script.on_nth_tick(REPORT, function()
       "%.4g MW over the minute before last against %.4g MW over the last, %+.2f%% -- raise -Settle if this fails",
       before_mw, lit_mw, 100 * (lit_mw - before_mw) / lit_mw)
       or string.format("the %ds settle is too short to compare two minutes", SETTLE / 60))
+  -- The rig's own feed line at the end of the settle (#546). Reported, not asserted.
+  local fed = snaps.lit.full.line
+  note("full: its feed line at the end of the settle",
+    string.format("%d rf-pipe, segment capacity %.6g holding %.6g, box %.6g",
+      fed.pipes, fed.capacity, fed.held, lit and lit.amount or 0))
 
   local half_sold, half_drawn = span("half", "lit", "deep")
   local dark_sold, dark_drawn = span("dark", "lit", "deep")
