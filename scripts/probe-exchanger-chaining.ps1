@@ -17,8 +17,10 @@
 
     THE ROW LENGTH IS HISTORICAL SINCE #227, AND THE MEASUREMENT IS NOT. That ticket took
     rf-heat-exchanger to 90 MW, so the same one-heater reactor now wants about four of these rather
-    than eight -- and a reactor on four heaters, which #89 measured at 996 to 1 195 MW, wants
-    eleven to thirteen. Both are right and they differ by feed rate, not by arithmetic.
+    than eight -- and a reactor on four heaters, which #89 measured at 996 to 1 195 MW with
+    confinement rung 3 and nothing else researched, wants eleven to thirteen; with every ladder at
+    its top it sells 1 114.1 to 1 336.9 MW and wants twelve to fifteen (#533, 2026-10-04,
+    Factorio 2.0.77). All are right and they differ by feed rate, not by arithmetic.
     Eight is left exactly as it was: what this probe measured is whether the ENGINE will carry fuel
     and water through seven short-end joints, which is a question about the engine and not about the
     balance, and shortening the row would throw away the harder case for no reason. Read "eight" as

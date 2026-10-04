@@ -636,8 +636,9 @@ script.on_nth_tick(CHECK_AT, function()
   -- trailing-minute output reaching 322 MW at 1800 s and 324 at 2100 -- both before radiation
   -- (#52). With it, one heater and nothing researched, the game measured 282.1 to 338.5 MW (#486,
   -- 2026-10-02, Factorio 2.0.77) and the fed model gives 322.7 (#499). Four heaters would read 996
-  -- to 1 195 MW instead (#89) and the counts below would quadruple; the switch is the feed, not the
-  -- arithmetic.
+  -- to 1 195 MW instead at confinement rung 3 alone (#89), or 1 114.1 to 1 336.9 with every ladder
+  -- at its top (#533, 2026-10-04, Factorio 2.0.77), and the counts below would roughly quadruple;
+  -- the switch is the feed, not the arithmetic.
   --
   -- THE CONSTANT BELOW IS 324 AND WAS 320 UNTIL #227. A round number was fine while nothing nearby
   -- was more precise, and stopped being fine when this comment started quoting the measurement to
