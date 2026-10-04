@@ -2751,4 +2751,69 @@ do
   near(burn, 2.5, 0.001, "every ladder at its top, " .. where .. ": burning all 2.5 u/s", "u/s")
 end
 
+-- THE BOX AND ITS SEGMENT AS TWO STORES (#543). docs/research/exchanger-coverage.md, "The rule
+-- behind the split", reads the game's fuel line as the reactor's box and the segment its pipes
+-- make trading at most 100 units a tick each way, and runs that beside seven fills. These pin the
+-- arithmetic to what the segment probe read, one heater, Factorio 2.0.77, 2026-10-04.
+do
+  local function fills_at(state, units)
+    for _, cycle in ipairs(state.cycles) do
+      if cycle.box >= units then return cycle.tick end
+    end
+  end
+
+  -- The four fills that end, on the game's own heater cycle: nothing researched for D-D, and
+  -- rf-aneutronic-reactor's 3000-unit box on helium-3, which no ladder reaches.
+  for _, case in ipairs({
+    { SPEC, "rf-d-d-plasma", 3, 100000, 999, 71402 },
+    { SPEC, "rf-d-d-plasma", 6, 100000, 999, 80642 },
+    { ANEUTRONIC, "rf-he3-he3-plasma", 3, 300000, 2997, 151562 },
+    { ANEUTRONIC, "rf-he3-he3-plasma", 6, 300000, 2997, 158762 },
+  }) do
+    local spec, plasma, pipes, ticks, units, tick = table.unpack(case)
+    local got = fills_at(L.settle_segment(spec, plasma, pipes, ticks), units)
+    check(got == tick, string.format("%s, %d pipes: a cycle first ends on %d units at tick %d, as in the game",
+      plasma, pipes, units, tick), tostring(got))
+  end
+
+  -- THE STEP: the segment stands still while the box crosses between two levels, one tick before
+  -- each delivery. The rule gives the three levels; the run has to sit on them.
+  for _, case in ipairs({ { 3, 624.00, 520.00, 532.00 }, { 6, 774.19, 516.13, 535.48 } }) do
+    local pipes, stands, from, to = case[1], case[2], case[3], case[4]
+    local V = SPEC.box_volume
+    local C = V + 100 * pipes
+    near(C * (C - 100) / (2 * C - 100), stands, 1e-5, pipes .. " pipes: the segment stands at " .. stands)
+    near(V * C / (2 * C - 100), from, 1e-5, pipes .. " pipes: while the box goes from " .. from)
+    near(100 + (V - 100) * (C - 100) / (2 * C - 100), to, 1e-5, pipes .. " pipes: to " .. to)
+    local low, high = math.huge, -math.huge
+    for _, cycle in ipairs(L.settle_segment(SPEC, "rf-d-d-plasma", pipes, 45000).cycles) do
+      if math.abs(cycle.before.segment - stands) < 0.01 then
+        low, high = math.min(low, cycle.before.box), math.max(high, cycle.before.box)
+      end
+    end
+    check(low >= from - 0.01 and high <= to + 0.01 and high - low > 0.5 * (to - from),
+      pipes .. " pipes: the run's segment stands there while its box is inside that range",
+      string.format("box %.2f to %.2f", low, high))
+  end
+
+  -- THE LONE BOX'S 526.3158, quality.md's figure: the same rule with no pipes, a segment whose
+  -- capacity is the box's own volume, seeded with 1000 units, nothing burning and nothing fed.
+  local idle = { plasma_per_craft = 0, craft_seconds = 2, crafting_speed = 1, plasma_temperature_c = 1e6 }
+  local function lone(ticks)
+    return L.settle_segment(SPEC, nil, 0, ticks, nil, nil, idle, 1000).box
+  end
+  near(lone(30), 527.17, 1e-5, "a lone box reads 527.17 after 30 ticks")
+  near(lone(60), 526.3173, 1e-6, "526.3173 after 60")
+  near(lone(120), 1e6 / 1900, 1e-9, "and 1000 x 1000 / 1900, 526.3158, from 120 on")
+
+  -- THE D-T LINE, SETTLED: it never fills, and sits on the low branch with the burn's draw on top.
+  -- The game read 275.71 units and 334.90 of 1300 at the cycle ending on 240 002 (#532). The
+  -- arithmetic gives 275.70 and 334.90; the note's table, before this test, quoted 275.75.
+  local settled = L.settle_segment(SPEC, "rf-d-t-plasma", 3, 240002)
+  local last = settled.cycles[#settled.cycles]
+  check(last.tick == 240002, "the D-T run's last cycle ends on 240 002", tostring(last.tick))
+  near(last.box, 275.70, 0.0001, "a D-T line on three pipes settles its box at 275.70 units")
+  near(last.segment, 334.90, 0.0001, "and its segment at 334.90 of 1300")
+end
+
 H.finish()
