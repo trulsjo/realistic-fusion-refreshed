@@ -97,6 +97,13 @@
     Hold a chosen number of rungs per ladder instead of none, as bench-mod-links.ps1's -Rungs does:
     comma-separated <ladder>=<rungs> pairs. Asserted the same way.
 
+.PARAMETER Heater
+    Follow the heater's output box against the filling segment (#540). In each cell, from the
+    first tick its output box gives under three quarters of what it held, print every tick on
+    which it holds anything, through the end of the first heater cycle in which the segment read
+    full, within 0.005 units. Each row carries what the box held, what it gave, the segment's room and the reactor's
+    box before the mod's step, so a rule for the delivery can be checked against it.
+
 .PARAMETER KeepTemp
     Keep the save, the rig mods and the captured output.
 
@@ -104,6 +111,7 @@
     pwsh -File scripts/probe-plasma-segment.ps1
     pwsh -File scripts/probe-plasma-segment.ps1 -Pipes 3,12 -Ticks 120000 -From 12000,96000
     pwsh -File scripts/probe-plasma-segment.ps1 -Pipes 3 -Plasma rf-d-t-plasma
+    pwsh -File scripts/probe-plasma-segment.ps1 -Pipes 3,6 -Heater
 #>
 
 #Requires -Version 7
@@ -123,6 +131,7 @@ param(
     # Case-sensitive: the names are Lua table keys.
     [ValidatePattern('^((confinement|heating|capture)_ladder=\d+)(,(confinement|heating|capture)_ladder=\d+)*$', Options = 'None')]
     [string] $Rungs,
+    [switch] $Heater,
     [switch] $KeepTemp
 )
 
@@ -194,6 +203,7 @@ local PIPES = { __PIPES__ }
 local FROM  = { __FROM__ }
 local SPAN  = __SPAN__
 local RUNGS = __RUNGS__
+local HEATER = __HEATER__
 
 local PLASMA = "__PLASMA__"
 local ENERGY_FEED = "__ENERGYFEED__"
@@ -369,6 +379,27 @@ script.on_event(defines.events.on_tick, function()
       cell.burned = 0
     end
 
+    -- THE HEATER'S OUTPUT BOX AGAINST THE SEGMENT (#540). `held` is after this tick's flow;
+    -- what it had to give is last tick's plus any craft that landed since.
+    if HEATER and cell.drip ~= "done" then
+      local had = (cell.drip_held or 0) + (crafts - (cell.drip_crafts or crafts)) * storage.per_craft
+      local gave = had - held
+      if not cell.drip and held > 0 and gave < 0.74 * had then cell.drip = "on" end
+      if cell.drip == "on" then
+        local capacity = cell.pipes[1].fluidbox.get_capacity(1)
+        if cell.drip_full and crafts > cell.drip_crafts then
+          cell.drip = "done"
+        elseif had > 0 then
+          local piped = cell.pipes[#cell.pipes].fluidbox[1]
+          say("drip pipes=%d tick=%d had=%.9g gave=%.9g held=%.9g seg=%.9g cap=%g pre=%.9g ptemp=%.9g",
+            cell.pipe_count, tick, had, gave, held, segment, capacity, pre[i],
+            piped and piped.temperature or 0)
+        end
+        if segment >= capacity - 0.005 then cell.drip_full = true end
+      end
+      cell.drip_held, cell.drip_crafts = held, crafts
+    end
+
     if spanned then
       local along = {}
       for p, pipe in ipairs(cell.pipes) do
@@ -393,6 +424,7 @@ $lua = $lua.
     Replace('__FROM__', ($spans -join ', ')).
     Replace('__SPAN__', "$Span").
     Replace('__RUNGS__', $rungsLua).
+    Replace('__HEATER__', $(if ($Heater) { 'true' } else { 'false' })).
     Replace('__ENERGYFEED__', (Write-EnergyFeed -RigDirectory $rigDir))
 Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
 
@@ -511,6 +543,25 @@ try {
             $a = $mine[$step - 1]; $b = $mine[$step]
             Write-Host ("  the box grew most, by {0:F4}, in the cycle ending on tick {1}: box {2:F4} to {3:F4}, segment {4:F4} to {5:F4}" -f
                 (Num $b['dbox']), [int]$b['tick'], (Num $a['box']), (Num $b['box']), (Num $a['seg']), (Num $b['seg']))
+        }
+        if ($Heater) {
+            $drips = @(Read-Records $ran 'drip' | Where-Object { $_['pipes'] -eq $n })
+            Write-Host ''
+            if ($drips.Count -eq 0) {
+                Write-Host '  the heater''s output box never gave under three quarters of what it held in this run'
+            } else {
+                Write-Host ("  the heater's output box, every tick it held anything, from tick {0} (it first gave under three quarters there) to tick {1}" -f
+                    $drips[0]['tick'], $drips[-1]['tick'])
+                Write-Host ('  {0,8}{1,11}{2,11}{3,9}{4,11}{5,13}{6,11}{7,13}{8,13}' -f
+                    'tick', 'had', 'gave', 'share', 'held', 'segment', 'room', 'box before', 'heater pipe C')
+                foreach ($d in $drips) {
+                    $had = Num $d['had']; $gave = Num $d['gave']
+                    Write-Host ('  {0,8}{1,11:F5}{2,11:F5}{3,9:F4}{4,11:F5}{5,13:F5}{6,11:F5}{7,13:F5}{8,13:E4}' -f
+                        [int]$d['tick'], $had, $gave, $(if ($had -gt 0) { $gave / $had } else { 0 }), (Num $d['held']),
+                        (Num $d['seg']), ((Num $d['cap']) - (Num $d['seg'])), (Num $d['pre']), (Num $d['ptemp']))
+                }
+                Write-Host '  "had" is what it held after the last tick plus any craft since; "gave" is what left it this tick.'
+            }
         }
         $full = $mine | Where-Object { (Num $_['box']) -ge $FullAt * $boxCap } | Select-Object -First 1
         Write-Host $(if ($full) { "  the box first read {0:P1} of its capacity, {1:F2} units, at the cycle ending on tick {2}" -f $FullAt, (Num $full['box']), $full['tick'] }

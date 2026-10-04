@@ -828,16 +828,25 @@ could not be tried, because three pipes is the shortest the rig builds.
 
 [#531](https://github.com/trulsjo/realistic-fusion-refreshed/issues/531),
 [#530](https://github.com/trulsjo/realistic-fusion-refreshed/issues/530) and
-[#532](https://github.com/trulsjo/realistic-fusion-refreshed/issues/532). **The box and the
+[#532](https://github.com/trulsjo/realistic-fusion-refreshed/issues/532), with
+[#540](https://github.com/trulsjo/realistic-fusion-refreshed/issues/540) for the heater. **The box and the
 segment trade through the box's one connection, at most 100 units a tick each way. Both
 branches, the step, the lone box's 526.3158 and the hot tail at the line follow from that.**
 It is read off the segment probe's tick rows and then run as arithmetic beside seven fills.
 
-**The rule.** Every tick, after the mod's step and before the heater delivers:
+**The rule.** Every tick, after the mod's step:
 
 1. the box pushes 100 × min(box fill, 1 − segment fill) units into the segment;
 2. the box pulls 100 × min(segment fill, 1 − box fill) units back, on the fills as the push
-   left them.
+   left them;
+3. the heater's output box pushes 100 × min(its fill, 1 − segment fill) into the segment, and
+   then does it again on the fills the first push left (#540). Its fill is over the 200 units
+   `get_capacity` reports for it.
+
+No transfer moves less than 0.1 units unless its source holds less or its destination has less
+room (#540). Steps 1 and 2 are #531's; step 3 is the same push made twice, because an output
+box has nothing to pull. [The heater's output box](#the-heaters-output-box) is where steps 3
+and the floor were read.
 
 "Fill" is contents over volume: the box over its own volume V, the segment over the capacity C
 it reports. 100 units a tick is what one flush connection passes
@@ -915,10 +924,10 @@ Checked 2026-10-04. `rf-reactor`'s plasma box is `input-output` on a boiler in
 docs'.
 
 **Run as arithmetic beside the game.** Tick by tick: `M.step` on the box every sixth tick,
-the two transfers, then the heater. A craft's 5 units land every 120 ticks, the first on tick
-121, and leave the heater's output box at three quarters of what it holds a tick, 3.75 and
-then 0.9375, as the probe reads it at every fill it printed up to 78% of the box; the last
-0.3125 goes on the third tick. Since
+the two transfers, then the heater's two pushes. A craft's 5 units land every 120 ticks, the
+first on tick 121. Early in a fill the pushes give 2.5 and 1.25 of a craft, three quarters of
+what the heater holds a tick, as the probe reads it at every fill it printed up to 78% of the
+box. The arithmetic gave the heater exactly that until #540 found the rule behind it. Since
 [#543](https://github.com/trulsjo/realistic-fusion-refreshed/issues/543) that is
 `M.settle_segment` in `realistic-fusion-refreshed/scripts/reactor-logic.lua`, and
 `tests/test-reactor-logic.lua` pins its four fill ticks, the step's levels, the lone box's
@@ -941,7 +950,7 @@ rows where the two differ; the committed one is the nearer to the game on every 
 | | a cycle first ends on 2997 units | 151 562 | 151 562 |
 | helium-3, 3000-unit box, six pipes | the cycle the box grew most in | 79 802 | 79 802 |
 | | a cycle first ends on 2997 units | 158 762 | 158 762 |
-| D-T, nothing researched, three pipes, 300 000 ticks | box, segment at 240 002 | 275.71, 334.90 | 275.70, 334.90 |
+| D-T, nothing researched, three pipes, 300 000 ticks | box, segment at 240 002 | 275.71, 334.90 | 275.71, 334.90 |
 | D-T, nothing researched, six pipes | box, segment at 240 002 | 275.84, 417.92 | 275.84, 417.92 |
 
 The four fills that end reach their last unit on the game's own heater cycle.
@@ -974,23 +983,24 @@ heating_ladder=3,confinement_ladder=2 -Ticks 801000 -From 120000,780000 -Span 24
 confinement rung 2 and nothing else (asserted), Factorio 2.0.77 (build 84539), 2026-10-04.
 Every one of the 1333 cycles ending from 640 000 to 800 000 ticks is printed, and the pipes'
 temperature is on every cycle of the run. **A cycle first ends on 998 units at tick 779 282**,
-at 998.0012; the cycle before, ending on 779 162, read 997.9990. The "drip" column is the
-arithmetic with the heater variant described under the table.
+at 998.0012; the cycle before, ending on 779 162, read 997.9990. "Arithmetic" is
+`M.settle_segment` as #543 committed it, with the heater giving three quarters of what it holds
+a tick; "the heater's rule" is the same function since #540, with step 3 and the floor above.
 
-| ticks | game: box | box, °C | pipes, °C | arithmetic: box | box, °C | pipes, °C | with the drip: box | pipes, °C |
+| ticks | game: box | box, °C | pipes, °C | arithmetic: box | box, °C | pipes, °C | the heater's rule: box | pipes, °C |
 |---|---|---|---|---|---|---|---|---|
-| 120 002 | 774.53 | 8.9905e8 | 8.9482e8 | 774.53 | 8.9905e8 | 8.9482e8 | 774.57 | 8.9482e8 |
-| 240 002 | 883.32 | 7.6558e8 | 7.6153e8 | 883.32 | 7.6558e8 | 7.6153e8 | 883.36 | 7.6153e8 |
-| 360 002 | 928.76 | 7.1467e8 | 7.0973e8 | 928.76 | 7.1468e8 | 7.0974e8 | 928.80 | 7.0974e8 |
-| 480 002 | 957.57 | 6.8365e8 | 6.7661e8 | 957.57 | 6.8365e8 | 6.7661e8 | 957.61 | 6.7661e8 |
-| 600 002 | 980.82 | 6.5952e8 | 6.4552e8 | 980.82 | 6.5951e8 | 6.4541e8 | 980.86 | 6.4541e8 |
-| 648 002 | 989.10 | 6.5171e8 | 6.2779e8 | 989.11 | 6.5171e8 | 6.2705e8 | 989.15 | 6.2776e8 |
-| 696 002 | 995.02 | 6.4810e8 | 5.9178e8 | 995.00 | 6.4810e8 | 5.9036e8 | 995.07 | 5.9174e8 |
-| 720 002 | 996.43 | 6.4775e8 | 5.6318e8 | 996.37 | 6.4775e8 | 5.6150e8 | 996.47 | 5.6313e8 |
-| 744 002 | 997.23 | 6.4744e8 | 5.3097e8 | 997.12 | 6.4747e8 | 5.2891e8 | 997.25 | 5.3071e8 |
-| 780 002 | 998.01 | 6.4712e8 | 4.7991e8 | 997.74 | 6.4714e8 | 4.7733e8 | 997.88 | 4.7877e8 |
-| 792 002 | 998.23 | 6.4695e8 | 4.6267e8 | 997.88 | 6.4706e8 | 4.5968e8 | 998.03 | 4.6101e8 |
-| a cycle first ends on 998 units | 779 282 | | | 803 522 | | | 789 722 | |
+| 120 002 | 774.53 | 8.9905e8 | 8.9482e8 | 774.53 | 8.9905e8 | 8.9482e8 | 774.53 | 8.9482e8 |
+| 240 002 | 883.32 | 7.6558e8 | 7.6153e8 | 883.32 | 7.6558e8 | 7.6153e8 | 883.32 | 7.6153e8 |
+| 360 002 | 928.76 | 7.1467e8 | 7.0973e8 | 928.76 | 7.1468e8 | 7.0974e8 | 928.76 | 7.0974e8 |
+| 480 002 | 957.57 | 6.8365e8 | 6.7661e8 | 957.57 | 6.8365e8 | 6.7661e8 | 957.57 | 6.7661e8 |
+| 600 002 | 980.82 | 6.5952e8 | 6.4552e8 | 980.82 | 6.5951e8 | 6.4541e8 | 980.82 | 6.4551e8 |
+| 648 002 | 989.10 | 6.5171e8 | 6.2779e8 | 989.11 | 6.5171e8 | 6.2705e8 | 989.11 | 6.2778e8 |
+| 696 002 | 995.02 | 6.4810e8 | 5.9178e8 | 995.00 | 6.4810e8 | 5.9036e8 | 995.03 | 5.9174e8 |
+| 720 002 | 996.43 | 6.4775e8 | 5.6318e8 | 996.37 | 6.4775e8 | 5.6150e8 | 996.43 | 5.6314e8 |
+| 744 002 | 997.23 | 6.4744e8 | 5.3097e8 | 997.12 | 6.4747e8 | 5.2891e8 | 997.23 | 5.3093e8 |
+| 780 002 | 998.01 | 6.4712e8 | 4.7991e8 | 997.74 | 6.4714e8 | 4.7733e8 | 998.02 | 4.7987e8 |
+| 792 002 | 998.23 | 6.4695e8 | 4.6267e8 | 997.88 | 6.4706e8 | 4.5968e8 | 998.23 | 4.6263e8 |
+| a cycle first ends on 998 units | 779 282 | | | 803 522 | | | 779 282 | |
 
 **The box stays hot because it stops sharing its heat.** Both transfers shrink as the two
 fill. At 120 002 the segment is 75.3% full and the box 77.5%, and about 25 units cross each
@@ -1002,31 +1012,87 @@ every step, so its box was colder, burned less and filled 100 000 ticks early. W
 the box's temperature is within 0.02% of the game's at every row above, and the pipes' within
 0.7%.
 
-**What is left is 3.1% the other way, and it is the heater's output box.** The arithmetic
-ends a cycle on 998 units 24 240 ticks after the game, where the pooled one was 100 928
-before it. Its segment reads 1300.00 at 780 002 against the game's 1297.87. In the game the
-heater's box backs up against a filling segment. It was read where the segment had 2.5 units
-of room: at tick 780 002 the box still held 4.63 of the craft's 5 units, having given 0.37. It
-gave 0.32, 0.28, 0.25, 0.23 and 0.21 on the ticks after, then 0.20 a tick to 780 016, then
-0.15 falling to 0.10 once the segment read 1300.00, and was empty at 780 030. It starts
-earlier than that: at 648 002, with 13 units of room, the game's segment already reads 1.5
-under the arithmetic's. The arithmetic's heater empties in three ticks whatever the segment
-holds. A variant that gives no more than 0.15 of the
-segment's room a tick, and never under 0.2, was fitted to the first ten of those ticks: the
-drip column. It has no 0.10-a-tick phase, and it was run on the scratch arithmetic
-before #543, not on `M.settle_segment`.
-Its segment reads 1297.66 at 780 002 and its pipes are within 0.4% of the game's at every
-row, and it ends a cycle on 998 units 10 440 ticks late, 1.3%. The curve is flat there. The
-game's box gains 0.0022 units a cycle at 780 002, so the 0.13 units the drip variant is short
-is worth thousands of ticks. What the heater's output box does against a nearly full segment
-was fitted and not found.
+**The last 3.1% was the heater's output box, and it follows the same rule.** With the heater
+giving three quarters of what it holds a tick, the arithmetic ends a cycle on 998 units 24 240
+ticks after the game, and its segment reads 1300.00 at 780 002 against the game's 1297.87. In
+the game the heater's box backs up against a filling segment. It was read where the segment had
+2.5 units of room: at tick 780 002 the box still held 4.63 of the craft's 5 units, having given
+0.37. It gave 0.32, 0.28, 0.25, 0.23 and 0.21 on the ticks after, then 0.20 a tick to 780 016,
+then 0.15 falling to 0.10 once the segment read 1300.00, and was empty at 780 030. It starts
+earlier than that: at 648 002, with 13.10 units of room, the game's segment reads 1286.90, 1.48
+under the three-quarters arithmetic's 1288.38.
+**With step 3 and the floor, `M.settle_segment` first ends a cycle on 998 units at tick
+779 282, the game's own cycle.** Its segment reads 1297.87 at 780 002 and 1286.91 at 648 002.
+At every row of the table its box is within 0.01 units of the game's and its pipes within
+0.01%. Computed 2026-10-04; `tests/test-reactor-logic.lua` pins the tick.
+
+Before the rule was found, a variant fitted to the first ten of those ticks gave no more than
+0.15 of the segment's room a tick and never under 0.2. Run on the scratch arithmetic before
+#543, it ended a cycle on 998 units 10 440 ticks late, at 789 722, and had no 0.10-a-tick
+phase. Both its numbers are the rule seen from outside. Two pushes of 100 × room / C give
+(100 / C) × (2 − 100 / C) of the room, which is 0.14793 at three pipes, and two floors are 0.2.
+The 0.10 phase is one push floored at 0.1, into the room the box's pull makes.
 
 | variant | a cycle first ends on 998 units | against the game |
 |---|---|---|
 | pooled, measured split, fed in bursts (#521) | 678 354 | 100 928 ticks early, 13.0% |
-| two stores trading by the rule, the heater emptying in three ticks | 803 522 | 24 240 late, 3.1% |
-| the same, the heater's box dripping near a full segment | 789 722 | 10 440 late, 1.3% |
+| two stores trading by the rule, the heater at three quarters a tick (#543) | 803 522 | 24 240 late, 3.1% |
+| scratch arithmetic, the heater's box fitted to drip near a full segment | 789 722 | 10 440 late, 1.3% |
+| two stores, the heater pushing twice, every transfer floored at 0.1 (#540) | 779 282 | on the game's cycle |
 | the game | 779 282 | |
+
+##### The heater's output box
+
+[#540](https://github.com/trulsjo/realistic-fusion-refreshed/issues/540). Since #540
+`scripts/probe-plasma-segment.ps1 -Heater` follows the heater's output box in each cell. It
+starts on the first tick the box gives under three quarters of what it held. From there it
+prints every tick the box holds anything, to the end of the first heater cycle in which the
+segment reads full, within 0.005 units. Two runs, Factorio 2.0.77 (build 84539), 2026-10-04,
+D-D, one heater a cell, research asserted:
+
+- `-Pipes 3,6 -Heater -From 12000 -Span 1`: nothing researched, 100 000 ticks.
+- `-Pipes 3,6 -Heater -Rungs heating_ladder=3,confinement_ladder=2 -Ticks 801000 -From 648000
+  -Span 3 -Every 100`: heating rung 3 and confinement rung 2 and nothing else, 801 000 ticks.
+
+Each tick pair was checked against steps 1 to 3 and the floor: the rule run from one tick's
+reading, compared with the next tick's held, segment and box before the mod's step. Pairs over
+a step tick are left out, because the probe reads the box before the mod steps it.
+
+| research, pipes | first gives under three quarters | rows end | tick pairs | worst miss | without the floor |
+|---|---|---|---|---|---|
+| nothing, three | 69 842: 3.61696 of 5 | 71 401, segment full | 153 | 1.8e-5 | 0.22 |
+| nothing, six | 78 842: 3.65635 of 5 | 80 563, segment full | 91 | 1.8e-5 | 0.22 |
+| heating 3 + confinement 2, three | 585 482: 3.69925 of 5 | 753 861, segment 1299.997 | 8780 | 2.2e-5 | 0.22 |
+| heating 3 + confinement 2, six | 663 362: 3.69934 of 5 | 800 890, the run's end; segment never full | 4348 | 2.1e-5 | 0.05 |
+
+The worst misses are within the five decimals the probe prints. Five orders were tried for one
+tick: the box's push and pull, then the heater's two pushes; the heater's two first; the box's
+push, the heater's two, then the pull; and two that alternate them. Only the first fits. The others miss by 0.06 to 0.15 at both pipe counts with
+nothing researched.
+
+**It is #531's rule applied to an output box: the push, made twice, because there is nothing
+to pull.** At three pipes with nothing researched the probe read, after tick 71 162, the heater
+holding 3.80534 and the segment 1296.81102 of 1300, the box 996.98972. The box pushes
+100 × 3.18898 / 1300 = 0.24531 and pulls 100 × (1 − 0.99674441) = 0.32556, so it gains 0.08025,
+and the probe read it 0.08025 higher, at 997.06997. That leaves 3.26923 units of room. The
+heater pushes 100 × 3.26923 / 1300 = 0.25148, then 100 × 3.01775 / 1300 = 0.23213: 0.48361
+between them. The probe read 0.48362 gone, and the heater at 3.32172. Early in a fill the
+segment's room is no limit. The two pushes then go by the heater's own fill, 100 × 5 / 200
+and 100 × 2.5 / 200, which is the three quarters.
+
+**The floor is a reading, not a fit.** From 71 174 to 71 176 the heater gave 0.20000 a tick,
+two pushes of 0.1 where the room would have allowed under 0.1 each. After the segment read
+1300.00, from 71 296 to 71 305, the box gained exactly 0.10000 on every tick the mod did not
+step it. 100 × (1 − box fill) was
+0.084 at 71 296, so the floor sets that pull. The heater gave the same 0.10000, one push into
+the room the pull made. The third tick after a craft early in a fill carries it too: 0.34577
+held gave 0.27288, which is 0.17289 by the heater's fill and then 0.1. The four fills the
+arithmetic reproduces above are unchanged by it.
+
+What the 2.0.77 docs say is unchanged from above: no rate, order or minimum for a fluidbox's
+flow appears on [`FluidBox`](https://lua-api.factorio.com/2.0.77/types/FluidBox.html) or
+[`LuaFluidBox`](https://lua-api.factorio.com/2.0.77/classes/LuaFluidBox.html), checked
+2026-10-04. The rule and its floor are this note's reading of the game.
 
 ### What that does to coverage, on one heater
 

@@ -2807,13 +2807,21 @@ do
   near(lone(120), 1e6 / 1900, 1e-9, "and 1000 x 1000 / 1900, 526.3158, from 120 on")
 
   -- THE D-T LINE, SETTLED: it never fills, and sits on the low branch with the burn's draw on top.
-  -- The game read 275.71 units and 334.90 of 1300 at the cycle ending on 240 002 (#532). The
-  -- arithmetic gives 275.70 and 334.90; the note's table, before this test, quoted 275.75.
+  -- The game read 275.71 units and 334.90 of 1300 at the cycle ending on 240 002 (#532), and so
+  -- does the arithmetic since #540's heater rule. Before it the arithmetic gave 275.70, and the
+  -- note's table, before #543, quoted 275.75.
   local settled = L.settle_segment(SPEC, "rf-d-t-plasma", 3, 240002)
   local last = settled.cycles[#settled.cycles]
   check(last.tick == 240002, "the D-T run's last cycle ends on 240 002", tostring(last.tick))
-  near(last.box, 275.70, 0.0001, "a D-T line on three pipes settles its box at 275.70 units")
+  near(last.box, 275.71, 0.0001, "a D-T line on three pipes settles its box at 275.71 units")
   near(last.segment, 334.90, 0.0001, "and its segment at 334.90 of 1300")
+
+  -- THE HEATER'S OUTPUT BOX (#540): two pushes a tick, floored at 0.1. With it the line cell,
+  -- heating rung 3 and confinement rung 2 on three pipes, ends a cycle on 998 units on the
+  -- game's own tick. With the box emptying at three quarters a tick it was 803 522.
+  local got = fills_at(L.settle_segment(at_rungs(3, 2), "rf-d-d-plasma", 3, 800000), 998)
+  check(got == 779282, "the line cell first ends a cycle on 998 units at 779 282, as in the game",
+    tostring(got))
 end
 
 H.finish()
