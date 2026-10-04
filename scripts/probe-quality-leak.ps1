@@ -65,7 +65,9 @@
       * THE ANSWER IS TAKEN OFF THE OUTPUT BOX, which starts at zero, and the input box's depletion
         is printed beside it. The two do not agree unit for unit -- the ratio is reported per cell --
         and the output box is the one the rate is taken from, because it starts from nothing and its
-        reading lands on an exact multiple of the transfer quantum.
+        reading lands on an exact multiple of the transfer quantum. Since #541 each box's segment
+        is read beside it: the input box trades with the segment it is in, and box plus segment on
+        the input side is what the output box gains.
 
     AND #101 IS RE-CONFIRMED AT QUALITY. Every level runs twice: one cell cold at
     min_temperature_c, one hot at the shipped D-D equilibrium. The hot row must read zero -- and it
@@ -215,6 +217,18 @@ local function quality_levels()
   end
   table.sort(levels, function(a, b) return a.level < b.level end)
   return levels
+end
+
+--- What the fluid segment a box is in holds, as get_fluid_segment_contents answers it, and that
+-- segment's get_capacity. A box with no pipe on it is still in a segment of its own (#531,
+-- docs/research/exchanger-coverage.md, "The rule behind the split"), and the two trade every tick,
+-- so a box's own amount is only part of what a conversion moves (#541).
+local function segment_of(entity, index)
+  local total = 0
+  for _, amount in pairs(entity.fluidbox.get_fluid_segment_contents(index) or {}) do
+    total = total + amount
+  end
+  return total, entity.fluidbox.get_capacity(index)
 end
 
 local function must(entity, what)
@@ -445,6 +459,33 @@ local function report()
     end
   end
 
+  -- EACH BOX'S SEGMENT, READ BESIDE THE BOX (#541). `made` and `taken` above are box amounts, and a
+  -- box trades with its segment every tick, so either box shows only its share of what moved.
+  -- Printed for every cell: the segment's contents and capacity at the baseline and now, each
+  -- side's box-plus-segment change, and that change over the box's alone.
+  say("segment           per cell: input box, its segment and capacity at the baseline and now; "
+    .. "then the same for the output; `in total` and `out total` are box plus segment")
+  for _, c in ipairs(cells) do
+    local e = c.entity
+    local in_seg, in_cap = segment_of(e, 1)
+    local out_seg, out_cap = segment_of(e, 2)
+    local in_box  = e.fluidbox[1] and e.fluidbox[1].amount or 0
+    local out_box = e.fluidbox[2] and e.fluidbox[2].amount or 0
+    say("seg    %-10s %-5s in: box %.10g -> %.10g, segment %.10g -> %.10g of %.10g   "
+      .. "out: box %.10g -> %.10g, segment %.10g -> %.10g of %.10g",
+      c.quality, c.regime, c.seeded, in_box, c.in_seg_at_baseline, in_seg, in_cap,
+      c.made_at_baseline, out_box, c.out_seg_at_baseline, out_seg, out_cap)
+    local taken_total = (c.seeded + c.in_seg_at_baseline) - (in_box + in_seg)
+    local made_total  = (out_box + out_seg) - (c.made_at_baseline + c.out_seg_at_baseline)
+    local taken_box   = c.seeded - in_box
+    local made_box    = out_box - c.made_at_baseline
+    say("seg    %-10s %-5s in total taken %.10g (x%.10g of the box's)   out total made %.10g "
+      .. "(x%.10g of the box's)   made/taken, totals = %.10g",
+      c.quality, c.regime, taken_total, taken_box ~= 0 and taken_total / taken_box or 0,
+      made_total, made_box ~= 0 and made_total / made_box or 0,
+      taken_total ~= 0 and made_total / taken_total or 0)
+  end
+
   -- The powered control. A subject that never ran would report a leak of zero, which is exactly
   -- what the hot rows are supposed to report -- so the two are told apart here rather than by hope.
   for _, c in ipairs(cells) do
@@ -469,8 +510,9 @@ script.on_nth_tick(1, function()
   if tick <= 5 or tick % 60 == 0 then
     local c = storage.cells[1]
     local box = c.entity.fluidbox[1]
-    say("trace  tick %-5d %-10s %-5s amount=%.10g temperature=%.10g",
-      tick, c.quality, c.regime, box and box.amount or -1, box and box.temperature or -1)
+    say("trace  tick %-5d %-10s %-5s amount=%.10g temperature=%.10g segment=%.10g",
+      tick, c.quality, c.regime, box and box.amount or -1, box and box.temperature or -1,
+      (segment_of(c.entity, 1)))
   end
 end)
 
@@ -490,6 +532,8 @@ script.on_nth_tick(60, function()
       local input, output = c.entity.fluidbox[1], c.entity.fluidbox[2]
       c.seeded = input and input.amount or 0
       c.made_at_baseline = output and output.amount or 0
+      c.in_seg_at_baseline  = segment_of(c.entity, 1)
+      c.out_seg_at_baseline = segment_of(c.entity, 2)
     end
     return
   end
