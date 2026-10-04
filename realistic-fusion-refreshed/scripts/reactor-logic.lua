@@ -1492,7 +1492,7 @@ end
 --
 -- @param spec, fluid_name  as M.step's. A nil fluid_name burns nothing.
 -- @param pipes    rf-pipe in the segment. 0 is a lone box: a segment of the box's own volume.
--- @param ticks    how long to run. M.step runs on every sixth, at control.lua's cadence.
+-- @param ticks    how long to run. M.step runs on every M.step_ticks-th, control.lua's cadence.
 -- @param paid_j, capture  as M.settle's; math.huge if paid_j is nil
 -- @param heater   M.heater if nil. A craft lands on tick period + 1, then every period, in an
 --                 output box of M.heater_output_box units.

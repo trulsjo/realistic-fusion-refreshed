@@ -1058,8 +1058,8 @@ All 33 rows of the five that match are within those figures, and those five matc
 **The ten ladder cells read as they did before #544**
 ([#554](https://github.com/trulsjo/realistic-fusion-refreshed/issues/554)). Re-run 2026-10-04
 against Factorio 2.0.77 by `probe-brownout-contention.ps1` with nothing researched and with
-`-HeatingRungs 5`, each asserted rung by rung, every cell reporting all 21 rungs of 1200 ticks,
-the second 600 measured. No ladder cell
+`-HeatingRungs 5`, each asserted rung by rung, every cell reporting all 21 rungs. A rung is 1200
+ticks, and the second half of each, 600 ticks, is what is measured. No ladder cell
 holds a store, so the store prediction should leave them alone, and it does. No reactor here is
 fed by a heater: the rig holds each one's plasma at its box's fill.
 

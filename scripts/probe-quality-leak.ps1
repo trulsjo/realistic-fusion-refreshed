@@ -537,7 +537,7 @@ local function report()
   say("done")
 end
 
--- The first few seconds of one cell's input box, printed as a curve.
+-- Two cells' input box, segment and output box, printed tick by tick.
 --
 -- IT EXISTS BECAUSE THE FIRST RUN LOST HALF THE BOX AND COULD NOT SAY WHEN. Every cell was seeded
 -- to the box's declared volume of 1000 and read back 526.3158 at the end -- the same figure at every

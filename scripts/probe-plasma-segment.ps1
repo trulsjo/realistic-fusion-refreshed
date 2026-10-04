@@ -103,7 +103,8 @@
     which it holds anything, through the end of the first heater cycle in which the segment read
     full, within 0.005 units. Each row carries what the box held, what it gave, the segment's
     room and the reactor's box before the mod's step, so a rule for the delivery can be checked
-    against it.
+    against it. A box already holding plasma on the first tick the probe reads it does not start
+    the rows on that tick: nothing was read before it, so what it gave is not known.
 
     "Under three quarters" is tested as under 0.74999 of what it held (#552). The engine's
     amounts are single precision: the first craft's exact three quarters, 3.75 of 5 on tick 122,
