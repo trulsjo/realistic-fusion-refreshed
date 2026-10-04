@@ -2238,7 +2238,7 @@ end
         Write-Host '     refused by check_every_plasma_burns(), a swapped collector box'
         Write-Host '     refused by check_collector_boxes(), a doubled plasma box refused by'
         Write-Host '     check_plasma_capacity() and a widened heater box refused by'
-        Write-Host '     check_segment_constants() -- all four by their own words -- a'
+        Write-Host '     check_segment_constants() -- each refusal in the check''s own words -- a'
         Write-Host '     socket-height gate that measures its own reference off vanilla, passes the'
         Write-Host '     sheets, catches a lifted one and catches a parted SOCKET_Z, a socket-parts'
         Write-Host '     gate that passes the sheets, catches one shaved underneath, catches a'
