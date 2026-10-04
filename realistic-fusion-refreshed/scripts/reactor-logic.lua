@@ -860,8 +860,9 @@ M.blanket = {
 --- What one rf-heater turns fuel into plasma at.
 --
 -- step(), settle() AND breed() DO NOT USE THIS: the heater is an ordinary assembling machine, and
--- those start at the reactor's box. M.settle_fed is the one function here that models the heater,
--- feeding the box at its rate and its temperature (#502). The rest is here because it is the
+-- those start at the reactor's box. M.settle_fed is the one function the mod's model uses that
+-- models the heater, feeding the box at its rate and its temperature (#502); M.settle_segment
+-- models it too, but is arithmetic for a note and nothing the mod runs calls it (#543). The rest is here because it is the
 -- denominator of the SUPPLY RATIO (CONTEXT.md) -- how many settled D-D reactors feed one consumer
 -- of what they breed -- and that ratio's smaller reading, the one a player actually meets, is per
 -- heater rather than per saturated reactor. Pinning it needs the rate, and a figure pinned

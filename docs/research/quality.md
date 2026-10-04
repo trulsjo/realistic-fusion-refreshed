@@ -771,7 +771,8 @@ The accumulators gave their full 5.4 MW for sixteen seconds and the last 3.6 MJ 
 seventeenth, 90 MJ in all, and took nothing back. What they gave was split 90 : 225, the same
 share by ask the supply's own 50 MW is split by: of 5.4 MW, 1.54 to the normal reactor and 3.86
 to the legendary one, where an even split would be 2.7 each. Every one of the 33 rows is within
-1.8e-6 MW of the water-fill of the supply plus what the accumulators were measured giving. So
+1.8e-6 MW of the water-fill of the supply plus what the accumulators were measured giving.
+*(#544, below, predicts it.)* So
 the legendary reactor takes the larger part of a discharge as it takes the larger part of the
 supply. Neither reactor is capped at this supply. #528's `acc-supply` cell, below, lifts a lone
 reactor to its spend, and #538's `discharge-cap`, further below, caps one of two so the
