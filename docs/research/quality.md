@@ -1125,13 +1125,13 @@ a box will actually hold are not the same number. *(#531 found why:
 [`exchanger-coverage.md`](exchanger-coverage.md#the-rule-behind-the-split).)* And the input and output readings of the same
 conversion **disagree by a factor of 1.887** in the one cell where there is anything to compare —
 close to the 1.900 the seeded box relaxes by, and not equal to it. *(#541 found that it is the
-same trade, seen from the input box alone: [The 1.887 is the box's share](#the-1887-is-the-boxs-share).)*
+same trade, seen from the input box alone: [The 1.887 is the box's share, and a fitted rule reproduces it](#the-1887-is-the-boxs-share-and-a-fitted-rule-reproduces-it).)*
 
 And it is a *fuel* leak rather than an energy exploit: the boiler consumes a unit of plasma —
 10²⁰ nuclei — to make 1 MJ, where fusing the same 10²⁰ D-D nuclei releases about 58 MJ. At the one
 level where it runs at all, 3.576 W against 50 MW of heating is one part in fourteen million.
 
-#### The 1.887 is the box's share
+#### The 1.887 is the box's share, and a fitted rule reproduces it
 
 ([#541](https://github.com/trulsjo/realistic-fusion-refreshed/issues/541).) The rig now reads
 each box's segment beside the box. `pwsh -File scripts/probe-quality-leak.ps1` and again with
@@ -1152,7 +1152,7 @@ lengths.** The output's segment holds nothing, so the output box shows everythin
 input box shows only its share, and the segment gave the rest. So the 1.887 is the box/segment
 split seen from the input box. It is the same split as the 526.3158.
 
-**Where it lands is not a constant, and the rule does not give 1.887.** Counted in float32 ULPs
+**Where it lands is not a constant, and #531's rule does not give 1.887.** Counted in float32 ULPs
 at 1.0, 2⁻²⁴ units, the conversion moved 60 000 of them in 1000 s and the box gave 31 800,
 an exact 53%. That is why the factor reads 100/53. Over 10 000 s it moved 600 000 and the box
 gave 316 200. The factor climbs toward the 1.900 that the rule's low branch gives a lone 1000-unit
@@ -1166,18 +1166,55 @@ for this note, draining 2⁻²⁴ a tick from the box, computed 2026-10-04:
 | the rule from the game's baseline, in doubles | 31 755 | 1.889 |
 | the same, each transfer rounded or floored or ceiled to 2⁻²⁴, nine combinations | 31 752 – 31 762 | 1.889 – 1.890 |
 | the same, each transfer rounded to float32 | 32 032 | 1.873 |
+| a fixed-point variant, fitted to the game's ticks (below), from the seed | 31 800 | 1.887 |
 
 From the game's baseline over 10 000 s the double-precision rule reads 1.899, against the
-game's 1.898. Every variant that starts where the game starts lands within 0.2% of the game,
-or 0.7% with float32 transfers. None reproduces the 31 800: the nearest gives 38 ULPs less,
-2.3×10⁻⁶ units. Where the box sits is off the rule by more than that.
-The game's baseline box is 1.04×10⁻⁵ above the low branch for what box and segment hold
-between them. At the end of the 1000 s run it is 2.8×10⁻⁶ below that branch, and at the end
-of 10 000 s it is 1.41×10⁻⁵ below. A box nothing drains settles at 526.3158023 in the game,
-in every cell but the legendary cold one, where the rule settles at 1×10⁶ / 1900 =
-526.3157895, so 1.28×10⁻⁵ apart. The rule matches the game to four decimals and does not
-match it to the tenth significant figure. What sets that offset was not found, so the arithmetic
-that gives 1.887 rather than 1.889 was not found either.
+game's 1.898. None of the first five rows reproduces the 31 800: the nearest gives 38 ULPs
+less, 2.3×10⁻⁶ units. A box nothing drains settles at 526.3158023 in the game, in every cell
+but the legendary cold one, where the rule settles at 1×10⁶ / 1900 = 526.3157895, so
+1.28×10⁻⁵ apart.
+
+**The game leaves #531's rule on the first tick**
+([#553](https://github.com/trulsjo/realistic-fusion-refreshed/issues/553)). The rig now reads
+the normal and the legendary cold cell every tick: the input box, its segment and the output
+box, to seventeen digits. It runs the rule beside them from the seed, taking only the output
+box's gain each tick from the game. `pwsh -File scripts/probe-quality-leak.ps1 -TraceTicks
+60420`, again without the trace, and with `-Seconds 10000 -TraceTicks 0`; Factorio 2.0.77,
+2026-10-04, no heater, no pipe, 60 300 ticks or 600 300. The rig sets no research, and its
+subjects are unregistered, so no ladder reaches them. In both cells the game's box reads
+909.99999642372131 at tick 1, where the rule gives 910: 3.58×10⁻⁶ units apart, sixty units of 2⁻²⁴. In the normal cell the gap
+grows to 1.29×10⁻⁵ by tick 167, the lone box's offset above, and stays there. In the legendary
+cell the largest is 2.81×10⁻⁵, at tick 59 301.
+
+**A variant that gives 31 800, fitted to those ticks.** Every amount the trace read, box,
+segment and output box in both cells on all 60 420 ticks, is a whole number of 2⁻²⁴ units.
+What the box and the segment trade in a tick, with the draw added back, is a whole multiple of
+100 such units on every tick. This variant reproduces them:
+
+1. the boiler's draw comes off the box first;
+2. a fill is the box's or the segment's amount in 2⁻²⁴ units over its volume, floored to a
+   whole number;
+3. the box pushes 100 × min(box fill, 2²⁴ − segment fill) units, then pulls 100 ×
+   min(segment fill, 2²⁴ − box fill) on the fills the push left.
+
+Run from the seed, it misses none of the 60 300 ticks in either cell. It gives the 31 800 of
+60 000 and the lone box's 526.3158023 to every digit printed. With `-Seconds 10000`, a run it
+was not fitted to, it misses none of 600 300 ticks in either cell and gives 316 200 of
+600 000, the game's figure. The legendary rows there put #531's rule 2.81×10⁻⁵ off the game
+at most, at tick 598 901.
+
+It is **fitted, not found**. It is the combination that missed no tick out of 27 tried on
+this trace in scratch arithmetic: the source fill floored, ceiled or rounded, the
+destination's the same, and the draw before, between or after the two transfers. The trace
+cannot say how the destination's fill is rounded; all three choices miss nothing. The
+game's code was not read, and no 2.0.77 doc page found says fluid amounts are fixed point.
+It is checked on a lone 1000-unit box at normal and legendary quality only, with no pipe and
+no heater.
+
+**The 1.28×10⁻⁵ excess and the factor's gap have one cause on this reading.** The same
+variant, with nothing changed between the two cells, gives the normal cell's 526.3158023 and
+the legendary cell's 31 800. Without step 2's floor it is #531's rule in doubles, which gives
+526.3157895 and 31 579 from the seed.
 
 ## The equilibrium, measured
 
@@ -1278,17 +1315,22 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   documented.** #147 measured the flooring — five levels, two run lengths, the legendary rate landing
   on 2⁻²⁴ units a tick to ten digits — and no 2.0.77 doc page found in this pass says the engine does
   that. The measurement stands on its own; the mechanism named for it is a reading of the numbers.
-- **Both oddities #147 turned up are the box/segment trade, and neither is matched past about
-  10⁻⁵ units.** A fluid box seeded to its declared `volume` settling at 526.3158 of 1000 is
-  where that trade balances with no pipes (#531, see
+- **Both oddities #147 turned up are the box/segment trade. A variant of it fitted to the game's
+  ticks matches both exactly, and that variant is a fit, not the game's documented rule.** A
+  fluid box seeded to its declared `volume` settling at 526.3158 of 1000 is where that trade
+  balances with no pipes (#531, see
   [`exchanger-coverage.md`](exchanger-coverage.md#the-rule-behind-the-split)). The 1.887
   between the input and output readings is the input box's share of what it and its segment
   gave, and box plus segment equals what was made, to ten digits (#541,
-  [The 1.887 is the box's share](#the-1887-is-the-boxs-share)). What is not explained is the
-  exact figure. The game's lone box settles 1.28×10⁻⁵ units above the rule's 526.3157895, and
-  the rule run from the game's baseline gives 1.889 or 1.890 over 1000 s, or 1.873 with float32
-  transfers, where the game gives 1.887. The factor is not a constant: it is 1.8975 over
-  10 000 s, legendary, 2026-10-04.
+  [The 1.887 is the box's share, and a fitted rule reproduces it](#the-1887-is-the-boxs-share-and-a-fitted-rule-reproduces-it)).
+  #531's rule in doubles leaves the game at tick 1, by 3.58×10⁻⁶ units. #553 fitted a variant
+  to the trace: amounts in whole 2⁻²⁴ units, each fill floored, the boiler's draw taken first.
+  It misses none of 60 300 ticks in the lone box or the draining one. It gives the lone box's
+  526.3158023 and the 1000 s figure of 31 800 of 60 000, which is 1.887. What is not shown is
+  that the game computes it that way. The variant was picked from 27 against the trace it
+  matches; the 10 000 s run, which it also matches on every tick, is the one check outside it. The rounding of the
+  destination's fill is not determined. It is checked only on a lone 1000-unit box at normal
+  and legendary quality, with no pipe and no heater. Factorio 2.0.77, 2026-10-04.
 - **Whether a mod may add a sixth quality level is unknown.** FFF #375 refers to restrictions without
   stating them and no 2.0.77 doc page found in this pass covers it. Narrowed but not measured by
   [`inverted-quality.md`](inverted-quality.md).
