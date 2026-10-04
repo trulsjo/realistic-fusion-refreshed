@@ -391,6 +391,10 @@ segment.
   the control load the same box stays within 7.1% of the powered one's temperature (1.2979
   against 1.3966×10⁸ at 120 000). This is the pooling loss the fresh canary pair showed,
   reached from a running save.
+  The pair was saved while its line was still filling. The shipped pair run further, in
+  [Once the shipped line is full, the unpowered reactor falls to the floor](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor),
+  drops to the same 15 °C when its line fills near tick 149 000, so the control load's warmth
+  at 120 000 is that of a line still filling.
 - **Settled:** the canary's powered box 1 is still cooling at 120 000, at 2.3962×10⁸ °C, moving
   toward the 2.3815×10⁸ a fresh canary box settles at. It moved 0.0026×10⁸ in the last 8000
   ticks. Box 2 has read 15 °C since 84 000.
@@ -400,7 +404,9 @@ a breaking change as "anything that breaks an existing save", and warns that thi
 silently and players find out, not the build". The save loads, no plasma is lost, and a full
 solo reactor runs as before. But a reactor that a saved plant heats only through the pipe goes
 from 2.6695×10⁸ °C to the 15 °C floor within 4000 ticks of loading, and the game logs nothing.
-That is a reading of the rule, not a choice between the options below.
+The reading is of a pair saved with its line still filling. A shipped pair whose line is
+already full holds its unpowered reactor at 15 °C before any change (#548), and that case was
+not loaded. That is a reading of the rule, not a choice between the options below.
 
 ## What was not measured
 
