@@ -384,7 +384,9 @@ script.on_event(defines.events.on_tick, function()
     if HEATER and cell.drip ~= "done" then
       local had = (cell.drip_held or 0) + (crafts - (cell.drip_crafts or crafts)) * storage.per_craft
       local gave = had - held
-      if not cell.drip and held > 0 and gave < 0.74 * had then cell.drip = "on" end
+      -- `had > 0` keeps a box that held something on the probe's first tick, with nothing read
+      -- before, from starting it.
+      if not cell.drip and had > 0 and held > 0 and gave < 0.74 * had then cell.drip = "on" end
       if cell.drip == "on" then
         local capacity = cell.pipes[1].fluidbox.get_capacity(1)
         if cell.drip_full and crafts > cell.drip_crafts then
@@ -460,6 +462,7 @@ try {
     if ($cells.Count -ne $pipeCounts.Count) { throw "the rig built $($cells.Count) cell(s) of $($pipeCounts.Count)." }
     $cycles = @(Read-Records $ran 'cycle')
     $ticked = @(Read-Records $ran 'tick')
+    $dripped = @(Read-Records $ran 'drip')
     if ($cycles.Count -eq 0) { throw 'the rig reported no heater cycle; the heater never crafted.' }
     # ONE CELL'S HEATER STANDING STILL BESIDE ANOTHER'S RUNNING (#536). The summary below indexes
     # each cell's last cycle, and on a cell with none that failed without saying which.
@@ -545,7 +548,7 @@ try {
                 (Num $b['dbox']), [int]$b['tick'], (Num $a['box']), (Num $b['box']), (Num $a['seg']), (Num $b['seg']))
         }
         if ($Heater) {
-            $drips = @(Read-Records $ran 'drip' | Where-Object { $_['pipes'] -eq $n })
+            $drips = @($dripped | Where-Object { $_['pipes'] -eq $n })
             Write-Host ''
             if ($drips.Count -eq 0) {
                 Write-Host '  the heater''s output box never gave under three quarters of what it held in this run'

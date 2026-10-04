@@ -1082,11 +1082,13 @@ script.on_nth_tick(REPORT, function()
       "%.4g MW over the minute before last against %.4g MW over the last, %+.2f%% -- raise -Settle if this fails",
       before_mw, lit_mw, 100 * (lit_mw - before_mw) / lit_mw)
       or string.format("the %ds settle is too short to compare two minutes", SETTLE / 60))
-  -- The rig's own feed line at the end of the settle (#546). Reported, not asserted.
+  -- The rig's own feed line at the end of the settle (#546). Reported, not asserted, so a cell
+  -- built without one says so rather than taking the gate down (#556).
   local fed = snaps.lit.full.line
-  note("full: its feed line at the end of the settle",
-    string.format("%d rf-pipe, segment capacity %.6g holding %.6g, box %.6g",
-      fed.pipes, fed.capacity, fed.held, lit and lit.amount or 0))
+  note("full: its feed line at the end of the settle", fed
+    and string.format("%d rf-pipe, segment capacity %.6g holding %.6g, box %.6g",
+      fed.pipes, fed.capacity, fed.held, lit and lit.amount or 0)
+    or string.format("no feed line, box %.6g", lit and lit.amount or 0))
 
   local half_sold, half_drawn = span("half", "lit", "deep")
   local dark_sold, dark_drawn = span("dark", "lit", "deep")
