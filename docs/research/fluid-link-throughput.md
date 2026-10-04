@@ -141,6 +141,15 @@ rather than a measurement; no 360 000-tick run has been taken on an unresearched
 confinement ladder has no such divisor, because it moves a physical parameter rather than scaling an
 output: a base-confinement figure has to be measured, and the one that exists is the 43.7 MW below.
 
+**"Fully researched" here means confinement rung 3 and plant-efficiency rung 3**, all that existed
+on 2026-09-11; the heating ladder (#425) came later. Both states were run until the fuel line passed
+the gate on 2026-10-04 ([#545](https://github.com/trulsjo/realistic-fusion-refreshed/issues/545);
+D-D, four heaters, four exchangers, Factorio 2.0.77, `-Ticks 1000000 -Window 20000`, read at
+980 000 ticks). With both ladders the reactor settles at **83.8 – 100.5 MW**, this note's 83.8 to
+the digit; with confinement rung 3 alone it settles at **76.0 – 91.1 MW**, so the 76.0 above is
+now measured as well as derived. The bench's default today holds every ladder at its top and
+settles at 141.0 – 169.3 MW (#527); four 90 MW exchangers still out-ask all of them.
+
 ### Why the rates moved, commit by commit
 
 Answered by [#225](https://github.com/trulsjo/realistic-fusion-refreshed/issues/225). The method is
@@ -239,7 +248,10 @@ Measured at 126 000 ticks on 2026-09-11, one run with the ladder researched and 
 which is the check that the two bounds are read consistently. The un-researched run reproduces the
 78.3 MW that [`bolted-joint-throughput.md`](bolted-joint-throughput.md) recorded on 2026-09-08, the
 day before that commit. **The plasma is untouched by it**: temperature and plasma rate are identical
-to the last digit across the two runs, so the ladder moves only what the reactor sells.
+to the last digit across the two runs, so the ladder moves only what the reactor sells. Both are
+126 000-tick figures, which the gate has refused since #508 for a fuel line still cooling; run to
+980 000 ticks the same two states settle at 76.0 and 83.8 MW sustained, about 3% under, and their
+ratio is still the ladder's to the digits a three-figure reading carries (#545, above).
 
 **Neither link is within an order of magnitude of anything.** The reactor and the exchangers were
 built as a real chain and again with the exchangers replaced by the rigs' categorised energy feed,
@@ -254,7 +266,11 @@ reactor is the constraint rather than the joint.
 [`bolted-joint-throughput.md`](bolted-joint-throughput.md) runs this same rig on `rf-d-t-plasma` with
 eight exchangers and the chained row takes **320.0 MW** where an unthrottled feed on the same reactor
 takes **1 195.4 MW** — and the conclusion survives either way, 1 195 MW being a fifth of one
-connection's 6 000.
+connection's 6 000. That 1 195.4 is the flowing bound at confinement rung 3 and no other rung,
+settled there ([#533](https://github.com/trulsjo/realistic-fusion-refreshed/issues/533)); with every
+ladder at its top, the bench's default today, the same four-heater reactor sells 1 336.9 MW on that
+bound (2026-10-04, Factorio 2.0.77, 126 000 and 1 980 000 ticks alike), and that is still under a
+quarter of one connection.
 
 **So the 1.1 geometry answers a question this mod does not have.** Whatever case there is for a
 15-wide heat exchanger butted flush against the reactor — and there is one, about how the machines

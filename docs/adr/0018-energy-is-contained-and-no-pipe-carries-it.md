@@ -369,7 +369,10 @@ face.**
   [#227](https://github.com/trulsjo/realistic-fusion-refreshed/issues/227)'s question. What the bench
   did measure on 2026-09-07 is that four 40 MW exchangers bolted to one reactor return the same
   78.3 MW to six digits as the drain cell that removes everything: the row is not demand-limited, so
-  the two cells are now one experiment.
+  the two cells are now one experiment. That 78.3 is confinement rung 3 and no other rung at
+  126 000 ticks; the same state settles at 76.0 MW by 980 000, and the bench's default today,
+  every ladder at its top, at 141.0 MW (2026-10-04, Factorio 2.0.77, four heaters; #545, #527).
+  The two cells read the same at 980 000 ticks as at 126 000, so the finding stands.
 
   **MEASURED AND CLOSED, 2026-09-08 (#89).**
   [`bolted-joint-throughput.md`](../research/bolted-joint-throughput.md) carries it. One bolted
@@ -381,13 +384,19 @@ face.**
   Both that multiplier and the 19.9% above are on the bench's FLOWING bound of
   1 195 MW; on its sustained bound of 996 MW the margin reads six instead. The basis is named rather
   than left to the reader, because quoting one of those two bounds against the other is the defect
-  this bullet had to be corrected for once already.
+  this bullet had to be corrected for once already. **Both bounds are confinement rung 3 and no
+  other rung**, all the rig held on 2026-09-08, and are settled there
+  ([#533](https://github.com/trulsjo/realistic-fusion-refreshed/issues/533)). The bench's default
+  today holds every ladder at its top, and there the same four-heater reactor sells 1 114.1 to
+  1 336.9 MW (2026-10-04, Factorio 2.0.77, 126 000 and 1 980 000 ticks alike): 4.5× on the flowing
+  bound and 5.4× on the sustained one. Neither turns the conclusion over.
   The band this bullet describes is confirmed -- 100 flush, 51.3 at twenty pipes, so the
   quoted floor of 50 is the right asymptote. One thing it said does not hold: re-deriving the ceiling
   was never #227's question, #227 being a balance ticket about how much one exchanger should drain.
   What #89 did hand #227 is worse arithmetic -- the same rig puts an ignited D-T reactor at
-  **996 to 1 195 MW**, the bench's two bounds, against the ~320 MW `entities.lua` and #89's own text
-  both reason from. Eight exchangers take **26.8%** of it, a figure that is the same on either bound
+  **996 to 1 195 MW**, the bench's two bounds at confinement rung 3 alone, against the ~320 MW
+  `entities.lua` and #89's own text both reason from. Eight exchangers take **26.8%** of it, a
+  figure that is the same on either bound
   and is the form to quote. This bullet's "eight chained exchangers" is that figure's consequence and
   inherits the correction.
 - **UPS is unmeasured**, and ADR 0005's outstanding obligation to measure it is unaffected either way.

@@ -84,6 +84,30 @@ megawatts without a conversion, and this note uses both.
 > over**: one connection still carries 8.3× what eight machines ask, and the four-heater D-T reactor
 > still outruns eight of them. The figures below are left as measured.
 
+> **Every D-T figure on this page is confinement rung 3 and no other rung, and it is settled there**
+> ([#533](https://github.com/trulsjo/realistic-fusion-refreshed/issues/533), noted 2026-10-04 under
+> [#545](https://github.com/trulsjo/realistic-fusion-refreshed/issues/545)). The rig researched
+> everything that existed on 2026-09-08, which was the confinement ladder alone. #533 re-ran the
+> `drain` cell at `-Rungs confinement_ladder=3` for 600 000 ticks and read 996.2 – 1 195.4 MW at
+> 597.4 units and 2.846×10⁹ °C, which is this page's run to the digit bar the sustained bound's
+> 996.0. **The bench's default invocation today is a different state**: every ladder at its top,
+> where the same four-heater, twelve-pipe reactor sells **1 114.1 – 1 336.9 MW** at 602.0 units and
+> 3.022×10⁹ °C, at 126 000 ticks and at 1 980 000 alike (2026-10-04, Factorio 2.0.77). That moves
+> the arithmetic, not the findings:
+>
+> | figure | confinement rung 3 alone, this page | every ladder at its top, the default today |
+> |---|---|---|
+> | the reactor, sustained – flowing | 996 – 1 195 MW | 1 114.1 – 1 336.9 MW |
+> | eight 90 MW exchangers' share | 72% to 60% | 65% to 54% |
+> | 90 MW machines' worth | 11.1 to 13.3 | 12.4 to 14.9 |
+> | `rf-hc-exchanger`s' worth | 2.5 to 3.0 | 2.8 to 3.3 |
+> | one connection's headroom, flowing bound | 5.0× | 4.5× |
+>
+> The 4.55× in the first note is this page's figures scaled by the plant-efficiency ladder alone;
+> 4.5× is measured with all three ladders. **No conclusion turns over**: one bolted connection still
+> carries several times what the hardest-driven reactor here sells, and one connection still feeds
+> eight exchangers.
+
 > **The `chain` cell measured here is the one #86 rebuilt.** Before that, `bench-mod-links.ps1`'s
 > `chain` cell carried **no reactor energy at all** — its exchangers sat at `no_input_fluid` and it
 > reported zero — which [#215](https://github.com/trulsjo/realistic-fusion-refreshed/issues/215)
@@ -107,7 +131,8 @@ plant-efficiency ladder that margin is 4.55×**, for the reason the note at the 
 gives; the figures below are the ones the rig measured, before that ladder existed.
 
 **What the measurement did turn up is a balance finding rather than a plumbing one.** An ignited D-T
-reactor on this rig sells **996 to 1 195 MW** — the meter's two bounds, see below — not the "on the
+reactor on this rig sells **996 to 1 195 MW** — the meter's two bounds, see below, at confinement
+rung 3 alone; 1 114.1 to 1 336.9 with every ladder at its top, per the third note — not the "on the
 order of 320 MW" that `entities.lua`'s high-capacity steam pair block states, and that #89's own
 text and ADR 0018's eight-exchanger row both reason from. Eight ordinary 40 MW exchangers — the
 rating before #227; eight 90 MW ones ask 60% to 72% of it, per the note at the top — took
@@ -220,6 +245,32 @@ like-for-like figures are **86.4 MW** researched at 126 000 ticks (this page) ag
 360 000, and **about 76.0 MW** base capture at 360 000 — 83.8 ÷ 1.1029412, arithmetic, never run. So
 the longer run reads LOWER on equal research, and 83.8 is not a drop-in replacement for 78.3.
 
+**Both states are now run until the fuel line passes the gate**
+([#545](https://github.com/trulsjo/realistic-fusion-refreshed/issues/545)). The 94.0 / 78.3 MW is
+confinement rung 3 and no other rung, which is everything the rig could research on 2026-09-08; the
+86.4 adds plant-efficiency rung 3. Each was run at `-Rungs confinement_ladder=3` and
+`-Rungs confinement_ladder=3,capture_ladder=3`, D-D, four heaters, four exchangers, twelve pipes
+in a 2200-unit segment, Factorio 2.0.77 (build 84539), 2026-10-04, the research asserted rung
+by rung — once at the default 126 000 ticks and once at `-Ticks 1000000 -Window 20000`:
+
+| research state | run | °C | MW, sustained – flowing | gate |
+|---|---|---|---|---|
+| confinement rung 3 alone | 126 000 ticks, as on 2026-09-08 | 5.507e8 | **78.3 – 94.0** | fails: the fuel line moved 1.8% |
+| confinement rung 3 alone | 1 000 000 ticks, read at 980 000 | 5.341e8 | **76.0 – 91.1** | passes |
+| confinement and plant efficiency, rung 3 each | 126 000 ticks, as on 2026-09-11 | 5.507e8 | **86.4 – 103.7** | fails: the fuel line moved 1.8% |
+| confinement and plant efficiency, rung 3 each | 1 000 000 ticks, read at 980 000 | 5.341e8 | **83.8 – 100.5** | passes |
+
+**The old figures reproduce to the digit, and each is about 3% over settled**: 78.3 is 2.3 MW over
+76.0 and 94.0 is 2.9 over 91.1; 86.4 is 2.6 over 83.8 and 103.7 is 3.2 over 100.5. The 126 000-tick
+reactor is 3.1% hot, drawing plasma left in the pipes from the fill, which is the transient #508's
+fuel-line check exists to refuse. The pipes are within twice the heater's 1×10⁶ °C from 440 000
+ticks and at 1.00069×10⁶ °C by 960 000. The settled points are #497's two-heater ones to every
+digit quoted — 5.342×10⁸ there against 5.341×10⁸ here, 76.0 – 91.1 MW at both — as a full box
+taking only what it burns predicts. **So the 76.0 above is no longer arithmetic**, and 83.8 is
+#215's 360 000-tick figure. None of these is the bench's default today: every ladder at its top, it
+settles at 141.0 – 169.3 MW (#527). Four 90 MW exchangers ask 360 MW, over all of them, so the row
+stays supply-limited and nothing below turns over.
+
 All four working, water full at 200, and **a shallow gradient the D-T row does not have**: 0.4 at the
 first machine down to 0.3 at the fourth. That is what supply-limited looks like — 94 MW of reactor
 against ~~160 MW~~ of demand (four 40 MW machines, before #227; **360 MW** of four 90 MW ones
@@ -232,7 +283,9 @@ both cases on one rig is what makes "no gradient at all" on the D-T row a measur
 absence of evidence.
 
 (94.0 MW is this rig's D-D reactor on four heaters and a shared plasma segment, drifting slowly down
-across the run and settled inside the gate's 2%. It is a **heater-fed** figure rather than a
+across the run and settled inside the gate's 2% as the gate stood then. The gate has read the fuel
+line since #508, refuses this run, and the same state settles at 91.1 MW flowing, per the table
+above. It is a **heater-fed** figure rather than a
 **settled** one, which is the distinction `CONTEXT.md` names and #109 opened over: it is not
 `reactor-logic.lua`'s 56.1 MW equilibrium, which is a single reactor held full at its own temperature.
 Nothing here rests on the difference.)
@@ -276,9 +329,10 @@ Not a plumbing result, and #89 asks for it to be stated for a follow-up rather t
 `entities.lua`'s high-capacity steam pair block puts an ignited D-T reactor at "on the order of 320
 MW", and #89's own text reasons from it — *"an ignited D-T reactor sells on the order of 320 MW,
 which is eight ordinary exchangers"*. ADR 0018's throughput bullet quotes no number, and its "row of
-eight chained exchangers" is the same figure's consequence. **Measured, on four heaters, it sells
-between 996 and 1 195 MW.** Eight 40 MW exchangers — the rating before #227 — were therefore roughly
-a **quarter** of what it makes, not a match for it, and the `chain` cell threw away **73.2%** of the
+eight chained exchangers" is the same figure's consequence. **Measured, on four heaters at
+confinement rung 3 alone, it sells between 996 and 1 195 MW.** Eight 40 MW exchangers — the rating
+before #227 — were therefore roughly a **quarter** of what it makes, not a match for it, and the
+`chain` cell threw away **73.2%** of the
 reactor's output — visible as its energy box sitting at 97.9% full for the whole run.
 
 **Why a range and not a number, and why the percentage is neither bound.** The meter cannot report

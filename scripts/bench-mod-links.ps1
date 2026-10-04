@@ -144,13 +144,16 @@
 
 .PARAMETER Exchangers
     Heat exchangers on the chain cell's reactor. Four 90 MW exchangers is 360 MW of demand against
-    the 94 MW this rig's D-D reactor settles at, so the link is not demand-limited. Fewer would
-    measure the exchangers rather than the reactor.
+    the 141.0 to 169.3 MW the default D-D reactor settles at, every ladder at its top (#527,
+    2026-10-04, Factorio 2.0.77), so the link is not demand-limited. Fewer would measure the
+    exchangers rather than the reactor. (The 94 MW this used to quote is confinement rung 3 and
+    nothing else, at 126 000 ticks; that state settles at 76.0 to 91.1 MW, #545.)
 
     ~~the 133 MW #37 settles at~~ is a PRE-#52 figure, from before the radiation term shipped, and
     corrected here for the same reason #88 corrected two others (#89). The conclusion is unchanged
-    at every number it has had: 360 MW of demand out-runs 133, 94 and 78.3 alike -- and so did the
-    160 MW that four 40 MW machines made before #227, which is why the default is not being moved.
+    at every number it has had: 360 MW of demand out-runs 133, 94, 78.3 and 169.3 alike -- and so
+    did the 160 MW that four 40 MW machines made before #227, which is why the default is not
+    being moved.
     THE SWITCH DELIBERATELY OVER-PROVISIONS, so a change that raises each machine's demand makes it
     more over-provisioned rather than less, and nothing here needs re-tuning.
 
@@ -159,18 +162,23 @@
     states for an ignited D-T reactor, and THAT FIGURE IS FOR ONE HEATER where this rig runs four:
     on four it measured 996 to 1 195 MW, so eight 90 MW exchangers take 60% (on the flowing bound)
     to 72% (on the sustained one) of what this rig's four-heater reactor makes, rather than matching
-    it. (On one heater, nothing researched, the reactor makes 282.1 to 338.5 MW with radiation,
-    which 320 sits inside -- #486, 2026-10-02.) Eight is
-    kept as the number #89 asked about rather than raised to the eleven-to-thirteen those bounds
-    imply, because the question is whether the eighth machine down a chain off ONE bolted connection
-    is fed at all -- and it is (docs/research/bolted-joint-throughput.md). The per-exchanger table
+    it. THAT IS CONFINEMENT RUNG 3 AND NO OTHER RUNG, which is all the rig held on 2026-09-08, and
+    it is settled there (#533). THE DEFAULT NOW HOLDS EVERY LADDER AT ITS TOP, and there the same
+    four-heater reactor sells 1 114.1 to 1 336.9 MW at 126 000 ticks and at 1 980 000 alike
+    (2026-10-04, Factorio 2.0.77), so eight take 54% to 65%. (On one heater, nothing researched,
+    the reactor makes 282.1 to 338.5 MW with radiation, which 320 sits inside -- #486,
+    2026-10-02.) Eight is kept as the number #89 asked about rather than raised to the
+    eleven-to-thirteen the rung-3 bounds imply, or twelve-to-fifteen the default's, because the
+    question is whether the eighth machine down a chain off ONE bolted connection is fed at all --
+    and it is (docs/research/bolted-joint-throughput.md). The per-exchanger table
     below is what says so; a row whose far end idles reports it there and nowhere else.
 
     #227 IS SETTLED AND DID NOT MOVE THIS SWITCH. Truls's call, 2026-09-10: one exchanger drains a
     D-D reactor at ship and through the first confinement rung, which took the machine from 40 MW to
     90. It moves the percentages in this help -- eight machines took 27% to 32% of this rig's
-    reactor at 40 MW and take 60% to 72% at 90, both spans quoted across the same two bounds -- and
-    it changes neither default, for the reason above.
+    reactor at 40 MW and take 60% to 72% at 90, both spans quoted across the same two bounds and
+    both at confinement rung 3 alone; at every ladder's top, the default, 90 MW takes 54% to 65% --
+    and it changes neither default, for the reason above.
 
 .PARAMETER Plasma
     Which plasma the heater bank makes, and so which tier the chain is driven by. The heater's own
@@ -179,9 +187,11 @@
 
     THE DEFAULT IS STILL D-D, which is the tier #48 measured and the one every figure in
     docs/research/fluid-link-throughput.md's mod-link section was taken on. rf-d-t-plasma is what
-    #89 added it for: this rig's D-D reactor settles at 94 MW flowing -- 78.3 sustained -- and never
-    asks much of a bolted joint, so a rig that can only run D-D cannot ask whether the joint is big
-    enough for the tier that would strain it.
+    #89 added it for: this rig's D-D reactor read 94 MW flowing -- 78.3 sustained -- at confinement
+    rung 3 alone and 126 000 ticks, and settles at 91.1 -- 76.0 -- there by 980 000 (#545,
+    2026-10-04, Factorio 2.0.77); at the default, every ladder at its top, it settles at 169.3 --
+    141.0 (#527). It never asks much of a bolted joint, so a rig that can only run D-D cannot ask
+    whether the joint is big enough for the tier that would strain it.
 
 .PARAMETER Pipes
     Pipes between the heater bank and the reactor, on the PLASMA link only. It used to set the

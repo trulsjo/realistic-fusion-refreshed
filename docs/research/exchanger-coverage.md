@@ -438,24 +438,39 @@ A full box takes only what it burns, so four heaters settle where two do: the tw
 under [The supply-limited cells on two heaters](#the-supply-limited-cells-on-two-heaters) reads
 the same point.
 
-**Notes that quote a default-length four-heater figure as settled.** None is the state above, and
-none is rewritten here. Each was taken at 126 000 ticks before the gate read the fuel line (#508).
+**Notes that quote a default-length four-heater figure as settled.** None is the state above.
+Each was taken at 126 000 ticks before the gate read the fuel line (#508), and since
+[#545](https://github.com/trulsjo/realistic-fusion-refreshed/issues/545) (2026-10-04) each names
+the research state its figure was read at and gives the settled or default-state figure beside it:
 
 - `bolted-joint-throughput.md`: the D-D control's 94.0 MW flowing and 78.3 sustained, its 86.4 MW
-  with the plant-efficiency ladder, and the D-T reactor's 996 to 1 195 MW at 597.4 units. The
-  D-T figure is settled, at confinement rung 3 and no other rung (#533, below).
-- `fluid-link-throughput.md`: the same 78.3235 and 86.3862 MW pair, and the 1 195.4 MW.
-- ADR 0018's Consequences: the 78.3 MW, and the 996 to 1 195 MW.
+  with the plant-efficiency ladder, and the D-T reactor's 996 to 1 195 MW at 597.4 units. A third
+  note at the top gives the D-T figures at both states, and the D-D section has the runs below.
+- `fluid-link-throughput.md`: the same 78.3235 and 86.3862 MW pair, its own 83.8 and 76.0 MW, and
+  the 1 195.4 MW.
+- ADR 0018's Consequences: the 78.3 MW, and the 996 to 1 195 MW with the 5× and 6× margins.
 - `bench-mod-links.ps1`'s help under `-Exchangers` and `-Plasma`: "the 94 MW this rig's D-D
-  reactor settles at", and 996 to 1 195 MW.
+  reactor settles at", now the default's 141.0 to 169.3, and 996 to 1 195 MW with the 60% to 72%.
 - `entities.lua` and `recipes/hc.lua`, `check-hc.ps1` and `probe-exchanger-chaining.ps1`: the
-  996 to 1 195 MW for a D-T reactor on four heaters.
+  996 to 1 195 MW for a D-T reactor on four heaters, and the exchanger counts it implies.
 - `entities.lua`, in the comment above `exchanger.energy_consumption`: the four-heater D-D
   reactor at 103.7 MW while flowing and 86.4 sustained.
 
-The 94.0, 78.3 and 86.4 MW were read with fewer ladders than exist now, so they are not this
-state at an earlier tick. How far those three are from settled was not measured. **The D-T
-figure is settled**: the next section has the run.
+**The three D-D figures, run to the gate.** The 94.0 and 78.3 MW are confinement rung 3 and no
+other rung, everything the rig could research on 2026-09-08; the 86.4 adds plant-efficiency
+rung 3, on 2026-09-11. Each state was run with `-Rungs` at the default 126 000 ticks and at
+`-Ticks 1000000 -Window 20000`: D-D, four heaters, four exchangers, twelve pipes, Factorio 2.0.77
+(build 84539), 2026-10-04, the research asserted rung by rung. MW is sustained – flowing.
+
+| research state | 126 000 ticks | gate | settled, read at 980 000 | difference |
+|---|---|---|---|---|
+| confinement rung 3 alone | 78.3 – 94.0 at 5.507e8 °C | fails, fuel line 1.8% | 76.0 – 91.1 at 5.341e8 °C | −2.3 – −2.9 MW, −2.9% – −3.1% |
+| confinement and plant efficiency, rung 3 each | 86.4 – 103.7 at 5.507e8 °C | fails, fuel line 1.8% | 83.8 – 100.5 at 5.341e8 °C | −2.6 – −3.2 MW, −3.0% – −3.1% |
+
+The old figures reproduce to the digit. Both long runs pass the gate, their pipes within twice
+the heater's 1×10⁶ °C from 440 000 ticks, and land on the two-heater point under
+[Confinement rung 3 on two heaters](#confinement-rung-3-on-two-heaters). **The D-T figure is
+settled**: the next section has the run.
 
 ### The four-heater D-T reactor, settled
 
@@ -498,8 +513,8 @@ the game's at both states.
 **Eight exchangers' 60% to 72% share does not move at the state it was quoted for.** 720 MW is
 72% of 996.2 and 60% of 1 195.4. It does move with the research state. On the bench's default
 invocation today the reactor sells 1 114.1 – 1 336.9 MW, and 720 is 65% and 54% of that. The
-bench's help under `-Exchangers` quotes 60% to 72% beside a default that now holds the other
-state. It is not rewritten here.
+bench's help under `-Exchangers` quoted 60% to 72% beside a default that now holds the other
+state; since #545 it gives both, each with its state.
 
 ### Five combination states, nearest the line
 

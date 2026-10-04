@@ -436,7 +436,8 @@ contain(reactor.fluid_box, PLASMA_CATEGORY)
 -- ADR 0031's Alternatives puts that as "eight exchangers make a single row 120 tiles wide rather
 -- than two of 60", and the count is left out here on purpose: #227 took the machine to 90 MW, so
 -- the same one-heater reactor that ADR reasoned from wants four rather than eight, and a reactor on
--- four heaters wants eleven to thirteen. The halving is what the second face buys, and it does
+-- four heaters wants eleven to thirteen at confinement rung 3 alone, or twelve to fifteen with
+-- every ladder at its top (#533). The halving is what the second face buys, and it does
 -- not depend on which of those the reader has.
 --
 -- Not east or west: those are plasma, and freeing one would spend ADR 0011's shared pool. The
@@ -640,7 +641,10 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 --     one-heater cell, and unre-measured at two -- so a player who over-feeds
 --     one reactor outruns one exchanger. bench-mod-links.ps1 runs FOUR heaters by design -- its
 --     -Exchangers help says it over-provisions on purpose -- and measures that reactor at
---     103.7 units-of-energy-per-tick-while-flowing against this machine's 90. Its box stays full at
+--     103.7 units-of-energy-per-tick-while-flowing against this machine's 90 -- at confinement rung
+--     3 and plant-efficiency rung 3 and nothing else, 126 000 ticks (2026-09-11). Settled, that
+--     state reads 100.5 at 980 000 ticks (#545, 2026-10-04, Factorio 2.0.77), and the bench's
+--     default, every ladder at its top, settles at 169.3 (#527). Its box stays full at
 --     1 000 of 1 000 with one exchanger bolted on, at 90 MW as at 70. Covering the saturated
 --     multi-heater reactor would want about 105 MW; covering the designed one-heater plant wants 90,
 --     and 90 is what Truls chose.
@@ -863,9 +867,11 @@ exchanger.output_fluid_box.filter = "steam"
 -- #518). Held at the game's fill it runs 16% hotter, and its 316 MW -- 315.7 at the 6-tick step,
 -- and 319.0 at the 277.3 units #486 quoted -- agrees on megawatts only because two errors cancel. What DOES
 -- depend on the feed is the figure itself: four heaters put the same reactor at 996 to 1 195 MW
--- (#89, docs/research/bolted-joint-throughput.md), and quoting either without saying which heater
--- count it came from is the operating-point defect CONTEXT.md exists to prevent. One heater is
--- what a player has, so one heater is what this block quotes.
+-- with confinement rung 3 and nothing else researched (#89,
+-- docs/research/bolted-joint-throughput.md; settled, #533) and at 1 114.1 to 1 336.9 with every
+-- ladder at its top (#533, 2026-10-04, Factorio 2.0.77), and quoting any of them without saying
+-- which heater count and which research it came from is the operating-point defect CONTEXT.md
+-- exists to prevent. One heater is what a player has, so one heater is what this block quotes.
 --
 -- AND IT IS NOW MEASURED WITH RADIATION (#486, 2026-10-02, Factorio 2.0.77): one heater, nothing
 -- researched, 282.1 to 338.5 MW across bench-mod-links.ps1's two bounds, heater-fed at 275.6 units (#518).
@@ -895,8 +901,10 @@ local hc_graphics = require("__realistic-fusion-refreshed-assets__.graphics.kras
 -- exactly where it was; what changed is the machine it is a multiple of. Restoring the round factor
 -- would mean 900 MW here, which is a balance decision nobody has taken. 400 still covers a lit D-T
 -- reactor on one heater's 320-odd MW with room to spare, which is the case this tier was sized for;
--- a reactor on four heaters is 996 to 1 195 MW and wants two and a half to three of these, and that
--- is a feed-rate question rather than an argument about the factor.
+-- a reactor on four heaters is 996 to 1 195 MW at confinement rung 3 alone and wants two and a half
+-- to three of these, or 1 114.1 to 1 336.9 MW and nearly three to three and a third with every
+-- ladder at its top (#533), and that is a feed-rate question rather than an argument about the
+-- factor.
 local hc_exchanger = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-hc-exchanger", {
   mining_time = 1,
 })
