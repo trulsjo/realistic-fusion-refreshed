@@ -1457,8 +1457,7 @@ end
 
 -- THREE NUMBERS M.settle_segment TAKES FROM THE GAME rather than from a spec, named so the load
 -- check can hold them to it (#555): control.lua's check_segment_constants() refuses to load when
--- rf-heater or rf-pipe stops agreeing with its number, and control.lua's UPDATE_INTERVAL is
--- M.step_ticks, so the third has nothing to disagree with.
+-- rf-heater, rf-pipe or control.lua's own UPDATE_INTERVAL stops agreeing with its number.
 --
 -- The capacity LuaFluidBox.get_capacity reports on rf-heater's output box, as
 -- scripts/probe-plasma-segment.ps1 prints it. Its fill is what the heater's pushes go by. It is the
@@ -1468,7 +1467,7 @@ end
 M.heater_output_box = 200
 -- What one rf-pipe adds to a segment's capacity: its fluid box's volume.
 M.pipe_volume = 100
--- The ticks between two of control.lua's simulation steps. control.lua's UPDATE_INTERVAL reads it.
+-- The ticks between two of control.lua's simulation steps. control.lua's UPDATE_INTERVAL is held to it.
 M.step_ticks = 6
 
 --- One transfer between two stores (#540): the rule M.settle_segment's note gives, floored at 0.1 and bounded by what

@@ -1058,7 +1058,8 @@ All 33 rows of the five that match are within those figures, and those five matc
 **The ten ladder cells read as they did before #544**
 ([#554](https://github.com/trulsjo/realistic-fusion-refreshed/issues/554)). Re-run 2026-10-04
 against Factorio 2.0.77 by `probe-brownout-contention.ps1` with nothing researched and with
-`-HeatingRungs 5`, each asserted rung by rung, every cell reporting all 21 rungs. No ladder cell
+`-HeatingRungs 5`, each asserted rung by rung, every cell reporting all 21 rungs of 1200 ticks,
+the second 600 measured. No ladder cell
 holds a store, so the store prediction should leave them alone, and it does. No reactor here is
 fed by a heater: the rig holds each one's plasma at its box's fill.
 
@@ -1193,7 +1194,7 @@ for this note, draining 2⁻²⁴ a tick from the box, computed 2026-10-04:
 | a fixed-point variant, fitted to the game's ticks (below), from the seed | 31 800 | 1.887 |
 
 From the game's baseline over 10 000 s the double-precision rule reads 1.899, against the
-game's 1.898. None of the first five rows reproduces the 31 800: the nearest gives 38 ULPs
+game's 1.898. None of the four rule rows above the fitted one reproduces the 31 800: the nearest gives 38 ULPs
 less, 2.3×10⁻⁶ units. A box nothing drains settles at 526.3158023 in the game, in every cell
 but the legendary cold one, where the rule settles at 1×10⁶ / 1900 = 526.3157895, so
 1.28×10⁻⁵ apart.
@@ -1227,10 +1228,11 @@ was not fitted to, it misses none of 600 300 ticks in either cell and gives 316 
 600 000, the game's figure. The legendary rows there put #531's rule 2.81×10⁻⁵ off the game
 at most, at tick 598 901.
 
-It is **fitted, not found**. It is the combination that missed no tick out of 27 tried on
+It is **fitted, not found**. It is what missed no tick out of 27 combinations tried on
 this trace in scratch arithmetic: the source fill floored, ceiled or rounded, the
 destination's the same, and the draw before, between or after the two transfers. The trace
-cannot say how the destination's fill is rounded; all three choices miss nothing. The
+cannot say how the destination's fill is rounded: all three choices miss nothing, so three of
+the 27 fit and the variant above is one of them. The
 game's code was not read, and no 2.0.77 doc page found says fluid amounts are fixed point.
 It is checked on a lone 1000-unit box at normal and legendary quality only, with no pipe and
 no heater.

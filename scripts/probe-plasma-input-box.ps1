@@ -29,7 +29,7 @@
                rf-pipe from its east face into a second. ONLY THE FIRST IS ON AN ELECTRIC NETWORK
                (asserted), check-pooling.ps1's discriminator: an unpowered reactor steps with its
                heating clamped to zero, so any heat it holds came along the pipe.
-      both     The pair again, with the second reactor on an electric network of its own (asserted).
+      both     The pair again, with the second reactor powered too (asserted to be on an electric network).
       lone     No heater, no pipe, no power: an unregistered copy of rf-reactor, rf-input-box-lone,
                seeded to its box's capacity at 15 degC. Copied after the canary, so it carries this
                run's box. Unregistered because a stepped reactor is heated and burns its plasma;

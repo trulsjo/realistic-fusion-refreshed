@@ -2174,7 +2174,7 @@ try {
         if ($m.Kind -eq 'zip') { Copy-Item -LiteralPath $m.Path -Destination $modDir }
         else { New-ModJunctions -ModDirectory $modDir -Links @{ $m.Name = $m.Path } }
     }
-    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled -Mods ($ourMods + $rigName + $alsoMods.Name)
+    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled -Mods ($ourMods + $rigName + @($alsoMods | ForEach-Object Name))
     if ($alsoMods) { Write-Host "also loading: $($alsoMods.Name -join ', ')" }
     $bundledOn = if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.0 only)' }
     Write-Host "bundled enabled: $bundledOn  |  interval $interval ticks, tail $Tail pipes, check at tick $Ticks"

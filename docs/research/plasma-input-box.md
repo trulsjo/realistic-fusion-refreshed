@@ -139,7 +139,7 @@ two cells added after the pair, so every cell above is built first and keeps its
 both runs), sampled every 4000 ticks:
 
 - **both**: the pair again, one heater, three `rf-pipe` and twelve more between the reactors,
-  with the second reactor on an electric network of its own (asserted).
+  with the second reactor powered too (asserted to be on an electric network).
 - **lone**: no heater, no pipe, no power. An unregistered copy of `rf-reactor`, so
   `control.lua` never steps it, seeded at tick 0 to its box's capacity of 1000 at 15 °C. That
   is the instrument `quality.md`'s 526.3158 was read on: `probe-quality-leak.ps1`'s cold cell.
@@ -155,7 +155,7 @@ reading above moved.
 from the first row after which every row reads within 10⁻⁴ of the last row's. The canary solo
 boxes pass it from tick 44 000, the figure the readings above give, in both runs.
 
-#### The shipped box settles near the canary's, and is still moving
+#### The shipped box passes the settle test near the canary's, and is still moving
 
 | 600 000 ticks, 1 heater | first row of the settle test | °C at 596 000 | box at 596 000 |
 |---|---|---|---|
@@ -297,12 +297,14 @@ emptied into them, was not separated: the rig reads totals, not the order things
 ### The load check: everything holds
 
 **Shipped and canary both exit 0** and print the same verdict: "prototypes valid, every referenced
-asset present, map created, the simulation's fifteen load-time invariants hold". By name, all
-fifteen hold under the canary: `check_fuel_rows`, `check_reactor_specs`, `check_plasma_capacity`,
+asset present, map created, the simulation's sixteen load-time invariants hold". By name, all
+sixteen hold under the canary: `check_fuel_rows`, `check_reactor_specs`, `check_plasma_capacity`,
 `check_input_flow`, `check_ladder_prototypes`, `check_ladder_clamp`, `check_plant_efficiency`,
 `check_plasma_bounds`, `check_signal_ceiling`, `check_every_plasma_burns`,
 `check_collector_boxes`, `check_blanket_feed`, `check_energy_outlets`,
-`check_reactor_companions` and `check_steam_sinks`. They run in `check_prototypes()` in
+`check_reactor_companions`, `check_steam_sinks` and `check_segment_constants`. The sixteenth
+is #555's, from the same batch; the run was first taken with fifteen and taken again with it,
+both gates reading as before. They run in `check_prototypes()` in
 `realistic-fusion-refreshed/control.lua`, which refuses to create a map when one fails.
 
 The rest of the gate also read the same in both runs. All 26 contained connections still hold
@@ -310,15 +312,16 @@ what the data stage declared, both manifests agree, 9 sockets are at vanilla pip
 `check-socket-parts` measured 24 parts and could not measure 6, 4 mockups agree, and no asset is
 missing.
 
-**By reading, none of the fifteen looks at the plasma box's production type.** The only
-`production_type` test in `control.lua` picks a boiler's steam box by `"output"`.
+**By reading, none of the sixteen looks at the plasma box's production type.** `control.lua`
+tests `production_type` twice, both times for `"output"`: to pick a boiler's steam box, and in
+`check_segment_constants` to sum `rf-heater`'s output boxes.
 `check_plasma_capacity` reads box 1's `volume` and nothing else. So the gate holds the prototypes
 to the simulation's numbers, and the mixing the simulation relies on is outside what it checks.
 
 ### The Lua suites: the canary cannot reach them
 
-**Run:** all six suites under Lua 5.4.6, 962 checks, 0 failures: blanket-energy 49, bremsstrahlung
-31, circuit-output 116, further-reactions 44, reactivity 57, reactor-logic 665. The suites load
+**Run:** all six suites under Lua 5.4.6, 968 checks, 0 failures: blanket-energy 49, bremsstrahlung
+31, circuit-output 116, further-reactions 44, reactivity 57, reactor-logic 671. The suites load
 no prototype, so there is no way to load the canary into them. One run serves both variants.
 
 **Reading:** no module under `realistic-fusion-refreshed/scripts/` names `production_type`.

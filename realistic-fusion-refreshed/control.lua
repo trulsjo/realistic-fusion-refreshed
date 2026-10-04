@@ -354,9 +354,8 @@ local function energy_temperature(name)
 end
 
 -- ADR 0005 pre-authorises throttling the simulation to a coarser cadence and requires that doing
--- so be a change in one place. This is that place: nothing else the mod runs knows how often the
--- simulation steps, and the step itself is written in terms of elapsed seconds. The number is
--- reactor-logic's M.step_ticks since #555; see below.
+-- so be a change in one place. This is that place: nothing else in the mod knows how often the
+-- simulation steps, and the step itself is written in terms of elapsed seconds.
 --
 -- Ten steps a second, not sixty, on the strength of #24's measurement. Not because the per-tick
 -- cost was unaffordable -- #24 put it at nine to eleven microseconds per reactor before throttling,
@@ -389,10 +388,10 @@ end
 --
 -- See docs/research/reactor-runtime-cost.md; scripts/bench-reactors.ps1 takes the measurement.
 --
--- The number itself lives in scripts/reactor-logic.lua as M.step_ticks since #555, so that
--- M.settle_segment's arithmetic and this cadence are one definition and cannot disagree. It is
--- still changed in one place; that place is the line there.
-local UPDATE_INTERVAL = logic.step_ticks
+-- It stays a literal on a line of its own: scripts/check-pooling.ps1 and scripts/bench-reactors.ps1
+-- read it out of this file by that shape. M.settle_segment's arithmetic assumes the same number as
+-- M.step_ticks, and check_segment_constants() below refuses to load when the two disagree (#555).
+local UPDATE_INTERVAL = 6
 
 -- How many simulation steps pass between reports. The reactor is simulated ten times a second and
 -- reports itself twice, because those two numbers answer different questions.
@@ -2110,8 +2109,8 @@ end
 -- pin the game's own readings, so a prototype that moved under it would leave them green and the
 -- note's figures wrong. The heater's output box is the two output boxes together: a crafting
 -- machine merges them for a recipe making one fluid, which every rf-plasma-heating recipe is, and
--- 2 x 100 is the 200 LuaFluidBox.get_capacity reports. The step interval needs no check here,
--- because UPDATE_INTERVAL above IS logic.step_ticks.
+-- 2 x 100 is the 200 LuaFluidBox.get_capacity reports. The step interval is no prototype's: it is
+-- UPDATE_INTERVAL above, held to M.step_ticks by the same loop.
 local function check_segment_constants()
   local heater = 0
   for _, box in ipairs(prototypes.entity["rf-heater"].fluidbox_prototypes) do
@@ -2121,13 +2120,14 @@ local function check_segment_constants()
   for _, row in ipairs({
     { "heater_output_box", heater, "rf-heater's output fluid boxes hold" },
     { "pipe_volume", pipe and pipe.volume, "rf-pipe's fluid box holds" },
+    { "step_ticks", UPDATE_INTERVAL, "control.lua's UPDATE_INTERVAL is" },
   }) do
     local field, found, what = row[1], row[2], row[3]
     if found ~= logic[field] then
       error(string.format(
         "scripts/reactor-logic.lua's M.%s is %s, but %s %s. M.settle_segment's arithmetic, and the " ..
-        "readings its tests pin, assume the first. Reconcile M.%s with the prototype, or take " ..
-        "out the mod that moved it.",
+        "readings its tests pin, assume the first. Reconcile M.%s with it, or take out the " ..
+        "mod that moved it.",
         field, tostring(logic[field]), what, tostring(found), field))
     end
   end
