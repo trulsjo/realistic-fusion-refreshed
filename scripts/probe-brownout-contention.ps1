@@ -96,7 +96,8 @@
     shared among the others the same way, again, until nobody is capped (a water-fill). That is the
     model the brownout table assumes. BETWEEN priority classes the prediction is #439's reading of
     the primary cell: primary-input, then secondary-input, then tertiary, each served in full from
-    what the one before left. The report prints, per member, what it drew and gave back, the
+    what the one before left. Since #528 a fourth class is served after those three:
+    managed-accumulator, which is what the engine reports for a vanilla accumulator. The report prints, per member, what it drew and gave back, the
     prediction and the deviation, so a class rule that is wrong shows up as one, not as a pass.
 
     THE LESSONS THE SIBLING RIG PAID FOR, KEPT HERE
@@ -288,7 +289,8 @@ local function drawn(cell, m)
     { name = m.entity.name, quality = m.quality }) or 0
 end
 
---- What a member has GIVEN to its network, the same way. Only a tertiary member can.
+--- What a member has GIVEN to its network, the same way. Only a tertiary member or an
+--- accumulator can.
 local function given(cell, m)
   return cell.substation.electric_network_statistics.get_output_count(
     { name = m.entity.name, quality = m.quality }) or 0

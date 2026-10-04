@@ -449,6 +449,8 @@ none is rewritten here. Each was taken at 126 000 ticks before the gate read the
   reactor settles at", and 996 to 1 195 MW.
 - `entities.lua` and `recipes/hc.lua`, `check-hc.ps1` and `probe-exchanger-chaining.ps1`: the
   996 to 1 195 MW for a D-T reactor on four heaters.
+- `entities.lua`, in the comment above `exchanger.energy_consumption`: the four-heater D-D
+  reactor at 103.7 MW while flowing and 86.4 sustained.
 
 The 94.0, 78.3 and 86.4 MW were read with fewer ladders than exist now, so they are not this
 state at an earlier tick. How far each is from settled was not measured.
