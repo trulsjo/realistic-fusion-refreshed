@@ -138,12 +138,11 @@
                                   answer -- rf-d-d-fusion unlocks the turbine itself -- is what
                                   this holds in place. Indifferent to which answer: it wants a
                                   reachable sink, not a particular one.
-      check_segment_constants()   The two prototype numbers M.settle_segment's arithmetic
+      check_segment_constants()   The three game numbers M.settle_segment's arithmetic
                                   assumes: rf-heater's two output boxes together against
-                                  M.heater_output_box, and rf-pipe's box against M.pipe_volume
-                                  (#555). The third, the step interval, is one definition --
-                                  control.lua's UPDATE_INTERVAL is M.step_ticks -- so it is
-                                  not checked. Nothing the mod runs calls that arithmetic; its
+                                  M.heater_output_box, rf-pipe's box against M.pipe_volume,
+                                  and control.lua's UPDATE_INTERVAL against M.step_ticks
+                                  (#555). Nothing the mod runs calls that arithmetic; its
                                   tests pin the game's readings, so a moved prototype would leave
                                   them green and the readings unexplained.
 
@@ -2128,8 +2127,8 @@ box.volume = box.volume * 2
                 # output box, a pipe's volume, the step interval -- to the prototypes; the heater's is
                 # the one broken here because it is the one read as a SUM of two boxes, and a check
                 # that summed the wrong boxes would pass a plain run and fail only here. The step
-                # interval has no half: control.lua's UPDATE_INTERVAL is reactor-logic's step_ticks,
-                # so there is nothing to make disagree.
+                # interval has no half: UPDATE_INTERVAL is a local in control.lua, which no canary
+                # mod can reach.
                 @'
 local heater = data.raw["assembling-machine"]["rf-heater"]
 local widened = false
@@ -2237,8 +2236,9 @@ end
         Write-Host '     cannot cover its heating refused by check_input_flow(), a slid'
         Write-Host "     connection caught on $mockupName's mockup, an unburnable plasma"
         Write-Host '     refused by check_every_plasma_burns(), a swapped collector box'
-        Write-Host '     refused by check_collector_boxes() and a doubled plasma box refused by'
-        Write-Host '     check_plasma_capacity() -- all three by their own words -- a'
+        Write-Host '     refused by check_collector_boxes(), a doubled plasma box refused by'
+        Write-Host '     check_plasma_capacity() and a widened heater box refused by'
+        Write-Host '     check_segment_constants() -- all four by their own words -- a'
         Write-Host '     socket-height gate that measures its own reference off vanilla, passes the'
         Write-Host '     sheets, catches a lifted one and catches a parted SOCKET_Z, a socket-parts'
         Write-Host '     gate that passes the sheets, catches one shaved underneath, catches a'
