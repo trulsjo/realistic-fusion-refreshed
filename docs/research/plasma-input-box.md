@@ -117,7 +117,8 @@ report **one segment id in both variants**: 9 = 9 = 9 = 9. The segment reports a
   76 000, where they read 524.17 and 525.47.
   The unpowered reactor stays within 3.0% of the powered one's temperature (1.9721 against
   2.0330×10⁸ at 96 000), which is heat that came through the pipe. Neither box reached 99.9% in
-  100 000 ticks. The segment held 2164.29 of its 3500 at tick 96 000.
+  100 000 ticks. That holds only while the line fills: see
+  [Once the shipped line is full](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor). The segment held 2164.29 of its 3500 at tick 96 000.
 - **Canary: one segment, but not one pool of heat.** The plasma still reaches both boxes: until
   tick 48 000, each box takes about half the heater's feed, and the unpowered box fills first at
   47 774. The powered box fills at 61 093. **Heat does not travel.** The unpowered box read
@@ -129,6 +130,86 @@ report **one segment id in both variants**: 9 = 9 = 9 = 9. The segment reports a
   48 000 and 61 093 the powered box took all of the feed, and then the segment started to fill.
 - At tick 52 000, the canary segment read 0.96 where every other row before 64 000 read 0. That
   single reading is not explained.
+
+### Past tick 96 000, both reactors powered, and a lone box
+
+([#548](https://github.com/trulsjo/realistic-fusion-refreshed/issues/548).) The same probe with
+two cells added after the pair, so every cell above is built first and keeps its segment id.
+2026-10-04, Factorio 2.0.77 (build 84539), nothing researched (all 11 rungs asserted off in
+both runs), sampled every 4000 ticks:
+
+- **both**: the pair again, one heater, three `rf-pipe` and twelve more between the reactors,
+  with the second reactor on an electric network of its own (asserted).
+- **lone**: no heater, no pipe, no power. An unregistered copy of `rf-reactor`, so
+  `control.lua` never steps it, seeded at tick 0 to its box's capacity of 1000 at 15 °C. That
+  is the instrument `quality.md`'s 526.3158 was read on: `probe-quality-leak.ps1`'s cold cell.
+  The copy is made after the canary, so it carries the variant's box. The runtime prototype
+  reads `input-output` in the shipped run and `input` in the canary run.
+
+`pwsh -File scripts/probe-plasma-input-box.ps1` read them to 96 000 ticks, and
+`pwsh -File scripts/probe-plasma-input-box.ps1 -Ticks 600000` to 596 000. **The two runs print
+the same box, segment and temperature on all 350 rows up to 96 000**, old cells included, so no
+reading above moved.
+
+**The settle test** is now the probe's own (`-Settle`, default 10⁻⁴): a temperature has settled
+from the first row after which every row reads within 10⁻⁴ of the last row's. The canary solo
+boxes pass it from tick 44 000, the figure the readings above give, in both runs.
+
+#### The shipped box settles near the canary's, and is still moving
+
+| 600 000 ticks, 1 heater | first row of the settle test | °C at 596 000 | box at 596 000 |
+|---|---|---|---|
+| shipped, 3 pipes | 580 000 | 2.382469×10⁸ | 1000.0000 |
+| shipped, 6 pipes | 580 000 | 2.383660×10⁸ | 1000.0000 |
+| canary, 3 pipes | 44 000 | 2.381386×10⁸ | 1000.0000 |
+| canary, 6 pipes | 44 000 | 2.381386×10⁸ | 1000.0000 |
+
+The shipped box passes the test only over its last 16 000 ticks, and has not stopped. At three
+pipes it read 2.3986×10⁸ at 200 000, 2.3856×10⁸ at 400 000, 2.3828×10⁸ at 560 000 and
+2.3825×10⁸ at 596 000. That is 3×10⁴ °C over the last 36 000 ticks, and the six-pipe box falls
+the same 3×10⁴ (2.3840 to 2.3837×10⁸ from 572 000). **So 600 000 ticks give a box that passes
+the test 0.05% (three pipes) and 0.10% (six) above the canary's 2.381386×10⁸, still
+falling.** Where it ends was not read.
+
+#### Two powered canary boxes on one line settle at the same temperature
+
+| 600 000 ticks, 1 heater, 3 + 12 pipes | box 1 full at | box 2 full at | °C at 96 000, 1 and 2 | first settle row, 1 and 2 | °C at 596 000, both |
+|---|---|---|---|---|---|
+| canary | 89 651 | 88 694 | 2.3840 and 2.3826×10⁸ | 104 000 and 100 000 | 2.381386×10⁸ |
+| shipped | 246 755 | 246 755 | 6.8839 and 6.8839×10⁸ | 592 000 and 584 000 | 2.371960 and 2.396459×10⁸ |
+
+- **Canary: yes.** Both boxes settle at 2.381386×10⁸ at 596 000, the same figure as a solo
+  canary box. The segment read 0 at every row until the boxes filled, then 148.45 at 96 000,
+  2642.04 at 200 000 and its capacity of 3500 from 236 000. Each reactor is powered and heated by
+  its own step here, so this says that each settles at the solo figure. It does not say that heat
+  travels between them, which the unpowered pair above says it does not.
+- **Shipped, for comparison: no.** The two boxes held the same amount to within 0.0021 units at
+  every row except 100 000 (520.65 and 522.40), and the same temperature to the four figures the
+  probe prints at every row until they filled at 246 755. From the fill on they draw apart:
+  2.4344 and 2.4346×10⁸ at 248 000, 2.4042 and 2.4132×10⁸ at 300 000. At 596 000 they read
+  2.3720 and 2.3965×10⁸, 1.0% apart, and both are still falling. Why the full shipped pair
+  splits was not looked into.
+
+#### Once the shipped line is full, the unpowered reactor falls to the floor
+
+The 600 000-tick run also read the shipped pair with one reactor powered past 96 000. The two
+boxes fill together at 148 946 and 148 939. The unpowered reactor read 3.5294×10⁷ °C at 148 000
+and **15 °C at 152 000 and at every row after that**, to 596 000. The powered reactor read
+2.3859×10⁸ at 596 000. `control.lua` changed the unpowered box on 24 975 of the 99 334 step ticks.
+So the heat this rig reads travelling along the shipped pipe travels only while the line is
+filling. Why was not looked into.
+
+#### The lone box
+
+| 600 000 ticks, 0 heaters, 0 pipes | box at 0 | box from 4000 to 596 000 | its segment | °C |
+|---|---|---|---|---|
+| shipped (`input-output`) | 1000.0000 | 526.3158 | 473.6842 | 15 |
+| canary (`input`) | 1000.0000 | 1000.0000 | 0 | 15 |
+
+The shipped copy reproduces `quality.md`'s 526.3158 to the digit, and its segment holds 0.9 of
+the box, which is the control row. **The canary box keeps all 1000 it was seeded with**, and its
+segment holds nothing at any row. The segment reports a capacity of 1000 in both runs. Neither
+box is written by `control.lua`: 0 of 99 334 step ticks.
 
 ## The repository's gates under the canary
 
@@ -325,11 +406,6 @@ That is a reading of the rule, not a choice between the options below.
 
 - `rf-aneutronic-reactor`, D-T, the helium-3 plasmas, and any researched state. The canary
   changes `rf-reactor` alone.
-- A pair with both reactors powered under the canary. That would show whether two `input` boxes
-  that are each heated still converge.
-- Where the shipped box's temperature settles. It was still cooling when the run ended at
-  96 000 ticks, so only the canary has a settled temperature here.
-- A lone box with no pipes, to see what becomes of the 526.3158 that `quality.md` records.
 
 ## Options
 
@@ -337,18 +413,20 @@ Each option lists what it changes. None is chosen.
 
 1. **Do nothing; keep `input-output`.** Nothing moves. The fuel line remains two stores trading
    through the box's connection, the box fills in 2.3 to 2.6 times the fed model's time, and
-   ADR 0011's pooling works: a reactor on the run shares heat with its neighbours, as the
-   shipped pair shows. The prototype stays outside the docs' advice for `input-output`, and that
+   ADR 0011's pooling works while the line fills: a reactor on the run shares heat with its
+   neighbours, as the shipped pair shows to 148 000. Once that pair's line is full, its unpowered
+   reactor falls to 15 °C (#548). The prototype stays outside the docs' advice for `input-output`, and that
    advice gives no reason. The modelling work in
    [The rule behind the split](exchanger-coverage.md#the-rule-behind-the-split) remains needed,
    because `M.settle_fed` is not what the game does.
 2. **Make both reactors' plasma box `input`.** On the one rig measured, the game then does what
    `M.settle_fed` describes: a fill at 30 975 against 31 000, settling at 2.3815×10⁸ against
    2.381×10⁸, with no dependence on pipe count. The segment becomes a queue in front of the box
-   rather than a second store. **It ends ADR 0011's heat pooling.** Reactors on one run share
-   feed plasma but not heat, and a reactor without power sits at the 15 °C floor beside a hot
-   one. ADR 0011 would need superseding. The pooling rows of `check-pooling.ps1`, 23 of whose
-   125 checks fail under the canary (see
+   rather than a second store. **It ends ADR 0011's heat pooling, which the shipped box keeps
+   only while the line fills (#548).** Reactors on one run share feed plasma but not heat, and a
+   reactor without power sits at the 15 °C floor beside a hot one. ADR 0011 would need
+   superseding. The pooling rows of `check-pooling.ps1`, 23 of whose 125 checks fail under the
+   canary (see
    [The repository's gates under the canary](#the-repositorys-gates-under-the-canary)), and the
    comments in `control.lua` that describe box 1 as "the input-output box ADR 0011's fluid
    coupling rests on", would need rewriting. An existing save loads without complaint and loses
