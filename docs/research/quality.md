@@ -662,7 +662,8 @@ no two cells share one — supplied down a ladder from 1.2 to 0.2 of what the pa
 
 "A share of what each asks for" is the model the table above assumes: the supply is divided in
 proportion to each consumer's `input_flow_limit`, and one handed more than it spends keeps its spend
-— its buffer is full and it stops asking — and the rest goes to the other. In `pair` that is the
+— its buffer is full and it stops asking — and the rest goes to the other. *(#534, below,
+corrects the mechanism and keeps the result: such a member settles with room in its buffer.)* In `pair` that is the
 legendary reactor holding a full 50 MW while the normal one alone absorbs the shortfall, down to
 70% of supply, and then the two splitting 90 : 225 — at 50% of supply, 14.29 MW against 35.71.
 **Both `secondary-input` cells match it to within 2e-6 MW on every one of the 21 rungs.** So the assumption
@@ -773,8 +774,8 @@ to the legendary one, where an even split would be 2.7 each. Every one of the 33
 1.8e-6 MW of the water-fill of the supply plus what the accumulators were measured giving. So
 the legendary reactor takes the larger part of a discharge as it takes the larger part of the
 supply. Neither reactor is capped at this supply. #528's `acc-supply` cell, below, lifts a lone
-reactor to its spend; a discharge that caps one of two reactors, so the re-share is seen, was
-not run.
+reactor to its spend, and #538's `discharge-cap`, further below, caps one of two so the
+re-share is seen.
 
 **Members that spend differently are split by the same water-fill**
 ([#493](https://github.com/trulsjo/realistic-fusion-refreshed/issues/493)). Measured 2026-10-04
@@ -820,11 +821,8 @@ spends, so every supply is larger in MW than in the tables above.
 | `discharge` | 1.1e-6, on 33 rows | 5.4 MW split 1.54 : 3.86 again, on 21.43 and 53.57 |
 
 Seven of the eight ladder cells the rig then held match on all 21 rungs, and the discharge cell
-on all 33 rows. (#528's six cells came after this run. The same command now runs them at rung 5
-too: `acc-sec` matches, `acc-tert` misses by its 5.4 MW, and the reactor's first-second
-over-draw in the two `acc-spare` cells is 1.92 MJ where it is 4.83 unresearched. Its 0.4 MW
-over-draw in the two `acc-supply` cells is gone: 67.5 MW of supply and 5.4 of discharge is
-72.9, under the 75 MW spend. Run 2026-10-04, Factorio 2.0.77, heating rung 5 asserted.)
+on all 33 rows. (#528's six cells came after this run. #538, below, has them at rung 5 as a
+table.)
 `tert-tert` misses by the load's whole predicted draw, as it does with nothing researched: 75 MW
 on the top five rungs, 67.5 down to 7.5 on the next nine.
 
@@ -838,8 +836,8 @@ two spend. So at this rung there is no band where the aneutronic reactor absorbs
 alone: at 95% of supply the two draw 71.25 and 190, both 5% short. With nothing researched that
 band ran from 250 MW down to 183.3.
 
-Only this rung was run. Rungs 1 to 4 are not measured, and neither is a state with the
-confinement or plant-efficiency ladder held, which move no electrical spend.
+Only this rung was run under #494. #538, below, runs rungs 1 to 4. A state with the
+confinement or plant-efficiency ladder held is not measured; those move no electrical spend.
 
 **The #490 result is the supply's class, not the rig's load: a real accumulator draws nothing
 from a `tertiary` supply either, and a `tertiary` load draws nothing from a charged accumulator**
@@ -875,9 +873,9 @@ asking 90 MW and getting nothing, and gave it nothing. So charged accumulators s
 `secondary-input` reactor and do not serve a `tertiary` load. With `tert-tert` and `acc-tert`
 that is three pairings of a `tertiary`-class source with a `tertiary`-class sink, and the sink
 drew nothing in each: interface to interface, interface to accumulator, accumulator to
-interface. Accumulator to accumulator was not run. The engine reports an accumulator's priority
-as `managed-accumulator`, not the `tertiary` its prototype declares, and the three pairings read
-alike all the same.
+interface. #538's `acc-acc`, below, is the fourth, accumulator to accumulator. The engine
+reports an accumulator's priority as `managed-accumulator`, not the `tertiary` its prototype
+declares, and the three pairings read alike all the same.
 
 **What the 2.0.77 docs say, quoted.** The whole of
 [`ElectricUsagePriority`](https://lua-api.factorio.com/2.0.77/types/ElectricUsagePriority.html)
@@ -895,7 +893,139 @@ than it spends, on the grounds that its buffer is full. A reactor that has been 
 empty buffer, and it took the accumulators' whole 5.4 MW in `acc-supply`: 50.4 MW against a
 50 MW spend, 0.4 MW over the prediction on 16 rows, in both cells at that supply. In `acc-spare`
 it took 4.83 MJ over its spend in the first second and then stopped. The ladder cells never
-show this, because each rung's first half lets the buffers settle.
+show this, because each rung's first half lets the buffers settle. *(#534, below, replaces the
+cap. It also corrects "its buffer is full": a member held at its spend settles with room in
+its buffer, and a settled rung shows no over-draw because that room has stopped changing.)*
+
+**A member asks for the room in its buffer, and the water-fill is where that settles**
+([#534](https://github.com/trulsjo/realistic-fusion-refreshed/issues/534)). Measured 2026-10-04
+against Factorio 2.0.77, same rig, nothing researched (asserted again). The probe now reads
+every member's buffer where each measured period starts, and predicts tick by tick. Each tick a
+member asks for its `input_flow_limit` or for the room left in its buffer, whichever is less.
+Each class's supply is divided in proportion to those asks. The member then spends out of its
+buffer. What charged accumulators give is still read and not predicted: it is added to the
+supply at their output limit until the second's reading is spent.
+
+**Raising the water-fill's cap by the buffer's room was tried first, and it was wrong.** It
+matched the four over-draw cells and broke every ladder cell that had matched, by up to
+0.56 MW in `four`. A member held at its spend does not have a full buffer. In `pair` at 75 MW
+of supply the legendary reactor's 10.67 MJ buffer stood 3 MJ short of full at the start of the
+measured half. At that room it asks for 3 MJ a tick against the normal reactor's 1.5, and two
+thirds of the 1.25 MJ supplied each tick is the 0.833 MJ it spends. So the engine does not cap
+a member at its spend. The buffer settles at the room whose ask draws exactly the spend, and
+the water-fill of #487 is that steady state, not the rule.
+
+| cells | worst deviation from the tick-by-tick prediction, MW | under the water-fill |
+|---|---|---|
+| `pair`, `secondary`, `primary`, `four`, `tertiary`, `three`, `acc-sec`, 21 rungs each | 1.8e-6 | matched |
+| `aneutronic`, 21 rungs | 7.3e-6 | matched, 7.3e-6 |
+| `discharge`, 33 rows | 1.8e-6 | matched |
+| `acc-supply`, `acc-supply-load`, 33 rows each | under 1e-14 | **0.4 MW out on 16 rows** |
+| `acc-spare`, `acc-spare-load`, 33 rows each | 1.25e-6 | **4.83 MJ out in the first second** |
+| `tert-tert` | 50.92 | 50 |
+| `acc-tert` | 5.4 | 5.4 |
+
+**All four over-draw cells are now predicted**, and the eight ladder cells and the discharge
+cell that matched before still match. In those four the test is one-sided. A lone reactor's
+ask is over the supply and the measured discharge together on every tick, so its prediction
+is their sum, and it could only miss if the accumulators had given more than the buffer had
+room for. The rule is tested where a supply is split: the ladder cells, and #538's
+`discharge-cap` below. In `acc-spare` the reactor's buffer had 5.667 MJ of room
+when the accumulators were charged. It took 4.833 MJ of that in the first second and stood at
+0.833 MJ of room on every row after. 0.833 MJ is one tick's spend: `spend` in
+`realistic-fusion-refreshed/control.lua` takes it out of the buffer before the rig reads, so
+a fully supplied reactor always reads one tick short.
+
+**The two cells that missed still miss, and one by more.** `tert-tert` and `acc-tert` are the
+class rule, not the buffer: a `tertiary`-class member draws nothing from a `tertiary` supply.
+`tert-tert`'s prediction for the load is 0.92 MW higher on the top four rungs than it was,
+because the load's buffer stands empty and the prediction now fills it.
+
+**The prediction holds at every heating rung, and the over-draw shrinks as the spend rises**
+([#538](https://github.com/trulsjo/realistic-fusion-refreshed/issues/538)). Measured 2026-10-04
+against Factorio 2.0.77 by `probe-brownout-contention.ps1 -HeatingRungs 1` to `-HeatingRungs 5`,
+one run a rung: the whole rig, with the force holding that many rungs of the heating ladder
+and no other rung of any ladder, asserted rung by rung. Every figure is beside the tick-by-tick
+prediction of #534. "Worst" is over every cell but `tert-tert` and `acc-tert`.
+
+| heating rungs held | `rf-reactor` spends, MW | worst deviation, MW | `tert-tert` misses by | `acc-tert` misses by | `acc-supply`: supply + 5.4 | `acc-spare`: over-draw in the first second, MJ |
+|---|---|---|---|---|---|---|
+| 0 | 50 | 7.3e-6 | 50.92 | 5.4 | 50.4, 0.4 over the spend | 4.833 |
+| 1 | 55 | 6.8e-6 | 55.91 | 5.4 | 54.9, under it | 4.25 |
+| 2 | 60 | 7.3e-6 | 60.9 | 5.4 | 59.4, under it | 3.667 |
+| 3 | 65 | 5.9e-6 | 65.89 | 5.4 | 63.9, under it | 3.083 |
+| 4 | 70 | 5.5e-6 | 70.88 | 5.4 | 68.4, under it | 2.5 |
+| 5 | 75 | 5.0e-6 | 75.88 | 5.4 | 72.9, under it | 1.917 |
+
+The worst deviation is `aneutronic`'s at every rung. The 0.4 MW over-draw in the two
+`acc-supply` cells exists only with nothing researched: from rung 1 the supply and the
+discharge together are under the spend. The first-second over-draw in the two `acc-spare`
+cells falls by 0.583 MJ a rung. A reactor at exactly its spend holds less room the more it
+spends: 5.667 MJ at rung 0 down to 3.167 at rung 5, one tick's spend of which it keeps.
+
+In `aneutronic` a 90 : 240 share hands the D-D reactor its spend only above 201.7, 220,
+238.3 and 256.7 MW of supply at rungs 1 to 4, where the two spend 255, 260, 265 and 270. So
+the band where the aneutronic reactor absorbs the shortfall alone narrows from the top 21% of
+the cell's spend at rung 1 to the top 5% at rung 4, and is gone at rung 5. The measured rungs
+fall on the right side each time: at rung 3 the D-D reactor is full at 238.5 MW and draws
+61.43 at 225.2, and at rung 4 it draws 69.95 at 256.5.
+
+**#528's six cells at heating rung 5**, from the `-HeatingRungs 5` run above. The reactor
+spends 75 MW and asks 90.
+
+| cell | supply | reactor drew, MW | accumulators | `tertiary` load |
+|---|---|---|---|---|
+| `acc-tert` | `tertiary`, 96.48 down to 16.08 MW | as predicted, all 21 rungs | **drew 0 on all 21**; predicted 5.4 on the top five rungs, 1.38 on the sixth, 0 on fifteen | |
+| `acc-sec` | `secondary-output`, the same ladder | as predicted, all 21 rungs | drew 5.4 on the top five, 1.38 on the sixth, 0 on fifteen, as predicted | |
+| `acc-supply` | 67.5 MW, 0.9 of the spend | 72.9 for 16 s, 71.1 in the 17th, then 67.5 | gave 5.4 MW for 16 s, 3.6 MJ in the 17th | |
+| `acc-supply-load` | 67.5 MW | the same | the same | **0 on all 33 rows** |
+| `acc-spare` | 75 MW, the spend | 76.92 in the first second, then 75 | gave 1.917 MJ in the first second, then nothing; 88.08 MJ left | |
+| `acc-spare-load` | 75 MW | the same | the same | **0 on all 33 rows** |
+
+The five that are predicted are within 2.6e-8 MW on every row. `acc-tert` misses by the
+accumulators' whole predicted draw, as it does unresearched.
+
+**Accumulator to accumulator: nothing, the fourth pairing of four**
+([#538](https://github.com/trulsjo/realistic-fusion-refreshed/issues/538)). Same runs, a cell
+`acc-acc`, alone on a network of its own: `acc-spare-load` with six legendary accumulators
+where the rig's `tertiary` load was. They are legendary because the eighteen charged ones
+already hold the normal name+quality key. They ask 4.5 MW between them, hold up to 180 MJ, and
+are emptied every second so they never stop asking. The engine reports them
+`managed-accumulator` too.
+
+| heating rungs held | supply, MW | charged accumulators gave | they then held | the six empty ones drew |
+|---|---|---|---|---|
+| 0 | 50 | 4.833 MJ, to the reactor, in the first second | 85.17 MJ for 29 s | **0 on all 33 rows** |
+| 5 | 75 | 1.917 MJ, likewise | 88.08 MJ for 29 s | **0 on all 33 rows** |
+
+Rungs 1 to 4 read the same way. The reactor's rows are `acc-spare`'s. So with `tert-tert`,
+`acc-tert` and `acc-spare-load` that is all four pairings of a `tertiary`-class source with a
+`tertiary`-class sink, and the sink drew nothing in each. The prediction cannot miss in this
+cell: what the charged accumulators give is read, and they gave the empty ones nothing.
+
+**A discharge that caps one of two reactors re-shares the excess as the prediction says**
+([#538](https://github.com/trulsjo/realistic-fusion-refreshed/issues/538)). Same runs, a cell
+`discharge-cap`, alone on a network of its own: `discharge` with its supply at 0.68 of what
+the two reactors spend. By ask the legendary reactor reaches its spend at 0.70. Unresearched
+that is 68 MW of supply, then 73.4 with the accumulators' 5.4.
+
+| seconds after the charge | accumulators gave, MW | normal reactor drew | legendary reactor drew | room in the legendary reactor's buffer at the start, MJ |
+|---|---|---|---|---|
+| the three before it | 0 | 19.43 | 48.57 | 10.67 |
+| 1 and 2 | 5.4 | 20.97 | 52.43 | 10.67, then 8.24 |
+| 3 | 5.4 | 21.06 | 52.34 | 5.81 |
+| 4 | 5.4 | 23.14 | 50.26 | 3.47 |
+| 5 to 16 | 5.4 | 23.40 | 50 | 3.21 |
+| 17 | 3.6 | 22.30 | 49.30 | 3.21 |
+| 18 to 30 | 0 | 19.43 | 48.57 | 3.91, back to 10.67 by the 23rd |
+
+For two seconds the 73.4 MW is split 90 : 225, which hands the legendary reactor 2.43 MW more
+than it spends, and its buffer fills. From the third second the room left is under what its
+flow limit asks for, its ask falls, and the normal reactor gets the difference: 23.40 MW from
+the fifth second, against 20.97 by ask alone. The legendary reactor's buffer stops 3.21 MJ
+short of full. All 33 rows are within 1.5e-6 MW of the prediction unresearched, and within
+3.3e-6 at every rung to 5, where the supply is 102 MW and the re-share lifts the normal
+reactor from 30.69 to 32.40.
 
 Whether the mod should guarantee any of this is the scope decision above and Truls's; the
 probe asserts nothing about the answer.
@@ -948,7 +1078,8 @@ replaced it is a different mechanism.
 Two things the rig turned up that are not about quality and are worth knowing. A fluid box seeded to
 its own declared `volume` of 1000 **relaxes to 526.3158 over about two seconds** and holds that
 figure to the digit, at every quality and in both temperature regimes — so `get_capacity()` and what
-a box will actually hold are not the same number. And the input and output readings of the same
+a box will actually hold are not the same number. *(#531 found why:
+[`exchanger-coverage.md`](exchanger-coverage.md#the-rule-behind-the-split).)* And the input and output readings of the same
 conversion **disagree by a factor of 1.887** in the one cell where there is anything to compare —
 close to the 1.900 the seeded box relaxes by, and not equal to it.
 
@@ -1038,23 +1169,29 @@ Stated plainly, because this repository treats an unverified claim as a defect.
 - **Contention is measured for small cells, not for a factory.** #439 ran pairs and #487 added four
   reactors on one network and a reactor against a `tertiary` load; #491 put all three input
   classes on one network, on a `secondary-output` supply only; #492 discharged accumulators into
-  one short network, at one supply fraction, with neither of two reactors capped; #493 put the aneutronic
-  reactor beside one D-D reactor, both at normal quality; #494 ran the whole rig once more
-  at heating rung 5 and at no rung between. A network mixing researched and unresearched
-  reactors needs two forces and has not been built. The class-ordered water-fill is a
-  prediction, and it is wrong in two measured ways. A `tertiary`-class member draws nothing from
-  a `tertiary`-class supply, by up to 50 MW unresearched (#490, and #528 with vanilla
-  accumulators on either side); accumulator to accumulator was not run. And a reactor whose
-  buffer is not full draws past its spend: by 0.4 MW for 16 s in #528's two `acc-supply` cells,
-  and by 4.83 MJ in the first second of its two `acc-spare` cells, unresearched. Why the engine
-  does the first is read off one sentence of the docs and is not documented further.
+  one short network, and #538 again with one of two reactors capped, at one supply fraction
+  each; #493 put the aneutronic
+  reactor beside one D-D reactor, both at normal quality; #494 and #538 ran the whole rig at
+  every heating rung, and at no state with another ladder held. A network mixing researched and
+  unresearched
+  reactors needs two forces and has not been built. The class-ordered prediction is a
+  prediction, and it is wrong in one measured way. A `tertiary`-class member draws nothing from
+  a `tertiary`-class supply, where it is predicted up to 50.92 MW unresearched (#490, #528 and
+  #538, with vanilla accumulators on either side and on both). Why the engine does that is read
+  off one sentence of the docs and is not documented further. A reactor whose buffer is not
+  full draws past its spend, and since #534 the prediction says by how much, to within 1.3e-6
+  MW in the four cells that showed it. What a charged accumulator gives is read and not
+  predicted.
 - **Why the engine floors a fluid transfer to whole float32 ULPs per tick is inferred, not
   documented.** #147 measured the flooring — five levels, two run lengths, the legendary rate landing
   on 2⁻²⁴ units a tick to ten digits — and no 2.0.77 doc page found in this pass says the engine does
   that. The measurement stands on its own; the mechanism named for it is a reading of the numbers.
-- **The two oddities #147 turned up on the way are recorded and not explained.** A fluid box seeded
-  to its declared `volume` settles at 526.3158 of 1000, and the input and output sides of the same
-  conversion disagree by a factor of about 1.887. Both are reproducible and neither has been chased.
+- **One of the two oddities #147 turned up on the way is still not explained.** The input and
+  output sides of the same conversion disagree by a factor of about 1.887; that is reproducible
+  and has not been chased. The other, a fluid box seeded to its declared `volume` settling at
+  526.3158 of 1000, is explained since #531: the box trades with the segment it is in, and
+  526.3158 is where that trade balances with no pipes. See
+  [`exchanger-coverage.md`](exchanger-coverage.md#the-rule-behind-the-split).
 - **Whether a mod may add a sixth quality level is unknown.** FFF #375 refers to restrictions without
   stating them and no 2.0.77 doc page found in this pass covers it. Narrowed but not measured by
   [`inverted-quality.md`](inverted-quality.md).
