@@ -1454,13 +1454,26 @@ function M.settle_fed(spec, fluid_name, feed, seconds, paid_j, dt, capture, feed
   return amount, t_c, last
 end
 
+-- The capacity LuaFluidBox.get_capacity reports on rf-heater's output box, as
+-- scripts/probe-plasma-segment.ps1 prints it. Its fill is what the heater's pushes go by.
+local HEATER_BOX = 200
+
+--- One transfer between two stores (#540): the rule M.settle_segment's note gives, floored at 0.1 and bounded by what
+-- the source holds and the room the destination has.
+local function flow(from, from_volume, to, to_volume)
+  local rate = math.max(0.1, 100 * math.min(from / from_volume, 1 - to / to_volume))
+  return math.max(0, math.min(rate, from, to_volume - to))
+end
+
 --- Run a reactor's box and the fluid segment its pipes make, tick by tick from empty (#543).
 --
 -- docs/research/exchanger-coverage.md, "The rule behind the split": the game holds the line's
 -- plasma in TWO stores, the box and a segment of capacity box_volume + 100 per pipe, and they
--- trade through the box's one connection. Every tick, after the mod's step and before the heater
--- delivers, the box pushes 100 x min(box fill, 1 - segment fill) into the segment and then pulls
--- 100 x min(segment fill, 1 - box fill) back. Each transfer carries its source's temperature.
+-- trade through the box's one connection. Every tick, after the mod's step, the box pushes
+-- 100 x min(box fill, 1 - segment fill) into the segment and then pulls 100 x min(segment fill,
+-- 1 - box fill) back; then the heater's output box pushes twice, 100 x min(its fill, 1 - segment
+-- fill) each time (#540). No transfer moves under 0.1 units unless its source holds less or its
+-- destination has less room. Each carries its source's temperature.
 --
 -- ARITHMETIC FOR THE NOTE, NOT THE MOD. Nothing the mod runs calls this, and M.settle_fed is not
 -- changed by it: whether the fed model should count the segment is #522, and open.
@@ -1469,9 +1482,8 @@ end
 -- @param pipes    rf-pipe in the segment. 0 is a lone box: a segment of the box's own volume.
 -- @param ticks    how long to run. M.step runs on every sixth, at control.lua's cadence.
 -- @param paid_j, capture  as M.settle's; math.huge if paid_j is nil
--- @param heater   M.heater if nil. A craft lands on tick period + 1, then every period, and its
---                 output box gives three quarters of what it holds a tick, or all of it once that
---                 is under a quarter of a craft, never past the segment's room.
+-- @param heater   M.heater if nil. A craft lands on tick period + 1, then every period, in an
+--                 output box of HEATER_BOX units.
 -- @param start    units in the box at tick 0, at the heater's temperature; 0 if nil
 -- @return { box, box_c, segment, segment_c, held, cycles }. One entry in cycles per heater
 --         cycle, read where the segment probe reads it: `tick` is the cycle's end, with the
@@ -1490,19 +1502,18 @@ function M.settle_segment(spec, fluid_name, pipes, ticks, paid_j, capture, heate
       local result = M.step(spec, fluid_name, s.box, s.box_c, paid_j or math.huge, 0.1, capture)
       if result then s.box, s.box_c = s.box - result.plasma_consumed, result.temperature_c end
     end
-    local push = 100 * math.min(s.box / V, 1 - s.segment / C)
+    local push = flow(s.box, V, s.segment, C)
     if push > 0 then
       s.segment_c, s.segment, s.box = mix(s.segment, s.segment_c, push, s.box_c), s.segment + push, s.box - push
     end
-    local pull = 100 * math.min(s.segment / C, 1 - s.box / V)
+    local pull = flow(s.segment, C, s.box, V)
     if pull > 0 then
       s.box_c, s.box, s.segment = mix(s.box, s.box_c, pull, s.segment_c), s.box + pull, s.segment - pull
     end
     local landing = t > period and t % period == 1
     if landing then s.held = s.held + heater.plasma_per_craft end
-    if s.held > 0 then
-      local give = s.held > heater.plasma_per_craft / 4 and 0.75 * s.held or s.held
-      give = math.min(give, C - s.segment)
+    for _ = 1, 2 do
+      local give = flow(s.held, HEATER_BOX, s.segment, C)
       if give > 0 then
         s.segment_c, s.segment, s.held = mix(s.segment, s.segment_c, give, feed_c), s.segment + give, s.held - give
       end
