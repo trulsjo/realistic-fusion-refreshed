@@ -372,7 +372,12 @@ face.**
   the two cells are now one experiment. That 78.3 is confinement rung 3 and no other rung at
   126 000 ticks; the same state settles at 76.0 MW by 980 000, and the bench's default today,
   every ladder at its top, at 141.0 MW (2026-10-04, Factorio 2.0.77, four heaters; #545, #527).
-  The two cells read the same at 980 000 ticks as at 126 000, so the finding stands.
+  The two cells read the same as each other at both lengths, so the finding stands. Run at
+  `-Rungs confinement_ladder=3` with four heaters and twelve pipes (2026-10-04, Factorio 2.0.77;
+  [#554](https://github.com/trulsjo/realistic-fusion-refreshed/issues/554)), the drain cell and
+  the four-exchanger cell both read 78.3 MW sustained, 94.0 flowing, at 126 000 ticks, where the
+  gate refuses both on the fuel line, and both read 76.0 MW, 91.1 flowing, at 980 000 ticks of a
+  1 000 000-tick run that passes it. Their window traces match window for window in both runs.
 
   **MEASURED AND CLOSED, 2026-09-08 (#89).**
   [`bolted-joint-throughput.md`](../research/bolted-joint-throughput.md) carries it. One bolted
