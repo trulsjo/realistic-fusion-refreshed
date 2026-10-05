@@ -31,8 +31,9 @@
     Run only the gates whose name matches this wildcard, e.g. 'check-p*' or 'test-*'.
 
 .PARAMETER SelfTest
-    Prove the runner with stand-in gates and no game: a gate that fails is reported by name and
-    turns the run red, and one that passes beside it is still reported as passing.
+    Prove the runner with stand-in gates and no game: a gate that fails, or whose executable is
+    missing, is returned by name as failed, and one that passes beside it is still reported as
+    passing. The exit code this script turns that list into is not exercised.
 
 .EXAMPLE
     pwsh -File scripts/run-gates.ps1
