@@ -103,6 +103,16 @@ same harness for every script that sources it, so every gate here needs the subm
 starts no game (`ship-check.ps1`) included. Since #462 none of the harness's functions
 is defined a second time in this repo.
 
+**`scripts/run-gates.ps1` runs them all in one step** (#567): the Lua suites, `ship-check.ps1`,
+the default `load-check.ps1` and every `scripts/check-*.ps1` it finds, one at a time, one line
+per gate, exiting non-zero and naming each gate that failed. **Run it on a branch that combines
+more than one ticket, before the review.** Each ticket's author runs the gates its own change
+touches, and #557 was broken between tickets: #555 changed how `control.lua` writes
+`UPDATE_INTERVAL`, which `check-pooling.ps1` reads by its shape. It took 4 min 45 s for 21 gates
+on this machine on 2026-10-05 with nothing else running. It runs no probe, no gate's
+`-SelfTest`, and not `load-check.ps1 -FromZips`, `locale-check.ps1` or `name-check.ps1`; its
+own `-SelfTest` proves with stand-in gates that a failing gate is named and not swallowed.
+
 `scripts/probe-*` are **not** in that list and are not gates. A probe asserts nothing and answers
 a question a decision is waiting on — exit 0 means it ran and reported, never that the answer was the
 hoped-for one. Its findings belong in `docs/research/`, and it stays committed so the next engine
@@ -337,7 +347,8 @@ vocabulary is `CONTEXT.md`'s Art section.
 
 ### Code review
 
-Three rules, all in `docs/agents/code-review.md`.
+Three rules, all in `docs/agents/code-review.md`. Before a review of a branch that combines
+more than one ticket, run `scripts/run-gates.ps1` on it; the State section says what it runs.
 
 **The filter gates the comment, not the report.** `/code-review`'s 80-point threshold governs what
 gets posted to the PR. Its rubric only emits 0/25/50/75/100, so the filter admits 100 alone — a
