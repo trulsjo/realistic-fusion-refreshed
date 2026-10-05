@@ -23,6 +23,9 @@
                ONLY THE FIRST IS ON AN ELECTRIC NETWORK (asserted): an unpowered reactor steps with
                its heating clamped to zero, so any heat it holds came along the pipe.
 
+      both     With -Both only: the pair again with its second reactor powered too (asserted to be
+               on an electric network), built last so no other cell's segment id moves (#561).
+
     NOTHING IS RESEARCHED, asserted rung by rung at build and again at each load.
 
     THE THREE RUNS
@@ -64,6 +67,9 @@
     rf-pipe between the pair's reactors. 11 is the fewest that keeps the second outside the first
     one's substation.
 
+.PARAMETER Both
+    Also build the pair with both reactors powered.
+
 .PARAMETER Every
     Ticks between sampled rows.
 
@@ -84,6 +90,7 @@ param(
     [ValidateRange(3, 12)]        [int] $Pipes     = 3,
     [ValidateRange(11, 40)]       [int] $Bridge    = 12,
     [ValidateRange(10, 100000)]   [int] $Every     = 2000,
+    [switch] $Both,
     [switch] $KeepTemp
 )
 
@@ -132,6 +139,7 @@ $lua = @'
 
 local PIPES     = __PIPES__
 local BRIDGE    = __BRIDGE__
+local BOTH      = __BOTH__
 local EVERY     = __EVERY__
 local SAVE_AT   = __SAVEAT__
 local SAVE_NAME = "__SAVENAME__"
@@ -186,14 +194,16 @@ local function first_pipe(surface, force, from, step, count)
 end
 
 --- One heater, PIPES pipes and a reactor; with `bridge`, a second reactor that many pipes east.
-local function build(surface, force, ox, label, bridge)
-  for _, dx in ipairs({ 9, -9 }) do
-    rf_place_or_die(surface, { name = "substation", position = { ox + dx, 5 }, force = force },
-      "a substation")
-    local eei = rf_place_or_die(surface, { name = "electric-energy-interface",
-      position = { ox + dx + (dx > 0 and 2.5 or -2.5), 5.5 }, force = force }, "a power source")
-    eei.power_production = 8e6
-  end
+local function power(surface, force, x, dx)
+  rf_place_or_die(surface, { name = "substation", position = { x + dx, 5 }, force = force },
+    "a substation")
+  local eei = rf_place_or_die(surface, { name = "electric-energy-interface",
+    position = { x + dx + (dx > 0 and 2.5 or -2.5), 5.5 }, force = force }, "a power source")
+  eei.power_production = 8e6
+end
+
+local function build(surface, force, ox, label, bridge, both)
+  for _, dx in ipairs({ 9, -9 }) do power(surface, force, ox, dx) end
   local first = reactor_at(surface, force, ox + 0.5)
   -- rf-reactor's west plasma connection is 7 tiles out, so the first pipe is 8.
   local west = { ox + 0.5 - 8, 0.5 }
@@ -216,8 +226,11 @@ local function build(surface, force, ox, label, bridge)
     local east = { ox + 0.5 + 8, 0.5 }
     local span = first_pipe(surface, force, east, { 1, 0 }, bridge)
     local second = reactor_at(surface, force, east[1] + (bridge - 1) + 8)
+    if both then
+      power(surface, force, second.position.x - 0.5, 9)
+      if not second.electric_network_id then error("the " .. label .. " cell's second reactor is unpowered") end
     -- THE DISCRIMINATOR: what heats this one arrived along the pipe.
-    if second.electric_network_id then
+    elseif second.electric_network_id then
       error("the pair's second reactor is on an electric network, so its heat would not say pooling")
     end
     cell.reactors[2], cell.sides[2] = second, span
@@ -249,7 +262,7 @@ script.on_init(function()
   surface.request_to_generate_chunks({ 100, 0 }, 8)
   surface.force_generate_chunk_requests()
   storage.quieted = __QUIETFN__(surface)
-  local clear = { { -60, -40 }, { 200, 40 } }
+  local clear = { { -60, -40 }, { BOTH and 300 or 200, 40 } }
   local tiles = {}
   for x = clear[1][1], clear[2][1] do
     for y = clear[1][2], clear[2][2] do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
@@ -260,6 +273,7 @@ script.on_init(function()
   end
 
   storage.cells = { build(surface, force, 0, "solo", nil), build(surface, force, 100, "pair", BRIDGE) }
+  if BOTH then storage.cells[3] = build(surface, force, 200, "both", BRIDGE, true) end
   say("built production_type=%s", production_type())
 end)
 
@@ -314,6 +328,7 @@ $lua = $lua.
     Replace('__QUIETFN__', $script:QuietMapFunction).
     Replace('__PIPES__', "$Pipes").
     Replace('__BRIDGE__', "$Bridge").
+    Replace('__BOTH__', $(if ($Both) { 'true' } else { 'false' })).
     Replace('__EVERY__', "$Every").
     Replace('__SAVEAT__', "$SaveAt").
     Replace('__SAVENAME__', $saveName).
@@ -368,8 +383,10 @@ try {
     # server_save refuses outright when the directory it writes into does not exist yet.
     New-Item -ItemType Directory -Path (Join-Path $temp 'write-data/saves') -Force | Out-Null
     $fill = [pscustomobject]@{ Code = 0; OutFile = (Join-Path $temp 'save-stdout.txt'); ErrFile = (Join-Path $temp 'save-stderr.txt') }
+    # The port stays under 49152: Windows reserves ranges of the dynamic ports above it, and a
+    # server bound into one exits with error 10013 before it ticks (seen 2026-10-05, port 54883).
     $line = (@('--config', (Join-Path $temp 'factorio-config.ini'), '--mod-directory', $modDir,
-               '--start-server', $map, '--server-settings', $settings, '--port', "$(Get-Random -Minimum 35000 -Maximum 60000)") |
+               '--start-server', $map, '--server-settings', $settings, '--port', "$(Get-Random -Minimum 35000 -Maximum 49000)") |
         ForEach-Object { ConvertTo-NativeArgument $_ }) -join ' '
     $server = Start-Process -FilePath $FactorioExe -ArgumentList $line -PassThru -NoNewWindow `
         -RedirectStandardOutput $fill.OutFile -RedirectStandardError $fill.ErrFile
