@@ -1086,11 +1086,33 @@ read #540's figures, and the rows end on the same ticks.
 | heating 3 + confinement 2, three, 801 000 ticks | 580 562: 3.74986 of 5 | 41 | 8903 | 123 | 2.0e-5 | 2.0e-5 |
 | heating 3 + confinement 2, six, 801 000 ticks | 657 842: 3.74915 of 5 | 46 | 4486 | 138 | 2.1e-5 | 2.1e-5 |
 
-The pairs were checked by scratch arithmetic rebuilt for #552, because #540's was not
-committed. Over #540's own rows it gives the same four pair counts and the same "without the
-floor" column, 0.22, 0.22, 0.22 and 0.05. Its worst misses are 1.5e-5, 1.5e-5, 2.0e-5 and 2.1e-5
-where #540's table reads 1.8e-5, 1.8e-5, 2.2e-5 and 2.1e-5. Neither checker is committed, so the
-difference is not traced; every one of those figures is under 6.1e-5, the single-precision step
+**Since [#563](https://github.com/trulsjo/realistic-fusion-refreshed/issues/563) the probe
+checks the pairs itself, so this table can be repeated.** `-Heater` now runs the rule over every
+pair of consecutive rows and prints, per cell, the pairs it predicts, the pairs it misses by
+over 1×10⁻⁴ units, and the worst miss with and without the 0.1 floor. The same two commands,
+2026-10-05, Factorio 2.0.77 (build 84539), D-D, one heater a cell, research asserted:
+
+| research, pipes, ticks | tick pairs | missed by over 1×10⁻⁴ | worst miss | on tick | without the floor |
+|---|---|---|---|---|---|
+| nothing, three, 100 000 | 156 | 0 | 1.5e-5 | 70 322 | 0.22 |
+| nothing, six, 100 000 | 94 | 0 | 1.7e-5 | 78 723 | 0.23 |
+| heating 3 + confinement 2, three, 801 000 | 8903 | 0 | 2.0e-5 | 723 722 | 0.22 |
+| heating 3 + confinement 2, six, 801 000 | 4486 | 0 | 2.1e-5 | 721 922 | 0.05 |
+
+These are #552's pair counts and worst misses, from committed code. The one figure that moves
+is the six-pipe unresearched cell's "without the floor", which the probe prints as 0.23 where
+#552's scratch column read 0.22 over #540's 91 rows.
+
+**#540's higher worst misses are what the printed table gives.** #540's checker and #552's
+were both scratch and neither was committed, so the difference between 1.8e-5, 1.8e-5, 2.2e-5,
+2.1e-5 and 1.5e-5, 1.5e-5, 2.0e-5, 2.1e-5 was not traced. The probe's rows carry nine
+significant digits, and its report prints them to five decimals. The same rule run over the
+printed five-decimal table, on #540's own pairs, gives 1.82e-5 over the 153, 1.80e-5 over the
+91, 2.17e-5 over the 8780 and 2.10e-5 over the 4348: #540's four figures. So #540 read the
+rounded table and #552 and the probe read the rows, and the up to 0.3e-5 between them is
+the rounding of three five-decimal readings. The probe's figures stand. That #540 worked from
+the printed table is inferred from the match; its arithmetic is not on record. Every one of
+these figures is under 6.1e-5, the single-precision step
 of an amount between 512 and 1024 units, which is what the box holds on these rows. The worst
 misses are two units in the fifth decimal the probe prints. Five orders were tried for one
 tick: the box's push and pull, then the heater's two pushes; the heater's two first; the box's
