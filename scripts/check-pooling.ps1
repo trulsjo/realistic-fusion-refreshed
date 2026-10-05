@@ -1785,8 +1785,13 @@ script.on_nth_tick(CHECK_AT, function()
       -- over would mean the loss had stopped. THE UPPER BOUND WAS 1.02 UNTIL #565, which only
       -- refused energy appearing: under the plasma input-box canary all four rows read 100.0%
       -- arrived and passed a row whose name says "not all of it". The four read 94.6%, 75.4%,
-      -- 57.6% and 67.0% as shipped, the same in every run, so 0.98 leaves the nearest, `solo`,
+      -- 57.6% and 67.0% at the default -Tail, with and without -With space-age, and 94.6%,
+      -- 83.6%, 57.6% and 73.0% at -Tail 40 (read 2026-10-05), so 0.98 leaves the nearest, `solo`,
       -- 3.4 points of room. The measured fraction is the number to read.
+      --
+      -- ONLY THESE FOUR MOVED. The three write-shape rows and the six writer rows further down
+      -- keep 0.4 to 1.02 and still pass at 100% arrived under that canary: their names state a
+      -- shape, not a loss, and the rows that compare them with each other are what fail there.
       local kept = measured / predicted
       record(kept > 0.4 and kept < 0.98,
         string.format("%s: the run gains most of what its reactors spent, and not all of it", name),

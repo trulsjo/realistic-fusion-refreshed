@@ -87,7 +87,7 @@ New-Item -ItemType Directory -Path $temp -Force | Out-Null
 $pwsh = (Get-Process -Id $PID).Path
 
 if ($SelfTest) {
-    Invoke-SelfTestHalves -Halves @(
+    try { Invoke-SelfTestHalves -Halves @(
         @{ Name = 'failing-gate-reported'; Body = {
             $standIns = @(
                 @{ Name = 'stand-in-green'; Exe = $pwsh; Arguments = @('-NoProfile', '-Command', 'exit 0') }
@@ -106,8 +106,7 @@ if ($SelfTest) {
             if (@($failed).Count -ne 1) { throw 'a gate whose executable does not exist was reported as passing.' }
             'a gate whose executable is missing fails rather than being skipped.'
         } }
-    )
-    Remove-Item -Recurse -Force $temp
+    ) } finally { Remove-Item -Recurse -Force $temp -ErrorAction SilentlyContinue }
     Write-Host '-SelfTest: PASS' -ForegroundColor Green
     exit 0
 }
