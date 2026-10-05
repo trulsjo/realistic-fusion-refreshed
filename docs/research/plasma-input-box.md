@@ -424,7 +424,23 @@ The canary refuses to load unless the box is `input-output` before it changes it
 reads the plasma box's production type back, so the change itself is the canary's own assertion plus
 #542's runtime reading above.
 
-### The pooling check: 23 of 125 checks fail
+### The pooling check: 23 of 125 checks failed, and 27 do since #565
+
+**Since [#565](https://github.com/trulsjo/realistic-fusion-refreshed/issues/565) four more rows
+fail under the canary, which is what they should have done.** The readings below are #549's, of
+2026-10-04, when the four "the run gains most of what its reactors spent, and not all of it"
+rows were bounded above 0.4 and below 1.02 and so passed at 100.0% arrived. #565 moved the
+upper bound to 0.98. Run again on 2026-10-05, Factorio 2.0.77: shipped,
+`PASS: 125 checks, 0 failures`, the four rows reading 94.6%, 75.4%, 57.6% and 67.0% as before,
+so the nearest has 3.4 points of room; canary, `FAIL: 125 checks, 27 failures`, the 23 below
+and those four. `scripts/check-pooling.ps1 -SelfTest` proves it: its `all-arrives-refused` half
+loads this canary and requires the four rows to fail by name.
+
+Nine other rows keep the old bound of above 0.4 and below 1.02, and still pass at 100% under the
+canary: the three write shapes and the six writer rows, which read 72.2% and 71.10% to 72.19%
+as shipped. Their names state a shape, not a loss, so #565 left them; the rows that compare
+them with each other are among the 23.
+
 
 Defaults: 1801 ticks, a simulation step every 6, a 20-pipe tail on `piped`. Nothing researched:
 the rig asserted all 11 rungs off in both runs. The rig has no heater; every cell is seeded and
@@ -452,11 +468,12 @@ differently. These are the 23 that fail:
 | and the three-reactor run loses MORE than mixing alone accounts for | 57.6% against 75.4% | 100.0% against 100.0% |
 | and what reaches the pool DEPENDS on what else is plumbed into the run | 57.6% against 67.0% | 100.0% against 100.0% |
 
-These 45 checks still pass, with different figures:
+These 45 checks still passed on 2026-10-04, with different figures. Since #565 the first row's
+four fail, which leaves 41:
 
 | row | shipped | canary |
 |---|---|---|
-| solo, solopipe, bare, piped: the run gains most of what its reactors spent, and not all of it | 94.6%, 75.4%, 57.6%, 67.0% arrived | 100.0% in all four; the check's bound is above 0.4 and below 1.02 |
+| solo, solopipe, bare, piped: the run gains most of what its reactors spent, and not all of it | 94.6%, 75.4%, 57.6%, 67.0% arrived | 100.0% in all four; the bound was above 0.4 and below 1.02 then, and is below 0.98 since #565, so these four now fail |
 | solo: one reactor with no run to share into keeps nearly all of what it spent | 94.6% | 100.0% |
 | pair, trio, five: the pool ran down | 47.33%, 44.64%, 42.68% of capacity left | 80.78%, 75.61%, 71.82% |
 | trio, five: every unpowered reactor on the run is at one temperature | 7.99052×10⁷ °C, spread 0.0329%; 4.77436×10⁷, spread 0.059% | 15 °C, spread 0%, in both |
@@ -708,7 +725,7 @@ Each option lists what it changes. None is chosen.
    rather than a second store. **It ends ADR 0011's heat pooling, which the shipped box keeps
    only while the line fills (#548).** Reactors on one run share feed plasma but not heat, and a
    reactor without power sits at the 15 °C floor beside a hot one. ADR 0011 would need
-   superseding. The pooling rows of `check-pooling.ps1`, 23 of whose 125 checks fail under the
+   superseding. The pooling rows of `check-pooling.ps1`, 27 of whose 125 checks fail under the
    canary (see
    [The repository's gates under the canary](#the-repositorys-gates-under-the-canary)), and the
    comments in `control.lua` that describe box 1 as "the input-output box ADR 0011's fluid
