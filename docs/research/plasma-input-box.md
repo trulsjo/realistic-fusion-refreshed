@@ -299,6 +299,63 @@ the box, which is the control row. **The canary box keeps all 1000 it was seeded
 segment holds nothing at any row. The segment reports a capacity of 1000 in both runs. Neither
 box is written by `control.lua`: 0 of 99 334 step ticks.
 
+### The aneutronic reactor
+
+([#562](https://github.com/trulsjo/realistic-fusion-refreshed/issues/562).) The probe takes
+`-Plasma` since #562, and the canary and the lone copy follow the reactor that burns it.
+`pwsh -File scripts/probe-plasma-input-box.ps1 -Plasma rf-d-he3-plasma -Pipes 3 -Ticks 500000 -Every 4000`
+on 2026-10-05, Factorio 2.0.77 (build 84539): D-He3 into `rf-aneutronic-reactor` and its
+3000-unit box, one heater per cell, nothing researched (all 11 rungs asserted off in both runs),
+rows every 4000 ticks to 496 000. The canary refuses to load unless the box was `input-output`.
+
+**It loads, and it is stepped.** Neither run printed a line naming a warning or an error. The
+runtime prototype's box reads `input-output` in the shipped run and `input` in the canary run,
+and the lone copy reads the same. `control.lua` changed every powered box across its handler on
+82 644 of the 82 667 step ticks, in both variants.
+
+**One heater does not fill this box, in either variant.** No box in a heated cell reaches 99.9%
+of 3000. Each settles into a cycle its rows repeat every 12 000 ticks, which is the 4000-tick
+sampling against the heater's 120-tick cycle. The ranges below are the three rows of that cycle
+from 468 000 to 496 000.
+
+| 500 000 ticks, 1 heater, 3 pipes | box, of 3000 | segment beside it, of 3300 | box °C | box at 32 000 | at 64 000 |
+|---|---|---|---|---|---|
+| shipped | 467.54 to 469.12 | 499.54 to 501.47 | 4.4074 to 4.4220×10⁹ | 415.47 | 465.87 |
+| canary | 466.91 to 469.52 | 0 to 0.88 | 4.4034 to 4.4281×10⁹ | 465.95 | 469.52 |
+
+- The box ends in the same place. The canary gets there in about half the time, and holds
+  nothing beside it: the shipped line keeps 1068 to 1069 units in the segment for every 1000 in
+  the box, which is the low branch of #531's rule at this size, (3300 − 100) / 3000 = 1.0667.
+- So there is no fill tick to quote, and the fed model's figures for this reactor were not
+  compared.
+
+**The pair, one reactor unpowered, three pipes and twelve, segment capacity 7500:**
+
+| | powered box | °C | unpowered box | °C | segment |
+|---|---|---|---|---|---|
+| shipped, 64 000 | 310.57 | 4.1221×10⁹ | 310.58 | 4.0641×10⁹ | 767.29 |
+| shipped, 468 000 to 496 000 | 324.99 to 325.71 | 4.1014 to 4.1143×10⁹ | 324.98 to 325.71 | 4.0461 to 4.0512×10⁹ | 802.64 to 804.69 |
+| canary, 64 000 | 341.72 | 4.9181×10⁹ | 1332.50 | 15 | 0 |
+| canary, 468 000 to 496 000 | 467.02 to 469.32 | 4.4052 to 4.4270×10⁹ | 3000.00 | 15 | 0 to 1.20 |
+
+- **Shipped: heat travels, and goes on travelling.** The unpowered box reads within 1.6% of
+  the powered one at every row of the last cycle, and `control.lua` changes it on 82 644 step
+  ticks, the same count as a powered one: it is hot enough to burn what reaches it. The line
+  never fills, so the full-line loss
+  [read on `rf-reactor`](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor)
+  is not reached here. A line that did fill was not built.
+- **Canary: heat does not travel.** The unpowered box read 4.1473×10⁴ °C at 4000 and 15 °C at
+  every row from 8000. It takes plasma all the same, and is full, at 3000 units of cold plasma,
+  from tick 143 901. `control.lua` never changed it: 0 of 82 667 step ticks. The powered box
+  holds 341.72 at 64 000 while its neighbour fills, 403.02 at 148 000 once it has, and the solo
+  figures by the last cycle.
+- Both reactors powered: the shipped boxes read 341.36 and 341.37 at 160 000, at 4.9244 and
+  4.9243×10⁹ °C; the canary's 341.89 and 341.87, at 4.9172 and 4.9175×10⁹.
+
+**The lone box**, seeded with 3000 units at 15 °C: the shipped copy holds 1525.4238 beside
+1474.5762 in its segment from the first row to 496 000, which is #531's rule again,
+3000² / (2 × 3000 − 100) = 1525.4237. The canary copy keeps all 3000.
+
 ## The repository's gates under the canary
 
 [#549](https://github.com/trulsjo/realistic-fusion-refreshed/issues/549). 2026-10-04, Factorio
@@ -501,8 +558,9 @@ not loaded. That is a reading of the rule, not a choice between the options belo
 
 ## What was not measured
 
-- `rf-aneutronic-reactor`, D-T, the helium-3 plasmas, and any researched state. The canary
-  changes `rf-reactor` alone.
+- D-T and He3-He3, and any researched state but the one pair at heating rung 5. The aneutronic
+  reactor is read on D-He3 with one heater, which does not fill it; a line of it that fills was
+  not built.
 
 ## Options
 
@@ -530,9 +588,12 @@ Each option lists what it changes. None is chosen.
    coupling rests on", would need rewriting. An existing save loads without complaint and loses
    no plasma, but a reactor heated only through the pipe falls to 15 °C, so the change would be
    breaking; see [An existing save loaded under the canary](#an-existing-save-loaded-under-the-canary).
-   The aneutronic reactor is unmeasured, but carries the same box.
+   On the aneutronic reactor, read on D-He3 with one heater (#562), the box settles at the same
+   467 to 470 units either way, the segment beside it empties, and an unpowered reactor on the
+   run fills with 3000 units of plasma at 15 °C where the shipped one runs within 1.6% of its
+   neighbour.
 3. **Make only one reactor `input`.** This splits the fuel-line behaviour by tier, and it is
-   possible because the two reactors are separate prototypes. Only `rf-reactor` was measured.
+   possible because the two reactors are separate prototypes. Both were measured, each alone: `rf-reactor` on D-D and `rf-aneutronic-reactor` on D-He3.
 4. **Keep `input-output` and make the model match the game.** This changes no prototype. It
    moves the fed model onto the two-store rule #531 read, which is the work already open in
    `exchanger-coverage.md`, and it keeps pooling. Like option 1, it relies on behaviour the
