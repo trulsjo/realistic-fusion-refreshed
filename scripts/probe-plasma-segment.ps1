@@ -105,12 +105,21 @@
     room and the reactor's box before the mod's step, so a rule for the delivery can be checked
     against it. A box already holding plasma on the first tick the probe reads it does not start
     the rows on that tick: nothing was read before it, so what it gave is not known.
+    Under the rows the report runs the two-store rule over every pair of consecutive ticks and
+    prints how many it predicts, how many it misses by over 1e-4 units, and the worst miss with
+    and without the 0.1-unit floor (#563). It reports and asserts nothing.
 
     "Under three quarters" is tested as under 0.74999 of what it held (#552). The engine's
     amounts are single precision: the first craft's exact three quarters, 3.75 of 5 on tick 122,
     reads 3.74999642, which a test of under 0.75 takes. Until #552 the test was under 0.74, which
     began the rows later: by one heater cycle with nothing researched, and by 41 and 46 at three
     pipes and six on heating rung 3 and confinement rung 2.
+
+.PARAMETER Fixed
+    Run the fixed-point rule docs/research/quality.md fitted to a lone box beside each cell, one
+    tick at a time (#564): from the game's reading of one tick it predicts the next, exactly, in
+    2^-24 units. Reported every 6000 ticks, split into ticks the heater had nothing to give and
+    ticks it was feeding, and by how the destination's fill is rounded, which the fit left open.
 
 .PARAMETER KeepTemp
     Keep the save, the rig mods and the captured output.
@@ -140,6 +149,7 @@ param(
     [ValidatePattern('^((confinement|heating|capture)_ladder=\d+)(,(confinement|heating|capture)_ladder=\d+)*$', Options = 'None')]
     [string] $Rungs,
     [switch] $Heater,
+    [switch] $Fixed,
     [switch] $KeepTemp
 )
 
@@ -212,6 +222,7 @@ local FROM  = { __FROM__ }
 local SPAN  = __SPAN__
 local RUNGS = __RUNGS__
 local HEATER = __HEATER__
+local FIXED  = __FIXED__
 
 local PLASMA = "__PLASMA__"
 local ENERGY_FEED = "__ENERGYFEED__"
@@ -228,6 +239,35 @@ local REACTOR = ANEUTRONIC[PLASMA] and "rf-aneutronic-reactor" or "rf-reactor"
 local ENERGY = (ANEUTRONIC[PLASMA] and logic.aneutronic_reactor or logic.reactor).energy_fluid
 
 local function say(fmt, ...) log("SEGPROBE " .. string.format(fmt, ...)) end
+
+-- THE FITTED FIXED-POINT RULE, ONE TICK AT A TIME (#564). docs/research/quality.md fitted it to a
+-- lone box nothing feeds: every amount a whole count of 2^-24 units, a source's fill that count
+-- over its volume FLOORED, a transfer 100 times the smaller of the source's fill and one minus
+-- the destination's. The fit could not say how the DESTINATION's fill is rounded, so all three
+-- are run. Here it is asked to predict the next tick of a FED line from the game's own reading
+-- of this one: the box after the mod's step, the segment, and what the heater has to give.
+-- The order and the 0.1-unit floor are M.settle_segment's; the floor is 0.1 x 2^24 floored.
+local UNITS = 2 ^ 24
+local FLOOR_UNITS = math.floor(0.1 * UNITS)
+local ROUNDINGS = {
+  floor = math.floor,
+  ceil  = math.ceil,
+  round = function(x) return math.floor(x + 0.5) end,
+}
+local function fixed_flow(round, from, from_volume, to, to_volume)
+  local rate = math.max(FLOOR_UNITS, 100 * math.min(math.floor(from / from_volume), UNITS - round(to / to_volume)))
+  return math.max(0, math.min(rate, from, to_volume * UNITS - to))
+end
+--- One engine tick from `s` (2^-24 units): the box pushes, then pulls, then the heater pushes twice.
+local function fixed_step(round, s, V, C, H)
+  local box, seg, heater = s.box, s.segment, s.had
+  local push = fixed_flow(round, box, V, seg, C); box, seg = box - push, seg + push
+  local pull = fixed_flow(round, seg, C, box, V); box, seg = box + pull, seg - pull
+  for _ = 1, 2 do
+    local give = fixed_flow(round, heater, H, seg, C); heater, seg = heater - give, seg + give
+  end
+  return box, seg, heater
+end
 
 __RIGBUILD__
 
@@ -411,6 +451,46 @@ script.on_event(defines.events.on_tick, function()
       cell.drip_held, cell.drip_crafts = held, crafts
     end
 
+    if FIXED then
+      local fx = cell.fx
+      if fx then
+        local V, C = cell.reactor.fluidbox.get_capacity(1), cell.pipes[1].fluidbox.get_capacity(1)
+        local H = cell.heater.fluidbox.get_capacity(cell.heater_box)
+        fx.had = fx.held + (crafts - fx.crafts) * storage.per_craft * UNITS
+        -- "idle" is a tick the heater had nothing to give, so only the box and the segment traded.
+        local kind = fx.had > 0 and "feeding" or "idle"
+        local seen = { pre[i] * UNITS, segment * UNITS, held * UNITS }
+        for _, reading in ipairs(seen) do
+          if reading ~= math.floor(reading) then fx.off_grid = fx.off_grid + 1 end
+        end
+        fx[kind] = fx[kind] + 1
+        for name, round in pairs(ROUNDINGS) do
+          local b, g, h = fixed_step(round, fx, V, C, H)
+          if b ~= seen[1] or g ~= seen[2] or h ~= seen[3] then
+            local key = kind .. "_" .. name
+            fx[key] = (fx[key] or 0) + 1
+            fx[key .. "_first"] = fx[key .. "_first"] or tick
+            local off = math.max(math.abs(b - seen[1]), math.abs(g - seen[2]), math.abs(h - seen[3]))
+            if off > (fx[key .. "_worst"] or 0) then fx[key .. "_worst"] = off end
+          end
+        end
+      else
+        fx = { idle = 0, feeding = 0, off_grid = 0 }
+        cell.fx = fx
+      end
+      fx.box, fx.segment, fx.held, fx.crafts = box * UNITS, segment * UNITS, held * UNITS, crafts
+      if tick % 6000 == 0 then
+        for _, kind in ipairs({ "idle", "feeding" }) do
+          for name in pairs(ROUNDINGS) do
+            local key = kind .. "_" .. name
+            say("fixed pipes=%d tick=%d kind=%s rounding=%s ticks=%d missed=%d first=%s worst=%.17g off_grid=%d",
+              cell.pipe_count, tick, kind, name, fx[kind], fx[key] or 0, tostring(fx[key .. "_first"] or "never"),
+              (fx[key .. "_worst"] or 0) / UNITS, fx.off_grid)
+          end
+        end
+      end
+    end
+
     if spanned then
       local along = {}
       for p, pipe in ipairs(cell.pipes) do
@@ -436,6 +516,7 @@ $lua = $lua.
     Replace('__SPAN__', "$Span").
     Replace('__RUNGS__', $rungsLua).
     Replace('__HEATER__', $(if ($Heater) { 'true' } else { 'false' })).
+    Replace('__FIXED__', $(if ($Fixed) { 'true' } else { 'false' })).
     Replace('__ENERGYFEED__', (Write-EnergyFeed -RigDirectory $rigDir))
 Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
 
@@ -450,6 +531,65 @@ function Read-Records {
         $f
     }
 }
+function Step-HeaterRule {
+    <#  One tick of the two-store rule, as M.settle_segment in the mod's reactor-logic.lua has it:
+        the box pushes and then pulls, then the heater's output box pushes twice. Every transfer is
+        100 x min(source fill, 1 - destination fill), not under $Floor unless the source or the
+        room is smaller.  #>
+    param([double] $Box, [double] $Segment, [double] $Heater, [double] $BoxVolume, [double] $Capacity,
+          [double] $HeaterVolume, [double] $Floor)
+
+    $flow = {
+        param($from, $fromVolume, $to, $toVolume)
+        # 0.0 and 100.0, not 0 and 100: given an int, [math]::Max binds its int overload and rounds.
+        $rate = [math]::Max($Floor, 100.0 * [math]::Min($from / $fromVolume, 1.0 - $to / $toVolume))
+        [math]::Max(0.0, [math]::Min([math]::Min([double]$rate, [double]$from), [double]($toVolume - $to)))
+    }
+    $push = & $flow $Box $BoxVolume $Segment $Capacity;    $Box -= $push; $Segment += $push
+    $pull = & $flow $Segment $Capacity $Box $BoxVolume;    $Box += $pull; $Segment -= $pull
+    foreach ($twice in 1, 2) {
+        $give = & $flow $Heater $HeaterVolume $Segment $Capacity; $Heater -= $give; $Segment += $give
+    }
+    @{ Box = $Box; Segment = $Segment; Heater = $Heater }
+}
+
+function Write-HeaterRule {
+    <#  THE RULE AGAINST THE ROWS (#563). #540 and #552 each checked the heater rows with arithmetic
+        that was never committed, and their worst misses differed. This is that check, printed.
+
+        A TICK PAIR is two rows on consecutive ticks. The rule is run from the first row's reading
+        -- the box before the mod's step, the segment, and what the heater had to give on the next
+        tick, which carries any craft that landed -- and compared with the second row's box, segment
+        and heater. A pair whose first tick is a step tick is left out: the box is read before the
+        mod steps it there, so the rule would start from a box the engine never saw. It reports and
+        asserts nothing.  #>
+    param([object[]] $Rows, [double] $BoxVolume)
+
+    # The mod's reactor-logic.lua names these M.heater_output_box and M.step_ticks; load-check.ps1
+    # holds both to the prototypes.
+    $heaterVolume = 200.0; $stepTicks = 6
+    $pairs = 0; $missed = 0; $worst = 0.0; $worstAt = 0; $bare = 0.0
+    for ($i = 0; $i -lt $Rows.Count - 1; $i++) {
+        $a = $Rows[$i]; $b = $Rows[$i + 1]
+        $tick = [int]$a['tick']
+        if ([int]$b['tick'] -ne $tick + 1 -or $tick % $stepTicks -eq 0) { continue }
+        $pairs++
+        $from = @{ Box = (Num $a['pre']); Segment = (Num $a['seg']); Heater = (Num $b['had'])
+                   BoxVolume = $BoxVolume; Capacity = (Num $a['cap']); HeaterVolume = $heaterVolume }
+        $miss = @{}
+        foreach ($floor in 0.1, 0.0) {
+            $to = Step-HeaterRule @from -Floor $floor
+            $miss[$floor] = [math]::Max([math]::Max([math]::Abs($to.Box - (Num $b['pre'])),
+                [math]::Abs($to.Segment - (Num $b['seg']))), [math]::Abs($to.Heater - (Num $b['held'])))
+        }
+        if ($miss[0.1] -gt $worst) { $worst = $miss[0.1]; $worstAt = $tick }
+        if ($miss[0.1] -gt 1e-4) { $missed++ }
+        if ($miss[0.0] -gt $bare) { $bare = $miss[0.0] }
+    }
+    Write-Host ("  the rule against these rows: {0} tick pairs, {1} missed by over 1e-4 units; worst miss {2:E1} on tick {3}; without the 0.1 floor the worst is {4:G2}" -f
+        $pairs, $missed, $worst, $worstAt, $bare)
+}
+
 function Num { param($Value) [double]::Parse($Value, $inv) }
 
 try {
@@ -472,6 +612,7 @@ try {
     $cycles = @(Read-Records $ran 'cycle')
     $ticked = @(Read-Records $ran 'tick')
     $dripped = @(Read-Records $ran 'drip')
+    $fixedAll = @(Read-Records $ran 'fixed')
     if ($cycles.Count -eq 0) { throw 'the rig reported no heater cycle; the heater never crafted.' }
     # ONE CELL'S HEATER STANDING STILL BESIDE ANOTHER'S RUNNING (#536). The summary below indexes
     # each cell's last cycle, and on a cell with none that failed without saying which.
@@ -573,6 +714,20 @@ try {
                         (Num $d['seg']), ((Num $d['cap']) - (Num $d['seg'])), (Num $d['pre']), (Num $d['ptemp']))
                 }
                 Write-Host '  "had" is what it held after the last tick plus any craft since; "gave" is what left it this tick.'
+                Write-HeaterRule -Rows $drips -BoxVolume $boxCap
+            }
+        }
+        if ($Fixed) {
+            $fixedRows = @($fixedAll | Where-Object { $_['pipes'] -eq $n })
+            Write-Host ''
+            if ($fixedRows.Count -eq 0) { Write-Host '  the fitted fixed-point rule: no row; the run is shorter than 6000 ticks' }
+            else {
+                $at = $fixedRows[-1]['tick']
+                Write-Host ("  the fitted fixed-point rule, one tick at a time, to tick {0}; {1} reading(s) were not whole 2^-24 units" -f $at, $fixedRows[-1]['off_grid'])
+                foreach ($f in ($fixedRows | Where-Object { $_['tick'] -eq $at } | Sort-Object { $_['kind'] }, { $_['rounding'] })) {
+                    Write-Host ("    {0,-8} destination fill {1,-6}: missed {2} of {3} ticks, first on {4}, worst {5:E2} units" -f
+                        $f['kind'], $f['rounding'], $f['missed'], $f['ticks'], $f['first'], (Num $f['worst']))
+                }
             }
         }
         $full = $mine | Where-Object { (Num $_['box']) -ge $FullAt * $boxCap } | Select-Object -First 1
