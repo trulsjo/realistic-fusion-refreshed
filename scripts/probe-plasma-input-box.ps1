@@ -53,8 +53,8 @@
                           mods probe-plasma-segment.ps1 uses. A difference on a step tick is the mod
                           writing the box; one on any other tick fails the run, because then the two
                           readings do not bracket the step. The first tick each box reaches -FullAt
-                          of its capacity is kept, and the first tick after that on which it reads
-                          the floor's temperature (#571), or "never".
+                          of its capacity is kept, and the first tick from that one on which it
+                          reads the floor's temperature (#571), or "never".
       with -Trace         every tick of the window, for the pair (or -TraceCell): each box's amount and temperature
                           before control.lua's handler and after it, and the segment's amount and
                           temperature through the bridge's first pipe (#558). What a box changed by
@@ -352,8 +352,9 @@ local function to_floor(spec, amount, c, sum)
   return steps
 end
 
--- THE FITTED FIXED-POINT RULE ON TWO BOXES (#572). fixed_flow is probe-plasma-segment.ps1's, with
--- the destination's fill floored, which #564 settled; change one and change the other. There one
+-- THE FITTED FIXED-POINT RULE ON TWO BOXES (#572). fixed_flow is probe-plasma-segment.ps1's with
+-- its `round` argument fixed at math.floor, the rounding #564 settled. That one still runs all
+-- three roundings and nothing holds the two copies together: change one and change the other. There one
 -- box pushes and pulls and then the heater pushes twice. Here there are two boxes, and the order
 -- the engine takes the three in is what is being read, so all six are run.
 local UNITS = 2 ^ 24
@@ -577,7 +578,8 @@ script.on_event(defines.events.on_tick, function()
         if s then
           local sum = t.split
           tally(sum, s)
-          local off = math.abs(s.temperature - temp) / temp
+          -- A box read empty after the step has no temperature to miss by a fraction of.
+          local off = temp ~= 0 and math.abs(s.temperature - temp) / temp or math.huge
           if off > sum.worst_c then sum.worst_c, sum.worst_c_tick = off, tick end
           sum.worst_box = math.max(sum.worst_box, math.abs(s.amount - box))
           -- The engine keeps a temperature in single precision and an amount in whole 2^-24
