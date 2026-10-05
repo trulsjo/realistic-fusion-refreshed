@@ -1227,8 +1227,8 @@ Run from the seed, it misses none of the 60 300 ticks in either cell. It gives t
 was not fitted to, it misses none of 600 300 ticks in either cell and gives 316 200 of
 600 000, the game's figure. The legendary rows there put #531's rule 2.81×10⁻⁵ off the game
 at most, at tick 598 901. That is not the 1000 s run's maximum at a later tick: read again on
-2026-10-05, the 1000 s run's largest is 2.811376862×10⁻⁵ at tick 59 301 and the 10 000 s run's
-is 2.811699733×10⁻⁵ at 598 901. The two agree to three figures and differ in the fifth; the
+2026-10-05 with `-TraceTicks 0` and with `-Seconds 10000 -TraceTicks 0`, the 1000 s run's largest is 2.811376862×10⁻⁵ at tick 59 301 and the 10 000 s run's
+is 2.811699733×10⁻⁵ at 598 901. The two agree to four figures and differ in the fifth; the
 longer run finds a slightly larger gap late.
 
 It is **fitted, not found**. It is what missed no tick out of 27 combinations tried on

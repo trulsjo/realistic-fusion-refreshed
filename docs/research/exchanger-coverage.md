@@ -1107,7 +1107,8 @@ is the six-pipe unresearched cell's "without the floor", which the probe prints 
 were both scratch and neither was committed, so the difference between 1.8e-5, 1.8e-5, 2.2e-5,
 2.1e-5 and 1.5e-5, 1.5e-5, 2.0e-5, 2.1e-5 was not traced. The probe's rows carry nine
 significant digits, and its report prints them to five decimals. The same rule run over the
-printed five-decimal table, on #540's own pairs, gives 1.82e-5 over the 153, 1.80e-5 over the
+printed five-decimal table, on #540's own pairs, in scratch arithmetic that is not committed,
+gives 1.82e-5 over the 153, 1.80e-5 over the
 91, 2.17e-5 over the 8780 and 2.10e-5 over the 4348: #540's four figures. So #540 read the
 rounded table and #552 and the probe read the rows, and the up to 0.3e-5 between them is
 the rounding of three five-decimal readings. The probe's figures stand. That #540 worked from

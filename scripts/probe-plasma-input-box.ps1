@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
-    Runs one fuel-line rig twice: once on rf-reactor as shipped, with an "input-output" plasma box,
-    and once under a canary that makes that box "input". Reports the fill, the settled box, whether
+    Runs one fuel-line rig twice: once on the reactor as shipped, with an "input-output" plasma box,
+    and once under a canary that makes that box "input". rf-reactor unless -Plasma says otherwise. Reports the fill, the settled box, whether
     control.lua still writes the box, whether two bridged reactors still share one pool (#542), and
     where a lone box with no pipes relaxes to (#548).
 
@@ -30,7 +30,7 @@
                (asserted), check-pooling.ps1's discriminator: an unpowered reactor steps with its
                heating clamped to zero, so any heat it holds came along the pipe.
       both     The pair again, with the second reactor powered too (asserted to be on an electric network).
-      lone     No heater, no pipe, no power: an unregistered copy of rf-reactor, rf-input-box-lone,
+      lone     No heater, no pipe, no power: an unregistered copy of the reactor, rf-input-box-lone,
                seeded to its box's capacity at 15 degC. Copied after the canary, so it carries this
                run's box. Unregistered because a stepped reactor is heated and burns its plasma;
                this is the instrument quality.md read the lone box's 526.3158 on.
@@ -53,7 +53,7 @@
                           writing the box; one on any other tick fails the run, because then the two
                           readings do not bracket the step. The first tick each box reaches -FullAt
                           of its capacity is kept.
-      with -Trace         every tick of the window, for the pair: each box's amount and temperature
+      with -Trace         every tick of the window, for the pair (or -TraceCell): each box's amount and temperature
                           before control.lua's handler and after it, and the segment's amount and
                           temperature through the bridge's first pipe (#558). What a box changed by
                           from one tick's second reading to the next tick's first is the engine
@@ -82,7 +82,8 @@
 
 .PARAMETER Settle
     The settle test: a box's temperature has settled from the first sampled row after which every
-    row reads within this fraction of the last row's.
+    row reads within this fraction of the last row's. A pass means "within this of where the run
+    ended", not "stopped": a drift slower than this over the run's tail passes (#560).
 
 .PARAMETER Plasma
     The plasma the heaters make, and so which reactor is read (#562): rf-d-d-plasma and

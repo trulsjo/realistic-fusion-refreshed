@@ -191,8 +191,10 @@ same point of that cycle. The table prints five figures, so "the same" below mea
   the seven figures the probe prints for a last row. The canary's 2.381386×10⁸ above is the
   same box on another row of the 12 000-tick cycle: at 1 960 000 all four read 2.3814×10⁸, and
   at 1 980 000 all four read 2.3815×10⁸.
-- The shipped box takes about ten times as long to get there at three pipes, and about twelve
-  times at six.
+- The shipped box takes far longer to get there. The canary's 120 000 is the earliest this
+  comparison can report on rows 20 000 apart, and the 600 000-tick run had the canary settled
+  by 44 000; against that the shipped box's 1 160 000 and 1 400 000 are about 26 and 32 times
+  as long.
 - **The settle test as written can pass a box that is still drifting, and did.** It asks that
   every row from some row on be within 10⁻⁴ of the LAST row, so any drift slower than that over
   the run's tail passes. It passed the 600 000-tick run from 580 000 with the box 0.05% high
@@ -221,8 +223,8 @@ same point of that cycle. The table prints five figures, so "the same" below mea
   (0.37% at 300 000, 1.03% at 600 000). They neither converge nor go on diverging. The first
   box sits 0.55% under the solo figure of 2.381512×10⁸ and the second 0.55% over it. Under the
   canary both read 2.381512×10⁸.
-- **Why: one of the two full boxes exports heat into the segment every tick, and the other
-  does not.** Read on the same day with
+- **Why, as far as 600 ticks show: one of the two full boxes exports heat into the segment,
+  and the other does not.** Read on the same day with
   `-Pipes 3 -Ticks 301000 -Every 4000 -Trace 300000,300600 -TraceCell both`, every tick from
   300 000 to 300 600, both boxes full. Over those 600 ticks the mod's step burned 5.4050 units
   in the first box and 5.4426 in the second, and the engine put the same amounts back. But the
@@ -233,8 +235,9 @@ same point of that cycle. The table prints five figures, so "the same" below mea
   that is about 5.45 units pushed and 10.85 pulled, and 5.45 is what the other box drew. So
   the reading fits one box making room in a full segment as it refills, and the other pushing
   into that room before pulling back. **The order the engine takes the two boxes in was not
-  read; it is inferred from the heat.** A full line trades nothing in bulk, so this small
-  one-way trade is the only coupling left, which is why the gap holds instead of closing.
+  read; it is inferred from the heat.** A full line trades nothing in bulk, so a small
+  one-way trade of this kind would hold the gap open instead of closing it. That it is the only
+  coupling left was not shown.
 
 #### Once the shipped line is full, the unpowered reactor falls to the floor
 
@@ -276,11 +279,12 @@ under a hundredth on 149 616, and 15 °C on tick 150 012.
   147 832, 0.231 at 148 748 and 0 at 149 206. The engine last moved that box on tick 149 982.
 - **The rule predicts what the engine moved.** Applied to each box alone, it is within 0.001
   units of the engine's move on 5123 of the 5500 ticks for the unpowered box and 4956 for the
-  powered one. The worst misses are 0.093 units on tick 146 041 and 0.087 on 149 054. The 199
-  ticks on which the unpowered box misses by more than 0.01 come in pairs 120 ticks apart, which
-  is the heater's cycle: a craft landing in the segment inside the tick is what the rule, applied
-  to one box against the segment as it stood, does not see. Running the two boxes in either
-  order moves neither worst miss.
+  powered one. The worst misses are 0.093 units on tick 146 041 and 0.087 on 149 054. By scratch
+  arithmetic over the same trace rows, which the probe does not print: the 199 ticks on which
+  the unpowered box misses by more than 0.01 come in pairs 120 ticks apart, which is the
+  heater's cycle, and running the two boxes in either order moves neither worst miss. A craft
+  landing in the segment inside the tick is what the rule, applied to one box against the
+  segment as it stood, does not see.
 - **The heat went into the mod's step.** Over the window the unpowered box held 5.6685×10¹⁰
   unit-°C at the start. The engine brought it 1.4119×10¹¹ more, and `control.lua`'s step took
   1.9788×10¹¹ out, leaving 1.5×10⁴: 1000 units at 15 °C. An unpowered reactor is stepped with no
@@ -300,7 +304,8 @@ reactor on the cold end of it.
 **It is not this one rig's**
 ([#559](https://github.com/trulsjo/realistic-fusion-refreshed/issues/559)). The same probe on
 2026-10-05, Factorio 2.0.77 (build 84539), one heater and three pipes to the first reactor,
-only the first reactor powered (asserted), rows every 2000 ticks:
+only the first reactor powered (asserted), rows every 2000 ticks. Each of the last four runs
+is `-Pipes 3 -Every 2000` and the arguments its row names:
 
 | shape | run | pipes between reactors | segment capacity | unpowered box full at | first row at 15 °C | powered box, last row |
 |---|---|---|---|---|---|---|
@@ -310,9 +315,11 @@ only the first reactor powered (asserted), rows every 2000 ticks:
 | pair, heating rung 5 and no other | `-Rungs heating_ladder=5 -Ticks 240000` | 12 | 3500 | 179 299 | 182 000 | 4.4330×10⁸ at 238 000, still falling |
 | three reactors, nothing researched | `-Trio -Ticks 280000` | 12 and 12 | 5700 | 224 297, both | 226 000, both | 2.3887×10⁸ at 278 000 |
 
-In every shape the unpowered reactor reads 15 °C on the first sampled row after its box fills,
-and at every row after it. The first row is the traced run of #558, where the tick is exact; the
-others are the first 2000-tick row. The three-reactor run's two unpowered boxes read 5.4122 and
+In every shape the unpowered reactor reads 15 °C within 2800 ticks of its box filling, and at
+every row after. The first row is the traced run of #558, where the tick is exact. In the
+others it is the first 2000-tick row after the fill for twenty pipes and for three reactors,
+and the second for thirty pipes and for heating rung 5, whose rows at 198 000 and 180 000 were
+still above the floor. The three-reactor run's two unpowered boxes read 5.4122 and
 5.4110×10⁷ at 200 000, 0.02% apart, and reach the floor on the same row. Under the canary the
 last four runs read under 4000 °C in every unpowered box at every row from 16 000, and 15 °C at
 every row from 30 000.
@@ -331,7 +338,7 @@ probe's readings would fail these rows of `pair`, `trio` and `five`, were a cell
 
 "every unpowered reactor on the run is at one temperature" would still pass, at 15 °C, and
 "every box holds its share of one pool, not its own contents" would pass on amounts, since a
-full line has every box full. Neither would be evidence of pooling there. No gate was changed.
+full line has every box full. Neither would be evidence of pooling there. #559 changed no gate.
 
 #### The lone box
 
@@ -371,7 +378,7 @@ from 468 000 to 496 000.
 
 - The box ends in the same place. The canary gets there in about half the time, and holds
   nothing beside it: the shipped line keeps 1068 to 1069 units in the segment for every 1000 in
-  the box, which is the low branch of #531's rule at this size, (3300 − 100) / 3000 = 1.0667.
+  the box, 0.2% over the low branch of #531's rule at this size, (3300 − 100) / 3000 = 1.0667.
 - So there is no fill tick to quote, and the fed model's figures for this reactor were not
   compared.
 
@@ -652,8 +659,10 @@ every figure.
 | saved at 156 001 | reading | tick | box 1 | °C | box 2 | °C | segment |
 |---|---|---|---|---|---|---|---|
 | solo, full | saved | 156 001 | 1000 | 2.4048×10⁸ | | | 1300 |
+| solo, full | control and canary, next tick | 156 002 | 1000 | 2.4048×10⁸ | | | 1300 |
 | solo, full | control and canary | 196 000 | 1000 | 2.3991×10⁸ | | | 1300 |
 | pair, one powered, full | saved | 156 001 | 1000 | 2.3788×10⁸ | 1000 | 15 | 3500 |
+| pair, one powered, full | control and canary, next tick | 156 002 | 1000 | 2.3788×10⁸ | 1000 | 15 | 3500 |
 | pair, one powered, full | control and canary | 196 000 | 1000 | 2.3941×10⁸ | 1000 | 15 | 3500 |
 | pair, both powered, filling | saved | 156 001 | 700.9313 | 4.4624×10⁸ | 700.9292 | 4.4624×10⁸ | 2337.3418 |
 | pair, both powered, filling | control, next tick | 156 002 | 700.9413 | 4.4624×10⁸ | 701.0356 | 4.4621×10⁸ | 2340.9755 |
@@ -693,7 +702,7 @@ save loads, logs nothing, and loses no plasma. Case by case:
 | a full pair, one reactor unpowered (#561 at 156 001) | identical in both loads; the unpowered reactor is at 15 °C before and after | no |
 | a part-full solo line (#561 at 40 001) | the box fills on the row at 42 000 where it filled at 72 000, and runs colder until it settles | it changes what the plant does, and nothing stops working |
 | a filling pair, both powered (#561 at 40 001 and 156 001) | both boxes fill from the segment and stay hot | the same |
-| a filling pair, one reactor unpowered (#550 at 80 001, #561 at 40 001) | the unpowered reactor falls from 6.18×10⁸ or 2.67×10⁸ °C to 15 °C within 6000 ticks, where the control load keeps it within 1.6% of its neighbour | **yes** |
+| a filling pair, one reactor unpowered (#550 at 80 001, #561 at 40 001) | the unpowered reactor falls from 6.18×10⁸ or 2.67×10⁸ °C to 15 °C within 6000 ticks, where the control load keeps it warm: within 1.6% of its neighbour at 80 000 in #561's, 7.1% at 120 000 in #550's | **yes** |
 
 So the break is confined to a reactor that a saved plant heats only through the pipe, on a line
 that has not yet filled. Under the shipped box that reactor loses the same heat when the line
