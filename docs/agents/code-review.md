@@ -9,14 +9,15 @@ them.** Which are installed is a fact about a machine and not about this reposit
 finding, and it needs a pull request. It is what this file calls **the plugin pass**, and what "the
 workflow" and "the plugin" mean below.
 `mattpocock-skills:code-review` and the built-in `code-review` both read a diff and need no pull
-request, and no rule here is about either. Write the qualified name
+request, and neither is the plugin pass. Write the qualified name
 when it matters which.
 
 1. **[The threshold gates the comment, not the report](#the-threshold-gates-the-comment-not-the-report)** — decided by Truls, 2026-08-26, settling
-   [#128](https://github.com/trulsjo/realistic-fusion-refreshed/issues/128).
+   [#128](https://github.com/trulsjo/realistic-fusion-refreshed/issues/128); amended 2026-10-05 (#592).
 2. **[Review the prose, not only the code](#review-the-prose-not-only-the-code)** — decided by Truls, 2026-09-03, after
    [#230](https://github.com/trulsjo/realistic-fusion-refreshed/pull/230); its third rule widened from
-   the file to the repository on 2026-09-14, settling [#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331).
+   the file to the repository on 2026-09-14, settling [#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331);
+   its last rule narrowed 2026-10-05 (#592).
 3. **[A review that plants takes its own worktree](#a-review-that-plants-takes-its-own-worktree)** —
    [#311](https://github.com/trulsjo/realistic-fusion-refreshed/issues/311), after the review of
    [#309](https://github.com/trulsjo/realistic-fusion-refreshed/pull/309) on 2026-09-10.
@@ -41,10 +42,11 @@ told to the person who ran the review** — or, since 2026-10-05, what reaches t
 **Report every finding that survived verification, whatever it scored.** The workflow's own comment
 carries only what clears the threshold, exactly as the workflow says. **Every other surviving
 finding goes in a second comment on the same pull request, with its score** — so the pull request
-holds the whole report, and not the transcript of the session that ran it. Until 2026-10-05 this
-said to post only what cleared the threshold;
-[#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579) posted the second comment
-anyway, and #592 made that the rule.
+holds the plugin pass's whole report, and not the transcript of the session that ran it. Until
+2026-10-05 this said to post only what cleared the threshold. Sessions had been posting the rest
+anyway — on #305, #309 and #361 in September, and on
+[#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579) as a comment of its own — and
+#592 made that the rule.
 
 **A review that posts nothing must still say what it filtered.** Name each finding, its score, and
 whether it was independently verified. A silent pass and a filtered pass must never look the same —
@@ -53,8 +55,8 @@ that is the whole point of this file.
 **Do not re-score to move a finding into the first comment.** The threshold is deliberately
 conservative and stays where it is. If a filtered finding matters, say so in the report and let a
 human decide; inflating a score to route around the filter destroys the only signal the score
-carries. Until 2026-10-05 a filtered finding was not posted at all, and this was written against
-re-scoring to get one published.
+carries. Until 2026-10-05 the rule kept a filtered finding off the pull request, and this was
+written against re-scoring to get one published.
 
 ### Why the threshold cannot be read as "these findings do not matter"
 
@@ -65,7 +67,9 @@ band, which the rubric itself defines as
 > Highly confident. The agent double checked the issue, and verified that it is very likely it is a
 > real issue that will be hit in practice … The issue is very important
 
-is discarded by construction. A finding can be verified, important, and dropped.
+is discarded by construction. A finding can be verified, important, and dropped. Since 2026-10-05
+(#592) read "discarded" and "dropped" as left out of the workflow's own comment: such a finding is
+now posted in the second one.
 
 **Measured, not assumed.** Across PRs #124, #126 and #127: ten findings, **zero posted, nine real
 and subsequently fixed** — in `954338d`, `8fdbd24` and `971adef` respectively. Two were not nitpicks:
@@ -79,7 +83,9 @@ because they were reported outside the workflow's own output.
 Decided by Truls, 2026-09-03, after
 [#230](https://github.com/trulsjo/realistic-fusion-refreshed/pull/230). Its third rule widened from the
 file to the repository on 2026-09-14, settling
-[#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331).
+[#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331). Its last rule, on the
+fixed state, was narrowed on 2026-10-05, settling
+[#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592).
 
 **Every gate in this repository checks machinery. None of them reads English.** `load-check.ps1`
 proves the prototypes load and the invariants hold; `ship-check.ps1` proves the mods say what ADR
@@ -120,8 +126,12 @@ obligation lives here, in the review.
 review and verification is worth running, and this file exists because it found more than the first.
 Since 2026-10-05 (#592) what is *required* of the fixed state is narrower than a round: the reviewer
 that raised a finding confirms its fix. A full second round is the plugin pass, run when it is asked
-for, and "the review" in this section's older sentences means whichever review is being run. See
-[One review before the pull request](#one-review-before-the-pull-request).
+for, and "the review" in this section's older sentences means whichever review is being run. **That
+is a weaker check than the one this section measured.** Fresh eyes found #230's four, and a reviewer
+confirming its own finding is not fresh eyes. It was chosen on what the plugin pass cost on one
+branch, and the last rule of
+[One review before the pull request](#one-review-before-the-pull-request) is how the difference is
+meant to be made up.
 
 ### Measured, not assumed
 
@@ -222,7 +232,11 @@ is handed and not by a skill's name:
   gates that were run.
 
 **The reviewer that raised a finding confirms its fix.** Continue the same subagent and have it read
-each fix against its own finding. That is a confirmation and not a second round.
+each fix against its own finding. That is a confirmation and not a second round. **A fix that adds a
+sentence adds a claim, and the confirmation checks it like any other.** On
+[#594](https://github.com/trulsjo/realistic-fusion-refreshed/pull/594), the change that wrote this
+rule, one of the three findings the plugin pass posted was in a sentence a fix had added after the
+pre-PR review, and the confirmation had passed it.
 
 **The plugin pass is run when it is asked for, and not otherwise.** It is the full second round.
 When an implement skill says to close out with `/code-review`, in this repository that means the
@@ -241,11 +255,12 @@ pass does.
 ### Measured, not assumed
 
 [#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579) was reviewed twice on
-2026-10-05, and it is the only branch behind this rule.
+2026-10-05. It is the only branch that had both kinds of pass, so it is the only one behind this
+rule.
 
 | pass | when | cost | found |
 |---|---|---|---|
-| one subagent with the probes' raw output | before the pull request | not measured | 12 findings, 11 fixed |
+| one subagent with the probes' raw output | before the pull request | not measured | 12 findings: 11 fixed, one left unfixed at a score of 50 |
 | `code-review:code-review` | on the pull request | about ten minutes, about 400 000 subagent tokens | eight candidates: seven fixed, one false positive |
 
 **Only the first could check a figure against what a probe printed.** The plugin's reviewers are
