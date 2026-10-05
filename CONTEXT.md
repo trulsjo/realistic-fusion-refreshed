@@ -227,7 +227,9 @@ the only thing that tells a player the density lever exists.
 (#421). **It exists only behind a mod option, off by default**, and with the option off a reactor
 has no density limit, only a box: a full reactor simply stops taking fuel, and over-supply does
 nothing. With the option on, the limit sits at what "full" means with the option off, and the box
-grows past it, so every figure quoted below the limit reads the same with the option on or off.
+grows past it. **Fill is still quoted against the old full**, so a reactor holding a given amount,
+up to and including the limit, behaves the same with the option on or off. What changes is that a
+reactor fed faster than it burns no longer stops at full; it goes on filling past the limit.
 Do not call it the reactor's capacity: with the option on, the box holds more than the limit allows.
 
 **Disruption** — what happens to a reactor filled past its density limit: the plasma collapses,
