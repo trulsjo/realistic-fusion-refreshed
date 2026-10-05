@@ -251,6 +251,42 @@ This is the hot tail #530 found on a solo line, in
 [The rule behind the split](exchanger-coverage.md#the-rule-behind-the-split), with a second
 reactor on the cold end of it.
 
+**It is not this one rig's**
+([#559](https://github.com/trulsjo/realistic-fusion-refreshed/issues/559)). The same probe on
+2026-10-05, Factorio 2.0.77 (build 84539), one heater and three pipes to the first reactor,
+only the first reactor powered (asserted), rows every 2000 ticks:
+
+| shape | run | pipes between reactors | segment capacity | unpowered box full at | first row at 15 °C | powered box, last row |
+|---|---|---|---|---|---|---|
+| pair, nothing researched | 152 000 ticks, traced | 12 | 3500 | 148 939 | tick 150 012 | 2.2094×10⁸ °C at 151 496 |
+| pair, nothing researched | `-Bridge 20 -Ticks 210000` | 20 | 4300 | 170 543 | 172 000 | 2.3947×10⁸ at 208 000 |
+| pair, nothing researched | `-Bridge 30 -Ticks 260000` | 30 | 5300 | 197 547 | 200 000 | 2.3944×10⁸ at 258 000 |
+| pair, heating rung 5 and no other | `-Rungs heating_ladder=5 -Ticks 240000` | 12 | 3500 | 179 299 | 182 000 | 4.4330×10⁸ at 238 000, still falling |
+| three reactors, nothing researched | `-Trio -Ticks 280000` | 12 and 12 | 5700 | 224 297, both | 226 000, both | 2.3887×10⁸ at 278 000 |
+
+In every shape the unpowered reactor reads 15 °C on the first sampled row after its box fills,
+and at every row after it. The first row is the traced run of #558, where the tick is exact; the
+others are the first 2000-tick row. The three-reactor run's two unpowered boxes read 5.4122 and
+5.4110×10⁷ at 200 000, 0.02% apart, and reach the floor on the same row. Under the canary the
+last four runs read under 4000 °C in every unpowered box at every row from 16 000, and 15 °C at
+every row from 30 000.
+
+**What this says about `scripts/check-pooling.ps1`, by reading it and not by running it past a
+fill.** No cell of the check reaches a full line as it ships. Its cells are seeded and have no
+heater; it runs 1801 ticks; and its `pair`, `trio` and `five` cells assert that "the pool ran
+down, so nothing was holding it up", which requires the run to be under 99.9% of capacity. They
+read 47.33%, 44.64% and 42.68% of capacity left as shipped. So the check passes 125 of 125 on
+pooling as it is while a line has room, and says nothing about a full one. On a full line the
+probe's readings would fail these rows of `pair`, `trio` and `five`, were a cell held there:
+
+- "the pool ran down, so nothing was holding it up": a full line is 100% of capacity.
+- "and far above the seed, so the pool carried heat to them": the unpowered reactors read 15 °C.
+- "the powered reactor runs a little above the run, not away from it": 2.2×10⁸ °C against 15.
+
+"every unpowered reactor on the run is at one temperature" would still pass, at 15 °C, and
+"every box holds its share of one pool, not its own contents" would pass on amounts, since a
+full line has every box full. Neither would be evidence of pooling there. No gate was changed.
+
 #### The lone box
 
 | 600 000 ticks, 0 heaters, 0 pipes | box at 0 | box from 4000 to 596 000 | its segment | °C |
