@@ -352,7 +352,8 @@ more than one ticket, run `scripts/run-gates.ps1` on it; the State section says 
 
 **One review, before the pull request** (#592). Every branch gets the pre-PR review: a fresh
 subagent handed the diff, `docs/agents/code-review.md`, and the probes' raw output or the gate
-result. The same subagent confirms each fix. **When an implement skill says to close out with
+result. The same subagent confirms each fix, and every finding goes in the PR body with its score
+and whether it was fixed. **When an implement skill says to close out with
 `/code-review`, this is what it means here** — more than one skill can answer to that name, and
 the official plugin, `code-review:code-review`, is the one that needs a pull request. It is run
 only when asked for.

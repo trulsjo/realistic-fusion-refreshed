@@ -238,6 +238,12 @@ sentence adds a claim, and the confirmation checks it like any other.** On
 rule, one of the three findings the plugin pass posted was in a sentence a fix had added after the
 pre-PR review, and the confirmation had passed it.
 
+**Its findings go in the pull request's body, every one of them**, each with its score and whether
+it was fixed. No pull request exists when they are made, so the body is the first place that can
+hold them. [#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579)'s body gave the
+counts and the one finding left unfixed, and the eleven that were fixed are in no record. Decided by
+Truls on 2026-10-05, after the plugin pass on #594 found the rule did not say.
+
 **The plugin pass is run when it is asked for, and not otherwise.** It is the full second round.
 When an implement skill says to close out with `/code-review`, in this repository that means the
 pre-PR review, and no pull request is needed for it.
