@@ -278,9 +278,10 @@ unpowered, 246 755 and 49 245 with both powered. Each cell is ticks missed, and 
   the 2⁻²⁴ grid.
 - **It predicts the first box running colder, and the first box does.** With both powered and
   the line full, the order that fits has the first box push 468.69 units of its own plasma
-  into the segment over the 49 245 ticks, and the second 19.90. The first box is taken while
-  the segment still has the room the second box's pull left on the tick before, and the
-  heater refills that room before the second box is reached. The first box reads
+  into the segment over the 49 245 ticks, and the second 19.90. In that order the first box
+  is taken while the segment still has the room the second box's pull left on the tick
+  before, and the heater refills that room before the second box is reached. That is the
+  fitted rule's account, not a reading of the engine. The first box reads
   2.405249×10⁸ °C at 296 000 and the second 2.413716×10⁸, 0.35% apart, the first colder, as
   it is at every row from 248 000, the first after the fill. The gap is still widening at
   296 000; #560 read it at 1.10% from 1 000 000. This is the trade #560 inferred from 600
@@ -541,7 +542,9 @@ two of a pair, nothing researched (all 11 rungs asserted off in both runs), rows
 ticks to 496 000. A He3-He3 reactor burns almost none of its feed, so the line fills. D-He3
 was not filled: one heater holds its box at 467 to 470 of 3000, and how many it would take
 was not worked out. The fill ticks are exact, read every tick; the first tick a full box
-reads 15 °C is exact too, since #571.
+reads 15 °C is exact too, since #571. A fill tick here is the first tick the box reads 99.9%.
+[`quality.md`](quality.md) gives the same three-pipe line 151 562, which is another measure:
+the end of the first heater cycle to close at 99.9%.
 
 | 500 000 ticks, 1 heater | solo, 3 pipes, segment 3300 | pair, one powered: powered box | unpowered box | both powered: box 1 | box 2 |
 |---|---|---|---|---|---|
@@ -560,7 +563,7 @@ capacity by 496 000: 3300 for the solo cell and 7500 for a pair.
   row after.** Its box fills on tick 324 190 and first reads 15 °C full on tick 324 192. It
   reads 15 °C at all 44 rows from 324 000 to 496 000, beside a powered box at 3.1057×10⁶.
 - **On this plasma it was nearly there before the fill.** The unpowered box is at 0.922 of the
-  powered one's temperature at 64 000 (3.0033 against 3.2561×10⁸), 0.653 at 128 000, 0.184
+  powered one's temperature at 64 000 (3.0033×10⁸ against 3.2561×10⁸), 0.653 at 128 000, 0.184
   at 192 000 and 0.018 at 256 000 (1.1019×10⁵ against 6.0877×10⁶). Its first row at 15 °C is
   252 000, with the box at 2340.99 of 3000. From there to the fill its rows repeat on the
   12 000-tick cycle against the heater: 15 °C at 264 000, 276 000 and so on to 324 000, and
@@ -913,7 +916,7 @@ Each option lists what it changes. None is chosen.
    467 to 470 units either way, the segment beside it empties, and an unpowered reactor on the
    run fills with 3000 units of plasma at 15 °C where the shipped one runs within 1.6% of its
    neighbour. On He3-He3, which fills that line (#571), the unpowered reactor ends at 15 °C
-   with either box.
+   whether the box is `input-output` or `input`.
 3. **Make only one reactor `input`.** This splits the fuel-line behaviour by tier, and it is
    possible because the two reactors are separate prototypes. Both were measured, each alone: `rf-reactor` on D-D and `rf-aneutronic-reactor` on D-He3 and, since #571, on He3-He3.
 4. **Keep `input-output` and make the model match the game.** This changes no prototype. It
