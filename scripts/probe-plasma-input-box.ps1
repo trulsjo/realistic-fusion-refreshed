@@ -35,7 +35,11 @@
                run's box. Unregistered because a stepped reactor is heated and burns its plasma;
                this is the instrument quality.md read the lone box's 526.3158 on.
 
-    NOTHING IS RESEARCHED, and that is asserted rung by rung (rf_assert_research).
+      trio     With -Trio only, and built last so no other cell's segment id moves: the pair with
+               a third reactor another -Bridge pipes east. Only the first is powered (asserted).
+
+    NOTHING IS RESEARCHED unless -Rungs says otherwise, and either state is asserted rung by rung
+    (rf_assert_research).
 
     WHAT IS READ
 
@@ -49,6 +53,13 @@
                           writing the box; one on any other tick fails the run, because then the two
                           readings do not bracket the step. The first tick each box reaches -FullAt
                           of its capacity is kept.
+      with -Trace         every tick of the window, for the pair: each box's amount and temperature
+                          before control.lua's handler and after it, and the segment's amount and
+                          temperature through the bridge's first pipe (#558). What a box changed by
+                          from one tick's second reading to the next tick's first is the engine
+                          moving fluid; the rest is the mod's step. The report splits each box's
+                          heat (amount x degC) between the two, and checks every engine move
+                          against #531's rule.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
@@ -73,6 +84,16 @@
     The settle test: a box's temperature has settled from the first sampled row after which every
     row reads within this fraction of the last row's.
 
+.PARAMETER Trio
+    Also build a run of three reactors with only the first powered (#559).
+
+.PARAMETER Rungs
+    Hold a chosen number of rungs per ladder instead of none, as probe-plasma-segment.ps1's -Rungs
+    does: comma-separated <ladder>=<rungs> pairs. Asserted the same way.
+
+.PARAMETER Trace
+    A tick window, <from>,<to>: read the pair every tick inside it. Off unless given.
+
 .PARAMETER KeepTemp
     Keep the saves, the rig mods and the captured output.
 
@@ -92,6 +113,11 @@ param(
     [ValidateRange(60, 100000)]   [int]    $Every  = 4000,
     [ValidateRange(0.5, 1.0)]     [double] $FullAt = 0.999,
     [ValidateRange(0.0, 0.1)]     [double] $Settle = 1e-4,
+    [ValidatePattern('^\d+,\d+$')] [string] $Trace,
+    [switch] $Trio,
+    # Case-sensitive: the names are Lua table keys.
+    [ValidatePattern('^((confinement|heating|capture)_ladder=\d+)(,(confinement|heating|capture)_ladder=\d+)*$', Options = 'None')]
+    [string] $Rungs,
     [switch] $KeepTemp
 )
 
@@ -109,6 +135,11 @@ if (@($pipeCounts | Sort-Object -Unique).Count -ne $pipeCounts.Count) { throw "-
 foreach ($count in $pipeCounts) {
     if ($count -lt 3 -or $count -gt 12) { throw "-Pipes $count is outside 3 to 12." }
 }
+$traceFrom, $traceTo = if ($Trace) { $Trace -split ',' | ForEach-Object { [int] $_ } } else { 0, -1 }
+if ($Trace -and ($traceTo -lt $traceFrom -or $traceTo -ge $Ticks)) { throw "-Trace $Trace is not a window inside -Ticks $Ticks." }
+$named = @($Rungs -split ',' | Where-Object { $_ } | ForEach-Object { ($_ -split '=')[0] })
+if ($named.Count -ne @($named | Sort-Object -Unique).Count) { throw "-Rungs names a ladder twice: $Rungs" }
+$rungsLua = if ($Rungs) { '{ ' + (($Rungs -split ',') -join ', ') + ' }' } else { 'nil' }
 if ($Every -ge $Ticks) { throw "-Every $Every is not less than -Ticks $Ticks, so no row would be sampled." }
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
@@ -170,15 +201,17 @@ Set-Content -Encoding utf8 -Path (Join-Path $preDir 'control.lua') -Value @'
 remote.add_interface("rf-input-box-pre", {
   watch = function(reactors) storage.watch = reactors end,
   read  = function() return storage.pre end,
+  read_temp = function() return storage.pre_c end,
 })
 script.on_event(defines.events.on_tick, function()
   if not storage.watch then return end
-  local pre = {}
+  local pre, pre_c = {}, {}
   for i, reactor in ipairs(storage.watch) do
     local plasma = reactor.fluidbox[1]
     pre[i] = plasma and plasma.amount or 0
+    pre_c[i] = plasma and plasma.temperature or 0
   end
-  storage.pre = pre
+  storage.pre, storage.pre_c = pre, pre_c
 end)
 '@
 
@@ -189,6 +222,9 @@ local PIPES   = { __PIPES__ }
 local BRIDGE  = __BRIDGE__
 local EVERY   = __EVERY__
 local FULL_AT = __FULLAT__
+local TRACE_FROM, TRACE_TO = __TRACEFROM__, __TRACETO__
+local TRIO  = __TRIO__
+local RUNGS = __RUNGS__
 local ENERGY_FEED = "__ENERGYFEED__"
 local PLASMA  = "rf-d-d-plasma"
 local REACTOR = "rf-reactor"
@@ -244,9 +280,9 @@ local function power(surface, force, x, dx)
   eei.power_production = 8e6
 end
 
---- One heater, `pipe_count` pipes and a reactor; with `bridge`, a second reactor that many pipes
---- east, on an electric network of its own only when `both` is set.
-local function build(surface, force, ox, label, pipe_count, bridge, both)
+--- One heater, `pipe_count` pipes and a reactor; with `bridge`, `chain` more reactors (one if
+--- nil) each that many pipes east of the last, powered only when `both` is set.
+local function build(surface, force, ox, label, pipe_count, bridge, both, chain)
   for _, dx in ipairs({ 9, -9 }) do power(surface, force, ox, dx) end
   local first = reactor_at(surface, force, ox + 0.5)
   -- rf-reactor's west plasma connection is 7 tiles out, so the first pipe is 8.
@@ -265,8 +301,9 @@ local function build(surface, force, ox, label, pipe_count, bridge, both)
   end
 
   local cell = { label = label, reactors = { first }, sides = { run[1] }, run = run }
-  if bridge then
-    local east = { ox + 0.5 + 8, 0.5 }
+  local from = ox + 0.5
+  for _ = 1, bridge and (chain or 1) or 0 do
+    local east = { from + 8, 0.5 }
     local span = pipes_from(surface, force, east, { 1, 0 }, bridge)
     local second = reactor_at(surface, force, east[1] + (bridge - 1) + 8)
     if both then
@@ -274,11 +311,12 @@ local function build(surface, force, ox, label, pipe_count, bridge, both)
       if not second.electric_network_id then error("the " .. label .. " cell's second reactor is unpowered") end
     -- THE DISCRIMINATOR: what heats this one arrived along the pipe.
     elseif second.electric_network_id then
-      error("the pair's second reactor is on an electric network, so its heat would not say pooling")
+      error("the " .. label .. " cell's unpowered reactor is on an electric network, so its heat would not say pooling")
     end
-    cell.reactors[2] = second
-    cell.sides[2] = span[1]
-    cell.span = span
+    cell.reactors[#cell.reactors + 1] = second
+    cell.sides[#cell.sides + 1] = span[1]
+    cell.span = cell.span or span
+    from = second.position.x
   end
   return cell
 end
@@ -298,13 +336,14 @@ script.on_init(function()
   local force   = game.forces.player
 
   force.research_all_technologies()
-  rf_unresearch(force, logic, logic.reactor, nil)
+  rf_unresearch(force, logic, logic.reactor, RUNGS)
   rf_assert_research(function(ok, name, detail)
     if not ok then error(name .. " -- " .. detail) end
     say("research %s", name)
-  end, force, logic, logic.reactor, false)
+  end, force, logic, logic.reactor, RUNGS or false)
 
-  local east = (#PIPES + 2) * PITCH
+  -- The trio is two bridges long, so it takes two pitches at the east end.
+  local east = (#PIPES + (TRIO and 4 or 2)) * PITCH
   surface.request_to_generate_chunks({ east / 2, 0 }, math.ceil(east / 32) + 4)
   surface.force_generate_chunk_requests()
   storage.quieted = __QUIETFN__(surface)
@@ -328,6 +367,9 @@ script.on_init(function()
   local lone = rf_place_or_die(surface, { name = LONE, position = { 0.5, -24.5 }, force = force }, LONE)
   lone.fluidbox[1] = { name = PLASMA, amount = lone.fluidbox.get_capacity(1), temperature = LONE_C }
   cells[#cells + 1] = { label = "lone", reactors = { lone }, sides = { lone } }
+  if TRIO then
+    cells[#cells + 1] = build(surface, force, (#PIPES + 2) * PITCH, "trio" .. PIPES[1], PIPES[1], BRIDGE, false, 2)
+  end
   for _, cell in ipairs(cells) do
     for r, reactor in ipairs(cell.reactors) do
       watch[#watch + 1] = reactor
@@ -352,6 +394,8 @@ script.on_event(defines.events.on_tick, function()
   local pre = remote.call("rf-input-box-pre", "read")
   if not pre then return end
   local sample = tick % EVERY == 0
+  local pre_c = remote.call("rf-input-box-pre", "read_temp")
+  local traced = tick >= TRACE_FROM and tick <= TRACE_TO and {}
   for i, t in ipairs(storage.tracked) do
     if not t.reactor.valid then error("the " .. t.cell.label .. " cell lost a reactor mid-run") end
     local plasma = t.reactor.fluidbox[1]
@@ -365,11 +409,22 @@ script.on_event(defines.events.on_tick, function()
         .. "it on a tick it does not step on", tick, t.cell.label, t.r, pre[i], box))
     end
     if not t.full and box >= FULL_AT * t.cap then t.full = tick end
+    if traced and t.cell.span and t.cell.label:sub(1, 4) == "pair" then
+      traced[#traced + 1] = string.format("b%dpre=%.17g c%dpre=%.17g b%d=%.17g c%d=%.17g", t.r, pre[i],
+        t.r, pre_c[i], t.r, box, t.r, plasma and plasma.temperature or 0)
+      traced.cell = t.cell
+    end
     if sample then
       say("row cell=%s r=%d tick=%d box=%.9g temp=%.9g seg=%.9g writes=%d steps=%d full=%s",
         t.cell.label, t.r, tick, box, plasma and plasma.temperature or 0, segment_of(t.side),
         t.writes, t.steps, tostring(t.full or "never"))
     end
+  end
+  if traced and traced.cell then
+    local pipe = traced.cell.span[1].fluidbox[1]
+    say("trace tick=%d %s seg=%.17g segc=%.17g segcap=%.17g", tick, table.concat(traced, " "),
+      segment_of(traced.cell.span[1]), pipe and pipe.temperature or 0,
+      traced.cell.span[1].fluidbox.get_capacity(1))
   end
   if sample then
     for _, cell in ipairs(storage.cells) do say("ids cell=%s tick=%d %s", cell.label, tick, ids(cell)) end
@@ -388,6 +443,10 @@ $lua = $lua.
     Replace('__BRIDGE__', "$Bridge").
     Replace('__EVERY__', "$Every").
     Replace('__FULLAT__', $FullAt.ToString($inv)).
+    Replace('__TRACEFROM__', "$traceFrom").
+    Replace('__TRACETO__', "$traceTo").
+    Replace('__TRIO__', $(if ($Trio) { 'true' } else { 'false' })).
+    Replace('__RUNGS__', $rungsLua).
     Replace('__ENERGYFEED__', (Write-EnergyFeed -RigDirectory $rigDir))
 Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
 
@@ -447,7 +506,8 @@ function Write-Variant {
     Write-Host "  rf-reactor's box 1 production_type, as the runtime prototype reads: $($built['production_type'])"
     Write-Host "  the lone copy's box 1 production_type: $($built['lone_production_type'])"
     $research = @($Run.Created | Select-String -Pattern 'IBOXPROBE research ')
-    Write-Host "  research: $($research.Count) rung(s) asserted, every ladder OFF"
+    Write-Host ("  research: $($research.Count) rung(s) asserted, " +
+        $(if ($Rungs) { "-Rungs $Rungs, every other ladder OFF" } else { 'every ladder OFF' }))
 
     # The segment ids at build and at the last sample, per cell.
     $idRows = @(Read-Records $Run.Created 'ids') + @(Read-Records $Run.Ran 'ids')
@@ -488,6 +548,65 @@ function Write-Variant {
             Write-Host ('  {0,8}{1,13:F4}{2,13:F4}{3,13:E4}{4,11:F1}' -f [int]$row['tick'], $box, $seg,
                 (Num $row['temp']), $(if ($box -gt 0) { 1000 * $seg / $box } else { 0 }))
         }
+    }
+    if ($Trace) { Write-Trace -Rows @(Read-Records $Run.Ran 'trace') }
+}
+
+function Write-Trace {
+    <#  THE PAIR, TICK BY TICK (#558). Between one tick's reading after the mod and the next tick's
+        reading before it, only the engine has moved fluid; between a tick's two readings, only the
+        mod's step has. Heat is amount x degC, which is what the mixing conserves.
+
+        THE RULE is #531's, applied to each box alone against the segment as it stood: push
+        100 x min(box fill, 1 - segment fill), then pull 100 x min(segment fill, 1 - box fill).
+        The other box and the heater move the same segment inside the same tick, so a miss on the
+        ticks a craft lands is the instrument's and not the rule's.  #>
+    param([object[]] $Rows)
+
+    Write-Host ''
+    if ($Rows.Count -lt 2) { Write-Host '  trace: no pair row inside the window.'; return }
+    $t = foreach ($r in $Rows) { $n = @{}; foreach ($k in $r.Keys) { $n[$k] = Num $r[$k] }; $n }
+    Write-Host ("  === the pair, every tick from {0} to {1}: {2} rows, segment capacity {3}" -f
+        [int]$t[0]['tick'], [int]$t[-1]['tick'], $t.Count, $t[0]['segcap'])
+    Write-Host "  the rule below is the input-output box's; under the canary its misses are a reading, not a fault"
+    $volume = 1000.0
+    foreach ($k in 1, 2) {
+        $worst = 0.0; $worstAt = 0; $small = 0; $engine = 0.0; $mod = 0.0; $engineHeat = 0.0; $modHeat = 0.0
+        $lastMove = 'never'
+        for ($i = 0; $i -lt $t.Count - 1; $i++) {
+            $a = $t[$i]; $n = $t[$i + 1]
+            $box = $a["b$k"]; $seg = $a['seg']; $cap = $a['segcap']
+            $push = 100 * [math]::Min($box / $volume, 1 - $seg / $cap)
+            $pull = 100 * [math]::Min(($seg + $push) / $cap, 1 - ($box - $push) / $volume)
+            $moved = $n["b${k}pre"] - $box
+            $miss = [math]::Abs($moved - ($pull - $push))
+            if ($miss -gt $worst) { $worst = $miss; $worstAt = [int]$a['tick'] }
+            if ($miss -lt 1e-3) { $small++ }
+            if ($moved -ne 0 -or $n["c${k}pre"] -ne $a["c$k"]) { $lastMove = [int]$a['tick'] }
+            $engine += $moved; $mod += $a["b$k"] - $a["b${k}pre"]
+            $engineHeat += $n["b${k}pre"] * $n["c${k}pre"] - $box * $a["c$k"]
+            $modHeat    += $box * $a["c$k"] - $a["b${k}pre"] * $a["c${k}pre"]
+        }
+        Write-Host ("  box {0}: the engine moved {1:F4} units in and the mod's step {2:F4}; in heat, the engine {3:E4} and the step {4:E4} unit-degC, from {5:E4} to {6:E4}" -f
+            $k, $engine, $mod, $engineHeat, $modHeat, ($t[0]["b$k"] * $t[0]["c$k"]), ($t[-1]["b$k"] * $t[-1]["c$k"]))
+        Write-Host ("         the rule misses the engine's move by under 0.001 units on {0} of {1} ticks, worst {2:G4} on tick {3}; the engine last moved the box on tick {4}" -f
+            $small, ($t.Count - 1), $worst, $worstAt, $lastMove)
+    }
+    foreach ($under in 0.5, 0.1, 0.01) {
+        $hit = $t | Where-Object { $_['c1'] -gt 0 -and $_['c2'] / $_['c1'] -lt $under } | Select-Object -First 1
+        Write-Host ("  box 2 first reads under {0} of box 1's temperature on tick {1}" -f $under, $(if ($hit) { [int]$hit['tick'] } else { 'never, in the window' }))
+    }
+    $low = ($t | Measure-Object -Minimum { $_['c2'] }).Minimum
+    $floor = $t | Where-Object { $_['c2'] -eq $low } | Select-Object -First 1
+    Write-Host ("  box 2's lowest reading, {0:G9} degC, is first read on tick {1}" -f $low, [int]$floor['tick'])
+    Write-Host ('  {0,8}{1,11}{2,13}{3,11}{4,13}{5,11}{6,13}{7,10}{8,10}' -f 'tick', 'box 1', 'degC', 'box 2', 'degC', 'segment', 'degC', 'push', 'pull')
+    $stride = [math]::Max(1, [int](($t.Count - 1) / 12))
+    for ($i = 0; $i -lt $t.Count; $i += $stride) {
+        $a = $t[$i]
+        $push = 100 * [math]::Min($a['b2'] / $volume, 1 - $a['seg'] / $a['segcap'])
+        $pull = 100 * [math]::Min(($a['seg'] + $push) / $a['segcap'], 1 - ($a['b2'] - $push) / $volume)
+        Write-Host ('  {0,8}{1,11:F4}{2,13:E4}{3,11:F4}{4,13:E4}{5,11:F4}{6,13:E4}{7,10:F5}{8,10:F5}' -f
+            [int]$a['tick'], $a['b1'], $a['c1'], $a['b2'], $a['c2'], $a['seg'], $a['segc'], $push, $pull)
     }
 }
 
