@@ -35,6 +35,12 @@ five heating rungs, the optimum walking 65% → 90% and the floor 35% → 80%.
 > gained the heating axis in #425 — the pair at τ 60 is what control.lua's density-curve cache key
 > now rests on.
 
+**The over-supplied side is decided, 2026-10-05 (#421),** by
+[ADR 0039](0039-over-supply-is-a-density-limit-behind-an-option.md). By default nothing changes:
+a full reactor stops taking fuel, and this ADR's lean/running/rich axis is the whole story. Behind
+a startup option, off by default, a density limit sits at full and a disruption hazard rises past
+it, and `circuit-output.status` gains `unstable` beyond `rich`.
+
 ## Context
 
 #37's item 3 recorded that a fluid box shares its contents with its segment in proportion to

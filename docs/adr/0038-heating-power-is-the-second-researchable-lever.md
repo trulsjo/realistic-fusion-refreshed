@@ -303,6 +303,10 @@ unchanged beside the researched one.
 - **An over-supply mechanic** — [#421](https://github.com/trulsjo/realistic-fusion-refreshed/issues/421). A D-T reactor saturates at 34 u/s and simply stops
   taking more, so a second heater past saturation is wasted throughput rather than an interesting
   choice. Raised here and deferred.
+
+  > **Decided 2026-10-05 (#421)** by
+  > [ADR 0039](0039-over-supply-is-a-density-limit-behind-an-option.md): nothing by default, and an
+  > optional density limit with a disruption hazard behind a startup setting.
 - **The aneutronic tier's ratio** — [#422](https://github.com/trulsjo/realistic-fusion-refreshed/issues/422), per decision 5.
 - **Tech-tree legibility** — eight research steps now sit on one reactor. Worth its own look, and
   not a reason to cut rungs.
