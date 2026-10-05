@@ -53,14 +53,24 @@
                           mods probe-plasma-segment.ps1 uses. A difference on a step tick is the mod
                           writing the box; one on any other tick fails the run, because then the two
                           readings do not bracket the step. The first tick each box reaches -FullAt
-                          of its capacity is kept.
+                          of its capacity is kept, and the first tick after that on which it reads
+                          the floor's temperature (#571), or "never".
       with -Trace         every tick of the window, for the pair (or -TraceCell): each box's amount and temperature
                           before control.lua's handler and after it, and the segment's amount and
                           temperature through the bridge's first pipe (#558). What a box changed by
                           from one tick's second reading to the next tick's first is the engine
                           moving fluid; the rest is the mod's step. The report splits each box's
                           heat (amount x degC) between the two, and checks every engine move
-                          against #531's rule.
+                          against #531's rule. For an unpowered box with nothing researched it
+                          also runs the mod's own M.step beside every step tick of the window,
+                          with no heating, and says what each of the step's terms took and how
+                          far the prediction is from the reading (#570); and, from that box's
+                          temperature on the window's first tick, how many steps a box held full
+                          and unheated takes to reach the floor.
+      with -Fixed         every tick, for the pair and for both: the fitted fixed-point rule run
+                          from the game's reading of one tick to the next, with the two boxes and
+                          the heater taken in each of the six orders (#572). A tick is a miss
+                          when any of the four predicted figures differs at all.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
@@ -104,6 +114,11 @@
 .PARAMETER TraceCell
     Which two-reactor cell -Trace reads: pair, the default, or both (#560).
 
+.PARAMETER Fixed
+    Run the fitted fixed-point rule beside each two-reactor cell, one tick at a time, in every
+    order of the two boxes and the heater (#572). probe-plasma-segment.ps1 -Fixed is the same rule
+    on one reactor. It is the input-output box's rule, so under the canary its misses are a reading.
+
 .PARAMETER KeepTemp
     Keep the saves, the rig mods and the captured output.
 
@@ -128,6 +143,7 @@ param(
     [ValidateSet('rf-d-d-plasma', 'rf-d-t-plasma', 'rf-d-he3-plasma', 'rf-he3-he3-plasma')]
     [string] $Plasma = 'rf-d-d-plasma',
     [switch] $Trio,
+    [switch] $Fixed,
     # Case-sensitive: the names are Lua table keys.
     [ValidatePattern('^((confinement|heating|capture)_ladder=\d+)(,(confinement|heating|capture)_ladder=\d+)*$', Options = 'None')]
     [string] $Rungs,
@@ -240,6 +256,7 @@ local TRACE_FROM, TRACE_TO = __TRACEFROM__, __TRACETO__
 local TRACE_CELL = "__TRACECELL__"
 local TRIO  = __TRIO__
 local RUNGS = __RUNGS__
+local FIXED = __FIXED__
 local ENERGY_FEED = "__ENERGYFEED__"
 local PLASMA  = "__PLASMA__"
 local REACTOR = "__REACTOR__"
@@ -251,9 +268,120 @@ local PITCH   = 100
 local STEP_TICKS = 6
 
 local logic  = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
-local ENERGY = (REACTOR == "rf-aneutronic-reactor" and logic.aneutronic_reactor or logic.reactor).energy_fluid
+local SPEC   = REACTOR == "rf-aneutronic-reactor" and logic.aneutronic_reactor or logic.reactor
+local ENERGY = SPEC.energy_fluid
+-- control.lua's dt, by the same division.
+local DT = STEP_TICKS / 60
 
 local function say(fmt, ...) log("IBOXPROBE " .. string.format(fmt, ...)) end
+
+-- WHICH OF THE STEP'S LOSSES TAKES THE HEAT (#570). M.step returns a temperature and a burn, not
+-- its terms, and working them out here would be a second implementation of it. So each is read
+-- off the step itself, in units x degC, the trace's own measure:
+--
+--   ash          what was burnt, at the temperature it was burnt at: burnt fuel leaves with its
+--                share of the heat, so it lowers the amount and not the temperature
+--   confinement  what the same step keeps when its spec has no confinement loss
+--   charged      the charged share of the fusion power, which heats the plasma: a gain
+--   radiation    whatever else the no-confinement step lost: bremsstrahlung
+--
+-- so a step removes ash + confinement + radiation - charged, by construction. Joules become
+-- unit-degC by the step's own heating: what a joule paid raises a unit by.
+local NO_CONFINEMENT_LOSS = setmetatable({ confinement_time_s = math.huge }, { __index = SPEC })
+local TERMS = { "ash", "confinement", "radiation", "charged" }
+local J_PER_UNIT_C
+do
+  local unlit, lit = logic.step(SPEC, PLASMA, 1000, 1e6, 0, DT), logic.step(SPEC, PLASMA, 1000, 1e6, 1e3, DT)
+  J_PER_UNIT_C = 1e3 / ((1000 - unlit.plasma_consumed) * (lit.temperature_c - unlit.temperature_c))
+end
+
+-- M.step's clamp lands on the floor to a double's rounding, not exactly, so "at the floor" is
+-- tested to single precision, which is all the engine keeps of a temperature.
+local function at_floor(c)
+  return c - SPEC.min_temperature_c <= SPEC.min_temperature_c * 2 ^ -23
+end
+
+--- One unheated step of `amount` at `c` degC: where it ends and what each term took.
+local function unheated(amount, c)
+  local real = logic.step(SPEC, PLASMA, amount, c, 0, DT)
+  if not real then return nil end
+  local open = logic.step(NO_CONFINEMENT_LOSS, PLASMA, amount, c, 0, DT)
+  local left = amount - real.plasma_consumed
+  local charged = real.fusion_power_w * DT * logic.fuels[PLASMA].charged_fraction / J_PER_UNIT_C
+  return {
+    amount = left, temperature = real.temperature_c, removed = amount * c - left * real.temperature_c,
+    ash = real.plasma_consumed * c, charged = charged,
+    confinement = left * (open.temperature_c - real.temperature_c),
+    radiation = left * (c - open.temperature_c) + charged,
+    -- THE STEP THAT LANDS ON THE FLOOR. M.step scales its two losses to what the plasma has left
+    -- above the floor, and the no-confinement step is scaled differently, so the difference
+    -- between them no longer says which term took what. Counted apart, not split.
+    landed = not at_floor(c) and at_floor(real.temperature_c),
+  }
+end
+
+local function new_tally()
+  return { steps = 0, landings = 0, landed = 0, ash = 0, confinement = 0, radiation = 0, charged = 0,
+    worst_c = 0, worst_c_tick = 0, worst_box = 0, close = 0 }
+end
+
+local function tally(sum, s)
+  sum.steps = sum.steps + 1
+  if s.landed then
+    sum.landings, sum.landed = sum.landings + 1, sum.landed + s.removed
+  else
+    for _, term in ipairs(TERMS) do sum[term] = sum[term] + s[term] end
+  end
+end
+
+local function say_tally(kind, sum, rest)
+  say("%s steps=%d ash=%.9g confinement=%.9g radiation=%.9g charged=%.9g landed=%.9g landings=%d %s",
+    kind, sum.steps, sum.ash, sum.confinement, sum.radiation, sum.charged, sum.landed, sum.landings, rest)
+end
+
+-- 10 000 s. A box that fuses enough to hold itself up never lands, and is reported as that.
+local STEP_CAP = 1e5
+--- Steps an unheated box held at `amount` takes from `c` to the floor, tallied when `sum` is given.
+local function to_floor(spec, amount, c, sum)
+  local steps = 0
+  while not at_floor(c) and steps < STEP_CAP do
+    if sum then tally(sum, unheated(amount, c)) end
+    c = logic.step(spec, PLASMA, amount, c, 0, DT).temperature_c
+    steps = steps + 1
+  end
+  return steps
+end
+
+-- THE FITTED FIXED-POINT RULE ON TWO BOXES (#572). fixed_flow is probe-plasma-segment.ps1's, with
+-- the destination's fill floored, which #564 settled; change one and change the other. There one
+-- box pushes and pulls and then the heater pushes twice. Here there are two boxes, and the order
+-- the engine takes the three in is what is being read, so all six are run.
+local UNITS = 2 ^ 24
+local FLOOR_UNITS = math.floor(0.1 * UNITS)
+local ORDERS = { "H12", "H21", "1H2", "2H1", "12H", "21H" }
+local function fixed_flow(from, from_volume, to, to_volume)
+  local rate = math.max(FLOOR_UNITS,
+    100 * math.min(math.floor(from / from_volume), UNITS - math.floor(to / to_volume)))
+  return math.max(0, math.min(rate, from, to_volume * UNITS - to))
+end
+--- One engine tick from `fx` (2^-24 units), the heater (H) and the boxes (1, 2) taken in `order`:
+--- where it ends, and what each box pushed into the segment on the way.
+local function fixed_step(order, fx)
+  local box, seg, heater, pushed = { fx.box[1], fx.box[2] }, fx.segment, fx.had, {}
+  for who in order:gmatch(".") do
+    if who == "H" then
+      for _ = 1, 2 do
+        local give = fixed_flow(heater, fx.H, seg, fx.C); heater, seg = heater - give, seg + give
+      end
+    else
+      local k = tonumber(who)
+      local push = fixed_flow(box[k], fx.V, seg, fx.C); box[k], seg = box[k] - push, seg + push
+      pushed[k] = push
+      local pull = fixed_flow(seg, fx.C, box[k], fx.V); box[k], seg = box[k] + pull, seg - pull
+    end
+  end
+  return { box[1], box[2], seg, heater }, pushed
+end
 
 __RIGBUILD__
 
@@ -315,7 +443,8 @@ local function build(surface, force, ox, label, pipe_count, bridge, both, chain)
     error("a machine in the " .. label .. " cell is on no electric network")
   end
 
-  local cell = { label = label, reactors = { first }, sides = { run[1] }, run = run }
+  local cell = { label = label, reactors = { first }, sides = { run[1] }, run = run,
+    heater = heater, heater_box = rf_box_of(heater, PLASMA), at = {} }
   local from = ox + 0.5
   for _ = 1, bridge and (chain or 1) or 0 do
     local east = { from + 8, 0.5 }
@@ -388,12 +517,14 @@ script.on_init(function()
   for _, cell in ipairs(cells) do
     for r, reactor in ipairs(cell.reactors) do
       watch[#watch + 1] = reactor
+      if cell.at then cell.at[r] = #watch end
       tracked[#tracked + 1] = { cell = cell, r = r, reactor = reactor, side = cell.sides[r],
         cap = reactor.fluidbox.get_capacity(1), writes = 0, steps = 0 }
     end
   end
   remote.call("rf-input-box-pre", "watch", watch)
   storage.cells, storage.tracked = cells, tracked
+  storage.per_craft = prototypes.recipe[PLASMA].products[1].amount
   local production = prototypes.entity[REACTOR].fluidbox_prototypes[1].production_type
   say("built cells=%d quieted=%d production_type=%s lone_production_type=%s", #cells, storage.quieted,
     production, prototypes.entity[LONE].fluidbox_prototypes[1].production_type)
@@ -424,15 +555,46 @@ script.on_event(defines.events.on_tick, function()
         .. "it on a tick it does not step on", tick, t.cell.label, t.r, pre[i], box))
     end
     if not t.full and box >= FULL_AT * t.cap then t.full = tick end
+    local temp = plasma and plasma.temperature or 0
+    -- The first tick a FULL box reads the floor (#571): an empty line's cold box does not count.
+    if t.full and not t.floor and temp == SPEC.min_temperature_c then t.floor = tick end
     if traced and t.cell.span and t.cell.label:sub(1, 4) == TRACE_CELL then
       traced[#traced + 1] = string.format("b%dpre=%.17g c%dpre=%.17g b%d=%.17g c%d=%.17g", t.r, pre[i],
         t.r, pre_c[i], t.r, box, t.r, plasma and plasma.temperature or 0)
       traced.cell = t.cell
+      -- THE STEP'S TERMS, for a box nothing heats (#570). An unpowered reactor pays nothing, so
+      -- the mod steps it with no heating; nothing researched, so SPEC is the spec it is stepped
+      -- with. The window's last tick is left out, as Write-Trace leaves it out of the heat.
+      if not RUNGS and not t.reactor.electric_network_id then
+        if tick == TRACE_FROM then
+          t.split = new_tally()
+          local sum = new_tally()
+          local steps = to_floor(SPEC, t.cap, temp, sum)
+          say_tally("descent", sum, string.format("r=%d from=%.9g amount=%g radiation_only_steps=%d",
+            t.r, temp, t.cap, to_floor(NO_CONFINEMENT_LOSS, t.cap, temp)))
+        end
+        local s = tick % STEP_TICKS == 0 and tick < TRACE_TO and unheated(pre[i], pre_c[i])
+        if s then
+          local sum = t.split
+          tally(sum, s)
+          local off = math.abs(s.temperature - temp) / temp
+          if off > sum.worst_c then sum.worst_c, sum.worst_c_tick = off, tick end
+          sum.worst_box = math.max(sum.worst_box, math.abs(s.amount - box))
+          -- The engine keeps a temperature in single precision and an amount in whole 2^-24
+          -- units, so that much of a miss is the write and not the arithmetic.
+          if off <= 2 ^ -23 and math.abs(s.amount - box) <= 2 ^ -24 then sum.close = sum.close + 1 end
+        end
+        if tick == TRACE_TO then
+          local sum = t.split
+          say_tally("split", sum, string.format("r=%d worst_c=%.9g worst_c_tick=%d worst_box=%.9g close=%d",
+            t.r, sum.worst_c, sum.worst_c_tick, sum.worst_box, sum.close))
+        end
+      end
     end
     if sample then
-      say("row cell=%s r=%d tick=%d box=%.9g temp=%.9g seg=%.9g writes=%d steps=%d full=%s",
-        t.cell.label, t.r, tick, box, plasma and plasma.temperature or 0, segment_of(t.side),
-        t.writes, t.steps, tostring(t.full or "never"))
+      say("row cell=%s r=%d tick=%d box=%.9g temp=%.9g seg=%.9g writes=%d steps=%d full=%s floor=%s",
+        t.cell.label, t.r, tick, box, temp, segment_of(t.side),
+        t.writes, t.steps, tostring(t.full or "never"), tostring(t.floor or "never"))
     end
   end
   if traced and traced.cell then
@@ -443,6 +605,61 @@ script.on_event(defines.events.on_tick, function()
   end
   if sample then
     for _, cell in ipairs(storage.cells) do say("ids cell=%s tick=%d %s", cell.label, tick, ids(cell)) end
+  end
+
+  for _, cell in ipairs(FIXED and storage.cells or {}) do
+    if cell.heater and #cell.reactors == 2 then
+      local fx = cell.fx
+      local out = cell.heater.fluidbox[cell.heater_box]
+      local held, crafts = (out and out.amount or 0) * UNITS, cell.heater.products_finished
+      local segment = segment_of(cell.span[1]) * UNITS
+      if fx then
+        fx.had = fx.held + (crafts - fx.crafts) * storage.per_craft * UNITS
+        local seen = { pre[cell.at[1]] * UNITS, pre[cell.at[2]] * UNITS, segment, held }
+        for _, reading in ipairs(seen) do
+          if reading ~= math.floor(reading) then fx.off_grid = fx.off_grid + 1 end
+        end
+        local phase = fx.brimmed and "full" or "filling"
+        fx[phase] = fx[phase] + 1
+        for _, order in ipairs(ORDERS) do
+          local told, pushed = fixed_step(order, fx)
+          local off, m = 0, fx[phase .. order]
+          for n = 1, 4 do off = math.max(off, math.abs(told[n] - seen[n])) end
+          -- What the order has each box push, whether or not it fits: an order that fits says
+          -- which box gives its own plasma to the line.
+          for k = 1, 2 do m.pushed[k] = m.pushed[k] + pushed[k] end
+          if off > 0 then
+            m.missed, m.first = m.missed + 1, m.first or tick
+            if off > m.worst then m.worst = off end
+          end
+        end
+      else
+        fx = { filling = 0, full = 0, off_grid = 0, V = cell.reactors[1].fluidbox.get_capacity(1),
+          C = cell.span[1].fluidbox.get_capacity(1), H = cell.heater.fluidbox.get_capacity(cell.heater_box) }
+        for _, phase in ipairs({ "filling", "full" }) do
+          for _, order in ipairs(ORDERS) do fx[phase .. order] = { missed = 0, worst = 0, pushed = { 0, 0 } } end
+        end
+        cell.fx = fx
+      end
+      -- The state the next tick is predicted from: both boxes AFTER the mod's step.
+      fx.box, fx.brimmed = {}, true
+      for k, reactor in ipairs(cell.reactors) do
+        local plasma = reactor.fluidbox[1]
+        fx.box[k] = (plasma and plasma.amount or 0) * UNITS
+        fx.brimmed = fx.brimmed and storage.tracked[cell.at[k]].full ~= nil
+      end
+      fx.segment, fx.held, fx.crafts = segment, held, crafts
+      if sample then
+        for _, phase in ipairs({ "filling", "full" }) do
+          for _, order in ipairs(ORDERS) do
+            local m = fx[phase .. order]
+            say("fixed cell=%s tick=%d phase=%s order=%s ticks=%d missed=%d first=%s worst=%.17g off_grid=%d push1=%.17g push2=%.17g",
+              cell.label, tick, phase, order, fx[phase], m.missed, tostring(m.first or "never"),
+              m.worst / UNITS, fx.off_grid, m.pushed[1] / UNITS, m.pushed[2] / UNITS)
+          end
+        end
+      end
+    end
   end
 end)
 '@
@@ -465,6 +682,7 @@ $lua = $lua.
     Replace('__REACTOR__', $reactorName).
     Replace('__TRIO__', $(if ($Trio) { 'true' } else { 'false' })).
     Replace('__RUNGS__', $rungsLua).
+    Replace('__FIXED__', $(if ($Fixed) { 'true' } else { 'false' })).
     Replace('__ENERGYFEED__', (Write-EnergyFeed -RigDirectory $rigDir))
 Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
 
@@ -548,6 +766,7 @@ function Write-Variant {
             $cell, $n, $r['box_cap'], $r['side_cap'], $r['powered'])
         Write-Host ("  the box first reached {0:P1} on tick {1}; to tick {2} control.lua changed it across its handler on {3} of {4} step ticks" -f
             $FullAt, $end['full'], $end['tick'], $end['writes'], $end['steps'])
+        Write-Host "  full, it first read the floor's temperature on tick $($end['floor'])"
         Write-Host ('  {0,8}{1,13}{2,13}{3,13}{4,11}' -f 'tick', 'box', 'segment', 'box degC', 'seg/1000')
         # THE SETTLE TEST: the first row from which every row to the end reads a temperature within
         # $Settle of the last row's, relative. The canary box passed it by tick 44 000 in #542's run.
@@ -567,9 +786,62 @@ function Write-Variant {
                 (Num $row['temp']), $(if ($box -gt 0) { 1000 * $seg / $box } else { 0 }))
         }
     }
+    if ($Fixed) { Write-Fixed -Rows @(Read-Records $Run.Ran 'fixed') }
     if ($Trace) {
         $pairBox = @(Read-Records $Run.Created 'reactor' | Where-Object { $_['cell'] -like "$TraceCell*" })[0]
         Write-Trace -Rows @(Read-Records $Run.Ran 'trace') -BoxVolume (Num $pairBox['box_cap'])
+        Write-Split -Split @(Read-Records $Run.Ran 'split') -Descent @(Read-Records $Run.Ran 'descent')
+    }
+}
+
+function Write-Fixed {
+    <#  THE ORDER THE ENGINE TAKES TWO BOXES IN (#572): the last sampled row of each order, split
+        into the ticks before both boxes had read -FullAt and the ticks from then on.  #>
+    param([object[]] $Rows)
+
+    Write-Host ''
+    if ($Rows.Count -eq 0) { Write-Host '  the fitted fixed-point rule: no row; no tick was sampled.'; return }
+    foreach ($cell in ($Rows | ForEach-Object { $_['cell'] } | Select-Object -Unique)) {
+        $of = @($Rows | Where-Object { $_['cell'] -eq $cell })
+        $at = $of[-1]['tick']
+        Write-Host ("  === {0}: the fitted fixed-point rule, one tick at a time, to tick {1}; {2} reading(s) were not whole 2^-24 units" -f
+            $cell, $at, $of[-1]['off_grid'])
+        Write-Host '  an order names what the rule takes first: H the heater, 1 the first reactor, 2 the second'
+        foreach ($f in ($of | Where-Object { $_['tick'] -eq $at })) {
+            Write-Host ("    {0}, {1,-7}: missed {2} of {3} ticks, first on {4}, worst {5:E2} units; it has box 1 push {6:F4} units and box 2 {7:F4}" -f
+                $f['order'], $f['phase'], $f['missed'], $f['ticks'], $f['first'], (Num $f['worst']), (Num $f['push1']), (Num $f['push2']))
+        }
+    }
+}
+
+function Write-Split {
+    <#  WHICH OF THE STEP'S TERMS TOOK THE HEAT (#570), in units x degC as Write-Trace counts it.
+        "the window" is M.step run from each step tick's reading before the mod; "the descent" is
+        M.step run on from the window's first reading with the box held full.  #>
+    param([object[]] $Split, [object[]] $Descent)
+
+    if ($Split.Count -eq 0) {
+        Write-Host "  the step's terms: not run. They are read for an unpowered box with nothing researched."
+        return
+    }
+    $terms = {
+        param($r)
+        $net = (Num $r['ash']) + (Num $r['confinement']) + (Num $r['radiation']) - (Num $r['charged']) + (Num $r['landed'])
+        ('ash {0:E4}, confinement {1:E4}, radiation {2:E4}, less {3:E4} of charged fusion heating; {4} step(s) landed on the floor and took {5:E4} more; in all {6:E4}' -f
+            (Num $r['ash']), (Num $r['confinement']), (Num $r['radiation']), (Num $r['charged']), $r['landings'], (Num $r['landed']), $net)
+    }
+    foreach ($s in $Split) {
+        Write-Host ("  box {0}, M.step unheated beside {1} step ticks of the window, unit-degC removed:" -f $s['r'], $s['steps'])
+        Write-Host ("         " + (& $terms $s))
+        Write-Host ("         against the reading after the mod: {0} of {1} steps within 2^-23 of the temperature and 2^-24 units of the amount; worst temperature miss {2:E2} of the reading, on tick {3}; worst amount miss {4:E2} units" -f
+            $s['close'], $s['steps'], (Num $s['worst_c']), $s['worst_c_tick'], (Num $s['worst_box']))
+    }
+    foreach ($d in $Descent) {
+        # 100000 is the rig's STEP_CAP: a descent that long did not land.
+        $ticks = { param($n) if ([int]$n -ge 100000) { 'not in 100000 steps' } else { "after $n steps, $(6 * [int]$n) ticks" } }
+        Write-Host ("  box {0}, held at {1} units and unheated from {2:E4} degC: at the floor {3}; with no confinement loss, {4}" -f
+            $d['r'], $d['amount'], (Num $d['from']), (& $ticks $d['steps']), (& $ticks $d['radiation_only_steps']))
+        Write-Host ("         " + (& $terms $d))
     }
 }
 

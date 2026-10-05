@@ -63,8 +63,9 @@
 
 .PARAMETER Ticks
     Ticks to run, from an empty line. On D-D with nothing researched three pipes are full by
-    about 72 000 and six by about 81 000. Helium-3 fills its 3000-unit box by about 152 000 and
-    159 000, and a D-T line never fills: it has settled by about 108 000.
+    about 72 000 and six by about 81 000. He3-He3 fills its 3000-unit box by about 152 000 and
+    159 000; D-He3 never fills it with one heater (#562), and a D-T line never fills: it has
+    settled by about 108 000.
 
 .PARAMETER Pipes
     Pipe counts, comma-separated, one cell each, 3 to 12. Three is the shortest line the bench
