@@ -197,7 +197,59 @@ boxes fill together at 148 946 and 148 939. The unpowered reactor read 3.5294×1
 and **15 °C at 152 000 and at every row after that**, to 596 000. The powered reactor read
 2.3859×10⁸ at 596 000. `control.lua` changed the unpowered box on 24 975 of the 99 334 step ticks.
 So the heat this rig reads travelling along the shipped pipe travels only while the line is
-filling. Why was not looked into.
+filling.
+
+**Why: a full box and a full segment stop trading, and the mod's own step cools a box it does
+not heat** ([#558](https://github.com/trulsjo/realistic-fusion-refreshed/issues/558)). The pair
+was read every tick from 146 000 to 151 500 by
+`pwsh -File scripts/probe-plasma-input-box.ps1 -Pipes 3 -Ticks 152000 -Every 1000 -Trace 146000,151500`
+on 2026-10-05, Factorio 2.0.77 (build 84539), nothing researched, one heater, three pipes and
+twelve. Each box is read before and after `control.lua`'s handler, so what moved between one
+tick's second reading and the next tick's first is the engine, and the rest is the mod's step.
+Heat is counted as units × °C. The earlier rows are from the same command with
+`-Ticks 156000` and no trace.
+
+The two temperatures do not part on one tick. They draw apart as the line fills:
+
+| tick | box, of 1000 | segment, of 3500 | powered box °C | unpowered box °C | unpowered ÷ powered |
+|---|---|---|---|---|---|
+| 64 000 | 437.07 | 1486.11 | 3.7500×10⁸ | 3.7108×10⁸ | 0.990 |
+| 96 000 | 656.50 | 2164.29 | 2.0330×10⁸ | 1.9721×10⁸ | 0.970 |
+| 120 000 | 807.72 | 2752.34 | 1.3966×10⁸ | 1.2979×10⁸ | 0.929 |
+| 136 000 | 913.19 | 3162.45 | 1.1327×10⁸ | 9.4149×10⁷ | 0.831 |
+| 144 000 | 966.03 | 3367.98 | 1.1353×10⁸ | 6.9550×10⁷ | 0.613 |
+| 146 000 | 979.70 | 3421.12 | 1.2041×10⁸ | 5.7859×10⁷ | 0.481 |
+| 148 000 | 993.24 | 3473.81 | 1.4093×10⁸ | 3.5294×10⁷ | 0.250 |
+
+The unpowered box first reads under a tenth of the powered one's temperature on tick 148 896,
+under a hundredth on 149 616, and 15 °C on tick 150 012.
+
+- **The trade shrinks to nothing as the line fills, as #531's rule says it must.** The rule is a
+  push of 100 × min(box fill, 1 − segment fill) and a pull of 100 × min(segment fill, 1 − box
+  fill). For the unpowered box it gives 2.254 units a tick each way at 146 000, 0.928 at
+  147 832, 0.231 at 148 748 and 0 at 149 206. The engine last moved that box on tick 149 982.
+- **The rule predicts what the engine moved.** Applied to each box alone, it is within 0.001
+  units of the engine's move on 5123 of the 5500 ticks for the unpowered box and 4956 for the
+  powered one. The worst misses are 0.093 units on tick 146 041 and 0.087 on 149 054. The 199
+  ticks on which the unpowered box misses by more than 0.01 come in pairs 120 ticks apart, which
+  is the heater's cycle: a craft landing in the segment inside the tick is what the rule, applied
+  to one box against the segment as it stood, does not see. Running the two boxes in either
+  order moves neither worst miss.
+- **The heat went into the mod's step.** Over the window the unpowered box held 5.6685×10¹⁰
+  unit-°C at the start. The engine brought it 1.4119×10¹¹ more, and `control.lua`'s step took
+  1.9788×10¹¹ out, leaving 1.5×10⁴: 1000 units at 15 °C. An unpowered reactor is stepped with no
+  heating, so the step only loses. Which of its loss terms does the cooling was not separated.
+- **The segment keeps its heat.** It read 8.9182×10⁷ °C at 146 000 and 8.6240×10⁷ at 151 496.
+  From tick 150 012 the unpowered box sits at 15 °C beside a segment at 8.6×10⁷ and a powered
+  box at 2.2×10⁸, and nothing moves between them.
+- The powered box is the same trade seen from the other side. The engine took 1.3779×10¹¹
+  unit-°C out of it over the window and its step put 2.4075×10¹¹ in. Once the trade stops it
+  keeps everything it is given, which is why it climbs from 1.2041×10⁸ to 2.2094×10⁸ over the
+  window.
+
+This is the hot tail #530 found on a solo line, in
+[The rule behind the split](exchanger-coverage.md#the-rule-behind-the-split), with a second
+reactor on the cold end of it.
 
 #### The lone box
 
@@ -422,9 +474,10 @@ Each option lists what it changes. None is chosen.
 
 1. **Do nothing; keep `input-output`.** Nothing moves. The fuel line remains two stores trading
    through the box's connection, the box fills in 2.3 to 2.6 times the fed model's time, and
-   ADR 0011's pooling works while the line fills: a reactor on the run shares heat with its
-   neighbours, as the shipped pair shows to 148 000. Once that pair's line is full, its unpowered
-   reactor falls to 15 °C (#548). The prototype stays outside the docs' advice for `input-output`, and that
+   ADR 0011's pooling works while the line has room: a reactor on the run shares heat with its
+   neighbours, less as the line fills. The shipped pair's unpowered reactor is within 3% of the
+   powered one at 96 000, 17% short at 136 000, and at 15 °C from tick 150 012, once the line
+   is full (#548, #558). The prototype stays outside the docs' advice for `input-output`, and that
    advice gives no reason. The modelling work in
    [The rule behind the split](exchanger-coverage.md#the-rule-behind-the-split) remains needed,
    because `M.settle_fed` is not what the game does.
