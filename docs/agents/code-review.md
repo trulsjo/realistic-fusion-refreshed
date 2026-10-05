@@ -1,7 +1,16 @@
-# Code review — three rules this repository adds
+# Code review — four rules this repository adds
 
-All three are conventions layered on the `/code-review` plugin rather than changes to it; see *Why it is
-written here rather than fixed at source* at the foot.
+All four are conventions this repository keeps around the `code-review:code-review` plugin rather
+than changes to it; see *Why it is written here rather than fixed at source* at the foot.
+
+**Three skills answered to `/code-review` in the session that wrote this, and this file means one of
+them.** Which are installed is a fact about a machine and not about this repository.
+`code-review:code-review` is the official plugin: five reviewers, then a scorer for each candidate
+finding, and it needs a pull request. It is what this file calls **the plugin pass**, and what "the
+workflow" and "the plugin" mean below.
+`mattpocock-skills:code-review` and the built-in `code-review` both read a diff and need no pull
+request, and no rule here is about either. Write the qualified name
+when it matters which.
 
 1. **[The threshold gates the comment, not the report](#the-threshold-gates-the-comment-not-the-report)** — decided by Truls, 2026-08-26, settling
    [#128](https://github.com/trulsjo/realistic-fusion-refreshed/issues/128).
@@ -11,28 +20,41 @@ written here rather than fixed at source* at the foot.
 3. **[A review that plants takes its own worktree](#a-review-that-plants-takes-its-own-worktree)** —
    [#311](https://github.com/trulsjo/realistic-fusion-refreshed/issues/311), after the review of
    [#309](https://github.com/trulsjo/realistic-fusion-refreshed/pull/309) on 2026-09-10.
+4. **[One review before the pull request](#one-review-before-the-pull-request)** — decided by Truls,
+   2026-10-05, settling [#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592). It
+   also changed wording in the first two, dated where it sits, and wrote the plugin's name out in
+   full throughout.
 
 ## The threshold gates the comment, not the report
 
 Decided by Truls, 2026-08-26, settling
-[#128](https://github.com/trulsjo/realistic-fusion-refreshed/issues/128).
+[#128](https://github.com/trulsjo/realistic-fusion-refreshed/issues/128). Where the findings under
+the threshold are posted was changed on 2026-10-05, settling
+[#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592).
 
-The `/code-review` workflow scores each candidate finding and drops anything below 80. **That filter
-governs what gets posted to the pull request. It does not govern what gets told to the person who
-ran the review.**
+The `code-review:code-review` workflow scores each candidate finding and leaves anything
+below 80 out of its comment. **That filter governs what the workflow's own comment carries. It does not govern what gets
+told to the person who ran the review** — or, since 2026-10-05, what reaches the pull request.
 
 ### The rule
 
-**Report every finding that survived verification, whatever it scored.** Post to the PR only what
-clears the threshold, exactly as the workflow says.
+**Report every finding that survived verification, whatever it scored.** The workflow's own comment
+carries only what clears the threshold, exactly as the workflow says. **Every other surviving
+finding goes in a second comment on the same pull request, with its score** — so the pull request
+holds the whole report, and not the transcript of the session that ran it. Until 2026-10-05 this
+said to post only what cleared the threshold;
+[#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579) posted the second comment
+anyway, and #592 made that the rule.
 
 **A review that posts nothing must still say what it filtered.** Name each finding, its score, and
 whether it was independently verified. A silent pass and a filtered pass must never look the same —
 that is the whole point of this file.
 
-**Do not re-score to get a finding published.** The threshold is deliberately conservative and stays
-where it is. If a filtered finding matters, say so in the report and let a human decide; inflating a
-score to route around the filter destroys the only signal the score carries.
+**Do not re-score to move a finding into the first comment.** The threshold is deliberately
+conservative and stays where it is. If a filtered finding matters, say so in the report and let a
+human decide; inflating a score to route around the filter destroys the only signal the score
+carries. Until 2026-10-05 a filtered finding was not posted at all, and this was written against
+re-scoring to get one published.
 
 ### Why the threshold cannot be read as "these findings do not matter"
 
@@ -96,6 +118,10 @@ obligation lives here, in the review.
 
 **Review the fixed state, not just the original.** A second round on work that has already passed
 review and verification is worth running, and this file exists because it found more than the first.
+Since 2026-10-05 (#592) what is *required* of the fixed state is narrower than a round: the reviewer
+that raised a finding confirms its fix. A full second round is the plugin pass, run when it is asked
+for, and "the review" in this section's older sentences means whichever review is being run. See
+[One review before the pull request](#one-review-before-the-pull-request).
 
 ### Measured, not assumed
 
@@ -171,7 +197,7 @@ hand-reverted only its own two lines rather than `git checkout --` the file, so 
 Two agents also wrote probe scripts to the same `/tmp` path in that run. The one agent that had made
 its own worktree with `git worktree add --detach` saw none of it; that is the pattern.
 
-### Whether `/code-review` itself should carry it
+### Whether `code-review:code-review` itself should carry it
 
 **No, and nothing there can.** The plugin's own instructions launch five reviewers that read the
 change, its blame, earlier pull requests and its comments; none of them is told to modify the tree,
@@ -179,14 +205,71 @@ so the plugin never plants. The plugin is also not this repository's to edit, fo
 next section gives. The rule binds whatever runs alongside it — a gate-poisoning pass, a review agent
 asked to prove a finding — and that is why it lives here.
 
+## One review before the pull request
+
+Decided by Truls, 2026-10-05, settling
+[#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592).
+
+### The rule
+
+**Every branch gets one review, before its pull request exists.** This section and `CLAUDE.md` call
+it **the pre-PR review**. One fresh subagent runs it, and it is defined by what the subagent
+is handed and not by a skill's name:
+
+- the diff against `main`;
+- this file;
+- on a branch that records measurements, the probes' raw output; on any other, the result of the
+  gates that were run.
+
+**The reviewer that raised a finding confirms its fix.** Continue the same subagent and have it read
+each fix against its own finding. That is a confirmation and not a second round.
+
+**The plugin pass is run when it is asked for, and not otherwise.** It is the full second round.
+When an implement skill says to close out with `/code-review`, in this repository that means the
+pre-PR review, and no pull request is needed for it.
+
+**The scoring step stays.** It is inside the plugin, so it runs whenever the plugin pass does. Every
+surviving finding is reported whatever it scores, so the score decides only which comment a finding
+is posted in — and it is still the step that verifies a candidate.
+
+**A plugin-pass finding the pre-PR review missed gets its class named**, by the session that fixes it, in
+the pull request. A class a script can detect becomes a section of `scripts/ship-check.ps1`. A class
+that takes judgement becomes a line in this file. "One-off, no rule" is an answer, and it is written
+down like the others. This is how the pre-PR review is meant to come to catch what today only the plugin
+pass does.
+
+### Measured, not assumed
+
+[#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579) was reviewed twice on
+2026-10-05, and it is the only branch behind this rule.
+
+| pass | when | cost | found |
+|---|---|---|---|
+| one subagent with the probes' raw output | before the pull request | not measured | 12 findings, 11 fixed |
+| `code-review:code-review` | on the pull request | about ten minutes, about 400 000 subagent tokens | eight candidates: seven fixed, one false positive |
+
+**Only the first could check a figure against what a probe printed.** The plugin's reviewers are
+given the change, its blame, earlier pull requests and its comments, and a probe's output is in none
+of those.
+
+**The seven were real, and all seven were small.** One commit fixed all of them and no figure moved.
+The one that scored 100 was a temperature written without its exponent. The scorer gave the false
+positive 0 — a claim that a table did not add up to its sum, which it does once rounded.
+
+**The first pass happened by accident.** The session read `/code-review` in the
+`mattpocock-skills:implement` skill as the official plugin, which needs a pull request, and none
+existed, so it improvised a reviewer. The `code-review` skill that ships beside `implement` needs no
+pull request. That confusion is why the head of this file names all three.
+
 ## Why it is written here rather than fixed at source
 
 The workflow is a plugin, at `~/.claude/plugins/cache/claude-plugins-official/code-review/`. It is
 not this repository's to edit, and editing a cache would be undone by the next plugin update. So
 this is a convention, and `CLAUDE.md` points at it so a review session loads it before running.
 
-Nothing about the scoring, the rubric or the 80 is changed, and none of the three rules asks the
+Nothing about the scoring, the rubric or the 80 is changed, and none of the four rules asks the
 workflow to do anything it does not already do. The first drops one assumption -- that a filtered
 finding is a discarded one. The second adds one obligation the rubric never mentions, because a
 plugin that reviews code cannot know that in this repository the prose is part of the deliverable.
-The third governs the passes that run beside the workflow rather than inside it.
+The third governs the passes that run beside the workflow rather than inside it. The fourth says
+when the workflow is run at all, and what is run when it is not.

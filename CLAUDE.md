@@ -347,12 +347,20 @@ vocabulary is `CONTEXT.md`'s Art section.
 
 ### Code review
 
-Three rules, all in `docs/agents/code-review.md`. Before a review of a branch that combines
+Four rules, all in `docs/agents/code-review.md`. Before a review of a branch that combines
 more than one ticket, run `scripts/run-gates.ps1` on it; the State section says what it runs.
 
-**The filter gates the comment, not the report.** `/code-review`'s 80-point threshold governs what
-gets posted to the PR. Its rubric only emits 0/25/50/75/100, so the filter admits 100 alone — a
-finding can be verified, important and dropped. Report every surviving finding with its score; a
+**One review, before the pull request** (#592). Every branch gets the pre-PR review: a fresh
+subagent handed the diff, `docs/agents/code-review.md`, and the probes' raw output or the gate
+result. The same subagent confirms each fix. **When an implement skill says to close out with
+`/code-review`, this is what it means here** — more than one skill can answer to that name, and
+the official plugin, `code-review:code-review`, is the one that needs a pull request. It is run
+only when asked for.
+
+**The filter gates the comment, not the report.** `code-review:code-review`'s 80-point threshold
+governs which comment a finding is posted in. Its rubric only emits 0/25/50/75/100, so the filter
+admits 100 alone — a finding can be verified, important and filtered. Report every surviving
+finding with its score, and post the ones under the threshold to the PR in a second comment; a
 review that posts nothing must still say what it filtered.
 
 **Review the prose, not only the code.** Every gate here checks machinery and none of them reads
