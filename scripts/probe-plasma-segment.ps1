@@ -117,8 +117,8 @@
 
 .PARAMETER Fixed
     Run the fixed-point rule docs/research/quality.md fitted to a lone box beside each cell, one
-    tick at a time (#564): from the game's reading of one tick it predicts the next, exactly, in
-    2^-24 units. Reported every 6000 ticks, split into ticks the heater had nothing to give and
+    tick at a time (#564): from the game's reading of one tick it predicts the next in whole
+    2^-24 units, and a tick is a miss when any predicted figure differs at all. Reported every 6000 ticks, split into ticks the heater had nothing to give and
     ticks it was feeding, and by how the destination's fill is rounded, which the fit left open.
 
 .PARAMETER KeepTemp
@@ -565,8 +565,9 @@ function Write-HeaterRule {
         asserts nothing.  #>
     param([object[]] $Rows, [double] $BoxVolume)
 
-    # The mod's reactor-logic.lua names these M.heater_output_box and M.step_ticks; load-check.ps1
-    # holds both to the prototypes.
+    # The mod's reactor-logic.lua names these M.heater_output_box and M.step_ticks, and
+    # load-check.ps1 holds THOSE to the prototypes. These two are this probe's own copies and
+    # nothing holds them to the mod's: change one there and change it here.
     $heaterVolume = 200.0; $stepTicks = 6
     $pairs = 0; $missed = 0; $worst = 0.0; $worstAt = 0; $bare = 0.0
     for ($i = 0; $i -lt $Rows.Count - 1; $i++) {

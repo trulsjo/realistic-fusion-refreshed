@@ -113,7 +113,7 @@ on this machine on 2026-10-05 with nothing else running. It runs no probe, no ga
 `-SelfTest`, and not `load-check.ps1 -FromZips`, `locale-check.ps1` or `name-check.ps1`; its
 own `-SelfTest` proves with stand-in gates that a failing gate is named and not swallowed.
 
-`scripts/probe-*` are **not** in that list and are not gates. A probe asserts nothing and answers
+`scripts/probe-*` are **not** gates, and `run-gates.ps1` runs none of them. A probe asserts nothing and answers
 a question a decision is waiting on — exit 0 means it ran and reported, never that the answer was the
 hoped-for one. Its findings belong in `docs/research/`, and it stays committed so the next engine
 version can be asked the same question.
