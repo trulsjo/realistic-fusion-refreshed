@@ -223,6 +223,17 @@ best and would gain from more plasma, rich is thicker and would gain from less. 
 states and neither is a fault — the words are about *which way to move the throttle*, and they are
 the only thing that tells a player the density lever exists.
 
+**Density limit** — the densest a reactor's plasma can stably run at, after the real Greenwald limit
+(#421). **It exists only behind a mod option, off by default**, and with the option off a reactor
+has no density limit, only a box: a full reactor simply stops taking fuel, and over-supply does
+nothing. With the option on, the limit sits at what "full" means with the option off, and the box
+grows past it, so every figure quoted below the limit reads the same with the option on or off.
+Do not call it the reactor's capacity: with the option on, the box holds more than the limit allows.
+
+**Disruption** — what happens to a reactor filled past its density limit: the plasma collapses,
+the box empties, and the reactor has to be filled and heated again from cold. A fault, unlike
+**rich**, which is a working state. It exists only with the density-limit option on.
+
 **Operating point** — the state a quoted reactor figure was measured in: how full its box is, what
 temperature its plasma is at, and whether the reactor is supply-limited. **Two of them are quoted in
 this repository and they are not interchangeable.** Named here because the same reactor was quoted at
