@@ -287,7 +287,9 @@ there are twenty-four readings and no default one; the two named below are the c
 
 - **Per heater** — one `rf-heater`'s worth of fuel. This is the reading a player meets, because a
   heater is what they build. **9.1 D-D reactors per heater** on the D-T mix **unresearched**, and
-  **0.97 fully researched** — where one breeder more than covers one heater.
+  **0.97 fully researched** — where one breeder more than covers one heater. **It always means
+  `rf-heater`, even once a bigger heater exists** (#420): a high-capacity heater is counted as so
+  many heaters' worth, never as one heater, so a new machine cannot move this reading.
 - **Per saturated reactor** — what a settled consuming reactor burns flat out. **94.7 D-D reactors
   per D-T reactor unresearched**, and **8.93 fully researched**. The whole grid is in
   [`d-t-ignition.md`](docs/research/d-t-ignition.md), heating power against confinement time.
