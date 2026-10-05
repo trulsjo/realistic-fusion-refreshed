@@ -1226,7 +1226,10 @@ Run from the seed, it misses none of the 60 300 ticks in either cell. It gives t
 60 000 and the lone box's 526.3158023 to every digit printed. With `-Seconds 10000`, a run it
 was not fitted to, it misses none of 600 300 ticks in either cell and gives 316 200 of
 600 000, the game's figure. The legendary rows there put #531's rule 2.81×10⁻⁵ off the game
-at most, at tick 598 901.
+at most, at tick 598 901. That is not the 1000 s run's maximum at a later tick: read again on
+2026-10-05, the 1000 s run's largest is 2.811376862×10⁻⁵ at tick 59 301 and the 10 000 s run's
+is 2.811699733×10⁻⁵ at 598 901. The two agree to three figures and differ in the fifth; the
+longer run finds a slightly larger gap late.
 
 It is **fitted, not found**. It is what missed no tick out of 27 combinations tried on
 this trace in scratch arithmetic: the source fill floored, ceiled or rounded, the
@@ -1234,8 +1237,40 @@ destination's the same, and the draw before, between or after the two transfers.
 cannot say how the destination's fill is rounded: all three choices miss nothing, so three of
 the 27 fit and the variant above is one of them. The
 game's code was not read, and no 2.0.77 doc page found says fluid amounts are fixed point.
-It is checked on a lone 1000-unit box at normal and legendary quality only, with no pipe and
+The fit itself is on a lone 1000-unit box at normal and legendary quality, with no pipe and
 no heater.
+
+**Outside the cells it was fitted to, it still misses no tick, and a fed line settles the
+rounding** ([#564](https://github.com/trulsjo/realistic-fusion-refreshed/issues/564)).
+`scripts/probe-plasma-segment.ps1 -Fixed` runs the variant beside a fuel line, one tick at a
+time: from the game's reading of one tick, the box after the mod's step, the segment and what
+the heater has to give, it predicts the next tick's box, segment and heater in whole 2⁻²⁴
+units, and counts a miss when any of the three differs at all. That is a weaker test than
+running from the seed, and it is the one a line the mod burns from allows. The order is
+`M.settle_segment`'s: the box pushes and pulls, then the heater's output box pushes twice. The
+0.1-unit floor is taken as 0.1 × 2²⁴ floored, 1 677 721 units. 2026-10-05, Factorio 2.0.77
+(build 84539), normal quality, one heater a cell, nothing researched (all 11 rungs asserted
+off):
+
+| line | ticks | destination fill floored | ceiled | rounded |
+|---|---|---|---|---|
+| D-D, 1000-unit box, three pipes, `-Pipes 3,6 -Heater -Fixed -From 12000 -Span 1` | 96 000: 27 113 with the heater feeding, 68 887 without | 0 missed | 4392 missed, first on tick 32 524 | 17 562 missed, first on 32 524 |
+| the same run, six pipes | 96 000: 18 101 and 77 899 | 0 missed | 4896 missed, first on 36 723 | 19 705 missed, first on 36 723 |
+| D-He3, 3000-unit box, three pipes, `-Plasma rf-d-he3-plasma -Pipes 3 -Fixed -Ticks 200000 -From 12000 -Span 1` | 198 000: 6596 and 191 404 | 0 missed | 0 missed | 0 missed |
+
+- **With every fill floored, the variant predicts every tick of all three lines exactly.** The
+  two D-D lines fill inside the run, at 71 295 and 80 539, so the ticks include the heater's
+  output box backing up against a full segment, where the 0.1-unit floor acts. No reading on any
+  line was off the 2⁻²⁴ grid.
+- **The fed D-D line separates the three combinations the lone box could not.** Ceiling or
+  rounding the destination's fill misses from tick 32 524 at three pipes and 36 723 at six, by at
+  most 1.79×10⁻⁵ units, which is 300 units of 2⁻²⁴. Only flooring fits. The D-He3 line does not
+  separate them: its box holds 467 to 470 of 3000 and all three miss nothing there.
+- It is still **fitted, not found**. No source for the game's fluid arithmetic was found, so
+  what is shown is that one rule, fitted on a lone box, predicts 390 000 further ticks of three
+  fed lines without a miss, and not that the game computes it that way. D-T, He3-He3, any
+  researched state, more than one reactor on a segment, and quality above normal on a fed line
+  were not run.
 
 **The 1.28×10⁻⁵ excess and the factor's gap have one cause on this reading.** The same
 variant, with nothing changed between the two cells, gives the normal cell's 526.3158023 and
@@ -1354,9 +1389,12 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   It misses none of 60 300 ticks in the lone box or the draining one. It gives the lone box's
   526.3158023 and the 1000 s figure of 31 800 of 60 000, which is 1.887. What is not shown is
   that the game computes it that way. The variant was picked from 27 against the trace it
-  matches; the 10 000 s run, which it also matches on every tick, is the one check outside it. The rounding of the
-  destination's fill is not determined. It is checked only on a lone 1000-unit box at normal
-  and legendary quality, with no pipe and no heater. Factorio 2.0.77, 2026-10-04.
+  matches; the 10 000 s run, which it also matches on every tick, was the one check outside it
+  until #564. Since then it also predicts, one tick at a time, every one of 390 000 ticks of
+  three fed fuel lines, two on a 1000-unit box and one on a 3000-unit one, and the D-D lines
+  settle the rounding of the destination's fill: floored. It is still fitted, not found, and
+  not run on D-T, He3-He3, a researched state or two reactors on a segment. Factorio 2.0.77,
+  2026-10-04 and 2026-10-05.
 - **Whether a mod may add a sixth quality level is unknown.** FFF #375 refers to restrictions without
   stating them and no 2.0.77 doc page found in this pass covers it. Narrowed but not measured by
   [`inverted-quality.md`](inverted-quality.md).
