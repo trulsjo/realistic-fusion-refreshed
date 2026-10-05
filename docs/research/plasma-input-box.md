@@ -169,7 +169,35 @@ pipes it read 2.3986×10⁸ at 200 000, 2.3856×10⁸ at 400 000, 2.3828×10⁸ 
 2.3825×10⁸ at 596 000. That is 3×10⁴ °C over the last 36 000 ticks, and the six-pipe box falls
 the same 3×10⁴ (2.3840 to 2.3837×10⁸ from 572 000). **So 600 000 ticks give a box that passes
 the test 0.05% (three pipes) and 0.10% (six) above the canary's 2.381386×10⁸, still
-falling.** Where it ends was not read.
+falling.** Where it ends was not read by that run.
+
+**It ends on the canary's figure**
+([#560](https://github.com/trulsjo/realistic-fusion-refreshed/issues/560)).
+`pwsh -File scripts/probe-plasma-input-box.ps1 -Ticks 2000000 -Every 20000`, 2026-10-05,
+Factorio 2.0.77 (build 84539), nothing researched (all 11 rungs asserted off), one heater a
+cell, rows every 20 000 ticks to 1 980 000. The sampled rows repeat on a 12 000-tick cycle
+against the heater, so a row is compared with the row 60 000 ticks before it, which is at the
+same point of that cycle. The table prints five figures, so "the same" below means within
+1×10⁴ °C, 4×10⁻⁵ of the reading.
+
+| 2 000 000 ticks, 1 heater | °C at 1 980 000 | every later row reads the same as the one 60 000 before it, from | `-Settle` 10⁻⁴ passes from |
+|---|---|---|---|
+| shipped, 3 pipes | 2.381512×10⁸ | 1 160 000 | 800 000 |
+| shipped, 6 pipes | 2.381512×10⁸ | 1 400 000 | 980 000 |
+| canary, 3 pipes | 2.381512×10⁸ | 120 000 | 60 000 |
+| canary, 6 pipes | 2.381512×10⁸ | 120 000 | 60 000 |
+
+- **The shipped box and the canary box end on the same temperature**, at both pipe counts, to
+  the seven figures the probe prints for a last row. The canary's 2.381386×10⁸ above is the
+  same box on another row of the 12 000-tick cycle: at 1 960 000 all four read 2.3814×10⁸, and
+  at 1 980 000 all four read 2.3815×10⁸.
+- The shipped box takes about ten times as long to get there at three pipes, and about twelve
+  times at six.
+- **The settle test as written can pass a box that is still drifting, and did.** It asks that
+  every row from some row on be within 10⁻⁴ of the LAST row, so any drift slower than that over
+  the run's tail passes. It passed the 600 000-tick run from 580 000 with the box 0.05% high
+  and falling, and it passes this run from 800 000 at three pipes, 360 000 ticks before the
+  rows stop moving. A pass means "within 10⁻⁴ of where the run ended", not "stopped".
 
 #### Two powered canary boxes on one line settle at the same temperature
 
@@ -187,8 +215,26 @@ falling.** Where it ends was not read.
   every row except 100 000 (520.65 and 522.40), and the same temperature to the four figures the
   probe prints at every row until they filled at 246 755. From the fill on they draw apart:
   2.4344 and 2.4346×10⁸ at 248 000, 2.4042 and 2.4132×10⁸ at 300 000. At 596 000 they read
-  2.3720 and 2.3965×10⁸, 1.0% apart, and both are still falling. Why the full shipped pair
-  splits was not looked into.
+  2.3720 and 2.3965×10⁸, 1.0% apart, and both are still falling.
+- **Run to 1 980 000 (#560), the two shipped boxes stay apart.** They read 2.368459 and
+  2.394605×10⁸, 1.10% apart, and have read 1.10% apart at every checked row from 1 000 000
+  (0.37% at 300 000, 1.03% at 600 000). They neither converge nor go on diverging. The first
+  box sits 0.55% under the solo figure of 2.381512×10⁸ and the second 0.55% over it. Under the
+  canary both read 2.381512×10⁸.
+- **Why: one of the two full boxes exports heat into the segment every tick, and the other
+  does not.** Read on the same day with
+  `-Pipes 3 -Ticks 301000 -Every 4000 -Trace 300000,300600 -TraceCell both`, every tick from
+  300 000 to 300 600, both boxes full. Over those 600 ticks the mod's step burned 5.4050 units
+  in the first box and 5.4426 in the second, and the engine put the same amounts back. But the
+  5.4426 units reaching the second box carried 1.0164×10⁹ unit-°C, which is 1.8675×10⁸ a unit,
+  the segment's own temperature (1.8698 to 1.8649×10⁸ over the window). The 5.4050 reaching
+  the first carried 7.1712×10⁸, only 1.3268×10⁸ a unit. A net inflow colder than the segment
+  it comes from means the box also pushed its own, hotter plasma out: at the box's 2.4040×10⁸
+  that is about 5.45 units pushed and 10.85 pulled, and 5.45 is what the other box drew. So
+  the reading fits one box making room in a full segment as it refills, and the other pushing
+  into that room before pulling back. **The order the engine takes the two boxes in was not
+  read; it is inferred from the heat.** A full line trades nothing in bulk, so this small
+  one-way trade is the only coupling left, which is why the gap holds instead of closing.
 
 #### Once the shipped line is full, the unpowered reactor falls to the floor
 
