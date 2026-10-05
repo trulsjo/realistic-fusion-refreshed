@@ -234,10 +234,67 @@ same point of that cycle. The table prints five figures, so "the same" below mea
   it comes from means the box also pushed its own, hotter plasma out: at the box's 2.4040×10⁸
   that is about 5.45 units pushed and 10.85 pulled, and 5.45 is what the other box drew. So
   the reading fits one box making room in a full segment as it refills, and the other pushing
-  into that room before pulling back. **The order the engine takes the two boxes in was not
-  read; it is inferred from the heat.** A full line trades nothing in bulk, so a small
+  into that room before pulling back. A full line trades nothing in bulk, so a small
   one-way trade of this kind would hold the gap open instead of closing it. That it is the only
   coupling left was not shown.
+- **The order is read since #572: the first reactor, then the heater, then the second
+  reactor.** That the first box is taken before the second is what the heat implied; the
+  heater's place between them is new. See
+  [The order the engine takes the two boxes in](#the-order-the-engine-takes-the-two-boxes-in).
+
+#### The order the engine takes the two boxes in
+
+([#572](https://github.com/trulsjo/realistic-fusion-refreshed/issues/572).) The fitted
+fixed-point rule of [`quality.md`](quality.md#the-1887-is-the-boxs-share-and-a-fitted-rule-reproduces-it)
+predicts every tick of a fed line with one reactor (#564). Since #572 this probe's `-Fixed`
+runs it beside the pair and beside both, one tick at a time. From the game's reading of one
+tick, each box after the mod's step, the segment and what the heater has to give, it predicts
+the next tick's two boxes, segment and heater in whole 2⁻²⁴ units, with every fill floored. A
+box pushes and then pulls; the heater's output box pushes twice. It is run in all six orders
+of the three, and a tick is a miss when any of the four figures differs at all. An order
+names what is taken first: H the heater, 1 the first reactor, which is the one next to the
+heater, and 2 the second.
+
+`pwsh -File scripts/probe-plasma-input-box.ps1 -Pipes 3 -Ticks 300000 -Every 4000 -Trace 146000,151500 -Fixed`,
+2026-10-05, Factorio 2.0.77 (build 84539), normal quality, nothing researched (all 11 rungs
+asserted off), one heater a cell, three pipes to the first reactor and twelve between the two,
+counted to the last row at 296 000. "Filling" is every tick until both boxes have read 99.9%,
+and "full" every tick from then: 148 946 and 147 054 ticks for the pair with one reactor
+unpowered, 246 755 and 49 245 with both powered. Each cell is ticks missed, and the first:
+
+| order | one unpowered, filling | one unpowered, full | both powered, filling | both powered, full |
+|---|---|---|---|---|
+| H12 | 5004, tick 122 | 24 510, tick 149 049 | 8294, tick 122 | 8205, tick 246 842 |
+| H21 | 146 162, tick 122 | 24 510, tick 149 049 | 243 561, tick 122 | 8208, tick 246 839 |
+| **1H2** | **0** | **0** | **0** | **0** |
+| 2H1 | 146 162, tick 122 | 24 510, tick 149 049 | 243 561, tick 122 | 8208, tick 246 839 |
+| 12H | 5004, tick 122 | 165, tick 149 049 | 8294, tick 122 | 8194, tick 246 842 |
+| 21H | 146 162, tick 122 | 165, tick 149 049 | 243 561, tick 122 | 8197, tick 246 839 |
+
+- **One order misses no tick: the first reactor, the heater, the second reactor.** It misses
+  none of 592 000 ticks, 296 000 in each cell, filling and full. Each of the other five
+  misses in all four columns, from tick 122 while the line fills, as the first craft reaches
+  the line. Their worst misses are 0.21 units filling and 0.10 full. No reading was off
+  the 2⁻²⁴ grid.
+- **It predicts the first box running colder, and the first box does.** With both powered and
+  the line full, the order that fits has the first box push 468.69 units of its own plasma
+  into the segment over the 49 245 ticks, and the second 19.90. The first box is taken while
+  the segment still has the room the second box's pull left on the tick before, and the
+  heater refills that room before the second box is reached. The first box reads
+  2.405249×10⁸ °C at 296 000 and the second 2.413716×10⁸, 0.35% apart, the first colder, as
+  it is at every row from 248 000, the first after the fill. The gap is still widening at
+  296 000; #560 read it at 1.10% from 1 000 000. This is the trade #560 inferred from 600
+  ticks of heat.
+- With one reactor unpowered and the line full, the fitting order has the two boxes push
+  11.29 and 10.29 units in 147 054 ticks: a box at 15 °C burns nothing, so it makes no room.
+- **1H2 is also the order the rig builds them in.** Each cell places its first reactor, then
+  its pipes and heater, then the second reactor. Whether the engine's order follows build
+  order, position or something else was not separated: no cell was built in another order.
+- Under the canary no order fits. With one reactor unpowered, none misses fewer than 60 971
+  of 61 093 ticks filling or 106 584 of 234 907 full. The rule is the `input-output` box's,
+  so that is a reading of the canary and not of the rule.
+- It is still a **fitted** rule. What is shown is that one order of it predicts the game on
+  every tick read, not that the engine computes it so.
 
 #### Once the shipped line is full, the unpowered reactor falls to the floor
 
@@ -288,7 +345,8 @@ under a hundredth on 149 616, and 15 °C on tick 150 012.
 - **The heat went into the mod's step.** Over the window the unpowered box held 5.6685×10¹⁰
   unit-°C at the start. The engine brought it 1.4119×10¹¹ more, and `control.lua`'s step took
   1.9788×10¹¹ out, leaving 1.5×10⁴: 1000 units at 15 °C. An unpowered reactor is stepped with no
-  heating, so the step only loses. Which of its loss terms does the cooling was not separated.
+  heating, so the step only loses. Radiation takes two thirds of that and the confinement loss
+  one third; see [Which of the step's terms takes it](#which-of-the-steps-terms-takes-it).
 - **The segment keeps its heat.** It read 8.9182×10⁷ °C at 146 000 and 8.6240×10⁷ at 151 496.
   From tick 150 012 the unpowered box sits at 15 °C beside a segment at 8.6×10⁷ and a powered
   box at 2.2×10⁸, and nothing moves between them.
@@ -300,6 +358,68 @@ under a hundredth on 149 616, and 15 °C on tick 150 012.
 This is the hot tail #530 found on a solo line, in
 [The rule behind the split](exchanger-coverage.md#the-rule-behind-the-split), with a second
 reactor on the cold end of it.
+
+##### Which of the step's terms takes it
+
+([#570](https://github.com/trulsjo/realistic-fusion-refreshed/issues/570).) `M.step` in
+`realistic-fusion-refreshed/scripts/reactor-logic.lua` moves an unheated plasma's heat in four
+ways, and returns none of them: it returns a temperature and a burn. Since #570 the probe's
+`-Trace` reads them off the step itself, so that nothing is worked out twice. Beside every step
+tick of the window it calls `M.step` with the unpowered box's reading before the mod, the
+shipped spec and no heating, and calls it again with a spec whose `confinement_time_s` is
+infinite. Heat is units × °C, as above.
+
+- **ash**: what was burnt, at the temperature it was burnt at. Burnt fuel leaves with its share
+  of the heat, so this lowers the amount and not the temperature.
+- **confinement**: what the second call keeps and the first does not.
+- **charged fusion heating**: the charged share of the step's fusion power. It heats the
+  plasma, so it is a gain. Joules are turned into unit-°C by the step's own heating: what one
+  paid joule raises a unit by.
+- **radiation**: whatever else the second call lost, which in `M.step` is bremsstrahlung.
+
+`pwsh -File scripts/probe-plasma-input-box.ps1 -Pipes 3 -Ticks 300000 -Every 4000 -Trace 146000,151500 -Fixed`,
+2026-10-05, Factorio 2.0.77 (build 84539), nothing researched (all 11 rungs asserted off), one
+heater, three pipes and twelve. The window is the 5500 ticks #558 traced, and the mod steps on
+916 of them, 146 004 to 151 494. It is the shipped pair's unpowered box:
+
+| term | unit-°C removed over the 916 steps | of the total |
+|---|---|---|
+| radiation | 1.3011×10¹¹ | 65.8% |
+| confinement, at the shipped 30 s | 6.9484×10¹⁰ | 35.1% |
+| ash | 1.8393×10⁷ | 0.01% |
+| charged fusion heating, a gain | −1.7341×10⁹ | −0.9% |
+| the one step that lands on the floor | 1.3244×10⁵ | under 0.001% |
+| **sum** | **1.9788×10¹¹** | |
+| the trace's reading, #558 | 1.9788×10¹¹ | |
+
+The sum agreeing with the trace checks the total and not the split: the four terms add up to
+what the step removed by construction, and the charged heating is added into radiation and
+taken out again, so a wrong joule conversion would move those two rows together and leave the
+sum alone.
+
+- **Radiation takes 65.8% of the heat and the confinement loss 35.1%.** The box is at full
+  density and cooling, which is where bremsstrahlung, going as density squared, is at its
+  largest beside a loss that goes as the heat held.
+- The step that lands on the floor is counted apart. `M.step` scales its two losses to what
+  the plasma has left above 15 °C, and the second call is scaled differently, so their
+  difference no longer says which term took what on that step.
+- **The pure simulation reproduces the box on every one of the 916 steps**, of which the last
+  247, from 150 018, are a box already at 15 °C, where there is nothing to miss. Its temperature
+  is within 2⁻²³ of the game's reading after the mod on all 916, and its amount within 2⁻²⁴
+  units. The worst temperature miss is 5.90×10⁻⁸ of the reading, on tick 149 208, and the
+  worst amount miss 5.96×10⁻⁸ units. Those are the sizes of a single-precision temperature
+  and of the 2⁻²⁴-unit amounts [`quality.md`](quality.md) fitted, so the misses are the
+  write and not the arithmetic.
+- **A box held full and left unheated reaches the floor in 1818 ticks from the traced
+  temperature, and radiation sets that time.** Run on from the box's 5.7859×10⁷ °C on tick
+  146 000, with 1000 units held and nothing else moving, `M.step` reads 15 °C after 303
+  steps, 30.3 s. Of the 5.7861×10¹⁰ unit-°C it removes, radiation takes 4.0813×10¹⁰ (70.5%)
+  and confinement 1.7324×10¹⁰ (29.9%). With no confinement loss the same run takes 397
+  steps, 2382 ticks. Confinement alone was not run, because the spec has no field that turns
+  radiation off; by arithmetic it is a 30 s exponential, 30 × ln(5.7859×10⁷ K / 288 K) =
+  366 s, about 22 000 ticks, some nine times the 2382 radiation alone takes.
+- The traced box took 4012 ticks, 146 000 to 150 012, where the full unheated box takes 1818,
+  because the engine brought it 1.4119×10¹¹ unit-°C over the window, 2.5 times what it held.
 
 **It is not this one rig's**
 ([#559](https://github.com/trulsjo/realistic-fusion-refreshed/issues/559)). The same probe on
@@ -396,7 +516,8 @@ from 468 000 to 496 000.
   ticks, the same count as a powered one: it is hot enough to burn what reaches it. The line
   never fills, so the full-line loss
   [read on `rf-reactor`](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor)
-  is not reached here. A line that did fill was not built.
+  is not reached here. He3-He3 fills this reactor's line; see
+  [An aneutronic line that fills](#an-aneutronic-line-that-fills-he3-he3).
 - **Canary: heat does not travel.** The unpowered box read 4.1473×10⁴ °C at 4000 and 15 °C at
   every row from 8000. It takes plasma all the same, and is full, at 3000 units of cold plasma,
   from tick 143 901. `control.lua` never changed it: 0 of 82 667 step ticks. The powered box
@@ -408,6 +529,53 @@ from 468 000 to 496 000.
 **The lone box**, seeded with 3000 units at 15 °C: the shipped copy holds 1525.4238 beside
 1474.5762 in its segment from the first row to 496 000, which is #531's rule again,
 3000² / (2 × 3000 − 100) = 1525.4237. The canary copy keeps all 3000.
+
+#### An aneutronic line that fills: He3-He3
+
+([#571](https://github.com/trulsjo/realistic-fusion-refreshed/issues/571).) **What it took
+was the other plasma, and no more heaters.** The probe was not changed to build it.
+`pwsh -File scripts/probe-plasma-input-box.ps1 -Plasma rf-he3-he3-plasma -Pipes 3 -Ticks 500000 -Every 4000`
+on 2026-10-05, Factorio 2.0.77 (build 84539): He3-He3 into `rf-aneutronic-reactor` and its
+3000-unit box, one heater per cell, three pipes to the first reactor and twelve between the
+two of a pair, nothing researched (all 11 rungs asserted off in both runs), rows every 4000
+ticks to 496 000. A He3-He3 reactor burns almost none of its feed, so the line fills. D-He3
+was not filled: one heater holds its box at 467 to 470 of 3000, and how many it would take
+was not worked out. The fill ticks are exact, read every tick; the first tick a full box
+reads 15 °C is exact too, since #571.
+
+| 500 000 ticks, 1 heater | solo, 3 pipes, segment 3300 | pair, one powered: powered box | unpowered box | both powered: box 1 | box 2 |
+|---|---|---|---|---|---|
+| shipped: box first at 99.9% of 3000 | 151 531 | 324 192 | 324 190 | 325 354 | 325 353 |
+| shipped: °C from the first row after the fill to 496 000 | 3.1057×10⁶ | 3.1057×10⁶ | 15 | 3.1057×10⁶ | 3.1057×10⁶ |
+| canary: box first at 99.9% | 72 162 | 144 377 | 143 901 | 144 617 | 144 616 |
+| canary: °C from the first row after the fill to 496 000 | 3.1057×10⁶ | 3.1057×10⁶ | 15 | 3.1057×10⁶ | 3.1057×10⁶ |
+
+Every heated cell's box reads 3000.0000 at every row after its fill, and every segment its
+capacity by 496 000: 3300 for the solo cell and 7500 for a pair.
+
+- **Solo.** The shipped box fills at 151 531 and reads 3.1057×10⁶ °C at every row from
+  152 000. The canary box fills at 72 162, 2.10 times sooner, holds under one unit beside it until
+  then, and ends on the same temperature.
+- **The shipped pair's unpowered reactor is at the floor once the line is full, and on every
+  row after.** Its box fills on tick 324 190 and first reads 15 °C full on tick 324 192. It
+  reads 15 °C at all 44 rows from 324 000 to 496 000, beside a powered box at 3.1057×10⁶.
+- **On this plasma it was nearly there before the fill.** The unpowered box is at 0.922 of the
+  powered one's temperature at 64 000 (3.0033 against 3.2561×10⁸), 0.653 at 128 000, 0.184
+  at 192 000 and 0.018 at 256 000 (1.1019×10⁵ against 6.0877×10⁶). Its first row at 15 °C is
+  252 000, with the box at 2340.99 of 3000. From there to the fill its rows repeat on the
+  12 000-tick cycle against the heater: 15 °C at 264 000, 276 000 and so on to 324 000, and
+  between 1.6×10³ and 1.1×10⁵ at the rows between. So the parting is the gradual one #558
+  read on `rf-reactor`, on a line whose powered reactor is itself only at 3 to 6×10⁶ °C by
+  then. The fill ends it; it does not cause it.
+- **Both powered, the two shipped boxes end on one temperature.** They fill at 325 354 and
+  325 353 and both read 3.1057×10⁶ °C from 328 000, the solo figure. The 1.10% the two
+  `rf-reactor` boxes hold apart on D-D was not seen here to the five figures printed.
+- **Canary.** The unpowered box reads 1.7497×10⁴ °C at 4000 and 15 °C at every row from
+  8000, fills with cold plasma at 143 901, and first reads 15 °C full on 143 904. The powered
+  box beside it fills at 144 377. Both powered, they fill at 144 617 and 144 616 and read
+  3.1057×10⁶.
+- **The lone box**, seeded with 3000 units at 15 °C, reads as it did on D-He3: 1525.4238
+  beside 1474.5762 shipped, all 3000 under the canary.
 
 ## The repository's gates under the canary
 
@@ -711,9 +879,9 @@ choice between the options below.
 
 ## What was not measured
 
-- D-T and He3-He3, and any researched state but the one pair at heating rung 5. The aneutronic
-  reactor is read on D-He3 with one heater, which does not fill it; a line of it that fills was
-  not built.
+- D-T, and any researched state but the one pair at heating rung 5. The aneutronic reactor's
+  full line is read on He3-He3 only (#571); D-He3 with one heater does not fill it, and a
+  D-He3 line that fills was not built.
 
 ## Options
 
@@ -744,9 +912,10 @@ Each option lists what it changes. None is chosen.
    On the aneutronic reactor, read on D-He3 with one heater (#562), the box settles at the same
    467 to 470 units either way, the segment beside it empties, and an unpowered reactor on the
    run fills with 3000 units of plasma at 15 °C where the shipped one runs within 1.6% of its
-   neighbour.
+   neighbour. On He3-He3, which fills that line (#571), the unpowered reactor ends at 15 °C
+   with either box.
 3. **Make only one reactor `input`.** This splits the fuel-line behaviour by tier, and it is
-   possible because the two reactors are separate prototypes. Both were measured, each alone: `rf-reactor` on D-D and `rf-aneutronic-reactor` on D-He3.
+   possible because the two reactors are separate prototypes. Both were measured, each alone: `rf-reactor` on D-D and `rf-aneutronic-reactor` on D-He3 and, since #571, on He3-He3.
 4. **Keep `input-output` and make the model match the game.** This changes no prototype. It
    moves the fed model onto the two-store rule #531 read, which is the work already open in
    `exchanger-coverage.md`, and it keeps pooling. Like option 1, it relies on behaviour the

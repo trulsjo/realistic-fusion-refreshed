@@ -1270,7 +1270,46 @@ off):
   what is shown is that one rule, fitted on a lone box, predicts 390 000 further ticks of three
   fed lines without a miss, and not that the game computes it that way. D-T, He3-He3, any
   researched state, more than one reactor on a segment, and quality above normal on a fed line
-  were not run.
+  were not run by #564. #573 ran the first three, below, and #572 two reactors on a segment, in
+  [`plasma-input-box.md`](plasma-input-box.md#the-order-the-engine-takes-the-two-boxes-in).
+
+**D-T, He3-He3 and a researched D-D line miss nothing either**
+([#573](https://github.com/trulsjo/realistic-fusion-refreshed/issues/573)). The same switch on
+2026-10-05, Factorio 2.0.77 (build 84539), normal quality, one heater a cell, a three-pipe cell
+and a six-pipe cell in each run. Each run is `-Pipes 3,6 -Fixed -From 12000 -Span 1` and the
+arguments its row names. The rule reports every 6000 ticks, so a 130 000-tick run is counted to
+126 000 and a 200 000-tick run to 198 000. "Nothing researched" is all 11 rungs asserted off;
+the researched run has confinement at rung 3 and the other eight rungs off, all 11 asserted.
+
+| line | pipes | ticks | destination fill floored | ceiled | rounded |
+|---|---|---|---|---|---|
+| D-T, 1000-unit box, nothing researched, `-Plasma rf-d-t-plasma -Ticks 130000` | 3 | 126 000: 4196 with the heater feeding, 121 804 without | 0 missed | 0 missed | 0 missed |
+| the same run | 6 | 126 000: 4196 and 121 804 | 0 missed | 0 missed | 0 missed |
+| He3-He3, 3000-unit box, nothing researched, `-Plasma rf-he3-he3-plasma -Ticks 200000` | 3 | 198 000: 51 464 and 146 536 | 0 missed | 2774 missed, first on tick 75 963 | 37 784 missed, first on 75 963 |
+| the same run | 6 | 198 000: 44 501 and 153 499 | 0 missed | 3004 missed, first on 79 563 | 36 204 missed, first on 79 564 |
+| D-D, 1000-unit box, confinement rung 3, `-Rungs confinement_ladder=3 -Ticks 130000` | 3 | 126 000: 4196 and 121 804 | 0 missed | 9131 missed, first on 39 605 | 38 539 missed, first on 39 605 |
+| the same run | 6 | 126 000: 4196 and 121 804 | 0 missed | 8926 missed, first on 44 524 | 36 470 missed, first on 44 525 |
+
+- **With every fill floored, the variant misses none of these 900 000 ticks**, which with
+  #564's 390 000 is 1 290 000 ticks of nine fed lines. No reading on any line was off the 2⁻²⁴
+  grid.
+- **The two He3-He3 lines fill inside the run.** The box first ends a heater cycle at 99.9% of
+  its 3000 on tick 151 562 at three pipes and 158 762 at six, and both cells end the run with
+  the box at 3000.00 and the segment at its capacity, 3300.00 and 3600.00. The reactor burned
+  15.03 of the 6315.03 units fed at three pipes and 15.76 of 6615.76 at six. The rule is
+  counted for 46 438 and 39 238 ticks past that cycle. The heater's output box held plasma on
+  51 464 and 44 501 ticks of the 198 000, where a line with room has it on four ticks of each
+  120-tick cycle (4196 of 126 000 on D-T). So the heater backing up against a full line is
+  covered on a 3000-unit box, which #564's D-He3 line never reached.
+- **The rounding separates again, and only flooring fits.** Ceiling or rounding the
+  destination's fill misses on both He3-He3 lines and both researched D-D lines, by at most
+  1.79×10⁻⁵ units on He3-He3 and 5.96×10⁻⁶ on D-D. The D-T lines do not separate them: a D-T
+  box burns 4803.14 of the 5413.75 units fed at three pipes and 4719.99 at six, ends the run
+  at 275.71 and 275.84 of 1000, and all three roundings miss nothing there.
+- Neither D-T line nor either researched D-D line fills in 130 000 ticks. The researched boxes
+  end at 894.12 and 850.54 of 1000, beside 1151.13 of 1300 and 1338.46 of 1600 in the segment.
+- It is still **fitted, not found**. Quality above normal on a fed line, a heating rung, and
+  D-He3 on a line that fills were not run.
 
 **The 1.28×10⁻⁵ excess and the factor's gap have one cause on this reading.** The same
 variant, with nothing changed between the two cells, gives the normal cell's 526.3158023 and
@@ -1390,11 +1429,14 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   526.3158023 and the 1000 s figure of 31 800 of 60 000, which is 1.887. What is not shown is
   that the game computes it that way. The variant was picked from 27 against the trace it
   matches; the 10 000 s run, which it also matches on every tick, was the one check outside it
-  until #564. Since then it also predicts, one tick at a time, every one of 390 000 ticks of
-  three fed fuel lines, two on a 1000-unit box and one on a 3000-unit one, and the D-D lines
-  settle the rounding of the destination's fill: floored. It is still fitted, not found, and
-  not run on D-T, He3-He3, a researched state or two reactors on a segment. Factorio 2.0.77,
-  2026-10-04 and 2026-10-05.
+  until #564. Since then it also predicts, one tick at a time, every one of 1 290 000 ticks of
+  nine fed fuel lines, six on a 1000-unit box and three on a 3000-unit one, on all four
+  plasmas and at confinement rung 3 (#564, #573), and the D-D and He3-He3 lines settle the
+  rounding of the destination's fill: floored. With two reactors on one segment it misses none
+  of 592 000 ticks in one order of the six, the first reactor, the heater, the second reactor
+  (#572). It is still fitted, not found, and not run at quality above normal on a fed line, at
+  a heating rung, or on a D-He3 line that fills.
+  Factorio 2.0.77, 2026-10-04 and 2026-10-05.
 - **Whether a mod may add a sixth quality level is unknown.** FFF #375 refers to restrictions without
   stating them and no 2.0.77 doc page found in this pass covers it. Narrowed but not measured by
   [`inverted-quality.md`](inverted-quality.md).
