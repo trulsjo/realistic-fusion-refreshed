@@ -113,13 +113,16 @@ on this machine on 2026-10-05 with nothing else running. It runs no probe, no ga
 `-SelfTest`, and not `load-check.ps1 -FromZips`, `locale-check.ps1` or `name-check.ps1`; its
 own `-SelfTest` proves with stand-in gates that a failing gate is named and not swallowed.
 
-**Three things run unattended, and nothing else does** (#599). `.github/workflows/gates.yml` runs
-the game-free gates — the ones that need neither Factorio nor Blender — on every pull request and
-every push to `main`: the Lua suites, `ship-check.ps1`, and `commit-check.ps1` over the commits
-that event brought. Every gate that starts the game — the ones that create a map, and
-`locale-check.ps1` and `name-check.ps1`, which only dump prototypes — every probe and every
-`-SelfTest` still runs only when a person or a session starts it, so a green check says nothing
-about `load-check.ps1`, any `scripts/check-*.ps1` or those two. **The check is advisory**: `main` has no branch protection, so a
+**One workflow runs three gates unattended** (#599). `.github/workflows/gates.yml` is the only file
+under `.github/`, and it runs the game-free gates — the ones that need neither Factorio nor
+Blender — on a pull request and on a push to `main`: each `tests/test-*.lua`, `ship-check.ps1`,
+and `commit-check.ps1` over the commits that event brought. A pull request with a merge conflict
+gets no run at all, which looks the same as one not yet run. The one other check nobody starts by
+hand is the `commit-msg` hook in the Commit messages section, which a clone opts into and a
+commit triggers. **What stays manual is the rest of what `run-gates.ps1` runs, and all of what it
+leaves out**: the default `load-check.ps1` and each `scripts/check-*.ps1`, then
+`load-check.ps1 -FromZips`, `locale-check.ps1`, `name-check.ps1`, the probes and the self-tests.
+A green check says nothing about any of those. **The check is advisory**: `main` has no branch protection, so a
 red one blocks no merge.
 
 `scripts/probe-*` are **not** gates, and `run-gates.ps1` runs none of them. A probe asserts nothing and answers
