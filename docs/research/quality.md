@@ -433,7 +433,7 @@ read at all five levels; only the two ends are shown, and "flat" means all five 
 | `rf-heater` | `assembling-machine` | **`crafting_speed`** | 1 | **2.5** | No. Plasma supply, which ADR 0016 makes a player lever anyway |
 | | | `energy_usage` | 5 MW | **5 MW** | — (`quality_affects_energy_usage` is `false`) |
 | | | fluid boxes | 1000/1000/100/100 | flat | — |
-| `rf-heat-exchanger` | `boiler` | **`energy_consumption`** | 40 MW | **100 MW** | No |
+| `rf-heat-exchanger` | `boiler` | **`energy_consumption`** | 40 MW | **100 MW** | No. **This row predates #227**: it was read on 2026-08-21 at a 40 MW base, and the base has been 90 MW since 2026-09-10 — see the callout under this table. The legendary figure at that base is not measured; [#609](https://github.com/trulsjo/realistic-fusion-refreshed/issues/609) is to measure it (marked 2026-10-06, #615) |
 | | | fluid boxes | 200 / 200 | flat | — |
 | `rf-hc-exchanger` | `boiler` | **`energy_consumption`** | 400 MW | **1000 MW** | No |
 | | | fluid boxes | 1000 / 1000 | flat | — |
@@ -1033,7 +1033,10 @@ spends 75 MW and asks 90.
 | `acc-spare-load` | 75 MW | the same | the same | **0 on all 33 rows** |
 
 The five that are predicted are within 2.6e-8 MW on every row. `acc-tert` misses by the
-accumulators' whole predicted draw, as it does unresearched.
+accumulators' whole predicted draw, as it does unresearched. *(The 2.6e-8 is #538's run, with
+the accumulators' discharge read and not predicted. #544's table, below, gives `acc-spare`
+2.5e-8 at this rung from a later run that predicts the discharge: two runs, not one figure
+quoted twice. Noted 2026-10-06, #615.)*
 
 **Accumulator to accumulator: nothing, the fourth pairing of four**
 ([#538](https://github.com/trulsjo/realistic-fusion-refreshed/issues/538)). Same runs, a cell
@@ -1132,7 +1135,10 @@ class: the supply and the discharge together are under the reactor's ask on ever
 nothing is left for the load in any reading.
 
 In the two that miss, the reactor still matches on every row, within 1.25e-6 MW unresearched
-and 2.5e-8 at rung 5. The miss is the `tertiary`-class sink. From the second second on, the
+and 2.5e-8 at rung 5. *(That is the figure #544's table gives `acc-spare`, whose rows the
+reactor's are. #538's run at the same rung, above, read 2.6e-8 over the five cells it
+predicted; noted 2026-10-06, #615.)* The miss is the `tertiary`-class sink. From the second
+second on, the
 reactor asks exactly its spend, which the supply covers, and the store is predicted to give
 the sink its whole ask: 5.4 MW to the `tertiary` load and 4.5 to the six empty accumulators,
 on rows 2 to 30 at both rungs. In the first second the reactor's buffer fills first and the
