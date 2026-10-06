@@ -36,15 +36,23 @@ not `code-review:code-review`, which is the plugin pass and runs only when asked
    > code*, binds you. Then review `<scratch>/branch.diff` (the diff against `main`) against
    > `<evidence files>`, which hold `<the probes' raw output | the gate results>`.
    >
+   > The branch claims to resolve `<#n, #n>`. Read each with the **Read an issue** command in
+   > `docs/agents/issue-tracker.md` and hold the diff against its acceptance criteria.
+   >
    > You are read-only: edit, commit and run nothing that changes the working tree. If proving a
    > finding takes a planted change, make your own worktree first, as the third rule says. Scratch
    > files go in `<scratch>/reviewer/`.
    >
-   > Return every finding you verified as a numbered list. For each: the file and the quoted
-   > words or code, what is wrong, the source that shows it, and a score of 0, 25, 50, 75 or 100
+   > Return every finding as a numbered list, one you could not verify included, at 25. For
+   > each: the file and the quoted words or code, what is wrong, the source that shows it, and a
+   > score of 0, 25, 50, 75 or 100
    > — 0 a false positive, 25 possibly real and unverified, 50 real but minor or rare, 75
    > verified and important, 100 certain and it will be hit. Report every one whatever it scores.
    > Say so plainly if you found nothing, and say what you did not check.
+
+   **A long report arrives cut off**, and a subagent cannot write its report to a file. If the
+   last finding stops mid-sentence, ask the reviewer for the rest with SendMessage before fixing
+   anything. On this skill's first run the report stopped inside the sixth of nine findings.
 
 4. **Fix, commit, and continue the same reviewer** with SendMessage to the name from step 3. Do
    not spawn a second one. Hand it the diff of the fixes and nothing else:

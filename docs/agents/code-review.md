@@ -17,7 +17,8 @@ when it matters which.
 2. **[Review the prose, not only the code](#review-the-prose-not-only-the-code)** — decided by Truls, 2026-09-03, after
    [#230](https://github.com/trulsjo/realistic-fusion-refreshed/pull/230); its third rule widened from
    the file to the repository on 2026-09-14, settling [#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331);
-   its last rule narrowed 2026-10-05 (#592).
+   its last rule narrowed 2026-10-05 (#592); a rule for the notes' figure tables added 2026-10-06
+   (#602).
 3. **[A review that plants takes its own worktree](#a-review-that-plants-takes-its-own-worktree)** —
    [#311](https://github.com/trulsjo/realistic-fusion-refreshed/issues/311), after the review of
    [#309](https://github.com/trulsjo/realistic-fusion-refreshed/pull/309) on 2026-09-10.
@@ -85,7 +86,8 @@ Decided by Truls, 2026-09-03, after
 file to the repository on 2026-09-14, settling
 [#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331). Its last rule, on the
 fixed state, was narrowed on 2026-10-05, settling
-[#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592).
+[#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592). The rule for a note's
+`## Current figures` table was added on 2026-10-06 (#602).
 
 **Every gate in this repository checks machinery. None of them reads English.** `load-check.ps1`
 proves the prototypes load and the invariants hold; `ship-check.ps1` proves the mods say what ADR
@@ -118,15 +120,15 @@ occurrence" and "change every occurrence" are not the same instruction. Read the
 block carries that note — a date, an issue number, or both — and move on. What the rule looks for
 is an old figure still presented as current.
 
-**A change to a figure in a note changes its row in that note's table in the same commit.** Since
-2026-10-06 (#602) seven notes under `docs/research/` open with a `## Current figures` table, one row
-for each figure the note stands behind. A figure that moves in a section and not in its row leaves
-the old one at the top of the note, presented as current. A figure a change supersedes loses its
-row.
-
 **This binds the reviewer.** All three escapes #331 records were reviewer misses on changes whose
 own files were correct. An author who greps before opening the pull request saves a round, but the
 obligation lives here, in the review.
+
+**A change to a figure in a note changes its row in that note's table in the same commit.** Since
+2026-10-06 (#602) seven notes under `docs/research/` open with a `## Current figures` table: the
+headline figures the note stands behind, and a grid as a few of its cells or as counts, not the
+note's every figure. A figure that moves in a section and not in its row leaves the old one at the
+top of the note, presented as current. A figure a change supersedes loses its row.
 
 **Review the fixed state, not just the original.** A second round on work that has already passed
 review and verification is worth running, and this file exists because it found more than the first.
