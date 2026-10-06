@@ -7,7 +7,9 @@ Issues and PRDs for this repo live as GitHub issues. Use the `gh` CLI for all op
 - **Create an issue**: `gh issue create --title "..." --body "..."`. Write a multi-line body to a file and pass `--body-file <path>`; the same goes for `gh issue comment` and `gh pr create`. Heredoc bodies passed through the Bash tool have failed here with `unexpected EOF while looking for matching '`. Every command that failed ran past 60 lines; the trigger is not pinned down.
 - **Blocking between issues**: when filing tickets, set each blocking edge as a native GitHub issue dependency as the tickets are created, with the `gh api` call under Wayfinding operations below. A ticket body that has a `## Blocked by` section keeps it; the edge is set as well.
 - **Pull request body**: one `Closes #<n>` line for each ticket the branch resolves.
-- **Read an issue**: `gh issue view <number> --comments`, filtering comments by `jq` and also fetching labels.
+- **Read an issue**: `gh issue view <number> --json title,body,labels,comments --jq '{title, body, labels: [.labels[].name], comments: [.comments[].body]}'`
+- **Read a pull request**: `gh pr view <number> --json title,body,comments --jq '{title, body, comments: [.comments[].body]}'`, and `gh pr diff <number>` for the diff.
+- **Not `--comments` without `--json`**: under the Bash tool here `gh issue view <number> --comments` prints the comments and no body, so nothing at all for an issue with no comments (gh 2.102.0, 2026-10-06).
 - **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
 - **Comment on an issue**: `gh issue comment <number> --body "..."`
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
@@ -21,7 +23,7 @@ Infer the repo from `git remote -v` — `gh` does this automatically when run in
 
 When set to `yes`, PRs run through the same labels and states as issues, using the `gh pr` equivalents:
 
-- **Read a PR**: `gh pr view <number> --comments` and `gh pr diff <number>` for the diff.
+- **Read a PR**: the **Read a pull request** command under Conventions.
 - **List external PRs for triage**: `gh pr list --state open --json number,title,body,labels,author,authorAssociation,comments` then keep only `authorAssociation` of `CONTRIBUTOR`, `FIRST_TIME_CONTRIBUTOR`, or `NONE` (drop `OWNER`/`MEMBER`/`COLLABORATOR`).
 - **Comment / label / close**: `gh pr comment`, `gh pr edit --add-label`/`--remove-label`, `gh pr close`.
 
@@ -33,7 +35,7 @@ Create a GitHub issue.
 
 ## When a skill says "fetch the relevant ticket"
 
-Run `gh issue view <number> --comments`.
+Run the **Read an issue** command under Conventions.
 
 ## Wayfinding operations
 
