@@ -53,6 +53,7 @@ to a figure below changes its row here in the same commit (docs/agents/code-revi
 | Fed model, two heaters, the six cells one heater cannot fill | all six full; most burned 3.812 u/s; largest of the twenty-four MW figures 161.4 | 2026-10-04 | none (pure simulation) | the six supply-limited heating × confinement cells, at every capture | [The supply-limited cells on two heaters](#the-supply-limited-cells-on-two-heaters) |
 | Game, D-D, two heaters | 106.7 – 128.0 MW, 999.9 held, 7.047e8 °C | 2026-10-04 | 2.0.77 | heating 4 + confinement 2, capture 0.85 | [The supply-limited cells on two heaters](#the-supply-limited-cells-on-two-heaters) |
 | Game, D-D, two heaters | 141.1 – 169.3 MW, 999.8 held, 9.082e8 °C | 2026-10-04 | 2.0.77 | all ladders complete | [The supply-limited cells on two heaters](#the-supply-limited-cells-on-two-heaters) |
+| Game, D-D, research states measured on a fuel line, by heater count | twenty on one heater, three on two, three on four; twenty-one distinct, so seventy-five of the ninety-six unmeasured | 2026-10-03 to 2026-10-04, counted 2026-10-06 (#615) | 2.0.77 | the twenty-one states the sections name | [The supply-limited cells on two heaters](#the-supply-limited-cells-on-two-heaters) |
 
 **Measured 2026-09-20 on the pure simulation** — `realistic-fusion-refreshed/scripts/reactor-logic.lua`
 through `M.settle`, box full and never starved, settled 1200 s at one tick, fills swept at the 5%
@@ -636,6 +637,10 @@ figures are inside the game's bracket.
 measured part-full: the top corner, confinement 2 + heating 4, and confinement 3 + heating 2.
 The full cell nearest the line, confinement 2 + heating 3, is measured full. One state with
 plant efficiency beside another ladder is measured, and its plasma is that other ladder's.
+*(One on one heater. A second, confinement and plant efficiency at rung 3 each, was measured on
+four heaters on 2026-10-04, under
+[The default four-heater run, settled](#the-default-four-heater-run-settled); noted #615,
+2026-10-06.)*
 
 ### Why the box fills slower than the fed model
 
@@ -1285,7 +1290,8 @@ box is part-full and the reactor burns all 2.5 u/s.
 
 **No cell is `~` on the fed map.** Under-feeding raises what a fed reactor sells in twenty-nine
 of the thirty-two `ok` cells, and in none of them past 90. The largest gain is 4.6 MW, at the
-plant-efficiency rung 3 corner: 60.95 MW at full feed and 65.56 at 30% of it.
+plant-efficiency rung 3 corner: 60.95 MW at full feed and 65.56 at 30% of it. The grid below
+rounds to one decimal and shows that cell as 60.9 / 65.6.
 
 **One cell is `X` by a hair.** Capture 0.9, τ 40 s, 60 MW sells 90.02 MW at full feed. Every
 other cell is at least 1.0 MW from the line, at full feed and tuned.
@@ -1409,16 +1415,31 @@ and 623.8 units. The four-heater run under
 [The default four-heater run, settled](#the-default-four-heater-run-settled) is the second
 state again, and reads the same point.
 
-**The seventy-six states still unmeasured on a fuel line** are every state with two or more
-ladders researched, less the top corner and the seven combination states measured above:
+**The seventy-five states still unmeasured on a fuel line** are every state with two or more
+ladders researched, less the top corner and the eight combination states measured above:
 ninety-six, less the unresearched corner, the eleven single-ladder states, the far corner and those
-seven. The fed model reads all of them, and it has matched the game at all twenty measured.
+eight. Seven of the eight are on one heater, under
+[Five combination states, nearest the line](#five-combination-states-nearest-the-line) and
+[Two more combination states](#two-more-combination-states). The eighth, confinement and plant
+efficiency at rung 3 each, is on four heaters only, under
+[The default four-heater run, settled](#the-default-four-heater-run-settled). The fed model reads
+all of them, and it has matched the game at all twenty measured on one heater. The twenty-first
+has no fed figure set beside it there: its 5.341×10⁸ °C is the fed model's for confinement
+rung 3. *(Until #615, 2026-10-06, this said seventy-six states, seven combination states and
+"all twenty measured". That count left out the four-heater state, run 2026-10-04. Seventy-six
+is still the count unmeasured on ONE heater. The count is of D-D runs: the D-T runs above are
+at research states, and on heater counts, it already holds.)*
 
 ## What this does not cover
 
 - **THE FED REACTOR, measured at twenty of ninety-six states** on one heater, at three on
-  two and at one on four — see [The fed reactor, one heater](#the-fed-reactor-one-heater) above. Every figure outside that
-  section is the held reactor on the pure model.
+  two and at three on four — see [The fed reactor, one heater](#the-fed-reactor-one-heater) above. Every figure outside that
+  section is the held reactor on the pure model. *(Until #615, 2026-10-06, this said one on
+  four. The three are every ladder at its top, confinement rung 3 alone, and confinement and
+  plant efficiency at rung 3 each, all under
+  [The default four-heater run, settled](#the-default-four-heater-run-settled). The last is
+  measured on no other heater count, so twenty-one distinct states are measured in all. These
+  count D-D runs.)*
 - **THE D-T TIER.** The coverage question is asked of `rf-d-d-plasma` only. A D-T reactor is a
   different sizing question and `rf-hc-exchanger` is the machine on the other end of it. D-T
   appears above twice, for a fuel line and not for sizing: the four-heater run (#533) and the
