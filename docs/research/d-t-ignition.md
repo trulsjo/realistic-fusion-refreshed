@@ -98,7 +98,20 @@ note, which `GLOSSARY.md` names and which a heater-fed reactor is not (#109):
 |---|---|---|---|---|
 | ~~D-D, 20 min~~ | ~~8.77×10⁸ °C~~ | ~~2.14~~ | ~~133 MW~~ | ~~3.7 u/s~~ |
 | **D-D, 20 min (#52)** | **2.42×10⁸ °C** | **0.32** | **56.1 MW** | 1.0 u/s |
-| D-T, 1 min | 2×10⁹ °C — the clamp *as it then was; 3.25×10⁹ since #58* | 96 | 4 127 MW | 34 u/s |
+| ~~D-T, 1 min~~ | ~~2×10⁹ °C~~ — the clamp *as it then was; 3.25×10⁹ since #58* | ~~96~~ | ~~4 127 MW~~ | ~~34 u/s~~ |
+
+> **The D-T row is struck as pre-#52 and at the old ceiling (marked 2026-10-06, #613).** Its Q, its
+> thermal output and its burn were taken without the radiation term and pinned at the 2×10⁹ °C clamp
+> of the time. What this note records since, with radiation: **3.25×10⁹ °C and 26.0 u/s at one
+> minute** ("Both readings of the supply ratio" below), and Q 73.1 quoted beside that temperature in
+> the blockquote under the next table. No thermal output at one minute is on record since.
+>
+> **The D-D row's 1.0 u/s is flagged, not struck (2026-10-06, #613).** It counts plasma, and a unit
+> of D-D plasma is a unit of deuterium, one for one — recipe `rf-d-d-plasma` in
+> `realistic-fusion-refreshed/prototypes/recipes/d-d.lua`. So it is the same quantity as the
+> **0.548 u/s of deuterium** "Both readings of the supply ratio" gives for the same settled reactor,
+> and the two disagree. 0.548 is the one that section ties to the 0.137 u/s of tritium
+> `tests/test-reactor-logic.lua` pins; what produced 1.0 is not on record.
 
 D-D balances: heating plus alpha self-heating against the confinement loss, partway up the curve.
 D-T does not. At n = 10²⁰ m⁻³ and τ_E = 30 s this reactor passes the Lawson criterion for D-T by
@@ -110,7 +123,7 @@ where the cross-section is falling.
 
 | ceiling | settles at | Q | thermal out |
 |---|---|---|---|
-| 2×10⁹ °C (then shipped) | 2×10⁹ (pinned) | 96 | 4 127 MW |
+| ~~2×10⁹ °C (then shipped)~~ | ~~2×10⁹ (pinned)~~ | ~~96~~ | ~~4 127 MW~~ |
 | ~~5×10⁹ °C~~ | ~~4.63×10⁹~~ | ~~58.9~~ | ~~2 547 MW~~ |
 | ~~10¹⁰ °C~~ | ~~4.63×10⁹~~ | ~~58.9~~ | ~~2 547 MW~~ |
 | ~~10¹¹ °C~~ | ~~4.63×10⁹~~ | ~~58.9~~ | ~~2 547 MW~~ |
@@ -124,6 +137,11 @@ where the cross-section is falling.
 >
 > The shape the table was drawn to show survives: past about 4×10⁹ the ceiling stops mattering,
 > because the plasma settles below it whatever it is set to.
+>
+> **Two marks added 2026-10-06 (#613).** The first row is struck too: it is the one-minute D-T row
+> of the table before this one, radiation-free and pinned at the ceiling of the time. And the
+> 3.25×10⁹ °C above is the reading **at one minute**; settled, at twenty minutes, it is 3.27×10⁹
+> ("Both readings of the supply ratio" below).
 
 ~~**The shipped ceiling stays where it is.** One reason holds, and it is the second one below.~~
 **It moved to 5×10⁹ on 2026-08-25** (#58, ADR 0025), and neither of the two reasons below is why it
@@ -162,7 +180,8 @@ reaction runs free beneath it, not where a readout stops.
 
 ~~What it costs as it stands is that the temperature reading is **pinned at 2×10⁹ for every D-T
 reactor**, whatever it is doing.~~ **It is not pinned any more.** Measured through the shipped
-`step()` at the raised ceiling, D-T settles at **3.25×10⁹ °C** at the shipped 30 s of confinement and
+`step()` at the raised ceiling, D-T settles at **3.25×10⁹ °C** at the shipped 30 s of confinement
+*(the reading at one minute; 3.27×10⁹ settled, at twenty — marked 2026-10-06, #613)* and
 moves with the ladder to **3.92×10⁹ °C** at the top rung — so the reading is a measurement again, and
 it moves with the reactor. `scripts/check-d-t.ps1` sees 3.13×10⁹ °C in game.
 
@@ -201,6 +220,14 @@ fed** and the output follows the fuel line:
 | 10 u/s | 1 170 MW | 10 u/s | | |
 | 20 u/s | 2 297 MW | 20 u/s | | |
 | 40 u/s | 3 888 MW | 34 u/s — **fuel-saturated** | | |
+
+> **Every cell of this table is pre-#52 and at the old 2×10⁹ °C ceiling (marked 2026-10-06, #613).**
+> It falls under "every figure in this note below this line is the radiation-free one" above, and
+> "the ceiling" in the sentence introducing it is the clamp as it then was. The two one-heater cells
+> have later readings, in the two paragraphs that follow. The saturated burn has one: a settled D-T
+> reactor burns 26.0 u/s at one minute and 25.9 settled, with radiation, not 34 ("Both readings of
+> the supply ratio" below). The rest — 606, 1 170, 2 297 and 3 888 MW, and the D-D cell's 103 MW —
+> have no later reading on record.
 
 **The one-heater D-D cell is superseded (#440, 2026-10-01, Factorio 2.0.77).** Measured with
 radiation, one heater, nothing researched: **48.9 – 58.6 MW** at 126 000 ticks, against the 86
@@ -251,7 +278,8 @@ turbine, 49 to 59 turbines unresearched and 56 to 67 researched, against the 55 
 So ignition removes temperature as a control input and hands the player a different throttle: the
 fuel line. Below saturation the relationship is affine and very nearly proportional — doubling the
 feed gives 1.87× the power, the shortfall being the 50 MW of confinement heating that is recovered
-either way and does not double.
+either way and does not double. *(1.87× is the table's 606 MW over its 324, both pre-#52 cells; no
+such ratio with radiation is on record. Marked 2026-10-06, #613.)*
 
 ## Does the fuel chain support it?
 
@@ -322,7 +350,9 @@ of heating. The grid below carries the other twenty-three.
 - A settled D-T reactor burns **25.9 u/s of plasma**, so 25.9 u/s of `rf-d-t-mix`, so
   **13.0 u/s of tritium**.
 - A settled D-D reactor burns **0.548 u/s** of deuterium and breeds a quarter of that back as
-  tritium: **0.137 u/s**.
+  tritium: **0.137 u/s**. *(Deuterium and D-D plasma are one count — recipe `rf-d-d-plasma` is one
+  for one — so this is the quantity the equilibrium table's D-D row gives as 1.0 u/s, and the two
+  disagree. See the note under that table; flagged 2026-10-06, #613.)*
 
 **94.7 D-D reactors feed one D-T reactor** — the supply ratio **per saturated reactor**; per heater
 it is 9.12. Together that is 8 465 MW from 95.7 reactors, **88.5 MW
@@ -478,6 +508,13 @@ a D-T reactor breeds nothing, so its collector stays empty  -- 0 units in the co
 the plasma heater turns Core's D-T mix into D-T plasma  -- 200 units of rf-d-t-plasma, status full_output
 ```
 
+> **This transcript is pre-#52 and at the old ceiling (marked 2026-10-06, #613).** It falls under
+> "every figure in this note below this line is the radiation-free one", `2e+09` is the clamp as it
+> was before #58, and the 133 MW the next paragraph compares it with is struck in the equilibrium
+> table. The one later reading this note has from this rig is the D-T temperature: 3.13×10⁹ °C
+> (2026-08-25, "Both of those are settled" above). No later 37.1×, 3924 MW, 105.8 MW or D-D
+> temperature from it is on record here.
+
 The D-D figure is 106 MW rather than the 133 MW above because two minutes is not twenty: that
 reactor is at 7.7×10⁸ °C and still climbing. The D-T reactor reached its ceiling inside the first
 minute and the run is measuring its steady state.
@@ -507,6 +544,11 @@ Outside Factorio, at the same density and the same temperature and with no power
 |---|---|---|
 | **D-T** | **rises** to 6.046×10⁸ | 2×10⁹ °C — then the top of its range; 5×10⁹ since #58 |
 | **D-D** | falls to 5.998×10⁸ | 7.45×10⁴ °C — out of the fusing range entirely |
+
+> **Both rows are pre-#52 readings, and the D-T one is at the old ceiling (marked 2026-10-06,
+> #613).** They fall under "every figure in this note below this line is the radiation-free one".
+> No later reading exists; #611 re-takes them, and until it does none of the four is a current
+> figure.
 
 Three and a half orders apart, from the same starting point, on the same reactor. That is ignition,
 and `tests/test-reactor-logic.lua` asserts it as a separation rather than as two values because both
@@ -554,6 +596,12 @@ climbing before the shortfall begins, so a settle too short to have converged fa
 quietly rebasing every figure in the report.
 
 What it found, against that settled baseline:
+
+> **Every figure in the bullets below is a pre-#52, old-ceiling reading awaiting #611 (marked
+> 2026-10-06, #613).** They fall under "every figure in this note below this line is the
+> radiation-free one", and "the clamp" in them is the 2×10⁹ °C ceiling as it then was, not the
+> 5×10⁹ of #58. No later reading of any of them is on record; #611 re-takes them, and until it does
+> none is a current figure. The settle curve above, 86 MW to 324, is the same pre-#52 run.
 
 - **A brownout is not a power cut, and the rig had to be built so.** `rf-reactor`'s energy source is
   `usage_priority = "secondary-input"` — *"used for all other machines"* in the 2.0.77 docs, the same
