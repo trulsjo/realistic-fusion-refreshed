@@ -9,6 +9,8 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 `Collectors attached (#62)`, dated 2026-09-03, were taken before #72 and #425 each added to the
 step: +0.88 and +0.83 µs per reactor per tick, both rows below. The latest reading of the shipped
 D-D step on the vented rig is the 5.257 µs dated 2026-09-20, not the 3.68 µs dated 2026-09-03.
+The collected and blanketed rows of that date, and the shares of a tick beside them, are from the
+same sitting, and this table holds no later per-reactor cost for those configurations.
 
 | Figure | Value | Measured | Game version | Research state | Section |
 |---|---|---|---|---|---|
