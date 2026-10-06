@@ -195,7 +195,7 @@ end
 -- both GREEN, because neither is a fault. A reactor that is merely off its best density is working.
 --
 -- AND WHY "STARVED" IS NO LONGER "NO PLASMA". It used to be, which was safe only while less plasma
--- unambiguously meant less power. It does not (ADR 0016), and CONTEXT.md now separates the two
+-- unambiguously meant less power. It does not (ADR 0016), and GLOSSARY.md now separates the two
 -- words: under-supplied is held below full deliberately and may be the best state a reactor can be
 -- in; starved is held below the density at which it is worth running. That line is
 -- reactor-logic.density_curve's `floor`, and it is MEASURED per confinement rung rather than

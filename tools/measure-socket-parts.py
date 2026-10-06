@@ -7,7 +7,7 @@
     python tools/measure-socket-parts.py <...> --direction west --radius 0.249 \
            --part "accent band" --window 203..206    # read one part through a window you name
 
-A BENCH, NOT A CHECK, in this repository's own three words for a script (CONTEXT.md, Measurement
+A BENCH, NOT A CHECK, in this repository's own three words for a script (GLOSSARY.md, Measurement
 words). A check asserts an invariant and blocks on it; a probe asserts nothing; a BENCH measures a
 quantity, reports it, and asserts only its own validity -- it refuses to return a number it cannot
 stand behind. That last sentence is this whole file. It says nothing about whether a socket is

@@ -240,7 +240,7 @@ machines with `rf-pipe`, whose connections carry the plasma category (#26), so i
 reactor energy at all and measured the containment rule instead of the question. Reactor energy is an
 ordinary fluid today and an ordinary pipe carries it, so the control uses vanilla `pipe`. That is the
 interim state rather than the intended one: ADR 0018 decides "No pipe entity carries either, and none
-is added", and `CONTEXT.md` records that no prototype carries an energy category yet.
+is added", and `GLOSSARY.md` records that no prototype carries an energy category yet.
 
 ## What this settles, and what it does not
 

@@ -27,7 +27,7 @@ reactor. That coupling *was* the network.
 Three things bear on the choice.
 
 1. **ADR 0010 already replaced the substrate.** It specifies four separate plasma fluids —
-   `rf-d-d-plasma`, `rf-d-t-plasma`, `rf-d-he3-plasma`, `rf-he3-he3-plasma` — and `CONTEXT.md` fixes the
+   `rf-d-d-plasma`, `rf-d-t-plasma`, `rf-d-he3-plasma`, `rf-he3-he3-plasma` — and `GLOSSARY.md` fixes the
    language: *"Each reaction has its own plasma."* One plasma per reaction is mutually exclusive with one
    mixed plasma running seven channels. The redesign's network, as built, was already off the table
    before this decision was taken.

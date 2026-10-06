@@ -47,7 +47,7 @@
 
     WHAT IT SHOOTS, and which of #390's questions each one is for. Every frame is taken at zoom 8
     AND at zoom 1, because the miss being visible under magnification and invisible where a player
-    meets it are different findings (CONTEXT.md, Zoom):
+    meets it are different findings (GLOSSARY.md, Zoom):
 
       exchanger-west-*    THE SUBJECT AND ITS CONTROL IN ONE FRAME. The west short end carries a
                           contained rf-reactor-energy socket and a plumbable water socket two tiles

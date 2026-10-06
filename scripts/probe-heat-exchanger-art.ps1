@@ -7,7 +7,7 @@
     A PROBE, NOT A CHECK. Exit 0 means it ran and wrote the pictures, never that the art is good.
     The question it answers is the one no gate can: does the rendered building read correctly in
     the game, at zoom 1 -- 32 px to the tile, the game's own camera, the size a player meets it at
-    (CONTEXT.md, Zoom) -- and again magnified, beside the machines it stands next to? load-check proves
+    (GLOSSARY.md, Zoom) -- and again magnified, beside the machines it stands next to? load-check proves
     the sheets exist and agree with the prototype's footprint (#250); nothing proves they look
     right. That is a person looking, and this is what puts the pictures in front of them (#252).
 
@@ -304,7 +304,7 @@ script.on_event(defines.events.on_tick, function()
   tiles_shot("pipes.png",        solo.pipes_x,   0.5, solo.pipes_w, solo.pipes_h, 3, 0)
   tiles_shot("rotations.png", g.x, g.y, 2 * g.pitch + 4, 2 * g.pitch + 4, 1.5, 0)
 
-  -- ZOOM 1 -- 32 px to the tile, the size a player meets the machine at (CONTEXT.md, Zoom). Every
+  -- ZOOM 1 -- 32 px to the tile, the size a player meets the machine at (GLOSSARY.md, Zoom). Every
   -- other frame above is magnification. #359 asks whether two accents can be told apart where they
   -- are MET, and this machine is the hard case: tools/measure-accent-separation.py reads its steam
   -- and water accents 11.7 dE00 apart at their closest, the tightest pair on any sheet, and draws

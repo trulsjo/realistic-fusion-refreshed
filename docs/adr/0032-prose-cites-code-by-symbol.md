@@ -103,7 +103,7 @@ ambiguity not arise.
 
 ### Which citations are ours
 
-Swept 2026-09-09 across `docs/`, `CONTEXT.md`, `README.md`, `models/` and our own Lua and PowerShell.
+Swept 2026-09-09 across `docs/`, `GLOSSARY.md`, `README.md`, `models/` and our own Lua and PowerShell.
 Roughly 110 line citations point at the predecessor archives, the base game, Space Age or a
 third-party mod. **Forty-five point into this repository:**
 
@@ -185,7 +185,7 @@ which is outside the rule. So no source file in this repository violates it.
   > gap in the script's help. Two smaller gaps came with it: a continuation whose path sits on an
   > earlier line, and one written without backticks.
 - **The gate reads `scripts/` and `docs/` only.** `$citing` is the files directly in `scripts/` plus
-  `docs/**/*.md`. It does not read `CONTEXT.md`, `README.md`, `models/` or any `.lua`, so decision
+  `docs/**/*.md`. It does not read `GLOSSARY.md`, `README.md`, `models/` or any `.lua`, so decision
   item 5 is a convention a reviewer keeps, not one a run enforces. Say so in the script rather than
   letting a green run imply otherwise.
 

@@ -26,7 +26,7 @@ data:extend({
   -- it in that table, 86 MW, is superseded: #440 measured one heater, nothing researched, at 48.9
   -- to 58.6 MW on 2026-10-01 against Factorio 2.0.77.
   --
-  -- THIS RATE IS THE PER-HEATER READING OF THE SUPPLY RATIO (CONTEXT.md, #290): one heater on the
+  -- THIS RATE IS THE PER-HEATER READING OF THE SUPPLY RATIO (GLOSSARY.md, #290): one heater on the
   -- mix takes 1.25 u/s of tritium and a settled D-D reactor breeds 0.137, so a heater costs 9.12
   -- D-D reactors. The other reading, what a SATURATED D-T reactor costs, is 94.7 -- ten heaters'
   -- worth. Quote neither without saying which.

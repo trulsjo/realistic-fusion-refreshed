@@ -7,7 +7,7 @@ disable-model-invocation: true
 # /render-machine rf-<machine>
 
 Produces **rendered art** for one machine: the sprite set, icon and `manifest.json` under
-`realistic-fusion-refreshed-assets/graphics/rendered/<machine>/`. Vocabulary is `CONTEXT.md`'s
+`realistic-fusion-refreshed-assets/graphics/rendered/<machine>/`. Vocabulary is `GLOSSARY.md`'s
 **Art** section: mockup, rendered art, look note, house style, model, regenerate.
 
 The skill writes PNGs, the manifest, `geometry.json` and, on regenerate, the model. It changes no

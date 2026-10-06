@@ -92,13 +92,13 @@ cells lost, they lost it to the shortfall and not to the clock. "net MW" is outp
 across the whole shortfall.
 
 **Every "MW lit" here is a HEATER-FED figure and not a settled one**, which is the distinction
-`CONTEXT.md` names under **operating point** and the thing that made `dd` look like it contradicted
+`GLOSSARY.md` names under **operating point** and the thing that made `dd` look like it contradicted
 the rest of the repository (#109). These reactors are held by a heater that cannot fill them, so every
 one of them is supply-limited -- the cell readings above say `reactor low_power, heater low_power` --
 and a thinner plasma settles hotter and sells more. This run's `dd` cell was lit at
 **589.7 units and 1.1e+9 C**, selling
 **85.23 MW**. The same reactor sitting FULL at its own equilibrium sells far
-less; `CONTEXT.md` carries that figure, because it is a property of the simulation rather than of
+less; `GLOSSARY.md` carries that figure, because it is a property of the simulation rather than of
 this rig and nothing here measures it. Both are right, and neither is the other.
 
 Every figure in this paragraph comes out of the run above rather than being typed here, which is the

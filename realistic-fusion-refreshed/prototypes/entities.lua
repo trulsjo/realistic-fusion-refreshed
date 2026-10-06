@@ -25,7 +25,7 @@ local rendered = require("__realistic-fusion-refreshed-assets__.graphics.rendere
 -- What a reactor's tooltip cannot say for itself. Both reactors are boilers (ADR 0011), so the
 -- engine reports the boiler's energy_consumption as "Max consumption" -- 1 W, seven orders below
 -- the truth, because the real draw is spent out of buffer_capacity by control.lua and the engine
--- has no way to know. That figure is a HOST ARTEFACT in CONTEXT.md's sense: it belongs to the
+-- has no way to know. That figure is a HOST ARTEFACT in GLOSSARY.md's sense: it belongs to the
 -- prototype the reactor is built on and not to the simulation, and the rule there is to explain
 -- one rather than correct it, because correcting this one hands the boiler a fluid conversion rate
 -- proportional to it -- which is precisely what the 1 W is for.
@@ -49,7 +49,7 @@ end
 -- explicitly where the simulation reads it or where it defines what the machine IS; everything else
 -- is inherited. Core's entities.lua states the same rule over its own five clone sites.
 --
--- THE WORD IS "SET EXPLICITLY" AND NOT "PINNED". CONTEXT.md's PINNED is a plasma held at its
+-- THE WORD IS "SET EXPLICITLY" AND NOT "PINNED". GLOSSARY.md's PINNED is a plasma held at its
 -- temperature ceiling, and this paragraph used to spend the term on a second meaning. pin() below
 -- keeps its name -- it does naming, mining and claim(), and sets no balance stat at all -- but
 -- nothing here adds a third use.
@@ -61,7 +61,7 @@ end
 -- editing the deepcopied ones, which is what puts an earlier-sorting mod out of reach of those
 -- boxes entirely -- see the note at rf-reactor's, where the volume is a physics input.
 --
--- THE OTHER FIVE INHERIT, and every item below is an INHERITED STAT in CONTEXT.md's sense: nothing
+-- THE OTHER FIVE INHERIT, and every item below is an INHERITED STAT in GLOSSARY.md's sense: nothing
 -- here reads it, so a coexisting set may change it and this mod does not object.
 --   rf-heater                   energy_source -- its emissions, drain and usage_priority --
 --                               fluid_boxes[*].volume, and allowed_module_categories. The same
@@ -91,7 +91,7 @@ end
 
 local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entities/"
 
--- Plasma must not travel through vanilla pipes (CONTEXT.md, ADR 0010). This is what enforces it.
+-- Plasma must not travel through vanilla pipes (GLOSSARY.md, ADR 0010). This is what enforces it.
 --
 -- SINCE #86 AND #87 THE SAME SENTENCE IS TRUE OF THE TWO ENERGY FLUIDS, which ADR 0010 could not
 -- have said: at the time they were meant to travel on ordinary pipes. ADR 0018 gives each of them a
@@ -657,7 +657,7 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 --     the sustained figure of one against the while-flowing figure of the other is how a reader
 --     concludes 90 is enough here, or that 70 was; neither is.
 --   * SETTLED AND AT FULL SUPPLY -- ALL FOUR PINNED by tests/test-reactor-logic.lua's mw_at block.
---     CONTEXT.md requires the operating point be named and ADR 0024 item 1 calls it a load-bearing
+--     GLOSSARY.md requires the operating point be named and ADR 0024 item 1 calls it a load-bearing
 --     qualifier: 56.1 MW unresearched, 67.1 at rf-plasma-confinement-1, 82.9 at rung 2 and 104.9 at
 --     rung 3, so 90 covers the confinement ladder to its second rung and not to its third.
 --     AT SHIPPED HEATING AND SHIPPED CAPTURE, which is the qualifier #432 added: those four are one
@@ -727,7 +727,7 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 -- full box. THAT BENCH RAN FOUR HEATERS AND RESEARCHED EVERYTHING, which nothing said at the time
 -- (#444). With one heater and nothing researched the box stays full, and the two still differ:
 -- the fed reactor pays to heat its fuel and settles at 2.381e8 C and 55.3 MW, against the pure
--- model's 2.422e8 and 56.1 (#502). That is what CONTEXT.md's operating-point vocabulary is for; this reactor has been quoted at 56 and at
+-- model's 2.422e8 and 56.1 (#502). That is what GLOSSARY.md's operating-point vocabulary is for; this reactor has been quoted at 56 and at
 -- 85 MW before (#109) and both were right. Sizing on the settled figure alone is the trap, and the
 -- first attempt at this ticket fell in it -- and naming the operating point WITHOUT the research
 -- state and the heater count turned out to be a second one.
@@ -870,7 +870,7 @@ exchanger.output_fluid_box.filter = "steam"
 -- with confinement rung 3 and nothing else researched (#89,
 -- docs/research/bolted-joint-throughput.md; settled, #533) and at 1 114.1 to 1 336.9 with every
 -- ladder at its top (#533, 2026-10-04, Factorio 2.0.77), and quoting any of them without saying
--- which heater count and which research it came from is the operating-point defect CONTEXT.md
+-- which heater count and which research it came from is the operating-point defect GLOSSARY.md
 -- exists to prevent. One heater is what a player has, so one heater is what this block quotes.
 --
 -- AND IT IS NOW MEASURED WITH RADIATION (#486, 2026-10-02, Factorio 2.0.77): one heater, nothing
@@ -1073,7 +1073,7 @@ hc_turbine.energy_source = {
 
 -- ---------------------------------------------------------------- isotope collector
 
--- Where the D-D by-products come out (#27). The reactors are the breeder (CONTEXT.md, ADR 0010),
+-- Where the D-D by-products come out (#27). The reactors are the breeder (GLOSSARY.md, ADR 0010),
 -- and this is the fitting a player bolts to one to collect what it breeds.
 --
 -- It exists because the reactor has nowhere to put them. A boiler has exactly two fluid boxes and
@@ -1295,7 +1295,7 @@ collector.output_fluid_box.pipe_connections = {
 
 -- ---------------------------------------------------------------- lithium blanket
 
--- The second breeding route (#30, CONTEXT.md): a shell of lithium bolted to a reactor, catching
+-- The second breeding route (#30, GLOSSARY.md): a shell of lithium bolted to a reactor, catching
 -- the neutrons the plasma cannot confine and turning them into tritium. ADR 0010 makes it the
 -- later of the two routes and the one real D-T machines are designed around.
 --
@@ -1675,7 +1675,7 @@ local tank = pin(table.deepcopy(data.raw["storage-tank"]["storage-tank"]), "rf-a
 -- above.
 --
 -- THAT 9:1 IS THE SUPPLY RATIO, AND IT IS THE SAME MEASUREMENT THE NEUTRONIC TIER QUOTES (#290).
--- CONTEXT.md defines it: how many SETTLED D-D reactors supply one consumer of what they breed, with
+-- GLOSSARY.md defines it: how many SETTLED D-D reactors supply one consumer of what they breed, with
 -- two readings that differ by a factor of ten.
 --
 --   per heater             9.12 D-D reactors, and the reading every figure here is
@@ -1725,7 +1725,7 @@ tank.water_reflection = tank_graphics.water_reflection
 
 -- ---------------------------------------------------------------- plasma-safe fluid handling
 
--- Plasma must not travel through vanilla pipes (CONTEXT.md, ADR 0010). Enforcing that is #26;
+-- Plasma must not travel through vanilla pipes (GLOSSARY.md, ADR 0010). Enforcing that is #26;
 -- these exist so there is something to enforce it in favour of.
 --
 -- These carry real art rather than a tint, so a plasma line is visibly not a water line -- which

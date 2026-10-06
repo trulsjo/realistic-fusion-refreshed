@@ -166,7 +166,7 @@ on building properly.
   and it does not bound temperature. Full supply is the guard's **reference operating point**, not
   its hottest case. (The first clause is a near miss too: the ladder stops at 60 s, where the optimum
   is near 90% fill rather than at full.)
-- **`CONTEXT.md` gains the term**, so "under-supplied" stops being usable as a synonym for "starved".
+- **`GLOSSARY.md` gains the term**, so "under-supplied" stops being usable as a synonym for "starved".
 - **Not playtested.** Whether a 40% reward for under-supplying reads as depth or as an exploit is a
   play question, and the honest answer today is that nobody has played it. This ADR accepts the shape;
   reversing it later is a density number and an ADR, not a rewrite.

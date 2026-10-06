@@ -1,4 +1,4 @@
--- rf-blanket-breeding (#30): the later of the two breeding routes CONTEXT.md names.
+-- rf-blanket-breeding (#30): the later of the two breeding routes GLOSSARY.md names.
 --
 -- Three prerequisites, and each of them is something the technology genuinely cannot work without
 -- rather than a tree shape chosen for looks. This is the same closure rule rf-d-t-fusion follows:

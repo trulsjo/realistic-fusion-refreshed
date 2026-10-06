@@ -337,7 +337,7 @@ end
 -- The temperature apply() stamps on the reactor energy it writes, memoised per reactor by
 -- energy_temperature() below and taken from the prototype rather than hardcoded here. Nothing
 -- reads it -- the exchanger and the converter both burn their fluid by fuel_value -- so this is
--- about what a player sees in the pipe and nothing else. See CONTEXT.md on HOST ARTEFACT (#46).
+-- about what a player sees in the pipe and nothing else. See GLOSSARY.md on HOST ARTEFACT (#46).
 local ENERGY_TEMPERATURE = {}
 
 -- Memoised at the point of use rather than filled by check_prototypes(), and that is not a

@@ -148,7 +148,7 @@
     was written, that sentence gives way to the worked example above, which this file already
     proves. docs/research/socket-shapes.md had it right all along -- "zoom 1, 32 px to the tile,
     where a player meets it" -- so the two socket probes now agree about a term they both use, and
-    CONTEXT.md's Measurement words is where it is fixed for everyone else.
+    GLOSSARY.md's Measurement words is where it is fixed for everyone else.
 
     Findings belong in docs/research/ or on the ticket. Kept committed so the next machine rendered
     -- and the next engine version -- can be asked the same question.

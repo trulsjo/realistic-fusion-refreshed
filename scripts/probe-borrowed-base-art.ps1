@@ -291,7 +291,7 @@ script.on_event(defines.events.on_tick, function()
   if not storage.shoot_at or game.tick < storage.shoot_at then return end
   storage.shoot_at = nil
 
-  -- ZOOM 1 -- 32 px to the tile, the size a player meets the machine at (CONTEXT.md, Zoom). It is
+  -- ZOOM 1 -- 32 px to the tile, the size a player meets the machine at (GLOSSARY.md, Zoom). It is
   -- the only zoom shot here, because it is the only zoom the question is about. Each frame is the
   -- machine plus six tiles of surroundings, the same framing the other two art probes' zoom-1
   -- frames use, so a control frame from this rig and one from theirs are the same picture.

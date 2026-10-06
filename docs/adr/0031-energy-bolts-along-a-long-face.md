@@ -51,7 +51,7 @@ neutronic tier has shipped for two weeks in a state where ADR 0018's item 2 coul
 categorise both ends and reactor energy has no route to an exchanger at all.
 
 `probe-energy-containment.ps1` worked around it by declaring a rig-only variant with a south
-connection, and `CONTEXT.md` records that its bolt row *"is a claim about a shape that would chain,
+connection, and `GLOSSARY.md` records that its bolt row *"is a claim about a shape that would chain,
 not about the one in the tree."*
 
 ### What was measured before deciding, and what each measurement cost the alternatives

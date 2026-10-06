@@ -699,7 +699,7 @@ here, and so is the observation that their gate silently solved #36 for them.
 ## 8. Options, with what each would cost
 
 **These are options, not a recommendation.** Tech-tree shape and progression are Truls's under
-`CLAUDE.md`, and the two that change an edge would need at minimum a note in `CONTEXT.md` and a
+`CLAUDE.md`, and the two that change an edge would need at minimum a note in `GLOSSARY.md` and a
 technology-file comment — #36's acceptance criteria already say an ADR if the module's public shape
 moves.
 
@@ -731,7 +731,7 @@ moves.
   progression; and the 900 extra science units plus off-starting-area uranium prospecting is a real toll
   on the first fusion reactor.
 - **Cost:** one line, plus deleting the `steam-turbine` unlock in
-  `realistic-fusion-refreshed/prototypes/technology/d-d.lua` and its comment, plus a `CONTEXT.md`
+  `realistic-fusion-refreshed/prototypes/technology/d-d.lua` and its comment, plus a `GLOSSARY.md`
   entry. The verification is not free: #36's third acceptance criterion — *a player researching
   `rf-d-d-fusion` and nothing else can still convert the exchanger's steam to electricity, verified
   through the tech tree* — would need re-running, and honestly ought to be re-run under Bob's too,
@@ -790,7 +790,7 @@ technology upstream that gates fusion.
 - **For:** the only arrangement in which the tritium evidence is doing what the evidence actually says
   — fission supplies fusion rather than preceding it; consumes Core fluids that already exist.
 - **Against:** it is a module, not an edge, and out of [ADR 0002](../adr/0002-v1-scope-and-module-split.md)'s
-  v1 scope; it adds a third breeding route where `CONTEXT.md` names two; and it answers neither #36 nor
+  v1 scope; it adds a third breeding route where `GLOSSARY.md` names two; and it answers neither #36 nor
   #37.
 - **Cost:** high — a superseding ADR and a module. See `fission.md` §8 for the full pricing.
 
@@ -899,7 +899,7 @@ In this repository:
 - `scripts/check-blanket.ps1`, `scripts/check-hc.ps1`, `scripts/check-aneutronic.ps1` (the closure
   rigs); `check_steam_sinks()` in `realistic-fusion-refreshed/control.lua`, and `scripts/load-check.ps1` — committed
   since this note was written; the caveat above is what was true on the day.
-- `CONTEXT.md`; ADRs [0002](../adr/0002-v1-scope-and-module-split.md),
+- `GLOSSARY.md`; ADRs [0002](../adr/0002-v1-scope-and-module-split.md),
   [0005](../adr/0005-real-time-fusion-simulation.md),
   [0007](../adr/0007-coexistence-without-integration.md),
   [0010](../adr/0010-v1-module-layout-and-prototype-set.md),

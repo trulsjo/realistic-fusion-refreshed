@@ -180,7 +180,7 @@ softer, because it needs a body density this note did not source; the per-mass c
 mass and is the one to quote.
 
 **The mod's weakest reactor is 67 times more power-dense than the centre of the Sun.** That is
-`rf-reactor` on D-D — the breeder tier, below scientific break-even, the machine `CONTEXT.md` says
+`rf-reactor` on D-D — the breeder tier, below scientific break-even, the machine `GLOSSARY.md` says
 must not be described as a power source. The D-T tier at the clamp is twenty thousand times the solar
 centre. A Factorio reactor is a fifteen-tile square; the Sun's energy-producing core is 10²⁵ m³. That
 ratio, and not any per-volume superiority, is where the Sun's 3.8×10²⁶ W comes from.
@@ -357,7 +357,7 @@ bremsstrahlung photon leaves. Three specific things follow, none of which asks f
 - **Routing the radiated energy into `captured_j` is also right**, and the stellar case is the reason
   the distinction matters: the X-rays are not lost from the *machine*, only from the *plasma*, and they
   land on the first wall. That is what makes the shipped D-D tier sell 56.1 MW against 50 MW drawn while
-  sitting at Q 0.32 — `CONTEXT.md`'s two break-evens. A star has no first wall and no `captured_j`; it
+  sitting at Q 0.32 — `GLOSSARY.md`'s two break-evens. A star has no first wall and no `captured_j`; it
   has 0.7 R☉ of its own body doing the same job, and calls the result its luminosity.
 - **The one place the stellar analogy would matter is a channel the model does not carry.** In a real
   reactor at these temperatures the dominant radiative term is cyclotron radiation, and plasmas are

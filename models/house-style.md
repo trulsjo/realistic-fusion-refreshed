@@ -359,7 +359,7 @@ asymmetry being measured and reported the band as 1 px out where the pipe report
 reference does not do that, which is why the pipe reading was the larger one and the one Truls was
 describing. With nothing cut the stub is symmetric too, so the two references now agree about the
 asymmetry: there is none. They still differ by a pixel about how PROUD the band is -- 3.0 over the
-stub and 4.0 over the barrel -- and that difference is the reason `CONTEXT.md` requires a proudness
+stub and 4.0 over the barrel -- and that difference is the reason `GLOSSARY.md` requires a proudness
 figure to name what it is proud of.
 
 **AND THE RULE THAT CAME OUT OF IT** (Truls, 2026-09-16): *"I expect that the pipe inside line up
@@ -599,7 +599,7 @@ reactor's runtime route). Two fields go with it, both **set explicitly** rather 
 inherited, because both decide whether the layer is drawn at all: `burning_cooldown` above 1, or
 neither layer appears, and `fire_glow_flicker_enabled = false`, since a fluid energy source emits no
 light and the flicker would take the alpha to nothing. Not "pinned" — that word is a plasma
-temperature here (`CONTEXT.md`) — and not "like every other stat", either: `rf-heat-exchanger` sets
+temperature here (`GLOSSARY.md`) — and not "like every other stat", either: `rf-heat-exchanger` sets
 these two and inherits its `target_temperature` and its water and steam boxes, which is the split
 the note at the top of `prototypes/entities.lua` sets out. A machine whose prototype has no such layer — the
 reactors — keeps the separate core prototype drawn from `control.lua`.

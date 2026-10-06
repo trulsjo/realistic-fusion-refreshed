@@ -6,6 +6,8 @@ these concepts, it uses the term as defined here rather than a synonym.
 Created alongside [ADR 0010](docs/adr/0010-v1-module-layout-and-prototype-set.md), which specified v1.
 Decisions live in `docs/adr/`; this file only fixes the language.
 
+This file was `CONTEXT.md` until 2026-10-06 (#600), renamed to the name the engineering skills look for.
+
 ## The three mods
 
 **Core** — `realistic-fusion-refreshed-core`, title "Realistic Fusion Refreshed Core". Owns every

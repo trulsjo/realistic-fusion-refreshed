@@ -136,7 +136,7 @@ output.**
 
 5. **Q excludes it.** Q-factor is a plasma statistic — fusion power over heating power — and the
    blanket's heat is released in a shell outside the plasma. Letting it in would make the signal stop
-   meaning what `CONTEXT.md` says it means. The cost is accepted: a player sees a Q that understates
+   meaning what `GLOSSARY.md` says it means. The cost is accepted: a player sees a Q that understates
    how good the machine is economically, which is the right trade, because Q is not an economic
    number.
 
@@ -155,14 +155,14 @@ output.**
   glossary's sense. No per-fuel gate was needed to protect it.
   *(Corrected 2026-08-21: this said "still a machine a player runs at a loss". Measured once #52
   shipped, a D-D reactor sells 56.1 MW against 50 MW drawn AT THE SETTLED OPERATING POINT -- box full
-  at 2.42e8 C, `CONTEXT.md` (#109) -- above engineering break-even, which is
-  0.1765 here at the unresearched capture efficiency. See `CONTEXT.md` on **break-even**.)*
+  at 2.42e8 C, `GLOSSARY.md` (#109) -- above engineering break-even, which is
+  0.1765 here at the unresearched capture efficiency. See `GLOSSARY.md` on **break-even**.)*
 - **ADR 0018 is untouched.** An aneutronic reactor releases no neutrons, so a blanket on one breeds
   nothing "by arithmetic rather than by a missing field" — blanket heat can therefore only ever be
   `rf-reactor-energy`, never the aneutronic fluid, and the two-category split is unaffected.
 - **The blanket becomes a power upgrade as well as a fuel one**, which is what a real blanket is, and
   changes what `rf-blanket-breeding` is worth researching for.
-- **Vocabulary moves**, and `CONTEXT.md` carries it: **blanket breeding** widens to name heat as its
+- **Vocabulary moves**, and `GLOSSARY.md` carries it: **blanket breeding** widens to name heat as its
   second product, **Q-factor** gains that blanket heat is excluded, and **blanket share** joins as a
   new term.
 - **A third signal is one more than ADR 0010 specified.** That ADR chose two signals over a GUI

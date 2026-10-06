@@ -170,7 +170,7 @@ thing, and "ten machines" -- which #391 and #392 both say -- is the call-site co
 wrong noun.
 
 **#391 records; #392 builds.** This ADR, the `models/house-style.md` rewrite and the three terms
-added to `CONTEXT.md` close #391. The build-script change, the `port` split, the re-render and the
+added to `GLOSSARY.md` close #391. The build-script change, the `port` split, the re-render and the
 gate change are #392's, and #392 requires the gate to be shown failing before it passes — which a
 gate written in the same sitting as the art it gates has nothing to fail against.
 

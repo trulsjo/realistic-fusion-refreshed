@@ -62,7 +62,7 @@ run the machine did not block in.**
    different populations depending on which number a reader takes.
 2. **"Pooled mean" keeps its name.** A figure is *the pooled mean over N surviving runs*, with N
    written out rather than left to be assumed from `-Runs`. **Stalled run** is the new term and is
-   the thing removed; it is in `CONTEXT.md`. No second name for the statistic, because inventing
+   the thing removed; it is in `GLOSSARY.md`. No second name for the statistic, because inventing
    one would make every figure already published ambiguous about which one it was.
 3. **Per row, not per sweep.** A stall in run 3 at *n* = 200 does not remove run 3 at *n* = 0. The
    runs are separate processes with the map reloaded between them and share nothing but an index,

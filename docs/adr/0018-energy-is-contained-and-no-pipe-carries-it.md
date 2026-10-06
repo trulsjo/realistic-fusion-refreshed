@@ -225,7 +225,7 @@ face.**
    outright rather than joining two boxes whose filters disagree and leaving a player to work out why
    nothing flows. `realistic-fusion-refreshed/prototypes/fluids.lua` calls the separation of the two
    conversion routes *"the tier's whole mechanic rather than bookkeeping"*, above
-   `rf-aneutronic-reactor-energy`, and `CONTEXT.md` calls direct energy conversion
+   `rf-aneutronic-reactor-energy`, and `GLOSSARY.md` calls direct energy conversion
    "a different route, not a better one". This puts both statements in the geometry.
 
 4. **`rf-heat-exchanger`'s energy box becomes `input-output` on three connections** — north

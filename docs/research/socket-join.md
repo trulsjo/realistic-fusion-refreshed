@@ -70,7 +70,7 @@ on 38 to 44 per cent at about 10 — the pipe holds still and the grass under it
 outside the paved rectangle survive, which is the plant in the corner of one `run` frame and not the
 other.
 
-**SAY THE METRIC OR THE NUMBER IS NOT REPRODUCIBLE**, which is the same rule as `CONTEXT.md`'s
+**SAY THE METRIC OR THE NUMBER IS NOT REPRODUCIBLE**, which is the same rule as `GLOSSARY.md`'s
 **Proud** entry one layer down. The deltas above are the per-pixel SUM of absolute difference over
 all four RGBA channels, averaged over a band, with the 768-row frame cut into eight bands of 96.
 Read instead as a mean over the three colour channels, the same frames give 9.7 to 11.4 for bare

@@ -39,7 +39,7 @@ case for connecting more than one heater if oversupplying the reactor does somet
    reactor holding the same amount behaves the same with the option on or off, up to and including
    the limit. It does **not** promise that every operating point is reached the same way. A
    reactor fed faster than it burns stops at full with the option off, but goes on filling past
-   the limit with it on, so the heater-fed operating point at 999.9 units, which `CONTEXT.md`
+   the limit with it on, so the heater-fed operating point at 999.9 units, which `GLOSSARY.md`
    quotes, is a state the option makes a player choose rather than one the box imposes.
 4. **Above the limit, fusion keeps following the model, and so does a hazard.** Fusion power past
    the limit is whatever the existing density curve gives. It rises where the reactor's optimum
@@ -66,7 +66,7 @@ case for connecting more than one heater if oversupplying the reactor does somet
 - **Fuelling as a control**: a faster refill after a dip. Rejected because it pays only in
   transients, which a player rarely sees.
 - **A limit below today's full box**: rejected because it would make the settled reference figures
-  unreachable with the option on, so half of `CONTEXT.md` would read differently depending on a
+  unreachable with the option on, so half of `GLOSSARY.md` would read differently depending on a
   setting.
 - **A hard limit**, or a hard limit with a grace period: rejected because over-supply would then be
   a mistake to avoid rather than a choice. The hazard rate is what makes running past the limit a
