@@ -5,7 +5,7 @@
     working. Discharges #30.
 
 .DESCRIPTION
-    Blanket breeding is the second of the two routes CONTEXT.md names, and the one real D-T
+    Blanket breeding is the second of the two routes GLOSSARY.md names, and the one real D-T
     machines are designed around: the plasma cannot confine its neutrons, so a shell of lithium
     around it catches them and breeds tritium. tests/test-reactor-logic.lua asserts the arithmetic;
     this asserts that the arithmetic reaches a pipe, spends an item, and stops when it should.

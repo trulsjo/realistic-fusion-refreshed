@@ -5,7 +5,7 @@ tools/measure-accent-separation.py reads it through on the shipped sheet.
     python tools/measure-frame-accents.py docs/research/accent-legibility-at-zoom-1/collector-alone.png
     python tools/measure-frame-accents.py docs/research/accent-legibility-at-zoom-1/*.png
 
-A BENCH, NOT A CHECK, in this repository's own three words (CONTEXT.md, Measurement words): it
+A BENCH, NOT A CHECK, in this repository's own three words (GLOSSARY.md, Measurement words): it
 measures a quantity, reports it, and asserts only its own validity. It says nothing about whether
 an accent reads, and it adds no threshold -- that is a decision, it belongs to Truls, and ADR 0034
 holds it. scripts/load-check.ps1 and scripts/ship-check.ps1 do not run this and nothing fails
@@ -36,7 +36,7 @@ measure-accent-separation.py halves each sheet to 32 px to the tile before it me
 The halved sheet and a zoom-1 frame are therefore the same scale exactly, and the mapping between
 them is a TRANSLATION BY A WHOLE NUMBER OF PIXELS and nothing else. At any other zoom it would be a
 resampling, the window would stop being the window, and the figure would stop being comparable. So
-a frame at another zoom is refused rather than scaled -- which is CONTEXT.md's Zoom entry applied to
+a frame at another zoom is refused rather than scaled -- which is GLOSSARY.md's Zoom entry applied to
 an instrument instead of to prose.
 
 THE TRANSLATION IS THE PART THAT IS WRONG SILENTLY, and `sheet_to_frame` below is all of it. A frame
@@ -306,7 +306,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     print(f"Accent bands in a game frame, AT ZOOM {ZOOM} -- 32 px to the tile, the size a player "
-          f"meets a machine at (CONTEXT.md, Zoom).")
+          f"meets a machine at (GLOSSARY.md, Zoom).")
     print("Each window is tools/measure-accent-separation.py's own, off the shipped sheet, "
           "translated onto the frame; 'moved' is the sheet-to-frame distance in CIEDE2000.")
 

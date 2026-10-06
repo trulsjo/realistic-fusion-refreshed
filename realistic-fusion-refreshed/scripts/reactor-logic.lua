@@ -114,7 +114,7 @@ end
 -- so the mean release is 3.65 MeV and the charged share is 4.85/7.30.
 --
 -- The two branches are also where tritium and helium-3 come from, which is what makes the reactors
--- the breeder (CONTEXT.md, ADR 0010) rather than a separate machine: half the reactions leave a
+-- the breeder (GLOSSARY.md, ADR 0010) rather than a separate machine: half the reactions leave a
 -- triton behind and half leave a helium-3, so breeding is the same reaction count the energy is
 -- computed from and cannot drift away from it.
 M.fuels = {
@@ -314,7 +314,7 @@ M.fuels = {
   -- With the term counted, no fill ignites this reaction. Thinning the plasma does reach the clamp,
   -- but on heater power rather than on fusion -- ~~Q peaks at 0.0131 around 300 units~~ Q reaches
   -- 0.0131 at 300 units and peaks at 0.0177 around 349, which is not
-  -- ignition in CONTEXT.md's sense at all. D-He3 in the same machine is fine at half fill (Q 20.7)
+  -- ignition in GLOSSARY.md's sense at all. D-He3 in the same machine is fine at half fill (Q 20.7)
   -- and trapped at full, so the two tiers now differ in kind rather than in degree: one has an
   -- operating density and the other has no operating point.
   --
@@ -458,7 +458,7 @@ M.reactor = {
   -- where they are worth most.
   --
   -- WHY heating_power_w AND NOT SOMETHING ELSE, which ADR 0038 settled by measurement rather than
-  -- by taste. The supply ratio -- settled D-D reactors per saturated D-T reactor, CONTEXT.md
+  -- by taste. The supply ratio -- settled D-D reactors per saturated D-T reactor, GLOSSARY.md
   -- defines it -- falls monotonically with heating power and turns over nowhere. The intuitive
   -- levers are backwards: lowering max_temperature_c parks the plasma nearer the peak of the
   -- cross-section and it burns MORE, doubling density is far worse because bremsstrahlung goes as
@@ -605,7 +605,7 @@ M.reactor = {
   -- the ceiling at 62.7%, below the value already shipped.
   --
   -- It is also the aneutronic reactor's shipped constant, and that convergence is the point rather
-  -- than a coincidence: see M.aneutronic_reactor below, and CONTEXT.md on direct energy conversion.
+  -- than a coincidence: see M.aneutronic_reactor below, and GLOSSARY.md on direct energy conversion.
   capture_ceiling = 0.95,
   -- What research does to the number above (#96).
   --
@@ -629,7 +629,7 @@ M.reactor = {
   --
   -- NEUTRONIC ONLY. M.aneutronic_reactor deliberately has no ladder, the same shape the confinement
   -- ladder above has and for a related reason: that tier already sits at the ceiling, and the two
-  -- routes converging is what makes CONTEXT.md's claim about direct energy conversion -- "a
+  -- routes converging is what makes GLOSSARY.md's claim about direct energy conversion -- "a
   -- different route, not a better one" -- literally rather than approximately true.
   --
   -- Rungs are provisional, like every other balance number in this repository, and the CEILING IS
@@ -772,7 +772,7 @@ M.aneutronic_reactor = {
   -- capture_ladder here and no capture_ceiling either: this tier already sits AT the neutronic
   -- ladder's ceiling, so a line into it would have to raise the one number that keeps the loop
   -- closed, on the tier that runs the margin tightest. The two routes converging to within 1.25
-  -- points is what makes CONTEXT.md's claim about direct energy conversion literally true; applying the
+  -- points is what makes GLOSSARY.md's claim about direct energy conversion literally true; applying the
   -- line here would preserve the ten-point gap that claim denies exists.
   capture_efficiency = 0.95,
   energy_fluid_j_per_unit = 1e6,
@@ -796,7 +796,7 @@ M.aneutronic_reactor = {
 --
 -- A blanket is a shell of lithium around the reactor that catches escaping neutrons and turns them
 -- into tritium. It is the route real D-T machines are designed around, and the upgrade that
--- decouples D-T throughput from what the D-D tier happens to leave behind (CONTEXT.md names the
+-- decouples D-T throughput from what the D-D tier happens to leave behind (GLOSSARY.md names the
 -- two routes; ADR 0010 makes this one the later of them).
 --
 -- Its own table rather than fields on M.reactor, for the reason M.reactor is passed in rather than
@@ -863,7 +863,7 @@ M.blanket = {
 -- those start at the reactor's box. M.settle_fed and M.settle_segment are the two functions here
 -- that model the heater: the first feeds the box at its rate and its temperature (#502), the
 -- second adds the segment between them and is arithmetic for a note (#543). The rest is here because it is the
--- denominator of the SUPPLY RATIO (CONTEXT.md) -- how many settled D-D reactors feed one consumer
+-- denominator of the SUPPLY RATIO (GLOSSARY.md) -- how many settled D-D reactors feed one consumer
 -- of what they breed -- and that ratio's smaller reading, the one a player actually meets, is per
 -- heater rather than per saturated reactor. Pinning it needs the rate, and a figure pinned
 -- against a literal 2.5 would go on reading 2.5 after someone retuned the recipe.
@@ -1606,7 +1606,7 @@ local CURVE_DT      = 1.0
 -- ranking the fills by settled FUSION POWER ranks them by Q. That is why nothing here divides:
 -- a ratio against a constant is the constant's own ordering.
 --
--- THE FLOOR IS "WORSE THAN A FULL ONE", which is the line ADR 0016 draws and the one CONTEXT.md's
+-- THE FLOOR IS "WORSE THAN A FULL ONE", which is the line ADR 0016 draws and the one GLOSSARY.md's
 -- "starved" needs: below it a player has thinned the plasma past the point where the n^2 term wins
 -- again and would be better off simply filling the reactor. It is the LOWEST fill still worth as
 -- much as a full one, so a reactor under it is in a genuine fault and not merely under-supplied.

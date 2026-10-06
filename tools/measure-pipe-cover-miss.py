@@ -7,7 +7,7 @@ scripts/probe-pipe-cover-miss.ps1.
     pwsh -File scripts/probe-pipe-cover-miss.ps1 -MapSeed 7 -Strip all       -OutputDirectory bare-all
     python tools/measure-pipe-cover-miss.py covers bare --all bare-all
 
-A BENCH, NOT A CHECK (CONTEXT.md, Measurement words): it measures, reports, and asserts only its own
+A BENCH, NOT A CHECK (GLOSSARY.md, Measurement words): it measures, reports, and asserts only its own
 validity. It draws no threshold and says nothing about what the miss ought to be -- #391 weighs the
 remedies and that is Truls's.
 

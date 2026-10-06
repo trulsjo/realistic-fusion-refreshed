@@ -22,7 +22,7 @@
 -- NEUTRONIC ONLY, which is decision 4 and is deliberate rather than an omission.
 -- rf-aneutronic-reactor stays at 0.95 and gets no line. Applying it there would spend the tightest
 -- margin in the design -- 190 MW back for 200 MW spent -- and would preserve a ten-point efficiency
--- gap that CONTEXT.md's entry on direct energy conversion denies exists. With the steam route
+-- gap that GLOSSARY.md's entry on direct energy conversion denies exists. With the steam route
 -- climbing to 0.9375 the gap closes to 1.25 points, and the only remaining benefit of the
 -- aneutronic tier is the one that entry names: the whole steam stage disappears. (ADR 0020 says
 -- "under a point" there, which is out by a quarter: 0.95 - 0.9375 is 0.0125, and it is that ADR's

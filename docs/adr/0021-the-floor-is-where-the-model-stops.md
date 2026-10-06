@@ -109,7 +109,7 @@ by 10 s, total sold included, and the D-D tier shows no difference at any point.
 **The model now declines to describe something, deliberately.** A real plasma at 15 °C keeps
 radiating; this one does not. That is a fiction of *omission* where the previous behaviour was a
 fiction of *creation*, and omission is the one consistent with a declared domain boundary. It is
-recorded rather than hidden: [`CONTEXT.md`](../../CONTEXT.md) names the state and says so.
+recorded rather than hidden: [`GLOSSARY.md`](../../GLOSSARY.md) names the state and says so.
 
 **`min_temperature_c` is load-bearing in a second way now.** Raising it no longer only shifts the
 boiler leak #46 was about — it moves where the model claims its physics stops, and silently widens the

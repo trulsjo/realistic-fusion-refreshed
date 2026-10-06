@@ -29,7 +29,7 @@ data:extend({
   fluid("rf-hydrogen-sulfide", { r = 0.92, g = 0.84, b = 0.35 }, "rf-b[hydrogen-sulfide]"),
   -- Deuterium oxide: the intermediate between water and deuterium.
   fluid("rf-heavy-water", { r = 0.30, g = 0.52, b = 0.88 }, "rf-c[heavy-water]"),
-  -- The spent stream leaving enrichment. Not "waste water" (CONTEXT.md).
+  -- The spent stream leaving enrichment. Not "waste water" (GLOSSARY.md).
   fluid("rf-depleted-water", { r = 0.46, g = 0.46, b = 0.42 }, "rf-d[depleted-water]"),
   -- What the entire power side of the mod consumes. Its icon is hydrogen's, recoloured to this
   -- cyan -- deuterium is heavy hydrogen, so the shared shape is the point (see NOTICE).
@@ -55,7 +55,7 @@ data:extend({
   fluid("rf-d-t-mix", { r = 0.46, g = 0.97, b = 0.76 }, "rf-h[d-t-mix]"),
   fluid("rf-d-he3-mix", { r = 0.64, g = 0.64, b = 1.00 }, "rf-i[d-he3-mix]"),
 
-  -- The lithium branch. Brine is *produced* from water, never mined (CONTEXT.md): the route
+  -- The lithium branch. Brine is *produced* from water, never mined (GLOSSARY.md): the route
   -- deliberately involves no map resource, so the mod behaves identically on an existing save and
   -- a fresh one. A new ore or fluid deposit would only generate in unexplored chunks.
   fluid("rf-brine", { r = 0.62, g = 0.66, b = 0.45 }, "rf-j[brine]"),

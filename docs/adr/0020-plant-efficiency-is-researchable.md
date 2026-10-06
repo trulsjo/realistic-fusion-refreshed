@@ -112,7 +112,7 @@ the remaining gap to a ceiling of 0.95.**
   a fudge factor will not see it: the constant stands in for divertor, cryoplant and magnet power, and
   cutting recirculating power is exactly what real fusion engineering chases — high-temperature
   superconducting magnets being the headline case.
-- **`CONTEXT.md`'s claim about direct energy conversion becomes literally true.** The glossary says DEC
+- **`GLOSSARY.md`'s claim about direct energy conversion becomes literally true.** The glossary says DEC
   is "a different route, not a better one... The gain is that the whole steam stage disappears, not that
   the conversion is markedly more efficient". Today a 10-point efficiency gap quietly contradicts that.
   With the steam route climbing to 0.9375 against the aneutronic 0.95, the gap closes to ~~under a

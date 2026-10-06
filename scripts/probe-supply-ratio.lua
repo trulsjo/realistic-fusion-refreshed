@@ -17,7 +17,7 @@ a shape, not a language and not a map, and this is the first probe here to take 
 
 WHAT IT MEASURES. The supply ratio per saturated reactor -- settled D-D reactors per settled D-T
 reactor -- and its per-heater reading, at the same operating point tests/test-reactor-logic.lua
-pins in the block headed "the fuel chain, at the settled point (#117)". CONTEXT.md defines both
+pins in the block headed "the fuel chain, at the settled point (#117)". GLOSSARY.md defines both
 readings. The code below is deliberately the same arithmetic as that block's `chain`: the control
 row exists to prove it, and a rig measuring something subtly else would price every lever against
 the wrong baseline.

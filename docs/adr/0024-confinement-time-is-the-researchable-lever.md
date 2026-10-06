@@ -235,7 +235,7 @@ own thermometer stays a player's choice under ADR 0016 and is not a defect in th
   > and the ratio it replaced was wrong by two orders of magnitude.**
   > [`d-t-ignition.md`](../research/d-t-ignition.md) quoted "about 1.4 D-D reactors feed one D-T
   > reactor" — a heater-fed D-T reactor against a settled D-D one, and stale from #52 besides. Truls's
-  > decision was to quote **both tiers settled**, which is the operating point `CONTEXT.md` names as
+  > decision was to quote **both tiers settled**, which is the operating point `GLOSSARY.md` names as
   > the reference. At that point it is **94.7 D-D reactors per D-T reactor unresearched, falling to
   > 18.5 with this ladder researched**, and every rung shortens it. Every rung is pinned in
   > `tests/test-reactor-logic.lua` rather than computed in prose. What that note leaves open is

@@ -5,7 +5,7 @@
     fluids are untouched. Discharges #26 and #86.
 
 .DESCRIPTION
-    CONTEXT.md's rule is that plasma must not travel through vanilla pipes. ADR 0010 says the 1.1
+    GLOSSARY.md's rule is that plasma must not travel through vanilla pipes. ADR 0010 says the 1.1
     original enforced that in control.lua -- 160 lines whose only job was hunting down
     plasma-carrying vanilla pipes and destroying them -- and that v1 does the same.
 

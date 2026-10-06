@@ -84,7 +84,7 @@ flange pair, and the band sits inboard of it — which is what ADR 0033's end tr
 `collector-west-socket-x8.png` and `exchanger-west-sockets-x7.png` are the two frames side by side.
 
 The exchanger takes three pipes and **refuses three**, which is what contained means
-(`CONTEXT.md`, Contained). Its energy sockets are among the refusals, so no pipe can reach them at
+(`GLOSSARY.md`, Contained). Its energy sockets are among the refusals, so no pipe can reach them at
 all.
 
 ## Two screen pixels was not the problem it looked like

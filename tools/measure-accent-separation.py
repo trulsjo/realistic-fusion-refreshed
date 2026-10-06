@@ -6,7 +6,7 @@ each one a player actually gets.
     python tools/measure-accent-separation.py --machine rf-isotope-collector
     python tools/measure-accent-separation.py --de76        # quote dE76 beside dE00, for a note
 
-A BENCH, NOT A CHECK, in this repository's own three words (CONTEXT.md, Measurement words): it
+A BENCH, NOT A CHECK, in this repository's own three words (GLOSSARY.md, Measurement words): it
 measures a quantity, reports it, and asserts only its own validity. It says nothing about whether
 two accents are far enough apart -- that is a decision, it belongs to Truls, and #359 holds it.
 scripts/load-check.ps1 and scripts/ship-check.ps1 do not run this and nothing fails because of it.
@@ -96,7 +96,7 @@ import socket_strip  # noqa: E402
 MODELS_DIR = "models"
 RENDERED_DIR = os.path.join("realistic-fusion-refreshed-assets", "graphics", "rendered")
 
-# THE ZOOM EVERY FIGURE HERE IS AT. CONTEXT.md's Zoom entry: zoom 1 is 32 px to the tile and is the
+# THE ZOOM EVERY FIGURE HERE IS AT. GLOSSARY.md's Zoom entry: zoom 1 is 32 px to the tile and is the
 # size a player meets a machine at. The sheets are drawn at `manifest.frame.pixels_per_tile` and
 # ship at `manifest.frame.scale`; this bench refuses a machine whose product is not 32 rather than
 # quietly reporting a magnified figure.
@@ -481,7 +481,7 @@ def main(argv=None):
                  + (f" is called {a.machine}" if a.machine else ""))
 
     print(f"Accent separation on the shipped sheets, AT ZOOM 1 -- {ZOOM_1_PX_PER_TILE} px to the "
-          f"tile, the size a player meets a machine at (CONTEXT.md, Zoom).")
+          f"tile, the size a player meets a machine at (GLOSSARY.md, Zoom).")
     print("Perceptual distance is CIEDE2000 over CIE L*a*b* under D65, measured off the PNG and "
           "never off a palette row.")
     measured = untestable = refused = 0

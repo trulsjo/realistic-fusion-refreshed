@@ -15,7 +15,7 @@ and nothing was recorded until a machine actually wore it.
 
 Rests on [ADR 0001](0001-liftable-predecessor-material.md), which is why original art was needed at
 all, and on [ADR 0023](0023-art-ships-in-its-own-mod.md), which is why a model is not a shipped
-thing. Vocabulary is [`CONTEXT.md`](../../CONTEXT.md)'s **Art** section: mockup, rendered art, look
+thing. Vocabulary is [`GLOSSARY.md`](../../GLOSSARY.md)'s **Art** section: mockup, rendered art, look
 note, house style, model, regenerate.
 
 ## Context
@@ -46,7 +46,7 @@ and the Krastorio 2 buildings are slated to go if this route works.
 ## Decision
 
 **Every sprite this mod draws of its own is rendered headlessly from a stored Blender model.** Four
-parts, in the words `CONTEXT.md` fixes:
+parts, in the words `GLOSSARY.md` fixes:
 
 - **House style** — `models/house-style.md`, one text for the whole set: palette (one accent per
   fluid), materials, level of detail, how a connection is shown. Written for the full machine set

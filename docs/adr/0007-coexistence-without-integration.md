@@ -278,7 +278,7 @@ names a prototype of **ours** that the **game** made — and a technology of the
 wiring it into their technology, because a dump records what a prototype ended up as and never who
 wrote it. So the re-homed rule tests the set's own visible behaviour instead: the recipe is one base
 Factorio constructs from a fluid of ours, and the destination technology already carried
-base-generated barrel unlocks before we arrived. `CONTEXT.md` defines both terms against each other.
+base-generated barrel unlocks before we arrived. `GLOSSARY.md` defines both terms against each other.
 
 **A third way was declined rather than added, and the refusal is the finding.** SeaBlock's
 `no-pipe-touching` collects connection categories onto vanilla `infinity-pipe`, ours among them
@@ -318,7 +318,7 @@ where it defines what the machine *is*, and inherited otherwise. That is this AD
 to a stat rather than to a prototype: a machine built from a chemical plant, polluting at whatever
 rate the overhaul a player installed decided a chemical plant should pollute at, is coexistence
 working rather than coexistence failing. Neither number was chosen, which is what keeps the decision
-from being a balance call made as the side effect of a comment fix. `CONTEXT.md` defines the term —
+from being a balance call made as the side effect of a comment fix. `GLOSSARY.md` defines the term —
 an **inherited stat** is a value taken from the vanilla prototype that no simulated quantity reads.
 
 **Two things came out of the same enumeration, and both say this finding understated itself.** It is

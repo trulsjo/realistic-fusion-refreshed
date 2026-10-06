@@ -4,7 +4,7 @@
     stored, and that Core's gas mixer turns them back into reactor fuel. Discharges #27.
 
 .DESCRIPTION
-    The reactors are the breeder (CONTEXT.md, ADR 0010): half of every D-D reaction leaves a triton
+    The reactors are the breeder (GLOSSARY.md, ADR 0010): half of every D-D reaction leaves a triton
     behind and half leaves a helium-3. tests/test-reactor-logic.lua asserts the arithmetic; this
     asserts that the arithmetic reaches a pipe.
 

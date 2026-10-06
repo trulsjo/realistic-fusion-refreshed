@@ -29,7 +29,7 @@ local ENTITY = "__realistic-fusion-refreshed-assets__/graphics/krastorio-2/entit
 -- allowed_effects. Identity and throughput both -- a mod rewriting one of those would move the
 -- whole fuel chain without a check noticing.
 --
--- INHERITED, in CONTEXT.md's sense of an inherited stat: nothing here reads any of these, so a
+-- INHERITED, in GLOSSARY.md's sense of an inherited stat: nothing here reads any of these, so a
 -- coexisting set may change them and this mod does not object.
 --   energy_source              its emissions, drain and usage_priority. On the Angel's lane the
 --                              FOUR copied from the chemical plant read 1.8 pollution/min against

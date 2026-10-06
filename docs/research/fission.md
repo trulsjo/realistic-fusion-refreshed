@@ -590,7 +590,7 @@ reactor moderator, and ITER's supply is a fission by-product. A `RealisticFissio
 entire project**, and it would consume `rf-heavy-water` and `rf-lithium` — two fluids and one item Core
 already defines.
 
-It would also be a **third** breeding route, and CONTEXT.md currently fixes the vocabulary at exactly
+It would also be a **third** breeding route, and GLOSSARY.md currently fixes the vocabulary at exactly
 two (*D-D by-products* and *blanket breeding*). Adding one is a vocabulary change as well as a scope
 change.
 
@@ -766,7 +766,7 @@ Kovari et al. describe (+0.05 kg/reactor-year).
   possible fission surface; makes the fission module *serve* the fusion module rather than compete with
   it. Directly cited end to end.
 - **Against:** it is a fission module that is barely about fission, and a player who wanted a fission
-  overhaul would be disappointed. It also adds a third breeding route to a CONTEXT.md that names two.
+  overhaul would be disappointed. It also adds a third breeding route to a GLOSSARY.md that names two.
 - **Cost:** low to medium. One entity, one recipe path, one technology, no new fluids.
 
 ### C. Criticality as the mod's identity — point kinetics, control rods, poisons.
@@ -878,7 +878,7 @@ In this repository:
 - `realistic-fusion-refreshed/scripts/reactor-logic.lua`, `realistic-fusion-refreshed/scripts/reactivity.lua`,
   `tools/derive-reactivities.py`, `tools/endf/README.md`.
 - `realistic-fusion-refreshed-core/prototypes/fluids.lua`, `realistic-fusion-refreshed-core/prototypes/recipes/deuterium.lua`.
-- `CONTEXT.md`; ADRs [0002](../adr/0002-v1-scope-and-module-split.md),
+- `GLOSSARY.md`; ADRs [0002](../adr/0002-v1-scope-and-module-split.md),
   [0003](../adr/0003-space-age-tolerated-not-targeted.md),
   [0005](../adr/0005-real-time-fusion-simulation.md),
   [0007](../adr/0007-coexistence-without-integration.md),

@@ -442,7 +442,7 @@ script.on_init(function()
   -- counting pipes rather than claimed. The row is fed water at ONE end only: the first machine's
   -- west water connection. Its east one is consumed by the joint with the second machine, whose own
   -- west water connection stands on the same tile, so water for the second machine has to cross the
-  -- row the same way energy does. That is what "reachable" means in CONTEXT.md.
+  -- row the same way energy does. That is what "reachable" means in GLOSSARY.md.
   --
   -- rf-hc-turbine rather than a vanilla one, so the exchanger has a sink worth the name: 90 MW of
   -- steam into a 58.2 MW turbine, where one 5.8 MW vanilla turbine would leave the boiler

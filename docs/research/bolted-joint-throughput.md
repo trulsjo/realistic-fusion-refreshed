@@ -286,7 +286,7 @@ absence of evidence.
 across the run and settled inside the gate's 2% as the gate stood then. The gate has read the fuel
 line since #508, refuses this run, and the same state settles at 91.1 MW flowing, per the table
 above. It is a **heater-fed** figure rather than a
-**settled** one, which is the distinction `CONTEXT.md` names and #109 opened over: it is not
+**settled** one, which is the distinction `GLOSSARY.md` names and #109 opened over: it is not
 `reactor-logic.lua`'s 56.1 MW equilibrium, which is a single reactor held full at its own temperature.
 Nothing here rests on the difference.)
 

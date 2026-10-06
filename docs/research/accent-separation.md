@@ -25,7 +25,7 @@
 > water's own two sockets landing further apart than energy from water at its closest: 33.0 against
 > 29.2 below, 32.2 against 29.5 now — 2.7 dE00 of margin where there was 3.8. Section 1's claim
 > about how much accent a player gets moves the same way and in the machine's favour: every
-> plumbable band gains about seven percent of area, 23.5 over 22.0. `models/house-style.md` and `CONTEXT.md` carry the
+> plumbable band gains about seven percent of area, 23.5 over 22.0. `models/house-style.md` and `GLOSSARY.md` carry the
 > re-measured figures; this note carries the measurement it was written from.
 > Re-run it with `python tools/measure-accent-separation.py`.
 
@@ -128,7 +128,7 @@ Rerun this note's measurements with
 python tools/measure-accent-separation.py --de76
 ```
 
-`tools/measure-accent-separation.py` is a **bench** in this repository's sense (`CONTEXT.md`,
+`tools/measure-accent-separation.py` is a **bench** in this repository's sense (`GLOSSARY.md`,
 Measurement words): it measures a quantity, reports it, and asserts only its own validity. No gate
 runs it, `scripts/load-check.ps1` and `scripts/ship-check.ps1` do not know it exists, and nothing
 fails because of it. It reads the committed sheets under
@@ -185,7 +185,7 @@ extra seventy lines that go with it.
 ## Method, and the window every figure was read through
 
 Everything below is **at zoom 1 — 32 px to the tile, the size a player meets a machine at**
-(`CONTEXT.md`, Zoom). The sheets are drawn at 64 and ship at `scale 0.5`, so each sheet is halved
+(`GLOSSARY.md`, Zoom). The sheets are drawn at 64 and ship at `scale 0.5`, so each sheet is halved
 before anything is measured off it. The halving averages in **linear light with the colour
 premultiplied by alpha**, which is what a graphics card filtering an sRGB texture does; averaging
 the gamma-encoded bytes darkens every edge instead.

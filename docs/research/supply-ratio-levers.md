@@ -22,7 +22,7 @@ it can be re-taken. Where a row disagrees with what is shipped, the shipped valu
 
 ## The quantity
 
-`CONTEXT.md` defines **supply ratio** and both its readings. Every figure here is **per saturated
+`GLOSSARY.md` defines **supply ratio** and both its readings. Every figure here is **per saturated
 reactor** — settled D-D reactors per settled D-T reactor — unless the column says *per heater*.
 
 **The control comes out right**, which is what says the rig measures the same quantity the

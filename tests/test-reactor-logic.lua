@@ -338,7 +338,7 @@ near(parked.energy_units, 0, 1e-12, "a reactor parked at the minimum sells nothi
 
 -- ---------------------------------------------------------------- D-D by-products (#27)
 
--- The reactors are the breeder (CONTEXT.md, ADR 0010): running D-D leaves tritium and helium-3
+-- The reactors are the breeder (GLOSSARY.md, ADR 0010): running D-D leaves tritium and helium-3
 -- behind. The two branches are already in M.fuels' comment and drive energy_per_reaction_j, so
 -- what is asserted here is that the same reaction count also produces matter, and that the two
 -- accounts agree with each other rather than being two independent numbers that happen to look
@@ -529,7 +529,7 @@ end
 
 -- ---------------------------------------------------------------- blanket breeding (#30)
 --
--- The second breeding route (CONTEXT.md), and the one real D-T machines are designed around: a
+-- The second breeding route (GLOSSARY.md), and the one real D-T machines are designed around: a
 -- shell of lithium around the reactor catches the neutrons the plasma cannot confine and turns
 -- them into tritium. Everything below drives M.breed, which is deliberately not part of step() --
 -- the plasma does not know what is bolted to the outside of the reactor.
@@ -872,7 +872,7 @@ near(lit_t, 4.584e9, 0.01,
 -- asserted is only what the shipped constants do.
 -- AND THE DENSITY LEVER DOES NOT RESCUE IT, which is the difference between this tier and its
 -- neighbour. Thinning gets it hot -- 300 units settles at 2.51e9 -- but being hot is not IGNITING.
--- CONTEXT.md fixes that word: an ignited plasma is one "whose own fusion self-heating carries it
+-- GLOSSARY.md fixes that word: an ignited plasma is one "whose own fusion self-heating carries it
 -- without external confinement heating". At 300 units the 200 MW heater is carrying the whole
 -- thing. The plasma is hot because it is thin and being heated, not because it is fusing.
 --
@@ -1063,10 +1063,10 @@ check(hot_state.q_factor < 1, "which is below SCIENTIFIC break-even, by decision
 -- The reactor therefore radiates hard, recovers most of it as wall heat, and clears its own heating
 -- bill: 56.1 MW sold against 50 MW drawn, net +6.1 MW.
 --
--- THIS FORCED A VOCABULARY DECISION, AND IT WAS TAKEN. CONTEXT.md used to define a breeder tier as
+-- THIS FORCED A VOCABULARY DECISION, AND IT WAS TAKEN. GLOSSARY.md used to define a breeder tier as
 -- one "which consumes more power than it makes", which the measurement above makes false. Truls chose
 -- to fix the wording rather than stop selling the radiation (2026-08-21): a breeder tier is now one
--- that "makes no meaningful power", and CONTEXT.md carries a **break-even** entry distinguishing the
+-- that "makes no meaningful power", and GLOSSARY.md carries a **break-even** entry distinguishing the
 -- scientific sense (Q = 1) from the engineering one (0.1765 here). D-D sits between them.
 --
 -- The alternative was to exclude the radiation from what is sold, which would have made the tier a
@@ -1074,7 +1074,7 @@ check(hot_state.q_factor < 1, "which is below SCIENTIFIC break-even, by decision
 -- hard and currently sells all of it. Rejected as unphysical: the X-rays really do heat the wall.
 near(out_w / 1e6, 56.12, 0.01, "it sells 56.1 MW for the 50 MW it draws")
 check(out_w > SPEC.heating_power_w,
-  "so it is marginally NET POSITIVE, which is what CONTEXT.md's break-even entry now describes",
+  "so it is marginally NET POSITIVE, which is what GLOSSARY.md's break-even entry now describes",
   string.format("out %.4g W vs heating %.4g W, net %+.3g W",
     out_w, SPEC.heating_power_w, out_w - SPEC.heating_power_w))
 near((1 - SPEC.capture_efficiency) / SPEC.capture_efficiency, 0.1765, 0.01,
@@ -1683,7 +1683,7 @@ end
 -- numerator moved under it, and #117 asked for a figure a rig produces instead.
 --
 -- BOTH TIERS AT ONE OPERATING POINT, which was #117's first requirement and is Truls's decision:
--- SETTLED -- box full, all the power the reactor asks for. CONTEXT.md names it the reference point
+-- SETTLED -- box full, all the power the reactor asks for. GLOSSARY.md names it the reference point
 -- and pins the D-D end of it; the note used to compare a heater-fed D-T reactor against a settled
 -- D-D one, which are not the same kind of number.
 --
@@ -1781,7 +1781,7 @@ local TOP_TAU_ONLY = GRID[0][#LADDER]
 -- SINCE #290 IT ALSO PINS THE OTHER READING OF THE SAME QUANTITY, per rung. `ratio` is the SUPPLY
 -- RATIO per saturated reactor -- what a settled D-T reactor burns -- and `per_heater` is what one
 -- rf-heater's worth costs, which is the reading a player meets because a heater is what they build.
--- `heaters` is what relates them. CONTEXT.md defines all three under **supply ratio**; the note
+-- `heaters` is what relates them. GLOSSARY.md defines all three under **supply ratio**; the note
 -- publishes all three; this table is where they are measured.
 --
 -- AND SINCE #425 IT IS ONE ROW OF A GRID RATHER THAN THE WHOLE STATEMENT. Every figure in it is
@@ -2029,7 +2029,7 @@ do
     "and one a tenth outside it does not")
 end
 
--- AND THE OTHER READING OF IT, which is the one CONTEXT.md publishes because a heater is what a
+-- AND THE OTHER READING OF IT, which is the one GLOSSARY.md publishes because a heater is what a
 -- player builds. 9.1233 unresearched is pinned in the table above; this is its far corner.
 near(TOPPED.per_heater, 0.9726, 0.01,
   "and one heater on the D-T mix costs 0.973 of a D-D reactor there -- under one")

@@ -36,7 +36,7 @@ seem to be acceptable game-play wise. we need to find a way to make this number 
 That settled the direction and nothing else.
 
 [#290](https://github.com/trulsjo/realistic-fusion-refreshed/issues/290) then gave the quantity one
-name — **supply ratio**, defined in `CONTEXT.md` — and published both its readings. This ADR argues
+name — **supply ratio**, defined in `GLOSSARY.md` — and published both its readings. This ADR argues
 about one figure because of that.
 
 ### Three facts reshaped the question before any lever was chosen
@@ -95,7 +95,7 @@ is where the pain is comfortable; the ceiling is where it becomes unacceptable. 
 would make #294 lie about how firm this is.
 
 **Stated per saturated reactor**, which is the reading the whole footprint argument is built on and
-the one a future `rf-hc-heater` cannot silently move. `CONTEXT.md`'s rule still applies: any figure
+the one a future `rf-hc-heater` cannot silently move. `GLOSSARY.md`'s rule still applies: any figure
 published here says which reading it is.
 
 **Entry stays at 94.70, reported and ungated.** It is not a number a player is ever required to
@@ -279,7 +279,7 @@ unchanged beside the researched one.
   written, and at 75 MW break-even arrives at rung 1 with Q 1.0495 tuned and full alike.
 - **`docs/research/d-t-ignition.md`** — **extended**: the confinement table is now visibly the
   50 MW row of a 6×4 grid, and both supply-ratio readings carry their corners.
-- **`CONTEXT.md`** — **extended**: the **supply ratio** entry publishes both corners, and the
+- **`GLOSSARY.md`** — **extended**: the **supply ratio** entry publishes both corners, and the
   **operating point** entry gains the rule that a figure naming no research state is the
   unresearched one.
 - **`realistic-fusion-refreshed/prototypes/entities.lua`** — the aneutronic 9:1 comment.

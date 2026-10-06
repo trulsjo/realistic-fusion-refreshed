@@ -89,8 +89,8 @@ availability rather than proof of it, and it should be re-checked immediately be
   redesign's own `RealisticFusionCore/electric-boiler/` and `graphics/icons/angels-numerals/` in
   `CLAUDE.md` and ADR 0001, `RealisticFusionPower`, `RealisticFusionPowerPort`,
   `RealisticFusionWeaponry`, the `rfp-` prefix, and "Realistic Fusion 2.0" — which is the *redesign's*
-  mod version and not a title of ours (`CONTEXT.md` fixes that term).
-- **`CONTEXT.md` moves with it**, since it fixes the two mods' names and titles as vocabulary.
+  mod version and not a title of ours (`GLOSSARY.md` fixes that term).
+- **`GLOSSARY.md` moves with it**, since it fixes the two mods' names and titles as vocabulary.
 
 ## Alternatives considered
 

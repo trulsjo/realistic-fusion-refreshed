@@ -684,7 +684,7 @@ script.on_init(function()
   -- to it.
   --
   -- NOTHING HAS EVER MEASURED WHETHER THE ENGINE FORMS THAT BOLT. The bolt row above measures it on
-  -- the chain variant, whose bolting connection is "input-output" -- CONTEXT.md says so out loud --
+  -- the chain variant, whose bolting connection is "input-output" -- GLOSSARY.md says so out loud --
   -- and docs/research/exchanger-chaining.md establishes that a plain "input" connection stops fuel
   -- LEAVING a box. Whether it also stops fuel ARRIVING through a direct bolt is a different
   -- question and it has no answer on this page.

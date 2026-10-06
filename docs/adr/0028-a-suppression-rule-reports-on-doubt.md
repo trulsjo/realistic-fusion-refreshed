@@ -17,7 +17,7 @@ the game or a set already defines. `Get-DerivedWiring` is the only code in that 
 rather than us.
 
 **A replacement is a claim about authorship, not about difference** — settled on 2026-08-31 and now
-in `CONTEXT.md`. That framing decides what a suppression rule is *for*: excusing what upstream did,
+in `GLOSSARY.md`. That framing decides what a suppression rule is *for*: excusing what upstream did,
 never merely quietening what a reader would rather not read.
 
 It leaves one case unanswered, and the case is common. **The dump often cannot prove either party

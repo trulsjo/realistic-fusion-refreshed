@@ -91,7 +91,7 @@ question:
 
 **That total is a DRAW, not an output**, and the 56.1 MW this ADR quotes further down is what the
 reactor SELLS. The two agreeing to a tenth of a megawatt is a coincidence of the balance and either
-can move without the other; `CONTEXT.md` on **operating point** carries the warning (#109).
+can move without the other; `GLOSSARY.md` on **operating point** carries the warning (#109).
 
 `rf-d-d-fusion` sits behind `advanced-circuit` and `concrete` — roughly blue science, where 56 MW is
 about 62 vanilla steam engines. Vanilla nuclear, the comparable tier, needs no startup power at all.
@@ -125,7 +125,7 @@ of fusion power against 50 MW of heating. (Q 0.45 at its density optimum; see
 > "Below break-even" here means **scientific** break-even, `Q = 1`. It is not below *engineering*
 > break-even: a plant pays for itself at `Q ≥ (1 − capture_efficiency) / capture_efficiency`, which is
 > 0.1765, and the tier sells **56.1 MW against the 50 MW it draws** at the **settled** operating
-> point — box full, 1000 units at 2.42×10⁸ °C, all the power it asks for (`CONTEXT.md`, #109). That is
+> point — box full, 1000 units at 2.42×10⁸ °C, all the power it asks for (`GLOSSARY.md`, #109). That is
 > the operating point this margin is quoted at, and the argument is not transferable to the other one:
 > a heater-fed reactor is thinner, hotter and sells 85.2 MW, but it is also paying for the heater that
 > keeps it thin, which is a different bill and a different claim. Note too that this margin is the
@@ -133,7 +133,7 @@ of fusion power against 50 MW of heating. (Q 0.45 at its density optimum; see
 > break-even rather than above it -- the accounting ADR 0014 makes, and again a different claim. The X-rays this ADR added heat
 > the first wall and that heat is recovered, so the reactor fuses at a loss and sells at a small
 > profit. That does not change the decision — the tier's product is fuel and its power margin is
-> trivial — but it did make `CONTEXT.md`'s old gloss ("consumes more power than it makes") false, and
+> trivial — but it did make `GLOSSARY.md`'s old gloss ("consumes more power than it makes") false, and
 > that has been corrected. Truls chose to fix the wording rather than stop selling the radiation,
 > 2026-08-21.
 The wider ladder this leaves #53 is part of the reason: from 0.32 to 2.08 is a progression, where a
@@ -142,7 +142,7 @@ tier entering at break-even has one rung of headroom before the clamp.
 **The D-D tier's product is tritium and helium-3, not electricity.** This is the substantive claim,
 and it is what makes the two numbers above a design rather than a shortfall. A player builds a D-D
 reactor to breed the fuel the D-T tier burns. Power is what #53's research and the later tiers make
-of it. `CONTEXT.md` fixes the term.
+of it. `GLOSSARY.md` fixes the term.
 
 **The entry cost is accepted, and is stated where a player meets it.** The `rf-d-d-fusion` technology
 description says the reactor consumes more than it produces and is built to breed — so the cost is
@@ -163,7 +163,7 @@ claim.
 
 ## Consequences
 
-- **`CONTEXT.md` gains the term.** "Breeder tier" is now vocabulary, and "D-D by-products" stops
+- **`GLOSSARY.md` gains the term.** "Breeder tier" is now vocabulary, and "D-D by-products" stops
   reading as a side effect of a power reactor.
 - **#52 proceeds as written**, including its blast radius: `tests/test-reactor-logic.lua`'s
   shipped-balance block asserts the *intended* sub-break-even state and says why it is intended;

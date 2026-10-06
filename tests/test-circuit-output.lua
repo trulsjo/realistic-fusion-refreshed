@@ -291,7 +291,7 @@ equal(status_of(running, CURVE.optimum + CURVE.step * 1.5).key, "rich", "and ove
 
 -- ---------------------------------------------------------------- what "starved" means now (#74)
 --
--- CONTEXT.md separates two words that used to be one: under-supplied is held below full on purpose
+-- GLOSSARY.md separates two words that used to be one: under-supplied is held below full on purpose
 -- and may be the BEST state a reactor can be in; starved is held below the density at which it is
 -- worth running at all. The line is the curve's floor -- the thinnest fill still worth as much as
 -- a full reactor -- so it is measured per confinement rung rather than written down.

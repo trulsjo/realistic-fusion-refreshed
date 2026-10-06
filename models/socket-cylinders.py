@@ -34,7 +34,7 @@ says which connection carries which radius at which height. The second is how
 scripts/probe-socket-underside.py knows what it is reading, because a connection's radius and height
 are exactly the two numbers tools/measure-socket-parts.py refuses to guess.
 
-IT IS NOT CALLED A BENCH, AND THE NAME IS THE REASON. CONTEXT.md's Measurement words give `bench` to
+IT IS NOT CALLED A BENCH, AND THE NAME IS THE REASON. GLOSSARY.md's Measurement words give `bench` to
 a script that measures a quantity and asserts its own validity -- tools/measure-socket-parts.py is
 one -- and this builds a scene rather than measuring anything. One word, one meaning.
 
