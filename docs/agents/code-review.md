@@ -240,8 +240,8 @@ is handed and not by a skill's name:
 - on a branch that records measurements, the probes' raw output; on any other, the result of the
   gates that were run.
 
-`/pre-pr-review` (`.claude/skills/pre-pr-review/SKILL.md`, #595) runs it: it writes the reviewer's
-brief and the confirmation's. The list above is still the definition, and a review handed those
+`/pre-pr-review` (`.claude/skills/pre-pr-review/SKILL.md`, #595) runs it: it holds the reviewer's
+brief and the confirmation's as templates for the session to fill in. The list above is still the definition, and a review handed those
 three things is the pre-PR review whatever started it.
 
 **The reviewer that raised a finding confirms its fix.** Continue the same subagent and have it read
