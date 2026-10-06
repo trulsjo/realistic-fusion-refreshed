@@ -380,11 +380,16 @@ that fails once and passes on every re-run is another agent's plant, not a flaky
 ## Code indexes
 
 Two optional indexes of this repository exist on a machine that has built them. Both directories
-are git-ignored, so a fresh clone has neither, and neither is a required first step.
+are git-ignored, so a fresh clone has neither, and neither is a required first step (#598).
 
-- **graphify** (`graphify-out/`) answers a question that spans many files: `graphify query
-  "<question>"`, `graphify path "<A>" "<B>"`, `graphify explain "<concept>"`. Run
-  `graphify update .` before a query; it re-extracts code files only, with no LLM call.
-- **graft** (`graft/`) returns ranked nodes with their `file:line`, and who calls a symbol: `graft
-  ask "<query>"`, `graft callers <symbol>`. Both check the graph's freshness themselves unless
-  given `--no-refresh`.
+- **graphify** (`graphify-out/`) answers a question that spans many files:
+  `graphify query "<question>"`, `graphify path "<A>" "<B>"`, `graphify explain "<concept>"`.
+  Run `graphify update .` before a query; it re-extracts code files only, with no LLM call.
+- **graft** (`graft/`) returns ranked nodes with their `file:line`, and who calls a symbol:
+  `graft ask "<query>"`, `graft callers <symbol>`. Both check the graph's freshness themselves
+  unless given `--no-refresh`.
+
+**Do not re-run graphify's Claude install (`graphify claude install`) in this repository.** It
+looks for a heading that is exactly `## graphify`, and finding none it appends its own section
+below this one, telling the reader to query first, and installs its hook in
+`.claude/settings.json`.
