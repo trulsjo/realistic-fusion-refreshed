@@ -1,5 +1,55 @@
 # What a simulated reactor costs — the first measurement
 
+## Current figures
+
+Each row is a figure this note currently stands behind, copied from the section named. A change to
+a figure below changes its row here in the same commit (docs/agents/code-review.md).
+
+| Figure | Value | Measured | Game version | Research state | Section |
+|---|---|---|---|---|---|
+| Noise floor between quiet invocations of the shipped D-D step, rig, *n* = 200 | 1.35× | 2026-08-18 | 2.0.77 | not stated | [What remains once the machine is quiet](#what-remains-once-the-machine-is-quiet) |
+| `reactor-logic.step()` arithmetic alone, ablation ladder, D-D rig, *n* = 200, median over quiet passes | 0.876 µs per reactor | 2026-08-18 | 2.0.77 | not stated | [Where the cost actually goes](#where-the-cost-actually-goes) |
+| Equilibrium temperature shift, one step per tick against one step every six ticks | 0.10% | not stated | none (pure simulation) | not stated | [What changed as a result](#what-changed-as-a-result) |
+| Equilibrium temperature shift at one step per thirty ticks | 0.60% | not stated | none (pure simulation) | not stated | [What changed as a result](#what-changed-as-a-result) |
+| `get_capacity` asked of `rf-reactor` box 1 (plasma) on a 4000-unit run | 1000 | 2026-08-18 | 2.0.77 | not stated | [2. `get_capacity` reports the SEGMENT for a pipe and the BOX for a machine — this note had it wrong](#2-get_capacity-reports-the-segment-for-a-pipe-and-the-box-for-a-machine--this-note-had-it-wrong) |
+| Temperature spread on an undriven run seeded fifty times apart end to end, within three seconds | 0.015% | 2026-08-18 | 2.0.77 | not stated | [3. A run really is one pool, and an idle one flattens](#3-a-run-really-is-one-pool-and-an-idle-one-flattens) |
+| Powered reactor above its own run, row of two reactors with only the westmost powered | 3.6% above | 2026-08-18 | 2.0.77 | not stated | [3. A run really is one pool, and an idle one flattens](#3-a-run-really-is-one-pool-and-an-idle-one-flattens) |
+| Powered reactor above its own run, row of five reactors with only the westmost powered | 9.6% above | 2026-08-18 | 2.0.77 | not stated | [3. A run really is one pool, and an idle one flattens](#3-a-run-really-is-one-pool-and-an-idle-one-flattens) |
+| Share of the sum of amount × temperature gone after the engine flattens one box raised fourfold, three unregistered reactors, no simulation running | 18.2% | 2026-08-18 | 2.0.77 | not stated | [4. The engine destroys heat when it mixes](#4-the-engine-destroys-heat-when-it-mixes) |
+| Predicted step energy that arrived, `solo` — one reactor, no pipe, capacity 1000 | 94.6% | 2026-10-01 | 2.0.77 | unresearched (confinement, heating and plant efficiency off and asserted off) | [5. So the pool does not gain what the reactors spent — and only part of that is the engine's](#5-so-the-pool-does-not-gain-what-the-reactors-spent--and-only-part-of-that-is-the-engines) |
+| Predicted step energy that arrived, `solopipe` — one reactor, +20 pipe, capacity 3000 | 75.4% | 2026-10-01 | 2.0.77 | unresearched (confinement, heating and plant efficiency off and asserted off) | [5. So the pool does not gain what the reactors spent — and only part of that is the engine's](#5-so-the-pool-does-not-gain-what-the-reactors-spent--and-only-part-of-that-is-the-engines) |
+| Predicted step energy that arrived, `bare` — three reactors bridged, capacity 4000 | 57.6% | 2026-10-01 | 2.0.77 | unresearched (confinement, heating and plant efficiency off and asserted off) | [5. So the pool does not gain what the reactors spent — and only part of that is the engine's](#5-so-the-pool-does-not-gain-what-the-reactors-spent--and-only-part-of-that-is-the-engines) |
+| Predicted step energy that arrived, `piped` — three reactors bridged, +20 pipe, capacity 6000 | 67.0% | 2026-10-01 | 2.0.77 | unresearched (confinement, heating and plant efficiency off and asserted off) | [5. So the pool does not gain what the reactors spent — and only part of that is the engine's](#5-so-the-pool-does-not-gain-what-the-reactors-spent--and-only-part-of-that-is-the-engines) |
+| Arrived fraction once settled, three `rf-reactor` bridged with no tail, one rig-driven step, read at 120 and 960 ticks | 57.609% | 2026-09-13 | not stated | not stated | [5. So the pool does not gain what the reactors spent — and only part of that is the engine's](#5-so-the-pool-does-not-gain-what-the-reactors-spent--and-only-part-of-that-is-the-engines) |
+| Positional ramp between west, middle and east single-writer rows, same geometry, 6-tick window | 1.089 points | 2026-09-13 | not stated | not stated | [5. So the pool does not gain what the reactors spent — and only part of that is the engine's](#5-so-the-pool-does-not-gain-what-the-reactors-spent--and-only-part-of-that-is-the-engines) |
+| The same positional ramp at a 120-tick window | 0.000 | 2026-09-13 | not stated | not stated | [5. So the pool does not gain what the reactors spent — and only part of that is the engine's](#5-so-the-pool-does-not-gain-what-the-reactors-spent--and-only-part-of-that-is-the-engines) |
+| Electric buffer the engine holds against the declared `buffer_capacity`, at 1 MJ, 7 MJ, 10 MJ and 100 MJ declared | 16/15 — 6.666667% over | 2026-08-20 | 2.0.77 | not stated | [The rule](#the-rule) |
+| `rf-reactor` buffer ceiling, declared `buffer_capacity = "10MJ"` | 10,666,666.67 J | 2026-08-20 | 2.0.77 | not stated | [The rule](#the-rule) |
+| Vanilla `accumulator`, held against declared | Ratio 1.0 | 2026-08-20 | 2.0.77 | not stated | [What the ratio does **not** apply to, which is why this note claims a rule and not a law](#what-the-ratio-does-not-apply-to-which-is-why-this-note-claims-a-rule-and-not-a-law) |
+| `assembling-machine-2` with `buffer_capacity` forced to `"10MJ"`, energy held | 2,755.56 J | 2026-08-20 | 2.0.77 | not stated | [What the ratio does **not** apply to, which is why this note claims a rule and not a law](#what-the-ratio-does-not-apply-to-which-is-why-this-note-claims-a-rule-and-not-a-law) |
+| D-D vented, rig, `-Gap 6`, *n* = 200, `scriptUpdate` | 3.68 µs per reactor | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
+| D-D collected, rig, `-Gap 6`, *n* = 200, `scriptUpdate` | 4.84 µs per reactor | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
+| D-D blanketed, rig, `-Gap 6`, *n* = 200, `scriptUpdate` — the worst of the five configurations | 5.44 µs per reactor | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
+| All four reactions vented, rig, `-Gap 6`, *n* = 200, `scriptUpdate` | 3.04 µs per reactor | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
+| All four reactions collected, rig, `-Gap 6`, *n* = 200, `scriptUpdate` | 4.48 µs per reactor | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
+| All four reactions collected, share of a 16.67 ms tick at 200 reactors | 5.4% | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
+| D-D blanketed, share of a tick at 200 reactors | 6.5% | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
+| D-D blanketed, share of a tick at ten to fifty reactors | 0.3% to 1.6% | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
+| What a collector costs over the same rig vented, six pairs, D-D and mixed | about 1.4×, bracketed by 1.3 and 1.7 | 2026-09-03 | 2.0.77 | not stated | [What the collector costs](#what-the-collector-costs) |
+| D-D blanketed over D-D collected, rig, `-Gap 6`, *n* = 200 — inside the floor | 1.12 | 2026-09-03 | 2.0.77 | not stated | [The blanket, decided rather than omitted](#the-blanket-decided-rather-than-omitted) |
+| Loaded tick over rig control, `scriptUpdate` per reactor, D-D blanketed, `-Gap 6`, *n* = 200, borrowed 10k SPM megabase | 1.11 | 2026-09-06 | 2.0.77 | not stated | [The answer, and it is the dull one](#the-answer-and-it-is-the-dull-one) |
+| Borrowed base, median tick with 0 reactors, over 9,000 sampled ticks | 10.81 ms | 2026-09-06 | 2.0.77 | not stated | [The answer, and it is the dull one](#the-answer-and-it-is-the-dull-one) |
+| Rig control, median tick with 0 reactors, over 9,000 sampled ticks | 0.27 ms | 2026-09-06 | 2.0.77 | not stated | [The answer, and it is the dull one](#the-answer-and-it-is-the-dull-one) |
+| Largest one-tick change in the electric buffer of a driven, plasma-fed, powered `rf-reactor`, 600 settled ticks, since #72 | 0 J | 2026-09-06 | 2.0.77 | not stated | [The shape it fixed, measured rather than argued](#the-shape-it-fixed-measured-rather-than-argued) |
+| Electric buffer of the same driven `rf-reactor` as observed, max and min, since #72 | 9,833,333.33 J | 2026-09-06 | 2.0.77 | not stated | [The shape it fixed, measured rather than argued](#the-shape-it-fixed-measured-rather-than-argued) |
+| What per-tick confinement spending (#72) added, D-D rig, *n* = 200, paired alternating arms in one sitting | +0.88 µs per reactor | 2026-09-06 | 2.0.77 | not stated | [What it costs: about +0.9 µs per reactor, and the ratio is under this page's own floor](#what-it-costs-about-09-µs-per-reactor-and-the-ratio-is-under-this-pages-own-floor) |
+| What the per-force heating lookup (#425) added, D-D rig, *n* = 200, paired alternating arms in one sitting | +0.83 µs per reactor per tick | 2026-09-20 | 2.0.77 | not stated | [What a per-force heating draw costs per tick (#430)](#what-a-per-force-heating-draw-costs-per-tick-430) |
+| Shipped D-D step with the lookup, vented rig, *n* = 200, median of nine rounds | 5.257 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [The sitting](#the-sitting) |
+| The same step without the lookup (parent of the #425 commit), median of nine rounds | 4.424 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [The sitting](#the-sitting) |
+| `luaGarbageIncremental`, D-D rig with the lookup, *n* = 200, nine rounds | 0.1108 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [Nothing allocates](#nothing-allocates) |
+| What the lookup added on the `-Mixed` rig, 110 `rf-reactor` and 90 `rf-aneutronic-reactor` | +0.391 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [The aneutronic floor is bounded, not measured](#the-aneutronic-floor-is-bounded-not-measured) |
+| The lookup's +0.83 µs as a share of a 16.67 ms tick at 200 reactors | 1.0% | 2026-09-20 | 2.0.77 | not stated | [What is not taken](#what-is-not-taken) |
+
 The first UPS reading on v1's reactor simulation, taken as soon as one existed
 ([#24](https://github.com/trulsjo/realistic-fusion-refreshed/issues/24)).
 

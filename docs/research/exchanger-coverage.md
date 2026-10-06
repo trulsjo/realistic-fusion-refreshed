@@ -1,5 +1,59 @@
 # What one heat exchanger covers, across all three research ladders
 
+## Current figures
+
+Each row is a figure this note currently stands behind, copied from the section named. A change
+to a figure below changes its row here in the same commit (docs/agents/code-review.md).
+
+| Figure | Value | Measured | Game version | Research state | Section |
+|---|---|---|---|---|---|
+| Held map, cells by symbol | Twenty `ok`, four `~`, seventy-two `X`, of ninety-six | 2026-09-20 | none (pure simulation) | all ninety-six states | [The coverage map](#the-coverage-map) |
+| Held model, shipped corner, full supply / density optimum | 56.1 / 61.6 MW | 2026-09-20 | none (pure simulation) | unresearched | [The grid](#the-grid) |
+| Held model, heating walked alone, last rung one exchanger covers | rung 3, 65 MW — 83.2 MW full, 86.3 tuned | 2026-09-20 | none (pure simulation) | heating rung 3, nothing else | [Walking each ladder on its own, from the shipped state](#walking-each-ladder-on-its-own-from-the-shipped-state) |
+| Held model, heating walked alone, first rung not covered | rung 4, 70 MW — 92.9 full, 95.1 tuned | 2026-09-20 | none (pure simulation) | heating rung 4, nothing else | [Walking each ladder on its own, from the shipped state](#walking-each-ladder-on-its-own-from-the-shipped-state) |
+| Held model, confinement walked alone, last rung covered | rung 2, 50 s — 82.9 MW full, 88.7 tuned | 2026-09-20 | none (pure simulation) | confinement rung 2, nothing else | [Walking each ladder on its own, from the shipped state](#walking-each-ladder-on-its-own-from-the-shipped-state) |
+| Held model, confinement walked alone, first rung not covered | rung 3, 60 s — 104.9 full, 107.6 tuned | 2026-09-20 | none (pure simulation) | confinement rung 3, nothing else | [Walking each ladder on its own, from the shipped state](#walking-each-ladder-on-its-own-from-the-shipped-state) |
+| Held model, plant efficiency walked alone, whole ladder | 61.9 MW full, 68.0 tuned | 2026-09-20 | none (pure simulation) | plant efficiency rung 3, nothing else | [Walking each ladder on its own, from the shipped state](#walking-each-ladder-on-its-own-from-the-shipped-state) |
+| Held model, confinement rung 2 tuned, at the 85% fill the suite pins | 88.6 MW | not stated | none (pure simulation) | confinement rung 2, nothing else | [The grid](#the-grid) |
+| Held model, every ladder at its top | 211.2 MW at full supply, 2.35 exchangers | 2026-09-20 | none (pure simulation) | all ladders complete | [And the far corner](#and-the-far-corner) |
+| Game, D-D, one heater, nothing researched | 48.3 – 58.0 MW, 999.9 held, 2.382e8 °C | 2026-10-03 | 2.0.77 | unresearched | [The fed reactor, one heater](#the-fed-reactor-one-heater) |
+| Game, D-D, one heater, heating rung 4 / rung 5 | 77.7 – 93.2 MW / 85.3 – 102.4 MW | 2026-10-03 | 2.0.77 | heating rung 4 / rung 5, nothing else | [The fed reactor, one heater](#the-fed-reactor-one-heater) |
+| Game, D-D, one heater, confinement rung 3 | 76.0 – 91.1 MW, 999.8 held, 5.342e8 °C | 2026-10-03 | 2.0.77 | confinement rung 3, nothing else | [The fed reactor, one heater](#the-fed-reactor-one-heater) |
+| Game, D-D, one heater, every ladder at its top | 109.0 – 130.8 MW, 623.8 held, 1.462e9 °C | 2026-10-03 | 2.0.77 | all ladders complete | [The fed reactor, one heater](#the-fed-reactor-one-heater) |
+| Fed model, one heater, nothing researched | 55.3 MW, 1000 held, 2.381e8 °C, 0.531 u/s | not stated | none (pure simulation) | unresearched | [The fed reactor, one heater](#the-fed-reactor-one-heater) |
+| Fed model, one heater, every ladder at its top | 124.7 MW, 625.0 held, 1.460e9 °C, 2.500 u/s | not stated | none (pure simulation) | all ladders complete | [The fed reactor, one heater](#the-fed-reactor-one-heater) |
+| States supply-limited on one heater, fed model | twenty-four of the ninety-six | not stated | none (pure simulation) | all ninety-six states | [The fed reactor, one heater](#the-fed-reactor-one-heater) |
+| Most a full-box cell burns on one heater, fed model | 2.466 u/s | not stated | none (pure simulation) | heating rung 3 with confinement rung 2 | [The fed reactor, one heater](#the-fed-reactor-one-heater) |
+| Fed model, one heater, first rung NOT covered, each ladder walked alone | heating: rung 5, 97.6 MW (rung 4 is 88.9); confinement: none (rung 3 is 86.9); plant efficiency: none (60.9 at most) | not stated | none (pure simulation) | each ladder alone | [What that does to coverage, on one heater](#what-that-does-to-coverage-on-one-heater) |
+| Fed map, one heater, cells by symbol | 32 `ok`, 0 `~`, 64 `X`; 24 supply-limited, all `X` | not stated | none (pure simulation) | all ninety-six states | [The fed map, all ninety-six states](#the-fed-map-all-ninety-six-states) |
+| Fed map, the one cell `X` by a hair | 90.02 MW at full feed | not stated | none (pure simulation) | capture 0.9, τ 40 s, 60 MW | [The fed map, all ninety-six states](#the-fed-map-all-ninety-six-states) |
+| Fed map, largest gain from under-feeding | 4.6 MW: 60.95 MW at full feed and 65.56 at 30% of it | not stated | none (pure simulation) | plant efficiency rung 3, nothing else | [The fed map, all ninety-six states](#the-fed-map-all-ninety-six-states) |
+| Bench run-to-run spread, three runs each of D-T and D-D | zero, in each state | 2026-10-03 | 2.0.77 | unresearched | [Repeated runs read the same](#repeated-runs-read-the-same) |
+| Game, D-T, one heater | 275.6 units at 2.193×10⁹ °C, 282.1 – 338.5 MW | 2026-10-03 | 2.0.77 | unresearched | [Repeated runs read the same](#repeated-runs-read-the-same) |
+| Temperature the heater makes plasma at | 1×10⁶ °C | 2026-10-03 | 2.0.77 | nothing researched and confinement rung 2 | [The fuel line, measured](#the-fuel-line-measured) |
+| Fuel-line transient, pipes within 2× the heater's °C | 880 000 ticks at three pipes, 1 470 000 at twelve; about 65 000 ticks a pipe | 2026-10-03 | 2.0.77 | unresearched | [A longer line cools slower and settles in the same place](#a-longer-line-cools-slower-and-settles-in-the-same-place) |
+| Game, D-D, one heater, settled point at six, nine and twelve pipes | 2.38139×10⁸ °C, each at 1000.0 units and 48.3 – 58.0 MW | 2026-10-03 | 2.0.77 | unresearched | [A longer line cools slower and settles in the same place](#a-longer-line-cools-slower-and-settles-in-the-same-place) |
+| Game, D-D, two heaters, confinement rung 3 | 76.0 – 91.1 MW, 999.8 held, 5.342e8 °C | 2026-10-03 | 2.0.77 | confinement rung 3 and nothing else | [Confinement rung 3 on two heaters](#confinement-rung-3-on-two-heaters) |
+| Game, D-D, four heaters, the bench's default state, settled | 141.0 – 169.3 MW, 999.6 held, 9.083e8 °C, at 1 980 000 ticks | 2026-10-04 | 2.0.77 | all ladders complete | [The default four-heater run, settled](#the-default-four-heater-run-settled) |
+| Tick the default four-heater line is settled at, by the 2× mark | 260 000 | 2026-10-04 | 2.0.77 | all ladders complete | [The default four-heater run, settled](#the-default-four-heater-run-settled) |
+| Game, D-D, four heaters, confinement rung 3 alone, settled | 76.0 – 91.1 at 5.341e8 °C | 2026-10-04 | 2.0.77 | confinement rung 3 alone | [The default four-heater run, settled](#the-default-four-heater-run-settled) |
+| Game, D-D, four heaters, confinement and plant efficiency rung 3 each, settled | 83.8 – 100.5 at 5.341e8 °C | 2026-10-04 | 2.0.77 | confinement and plant efficiency, rung 3 each | [The default four-heater run, settled](#the-default-four-heater-run-settled) |
+| Game, D-T, four heaters, settled | 996.2 – 1 195.4 MW, 597.4 held, 2.846e9 °C | 2026-10-04 | 2.0.77 | confinement rung 3 only | [The four-heater D-T reactor, settled](#the-four-heater-d-t-reactor-settled) |
+| Game, D-T, four heaters, the bench's default state, settled | 1 114.1 – 1 336.9 MW, 602.0 held, 3.022e9 °C | 2026-10-04 | 2.0.77 | all ladders complete | [The four-heater D-T reactor, settled](#the-four-heater-d-t-reactor-settled) |
+| Fed model, D-T, four heaters | 1 139.9 MW, 596.3 held, 2.852e9 °C, burning 10 u/s | not stated | none (pure simulation) | confinement rung 3 only | [The four-heater D-T reactor, settled](#the-four-heater-d-t-reactor-settled) |
+| Fed model, D-T, four heaters | 1 274.8 MW, 605.4 held, 3.004e9 °C, burning 10 u/s | not stated | none (pure simulation) | all ladders complete | [The four-heater D-T reactor, settled](#the-four-heater-d-t-reactor-settled) |
+| Game, D-D, one heater, the full cell nearest the fed model's line | 97.0 – 116.4 MW, 999.8 held, 6.399e8 °C | 2026-10-03 | 2.0.77 | heating 3 + confinement 2 | [Five combination states, nearest the line](#five-combination-states-nearest-the-line) |
+| Game, D-D, one heater, the part-full cell nearest the line | 99.0 – 118.8 MW, 788.6 held, 9.489e8 °C | 2026-10-03 | 2.0.77 | heating 4 + confinement 2 | [Five combination states, nearest the line](#five-combination-states-nearest-the-line) |
+| Fuel-line segment capacity, and a full three-pipe line | 1300 at three pipes, six 1600, nine 1900 and twelve 2200; a full line is 2300 units | 2026-10-03 | 2.0.77 | unresearched | [Why the box fills slower than the fed model](#why-the-box-fills-slower-than-the-fed-model) |
+| What the box and the segment trade through the box's one connection | at most 100 units a tick each way; no transfer moves less than 0.1 units | 2026-10-04 | 2.0.77 | unresearched | [The rule behind the split](#the-rule-behind-the-split) |
+| The stand-still, 1000-unit box: segment stands at, while the box goes from – to | 624.00, 520.00 – 532.00 at three pipes; 774.19, 516.13 – 535.48 at six | 2026-10-04 | 2.0.77 | unresearched | [The rule behind the split](#the-rule-behind-the-split) |
+| Tick a cycle first ends on 999 units, game and `M.settle_segment` alike | 71 402 at three pipes, 80 642 at six | 2026-10-04 | 2.0.77 | unresearched | [The rule behind the split](#the-rule-behind-the-split) |
+| Tick a cycle first ends on 998 units at the line, three pipes, game and `M.settle_segment` alike | 779 282 | 2026-10-04 | 2.0.77 | heating rung 3 and confinement rung 2 and nothing else | [The rule behind the split](#the-rule-behind-the-split) |
+| Heater's output box, tick pairs the rule misses by over 1×10⁻⁴, and the worst miss of the four cells | 0; 2.1e-5 | 2026-10-05 | 2.0.77 | nothing researched; heating 3 + confinement 2 | [The heater's output box](#the-heaters-output-box) |
+| Fed model, two heaters, the six cells one heater cannot fill | all six full; most burned 3.812 u/s; largest of the twenty-four MW figures 161.4 | 2026-10-04 | none (pure simulation) | the six supply-limited heating × confinement cells, at every capture | [The supply-limited cells on two heaters](#the-supply-limited-cells-on-two-heaters) |
+| Game, D-D, two heaters | 106.7 – 128.0 MW, 999.9 held, 7.047e8 °C | 2026-10-04 | 2.0.77 | heating 4 + confinement 2, capture 0.85 | [The supply-limited cells on two heaters](#the-supply-limited-cells-on-two-heaters) |
+| Game, D-D, two heaters | 141.1 – 169.3 MW, 999.8 held, 9.082e8 °C | 2026-10-04 | 2.0.77 | all ladders complete | [The supply-limited cells on two heaters](#the-supply-limited-cells-on-two-heaters) |
+
 **Measured 2026-09-20 on the pure simulation** — `realistic-fusion-refreshed/scripts/reactor-logic.lua`
 through `M.settle`, box full and never starved, settled 1200 s at one tick, fills swept at the 5%
 resolution `M.density_curve` uses. No game is started: every figure here is the model's, and the

@@ -1,5 +1,35 @@
 # Bremsstrahlung, and whether it would bite
 
+## Current figures
+
+Each row is a figure this note currently stands behind, copied from the section named. A change
+to a figure below changes its row here in the same commit (docs/agents/code-review.md).
+
+| Figure | Value | Measured | Game version | Research state | Section |
+|---|---|---|---|---|---|
+| D-T ideal ignition crossings, Wurzel/Putvinski bremsstrahlung | 4.3 keV and 409 keV | 2026-08-17 | none (pure simulation) | n/a (no transport loss) | [Why bremsstrahlung sets an ignition floor](#why-bremsstrahlung-sets-an-ignition-floor--and-out-here-a-ceiling) |
+| D-D ideal ignition crossings, Wurzel/Putvinski bremsstrahlung | 71.9 keV and 167.5 keV | 2026-08-17 | none (pure simulation) | n/a (no transport loss) | [Why bremsstrahlung sets an ignition floor](#why-bremsstrahlung-sets-an-ignition-floor--and-out-here-a-ceiling) |
+| Relativistic bremsstrahlung, full hydrogenic `rf-reactor` plasma at 2×10⁹ K | 169 MW | 2026-08-17 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [The arithmetic at this model's operating point](#the-arithmetic-at-this-models-operating-point) |
+| D-D equilibrium temperature with bremsstrahlung (Wurzel/Putvinski) | 2.42×10⁸ K | 2026-08-17 | none (pure simulation) | confinement 30 s, heating 50 MW | [What it does to the equilibria](#what-it-does-to-the-equilibria) |
+| D-D Q at that equilibrium | 0.32 | 2026-08-17 | none (pure simulation) | confinement 30 s, heating 50 MW | [What it does to the equilibria](#what-it-does-to-the-equilibria) |
+| D-D fusion power at that equilibrium | 16 MW | 2026-08-17 | none (pure simulation) | confinement 30 s, heating 50 MW | [What it does to the equilibria](#what-it-does-to-the-equilibria) |
+| D-D bremsstrahlung at that equilibrium | 27 MW | 2026-08-17 | none (pure simulation) | confinement 30 s, heating 50 MW | [What it does to the equilibria](#what-it-does-to-the-equilibria) |
+| D-T equilibrium temperature with bremsstrahlung (Wurzel/Putvinski) | 3.26×10⁹ K | 2026-08-17 | none (pure simulation) | confinement 30 s, heating 50 MW | [What it does to the equilibria](#what-it-does-to-the-equilibria) |
+| D-T Q at that equilibrium | 73.2 | 2026-08-17 | none (pure simulation) | confinement 30 s, heating 50 MW | [What it does to the equilibria](#what-it-does-to-the-equilibria) |
+| D-T fusion power at that equilibrium | 3 658 MW | 2026-08-17 | none (pure simulation) | confinement 30 s, heating 50 MW | [What it does to the equilibria](#what-it-does-to-the-equilibria) |
+| D-T bremsstrahlung at that equilibrium | 331 MW | 2026-08-17 | none (pure simulation) | confinement 30 s, heating 50 MW | [What it does to the equilibria](#what-it-does-to-the-equilibria) |
+| D-D break-even confinement time, relativistic fit | between 50 s and 55 s | 2026-08-18 | none (pure simulation) | confinement swept, heating not stated | [The 20% disagreement, resolved](#the-20-disagreement-resolved--51-2026-08-18) |
+| D-T equilibrium temperature at `τ_E` 10 s | 2.02×10⁹ K | 2026-08-17 | none (pure simulation) | confinement 10 s, heating not stated | [Does any parameter put D-T under the int32 ceiling?](#does-any-parameter-put-d-t-under-the-int32-ceiling) |
+| D-T Q at `τ_E` 10 s | 96 | 2026-08-17 | none (pure simulation) | confinement 10 s, heating not stated | [Does any parameter put D-T under the int32 ceiling?](#does-any-parameter-put-d-t-under-the-int32-ceiling) |
+| D-T temperature at `τ_E` 3 s, where it quenches | 3.1×10⁷ K | 2026-08-17 | none (pure simulation) | confinement 3 s, heating not stated | [Does any parameter put D-T under the int32 ceiling?](#does-any-parameter-put-d-t-under-the-int32-ceiling) |
+| D-T temperature at `Z_eff` 7, where it quenches | 1.9×10⁷ K | 2026-08-17 | none (pure simulation) | confinement 30 s, heating not stated | [Does any parameter put D-T under the int32 ceiling?](#does-any-parameter-put-d-t-under-the-int32-ceiling) |
+| D-D equilibrium temperature at `τ_E` 60 s, with bremsstrahlung | 6.48×10⁸ K | 2026-08-17 | none (pure simulation) | confinement 60 s, heating 50 MW | [What adding it to this model took](#what-adding-it-to-this-model-took) |
+| D-D Q at `τ_E` 60 s, with bremsstrahlung | 1.47 | 2026-08-17 | none (pure simulation) | confinement 60 s, heating 50 MW | [What adding it to this model took](#what-adding-it-to-this-model-took) |
+| D-D equilibrium temperature at `τ_E` 100 s, with bremsstrahlung | 1.40×10⁹ K | 2026-08-17 | none (pure simulation) | confinement 100 s, heating 50 MW | [What adding it to this model took](#what-adding-it-to-this-model-took) |
+| D-D Q at `τ_E` 100 s, with bremsstrahlung | 3.58 | 2026-08-17 | none (pure simulation) | confinement 100 s, heating 50 MW | [What adding it to this model took](#what-adding-it-to-this-model-took) |
+| D-D Q at 150 MW of heating, with bremsstrahlung | 0.95 | 2026-08-17 | none (pure simulation) | confinement 30 s, heating 150 MW | [What adding it to this model took](#what-adding-it-to-this-model-took) |
+| D-D best Q from raising heating alone | about 0.97, at roughly 175 MW | 2026-08-17 | none (pure simulation) | confinement 30 s, heating swept | [What adding it to this model took](#what-adding-it-to-this-model-took) |
+
 Researched 2026-08-17 against primary sources, and computed against the shipped model — `scripts/
 reactor-logic.lua` and `cross-section-data/reactivities.lua` at `M.reactor`'s constants, driven from
 a standalone Lua 5.4.6 harness that requires the repo's own modules rather than reimplementing them.

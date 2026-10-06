@@ -1,5 +1,54 @@
 # D-T ignites, and what that costs
 
+## Current figures
+
+Each row is a figure this note currently stands behind, copied from the section named. A change to
+a figure below changes its row here in the same commit (docs/agents/code-review.md).
+
+| Figure | Value | Measured | Game version | Research state | Section |
+|---|---|---|---|---|---|
+| Largest D-T over D-D reactivity ratio, at 1×10⁸ K | 93× | 2026-08-17 | none (pure simulation) | n/a | [What the data says](#what-the-data-says) |
+| D-T energy advantage per reaction over D-D's mean | 4.8× | 2026-08-17 | none (pure simulation) | n/a | [What the data says](#what-the-data-says) |
+| D-D settled temperature, 20 min, with radiation (#52) | 2.42×10⁸ °C | not stated | not stated | not stated | [The equilibrium that isn't](#the-equilibrium-that-isnt) |
+| D-D Q with radiation (#52) | 0.3205 | 2026-08-21 | not stated | not stated | [Both of those are settled, 2026-08-25 (#57, #58, ADR 0025)](#both-of-those-are-settled-2026-08-25-57-58-adr-0025) |
+| D-D fusion power with radiation (#52) | 16.02 MW | 2026-08-21 | not stated | not stated | [Both of those are settled, 2026-08-25 (#57, #58, ADR 0025)](#both-of-those-are-settled-2026-08-25-57-58-adr-0025) |
+| D-D thermal sold at the settled point, against the 50 MW it draws | 56.1 MW | 2026-08-21 | not stated | not stated | [Both of those are settled, 2026-08-25 (#57, #58, ADR 0025)](#both-of-those-are-settled-2026-08-25-57-58-adr-0025) |
+| Plasma temperature ceiling (the clamp) | 5×10⁹ °C | 2026-08-25 | not stated | n/a | [Both of those are settled, 2026-08-25 (#57, #58, ADR 0025)](#both-of-those-are-settled-2026-08-25-57-58-adr-0025) |
+| Reach of the temperature signal in kilodegrees (#57) | about 2.1×10¹² °C | 2026-08-25 | not stated | n/a | [Both of those are settled, 2026-08-25 (#57, #58, ADR 0025)](#both-of-those-are-settled-2026-08-25-57-58-adr-0025) |
+| D-T Q at 30 s of confinement, with radiation, quoted beside 3.25×10⁹ °C | 73.1 | 2026-08-25 | none (pure simulation) | unresearched (30 s of confinement) | [The equilibrium that isn't](#the-equilibrium-that-isnt) |
+| D-T temperature at the top confinement rung, with radiation | 3.92×10⁹ °C | 2026-08-25 | none (pure simulation) | top confinement rung; heating not stated | [The equilibrium that isn't](#the-equilibrium-that-isnt) |
+| D-T Q at the top confinement rung, with radiation | 65.4 | 2026-08-25 | none (pure simulation) | top confinement rung; heating not stated | [The equilibrium that isn't](#the-equilibrium-that-isnt) |
+| D-T temperature `scripts/check-d-t.ps1` sees in game | 3.13×10⁹ °C | 2026-08-25 | 2.0.77 | not stated | [Both of those are settled, 2026-08-25 (#57, #58, ADR 0025)](#both-of-those-are-settled-2026-08-25-57-58-adr-0025) |
+| D-T temperature and burn at one minute, with radiation | 3.25×10⁹ °C and 26.0 u/s | not stated | none (pure simulation) | unresearched — 30 s, 50 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| D-T temperature and burn settled (twenty minutes), with radiation | 3.27×10⁹ and 25.9 | not stated | none (pure simulation) | unresearched — 30 s, 50 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| One-heater D-D output, in game, 126 000 ticks (#440) | 48.9 – 58.6 MW | 2026-10-01 | 2.0.77 | unresearched | [Ignition is a control change, not a runaway](#ignition-is-a-control-change-not-a-runaway) |
+| One-heater D-D output, in game, 870 000 ticks, fuel line finished cooling (#503) | 48.3 – 58.0 MW | 2026-10-03 | not stated | unresearched | [Ignition is a control change, not a runaway](#ignition-is-a-control-change-not-a-runaway) |
+| One-heater D-T output, in game, 252 000 ticks (#486) | 282.1 – 338.5 MW | 2026-10-02 | 2.0.77 | unresearched | [Ignition is a control change, not a runaway](#ignition-is-a-control-change-not-a-runaway) |
+| One-heater D-T box fill and temperature, in game, reproducible (#510, #518) | 275.6 units at 2.193×10⁹ °C | 2026-10-03 | 2.0.77 | unresearched | [Ignition is a control change, not a runaway](#ignition-is-a-control-change-not-a-runaway) |
+| Fed model (`M.settle_fed`) at 2.5 u/s of D-T plasma | 276.9 units and 2.183×10⁹ °C, burning 2.500 u/s and selling 322.7 MW | not stated | none (pure simulation) | not stated | [Ignition is a control change, not a runaway](#ignition-is-a-control-change-not-a-runaway) |
+| One-heater D-T output, in game, 126 000 ticks, fully researched | 321.0 – 385.2 MW at 313.9 units and 3.446×10⁹ °C | not stated | not stated | all ladders complete | [Ignition is a control change, not a runaway](#ignition-is-a-control-change-not-a-runaway) |
+| Exchangers covering a one-heater D-T reactor | four unresearched (3.1 to 3.8 machines' worth), four or five researched (3.6 to 4.3) | not stated | not stated | both, as labelled | [Ignition is a control change, not a runaway](#ignition-is-a-control-change-not-a-runaway) |
+| Turbines for a one-heater D-T reactor, at 5.82 MW a turbine | 49 to 59 unresearched, 56 to 67 researched | not stated | not stated | both, as labelled | [Ignition is a control change, not a runaway](#ignition-is-a-control-change-not-a-runaway) |
+| Supply ratio per heater | 9.12 D-D reactors | not stated | none (pure simulation) | unresearched — 30 s, 50 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| Supply ratio per heater | 0.973 | not stated | none (pure simulation) | fully researched — 60 s, 75 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| Supply ratio per saturated reactor | 94.7 D-D reactors | not stated | none (pure simulation) | unresearched — 30 s, 50 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| Supply ratio per saturated reactor | 8.93 | not stated | none (pure simulation) | fully researched — 60 s, 75 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| Supply ratio per saturated reactor, top confinement rung only | 18.50 | not stated | none (pure simulation) | 60 s `confinement-3`, 50 MW shipped heating | [What research does to it: two ladders, and a grid rather than a line](#what-research-does-to-it-two-ladders-and-a-grid-rather-than-a-line) |
+| Heaters a settled D-T reactor eats | 10.4 heaters | not stated | none (pure simulation) | unresearched — 30 s, 50 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| Heaters a settled D-T reactor eats | 9.18 | not stated | none (pure simulation) | fully researched — 60 s, 75 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| Tritium a settled D-T reactor burns | 12.97 u/s | not stated | none (pure simulation) | unresearched — 30 s, 50 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| Tritium a settled D-T reactor burns | 11.47 | not stated | none (pure simulation) | fully researched — 60 s, 75 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| Tritium a settled D-D reactor breeds | 0.137 u/s | not stated | none (pure simulation) | unresearched — 30 s, 50 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| Tritium a settled D-D reactor breeds, top confinement rung at base heating | 0.627 u/s | not stated | none (pure simulation) | 60 s, 50 MW | [What research does to it: two ladders, and a grid rather than a line](#what-research-does-to-it-two-ladders-and-a-grid-rather-than-a-line) |
+| Tritium a settled D-D reactor breeds, top heating rung at entry confinement | 0.393 u/s | not stated | none (pure simulation) | 30 s, 75 MW | [What research does to it: two ladders, and a grid rather than a line](#what-research-does-to-it-two-ladders-and-a-grid-rather-than-a-line) |
+| Output per reactor, 94.7 D-D reactors feeding one D-T reactor | 88.5 MW each (8 465 MW from 95.7 reactors) | not stated | none (pure simulation) | unresearched — 30 s, 50 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| What one heating rung is worth to the supply ratio | −24% at entry confinement and −8% at the top one | not stated | none (pure simulation) | as labelled | [What research does to it: two ladders, and a grid rather than a line](#what-research-does-to-it-two-ladders-and-a-grid-rather-than-a-line) |
+| Supply ratio per heater on the D-He3 mix, and on bare helium-3 | 9.12 and 18.2 | not stated | none (pure simulation) | not stated | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| Blanket breeding ratio, in game by `scripts/check-blanket.ps1`, against the model's 1.1 (#30) | 1.1000 | 2026-08-17 | not stated | not stated | [What research does to it: two ladders, and a grid rather than a line](#what-research-does-to-it-two-ladders-and-a-grid-rather-than-a-line) |
+| D-T plasma in the fuel segment beside the box, three pipes, one heater, 300 000 ticks (#532) | 334.9 units beside 275.7 in the box | 2026-10-04 | 2.0.77 | unresearched | [In the game](#in-the-game-1) |
+| D-T plasma in the fuel segment beside the box, six pipes, one heater, 300 000 ticks (#532) | 417.9 beside 275.8 | 2026-10-04 | 2.0.77 | unresearched | [In the game](#in-the-game-1) |
+| Brownout rig's own fuel line, 32 `rf-pipe`, one heater, tick 108 001 (#546) | a segment capacity of 4200 holding 1282.82 units, beside 312.48 in the box | 2026-10-04 | 2.0.77 | all ladders complete | [In the game](#in-the-game-1) |
+
 Measured 2026-08-17 while implementing
 [#28](https://github.com/trulsjo/realistic-fusion-refreshed/issues/28). Everything here comes from
 `scripts/reactor-logic.lua` driven at the shipped `M.reactor` constants, and from
