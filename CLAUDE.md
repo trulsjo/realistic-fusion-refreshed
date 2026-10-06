@@ -116,9 +116,10 @@ own `-SelfTest` proves with stand-in gates that a failing gate is named and not 
 **Three things run unattended, and nothing else does** (#599). `.github/workflows/gates.yml` runs
 the game-free gates — the ones that need neither Factorio nor Blender — on every pull request and
 every push to `main`: the Lua suites, `ship-check.ps1`, and `commit-check.ps1` over the commits
-that event brought. Every gate that creates a map, every probe and every `-SelfTest` still runs
-only when a person or a session starts it, so a green check says nothing about `load-check.ps1`
-or any `scripts/check-*.ps1`. **The check is advisory**: `main` has no branch protection, so a
+that event brought. Every gate that starts the game — the ones that create a map, and
+`locale-check.ps1` and `name-check.ps1`, which only dump prototypes — every probe and every
+`-SelfTest` still runs only when a person or a session starts it, so a green check says nothing
+about `load-check.ps1`, any `scripts/check-*.ps1` or those two. **The check is advisory**: `main` has no branch protection, so a
 red one blocks no merge.
 
 `scripts/probe-*` are **not** gates, and `run-gates.ps1` runs none of them. A probe asserts nothing and answers
