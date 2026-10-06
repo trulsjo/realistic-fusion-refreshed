@@ -370,12 +370,13 @@ more than one ticket, run `scripts/run-gates.ps1` on it; the State section says 
 **One review, before the pull request** (#592). Every branch gets the pre-PR review: a fresh
 subagent handed the diff, `docs/agents/code-review.md`, and the probes' raw output or the gate
 result. The same subagent confirms each fix, and every finding goes in the PR body with its score
-and whether it was fixed. **When an implement skill says to close out with
+and whether it was fixed. `/pre-pr-review` runs it; see
+`.claude/skills/pre-pr-review/SKILL.md` (#595). **When an implement skill says to close out with
 `/code-review`, this is what it means here** — more than one skill can answer to that name, and
 the official plugin, `code-review:code-review`, is the one that needs a pull request. It is run
 only when asked for.
 
-**The filter gates the comment, not the report.** `code-review:code-review`'s 80-point threshold
+**The threshold gates the comment, not the report.** `code-review:code-review`'s 80-point threshold
 governs which comment a finding is posted in. Its rubric only emits 0/25/50/75/100, so the filter
 admits 100 alone — a finding can be verified, important and filtered. Report every surviving
 finding with its score, and post the ones under the threshold to the PR in a second comment; a

@@ -118,6 +118,12 @@ occurrence" and "change every occurrence" are not the same instruction. Read the
 block carries that note — a date, an issue number, or both — and move on. What the rule looks for
 is an old figure still presented as current.
 
+**A change to a figure in a note changes its row in that note's table in the same commit.** Since
+2026-10-06 (#602) seven notes under `docs/research/` open with a `## Current figures` table, one row
+for each figure the note stands behind. A figure that moves in a section and not in its row leaves
+the old one at the top of the note, presented as current. A figure a change supersedes loses its
+row.
+
 **This binds the reviewer.** All three escapes #331 records were reviewer misses on changes whose
 own files were correct. An author who greps before opening the pull request saves a round, but the
 obligation lives here, in the review.
@@ -210,7 +216,8 @@ its own worktree with `git worktree add --detach` saw none of it; that is the pa
 ### Whether `code-review:code-review` itself should carry it
 
 **No, and nothing there can.** The plugin's own instructions launch five reviewers that read the
-change, its blame, earlier pull requests and its comments; none of them is told to modify the tree,
+change, its blame, earlier pull requests and the comments on them, and the comments in the code it
+touches; none of them is told to modify the tree,
 so the plugin never plants. The plugin is also not this repository's to edit, for the reason the
 next section gives. The rule binds whatever runs alongside it — a gate-poisoning pass, a review agent
 asked to prove a finding — and that is why it lives here.
@@ -230,6 +237,10 @@ is handed and not by a skill's name:
 - this file;
 - on a branch that records measurements, the probes' raw output; on any other, the result of the
   gates that were run.
+
+`/pre-pr-review` (`.claude/skills/pre-pr-review/SKILL.md`, #595) runs it: it writes the reviewer's
+brief and the confirmation's. The list above is still the definition, and a review handed those
+three things is the pre-PR review whatever started it.
 
 **The reviewer that raised a finding confirms its fix.** Continue the same subagent and have it read
 each fix against its own finding. That is a confirmation and not a second round. **A fix that adds a
@@ -270,7 +281,8 @@ rule.
 | `code-review:code-review` | on the pull request | about ten minutes, about 400 000 subagent tokens | eight candidates: seven fixed, one false positive |
 
 **Only the first could check a figure against what a probe printed.** The plugin's reviewers are
-given the change, its blame, earlier pull requests and its comments, and a probe's output is in none
+given the change, its blame, earlier pull requests and the comments on them, and the comments in the
+code it touches, and a probe's output is in none
 of those.
 
 **The seven were real, and all seven were small.** One commit fixed all of them and no figure moved.
@@ -284,8 +296,9 @@ pull request. That confusion is why the head of this file names all three.
 
 ## Why it is written here rather than fixed at source
 
-The workflow is a plugin, at `~/.claude/plugins/cache/claude-plugins-official/code-review/`. It is
-not this repository's to edit, and editing a cache would be undone by the next plugin update. So
+The workflow is a plugin, installed in Claude Code's plugin cache on each machine and not in this
+repository. It is not this repository's to edit, and editing a cache would be undone by the next
+plugin update. So
 this is a convention, and `CLAUDE.md` points at it so a review session loads it before running.
 
 Nothing about the scoring, the rubric or the 80 is changed, and none of the four rules asks the
