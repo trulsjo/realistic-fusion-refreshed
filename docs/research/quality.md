@@ -1,5 +1,53 @@
 # Quality, and what it does to this mod
 
+## Current figures
+
+Each row is a figure this note currently stands behind, copied from the section named. A change to
+a figure below changes its row here in the same commit (docs/agents/code-review.md).
+
+| Figure | Value | Measured | Game version | Research state | Section |
+|---|---|---|---|---|---|
+| `rf-reactor` fluid box capacity, plasma and energy, normal → legendary | 1000 → 1000, both boxes | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
+| `rf-aneutronic-reactor` fluid boxes, normal → legendary | 3000 / 1000 → 3000 / 1000 | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
+| `rf-reactor` `electric_buffer_size`, placed | 10 666 666.67 J at every level | 2026-08-21 | 2.0.77 | not stated | [The list of affected properties is engine-side and is not the list above](#the-list-of-affected-properties-is-engine-side-and-is-not-the-list-above) |
+| `rf-reactor` `energy_consumption`, normal → legendary | 1 W → 2.5 W | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
+| `rf-lithium-blanket` `inventory_size`, normal → legendary | 100 → 250 | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
+| `rf-heater` `crafting_speed` and `energy_usage`, normal → legendary | 1 → 2.5; 5 MW → 5 MW | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
+| `rf-hc-exchanger` `energy_consumption`, normal → legendary | 400 MW → 1000 MW | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
+| `rf-hc-turbine` `max_power_output` and `fluid_usage_per_tick`, normal → legendary | 58.2 MW → 145.5 MW; 10 → 25 | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
+| `rf-direct-energy-converter` `max_power_output` and `fluid_usage_per_tick`, normal → legendary | 100 MW → 250 MW; 1.6667 → 4.1667 | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
+| `rf-pump` `pumping_speed`, normal → legendary | 1200 /s → 3000 /s | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
+| Core's five machines, `crafting_speed`, normal → legendary | 1 → 2.5, `energy_usage` flat | 2026-08-21 | 2.0.77 | not stated | [Core](#core--realistic-fusion-refreshed-coreprototypesentitieslua) |
+| Generator out/in, `rf-direct-energy-converter`, `rf-hc-turbine`, `steam-turbine`, normal and legendary | 1.000000 | 2026-08-21 | 2.0.77 | not stated | [Two things the table is saying that are easy to miss](#two-things-the-table-is-saying-that-are-easy-to-miss) |
+| Break-even Q, shipped `rf-reactor` (η 0.85) and shipped aneutronic (η 0.95) | 0.1765; 0.0526 | not stated | none (pure simulation) | shipped η | [The ledger, written out](#the-ledger-written-out) |
+| Cold reactor (Q = 0), shipped `rf-reactor` and shipped aneutronic | 42.5 MW back for 50 MW — −7.5 MW; 190 MW back for 200 MW — −10 MW | not stated | none (pure simulation) | shipped η and heating | [The ledger, written out](#the-ledger-written-out) |
+| `rf-reactor` `input_flow_limit`, normal / uncommon / rare / epic / legendary | 90 MW / 117 MW / 144 MW / 171 MW / 225 MW | 2026-09-20 | 2.0.77 | n/a (prototype field; does not move with research) | [The one term quality does move, and what it is worth](#the-one-term-quality-does-move-and-what-it-is-worth) |
+| `rf-reactor` brownout knee, 50 MW spend, held / first short · derived, normal; legendary | 0.56 / 0.55 · 0.5556; 0.23 / 0.22 · 0.2222 | 2026-09-20 | 2.0.77 | heating: none; other ladders not stated | [The brackets, per heating rung](#the-brackets-per-heating-rung) |
+| The same, 60 MW spend | 0.67 / 0.66 · 0.6667; 0.27 / 0.26 · 0.2667 | 2026-09-20 | 2.0.77 | heating rung 2; other ladders not stated | [The brackets, per heating rung](#the-brackets-per-heating-rung) |
+| The same, 75 MW spend | 0.84 / 0.83 · 0.8333; 0.34 / 0.33 · 0.3333 | 2026-09-20 | 2.0.77 | heating rung 5; other ladders not stated | [The brackets, per heating rung](#the-brackets-per-heating-rung) |
+| `rf-aneutronic-reactor` `input_flow_limit`, normal to legendary | 240, 312, 384, 456 and 600 MW | 2026-10-01 | 2.0.77 | n/a (no ladder reaches `rf-aneutronic-reactor`) | [The brackets, per heating rung](#the-brackets-per-heating-rung) |
+| `rf-aneutronic-reactor` brownout knee, 200 MW spend, normal; legendary | 0.84 / 0.83 · 0.8333; 0.34 / 0.33 · 0.3333 | 2026-10-01 | 2.0.77 | n/a (no ladder reaches `rf-aneutronic-reactor`) | [The brackets, per heating rung](#the-brackets-per-heating-rung) |
+| `pair` (normal and legendary `rf-reactor` on one network) at 50% of supply | 14.29 MW against 35.71; legendary holds a full 50 MW down to 70% of supply | 2026-10-01 | 2.0.77 | nothing researched | [Contention: how a short network is split](#contention-how-a-short-network-is-split) |
+| `four`: supply above which legendary, rare, uncommon are full | 128 MW (f = 0.64), 171.875 (0.859), about 188.5 (0.942) | 2026-10-02 | 2.0.77 | nothing researched | [Contention: how a short network is split](#contention-how-a-short-network-is-split) |
+| `tert-tert`: what a `tertiary` load drew from a `tertiary` supply | 0 on all 21 rungs | 2026-10-03 | 2.0.77 | nothing researched | [Contention: how a short network is split](#contention-how-a-short-network-is-split) |
+| `discharge`: how the accumulators' 5.4 MW is split, normal; legendary | 1.54; 3.86 | 2026-10-04 | 2.0.77 | nothing researched | [Contention: how a short network is split](#contention-how-a-short-network-is-split) |
+| `aneutronic`: supply above which the D-D reactor keeps its 50 MW | 183.3 MW | 2026-10-04 | 2.0.77 | nothing researched | [Contention: how a short network is split](#contention-how-a-short-network-is-split) |
+| `aneutronic`: the same threshold with heating held | 201.7, 220, 238.3 and 256.7 MW at rungs 1 to 4; 275 MW at rung 5 | 2026-10-04 | 2.0.77 | heating rungs 1 to 5, one run a rung, no other rung of any ladder | [Contention: how a short network is split](#contention-how-a-short-network-is-split) |
+| `pair` at the top heating rung | legendary full above 105 MW of supply; 21.43 against 53.57 at 75 MW | 2026-10-04 | 2.0.77 | heating rungs 1 to 5, no other rung of any ladder | [Contention: how a short network is split](#contention-how-a-short-network-is-split) |
+| Room in the buffer of a reactor at exactly its spend | 5.667 MJ at rung 0 down to 3.167 at rung 5 | 2026-10-04 | 2.0.77 | heating rungs 0 to 5, no other rung of any ladder | [Contention: how a short network is split](#contention-how-a-short-network-is-split) |
+| `acc-spare`: over-draw in the first second | 4.833 MJ at rung 0; 1.917 at rung 5 | 2026-10-04 | 2.0.77 | heating rungs 0 and 5, no other rung of any ladder | [Contention: how a short network is split](#contention-how-a-short-network-is-split) |
+| `discharge-cap`: normal reactor's draw once the legendary one is capped | 23.40 MW from the fifth second, against 20.97 by ask alone; the legendary buffer stops 3.21 MJ short of full | 2026-10-04 | 2.0.77 | nothing researched | [Contention: how a short network is split](#contention-how-a-short-network-is-split) |
+| Worst deviation from the tick-by-tick prediction over the ladder cells that match (`aneutronic`), rung 0 / rung 5 | 7.3e-6 / 5.0e-6 MW | 2026-10-04 | 2.0.77 | nothing researched / heating rung 5 | [Contention: how a short network is split](#contention-how-a-short-network-is-split) |
+| The class miss, rung 0 / rung 5: `tert-tert`; `acc-tert`; `acc-spare-load`; `acc-acc` | 50.92 / 75.88; 5.4 / 5.4; 5.4 / 5.4; 4.5 / 4.5 MW | 2026-10-04 | 2.0.77 | nothing researched / heating rung 5 | [Contention: how a short network is split](#contention-how-a-short-network-is-split) |
+| Residual boiler leak, `rf-reactor`: cold cells; hot cells | 0 at normal, uncommon, rare and epic, 3.576 W at legendary (5.9604644775×10⁻⁸ units a tick); exactly zero at all five | not stated | not stated | n/a (rig subjects are unregistered; no ladder reaches them) | [The residual boiler leak, since quality multiplies it](#the-residual-boiler-leak-since-quality-multiplies-it) |
+| Legendary cold cell, made / taken off the input box alone, 1000 s; 10 000 s | 1.886792453; 1.897533207 | 2026-10-04 | 2.0.77 | n/a (rig subjects are unregistered; no ladder reaches them) | [The 1.887 is the box's share, and a fitted rule reproduces it](#the-1887-is-the-boxs-share-and-a-fitted-rule-reproduces-it) |
+| The same cell, what the box gave in float32 ULPs, 1000 s; 10 000 s | 31 800 of 60 000; 316 200 of 600 000 | 2026-10-04 | 2.0.77 | n/a (rig subjects are unregistered; no ladder reaches them) | [The 1.887 is the box's share, and a fitted rule reproduces it](#the-1887-is-the-boxs-share-and-a-fitted-rule-reproduces-it) |
+| Where a lone 1000-unit box nothing drains settles | 526.3158023 | 2026-10-04 | 2.0.77 | n/a (rig subjects are unregistered; no ladder reaches them) | [The 1.887 is the box's share, and a fitted rule reproduces it](#the-1887-is-the-boxs-share-and-a-fitted-rule-reproduces-it) |
+| Fitted fixed-point variant, run from the seed, ticks missed | none of 60 300 in either cell; none of 600 300 with `-Seconds 10000` | 2026-10-04 | 2.0.77 | n/a (rig subjects are unregistered; no ladder reaches them) | [The 1.887 is the box's share, and a fitted rule reproduces it](#the-1887-is-the-boxs-share-and-a-fitted-rule-reproduces-it) |
+| The same variant on fed fuel lines, every fill floored, ticks missed | none of 1 290 000 ticks of nine fed lines | 2026-10-05 | 2.0.77 (build 84539) | nothing researched, except two D-D lines at confinement rung 3 | [The 1.887 is the box's share, and a fitted rule reproduces it](#the-1887-is-the-boxs-share-and-a-fitted-rule-reproduces-it) |
+| Settled D-D temperature, `rf-reactor`, all five quality levels | 242382 kC, spread zero (242258 kC at 1200 s, 242382 kC at 2400 s, agreeing to 0.051%) | 2026-08-31 | 2.0.77 | nothing researched | [The equilibrium, measured](#the-equilibrium-measured) |
+| Settled Q, `rf-reactor`, all five quality levels | 32% | 2026-08-31 | 2.0.77 | nothing researched | [The equilibrium, measured](#the-equilibrium-measured) |
+
 Researched 2026-08-21. **Every API claim is pinned to Factorio 2.0.77**, which is the version this
 repository loads against; the docs are read at `https://lua-api.factorio.com/2.0.77/` rather than at
 `/stable/` or `/latest/`, both of which move.

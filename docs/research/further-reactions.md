@@ -1,5 +1,37 @@
 # Further fusion reactions, and whether any of them belongs here
 
+## Current figures
+
+Each row is a figure this note currently stands behind, copied from the section named. A change
+to a figure below changes its row here in the same commit (docs/agents/code-review.md).
+
+| Figure | Value | Measured | Game version | Research state | Section |
+|---|---|---|---|---|---|
+| D-T best charged fusion power over bremsstrahlung, `T_e = T_i` | 27.7 | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [The short version](#the-short-version) |
+| D-He3 best charged fusion power over bremsstrahlung, `T_e = T_i` | 4.3 | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [The short version](#the-short-version) |
+| D-D best charged fusion power over bremsstrahlung, `T_e = T_i` | 1.07 | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [The short version](#the-short-version) |
+| T-He3 best charged fusion power over bremsstrahlung, `T_e = T_i` | 0.58 | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [The short version](#the-short-version) |
+| p-B11 best charged fusion power over bremsstrahlung, `T_e = T_i` | 0.52 | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [The short version](#the-short-version) |
+| T-T best charged fusion power over bremsstrahlung, `T_e = T_i` | 0.21 | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [The short version](#the-short-version) |
+| He3-He3 best charged fusion power over bremsstrahlung, `T_e = T_i` | 0.06 | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [The short version](#the-short-version) |
+| D-He3 ideal ignition band, `T_e = T_i` | 31 keV .. 400 keV | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [And this is what each one does against its own bremsstrahlung](#and-this-is-what-each-one-does-against-its-own-bremsstrahlung) |
+| p-B11 best `P_charged/P_brem` at 10% boron, over 70–500 keV | 0.52 | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [And this is what each one does against its own bremsstrahlung](#and-this-is-what-each-one-does-against-its-own-bremsstrahlung) |
+| p-B11 best `P_charged/P_brem` at 50% boron, over 70–500 keV | 0.20 | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [And this is what each one does against its own bremsstrahlung](#and-this-is-what-each-one-does-against-its-own-bremsstrahlung) |
+| p-B11 `P_fus/P_brem` at Rider's point: ions 300 keV, electrons 138 keV, 5:1 mix | 1.04 | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [What that leaves, computed against this mod's own constants](#what-that-leaves-computed-against-this-mods-own-constants) |
+| D-He3 bremsstrahlung in `rf-aneutronic-reactor` at 3×10²⁰ m⁻³ and 2×10⁹ K, the clamp when written | 4 771 MW | 2026-08-21 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
+| D-He3 bremsstrahlung understated by `n_e = n_i, Z_eff = 1`, same point | 3.13× | 2026-08-21 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
+| He3-He3 bremsstrahlung in `rf-aneutronic-reactor` at 3×10²⁰ m⁻³ and 2×10⁹ K, the clamp when written | 9 672 MW | 2026-08-21 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
+| He3-He3 bremsstrahlung understated by `n_e = n_i, Z_eff = 1`, same point | 6.34× | 2026-08-21 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
+| D-He3 `P_charged/P_brem` at 2×10⁹ K, the clamp when written | 3.48 | 2026-08-21 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
+| D-He3 settling temperature in `rf-aneutronic-reactor`, bremsstrahlung counted | 1.37×10⁷ K | 2026-08-21 | none (pure simulation) | heating 200 MW as shipped, confinement not stated | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
+| D-He3 Q at that settling point | 6×10⁻⁸ | 2026-08-21 | none (pure simulation) | heating 200 MW as shipped, confinement not stated | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
+| He3-He3 settling temperature in `rf-aneutronic-reactor`, bremsstrahlung counted | 3.11×10⁶ K | 2026-08-21 | none (pure simulation) | heating 200 MW as shipped, confinement not stated | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
+| He3-He3 Q at that settling point | 9×10⁻⁴⁸ | 2026-08-21 | none (pure simulation) | heating 200 MW as shipped, confinement not stated | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
+| D-D Q in `rf-aneutronic-reactor` at 200 MW, bremsstrahlung counted | 0.77 | 2026-08-21 | none (pure simulation) | heating 200 MW, confinement not stated | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
+| T-He3 temperature in `rf-aneutronic-reactor` with bremsstrahlung, where it quenches | 1.4×10⁷ K | 2026-08-21 | none (pure simulation) | not stated | [T-He3, which the corrections promoted](#t-he3-which-the-corrections-promoted) |
+| T-T settling temperature in `rf-reactor`, bremsstrahlung counted | 2×10⁸ K | 2026-08-21 | none (pure simulation) | shipped constants, values not stated | [T-T, which is the cheapest thing on the list](#t-t-which-is-the-cheapest-thing-on-the-list) |
+| T-T Q in `rf-reactor`, bremsstrahlung counted | 0.349 | 2026-08-21 | none (pure simulation) | shipped constants, values not stated | [T-T, which is the cheapest thing on the list](#t-t-which-is-the-cheapest-thing-on-the-list) |
+
 Researched 2026-08-21 against primary sources, and computed against the shipped model —
 `realistic-fusion-refreshed/scripts/reactor-logic.lua` and `cross-section-data/reactivities.lua` at
 `M.reactor` and `M.aneutronic_reactor`, driven from a standalone Lua 5.4.6 harness that requires the
