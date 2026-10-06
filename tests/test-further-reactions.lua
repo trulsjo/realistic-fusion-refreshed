@@ -29,10 +29,12 @@
 -- and every p-11B figure here depends on electrons being colder than ions. That is the one that has
 -- no route into the simulation without a different step().
 --
--- AND NOTHING RUNS IT FOR YOU. There is no CI here and no scripts/*.ps1 invokes the Lua tests, so
--- regenerating cross-section-data/reactivities.lua invalidates further-reactions.md silently unless
--- somebody types the command above. Stated rather than glossed, exactly as the bremsstrahlung suite
--- states it, because "the test would catch it" is only true of a test something runs.
+-- IT IS RUN FOR YOU, BUT ONLY AFTER THE FACT. scripts/run-gates.ps1 runs the Lua suites (#567) and
+-- so does .github/workflows/gates.yml on every pull request and push to main (#599), so
+-- regenerating cross-section-data/reactivities.lua fails a check on the next pull request. Nothing
+-- stops the regeneration and nothing rewrites further-reactions.md. Stated rather than glossed,
+-- exactly as the bremsstrahlung suite states it, because "the test would catch it" is only true of
+-- a test something runs.
 --
 -- WHAT IT DOES NOT CHECK, so the gap is not mistaken for coverage: the note's full equilibrium
 -- sweeps for p-11B and the lithium family, and its ideal-ignition bands. Those need reactivity data
