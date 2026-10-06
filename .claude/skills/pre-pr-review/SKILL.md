@@ -49,10 +49,13 @@ not `code-review:code-review`, which is the plugin pass and runs only when asked
    > — 0 a false positive, 25 possibly real and unverified, 50 real but minor or rare, 75
    > verified and important, 100 certain and it will be hit. Report every one whatever it scores.
    > Say so plainly if you found nothing, and say what you did not check.
+   >
+   > Reply with one line per finding first: its number, the file, the fault and the score. Give
+   > the detail for a finding when you are asked for it. A long reply arrives cut off.
 
-   **A long report arrives cut off**, and a subagent cannot write its report to a file. If the
-   last finding stops mid-sentence, ask the reviewer for the rest with SendMessage before fixing
-   anything. On this skill's first run the report stopped inside the sixth of nine findings.
+   **Ask for each finding's detail with SendMessage before fixing it.** A subagent cannot write
+   its report to a file, and on this skill's first run a report sent whole stopped inside the
+   sixth of nine findings.
 
 4. **Fix, commit, and continue the same reviewer** with SendMessage to the name from step 3. Do
    not spawn a second one. Hand it the diff of the fixes and nothing else:
@@ -62,7 +65,8 @@ not `code-review:code-review`, which is the plugin pass and runs only when asked
    ```
 
    > `<scratch>/fixes.diff` is every change made since your review. For each of your findings,
-   > say whether it is fixed, from the diff alone. Then review every other added line in that
+   > say whether it is fixed, from the diff alone. Where your finding named a group, check the
+   > fix against each member. Then review every other added line in that
    > diff as new work: a fix that adds a sentence adds a claim. Number any new finding on from
    > your last and score it the same way.
 
