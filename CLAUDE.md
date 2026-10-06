@@ -377,12 +377,14 @@ fires does it in `git worktree add --detach`, never in a shared checkout, and ke
 on a path no other agent will pick; `git checkout --` there reverts other agents' edits too. A gate
 that fails once and passes on every re-run is another agent's plant, not a flaky gate.
 
-## graphify
+## Code indexes
 
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+Two optional indexes of this repository exist on a machine that has built them. Both directories
+are git-ignored, so a fresh clone has neither, and neither is a required first step.
 
-Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
-- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- **graphify** (`graphify-out/`) answers a question that spans many files: `graphify query
+  "<question>"`, `graphify path "<A>" "<B>"`, `graphify explain "<concept>"`. Run
+  `graphify update .` before a query; it re-extracts code files only, with no LLM call.
+- **graft** (`graft/`) returns ranked nodes with their `file:line`, and who calls a symbol: `graft
+  ask "<query>"`, `graft callers <symbol>`. Both check the graph's freshness themselves unless
+  given `--no-refresh`.

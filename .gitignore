@@ -37,3 +37,5 @@ __pycache__/
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
+# `graft build` also writes this, to keep graft/ searchable by ripgrep while git ignores it.
+/.ignore
