@@ -11,10 +11,12 @@ graphify-out/
 # describes this project. If a project-scoped setting is ever worth sharing, negate it
 # here rather than dropping this rule. The render-machine skill is shared (#251): it is
 # how a session produces rendered art, and it is the repository's, not the machine's.
+# So is the pre-pr-review skill (#595), which runs the review docs/agents/code-review.md defines.
 .claude/*
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/render-machine/
+!.claude/skills/pre-pr-review/
 
 # Built mod zips — reproducible from the working tree with the shared packer,
 # vendor/grado-factorio-tools/scripts/pack-mods.ps1 (see CLAUDE.md)
