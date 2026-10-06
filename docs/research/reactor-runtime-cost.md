@@ -5,6 +5,11 @@
 Each row is a figure this note currently stands behind, copied from the section named. A change to
 a figure below changes its row here in the same commit (docs/agents/code-review.md).
 
+**A row is a record of its sitting, and the Measured column is part of the figure.** The rows from
+`Collectors attached (#62)`, dated 2026-09-03, were taken before #72 and #425 each added to the
+step: +0.88 and +0.83 µs per reactor per tick, both rows below. The latest reading of the shipped
+D-D step on the vented rig is the 5.257 µs dated 2026-09-20, not the 3.68 µs dated 2026-09-03.
+
 | Figure | Value | Measured | Game version | Research state | Section |
 |---|---|---|---|---|---|
 | Noise floor between quiet invocations of the shipped D-D step, rig, *n* = 200 | 1.35× | 2026-08-18 | 2.0.77 | not stated | [What remains once the machine is quiet](#what-remains-once-the-machine-is-quiet) |
