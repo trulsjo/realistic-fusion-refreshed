@@ -18,11 +18,11 @@ to a figure below changes its row here in the same commit (docs/agents/code-revi
 | p-B11 best `P_charged/P_brem` at 10% boron, over 70–500 keV | 0.52 | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [And this is what each one does against its own bremsstrahlung](#and-this-is-what-each-one-does-against-its-own-bremsstrahlung) |
 | p-B11 best `P_charged/P_brem` at 50% boron, over 70–500 keV | 0.20 | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [And this is what each one does against its own bremsstrahlung](#and-this-is-what-each-one-does-against-its-own-bremsstrahlung) |
 | p-B11 `P_fus/P_brem` at Rider's point: ions 300 keV, electrons 138 keV, 5:1 mix | 1.04 | 2026-08-21 | none (pure simulation) | n/a (density cancels) | [What that leaves, computed against this mod's own constants](#what-that-leaves-computed-against-this-mods-own-constants) |
-| D-He3 bremsstrahlung in `rf-aneutronic-reactor` at 3×10²⁰ m⁻³ and 2×10⁹ K, the clamp when written | 4 771 MW | 2026-08-21 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
+| D-He3 bremsstrahlung in `rf-aneutronic-reactor` at 3×10²⁰ m⁻³ and 2×10⁹ K — the clamp when written, a fixed reference point since #58, still asserted there by the test | 4 771 MW | 2026-08-21 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
 | D-He3 bremsstrahlung understated by `n_e = n_i, Z_eff = 1`, same point | 3.13× | 2026-08-21 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
-| He3-He3 bremsstrahlung in `rf-aneutronic-reactor` at 3×10²⁰ m⁻³ and 2×10⁹ K, the clamp when written | 9 672 MW | 2026-08-21 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
+| He3-He3 bremsstrahlung in `rf-aneutronic-reactor` at 3×10²⁰ m⁻³ and 2×10⁹ K — the clamp when written, a fixed reference point since #58, still asserted there by the test | 9 672 MW | 2026-08-21 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
 | He3-He3 bremsstrahlung understated by `n_e = n_i, Z_eff = 1`, same point | 6.34× | 2026-08-21 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
-| D-He3 `P_charged/P_brem` at 2×10⁹ K, the clamp when written | 3.48 | 2026-08-21 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
+| D-He3 `P_charged/P_brem` at 2×10⁹ K — the clamp when written, a fixed reference point since #58, still asserted there by the test | 3.48 | 2026-08-21 | none (pure simulation) | n/a (evaluated at a fixed temperature) | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
 | D-He3 settling temperature in `rf-aneutronic-reactor`, bremsstrahlung counted | 1.37×10⁷ K | 2026-08-21 | none (pure simulation) | heating 200 MW as shipped, confinement not stated | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
 | D-He3 Q at that settling point | 6×10⁻⁸ | 2026-08-21 | none (pure simulation) | heating 200 MW as shipped, confinement not stated | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
 | He3-He3 settling temperature in `rf-aneutronic-reactor`, bremsstrahlung counted | 3.11×10⁶ K | 2026-08-21 | none (pure simulation) | heating 200 MW as shipped, confinement not stated | [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship) |
@@ -103,8 +103,12 @@ Three findings carry the note, and the third is not about new reactions at all.
   other two: a helium-3 nucleus is doubly charged, so a full `rf-aneutronic-reactor` running He3-He3
   holds **two electrons per ion**, and bremsstrahlung goes as `Z_eff n_e²`. At the clamp that is
   **6.3× the radiation** the naive form gives. He3-He3 then has no ignited state at all — its charged
-  fusion power is 1.7% to 6% of its bremsstrahlung everywhere in the dataset — and reaches the clamp
-  only on 10.2 GW of brute-force heating at Q 0.026. See
+  fusion power is ~~1.7% to 6%~~ **never more than 6%** of its bremsstrahlung everywhere in the
+  dataset — and reaches the clamp only on 10.2 GW of brute-force heating at Q 0.026. (**Corrected
+  2026-10-06, #614.** The ratio grid below gives this fuel 0.010 at 100 keV, which is 1.0% and under
+  the 1.7% floor this sentence claimed; across the grid it runs 1.0% to 5.9%, and the ordering
+  table's best is 0.06. The 6% is the part the argument needs and it stands. "The clamp" here is
+  2×10⁹, retired by #58 — see the note under the settling table in the section linked next.) See
   [What this does to the tiers that already ship](#what-this-does-to-the-tiers-that-already-ship).
 
 Three candidates are *interesting* without being good, all three have their fuel already in the chain,
@@ -287,8 +291,11 @@ plasma the ions are what gets heated and what fuses; the electrons are heated on
 ions, and they cool by radiating. Those two rates balance at an electron temperature *below* the ion
 temperature — and since bremsstrahlung goes as `√T_e` while fusion goes as the ion temperature,
 cooler electrons are a straight gain. For D-T the gap does not matter, because D-T wins by a factor of
-thirteen anyway. For p-B11 the gap is the entire margin. Rider's own p-B11 case runs ions at 300 keV
-and electrons at 138 keV; that ratio, 0.46, is not a design choice but the self-consistent answer.
+~~thirteen~~ **27.7** anyway (**marked 2026-10-06, #614**: thirteen is the ordering table's
+first-pass 13.0, corrected to 27.7 at about 26 keV on 2026-08-21; the ratio grid's 13.02 is D-T at
+100 keV, not its best). For p-B11 the gap is the entire margin. Rider's own p-B11 case runs ions at
+300 keV and electrons at 138 keV; that ratio, 0.46, is not a design choice but the self-consistent
+answer.
 
 **This model has one temperature.** `step()` holds one `temperature_c`, uses it for the reaction rate,
 and would use it for the radiation. Setting `T_e = T_i` is not a small error for an advanced fuel; it
@@ -614,11 +621,23 @@ And the consequence, sweeping heating power in the shipped aneutronic reactor wi
 | D-D | 400 MW | 1.94×10⁹ K | 5.52 | 2 210 MW | 1 467 MW | 401 MW |
 | **D-He3** | **200 MW — as shipped** | **1.37×10⁷ K** | **6×10⁻⁸** | **0 MW** | **196 MW** | 4 MW |
 | D-He3 | 400 MW | 5.20×10⁷ K | 0.0006 | 0 MW | 387 MW | 13 MW |
-| **D-He3** | **800 MW** | **2×10⁹ K (clamped)** | **20.7** | **16 559 MW** | 4 771 MW | 518 MW |
+| **D-He3** | **800 MW** | **2×10⁹ K (clamped †)** | **20.7** | **16 559 MW** | 4 771 MW | 518 MW |
 | **He3-He3** | **200 MW — as shipped** | **3.11×10⁶ K** | **9×10⁻⁴⁸** | 0 MW | 199 MW | 1 MW |
 | He3-He3 | 2 000 MW | 2.52×10⁸ K | 4×10⁻⁵ | 0 MW | 1 922 MW | 78 MW |
 | He3-He3 | 5 000 MW | 9.55×10⁸ K | 0.006 | 30 MW | 4 734 MW | 297 MW |
-| **He3-He3** | **10 200 MW** | 2×10⁹ K (clamped) | **0.026** | **261 MW** | **9 672 MW** | 621 MW |
+| **He3-He3** | **10 200 MW** | 2×10⁹ K (clamped †) | **0.026** | **261 MW** | **9 672 MW** | 621 MW |
+
+> **† The two clamped rows are outcomes under the retired ceiling — marked 2026-10-06 (#614).**
+> 2×10⁹ K was `max_temperature_c` when this table was computed, and both plasmas were stopped by
+> it rather than settling.
+> [#58](https://github.com/trulsjo/realistic-fusion-refreshed/issues/58) and
+> [ADR 0025](../adr/0025-a-plasma-temperature-ships-in-kilodegrees.md) moved the ceiling to
+> 5×10⁹ on 2026-08-25, so neither row says where these plasmas end up now, and this note does not
+> recompute them. Their Q, `P_fus`, `P_brem` and `E/τ` cells are still what the balance gives *at*
+> 2×10⁹ K, which `tests/test-further-reactions.lua` keeps as a fixed reference point — its own
+> comment says nothing settles there any more. The seven unclamped rows are unaffected. **The same
+> goes for every "at the clamp" and "reaches the clamp" in this note**, the Q 20.7 and the
+> 10.2 GW, Q 0.026 in the bullets below included: read each as "at 2×10⁹ K".
 
 Two distinct failures, and conflating them would be a mistake:
 
@@ -629,12 +648,16 @@ Two distinct failures, and conflating them would be a mistake:
   start would do the same job, and so would a lower operating density (ADR 0016's lever, pointing the
   other way for once).
 - **He3-He3 has no ignited state at all.** It never clears, at any heating power, because there is
-  nothing above to clear *to* — its charged fusion power is 1.7% to 6% of its bremsstrahlung
-  everywhere in the dataset. At 10.2 GW it reaches the clamp on brute force, radiating 9 672 MW to
+  nothing above to clear *to* — its charged fusion power is ~~1.7% to 6%~~ **never more than 6%** of
+  its bremsstrahlung everywhere in the dataset (**corrected 2026-10-06, #614**: the ratio grid gives
+  0.010 at 100 keV, so 1.0% to 5.9% across the grid, against a best of 0.06). At 10.2 GW it reaches
+  the clamp on brute force, radiating 9 672 MW to
   make 261 MW. **The shipped Q of 1.31 for this tier is entirely an artefact of the missing radiation
   term.** Rider's He3-He3 case runs ions at **1 MeV** with electrons at 278 keV and still only reaches
   `P_brem/P_fus = 1.42`; this mod's clamp is at 172 keV, a factor of six below where the reaction is
-  even discussed. `reactor-logic.lua` already says the tier "cannot reach its optimum" and quantifies
+  even discussed. (**Marked 2026-10-06, #614**: 172 keV is the 2×10⁹ clamp, retired by #58; the
+  2026-08-25 block under the ratio grid puts the 5×10⁹ ceiling at about 430 keV, still short of
+  1 MeV.) `reactor-logic.lua` already says the tier "cannot reach its optimum" and quantifies
   that as a hundredth of peak reactivity; what it does not say is that the optimum is on the far side
   of a radiation wall.
 
@@ -719,8 +742,11 @@ reaction, where D-T gives one and D-D half.
 
 What kills it as a *tier* is not physics but economics inside the mod: a triton burned in T-T yields
 11.33 MeV shared with another triton, where the same triton in D-T yields 17.59 MeV and lights an
-ignited reactor at Q 96. **T-T is a strictly worse use of tritium than D-T**, by two orders of
-magnitude in Q. Its only case is as somewhere to *put* tritium — a blanket that has bred more than the
+ignited reactor at ~~Q 96~~ **Q 73.2**. (**Corrected 2026-10-06, #614**: 96 is the `τ_E` 10 s row
+of [`bremsstrahlung.md`](bremsstrahlung.md)'s confinement sweep; at the shipped 30 s the same note
+gives Q 73.2 at 3.26×10⁹ K. The next sentence holds either way — 73.2 / 0.349 = 210.) **T-T is a
+strictly worse use of tritium than D-T**, by two orders of magnitude in Q. Its only case is as
+somewhere to *put* tritium — a blanket that has bred more than the
 D-T reactors can burn currently makes neither heat nor tritium (ADR 0019), and a T-T reactor would be
 a sink that pays something back.
 

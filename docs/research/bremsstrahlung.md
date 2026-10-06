@@ -30,6 +30,27 @@ to a figure below changes its row here in the same commit (docs/agents/code-revi
 | D-D Q at 150 MW of heating, with bremsstrahlung | 0.95 | 2026-08-17 | none (pure simulation) | confinement 30 s, heating 150 MW | [What adding it to this model took](#what-adding-it-to-this-model-took) |
 | D-D best Q from raising heating alone | about 0.97, at roughly 175 MW | 2026-08-17 | none (pure simulation) | confinement 30 s, heating swept | [What adding it to this model took](#what-adding-it-to-this-model-took) |
 
+> **"The clamp" and "the int32 ceiling" below are both retired — marked 2026-10-06 (#614).** This
+> note was written while `max_temperature_c` was 2×10⁹ °C and the reason given for it was that a
+> circuit signal is an int32, which stops at 2.147×10⁹. Both went on 2026-08-25, under
+> [ADR 0025](../adr/0025-a-plasma-temperature-ships-in-kilodegrees.md):
+> [#57](https://github.com/trulsjo/realistic-fusion-refreshed/issues/57) rescaled the
+> temperature signal to kilodegrees, so the integer no longer bounds the temperature, and
+> [#58](https://github.com/trulsjo/realistic-fusion-refreshed/issues/58) raised the ceiling
+> to **5×10⁹ °C**.
+>
+> **How to read the note now.** Every "the clamp" below is 2×10⁹, a temperature no plasma is held
+> at any more, and every conclusion of the shape "still above the ceiling, so the clamp does the
+> work and the signal stays pinned" is retired: D-T's 3.26×10⁹ K is under the 5×10⁹ ceiling and
+> settles free. Each such sentence is marked where it stands, and none is rewritten.
+>
+> **The computed equilibria are unaffected.** Each is solved at a stated confinement time and
+> heating power with no clamp in the balance — which is how D-T's 3.26×10⁹ K, and D-D's 2.13×10⁹ K
+> at 200 s, were reported above the 2×10⁹ then in force — and `tests/test-bremsstrahlung.lua` still
+> asserts them. A figure evaluated *at* 2×10⁹ K (the 169 MW, the 640 MW the clamp shed, the ash
+> table) is still correct arithmetic at that temperature; it has only stopped being where a plasma
+> is held.
+
 Researched 2026-08-17 against primary sources, and computed against the shipped model — `scripts/
 reactor-logic.lua` and `cross-section-data/reactivities.lua` at `M.reactor`'s constants, driven from
 a standalone Lua 5.4.6 harness that requires the repo's own modules rather than reimplementing them.
@@ -50,7 +71,9 @@ may act on it.
 
 **The short version: the claim is wrong in its load-bearing part, and right about something else.**
 Bremsstrahlung does not "bite long before 4.6×10⁹" for D-T — adding it moves that equilibrium to
-about 3.3×10⁹ K, still well above the int32 ceiling the clamp is really there to protect. What it
+about 3.3×10⁹ K, still well above the int32 ceiling the clamp is really there to protect. (**Marked
+2026-10-06, #614**: the arithmetic stands and the clause after the comma does not — the clamp
+protects no int32 since #57, and 3.3×10⁹ is under the 5×10⁹ ceiling #58 set.) What it
 does bite is **D-D**: adding bremsstrahlung drops the shipped D-D reactor from Q 2.1 to Q 0.32.
 Details and arithmetic below.
 
@@ -197,7 +220,7 @@ The two disagree, and by more as the plasma gets hotter:
 | 8.6 keV | 0.017 | 1.04 | 1.04 |
 | 43 keV | 0.084 | 1.26 | 1.21 |
 | **76 keV** (shipped D-D point) | 0.148 | **1.51** | 1.38 |
-| 172 keV (the clamp) | 0.337 | 2.42 | 1.99 |
+| 172 keV (the clamp until #58) | 0.337 | 2.42 | 1.99 |
 | **399 keV** (unbounded D-T point) | 0.781 | **5.25** | 3.93 |
 
 That spread is known and documented. **Xie**, "Bremsstrahlung radiation power in fusion plasmas
@@ -298,7 +321,7 @@ and the transport loss the model already carries is `E/τ_E = 3NkT/30`, with `N 
 | 5×10⁸ | 43 | 35 MW | 44 MW | 1.26 | 69 MW | 1 167 MW | 34 MW |
 | **8.77×10⁸** | 76 | 46 MW | **70 MW** | 1.51 | **121 MW** | 1 253 MW | **71 MW** |
 | 1.5×10⁹ | 129 | 61 MW | 120 MW | 1.98 | 207 MW | 1 093 MW | 128 MW |
-| **2×10⁹** (the clamp) | 172 | 70 MW | **169 MW** | 2.42 | **276 MW** | **962 MW** | 168 MW |
+| **2×10⁹** (the clamp until #58) | 172 | 70 MW | **169 MW** | 2.42 | **276 MW** | **962 MW** | 168 MW |
 | 3×10⁹ | 259 | 86 MW | 293 MW | 3.41 | 414 MW | 770 MW | 236 MW |
 | **4.63×10⁹** | 399 | 107 MW | **560 MW** | 5.25 | **639 MW** | **590 MW** | 325 MW |
 
@@ -322,14 +345,23 @@ Same harness, bremsstrahlung subtracted from the power balance, solved for the t
 
 | fuel | bremsstrahlung | settles at | Q | P_fus | P_brem | brems share of loss |
 |---|---|---|---|---|---|---|
-| **D-D** | none (shipped) | 8.77×10⁸ K | **2.14** | 107 MW | — | — |
+| **D-D** | none (shipped until #52) | 8.77×10⁸ K | **2.14** | 107 MW | — | — |
 | D-D | non-relativistic | 2.69×10⁸ K | 0.39 | 19 MW | 26 MW | 41% |
 | D-D | Rider 1997 | 2.46×10⁸ K | 0.33 | 16 MW | 27 MW | 44% |
 | **D-D** | Wurzel/Putvinski | **2.42×10⁸ K** | **0.32** | 16 MW | 27 MW | 44% |
-| **D-T** | none (shipped) | 4.63×10⁹ K | **58.9** | 2 947 MW | — | — |
+| **D-T** | none (shipped until #52) | 4.63×10⁹ K | **58.9** | 2 947 MW | — | — |
 | D-T | non-relativistic | 4.18×10⁹ K | 62.8 | 3 141 MW | 101 MW | 15% |
 | D-T | Rider 1997 | 3.47×10⁹ K | 70.5 | 3 524 MW | 276 MW | 37% |
 | **D-T** | Wurzel/Putvinski | **3.26×10⁹ K** | **73.2** | 3 658 MW | 331 MW | 37% |
+
+> **The two "none" rows are the pre-#52 model — marked 2026-10-06 (#614).** They read "none
+> (shipped)" when written, and the radiation-free balance stopped shipping on 2026-08-21 with
+> [#52](https://github.com/trulsjo/realistic-fusion-refreshed/issues/52). Both are kept as the
+> baseline the other rows are measured against, and both suites still reproduce them. The D-T one
+> was never an outcome a player saw: 4.63×10⁹ K is the unclamped root, and the 2×10⁹ clamp then in
+> force pinned it. What ships is the Wurzel/Putvinski row of each fuel. The same pre-#52 point is
+> what "the shipped D-D equilibrium" at 76 keV, 8.77×10⁸ K and Q 2.1 means wherever this note says
+> it.
 
 **D-T: the claim fails.** The equilibrium moves from 4.63×10⁹ to 3.26×10⁹ K — a 30% reduction, real
 but nowhere near the 2×10⁹ clamp and comfortably above the 2.147×10⁹ int32 ceiling. Bremsstrahlung
@@ -337,6 +369,10 @@ does not "bite long before 4.6×10⁹" in any sense that changes what the clamp 
 still ignites, still runs away past the clamp, and the clamp is still doing the work. Note also that
 Q goes **up**, not down: bremsstrahlung parks the plasma nearer the ⟨σv⟩ peak at 65 keV, so it
 actually fuses harder.
+
+> **Marked 2026-10-06 (#614).** The verdict on the claim stands, and so does 3.26×10⁹ K. What is
+> retired is "still runs away past the clamp, and the clamp is still doing the work": since #58 the
+> ceiling is 5×10⁹, D-T settles at 3.26×10⁹ beneath it, and no clamp does any work on it.
 
 **D-D: the tier collapses.** 8.77×10⁸ → 2.42×10⁸ K, Q 2.14 → 0.32, 107 MW of fusion power → 16 MW.
 Sub-breakeven, and the reactor is no longer a fusion machine — it is a 50 MW heater with a 16 MW
@@ -385,7 +421,9 @@ Three consequences, and the second is the one that costs work:
   crossing at 168 keV, so the balance always closes and the ladder simply walks up, not reaching the
   clamp until somewhere past 100 s. A player would still see a pinned temperature reading at the
   top, so the symptom survives — but a runaway and a slow climb bound a research ladder very
-  differently.
+  differently. (**Marked 2026-10-06, #614**: "the clamp" in this bullet is 2×10⁹, retired by #58,
+  and the pinned reading went with it — the 200 s rung further down settles at 2.13×10⁹ K, under the
+  5×10⁹ ceiling. The comparison of the two ladders does not depend on where the ceiling is.)
 
 **The lesson worth carrying into an implementation**, which is the reason this section is longer
 than the correction needs to be: the omission was not a typo but a whole term, and it left an
@@ -394,6 +432,12 @@ internally consistent set of numbers that agreed with themselves and looked fini
 expect to be able to make the same mistake, and `xi()` is where it would live.
 
 ### Does any parameter put D-T under the int32 ceiling?
+
+> **The question is retired; the sweeps are not — marked 2026-10-06 (#614).** It was asked because
+> a temperature above 2.147×10⁹ could not go on a wire. #57 put the signal in kilodegrees and #58
+> raised the ceiling to 5×10⁹ (ADR 0025), so the signal is unpinned with neither lever below
+> pulled, and the closing paragraph's two options are no longer waiting on anyone. Both tables
+> stand as equilibria at the confinement time or `Z_eff` each row states.
 
 Sweeps, with relativistic bremsstrahlung included, looking for a D-T equilibrium below 2.147×10⁹ K —
 the point of the question, since that is what would let the temperature circuit signal stop being
@@ -427,7 +471,9 @@ recommendations**; they are recorded here as the two options the arithmetic actu
 **No, and this is the part the existing note gets most wrong by omission.** In a real D-T reactor
 bremsstrahlung is a small, well-understood, roughly 5%-of-fusion-power tax, and it is not the binding
 constraint on anything. The table above shows why, in this model's own numbers: at the clamp,
-relativistic bremsstrahlung is 169 MW against 4 805 MW of fusion power — 3.5%.
+relativistic bremsstrahlung is 169 MW against 4 805 MW of fusion power — 3.5%. ("The clamp" is
+2×10⁹ K, retired by #58; the ratio is a property of that temperature and stands. Marked 2026-10-06,
+#614.)
 
 What actually limits a burning plasma, in rough order of how hard each one bites:
 
@@ -490,7 +536,8 @@ constraint. Applied to this model at the clamp, though, it does not save the sit
 | 0.15 | 2 355 MW | 471 MW | 446 MW |
 
 Even at a 15% ash fraction — far beyond what a real reactor would tolerate — alpha heating still
-exceeds the losses and the plasma still climbs to the clamp. The specific `τ*_He/τ_E` figures the
+exceeds the losses and the plasma still climbs to the clamp (2×10⁹ K when written, retired
+by #58 — marked 2026-10-06, #614). The specific `τ*_He/τ_E` figures the
 literature uses were also **not sourced primarily** here.
 
 **Density and beta limits.** Real machines cannot simply raise `n` to raise fusion power. The
@@ -574,6 +621,11 @@ temperature signal survive the change unchanged. The stated motivation in `d-t-i
 "fixing it properly means a bremsstrahlung term" — does not hold: a bremsstrahlung term does not fix
 the pinned signal.
 
+> **Marked 2026-10-06 (#614).** The arithmetic held — the term shipped with #52 and D-T does settle
+> at 3.26×10⁹ K. The conclusion drawn from it, that "the clamp and the pinned temperature signal
+> survive", lasted until 2026-08-25: #57 and #58 (ADR 0025) unpinned the signal by rescaling it and
+> raising the ceiling to 5×10⁹, which is neither of the things this paragraph weighed.
+
 ## Verdict on the existing claim
 
 The claim, in `realistic-fusion-refreshed/scripts/reactor-logic.lua`'s `M.fuels` `["rf-d-t-plasma"]`
@@ -590,7 +642,11 @@ entry as it then stood, and in `docs/research/d-t-ignition.md` point 1:
 - *"which this zero-dimensional model does not carry"* — **supported**, trivially. It does not.
 - *"and which would bite long before 4.6e9"* — **overstated**. It bites *at* 4.6×10⁹, moving the
   equilibrium to 3.26×10⁹ K. "Long before" implies it would bring the plasma down near the clamp, and
-  it does not: 3.26×10⁹ is still 52% above the clamp and 52% above the int32 ceiling.
+  it does not: 3.26×10⁹ is still ~~52%~~ **63%** above the clamp and 52% above the int32 ceiling.
+  (**Corrected 2026-10-06, #614.** 3.26 / 2 = 1.63, so 63% above the 2×10⁹ clamp; 3.26 / 2.147 =
+  1.518, so 52% above the int32 ceiling. The first figure repeated the second. Both bounds are
+  retired — see the block at the top — and against the 5×10⁹ ceiling 3.26×10⁹ is 35% *below*:
+  3.26 / 5 = 0.652.)
 - The implication that the clamp is therefore "the less wrong physics" — **not supported as
   argued**. The clamp discards 640 MW at 2×10⁹ K; bremsstrahlung there is 169 MW. The clamp is not
   standing in for bremsstrahlung; it is nearly four times too large to be. It is standing in for the
@@ -618,7 +674,9 @@ made, and a reader meeting them in an older commit needs to find out here that t
    **Done.** The claim is gone and the correction is in its place, in the same `["rf-d-t-plasma"]`
    entry — *"It was ALSO justified as standing in for bremsstrahlung"*, followed by the three bullets
    this note supplied, including that the clamp sheds about 640 MW where bremsstrahlung is 169 MW. The
-   clamp stayed, on the int32 argument, exactly as recommended. **The line range this bullet used to
+   clamp stayed, on the int32 argument, exactly as recommended — for four days: #57 retired the
+   int32 argument and #58 moved the clamp to 5×10⁹ on 2026-08-25 (ADR 0025; marked 2026-10-06,
+   #614). **The line range this bullet used to
    carry was already stale before this audit and staler afterwards** — #98 added about sixty lines to
    that file — which is the argument against citing line numbers in prose at all, and is now
    [ADR 0032](../adr/0032-prose-cites-code-by-symbol.md).
@@ -639,6 +697,8 @@ made, and a reader meeting them in an older commit needs to find out here that t
    `int32`, `bremsstrahlung`, `4.6` and `ceiling` finds only an unrelated note about a buffer
    overshooting its declared capacity. The pinned-signal question moved to its own spec, #54 through
    #58, which is where the levers this item lists are being weighed. **Nothing to repair.**
+   (**Marked 2026-10-06, #614**: weighed and settled — ADR 0025 took the last lever, a different
+   signal encoding, and raised the ceiling with it.)
 
 The honest one-line summary for whoever picks this up: **bremsstrahlung is real, it is a genuine gap
 in the model, adding it is four lines — and it would cost the D-D tier and buy nothing on D-T.**
