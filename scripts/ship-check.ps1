@@ -107,7 +107,7 @@
     one naming the wrong field, one quoting a fragment that greps to nothing -- so read that bet as
     a bet.
 
-    -SelfTest here does NOT re-prove the sections, unlike the checks that read a Factorio dump.
+    -SelfTest here does NOT re-prove sections 1 to 8, unlike the checks that read a Factorio dump.
     Those need one because they can pass by finding nothing; sections 1 to 4 name every file and
     string they require, so a mistake in them fails rather than goes quiet. What it proves is the
     shared self-test runner in factorio-lib.ps1, which every other gate's -SelfTest now calls: a
@@ -126,7 +126,7 @@
     SECTION 9 HAS NO FLOOR AND A -SelfTest INSTEAD (#416), because there is no count to hold it to:
     prose that cites a self-test half by ordinal should be absent, and after #411 through #415 it is,
     so a floor would have to be zero and would prove nothing. Two halves stand in for it, one per
-    direction: a planted document citing halves by ordinal four ways must be caught with its file
+    direction: a planted document citing halves by ordinal five ways must be caught with its file
     and line, and one naming its halves -- beside a measurement that follows the same word -- must
     not be flagged. The second matters as much: a gate that fires on the sentences the rule asks
     people to write is a gate that gets switched off. What section 9 cannot see is written out above
@@ -956,13 +956,22 @@ foreach ($cite in (Find-NumberedHalves -Files $citingCode -Root $repoRoot)) {
 #     below the table, because a section's extent needs a markdown parser to bound.
 #   - a small number. 3, 10 and 50 are written somewhere in any note, so a row whose value is one of
 #     those is held to nothing. The exponent's base in a power of ten passes the same way.
+#   - an order of magnitude written as a superscript. Only the mantissa and the 10 are numbers
+#     here, so a row a thousandfold out in its exponent passes. An exponent written with an e is
+#     read.
+#   - a group of three after a small number in ordinary prose: "rung 3 100 MW" hides the 100 from
+#     a row whose value is 100, because it reads as the tail of a grouped figure. That is a false
+#     FAILURE, the cheap direction, and only when the note writes the figure nowhere else.
+#   - a heading written with underscore emphasis. GitHub drops those underscores from the anchor
+#     and this keeps them, so such a heading's row fails until the heading is written with
+#     asterisks. No heading in the seven notes is.
 #   - a unit, a sign, or which of two figures in one cell is which.
 #   - the Measured, Game version and Research state cells, which are not read at all.
 $FIGURE_HEADING = '^##\s+Current figures\s*$'
 $FIGURE_HEADER  = '^\|\s*Figure\s*\|\s*Value\s*\|\s*Measured\s*\|\s*Game version\s*\|\s*Research state\s*\|\s*Section\s*\|\s*$'
 # Thousands grouped by a space or a comma first, so a figure written in groups of three is one number
 # and not three.
-$FIGURE_NUMBER  = '\d+(?:[ ,]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?(?:e-?\d+)?'
+$FIGURE_NUMBER  = '\d+(?:[ ,]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?(?:e[+-]?\d+)?'
 # How many notes carried a table when this section was written (#616). A scan that found none would
 # pass every row it never read.
 $FIGURE_TABLE_FLOOR = 7
@@ -980,8 +989,11 @@ function Get-HeadingAnchors {
         # A link in a heading renders as its text, and the anchor is made from what renders.
         $shown  = [regex]::Replace($Matches[1], '\[([^\]]*)\]\([^)]*\)', '$1')
         $anchor = [regex]::Replace($shown.ToLowerInvariant(), '[^\p{L}\p{M}\p{Nd}\p{Pc}\- ]', '').Replace(' ', '-')
-        if ($seen.ContainsKey($anchor)) { $seen[$anchor]++; $anchor = "$anchor-$($seen[$anchor])" }
-        else { $seen[$anchor] = 0 }
+        # A repeat takes the first suffix not already taken, so a heading that is itself
+        # called "results-1" does not share an anchor with the second "results".
+        $base = $anchor
+        if (-not $seen.ContainsKey($base)) { $seen[$base] = 0 }
+        while ($anchors.Contains($anchor)) { $seen[$base]++; $anchor = "$base-$($seen[$base])" }
         [void] $anchors.Add($anchor)
     }
     return , $anchors
@@ -1043,7 +1055,11 @@ function Find-LooseFigureRows {
             }
             $value = [regex]::Replace($cells[1], '[\s   ]+', ' ')
             foreach ($number in ([regex]::Matches($value, $FIGURE_NUMBER) | ForEach-Object { $_.Value } | Select-Object -Unique)) {
-                if ($below -notmatch ('(?<![\d.,])' + [regex]::Escape($number) + '(?!\d|[.,]\d)')) {
+                # Whole means not inside a longer figure on either side, a grouped one included:
+                # a group of three is not found as the tail of a longer grouped figure, and no
+                # figure is found as the head of one.
+                $before = if ($number -match '^\d{3}(?!\d)') { '(?<![\d.,]|\d[ ,])' } else { '(?<![\d.,])' }
+                if ($below -notmatch ($before + [regex]::Escape($number) + '(?!\d|[.,]\d|[ ,]\d{3}(?!\d))')) {
                     $found.Add([pscustomobject]@{ File = $rel; Line = $i + 1; Kind = 'value'
                         Detail = "$number, from the Value `"$($cells[1])`", is written nowhere below the table" })
                 }
@@ -1208,7 +1224,8 @@ if ($SelfTest) {
                 # table holds: a figure grouped in thousands and wrapped across a line end in the
                 # prose, and two figures in one cell. The bad row is a figure re-measured in its
                 # section and not in its row -- and the stale one must not be found inside the
-                # longer figure that replaced it.
+                # longer figure that replaced it. The second bad row is the same mistake in a
+                # grouped figure: its three-digit groups are the tail of the tick the note writes.
                 $doc = Join-Path $planted 'values.md'
                 @(
                     '# A note'
@@ -1220,20 +1237,24 @@ if ($SelfTest) {
                     '| Settle tick | 1 980 000 | 2026-10-05 | 2.0.77 | unresearched | [Readings](#readings) |'
                     '| Output range | 48.3 – 58.0 MW | 2026-10-03 | 2.0.77 | unresearched | [Readings](#readings) |'
                     '| D-D Q | 0.32 | 2026-08-17 | none (pure simulation) | unresearched | [Readings](#readings) |'
+                    '| Window | 980 000 | 2026-10-05 | 2.0.77 | unresearched | [Readings](#readings) |'
+                    '| Ceiling | 2e+09 C | 2026-08-17 | 2.0.77 | unresearched | [Readings](#readings) |'
                     ''
                     '## Readings'
                     ''
                     'The box settles by tick 1 980'
-                    '000 and sells 48.3 – 58.0 MW. Q is 0.3205.'
+                    '000 and sells 48.3 – 58.0 MW. Q is 0.3205. The clamp read 2e+09 C.'
                 ) | Set-Content -LiteralPath $doc -Encoding utf8
 
                 $rows = @((Find-LooseFigureRows -Files @($doc)).Found)
-                if ($rows.Count -ne 1 -or $rows[0].Kind -cne 'value' -or $rows[0].Line -ne 9) {
-                    throw ('two rows whose figures the note writes and one whose figure it does not ' +
+                $lines = @($rows | ForEach-Object { $_.Line } | Sort-Object)
+                if ($rows.Count -ne 2 -or ($rows | Where-Object { $_.Kind -cne 'value' }) -or
+                    $lines[0] -ne 9 -or $lines[1] -ne 10) {
+                    throw ('three rows whose figures the note writes and two whose figures it does not ' +
                            "produced: $(($rows | ForEach-Object { "line $($_.Line) $($_.Kind) ($($_.Detail))" }) -join '; '). " +
-                           'Wanted exactly one finding, kind value, on line 9.')
+                           'Wanted exactly two findings, kind value, on lines 9 and 10.')
                 }
-                'a row whose figure is written nowhere below the table is caught on its line, and a wrapped thousands figure and a two-figure cell are left alone.'
+                'a row whose figure is written nowhere below the table is caught on its line, as is one whose figure is only the tail of a longer grouped one; a wrapped thousands figure, a two-figure cell and an exponent with a plus sign are left alone.'
             } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }

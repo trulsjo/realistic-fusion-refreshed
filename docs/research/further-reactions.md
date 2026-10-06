@@ -743,8 +743,11 @@ reaction, where D-T gives one and D-D half.
 What kills it as a *tier* is not physics but economics inside the mod: a triton burned in T-T yields
 11.33 MeV shared with another triton, where the same triton in D-T yields 17.59 MeV and lights an
 ignited reactor at ~~Q 96~~ **Q 73.2**. (**Corrected 2026-10-06, #614**: 96 is the `τ_E` 10 s row
-of [`bremsstrahlung.md`](bremsstrahlung.md)'s confinement sweep; at the shipped 30 s the same note
-gives Q 73.2 at 3.26×10⁹ K. The next sentence holds either way — 73.2 / 0.349 = 210.) **T-T is a
+of [`bremsstrahlung.md`](bremsstrahlung.md)'s confinement sweep, and it is also the Q
+[`d-t-ignition.md`](d-t-ignition.md) gave the reactor as it then shipped, radiation-free and pinned
+at 2×10⁹, a row struck there since #613; which of the two this sentence took is not on record. At
+the shipped 30 s `bremsstrahlung.md` gives Q 73.2 at 3.26×10⁹ K. The next sentence holds either
+way — 73.2 / 0.349 = 210.) **T-T is a
 strictly worse use of tritium than D-T**, by two orders of magnitude in Q. Its only case is as
 somewhere to *put* tritium — a blanket that has bred more than the
 D-T reactors can burn currently makes neither heat nor tritium (ADR 0019), and a T-T reactor would be
