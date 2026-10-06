@@ -27,6 +27,23 @@
 
     ONE GAME AT A TIME. The gates start Factorio, and they run in sequence here on purpose.
 
+    AND BEFORE OR AFTER A SUBAGENT FAN-OUT, NOT DURING ONE (#617). Measured on this machine:
+
+      21 gates, nothing else running        4 min 45 s     2026-10-05
+      21 gates, six subagents reading       24 min 50 s    2026-10-06
+      ship-check.ps1 inside that run        10 min 59 s    2026-10-06
+      ship-check.ps1 -SelfTest, quiet       1 min 20 s     2026-10-06
+      the same beside four subagents        over 10 min    2026-10-06
+      git status --short, quiet             0.24 s         2026-10-06
+      gh issue view <n> --json, quiet       1.1 s          2026-10-06
+
+    Nothing failed in the slow run; the session waited, and four of its shell commands, each a few
+    git or gh calls, ran past timeouts of 30, 60 and 120 s. The cause was not isolated: the quiet
+    git and gh figures were taken later the same day, after the subagents had finished, and neither
+    was timed alone under load. The subagents started no game. They read research notes. The
+    last row is a lower bound: the run was still going when a 600 s timeout moved it to the
+    background, and it passed.
+
 .PARAMETER Only
     Run only the gates whose name matches this wildcard, e.g. 'check-p*' or 'test-*'.
 
