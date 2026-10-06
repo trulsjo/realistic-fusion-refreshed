@@ -34,7 +34,8 @@ nothing in the first pass became wrong — the space got larger:
 scratchpad first and landed on 2026-08-21; landing it corrected one figure in the ordering table
 below and confirmed every other number in this note. See
 [What is not verified](#what-is-not-verified) for what it does and does not cover, and note that
-**nothing runs it for you**. What
+**it is run for you only after the fact** — by `scripts/run-gates.ps1` and, since #599, on every
+pull request and push to `main`. What
 makes them believable in the meantime is stated rather than assumed: the harness reproduces **six**
 figures `bremsstrahlung.md` publishes, without being fitted to any of them — D-D at 8.769×10⁸ K and
 Q 2.139 radiation-free, 2.422×10⁸ K and Q 0.3205 with the term, D-T at 4.633×10⁹ K and 3.264×10⁹ K,

@@ -26,10 +26,11 @@
 -- directly. Keeping them independent is deliberate: this one solves for the equilibrium and the
 -- shipped one integrates towards it, so agreement between them is evidence rather than tautology.
 --
--- AND NOTHING RUNS IT FOR YOU. There is no CI here and no scripts/*.ps1 invokes the Lua tests, so
--- regenerating cross-section-data/reactivities.lua invalidates bremsstrahlung.md and ADR 0014
--- silently unless somebody types the command above. Stated rather than glossed, because "the test
--- would catch it" is only true of a test something runs.
+-- IT IS RUN FOR YOU, BUT ONLY AFTER THE FACT. scripts/run-gates.ps1 runs the Lua suites (#567) and
+-- so does .github/workflows/gates.yml on every pull request and push to main (#599), so
+-- regenerating cross-section-data/reactivities.lua fails a check on the next pull request. Nothing
+-- stops the regeneration and nothing rewrites bremsstrahlung.md or ADR 0014. Stated rather than
+-- glossed, because "the test would catch it" is only true of a test something runs.
 --
 -- Like the other tests here it runs outside Factorio (ADR 0005), written to Lua 5.2 semantics and
 -- verified on 5.4.

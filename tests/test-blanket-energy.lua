@@ -9,9 +9,10 @@
 -- figure below is computed against M.blanket as the shipped module holds it, so a balance pass on
 -- the ratio fails the suite rather than silently invalidating the note.
 --
--- AND NOTHING RUNS IT FOR YOU. There is no CI here and no scripts/*.ps1 invokes the Lua tests, so
--- that sentence is only true of somebody who types the command above. Stated rather than glossed,
--- the same way tests/test-bremsstrahlung.lua states it.
+-- IT IS RUN FOR YOU, BUT ONLY AFTER THE FACT. scripts/run-gates.ps1 runs the Lua suites (#567) and
+-- so does .github/workflows/gates.yml on every pull request and push to main (#599), so that
+-- sentence is true by the next pull request and not before. Stated rather than glossed, the same
+-- way tests/test-bremsstrahlung.lua states it.
 --
 -- WHAT IT COVERS OF THE SHIPPED CODE: capture_energy_j(), and only as a CROSS-CHECK. This file's
 -- own net_mev_per_neutron() below is a second implementation of the blend, which is exactly the
