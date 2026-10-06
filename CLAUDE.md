@@ -113,6 +113,14 @@ on this machine on 2026-10-05 with nothing else running. It runs no probe, no ga
 `-SelfTest`, and not `load-check.ps1 -FromZips`, `locale-check.ps1` or `name-check.ps1`; its
 own `-SelfTest` proves with stand-in gates that a failing gate is named and not swallowed.
 
+**Three things run unattended, and nothing else does** (#599). `.github/workflows/gates.yml` runs
+the game-free gates — the ones that need neither Factorio nor Blender — on every pull request and
+every push to `main`: the Lua suites, `ship-check.ps1`, and `commit-check.ps1` over the commits
+that event brought. Every gate that creates a map, every probe and every `-SelfTest` still runs
+only when a person or a session starts it, so a green check says nothing about `load-check.ps1`
+or any `scripts/check-*.ps1`. **The check is advisory**: `main` has no branch protection, so a
+red one blocks no merge.
+
 `scripts/probe-*` are **not** gates, and `run-gates.ps1` runs none of them. A probe asserts nothing and answers
 a question a decision is waiting on — exit 0 means it ran and reported, never that the answer was the
 hoped-for one. Its findings belong in `docs/research/`, and it stays committed so the next engine
@@ -310,6 +318,11 @@ git config core.hooksPath .githooks
 lets the commit through, instead of passing everything quietly — the posture
 [ADR 0001](https://github.com/trulsjo/grado-factorio-tools/blob/main/docs/adr/0001-siblings-consume-this-repo-as-a-submodule.md)
 in the tooling repo requires, and what makes the second step safe to ask for.
+
+**A clone that skips both is still checked, later** (#599). The workflow in the State section runs
+the same check over a pull request's commits and over each push to `main`, so the convention no
+longer depends on every clone opting in. The hook is still the only thing that stops a bad message
+before it is written; the workflow reports one after it is pushed.
 
 **It exists because the wrap rule had rotted.** Measured on 2026-09-06 by
 `commit-check.ps1 -Range '-50 main'`: 21 of the last 50 commits fail, on 183 body lines and 5
