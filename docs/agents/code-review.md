@@ -130,6 +130,12 @@ headline figures the note stands behind, and a grid as a few of its cells or as 
 note's every figure. A figure that moves in a section and not in its row leaves the old one at the
 top of the note, presented as current. A figure a change supersedes loses its row.
 
+**A gate holds part of this, and the review holds the rest** (#616). Section 10 of
+`scripts/ship-check.ps1` fails a row whose Section link names no heading of its note, and a row
+whose figure is written nowhere below the table. It cannot tell whether the row is the figure the
+note currently stands behind: a superseded figure is still written in the note, marked, so it
+passes. That is still read for.
+
 **Review the fixed state, not just the original.** A second round on work that has already passed
 review and verification is worth running, and this file exists because it found more than the first.
 Since 2026-10-05 (#592) what is *required* of the fixed state is narrower than a round: the reviewer

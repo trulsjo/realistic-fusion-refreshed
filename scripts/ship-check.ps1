@@ -133,6 +133,13 @@
     the section, not here: a citation in a trailing comment after code, the ways English points at a
     half without the word, and any file outside the tracked list.
 
+    SECTION 10 HAS BOTH (#616). It reads the `## Current figures` table at the top of a research
+    note and fails a row whose Section link names no heading of that file, or whose figure is
+    written nowhere below the table. A floor holds the number of tables it found, because it finds
+    the notes by scanning; and the figure-anchor-resolves and figure-value-in-note halves each plant
+    a loose row beside a good one. It cannot tell whether a row is the figure the note currently
+    stands behind; the section comment has the rest of what it cannot see.
+
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
     stopped saying no fails rather than turning every check below it green. It was also demonstrated
@@ -142,10 +149,10 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove two things a green run cannot: the shared -SelfTest runner
+    Run the checks as usual, then prove three things a green run cannot: the shared -SelfTest runner
     in factorio-lib.ps1 -- that it numbers halves from the list it was given and refuses a half it
-    cannot show ran -- and section 9, in both directions, on documents planted in a temporary
-    directory. Nothing here plants anything in the repository; the runner's cases are built in
+    cannot show ran -- section 9, in both directions, and section 10's two assertions, each in both
+    directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
     memory and the planted documents live in the scratch directory the run removes on its way out.
 
 .EXAMPLE
@@ -919,6 +926,158 @@ foreach ($cite in (Find-NumberedHalves -Files $citingCode -Root $repoRoot)) {
         'they run, and an ordinal points at a different half the moment one is inserted above it.'))
 }
 
+# 10. A ROW OF A `## Current figures` TABLE MUST STILL BELONG TO ITS NOTE (#602, #616).
+#
+# Seven notes under docs/research/ open with a table of the figures the note stands behind, and
+# docs/agents/code-review.md says a figure and its row change in the same commit. That rule is prose,
+# and this is the half of it a script can hold: a row whose Section link names a heading the file
+# does not have, and a row whose value is written nowhere in the note below the table. Both are what
+# an edit to a section leaves behind when the row is forgotten -- a heading renamed, a figure
+# re-measured -- and neither changes anything another gate reads.
+#
+# THE NOTES ARE FOUND BY THE HEADING, never by a list of names, so a note that gains a table is
+# gated from the commit that adds it. The table is the one under that heading whose header row names
+# the six columns; a row is every `|` line after the separator until the first line that is not one.
+#
+# AN ANCHOR IS COMPUTED THE WAY GITHUB COMPUTES IT, because that is where the link is followed:
+# lowercased, everything but letters, marks, decimal digits, underscores, hyphens and spaces dropped,
+# spaces to hyphens, and a repeated heading suffixed -1, -2 in order. A superscript is not a decimal
+# digit and a multiplication sign is not a letter, so both drop, which is what GitHub does to them.
+#
+# A VALUE IS HELD TO ITS NUMBERS, not to its words. Every number in the Value cell must be written
+# somewhere below the table, whole: 0.32 is not found inside 0.3205, and 5.4 is not found inside
+# 5.44. A cell holding several figures passes when each of them is found.
+#
+# WHAT IT CANNOT SEE:
+#   - whether the row is the figure the note CURRENTLY stands behind. A superseded figure is still
+#     written in the note -- the house style keeps it, marked -- so it passes here. That half of the
+#     rule stays with the review.
+#   - whether the value sits in the section the row points at. It is searched for in the whole note
+#     below the table, because a section's extent needs a markdown parser to bound.
+#   - a small number. 3, 10 and 50 are written somewhere in any note, so a row whose value is one of
+#     those is held to nothing. The exponent's base in a power of ten passes the same way.
+#   - a unit, a sign, or which of two figures in one cell is which.
+#   - the Measured, Game version and Research state cells, which are not read at all.
+$FIGURE_HEADING = '^##\s+Current figures\s*$'
+$FIGURE_HEADER  = '^\|\s*Figure\s*\|\s*Value\s*\|\s*Measured\s*\|\s*Game version\s*\|\s*Research state\s*\|\s*Section\s*\|\s*$'
+# Thousands grouped by a space or a comma first, so a figure written in groups of three is one number
+# and not three.
+$FIGURE_NUMBER  = '\d+(?:[ ,]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?(?:e-?\d+)?'
+# How many notes carried a table when this section was written (#616). A scan that found none would
+# pass every row it never read.
+$FIGURE_TABLE_FLOOR = 7
+
+function Get-HeadingAnchors {
+    <#  The anchor GitHub gives each heading of a markdown file, fenced blocks left out.  #>
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [AllowEmptyString()] [string[]] $Lines)
+
+    $anchors = [System.Collections.Generic.HashSet[string]]::new()
+    $seen    = @{}
+    $fenced  = $false
+    foreach ($text in $Lines) {
+        if ($text.TrimStart() -match '^(?:```|~~~)') { $fenced = -not $fenced; continue }
+        if ($fenced -or $text -notmatch '^#{1,6}\s+(.*?)\s*$') { continue }
+        # A link in a heading renders as its text, and the anchor is made from what renders.
+        $shown  = [regex]::Replace($Matches[1], '\[([^\]]*)\]\([^)]*\)', '$1')
+        $anchor = [regex]::Replace($shown.ToLowerInvariant(), '[^\p{L}\p{M}\p{Nd}\p{Pc}\- ]', '').Replace(' ', '-')
+        if ($seen.ContainsKey($anchor)) { $seen[$anchor]++; $anchor = "$anchor-$($seen[$anchor])" }
+        else { $seen[$anchor] = 0 }
+        [void] $anchors.Add($anchor)
+    }
+    return , $anchors
+}
+
+function Find-LooseFigureRows {
+    <#  Every row of a `## Current figures` table that has come loose from its note, and how many
+        such tables were read.
+
+        Returns one object: Tables, the count, and Found, a list of the file, the line, which of the
+        things is wrong and the words that show it. The count is returned beside the findings
+        because zero findings over zero tables is the pass this section must not give.  #>
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Files, [string] $Root)
+
+    $found  = [System.Collections.Generic.List[object]]::new()
+    $tables = 0
+    foreach ($rel in $Files) {
+        $full = if ($Root) { Join-Path $Root $rel } else { $rel }
+        if (-not (Test-Path -LiteralPath $full)) { continue }   # tracked, deleted, not yet staged
+        $lines = @(Get-Content -LiteralPath $full -Encoding utf8)
+        $at = 0
+        while ($at -lt $lines.Count -and $lines[$at] -notmatch $FIGURE_HEADING) { $at++ }
+        if ($at -ge $lines.Count) { continue }
+        # The header row, which must come before the next heading of the same rank.
+        $head = $at + 1
+        while ($head -lt $lines.Count -and $lines[$head] -notmatch $FIGURE_HEADER -and $lines[$head] -notmatch '^##\s') { $head++ }
+        if ($head -ge $lines.Count -or $lines[$head] -notmatch $FIGURE_HEADER) {
+            $found.Add([pscustomobject]@{ File = $rel; Line = $at + 1; Kind = 'table'
+                Detail = 'the heading is there and no table with the six columns follows it' })
+            continue
+        }
+        $tables++
+        $end = $head + 2                                        # past the header and its separator
+        while ($end -lt $lines.Count -and $lines[$end].StartsWith('|')) { $end++ }
+
+        $anchors = Get-HeadingAnchors -Lines $lines
+        # One line, one kind of space: a number wrapped across a line end, or grouped with a
+        # no-break or thin space, is still that number.
+        $below = if ($end -lt $lines.Count) { $lines[$end..($lines.Count - 1)] -join ' ' } else { '' }
+        $below = [regex]::Replace($below, '[\s   ]+', ' ')
+
+        for ($i = $head + 2; $i -lt $end; $i++) {
+            $cells = @([regex]::Split($lines[$i].Trim().Trim('|'), '(?<!\\)\|') | ForEach-Object { $_.Trim() })
+            if ($cells.Count -ne 6) {
+                $found.Add([pscustomobject]@{ File = $rel; Line = $i + 1; Kind = 'cells'
+                    Detail = "$($cells.Count) cells where the header has 6" })
+                continue
+            }
+            $links = @([regex]::Matches($cells[5], '\]\(#([^)\s]+)\)') | ForEach-Object { $_.Groups[1].Value })
+            if (-not $links) {
+                $found.Add([pscustomobject]@{ File = $rel; Line = $i + 1; Kind = 'anchor'
+                    Detail = "the Section cell links to no heading: $($cells[5])" })
+            }
+            foreach ($link in $links) {
+                if (-not $anchors.Contains($link)) {
+                    $found.Add([pscustomobject]@{ File = $rel; Line = $i + 1; Kind = 'anchor'
+                        Detail = "#$link is no heading of this file" })
+                }
+            }
+            $value = [regex]::Replace($cells[1], '[\s   ]+', ' ')
+            foreach ($number in ([regex]::Matches($value, $FIGURE_NUMBER) | ForEach-Object { $_.Value } | Select-Object -Unique)) {
+                if ($below -notmatch ('(?<![\d.,])' + [regex]::Escape($number) + '(?!\d|[.,]\d)')) {
+                    $found.Add([pscustomobject]@{ File = $rel; Line = $i + 1; Kind = 'value'
+                        Detail = "$number, from the Value `"$($cells[1])`", is written nowhere below the table" })
+                }
+            }
+        }
+    }
+    return [pscustomobject]@{ Tables = $tables; Found = $found }
+}
+
+$figureNotes = @($tracked | Where-Object { $_ -match '^docs/research/[^/]+\.md$' } | Where-Object {
+    $full = Join-Path $repoRoot $_
+    (Test-Path -LiteralPath $full) -and (Select-String -LiteralPath $full -Pattern $FIGURE_HEADING -Quiet)
+})
+$figureRows = Find-LooseFigureRows -Files $figureNotes -Root $repoRoot
+
+$checks++
+if ($figureRows.Tables -lt $FIGURE_TABLE_FLOOR) {
+    $failures.Add(("only $($figureRows.Tables) note(s) under docs/research/ carry a Current figures table, " +
+        "against the $FIGURE_TABLE_FLOOR there were when section 10 was written. Either a table was " +
+        'removed, which is a decision to record by lowering the floor, or the scan stopped finding them.'))
+}
+$checks++
+foreach ($row in $figureRows.Found) {
+    $what = switch ($row.Kind) {
+        'anchor' { 'points at a section the note does not have' }
+        'value'  { 'carries a figure the note does not' }
+        'cells'  { 'is not a six-cell row' }
+        default  { 'has no table to read' }
+    }
+    $failures.Add(("$($row.File), line $($row.Line): a Current figures row $what -- $($row.Detail). " +
+        'A figure that changes in a section changes its row in the same commit ' +
+        '(docs/agents/code-review.md, "Review the prose, not only the code").'))
+}
+
 if ($failures.Count) {
     Write-Host ''
     foreach ($f in $failures) { Write-Host "FAIL  $f" -ForegroundColor Red }
@@ -1009,6 +1168,73 @@ if ($SelfTest) {
                 ('prose that names its halves, a measurement after the same word whole or decimal, ' +
                  'and a pasted transcript inside a fence, are all left alone.')
             } }
+
+            @{ Name = 'figure-anchor-resolves'; Body = {
+                # Section 10 passes by finding nothing loose. Two rows whose Section links differ
+                # only in whether a heading answers them: the second "Results" is reachable as
+                # results-1 and as nothing else, which is the suffix a renamed or added heading
+                # moves.
+                $doc = Join-Path $planted 'anchors.md'
+                @(
+                    '# A note'
+                    ''
+                    '## Current figures'
+                    ''
+                    '| Figure | Value | Measured | Game version | Research state | Section |'
+                    '|---|---|---|---|---|---|'
+                    '| Cost, second sitting | 5.257 µs | 2026-09-20 | 2.0.77 | not stated | [Results](#results-1) |'
+                    '| Cost, a sitting nobody wrote | 5.257 µs | 2026-09-20 | 2.0.77 | not stated | [Results](#results-2) |'
+                    ''
+                    '## Results'
+                    ''
+                    '## Results'
+                    ''
+                    'The median was 5.257 µs.'
+                ) | Set-Content -LiteralPath $doc -Encoding utf8
+
+                $read = Find-LooseFigureRows -Files @($doc)
+                $rows = @($read.Found)
+                if ($read.Tables -ne 1) { throw "the planted note's table was counted $($read.Tables) time(s), not once." }
+                if ($rows.Count -ne 1 -or $rows[0].Kind -cne 'anchor' -or $rows[0].Line -ne 8) {
+                    throw ('a row linking to a heading the note has and a row linking to one it does not ' +
+                           "produced: $(($rows | ForEach-Object { "line $($_.Line) $($_.Kind) ($($_.Detail))" }) -join '; '). " +
+                           'Wanted exactly one finding, kind anchor, on line 8.')
+                }
+                'a row whose Section link names no heading is caught on its line, and the row beside it, linking to a repeated heading by its suffix, is left alone.'
+            } }
+
+            @{ Name = 'figure-value-in-note'; Body = {
+                # The other assertion, both directions again. The good rows are the shapes a real
+                # table holds: a figure grouped in thousands and wrapped across a line end in the
+                # prose, and two figures in one cell. The bad row is a figure re-measured in its
+                # section and not in its row -- and the stale one must not be found inside the
+                # longer figure that replaced it.
+                $doc = Join-Path $planted 'values.md'
+                @(
+                    '# A note'
+                    ''
+                    '## Current figures'
+                    ''
+                    '| Figure | Value | Measured | Game version | Research state | Section |'
+                    '|---|---|---|---|---|---|'
+                    '| Settle tick | 1 980 000 | 2026-10-05 | 2.0.77 | unresearched | [Readings](#readings) |'
+                    '| Output range | 48.3 – 58.0 MW | 2026-10-03 | 2.0.77 | unresearched | [Readings](#readings) |'
+                    '| D-D Q | 0.32 | 2026-08-17 | none (pure simulation) | unresearched | [Readings](#readings) |'
+                    ''
+                    '## Readings'
+                    ''
+                    'The box settles by tick 1 980'
+                    '000 and sells 48.3 – 58.0 MW. Q is 0.3205.'
+                ) | Set-Content -LiteralPath $doc -Encoding utf8
+
+                $rows = @((Find-LooseFigureRows -Files @($doc)).Found)
+                if ($rows.Count -ne 1 -or $rows[0].Kind -cne 'value' -or $rows[0].Line -ne 9) {
+                    throw ('two rows whose figures the note writes and one whose figure it does not ' +
+                           "produced: $(($rows | ForEach-Object { "line $($_.Line) $($_.Kind) ($($_.Detail))" }) -join '; '). " +
+                           'Wanted exactly one finding, kind value, on line 9.')
+                }
+                'a row whose figure is written nowhere below the table is caught on its line, and a wrapped thousands figure and a two-figure cell are left alone.'
+            } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
     Write-Host ''
@@ -1020,5 +1246,6 @@ Write-Host ("ship-check: {0} checks, 0 failures." -f $checks) -ForegroundColor G
 Write-Host 'The clean break and the quality gap are stated in both code mods and in README.md; the'
 Write-Host 'licence and the scope rule ship inside all three; the assets floor matches, no code mod'
 Write-Host 'ships art, every accent named for a fluid still carries that fluid''s own colour, and'
-Write-Host 'no prose cites a self-test half by position.'
+Write-Host 'no prose cites a self-test half by position, and every Current figures row still names a'
+Write-Host 'heading and a figure its note has.'
 exit 0

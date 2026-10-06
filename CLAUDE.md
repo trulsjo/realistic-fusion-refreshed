@@ -67,7 +67,9 @@ Since #151 it also asserts one thing that is not a claim about the mods at all: 
 script in `scripts/` which declares a `.SYNOPSIS` answers `Get-Help`. It lives there because it
 has the same shape as the rest — prose no other gate can see, checkable without starting a game.
 Since #416 it has a `-SelfTest` of its own, which is new: it proves the shared self-test runner in
-`factorio-lib.ps1` and section 9's citation rule, in both directions. The other eight sections it
+`factorio-lib.ps1` and section 9's citation rule, in both directions. Since #616 it also proves
+section 10, which fails a row of a research note's `## Current figures` table whose Section link
+names no heading or whose figure the note does not write. The other eight sections it
 runs on a plain invocation are unchanged and still have no self-test, for the reason its help block
 gives.
 Run them rather than reasoning about whether a change is safe. How two of the self-tests are
