@@ -1123,10 +1123,11 @@ where a balance decision becomes unavoidable rather than where one is avoided.
   published Gamow energies, every plasma's electron density and `Z_eff`, the 3.13× and 6.34×
   understatement factors, the ordering table, p-11B under both fits across boron fractions from 2% to
   48%, and the aneutronic tiers' behaviour with the term counted. **Landing it corrected one figure**
-  — see the note on the ordering table above. **Nothing runs it for you**, as with every suite here:
-  there is no CI and no `scripts/*.ps1` invokes the Lua tests, so regenerating
-  `cross-section-data/reactivities.lua` invalidates this document silently unless somebody types the
-  command.
+  — see the note on the ordering table above. **It is run for you, but only after the fact**, as with
+  every suite here: `scripts/run-gates.ps1` runs the Lua suites (#567) and so does
+  `.github/workflows/gates.yml` on every pull request and push to `main` (#599), so regenerating
+  `cross-section-data/reactivities.lua` fails a check on the next pull request and nothing rewrites
+  this document.
 - **What the committed suite does *not* cover**, so its 44 checks are not mistaken for full coverage:
   the ideal-ignition bands, the lithium family's equilibria, and the full p-11B and catalysed-D-D
   sweeps. The lithium reactivities come from ORNL/TM-6914 read off the paper rather than digitised,

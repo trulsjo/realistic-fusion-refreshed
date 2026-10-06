@@ -11,10 +11,11 @@ produce it.
 asserted there. Run `lua tests/test-blanket-energy.lua` to reproduce them rather than taking them on
 trust.
 
-**Nothing runs it for you.** There is no CI in this repository and no `scripts/*.ps1` invokes the Lua
-tests, so moving `M.blanket.tritium_per_neutron` invalidates this note silently unless whoever moves
-it types that command. The check exists and is not wired; the same is true of
-`tests/test-bremsstrahlung.lua`, which says so in the same words.
+**It is run for you, but only after the fact.** `scripts/run-gates.ps1` has run the Lua suites since
+#567, and since #599 `.github/workflows/gates.yml` runs them on every pull request and every push to
+`main`. So moving `M.blanket.tritium_per_neutron` fails a check on the next pull request; it does
+not stop the edit, and nothing rewrites this note. The same is true of
+`tests/test-bremsstrahlung.lua`.
 
 ## The answer
 

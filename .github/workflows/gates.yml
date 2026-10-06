@@ -1,5 +1,5 @@
 # The game-free gates (#599): the ones that need neither Factorio nor Blender, so a hosted runner
-# can run them. Every other gate creates a map and runs only where a person starts it -- see
+# can run them. Every other gate starts the game and runs only where a person starts it -- see
 # scripts/run-gates.ps1. No gate's -SelfTest runs here, the same as there.
 #
 # Advisory: main has no branch protection, so a red check blocks nothing.

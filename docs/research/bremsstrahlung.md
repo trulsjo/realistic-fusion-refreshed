@@ -9,10 +9,10 @@ Nothing in the mod was changed to produce these numbers.
 and every equilibrium below is asserted there to 1%. Run `lua tests/test-bremsstrahlung.lua` to
 reproduce the tables rather than taking them on trust.
 
-**Nothing runs it for you.** There is no CI in this repository and none of `scripts/*.ps1` invokes
-the Lua tests, so regenerating `cross-section-data/reactivities.lua` invalidates this document
-silently unless whoever regenerates it types that command. The check exists and is not wired; say
-that plainly rather than claiming a guarantee the repository does not have.
+**It is run for you, but only after the fact.** `scripts/run-gates.ps1` has run the Lua suites since
+#567, and since #599 `.github/workflows/gates.yml` runs them on every pull request and every push to
+`main`. So regenerating `cross-section-data/reactivities.lua` fails a check on the next pull
+request; it does not stop the regeneration, and nothing rewrites this document.
 
 It exists because `reactor-logic.lua` and `docs/research/d-t-ignition.md` both justify the 2×10⁹ °C
 temperature clamp with a claim about bremsstrahlung, and [#37](https://github.com/trulsjo/realistic-fusion-refreshed/issues/37)
