@@ -227,7 +227,8 @@ fed** and the output follows the fuel line:
 > have later readings, in the two paragraphs that follow. The saturated burn has one: a settled D-T
 > reactor burns 26.0 u/s at one minute and 25.9 settled, with radiation, not 34 ("Both readings of
 > the supply ratio" below). The rest — 606, 1 170, 2 297 and 3 888 MW, and the D-D cell's 103 MW —
-> have no later reading on record.
+> have no later reading in this note. [`exchanger-coverage.md`](exchanger-coverage.md) measures a
+> four-heater D-T reactor with radiation, at research states this table does not have.
 
 **The one-heater D-D cell is superseded (#440, 2026-10-01, Factorio 2.0.77).** Measured with
 radiation, one heater, nothing researched: **48.9 – 58.6 MW** at 126 000 ticks, against the 86

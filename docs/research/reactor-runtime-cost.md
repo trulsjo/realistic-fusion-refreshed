@@ -44,7 +44,7 @@ same sitting, and this table holds no later per-reactor cost for those configura
 | D-D blanketed, share of a tick at ten to fifty reactors | 0.3% to 1.6% | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
 | What a collector costs over the same rig vented, six pairs, D-D and mixed | about 1.4×, bracketed by 1.3 and 1.7 | 2026-09-03 | 2.0.77 | not stated | [What the collector costs](#what-the-collector-costs) |
 | D-D blanketed over D-D collected, rig, `-Gap 6`, *n* = 200 — inside the floor | 1.12 | 2026-09-03 | 2.0.77 | not stated | [The blanket, decided rather than omitted](#the-blanket-decided-rather-than-omitted) |
-| Loaded tick over rig control, `scriptUpdate` per reactor, D-D blanketed, `-Gap 6`, *n* = 200, borrowed 10k SPM megabase | 1.11 | 2026-09-06 | 2.0.77 | not stated | [The answer, and it is the dull one](#the-answer-and-it-is-the-dull-one) |
+| Loaded tick over rig control, `scriptUpdate` per reactor, D-D blanketed, `-Gap 6`, *n* = 200, borrowed 10k SPM megabase — both operands inflated by the census walk (#235); `borrowed-base.md` puts the ratio without it at about 1.16 | 1.11 | 2026-09-06 | 2.0.77 | not stated | [The answer, and it is the dull one](#the-answer-and-it-is-the-dull-one) |
 | Borrowed base, median tick with 0 reactors, over 9,000 sampled ticks | 10.81 ms | 2026-09-06 | 2.0.77 | not stated | [The answer, and it is the dull one](#the-answer-and-it-is-the-dull-one) |
 | Rig control, median tick with 0 reactors, over 9,000 sampled ticks | 0.27 ms | 2026-09-06 | 2.0.77 | not stated | [The answer, and it is the dull one](#the-answer-and-it-is-the-dull-one) |
 | Largest one-tick change in the electric buffer of a driven, plasma-fed, powered `rf-reactor`, 600 settled ticks, since #72 | 0 J | 2026-09-06 | 2.0.77 | not stated | [The shape it fixed, measured rather than argued](#the-shape-it-fixed-measured-rather-than-argued) |
@@ -588,10 +588,10 @@ the same number. It also passes the check #39 leaves behind for future sweeps: p
 **settles** above *n* = 10 rather than rising, which a sweep on a machine getting busier cannot do.
 
 > **The figures in this subsection are the vented step of 2026-08, before #72 and #425 — marked
-> 2026-10-06 (#612).** #62 measured the same reaction set with collectors at 4.48 µs and 5.4% of a
-> tick on 2026-09-03, and #72 and #425 have each added per-tick work since: +0.88 µs per reactor on
-> the D-D rig, and +0.391 on the `-Mixed` rig for #425's lookup. See *[Collectors
-> attached](#collectors-attached-62)*, *[Per-tick confinement spending
+> 2026-10-06 (#612).** #62 measured the same reaction set on 2026-09-03 at 3.04 µs vented, and at
+> 4.48 µs and 5.4% of a tick with collectors, and #72 and #425 have each added per-tick work since:
+> +0.88 µs per reactor on the D-D rig, and +0.391 on the `-Mixed` rig for #425's lookup. See
+> *[Collectors attached](#collectors-attached-62)*, *[Per-tick confinement spending
 > (#72)](#per-tick-confinement-spending-72)* and *[The aneutronic floor is bounded, not
 > measured](#the-aneutronic-floor-is-bounded-not-measured)*.
 

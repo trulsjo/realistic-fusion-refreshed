@@ -41,7 +41,7 @@
     git or gh calls, ran past timeouts of 30, 60 and 120 s. The cause was not isolated: the quiet
     git and gh figures were taken later the same day, after the subagents had finished, and neither
     was timed alone under load. The subagents started no game. They read research notes. The
-    last row is a lower bound: the run was still going when a 600 s timeout moved it to the
+    four-subagent row is a lower bound: the run was still going when a 600 s timeout moved it to the
     background, and it passed.
 
 .PARAMETER Only
