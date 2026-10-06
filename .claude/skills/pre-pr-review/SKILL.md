@@ -53,9 +53,9 @@ not `code-review:code-review`, which is the plugin pass and runs only when asked
    > Reply with one line per finding first: its number, the file, the fault and the score. Give
    > the detail for a finding when you are asked for it. A long reply arrives cut off.
 
-   **Ask for each finding's detail with SendMessage before fixing it.** A subagent cannot write
-   its report to a file, and on this skill's first run a report sent whole stopped inside the
-   sixth of nine findings.
+   **Ask for each finding's detail with SendMessage before fixing it**, and for the rest of any
+   reply that stops mid-sentence. On this skill's first run a report sent whole stopped inside
+   the sixth of nine findings, and the reviewer's attempt to write the rest to a file was refused.
 
 4. **Fix, commit, and continue the same reviewer** with SendMessage to the name from step 3. Do
    not spawn a second one. Hand it the diff of the fixes and nothing else:
@@ -68,7 +68,7 @@ not `code-review:code-review`, which is the plugin pass and runs only when asked
    > say whether it is fixed, from the diff alone. Where your finding named a group, check the
    > fix against each member. Then review every other added line in that
    > diff as new work: a fix that adds a sentence adds a claim. Number any new finding on from
-   > your last and score it the same way.
+   > your last and score it the same way. Reply with one line per finding.
 
    **Do not send a list of what was done for each finding.** On #594 the reviewer was sent one,
    confirmed against the list, and passed a false sentence a fix had added. A finding left unfixed
