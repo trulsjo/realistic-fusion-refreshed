@@ -1,0 +1,52 @@
+# The game-free gates (#599): the ones that need neither Factorio nor Blender, so a hosted runner
+# can run them. Every other gate creates a map and runs only where a person starts it -- see
+# scripts/run-gates.ps1. No gate's -SelfTest runs here, the same as there.
+#
+# Advisory: main has no branch protection, so a red check blocks nothing.
+name: gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lua:
+    name: Lua suites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y lua5.4
+      - name: tests/test-*.lua
+        run: |
+          failed=0
+          for suite in tests/test-*.lua; do
+            echo "::group::$suite"
+            lua5.4 "$suite" || { failed=1; echo "::error::$suite failed"; }
+            echo "::endgroup::"
+          done
+          exit $failed
+
+  pwsh:
+    name: ship-check and commit-check
+    # Windows because that is the only place these scripts have ever passed.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0   # commit-check walks a range
+      - name: ship-check.ps1
+        shell: pwsh
+        run: ./scripts/ship-check.ps1
+      # Only the commits this event brought: a pull request's own, or the ones in a push to main.
+      # Neither range reaches back into the history the convention's check already fails on.
+      - name: commit-check.ps1
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        env:
+          RANGE: >-
+            ${{ github.event_name == 'pull_request'
+                && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha)
+                || format('{0}..{1}', github.event.before, github.event.after) }}
+        run: ./vendor/grado-factorio-tools/scripts/commit-check.ps1 -Range $env:RANGE
