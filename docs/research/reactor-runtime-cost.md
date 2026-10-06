@@ -182,6 +182,11 @@ Two earlier sweeps of the same rig gave 9.3 and 11.0 µs at n = 200. **Run-to-ru
 around 20%**, so the working figure is **about 9 to 11 µs per reactor per tick**, and no digit
 after that is real.
 
+> **The "around 20%" is superseded — marked 2026-10-06 (#612).** #39 measured the floor on a quiet
+> machine at 1.35× on 2026-08-18 and says in so many words that it supersedes this figure; see
+> *[What remains once the machine is quiet](#what-remains-once-the-machine-is-quiet)*. The same 20%
+> is leaned on twice more in this section, for the throttling factor and for the pooled pair.
+
 Scaling is linear from 10 reactors up. The much higher figure at n = 1 is the fixed cost of the
 handler itself — one `on_nth_tick` call, one `pairs` loop — divided by one reactor, not something
 a reactor costs.
@@ -582,6 +587,14 @@ this is the same measurement, not a similar one.
 the same number. It also passes the check #39 leaves behind for future sweeps: per-reactor cost
 **settles** above *n* = 10 rather than rising, which a sweep on a machine getting busier cannot do.
 
+> **The figures in this subsection are the vented step of 2026-08, before #72 and #425 — marked
+> 2026-10-06 (#612).** #62 measured the same reaction set with collectors at 4.48 µs and 5.4% of a
+> tick on 2026-09-03, and #72 and #425 have each added per-tick work since: +0.88 µs per reactor on
+> the D-D rig, and +0.391 on the `-Mixed` rig for #425's lookup. See *[Collectors
+> attached](#collectors-attached-62)*, *[Per-tick confinement spending
+> (#72)](#per-tick-confinement-spending-72)* and *[The aneutronic floor is bounded, not
+> measured](#the-aneutronic-floor-is-bounded-not-measured)*.
+
 **The first attempt at this sweep is discarded rather than quoted.** It flagged `BUSY` at *n* = 0 —
 84% of the part already in other hands when the baseline launched — and returned 3.07 µs. Under #39's
 rule a contended baseline is worse than none, because the contamination lands on the difference. The
@@ -663,6 +676,12 @@ flagged, came in tighter still:
 digits: it is six invocations inside a few minutes, and the wider one is what a set spread across an
 afternoon looks like. The conservative number is the one to plan against.
 
+> **2.6 µs is the step as it stood on 2026-08-18; the floor is what still stands — marked
+> 2026-10-06 (#612).** #72's sitting of 2026-09-06 read the same measurement at 3.11 µs before its
+> change and 3.989 after it, and #430's of 2026-09-20 reads the shipped step at 5.257 µs: #72 and
+> #425 each added to it, +0.88 and +0.83 µs per reactor. See *[Per-tick confinement spending
+> (#72)](#per-tick-confinement-spending-72)* and *[The sitting](#the-sitting)*.
+
 **Two further controls were tried and neither is worth having.** Taking the per-reactor cost from the
 median across benchmark runs rather than the pooled mean does not help — 1.31× against 1.28× on the
 same data, because an outlier run is as often low as high. Nor does raising `-Runs` from 3 to 5:
@@ -722,6 +741,12 @@ Six passes, D-D, *n* = 200, 1000 ticks × 5 runs each. Median over the passes th
 | pending table and four write crossings | 0.725 | 38% |
 | **ladder total** | **1.932** | |
 | shipped step, measured directly | 2.507 | |
+
+> **The `write` row is the rung as it was before #72 — marked 2026-10-06 (#612).** Since #72
+> `-Ablate write` also runs the per-tick confinement pair, so it measures a different thing today,
+> and the 0.725 µs here was not re-measured: the two smoke invocations taken on the edited ladder
+> read `write` at 4.127 and 3.328 µs and are not a row. The 2.507 µs "shipped step" is likewise the
+> step before #72 and #425. See *[What this does not say](#what-this-does-not-say)*.
 
 **The arithmetic is about a third of the shipped step, not a hundredth of it.** Crossings still cost
 more than it does — 1.0 µs against 0.88 within the ladder — and the 0.58 µs by which the shipped step
@@ -804,6 +829,10 @@ against the early reading](#compared-against-the-early-reading)*.
 **What does not change is the verdict.** 2.5 µs per reactor is cheaper than the 2.9 to 4.0 the
 decision was discharged on, so *acceptable at the shipped cadence, no further throttling* holds with
 more room than it was given. `UPDATE_INTERVAL` stays at 6.
+
+> **The 2.5 µs is the vented step of 2026-08-18 — marked 2026-10-06 (#612).** The figure the
+> verdict is quoted on moved to #62's about 4.5 µs with collectors on 2026-09-03, and #72 and #425
+> have each added to the step since. See *[Collectors attached](#collectors-attached-62)*.
 
 ## Fluid segments, and what sharing a pool actually costs (#40)
 
@@ -964,7 +993,9 @@ ran at the top heating rung against a prediction made at the shipped spec. On th
 rows read **175.1%, 116.3%, 91.2% and 104.4%**, and three of them failed the "most of it, and not
 all of it" check: energy appearing from nowhere, exactly as the rig's own comment warns it would
 look. Every ladder on the reactor — the two in `M.spec_ladders` and plant efficiency — is now off
-and asserted off, rung by rung.
+and asserted off, rung by rung. **The 2026-10-01 readings are the ones the `## Current figures`
+table at the head of this note carries; the table above is the earlier sitting's, kept as it was
+recorded (marked 2026-10-06, #612).**
 
 **`solo` against `solopipe` is the measurement that matters**, because the only thing that changes
 between them is whether there is a run to mix across. One writer both times, so no reactor can
@@ -1065,7 +1096,8 @@ excess exists; it does not isolate that mechanism, and no fix is attempted here.
 > three-reactor run at one interval, against the **~17.6** the gap above needed. (That gap is 17.6
 > points on the table above and 17.8 on the run these six rows came off; `solopipe` reads 75.2% or
 > 75.4% depending on the run, which is the size of the run-to-run movement here and the reason
-> nothing below is quoted to a tenth.)
+> nothing below is quoted to a tenth.) **(Marked 2026-10-06, #612: the 2026-10-01 re-measurement
+> under the table reads `solopipe` at 75.4% and `bare` at 57.6%.)**
 >
 > #### The ramp was the window
 >
@@ -1127,6 +1159,7 @@ else is on the run"*, and closes with *"measured at 20 pipes against none: same 
 same stored energy to within a tenth"*. The cancellation argument is sound as arithmetic. The outcome
 is not: between five and forty percent of the energy never arrives, and the figure moves with both
 the plumbing and the number of reactors. 57.6% against 94.9% is not within a tenth of anything.
+(**94.6% as re-measured 2026-10-01, #443; marked 2026-10-06, #612.**)
 
 **What this does and does not mean.** It does *not* mean reactors are producing less energy than the
 mod intends — the reactor sells `rf-reactor-energy` out of its own step, and that is unaffected. It
@@ -1162,7 +1195,9 @@ owns it, and observing it is a different ticket.
    save, which this project does not have.~~ **The rig half is closed too, 2026-09-06 (#67)** —
    measured on a borrowed 10k SPM megabase spending 10.8 ms a tick, against a rig control taken in
    the same sitting. **The interaction this item feared is not there**: 7.01 µs per reactor on a
-   loaded tick against the control's 6.33, a ratio of 1.11 and so the same number. The save this
+   loaded tick against the control's 6.33, a ratio of 1.11 and so the same number. (**Both
+   absolutes carry the harness's census walk, noted 2026-09-12 under #235 in that section; marked
+   here 2026-10-06, #612.**) The save this
    item says the project does not have is a save it borrows and does not own — see *[On a loaded
    tick, not a rig](#on-a-loaded-tick-not-a-rig-67--adr-0005s-last-residue)* at the foot of this
    note.
@@ -1170,7 +1205,9 @@ owns it, and observing it is a different ticket.
    expectation recorded here — that per-reactor cost would not grow as reactions were added — held.
    It held plainly, in the end: measured on a quiet machine (#39) every reaction costs about the
    same, 2.5 µs, and the "the average *fell*, because only D-D breeds" this item used to record was
-   a contended machine rather than a property of the mod.
+   a contended machine rather than a property of the mod. (**Marked 2026-10-06, #612: 2.5 µs is the
+   vented figure of 2026-08-18; #62 measured the set with collectors at about 4.5 µs, and #72 and
+   #425 have each added to the step since.**)
 3. **Nothing was measured with a player watching.** Rendering, GUI and the interface #25 will add
    are all absent. The redesign's 45 ms is best explained by exactly that kind of cost, so v1's
    interface work should be measured when it lands rather than assumed free.
@@ -1235,13 +1272,19 @@ faster gauge, and this table is what it costs.
 Measured 2026-08-17, on shipped code with the breeding added: **2.85 µs per reactor**, 3.42% of a
 tick at n = 200.
 
+> **A reading of 2026-08-17's code, vented — marked 2026-10-06 (#612).** Later sittings read the
+> same vented D-D configuration between 2.4 and 3.2 µs (#39, #63), and once #72 and #425 had each
+> added to the step, at 5.257 µs on 2026-09-20. See *[The sitting](#the-sitting)*.
+
 **This is not a claim that breeding is free, and not a claim that it costs anything either.** The
 four runs of the preceding shipped code returned 1.73, 2.38, 2.45 and 2.46 µs, and this note has
 already recorded a run-to-run spread of 42% (**1.35× on a quiet machine, #39**) — so 2.85 against a
 previous high of 2.46 is 1.16×, and
 the section above says plainly that differences finer than about 1.5× are unmeasurable here without
-interleaved repeats. It sits inside the noise. Anyone who needs the real number should take it as
-an A/B on one machine in one sitting rather than reading it off this table.
+interleaved repeats (**superseded 2026-08-18 by #39: the floor is 1.35×, and anything finer than
+about 1.4× is unmeasured; marked 2026-10-06, #612**). It sits inside the noise. Anyone who needs
+the real number should take it as an A/B on one machine in one sitting rather than reading it off
+this table.
 
 What was added to the tick path is one table of two entries per reactor per step, built in
 `reactor-logic.step()` and handed back with the rest of the result. It is worth knowing that the
@@ -1642,8 +1685,11 @@ already reads a box volume out of `prototypes.entity` at load, so the machinery 
 
 **It is a candidate and not a plan, for three reasons.** One call is at most about 0.18 µs — a
 quarter of a `write` rung that is itself an upper bound — so alone it is well inside the 1.35×
-floor. It trades a crossing for the assumption that a box's declared volume never varies per entity
-at runtime, and this note has already been wrong once about what `get_capacity` answers (#40).
+floor. (**Marked 2026-10-06, #612: that rung is the 0.725 µs measured before #72, which *[What this
+does not say](#what-this-does-not-say)* records as moved and not re-measured, so the 0.18 µs is a
+quarter of the old rung.**) It trades a crossing for the assumption that a box's declared volume
+never varies per entity at runtime, and this note has already been wrong once about what
+`get_capacity` answers (#40).
 And there is no cause to pay for it: at the ten to fifty reactors a build has, the worst measured
 configuration is 0.3% to 1.6% of a tick.
 
@@ -1741,6 +1787,16 @@ the fullest tritium box at 3.3%, so nothing saturated.
 |---:|---:|---:|---:|
 | 50 | 7.45 | 6.28 | 1.19 |
 | 200 | **7.01** | **6.33** | **1.11** |
+
+> **Both columns carry the harness's census walk — marked 2026-10-06 (#612).** The #235 block under
+> *[The answer, and it is the dull one](#the-answer-and-it-is-the-dull-one)*, dated 2026-09-12,
+> records it: the walk sat in every per-reactor figure taken after `0b43649`, the rig control's
+> 6.33 µs is inflated by about 2.2 µs, and the two columns are "inflated alike". So every
+> per-reactor figure in this section, and each share of a tick taken from one — the 8.41% and the
+> 0.4% to 2.1% of the *Verdict* among them — is too high as an absolute, and no re-taken figure is
+> recorded here. The block leaves the two columns comparable with each other. See
+> [`borrowed-base.md`](borrowed-base.md) and
+> [#327](https://github.com/trulsjo/realistic-fusion-refreshed/issues/327).
 
 **The *n* = 50 row is quoted here, and #235 says not to quote it.** That embargo is named rather
 than stepped around: it was imposed because a spiking baseline had put the borrowed base *below* the
@@ -1885,6 +1941,12 @@ sweeps to — cost **8.41% of a 16.67 ms tick**. Scaling the same per-reactor fi
 to fifty reactors an ordinary build has gives **0.4% to 2.1%**. That is not a budget worth spending
 the physics on, which is the question the ADR pre-authorised a coarser cadence for.
 
+> **8.41% and 0.4% to 2.1% both come from this sweep's 7.01 µs, which the #235 block under *[The
+> answer, and it is the dull one](#the-answer-and-it-is-the-dull-one)* records as inflated by the
+> census walk — marked 2026-10-06 (#612).** Neither has been re-taken here. The range this note's
+> `## Current figures` table carries for ten to fifty reactors is #62's 0.3% to 1.6%, from the
+> 5.44 µs that block calls clean.
+
 That range is the loaded-tick figure's, and ADR 0005 records **0.3% to 1.6%** for the same ten to
 fifty reactors. **The two are one claim, not two.** The first comes from this sweep's 7.01 µs and the
 second from #62's 5.44; the ratio between them is 1.29, inside the floor, so they are the same number
@@ -1900,6 +1962,11 @@ average tick does. Neither share may be added to the other.
 and 5.44 on #62's rig are all inside one 1.35× band of each other, so **about 5.4 µs for the worst
 configuration** stands as the figure on record. Nothing in the tick path changed, and nothing here
 says the record should.
+
+> **7.01 and 6.33 here are the inflated figures — marked 2026-10-06 (#612).** The #235 block puts
+> the corrected rig control nearer 4.15 µs against #62's 5.44, about 1.31×: under the floor "but
+> against it rather than inside it". The figure on record stays #62's 5.44 µs, which that block
+> calls clean.
 
 **This sweep measured one configuration and not five, so it moves nothing about the other four.**
 Blanketed D-D was chosen because #62 measured it as the dearest; the mixed reaction set, the vented
@@ -2025,6 +2092,14 @@ invocations, alternating between the two arms in one sitting, none of them flagg
 [#37](https://github.com/trulsjo/realistic-fusion-refreshed/issues/37) predicted +0.9 µs, from the
 extra `entity.energy` crossings the change adds, and that is what came out. At 200 reactors it is
 0.18 ms a tick, taking the fleet from 3.7% of a 16.67 ms tick to 4.8%.
+
+> **The two medians, and the 3.7% and 4.8% taken from them, are this sitting's and no later one's
+> — marked 2026-10-06 (#612).** #430's sitting of 2026-09-20 reads the arm this table has at
+> 3.989 µs as 4.424, and the shipped step with #425's lookup as 5.257; see *[The
+> sitting](#the-sitting)*. And 2026-09-06 is after `0b43649`, from which the #235 block under
+> *[The answer, and it is the dull one](#the-answer-and-it-is-the-dull-one)* says the harness's
+> census walk sat in every per-reactor figure taken. This note does not say what that does to
+> these two or to the difference between them; see [`borrowed-base.md`](borrowed-base.md).
 
 **An earlier sitting agrees, on an earlier form of the change.** Before the idle-reactor gate above
 existed, the same ten-invocation design gave 3.075 against 4.000 — a delta of +0.93. Two paired
