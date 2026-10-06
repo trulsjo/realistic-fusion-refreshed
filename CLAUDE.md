@@ -121,7 +121,8 @@ own `-SelfTest` proves with stand-in gates that a failing gate is named and not 
 by Truls, 2026-10-07, #618). A branch is markdown-only when every path
 `git diff --name-only --no-renames main...HEAD` prints ends in `.md`; `--no-renames` is there so
 that a file renamed to `.md` prints the path it had. One path that does not end in `.md`, a
-`.gitignore` or a comment-only edit to a script included, and the branch runs `run-gates.ps1`.
+`.gitignore` or a comment-only edit to a script included, and the branch is not markdown-only:
+the paragraph above applies to it as it would to any other.
 The exception rests on one fact: no other gate reads a `.md` file, checked 2026-10-07. A gate
 that starts reading one ends it.
 
