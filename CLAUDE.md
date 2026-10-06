@@ -111,7 +111,9 @@ per gate, exiting non-zero and naming each gate that failed. **Run it on a branc
 more than one ticket, before the review.** Each ticket's author runs the gates its own change
 touches, and #557 was broken between tickets: #555 changed how `control.lua` writes
 `UPDATE_INTERVAL`, which `check-pooling.ps1` reads by its shape. It took 4 min 45 s for 21 gates
-on this machine on 2026-10-05 with nothing else running. It runs no probe, no gate's
+on this machine on 2026-10-05 with nothing else running, and 24 min 50 s the next day beside six
+subagents: **run it before or after a subagent fan-out, not during one** (#617; the script's help
+has the figures). It runs no probe, no gate's
 `-SelfTest`, and not `load-check.ps1 -FromZips`, `locale-check.ps1` or `name-check.ps1`; its
 own `-SelfTest` proves with stand-in gates that a failing gate is named and not swallowed.
 
