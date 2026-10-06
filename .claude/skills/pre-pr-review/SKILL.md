@@ -23,7 +23,9 @@ not `code-review:code-review`, which is the plugin pass and runs only when asked
 
    - a branch that records measurements: the raw output of each probe a figure came from;
    - any other branch: the output of the gates that were run — `scripts/run-gates.ps1` when the
-     branch combines more than one ticket, otherwise the gates the change touches.
+     branch combines more than one ticket, otherwise the gates the change touches. A
+     markdown-only branch, one where every path `git diff --name-only main...HEAD` prints ends
+     in `.md`, runs `scripts/ship-check.ps1` alone however many tickets it combines (#618).
 
    Done when every figure or pass the branch claims has its output in a file.
 
@@ -37,7 +39,9 @@ not `code-review:code-review`, which is the plugin pass and runs only when asked
    > `<evidence files>`, which hold `<the probes' raw output | the gate results>`.
    >
    > The branch claims to resolve `<#n, #n>`. Read each with the **Read an issue** command in
-   > `docs/agents/issue-tracker.md` and hold the diff against its acceptance criteria.
+   > `docs/agents/issue-tracker.md` and hold the diff against its acceptance criteria. If the
+   > branch resolves more than one ticket and the evidence is `ship-check.ps1` alone, confirm
+   > that every path in the diff ends in `.md`.
    >
    > You are read-only: edit, commit and run nothing that changes the working tree. If proving a
    > finding takes a planted change, make your own worktree first, as the third rule says. Scratch
