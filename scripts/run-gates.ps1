@@ -10,6 +10,13 @@
     ship check and the load check all passed, and check-pooling.ps1 reads that line by its shape.
     It was caught because the gates were run by hand on the combined tree. This is that step.
 
+    NOT FOR A MARKDOWN-ONLY BRANCH (#618, decided 2026-10-07). When every path
+    `git diff --name-only main...HEAD` prints ends in .md, the branch runs ship-check.ps1 alone,
+    because no other gate here reads a .md file. One path that does not end in .md, a comment-only
+    edit to a script included, and it runs everything: check-pooling.ps1 reads control.lua by
+    its shape, which is the failure above. This script does not look at the diff. The session
+    decides, and the pre-PR reviewer checks the paths.
+
     WHAT IT RUNS, in this order:
 
       the Lua suites           every tests/test-*.lua, with `lua` from PATH

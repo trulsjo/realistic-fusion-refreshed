@@ -110,7 +110,12 @@ the default `load-check.ps1` and every `scripts/check-*.ps1` it finds, one at a 
 per gate, exiting non-zero and naming each gate that failed. **Run it on a branch that combines
 more than one ticket, before the review.** Each ticket's author runs the gates its own change
 touches, and #557 was broken between tickets: #555 changed how `control.lua` writes
-`UPDATE_INTERVAL`, which `check-pooling.ps1` reads by its shape. It took 4 min 45 s for 21 gates
+`UPDATE_INTERVAL`, which `check-pooling.ps1` reads by its shape. **A markdown-only branch runs
+`ship-check.ps1` alone** (decided by Truls, 2026-10-07, #618): one where every path
+`git diff --name-only main...HEAD` prints ends in `.md`. One path that does not, a `.gitignore`
+or a comment-only edit to a script included, and the branch runs all of them. It rests on one
+fact: no other gate reads a `.md` file, checked 2026-10-07. A gate that starts reading one ends
+the exception. It took 4 min 45 s for 21 gates
 on this machine on 2026-10-05 with nothing else running, and 24 min 50 s the next day beside six
 subagents: **run it before or after a subagent fan-out, not during one** (#617; the script's help
 has the figures). It runs no probe, no gate's
@@ -369,7 +374,8 @@ vocabulary is `GLOSSARY.md`'s Art section.
 ### Code review
 
 Four rules, all in `docs/agents/code-review.md`. Before a review of a branch that combines
-more than one ticket, run `scripts/run-gates.ps1` on it; the State section says what it runs.
+more than one ticket, run `scripts/run-gates.ps1` on it, or `scripts/ship-check.ps1` alone when
+the branch is markdown-only; the State section says what the first runs and defines the second.
 
 **One review, before the pull request** (#592). Every branch gets the pre-PR review: a fresh
 subagent handed the diff, `docs/agents/code-review.md`, and the probes' raw output or the gate
