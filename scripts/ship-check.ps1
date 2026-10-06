@@ -959,9 +959,11 @@ foreach ($cite in (Find-NumberedHalves -Files $citingCode -Root $repoRoot)) {
 #   - an order of magnitude written as a superscript. Only the mantissa and the 10 are numbers
 #     here, so a row a thousandfold out in its exponent passes. An exponent written with an e is
 #     read.
-#   - a group of three after a small number in ordinary prose: "rung 3 100 MW" hides the 100 from
-#     a row whose value is 100, because it reads as the tail of a grouped figure. That is a false
-#     FAILURE, the cheap direction, and only when the note writes the figure nowhere else.
+#   - a number written straight after another one, when it opens with exactly three digits. The
+#     pair reads as one grouped figure, so "rung 3 100 MW" hides both the 3 and the 100, and prose
+#     wrapped as "rung 5" then "102.4 MW" hides the 102.4, since a line end is a space here. That
+#     is a false FAILURE, the cheap direction, and only when the note writes the figure nowhere
+#     else.
 #   - a heading written with underscore emphasis. GitHub drops those underscores from the anchor
 #     and this keeps them, so such a heading's row fails until the heading is written with
 #     asterisks. No heading in the seven notes is.
