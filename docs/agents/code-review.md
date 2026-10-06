@@ -294,3 +294,5 @@ finding is a discarded one. The second adds one obligation the rubric never ment
 plugin that reviews code cannot know that in this repository the prose is part of the deliverable.
 The third governs the passes that run beside the workflow rather than inside it. The fourth says
 when the workflow is run at all, and what is run when it is not.
+
+Planted for #599: see `scripts/ship-check.ps1:167`.
