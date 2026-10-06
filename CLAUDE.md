@@ -110,17 +110,20 @@ the default `load-check.ps1` and every `scripts/check-*.ps1` it finds, one at a 
 per gate, exiting non-zero and naming each gate that failed. **Run it on a branch that combines
 more than one ticket, before the review.** Each ticket's author runs the gates its own change
 touches, and #557 was broken between tickets: #555 changed how `control.lua` writes
-`UPDATE_INTERVAL`, which `check-pooling.ps1` reads by its shape. **A markdown-only branch runs
-`ship-check.ps1` alone** (decided by Truls, 2026-10-07, #618): one where every path
-`git diff --name-only main...HEAD` prints ends in `.md`. One path that does not, a `.gitignore`
-or a comment-only edit to a script included, and the branch runs all of them. It rests on one
-fact: no other gate reads a `.md` file, checked 2026-10-07. A gate that starts reading one ends
-the exception. It took 4 min 45 s for 21 gates
+`UPDATE_INTERVAL`, which `check-pooling.ps1` reads by its shape. It took 4 min 45 s for 21 gates
 on this machine on 2026-10-05 with nothing else running, and 24 min 50 s the next day beside six
 subagents: **run it before or after a subagent fan-out, not during one** (#617; the script's help
 has the figures). It runs no probe, no gate's
 `-SelfTest`, and not `load-check.ps1 -FromZips`, `locale-check.ps1` or `name-check.ps1`; its
 own `-SelfTest` proves with stand-in gates that a failing gate is named and not swallowed.
+
+**A markdown-only branch runs `ship-check.ps1` alone**, however many tickets it combines (decided
+by Truls, 2026-10-07, #618). A branch is markdown-only when every path
+`git diff --name-only --no-renames main...HEAD` prints ends in `.md`; `--no-renames` is there so
+that a file renamed to `.md` prints the path it had. One path that does not end in `.md`, a
+`.gitignore` or a comment-only edit to a script included, and the branch runs `run-gates.ps1`.
+The exception rests on one fact: no other gate reads a `.md` file, checked 2026-10-07. A gate
+that starts reading one ends it.
 
 **One workflow runs three gates unattended** (#599). `.github/workflows/gates.yml` is the only file
 under `.github/`, and it runs the game-free gates — the ones that need neither Factorio nor
@@ -375,7 +378,8 @@ vocabulary is `GLOSSARY.md`'s Art section.
 
 Four rules, all in `docs/agents/code-review.md`. Before a review of a branch that combines
 more than one ticket, run `scripts/run-gates.ps1` on it, or `scripts/ship-check.ps1` alone when
-the branch is markdown-only; the State section says what the first runs and defines the second.
+the branch is markdown-only; the State section says what `run-gates.ps1` runs and defines
+markdown-only.
 
 **One review, before the pull request** (#592). Every branch gets the pre-PR review: a fresh
 subagent handed the diff, `docs/agents/code-review.md`, and the probes' raw output or the gate

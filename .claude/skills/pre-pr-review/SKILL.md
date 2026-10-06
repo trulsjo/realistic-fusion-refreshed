@@ -24,8 +24,9 @@ not `code-review:code-review`, which is the plugin pass and runs only when asked
    - a branch that records measurements: the raw output of each probe a figure came from;
    - any other branch: the output of the gates that were run — `scripts/run-gates.ps1` when the
      branch combines more than one ticket, otherwise the gates the change touches. A
-     markdown-only branch, one where every path `git diff --name-only main...HEAD` prints ends
-     in `.md`, runs `scripts/ship-check.ps1` alone however many tickets it combines (#618).
+     markdown-only branch, one where every path `git diff --name-only --no-renames main...HEAD`
+     prints ends in `.md`, runs `scripts/ship-check.ps1` alone however many tickets it combines
+     (#618).
 
    Done when every figure or pass the branch claims has its output in a file.
 
