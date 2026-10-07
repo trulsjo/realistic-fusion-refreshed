@@ -17,9 +17,15 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    scratchpad, never into the repository:
 
    ```
-   git rev-parse HEAD                      # the reviewed commit; step 4 needs it
-   git diff main...HEAD > <scratch>/branch.diff
+   git tag -f pre-pr-reviewed HEAD         # the reviewed commit; step 4 needs it. Never pushed
+   git diff --output="<scratch>/branch.diff" main...HEAD
    ```
+
+   **Have git write the file, and quote the path** (#635). Both lines run unchanged in Git Bash
+   and in PowerShell, with `<scratch>` in either form of path. A `>` redirect to an unquoted
+   backslash path does not: Git Bash drops the backslashes and writes a file named for the whole
+   path into the current directory. Two `.diff` files of that shape sat in the repository root
+   from September.
 
 2. **Save the evidence to a file** in the same directory. Which evidence depends on the branch:
 
@@ -68,7 +74,7 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    not spawn a second one. Hand it the diff of the fixes and nothing else:
 
    ```
-   git diff <reviewed commit>..HEAD > <scratch>/fixes.diff
+   git diff --output="<scratch>/fixes.diff" pre-pr-reviewed..HEAD
    ```
 
    > `<scratch>/fixes.diff` is every change made since your review. For each of your findings,
@@ -84,9 +90,31 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    Before writing a fix, read what *Review the prose, not only the code* in
    `docs/agents/code-review.md` asks of the session that writes one (#632).
 
+   **When a finding corrects a figure or a claim, reword the commits that state the old one**
+   (#640). The rule, and where it stops, is in `docs/agents/code-review.md` under *A review before
+   the pull request, and the plugin pass after it*. Find them, write the corrected message to
+   `<scratch>/msg.txt` with the Write tool, and reword one commit at a time, from Git Bash:
+
+   ```
+   git log main..HEAD --format='%h %s' --grep='<the old figure or words>'
+   GIT_SEQUENCE_EDITOR="sed -i 's/^pick <short hash>/reword <short hash>/'" \
+     GIT_EDITOR="cp <scratch>/msg.txt" git rebase -i main
+   git push --force-with-lease             # only if the branch is already pushed
+   ```
+
+   `pre-pr-reviewed` stays on the commit the reviewer read, so the `fixes.diff` line above gives
+   the same diff after a reword as before it. Delete the tag when the branch has merged.
+
    Done when the reviewer has answered for every finding. New findings get the same step again.
 
-5. **Write the findings table** and put it in the pull request's body, every finding in it:
+5. **Answer for each thing the reviewer said it did not check** (#636). The same section of
+   `docs/agents/code-review.md` says how an item is checked and what the pull request's body
+   records for it. Check each item, or send it to the reviewer by name with SendMessage, and write
+   the outcome of each under the heading the findings table will go under.
+
+   Done when every item on the reviewer's list has an outcome written for it.
+
+6. **Write the findings table** and put it in the pull request's body, every finding in it:
 
    | # | Finding | Where | Score | Fixed |
    |---|---|---|---|---|
@@ -106,20 +134,29 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    ```python
    import json, sys
    total = lambda u: sum(v for k, v in u.items() if k.endswith("_tokens") and isinstance(v, int))
-   order, use = [], {}
-   for line in open(sys.argv[1], encoding="utf-8"):
-       m = json.loads(line).get("message") or {}
-       if m.get("role") == "assistant" and total(m.get("usage") or {}):
-           if m["id"] not in use:
-               order.append(m["id"])
-           use[m["id"]] = m["usage"]
-   print("last request:", total(use[order[-1]]), "all requests:", sum(map(total, use.values())))
+   everything = 0
+   for path in sys.argv[1:]:
+       order, use = [], {}
+       for line in open(path, encoding="utf-8"):
+           m = json.loads(line).get("message") or {}
+           if m.get("role") == "assistant" and total(m.get("usage") or {}):
+               if m["id"] not in use:
+                   order.append(m["id"])
+               use[m["id"]] = m["usage"]
+       reads = sum(u.get("cache_read_input_tokens", 0) for u in use.values())
+       everything += sum(map(total, use.values()))
+       print("last request:", total(use[order[-1]]), "all requests:", sum(map(total, use.values())),
+             "of which cache reads:", reads, "requests:", len(order))
+   print("all requests, every transcript given:", everything)
    ```
 
-   Write both figures. The first is the one the table in `docs/agents/code-review.md` holds, and
-   that file says what it measures. Read them again after the reviewer's last confirmation, the
-   one of the plugin pass's fixes, and replace the figures in the body. The table's row keeps the
-   figure read when the row was written. If the transcript cannot be found, write "not measured".
+   Write the first two figures, and what share of the second is cache reads. The first is the one
+   the first table in `docs/agents/code-review.md` holds, and the second the one its all-requests
+   table holds; that file says what each measures. Read them again after the reviewer's last
+   confirmation, the one of the plugin pass's fixes, and replace the figures in the body. The first
+   table's row keeps the figure read when the row was written. If the transcript cannot be found,
+   write "not measured". Given several transcripts, the script prints a line for each and their
+   sum, which is how the session that runs the plugin pass reads that pass's totals (#634).
 
 ## What this does not do
 
