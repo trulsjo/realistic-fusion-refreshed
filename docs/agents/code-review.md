@@ -384,9 +384,9 @@ and one was what a tool would do on a reinstall (#604). The six are branches whe
 asked for, two of them the changes that wrote this rule and this table, so they are not a sample of
 branches. Three rows have a cost: about 400 000 tokens on #579, about 580 000 for #594's scorers
 alone, and 629 193 for #625's reviewers and scorers, or 762 616 with the three steps before them.
-Two of the three are floors, and the verdict took the cost as about half a million tokens a pass.
-Whether the scorers' share of it stays is #626. Truls accepted each of those limits on 2026-10-07
-(#593).
+#594's is a floor. The verdict took the cost as about half a million tokens a pass, from the first
+two figures and 629 193. Whether the scorers' share of it stays is #626. Truls accepted on
+2026-10-07 (#593) that the six are not a sample and that three cost figures are enough.
 
 **The rule is revisited at ten routine rows, which is sixteen in the table** (Truls, 2026-10-07,
 #593). A routine row is one for a pull request opened after the verdict, when the pass stopped
