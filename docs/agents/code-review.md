@@ -25,7 +25,8 @@ when it matters which.
 4. **[One review before the pull request](#one-review-before-the-pull-request)** — decided by Truls,
    2026-10-05, settling [#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592). It
    also changed wording in the first two, dated where it sits, and wrote the plugin's name out in
-   full throughout. A table counting both kinds of pass was started under it on 2026-10-07 (#624).
+   full throughout. Since 2026-10-07 (#624) the table under it has a row for each branch and not
+   for each pass on #579.
 
 ## The threshold gates the comment, not the report
 
@@ -300,7 +301,7 @@ over the pull requests from #560 on; none of the others in that range has both.
 
 **The session that runs the plugin pass on a branch adds that branch's row** (#624, 2026-10-07). A
 figure that was not measured is written as not measured, and one that covers the whole pass as not
-split.
+split. A figure with no record behind it is not estimated.
 
 **Once the table has five rows the rule is revisited, and the verdict is Truls's** (#624,
 2026-10-07). It has two rows, and the three branches above would make five.
