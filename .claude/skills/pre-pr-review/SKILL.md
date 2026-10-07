@@ -94,6 +94,29 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    `yes, not confirmed` or `no: <reason>`. A review that found nothing says that in the body in
    place of the table, with what the reviewer said it did not check.
 
+   **Under the table, write what the reviewer cost** (#631). A reviewer reached by name goes idle
+   and sends no completion notice, so nothing reports its usage. Read it from the reviewer's
+   transcript, `projects/<project>/<session id>/subagents/agent-a<name>-*.jsonl` under the Claude
+   configuration directory, with this saved as `<scratch>/usage.py` and given that path:
+
+   ```python
+   import json, sys
+   order, use = [], {}
+   for line in open(sys.argv[1], encoding="utf-8"):
+       m = json.loads(line).get("message") or {}
+       if m.get("role") == "assistant" and m.get("usage"):
+           if m["id"] not in use:
+               order.append(m["id"])
+           use[m["id"]] = m["usage"]
+   total = lambda u: sum(v for k, v in u.items() if k.endswith("_tokens") and isinstance(v, int))
+   print("last request:", total(use[order[-1]]), "all requests:", sum(map(total, use.values())))
+   ```
+
+   Write both figures. The first is what a completion notice reports for a subagent that
+   finishes, and it is the one the table in `docs/agents/code-review.md` holds. Read them again
+   after the reviewer's last confirmation, the one of the plugin pass's fixes, and replace the
+   figures in the body. If the transcript cannot be found, write "not measured".
+
 ## What this does not do
 
 It briefs no scorers. The reviewer scores its own findings, and the score decides nothing here:

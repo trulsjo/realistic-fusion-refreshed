@@ -32,7 +32,8 @@ when it matters which.
    on 2026-10-07, in his verdict on
    [#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593), written here by #627:
    the pass runs on every pull request. The section's name changed with that, and the table gained a
-   column for the findings that were serious.
+   column for the findings that were serious. Since 2026-10-07 (#631) the table also has a column
+   for what the pre-PR review cost, and the section says what a token figure in it measures.
 
 **This file is the only place the four are stated**, since 2026-10-07 (#630). `CLAUDE.md` and
 `.claude/skills/pre-pr-review/SKILL.md` each stated parts of them until then, so a rule that changed
@@ -329,26 +330,43 @@ rule, had both kinds of pass later the same day, and
 table, had both on 2026-10-07, and so did
 [#628](https://github.com/trulsjo/realistic-fusion-refreshed/pull/628), the change that wrote the
 verdict below into this file. Each is a row here, since 2026-10-07 (#624). Each count of findings is
-read from that pull request's body and comments. Two of the four rows with a cost have it from
-elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in #595. The last
+read from that pull request's body and comments. Two of the four rows with a cost for the plugin pass
+have it from elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in #595. The last
 column is a grade, made on 2026-10-07 for all seven rows, and the paragraphs under the table say by
 what test.
 
-| branch | the pre-PR review found | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers | of the plugin pass's fixed findings, serious |
-|---|---|---|---|---|---|
-| #579 | 12 findings: 11 fixed, one left unfixed at a score of 50 | eight candidates: seven fixed, one false positive | about ten minutes and about 400 000 subagent tokens for the whole pass, not split | not split: inside the figure to the left | one of seven: a temperature written without its exponent |
-| #594 | nine findings: eight fixed, one left unfixed at a score of 50 | ten candidates: three posted at 100 and six more reported, so nine survived, of which eight fixed and one left unfixed and not scored; one false positive | not measured: the five reviewers ran as plain subagents, which report no usage | about 580 000 tokens | four of eight: three false sentences that change wrote, and older wording it superseded and left standing |
-| #604 | five findings: four fixed, one left unfixed at a score of 25 | three findings scored: two fixed, one left unfixed at a score of 25, its premise wrong; confirming the fixes raised a fourth point, fixed and not confirmed again | not recorded | not recorded | one of two: a renamed heading that a tool finds its own section by |
-| #605 | five findings: three fixed, two left unfixed at a score of 25 | two findings, at 100 and 75: both fixed | not recorded | not recorded | one of two: "there is no CI" left standing in four places |
-| #607 | ten findings, one of them unscored: seven fixed, three left unfixed, one at 50 and two at 25 | four candidates: two fixed, two false positives | not recorded | not recorded | one of two: superseded figures in a research note left reading as current |
-| #625 | 12 findings: ten fixed, two left unfixed at a score of 25 | six candidates: five survived, four at 75 and one at 50, and all five fixed; one false positive | 325 398 tokens, five reviewers | 303 795 tokens, six scorers | none of five |
-| #628 | ten findings: all ten fixed | five candidates: two posted at 100, two more at 75 and one at 50, and all five fixed; no false positive | 375 765 tokens, five reviewers | 286 539 tokens, five scorers | two of five: the first routine row named by its ticket's number, and the cell beside #594 saying that change wrote wording it had left standing |
+| branch | the pre-PR review found | pre-PR review's cost | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers | of the plugin pass's fixed findings, serious |
+|---|---|---|---|---|---|---|
+| #579 | 12 findings: 11 fixed, one left unfixed at a score of 50 | not measured | eight candidates: seven fixed, one false positive | about ten minutes and about 400 000 subagent tokens for the whole pass, not split | not split: inside the figure to the left | one of seven: a temperature written without its exponent |
+| #594 | nine findings: eight fixed, one left unfixed at a score of 50 | not recorded | ten candidates: three posted at 100 and six more reported, so nine survived, of which eight fixed and one left unfixed and not scored; one false positive | not measured: the five reviewers ran as plain subagents, which report no usage | about 580 000 tokens | four of eight: three false sentences that change wrote, and older wording it superseded and left standing |
+| #604 | five findings: four fixed, one left unfixed at a score of 25 | not recorded | three findings scored: two fixed, one left unfixed at a score of 25, its premise wrong; confirming the fixes raised a fourth point, fixed and not confirmed again | not recorded | not recorded | one of two: a renamed heading that a tool finds its own section by |
+| #605 | five findings: three fixed, two left unfixed at a score of 25 | not recorded | two findings, at 100 and 75: both fixed | not recorded | not recorded | one of two: "there is no CI" left standing in four places |
+| #607 | ten findings, one of them unscored: seven fixed, three left unfixed, one at 50 and two at 25 | not recorded | four candidates: two fixed, two false positives | not recorded | not recorded | one of two: superseded figures in a research note left reading as current |
+| #625 | 12 findings: ten fixed, two left unfixed at a score of 25 | 152 822 tokens, one reviewer | six candidates: five survived, four at 75 and one at 50, and all five fixed; one false positive | 325 398 tokens, five reviewers | 303 795 tokens, six scorers | none of five |
+| #628 | ten findings: all ten fixed | 136 546 tokens, one reviewer | five candidates: two posted at 100, two more at 75 and one at 50, and all five fixed; no false positive | 375 765 tokens, five reviewers | 286 539 tokens, five scorers | two of five: the first routine row named by its ticket's number, and the cell beside #594 saying that change wrote wording it had left standing |
 
-The cost of the pre-PR review was not measured on #579 and is recorded for none of the other six.
+The cost of the pre-PR review was not measured on #579, and none of the other six pull requests
+records it. Since 2026-10-07 (#631) `/pre-pr-review` has the session write it in the pull request's
+body, and the table has a column for it. #625's and #628's figures were read on 2026-10-07 from the
+transcripts of their reviewers, which the session that ran both still had. Each was read after the
+reviewer's last confirmation.
 #604, #605 and #607 each say five reviewers ran in the plugin pass, and none gives a time or a token
 count. #625's two figures are the usage its subagents reported; the three steps before its
 reviewers, which check eligibility, list the `CLAUDE.md` files and summarise the change, used 133 423
 more. #628's two figures are the same kind, and its three steps used 140 099.
+
+**A reported figure is the size of a subagent's last request, and not what the subagent used**
+(measured 2026-10-07, #631). A subagent that finishes sends a notice with a token count, and every
+figure for the plugin pass on #625 and #628 is a sum of those counts. The check was made on the 16
+subagents of one session that had both a notice and a transcript. For each, the count was between
+1.000 and 1.095 times the tokens of the agent's last request and its response, and the sum over all
+the agent's requests was 1.7 to 6.4 times the count. So a figure in the table says how large each
+subagent's context had grown, and it is a floor on what the pass used. The pre-PR reviewer is
+reached by name, goes idle without finishing and sends no notice, so its figure is the same reading
+taken from its transcript: 152 822 tokens on #625, where its 34 requests sum to 3 979 750, and
+136 546 on #628, where its 19 sum to 2 192 591. About nine tenths of each sum is context read again
+from cache. The verdict's "about half a million tokens a pass" rests on #625's figure in this unit
+and on two older ones: what #579's and #594's figures measure was not checked.
 
 **The first six rows are every pull request from #560 to #625 that had both kinds of pass**, counted
 2026-10-07 over the 14 from #568 to #625. One counts when its body carries the findings of a review
@@ -358,8 +376,9 @@ and #606 have neither.
 
 **The session that runs the plugin pass on a branch adds that branch's row** (#624, 2026-10-07),
 each time, whether or not a verdict is pending and including when the pass raises nothing. Since the
-verdict below that is every pull request. A row gives each cost column as the usage the pass's
-subagents reported, where they reported one, and the grade in the last column. A figure that was not
+verdict below that is every pull request. A row gives each of its three cost columns as the token count
+reported for that pass's subagents, where there is one, and the grade in the last column. The pre-PR
+review's is its one reviewer's, read after its last confirmation as `/pre-pr-review` says. A figure that was not
 measured is written as not measured, one that covers the whole pass as not split, and one the pull
 request does not give as not recorded. A figure with no record behind it is not estimated.
 
