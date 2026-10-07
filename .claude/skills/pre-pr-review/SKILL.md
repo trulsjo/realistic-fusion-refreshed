@@ -5,9 +5,12 @@ description: Run this repository's pre-PR review on the current branch. One fres
 
 # /pre-pr-review
 
-Runs the **pre-PR review** that `docs/agents/code-review.md` defines under *One review before the
-pull request*. That file is the rule; this is the procedure. It needs no pull request and it is
-not `code-review:code-review`, which is the plugin pass and runs only when asked for.
+Runs the **pre-PR review** that `docs/agents/code-review.md` defines under *A review before the pull
+request, and the plugin pass after it*. That file is the rule; this is the procedure. It needs no
+pull request and it is not `code-review:code-review`, which is the plugin pass. Since 2026-10-07
+(#593) the plugin pass follows on every pull request once it is open. That file says how, and this
+skill does not run it. Keep the reviewer from step 3 running until then, because it confirms the
+plugin pass's fixes as well.
 
 ## Steps
 

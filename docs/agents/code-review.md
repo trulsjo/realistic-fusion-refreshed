@@ -22,12 +22,17 @@ when it matters which.
 3. **[A review that plants takes its own worktree](#a-review-that-plants-takes-its-own-worktree)** —
    [#311](https://github.com/trulsjo/realistic-fusion-refreshed/issues/311), after the review of
    [#309](https://github.com/trulsjo/realistic-fusion-refreshed/pull/309) on 2026-09-10.
-4. **[One review before the pull request](#one-review-before-the-pull-request)** — decided by Truls,
-   2026-10-05, settling [#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592). It
-   also changed wording in the first two, dated where it sits, and wrote the plugin's name out in
-   full throughout. Since 2026-10-07 (#624) the table under it has a row for each branch and not
-   for each pass on #579, and two rules beside it say who adds a row and when the rule is
-   revisited.
+4. **[A review before the pull request, and the plugin pass after it](#a-review-before-the-pull-request-and-the-plugin-pass-after-it)** —
+   decided by Truls, 2026-10-05, settling
+   [#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592), under the name "One
+   review before the pull request". It also changed wording in the first two, dated where it sits,
+   and wrote the plugin's name out in full throughout. Since 2026-10-07 (#624) the table under it
+   has a row for each branch and not for each pass on #579, and two rules beside it say who adds a
+   row and when the rule is revisited. Its rule on when the plugin pass runs was reversed by Truls
+   on 2026-10-07, in his verdict on
+   [#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593), written here by #627:
+   the pass runs on every pull request. The section's name changed with that, and the table gained a
+   column for the findings that were serious.
 
 ## The threshold gates the comment, not the report
 
@@ -141,13 +146,14 @@ passes. That is still read for.
 **Review the fixed state, not just the original.** A second round on work that has already passed
 review and verification is worth running, and this file exists because it found more than the first.
 Since 2026-10-05 (#592) what is *required* of the fixed state is narrower than a round: the reviewer
-that raised a finding confirms its fix. A full second round is the plugin pass, run when it is asked
-for, and "the review" in this section's older sentences means whichever review is being run. **That
-is a weaker check than the one this section measured.** Fresh eyes found #230's four, and a reviewer
-confirming its own finding is not fresh eyes. It was chosen on what the plugin pass cost on one
-branch, and the last rule of
-[One review before the pull request](#one-review-before-the-pull-request) is how the difference is
-meant to be made up.
+that raised a finding confirms its fix. A full second round is the plugin pass, and "the review" in
+this section's older sentences means whichever review is being run. **That confirmation is a weaker
+check than the one this section measured.** Fresh eyes found #230's four, and a reviewer confirming
+its own finding is not fresh eyes. From 2026-10-05 the plugin pass ran only when it was asked for, a
+choice made on what it cost on one branch. Since 2026-10-07 it runs on every pull request, so every
+branch gets the second round as well as the confirmation; [A review before the pull request, and the
+plugin pass after it](#a-review-before-the-pull-request-and-the-plugin-pass-after-it) has the
+verdict and what it rests on.
 
 ### Measured, not assumed
 
@@ -232,14 +238,19 @@ so the plugin never plants. The plugin is also not this repository's to edit, fo
 next section gives. The rule binds whatever runs alongside it — a gate-poisoning pass, a review agent
 asked to prove a finding — and that is why it lives here.
 
-## One review before the pull request
+## A review before the pull request, and the plugin pass after it
 
 Decided by Truls, 2026-10-05, settling
-[#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592).
+[#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592), under the name "One review
+before the pull request". On 2026-10-07 he reversed the part of it that gave the section that name:
+the plugin pass, which ran only when it was asked for, runs on every pull request. The verdict is in
+[a comment on
+#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6037668590) and
+was written here by #627.
 
 ### The rule
 
-**Every branch gets one review, before its pull request exists.** This section and `CLAUDE.md` call
+**Every branch gets a review before its pull request exists.** This section and `CLAUDE.md` call
 it **the pre-PR review**. One fresh subagent runs it, and it is defined by what the subagent
 is handed and not by a skill's name:
 
@@ -265,13 +276,31 @@ hold them. [#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579
 counts and the one finding left unfixed, and the eleven that were fixed are in no record. Decided by
 Truls on 2026-10-05, after the plugin pass on #594 found the rule did not say.
 
-**The plugin pass is run when it is asked for, and not otherwise.** It is the full second round.
-When an implement skill says to close out with `/code-review`, in this repository that means the
-pre-PR review, and no pull request is needed for it.
+**Every pull request gets the plugin pass, after it is opened** (Truls, 2026-10-07, #593). It is the
+full second round. This holds for every pull request opened from 2026-10-07 on, a documentation-only
+one included. From 2026-10-05 until then the rule was "the plugin pass is run when it is asked for,
+and not otherwise"; *Measured, not assumed* below has what ended it.
+
+**The session sets aside the plugin's eligibility answer.** The plugin's first step can answer that
+a change needs no review, and it did for #625 because that change was documentation only. The
+session runs the pass anyway and says in the pull request that it did. No kind of change is exempt
+(Truls, 2026-10-07).
+
+**The pre-PR reviewer confirms the plugin pass's fixes** (Truls, 2026-10-07). Continue the subagent
+that ran the pre-PR review and hand it the diff of the fixes, with no list of what was done. If it
+is no longer running, a fresh reviewer confirms them and the pull request says so. On #625 that
+reviewer found an error the fixes had added.
+
+**When an implement skill says to close out with `/code-review`**, in this repository that still
+means the pre-PR review, and no pull request is needed for it. The plugin pass follows once the pull
+request is open.
 
 **The scoring step stays.** It is inside the plugin, so it runs whenever the plugin pass does. Every
 surviving finding is reported whatever it scores, so the score decides only which comment a finding
-is posted in — and it is still the step that verifies a candidate.
+is posted in — and it is still the step that verifies a candidate. Whether it stays now that the
+pass runs on every pull request is
+[#626](https://github.com/trulsjo/realistic-fusion-refreshed/issues/626), which is open and Truls's.
+The verdict of 2026-10-07 changed nothing about it.
 
 **A plugin-pass finding the pre-PR review missed gets its class named**, by the session that fixes it, in
 the pull request. A class a script can detect becomes a section of `scripts/ship-check.ps1`. A class
@@ -282,7 +311,7 @@ pass does.
 ### Measured, not assumed
 
 [#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579) was reviewed twice on
-2026-10-05, and the rule was decided on that branch alone.
+2026-10-05, and the one-review rule was decided on that branch alone.
 [#594](https://github.com/trulsjo/realistic-fusion-refreshed/pull/594), the change that wrote the
 rule, had both kinds of pass later the same day, and
 [#604](https://github.com/trulsjo/realistic-fusion-refreshed/pull/604),
@@ -291,16 +320,17 @@ rule, had both kinds of pass later the same day, and
 [#625](https://github.com/trulsjo/realistic-fusion-refreshed/pull/625), the change that wrote this
 table, had both on 2026-10-07. Each is a row here, since 2026-10-07 (#624). Each count of findings
 is read from that pull request's body and comments. Two of the three rows with a cost have it from
-elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in #595.
+elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in #595. The last
+column is a grade made on 2026-10-07, and the paragraphs under the table say by what test.
 
-| branch | the pre-PR review found | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers |
-|---|---|---|---|---|
-| #579 | 12 findings: 11 fixed, one left unfixed at a score of 50 | eight candidates: seven fixed, one false positive | about ten minutes and about 400 000 subagent tokens for the whole pass, not split | not split: inside the figure to the left |
-| #594 | nine findings: eight fixed, one left unfixed at a score of 50 | ten candidates: three posted at 100 and six more reported, so nine survived, of which eight fixed and one left unfixed and not scored; one false positive | not measured: the five reviewers ran as plain subagents, which report no usage | about 580 000 tokens |
-| #604 | five findings: four fixed, one left unfixed at a score of 25 | three findings scored: two fixed, one left unfixed at a score of 25, its premise wrong; confirming the fixes raised a fourth point, fixed and not confirmed again | not recorded | not recorded |
-| #605 | five findings: three fixed, two left unfixed at a score of 25 | two findings, at 100 and 75: both fixed | not recorded | not recorded |
-| #607 | ten findings, one of them unscored: seven fixed, three left unfixed, one at 50 and two at 25 | four candidates: two fixed, two false positives | not recorded | not recorded |
-| #625 | 12 findings: ten fixed, two left unfixed at a score of 25 | six candidates: five survived, four at 75 and one at 50, and all five fixed; one false positive | 325 398 tokens, five reviewers | 303 795 tokens, six scorers |
+| branch | the pre-PR review found | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers | of the plugin pass's fixed findings, serious |
+|---|---|---|---|---|---|
+| #579 | 12 findings: 11 fixed, one left unfixed at a score of 50 | eight candidates: seven fixed, one false positive | about ten minutes and about 400 000 subagent tokens for the whole pass, not split | not split: inside the figure to the left | one of seven: a temperature written without its exponent |
+| #594 | nine findings: eight fixed, one left unfixed at a score of 50 | ten candidates: three posted at 100 and six more reported, so nine survived, of which eight fixed and one left unfixed and not scored; one false positive | not measured: the five reviewers ran as plain subagents, which report no usage | about 580 000 tokens | four of eight: each a false or superseded sentence in the rules that change wrote |
+| #604 | five findings: four fixed, one left unfixed at a score of 25 | three findings scored: two fixed, one left unfixed at a score of 25, its premise wrong; confirming the fixes raised a fourth point, fixed and not confirmed again | not recorded | not recorded | one of two: a renamed heading that a tool finds its own section by |
+| #605 | five findings: three fixed, two left unfixed at a score of 25 | two findings, at 100 and 75: both fixed | not recorded | not recorded | one of two: "there is no CI" left standing in four places |
+| #607 | ten findings, one of them unscored: seven fixed, three left unfixed, one at 50 and two at 25 | four candidates: two fixed, two false positives | not recorded | not recorded | one of two: superseded figures in a research note left reading as current |
+| #625 | 12 findings: ten fixed, two left unfixed at a score of 25 | six candidates: five survived, four at 75 and one at 50, and all five fixed; one false positive | 325 398 tokens, five reviewers | 303 795 tokens, six scorers | none of five |
 
 The cost of the pre-PR review was not measured on #579 and is recorded for none of the other five.
 #604, #605 and #607 each say five reviewers ran in the plugin pass, and none gives a time or a token
@@ -315,28 +345,57 @@ such findings; #603, #619, #621 and #622 have the findings and no such comment; 
 neither.
 
 **The session that runs the plugin pass on a branch adds that branch's row** (#624, 2026-10-07),
-each time, whether or not a verdict is pending. A figure that was not measured is written as not
-measured, one that covers the whole pass as not split, and one the pull request does not give as
-not recorded. A figure with no record behind it is not estimated.
+each time, whether or not a verdict is pending and including when the pass raises nothing. Since the
+verdict below that is every pull request. A row records both cost columns from the usage the pass's
+subagents report, and the grade in the last column. A figure that was not measured is written as not
+measured, one that covers the whole pass as not split, and one the pull request does not give as not
+recorded. A figure with no record behind it is not estimated.
 
-**Once the table has five rows the rule is revisited, and the verdict is Truls's**
-([#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593), written here on
-2026-10-07 by #624). It had five rows the day this was written and has six with #625, so that is
-due, and no verdict has been given. #593 is where it will be recorded.
+**The verdict, 2026-10-07: the one-review rule fell** ([comment on
+#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6037668590),
+written here by #627). #593 had the rule revisited once the table had five rows, with the verdict
+Truls's. It had six, and he gave it: the plugin pass runs on every pull request, and the pre-PR
+review stays as it was.
 
-**Three of the six rows #593 does not provide for**: #604, #605 and #607, added on 2026-10-07 when
-Truls asked for them, and not by the sessions that ran their plugin passes. #593 names #579 and #594
-as the two rows that existed, and has a row added each time the plugin pass is run, which is how
-#625 got its own. It does not say whether a row added afterwards counts towards the five. That is
-his to say with the verdict.
+**#604, #605 and #607 count towards the five** (Truls, 2026-10-07). They were added on 2026-10-07
+when he asked for them, and not by the sessions that ran their plugin passes, which #593 had not
+provided for. Their counts are read from their own pull requests by the same test as the other three
+rows.
+
+**The test was how serious a finding was, and not how many there were.** A finding the plugin pass
+raised and that was then fixed is serious when it would have left a wrong figure, a false claim in a
+tracked record, or broken code. A false sentence in this file or in `CLAUDE.md` counts, because
+agents act on both. By that test **8 of the 26 fixed findings were serious, on 5 of the 6
+branches**. The 26 leaves out the point #604's confirmation raised, which none of the pass's
+reviewers did. The pre-PR review's fixed findings on the same six number 43. The comment on #593
+names each of the eight.
+
+**The grade is the session's, and Truls's to overrule.** The session that adds a row grades it by
+the test above. The six here were graded on 2026-10-07 by the session that put the verdict to him,
+and he ruled on three it was unsure of: #579's missing exponent is serious, a sentence on #607
+saying a skill writes what it only holds templates for is not, and a false sentence in this file or
+in `CLAUDE.md` is.
+
+**What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
+and one was what a tool would do on a reinstall (#604). The six are branches where the pass was
+asked for, two of them the changes that wrote this rule and this table, so they are not a sample of
+branches. Three rows have a cost: about 400 000 tokens on #579, about 580 000 for #594's scorers
+alone, and 629 193 on #625, which is about half a million a pass. Truls accepted each of those
+limits on 2026-10-07.
+
+**The rule is revisited at ten routine rows, which is sixteen in the table** (Truls, 2026-10-07). A
+routine row is one for a pull request opened from 2026-10-07 on, when the pass stopped waiting to be
+asked for: #627's is the first, and #625's is not one. The test is the same, no pass mark is set in
+advance, and the verdict is his.
 
 **On #579 only the pre-PR review could check a figure against what a probe printed.** The plugin's
 reviewers are given the change, its blame, earlier pull requests and the comments on them, and the
 comments in the code it touches, and a probe's output is in none
 of those.
 
-**#579's seven were real, and all seven were small.** One commit fixed all of them and no figure
-moved. The one that scored 100 was a temperature written without its exponent. The scorer gave the
+**#579's seven were real, and on 2026-10-05 all seven were read as small.** One commit fixed all of
+them and no figure moved. The one that scored 100 was a temperature written without its exponent,
+and on 2026-10-07 Truls ruled that one serious, as a wrong figure. The scorer gave the
 false positive 0 — a claim that a table did not add up to its sum, which it does once rounded.
 
 **#579's pre-PR review happened by accident.** The session read `/code-review` in the
@@ -356,4 +415,6 @@ workflow to do anything it does not already do. The first drops one assumption -
 finding is a discarded one. The second adds one obligation the rubric never mentions, because a
 plugin that reviews code cannot know that in this repository the prose is part of the deliverable.
 The third governs the passes that run beside the workflow rather than inside it. The fourth says
-when the workflow is run at all, and what is run when it is not.
+when the workflow is run, and what is run before it. Since 2026-10-07 it also has the session run
+the workflow where the workflow's own first step would have stopped, and that is the one place a
+rule here goes against an answer the workflow gives.
