@@ -324,10 +324,11 @@ not recorded. A figure with no record behind it is not estimated.
 2026-10-07 by #624). It had five rows the day this was written and has six with #625, so that is
 due, and no verdict has been given. #593 is where it will be recorded.
 
-**Three of the six rows are ones #593 did not name**: #604, #605 and #607, added on 2026-10-07
-when Truls asked for them. #593 set the five naming #579 and #594 as the two rows that existed, and
-does not say whether a branch it did not name counts towards it. That is his to say with the
-verdict.
+**Three of the six rows #593 does not provide for**: #604, #605 and #607, added on 2026-10-07 when
+Truls asked for them, and not by the sessions that ran their plugin passes. #593 names #579 and #594
+as the two rows that existed, and has a row added each time the plugin pass is run, which is how
+#625 got its own. It does not say whether a row added afterwards counts towards the five. That is
+his to say with the verdict.
 
 **On #579 only the pre-PR review could check a figure against what a probe printed.** The plugin's
 reviewers are given the change, its blame, earlier pull requests and the comments on them, and the
