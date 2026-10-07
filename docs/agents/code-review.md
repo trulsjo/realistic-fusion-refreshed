@@ -321,44 +321,48 @@ rule, had both kinds of pass later the same day, and
 [#605](https://github.com/trulsjo/realistic-fusion-refreshed/pull/605) and
 [#607](https://github.com/trulsjo/realistic-fusion-refreshed/pull/607) had both on 2026-10-06.
 [#625](https://github.com/trulsjo/realistic-fusion-refreshed/pull/625), the change that wrote this
-table, had both on 2026-10-07. Each is a row here, since 2026-10-07 (#624). Each count of findings
-is read from that pull request's body and comments. Two of the three rows with a cost have it from
+table, had both on 2026-10-07, and so did
+[#628](https://github.com/trulsjo/realistic-fusion-refreshed/pull/628), the change that wrote the
+verdict below into this file. Each is a row here, since 2026-10-07 (#624). Each count of findings is
+read from that pull request's body and comments. Two of the four rows with a cost have it from
 elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in #595. The last
-column is a grade made on 2026-10-07, and the paragraphs under the table say by what test.
+column is a grade, made on 2026-10-07 for all seven rows, and the paragraphs under the table say by
+what test.
 
 | branch | the pre-PR review found | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers | of the plugin pass's fixed findings, serious |
 |---|---|---|---|---|---|
 | #579 | 12 findings: 11 fixed, one left unfixed at a score of 50 | eight candidates: seven fixed, one false positive | about ten minutes and about 400 000 subagent tokens for the whole pass, not split | not split: inside the figure to the left | one of seven: a temperature written without its exponent |
-| #594 | nine findings: eight fixed, one left unfixed at a score of 50 | ten candidates: three posted at 100 and six more reported, so nine survived, of which eight fixed and one left unfixed and not scored; one false positive | not measured: the five reviewers ran as plain subagents, which report no usage | about 580 000 tokens | four of eight: each a false or superseded sentence in the rules that change wrote |
+| #594 | nine findings: eight fixed, one left unfixed at a score of 50 | ten candidates: three posted at 100 and six more reported, so nine survived, of which eight fixed and one left unfixed and not scored; one false positive | not measured: the five reviewers ran as plain subagents, which report no usage | about 580 000 tokens | four of eight: three false sentences that change wrote, and older wording it superseded and left standing |
 | #604 | five findings: four fixed, one left unfixed at a score of 25 | three findings scored: two fixed, one left unfixed at a score of 25, its premise wrong; confirming the fixes raised a fourth point, fixed and not confirmed again | not recorded | not recorded | one of two: a renamed heading that a tool finds its own section by |
 | #605 | five findings: three fixed, two left unfixed at a score of 25 | two findings, at 100 and 75: both fixed | not recorded | not recorded | one of two: "there is no CI" left standing in four places |
 | #607 | ten findings, one of them unscored: seven fixed, three left unfixed, one at 50 and two at 25 | four candidates: two fixed, two false positives | not recorded | not recorded | one of two: superseded figures in a research note left reading as current |
 | #625 | 12 findings: ten fixed, two left unfixed at a score of 25 | six candidates: five survived, four at 75 and one at 50, and all five fixed; one false positive | 325 398 tokens, five reviewers | 303 795 tokens, six scorers | none of five |
+| #628 | ten findings: all ten fixed | five candidates: two posted at 100, two more at 75 and one at 50, and all five fixed; no false positive | 375 765 tokens, five reviewers | 286 539 tokens, five scorers | two of five: the first routine row named by its ticket's number, and the cell beside #594 saying that change wrote wording it had left standing |
 
-The cost of the pre-PR review was not measured on #579 and is recorded for none of the other five.
+The cost of the pre-PR review was not measured on #579 and is recorded for none of the other six.
 #604, #605 and #607 each say five reviewers ran in the plugin pass, and none gives a time or a token
 count. #625's two figures are the usage its subagents reported; the three steps before its
-reviewers, which check eligibility, list the `CLAUDE.md` files and summarise the change, used
-133 423 more.
+reviewers, which check eligibility, list the `CLAUDE.md` files and summarise the change, used 133
+423 more. #628's two figures are the same kind, and its three steps used 140 099.
 
-**Those six are every pull request from #560 on that had both kinds of pass**, counted 2026-10-07
-over the 14 from #568 to #625. One counts when its body carries the findings of a review made before
-it was opened and it has a comment headed `### Code review`. #568 and #582 have the comment and no
-such findings; #603, #619, #621 and #622 have the findings and no such comment; #601 and #606 have
-neither.
+**The first six rows are every pull request from #560 to #625 that had both kinds of pass**, counted
+2026-10-07 over the 14 from #568 to #625. One counts when its body carries the findings of a review
+made before it was opened and it has a comment headed `### Code review`. #568 and #582 have the
+comment and no such findings; #603, #619, #621 and #622 have the findings and no such comment; #601
+and #606 have neither.
 
 **The session that runs the plugin pass on a branch adds that branch's row** (#624, 2026-10-07),
 each time, whether or not a verdict is pending and including when the pass raises nothing. Since the
-verdict below that is every pull request. A row records both cost columns from the usage the pass's
-subagents report, and the grade in the last column. A figure that was not measured is written as not
-measured, one that covers the whole pass as not split, and one the pull request does not give as not
-recorded. A figure with no record behind it is not estimated.
+verdict below that is every pull request. A row gives each cost column as the usage the pass's
+subagents reported, where they reported one, and the grade in the last column. A figure that was not
+measured is written as not measured, one that covers the whole pass as not split, and one the pull
+request does not give as not recorded. A figure with no record behind it is not estimated.
 
 **The verdict, 2026-10-07: the one-review rule fell** ([comment on
 #593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6037668590),
 written here by #627). #593 had the rule revisited once the table had five rows, with the verdict
-Truls's. It had six, and he gave it: the plugin pass runs on every pull request, and the pre-PR
-review stays as it was.
+Truls's. It had six, the first six above, and he gave it: the plugin pass runs on every pull
+request, and the pre-PR review stays as it was.
 
 **#604, #605 and #607 count towards the five** (Truls, 2026-10-07, #593). They were added on
 2026-10-07 when he asked for them, and not by the sessions that ran their plugin passes, which #593
@@ -368,30 +372,34 @@ other three rows.
 **The test was how serious a finding was, and not how many there were.** A finding the plugin pass
 raised and that was then fixed is serious when it would have left a wrong figure, a false claim in a
 tracked record, or broken code. A false sentence in this file or in `CLAUDE.md` counts, because
-agents act on both. By that test **8 of the 26 fixed findings were serious, on 5 of the 6
-branches**. The 26 leaves out the point #604's confirmation raised, which none of the pass's
-reviewers did. The pre-PR review's fixed findings on the same six number 43. The comment on #593
-names each of the eight.
+agents act on both. By that test **8 of the 26 fixed findings in those six rows were serious, on 5
+of the 6 branches**. The 26 leaves out the point #604's confirmation raised, which none of the
+pass's reviewers did. The pre-PR review's fixed findings on the same six number 43. The comment on
+#593 names each of the eight.
 
 **The grade is the session's, and Truls's to overrule** (Truls, 2026-10-07, #593). The session that
-adds a row grades it by the test above. The six here were graded on 2026-10-07 by the session that
+adds a row grades it by the test above. The first six were graded on 2026-10-07 by the session that
 put the verdict to him, and he ruled on three it was unsure of: #579's missing exponent is serious,
 a sentence on #607 saying a skill writes what it only holds templates for is not, and a false
-sentence in this file or in `CLAUDE.md` is.
+sentence in this file or in `CLAUDE.md` is. #628's two were graded by that last ruling and he has
+not seen them.
 
 **What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
 and one was what a tool would do on a reinstall (#604). The six are branches where the pass was
 asked for, two of them the changes that wrote this rule and this table, so they are not a sample of
-branches. Three rows have a cost: about 400 000 tokens on #579, about 580 000 for #594's scorers
-alone, and 629 193 for #625's reviewers and scorers, or 762 616 with the three steps before them.
-#594's is a floor. The verdict took the cost as about half a million tokens a pass, from the first
-two figures and 629 193. Whether the scorers' share of it stays is #626. Truls accepted on
+branches. Three of the six had a cost: about 400 000 tokens on #579, about 580 000 for #594's
+scorers alone, and 629 193 for #625's reviewers and scorers, or 762 616 with the three steps before
+them. #594's is a floor. The verdict took the cost as about half a million tokens a pass, from the
+first two figures and 629 193. Whether the scorers' share of it stays is #626. Truls accepted on
 2026-10-07 (#593) that the six are not a sample and that three cost figures are enough.
 
 **The rule is revisited at ten routine rows, which is sixteen in the table** (Truls, 2026-10-07,
 #593). A routine row is one for a pull request opened after the verdict, when the pass stopped
-waiting to be asked for: #627's is the first, and #625's is not one. The test is the same, no pass
-mark is set in advance, and the verdict is his.
+waiting to be asked for: #628's is the first, the pull request that closed #627, and #625's is not
+one. The comment on #593 words the cut as "opened from 2026-10-07 on", and #622 and #625 were opened
+that day before the verdict. "After the verdict" is this file's reading of it. Truls confirmed that
+#625's row is not routine and that this change's is the first; the wording of the cut is his to
+correct. The test is the same, no pass mark is set in advance, and the verdict is his.
 
 **On #579 only the pre-PR review could check a figure against what a probe printed.** The plugin's
 reviewers are given the change, its blame, earlier pull requests and the comments on them, and the
