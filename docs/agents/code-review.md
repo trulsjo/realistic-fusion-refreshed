@@ -383,9 +383,9 @@ put the verdict to him, and he ruled on three it was unsure of: #579's missing e
 a sentence on #607 saying a skill writes what it only holds templates for is not, and a false
 sentence in this file or in `CLAUDE.md` is. #628's two were graded by that last ruling and he has
 not seen them. A third of #628's five, `CLAUDE.md` dating the rule 2026-10-07 and not cutting it at
-the verdict, was graded as not serious, because of the pull requests opened that day it is false
-only of #622, which merged without the pass before the
-verdict. The same ruling could be read to cover it, and that is his to say.
+the verdict, was graded as not serious, because it is false only of pull requests that had merged
+before the verdict, #622 the last of them. The same ruling could be read to cover it, and that is
+his to say.
 
 **What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
 and one was what a tool would do on a reinstall (#604). The six are branches where the pass was
