@@ -311,7 +311,7 @@ reviewers, which check eligibility, list the `CLAUDE.md` files and summarise the
 **Those six are every pull request from #560 on that had both kinds of pass**, counted 2026-10-07
 over the 14 from #568 to #625. One counts when its body carries the findings of a review made before
 it was opened and it has a comment headed `### Code review`. #568 and #582 have the comment and no
-such findings; #601, #603, #619, #621 and #622 have the findings and no such comment; #606 has
+such findings; #603, #619, #621 and #622 have the findings and no such comment; #601 and #606 have
 neither.
 
 **The session that runs the plugin pass on a branch adds that branch's row** (#624, 2026-10-07),
@@ -324,9 +324,10 @@ not recorded. A figure with no record behind it is not estimated.
 2026-10-07 by #624). It had five rows the day this was written and has six with #625, so that is
 due, and no verdict has been given. #593 is where it will be recorded.
 
-**Three of the six rows were added from the record**: #604, #605 and #607, on 2026-10-07, when
-Truls asked for them. #593 set the five before those three were counted, and does not say whether a
-row added that way counts towards it. That is his to say with the verdict.
+**Three of the six rows are ones #593 did not name**: #604, #605 and #607, added on 2026-10-07
+when Truls asked for them. #593 set the five naming #579 and #594 as the two rows that existed, and
+does not say whether a branch it did not name counts towards it. That is his to say with the
+verdict.
 
 **On #579 only the pre-PR review could check a figure against what a probe printed.** The plugin's
 reviewers are given the change, its blame, earlier pull requests and the comments on them, and the
