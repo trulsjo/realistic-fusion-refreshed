@@ -287,14 +287,15 @@ rule, had both kinds of pass later the same day, and
 [#604](https://github.com/trulsjo/realistic-fusion-refreshed/pull/604),
 [#605](https://github.com/trulsjo/realistic-fusion-refreshed/pull/605) and
 [#607](https://github.com/trulsjo/realistic-fusion-refreshed/pull/607) had both on 2026-10-06. Each
-is a row here, since 2026-10-07 (#624), and each figure is read from that pull request's body and
-comments:
+is a row here, since 2026-10-07 (#624). Each count of findings is read from that pull request's
+body and comments. The two rows with a cost have it from elsewhere: #579's is in #592's body, and
+#594's is in the comment on #593 and in #595.
 
 | branch | the pre-PR review found | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers |
 |---|---|---|---|---|
 | #579 | 12 findings: 11 fixed, one left unfixed at a score of 50 | eight candidates: seven fixed, one false positive | about ten minutes and about 400 000 subagent tokens for the whole pass, not split | not split: inside the figure to the left |
 | #594 | nine findings: eight fixed, one left unfixed at a score of 50 | ten candidates: three posted at 100 and six more reported, so nine survived, of which eight fixed and one left unfixed and not scored; one false positive | not measured: the five reviewers ran as plain subagents, which report no usage | about 580 000 tokens |
-| #604 | five findings: four fixed, one left unfixed at a score of 25 | three candidates: two fixed, one left unfixed at a score of 25, its premise wrong | not recorded | not recorded |
+| #604 | five findings: four fixed, one left unfixed at a score of 25 | three findings scored: two fixed, one left unfixed at a score of 25, its premise wrong; confirming the fixes raised a fourth point, fixed and not confirmed again | not recorded | not recorded |
 | #605 | five findings: three fixed, two left unfixed at a score of 25 | two findings, at 100 and 75: both fixed | not recorded | not recorded |
 | #607 | ten findings, one of them unscored: seven fixed, three left unfixed, one at 50 and two at 25 | four candidates: two fixed, two false positives | not recorded | not recorded |
 
