@@ -280,24 +280,35 @@ pass does.
 ### Measured, not assumed
 
 [#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579) was reviewed twice on
-2026-10-05. It is the only branch that had both kinds of pass, so it is the only one behind this
-rule.
+2026-10-05, and the rule was decided on that branch alone.
+[#594](https://github.com/trulsjo/realistic-fusion-refreshed/pull/594), the change that wrote the
+rule, had both kinds of pass later the same day. Those two are every branch that has had both, and
+each is a row here (#624):
 
-| pass | when | cost | found |
-|---|---|---|---|
-| one subagent with the probes' raw output | before the pull request | not measured | 12 findings: 11 fixed, one left unfixed at a score of 50 |
-| `code-review:code-review` | on the pull request | about ten minutes, about 400 000 subagent tokens | eight candidates: seven fixed, one false positive |
+| branch | the pre-PR review found | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers |
+|---|---|---|---|---|
+| #579 | 12 findings: 11 fixed, one left unfixed at a score of 50 | eight candidates: seven fixed, one false positive | about ten minutes and about 400 000 subagent tokens for the whole pass, not split | not split: inside the figure to the left |
+| #594 | nine findings: eight fixed, one left unfixed at a score of 50 | ten candidates: eight fixed, one left unfixed and not scored, one false positive | not measured: the five reviewers ran as plain subagents, which report no usage | about 580 000 tokens |
 
-**Only the first could check a figure against what a probe printed.** The plugin's reviewers are
-given the change, its blame, earlier pull requests and the comments on them, and the comments in the
-code it touches, and a probe's output is in none
+The cost of the pre-PR review is recorded for neither branch.
+
+**The session that runs the plugin pass on a branch adds that branch's row.** A figure that was not measured is written as not measured, and one that
+covers the whole pass as not split; no cell is filled with an estimate.
+
+**Once the table has five rows the rule is revisited, and the verdict is Truls's.** It has two, and
+[#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593) is where the verdict will
+be recorded.
+
+**On #579 only the pre-PR review could check a figure against what a probe printed.** The plugin's
+reviewers are given the change, its blame, earlier pull requests and the comments on them, and the
+comments in the code it touches, and a probe's output is in none
 of those.
 
-**The seven were real, and all seven were small.** One commit fixed all of them and no figure moved.
+**#579's seven were real, and all seven were small.** One commit fixed all of them and no figure moved.
 The one that scored 100 was a temperature written without its exponent. The scorer gave the false
 positive 0 — a claim that a table did not add up to its sum, which it does once rounded.
 
-**The first pass happened by accident.** The session read `/code-review` in the
+**#579's pre-PR review happened by accident.** The session read `/code-review` in the
 `mattpocock-skills:implement` skill as the official plugin, which needs a pull request, and none
 existed, so it improvised a reviewer. The `code-review` skill that ships beside `implement` needs no
 pull request. That confusion is why the head of this file names all three.
