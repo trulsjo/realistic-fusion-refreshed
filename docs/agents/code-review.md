@@ -18,7 +18,8 @@ when it matters which.
    [#230](https://github.com/trulsjo/realistic-fusion-refreshed/pull/230); its third rule widened from
    the file to the repository on 2026-09-14, settling [#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331);
    its last rule narrowed 2026-10-05 (#592), and what it says of the plugin pass changed 2026-10-07
-   (#593); a rule for the notes' figure tables added 2026-10-06 (#602).
+   (#593); a rule for the notes' figure tables added 2026-10-06 (#602); a rule for the session
+   that writes a fix added 2026-10-07 (#632).
 3. **[A review that plants takes its own worktree](#a-review-that-plants-takes-its-own-worktree)** —
    [#311](https://github.com/trulsjo/realistic-fusion-refreshed/issues/311), after the review of
    [#309](https://github.com/trulsjo/realistic-fusion-refreshed/pull/309) on 2026-09-10.
@@ -101,7 +102,8 @@ the file to the repository on 2026-09-14, settling
 fixed state, was narrowed on 2026-10-05, settling
 [#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592). The rule for a note's
 `## Current figures` table was added on 2026-10-06 (#602). What the last rule says of the plugin
-pass was changed on 2026-10-07, when Truls's verdict on #593 had it run on every pull request.
+pass was changed on 2026-10-07, when Truls's verdict on #593 had it run on every pull request. A
+rule for the session that writes a fix was added on 2026-10-07 (#632).
 
 **Every gate in this repository checks machinery. None of them reads English.** `load-check.ps1`
 proves the prototypes load and the invariants hold; `ship-check.ps1` proves the mods say what ADR
@@ -162,6 +164,17 @@ on one branch. Since 2026-10-07 it runs on every pull request, so every branch g
 as well as the confirmation; [A review before the pull request, and the plugin pass after
 it](#a-review-before-the-pull-request-and-the-plugin-pass-after-it) has the verdict and what it
 rests on.
+
+**A fix is checked against its source before it is written, whoever supplied its words**
+(2026-10-07, #632). An enumeration or a figure taken from a reviewer's finding is checked against
+its source before it goes into a fix, the same as one the author worked out. This binds the session
+that writes the fix. On #625 the fix for the plugin pass's first finding counted #601 among the pull
+requests that carry a pre-PR review's findings. The count was copied from the reviewer's own earlier
+enumeration, and #601's body says the review had not been run. **A fix written after a review is
+the least-checked text on a branch**, and three more pull requests show it. On #594 a fix added a
+false sentence and the confirmation passed it. On #607 a fix corrected one row of a group and not
+the others, and the confirmation passed that. On #628 two of the plugin pass's five findings were
+what the fix for the pre-PR review's first finding had left behind.
 
 ### Measured, not assumed
 
