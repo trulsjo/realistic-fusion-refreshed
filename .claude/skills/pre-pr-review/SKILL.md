@@ -81,6 +81,9 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    confirmed against the list, and passed a false sentence a fix had added. A finding left unfixed
    on purpose is named to the reviewer as left, with the reason, and nothing more.
 
+   Before writing a fix, read what *Review the prose, not only the code* in
+   `docs/agents/code-review.md` asks of the session that writes one (#632).
+
    Done when the reviewer has answered for every finding. New findings get the same step again.
 
 5. **Write the findings table** and put it in the pull request's body, every finding in it:
