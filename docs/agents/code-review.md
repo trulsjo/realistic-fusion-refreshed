@@ -347,11 +347,13 @@ rule, had both kinds of pass later the same day, and
 [#625](https://github.com/trulsjo/realistic-fusion-refreshed/pull/625), the change that wrote this
 table, had both on 2026-10-07, and so did
 [#628](https://github.com/trulsjo/realistic-fusion-refreshed/pull/628), the change that wrote the
-verdict below into this file. Each is a row here, since 2026-10-07 (#624). Each count of findings is
-read from that pull request's body and comments. Two of the four rows with a cost for the plugin pass
-have it from elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in
-#595. The last column is a grade, made on 2026-10-07 for all seven rows, and the paragraphs under
-the table say by what test.
+verdict below into this file, and
+[#633](https://github.com/trulsjo/realistic-fusion-refreshed/pull/633), which gave the table its
+column for the pre-PR review's cost. Each is a row here, since 2026-10-07 (#624). Each count of
+findings is read from that pull request's body and comments. Two of the five rows with a cost for
+the plugin pass have it from elsewhere: #579's is in #592's body, and #594's is in the comment on
+#593 and in #595. The last column is a grade, made on 2026-10-07 for all eight rows, and the
+paragraphs under the table say by what test.
 
 | branch | the pre-PR review found | pre-PR review's cost | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers | of the plugin pass's fixed findings, serious |
 |---|---|---|---|---|---|---|
@@ -362,16 +364,20 @@ the table say by what test.
 | #607 | ten findings, one of them unscored: seven fixed, three left unfixed, one at 50 and two at 25 | not recorded | four candidates: two fixed, two false positives | not recorded | not recorded | one of two: superseded figures in a research note left reading as current |
 | #625 | 12 findings: ten fixed, two left unfixed at a score of 25 | 152 822 tokens, one reviewer | six candidates: five survived, four at 75 and one at 50, and all five fixed; one false positive | 325 398 tokens, five reviewers | 303 795 tokens, six scorers | none of five |
 | #628 | ten findings: all ten fixed | 136 546 tokens, one reviewer | five candidates: two posted at 100, two more at 75 and one at 50, and all five fixed; no false positive | 375 765 tokens, five reviewers | 286 539 tokens, five scorers | two of five: the first routine row named by its ticket's number, and the cell beside #594 saying that change wrote wording it had left standing |
+| #633 | 14 findings: 12 fixed, two left unfixed at a score of 25 | 162 435 tokens, one reviewer | two candidates: one posted at 100 and one more at 50, and both fixed; no false positive | 344 857 tokens, five reviewers | 119 402 tokens, two scorers | none of two |
 
-The cost of the pre-PR review was not measured on #579, and none of the other six pull requests
-records it. Since 2026-10-07 (#631) `/pre-pr-review` has the session write it in the pull request's
-body, and the table has a column for it. #625's and #628's figures were read on 2026-10-07 from the
-transcripts of their reviewers, which the session that ran both still had. Each was read after the
-reviewer's last confirmation.
+The cost of the pre-PR review was not measured on #579, and none of the first seven pull requests
+states one. Since 2026-10-07 (#631) `/pre-pr-review` has the session write it in the pull request's
+body, and the table has a column for it. #633's row is the first written under that rule. #625's
+and #628's rows were filled in on the same day from the transcripts of their reviewers, which the
+session that ran both still had. Being filled in afterwards, those two were read after the
+reviewer's last confirmation, where a row written by its own session is read before it, as the row
+rule below says.
 #604, #605 and #607 each say five reviewers ran in the plugin pass, and none gives a time or a token
 count. #625's two figures are the usage its subagents reported; the three steps before its
 reviewers, which check eligibility, list the `CLAUDE.md` files and summarise the change, used 133 423
-more. #628's two figures are the same kind, and its three steps used 140 099.
+more. #628's two figures are the same kind, and its three steps used 140 099. #633's are the same
+kind again, and its three steps used 140 189.
 
 **A reported figure is about the size of a subagent's last request, and not what the subagent used**
 (measured 2026-10-07, #631). The plugin pass's subagents on #625 and #628 each sent a notice with a
@@ -431,7 +437,9 @@ sentence in this file or in `CLAUDE.md` is. #628's two were graded by that last 
 not seen them. A third of #628's five, `CLAUDE.md` dating the rule 2026-10-07 and not cutting it at
 the verdict, was graded as not serious, because it is false only of pull requests that had merged
 before the verdict, #622 the last of them. The same ruling could be read to cover it, and that is
-his to say.
+his to say. #633's two were graded as not serious, and he has not seen those either. The sentence
+its first finding quotes was true of the pull requests' own text and read as false beside the
+table. Its second was a pair of sentences that did not say they spoke of different rows.
 
 **What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
 and one was what a tool would do on a reinstall (#604). The six are branches where the pass was
