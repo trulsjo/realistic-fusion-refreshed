@@ -36,10 +36,14 @@ when it matters which.
    column for the findings that were serious. Since 2026-10-07 (#631) the table also has a column
    for what the pre-PR review cost, and the section says what a token figure in it measures.
 
-**This file is the only place the four are stated**, since 2026-10-07 (#630). `CLAUDE.md` and
-`.claude/skills/pre-pr-review/SKILL.md` each stated parts of them until then, so a rule that changed
-had three files to change in: #627 edited all three to write one verdict. Both now name the section
-to read and when to read it, and state no rule. A rule is changed here and nowhere else.
+**A rule is changed in this file** (2026-10-07, #630). `CLAUDE.md` and the intro of
+`.claude/skills/pre-pr-review/SKILL.md` each stated parts of the four until then, so a rule that
+changed had three files to change in: #627 edited all three to write one verdict. Both now name the
+section to read and when to read it, and state no rule. The skill's steps are the pre-PR review's
+procedure, and they still say what they carry out: what the reviewer is handed, that it confirms the
+fixes of its own findings and reads a fix's added sentence as a new claim, that every finding goes
+in the pull request's body, and that a planted change takes a worktree. A change to one of those is
+made here first and then in the steps.
 
 ## The threshold gates the comment, not the report
 
@@ -166,15 +170,16 @@ it](#a-review-before-the-pull-request-and-the-plugin-pass-after-it) has the verd
 rests on.
 
 **A fix is checked against its source before it is written, whoever supplied its words**
-(2026-10-07, #632). An enumeration or a figure taken from a reviewer's finding is checked against
-its source before it goes into a fix, the same as one the author worked out. This binds the session
-that writes the fix. On #625 the fix for the plugin pass's first finding counted #601 among the pull
-requests that carry a pre-PR review's findings. The count was copied from the reviewer's own earlier
-enumeration, and #601's body says the review had not been run. **A fix written after a review is
-the least-checked text on a branch**, and three more pull requests show it. On #594 a fix added a
-false sentence and the confirmation passed it. On #607 a fix corrected one row of a group and not
-the others, and the confirmation passed that. On #628 two of the plugin pass's five findings were
-what the fix for the pre-PR review's first finding had left behind.
+(2026-10-07, #632). An enumeration or a figure taken from a reviewer, from a finding or from an
+earlier reply, is checked against its source before it goes into a fix, the same as one the author
+worked out. This binds the session that writes the fix. On #625 the fix for the plugin pass's first
+finding counted #601 among the pull requests that carry a pre-PR review's findings. The count was
+copied from the pre-PR reviewer's own earlier enumeration, and #601's body says the review had not
+been run. **A fix written after a review is the least-checked text on a branch**, and three more
+pull requests show it. On #594 a fix added a false sentence and the confirmation passed it. On #607
+a fix corrected one row of a group and not the others, and the confirmation passed that. On #628 two
+of the plugin pass's five findings were what the fix for the pre-PR review's first finding had left
+behind.
 
 ### Measured, not assumed
 
@@ -344,9 +349,9 @@ table, had both on 2026-10-07, and so did
 [#628](https://github.com/trulsjo/realistic-fusion-refreshed/pull/628), the change that wrote the
 verdict below into this file. Each is a row here, since 2026-10-07 (#624). Each count of findings is
 read from that pull request's body and comments. Two of the four rows with a cost for the plugin pass
-have it from elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in #595. The last
-column is a grade, made on 2026-10-07 for all seven rows, and the paragraphs under the table say by
-what test.
+have it from elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in
+#595. The last column is a grade, made on 2026-10-07 for all seven rows, and the paragraphs under
+the table say by what test.
 
 | branch | the pre-PR review found | pre-PR review's cost | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers | of the plugin pass's fixed findings, serious |
 |---|---|---|---|---|---|---|
@@ -368,18 +373,20 @@ count. #625's two figures are the usage its subagents reported; the three steps 
 reviewers, which check eligibility, list the `CLAUDE.md` files and summarise the change, used 133 423
 more. #628's two figures are the same kind, and its three steps used 140 099.
 
-**A reported figure is the size of a subagent's last request, and not what the subagent used**
-(measured 2026-10-07, #631). A subagent that finishes sends a notice with a token count, and every
-figure for the plugin pass on #625 and #628 is a sum of those counts. The check was made on the 16
-subagents of one session that had both a notice and a transcript. For each, the count was between
-1.000 and 1.095 times the tokens of the agent's last request and its response, and the sum over all
-the agent's requests was 1.7 to 6.4 times the count. So a figure in the table says how large each
-subagent's context had grown, and it is a floor on what the pass used. The pre-PR reviewer is
-reached by name, goes idle without finishing and sends no notice, so its figure is the same reading
-taken from its transcript: 152 822 tokens on #625, where its 34 requests sum to 3 979 750, and
-136 546 on #628, where its 19 sum to 2 192 591. About nine tenths of each sum is context read again
-from cache. The verdict's "about half a million tokens a pass" rests on #625's figure in this unit
-and on two older ones: what #579's and #594's figures measure was not checked.
+**A reported figure is about the size of a subagent's last request, and not what the subagent used**
+(measured 2026-10-07, #631). The plugin pass's subagents on #625 and #628 each sent a notice with a
+token count when they finished, and every figure for those two passes is a sum of those counts. The
+check was made on all 27 of them, whose counts sum to 1 565 019, which is the six figures given for
+the two passes here. For each, the count was between 1.000 and 1.095 times the tokens of the agent's
+last request and its response, and the sum over all the agent's requests was 1.7 to 6.4 times the
+count. So a figure in the table says how large each subagent's context had grown, and it is a floor
+on what the pass used. The pre-PR reviewer is reached by name, goes idle without finishing and sends
+no notice, so its figure is its last request and response read from its transcript, the reading that
+on the 27 was up to a tenth under the notice's count: 152 822 tokens on #625, where its 34 requests
+sum to 3 979 750, and 136 546 on #628, where its 19 sum to 2 192 591. About nine tenths of each sum
+is context read again from cache. The verdict's figure of about half a million tokens a pass rests
+on #625's two in this unit and on two older ones. What #579's and #594's figures measure was not
+checked, and the check does not explain why #594's reviewers reported no count.
 
 **The first six rows are every pull request from #560 to #625 that had both kinds of pass**, counted
 2026-10-07 over the 14 from #568 to #625. One counts when its body carries the findings of a review
@@ -389,11 +396,13 @@ and #606 have neither.
 
 **The session that runs the plugin pass on a branch adds that branch's row** (#624, 2026-10-07),
 each time, whether or not a verdict is pending and including when the pass raises nothing. Since the
-verdict below that is every pull request. A row gives each of its three cost columns as the token count
-reported for that pass's subagents, where there is one, and the grade in the last column. The pre-PR
-review's is its one reviewer's, read after its last confirmation as `/pre-pr-review` says. A figure that was not
-measured is written as not measured, one that covers the whole pass as not split, and one the pull
-request does not give as not recorded. A figure with no record behind it is not estimated.
+verdict below that is every pull request. A row gives each of its three cost columns as the token
+count reported for that pass's subagents, where there is one, and the grade in the last column. The
+pre-PR review's is its one reviewer's, read from its transcript as `/pre-pr-review` says when the
+row is written; the reviewer confirms after that, and the pull request's body has the later figure.
+A figure that was not measured is written as not measured, one that covers the whole pass as not
+split, and one the pull request does not give as not recorded. A figure with no record behind it is
+not estimated.
 
 **The verdict, 2026-10-07: the one-review rule fell** ([comment on
 #593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6037668590),
@@ -427,11 +436,12 @@ his to say.
 **What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
 and one was what a tool would do on a reinstall (#604). The six are branches where the pass was
 asked for, two of them the changes that wrote this rule and this table, so they are not a sample of
-branches. Three of the six had a cost: about 400 000 tokens on #579, about 580 000 for #594's
-scorers alone, and 629 193 for #625's reviewers and scorers, or 762 616 with the three steps before
-them. #594's is a floor. The verdict took the cost as about half a million tokens a pass, from the
-first two figures and 629 193. Whether the scorers' share of it stays is #626. Truls accepted on
-2026-10-07 (#593) that the six are not a sample and that three cost figures are enough.
+branches. Three of the six had a cost for the plugin pass: about 400 000 tokens on #579, about 580
+000 for #594's scorers alone, and 629 193 for #625's reviewers and scorers, or 762 616 with the
+three steps before them. #594's is a floor. The verdict took the cost as about half a million tokens
+a pass, from the first two figures and 629 193. Whether the scorers' share of it stays is #626.
+Truls accepted on 2026-10-07 (#593) that the six are not a sample and that three cost figures are
+enough.
 
 **The rule is revisited at ten routine rows, which is sixteen in the table** (Truls, 2026-10-07,
 #593). A routine row is one for a pull request opened after the verdict, when the pass stopped
