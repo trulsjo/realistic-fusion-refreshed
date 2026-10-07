@@ -334,8 +334,8 @@ comments in the code it touches, and a probe's output is in none
 of those.
 
 **#579's seven were real, and all seven were small.** One commit fixed all of them and no figure
-moved. The one that scored 100 was a temperature written without its exponent. The scorer gave the false
-positive 0 — a claim that a table did not add up to its sum, which it does once rounded.
+moved. The one that scored 100 was a temperature written without its exponent. The scorer gave the
+false positive 0 — a claim that a table did not add up to its sum, which it does once rounded.
 
 **#579's pre-PR review happened by accident.** The session read `/code-review` in the
 `mattpocock-skills:implement` skill as the official plugin, which needs a pull request, and none
