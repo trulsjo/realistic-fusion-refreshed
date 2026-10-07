@@ -9,8 +9,8 @@ Runs the **pre-PR review** that `docs/agents/code-review.md` defines under *A re
 request, and the plugin pass after it*. That file is the rule; this is the procedure. It needs no
 pull request and it is not `code-review:code-review`, which is the plugin pass. Since 2026-10-07
 (#593) the plugin pass follows on every pull request once it is open. That file says how, and this
-skill does not run it. Keep the reviewer from step 3 running until then, because it confirms the
-plugin pass's fixes as well.
+skill does not run it. Keep the reviewer from step 3 running until the plugin pass's fixes are
+confirmed, because it is the one that confirms them.
 
 ## Steps
 

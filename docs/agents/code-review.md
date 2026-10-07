@@ -17,8 +17,8 @@ when it matters which.
 2. **[Review the prose, not only the code](#review-the-prose-not-only-the-code)** — decided by Truls, 2026-09-03, after
    [#230](https://github.com/trulsjo/realistic-fusion-refreshed/pull/230); its third rule widened from
    the file to the repository on 2026-09-14, settling [#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331);
-   its last rule narrowed 2026-10-05 (#592); a rule for the notes' figure tables added 2026-10-06
-   (#602).
+   its last rule narrowed 2026-10-05 (#592), and what it says of the plugin pass changed 2026-10-07
+   (#593); a rule for the notes' figure tables added 2026-10-06 (#602).
 3. **[A review that plants takes its own worktree](#a-review-that-plants-takes-its-own-worktree)** —
    [#311](https://github.com/trulsjo/realistic-fusion-refreshed/issues/311), after the review of
    [#309](https://github.com/trulsjo/realistic-fusion-refreshed/pull/309) on 2026-09-10.
@@ -89,12 +89,13 @@ because they were reported outside the workflow's own output.
 ## Review the prose, not only the code
 
 Decided by Truls, 2026-09-03, after
-[#230](https://github.com/trulsjo/realistic-fusion-refreshed/pull/230). Its third rule widened from the
-file to the repository on 2026-09-14, settling
+[#230](https://github.com/trulsjo/realistic-fusion-refreshed/pull/230). Its third rule widened from
+the file to the repository on 2026-09-14, settling
 [#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331). Its last rule, on the
 fixed state, was narrowed on 2026-10-05, settling
 [#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592). The rule for a note's
-`## Current figures` table was added on 2026-10-06 (#602).
+`## Current figures` table was added on 2026-10-06 (#602). What the last rule says of the plugin
+pass was changed on 2026-10-07, when Truls's verdict on #593 had it run on every pull request.
 
 **Every gate in this repository checks machinery. None of them reads English.** `load-check.ps1`
 proves the prototypes load and the invariants hold; `ship-check.ps1` proves the mods say what ADR
@@ -145,15 +146,16 @@ passes. That is still read for.
 
 **Review the fixed state, not just the original.** A second round on work that has already passed
 review and verification is worth running, and this file exists because it found more than the first.
-Since 2026-10-05 (#592) what is *required* of the fixed state is narrower than a round: the reviewer
-that raised a finding confirms its fix. A full second round is the plugin pass, and "the review" in
-this section's older sentences means whichever review is being run. **That confirmation is a weaker
-check than the one this section measured.** Fresh eyes found #230's four, and a reviewer confirming
-its own finding is not fresh eyes. From 2026-10-05 the plugin pass ran only when it was asked for, a
-choice made on what it cost on one branch. Since 2026-10-07 it runs on every pull request, so every
-branch gets the second round as well as the confirmation; [A review before the pull request, and the
-plugin pass after it](#a-review-before-the-pull-request-and-the-plugin-pass-after-it) has the
-verdict and what it rests on.
+Since 2026-10-05 (#592) the reviewer that raised a finding confirms its fix, and from then until
+2026-10-07 that was all that was *required* of the fixed state, which is narrower than a round. A
+full second round is the plugin pass, and "the review" in this section's older sentences means
+whichever review is being run. **That confirmation is a weaker check than the one this section
+measured.** Fresh eyes found #230's four, and a reviewer confirming its own finding is not fresh
+eyes. From 2026-10-05 the plugin pass ran only when it was asked for, a choice made on what it cost
+on one branch. Since 2026-10-07 it runs on every pull request, so every branch gets the second round
+as well as the confirmation; [A review before the pull request, and the plugin pass after
+it](#a-review-before-the-pull-request-and-the-plugin-pass-after-it) has the verdict and what it
+rests on.
 
 ### Measured, not assumed
 
@@ -277,19 +279,20 @@ counts and the one finding left unfixed, and the eleven that were fixed are in n
 Truls on 2026-10-05, after the plugin pass on #594 found the rule did not say.
 
 **Every pull request gets the plugin pass, after it is opened** (Truls, 2026-10-07, #593). It is the
-full second round. This holds for every pull request opened from 2026-10-07 on, a documentation-only
-one included. From 2026-10-05 until then the rule was "the plugin pass is run when it is asked for,
-and not otherwise"; *Measured, not assumed* below has what ended it.
+full second round. This holds for every pull request opened after the verdict was given on
+2026-10-07, a documentation-only one included; #622 and #625 were opened earlier that day. From
+2026-10-05 until then the rule was "the plugin pass is run when it is asked for, and not otherwise";
+*Measured, not assumed* below has what ended it.
 
 **The session sets aside the plugin's eligibility answer.** The plugin's first step can answer that
 a change needs no review, and it did for #625 because that change was documentation only. The
 session runs the pass anyway and says in the pull request that it did. No kind of change is exempt
-(Truls, 2026-10-07).
+(Truls, 2026-10-07, #593).
 
-**The pre-PR reviewer confirms the plugin pass's fixes** (Truls, 2026-10-07). Continue the subagent
-that ran the pre-PR review and hand it the diff of the fixes, with no list of what was done. If it
-is no longer running, a fresh reviewer confirms them and the pull request says so. On #625 that
-reviewer found an error the fixes had added.
+**The pre-PR reviewer confirms the plugin pass's fixes** (Truls, 2026-10-07, #593). Continue the
+subagent that ran the pre-PR review and hand it the diff of the fixes, with no list of what was
+done. If it is no longer running, a fresh reviewer confirms them and the pull request says so. On
+#625 that reviewer found an error the fixes had added.
 
 **When an implement skill says to close out with `/code-review`**, in this repository that still
 means the pre-PR review, and no pull request is needed for it. The plugin pass follows once the pull
@@ -357,10 +360,10 @@ written here by #627). #593 had the rule revisited once the table had five rows,
 Truls's. It had six, and he gave it: the plugin pass runs on every pull request, and the pre-PR
 review stays as it was.
 
-**#604, #605 and #607 count towards the five** (Truls, 2026-10-07). They were added on 2026-10-07
-when he asked for them, and not by the sessions that ran their plugin passes, which #593 had not
-provided for. Their counts are read from their own pull requests by the same test as the other three
-rows.
+**#604, #605 and #607 count towards the five** (Truls, 2026-10-07, #593). They were added on
+2026-10-07 when he asked for them, and not by the sessions that ran their plugin passes, which #593
+had not provided for. Their counts are read from their own pull requests by the same test as the
+other three rows.
 
 **The test was how serious a finding was, and not how many there were.** A finding the plugin pass
 raised and that was then fixed is serious when it would have left a wrong figure, a false claim in a
@@ -370,23 +373,25 @@ branches**. The 26 leaves out the point #604's confirmation raised, which none o
 reviewers did. The pre-PR review's fixed findings on the same six number 43. The comment on #593
 names each of the eight.
 
-**The grade is the session's, and Truls's to overrule.** The session that adds a row grades it by
-the test above. The six here were graded on 2026-10-07 by the session that put the verdict to him,
-and he ruled on three it was unsure of: #579's missing exponent is serious, a sentence on #607
-saying a skill writes what it only holds templates for is not, and a false sentence in this file or
-in `CLAUDE.md` is.
+**The grade is the session's, and Truls's to overrule** (Truls, 2026-10-07, #593). The session that
+adds a row grades it by the test above. The six here were graded on 2026-10-07 by the session that
+put the verdict to him, and he ruled on three it was unsure of: #579's missing exponent is serious,
+a sentence on #607 saying a skill writes what it only holds templates for is not, and a false
+sentence in this file or in `CLAUDE.md` is.
 
 **What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
 and one was what a tool would do on a reinstall (#604). The six are branches where the pass was
 asked for, two of them the changes that wrote this rule and this table, so they are not a sample of
 branches. Three rows have a cost: about 400 000 tokens on #579, about 580 000 for #594's scorers
-alone, and 629 193 on #625, which is about half a million a pass. Truls accepted each of those
-limits on 2026-10-07.
+alone, and 629 193 for #625's reviewers and scorers, or 762 616 with the three steps before them.
+Two of the three are floors, and the verdict took the cost as about half a million tokens a pass.
+Whether the scorers' share of it stays is #626. Truls accepted each of those limits on 2026-10-07
+(#593).
 
-**The rule is revisited at ten routine rows, which is sixteen in the table** (Truls, 2026-10-07). A
-routine row is one for a pull request opened from 2026-10-07 on, when the pass stopped waiting to be
-asked for: #627's is the first, and #625's is not one. The test is the same, no pass mark is set in
-advance, and the verdict is his.
+**The rule is revisited at ten routine rows, which is sixteen in the table** (Truls, 2026-10-07,
+#593). A routine row is one for a pull request opened after the verdict, when the pass stopped
+waiting to be asked for: #627's is the first, and #625's is not one. The test is the same, no pass
+mark is set in advance, and the verdict is his.
 
 **On #579 only the pre-PR review could check a figure against what a probe printed.** The plugin's
 reviewers are given the change, its blame, earlier pull requests and the comments on them, and the
@@ -416,5 +421,6 @@ finding is a discarded one. The second adds one obligation the rubric never ment
 plugin that reviews code cannot know that in this repository the prose is part of the deliverable.
 The third governs the passes that run beside the workflow rather than inside it. The fourth says
 when the workflow is run, and what is run before it. Since 2026-10-07 it also has the session run
-the workflow where the workflow's own first step would have stopped, and that is the one place a
-rule here goes against an answer the workflow gives.
+the workflow where the workflow's own first step would have stopped, so there the session goes
+against an answer the workflow gives, as it does under the first rule when it posts what the
+threshold filtered.
