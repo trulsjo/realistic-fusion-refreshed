@@ -382,8 +382,9 @@ adds a row grades it by the test above. The first six were graded on 2026-10-07 
 put the verdict to him, and he ruled on three it was unsure of: #579's missing exponent is serious,
 a sentence on #607 saying a skill writes what it only holds templates for is not, and a false
 sentence in this file or in `CLAUDE.md` is. #628's two were graded by that last ruling and he has
-not seen them. A third of #628's five, `CLAUDE.md` saying "every pull request" with no cut-off, was
-graded as not serious, because it is false only of #622, which merged without the pass before the
+not seen them. A third of #628's five, `CLAUDE.md` dating the rule 2026-10-07 and not cutting it at
+the verdict, was graded as not serious, because of the pull requests opened that day it is false
+only of #622, which merged without the pass before the
 verdict. The same ruling could be read to cover it, and that is his to say.
 
 **What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
