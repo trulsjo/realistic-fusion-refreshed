@@ -342,8 +342,8 @@ what test.
 The cost of the pre-PR review was not measured on #579 and is recorded for none of the other six.
 #604, #605 and #607 each say five reviewers ran in the plugin pass, and none gives a time or a token
 count. #625's two figures are the usage its subagents reported; the three steps before its
-reviewers, which check eligibility, list the `CLAUDE.md` files and summarise the change, used 133
-423 more. #628's two figures are the same kind, and its three steps used 140 099.
+reviewers, which check eligibility, list the `CLAUDE.md` files and summarise the change, used 133 423
+more. #628's two figures are the same kind, and its three steps used 140 099.
 
 **The first six rows are every pull request from #560 to #625 that had both kinds of pass**, counted
 2026-10-07 over the 14 from #568 to #625. One counts when its body carries the findings of a review
@@ -382,7 +382,9 @@ adds a row grades it by the test above. The first six were graded on 2026-10-07 
 put the verdict to him, and he ruled on three it was unsure of: #579's missing exponent is serious,
 a sentence on #607 saying a skill writes what it only holds templates for is not, and a false
 sentence in this file or in `CLAUDE.md` is. #628's two were graded by that last ruling and he has
-not seen them.
+not seen them. A third of #628's five, `CLAUDE.md` saying "every pull request" with no cut-off, was
+graded as not serious, because it is false only of #622 and #625, which were already open. The same
+ruling could be read to cover it, and that is his to say.
 
 **What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
 and one was what a tool would do on a reinstall (#604). The six are branches where the pass was
@@ -397,9 +399,10 @@ first two figures and 629 193. Whether the scorers' share of it stays is #626. T
 #593). A routine row is one for a pull request opened after the verdict, when the pass stopped
 waiting to be asked for: #628's is the first, the pull request that closed #627, and #625's is not
 one. The comment on #593 words the cut as "opened from 2026-10-07 on", and #622 and #625 were opened
-that day before the verdict. "After the verdict" is this file's reading of it. Truls confirmed that
-#625's row is not routine and that this change's is the first; the wording of the cut is his to
-correct. The test is the same, no pass mark is set in advance, and the verdict is his.
+that day before the verdict. "After the verdict" is this file's reading of it. In the session that
+put the verdict to him Truls confirmed that #625's row is not routine and that this change's is the
+first, and the seventh point of #627 is the only written record of that. The wording of the cut is
+his to correct. The test is the same, no pass mark is set in advance, and the verdict is his.
 
 **On #579 only the pre-PR review could check a figure against what a probe printed.** The plugin's
 reviewers are given the change, its blame, earlier pull requests and the comments on them, and the
