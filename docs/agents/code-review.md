@@ -26,7 +26,8 @@ when it matters which.
    2026-10-05, settling [#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592). It
    also changed wording in the first two, dated where it sits, and wrote the plugin's name out in
    full throughout. Since 2026-10-07 (#624) the table under it has a row for each branch and not
-   for each pass on #579.
+   for each pass on #579, and two rules beside it say who adds a row and when the rule is
+   revisited.
 
 ## The threshold gates the comment, not the report
 
@@ -286,10 +287,11 @@ pass does.
 rule, had both kinds of pass later the same day, and
 [#604](https://github.com/trulsjo/realistic-fusion-refreshed/pull/604),
 [#605](https://github.com/trulsjo/realistic-fusion-refreshed/pull/605) and
-[#607](https://github.com/trulsjo/realistic-fusion-refreshed/pull/607) had both on 2026-10-06. Each
-is a row here, since 2026-10-07 (#624). Each count of findings is read from that pull request's
-body and comments. The two rows with a cost have it from elsewhere: #579's is in #592's body, and
-#594's is in the comment on #593 and in #595.
+[#607](https://github.com/trulsjo/realistic-fusion-refreshed/pull/607) had both on 2026-10-06.
+[#625](https://github.com/trulsjo/realistic-fusion-refreshed/pull/625), the change that wrote this
+table, had both on 2026-10-07. Each is a row here, since 2026-10-07 (#624). Each count of findings
+is read from that pull request's body and comments. Two of the three rows with a cost have it from
+elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in #595.
 
 | branch | the pre-PR review found | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers |
 |---|---|---|---|---|
@@ -298,30 +300,41 @@ body and comments. The two rows with a cost have it from elsewhere: #579's is in
 | #604 | five findings: four fixed, one left unfixed at a score of 25 | three findings scored: two fixed, one left unfixed at a score of 25, its premise wrong; confirming the fixes raised a fourth point, fixed and not confirmed again | not recorded | not recorded |
 | #605 | five findings: three fixed, two left unfixed at a score of 25 | two findings, at 100 and 75: both fixed | not recorded | not recorded |
 | #607 | ten findings, one of them unscored: seven fixed, three left unfixed, one at 50 and two at 25 | four candidates: two fixed, two false positives | not recorded | not recorded |
+| #625 | 12 findings: ten fixed, two left unfixed at a score of 25 | six candidates: five survived, four at 75 and one at 50, and all five fixed; one false positive | 325 398 tokens, five reviewers | 303 795 tokens, six scorers |
 
-The cost of the pre-PR review is recorded for none of the five. #604, #605 and #607 each say five
-reviewers ran in the plugin pass, and none gives a time or a token count.
+The cost of the pre-PR review was not measured on #579 and is recorded for none of the other five.
+#604, #605 and #607 each say five reviewers ran in the plugin pass, and none gives a time or a token
+count. #625's two figures are the usage its subagents reported; the three steps before its
+reviewers, which check eligibility, list the `CLAUDE.md` files and summarise the change, used
+133 423 more.
 
-**Those five are every pull request from #560 on that had both kinds of pass**, counted 2026-10-07.
-#568 and #582 had the plugin pass, and neither body carries a pre-PR review's findings.
+**Those six are every pull request from #560 on that had both kinds of pass**, counted 2026-10-07
+over the 14 from #568 to #625. One counts when its body carries the findings of a review made before
+it was opened and it has a comment headed `### Code review`. #568 and #582 have the comment and no
+such findings; #601, #603, #619, #621 and #622 have the findings and no such comment; #606 has
+neither.
 
-**The session that runs the plugin pass on a branch adds that branch's row** (#624, 2026-10-07). A
-figure that was not measured is written as not measured, one that covers the whole pass as not
-split, and one the pull request does not give as not recorded. A figure with no record behind it is
-not estimated.
+**The session that runs the plugin pass on a branch adds that branch's row** (#624, 2026-10-07),
+each time, whether or not a verdict is pending. A figure that was not measured is written as not
+measured, one that covers the whole pass as not split, and one the pull request does not give as
+not recorded. A figure with no record behind it is not estimated.
 
-**Once the table has five rows the rule is revisited, and the verdict is Truls's** (#624,
-2026-10-07). It has five rows as of 2026-10-07, so that is due, and no verdict has been given.
-[#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593) is where the verdict will
-be recorded.
+**Once the table has five rows the rule is revisited, and the verdict is Truls's**
+([#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593), written here on
+2026-10-07 by #624). It had five rows the day this was written and has six with #625, so that is
+due, and no verdict has been given. #593 is where it will be recorded.
+
+**Three of the six rows were added from the record**: #604, #605 and #607, on 2026-10-07, when
+Truls asked for them. #593 set the five before those three were counted, and does not say whether a
+row added that way counts towards it. That is his to say with the verdict.
 
 **On #579 only the pre-PR review could check a figure against what a probe printed.** The plugin's
 reviewers are given the change, its blame, earlier pull requests and the comments on them, and the
 comments in the code it touches, and a probe's output is in none
 of those.
 
-**#579's seven were real, and all seven were small.** One commit fixed all of them and no figure moved.
-The one that scored 100 was a temperature written without its exponent. The scorer gave the false
+**#579's seven were real, and all seven were small.** One commit fixed all of them and no figure
+moved. The one that scored 100 was a temperature written without its exponent. The scorer gave the false
 positive 0 — a claim that a table did not add up to its sum, which it does once rounded.
 
 **#579's pre-PR review happened by accident.** The session read `/code-review` in the
