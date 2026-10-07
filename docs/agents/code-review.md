@@ -25,7 +25,7 @@ when it matters which.
 4. **[One review before the pull request](#one-review-before-the-pull-request)** — decided by Truls,
    2026-10-05, settling [#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592). It
    also changed wording in the first two, dated where it sits, and wrote the plugin's name out in
-   full throughout.
+   full throughout. A table counting both kinds of pass was started under it on 2026-10-07 (#624).
 
 ## The threshold gates the comment, not the report
 
@@ -282,20 +282,28 @@ pass does.
 [#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579) was reviewed twice on
 2026-10-05, and the rule was decided on that branch alone.
 [#594](https://github.com/trulsjo/realistic-fusion-refreshed/pull/594), the change that wrote the
-rule, had both kinds of pass later the same day. Those two are every branch that has had both, and
-each is a row here (#624):
+rule, had both kinds of pass later the same day. Each is a row here, since 2026-10-07 (#624):
 
 | branch | the pre-PR review found | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers |
 |---|---|---|---|---|
 | #579 | 12 findings: 11 fixed, one left unfixed at a score of 50 | eight candidates: seven fixed, one false positive | about ten minutes and about 400 000 subagent tokens for the whole pass, not split | not split: inside the figure to the left |
-| #594 | nine findings: eight fixed, one left unfixed at a score of 50 | ten candidates: eight fixed, one left unfixed and not scored, one false positive | not measured: the five reviewers ran as plain subagents, which report no usage | about 580 000 tokens |
+| #594 | nine findings: eight fixed, one left unfixed at a score of 50 | ten candidates: three posted at 100 and six more reported, so nine survived, of which eight fixed and one left unfixed and not scored; one false positive | not measured: the five reviewers ran as plain subagents, which report no usage | about 580 000 tokens |
 
 The cost of the pre-PR review is recorded for neither branch.
 
-**The session that runs the plugin pass on a branch adds that branch's row.** A figure that was not measured is written as not measured, and one that
-covers the whole pass as not split; no cell is filled with an estimate.
+**Three more branches have had both kinds of pass and have no row yet**:
+[#604](https://github.com/trulsjo/realistic-fusion-refreshed/pull/604),
+[#605](https://github.com/trulsjo/realistic-fusion-refreshed/pull/605) and
+[#607](https://github.com/trulsjo/realistic-fusion-refreshed/pull/607), all on 2026-10-06. Each has
+the pre-PR review's table in its body and the plugin pass's comments under it. Counted 2026-10-07
+over the pull requests from #560 on; none of the others in that range has both.
 
-**Once the table has five rows the rule is revisited, and the verdict is Truls's.** It has two, and
+**The session that runs the plugin pass on a branch adds that branch's row** (#624, 2026-10-07). A
+figure that was not measured is written as not measured, and one that covers the whole pass as not
+split.
+
+**Once the table has five rows the rule is revisited, and the verdict is Truls's** (#624,
+2026-10-07). It has two rows, and the three branches above would make five.
 [#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593) is where the verdict will
 be recorded.
 
