@@ -283,28 +283,34 @@ pass does.
 [#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579) was reviewed twice on
 2026-10-05, and the rule was decided on that branch alone.
 [#594](https://github.com/trulsjo/realistic-fusion-refreshed/pull/594), the change that wrote the
-rule, had both kinds of pass later the same day. Each is a row here, since 2026-10-07 (#624):
+rule, had both kinds of pass later the same day, and
+[#604](https://github.com/trulsjo/realistic-fusion-refreshed/pull/604),
+[#605](https://github.com/trulsjo/realistic-fusion-refreshed/pull/605) and
+[#607](https://github.com/trulsjo/realistic-fusion-refreshed/pull/607) had both on 2026-10-06. Each
+is a row here, since 2026-10-07 (#624), and each figure is read from that pull request's body and
+comments:
 
 | branch | the pre-PR review found | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers |
 |---|---|---|---|---|
 | #579 | 12 findings: 11 fixed, one left unfixed at a score of 50 | eight candidates: seven fixed, one false positive | about ten minutes and about 400 000 subagent tokens for the whole pass, not split | not split: inside the figure to the left |
 | #594 | nine findings: eight fixed, one left unfixed at a score of 50 | ten candidates: three posted at 100 and six more reported, so nine survived, of which eight fixed and one left unfixed and not scored; one false positive | not measured: the five reviewers ran as plain subagents, which report no usage | about 580 000 tokens |
+| #604 | five findings: four fixed, one left unfixed at a score of 25 | three candidates: two fixed, one left unfixed at a score of 25, its premise wrong | not recorded | not recorded |
+| #605 | five findings: three fixed, two left unfixed at a score of 25 | two findings, at 100 and 75: both fixed | not recorded | not recorded |
+| #607 | ten findings, one of them unscored: seven fixed, three left unfixed, one at 50 and two at 25 | four candidates: two fixed, two false positives | not recorded | not recorded |
 
-The cost of the pre-PR review is recorded for neither branch.
+The cost of the pre-PR review is recorded for none of the five. #604, #605 and #607 each say five
+reviewers ran in the plugin pass, and none gives a time or a token count.
 
-**Three more branches have had both kinds of pass and have no row yet**:
-[#604](https://github.com/trulsjo/realistic-fusion-refreshed/pull/604),
-[#605](https://github.com/trulsjo/realistic-fusion-refreshed/pull/605) and
-[#607](https://github.com/trulsjo/realistic-fusion-refreshed/pull/607), all on 2026-10-06. Each has
-the pre-PR review's table in its body and the plugin pass's comments under it. Counted 2026-10-07
-over the pull requests from #560 on; none of the others in that range has both.
+**Those five are every pull request from #560 on that had both kinds of pass**, counted 2026-10-07.
+#568 and #582 had the plugin pass, and neither body carries a pre-PR review's findings.
 
 **The session that runs the plugin pass on a branch adds that branch's row** (#624, 2026-10-07). A
-figure that was not measured is written as not measured, and one that covers the whole pass as not
-split. A figure with no record behind it is not estimated.
+figure that was not measured is written as not measured, one that covers the whole pass as not
+split, and one the pull request does not give as not recorded. A figure with no record behind it is
+not estimated.
 
 **Once the table has five rows the rule is revisited, and the verdict is Truls's** (#624,
-2026-10-07). It has two rows, and the three branches above would make five.
+2026-10-07). It has five rows as of 2026-10-07, so that is due, and no verdict has been given.
 [#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593) is where the verdict will
 be recorded.
 
