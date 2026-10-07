@@ -382,14 +382,17 @@ more than one ticket, run `scripts/run-gates.ps1` on it, or `scripts/ship-check.
 the branch is markdown-only; the State section says what `run-gates.ps1` runs and defines
 markdown-only.
 
-**One review, before the pull request** (#592). Every branch gets the pre-PR review: a fresh
-subagent handed the diff, `docs/agents/code-review.md`, and the probes' raw output or the gate
-result. The same subagent confirms each fix, and every finding goes in the PR body with its score
-and whether it was fixed. `/pre-pr-review` runs it; see
+**A review before the pull request, and the plugin pass after it** (#592, #593). Every branch gets
+the pre-PR review: a fresh subagent handed the diff, `docs/agents/code-review.md`, and the probes'
+raw output or the gate result. The same subagent confirms each fix, and every finding goes in the PR
+body with its score and whether it was fixed. `/pre-pr-review` runs it; see
 `.claude/skills/pre-pr-review/SKILL.md` (#595). **When an implement skill says to close out with
-`/code-review`, this is what it means here** — more than one skill can answer to that name, and
-the official plugin, `code-review:code-review`, is the one that needs a pull request. It is run
-only when asked for.
+`/code-review`, this is what it means here** — more than one skill can answer to that name, and the
+official plugin, `code-review:code-review`, is the one that needs a pull request. **Every pull
+request then gets that plugin's pass as well** (decided by Truls, 2026-10-07, #593). The session
+runs it once the pull request is open, whatever the plugin's eligibility step answers, has the
+pre-PR reviewer confirm its fixes, and adds the branch's row to the table in
+`docs/agents/code-review.md`. From 2026-10-05 until that day it ran only when asked for.
 
 **The threshold gates the comment, not the report.** `code-review:code-review`'s 80-point threshold
 governs which comment a finding is posted in. Its rubric only emits 0/25/50/75/100, so the filter
