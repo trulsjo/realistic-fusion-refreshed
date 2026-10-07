@@ -377,41 +377,23 @@ vocabulary is `GLOSSARY.md`'s Art section.
 
 ### Code review
 
-Four rules, all in `docs/agents/code-review.md`. Before a review of a branch that combines
-more than one ticket, run `scripts/run-gates.ps1` on it, or `scripts/ship-check.ps1` alone when
-the branch is markdown-only; the State section says what `run-gates.ps1` runs and defines
-markdown-only.
+**`docs/agents/code-review.md` is the only place this repository's four review rules are stated**
+(#630). Read the section named when its condition holds:
 
-**A review before the pull request, and the plugin pass after it** (#592, #593). Every branch gets
-the pre-PR review: a fresh subagent handed the diff, `docs/agents/code-review.md`, and the probes'
-raw output or the gate result. The same subagent confirms each fix, and every finding goes in the PR
-body with its score and whether it was fixed. `/pre-pr-review` runs it; see
-`.claude/skills/pre-pr-review/SKILL.md` (#595). **When an implement skill says to close out with
-`/code-review`, this is what it means here** — more than one skill can answer to that name, and the
-official plugin, `code-review:code-review`, is the one that needs a pull request. **Every pull
-request opened after Truls's verdict of 2026-10-07 then gets that plugin's pass as well** (#593).
-The session runs it once the pull request is open, whatever the plugin's eligibility step answers,
-has the pre-PR reviewer confirm its fixes, and adds the branch's row to the table in
-`docs/agents/code-review.md`. From 2026-10-05 until that verdict it ran only when asked for.
+- **A branch is ready for its pull request, or an implement skill says to close out with
+  `/code-review`**: *A review before the pull request, and the plugin pass after it*, for the
+  pre-PR review. `/pre-pr-review` runs it.
+- **A pull request has been opened**: the same section, for the plugin pass
+  (`code-review:code-review`), who confirms its fixes, and the row it adds to that section's table.
+- **A review's findings are about to be reported or posted**: *The threshold gates the comment, not
+  the report*.
+- **A change is being reviewed**: *Review the prose, not only the code*.
+- **A review pass is about to edit the working tree, or a gate fails once and passes on every
+  re-run**: *A review that plants takes its own worktree*.
 
-**The threshold gates the comment, not the report.** `code-review:code-review`'s 80-point threshold
-governs which comment a finding is posted in. Its rubric only emits 0/25/50/75/100, so the filter
-admits 100 alone — a finding can be verified, important and filtered. Report every surviving
-finding with its score, and post the ones under the threshold to the PR in a second comment; a
-review that posts nothing must still say what it filtered.
-
-**Review the prose, not only the code.** Every gate here checks machinery and none of them reads
-English, so a wrong sentence beside a right number survives everything. Check each figure in prose
-against a figure in the diff and do the arithmetic; treat "no", "every" and "the only" as
-instructions to enumerate; and when a change supersedes a number, grep the repository for the old
-one and read every hit in a file that records a measurement, not only the file you edited. Three of
-the five defects found across two review rounds on #230 were claims rather than code,
-one of them contradicted by a table in the same commit.
-
-**A review that plants takes its own worktree** (#311). A pass that edits the tree to prove a gate
-fires does it in `git worktree add --detach`, never in a shared checkout, and keeps scratch files
-on a path no other agent will pick; `git checkout --` there reverts other agents' edits too. A gate
-that fails once and passes on every re-run is another agent's plant, not a flaky gate.
+Before a review of a branch that combines more than one ticket, run `scripts/run-gates.ps1` on it,
+or `scripts/ship-check.ps1` alone when the branch is markdown-only; the State section says what
+`run-gates.ps1` runs and defines markdown-only.
 
 ## Code indexes
 

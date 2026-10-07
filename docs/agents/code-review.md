@@ -34,6 +34,11 @@ when it matters which.
    the pass runs on every pull request. The section's name changed with that, and the table gained a
    column for the findings that were serious.
 
+**This file is the only place the four are stated**, since 2026-10-07 (#630). `CLAUDE.md` and
+`.claude/skills/pre-pr-review/SKILL.md` each stated parts of them until then, so a rule that changed
+had three files to change in: #627 edited all three to write one verdict. Both now name the section
+to read and when to read it, and state no rule. A rule is changed here and nowhere else.
+
 ## The threshold gates the comment, not the report
 
 Decided by Truls, 2026-08-26, settling
