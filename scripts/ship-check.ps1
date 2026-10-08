@@ -1135,6 +1135,8 @@ foreach ($row in $figureRows.Found) {
 #   - a table written without leading pipes, or whose first line follows a list marker on the
 #     same line. Its lines do not start with a pipe. One that is only indented under a list item
 #     is read, since a line is trimmed first.
+#   - two rows in a row that have both lost their `>`, when the second is cells of hyphens and
+#     nothing else. The pair reads as the header and delimiter row of a table of its own.
 #   - a delimiter row that is malformed some other way, a cell of colons and no hyphen for one.
 #   - anything about how a table looks: its width, its alignment, what a cell's markdown becomes.
 $TABLE_DELIMITER = '^\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?$'
