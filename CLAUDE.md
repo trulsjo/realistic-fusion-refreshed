@@ -387,8 +387,8 @@ none of them** (#630). Read the section named when its condition holds:
   (`code-review:code-review`), who confirms its fixes, and the row it adds to that section's table.
 - **A review's findings are about to be reported or posted**: *The threshold gates the comment, not
   the report*.
-- **A change is being reviewed, or a fix a review asked for is being written**: *Review the
-  prose, not only the code*.
+- **A change is being reviewed, a fix a review asked for is being written, or a ticket or a
+  retrospective's candidate is about to be published**: *Review the prose, not only the code*.
 - **A review pass is about to edit the working tree, or a gate fails once and passes on every
   re-run**: *A review that plants takes its own worktree*.
 

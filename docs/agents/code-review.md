@@ -47,7 +47,9 @@ changed had three files to change in: #627 edited all three to write one verdict
 section to read and when to read it, and state no rule. The skill's steps are the pre-PR review's
 procedure, and they still say what they carry out: what the reviewer is handed, that it confirms the
 fixes of its own findings and reads a fix's added sentence as a new claim, that every finding goes
-in the pull request's body, and that a planted change takes a worktree. A change to one of those is
+in the pull request's body, and that a planted change takes a worktree. Since 2026-10-08 they carry
+out two more: the session answers for what the reviewer did not check (#636), and rewords a commit
+message a review corrected (#640). A change to one of those is
 made here first and then in the steps.
 
 ## The threshold gates the comment, not the report
@@ -196,7 +198,7 @@ forward. That makes three kinds of text under one rule: a fix, a ticket and a re
 - **A ticket: #632's own body.** It was written without opening the pull requests it cites and was
   wrong on two facts. It said a fix on #607 added a false sentence, where the fix corrected one row
   of a group and left the others. It said three of #628's five plugin findings came from one fix,
-  where it was two. The session that implemented #632 opened the pull requests and wrote the right
+  where it was two. The session that implemented #632 wrote the right
   facts into the paragraph above, and the pre-PR reviewer on #633 checked them there. No rule asked
   for that: the ticket's evidence was read because the change restated it.
 - **A retrospective: the one run on 2026-10-07 after #633.** It said the session "did nothing else
@@ -339,11 +341,13 @@ because it stood under a table in which the same change gave two of those six ro
 
 **A commit message is reworded when a review corrects what it says** (Truls, 2026-10-07, #640).
 When a finding corrects a figure or a claim, the session searches the branch's commit messages for
-the old one, rewords each commit that carries it, and pushes with `git push --force-with-lease`.
-That push is allowed on an unmerged branch only, and never on `main`: history already on `main` is
-left alone. It is done before the pull request is opened where it can be, and before the merge
-otherwise. A reword gives the commit and every commit after it a new hash and changes no file, so
-the diff of the fixes is the same diff. **The session holds the reviewed commit by a local tag and
+the old one and rewords each commit that carries it. Where the branch has already been pushed, it
+then pushes with `git push --force-with-lease`. That push is allowed on an unmerged branch only,
+and never on `main`: history already on `main` is left alone. The reword is done before the pull
+request is opened where it can be, and before the merge otherwise. It replays the branch from the
+reworded commit's own parent and not onto `main`, which may have moved since the branch left it. So
+it gives that commit and every commit after it a new hash and changes no file, and the diff of the
+fixes is the same diff. **The session holds the reviewed commit by a local tag and
 not by its hash.** The tag stays on the commit the reviewer read, which the reword leaves in the
 repository beside its replacement, and the diff of the fixes is taken from the tag. On #633 the
 measurement was first counted over 16 subagents, the pre-PR review showed there were 27, and this
@@ -458,9 +462,11 @@ so no row here.
 
 Which subagents a cell sums is told by the description the session gave each when it spawned it,
 which the transcript's `.meta.json` keeps. The pre-PR review's is the one named reviewer, over its
-whole transcript, so its confirmations are in it, the one of the plugin pass's fixes included. The
-three steps are the subagents that checked eligibility, listed the `CLAUDE.md` files and summarised
-the change. The reviewers are the five numbered 1 to 5, and the scorers are one for each candidate.
+whole transcript, so its confirmations are in it, the one of the plugin pass's fixes included.
+That holds for these three rows, which were filled in afterwards; a row written by its own session
+is read before the reviewer's last confirmation, as the row rule below says. The three steps are
+the subagents that checked eligibility, listed the `CLAUDE.md` files and summarised the change. The
+reviewers are the five numbered 1 to 5, and the scorers are one for each candidate.
 
 **A total is a count of tokens and not a price.** A cache read is not priced as an input token, and
 most of every total is cache reads: about nine tenths of each pre-PR review's, and 74.8%, 76.9% and
@@ -472,8 +478,8 @@ scorer's token and a reviewer's are not the same spend either.
 #633. In the reported counts of the table above, with the three steps counted in, it is 39.8%,
 35.7% and 19.8%. #633's two scorers show how far the two units can part: their reported counts sum
 to 119 402 and their requests to 870 953, because one of them sent 12 requests. On the ten
-subagents of #633's plugin pass the sum over all requests was 1.9 to 9.9 times the last request, where the 27 above gave
-1.7 to 6.4 against the notice's count.
+subagents of #633's plugin pass the sum over all requests was 1.9 to 9.9 times the last request,
+where the 27 above gave 1.7 to 6.4 against the notice's count.
 
 **The first six rows are every pull request from #560 to #625 that had both kinds of pass**, counted
 2026-10-07 over the 14 from #568 to #625. One counts when its body carries the findings of a review
@@ -487,13 +493,14 @@ verdict below that is every pull request. A row gives each of its three cost col
 count reported for that pass's subagents, where there is one, and the grade in the last column. The
 pre-PR review's is its one reviewer's, read from its transcript as `/pre-pr-review` says when the
 row is written; the reviewer confirms after that, and the pull request's body has the later figure.
-**The session adds the branch's row to the all-requests table as well** (2026-10-08, #634), once
-the reviewer has confirmed the plugin pass's fixes, so that the pre-PR review's cell is its whole
-transcript. It reads the totals from the transcripts in its own `subagents` directory, the one
-`/pre-pr-review`'s last step names. Each `agent-*.jsonl` there has an `agent-*.meta.json` beside it
-whose `description` is what the session called that subagent when it spawned it. The session picks
-the plugin pass's subagents by description, gives that step's script the three steps' transcripts
-in one run, the reviewers' in a second and the scorers' in a third, and writes each run's total.
+**The session adds the branch's row to the all-requests table in the same commit** (2026-10-08,
+#634), so the reviewer's confirmation reads both rows. It reads the totals from the transcripts in
+its own `subagents` directory, the one `/pre-pr-review`'s last step names. Each `agent-*.jsonl`
+there has an `agent-*.meta.json` beside it whose `description` is what the session called that
+subagent when it spawned it. The session picks the plugin pass's subagents by description, gives
+that step's script the three steps' transcripts in one run, the reviewers' in a second and the
+scorers' in a third, and writes each run's total. The pre-PR review's cell is read when the row is
+written, as its cell in the other table is, and the pull request's body has the later figure.
 A figure that was not measured is written as not measured, one that covers the whole pass as not
 split, and one the pull request does not give as not recorded. A figure with no record behind it is
 not estimated.

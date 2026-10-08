@@ -25,7 +25,7 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    and in PowerShell, with `<scratch>` in either form of path. A `>` redirect to an unquoted
    backslash path does not: Git Bash drops the backslashes and writes a file named for the whole
    path into the current directory. Two `.diff` files of that shape sat in the repository root
-   from September.
+   from September until 2026-10-08.
 
 2. **Save the evidence to a file** in the same directory. Which evidence depends on the branch:
 
@@ -93,14 +93,18 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    **When a finding corrects a figure or a claim, reword the commits that state the old one**
    (#640). The rule, and where it stops, is in `docs/agents/code-review.md` under *A review before
    the pull request, and the plugin pass after it*. Find them, write the corrected message to
-   `<scratch>/msg.txt` with the Write tool, and reword one commit at a time, from Git Bash:
+   `<scratch>/msg.txt` with the Write tool, and reword one commit at a time. These lines are for
+   Git Bash, with `<scratch>` written with forward slashes: `cp` is handed the path unquoted.
 
    ```
    git log main..HEAD --format='%h %s' --grep='<the old figure or words>'
    GIT_SEQUENCE_EDITOR="sed -i 's/^pick <short hash>/reword <short hash>/'" \
-     GIT_EDITOR="cp <scratch>/msg.txt" git rebase -i main
+     GIT_EDITOR="cp <scratch>/msg.txt" git rebase -i <short hash>~1
    git push --force-with-lease             # only if the branch is already pushed
    ```
+
+   The rebase starts at the reworded commit's parent. Started at `main` it would replay the
+   branch onto wherever `main` is now, and the diff of the fixes would gain `main`'s changes.
 
    `pre-pr-reviewed` stays on the commit the reviewer read, so the `fixes.diff` line above gives
    the same diff after a reword as before it. Delete the tag when the branch has merged.
@@ -110,7 +114,8 @@ reviewer from step 3 running when this skill ends: that section has more for it 
 5. **Answer for each thing the reviewer said it did not check** (#636). The same section of
    `docs/agents/code-review.md` says how an item is checked and what the pull request's body
    records for it. Check each item, or send it to the reviewer by name with SendMessage, and write
-   the outcome of each under the heading the findings table will go under.
+   the outcome of each under the heading the findings table will go under. A defect that an item
+   turns up is fixed and confirmed as step 4 has it.
 
    Done when every item on the reviewer's list has an outcome written for it.
 
@@ -151,12 +156,13 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    ```
 
    Write the first two figures, and what share of the second is cache reads. The first is the one
-   the first table in `docs/agents/code-review.md` holds, and the second the one its all-requests
-   table holds; that file says what each measures. Read them again after the reviewer's last
-   confirmation, the one of the plugin pass's fixes, and replace the figures in the body. The first
-   table's row keeps the figure read when the row was written. If the transcript cannot be found,
-   write "not measured". Given several transcripts, the script prints a line for each and their
-   sum, which is how the session that runs the plugin pass reads that pass's totals (#634).
+   the table of findings and reported costs in `docs/agents/code-review.md` holds, and the second
+   the one its all-requests table holds; that file says what each measures. Read them again after
+   the reviewer's last confirmation, the one of the plugin pass's fixes, and replace the figures in
+   the body. Each table's row keeps the figure read when the row was written. If the transcript
+   cannot be found, write "not measured". Given several transcripts, the script prints a line for
+   each and their sum, which is how the session that runs the plugin pass reads that pass's totals
+   (#634).
 
 ## What this does not do
 
