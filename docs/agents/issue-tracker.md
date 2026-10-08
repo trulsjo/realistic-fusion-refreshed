@@ -31,16 +31,17 @@ GitHub shares one number space across issues and PRs, so a bare `#42` may be eit
 
 ## When a skill says "publish to the issue tracker"
 
-Create a GitHub issue. Two things come first (#637):
+Create a GitHub issue. Two things come first:
 
-- **Read the ticket's evidence from its source.** The rule is in `docs/agents/code-review.md`,
-  under *Review the prose, not only the code*: the paragraph on a ticket's evidence and a
+- **The rule for a ticket's evidence** (#637). It is in `docs/agents/code-review.md`, under
+  *Review the prose, not only the code*: the paragraph on a ticket's evidence and a
   retrospective's.
-- **Search the open issues for the ticket's concept, not only for its wording**, and say in the
-  pull request or in the session's report what was searched for. #639 was published on 2026-10-07
-  and closed as a duplicate of #591, open since 2026-10-05. Both asked for the gate history to
-  move out of the State section of the root `CLAUDE.md`, under titles that share no noun but
-  `CLAUDE.md`. The session that published #639 had not searched.
+- **Search the open issues for the ticket's concept, not only for its wording** (a comment on
+  #637, 2026-10-07). This one is stated here and nowhere else. Say in the pull request or in the
+  session's report what was searched for. #639 was published on 2026-10-07 and closed as a
+  duplicate of #591, open since 2026-10-05. Both asked for the gate history to move out of the
+  State section of the root `CLAUDE.md`, under titles that share no noun but `CLAUDE.md`. The
+  session that published #639 had not searched.
 
 ## When a skill says "fetch the relevant ticket"
 
