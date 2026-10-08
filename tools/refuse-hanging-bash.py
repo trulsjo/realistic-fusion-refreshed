@@ -30,7 +30,8 @@ WHAT IS REFUSED, each simple command of the line judged by itself:
     as a script.
 
 A pipe feeds the command after it, on the same line or on the next. A pipe into a group, `| {`
-or `| (`, is taken to feed every command after it on the line, the group's end not being tracked.
+or `| (`, is taken to feed every command after it, to the end of the whole command and not only of
+its line, the group's end not being tracked.
 
 WHAT IS LET THROUGH ON PURPOSE:
 
@@ -58,7 +59,8 @@ WHAT IT CANNOT SEE:
     is written at its other end, `while read f; do ...; done < list`, or before it, so that
     command is not judged. A later command of the body is judged like any other, and a `cat`
     there is refused although the loop feeds it: `while read l; do echo; cat; done < list`.
-  - a reader after a group that a pipe fed, `echo hi | { head -1; }; cat`, for the reason above.
+  - a reader anywhere after a group that a pipe fed, on its line or a later one, for the reason
+    above: `echo hi | { head -1; }; cat`.
   - a reader behind a wrapper other than the few skipped below, or behind a shell function.
     `timeout` is skipped with its `-s` and `-k` values; another option of its that takes a
     value is not known.
@@ -200,6 +202,7 @@ CASES = [
     ("while read l; do cat; done < list.txt", False),
     ("echo hi | { head -1; cat; }", False),
     ("echo hi | (read x; cat)", False),
+    ("echo hi | (head -1)\ngit status\npython -", False),                # a known false pass
     ("python --version && py -0 && python -V; python3 -h", False),
     ("git log |\n  cat", False),
     ("curl -s x |& python -", False),
