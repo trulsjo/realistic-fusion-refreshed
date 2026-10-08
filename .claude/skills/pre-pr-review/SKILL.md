@@ -68,8 +68,8 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    > — 0 a false positive, 25 possibly real and unverified, 50 real but minor or rare, 75
    > verified and important, 100 certain and it will be hit. Report every one whatever it scores.
    > Say so plainly if you found nothing, and say what you did not check. A table's cell counts
-   > in a tracked `.md` are held by `scripts/ship-check.ps1`, each row to its header; a table in
-   > a blockquote, and one in the pull request's body, it does not read.
+   > in a tracked `.md` are held by `scripts/ship-check.ps1`, each row to its header, in a
+   > blockquote or out of one; a table in the pull request's body it does not read.
    >
    > Reply with one line per finding first: its number, the file, the fault and the score. Give
    > the detail for a finding when you are asked for it. A long reply arrives cut off.
@@ -79,9 +79,10 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    the sixth of nine findings, and the reviewer's attempt to write the rest to a file was refused.
 
    **The report arrives as a message from the reviewer once this session's turn has ended**
-   (#648). End the turn to receive it; the message starts the session's next turn. If something
-   else starts it first, or the reply came cut off and asking does not get the rest, read it
-   from the reviewer's transcript, the file step 6 names.
+   (#648). End the turn to receive it; the message starts the session's next turn. A question
+   put to the user does not end the turn, and nothing from the reviewer arrives while one is
+   pending. If something else starts the next turn first, or the reply came cut off and asking
+   does not get the rest, read it from the reviewer's transcript, the file step 6 names.
 
 4. **Fix, commit, and continue the same reviewer** with SendMessage to the name from step 3. Do
    not spawn a second one. Hand it the diff of the fixes and nothing else:

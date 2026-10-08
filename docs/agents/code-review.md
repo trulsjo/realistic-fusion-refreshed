@@ -332,10 +332,18 @@ line left out "never `main`".
 
 **The reviewer's report, and each confirmation, reach the session as a message once the session's
 turn has ended** (2026-10-08, #648). The session ends its turn to receive one. The transcript of the
-session that ran the reviews of #641 and #642 holds 18 messages from the two reviewers, eight
-replies and ten idle notices, and each of the 18 came directly after a turn of the session ended.
-That is what the rule rests on, and it is not every message: the first report of #641's reviewer
-is not in that transcript, and how it reached the session was not found.
+session that ran the reviews of #641 and #642 holds 18 messages from the two reviewers up to
+#642's merge, nine replies and nine idle notices, and each of the 18 came directly after a turn of
+the session ended. **A question put to the user does not end the turn.** The first report of #641's
+reviewer was written at 22:21:28 UTC on 2026-10-07, while the session waited on a question it had
+asked at 22:15:18. The answer came at 04:11:05, and the turn ran on until 06:20:44. The report
+arrived two seconds after that, 7 h 59 min after it was written, with the reviewer's idle notice
+beside it. In between, the session had read the report from the reviewer's transcript.
+
+Until #654 this paragraph gave eight replies and ten idle notices, and said the first report was
+not in the transcript. Both were a miscount by the session that wrote it: it classed a whole
+transcript entry as an idle notice when any message in it was one, and the first report shares its
+entry with its notice.
 
 **The reviewer that raised a finding confirms its fix.** Continue the same subagent and have it read
 each fix against its own finding. That is a confirmation and not a second round. **A fix that adds a
@@ -612,7 +620,8 @@ skill that a new step superseded and the change left standing. #642's one fixed 
 as not serious: the tracker page asked for a `Closes` line for each ticket, where a body may join
 them on one line or have none. One of #650's six was graded as serious, by the ruling on a false
 sentence in `CLAUDE.md`, and he has not seen it: the file said the new check fails a row "in any
-tracked markdown", and the check reads no table inside a blockquote. The other five are in the
+tracked markdown", and the check then read no table inside a blockquote (it has since #652). The
+other five are in the
 skill's steps, this file's new rules and a comment in the script: a rule written only in the skill,
 an "all" that left out one report, a comment that the change which wrote it made stale, a sentence
 that could be read two ways, and a case a new rule did not cover.
