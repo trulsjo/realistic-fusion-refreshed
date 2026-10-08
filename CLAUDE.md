@@ -72,8 +72,9 @@ section 10, which fails a row of a research note's `## Current figures` table wh
 names no heading or whose figure the note does not write. Since #649 it proves section 11 as well,
 which fails a table in tracked markdown whose delimiter row, or any row under it, has a cell count
 that is not its header's: the part of how a table renders on GitHub that needs no browser. It reads
-a table whose lines start with a pipe and has a delimiter row, and no other: one inside a
-blockquote it does not see. The other eight sections it
+a table whose lines start with a pipe and has a delimiter row, and no other. Since #652 that
+includes one inside a blockquote, where it also fails a row that has lost its `>`. The other eight
+sections it
 runs on a plain invocation are unchanged and still have no self-test, for the reason its help block
 gives.
 Run them rather than reasoning about whether a change is safe. How two of the self-tests are
