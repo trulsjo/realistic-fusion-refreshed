@@ -53,8 +53,9 @@ in the pull request's body, and that a planted change takes a worktree. Since 20
 out two more: the session answers for what the reviewer did not check (#636), and rewords a commit
 message a review corrected (#640). Two of the earlier ones changed the same day: what the reviewer
 is handed now names the files it reads whole (#647), and which of its confirmations answers for a
-fix depends on the finding's score (#643). A change to one of those is made here first and then in
-the steps.
+fix depends on the finding's score (#643). They carry out one more from that day: the session ends
+its turn to receive what the reviewer sends (#648). A change to one of those is made here first and
+then in the steps.
 
 ## The threshold gates the comment, not the report
 
@@ -328,6 +329,13 @@ was a sentence in step 6 of the skill that the new step 5 superseded; it was out
 other was a passage of the skill that restated this file's reasons for the reword, and whose push
 line left out "never `main`".
 
+**The reviewer's report, and each confirmation, reach the session as a message once the session's
+turn has ended** (2026-10-08, #648). The session ends its turn to receive one. The transcript of the
+session that ran the reviews of #641 and #642 holds 18 messages from the two reviewers, eight
+replies and ten idle notices, and each of the 18 came directly after a turn of the session ended.
+That is what the rule rests on, and it is not every message: the first report of #641's reviewer
+is not in that transcript, and how it reached the session was not found.
+
 **The reviewer that raised a finding confirms its fix.** Continue the same subagent and have it read
 each fix against its own finding. That is a confirmation and not a second round. **A fix that adds a
 sentence adds a claim, and the confirmation checks it like any other.** On
@@ -341,10 +349,11 @@ it. The pull request is opened with that fix marked `yes, not confirmed`, and th
 the mark when the reviewer answers for it after the plugin pass. **A finding at 75 or over is the
 exception.** It is verified and important, so its fix gets a message of its own and is confirmed
 before the pull request is opened. Where that message's diff holds a waiting fix as well, the
-reviewer answers for both and nothing waits. A finding raised in the confirmation of the plugin
-pass's fixes has no later message to wait for, and its fix is confirmed as before. So is a defect
-that an item of the reviewer's unchecked list turns up, whoever finds it: its fix gets a message of
-its own.
+reviewer answers for both and nothing waits. Where the plugin pass leaves nothing to fix, no message
+for its fixes is sent, and the waiting fix gets a message of its own then. A finding raised in the
+confirmation of the plugin pass's fixes has no later message to wait for, and its fix is confirmed
+as before. So is a defect that an item of the reviewer's unchecked list turns up, whoever finds it:
+its fix gets a message of its own.
 
 The reason is what a message costs: the reviewer's whole context again, for every request it makes
 in answering. Read from the two reviewers' transcripts on 2026-10-08, over all their requests:
@@ -446,11 +455,13 @@ column for the pre-PR review's cost.
 [#641](https://github.com/trulsjo/realistic-fusion-refreshed/pull/641), which added the
 all-requests table further down, had both on 2026-10-08, and so did
 [#642](https://github.com/trulsjo/realistic-fusion-refreshed/pull/642), one line of the tracker
-page. Each is a row here, since 2026-10-07 (#624). Each count of findings is read from that pull
-request's body and comments. Two of the seven rows with a cost for the plugin pass have it from
-elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in #595. The last
-column is a grade, made on 2026-10-07 for the first eight rows and on 2026-10-08 for #641's and
-#642's, and the paragraphs under the table say by what test.
+page, and [#650](https://github.com/trulsjo/realistic-fusion-refreshed/pull/650), which gave
+`ship-check.ps1` its check of a table's shape. Each is a row here, since 2026-10-07 (#624). Each
+count of findings is read from that pull request's body and comments. Two of the eight rows with a
+cost for the plugin pass have it from elsewhere: #579's is in #592's body, and #594's is in the
+comment on #593 and in #595. The last column is a grade, made on 2026-10-07 for the first eight
+rows and on 2026-10-08 for the three after them, and the paragraphs under the table say by what
+test.
 
 | branch | the pre-PR review found | pre-PR review's cost | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers | of the plugin pass's fixed findings, serious |
 |---|---|---|---|---|---|---|
@@ -464,6 +475,7 @@ column is a grade, made on 2026-10-07 for the first eight rows and on 2026-10-08
 | #633 | 14 findings: 12 fixed, two left unfixed at a score of 25 | 162 435 tokens, one reviewer | two candidates: one posted at 100 and one more at 50, and both fixed; no false positive | 344 857 tokens, five reviewers | 119 402 tokens, two scorers | none of two |
 | #641 | 16 findings, three of them raised while confirming the plugin pass's fixes: 15 fixed, one left unfixed at a score of 25 | 155 993 tokens, one reviewer | four candidates: none posted, all four at 75, and all four fixed; no false positive | 368 386 tokens, five reviewers | 233 552 tokens, four scorers | none of four |
 | #642 | six findings: all six fixed | 103 932 tokens, one reviewer | two candidates: none posted, one at 75 and fixed, one at 35 and left unfixed, its premise wording that #641 had replaced | 307 442 tokens, five reviewers | 102 363 tokens, two scorers | none of one |
+| #650 | 14 findings, two of them raised while confirming the fixes: 13 fixed, one left unfixed at a score of 25 | 152 515 tokens, one reviewer | seven candidates: none posted, four at 75 and two at 50, and all six fixed; one false positive | 365 642 tokens, five reviewers | 459 174 tokens, seven scorers | one of six: `CLAUDE.md` saying the new check fails a row in any tracked markdown, where it reads no table inside a blockquote |
 
 The cost of the pre-PR review was not measured on #579, and none of the first seven pull requests
 states one. Since 2026-10-07 (#631) `/pre-pr-review` has the session write it in the pull request's
@@ -477,7 +489,8 @@ count. #625's two figures are the usage its subagents reported; the three steps 
 reviewers, which check eligibility, list the `CLAUDE.md` files and summarise the change, used 133 423
 more. #628's two figures are the same kind, and its three steps used 140 099. #633's are the same
 kind again, and its three steps used 140 189. #641's are the same kind, and its three steps used
-139 099. #642's are the same kind, and its three steps used 126 199.
+139 099. #642's are the same kind, and its three steps used 126 199. #650's are the same kind, and
+its three steps used 138 729.
 
 **A reported figure is about the size of a subagent's last request, and not what the subagent used**
 (measured 2026-10-07, #631). The plugin pass's subagents on #625 and #628 each sent a notice with a
@@ -509,6 +522,7 @@ so no row here.
 | #633 | 3 522 320 tokens in 26 requests | 90.2% | 301 140 tokens, three subagents | 1 198 669 tokens, five reviewers | 870 953 tokens, two scorers | 2 370 762 tokens |
 | #641 | 2 240 302 tokens in 17 requests | 87.7% | 392 566 tokens, three subagents | 1 703 340 tokens, five reviewers | 999 890 tokens, four scorers | 3 095 796 tokens |
 | #642 | 1 208 124 tokens in 13 requests | 90.9% | 322 107 tokens, three subagents | 1 144 328 tokens, five reviewers | 325 030 tokens, two scorers | 1 791 465 tokens |
+| #650 | 1 403 724 tokens in 11 requests | 71.1% | 432 603 tokens, three subagents | 1 672 809 tokens, five reviewers | 3 189 387 tokens, seven scorers | 5 294 799 tokens |
 
 Which subagents a cell sums is told by the description the session gave each when it spawned it,
 which the transcript's `.meta.json` keeps. The pre-PR review's is the one named reviewer, over its
@@ -520,15 +534,19 @@ the subagents that checked eligibility, listed the `CLAUDE.md` files and summari
 reviewers are the five numbered 1 to 5, and the scorers are one for each candidate.
 
 **A total is a count of tokens and not a price.** A cache read is not priced as an input token, and
-most of every total is cache reads: about nine tenths of each pre-PR review's, and 74.8%, 76.9%,
-77.9%, 81.1% and 74.4% of the five plugin passes'. The passes also ran on different models. Each
+most of every total is cache reads: about nine tenths of each pre-PR review's but #650's, which
+was 71.1% when its row was written, and 74.8%, 76.9%, 77.9%, 81.1%, 74.4% and 82.1% of the six
+plugin passes'. The passes also ran on different models. Each
 pre-PR reviewer ran on Opus, the plugin's reviewers on Sonnet, and its scorers and three steps on
 Haiku, so a scorer's token and a reviewer's are not the same spend either.
 
 **The scorers' share of a plugin pass in this unit** is 45.9% on #625, 29.9% on #628, 36.7% on
-#633, 32.3% on #641 and 18.1% on #642. In the reported counts of the table above, with the three
-steps counted in, it is 39.8%, 35.7%, 19.8%, 31.5% and 19.1%. #633's two scorers show how far the two units can part: their
-reported counts sum to 119 402 and their requests to 870 953, because one of them sent 12 requests.
+#633, 32.3% on #641, 18.1% on #642 and 60.2% on #650. In the reported counts of the table above,
+with the three steps counted in, it is 39.8%, 35.7%, 19.8%, 31.5%, 19.1% and 47.7%. #633's two
+scorers show how far the two units can part: their reported counts sum to 119 402 and their
+requests to 870 953, because one of them sent 12 requests. One of #650's seven sent 18 requests
+that sum to 1 178 225 tokens, and scored its candidate 0: a figure another reviewer had said it
+could not verify, which the scorer then verified.
 On the ten
 subagents of #633's plugin pass the sum over all requests was 1.9 to 9.9 times the last request,
 where the 27 above gave 1.7 to 6.4 against the notice's count.
@@ -591,7 +609,11 @@ table. Its second was a pair of sentences that did not say they spoke of differe
 steps or the tracker page and none is a wrong figure. The nearest to serious is a sentence in the
 skill that a new step superseded and the change left standing. #642's one fixed finding was graded
 as not serious: the tracker page asked for a `Closes` line for each ticket, where a body may join
-them on one line or have none.
+them on one line or have none. One of #650's six was graded as serious, by the ruling on a false
+sentence in `CLAUDE.md`, and he has not seen it: the file said the new check fails a row "in any
+tracked markdown", and the check reads no table inside a blockquote. The other five are in the
+skill's steps, this file's new rules and a comment in the script, and each is an omission or a
+sentence that could be read two ways.
 
 **What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
 and one was what a tool would do on a reinstall (#604). The six are branches where the pass was

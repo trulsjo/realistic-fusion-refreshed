@@ -1120,9 +1120,11 @@ foreach ($row in $figureRows.Found) {
 # WHAT IT CANNOT SEE:
 #   - a table with no delimiter row at all. Such a run is not a table to GitHub, and neither is a
 #     wrapped line of prose that happens to start with a pipe, and nothing here tells them apart.
-#     Two such runs were in the tracked notes when this was written. One is prose. The other was
-#     the last row of a blockquoted table in docs/research/predecessor-survey.md that had lost its
-#     `>`, which the pre-PR review of this section found and this section never would have.
+#     One such run is in the tracked notes, a wrapped line of prose in
+#     docs/research/icon-conventions-2-0.md. A second was there until the change that wrote this
+#     section: the last row of a blockquoted table in docs/research/predecessor-survey.md, which
+#     had lost its `>`. The pre-PR review of this section found it and that change gave the row its
+#     mark back. This section never would have found it.
 #   - a table written without leading pipes, or inside a blockquote or a list item's indent past
 #     the pipe. Its lines do not start with one.
 #   - a delimiter row that is malformed some other way, a cell of colons and no hyphen for one.
