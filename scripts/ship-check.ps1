@@ -1117,7 +1117,12 @@ foreach ($row in $figureRows.Found) {
 #
 # A BLOCKQUOTED TABLE IS READ TOO (#652). A line's `>` marks are taken off before any of the above
 # is asked of it, and counted. A row with a different count from its header is reported: it is the
-# row that lost its `>`, which GitHub renders below the quote and outside the table.
+# row that lost its `>`, which GitHub renders below the quote and outside the table. Two things
+# follow from reading through the marks, and both are handled where the run is walked. A table
+# that follows another with no blank line between, at a different depth, is a table of its own
+# when its second line is a delimiter row at its own depth. And a fence opened inside a quote is
+# closed by the quote's end as well as by a fence line, or one unclosed quoted fence would hide
+# every table after it.
 #
 # A CELL IS COUNTED THE WAY GITHUB COUNTS IT: a pipe ends a cell unless a backslash is before it,
 # and a pipe inside inline code ends one like any other.
@@ -1175,12 +1180,19 @@ function Find-MisshapenTableRows {
             }
             $texts[$i] = $text
         }
-        $fenced = $false
+        $fenced     = $false
+        $fenceDepth = 0
         for ($i = 0; $i -lt $lines.Count; $i++) {
-            if ($texts[$i] -match '^(?:```|~~~)') { $fenced = -not $fenced; continue }
+            if ($fenced -and $depths[$i] -lt $fenceDepth) { $fenced = $false }
+            if ($texts[$i] -match '^(?:```|~~~)') { $fenced = -not $fenced; $fenceDepth = $depths[$i]; continue }
             if ($fenced -or -not $texts[$i].StartsWith('|')) { continue }
-            $end = $i
-            while ($end -lt $lines.Count -and $texts[$end].StartsWith('|')) { $end++ }
+            $end = $i + 1
+            while ($end -lt $lines.Count -and $texts[$end].StartsWith('|')) {
+                $newTable = $depths[$end] -ne $depths[$i] -and $end + 1 -lt $lines.Count -and
+                            $depths[$end + 1] -eq $depths[$end] -and $texts[$end + 1] -match $TABLE_DELIMITER
+                if ($newTable) { break }
+                $end++
+            }
             if ($end - $i -ge 2 -and $texts[$i + 1] -match $TABLE_DELIMITER) {
                 $tables++
                 $want = (Split-TableRow -Line $texts[$i]).Count
@@ -1208,7 +1220,7 @@ $tableRows = Find-MisshapenTableRows -Files @($tracked | Where-Object { $_ -matc
 $checks++
 if ($tableRows.Tables -lt $TABLE_FLOOR) {
     $failures.Add(("only $($tableRows.Tables) table(s) were found in the tracked markdown, against a " +
-        "floor of $TABLE_FLOOR set when section 11 was written. Either a great many were removed, " +
+        "floor of $TABLE_FLOOR set under the count section 11 last recorded. Either a great many were removed, " +
         'which is a decision to record by lowering the floor, or the scan stopped finding them.'))
 }
 $checks++
@@ -1432,17 +1444,29 @@ if ($SelfTest) {
                     '> |---|---|'
                     '> | 1.2.0 | kept its mark |'
                     '| 1.8.0 | lost its mark |'
+                    ''
+                    '> | Release | Attribution | Source |'
+                    '> |---|---|'
+                    '> | 1.3.13 | a credit | a changelog |'
+                    ''
+                    '> ```'
+                    '> a fence the end of the quote closes'
+                    ''
+                    '| Release | Attribution |'
+                    '|---|---|'
+                    '| 1.8.18 | one | two |'
                 ) | Set-Content -LiteralPath $doc -Encoding utf8
 
                 $read = Find-MisshapenTableRows -Files @($doc)
                 $rows = @($read.Found | ForEach-Object { "$($_.Line) $($_.Kind)" })
-                if ($read.Tables -ne 2 -or ($rows -join '; ') -cne '3 row; 8 quote') {
-                    throw ("two planted blockquoted tables, one with a row of three cells under a " +
-                           "header of two, one whose last row has no blockquote mark, were read as " +
-                           "$($read.Tables) table(s) with: $($rows -join '; '). Wanted two tables and " +
-                           "exactly '3 row; 8 quote'.")
+                if ($read.Tables -ne 4 -or ($rows -join '; ') -cne '3 row; 8 quote; 11 delimiter; 19 row') {
+                    throw ("four planted tables -- three blockquoted, with a row of three cells under a " +
+                           "header of two, a last row with no blockquote mark and a delimiter row a " +
+                           "cell short, then one after a quoted fence that only the quote's end closes -- " +
+                           "were read as $($read.Tables) table(s) with: $($rows -join '; '). Wanted four " +
+                           "tables and exactly '3 row; 8 quote; 11 delimiter; 19 row'.")
                 }
-                'inside a blockquote, a row with a cell too many is caught on its line, and so is a row that has lost its mark.'
+                'inside a blockquote, a row with a cell too many, a row that has lost its mark and a delimiter row a cell short are each caught on their line, and a table after a quoted fence that only the end of the quote closes is still read.'
             } }
 
             @{ Name = 'table-shape-not-flagged'; Body = {
@@ -1474,17 +1498,26 @@ if ($SelfTest) {
                     '> > | Release | Attribution |'
                     '>> |---|---|'
                     '> >| 1.2.0 | another |'
+                    ''
+                    # Two tables with no blank line between them, the second in a quote. They are
+                    # two tables, and the second is not the first one's rows gone astray.
+                    '| Gate | Reads |'
+                    '|---|---|'
+                    '| ship-check | prose |'
+                    '> | Release | Attribution | Source |'
+                    '> |---|---|---|'
+                    '> | 0.2.0 | a credit | a changelog |'
                 ) | Set-Content -LiteralPath $doc -Encoding utf8
 
                 $read = Find-MisshapenTableRows -Files @($doc)
-                if ($read.Tables -ne 3 -or $read.Found.Count) {
+                if ($read.Tables -ne 5 -or $read.Found.Count) {
                     throw ("a well-formed table, a table inside a fence, a line of prose starting " +
-                           "with a pipe and two well-formed blockquoted tables were read as " +
-                           "$($read.Tables) table(s) with: " +
+                           "with a pipe, two well-formed blockquoted tables and a plain table with a " +
+                           "quoted one directly under it were read as $($read.Tables) table(s) with: " +
                            "$(($read.Found | ForEach-Object { "line $($_.Line) $($_.Kind) ($($_.Detail))" }) -join '; '). " +
-                           'Wanted three tables and no finding.')
+                           'Wanted five tables and no finding.')
                 }
-                'an escaped pipe, a row with no closing pipe, an empty cell, a table inside a fence, prose that starts with a pipe and a well-formed table inside a blockquote, nested or not, are all left alone.'
+                'an escaped pipe, a row with no closing pipe, an empty cell, a table inside a fence, prose that starts with a pipe, a well-formed table inside a blockquote, nested or not, and a quoted table directly under a plain one are all left alone.'
             } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
