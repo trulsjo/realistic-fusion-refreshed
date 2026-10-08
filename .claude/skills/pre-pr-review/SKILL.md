@@ -52,6 +52,13 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    > branch resolves more than one ticket and the evidence is `ship-check.ps1` alone, confirm
    > that every path in the diff ends in `.md`.
    >
+   > Read whole each of these, which the diff changes: `<each skill file, page under
+   > docs/agents/ and CLAUDE.md in the diff, or "none">`. A sentence the change made false and did
+   > not touch is in no hunk. Where the diff changes a step of a skill, hold the step against the
+   > rule in `docs/agents/code-review.md` that it carries out: it restates none of the rule's
+   > reasons and leaves out nothing the rule requires. Say in your report which files you read
+   > whole.
+   >
    > You are read-only: edit, commit and run nothing that changes the working tree. If proving a
    > finding takes a planted change, make your own worktree first, as the third rule says. Scratch
    > files go in `<scratch>/reviewer/`.
@@ -61,7 +68,9 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    > score of 0, 25, 50, 75 or 100
    > — 0 a false positive, 25 possibly real and unverified, 50 real but minor or rare, 75
    > verified and important, 100 certain and it will be hit. Report every one whatever it scores.
-   > Say so plainly if you found nothing, and say what you did not check.
+   > Say so plainly if you found nothing, and say what you did not check. How a table renders is
+   > covered: `scripts/ship-check.ps1` holds every table row to its header's cell count, on every
+   > pull request.
    >
    > Reply with one line per finding first: its number, the file, the fault and the score. Give
    > the detail for a finding when you are asked for it. A long reply arrives cut off.
@@ -69,6 +78,12 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    **Ask for each finding's detail with SendMessage before fixing it**, and for the rest of any
    reply that stops mid-sentence. On this skill's first run a report sent whole stopped inside
    the sixth of nine findings, and the reviewer's attempt to write the rest to a file was refused.
+
+   **The report arrives as a message from the reviewer once this session's turn has ended**
+   (#648). End the turn to receive it: on #641 and #642 all 16 of the reviewers' messages came
+   directly after a turn ended, and none during one. A reply that has not come once the turn has
+   ended, or that came cut off and cannot be had by asking, is read from the reviewer's
+   transcript, the file step 6 names.
 
 4. **Fix, commit, and continue the same reviewer** with SendMessage to the name from step 3. Do
    not spawn a second one. Hand it the diff of the fixes and nothing else:
@@ -110,7 +125,14 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    The same section says why the rebase starts at the commit's parent and why the `fixes.diff`
    line above gives the same diff after a reword. Delete the tag when the branch has merged.
 
-   Done when the reviewer has answered for every finding. New findings get the same step again.
+   The confirmation arrives as step 3's report does.
+
+   **A new finding at 75 or over gets this step again. One under 75 is fixed, committed and
+   held** (#643): send no message for it, and write it `yes, not confirmed` in step 6.
+   `docs/agents/code-review.md`, in the same section, says when its fix is confirmed.
+
+   Done when the reviewer has answered for every finding of its review and for each new one at 75
+   or over.
 
 5. **Answer for each thing the reviewer said it did not check** (#636). The same section of
    `docs/agents/code-review.md` says how an item is checked and what the pull request's body

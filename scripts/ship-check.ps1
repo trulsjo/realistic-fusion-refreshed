@@ -140,6 +140,13 @@
     a loose row beside a good one. It cannot tell whether a row is the figure the note currently
     stands behind; the section comment has the rest of what it cannot see.
 
+    SECTION 11 HAS BOTH AS WELL (#649). It reads every table in the tracked markdown and fails a
+    delimiter row or a body row whose cell count is not its header's, which is the part of how a
+    table renders on GitHub that can be checked without a browser. A floor holds the number of
+    tables it found, and the table-row-cells-caught and table-shape-not-flagged halves plant the
+    shapes it must and must not report. It cannot see a table that has no delimiter row; the
+    section comment has the rest.
+
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
     stopped saying no fails rather than turning every check below it green. It was also demonstrated
@@ -149,10 +156,10 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove three things a green run cannot: the shared -SelfTest runner
+    Run the checks as usual, then prove four things a green run cannot: the shared -SelfTest runner
     in factorio-lib.ps1 -- that it numbers halves from the list it was given and refuses a half it
-    cannot show ran -- section 9, in both directions, and section 10's two assertions, each in both
-    directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
+    cannot show ran -- section 9, in both directions, section 10's two assertions, each in both
+    directions, and section 11, in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
     memory and the planted documents live in the scratch directory the run removes on its way out.
 
 .EXAMPLE
@@ -1096,6 +1103,101 @@ foreach ($row in $figureRows.Found) {
         '(docs/agents/code-review.md, "Review the prose, not only the code").'))
 }
 
+# 11. A ROW OF A MARKDOWN TABLE MUST HAVE AS MANY CELLS AS ITS HEADER (#649).
+#
+# Four pull requests running, #625 to #641, the pre-PR reviewer said it had not checked how a table
+# renders on GitHub, and nobody looked. This is the part of rendering a script can hold. GitHub
+# reads a header and the delimiter row under it as a table only when the two have the same number
+# of cells; a body row with too many loses the extra ones, and one with too few gets empty cells.
+# None of the three changes anything another gate reads.
+#
+# A TABLE IS a run of lines that each start with a pipe, outside a code fence, whose second line is
+# a delimiter row: pipes, hyphens, colons and spaces and nothing else. Every tracked `.md` is read.
+#
+# A CELL IS COUNTED THE WAY GITHUB COUNTS IT: a pipe ends a cell unless a backslash is before it,
+# and a pipe inside inline code ends one like any other.
+#
+# WHAT IT CANNOT SEE:
+#   - a table with no delimiter row at all. Such a run is not a table to GitHub, and neither is a
+#     wrapped line of prose that happens to start with a pipe, and nothing here tells them apart.
+#     Two such runs were in the tracked notes when this was written, both prose.
+#   - a table written without leading pipes, or inside a blockquote or a list item's indent past
+#     the pipe. Its lines do not start with one.
+#   - a delimiter row that is malformed some other way, a cell of colons and no hyphen for one.
+#   - anything about how a table looks: its width, its alignment, what a cell's markdown becomes.
+$TABLE_DELIMITER = '^\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?$'
+# How many tables the tracked markdown held on 2026-10-08 was 441. A scan that found none would
+# pass every row it never read; the floor is set under the count so that removing a note does not
+# trip it.
+$TABLE_FLOOR = 400
+
+function Split-TableRow {
+    <#  The cells of one table line. The outer pipes are the row's edges and not separators.  #>
+    param([Parameter(Mandatory)] [string] $Line)
+
+    $inner = $Line.Trim() -replace '^\|', '' -replace '(?<!\\)\|$', ''
+    return , @([regex]::Split($inner, '(?<!\\)\|'))
+}
+
+function Find-MisshapenTableRows {
+    <#  Every delimiter row and body row whose cell count is not its header's, and how many tables
+        were read.
+
+        Returns one object: Tables, the count, and Found, a list of the file, the line, which kind
+        of row it is and the two counts. The count of tables is returned beside the findings for
+        the reason Find-LooseFigureRows returns its own.  #>
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Files, [string] $Root)
+
+    $found  = [System.Collections.Generic.List[object]]::new()
+    $tables = 0
+    foreach ($rel in $Files) {
+        $full = if ($Root) { Join-Path $Root $rel } else { $rel }
+        if (-not (Test-Path -LiteralPath $full)) { continue }   # tracked, deleted, not yet staged
+        $lines  = @(Get-Content -LiteralPath $full -Encoding utf8)
+        $fenced = $false
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            $text = $lines[$i].Trim()
+            if ($text -match '^(?:```|~~~)') { $fenced = -not $fenced; continue }
+            if ($fenced -or -not $text.StartsWith('|')) { continue }
+            $end = $i
+            while ($end -lt $lines.Count -and $lines[$end].Trim().StartsWith('|')) { $end++ }
+            if ($end - $i -ge 2 -and $lines[$i + 1].Trim() -match $TABLE_DELIMITER) {
+                $tables++
+                $want = (Split-TableRow -Line $lines[$i]).Count
+                for ($row = $i + 1; $row -lt $end; $row++) {
+                    $have = (Split-TableRow -Line $lines[$row]).Count
+                    if ($have -ne $want) {
+                        $found.Add([pscustomobject]@{ File = $rel; Line = $row + 1
+                            Kind   = if ($row -eq $i + 1) { 'delimiter' } else { 'row' }
+                            Detail = "$have cells where the header has $want" })
+                    }
+                }
+            }
+            $i = $end - 1
+        }
+    }
+    return [pscustomobject]@{ Tables = $tables; Found = $found }
+}
+
+$tableRows = Find-MisshapenTableRows -Files @($tracked | Where-Object { $_ -match '\.md$' }) -Root $repoRoot
+
+$checks++
+if ($tableRows.Tables -lt $TABLE_FLOOR) {
+    $failures.Add(("only $($tableRows.Tables) table(s) were found in the tracked markdown, against a " +
+        "floor of $TABLE_FLOOR set when section 11 was written. Either a great many were removed, " +
+        'which is a decision to record by lowering the floor, or the scan stopped finding them.'))
+}
+$checks++
+foreach ($row in $tableRows.Found) {
+    $what = if ($row.Kind -ceq 'delimiter') {
+        'has a delimiter row that does not match its header, so GitHub renders no table'
+    } else {
+        'has a row GitHub will pad or cut'
+    }
+    $failures.Add(("$($row.File), line $($row.Line): a table $what -- $($row.Detail). " +
+        'A pipe inside a cell is written with a backslash before it, inline code included.'))
+}
+
 if ($failures.Count) {
     Write-Host ''
     foreach ($f in $failures) { Write-Host "FAIL  $f" -ForegroundColor Red }
@@ -1258,6 +1360,67 @@ if ($SelfTest) {
                 }
                 'a row whose figure is written nowhere below the table is caught on its line, as is one whose figure is only the tail of a longer grouped one; a wrapped thousands figure, a two-figure cell and an exponent with a plus sign are left alone.'
             } }
+
+            @{ Name = 'table-row-cells-caught'; Body = {
+                # Section 11 passes by finding nothing misshapen. One table with a row too long and
+                # a row too short, and a second whose delimiter row is a cell short. The long row
+                # is the shape that is easy to write: a pipe inside inline code, which GitHub
+                # counts.
+                $doc = Join-Path $planted 'misshapen.md'
+                @(
+                    '| Gate | Reads | Runs a game |'
+                    '|---|---|---|'
+                    '| ship-check | prose | no |'
+                    '| load-check | `a | b` | yes |'
+                    '| name-check | a dump |'
+                    ''
+                    '| Gate | Reads | Runs a game |'
+                    '|---|---|'
+                    '| ship-check | prose | no |'
+                ) | Set-Content -LiteralPath $doc -Encoding utf8
+
+                $read = Find-MisshapenTableRows -Files @($doc)
+                $rows = @($read.Found | ForEach-Object { "$($_.Line) $($_.Kind)" })
+                if ($read.Tables -ne 2 -or ($rows -join '; ') -cne '4 row; 5 row; 8 delimiter') {
+                    throw ("two planted tables, one with a row of four cells and a row of two under a " +
+                           "header of three, one with a delimiter row of two, were read as $($read.Tables) " +
+                           "table(s) with: $($rows -join '; '). Wanted two tables and exactly " +
+                           "'4 row; 5 row; 8 delimiter'.")
+                }
+                'a row with a cell too many, a row with a cell too few and a delimiter row a cell short are each caught on their line; the long row is a pipe inside inline code.'
+            } }
+
+            @{ Name = 'table-shape-not-flagged'; Body = {
+                # The other direction. An escaped pipe is one cell, a row may leave off its closing
+                # pipe, a cell may be empty, a misshapen table inside a fence is quoted text, and a
+                # wrapped line of prose that starts with a pipe is no table.
+                $doc = Join-Path $planted 'shapely.md'
+                @(
+                    '| Gate | Reads | Runs a game |'
+                    '|:---|---:|:---:|'
+                    '| ship-check | `a \| b` | no |'
+                    '| load-check | a dump | yes'
+                    '| name-check | | no |'
+                    ''
+                    '```'
+                    '| Gate | Reads |'
+                    '|---|---|'
+                    '| ship-check | prose | no |'
+                    '```'
+                    ''
+                    'The layer is one of `"entity-info-icon"`'
+                    '| `"air-entity-info-icon"`, and vanilla uses the first.'
+                ) | Set-Content -LiteralPath $doc -Encoding utf8
+
+                $read = Find-MisshapenTableRows -Files @($doc)
+                if ($read.Tables -ne 1 -or $read.Found.Count) {
+                    throw ("a well-formed table, a table inside a fence and a line of prose starting " +
+                           "with a pipe were read as $($read.Tables) table(s) with: " +
+                           "$(($read.Found | ForEach-Object { "line $($_.Line) $($_.Kind) ($($_.Detail))" }) -join '; '). " +
+                           'Wanted one table and no finding.')
+                }
+                'an escaped pipe, a row with no closing pipe, an empty cell, a table inside a fence and prose that starts with a pipe are all left alone.'
+            } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
     Write-Host ''
@@ -1269,6 +1432,6 @@ Write-Host ("ship-check: {0} checks, 0 failures." -f $checks) -ForegroundColor G
 Write-Host 'The clean break and the quality gap are stated in both code mods and in README.md; the'
 Write-Host 'licence and the scope rule ship inside all three; the assets floor matches, no code mod'
 Write-Host 'ships art, every accent named for a fluid still carries that fluid''s own colour, and'
-Write-Host 'no prose cites a self-test half by position, and every Current figures row still names a'
-Write-Host 'heading and a figure its note has.'
+Write-Host 'no prose cites a self-test half by position, every Current figures row still names a'
+Write-Host 'heading and a figure its note has, and every table row has as many cells as its header.'
 exit 0

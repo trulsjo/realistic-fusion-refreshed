@@ -39,7 +39,9 @@ when it matters which.
    Since 2026-10-08 a second table gives what each pass used over all its requests (#634), and
    the section has two more rules for the session: what it does with the list of things the
    reviewer did not check (#636), and that a commit message is reworded when a review corrects
-   what it says (#640).
+   what it says (#640). Two more from the same day: the reviewer reads whole each agent-facing
+   file the diff changes (#647), and a finding under 75 raised while the fixes are confirmed has
+   its fix confirmed with the plugin pass's fixes (#643).
 
 **A rule is changed in this file** (2026-10-07, #630). `CLAUDE.md` and the intro of
 `.claude/skills/pre-pr-review/SKILL.md` each stated parts of the four until then, so a rule that
@@ -314,12 +316,42 @@ is handed and not by a skill's name:
 brief and the confirmation's as templates for the session to fill in. The list above is still the definition, and a review handed those
 three things is the pre-PR review whatever started it.
 
+**The reviewer reads whole each agent-facing file the diff changes** (2026-10-08, #647): a skill
+file, a page under `docs/agents/`, a `CLAUDE.md`. Its brief names them. A sentence that a change
+made false and did not touch is in no hunk of the diff. **Where the diff changes a step of a skill,
+the reviewer holds the step against the rule in this file that it carries out**: the step restates
+none of the rule's reasons and leaves out nothing the rule requires. On #641 the plugin pass found
+two things at 75 that the pre-PR review had not, and a rule for each was already in this file. One
+was a sentence in step 6 of the skill that the new step 5 superseded; it was outside the diff. The
+other was a passage of the skill that restated this file's reasons for the reword, and whose push
+line left out "never `main`".
+
 **The reviewer that raised a finding confirms its fix.** Continue the same subagent and have it read
 each fix against its own finding. That is a confirmation and not a second round. **A fix that adds a
 sentence adds a claim, and the confirmation checks it like any other.** On
 [#594](https://github.com/trulsjo/realistic-fusion-refreshed/pull/594), the change that wrote this
 rule, one of the three findings the plugin pass posted was in a sentence a fix had added after the
 pre-PR review, and the confirmation had passed it.
+
+**A finding under 75 that the reviewer raises while it confirms the fixes has its own fix confirmed
+with the plugin pass's fixes** (2026-10-08, #643). The session fixes it and sends no message for
+it. The pull request is opened with that fix marked `yes, not confirmed`, and the session changes
+the mark when the reviewer answers for it after the plugin pass. **A finding at 75 or over is the
+exception.** It is verified and important, so its fix gets a message of its own and is confirmed
+before the pull request is opened. A finding raised in the confirmation of the plugin pass's fixes
+has no later message to wait for, and its fix is confirmed as before.
+
+The reason is what a message costs: the reviewer's whole context again, for every request it makes
+in answering. Read from the two reviewers' transcripts on 2026-10-08, over all their requests:
+
+| Pull request | The review | Its confirmations | The one message this rule is about |
+|---|---|---|---|
+| #641 | 1 026 249 tokens, 9 requests | 2 969 221 tokens, 18 requests, 4 messages | 619 654 tokens, for finding 13, scored 75 |
+| #642 | 605 802 tokens, 7 requests | 1 445 257 tokens, 13 requests, 3 messages | 309 042 tokens, for finding 6, scored 25 |
+
+Each of those two messages carried one finding, raised in the confirmation before it, and the
+message for the plugin pass's fixes was still to come. Under this rule #642's would not have been
+sent. #641's would: its finding scored 75.
 
 **Its findings go in the pull request's body, every one of them**, each with its score and whether
 it was fixed. No pull request exists when they are made, so the body is the first place that can
@@ -368,7 +400,9 @@ session runs the pass anyway and says in the pull request that it did. No kind o
 **The pre-PR reviewer confirms the plugin pass's fixes** (Truls, 2026-10-07, #593). Continue the
 subagent that ran the pre-PR review and hand it the diff of the fixes, with no list of what was
 done. If it is no longer running, a fresh reviewer confirms them and the pull request says so. On
-#625 that reviewer found an error the fixes had added.
+#625 that reviewer found an error the fixes had added. Where a fix is waiting for this message
+(#643), the diff starts at or before that fix's commit, and the reviewer is told the finding's
+number and that its fix is in the diff.
 
 **When an implement skill says to close out with `/code-review`**, in this repository that still
 means the pre-PR review, and no pull request is needed for it. The plugin pass follows once the pull
