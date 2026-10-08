@@ -39,9 +39,10 @@ when it matters which.
    Since 2026-10-08 a second table gives what each pass used over all its requests (#634), and
    the section has two more rules for the session: what it does with the list of things the
    reviewer did not check (#636), and that a commit message is reworded when a review corrects
-   what it says (#640). Two more from the same day: the reviewer reads whole each agent-facing
-   file the diff changes (#647), and a finding under 75 raised while the fixes are confirmed has
-   its fix confirmed with the plugin pass's fixes (#643).
+   what it says (#640). Three more from the same day: the reviewer reads whole each agent-facing
+   file the diff changes (#647), a finding under 75 raised while the fixes are confirmed has its
+   fix confirmed with the plugin pass's fixes (#643), and the session ends its turn to receive
+   what the reviewer sends (#648).
 
 **A rule is changed in this file** (2026-10-07, #630). `CLAUDE.md` and the intro of
 `.claude/skills/pre-pr-review/SKILL.md` each stated parts of the four until then, so a rule that
@@ -475,7 +476,7 @@ test.
 | #633 | 14 findings: 12 fixed, two left unfixed at a score of 25 | 162 435 tokens, one reviewer | two candidates: one posted at 100 and one more at 50, and both fixed; no false positive | 344 857 tokens, five reviewers | 119 402 tokens, two scorers | none of two |
 | #641 | 16 findings, three of them raised while confirming the plugin pass's fixes: 15 fixed, one left unfixed at a score of 25 | 155 993 tokens, one reviewer | four candidates: none posted, all four at 75, and all four fixed; no false positive | 368 386 tokens, five reviewers | 233 552 tokens, four scorers | none of four |
 | #642 | six findings: all six fixed | 103 932 tokens, one reviewer | two candidates: none posted, one at 75 and fixed, one at 35 and left unfixed, its premise wording that #641 had replaced | 307 442 tokens, five reviewers | 102 363 tokens, two scorers | none of one |
-| #650 | 14 findings, two of them raised while confirming the fixes: 13 fixed, one left unfixed at a score of 25 | 152 515 tokens, one reviewer | seven candidates: none posted, four at 75 and two at 50, and all six fixed; one false positive | 365 642 tokens, five reviewers | 459 174 tokens, seven scorers | one of six: `CLAUDE.md` saying the new check fails a row in any tracked markdown, where it reads no table inside a blockquote |
+| #650 | 16 findings, two of them raised while confirming the fixes and two while confirming the plugin pass's: 15 fixed, one left unfixed at a score of 25 | 152 515 tokens, one reviewer | seven candidates: none posted, four at 75 and two at 50, and all six fixed; one false positive | 365 642 tokens, five reviewers | 459 174 tokens, seven scorers | one of six: `CLAUDE.md` saying the new check fails a row in any tracked markdown, where it reads no table inside a blockquote |
 
 The cost of the pre-PR review was not measured on #579, and none of the first seven pull requests
 states one. Since 2026-10-07 (#631) `/pre-pr-review` has the session write it in the pull request's
@@ -612,8 +613,9 @@ as not serious: the tracker page asked for a `Closes` line for each ticket, wher
 them on one line or have none. One of #650's six was graded as serious, by the ruling on a false
 sentence in `CLAUDE.md`, and he has not seen it: the file said the new check fails a row "in any
 tracked markdown", and the check reads no table inside a blockquote. The other five are in the
-skill's steps, this file's new rules and a comment in the script, and each is an omission or a
-sentence that could be read two ways.
+skill's steps, this file's new rules and a comment in the script: a rule written only in the skill,
+an "all" that left out one report, a comment that the change which wrote it made stale, a sentence
+that could be read two ways, and a case a new rule did not cover.
 
 **What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
 and one was what a tool would do on a reinstall (#604). The six are branches where the pass was
