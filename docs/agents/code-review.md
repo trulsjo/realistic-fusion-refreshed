@@ -465,13 +465,14 @@ column for the pre-PR review's cost.
 [#641](https://github.com/trulsjo/realistic-fusion-refreshed/pull/641), which added the
 all-requests table further down, had both on 2026-10-08, and so did
 [#642](https://github.com/trulsjo/realistic-fusion-refreshed/pull/642), one line of the tracker
-page, and [#650](https://github.com/trulsjo/realistic-fusion-refreshed/pull/650), which gave
-`ship-check.ps1` its check of a table's shape. Each is a row here, since 2026-10-07 (#624). Each
-count of findings is read from that pull request's body and comments. Two of the eight rows with a
-cost for the plugin pass have it from elsewhere: #579's is in #592's body, and #594's is in the
-comment on #593 and in #595. The last column is a grade, made on 2026-10-07 for the first eight
-rows and on 2026-10-08 for the three after them, and the paragraphs under the table say by what
-test.
+page, [#650](https://github.com/trulsjo/realistic-fusion-refreshed/pull/650), which gave
+`ship-check.ps1` its check of a table's shape, and
+[#655](https://github.com/trulsjo/realistic-fusion-refreshed/pull/655), which had that check read
+a table inside a blockquote. Each is a row here, since 2026-10-07 (#624). Each count of findings is
+read from that pull request's body and comments. Two of the nine rows with a cost for the plugin
+pass have it from elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in
+#595. The last column is a grade, made on 2026-10-07 for the first eight rows and on 2026-10-08 for
+the four after them, and the paragraphs under the table say by what test.
 
 | branch | the pre-PR review found | pre-PR review's cost | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers | of the plugin pass's fixed findings, serious |
 |---|---|---|---|---|---|---|
@@ -486,6 +487,7 @@ test.
 | #641 | 16 findings, three of them raised while confirming the plugin pass's fixes: 15 fixed, one left unfixed at a score of 25 | 155 993 tokens, one reviewer | four candidates: none posted, all four at 75, and all four fixed; no false positive | 368 386 tokens, five reviewers | 233 552 tokens, four scorers | none of four |
 | #642 | six findings: all six fixed | 103 932 tokens, one reviewer | two candidates: none posted, one at 75 and fixed, one at 35 and left unfixed, its premise wording that #641 had replaced | 307 442 tokens, five reviewers | 102 363 tokens, two scorers | none of one |
 | #650 | 16 findings, two of them raised while confirming the fixes and two while confirming the plugin pass's: 15 fixed, one left unfixed at a score of 25 | 152 515 tokens, one reviewer | seven candidates: none posted, four at 75 and two at 50, and all six fixed; one false positive | 365 642 tokens, five reviewers | 459 174 tokens, seven scorers | one of six: `CLAUDE.md` saying the new check fails a row in any tracked markdown, where it then read no table inside a blockquote |
+| #655 | ten findings, one of them raised while confirming the fixes and one while confirming the plugin pass's: all ten fixed | 157 078 tokens, one reviewer | one candidate: not posted, at 50, and fixed; no false positive | 350 091 tokens, five reviewers | 59 112 tokens, one scorer | none of one |
 
 The cost of the pre-PR review was not measured on #579, and none of the first seven pull requests
 states one. Since 2026-10-07 (#631) `/pre-pr-review` has the session write it in the pull request's
@@ -500,7 +502,7 @@ reviewers, which check eligibility, list the `CLAUDE.md` files and summarise the
 more. #628's two figures are the same kind, and its three steps used 140 099. #633's are the same
 kind again, and its three steps used 140 189. #641's are the same kind, and its three steps used
 139 099. #642's are the same kind, and its three steps used 126 199. #650's are the same kind, and
-its three steps used 138 729.
+its three steps used 138 729. #655's are the same kind, and its three steps used 137 182.
 
 **A reported figure is about the size of a subagent's last request, and not what the subagent used**
 (measured 2026-10-07, #631). The plugin pass's subagents on #625 and #628 each sent a notice with a
@@ -533,6 +535,7 @@ so no row here.
 | #641 | 2 240 302 tokens in 17 requests | 87.7% | 392 566 tokens, three subagents | 1 703 340 tokens, five reviewers | 999 890 tokens, four scorers | 3 095 796 tokens |
 | #642 | 1 208 124 tokens in 13 requests | 90.9% | 322 107 tokens, three subagents | 1 144 328 tokens, five reviewers | 325 030 tokens, two scorers | 1 791 465 tokens |
 | #650 | 1 403 724 tokens in 11 requests | 71.1% | 432 603 tokens, three subagents | 1 672 809 tokens, five reviewers | 3 189 387 tokens, seven scorers | 5 294 799 tokens |
+| #655 | 1 773 694 tokens in 14 requests | 92.2% | 303 349 tokens, three subagents | 1 594 636 tokens, five reviewers | 305 370 tokens, one scorer | 2 203 355 tokens |
 
 Which subagents a cell sums is told by the description the session gave each when it spawned it,
 which the transcript's `.meta.json` keeps. The pre-PR review's is the one named reviewer, over its
@@ -545,14 +548,15 @@ reviewers are the five numbered 1 to 5, and the scorers are one for each candida
 
 **A total is a count of tokens and not a price.** A cache read is not priced as an input token, and
 most of every total is cache reads: about nine tenths of each pre-PR review's but #650's, which
-was 71.1% when its row was written, and 74.8%, 76.9%, 77.9%, 81.1%, 74.4% and 82.1% of the six
-plugin passes'. The passes also ran on different models. Each
+was 71.1% when its row was written, and 74.8%, 76.9%, 77.9%, 81.1%, 74.4%, 82.1% and 78.8% of
+the seven plugin passes'. The passes also ran on different models. Each
 pre-PR reviewer ran on Opus, the plugin's reviewers on Sonnet, and its scorers and three steps on
 Haiku, so a scorer's token and a reviewer's are not the same spend either.
 
 **The scorers' share of a plugin pass in this unit** is 45.9% on #625, 29.9% on #628, 36.7% on
-#633, 32.3% on #641, 18.1% on #642 and 60.2% on #650. In the reported counts of the table above,
-with the three steps counted in, it is 39.8%, 35.7%, 19.8%, 31.5%, 19.1% and 47.7%. #633's two
+#633, 32.3% on #641, 18.1% on #642, 60.2% on #650 and 13.9% on #655. In the reported counts of the
+table above, with the three steps counted in, it is 39.8%, 35.7%, 19.8%, 31.5%, 19.1%, 47.7% and
+10.8%. #633's two
 scorers show how far the two units can part: their reported counts sum to 119 402 and their
 requests to 870 953, because one of them sent 12 requests. One of #650's seven sent 18 requests
 that sum to 1 178 225 tokens, and scored its candidate 0: a figure another reviewer had said it
@@ -625,7 +629,9 @@ tracked markdown", and the check then read no table inside a blockquote (it has 
 other five are in the
 skill's steps, this file's new rules and a comment in the script: a rule written only in the skill,
 an "all" that left out one report, a comment that the change which wrote it made stale, a sentence
-that could be read two ways, and a case a new rule did not cover.
+that could be read two ways, and a case a new rule did not cover. #655's one fixed finding was
+graded as not serious: a failure message that speaks of a row outside its header's blockquote,
+where the check also fires on a row quoted one level deeper.
 
 **What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
 and one was what a tool would do on a reinstall (#604). The six are branches where the pass was
