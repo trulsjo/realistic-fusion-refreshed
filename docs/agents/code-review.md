@@ -51,8 +51,10 @@ procedure, and they still say what they carry out: what the reviewer is handed, 
 fixes of its own findings and reads a fix's added sentence as a new claim, that every finding goes
 in the pull request's body, and that a planted change takes a worktree. Since 2026-10-08 they carry
 out two more: the session answers for what the reviewer did not check (#636), and rewords a commit
-message a review corrected (#640). A change to one of those is
-made here first and then in the steps.
+message a review corrected (#640). Two of the earlier ones changed the same day: what the reviewer
+is handed now names the files it reads whole (#647), and which of its confirmations answers for a
+fix depends on the finding's score (#643). A change to one of those is made here first and then in
+the steps.
 
 ## The threshold gates the comment, not the report
 
@@ -338,8 +340,11 @@ with the plugin pass's fixes** (2026-10-08, #643). The session fixes it and send
 it. The pull request is opened with that fix marked `yes, not confirmed`, and the session changes
 the mark when the reviewer answers for it after the plugin pass. **A finding at 75 or over is the
 exception.** It is verified and important, so its fix gets a message of its own and is confirmed
-before the pull request is opened. A finding raised in the confirmation of the plugin pass's fixes
-has no later message to wait for, and its fix is confirmed as before.
+before the pull request is opened. Where that message's diff holds a waiting fix as well, the
+reviewer answers for both and nothing waits. A finding raised in the confirmation of the plugin
+pass's fixes has no later message to wait for, and its fix is confirmed as before. So is a defect
+the session finds itself while it answers for what the reviewer did not check: it has no score,
+and it gets a message of its own.
 
 The reason is what a message costs: the reviewer's whole context again, for every request it makes
 in answering. Read from the two reviewers' transcripts on 2026-10-08, over all their requests:
@@ -401,8 +406,10 @@ session runs the pass anyway and says in the pull request that it did. No kind o
 subagent that ran the pre-PR review and hand it the diff of the fixes, with no list of what was
 done. If it is no longer running, a fresh reviewer confirms them and the pull request says so. On
 #625 that reviewer found an error the fixes had added. Where a fix is waiting for this message
-(#643), the diff starts at or before that fix's commit, and the reviewer is told the finding's
-number and that its fix is in the diff.
+(#643), the diff starts at the parent of that fix's commit,
+`git diff --output="<scratch>/plugin-fixes.diff" <that commit>~1..HEAD`, and the reviewer is told
+the finding's number and that its fix is in the diff. The session then changes the fix's mark in
+the pull request's body to what the reviewer answered.
 
 **When an implement skill says to close out with `/code-review`**, in this repository that still
 means the pre-PR review, and no pull request is needed for it. The plugin pass follows once the pull

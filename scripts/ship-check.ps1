@@ -1120,13 +1120,15 @@ foreach ($row in $figureRows.Found) {
 # WHAT IT CANNOT SEE:
 #   - a table with no delimiter row at all. Such a run is not a table to GitHub, and neither is a
 #     wrapped line of prose that happens to start with a pipe, and nothing here tells them apart.
-#     Two such runs were in the tracked notes when this was written, both prose.
+#     Two such runs were in the tracked notes when this was written. One is prose. The other was
+#     the last row of a blockquoted table in docs/research/predecessor-survey.md that had lost its
+#     `>`, which the pre-PR review of this section found and this section never would have.
 #   - a table written without leading pipes, or inside a blockquote or a list item's indent past
 #     the pipe. Its lines do not start with one.
 #   - a delimiter row that is malformed some other way, a cell of colons and no hyphen for one.
 #   - anything about how a table looks: its width, its alignment, what a cell's markdown becomes.
 $TABLE_DELIMITER = '^\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?$'
-# How many tables the tracked markdown held on 2026-10-08 was 441. A scan that found none would
+# How many tables the tracked markdown held on 2026-10-08 was 440. A scan that found none would
 # pass every row it never read; the floor is set under the count so that removing a note does not
 # trip it.
 $TABLE_FLOOR = 400
