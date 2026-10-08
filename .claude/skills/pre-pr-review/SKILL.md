@@ -53,11 +53,10 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    > that every path in the diff ends in `.md`.
    >
    > Read whole each of these, which the diff changes: `<each skill file, page under
-   > docs/agents/ and CLAUDE.md in the diff, or "none">`. A sentence the change made false and did
-   > not touch is in no hunk. Where the diff changes a step of a skill, hold the step against the
-   > rule in `docs/agents/code-review.md` that it carries out: it restates none of the rule's
-   > reasons and leaves out nothing the rule requires. Say in your report which files you read
-   > whole.
+   > docs/agents/ and CLAUDE.md in the diff, or "none">`. Where the diff changes a step of a
+   > skill, hold the step against the rule in `docs/agents/code-review.md` that it carries out:
+   > it restates none of the rule's reasons and leaves out nothing the rule requires. Say in your
+   > report which files you read whole.
    >
    > You are read-only: edit, commit and run nothing that changes the working tree. If proving a
    > finding takes a planted change, make your own worktree first, as the third rule says. Scratch
@@ -68,9 +67,9 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    > score of 0, 25, 50, 75 or 100
    > — 0 a false positive, 25 possibly real and unverified, 50 real but minor or rare, 75
    > verified and important, 100 certain and it will be hit. Report every one whatever it scores.
-   > Say so plainly if you found nothing, and say what you did not check. How a table renders is
-   > covered: `scripts/ship-check.ps1` holds every table row to its header's cell count, on every
-   > pull request.
+   > Say so plainly if you found nothing, and say what you did not check. A table's cell counts
+   > in a tracked `.md` are held by `scripts/ship-check.ps1`, each row to its header; a table in
+   > a blockquote, and one in the pull request's body, it does not read.
    >
    > Reply with one line per finding first: its number, the file, the fault and the score. Give
    > the detail for a finding when you are asked for it. A long reply arrives cut off.
@@ -80,10 +79,11 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    the sixth of nine findings, and the reviewer's attempt to write the rest to a file was refused.
 
    **The report arrives as a message from the reviewer once this session's turn has ended**
-   (#648). End the turn to receive it: on #641 and #642 all 16 of the reviewers' messages came
-   directly after a turn ended, and none during one. A reply that has not come once the turn has
-   ended, or that came cut off and cannot be had by asking, is read from the reviewer's
-   transcript, the file step 6 names.
+   (#648). End the turn to receive it: on #641 and #642 all 18 of the reviewers' messages, eight
+   replies and ten idle notices, came directly after a turn ended, and none during one. The
+   message starts the session's next turn. If something else starts it first, or the reply came
+   cut off and asking does not get the rest, read it from the reviewer's transcript, the file
+   step 6 names.
 
 4. **Fix, commit, and continue the same reviewer** with SendMessage to the name from step 3. Do
    not spawn a second one. Hand it the diff of the fixes and nothing else:
@@ -138,7 +138,7 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    `docs/agents/code-review.md` says how an item is checked and what the pull request's body
    records for it. Check each item, or send it to the reviewer by name with SendMessage, and write
    the outcome of each for the pull request's body, under a `## Pre-PR review` heading. A defect
-   that an item turns up is fixed and confirmed as step 4 has it.
+   that an item turns up is fixed and confirmed as step 4 has it for a finding at 75 or over.
 
    Done when every item on the reviewer's list has an outcome written for it.
 
@@ -150,7 +150,7 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    | 1 | one line, in the reviewer's terms | file, and the symbol or quoted words | 75 | yes, confirmed |
    | 2 | … | … | 50 | no: the reason it was left |
 
-   **Fixed** is `yes, confirmed` only when the reviewer said so in step 4; otherwise
+   **Fixed** is `yes, confirmed` only when the reviewer has said so; otherwise
    `yes, not confirmed` or `no: <reason>`. A review that found nothing says that in the body in
    place of the table, below step 5's outcomes for what the reviewer said it did not check.
 

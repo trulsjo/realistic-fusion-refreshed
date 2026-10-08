@@ -480,7 +480,7 @@ verified.**
 > | 0.2.0, 2020-01-01 | *"Credit to YuokiTani for re-rendering some unused textures with changed colors from https://u.nu/factoriogfx"* |
 > | 1.2.0, 2020-09-05 | *"Others are modified from angel's discarded/unused thread"* |
 > | 1.3.13, 2020-12-06 | *"New antimatter reactor graphics, courtesy of PreLeyZero."* |
-| 1.8.0, 2021-09-03 | *"PreLeyZero made completely new antimatter reactor graphics, and in turn doubled the mod size."* |
+> | 1.8.0, 2021-09-03 | *"PreLeyZero made completely new antimatter reactor graphics, and in turn doubled the mod size."* |
 >
 > The rest of that 1.2.0 line — *"Some of the textures are modified from Krastorio 2 and licensed under
 > GNU GPL v3"* — refers to the marked `particle-accelerator/` set, so it is **not** evidence of GPL
