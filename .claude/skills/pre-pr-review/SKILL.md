@@ -103,6 +103,10 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    git push --force-with-lease             # only if the branch is already pushed
    ```
 
+   **Run the `git log` line again before each reword.** A reword gives every later commit a new
+   hash, and a rebase handed a hash that is no longer on the branch exits 0, rewords nothing and
+   puts the earlier commit's old message back.
+
    The rebase starts at the reworded commit's parent. Started at `main` it would replay the
    branch onto wherever `main` is now, and the diff of the fixes would gain `main`'s changes.
 
