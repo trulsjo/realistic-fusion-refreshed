@@ -26,9 +26,11 @@ WHAT IS REFUSED, each simple command of the line judged by itself:
     here-string.
   - Python given `-` for its script, or given no script and no `-c` or `-m`, when nothing feeds
     it or when the LAST thing redirected into it is /dev/null. An option that prints and exits
-    (`--version`, `-V`, `-h`, any `--` option, the launcher's `-0`) counts as a script.
+    (`--version`, `-V`, `-h`, any option of two hyphens and a name, the launcher's `-0`) counts
+    as a script.
 
-A pipe feeds the command after it, on the same line, on the next, or inside a group.
+A pipe feeds the command after it, on the same line or on the next. A pipe into a group, `| {`
+or `| (`, is taken to feed every command after it on the line, the group's end not being tracked.
 
 WHAT IS LET THROUGH ON PURPOSE:
 
@@ -52,6 +54,9 @@ WHAT IT CANNOT SEE:
     refusal. `git commit -m "$(cat <<'EOF' ...)"` with an odd count of `"` in its body is one.
   - a shift inside arithmetic, `$(( 1 << 3 ))`. It is taken for a heredoc, and what follows it
     for the body, so a reader after it is let through.
+  - a reader in the body of a loop, after `do`. What feeds a loop is written at its other end,
+    `while read f; do ...; done < list`, or before it, so the body is not judged at all.
+  - a reader after a group that a pipe fed, `echo hi | { head -1; }; cat`, for the reason above.
   - a reader behind a wrapper other than the few skipped below, or behind a shell function.
     `timeout` is skipped with its `-s` and `-k` values; another option of its that takes a
     value is not known.
@@ -64,7 +69,7 @@ import re
 import sys
 
 WRAPPERS = {"time", "nohup", "command", "exec", "env", "winpty",
-            "then", "do", "else", "if", "elif", "while", "until", "!"}
+            "then", "else", "if", "elif", "!"}      # not `do`: see WHAT IT CANNOT SEE
 PYTHON = re.compile(r"^(?:python[\d.]*|py)(?:\.exe)?$")
 WORD = r"[^\s;&|()<>]+"     # a redirect's target ends at an operator, as at a space
 FEED = r"<<<\s*" + WORD + r"|<<H|\d*<\s*(?!<)" + WORD
@@ -161,7 +166,7 @@ def judge(command):
                         continue
                     if k and args[k - 1] in ("-W", "-X"):
                         continue
-                    prints = a.startswith(("--", "-0")) or a in ("-V", "-VV", "-h", "-?")
+                    prints = (a.startswith(("--", "-0")) and a != "--") or a in ("-V", "-VV", "-h", "-?")
                     if a in ("-c", "-m") or not a.startswith("-") or a == "-" or prints:
                         script = a
                         break
@@ -170,8 +175,8 @@ def judge(command):
                             "prompt here and never ends" if from_null else
                             "Python with no script and nothing fed to it reads the Bash tool's "
                             "stdin, a pipe that is never closed")
-        if pipeline.strip():
-            piped = not simples[-1].strip()
+        # Where the group ends is not tracked, so everything after its pipe counts as fed.
+        piped = piped or (bool(pipeline.strip()) and not simples[-1].strip())
     return None
 
 
@@ -187,7 +192,11 @@ CASES = [
     ("git log | head; cat", True),
     ("timeout -s KILL 5 cat > /dev/null", True),                         # run 9 of the reproduction
     ("if true; then cat; fi", True),
-    ("echo hi | { cat; }; cat", True),                                   # the pipe feeds the group only
+    ("python -- -", True),
+    ("git ls-files | while read f; do cat; done", False),
+    ("while read l; do cat; done < list.txt", False),
+    ("echo hi | { head -1; cat; }", False),
+    ("echo hi | (read x; cat)", False),
     ("python --version && py -0 && python -V; python3 -h", False),
     ("git log |\n  cat", False),
     ("curl -s x |& python -", False),
