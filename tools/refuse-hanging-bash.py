@@ -9,22 +9,26 @@ WHAT HANGS, reproduced on 2026-10-09 under Git Bash on Windows with Python 3.13.
 
   - A command left reading the tool's stdin. That stdin is a pipe nobody closes, so a bare `cat`
     never sees its end. `timeout 8 cat` was still running after 40 s.
-  - `python -` or a bare `python` with stdin from /dev/null. /dev/null is NUL there, a character
-    device, so Python takes it for a console and starts the interactive prompt, which fails on
-    the console's size and tries again without end: two runs of 8 s wrote 12.7 MB of traceback
-    between them.
+  - `python -` or a bare `python` with stdin from /dev/null. Python starts the interactive
+    prompt, which fails on the console's size and tries again without end: two runs of 8 s wrote
+    12.7 MB of traceback between them. Why it takes /dev/null for a console was not established.
+    /dev/null is NUL there, a character device, which is the likely reason and no more than that.
 
 A heredoc is NOT what hangs. `python - <<'PY'` with a body holding both kinds of quote ran and
-exited 0, and so did `cat <<'X'` with an empty body. The three commands #645 records each held one
-of the two shapes above beside their heredoc: a bare `cat` in front of it, or a `< /dev/null`
-after it, which replaces the heredoc as stdin.
+exited 0, and so did `cat <<'X'` with an empty body. Of the three commands #645 records, the one
+that completed held neither shape above. The two that ran to the timeout each held one beside
+their heredoc: a bare `cat` in front of it, or a `< /dev/null` after it, which replaces the
+heredoc as stdin.
 
 WHAT IS REFUSED, each simple command of the line judged by itself:
 
   - `cat` with no file operand, when nothing feeds it: no pipe into it, no `<`, no heredoc and no
     here-string.
   - Python given `-` for its script, or given no script and no `-c` or `-m`, when nothing feeds
-    it or when the LAST thing redirected into it is /dev/null.
+    it or when the LAST thing redirected into it is /dev/null. An option that prints and exits
+    (`--version`, `-V`, `-h`, any `--` option, the launcher's `-0`) counts as a script.
+
+A pipe feeds the command after it, on the same line, on the next, or inside a group.
 
 WHAT IS LET THROUGH ON PURPOSE:
 
@@ -42,7 +46,15 @@ WHAT IT CANNOT SEE:
     with what counts as its file operand.
   - a command inside double quotes, `"$(cat)"`, or handed to `bash -c '...'`. Quoted text is
     blanked.
+  - where a double-quoted span ends when it holds a `$(...)` with quotes of its own. The span
+    is taken to end at the first inner `"`, so the rest of such a line is read as commands, and
+    a heredoc body inside it that has a line opening with `cat` or `python -` is a false
+    refusal. `git commit -m "$(cat <<'EOF' ...)"` with an odd count of `"` in its body is one.
+  - a shift inside arithmetic, `$(( 1 << 3 ))`. It is taken for a heredoc, and what follows it
+    for the body, so a reader after it is let through.
   - a reader behind a wrapper other than the few skipped below, or behind a shell function.
+    `timeout` is skipped with its `-s` and `-k` values; another option of its that takes a
+    value is not known.
   - a command that hangs for any reason other than its stdin.
 
 `--self-test` runs the cases at the foot and exits non-zero when one is judged wrongly.
@@ -51,7 +63,8 @@ import json
 import re
 import sys
 
-WRAPPERS = {"time", "nohup", "command", "exec", "env", "winpty"}
+WRAPPERS = {"time", "nohup", "command", "exec", "env", "winpty",
+            "then", "do", "else", "if", "elif", "while", "until", "!"}
 PYTHON = re.compile(r"^(?:python[\d.]*|py)(?:\.exe)?$")
 WORD = r"[^\s;&|()<>]+"     # a redirect's target ends at an operator, as at a space
 FEED = r"<<<\s*" + WORD + r"|<<H|\d*<\s*(?!<)" + WORD
@@ -81,7 +94,7 @@ def blank(command):
             out.append(" <<< ")
             i += 3
         elif command.startswith("<<", i):
-            m = re.match(r"<<(-?)\s*(['\"]?)([\w.-]+)\2", command[i:])
+            m = re.match(r"<<(-?)\s*(?:\\|(['\"]))?([\w.-]+)(?(2)\2)", command[i:])
             if not m:
                 out.append("<<")
                 i += 2
@@ -116,8 +129,12 @@ def judge(command):
     text = blank(command)
     # Output redirects carry `&` and `|` that are not operators; they say nothing about stdin.
     text = re.sub(r"\d*>&\d+|\d*>&-|&>>?\s*" + WORD + r"|\d*>[>|]?\s*" + WORD, " ", text)
+    # `|&` is a pipe, and a pipe at a line's end carries on to the next line.
+    text = re.sub(r"\|&?\s*\n\s*", "| ", text.replace("|&", "|"))
+    piped = False              # the last pipeline ended in a pipe: it feeds a group, `| ( cat )`
     for pipeline in re.split(r"\|\||&&|[;&\n(){}]", text):
-        for at, simple in enumerate(re.split(r"\|&?", pipeline)):
+        simples = re.split(r"\|", pipeline)
+        for at, simple in enumerate(simples):
             feeds = re.findall(FEED, simple)
             words = re.sub(FEED, " ", simple).split()
             while words and (re.match(r"^\w+=", words[0]) or words[0] in WRAPPERS):
@@ -125,13 +142,13 @@ def judge(command):
             if words and words[0] == "timeout":
                 words.pop(0)
                 while words and words[0].startswith("-"):
-                    words.pop(0)
+                    words = words[2:] if words[0] in ("-s", "-k") else words[1:]
                 words = words[1:]          # the duration
             if not words:
                 continue
             name, args = words[0].rsplit("/", 1)[-1], words[1:]
             last = feeds[-1].lstrip("0123456789< \t") if feeds else None
-            fed = bool(feeds) or at > 0
+            fed = bool(feeds) or at > 0 or piped
             from_null = last in NULLS
 
             if name == "cat" and not fed and not [a for a in args if not a.startswith("-")]:
@@ -144,7 +161,8 @@ def judge(command):
                         continue
                     if k and args[k - 1] in ("-W", "-X"):
                         continue
-                    if a in ("-c", "-m") or not a.startswith("-") or a == "-":
+                    prints = a.startswith(("--", "-0")) or a in ("-V", "-VV", "-h", "-?")
+                    if a in ("-c", "-m") or not a.startswith("-") or a == "-" or prints:
                         script = a
                         break
                 if script in (None, "-") and (from_null or not fed):
@@ -152,6 +170,8 @@ def judge(command):
                             "prompt here and never ends" if from_null else
                             "Python with no script and nothing fed to it reads the Bash tool's "
                             "stdin, a pipe that is never closed")
+        if pipeline.strip():
+            piped = not simples[-1].strip()
     return None
 
 
@@ -165,6 +185,15 @@ CASES = [
     ("timeout 8 python -", True),
     ("FOO=1 python3 -X utf8 -", True),
     ("git log | head; cat", True),
+    ("timeout -s KILL 5 cat > /dev/null", True),                         # run 9 of the reproduction
+    ("if true; then cat; fi", True),
+    ("echo hi | { cat; }; cat", True),                                   # the pipe feeds the group only
+    ("python --version && py -0 && python -V; python3 -h", False),
+    ("git log |\n  cat", False),
+    ("curl -s x |& python -", False),
+    ("echo hi | (cat > f)", False),
+    ("echo hi | { cat; }", False),
+    ("cat <<\\EOF\npython -\nEOF\n", False),
     ("cat > /dev/null <<'X'\nX\n", False),                               # 2026-10-07 22:12, completed
     ("python - <<'PY'\nimport sys\nprint(\"it's\")\ncat\nPY\necho done", False),
     ("python - <<< 'print(1)'", False),                                  # a here-string

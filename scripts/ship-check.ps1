@@ -152,7 +152,9 @@
     the three files docs/agents/code-review.md names as wrapped, and fails when that file's sentence
     is not the one this script's width and file list make. The files are named and not scanned for,
     so a missing one fails by name and there is no count to hold. The overlong-prose-caught and
-    unwrappable-line-not-flagged halves plant what it must and must not report. It cannot see a
+    unwrappable-line-not-flagged halves plant what the scan of the lines must and must not report.
+    The sentence check and the missing file have no half: like sections 1 to 4 they name what
+    they require, so a mistake in them fails and does not go quiet. It cannot see a
     figure grouped in thousands that a rewrap split across a line end; the section comment has the
     rest.
 
@@ -168,8 +170,8 @@
     Run the checks as usual, then prove five things a green run cannot: the shared -SelfTest runner
     in factorio-lib.ps1 -- that it numbers halves from the list it was given and refuses a half it
     cannot show ran -- section 9, in both directions, section 10's two assertions, each in both
-    directions, section 11, in both directions and inside a blockquote, and section 12, in both
-    directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
+    directions, section 11, in both directions and inside a blockquote, and section 12's scan of
+    the lines, in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
     memory and the planted documents live in the scratch directory the run removes on its way out.
 
 .EXAMPLE
@@ -1261,6 +1263,7 @@ foreach ($row in $tableRows.Found) {
 #     and list marker are taken off. A row cannot be wrapped.
 #   - a line inside a code fence, and the fence lines themselves. Get-ProseLines leaves them out.
 #   - front matter: a first line of three hyphens, and every line down to the next such line.
+#   - a heading. It has spaces and cannot be wrapped.
 #   - a line with no space to break it at, once the same things are taken off. A long link alone
 #     on its line is the case. A long link that is not alone fails, and the fix is to break
 #     before it.
@@ -1293,7 +1296,7 @@ function Find-OverlongProseLines {
             $text = $prose.Text
             if ($prose.Line -eq 1 -and $text.Trim() -ceq '---') { $front = $true; continue }
             if ($front) { if ($text.Trim() -ceq '---') { $front = $false }; continue }
-            if ($text.Length -le $Width) { continue }
+            if ($text.Length -le $Width -or $text -match '^#{1,6}\s') { continue }
             $bare = ($text -replace '^[\s>]*(?:(?:[-*+]|\d+[.)])\s+)?', '').TrimEnd()
             if ($bare.StartsWith('|') -or $bare -notmatch '\s') { continue }
             $found.Add([pscustomobject]@{ File = $rel; Line = $prose.Line; Length = $text.Length })
@@ -1651,16 +1654,18 @@ if ($SelfTest) {
                     $link
                     "   - $link"
                     "> $link"
+                    ''
+                    "## $long"
                 ) | Set-Content -LiteralPath $doc -Encoding utf8
 
                 $rows = @(Find-OverlongProseLines -Files @($doc) | ForEach-Object { "$($_.Line):$($_.Length)" })
                 if ($rows.Count) {
-                    throw ("front matter, three table rows, a line inside a fence and three links alone " +
+                    throw ("front matter, three table rows, a line inside a fence, a heading and three links alone " +
                            "on their lines, each over $WRAP_WIDTH characters, were reported as prose to " +
                            "rewrap: $($rows -join '; '). A gate that fires on a line nobody can break " +
                            'gets switched off.')
                 }
-                "front matter, a table row plain, quoted or indented, a line inside a fence and a link alone on its line are each left alone over $WRAP_WIDTH characters."
+                "front matter, a table row plain, quoted or indented, a line inside a fence, a heading and a link alone on its line are each left alone over $WRAP_WIDTH characters."
             } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
