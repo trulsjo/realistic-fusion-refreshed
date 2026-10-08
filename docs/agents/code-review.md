@@ -42,7 +42,8 @@ when it matters which.
    what it says (#640). Three more from the same day: the reviewer reads whole each agent-facing
    file the diff changes (#647), a finding under 75 raised while the fixes are confirmed has its
    fix confirmed with the plugin pass's fixes (#643), and the session ends its turn to receive
-   what the reviewer sends (#648).
+   what the reviewer sends (#648). The evidence under that last one was corrected the same day
+   (#654), which added that a question put to the user does not end the turn.
 
 **A rule is changed in this file** (2026-10-07, #630). `CLAUDE.md` and the intro of
 `.claude/skills/pre-pr-review/SKILL.md` each stated parts of the four until then, so a rule that
@@ -55,8 +56,8 @@ out two more: the session answers for what the reviewer did not check (#636), an
 message a review corrected (#640). Two of the earlier ones changed the same day: what the reviewer
 is handed now names the files it reads whole (#647), and which of its confirmations answers for a
 fix depends on the finding's score (#643). They carry out one more from that day: the session ends
-its turn to receive what the reviewer sends (#648). A change to one of those is made here first and
-then in the steps.
+its turn to receive what the reviewer sends (#648), which a question put to the user does not end
+(#654). A change to one of those is made here first and then in the steps.
 
 ## The threshold gates the comment, not the report
 
@@ -335,9 +336,9 @@ turn has ended** (2026-10-08, #648). The session ends its turn to receive one. T
 session that ran the reviews of #641 and #642 holds 18 messages from the two reviewers up to
 #642's merge, nine replies and nine idle notices, and each of the 18 came directly after a turn of
 the session ended. **A question put to the user does not end the turn.** The first report of #641's
-reviewer was written at 22:21:28 UTC on 2026-10-07, while the session waited on a question it had
+reviewer was sent at 22:21:12 UTC on 2026-10-07, while the session waited on a question it had
 asked at 22:15:18. The answer came at 04:11:05, and the turn ran on until 06:20:44. The report
-arrived two seconds after that, 7 h 59 min after it was written, with the reviewer's idle notice
+arrived two seconds after that, 7 h 59 min after it was sent, with the reviewer's idle notice
 beside it. In between, the session had read the report from the reviewer's transcript.
 
 Until #654 this paragraph gave eight replies and ten idle notices, and said the first report was
@@ -484,7 +485,7 @@ test.
 | #633 | 14 findings: 12 fixed, two left unfixed at a score of 25 | 162 435 tokens, one reviewer | two candidates: one posted at 100 and one more at 50, and both fixed; no false positive | 344 857 tokens, five reviewers | 119 402 tokens, two scorers | none of two |
 | #641 | 16 findings, three of them raised while confirming the plugin pass's fixes: 15 fixed, one left unfixed at a score of 25 | 155 993 tokens, one reviewer | four candidates: none posted, all four at 75, and all four fixed; no false positive | 368 386 tokens, five reviewers | 233 552 tokens, four scorers | none of four |
 | #642 | six findings: all six fixed | 103 932 tokens, one reviewer | two candidates: none posted, one at 75 and fixed, one at 35 and left unfixed, its premise wording that #641 had replaced | 307 442 tokens, five reviewers | 102 363 tokens, two scorers | none of one |
-| #650 | 16 findings, two of them raised while confirming the fixes and two while confirming the plugin pass's: 15 fixed, one left unfixed at a score of 25 | 152 515 tokens, one reviewer | seven candidates: none posted, four at 75 and two at 50, and all six fixed; one false positive | 365 642 tokens, five reviewers | 459 174 tokens, seven scorers | one of six: `CLAUDE.md` saying the new check fails a row in any tracked markdown, where it reads no table inside a blockquote |
+| #650 | 16 findings, two of them raised while confirming the fixes and two while confirming the plugin pass's: 15 fixed, one left unfixed at a score of 25 | 152 515 tokens, one reviewer | seven candidates: none posted, four at 75 and two at 50, and all six fixed; one false positive | 365 642 tokens, five reviewers | 459 174 tokens, seven scorers | one of six: `CLAUDE.md` saying the new check fails a row in any tracked markdown, where it then read no table inside a blockquote |
 
 The cost of the pre-PR review was not measured on #579, and none of the first seven pull requests
 states one. Since 2026-10-07 (#631) `/pre-pr-review` has the session write it in the pull request's
