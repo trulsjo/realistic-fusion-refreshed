@@ -1229,11 +1229,11 @@ $checks++
 foreach ($row in $tableRows.Found) {
     $what = switch ($row.Kind) {
         'delimiter' { 'has a delimiter row that does not match its header, so GitHub renders no table' }
-        'quote'     { 'has a row that is not in the blockquote its header is in, so GitHub ends the table above it' }
+        'quote'     { 'has a row with a different number of blockquote marks from its header, so GitHub ends the table above it' }
         default     { 'has a row GitHub will pad or cut' }
     }
     $hint = if ($row.Kind -ceq 'quote') {
-        'Every line of a quoted table carries the mark.'
+        'Every line of a quoted table carries the same marks.'
     } else {
         'A pipe inside a cell is written with a backslash before it, inline code included.'
     }
