@@ -12,38 +12,42 @@ workflow" and "the plugin" mean below.
 request, and neither is the plugin pass. Write the qualified name
 when it matters which.
 
-1. **[The threshold gates the comment, not the report](#the-threshold-gates-the-comment-not-the-report)** — decided by Truls, 2026-08-26, settling
-   [#128](https://github.com/trulsjo/realistic-fusion-refreshed/issues/128); amended 2026-10-05 (#592).
-2. **[Review the prose, not only the code](#review-the-prose-not-only-the-code)** — decided by Truls, 2026-09-03, after
-   [#230](https://github.com/trulsjo/realistic-fusion-refreshed/pull/230); its third rule widened from
-   the file to the repository on 2026-09-14, settling [#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331);
-   its last rule narrowed 2026-10-05 (#592), and what it says of the plugin pass changed 2026-10-07
-   (#593); a rule for the notes' figure tables added 2026-10-06 (#602); a rule for the session
-   that writes a fix added 2026-10-07 (#632), and widened on 2026-10-08 (#637) to a ticket's
-   evidence and a retrospective's.
+1. **[The threshold gates the comment, not the
+   report](#the-threshold-gates-the-comment-not-the-report)** — decided by Truls, 2026-08-26,
+   settling [#128](https://github.com/trulsjo/realistic-fusion-refreshed/issues/128); amended
+   2026-10-05 (#592).
+2. **[Review the prose, not only the code](#review-the-prose-not-only-the-code)** — decided by
+   Truls, 2026-09-03, after [#230](https://github.com/trulsjo/realistic-fusion-refreshed/pull/230);
+   its third rule widened from the file to the repository on 2026-09-14, settling
+   [#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331); its last rule narrowed
+   2026-10-05 (#592), and what it says of the plugin pass changed 2026-10-07 (#593); a rule for the
+   notes' figure tables added 2026-10-06 (#602); a rule for the session that writes a fix added
+   2026-10-07 (#632), and widened on 2026-10-08 (#637) to a ticket's evidence and a retrospective's.
 3. **[A review that plants takes its own worktree](#a-review-that-plants-takes-its-own-worktree)** —
    [#311](https://github.com/trulsjo/realistic-fusion-refreshed/issues/311), after the review of
    [#309](https://github.com/trulsjo/realistic-fusion-refreshed/pull/309) on 2026-09-10.
-4. **[A review before the pull request, and the plugin pass after it](#a-review-before-the-pull-request-and-the-plugin-pass-after-it)** —
-   decided by Truls, 2026-10-05, settling
-   [#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592), under the name "One
-   review before the pull request". It also changed wording in the first two, dated where it sits,
-   and wrote the plugin's name out in full throughout. Since 2026-10-07 (#624) the table under it
-   has a row for each branch and not for each pass on #579, and two rules beside it say who adds a
-   row and when the rule is revisited. Its rule on when the plugin pass runs was reversed by Truls
-   on 2026-10-07, in his verdict on
+4. **[A review before the pull request, and the plugin pass after
+   it](#a-review-before-the-pull-request-and-the-plugin-pass-after-it)** — decided by Truls,
+   2026-10-05, settling [#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592),
+   under the name "One review before the pull request". It also changed wording in the first two,
+   dated where it sits, and wrote the plugin's name out in full throughout. Since 2026-10-07 (#624)
+   the table under it has a row for each branch and not for each pass on #579, and two rules beside
+   it say who adds a row and when the rule is revisited. Its rule on when the plugin pass runs was
+   reversed by Truls on 2026-10-07, in his verdict on
    [#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593), written here by #627:
    the pass runs on every pull request. The section's name changed with that, and the table gained a
    column for the findings that were serious. Since 2026-10-07 (#631) the table also has a column
-   for what the pre-PR review cost, and the section says what a token figure in it measures.
-   Since 2026-10-08 a second table gives what each pass used over all its requests (#634), and
-   the section has two more rules for the session: what it does with the list of things the
-   reviewer did not check (#636), and that a commit message is reworded when a review corrects
-   what it says (#640). Three more from the same day: the reviewer reads whole each agent-facing
-   file the diff changes (#647), a finding under 75 raised while the fixes are confirmed has its
-   fix confirmed with the plugin pass's fixes (#643), and the session ends its turn to receive
-   what the reviewer sends (#648). The evidence under that last one was corrected the same day
-   (#654), which added that a question put to the user does not end the turn.
+   for what the pre-PR review cost, and the section says what a token figure in it measures. Since
+   2026-10-08 a second table gives what each pass used over all its requests (#634), and the section
+   has two more rules for the session: what it does with the list of things the reviewer did not
+   check (#636), and that a commit message is reworded when a review corrects what it says (#640).
+   Three more from the same day: the reviewer reads whole each agent-facing file the diff changes
+   (#647), a finding under 75 raised while the fixes are confirmed has its fix confirmed with the
+   plugin pass's fixes (#643), and the session ends its turn to receive what the reviewer sends
+   (#648). The evidence under that last one was corrected the same day (#654), which added that a
+   question put to the user does not end the turn. Since 2026-10-09 (#644) the two tables are on a
+   page of their own, [`review-figures.md`](review-figures.md), and what was said of one pull
+   request in the sentences around them is a cell of its row.
 
 **A rule is changed in this file** (2026-10-07, #630). `CLAUDE.md` and the intro of
 `.claude/skills/pre-pr-review/SKILL.md` each stated parts of the four until then, so a rule that
@@ -59,6 +63,13 @@ fix depends on the finding's score (#643). They carry out one more from that day
 its turn to receive what the reviewer sends (#648), which a question put to the user does not end
 (#654). A change to one of those is made here first and then in the steps.
 
+**This file, `docs/agents/review-figures.md` and `.claude/skills/pre-pr-review/SKILL.md` are
+wrapped at 100 characters** (2026-10-09, #646). Section 12 of `scripts/ship-check.ps1` fails a
+longer line of prose in any of the three. It leaves alone a table row, a line inside a code fence,
+the skill's front matter, and a line with no space to break it at, which is what a long link alone
+on its line is. **A figure grouped in thousands stays on one line when a paragraph is rewrapped**,
+and no gate reads for that. #646 has the findings that asked for a stated width.
+
 ## The threshold gates the comment, not the report
 
 Decided by Truls, 2026-08-26, settling
@@ -66,9 +77,10 @@ Decided by Truls, 2026-08-26, settling
 the threshold are posted was changed on 2026-10-05, settling
 [#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592).
 
-The `code-review:code-review` workflow scores each candidate finding and leaves anything
-below 80 out of its comment. **That filter governs what the workflow's own comment carries. It does not govern what gets
-told to the person who ran the review** — or, since 2026-10-05, what reaches the pull request.
+The `code-review:code-review` workflow scores each candidate finding and leaves anything below 80
+out of its comment. **That filter governs what the workflow's own comment carries. It does not
+govern what gets told to the person who ran the review** — or, since 2026-10-05, what reaches the
+pull request.
 
 ### The rule
 
@@ -105,11 +117,11 @@ is discarded by construction. A finding can be verified, important, and dropped.
 now posted in the second one.
 
 **Measured, not assumed.** Across PRs #124, #126 and #127: ten findings, **zero posted, nine real
-and subsequently fixed** — in `954338d`, `8fdbd24` and `971adef` respectively. Two were not nitpicks:
-a mod-portal token surviving in PowerShell's `$Error` after the thrown message had been scrubbed
-(scored 75), and an ADR justifying a scope decision with a fact true only of a mod version the same
-ADR declines to target (scored 75, merged into a permanent decision record). Both were fixed only
-because they were reported outside the workflow's own output.
+and subsequently fixed** — in `954338d`, `8fdbd24` and `971adef` respectively. Two were not
+nitpicks: a mod-portal token surviving in PowerShell's `$Error` after the thrown message had been
+scrubbed (scored 75), and an ADR justifying a scope decision with a fact true only of a mod version
+the same ADR declines to target (scored 75, merged into a permanent decision record). Both were
+fixed only because they were reported outside the workflow's own output.
 
 ## Review the prose, not only the code
 
@@ -282,19 +294,19 @@ another agent's plant, not a flaky gate.** Check `git status` and `git worktree 
 investigating it. On #309 a third agent saw `1 of 178 checks failed` on its first run of
 `ship-check.ps1` and `178 checks, 0 failures` on the next three, and reported a transient,
 non-reproducible failure — it was a planted line-number citation of `ship-check.ps1` sitting
-uncommitted in an ADR for one run. Another agent found that same plant in the file it was editing and
-hand-reverted only its own two lines rather than `git checkout --` the file, so nothing was lost.
-Two agents also wrote probe scripts to the same `/tmp` path in that run. The one agent that had made
-its own worktree with `git worktree add --detach` saw none of it; that is the pattern.
+uncommitted in an ADR for one run. Another agent found that same plant in the file it was editing
+and hand-reverted only its own two lines rather than `git checkout --` the file, so nothing was
+lost. Two agents also wrote probe scripts to the same `/tmp` path in that run. The one agent that
+had made its own worktree with `git worktree add --detach` saw none of it; that is the pattern.
 
 ### Whether `code-review:code-review` itself should carry it
 
 **No, and nothing there can.** The plugin's own instructions launch five reviewers that read the
 change, its blame, earlier pull requests and the comments on them, and the comments in the code it
-touches; none of them is told to modify the tree,
-so the plugin never plants. The plugin is also not this repository's to edit, for the reason the
-next section gives. The rule binds whatever runs alongside it — a gate-poisoning pass, a review agent
-asked to prove a finding — and that is why it lives here.
+touches; none of them is told to modify the tree, so the plugin never plants. The plugin is also not
+this repository's to edit, for the reason the next section gives. The rule binds whatever runs
+alongside it — a gate-poisoning pass, a review agent asked to prove a finding — and that is why it
+lives here.
 
 ## A review before the pull request, and the plugin pass after it
 
@@ -318,8 +330,8 @@ is handed and not by a skill's name:
   gates that were run.
 
 `/pre-pr-review` (`.claude/skills/pre-pr-review/SKILL.md`, #595) runs it: it holds the reviewer's
-brief and the confirmation's as templates for the session to fill in. The list above is still the definition, and a review handed those
-three things is the pre-PR review whatever started it.
+brief and the confirmation's as templates for the session to fill in. The list above is still the
+definition, and a review handed those three things is the pre-PR review whatever started it.
 
 **The reviewer reads whole each agent-facing file the diff changes** (2026-10-08, #647): a skill
 file, a page under `docs/agents/`, a `CLAUDE.md`. Its brief names them. A sentence that a change
@@ -441,159 +453,69 @@ pass runs on every pull request is
 [#626](https://github.com/trulsjo/realistic-fusion-refreshed/issues/626), which is open and Truls's.
 The verdict of 2026-10-07 changed nothing about it.
 
-**A plugin-pass finding the pre-PR review missed gets its class named**, by the session that fixes it, in
-the pull request. A class a script can detect becomes a section of `scripts/ship-check.ps1`. A class
-that takes judgement becomes a line in this file. "One-off, no rule" is an answer, and it is written
-down like the others. This is how the pre-PR review is meant to come to catch what today only the plugin
-pass does.
+**A plugin-pass finding the pre-PR review missed gets its class named**, by the session that fixes
+it, in the pull request. A class a script can detect becomes a section of `scripts/ship-check.ps1`.
+A class that takes judgement becomes a line in this file. "One-off, no rule" is an answer, and it is
+written down like the others. This is how the pre-PR review is meant to come to catch what today
+only the plugin pass does.
 
 ### Measured, not assumed
 
-[#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579) was reviewed twice on
-2026-10-05, and the one-review rule was decided on that branch alone.
-[#594](https://github.com/trulsjo/realistic-fusion-refreshed/pull/594), the change that wrote the
-rule, had both kinds of pass later the same day, and
-[#604](https://github.com/trulsjo/realistic-fusion-refreshed/pull/604),
-[#605](https://github.com/trulsjo/realistic-fusion-refreshed/pull/605) and
-[#607](https://github.com/trulsjo/realistic-fusion-refreshed/pull/607) had both on 2026-10-06.
-[#625](https://github.com/trulsjo/realistic-fusion-refreshed/pull/625), the change that wrote this
-table, had both on 2026-10-07, and so did
-[#628](https://github.com/trulsjo/realistic-fusion-refreshed/pull/628), the change that wrote the
-verdict below into this file, and
-[#633](https://github.com/trulsjo/realistic-fusion-refreshed/pull/633), which gave the table its
-column for the pre-PR review's cost.
-[#641](https://github.com/trulsjo/realistic-fusion-refreshed/pull/641), which added the
-all-requests table further down, had both on 2026-10-08, and so did
-[#642](https://github.com/trulsjo/realistic-fusion-refreshed/pull/642), one line of the tracker
-page, [#650](https://github.com/trulsjo/realistic-fusion-refreshed/pull/650), which gave
-`ship-check.ps1` its check of a table's shape, and
-[#655](https://github.com/trulsjo/realistic-fusion-refreshed/pull/655), which had that check read
-a table inside a blockquote. Each is a row here, since 2026-10-07 (#624). Each count of findings is
-read from that pull request's body and comments. Two of the nine rows with a cost for the plugin
-pass have it from elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in
-#595. The last column is a grade, made on 2026-10-07 for the first eight rows and on 2026-10-08 for
-the four after them, and the paragraphs under the table say by what test.
+**The figures are in [`review-figures.md`](review-figures.md)** (moved there on 2026-10-09, #644):
+what each pull request's two passes found and cost, one row for a pull request in each of two
+tables. The first table has the counts of findings, the token counts each pass's subagents
+reported and the grade. The second has what each pass used over all its requests. Read that page
+to add a pull request's rows, when this rule is revisited, and when a decision needs what a pass
+found or cost, as #626 does. **Since the move, a pull request's figures go in its two rows and
+nowhere in this file.** What this section keeps is the row rule, the verdict with the figures it
+rested on, and what was concluded across rows, each with its date and the number of rows it was
+drawn from.
 
-| branch | the pre-PR review found | pre-PR review's cost | the plugin pass found | plugin pass's cost: reviewers | plugin pass's cost: scorers | of the plugin pass's fixed findings, serious |
-|---|---|---|---|---|---|---|
-| #579 | 12 findings: 11 fixed, one left unfixed at a score of 50 | not measured | eight candidates: seven fixed, one false positive | about ten minutes and about 400 000 subagent tokens for the whole pass, not split | not split: inside the figure to the left | one of seven: a temperature written without its exponent |
-| #594 | nine findings: eight fixed, one left unfixed at a score of 50 | not recorded | ten candidates: three posted at 100 and six more reported, so nine survived, of which eight fixed and one left unfixed and not scored; one false positive | not measured: the five reviewers ran as plain subagents, which report no usage | about 580 000 tokens | four of eight: three false sentences that change wrote, and older wording it superseded and left standing |
-| #604 | five findings: four fixed, one left unfixed at a score of 25 | not recorded | three findings scored: two fixed, one left unfixed at a score of 25, its premise wrong; confirming the fixes raised a fourth point, fixed and not confirmed again | not recorded | not recorded | one of two: a renamed heading that a tool finds its own section by |
-| #605 | five findings: three fixed, two left unfixed at a score of 25 | not recorded | two findings, at 100 and 75: both fixed | not recorded | not recorded | one of two: "there is no CI" left standing in four places |
-| #607 | ten findings, one of them unscored: seven fixed, three left unfixed, one at 50 and two at 25 | not recorded | four candidates: two fixed, two false positives | not recorded | not recorded | one of two: superseded figures in a research note left reading as current |
-| #625 | 12 findings: ten fixed, two left unfixed at a score of 25 | 152 822 tokens, one reviewer | six candidates: five survived, four at 75 and one at 50, and all five fixed; one false positive | 325 398 tokens, five reviewers | 303 795 tokens, six scorers | none of five |
-| #628 | ten findings: all ten fixed | 136 546 tokens, one reviewer | five candidates: two posted at 100, two more at 75 and one at 50, and all five fixed; no false positive | 375 765 tokens, five reviewers | 286 539 tokens, five scorers | two of five: the first routine row named by its ticket's number, and the cell beside #594 saying that change wrote wording it had left standing |
-| #633 | 14 findings: 12 fixed, two left unfixed at a score of 25 | 162 435 tokens, one reviewer | two candidates: one posted at 100 and one more at 50, and both fixed; no false positive | 344 857 tokens, five reviewers | 119 402 tokens, two scorers | none of two |
-| #641 | 16 findings, three of them raised while confirming the plugin pass's fixes: 15 fixed, one left unfixed at a score of 25 | 155 993 tokens, one reviewer | four candidates: none posted, all four at 75, and all four fixed; no false positive | 368 386 tokens, five reviewers | 233 552 tokens, four scorers | none of four |
-| #642 | six findings: all six fixed | 103 932 tokens, one reviewer | two candidates: none posted, one at 75 and fixed, one at 35 and left unfixed, its premise wording that #641 had replaced | 307 442 tokens, five reviewers | 102 363 tokens, two scorers | none of one |
-| #650 | 16 findings, two of them raised while confirming the fixes and two while confirming the plugin pass's: 15 fixed, one left unfixed at a score of 25 | 152 515 tokens, one reviewer | seven candidates: none posted, four at 75 and two at 50, and all six fixed; one false positive | 365 642 tokens, five reviewers | 459 174 tokens, seven scorers | one of six: `CLAUDE.md` saying the new check fails a row in any tracked markdown, where it then read no table inside a blockquote |
-| #655 | ten findings, one of them raised while confirming the fixes and one while confirming the plugin pass's: all ten fixed | 157 078 tokens, one reviewer | one candidate: not posted, at 50, and fixed; no false positive | 350 091 tokens, five reviewers | 59 112 tokens, one scorer | none of one |
+**A reported count is a floor on what a pass used** (measured 2026-10-07, #631, on the 27
+subagents of two plugin passes). The count a subagent reports when it finishes was 1.000 to 1.095
+times the tokens of its last request and its response, and the sum over all its requests was 1.7
+to 6.4 times the count. The first table holds reported counts, and the second holds the sums. A
+sum is a count of tokens and not a price: a cache read is not priced as an input token, and the
+passes run on different models. That page has both measurements in full.
 
-The cost of the pre-PR review was not measured on #579, and none of the first seven pull requests
-states one. Since 2026-10-07 (#631) `/pre-pr-review` has the session write it in the pull request's
-body, and the table has a column for it. #633's row is the first written under that rule. #625's
-and #628's rows were filled in on the same day from the transcripts of their reviewers, which the
-session that ran both still had. Being filled in afterwards, those two were read after the
-reviewer's last confirmation, where a row written by its own session is read before it, as the row
-rule below says.
-#604, #605 and #607 each say five reviewers ran in the plugin pass, and none gives a time or a token
-count. #625's two figures are the usage its subagents reported; the three steps before its
-reviewers, which check eligibility, list the `CLAUDE.md` files and summarise the change, used 133 423
-more. #628's two figures are the same kind, and its three steps used 140 099. #633's are the same
-kind again, and its three steps used 140 189. #641's are the same kind, and its three steps used
-139 099. #642's are the same kind, and its three steps used 126 199. #650's are the same kind, and
-its three steps used 138 729. #655's are the same kind, and its three steps used 137 182.
+**Across the seven rows of the second table, read 2026-10-09** (#644): cache reads were 71.1% to
+92.2% of a pre-PR review's total and 74.4% to 82.1% of a plugin pass's. The scorers' share of a
+plugin pass was 13.9% to 60.2% over all requests, and 10.8% to 47.7% in reported counts with the
+three steps before the reviewers counted in. Whether the scoring step stays is #626.
 
-**A reported figure is about the size of a subagent's last request, and not what the subagent used**
-(measured 2026-10-07, #631). The plugin pass's subagents on #625 and #628 each sent a notice with a
-token count when they finished, and every figure for those two passes is a sum of those counts. The
-check was made on all 27 of them, whose counts sum to 1 565 019, which is the six figures given for
-the two passes here. For each, the count was between 1.000 and 1.095 times the tokens of the agent's
-last request and its response, and the sum over all the agent's requests was 1.7 to 6.4 times the
-count. So a figure in the table says how large each subagent's context had grown, and it is a floor
-on what the pass used. The pre-PR reviewer is reached by name, goes idle without finishing and sends
-no notice, so its figure is its last request and response read from its transcript, the reading that
-on the 27 was up to a tenth under the notice's count: 152 822 tokens on #625, where its 34 requests
-sum to 3 979 750, and 136 546 on #628, where its 19 sum to 2 192 591. About nine tenths of each sum
-is context read again from cache. The verdict's figure of about half a million tokens a pass rests
-on #625's two in this unit and on two older ones. What #579's and #594's figures measure was not
-checked, and the check does not explain why #594's reviewers reported no count.
+**The session that runs the plugin pass on a branch adds that branch's row to each table of
+`review-figures.md`, in one commit** (#624, 2026-10-07; the second table since 2026-10-08, #634),
+each time, whether or not a verdict is pending and including when the pass raises nothing. Since
+the verdict below that is every pull request. Both rows are then there when the reviewer confirms
+the plugin pass's fixes.
 
-**What each pass used over all its requests** (read 2026-10-08, #634). #625, #628 and #633 were
-reviewed in one session, and its subagents' transcripts were still on its machine: 41 of them, 40
-belonging to the three pull requests and one a probe of the usage notice. Each figure below sums,
-over every request a subagent sent, the four token counts in that request's usage record: input,
-output, cache write and cache read. They are read with the script in `/pre-pr-review`'s last step.
-The five older rows of the table above have no transcript and
-so no row here.
+**The two added lines are the whole edit** (2026-10-09, #644). What there is to say about one pull
+request is a cell of its row, and no sentence here or on that page changes for it. A share that
+can be worked out from the row's own cells is not written. #644 has what adding a pull request
+took while its figures were also in the sentences around the tables.
 
-| branch | pre-PR review: its one reviewer | of that, cache reads | plugin pass: the three steps before the reviewers | plugin pass: reviewers | plugin pass: scorers | plugin pass: those three summed |
-|---|---|---|---|---|---|---|
-| #625 | 3 979 750 tokens in 34 requests | 89.7% | 293 110 tokens, three subagents | 1 022 849 tokens, five reviewers | 1 114 370 tokens, six scorers | 2 430 329 tokens |
-| #628 | 2 192 591 tokens in 19 requests | 89.0% | 296 532 tokens, three subagents | 1 756 565 tokens, five reviewers | 877 709 tokens, five scorers | 2 930 806 tokens |
-| #633 | 3 522 320 tokens in 26 requests | 90.2% | 301 140 tokens, three subagents | 1 198 669 tokens, five reviewers | 870 953 tokens, two scorers | 2 370 762 tokens |
-| #641 | 2 240 302 tokens in 17 requests | 87.7% | 392 566 tokens, three subagents | 1 703 340 tokens, five reviewers | 999 890 tokens, four scorers | 3 095 796 tokens |
-| #642 | 1 208 124 tokens in 13 requests | 90.9% | 322 107 tokens, three subagents | 1 144 328 tokens, five reviewers | 325 030 tokens, two scorers | 1 791 465 tokens |
-| #650 | 1 403 724 tokens in 11 requests | 71.1% | 432 603 tokens, three subagents | 1 672 809 tokens, five reviewers | 3 189 387 tokens, seven scorers | 5 294 799 tokens |
-| #655 | 1 773 694 tokens in 14 requests | 92.2% | 303 349 tokens, three subagents | 1 594 636 tokens, five reviewers | 305 370 tokens, one scorer | 2 203 355 tokens |
-
-Which subagents a cell sums is told by the description the session gave each when it spawned it,
-which the transcript's `.meta.json` keeps. The pre-PR review's is the one named reviewer, over its
-whole transcript, so its confirmations are in it, the one of the plugin pass's fixes included.
-That holds for the first three rows, which were filled in afterwards; a row written by its own
-session is read before the reviewer's last confirmation, as the row rule below says, and #641's is
-the first of those. The three steps are
-the subagents that checked eligibility, listed the `CLAUDE.md` files and summarised the change. The
-reviewers are the five numbered 1 to 5, and the scorers are one for each candidate.
-
-**A total is a count of tokens and not a price.** A cache read is not priced as an input token, and
-most of every total is cache reads: about nine tenths of each pre-PR review's but #650's, which
-was 71.1% when its row was written, and 74.8%, 76.9%, 77.9%, 81.1%, 74.4%, 82.1% and 78.8% of
-the seven plugin passes'. The passes also ran on different models. Each
-pre-PR reviewer ran on Opus, the plugin's reviewers on Sonnet, and its scorers and three steps on
-Haiku, so a scorer's token and a reviewer's are not the same spend either.
-
-**The scorers' share of a plugin pass in this unit** is 45.9% on #625, 29.9% on #628, 36.7% on
-#633, 32.3% on #641, 18.1% on #642, 60.2% on #650 and 13.9% on #655. In the reported counts of the
-table above, with the three steps counted in, it is 39.8%, 35.7%, 19.8%, 31.5%, 19.1%, 47.7% and
-10.8%. #633's two
-scorers show how far the two units can part: their reported counts sum to 119 402 and their
-requests to 870 953, because one of them sent 12 requests. One of #650's seven sent 18 requests
-that sum to 1 178 225 tokens, and scored its candidate 0: a figure another reviewer had said it
-could not verify, which the scorer then verified.
-On the ten
-subagents of #633's plugin pass the sum over all requests was 1.9 to 9.9 times the last request,
-where the 27 above gave 1.7 to 6.4 against the notice's count.
-
-**The first six rows are every pull request from #560 to #625 that had both kinds of pass**, counted
-2026-10-07 over the 14 from #568 to #625. One counts when its body carries the findings of a review
-made before it was opened and it has a comment headed `### Code review`. #568 and #582 have the
-comment and no such findings; #603, #619, #621 and #622 have the findings and no such comment; #601
-and #606 have neither.
-
-**The session that runs the plugin pass on a branch adds that branch's row** (#624, 2026-10-07),
-each time, whether or not a verdict is pending and including when the pass raises nothing. Since the
-verdict below that is every pull request. A row gives each of its three cost columns as the token
-count reported for that pass's subagents, where there is one, and the grade in the last column. The
-pre-PR review's is its one reviewer's, read from its transcript as `/pre-pr-review` says when the
-row is written; the reviewer confirms after that, and the pull request's body has the later figure.
-**The session adds the branch's row to the all-requests table in the same commit** (2026-10-08,
-#634), so the reviewer's confirmation reads both rows. It reads the totals from the transcripts in
-its own `subagents` directory, the one `/pre-pr-review`'s last step names. Each `agent-*.jsonl`
-there has an `agent-*.meta.json` beside it whose `description` is what the session called that
-subagent when it spawned it. The session picks the plugin pass's subagents by description, gives
-that step's script the three steps' transcripts in one run, the reviewers' in a second and the
-scorers' in a third, and writes each run's total. The pre-PR review's cell is read when the row is
-written, as its cell in the other table is, and the pull request's body has the later figure.
-A figure that was not measured is written as not measured, one that covers the whole pass as not
-split, and one the pull request does not give as not recorded. A figure with no record behind it is
-not estimated.
+**What a row holds.** In the first table: the day of the two passes; each count of findings, read
+from the pull request's body and comments; four costs, each the token count reported for that
+pass's subagents where there is one; and the grade, with the day it was made and its reason in the
+last cell. The pre-PR review's cost is its one reviewer's, read from its transcript as
+`/pre-pr-review` says when the row is written; the reviewer confirms after that, and the pull
+request's body has the later figure. In the second table: the totals over all requests, read from
+the transcripts in the session's own `subagents` directory, the one `/pre-pr-review`'s last step
+names. Each `agent-*.jsonl` there has an `agent-*.meta.json` beside it whose `description` is what
+the session called that subagent when it spawned it. The session picks the plugin pass's subagents
+by description, gives that step's script the three steps' transcripts in one run, the reviewers'
+in a second and the scorers' in a third, and writes each run's total, the sum of the three, and
+the share of that sum that is cache reads. The pre-PR review's cell is read when the row is
+written, as its cell in the other table is, and the pull request's body has the later figure. A
+figure that was not measured is written as not measured, one that covers the whole pass as not
+split, and one the pull request does not give as not recorded. A figure with no record behind it
+is not estimated.
 
 **The verdict, 2026-10-07: the one-review rule fell** ([comment on
 #593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6037668590),
 written here by #627). #593 had the rule revisited once the table had five rows, with the verdict
-Truls's. It had six, the first six above, and he gave it: the plugin pass runs on every pull
-request, and the pre-PR review stays as it was.
+Truls's. It had six, the first six of the first table, and he gave it: the plugin pass runs on every
+pull request, and the pre-PR review stays as it was.
 
 **#604, #605 and #607 count towards the five** (Truls, 2026-10-07, #593). They were added on
 2026-10-07 when he asked for them, and not by the sessions that ran their plugin passes, which #593
@@ -609,29 +531,12 @@ pass's reviewers did. The pre-PR review's fixed findings on the same six number 
 #593 names each of the eight.
 
 **The grade is the session's, and Truls's to overrule** (Truls, 2026-10-07, #593). The session that
-adds a row grades it by the test above. The first six were graded on 2026-10-07 by the session that
-put the verdict to him, and he ruled on three it was unsure of: #579's missing exponent is serious,
-a sentence on #607 saying a skill writes what it only holds templates for is not, and a false
-sentence in this file or in `CLAUDE.md` is. #628's two were graded by that last ruling and he has
-not seen them. A third of #628's five, `CLAUDE.md` dating the rule 2026-10-07 and not cutting it at
-the verdict, was graded as not serious, because it is false only of pull requests that had merged
-before the verdict, #622 the last of them. The same ruling could be read to cover it, and that is
-his to say. #633's two were graded as not serious, and he has not seen those either. The sentence
-its first finding quotes was true of the pull requests' own text and read as false beside the
-table. Its second was a pair of sentences that did not say they spoke of different rows.
-#641's four were graded as not serious, and he has not seen those. All four are in the skill's
-steps or the tracker page and none is a wrong figure. The nearest to serious is a sentence in the
-skill that a new step superseded and the change left standing. #642's one fixed finding was graded
-as not serious: the tracker page asked for a `Closes` line for each ticket, where a body may join
-them on one line or have none. One of #650's six was graded as serious, by the ruling on a false
-sentence in `CLAUDE.md`, and he has not seen it: the file said the new check fails a row "in any
-tracked markdown", and the check then read no table inside a blockquote (it has since #652). The
-other five are in the
-skill's steps, this file's new rules and a comment in the script: a rule written only in the skill,
-an "all" that left out one report, a comment that the change which wrote it made stale, a sentence
-that could be read two ways, and a case a new rule did not cover. #655's one fixed finding was
-graded as not serious: a failure message that speaks of a row outside its header's blockquote,
-where the check also fires on a row quoted one level deeper.
+adds a row grades it by the test above, and writes in the row's last cell the day, the reason, and
+whether he has seen the grade. The first six were graded on 2026-10-07 by the session that put the
+verdict to him, and he ruled on three it was unsure of: #579's missing exponent is serious, a
+sentence on #607 saying a skill writes what it only holds templates for is not, and a false
+sentence in this file or in `CLAUDE.md` is. A later row is graded by the same test and those
+rulings, and its last cell has what the session wrote of its grade.
 
 **What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
 and one was what a tool would do on a reinstall (#604). The six are branches where the pass was

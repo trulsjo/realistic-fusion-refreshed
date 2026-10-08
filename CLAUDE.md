@@ -74,7 +74,10 @@ which fails a table in tracked markdown whose delimiter row, or any row under it
 that is not its header's: the part of how a table renders on GitHub that needs no browser. It reads
 a table that has a delimiter row and whose lines start with a pipe, or since #652 with a pipe
 after their blockquote marks, and no other. Inside a blockquote it also fails a row that has lost
-its `>`. The other eight sections it
+its `>`. Since #646 it proves section 12 too, which fails a prose line over 100 characters in the
+three files `docs/agents/code-review.md` names as wrapped at that width: that file,
+`docs/agents/review-figures.md` and the pre-PR review skill. It leaves alone a table row, a line
+inside a code fence, front matter, and a line with no space to break it at. The other eight sections it
 runs on a plain invocation are unchanged and still have no self-test, for the reason its help block
 gives.
 Run them rather than reasoning about whether a change is safe. How two of the self-tests are
@@ -389,7 +392,8 @@ none of them** (#630). Read the section named when its condition holds:
   `/code-review`**: *A review before the pull request, and the plugin pass after it*, for the
   pre-PR review. `/pre-pr-review` runs it.
 - **A pull request has been opened**: the same section, for the plugin pass
-  (`code-review:code-review`), who confirms its fixes, and the row it adds to that section's table.
+  (`code-review:code-review`), who confirms its fixes, and the row it adds to each of the two
+  tables, which since #644 are in `docs/agents/review-figures.md`.
 - **A review's findings are about to be reported or posted**: *The threshold gates the comment, not
   the report*.
 - **A change is being reviewed, a fix a review asked for is being written, or a ticket or a

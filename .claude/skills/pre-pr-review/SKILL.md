@@ -39,8 +39,8 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    Done when every figure or pass the branch claims has its output in a file.
 
 3. **Spawn one fresh reviewer** with the Agent tool: `general-purpose`, never a fork, since a fork
-   has already read the author's reasoning. Give it a `name` so step 4 can reach it. Its brief is the
-   block below with the paths filled in and nothing about what the author thinks is right:
+   has already read the author's reasoning. Give it a `name` so step 4 can reach it. Its brief is
+   the block below with the paths filled in and nothing about what the author thinks is right:
 
    > You are the pre-PR reviewer of a branch of this repository. Read
    > `docs/agents/code-review.md` in full first; its second rule, *Review the prose, not only the
@@ -180,8 +180,8 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    ```
 
    Write the first two figures, and what share of the second is cache reads. The first is the one
-   the table of findings and reported costs in `docs/agents/code-review.md` holds, and the second
-   the one its all-requests table holds; that file says what each measures. Read them again after
+   the first table of `docs/agents/review-figures.md` holds, and the second the one its second
+   table holds; that page says what each measures (#644). Read them again after
    the reviewer's last confirmation, the one of the plugin pass's fixes, and replace the figures in
    the body. Each table's row keeps the figure read when the row was written. If the transcript
    cannot be found, write "not measured". Given several transcripts, the script prints a line for
