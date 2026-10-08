@@ -77,7 +77,8 @@ after their blockquote marks, and no other. Inside a blockquote it also fails a 
 its `>`. Since #646 it proves section 12 too, which fails a prose line over 100 characters in the
 three files `docs/agents/code-review.md` names as wrapped at that width: that file,
 `docs/agents/review-figures.md` and the pre-PR review skill. It leaves alone a table row, a line
-inside a code fence, a heading, front matter, and a line with no space to break it at. Its two
+inside a code fence, a heading, front matter, and a line with no space to break it at; a fence
+opened inside a blockquote it does not see, and reads as prose. Its two
 halves prove that scan of the lines; the check of the sentence against the script's own width and
 file list names what it requires, and has none. The other eight sections it
 runs on a plain invocation are unchanged and still have no self-test, for the reason its help block
