@@ -481,11 +481,11 @@ to 6.4 times the count. The first table holds reported counts, and the second ho
 sum is a count of tokens and not a price: a cache read is not priced as an input token, and the
 passes run on different models. That page has both measurements in full.
 
-**Across the seven rows of the second table, read 2026-10-09** (#644): cache reads were 71.1% to
-92.2% of a pre-PR review's total and 74.4% to 82.1% of a plugin pass's. The 71.1% is #650's, as it
-was when its row was written; the other six rows are 87.7% or over. The scorers' share of a
-plugin pass was 13.9% to 60.2% over all requests, and 10.8% to 47.7% in reported counts with the
-three steps before the reviewers counted in. Whether the scoring step stays is #626.
+**Across the seven rows of the second table from #625 to #655, read 2026-10-09** (#644): cache reads
+were 71.1% to 92.2% of a pre-PR review's total and 74.4% to 82.1% of a plugin pass's. The 71.1% is
+#650's, as it was when its row was written; the other six rows are 87.7% or over. The scorers' share
+of a plugin pass was 13.9% to 60.2% over all requests, and 10.8% to 47.7% in reported counts with
+the three steps before the reviewers counted in. Whether the scoring step stays is #626.
 
 **The session that runs the plugin pass on a branch adds that branch's row to each table of
 `review-figures.md`, in one commit** (#624, 2026-10-07; the second table since 2026-10-08, #634),
