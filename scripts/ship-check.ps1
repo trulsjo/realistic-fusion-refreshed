@@ -148,6 +148,14 @@
     table-shape-not-flagged halves plant the shapes it must and must not report. It cannot see a
     table that has no delimiter row; the section comment has the rest.
 
+    SECTION 12 HAS A -SelfTest AND NO FLOOR (#646). It fails a prose line over the wrap width in
+    the three files docs/agents/code-review.md names as wrapped, and fails when that file's sentence
+    is not the one this script's width and file list make. The files are named and not scanned for,
+    so a missing one fails by name and there is no count to hold. The overlong-prose-caught and
+    unwrappable-line-not-flagged halves plant what it must and must not report. It cannot see a
+    figure grouped in thousands that a rewrap split across a line end; the section comment has the
+    rest.
+
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
     stopped saying no fails rather than turning every check below it green. It was also demonstrated
@@ -157,10 +165,11 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove four things a green run cannot: the shared -SelfTest runner
+    Run the checks as usual, then prove five things a green run cannot: the shared -SelfTest runner
     in factorio-lib.ps1 -- that it numbers halves from the list it was given and refuses a half it
     cannot show ran -- section 9, in both directions, section 10's two assertions, each in both
-    directions, and section 11, in both directions and inside a blockquote, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
+    directions, section 11, in both directions and inside a blockquote, and section 12, in both
+    directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
     memory and the planted documents live in the scratch directory the run removes on its way out.
 
 .EXAMPLE
@@ -1240,6 +1249,79 @@ foreach ($row in $tableRows.Found) {
     $failures.Add("$($row.File), line $($row.Line): a table $what -- $($row.Detail). $hint")
 }
 
+# 12. A PROSE LINE OF THE REVIEW DOCS IS NO LONGER THAN THEIR WRAP WIDTH (#646).
+#
+# Pre-PR reviewers kept finding over-long lines in docs/agents/code-review.md, against a width no
+# tracked file stated; #646 has the findings. That file states the width now and names the files it
+# binds, and this section holds those files to it. The sentence and the two constants below say
+# the same thing twice, so the sentence is required to be the one the constants make.
+#
+# WHAT IS LEFT ALONE, whatever its length:
+#   - a table row: a line whose first character is a pipe, once its indentation, blockquote marks
+#     and list marker are taken off. A row cannot be wrapped.
+#   - a line inside a code fence, and the fence lines themselves. Get-ProseLines leaves them out.
+#   - front matter: a first line of three hyphens, and every line down to the next such line.
+#   - a line with no space to break it at, once the same things are taken off. A long link alone
+#     on its line is the case. A long link that is not alone fails, and the fix is to break
+#     before it.
+#
+# WHAT IT CANNOT SEE:
+#   - a figure grouped in thousands that a rewrap split across a line end. #646 names two that
+#     reviewers found by reading. A number ending one line and a number opening the next are not
+#     always one figure, which is the ambiguity section 10's comment records, so that stays with
+#     whoever rewraps and whoever reviews.
+#   - a fence opened inside a blockquote. Get-ProseLines does not look through the marks, so the
+#     lines of such a fence are read as prose. That is a false FAILURE, the cheap direction.
+#   - how wide a line renders. A line's length is its count of UTF-16 code units.
+#   - any file the sentence does not name.
+$WRAP_WIDTH = 100
+# The first is where the sentence is; it calls itself "this file" there.
+$WRAPPED    = @('docs/agents/code-review.md', 'docs/agents/review-figures.md', '.claude/skills/pre-pr-review/SKILL.md')
+
+function Find-OverlongProseLines {
+    <#  Every prose line of these markdown files that is longer than the width and could be broken.
+
+        Returns the file, the line and its length.  #>
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Files, [string] $Root, [int] $Width = $WRAP_WIDTH)
+
+    $found = [System.Collections.Generic.List[object]]::new()
+    foreach ($rel in $Files) {
+        $full = if ($Root) { Join-Path $Root $rel } else { $rel }
+        if (-not (Test-Path -LiteralPath $full)) { continue }   # reported by the caller, which names the files
+        $front = $false
+        foreach ($prose in (Get-ProseLines -Path $full -Extension '.md')) {
+            $text = $prose.Text
+            if ($prose.Line -eq 1 -and $text.Trim() -ceq '---') { $front = $true; continue }
+            if ($front) { if ($text.Trim() -ceq '---') { $front = $false }; continue }
+            if ($text.Length -le $Width) { continue }
+            $bare = ($text -replace '^[\s>]*(?:(?:[-*+]|\d+[.)])\s+)?', '').TrimEnd()
+            if ($bare.StartsWith('|') -or $bare -notmatch '\s') { continue }
+            $found.Add([pscustomobject]@{ File = $rel; Line = $prose.Line; Length = $text.Length })
+        }
+    }
+    return $found
+}
+
+$checks++
+foreach ($rel in $WRAPPED) {
+    if (-not (Test-Path -LiteralPath (Join-Path $repoRoot $rel))) {
+        $failures.Add("$rel is one of the files section 12 holds to a wrap width, and it is not there.")
+    }
+}
+foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
+    $failures.Add(("$($long.File), line $($long.Line): a prose line of $($long.Length) characters in a file " +
+        "wrapped at $WRAP_WIDTH (docs/agents/code-review.md says which files are). Rewrap the " +
+        'paragraph, and keep a figure grouped in thousands on one line.'))
+}
+$wrapRule = Join-Path $repoRoot $WRAPPED[0]
+if (Test-Path -LiteralPath $wrapRule) {
+    # One kind of space, so the sentence is found however it is itself wrapped.
+    Test-Claim -Where $WRAPPED[0] -Text ([regex]::Replace((Get-Content -LiteralPath $wrapRule -Raw), '\s+', ' ')) -Needles @{
+        'the wrap width and the files section 12 holds to it' =
+            @("This file, ``$($WRAPPED[1])`` and ``$($WRAPPED[2])`` are wrapped at $WRAP_WIDTH characters")
+    }
+}
+
 if ($failures.Count) {
     Write-Host ''
     foreach ($f in $failures) { Write-Host "FAIL  $f" -ForegroundColor Red }
@@ -1521,6 +1603,65 @@ if ($SelfTest) {
                 }
                 'an escaped pipe, a row with no closing pipe, an empty cell, a table inside a fence, prose that starts with a pipe, a well-formed table inside a blockquote, nested or not, and a quoted table directly under a plain one are all left alone.'
             } }
+
+            @{ Name = 'overlong-prose-caught'; Body = {
+                # Section 12 passes by finding nothing long. Four lines one word over the width,
+                # in the four places prose sits, and a fifth of exactly the width. The fourth is
+                # a link too long to fit that is not alone on its line.
+                $doc  = Join-Path $planted 'overlong.md'
+                $long = ('word ' * 21).Trim()
+                @(
+                    $long
+                    "   - $long"
+                    "> $long"
+                    ('see [the page](https://example.invalid/' + ('a' * 80) + ')')
+                    ('word ' * 19) + 'words'
+                ) | Set-Content -LiteralPath $doc -Encoding utf8
+
+                $rows = @(Find-OverlongProseLines -Files @($doc) | ForEach-Object { "$($_.Line):$($_.Length)" })
+                if (($rows -join '; ') -cne '1:104; 2:109; 3:106; 4:120') {
+                    throw ("four planted lines over $WRAP_WIDTH characters -- a paragraph's, a list item's, " +
+                           "a blockquote's and a word before a long link -- beside one of exactly " +
+                           "$WRAP_WIDTH, were reported as: $($rows -join '; '). Wanted exactly " +
+                           "'1:104; 2:109; 3:106; 4:120'.")
+                }
+                "a prose line over $WRAP_WIDTH characters is caught with its line and length in a paragraph, a list item and a blockquote, as is a long link with a word before it; a line of exactly $WRAP_WIDTH is left alone."
+            } }
+
+            @{ Name = 'unwrappable-line-not-flagged'; Body = {
+                # The other direction: everything the section says it leaves alone, each over the
+                # width. Front matter, a table row plain and quoted and indented, a line inside a
+                # fence, and a link alone on its line -- bare, in a list item and in a blockquote.
+                $doc  = Join-Path $planted 'unwrappable.md'
+                $long = ('word ' * 21).Trim()
+                $link = '[the-page](https://example.invalid/' + ('a' * 80) + ')'
+                @(
+                    '---'
+                    "description: $long"
+                    '---'
+                    ''
+                    "| $long | a cell |"
+                    "> | $long | a cell |"
+                    "   | $long | a cell |"
+                    ''
+                    '```'
+                    $long
+                    '```'
+                    ''
+                    $link
+                    "   - $link"
+                    "> $link"
+                ) | Set-Content -LiteralPath $doc -Encoding utf8
+
+                $rows = @(Find-OverlongProseLines -Files @($doc) | ForEach-Object { "$($_.Line):$($_.Length)" })
+                if ($rows.Count) {
+                    throw ("front matter, three table rows, a line inside a fence and three links alone " +
+                           "on their lines, each over $WRAP_WIDTH characters, were reported as prose to " +
+                           "rewrap: $($rows -join '; '). A gate that fires on a line nobody can break " +
+                           'gets switched off.')
+                }
+                "front matter, a table row plain, quoted or indented, a line inside a fence and a link alone on its line are each left alone over $WRAP_WIDTH characters."
+            } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
     Write-Host ''
@@ -1533,5 +1674,6 @@ Write-Host 'The clean break and the quality gap are stated in both code mods and
 Write-Host 'licence and the scope rule ship inside all three; the assets floor matches, no code mod'
 Write-Host 'ships art, every accent named for a fluid still carries that fluid''s own colour, and'
 Write-Host 'no prose cites a self-test half by position, every Current figures row still names a'
-Write-Host 'heading and a figure its note has, and every table row has as many cells as its header.'
+Write-Host 'heading and a figure its note has, every table row has as many cells as its header, and'
+Write-Host 'no prose line of the review docs is over the width they are wrapped at.'
 exit 0
