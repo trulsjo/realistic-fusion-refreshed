@@ -63,9 +63,9 @@ fix depends on the finding's score (#643). They carry out one more from that day
 its turn to receive what the reviewer sends (#648), which a question put to the user does not end
 (#654). A change to one of those is made here first and then in the steps.
 
-**This file, `docs/agents/review-figures.md` and `.claude/skills/pre-pr-review/SKILL.md` are
-wrapped at 100 characters** (2026-10-09, #646). Section 12 of `scripts/ship-check.ps1` fails a
-longer line of prose in any of the three. It leaves alone a table row, a line inside a code fence,
+**This file, `docs/agents/review-figures.md` and `.claude/skills/pre-pr-review/SKILL.md` are wrapped
+at 100 characters** (2026-10-09, #646). Section 12 of `scripts/ship-check.ps1` fails a longer line
+of prose in any of the three. It leaves alone a table row, a line inside a code fence, a heading,
 the skill's front matter, and a line with no space to break it at, which is what a long link alone
 on its line is. **A figure grouped in thousands stays on one line when a paragraph is rewrapped**,
 and no gate reads for that. #646 has the findings that asked for a stated width.
@@ -495,21 +495,22 @@ can be worked out from the row's own cells is not written. #644 has what adding 
 took while its figures were also in the sentences around the tables.
 
 **What a row holds.** In the first table: the day of the two passes; each count of findings, read
-from the pull request's body and comments; four costs, each the token count reported for that
-pass's subagents where there is one; and the grade, with the day it was made and its reason in the
-last cell. The pre-PR review's cost is its one reviewer's, read from its transcript as
-`/pre-pr-review` says when the row is written; the reviewer confirms after that, and the pull
-request's body has the later figure. In the second table: the totals over all requests, read from
-the transcripts in the session's own `subagents` directory, the one `/pre-pr-review`'s last step
-names. Each `agent-*.jsonl` there has an `agent-*.meta.json` beside it whose `description` is what
-the session called that subagent when it spawned it. The session picks the plugin pass's subagents
-by description, gives that step's script the three steps' transcripts in one run, the reviewers'
-in a second and the scorers' in a third, and writes each run's total, the sum of the three, and
-the share of that sum that is cache reads. The pre-PR review's cell is read when the row is
-written, as its cell in the other table is, and the pull request's body has the later figure. A
-figure that was not measured is written as not measured, one that covers the whole pass as not
-split, and one the pull request does not give as not recorded. A figure with no record behind it
-is not estimated.
+from the pull request's body and comments; four costs, each the token count reported for that pass's
+subagents where there is one; and the grade, with the day it was made and its reason in the last
+cell. The pre-PR review's cost is its one reviewer's, read from its transcript as `/pre-pr-review`
+says when the row is written; the reviewer confirms after that, and the pull request's body has the
+later figure. Anything else there is to say of the pull request goes in the last cell of its row in
+the second table. In the second table: the totals over all requests, and for the pre-PR review its
+count of requests and the share that is cache reads, read from the transcripts in the session's own
+`subagents` directory, the one `/pre-pr-review`'s last step names. Each `agent-*.jsonl` there has an
+`agent-*.meta.json` beside it whose `description` is what the session called that subagent when it
+spawned it. The session picks the plugin pass's subagents by description, gives that step's script
+the three steps' transcripts in one run, the reviewers' in a second and the scorers' in a third, and
+writes each run's total, the sum of the three, and the share of that sum that is cache reads. The
+pre-PR review's cell is read when the row is written, as its cell in the other table is, and the
+pull request's body has the later figure. A figure that was not measured is written as not measured,
+one that covers the whole pass as not split, and one the pull request does not give as not recorded.
+A figure with no record behind it is not estimated.
 
 **The verdict, 2026-10-07: the one-review rule fell** ([comment on
 #593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6037668590),
@@ -532,30 +533,31 @@ pass's reviewers did. The pre-PR review's fixed findings on the same six number 
 
 **The grade is the session's, and Truls's to overrule** (Truls, 2026-10-07, #593). The session that
 adds a row grades it by the test above, and writes in the row's last cell the day, the reason, and
-whether he has seen the grade. The first six were graded on 2026-10-07 by the session that put the
+whether he has seen the grade. The cells of #642 and #655 were written before this asked for the
+last of those, and do not say. The first six were graded on 2026-10-07 by the session that put the
 verdict to him, and he ruled on three it was unsure of: #579's missing exponent is serious, a
-sentence on #607 saying a skill writes what it only holds templates for is not, and a false
-sentence in this file or in `CLAUDE.md` is. A later row is graded by the same test and those
-rulings, and its last cell has what the session wrote of its grade.
+sentence on #607 saying a skill writes what it only holds templates for is not, and a false sentence
+in this file or in `CLAUDE.md` is. A later row is graded by the same test and those rulings, and its
+last cell has what the session wrote of its grade.
 
 **What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
 and one was what a tool would do on a reinstall (#604). The six are branches where the pass was
-asked for, two of them the changes that wrote this rule and this table, so they are not a sample of
-branches. Three of the six had a cost for the plugin pass: about 400 000 tokens on #579, about
-580 000 for #594's scorers alone, and 629 193 for #625's reviewers and scorers, or 762 616 with
-the three steps before them. #594's is a floor. The verdict took the cost as about half a million
-tokens a pass, from the first two figures and 629 193. Whether the scorers' share of it stays is
-#626. Truls accepted on 2026-10-07 (#593) that the six are not a sample and that three cost figures
-are enough.
+asked for, two of them the changes that wrote this rule and the first table, so they are not a
+sample of branches. Three of the six had a cost for the plugin pass: about 400 000 tokens on #579,
+about 580 000 for #594's scorers alone, and 629 193 for #625's reviewers and scorers, or 762 616
+with the three steps before them. #594's is a floor. The verdict took the cost as about half a
+million tokens a pass, from the first two figures and 629 193. Whether the scorers' share of it
+stays is #626. Truls accepted on 2026-10-07 (#593) that the six are not a sample and that three cost
+figures are enough.
 
-**The rule is revisited at ten routine rows, which is sixteen in the table** (Truls, 2026-10-07,
-#593). A routine row is one for a pull request opened after the verdict, when the pass stopped
-waiting to be asked for: #628's is the first, the pull request that closed #627, and #625's is not
-one. The comment on #593 words the cut as "opened from 2026-10-07 on", and #622 and #625 were opened
-that day before the verdict. "After the verdict" is this file's reading of it. In the session that
-put the verdict to him Truls confirmed that #625's row is not routine and that this change's is the
-first, and the seventh point of #627 is the only written record of that. The wording of the cut is
-his to correct. The test is the same, no pass mark is set in advance, and the verdict is his.
+**The rule is revisited at ten routine rows, which is sixteen in the first table** (Truls,
+2026-10-07, #593). A routine row is one for a pull request opened after the verdict, when the pass
+stopped waiting to be asked for: #628's is the first, the pull request that closed #627, and #625's
+is not one. The comment on #593 words the cut as "opened from 2026-10-07 on", and #622 and #625 were
+opened that day before the verdict. "After the verdict" is this file's reading of it. In the session
+that put the verdict to him Truls confirmed that #625's row is not routine and that this change's is
+the first, and the seventh point of #627 is the only written record of that. The wording of the cut
+is his to correct. The test is the same, no pass mark is set in advance, and the verdict is his.
 
 **On #579 only the pre-PR review could check a figure against what a probe printed.** The plugin's
 reviewers are given the change, its blame, earlier pull requests and the comments on them, and the
