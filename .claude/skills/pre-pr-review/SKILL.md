@@ -79,8 +79,9 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    the sixth of nine findings, and the reviewer's attempt to write the rest to a file was refused.
 
    **The report arrives as a message from the reviewer once this session's turn has ended**
-   (#648). End the turn to receive it: on #641 and #642 all 18 of the reviewers' messages, eight
-   replies and ten idle notices, came directly after a turn ended, and none during one. The
+   (#648). End the turn to receive it: on #641 and #642 all 18 of the reviewers' messages in the
+   session's transcript, eight replies and ten idle notices, came directly after a turn ended,
+   and none during one. The first report of #641's reviewer is not in that transcript. The
    message starts the session's next turn. If something else starts it first, or the reply came
    cut off and asking does not get the rest, read it from the reviewer's transcript, the file
    step 6 names.
