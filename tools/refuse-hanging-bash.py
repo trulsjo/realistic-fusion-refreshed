@@ -54,8 +54,10 @@ WHAT IT CANNOT SEE:
     refusal. `git commit -m "$(cat <<'EOF' ...)"` with an odd count of `"` in its body is one.
   - a shift inside arithmetic, `$(( 1 << 3 ))`. It is taken for a heredoc, and what follows it
     for the body, so a reader after it is let through.
-  - a reader in the body of a loop, after `do`. What feeds a loop is written at its other end,
-    `while read f; do ...; done < list`, or before it, so the body is not judged at all.
+  - a reader that is the first command of a loop's body, straight after `do`. What feeds a loop
+    is written at its other end, `while read f; do ...; done < list`, or before it, so that
+    command is not judged. A later command of the body is judged like any other, and a `cat`
+    there is refused although the loop feeds it: `while read l; do echo; cat; done < list`.
   - a reader after a group that a pipe fed, `echo hi | { head -1; }; cat`, for the reason above.
   - a reader behind a wrapper other than the few skipped below, or behind a shell function.
     `timeout` is skipped with its `-s` and `-k` values; another option of its that takes a
@@ -193,6 +195,7 @@ CASES = [
     ("timeout -s KILL 5 cat > /dev/null", True),                         # run 9 of the reproduction
     ("if true; then cat; fi", True),
     ("python -- -", True),
+    ("while read l; do echo; cat; done < list.txt", True),               # a known false refusal
     ("git ls-files | while read f; do cat; done", False),
     ("while read l; do cat; done < list.txt", False),
     ("echo hi | { head -1; cat; }", False),

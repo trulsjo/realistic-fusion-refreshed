@@ -47,7 +47,8 @@ when it matters which.
    (#648). The evidence under that last one was corrected the same day (#654), which added that a
    question put to the user does not end the turn. Since 2026-10-09 (#644) the two tables are on a
    page of their own, [`review-figures.md`](review-figures.md), and what was said of one pull
-   request in the sentences around them is a cell of its row.
+   request in the sentences around them is a cell of its row. The row rule changed with that: the
+   two added lines are the whole edit, and a pull request's figures go nowhere in this file.
 
 **A rule is changed in this file** (2026-10-07, #630). `CLAUDE.md` and the intro of
 `.claude/skills/pre-pr-review/SKILL.md` each stated parts of the four until then, so a rule that
@@ -67,8 +68,9 @@ its turn to receive what the reviewer sends (#648), which a question put to the 
 at 100 characters** (2026-10-09, #646). Section 12 of `scripts/ship-check.ps1` fails a longer line
 of prose in any of the three. It leaves alone a table row, a line inside a code fence, a heading,
 the skill's front matter, and a line with no space to break it at, which is what a long link alone
-on its line is. **A figure grouped in thousands stays on one line when a paragraph is rewrapped**,
-and no gate reads for that. #646 has the findings that asked for a stated width.
+on its line is. A fence opened inside a blockquote it does not see: it reads that fence's lines as
+prose, and fails a long one. **A figure grouped in thousands stays on one line when a paragraph is
+rewrapped**, and no gate reads for that. #646 has the findings that asked for a stated width.
 
 ## The threshold gates the comment, not the report
 
@@ -405,7 +407,8 @@ neither the session nor the reviewer can check is written there as left unchecke
 On #633 the reviewer said it had not checked the bodies of #594, #604 and #605 for a pre-PR cost.
 The session checked those three bodies, and the sentence the item was about, "none of the other six
 pull requests records it", held against them. The plugin pass then raised that sentence at 100,
-because it stood under a table in which the same change gave two of those six rows a figure.
+because it stood under a table, then in this file, in which the same change gave two of those six
+rows a figure.
 
 **A commit message is reworded when a review corrects what it says** (Truls, 2026-10-07, #640).
 When a finding corrects a figure or a claim, the session searches the branch's commit messages for
@@ -479,7 +482,8 @@ sum is a count of tokens and not a price: a cache read is not priced as an input
 passes run on different models. That page has both measurements in full.
 
 **Across the seven rows of the second table, read 2026-10-09** (#644): cache reads were 71.1% to
-92.2% of a pre-PR review's total and 74.4% to 82.1% of a plugin pass's. The scorers' share of a
+92.2% of a pre-PR review's total and 74.4% to 82.1% of a plugin pass's. The 71.1% is #650's, as it
+was when its row was written; the other six rows are 87.7% or over. The scorers' share of a
 plugin pass was 13.9% to 60.2% over all requests, and 10.8% to 47.7% in reported counts with the
 three steps before the reviewers counted in. Whether the scoring step stays is #626.
 
