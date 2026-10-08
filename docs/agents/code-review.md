@@ -343,8 +343,8 @@ exception.** It is verified and important, so its fix gets a message of its own 
 before the pull request is opened. Where that message's diff holds a waiting fix as well, the
 reviewer answers for both and nothing waits. A finding raised in the confirmation of the plugin
 pass's fixes has no later message to wait for, and its fix is confirmed as before. So is a defect
-the session finds itself while it answers for what the reviewer did not check: it has no score,
-and it gets a message of its own.
+that an item of the reviewer's unchecked list turns up, whoever finds it: its fix gets a message of
+its own.
 
 The reason is what a message costs: the reviewer's whole context again, for every request it makes
 in answering. Read from the two reviewers' transcripts on 2026-10-08, over all their requests:
