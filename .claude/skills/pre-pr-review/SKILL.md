@@ -130,7 +130,7 @@ reviewer from step 3 running when this skill ends: that section has more for it 
 
    **Fixed** is `yes, confirmed` only when the reviewer said so in step 4; otherwise
    `yes, not confirmed` or `no: <reason>`. A review that found nothing says that in the body in
-   place of the table, above step 5's outcomes for what the reviewer said it did not check.
+   place of the table, below step 5's outcomes for what the reviewer said it did not check.
 
    **Under the table, write what the reviewer cost** (#631). A reviewer reached by name goes idle
    and sends no completion notice, so nothing reports its usage. Read it from the reviewer's
