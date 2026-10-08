@@ -100,30 +100,28 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    git log main..HEAD --format='%h %s' --grep='<the old figure or words>'
    GIT_SEQUENCE_EDITOR="sed -i 's/^pick <short hash>/reword <short hash>/'" \
      GIT_EDITOR="cp <scratch>/msg.txt" git rebase -i <short hash>~1
-   git push --force-with-lease             # only if the branch is already pushed
+   git push --force-with-lease             # a pushed, unmerged branch only; never main
    ```
 
    **Run the `git log` line again before each reword.** A reword gives every later commit a new
    hash, and a rebase handed a hash that is no longer on the branch exits 0, rewords nothing and
    puts the earlier commit's old message back.
 
-   The rebase starts at the reworded commit's parent. Started at `main` it would replay the
-   branch onto wherever `main` is now, and the diff of the fixes would gain `main`'s changes.
-
-   `pre-pr-reviewed` stays on the commit the reviewer read, so the `fixes.diff` line above gives
-   the same diff after a reword as before it. Delete the tag when the branch has merged.
+   The same section says why the rebase starts at the commit's parent and why the `fixes.diff`
+   line above gives the same diff after a reword. Delete the tag when the branch has merged.
 
    Done when the reviewer has answered for every finding. New findings get the same step again.
 
 5. **Answer for each thing the reviewer said it did not check** (#636). The same section of
    `docs/agents/code-review.md` says how an item is checked and what the pull request's body
    records for it. Check each item, or send it to the reviewer by name with SendMessage, and write
-   the outcome of each under the heading the findings table will go under. A defect that an item
-   turns up is fixed and confirmed as step 4 has it.
+   the outcome of each for the pull request's body, under a `## Pre-PR review` heading. A defect
+   that an item turns up is fixed and confirmed as step 4 has it.
 
    Done when every item on the reviewer's list has an outcome written for it.
 
-6. **Write the findings table** and put it in the pull request's body, every finding in it:
+6. **Write the findings table** and put it in the pull request's body under the same heading,
+   below step 5's outcomes, every finding in it:
 
    | # | Finding | Where | Score | Fixed |
    |---|---|---|---|---|
@@ -132,7 +130,7 @@ reviewer from step 3 running when this skill ends: that section has more for it 
 
    **Fixed** is `yes, confirmed` only when the reviewer said so in step 4; otherwise
    `yes, not confirmed` or `no: <reason>`. A review that found nothing says that in the body in
-   place of the table, with what the reviewer said it did not check.
+   place of the table, above step 5's outcomes for what the reviewer said it did not check.
 
    **Under the table, write what the reviewer cost** (#631). A reviewer reached by name goes idle
    and sends no completion notice, so nothing reports its usage. Read it from the reviewer's
