@@ -1274,10 +1274,11 @@ foreach ($row in $tableRows.Found) {
 #
 # A FIGURE GROUPED IN THOUSANDS IS NOT SPLIT ACROSS A LINE END (#662). #646 names two that a rewrap
 # split and reviewers found by reading, "133 423" and "580 000". A line fails when it ends in a
-# number of one to three digits, or in such a number and groups of three after it, with a space or
-# the line's start before it, and the next line opens with exactly three digits. Both lines are
-# prose as above: not a table row, a heading, front matter or a fenced line. "#656", "2026",
-# "10.8" and "2026-10-09" at a line's end are none of them the head of a grouped figure.
+# number of one to three digits, or in such a number and groups of three after it, and the next
+# line opens with exactly three digits. Before the number comes a space, the line's start or
+# punctuation such as a bracket or an asterisk, and not a letter, a digit, `#`, `.`, `,` or `-`:
+# "#656", "2026", "10.8" and "2026-10-09" at a line's end are none of them the head of a grouped
+# figure. Both lines are prose as above: not a table row, a heading, front matter or a fenced line.
 #
 # TWO NUMBERS THAT ARE NOT ONE FIGURE FAIL AS WELL, when the first is of one to three digits and
 # the second of exactly three: "the first 12" above "100 lines of it". Nothing in the two lines
@@ -1342,7 +1343,7 @@ function Find-SplitFigures {
             if ($head -and $head.Line -eq $prose.Line - 1 -and $bare -match '^(\d{3})(?!\d)') {
                 $found.Add([pscustomobject]@{ File = $rel; Line = $head.Line; Figure = "$($head.Digits) $($Matches[1])" })
             }
-            $head = if ($bare -match '(?:^|\s)(\d{1,3}(?: \d{3})*)$') { @{ Line = $prose.Line; Digits = $Matches[1] } } else { $null }
+            $head = if ($bare -match '(?<![\w#.,-])(\d{1,3}(?: \d{3})*)$') { @{ Line = $prose.Line; Digits = $Matches[1] } } else { $null }
         }
     }
     return $found
@@ -1745,18 +1746,23 @@ if ($SelfTest) {
                     '> a quoted line that ends in 2 430'
                     '> 329 tokens.'
                     ''
+                    'a figure in brackets (about 580'
+                    '000 tokens) and one in bold, **133'
+                    '423 tokens**.'
+                    ''
                     'the gate read the first 12'
                     '100 lines of it took a second.'
                 ) | Set-Content -LiteralPath $doc -Encoding utf8
 
                 $rows = @(Find-SplitFigures -Files @($doc) | ForEach-Object { "$($_.Line):$($_.Figure)" })
-                if (($rows -join '; ') -cne '1:580 000; 2:1 565 019; 5:133 423; 8:2 430 329; 11:12 100') {
-                    throw ("four figures split across a line end -- two in a paragraph, one in a list item " +
-                           "and one in a blockquote -- and a line ending in 12 above one opening with " +
-                           "'100 lines' were reported as: $($rows -join '; '). Wanted exactly " +
-                           "'1:580 000; 2:1 565 019; 5:133 423; 8:2 430 329; 11:12 100'.")
+                if (($rows -join '; ') -cne '1:580 000; 2:1 565 019; 5:133 423; 8:2 430 329; 11:580 000; 12:133 423; 15:12 100') {
+                    throw ("six figures split across a line end -- two in a paragraph, one in a list item, " +
+                           "one in a blockquote, one after a bracket and one after bold marks -- and a " +
+                           "line ending in 12 above one opening with '100 lines' were reported as: " +
+                           "$($rows -join '; '). Wanted exactly '1:580 000; 2:1 565 019; 5:133 423; " +
+                           "8:2 430 329; 11:580 000; 12:133 423; 15:12 100'.")
                 }
-                'a figure grouped in thousands that is split across a line end is caught with its line in a paragraph, a list item and a blockquote, after its first group or its second; a line ending in a number of one to three digits above a line opening with an unrelated three-digit number is caught as well, there being nothing in the two lines to tell them apart.'
+                'a figure grouped in thousands that is split across a line end is caught with its line in a paragraph, a list item and a blockquote, after its first group or its second, and with a bracket or bold marks before it; a line ending in a number of one to three digits above a line opening with an unrelated three-digit number is caught as well, there being nothing in the two lines to tell them apart.'
             } }
 
             @{ Name = 'unsplit-figure-not-flagged'; Body = {

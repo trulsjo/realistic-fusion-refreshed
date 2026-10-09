@@ -7,20 +7,27 @@ configuration directory. Each `agent-*.jsonl` there is one subagent's transcript
 `agent-*.meta.json` beside it has the description the session gave that subagent when it spawned
 it. Run it from anywhere; it reads those files and the session's transcript and writes nothing.
 
-HOW A SUBAGENT IS SORTED: by its description, the first of these that it holds, in any case.
+HOW A SUBAGENT IS SORTED: by its description, in upper case or lower.
 
-    pre-pr       the pre-PR reviewer         "Pre-PR review of <branch>"
+    Pre-PR       the pre-PR reviewer         "Pre-PR review of <branch>"
     step         the three steps             "plugin pass #<n>: eligibility step"
     reviewer     the plugin's reviewers      "plugin pass #<n>: reviewer 2, shallow bug scan"
     scorer       its scorers                 "plugin pass #<n>: scorer C, <the candidate>"
 
-`step`, `reviewer` and `scorer` are matched as whole words, so "Pre-PR review" is no reviewer. A
-subagent whose description holds none of them is printed as UNSORTED and is in no sum.
-docs/agents/code-review.md tells the session that spawns them to name them so.
+A description that starts with `Pre-PR` is the pre-PR reviewer's. Any other is sorted by whichever
+of `step`, `reviewer` and `scorer` comes first in it as a whole word, so a scorer whose candidate
+is about a step or a reviewer is still a scorer: "scorer B, step 7 names only md". A subagent
+whose description holds none of them is printed as UNSORTED and is in no sum, and so is a
+transcript with no `.meta.json` beside it. docs/agents/code-review.md tells the session that
+spawns them to name them so.
 
-A SESSION THAT REVIEWED TWO PULL REQUESTS gives each <text> that marks one of them, "#656" or the
-reviewer's name. A subagent is then counted only when its description or its name holds one of
-them, and the rest are printed as LEFT OUT.
+WHAT THAT GETS WRONG: a step whose description names a reviewer or a scorer before the word
+`step`, "reviewer eligibility step". The three steps' own names hold neither.
+
+A SESSION THAT REVIEWED TWO PULL REQUESTS gives the texts that mark one of them: its number as
+"#656", and the name of its pre-PR reviewer, whose description has no number. A subagent is then
+counted only when its description or its name holds one of them, and the rest are printed as LEFT
+OUT. A text is not found inside a longer number: "#65" does not mark "#656".
 
 WHAT IT PRINTS, in the units the two tables hold:
 
@@ -39,7 +46,7 @@ usage of its last line.
 WHAT IT CANNOT SEE: when a figure was read. The pre-PR reviewer goes on after its row is written,
 so a later run prints more than the row holds; review-figures.md says which reading a row keeps.
 
-`--self-test` builds a session of five subagents in a temporary directory and exits non-zero when
+`--self-test` builds a session of six subagents in a temporary directory and exits non-zero when
 a figure printed for it is not the one worked out by hand below. It is run by
 scripts/run-gates.ps1 and by .github/workflows/gates.yml.
 """
@@ -50,8 +57,7 @@ import re
 import sys
 import tempfile
 
-GROUPS = [("pre-PR", r"pre-pr"), ("steps", r"\bstep\b"), ("reviewers", r"\breviewer\b"),
-          ("scorers", r"\bscorer\b")]
+GROUPS = {"step": "steps", "reviewer": "reviewers", "scorer": "scorers"}
 NOTICE = re.compile(r"<tool-use-id>(\w+)</tool-use-id>.*?<subagent_tokens>(\d+)</subagent_tokens>",
                     re.S)
 
@@ -94,14 +100,17 @@ def notices(directory):
 def collect(directory, texts=()):
     """One row for each subagent: its group, its figures and its description."""
     reported, rows = notices(directory), []
-    for path in sorted(glob.glob(os.path.join(directory, "agent-*.meta.json"))):
-        meta = json.load(open(path, encoding="utf-8"))
+    for path in sorted(glob.glob(os.path.join(directory, "agent-*.jsonl"))):
+        beside = path[:-len(".jsonl")] + ".meta.json"
+        meta = json.load(open(beside, encoding="utf-8")) if os.path.exists(beside) else {}
         said = meta.get("description", "")
         named = said + " " + meta.get("name", "")
-        group = next((g for g, word in GROUPS if re.search(word, said, re.I)), "UNSORTED")
-        if texts and not any(t.lower() in named.lower() for t in texts):
+        word = re.search(r"\b(step|reviewer|scorer)\b", said, re.I)
+        group = "pre-PR" if said.lower().startswith("pre-pr") else \
+            GROUPS[word.group(1).lower()] if word else "UNSORTED"
+        if texts and not any(re.search(re.escape(t) + r"(?!\d)", named, re.I) for t in texts):
             group = "LEFT OUT"
-        last, every, reads, requests = read(path[:-len(".meta.json")] + ".jsonl")
+        last, every, reads, requests = read(path)
         rows.append({"group": group, "reported": reported.get(meta.get("toolUseId")), "last": last,
                      "all": every, "reads": reads, "requests": requests, "said": said})
     return rows
@@ -170,7 +179,7 @@ def report(rows):
 
 
 def self_test():
-    """Five subagents with small figures, and the sums of them worked out by hand."""
+    """Six subagents with small figures, and the sums of them worked out by hand."""
     def usage(i, o, w, r):
         return {"input_tokens": i, "output_tokens": o, "cache_creation_input_tokens": w,
                 "cache_read_input_tokens": r, "service_tier": "standard"}
@@ -182,20 +191,22 @@ def self_test():
         "a1": ("plugin pass #9: eligibility step", "toolu_1",
                [said("m1", usage(1, 2, 3, 4)), {"message": {"role": "user", "content": "x"}}]),
         # m2 is streamed twice and counts once, at its last line: 100, not 40 + 100.
-        "a2": ("plugin pass #9: reviewer 1, CLAUDE.md adherence", "toolu_2",
+        "a2": ("plugin pass #9: reviewer 1, pre-PR findings in the body", "toolu_2",
                [said("m2", usage(10, 10, 10, 10)), said("m2", usage(10, 20, 30, 40)),
                 said("m3", usage(1, 1, 1, 7))]),
-        "a3": ("plugin pass #9: scorer A, a candidate", "toolu_3", [said("m4", usage(5, 5, 0, 90))]),
+        "a3": ("plugin pass #9: scorer A, the reviewer skipped a step", "toolu_3", [said("m4", usage(5, 5, 0, 90))]),
         "a4": ("Pre-PR review of a-branch", None,
                [said("m5", usage(100, 0, 0, 0)), said("m6", usage(0, 50, 0, 150))]),
-        "a5": ("PR 9 eligibility check", "toolu_5", [said("m7", usage(1000, 0, 0, 0))]),
+        "a5": ("PR #95 eligibility check", "toolu_5", [said("m7", usage(1000, 0, 0, 0))]),
+        "a6": (None, None, [said("m8", usage(7, 0, 0, 0))]),        # no .meta.json beside it
     }
     with tempfile.TemporaryDirectory() as scratch:
         directory = os.path.join(scratch, "session", "subagents")
         os.makedirs(directory)
         for name, (description, call, lines) in agents.items():
-            with open(os.path.join(directory, f"agent-{name}.meta.json"), "w", encoding="utf-8") as f:
-                json.dump({"description": description, "toolUseId": call}, f)
+            if description:
+                with open(os.path.join(directory, f"agent-{name}.meta.json"), "w", encoding="utf-8") as f:
+                    json.dump({"description": description, "toolUseId": call}, f)
             with open(os.path.join(directory, f"agent-{name}.jsonl"), "w", encoding="utf-8") as f:
                 f.write("".join(json.dumps(line) + "\n" for line in lines))
         notice = ("<task-notification>\n<tool-use-id>{}</tool-use-id>\n<usage><subagent_tokens>{}"
@@ -231,9 +242,9 @@ def self_test():
         "scorers reported": 0, "scorers unreported": 1, "scorers all": 100,
         "plugin all": 220, "plugin reads": 141,        # 10 + 110 + 100, and 4 + 47 + 90
         "pre-PR last": 200, "pre-PR all": 300, "pre-PR reads": 150, "pre-PR requests": 2,
-        "unsorted all": 1000, "unsorted reported": 999,
-        # Neither the pre-PR reviewer nor "PR 9 eligibility check" holds "#9".
-        "left out with #9 given": 2, "plugin all with #9 given": 220,
+        "unsorted all": 1007, "unsorted reported": 999,     # the two with no word to sort by
+        # The pre-PR reviewer, "PR #95 eligibility check" and the one with no description.
+        "left out with #9 given": 3, "plugin all with #9 given": 220,
     }
     wrong = [f"{k}: {got[k]}, wanted {want[k]}" for k in want if got[k] != want[k]]
     for w in wrong:

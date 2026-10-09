@@ -75,10 +75,11 @@ Read 2026-10-08 (#634) for the first three rows, and by the session that added i
 since. #625, #628 and #633 were reviewed in one session, and its subagents' transcripts were still
 on its machine: 41 of them, 40 belonging to the three pull requests and one a probe of the usage
 notice. Each figure below sums, over every request a subagent sent, the four token counts in that
-request's usage record: input, output, cache write and cache read. They are read with
-`tools/review-usage.py`, which step 6 of `/pre-pr-review` names; until 2026-10-09 (#661) the script
-was a fenced block in that step. The five older rows of the table above have no transcript and so no
-row here.
+request's usage record: input, output, cache write and cache read. Since 2026-10-09 (#661) they are
+read with `tools/review-usage.py`, which step 6 of `/pre-pr-review` names. The eight rows from #625
+to #656 were read before that, with the script that step then held as a fenced block, and the plugin
+pass's cells of #656 with a script its session wrote. The five older rows of the table above have no
+transcript and so no row here.
 
 | branch | pre-PR review: its one reviewer | of that, cache reads | plugin pass: the three steps before the reviewers | plugin pass: reviewers | plugin pass: scorers | plugin pass: those three summed | plugin pass: of that sum, cache reads | what else the transcripts showed |
 |---|---|---|---|---|---|---|---|---|

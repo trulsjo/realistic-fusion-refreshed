@@ -174,8 +174,9 @@ after the plugin pass.
    pass's fixes, and replace the figures in the body. Each table's row keeps the figure read when
    the row was written. If the script prints no line for the reviewer, write "not measured". The
    same run prints the plugin pass's figures once that pass has run, which is how the session that
-   runs it reads them (#634). A session that reviews two pull requests gives the script a text
-   that marks one, after the directory; the script's docstring says how.
+   runs it reads them (#634). A session that reviews two pull requests gives the script two
+   texts after the directory, the pull request's number as `"#<n>"` and this reviewer's name, and
+   the script counts only the subagents that hold one of them.
 
 7. **Read the branch's counts again, after the last fix commit** (#663).
    `docs/agents/code-review.md` has the rule under *Review the prose, not only the code*: what is
@@ -185,16 +186,19 @@ after the plugin pass.
 
    ```
    gh pr view <n> --json body --jq .body         # its counts, and each output it quotes
-   git diff -U0 main...HEAD -- "*.md"            # each count the branch added to tracked prose
+   git diff -U0 main...HEAD                      # each count the branch added to tracked prose
    git log main..HEAD --format="%h %s%n%b"       # the branch's own commit messages
    ```
 
    Run each command the body quotes output from, on the head. Count what each count counts. A
-   commit message that the head contradicts is reworded as step 4 says.
+   commit message that the head contradicts is reworded as step 4 says. Tracked prose is a
+   comment or a help block as much as a `.md` file. What the reading turns up is fixed and
+   committed, its diff is sent to the reviewer in a message of its own as step 4 sends one, and
+   what that fix changed is read again.
 
    Done when the body has, under the `## Pre-PR review` heading, a line that names what was read
-   again and the commit it was read on: `Read again on <short hash>: <each count and each quoted
-   output, and that the commit messages were read>`.
+   again and the head it was read on, the last one if a fix moved it: `Read again on <short hash>:
+   <each count and each quoted output, and that the commit messages were read>`.
 
 ## What this does not do
 
