@@ -146,19 +146,17 @@ The exception rests on one fact: no other gate reads a `.md` file, checked 2026-
 that starts reading one ends it.
 
 **One workflow runs three gates and three tools' self-tests unattended** (#599, #659).
-`.github/workflows/gates.yml` is the only file
-under `.github/`, and it runs the game-free gates — the ones that need neither Factorio nor
-Blender — on a pull request and on a push to `main`: each `tests/test-*.lua`, `ship-check.ps1`,
-and `commit-check.ps1` over the commits that event brought. Since #659 a third job runs the
-`--self-test` of the same three scripts under `tools/` that `run-gates.ps1` runs. A pull request
-with a merge conflict gets no run at all, which looks the same as one not yet run. The one other
-check nobody starts by hand is the `commit-msg` hook in the Commit messages section, which a
-clone opts into and a commit triggers. **What stays manual is the rest of what `run-gates.ps1` runs, and all of what it
-leaves out**: the default `load-check.ps1` and each `scripts/check-*.ps1`, then
-`load-check.ps1 -FromZips`, `locale-check.ps1`, `name-check.ps1`, the probes and the gates' own
-self-tests.
-A green check says nothing about any of those. **The check is advisory**: `main` has no branch protection, so a
-red one blocks no merge.
+`.github/workflows/gates.yml` is the only file under `.github/`, and it runs the game-free gates —
+the ones that need neither Factorio nor Blender — on a pull request and on a push to `main`: each
+`tests/test-*.lua`, `ship-check.ps1`, and `commit-check.ps1` over the commits that event brought.
+Since #659 a third job runs the `--self-test` of the same three scripts under `tools/` that
+`run-gates.ps1` runs. A pull request with a merge conflict gets no run at all, which looks the same
+as one not yet run. The one other check nobody starts by hand is the `commit-msg` hook in the Commit
+messages section, which a clone opts into and a commit triggers. **What stays manual is the rest of
+what `run-gates.ps1` runs, and all of what it leaves out**: the default `load-check.ps1` and each
+`scripts/check-*.ps1`, then `load-check.ps1 -FromZips`, `locale-check.ps1`, `name-check.ps1`, the
+probes and the gates' own self-tests. A green check says nothing about any of those. **The check is
+advisory**: `main` has no branch protection, so a red one blocks no merge.
 
 `scripts/probe-*` are **not** gates, and `run-gates.ps1` runs none of them. A probe asserts nothing and answers
 a question a decision is waiting on — exit 0 means it ran and reported, never that the answer was the
