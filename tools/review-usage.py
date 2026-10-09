@@ -27,7 +27,7 @@ WHAT THAT GETS WRONG: a step whose description names a reviewer or a scorer befo
 A SESSION THAT REVIEWED TWO PULL REQUESTS gives the texts that mark one of them: its number as
 "#656", and the name of its pre-PR reviewer, whose description has no number. A subagent is then
 counted only when its description or its name holds one of them, and the rest are printed as LEFT
-OUT. A text is not found inside a longer number: "#65" does not mark "#656".
+OUT. A text is not found where a digit follows it: "#65" does not mark "#656".
 
 WHAT IT PRINTS, in the units the two tables hold:
 
@@ -168,8 +168,9 @@ def report(rows):
         if s:
             out.append(f"  plugin pass: {cell:20}{n(s['all'])} tokens, {s['subagents']} subagent(s)")
     plugin = sums["plugin pass"]
-    out.append(f"  plugin pass: those three summed  {n(plugin['all'])} tokens; of that sum, "
-               f"cache reads {share(plugin['reads'], plugin['all'])}")
+    if plugin["all"]:
+        out.append(f"  plugin pass: those three summed  {n(plugin['all'])} tokens; of that sum, "
+                   f"cache reads {share(plugin['reads'], plugin['all'])}")
     for g in ("UNSORTED", "LEFT OUT"):
         if g in sums:
             out.append(f"\n{g}, in no sum above: {sums[g]['subagents']} subagent(s), "
