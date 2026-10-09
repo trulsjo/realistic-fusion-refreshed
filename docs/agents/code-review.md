@@ -69,8 +69,8 @@ fix depends on the finding's score (#643). They carry out one more from that day
 its turn to receive what the reviewer sends (#648), which a question put to the user does not end
 (#654). Since 2026-10-09 the step that spawns the reviewer gives it the description the usage
 script sorts it by (#661), and they carry out one more: after the last fix commit the session reads
-again what the branch and the body count and quote (#663), and holds a fix from that reading
-that only corrects a count (#665). A change to one of those is made here
+again what the branch and the body count and quote (#663), and sends no message for a fix from
+that reading that only corrects a count (#665). A change to one of those is made here
 first and then in the steps.
 
 **This file, `docs/agents/review-figures.md` and `.claude/skills/pre-pr-review/SKILL.md` are wrapped
@@ -151,7 +151,8 @@ fixed state, was narrowed on 2026-10-05, settling
 pass was changed on 2026-10-07, when Truls's verdict on #593 had it run on every pull request. A
 rule for the session that writes a fix was added on 2026-10-07 (#632), and widened on 2026-10-08
 (#637) to the session that writes a ticket or a retrospective. A rule for the older text a fix
-leaves behind was added on 2026-10-09 (#663).
+leaves behind was added on 2026-10-09 (#663), and narrowed the same day for a fix that only
+corrects a count (#665).
 
 **Every gate in this repository checks machinery. None of them reads English.** `load-check.ps1`
 proves the prototypes load and the invariants hold; `ship-check.ps1` proves the mods say what ADR
@@ -243,11 +244,12 @@ cannot be told from one made before the last fix. **What the reading turns up is
 finding raised in the last confirmation**: the fix gets a message of its own to the reviewer, what
 that fix changed is read again, and the body names the head after it.
 
-**A fix that only corrects a count is the exception, and is held** (2026-10-09, #665). It is one
-whose every changed line differs from the line it replaces in digits alone, or in a number written
-as a word, where the number counts rows, cases, findings, files or commits. The session commits
-it, sends the reviewer no message for it, and says in the body's line for the reading that this
-fix was not confirmed. A fix that changes any other word is a new claim and keeps its message.
+**A fix that only corrects a count is the exception, and goes unconfirmed** (2026-10-09, #665). It
+is one whose every changed line differs from the line it replaces in digits alone, or in a number
+written as a word, where the number counts rows, cases, findings, files or commits. The session
+commits it, sends the reviewer no message for it, and says in the body's line for the reading that
+this fix was not confirmed. No later message confirms it: unlike a fix held under #643, nothing
+follows the reading. A fix that changes any other word is a new claim and keeps its message.
 
 The reason is what a message costs. On #664, the first use of the reading, it found one thing: a
 row of `review-figures.md` that said 15 findings and 14 fixed, where the reviewer had by then
@@ -262,8 +264,8 @@ does. Read from the reviewer's transcript on 2026-10-09, over the requests each 
 | the fixes of findings 16 and 17 | 3 | 660 802 |
 | the one changed cell | 3 | 669 308 |
 
-That cell's fix also changed words beside its two numbers, so this rule would not have held it as
-it was written. Its two numbers alone would have been held.
+That cell's fix also changed words beside its two numbers, so this rule would not have covered
+it as it was written. Its two numbers alone would have gone unconfirmed.
 
 Three of #656's 22 pre-PR findings were of this kind, and the reviewer raised all three in its last
 confirmation, the one of the plugin pass's fixes:

@@ -124,7 +124,8 @@ is defined a second time in this repo.
 the default `load-check.ps1` and every `scripts/check-*.ps1` it finds, one at a time, one line
 per gate, exiting non-zero and naming each gate that failed. Since #659 it also runs the
 `--self-test` of three scripts under `tools/` that are not gates and that nothing else checks:
-`refuse-hanging-bash.py`, the hook that refuses a Bash command which would hang, and
+`refuse-hanging-bash.py`, the hook that refuses a Bash command which would hang or which holds
+a heredoc of over 60 lines (#666), and
 `review-usage.py` and `rewrap.py`, which a session runs by hand. Each is a line of its own, after
 the Lua suites. **Run it on a branch that combines
 more than one ticket, before the review.** Each ticket's author runs the gates its own change
