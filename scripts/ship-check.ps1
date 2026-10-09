@@ -153,9 +153,13 @@
     is not the one this script's width and file list make. The files are named and not scanned for,
     so a missing one fails by name and there is no count to hold. The overlong-prose-caught and
     unwrappable-line-not-flagged halves plant what the scan of the lines must and must not report.
-    The sentence check and the missing file have no half: like sections 1 to 4 they name what
-    they require, so a mistake in them fails and does not go quiet. It cannot see a
-    figure grouped in thousands that a rewrap split across a line end; the section comment has the
+    Since #662 it also fails a figure grouped in thousands that is split across a line end in
+    those files, and the split-figure-caught and unsplit-figure-not-flagged halves plant what that
+    scan must and must not report. Its failures name tools/rewrap.py, which rewraps a paragraph,
+    and it fails when that tool's width is not this script's.
+    The sentence check, the tool's width and a missing file have no half: like sections 1 to 4
+    they name what they require, so a mistake in them fails and does not go quiet. It cannot tell
+    two numbers from a split figure when the second has three digits; the section comment has the
     rest.
 
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
@@ -170,8 +174,8 @@
     Run the checks as usual, then prove five things a green run cannot: the shared -SelfTest runner
     in factorio-lib.ps1 -- that it numbers halves from the list it was given and refuses a half it
     cannot show ran -- section 9, in both directions, section 10's two assertions, each in both
-    directions, section 11, in both directions and inside a blockquote, and section 12's scan of
-    the lines, in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
+    directions, section 11, in both directions and inside a blockquote, and section 12's two scans
+    of the lines, each in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
     memory and the planted documents live in the scratch directory the run removes on its way out.
 
 .EXAMPLE
@@ -1268,11 +1272,21 @@ foreach ($row in $tableRows.Found) {
 #     on its line is the case. A long link that is not alone fails, and the fix is to break
 #     before it.
 #
+# A FIGURE GROUPED IN THOUSANDS IS NOT SPLIT ACROSS A LINE END (#662). #646 names two that a rewrap
+# split and reviewers found by reading, "133 423" and "580 000". A line fails when it ends in a
+# number of one to three digits, or in such a number and groups of three after it, with a space or
+# the line's start before it, and the next line opens with exactly three digits. Both lines are
+# prose as above: not a table row, a heading, front matter or a fenced line. "#656", "2026",
+# "10.8" and "2026-10-09" at a line's end are none of them the head of a grouped figure.
+#
+# TWO NUMBERS THAT ARE NOT ONE FIGURE FAIL AS WELL, when the first is of one to three digits and
+# the second of exactly three: "the first 12" above "100 lines of it". Nothing in the two lines
+# tells that from a split figure, the ambiguity section 10's comment records. That is a false
+# FAILURE, and the way out is to break the line a word earlier or later. tools/rewrap.py never
+# breaks there, so a paragraph it wrapped passes.
+#
 # WHAT IT CANNOT SEE:
-#   - a figure grouped in thousands that a rewrap split across a line end. #646 names two that
-#     reviewers found by reading. A number ending one line and a number opening the next are not
-#     always one figure, which is the ambiguity section 10's comment records, so that stays with
-#     whoever rewraps and whoever reviews.
+#   - a figure split after a list marker or across a blank line, which is not one paragraph.
 #   - a fence opened inside a blockquote. Get-ProseLines does not look through the marks, so the
 #     lines of such a fence are read as prose. That is a false FAILURE, the cheap direction.
 #   - how wide a line renders. A line's length is its count of UTF-16 code units.
@@ -1305,6 +1319,35 @@ function Find-OverlongProseLines {
     return $found
 }
 
+function Find-SplitFigures {
+    <#  Every prose line of these markdown files that ends in the first groups of a figure grouped
+        in thousands while the line under it opens with the next group.
+
+        Returns the file, the first of the two lines, and the figure the two read as.  #>
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Files, [string] $Root)
+
+    $found = [System.Collections.Generic.List[object]]::new()
+    foreach ($rel in $Files) {
+        $full = if ($Root) { Join-Path $Root $rel } else { $rel }
+        if (-not (Test-Path -LiteralPath $full)) { continue }
+        $front = $false
+        $head  = $null      # the line above, when it ends in what could be a figure's first groups
+        foreach ($prose in (Get-ProseLines -Path $full -Extension '.md')) {
+            $text = $prose.Text
+            if ($prose.Line -eq 1 -and $text.Trim() -ceq '---') { $front = $true; continue }
+            if ($front) { if ($text.Trim() -ceq '---') { $front = $false }; continue }
+            # The list marker stays on: a figure does not carry on into a new item.
+            $bare = ($text -replace '^[\s>]*', '').TrimEnd()
+            if ($bare -match '^#{1,6}\s' -or $bare.StartsWith('|')) { $head = $null; continue }
+            if ($head -and $head.Line -eq $prose.Line - 1 -and $bare -match '^(\d{3})(?!\d)') {
+                $found.Add([pscustomobject]@{ File = $rel; Line = $head.Line; Figure = "$($head.Digits) $($Matches[1])" })
+            }
+            $head = if ($bare -match '(?:^|\s)(\d{1,3}(?: \d{3})*)$') { @{ Line = $prose.Line; Digits = $Matches[1] } } else { $null }
+        }
+    }
+    return $found
+}
+
 $checks++
 foreach ($rel in $WRAPPED) {
     if (-not (Test-Path -LiteralPath (Join-Path $repoRoot $rel))) {
@@ -1313,8 +1356,26 @@ foreach ($rel in $WRAPPED) {
 }
 foreach ($long in (Find-OverlongProseLines -Files $WRAPPED -Root $repoRoot)) {
     $failures.Add(("$($long.File), line $($long.Line): a prose line of $($long.Length) characters in a file " +
-        "wrapped at $WRAP_WIDTH (docs/agents/code-review.md says which files are). Rewrap the " +
-        'paragraph, and keep a figure grouped in thousands on one line.'))
+        "wrapped at $WRAP_WIDTH (docs/agents/code-review.md says which files are). " +
+        "``python tools/rewrap.py $($long.File) $($long.Line)`` rewraps its paragraph and keeps a " +
+        'figure grouped in thousands on one line.'))
+}
+$checks++
+foreach ($split in (Find-SplitFigures -Files $WRAPPED -Root $repoRoot)) {
+    $failures.Add(("$($split.File), line $($split.Line): the line ends in a number and the next opens with " +
+        "three digits, which reads as the figure $($split.Figure) split across the line end. " +
+        "``python tools/rewrap.py $($split.File) $($split.Line)`` rewraps the paragraph and keeps such a " +
+        'figure on one line. If they are two numbers, break the line a word earlier or later.'))
+}
+# The tool wraps at a width of its own, which is this one or the tool undoes the gate.
+$rewrap = Join-Path $repoRoot 'tools/rewrap.py'
+if (Test-Path -LiteralPath $rewrap) {
+    # One kind of space, so the needle can end in one and "WIDTH = 1000" is not taken for it.
+    Test-Claim -Where 'tools/rewrap.py' -Text ([regex]::Replace((Get-Content -LiteralPath $rewrap -Raw), '\s+', ' ')) -Needles @{
+        'the width section 12 holds the review docs to' = @("WIDTH = $WRAP_WIDTH ")
+    }
+} else {
+    $failures.Add('tools/rewrap.py is the tool section 12 names in its failures, and it is not there.')
 }
 $wrapRule = Join-Path $repoRoot $WRAPPED[0]
 if (Test-Path -LiteralPath $wrapRule) {
@@ -1667,6 +1728,78 @@ if ($SelfTest) {
                 }
                 "front matter, a table row plain, quoted or indented, a line inside a fence, a heading and a link alone on its line are each left alone over $WRAP_WIDTH characters."
             } }
+
+            @{ Name = 'split-figure-caught'; Body = {
+                # A grouped figure broken after its first group, and after its second, in the
+                # three places prose sits. The last pair is two numbers and not one figure: it
+                # is caught like the rest, which the section comment says and why.
+                $doc = Join-Path $planted 'split.md'
+                @(
+                    'the scorers used about 580'
+                    '000 tokens, and the 27 of them reported 1 565'
+                    '019 between them.'
+                    ''
+                    '   - a list item whose reviewers reported 133'
+                    '     423 tokens.'
+                    ''
+                    '> a quoted line that ends in 2 430'
+                    '> 329 tokens.'
+                    ''
+                    'the gate read the first 12'
+                    '100 lines of it took a second.'
+                ) | Set-Content -LiteralPath $doc -Encoding utf8
+
+                $rows = @(Find-SplitFigures -Files @($doc) | ForEach-Object { "$($_.Line):$($_.Figure)" })
+                if (($rows -join '; ') -cne '1:580 000; 2:1 565 019; 5:133 423; 8:2 430 329; 11:12 100') {
+                    throw ("four figures split across a line end -- two in a paragraph, one in a list item " +
+                           "and one in a blockquote -- and a line ending in 12 above one opening with " +
+                           "'100 lines' were reported as: $($rows -join '; '). Wanted exactly " +
+                           "'1:580 000; 2:1 565 019; 5:133 423; 8:2 430 329; 11:12 100'.")
+                }
+                'a figure grouped in thousands that is split across a line end is caught with its line in a paragraph, a list item and a blockquote, after its first group or its second; a line ending in a number of one to three digits above a line opening with an unrelated three-digit number is caught as well, there being nothing in the two lines to tell them apart.'
+            } }
+
+            @{ Name = 'unsplit-figure-not-flagged'; Body = {
+                # The other direction: a line that ends in digits which are no figure's first
+                # group, and a line that opens with three digits where no paragraph carries on.
+                $doc = Join-Path $planted 'unsplit.md'
+                @(
+                    'the figure 580 000 sits on one line, and this one ends in the year 2026'
+                    '100 characters is the width. This line ends in an issue, #656'
+                    '100 more characters. This one ends in a share, 10.8'
+                    '100 again, and this one in a date, 2026-10-09'
+                    '100 once more, and this one in a number above four digits, 12'
+                    '1000 lines.'
+                    ''
+                    'a line that ends in 12'
+                    ''
+                    '100 lines under a blank line.'
+                    ''
+                    '- an item that ends in 12'
+                    '- 100 things in the next item'
+                    ''
+                    'a line above a table ends in 12'
+                    '| 100 | a cell |'
+                    '|---|---|'
+                    ''
+                    'a line above a fence ends in 12'
+                    '```'
+                    '100 lines of output'
+                    '```'
+                    ''
+                    'a line above a heading ends in 12'
+                    '## 100 things'
+                ) | Set-Content -LiteralPath $doc -Encoding utf8
+
+                $rows = @(Find-SplitFigures -Files @($doc) | ForEach-Object { "$($_.Line):$($_.Figure)" })
+                if ($rows.Count) {
+                    throw ("a year, an issue number, a decimal, a date and a number above a four-digit one at a " +
+                           "line's end, and a three-digit number opening a line under a blank line, in a new " +
+                           "list item, in a table row, in a fence and in a heading, were reported as split " +
+                           "figures: $($rows -join '; ').")
+                }
+                'a line that ends in a year, an issue number, a decimal or a date is not the head of a figure, and three digits that open a line under a blank line, in a new list item, in a table row, inside a fence or in a heading do not carry one on.'
+            } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
     Write-Host ''
@@ -1680,5 +1813,6 @@ Write-Host 'licence and the scope rule ship inside all three; the assets floor m
 Write-Host 'ships art, every accent named for a fluid still carries that fluid''s own colour, and'
 Write-Host 'no prose cites a self-test half by position, every Current figures row still names a'
 Write-Host 'heading and a figure its note has, every table row has as many cells as its header, and'
-Write-Host 'no prose line of the review docs is over the width they are wrapped at.'
+Write-Host 'no prose line of the review docs is over the width they are wrapped at or splits a'
+Write-Host 'grouped figure across its end.'
 exit 0
