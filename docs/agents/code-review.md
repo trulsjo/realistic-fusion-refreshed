@@ -22,7 +22,8 @@ when it matters which.
    [#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331); its last rule narrowed
    2026-10-05 (#592), and what it says of the plugin pass changed 2026-10-07 (#593); a rule for the
    notes' figure tables added 2026-10-06 (#602); a rule for the session that writes a fix added
-   2026-10-07 (#632), and widened on 2026-10-08 (#637) to a ticket's evidence and a retrospective's.
+   2026-10-07 (#632), and widened on 2026-10-08 (#637) to a ticket's evidence and a retrospective's;
+   a rule for the older text a fix leaves behind added 2026-10-09 (#663).
 3. **[A review that plants takes its own worktree](#a-review-that-plants-takes-its-own-worktree)** —
    [#311](https://github.com/trulsjo/realistic-fusion-refreshed/issues/311), after the review of
    [#309](https://github.com/trulsjo/realistic-fusion-refreshed/pull/309) on 2026-09-10.
@@ -48,7 +49,10 @@ when it matters which.
    question put to the user does not end the turn. Since 2026-10-09 (#644) the two tables are on a
    page of their own, [`review-figures.md`](review-figures.md), and what was said of one pull
    request in the sentences around them is a cell of its row. The row rule changed with that: the
-   two added lines are the whole edit, and a pull request's figures go nowhere in this file.
+   two added lines are the whole edit, and a pull request's figures go nowhere in this file. The
+   same day (#661) one tracked script, `tools/review-usage.py`, took the place of the script in the
+   skill's step and of the one each session wrote for the plugin pass's cells, and the section says
+   which word the session puts in each subagent's description so that the script can sort it.
 
 **A rule is changed in this file** (2026-10-07, #630). `CLAUDE.md` and the intro of
 `.claude/skills/pre-pr-review/SKILL.md` each stated parts of the four until then, so a rule that
@@ -62,7 +66,9 @@ message a review corrected (#640). Two of the earlier ones changed the same day:
 is handed now names the files it reads whole (#647), and which of its confirmations answers for a
 fix depends on the finding's score (#643). They carry out one more from that day: the session ends
 its turn to receive what the reviewer sends (#648), which a question put to the user does not end
-(#654). A change to one of those is made here first and then in the steps.
+(#654). Since 2026-10-09 they carry out one more: after the last fix commit the session reads
+again what the branch and the body count and quote (#663). A change to one of those is made here
+first and then in the steps.
 
 **This file, `docs/agents/review-figures.md` and `.claude/skills/pre-pr-review/SKILL.md` are wrapped
 at 100 characters** (2026-10-09, #646). Section 12 of `scripts/ship-check.ps1` fails a longer line
@@ -70,7 +76,12 @@ of prose in any of the three. It leaves alone a table row, a line inside a code 
 the skill's front matter, and a line with no space to break it at, which is what a long link alone
 on its line is. A fence opened inside a blockquote it does not see: it reads that fence's lines as
 prose, and fails a long one. **A figure grouped in thousands stays on one line when a paragraph is
-rewrapped**, and no gate reads for that. #646 has the findings that asked for a stated width.
+rewrapped**, and since 2026-10-09 (#662) section 12 fails one that is split across a line end.
+`python tools/rewrap.py <file> <line>` rewraps the paragraph that line sits in, at this width, and
+keeps such a figure together; section 12's failures give the file and the line. The check cannot
+tell a split figure from two numbers, so it also fails a line that ends in a number of one to three
+digits above a line that opens with an unrelated one of exactly three, and the way out is to break
+the line a word earlier or later. #646 has the findings that asked for a stated width.
 
 ## The threshold gates the comment, not the report
 
@@ -136,7 +147,8 @@ fixed state, was narrowed on 2026-10-05, settling
 `## Current figures` table was added on 2026-10-06 (#602). What the last rule says of the plugin
 pass was changed on 2026-10-07, when Truls's verdict on #593 had it run on every pull request. A
 rule for the session that writes a fix was added on 2026-10-07 (#632), and widened on 2026-10-08
-(#637) to the session that writes a ticket or a retrospective.
+(#637) to the session that writes a ticket or a retrospective. A rule for the older text a fix
+leaves behind was added on 2026-10-09 (#663).
 
 **Every gate in this repository checks machinery. None of them reads English.** `load-check.ps1`
 proves the prototypes load and the invariants hold; `ship-check.ps1` proves the mods say what ADR
@@ -209,6 +221,34 @@ pull requests show it. On #594 a fix added a false sentence and the confirmation
 a fix corrected one row of a group and not the others, and the confirmation passed that. On #628 two
 of the plugin pass's five findings were what the fix for the pre-PR review's first finding had left
 behind.
+
+**What a fix leaves behind is read again after the last fix commit** (2026-10-09, #663). The rule
+above is about a fix's own text. This one is about older text on the same branch, which a later
+commit can make false without touching it: a count, a quoted output, a statement of what the change
+does. After the last fix commit on the branch, the plugin pass's fixes included, and before the pull
+request's body is last edited, the session reads each of these again against the branch's head:
+
+- **quoted output in the body**, by running the command on the head and comparing what it prints;
+- **a count in the body, and a count the branch added to tracked prose**, by counting the rows,
+  cases, findings or files it counts;
+- **the branch's own commit messages**, each statement of what the change does against the code at
+  the head. A message that a later commit made false is reworded, as the fourth rule says of one a
+  review corrects.
+
+**The body then says what was read again, and on which commit.** A reading that names no commit
+cannot be told from one made before the last fix.
+
+Three of #656's 22 pre-PR findings were of this kind, and the reviewer raised all three in its last
+confirmation, the one of the plugin pass's fixes:
+
+| Finding | What the text said | What had made it false |
+|---|---|---|
+| 19 | this file's "Across the seven rows of the second table, read 2026-10-09" | the table gained an eighth row that day, #656's own |
+| 20 | a commit message's "A loop body is no longer judged" | the fix for the plugin pass's finding F, which corrected that claim |
+| 22 | the body's "prints `32 of 32 cases judged as wanted.`" | later fixes added cases, and the last commit printed 34 of 34 |
+
+Six of the 22 were raised in a confirmation and not in the first read: 17 and 18 while the fixes
+were confirmed, and 19 to 22 while the plugin pass's were. #656's body has the table.
 
 **A ticket's evidence and a retrospective's are read from their source the same way** (2026-10-08,
 #637). Each is written after the work, from what the session remembers, and whoever acts on it
@@ -436,6 +476,17 @@ a change needs no review, and it did for #625 because that change was documentat
 session runs the pass anyway and says in the pull request that it did. No kind of change is exempt
 (Truls, 2026-10-07, #593).
 
+**The session puts one of four words in each subagent's description** (2026-10-09, #661). The
+description is what the Agent tool is given when a subagent is spawned, and it is all that says
+afterwards which transcript was which. `tools/review-usage.py` sorts a session's subagents by it, in
+upper case or lower: `Pre-PR` for the pre-PR reviewer, and `step`, `reviewer` or `scorer`, each as a
+whole word, for the plugin pass's three steps before the reviewers, its reviewers and its scorers.
+The plugin pass's descriptions also carry the pull request's number, as in `plugin pass #656:
+reviewer 2, shallow bug scan`, so that a session which reviews two pull requests can give the script
+one of them. A subagent whose description holds none of the four is printed as unsorted and is in no
+sum. On #656 the session had named its subagents with those words by its own choice, and a script it
+wrote for the purpose sorted them; no tracked file asked for either.
+
 **The pre-PR reviewer confirms the plugin pass's fixes** (Truls, 2026-10-07, #593). Continue the
 subagent that ran the pre-PR review and hand it the diff of the fixes, with no list of what was
 done. If it is no longer running, a fresh reviewer confirms them and the pull request says so. On
@@ -506,12 +557,14 @@ says when the row is written; the reviewer confirms after that, and the pull req
 later figure. Anything else there is to say of the pull request goes in the last cell of its row in
 the second table. In the second table: the totals over all requests, and for the pre-PR review its
 count of requests and the share that is cache reads, read from the transcripts in the session's own
-`subagents` directory, the one `/pre-pr-review`'s last step names. Each `agent-*.jsonl` there has an
+`subagents` directory, the one step 6 of `/pre-pr-review` names. Each `agent-*.jsonl` there has an
 `agent-*.meta.json` beside it whose `description` is what the session called that subagent when it
-spawned it. The session picks the plugin pass's subagents by description, gives that step's script
-the three steps' transcripts in one run, the reviewers' in a second and the scorers' in a third, and
-writes each run's total, the sum of the three, and the share of that sum that is cache reads. The
-pre-PR review's cell is read when the row is written, as its cell in the other table is, and the
+spawned it. `python tools/review-usage.py <that directory>` sorts them by description and prints the
+figures of both rows (#661): for the first table the counts the three groups of the plugin pass
+reported, and for the second each group's total, the sum of the three, and the share of that sum
+that is cache reads. Run on #656's directory on 2026-10-09 it printed each figure the two rows of
+#656 have for the plugin pass, and one subagent as unsorted, described "PR 656 eligibility check".
+The pre-PR review's cell is read when the row is written, as its cell in the other table is, and the
 pull request's body has the later figure. A figure that was not measured is written as not measured,
 one that covers the whole pass as not split, and one the pull request does not give as not recorded.
 A figure with no record behind it is not estimated.

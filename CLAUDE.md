@@ -80,7 +80,11 @@ three files `docs/agents/code-review.md` names as wrapped at that width: that fi
 inside a code fence, a heading, front matter, and a line with no space to break it at; a fence
 opened inside a blockquote it does not see, and reads as prose. Its two
 halves prove that scan of the lines; the check of the sentence against the script's own width and
-file list names what it requires, and has none. The other eight sections it
+file list names what it requires, and has none. Since #662 section 12 also fails a figure grouped
+in thousands that is split across a line end in those three files, with two more halves that prove
+that scan, and its failures name `tools/rewrap.py`, which rewraps the paragraph a line sits in. It
+fails two unrelated numbers the same way when the first has one to three digits and the second
+exactly three; the section comment says why. The other eight sections it
 runs on a plain invocation are unchanged and still have no self-test, for the reason its help block
 gives.
 Run them rather than reasoning about whether a change is safe. How two of the self-tests are
@@ -118,13 +122,17 @@ is defined a second time in this repo.
 
 **`scripts/run-gates.ps1` runs them all in one step** (#567): the Lua suites, `ship-check.ps1`,
 the default `load-check.ps1` and every `scripts/check-*.ps1` it finds, one at a time, one line
-per gate, exiting non-zero and naming each gate that failed. **Run it on a branch that combines
+per gate, exiting non-zero and naming each gate that failed. Since #659 it also runs the
+`--self-test` of three scripts under `tools/` that are not gates and that nothing else checks:
+`refuse-hanging-bash.py`, the hook that refuses a Bash command which would hang, and
+`review-usage.py` and `rewrap.py`, which a session runs by hand. Each is a line of its own, after
+the Lua suites. **Run it on a branch that combines
 more than one ticket, before the review.** Each ticket's author runs the gates its own change
 touches, and #557 was broken between tickets: #555 changed how `control.lua` writes
 `UPDATE_INTERVAL`, which `check-pooling.ps1` reads by its shape. It took 4 min 45 s for 21 gates
 on this machine on 2026-10-05 with nothing else running, and 24 min 50 s the next day beside six
 subagents: **run it before or after a subagent fan-out, not during one** (#617; the script's help
-has the figures). It runs no probe, no gate's
+has the figures; the 21 was before #659 added three). It runs no probe, no gate's
 `-SelfTest`, and not `load-check.ps1 -FromZips`, `locale-check.ps1` or `name-check.ps1`; its
 own `-SelfTest` proves with stand-in gates that a failing gate is named and not swallowed.
 
@@ -137,15 +145,18 @@ the paragraph above applies to it as it would to any other.
 The exception rests on one fact: no other gate reads a `.md` file, checked 2026-10-07. A gate
 that starts reading one ends it.
 
-**One workflow runs three gates unattended** (#599). `.github/workflows/gates.yml` is the only file
+**One workflow runs three gates and three tools' self-tests unattended** (#599, #659).
+`.github/workflows/gates.yml` is the only file
 under `.github/`, and it runs the game-free gates — the ones that need neither Factorio nor
 Blender — on a pull request and on a push to `main`: each `tests/test-*.lua`, `ship-check.ps1`,
-and `commit-check.ps1` over the commits that event brought. A pull request with a merge conflict
-gets no run at all, which looks the same as one not yet run. The one other check nobody starts by
-hand is the `commit-msg` hook in the Commit messages section, which a clone opts into and a
+and `commit-check.ps1` over the commits that event brought. Since #659 a third job runs the
+`--self-test` of the same three scripts under `tools/` that `run-gates.ps1` runs. A pull request
+with a merge conflict gets no run at all, which looks the same as one not yet run. The one other
+check nobody starts by hand is the `commit-msg` hook in the Commit messages section, which a clone opts into and a
 commit triggers. **What stays manual is the rest of what `run-gates.ps1` runs, and all of what it
 leaves out**: the default `load-check.ps1` and each `scripts/check-*.ps1`, then
-`load-check.ps1 -FromZips`, `locale-check.ps1`, `name-check.ps1`, the probes and the self-tests.
+`load-check.ps1 -FromZips`, `locale-check.ps1`, `name-check.ps1`, the probes and the gates' own
+self-tests.
 A green check says nothing about any of those. **The check is advisory**: `main` has no branch protection, so a
 red one blocks no merge.
 

@@ -9,7 +9,8 @@ Runs the **pre-PR review** that `docs/agents/code-review.md` defines under *A re
 request, and the plugin pass after it*. That file is the rule; this is the procedure. It needs no
 pull request and it is not `code-review:code-review`, which is the plugin pass, and this skill does
 not run that. The same section says when the plugin pass runs and who confirms its fixes. Leave the
-reviewer from step 3 running when this skill ends: that section has more for it to do.
+reviewer from step 3 running after step 6: that section has more for it to do. Step 7 is done
+after the plugin pass.
 
 ## Steps
 
@@ -39,7 +40,8 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    Done when every figure or pass the branch claims has its output in a file.
 
 3. **Spawn one fresh reviewer** with the Agent tool: `general-purpose`, never a fork, since a fork
-   has already read the author's reasoning. Give it a `name` so step 4 can reach it. Its brief is
+   has already read the author's reasoning. Give it a `name` so step 4 can reach it, and a
+   `description` that starts `Pre-PR review`, which step 6's script sorts it by (#661). Its brief is
    the block below with the paths filled in and nothing about what the author thinks is right:
 
    > You are the pre-PR reviewer of a branch of this repository. Read
@@ -155,38 +157,44 @@ reviewer from step 3 running when this skill ends: that section has more for it 
    place of the table, below step 5's outcomes for what the reviewer said it did not check.
 
    **Under the table, write what the reviewer cost** (#631). A reviewer reached by name goes idle
-   and sends no completion notice, so nothing reports its usage. Read it from the reviewer's
-   transcript: the one file matching
-   `projects/<project>/<session id>/subagents/agent-a<name>-*.jsonl` under the Claude configuration
-   directory. Save this as `<scratch>/usage.py` and give it that file's full path, not the pattern:
+   and sends no completion notice, so nothing reports its usage. Read it from the session's own
+   `subagents` directory, `projects/<project>/<session id>/subagents` under the Claude
+   configuration directory, where the reviewer's transcript is the one file matching
+   `agent-a<name>-*.jsonl`. Give the directory to the tracked script (#661):
 
-   ```python
-   import json, sys
-   total = lambda u: sum(v for k, v in u.items() if k.endswith("_tokens") and isinstance(v, int))
-   everything = 0
-   for path in sys.argv[1:]:
-       order, use = [], {}
-       for line in open(path, encoding="utf-8"):
-           m = json.loads(line).get("message") or {}
-           if m.get("role") == "assistant" and total(m.get("usage") or {}):
-               if m["id"] not in use:
-                   order.append(m["id"])
-               use[m["id"]] = m["usage"]
-       reads = sum(u.get("cache_read_input_tokens", 0) for u in use.values())
-       everything += sum(map(total, use.values()))
-       print("last request:", total(use[order[-1]]), "all requests:", sum(map(total, use.values())),
-             "of which cache reads:", reads, "requests:", len(order))
-   print("all requests, every transcript given:", everything)
+   ```
+   python tools/review-usage.py "<that directory>"
    ```
 
-   Write the first two figures, and what share of the second is cache reads. The first is the one
-   the first table of `docs/agents/review-figures.md` holds, and the second the one its second
-   table holds; that page says what each measures (#644). Read them again after
-   the reviewer's last confirmation, the one of the plugin pass's fixes, and replace the figures in
-   the body. Each table's row keeps the figure read when the row was written. If the transcript
-   cannot be found, write "not measured". Given several transcripts, the script prints a line for
-   each and their sum, which is how the session that runs the plugin pass reads that pass's totals
-   (#634).
+   It prints a line for each subagent, then the figures as the two tables of
+   `docs/agents/review-figures.md` hold them. Write the pre-PR review's two, its last request and
+   its total over all requests, and what share of the total is cache reads. The first is the one
+   the first table holds, and the second the one the second table holds; that page says what each
+   measures (#644). Read them again after the reviewer's last confirmation, the one of the plugin
+   pass's fixes, and replace the figures in the body. Each table's row keeps the figure read when
+   the row was written. If the script prints no line for the reviewer, write "not measured". The
+   same run prints the plugin pass's figures once that pass has run, which is how the session that
+   runs it reads them (#634). A session that reviews two pull requests gives the script a text
+   that marks one, after the directory; the script's docstring says how.
+
+7. **Read the branch's counts again, after the last fix commit** (#663).
+   `docs/agents/code-review.md` has the rule under *Review the prose, not only the code*: what is
+   read again and how. This step comes after the skill's others and after the plugin pass: run it
+   when the reviewer has confirmed that pass's fixes and no fix is left to commit, before the body
+   is edited for the last time. These lines list what the rule names:
+
+   ```
+   gh pr view <n> --json body --jq .body         # its counts, and each output it quotes
+   git diff -U0 main...HEAD -- "*.md"            # each count the branch added to tracked prose
+   git log main..HEAD --format="%h %s%n%b"       # the branch's own commit messages
+   ```
+
+   Run each command the body quotes output from, on the head. Count what each count counts. A
+   commit message that the head contradicts is reworded as step 4 says.
+
+   Done when the body has, under the `## Pre-PR review` heading, a line that names what was read
+   again and the commit it was read on: `Read again on <short hash>: <each count and each quoted
+   output, and that the commit messages were read>`.
 
 ## What this does not do
 

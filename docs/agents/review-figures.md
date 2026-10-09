@@ -75,8 +75,9 @@ Read 2026-10-08 (#634) for the first three rows, and by the session that added i
 since. #625, #628 and #633 were reviewed in one session, and its subagents' transcripts were still
 on its machine: 41 of them, 40 belonging to the three pull requests and one a probe of the usage
 notice. Each figure below sums, over every request a subagent sent, the four token counts in that
-request's usage record: input, output, cache write and cache read. They are read with the script in
-`/pre-pr-review`'s last step. The five older rows of the table above have no transcript and so no
+request's usage record: input, output, cache write and cache read. They are read with
+`tools/review-usage.py`, which step 6 of `/pre-pr-review` names; until 2026-10-09 (#661) the script
+was a fenced block in that step. The five older rows of the table above have no transcript and so no
 row here.
 
 | branch | pre-PR review: its one reviewer | of that, cache reads | plugin pass: the three steps before the reviewers | plugin pass: reviewers | plugin pass: scorers | plugin pass: those three summed | plugin pass: of that sum, cache reads | what else the transcripts showed |
@@ -91,7 +92,8 @@ row here.
 | #656 | 2 120 501 tokens in 14 requests | 90.8% | 602 867 tokens, three subagents | 2 819 828 tokens, five reviewers | 3 793 176 tokens, six scorers | 7 215 871 tokens | 87.4% | Two of its six scorers sent 15 and 16 requests, 950 309 and 1 160 664 tokens, for candidates scored 50 and 25 |
 
 Which subagents a cell sums is told by the description the session gave each when it spawned it,
-which the transcript's `.meta.json` keeps. The pre-PR review's is the one named reviewer, over its
+which the transcript's `.meta.json` keeps. `code-review.md` says which word each description holds
+(#661). The pre-PR review's is the one named reviewer, over its
 whole transcript, so its confirmations are in it, the one of the plugin pass's fixes included.
 That holds for the first three rows, which were filled in afterwards; a row written by its own
 session is read before the reviewer's last confirmation, as the row rule in `code-review.md` says,
