@@ -152,8 +152,8 @@ Blender — on a pull request and on a push to `main`: each `tests/test-*.lua`, 
 and `commit-check.ps1` over the commits that event brought. Since #659 a third job runs the
 `--self-test` of the same three scripts under `tools/` that `run-gates.ps1` runs. A pull request
 with a merge conflict gets no run at all, which looks the same as one not yet run. The one other
-check nobody starts by hand is the `commit-msg` hook in the Commit messages section, which a clone opts into and a
-commit triggers. **What stays manual is the rest of what `run-gates.ps1` runs, and all of what it
+check nobody starts by hand is the `commit-msg` hook in the Commit messages section, which a
+clone opts into and a commit triggers. **What stays manual is the rest of what `run-gates.ps1` runs, and all of what it
 leaves out**: the default `load-check.ps1` and each `scripts/check-*.ps1`, then
 `load-check.ps1 -FromZips`, `locale-check.ps1`, `name-check.ps1`, the probes and the gates' own
 self-tests.
