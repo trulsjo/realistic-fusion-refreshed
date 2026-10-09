@@ -66,11 +66,26 @@ WHAT IT CANNOT SEE:
     value is not known.
   - a command that hangs for any reason other than its stdin.
 
-`--self-test` runs the cases at the foot and exits non-zero when one is judged wrongly.
+WHAT IS KEPT (#660). Each refusal appends one line of JSON to `.claude/refused-bash.log` at the
+root of the repository this script is in: the time, the reason and the command. `.claude/*` is
+git-ignored, so the log is this machine's. It is where a false refusal is counted from: read the commands there and
+see which would not have hung. A command let through writes nothing, so a false pass is not in
+it; the hook does not see how a command ended. A log that cannot be written is passed over, and
+the call is refused just the same.
+
+`--self-test` runs the cases at the foot and exits non-zero when one is judged wrongly, or when a
+refusal is not logged as above. It writes to a temporary directory and never to the log. It is run
+by scripts/run-gates.ps1 and by .github/workflows/gates.yml (#659).
 """
+import datetime
 import json
+import os
 import re
 import sys
+import tempfile
+
+LOG = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                   ".claude", "refused-bash.log")
 
 WRAPPERS = {"time", "nohup", "command", "exec", "env", "winpty",
             "then", "else", "if", "elif", "!"}      # not `do`: see WHAT IT CANNOT SEE
@@ -223,21 +238,60 @@ CASES = [
 ]
 
 
+def verdict(call, log=LOG):
+    """Why this tool call is refused, or None. A refusal is appended to the log on the way."""
+    if call.get("tool_name", "Bash") != "Bash":
+        return None
+    command = (call.get("tool_input") or {}).get("command") or ""
+    why = judge(command)
+    if why:
+        try:
+            with open(log, "a", encoding="utf-8") as f:
+                now = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
+                f.write(json.dumps({"time": now, "why": why, "command": command}) + "\n")
+        except OSError:
+            pass                # the log is a record; the refusal does not wait on it
+    return why
+
+
+def log_wrong():
+    """What verdict() does with the log that it should not, as sentences. None is wanted."""
+    refused, passed = {"tool_input": {"command": "cat"}}, {"tool_input": {"command": "cat f"}}
+    wrong = []
+    with tempfile.TemporaryDirectory() as scratch:
+        log = os.path.join(scratch, "refused.log")
+        verdict(passed, log)
+        if os.path.exists(log):
+            wrong.append("a command let through wrote to the log")
+        why = verdict(refused, log)
+        verdict(passed, log)
+        lines = open(log, encoding="utf-8").read().splitlines() if os.path.exists(log) else []
+        entry = json.loads(lines[0]) if len(lines) == 1 else {}
+        if (entry.get("why"), entry.get("command")) != (why, "cat") or not entry.get("time"):
+            wrong.append(f"one refusal and two passes left these lines in the log: {lines!r}")
+        try:
+            if not verdict(refused, scratch):       # a directory: it cannot be opened to append
+                wrong.append("a log that cannot be written let the command through")
+        except Exception as e:
+            wrong.append(f"a log that cannot be written raised {e!r}")
+    return wrong
+
+
 def self_test():
-    wrong = [(c, want) for c, want in CASES if bool(judge(c)) != want]
-    for c, want in wrong:
-        print(f"WRONG: wanted {'refused' if want else 'let through'}: {c!r}", file=sys.stderr)
-    print(f"{len(CASES) - len(wrong)} of {len(CASES)} cases judged as wanted.")
-    return 1 if wrong else 0
+    wrong = [f"wanted {'refused' if want else 'let through'}: {c!r}"
+             for c, want in CASES if bool(judge(c)) != want]
+    logged = log_wrong()
+    for w in wrong + logged:
+        print(f"WRONG: {w}", file=sys.stderr)
+    print(f"{len(CASES) - len(wrong)} of {len(CASES)} cases judged as wanted, "
+          f"and {3 - len(logged)} of 3 checks of the log held.")
+    return 1 if wrong or logged else 0
 
 
 def main():
     if sys.argv[1:] == ["--self-test"]:
         return self_test()
-    call = json.load(sys.stdin)
-    if call.get("tool_name", "Bash") != "Bash":
-        return 0
-    why = judge((call.get("tool_input") or {}).get("command") or "")
+    why = verdict(json.load(sys.stdin))
     if not why:
         return 0
     print(f"Refused before it ran (#645): {why}. Write the script or the text to a file with the "
