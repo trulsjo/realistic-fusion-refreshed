@@ -81,7 +81,7 @@ after the plugin pass.
    is fixed from the line. On this skill's first run a report sent whole stopped inside the sixth
    of nine findings, and the reviewer's attempt to write the rest to a file was refused. On #664
    each of the 17 findings' lines named both; no detail was asked for, 16 were fixed from the
-   lines and confirmed, and the 17th needed no change.
+   lines and confirmed, and one, finding 11, needed no change.
 
    **The report arrives as a message from the reviewer once this session's turn has ended**
    (#648). End the turn to receive it; the message starts the session's next turn. A question
@@ -203,7 +203,7 @@ after the plugin pass.
    Done when the body has, under the `## Pre-PR review` heading, a line that names what was read
    again and the head it was read on, the last one if a fix moved it: `Read again on <short hash>:
    <each count and each quoted output, and that the commit messages were read>`. The line names
-   each fix that was held, as not confirmed.
+   each fix that got no message, as not confirmed.
 
 ## What this does not do
 

@@ -45,13 +45,15 @@ A LONG HEREDOC IS REFUSED TOO (#666), though it does not hang: one whose body is
 HEREDOC_LINES lines, 60, counted without the line that ends it. The trouble a heredoc has here is
 a body cut short on a quote, `unexpected EOF while looking for matching '`, after which nothing
 runs. docs/agents/issue-tracker.md says to write the file with the Write tool, and a session that
-had that in context sent nine heredocs on 2026-10-09 all the same.
+had that in context sent nine Bash commands holding a heredoc on 2026-10-09 all the same.
 
-LENGTH DOES NOT PREDICT THAT FAILURE. Of those nine, the one whose body was 129 lines was cut
-short and the one of 121 ran; the other seven, of 34 lines or fewer, ran. So the 60 is not where
+LENGTH DOES NOT PREDICT THAT FAILURE. Of those nine, the one whose longest body was 129 lines,
+in a command of 132, was cut short, and the one of 121, in a command of 124, ran; the other
+seven, of 34 lines or fewer, ran. So the 60 is not where
 heredocs start to fail. It is the tracker page's record of the earlier ones, "Every command that
 failed ran past 60 lines", taken as the size past which a body is a file and is written as one.
-It refuses long heredocs that would have worked. The log says how many.
+It refuses long heredocs that would have worked. The log holds each command refused, and
+not how it would have ended.
 
 WHAT IT CANNOT SEE:
 
@@ -66,7 +68,8 @@ WHAT IT CANNOT SEE:
     a heredoc body inside it that has a line opening with `cat` or `python -` is a false
     refusal. `git commit -m "$(cat <<'EOF' ...)"` with an odd count of `"` in its body is one.
   - a shift inside arithmetic, `$(( 1 << 3 ))`. It is taken for a heredoc, and what follows it
-    for the body, so a reader after it is let through.
+    for the body, so a reader after it is let through, and a command with more than
+    HEREDOC_LINES lines after it is refused as a long heredoc.
   - a reader that is the first command of a loop's body, straight after `do`. What feeds a loop
     is written at its other end, `while read f; do ...; done < list`, or before it, so that
     command is not judged. A later command of the body is judged like any other, and a `cat`
@@ -82,8 +85,8 @@ WHAT IS KEPT (#660). Each refusal appends one line of JSON to `.claude/refused-b
 root of the repository this script is in: the time, the reason and the command. `.claude/*` is
 git-ignored, so the log is this machine's. It is where a false refusal is counted from: read the
 commands there and see which would not have hung, or which heredoc would have run. A command let
-through writes nothing, so a false pass is not in it; the hook does not see how a command ended. A log that cannot be written is passed over, and
-the call is refused just the same.
+through writes nothing, so a false pass is not in it; the hook does not see how a command ended.
+A log that cannot be written is passed over, and the call is refused just the same.
 
 `--self-test` runs the cases at the foot and exits non-zero when one is judged wrongly, or when a
 refusal is not logged as above. It writes to a temporary directory and never to the log. It is run
@@ -151,6 +154,7 @@ def blank(command, bodies=None):
                     end = n if end < 0 else end
                     line = command[i:end]
                     i = min(end + 1, n)
+                    line = line.rstrip("\r")       # a command sent with CRLF line ends
                     if (line.lstrip("\t") if tabs else line) == word:
                         break
                     lines += 1
@@ -168,7 +172,8 @@ def blank(command, bodies=None):
 
 
 def judge(command):
-    """Why this command would hang, as a sentence, or None when nothing in it is known to."""
+    """Why this command is refused, as a sentence, or None: it would hang, or it holds a long
+    heredoc."""
     bodies = []
     text = blank(command, bodies)
     # Output redirects carry `&` and `|` that are not operators; they say nothing about stdin.
@@ -249,6 +254,7 @@ CASES = [
     ("cat > f.py <<'X'\n" + "line\n" * 61 + "X\n", True),                # a heredoc over HEREDOC_LINES
     ("cat > f.py <<'X'\n" + "line\n" * 60 + "X\n", False),               # one of exactly that many
     ("git log; python - <<'PY'\n" + "x = 1\n" * 61, True),               # and one that never ends
+    ("cat > f <<'X'\r\na\r\nX\r\n" + "echo hi\r\n" * 61, False),         # CRLF: the body ends at X
     ("cat <<\\EOF\npython -\nEOF\n", False),
     ("cat > /dev/null <<'X'\nX\n", False),                               # 2026-10-07 22:12, completed
     ("python - <<'PY'\nimport sys\nprint(\"it's\")\ncat\nPY\necho done", False),
@@ -320,9 +326,10 @@ def main():
     why = verdict(json.load(sys.stdin))
     if not why:
         return 0
-    print(f"Refused before it ran (#645): {why}. Write the script or the text to a file with the "
-          "Write tool and give the command that file's path; or feed it with a pipe or `< file`. "
-          "tools/refuse-hanging-bash.py says what is refused.", file=sys.stderr)
+    print(f"Refused before it ran: {why}. Write the script or the text to a file with the Write "
+          "tool and give the command that file's path. A command left reading can be fed with a "
+          "pipe or `< file` instead. tools/refuse-hanging-bash.py says what is refused.",
+          file=sys.stderr)
     return 2
 
 
