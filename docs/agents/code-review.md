@@ -66,7 +66,8 @@ message a review corrected (#640). Two of the earlier ones changed the same day:
 is handed now names the files it reads whole (#647), and which of its confirmations answers for a
 fix depends on the finding's score (#643). They carry out one more from that day: the session ends
 its turn to receive what the reviewer sends (#648), which a question put to the user does not end
-(#654). Since 2026-10-09 they carry out one more: after the last fix commit the session reads
+(#654). Since 2026-10-09 the step that spawns the reviewer gives it the description the usage
+script sorts it by (#661), and they carry out one more: after the last fix commit the session reads
 again what the branch and the body count and quote (#663). A change to one of those is made here
 first and then in the steps.
 
@@ -236,7 +237,9 @@ request's body is last edited, the session reads each of these again against the
   review corrects.
 
 **The body then says what was read again, and on which commit.** A reading that names no commit
-cannot be told from one made before the last fix.
+cannot be told from one made before the last fix. **What the reading turns up is fixed like any
+finding raised in the last confirmation**: the fix gets a message of its own to the reviewer, what
+that fix changed is read again, and the body names the head after it.
 
 Three of #656's 22 pre-PR findings were of this kind, and the reviewer raised all three in its last
 confirmation, the one of the plugin pass's fixes:
@@ -479,18 +482,23 @@ session runs the pass anyway and says in the pull request that it did. No kind o
 **The session puts one of four words in each subagent's description** (2026-10-09, #661). The
 description is what the Agent tool is given when a subagent is spawned, and it is all that says
 afterwards which transcript was which. `tools/review-usage.py` sorts a session's subagents by it, in
-upper case or lower: `Pre-PR` for the pre-PR reviewer, and `step`, `reviewer` or `scorer`, each as a
-whole word, for the plugin pass's three steps before the reviewers, its reviewers and its scorers.
-The plugin pass's descriptions also carry the pull request's number, as in `plugin pass #656:
-reviewer 2, shallow bug scan`, so that a session which reviews two pull requests can give the script
-one of them. A subagent whose description holds none of the four is printed as unsorted and is in no
-sum. On #656 the session had named its subagents with those words by its own choice, and a script it
-wrote for the purpose sorted them; no tracked file asked for either.
+upper case or lower: `Pre-PR` at its start for the pre-PR reviewer, and `step`, `reviewer` or
+`scorer` as a whole word for the plugin pass's three steps before the reviewers, its reviewers and
+its scorers. Where a description holds more than one of those three, the script takes the first, so
+the word for what the subagent is comes before what it is about. The plugin pass's descriptions also
+carry the pull request's number, as in `plugin pass #656: reviewer 2, shallow bug scan`, so that a
+session which reviews two pull requests can give the script one of them. A subagent whose
+description holds none of the four is printed as unsorted and is in no sum. Giving the script a
+number leaves out the pre-PR reviewer, whose description has none, so the session gives its name as
+well. On #656 the session had named its subagents with those words by its own choice, and a script
+it wrote for the purpose sorted them; no tracked file asked for either.
 
 **The pre-PR reviewer confirms the plugin pass's fixes** (Truls, 2026-10-07, #593). Continue the
 subagent that ran the pre-PR review and hand it the diff of the fixes, with no list of what was
 done. If it is no longer running, a fresh reviewer confirms them and the pull request says so. On
-#625 that reviewer found an error the fixes had added. Where a fix is waiting for this message
+#625 that reviewer found an error the fixes had added. When it has confirmed them, the session
+reads again what *Review the prose, not only the code* names for the last fix commit (#663),
+before it edits the body for the last time. Where a fix is waiting for this message
 (#643), the diff starts at the parent of that fix's commit,
 `git diff --output="<scratch>/plugin-fixes.diff" <that commit>~1..HEAD`, and the reviewer is told
 the finding's number and that its fix is in the diff. The session then changes the fix's mark in
