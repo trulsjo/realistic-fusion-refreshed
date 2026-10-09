@@ -1,4 +1,5 @@
-"""A PreToolUse hook for the Bash tool: refuse a command that would hang on its input (#645).
+"""A PreToolUse hook for the Bash tool: refuse a command that would hang on its input (#645),
+or that holds a long heredoc (#666).
 
 Claude Code hands a hook the tool call as JSON on stdin. Exit 2 refuses the call and shows stderr
 to the model; exit 0 lets it through. Register it for the Bash tool only:
@@ -38,9 +39,19 @@ WHAT IS LET THROUGH ON PURPOSE:
   - `<<` inside a quoted argument. Quoted text is blanked before anything is looked for, so
     `echo "a << b"` holds no heredoc and no command of its own.
   - A here-string, `<<<`. It feeds the command a line and ends, so nothing hangs.
-  - A heredoc that feeds the command. It does not hang. The trouble a heredoc has here is another
-    one, a body cut short on a quote, and docs/agents/issue-tracker.md still says to write the
-    file instead.
+  - A heredoc of HEREDOC_LINES lines or fewer that feeds the command. It does not hang.
+
+A LONG HEREDOC IS REFUSED TOO (#666), though it does not hang: one whose body is over
+HEREDOC_LINES lines, 60, counted without the line that ends it. The trouble a heredoc has here is
+a body cut short on a quote, `unexpected EOF while looking for matching '`, after which nothing
+runs. docs/agents/issue-tracker.md says to write the file with the Write tool, and a session that
+had that in context sent nine heredocs on 2026-10-09 all the same.
+
+LENGTH DOES NOT PREDICT THAT FAILURE. Of those nine, the one whose body was 129 lines was cut
+short and the one of 121 ran; the other seven, of 34 lines or fewer, ran. So the 60 is not where
+heredocs start to fail. It is the tracker page's record of the earlier ones, "Every command that
+failed ran past 60 lines", taken as the size past which a body is a file and is written as one.
+It refuses long heredocs that would have worked. The log says how many.
 
 WHAT IT CANNOT SEE:
 
@@ -48,7 +59,8 @@ WHAT IT CANNOT SEE:
     `grep pattern`, `sort` or `jq .` waits the same way; add a reader here when one hangs,
     with what counts as its file operand.
   - a command inside double quotes, `"$(cat)"`, or handed to `bash -c '...'`. Quoted text is
-    blanked.
+    blanked. A heredoc there is not counted either, however long:
+    `git commit -m "$(cat <<'EOF' ...)"`.
   - where a double-quoted span ends when it holds a `$(...)` with quotes of its own. The span
     is taken to end at the first inner `"`, so the rest of such a line is read as commands, and
     a heredoc body inside it that has a line opening with `cat` or `python -` is a false
@@ -68,9 +80,9 @@ WHAT IT CANNOT SEE:
 
 WHAT IS KEPT (#660). Each refusal appends one line of JSON to `.claude/refused-bash.log` at the
 root of the repository this script is in: the time, the reason and the command. `.claude/*` is
-git-ignored, so the log is this machine's. It is where a false refusal is counted from: read the commands there and
-see which would not have hung. A command let through writes nothing, so a false pass is not in
-it; the hook does not see how a command ended. A log that cannot be written is passed over, and
+git-ignored, so the log is this machine's. It is where a false refusal is counted from: read the
+commands there and see which would not have hung, or which heredoc would have run. A command let
+through writes nothing, so a false pass is not in it; the hook does not see how a command ended. A log that cannot be written is passed over, and
 the call is refused just the same.
 
 `--self-test` runs the cases at the foot and exits non-zero when one is judged wrongly, or when a
@@ -93,11 +105,14 @@ PYTHON = re.compile(r"^(?:python[\d.]*|py)(?:\.exe)?$")
 WORD = r"[^\s;&|()<>]+"     # a redirect's target ends at an operator, as at a space
 FEED = r"<<<\s*" + WORD + r"|<<H|\d*<\s*(?!<)" + WORD
 NULLS = {"/dev/null", "nul", "NUL"}
+HEREDOC_LINES = 60          # the longest heredoc body let through; the docstring says why 60
 
 
-def blank(command):
+def blank(command, bodies=None):
     """The command with each quoted span turned into the word Q, each heredoc into `<<H` with
-    its body dropped, and comments gone. What is left can be split on shell operators."""
+    its body dropped, and comments gone. What is left can be split on shell operators.
+
+    Given a list for `bodies`, it gains each heredoc body's count of lines."""
     out, pending, i, n = [], [], 0, len(command)
     while i < n:
         c = command[i]
@@ -130,6 +145,7 @@ def blank(command):
             # The bodies start on the next line, in the order their heredocs were opened.
             i += 1
             for word, tabs in pending:
+                lines = 0
                 while i < n:
                     end = command.find("\n", i)
                     end = n if end < 0 else end
@@ -137,6 +153,9 @@ def blank(command):
                     i = min(end + 1, n)
                     if (line.lstrip("\t") if tabs else line) == word:
                         break
+                    lines += 1
+                if bodies is not None:
+                    bodies.append(lines)
             pending = []
             out.append("\n")
         elif c == "#" and (i == 0 or command[i - 1].isspace()):
@@ -150,7 +169,8 @@ def blank(command):
 
 def judge(command):
     """Why this command would hang, as a sentence, or None when nothing in it is known to."""
-    text = blank(command)
+    bodies = []
+    text = blank(command, bodies)
     # Output redirects carry `&` and `|` that are not operators; they say nothing about stdin.
     text = re.sub(r"\d*>&\d+|\d*>&-|&>>?\s*" + WORD + r"|\d*>[>|]?\s*" + WORD, " ", text)
     # `|&` is a pipe, and a pipe at a line's end carries on to the next line.
@@ -196,6 +216,9 @@ def judge(command):
                             "stdin, a pipe that is never closed")
         # Where the group ends is not tracked, so everything after its pipe counts as fed.
         piped = piped or (bool(pipeline.strip()) and not simples[-1].strip())
+    if bodies and max(bodies) > HEREDOC_LINES:
+        return (f"a heredoc body of {max(bodies)} lines is over the {HEREDOC_LINES} this hook lets "
+                "through; a long one has been cut short on a quote here, and nothing ran")
     return None
 
 
@@ -223,6 +246,9 @@ CASES = [
     ("curl -s x |& python -", False),
     ("echo hi | (cat > f)", False),
     ("echo hi | { cat; }", False),
+    ("cat > f.py <<'X'\n" + "line\n" * 61 + "X\n", True),                # a heredoc over HEREDOC_LINES
+    ("cat > f.py <<'X'\n" + "line\n" * 60 + "X\n", False),               # one of exactly that many
+    ("git log; python - <<'PY'\n" + "x = 1\n" * 61, True),               # and one that never ends
     ("cat <<\\EOF\npython -\nEOF\n", False),
     ("cat > /dev/null <<'X'\nX\n", False),                               # 2026-10-07 22:12, completed
     ("python - <<'PY'\nimport sys\nprint(\"it's\")\ncat\nPY\necho done", False),
@@ -278,7 +304,7 @@ def log_wrong():
 
 
 def self_test():
-    wrong = [f"wanted {'refused' if want else 'let through'}: {c!r}"
+    wrong = [f"wanted {'refused' if want else 'let through'}: {c[:200]!r}"
              for c, want in CASES if bool(judge(c)) != want]
     logged = log_wrong()
     for w in wrong + logged:
