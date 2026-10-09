@@ -51,8 +51,8 @@ when it matters which.
    request in the sentences around them is a cell of its row. The row rule changed with that: the
    two added lines are the whole edit, and a pull request's figures go nowhere in this file. The
    same day (#661) one tracked script, `tools/review-usage.py`, took the place of the script in the
-   skill's step and of the one each session wrote for the plugin pass's cells, and the section says
-   which word the session puts in each subagent's description so that the script can sort it.
+   skill's step and of the one #656's session wrote for the plugin pass's cells, and the section
+   says which word the session puts in each subagent's description so that the script can sort it.
 
 **A rule is changed in this file** (2026-10-07, #630). `CLAUDE.md` and the intro of
 `.claude/skills/pre-pr-review/SKILL.md` each stated parts of the four until then, so a rule that
@@ -496,13 +496,13 @@ it wrote for the purpose sorted them; no tracked file asked for either.
 **The pre-PR reviewer confirms the plugin pass's fixes** (Truls, 2026-10-07, #593). Continue the
 subagent that ran the pre-PR review and hand it the diff of the fixes, with no list of what was
 done. If it is no longer running, a fresh reviewer confirms them and the pull request says so. On
-#625 that reviewer found an error the fixes had added. When it has confirmed them, the session
-reads again what *Review the prose, not only the code* names for the last fix commit (#663),
-before it edits the body for the last time. Where a fix is waiting for this message
-(#643), the diff starts at the parent of that fix's commit,
-`git diff --output="<scratch>/plugin-fixes.diff" <that commit>~1..HEAD`, and the reviewer is told
-the finding's number and that its fix is in the diff. The session then changes the fix's mark in
-the pull request's body to what the reviewer answered.
+#625 that reviewer found an error the fixes had added. When it has confirmed them, or when the pass
+left nothing to fix, the session reads again what *Review the prose, not only the code* names for
+the last fix commit (#663), before it edits the body for the last time. Where a fix is waiting for
+this message (#643), the diff starts at the parent of that fix's commit, `git diff
+--output="<scratch>/plugin-fixes.diff" <that commit>~1..HEAD`, and the reviewer is told the
+finding's number and that its fix is in the diff. The session then changes the fix's mark in the
+pull request's body to what the reviewer answered.
 
 **When an implement skill says to close out with `/code-review`**, in this repository that still
 means the pre-PR review, and no pull request is needed for it. The plugin pass follows once the pull

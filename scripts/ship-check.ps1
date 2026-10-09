@@ -1746,7 +1746,7 @@ if ($SelfTest) {
                     '> a quoted line that ends in 2 430'
                     '> 329 tokens.'
                     ''
-                    'a figure in brackets (about 580'
+                    'a figure in brackets (580'
                     '000 tokens) and one in bold, **133'
                     '423 tokens**.'
                     ''
