@@ -1,6 +1,8 @@
 # The game-free gates (#599): the ones that need neither Factorio nor Blender, so a hosted runner
 # can run them. Every other gate starts the game and runs only where a person starts it -- see
-# scripts/run-gates.ps1. No gate's -SelfTest runs here, the same as there.
+# scripts/run-gates.ps1. No gate's -SelfTest runs here, the same as there. Three tools under
+# tools/ are not gates and have a --self-test that is all that checks them; those run here, as
+# they do there (#659).
 #
 # Advisory: main has no branch protection, so a red check blocks nothing.
 name: gates
@@ -23,6 +25,22 @@ jobs:
           for suite in tests/test-*.lua; do
             echo "::group::$suite"
             lua5.4 "$suite" || { failed=1; echo "::error::$suite failed"; }
+            echo "::endgroup::"
+          done
+          exit $failed
+
+  tools:
+    name: Tools' self-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The runner's own Python: the three import nothing that has to be installed.
+      - name: tools/*.py --self-test
+        run: |
+          failed=0
+          for tool in refuse-hanging-bash review-usage rewrap; do
+            echo "::group::$tool"
+            python3 "tools/$tool.py" --self-test || { failed=1; echo "::error::$tool failed"; }
             echo "::endgroup::"
           done
           exit $failed

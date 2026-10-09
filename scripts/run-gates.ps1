@@ -21,12 +21,20 @@
     WHAT IT RUNS, in this order:
 
       the Lua suites           every tests/test-*.lua, with `lua` from PATH
+      three tools' self-tests  tools/refuse-hanging-bash.py, review-usage.py and rewrap.py,
+                               each with --self-test and `python` from PATH (#659)
       ship-check.ps1           no game
       load-check.ps1           the default load, from the junctioned repository
       check-*.ps1              every scripts/check-*.ps1, found by name, so a new one is picked up
 
     Each is its own process with its default arguments. A gate that fails does not stop the run:
     the rest still run, so one invocation says everything that is broken.
+
+    THE THREE TOOLS ARE NOT GATES, and a self-test is all that checks each. None of them runs in
+    any gate: one is a hook that judges every Bash tool call on a machine that registers it, and
+    two are run by hand by the session that needs them. #656's pre-PR review found a defect in what the hook
+    refuses six times, and each fix was checked by running its self-test by hand. They need Python
+    and nothing installed into it.
 
     WHAT IT DOES NOT RUN. No probe: a probe asserts nothing, and exit 0 from one means it reported.
     No -SelfTest of any gate, and not load-check.ps1 -FromZips, locale-check.ps1 or name-check.ps1:
@@ -139,6 +147,11 @@ if ($SelfTest) {
 $gates = @()
 foreach ($suite in Get-ChildItem (Join-Path $repoRoot 'tests') -Filter 'test-*.lua' | Sort-Object Name) {
     $gates += @{ Name = $suite.BaseName; Exe = 'lua'; Arguments = @($suite.FullName) }
+}
+# Named and not found: most of tools/*.py have no --self-test, and would read it as a file name.
+foreach ($tool in 'refuse-hanging-bash', 'review-usage', 'rewrap') {
+    $gates += @{ Name = $tool; Exe = 'python'
+                 Arguments = @((Join-Path $repoRoot "tools/$tool.py"), '--self-test') }
 }
 $scripts = @('ship-check.ps1', 'load-check.ps1') +
     @(Get-ChildItem $PSScriptRoot -Filter 'check-*.ps1' | Sort-Object Name | ForEach-Object Name)
