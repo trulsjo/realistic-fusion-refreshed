@@ -76,9 +76,12 @@ after the plugin pass.
    > Reply with one line per finding first: its number, the file, the fault and the score. Give
    > the detail for a finding when you are asked for it. A long reply arrives cut off.
 
-   **Ask for each finding's detail with SendMessage before fixing it**, and for the rest of any
-   reply that stops mid-sentence. On this skill's first run a report sent whole stopped inside
-   the sixth of nine findings, and the reviewer's attempt to write the rest to a file was refused.
+   **Ask for a finding's detail with SendMessage when its line does not name the place and the
+   fault** (#668), and for the rest of any reply that stops mid-sentence. A line that names both
+   is fixed from the line. On this skill's first run a report sent whole stopped inside the sixth
+   of nine findings, and the reviewer's attempt to write the rest to a file was refused. On #664
+   each of the 17 findings' lines named both; no detail was asked for, 16 were fixed from the
+   lines and confirmed, and the 17th needed no change.
 
    **The report arrives as a message from the reviewer once this session's turn has ended**
    (#648). End the turn to receive it; the message starts the session's next turn. A question
@@ -194,11 +197,13 @@ after the plugin pass.
    commit message that the head contradicts is reworded as step 4 says. Tracked prose is a
    comment or a help block as much as a `.md` file. What the reading turns up is fixed and
    committed, its diff is sent to the reviewer in a message of its own as step 4 sends one, and
-   what that fix changed is read again.
+   what that fix changed is read again. **A fix that only corrects a count gets no message**
+   (#665): the rule says which fix that is. Commit it and read again what it changed.
 
    Done when the body has, under the `## Pre-PR review` heading, a line that names what was read
    again and the head it was read on, the last one if a fix moved it: `Read again on <short hash>:
-   <each count and each quoted output, and that the commit messages were read>`.
+   <each count and each quoted output, and that the commit messages were read>`. The line names
+   each fix that was held, as not confirmed.
 
 ## What this does not do
 
