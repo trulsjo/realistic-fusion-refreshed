@@ -259,7 +259,7 @@ does. Read from the reviewer's transcript on 2026-10-09, over the requests each 
 | The session's message | Requests | Tokens |
 |---|---|---|
 | the first review | 11 | 1 623 969 |
-| the fixes of findings 1 to 11 | 4 | 782 832 |
+| the fixes after the first review | 4 | 782 832 |
 | the diff after the plugin pass | 4 | 846 067 |
 | the fixes of findings 16 and 17 | 3 | 660 802 |
 | the one changed cell | 3 | 669 308 |
