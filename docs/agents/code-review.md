@@ -519,15 +519,28 @@ pass's reviewers did. The pre-PR review's fixed findings on the same six number 
 
 **The grade is the session's, and Truls's to overrule** (Truls, 2026-10-07, #593). The session that
 adds a row grades it by the test above, and writes in the row's last cell the day, the reason, and
-whether he has seen the grade. The cells of #642 and #655 were written before this asked for the
-last of those, and do not say. The first six were graded on 2026-10-07 by the session that put the
+whether he has seen the grade. The first six were graded on 2026-10-07 by the session that put the
 verdict to him, and he ruled on three it was unsure of: #579's missing exponent is serious, a
 sentence on #607 saying a skill writes what it only holds templates for is not, and a false sentence
 in this file or in `CLAUDE.md` is. A later row is graded by the same test and those rulings, and its
-last cell has what the session wrote of its grade.
+last cell has what the session wrote of its grade. On 2026-10-10 he saw the grades of the ten
+routine rows, #628's to #673's: he ruled the third finding on #628 not serious and let the others
+stand, and each of those cells says so.
 
-**The rule is revisited at ten routine rows, which is sixteen in the first table** (Truls,
-2026-10-07, #593). A routine row is one for a pull request opened after the verdict, when the pass
+**The verdict of 2026-10-10: the rule stands.** The first revisit fell due at #673's row, the tenth
+routine one, and Truls kept the plugin pass on every pull request. By the test above 4 of the 25
+fixed findings in those ten rows were serious, on 3 of the 10 branches. [What the passes cost, and
+the verdict's limits](code-review-evidence.md#what-the-verdict-of-2026-10-10-rested-on), are on the
+evidence page.
+
+**The rule is next revisited at ten more routine rows, or at the first five that touch a mod,
+whichever comes first** (Truls, 2026-10-10). Both are counted from the row after #673's. Ten more is
+the twentieth routine row, which is the twenty-sixth of the first table. A row touches a mod when
+its pull request changes a file under `realistic-fusion-refreshed-assets/`,
+`realistic-fusion-refreshed-core/` or `realistic-fusion-refreshed/`; that is this file's reading of
+"touch a mod", and the wording is his to correct. None of the first ten does. The first revisit was
+set at ten routine rows, which was sixteen in the first table (Truls, 2026-10-07, #593). A routine
+row is one for a pull request opened after the verdict, when the pass
 stopped waiting to be asked for: #628's is the first, the pull request that closed #627, and #625's
 is not one. The comment on #593 words the cut as "opened from 2026-10-07 on", and #622 and #625 were
 opened that day before the verdict. "After the verdict" is this file's reading of it. In the session
