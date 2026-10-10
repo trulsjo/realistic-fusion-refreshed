@@ -137,3 +137,7 @@ One line for each, newest last. The passages above are not edited.
 - **2026-10-10, #670.** The fourth rule gained a paragraph: the main session's own cost goes in
   the pull request's body, read with `tools/review-usage.py`, and in neither table. Step 6 of the
   skill carries it out.
+- **2026-10-10, no ticket: Truls's verdict on the fourth rule's first revisit.** The plugin pass
+  stays on every pull request. The rule is next revisited at ten more routine rows or at the first
+  five that touch a mod, whichever comes first. He saw the grades of the ten routine rows, ruled
+  the third finding on #628 not serious and let the others stand.

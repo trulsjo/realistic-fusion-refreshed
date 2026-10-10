@@ -228,3 +228,34 @@ the same session, that morning, carried 69 139. 18 of the 48 requests called no 
 tokens: each answered a notice or reported status, three of them an idle notice from the reviewer
 and seven a subagent's hand-back while the plugin pass ran. Those 18 were counted by a scratch
 script and are not a figure the tracked script prints.
+
+### What the verdict of 2026-10-10 rested on
+
+Under the rule that the plugin pass runs on every pull request, at its first revisit. Written for
+this page on 2026-10-10, from the rows of [`review-figures.md`](review-figures.md) as they were that
+day.
+
+The ten routine rows are #628, #633, #641, #642, #650, #655, #656, #664, #669 and #673, which are
+every pull request opened from the verdict of 2026-10-07 to 2026-10-10.
+
+**4 of the 25 findings the plugin pass raised and that were fixed were serious, on 3 of the 10
+branches**: two on #628, one on #650 and one on #656. The six rows of the first verdict had 8 of 26
+on 5 of 6. Each of the four is serious by the ruling on a false sentence in `code-review.md` or in
+`CLAUDE.md`, and none is a wrong figure or broken code. Truls ruled a third finding on #628 not
+serious. The three passes after #656 fixed one finding between them, and it was not serious. The
+pre-PR review found 143 things on the same ten and 134 were fixed.
+
+| The plugin pass on the ten | Summed | A pass |
+|---|---|---|
+| the counts its subagents reported | 7 291 826 tokens | 729 183 |
+| over all requests | 33 559 513 tokens | 3 355 951 |
+| of that, the scorers | 11 148 320 tokens, 33.2% | |
+
+The first verdict took a pass as about half a million tokens, in reported counts. A total is a count
+of tokens and not a price, as that page says. What the main session used to run a pass is in neither
+figure and was not split out.
+
+**None of the ten touches a mod.** Each changes files under `docs/`, `.claude/`, `scripts/`,
+`tools/` or `.github/`, or `CLAUDE.md`, and nothing else, read from each pull request's list of
+files on 2026-10-10. So the ten say nothing of what the pass finds in Lua or in a prototype, which
+is why the next revisit also falls due at five rows that touch one.
