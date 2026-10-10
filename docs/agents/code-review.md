@@ -440,8 +440,9 @@ and the grade. The second has what each pass used over all its requests. Read th
 pull request's rows, when this rule is revisited, and when a decision needs what a pass found or
 cost, as #626 does. **Since the move, a pull request's figures go in its two rows and nowhere in
 this file.** What this section keeps is the row rule, the verdict and its test, and what was
-concluded across rows, each with its date and the number of rows it was drawn from. The figures the
-verdict rested on are on the evidence page since 2026-10-10 (#672).
+concluded across rows, each with its date and the number of rows it was drawn from. What the pass
+cost on the branches the verdict rested on, and the verdict's limits, are on the evidence page since
+2026-10-10 (#672).
 
 **A reported count is a floor on what a pass used** (measured 2026-10-07, #631, on the 27
 subagents of two plugin passes). The count a subagent reports when it finishes was 1.000 to 1.095
