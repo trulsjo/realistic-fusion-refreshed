@@ -35,7 +35,7 @@ second**, in the commit that changes the rule here. This file gets the rule and 
 **A rule is changed in this file** (2026-10-07, #630). `CLAUDE.md` and the intro of
 `.claude/skills/pre-pr-review/SKILL.md` each name the section to read and when to read it, and state
 no rule. The skill's steps are the pre-PR review's procedure, and they say what they carry out. A
-change to one of those is made here first and then in the steps.
+change to what a step carries out is made here first and then in the step.
 
 **This file, `docs/agents/review-figures.md`, `docs/agents/code-review-history.md`,
 `docs/agents/code-review-evidence.md` and `.claude/skills/pre-pr-review/SKILL.md` are wrapped at 100
@@ -374,8 +374,8 @@ the ticket, and it does change the diff: a body that restates a sentence of the 
 when a finding corrects that sentence, and the reword above is then owed for words the body had no
 need of. It rests on the first sentence of the shared commit convention's *Body* section,
 `vendor/grado-factorio-tools/docs/commit-convention.md`, and holds a branch under review to it. Six
-of #669's 16 pre-PR findings were about a commit message, 2, 6, 11, 14, 15 and 16, and five commits
-were rewritten in two rounds; [the evidence page has
+of #669's 16 pre-PR findings were about a commit message, 2, 6, 11, 14, 15 and 16, and three commits
+were reworded five times in two rounds; [the evidence page has
 each](code-review-evidence.md#commit-bodies-that-a-fix-made-false-on-669-671).
 
 **Every pull request gets the plugin pass, after it is opened** (Truls, 2026-10-07, #593). It is the
@@ -435,13 +435,13 @@ only the plugin pass does.
 
 **The figures are in [`review-figures.md`](review-figures.md)** (moved there on 2026-10-09, #644):
 what each pull request's two passes found and cost, one row for a pull request in each of two
-tables. The first table has the counts of findings, the token counts each pass's subagents
-reported and the grade. The second has what each pass used over all its requests. Read that page
-to add a pull request's rows, when this rule is revisited, and when a decision needs what a pass
-found or cost, as #626 does. **Since the move, a pull request's figures go in its two rows and
-nowhere in this file.** What this section keeps is the row rule, the verdict with the figures it
-rested on, and what was concluded across rows, each with its date and the number of rows it was
-drawn from.
+tables. The first table has the counts of findings, the token counts each pass's subagents reported
+and the grade. The second has what each pass used over all its requests. Read that page to add a
+pull request's rows, when this rule is revisited, and when a decision needs what a pass found or
+cost, as #626 does. **Since the move, a pull request's figures go in its two rows and nowhere in
+this file.** What this section keeps is the row rule, the verdict and its test, and what was
+concluded across rows, each with its date and the number of rows it was drawn from. The figures the
+verdict rested on are on the evidence page since 2026-10-10 (#672).
 
 **A reported count is a floor on what a pass used** (measured 2026-10-07, #631, on the 27
 subagents of two plugin passes). The count a subagent reports when it finishes was 1.000 to 1.095
@@ -492,10 +492,11 @@ A figure with no record behind it is not estimated.
 subagents is in it: its requests, their tokens summed as the second table sums them, the share that
 is cache reads, and the context of its first request, which is what the session carried into the
 work. `tools/review-usage.py` prints the four after the tables' figures. A session that did other
-work before the branch bounds the part with the two texts the script's docstring describes. On #669
-it was 21 101 666 tokens in 48 requests, against about 3.9 million for the two passes together,
-because the session began the work with 396 207 tokens of context; [the evidence page has the
-figures](code-review-evidence.md#what-the-main-session-used-on-669-670).
+work before the branch gives the script the text the work began with, as its docstring says. The
+figure runs from there to when it is read: the body's is read when the body is last edited, and
+leaves out what the session does after. On #669 the main session used about five times what the two
+passes did together, because it began the work with a context already large; [the evidence page has
+the figures](code-review-evidence.md#what-the-main-session-used-on-669-670).
 
 **The verdict, 2026-10-07: the one-review rule fell** ([comment on
 #593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6037668590),

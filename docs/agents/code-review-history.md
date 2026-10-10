@@ -2,9 +2,8 @@
 
 The dated record behind [`code-review.md`](code-review.md): who decided each of its four rules, and
 when and by which ticket each was amended. It was part of that file until 2026-10-10 (#672). Each
-passage below is as it stood there, so "this file", "here", "above" and "below" in one mean
-`code-review.md`. The move changed four links in the first passage, which pointed at headings of
-that file, and no other word.
+passage below is as it stood there, so "this file" and "here" in one mean `code-review.md`. The move
+changed four links in the first passage, which pointed at headings of that file, and no other word.
 
 **Read this page** when a rule is being changed, and when the date or the origin of a sentence in
 `code-review.md` is in question. Reviewing a branch does not need it. **The rule is the one
@@ -66,7 +65,8 @@ what each is about.
 ## Where a rule is changed
 
 The paragraph of `code-review.md` under its list, until 2026-10-10. That file keeps a shorter one,
-and what the steps of the skill carry out is listed here.
+and what the steps of the skill carried out up to #665 is listed here. A later one is a line at the
+foot.
 
 **A rule is changed in this file** (2026-10-07, #630). `CLAUDE.md` and the intro of
 `.claude/skills/pre-pr-review/SKILL.md` each stated parts of the four until then, so a rule that
@@ -132,6 +132,8 @@ One line for each, newest last. The passages above are not edited.
   moved out of `code-review.md`, which keeps each rule and a sentence of why. Both pages are
   wrapped at 100 characters and are in section 12's list.
 - **2026-10-10, #671.** The fourth rule gained a paragraph: a commit body on a branch takes its
-  reason from the ticket and leaves what the change says to the diff.
+  reason from the ticket and leaves what the change says to the diff. Step 1 of the pre-PR review
+  skill carries it out.
 - **2026-10-10, #670.** The fourth rule gained a paragraph: the main session's own cost goes in
-  the pull request's body, read with `tools/review-usage.py`, and in neither table.
+  the pull request's body, read with `tools/review-usage.py`, and in neither table. Step 6 of the
+  skill carries it out.
