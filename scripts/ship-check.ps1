@@ -149,7 +149,7 @@
     table that has no delimiter row; the section comment has the rest.
 
     SECTION 12 HAS A -SelfTest AND NO FLOOR (#646). It fails a prose line over the wrap width in
-    the three files docs/agents/code-review.md names as wrapped, and fails when that file's sentence
+    the files docs/agents/code-review.md names as wrapped, and fails when that file's sentence
     is not the one this script's width and file list make. The files are named and not scanned for,
     so a missing one fails by name and there is no count to hold. The overlong-prose-caught and
     unwrappable-line-not-flagged halves plant what the scan of the lines must and must not report.
@@ -1294,7 +1294,8 @@ foreach ($row in $tableRows.Found) {
 #   - any file the sentence does not name.
 $WRAP_WIDTH = 100
 # The first is where the sentence is; it calls itself "this file" there.
-$WRAPPED    = @('docs/agents/code-review.md', 'docs/agents/review-figures.md', '.claude/skills/pre-pr-review/SKILL.md')
+$WRAPPED    = @('docs/agents/code-review.md', 'docs/agents/review-figures.md', 'docs/agents/code-review-history.md',
+                'docs/agents/code-review-evidence.md', '.claude/skills/pre-pr-review/SKILL.md')
 
 function Find-OverlongProseLines {
     <#  Every prose line of these markdown files that is longer than the width and could be broken.
@@ -1380,10 +1381,12 @@ if (Test-Path -LiteralPath $rewrap) {
 }
 $wrapRule = Join-Path $repoRoot $WRAPPED[0]
 if (Test-Path -LiteralPath $wrapRule) {
+    # The sentence lists every file after the first, each in backticks, the last after an "and".
+    $others = @($WRAPPED[1..($WRAPPED.Count - 2)] | ForEach-Object { '`' + $_ + '`' }) -join ', '
     # One kind of space, so the sentence is found however it is itself wrapped.
     Test-Claim -Where $WRAPPED[0] -Text ([regex]::Replace((Get-Content -LiteralPath $wrapRule -Raw), '\s+', ' ')) -Needles @{
         'the wrap width and the files section 12 holds to it' =
-            @("This file, ``$($WRAPPED[1])`` and ``$($WRAPPED[2])`` are wrapped at $WRAP_WIDTH characters")
+            @("This file, $others and ``$($WRAPPED[-1])`` are wrapped at $WRAP_WIDTH characters")
     }
 }
 
