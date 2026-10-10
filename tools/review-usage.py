@@ -1,6 +1,7 @@
 """Print the token figures a pull request's two rows in docs/agents/review-figures.md need (#661).
 
     python tools/review-usage.py <subagents directory> [<text> ...]
+                                 [--since=<text>] [--until=<text>]
 
 The directory is the session's own, `projects/<project>/<session id>/subagents` under the Claude
 configuration directory. Each `agent-*.jsonl` there is one subagent's transcript, and the
@@ -43,12 +44,28 @@ A figure is the four token counts of a request's usage record summed: input, out
 and cache read. A message streamed in several transcript lines is counted once, by its id, at the
 usage of its last line.
 
+THE MAIN SESSION (#670) is printed last, for the pull request's body and for neither table: the
+requests of the session's own transcript, their tokens, the share that is cache reads, and the
+context of the first of them, which is that request's tokens less its output. With no `--since`
+that is the whole transcript, which is right for a session that wrote one pull request and did
+nothing else. A session that did more bounds the part that wrote this one by what the user said:
+
+    --since=<text>   start at the first turn of the user that holds the text
+    --until=<text>   stop at the first turn after it that holds this one; without it, at the end
+
+The arguments of the command that started the work are such a text, "#665 #666 #668", and so are
+the user's words on the merge. A text is looked for in what the user typed and in a command's
+expansion, and not in a tool's output. Run on the session that wrote #669 with those two texts,
+it prints 48 requests and 21 101 666 tokens, from a first context of 396 207.
+
 WHAT IT CANNOT SEE: when a figure was read. The pre-PR reviewer goes on after its row is written,
 so a later run prints more than the row holds; review-figures.md says which reading a row keeps.
+Nor which turn the user typed: the summary a compaction leaves is a turn of the user's too, so a
+text that a summary repeats can start or end the part there. Give a text the work began with.
 
-`--self-test` builds a session of six subagents in a temporary directory and exits non-zero when
-a figure printed for it is not the one worked out by hand below. It is run by
-scripts/run-gates.ps1 and by .github/workflows/gates.yml.
+`--self-test` builds a session of six subagents and five requests of its own in a temporary
+directory and exits non-zero when a figure printed for it is not the one worked out by hand
+below. It is run by scripts/run-gates.ps1 and by .github/workflows/gates.yml.
 """
 import glob
 import json
@@ -97,6 +114,42 @@ def notices(directory):
     return found
 
 
+def typed(entry):
+    """What a user's turn says, a tool's output left out."""
+    m = entry.get("message") or {}
+    if m.get("role") != "user":
+        return ""
+    content = m.get("content")
+    if isinstance(content, str):
+        return content
+    return "\n".join(c.get("text", "") for c in content or []
+                     if isinstance(c, dict) and c.get("type") == "text")
+
+
+def main_session(directory, since=None, until=None):
+    """The session's own requests, from the turn holding `since` to the one holding `until`."""
+    session = os.path.dirname(os.path.abspath(directory)) + ".jsonl"
+    if not os.path.exists(session):
+        return None
+    order, use, on = [], {}, since is None
+    for line in open(session, encoding="utf-8"):
+        entry = json.loads(line)
+        said = typed(entry)
+        if not on:
+            on = since in said
+        elif until and until in said:
+            break
+        m = entry.get("message") or {}
+        if on and m.get("role") == "assistant" and total(m.get("usage") or {}):
+            if m["id"] not in use:
+                order.append(m["id"])
+            use[m["id"]] = m["usage"]
+    first = use[order[0]] if order else {}
+    return {"requests": len(order), "all": sum(map(total, use.values())),
+            "reads": sum(u.get("cache_read_input_tokens", 0) for u in use.values()),
+            "first": total(first) - first.get("output_tokens", 0)}
+
+
 def collect(directory, texts=()):
     """One row for each subagent: its group, its figures and its description."""
     reported, rows = notices(directory), []
@@ -138,6 +191,24 @@ def n(count):
 
 def share(part, whole):
     return f"{100 * part / whole:.1f}%" if whole else "nothing to take a share of"
+
+
+def report_session(found, since, until):
+    """The lines for the main session: what the pull request's body takes, and no table."""
+    span = "the whole transcript" if since is None else \
+        f'from the turn that says "{since}" to ' + (
+            f'the one that says "{until}"' if until else "the end")
+    out = ["", f"THE MAIN SESSION, for the pull request's body: {span}"]
+    if found is None:
+        out.append("  no transcript beside the directory, so not measured")
+    elif not found["requests"]:
+        out.append("  no request there: no turn of the user says the first text, or none "
+                   "follows it")
+    else:
+        out.append(f"  {found['requests']} requests, {n(found['all'])} tokens over all of them; of "
+                   f"that, cache reads {share(found['reads'], found['all'])}; the context of the "
+                   f"first request was {n(found['first'])} tokens")
+    return "\n".join(out)
 
 
 def report(rows):
@@ -223,8 +294,27 @@ def self_test():
             # A notice quoted in a tool's output is not a notice.
             f.write(json.dumps({"message": {"role": "user", "content": [
                 {"type": "tool_result", "content": notice.format("toolu_3", 77777)}]}}) + "\n")
+            # The main session's own requests. "write #9" starts the part for #9 where the user
+            # says it, not where a tool's output holds it, and "merged #9" ends that part.
+            for entry in (
+                    {"message": {"role": "user", "content": "write #8"}},
+                    said("s1", usage(1, 2, 3, 4)),
+                    {"message": {"role": "user", "content": [
+                        {"type": "tool_result", "content": "write #9"}]}},
+                    said("s2", usage(2, 0, 0, 0)),
+                    {"message": {"role": "user", "content": [
+                        {"type": "text", "text": "write #9"}]}},
+                    said("s3", usage(10, 1, 20, 100)), said("s3", usage(10, 5, 20, 100)),
+                    said("s4", usage(0, 1, 0, 200)),
+                    {"message": {"role": "user", "content": "merged #9"}},
+                    said("s5", usage(1000, 0, 0, 0))):
+                f.write(json.dumps(entry) + "\n")
         sums = summarise(collect(directory))
         only = summarise(collect(directory, ["#9"]))
+        whole = main_session(directory)
+        part = main_session(directory, "write #9", "merged #9")
+        open_ended = main_session(directory, "write #9")
+        never = main_session(directory, "write #7")
     got = {
         "steps reported": sums["steps"]["reported"], "steps all": sums["steps"]["all"],
         "reviewers reported": sums["reviewers"]["reported"], "reviewers all": sums["reviewers"]["all"],
@@ -236,6 +326,10 @@ def self_test():
         "pre-PR reads": sums["pre-PR"]["reads"], "pre-PR requests": sums["pre-PR"]["requests"],
         "unsorted all": sums["UNSORTED"]["all"], "unsorted reported": sums["UNSORTED"]["reported"],
         "left out with #9 given": only["LEFT OUT"]["subagents"], "plugin all with #9 given": only["plugin pass"]["all"],
+        "session requests": whole["requests"], "session all": whole["all"],
+        "part requests": part["requests"], "part all": part["all"], "part reads": part["reads"],
+        "part first context": part["first"], "part to the end, all": open_ended["all"],
+        "part never started, requests": never["requests"],
     }
     want = {
         "steps reported": 11, "steps all": 10,
@@ -246,6 +340,10 @@ def self_test():
         "unsorted all": 1007, "unsorted reported": 999,     # the two with no word to sort by
         # The pre-PR reviewer, "PR #95 eligibility check" and the one with no description.
         "left out with #9 given": 3, "plugin all with #9 given": 220,
+        "session requests": 5, "session all": 1348,     # 10 + 2 + 135 + 201 + 1000
+        # s3 and s4. s3 is streamed twice and counts once; its context is 10 + 20 + 100.
+        "part requests": 2, "part all": 336, "part reads": 300, "part first context": 130,
+        "part to the end, all": 1336, "part never started, requests": 0,
     }
     wrong = [f"{k}: {got[k]}, wanted {want[k]}" for k in want if got[k] != want[k]]
     for w in wrong:
@@ -261,11 +359,21 @@ def main():
         print(__doc__.split("\n\n")[1], file=sys.stderr)
         print("Give the session's subagents directory.", file=sys.stderr)
         return 2
-    rows = collect(sys.argv[1], sys.argv[2:])
+    bound = {"--since": None, "--until": None}
+    texts = []
+    for arg in sys.argv[2:]:
+        key, _, value = arg.partition("=")
+        if key in bound and value:
+            bound[key] = value
+        else:
+            texts.append(arg)
+    rows = collect(sys.argv[1], texts)
     if not rows:
         print(f"No agent-*.meta.json in {sys.argv[1]}.", file=sys.stderr)
         return 2
     print(report(rows))
+    print(report_session(main_session(sys.argv[1], bound["--since"], bound["--until"]),
+                         bound["--since"], bound["--until"]))
     return 0
 
 
