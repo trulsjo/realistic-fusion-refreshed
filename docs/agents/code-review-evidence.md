@@ -1,10 +1,10 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but two was part of that file until 2026-10-10 (#672) and is as it stood there, so "this file", "the
-rule above" and "below" in one mean `code-review.md`. The two written for this page are the ones for
-#670 and #671. What each pull request's two passes found and cost is on a third page,
-[`review-figures.md`](review-figures.md).
+but two was part of that file until 2026-10-10 (#672) and is as it stood there, so "this file" in
+one is `code-review.md`, and "this rule", "this paragraph" and "the paragraph above" are that
+file's. The two written for this page are the ones for #670 and #671. What each pull request's two
+passes found and cost is on a third page, [`review-figures.md`](review-figures.md).
 
 **Read this page** when a rule is revisited or doubted, and when a sentence of `code-review.md`
 names a case by its pull request and the case is wanted in full. Reviewing a branch does not need
@@ -165,14 +165,14 @@ transcript, and from the commits the rewords replaced, which are in no branch:
 | 14 | "is now committed and held as not confirmed" | the fix for finding 12 had taken "held" out of the rule |
 | 16 | "The rest is prose the change left behind or got wrong:", over a list of five | the commit fixed ten such things |
 
-Finding 15 was a subject, "found on #665 to #668", read as including #667. Five commits were
-rewritten in two rounds, two and then three, and 14 to 16 were raised against messages written or
-left during the first. #656's finding 20 was the same kind: a message's "A loop body is no longer
-judged", which a later fix made false.
+Finding 15 was a subject, "found on #665 to #668", read as including #667. Three commits were
+reworded five times in two rounds, two of them and then all three, and 14 to 16 were raised against
+messages written or left during the first. #656's finding 20 was the same kind: a message's "A loop
+body is no longer judged", which a later fix made false.
 
 ### What the verdict of 2026-10-07 rested on (#593)
 
-Three passages of the section *Measured, not assumed* of that rule, until 2026-10-10. The verdict
+Five paragraphs of the section *Measured, not assumed* of that rule, until 2026-10-10. The verdict
 itself, the test it used and when the rule is revisited are still in `code-review.md`.
 
 **#604, #605 and #607 count towards the five** (Truls, 2026-10-07, #593). They were added on
@@ -211,8 +211,9 @@ Under the rule that the main session's own cost goes in the pull request's body.
 page on 2026-10-10.
 
 Read on 2026-10-10 from the transcript of the session that wrote #669, between the command that
-started the work and the user's words on the merge. `tools/review-usage.py` prints the first row
-when it is given those two texts. The other two are #669's body and its row in `review-figures.md`:
+started the work and the user's words on the merge. A body is written before the merge, so a body's
+own figure stops sooner than this one. `tools/review-usage.py` prints the first row when it is given
+those two texts. The other two are #669's body and its row in `review-figures.md`:
 
 | Who | Requests | Tokens over all requests |
 |---|---|---|

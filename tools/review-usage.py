@@ -54,14 +54,17 @@ nothing else. A session that did more bounds the part that wrote this one by wha
     --until=<text>   stop at the first turn after it that holds this one; without it, at the end
 
 The arguments of the command that started the work are such a text, "#665 #666 #668", and so are
-the user's words on the merge. A text is looked for in what the user typed and in a command's
-expansion, and not in a tool's output. Run on the session that wrote #669 with those two texts,
-it prints 48 requests and 21 101 666 tokens, from a first context of 396 207.
+the user's words on the merge. A text is looked for in every turn the transcript gives the user,
+and not in a tool's output. Run on the session that wrote #669 with those two texts, it prints
+48 requests and 21 101 666 tokens, from a first context of 396 207. A pull request's body is
+written before the merge, so it gives `--since` alone, and its figure runs to when it was read.
 
 WHAT IT CANNOT SEE: when a figure was read. The pre-PR reviewer goes on after its row is written,
 so a later run prints more than the row holds; review-figures.md says which reading a row keeps.
-Nor which turn the user typed: the summary a compaction leaves is a turn of the user's too, so a
-text that a summary repeats can start or end the part there. Give a text the work began with.
+Nor which turn the user typed. A subagent's hand-back, a message from another session, a task
+notice and the summary a compaction leaves are each a turn of the user's in the transcript, so a
+text that one of them holds can start or end the part there: `--until=merge` stopped #669's part
+at a hand-back, 34 requests in. Give a text that the user's own turn holds and those do not.
 
 `--self-test` builds a session of six subagents and five requests of its own in a temporary
 directory and exits non-zero when a figure printed for it is not the one worked out by hand
@@ -363,10 +366,13 @@ def main():
     texts = []
     for arg in sys.argv[2:]:
         key, _, value = arg.partition("=")
-        if key in bound and value:
-            bound[key] = value
-        else:
+        if not arg.startswith("--"):
             texts.append(arg)
+        elif key in bound and value:
+            bound[key] = value
+        else:       # a mistyped option would otherwise be a text no subagent holds
+            print(f"{arg}: the options are --since=<text> and --until=<text>.", file=sys.stderr)
+            return 2
     rows = collect(sys.argv[1], texts)
     if not rows:
         print(f"No agent-*.meta.json in {sys.argv[1]}.", file=sys.stderr)
