@@ -14,8 +14,10 @@ after the plugin pass.
 
 ## Steps
 
-1. **Commit the work**, so the review and the fixes are two diffs. Write both to the session's
-   scratchpad, never into the repository:
+1. **Commit the work**, so the review and the fixes are two diffs. Each commit body on the branch,
+   this one's and every later one's, is written as `docs/agents/code-review.md` says under *A
+   review before the pull request, and the plugin pass after it* (#671). Write both diffs to the
+   session's scratchpad, never into the repository:
 
    ```
    git tag -f pre-pr-reviewed HEAD         # the reviewed commit; step 4 needs it. Never pushed
@@ -180,6 +182,11 @@ after the plugin pass.
    runs it reads them (#634). A session that reviews two pull requests gives the script two
    texts after the directory, the pull request's number as `"#<n>"` and this reviewer's name, and
    the script counts only the subagents that hold one of them.
+
+   **Under the reviewer's cost, write the main session's own** (#670): the script's last lines.
+   Where this session did other work before the branch, add `"--since=<text>"` with the
+   arguments of the command that started the work; the script's docstring says how the part is
+   bounded. Read it again with the reviewer's figures, when the body is last edited.
 
 7. **Read the branch's counts again, after the last fix commit** (#663).
    `docs/agents/code-review.md` has the rule under *Review the prose, not only the code*: what is

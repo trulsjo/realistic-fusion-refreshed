@@ -3,7 +3,7 @@
     python tools/rewrap.py <file> <line> [<line> ...]
 
 The lines are the ones scripts/ship-check.ps1 section 12 prints, counted from 1. The width is the
-one docs/agents/code-review.md states and section 12 holds three files to; that section fails
+one docs/agents/code-review.md states and section 12 holds the files it names to; that section fails
 when WIDTH below is not its own.
 
 A PARAGRAPH runs from a blank line, a list marker or a change of blockquote depth to the next. Its
@@ -26,7 +26,7 @@ paragraph by hand.
 WHAT IT CANNOT SEE:
 
   - a hard line break, two spaces or a backslash at a line's end. It is joined like any other.
-  - an indented code block, which it takes for a paragraph. The three files use fences.
+  - an indented code block, which it takes for a paragraph. The wrapped files use fences.
   - how wide a line renders. A line's length is its count of characters.
 
 `--self-test` rewraps a document made up below and exits non-zero when a line of it is not the

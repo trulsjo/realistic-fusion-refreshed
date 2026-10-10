@@ -13,85 +13,49 @@ request, and neither is the plugin pass. Write the qualified name
 when it matters which.
 
 1. **[The threshold gates the comment, not the
-   report](#the-threshold-gates-the-comment-not-the-report)** — decided by Truls, 2026-08-26,
-   settling [#128](https://github.com/trulsjo/realistic-fusion-refreshed/issues/128); amended
-   2026-10-05 (#592).
-2. **[Review the prose, not only the code](#review-the-prose-not-only-the-code)** — decided by
-   Truls, 2026-09-03, after [#230](https://github.com/trulsjo/realistic-fusion-refreshed/pull/230);
-   its third rule widened from the file to the repository on 2026-09-14, settling
-   [#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331); its last rule narrowed
-   2026-10-05 (#592), and what it says of the plugin pass changed 2026-10-07 (#593); a rule for the
-   notes' figure tables added 2026-10-06 (#602); a rule for the session that writes a fix added
-   2026-10-07 (#632), and widened on 2026-10-08 (#637) to a ticket's evidence and a retrospective's;
-   a rule for the older text a fix leaves behind added 2026-10-09 (#663), and narrowed the same
-   day for a fix that only corrects a count (#665).
-3. **[A review that plants takes its own worktree](#a-review-that-plants-takes-its-own-worktree)** —
-   [#311](https://github.com/trulsjo/realistic-fusion-refreshed/issues/311), after the review of
-   [#309](https://github.com/trulsjo/realistic-fusion-refreshed/pull/309) on 2026-09-10.
+   report](#the-threshold-gates-the-comment-not-the-report)**: what a review reports and posts,
+   whatever a finding scored.
+2. **[Review the prose, not only the code](#review-the-prose-not-only-the-code)**: what a reviewer
+   checks in prose, and what the session checks when it writes a fix, a ticket or a retrospective.
+3. **[A review that plants takes its own worktree](#a-review-that-plants-takes-its-own-worktree)**:
+   where a pass that modifies the working tree does it.
 4. **[A review before the pull request, and the plugin pass after
-   it](#a-review-before-the-pull-request-and-the-plugin-pass-after-it)** — decided by Truls,
-   2026-10-05, settling [#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592),
-   under the name "One review before the pull request". It also changed wording in the first two,
-   dated where it sits, and wrote the plugin's name out in full throughout. Since 2026-10-07 (#624)
-   the table under it has a row for each branch and not for each pass on #579, and two rules beside
-   it say who adds a row and when the rule is revisited. Its rule on when the plugin pass runs was
-   reversed by Truls on 2026-10-07, in his verdict on
-   [#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593), written here by #627:
-   the pass runs on every pull request. The section's name changed with that, and the table gained a
-   column for the findings that were serious. Since 2026-10-07 (#631) the table also has a column
-   for what the pre-PR review cost, and the section says what a token figure in it measures. Since
-   2026-10-08 a second table gives what each pass used over all its requests (#634), and the section
-   has two more rules for the session: what it does with the list of things the reviewer did not
-   check (#636), and that a commit message is reworded when a review corrects what it says (#640).
-   Three more from the same day: the reviewer reads whole each agent-facing file the diff changes
-   (#647), a finding under 75 raised while the fixes are confirmed has its fix confirmed with the
-   plugin pass's fixes (#643), and the session ends its turn to receive what the reviewer sends
-   (#648). The evidence under that last one was corrected the same day (#654), which added that a
-   question put to the user does not end the turn. Since 2026-10-09 (#644) the two tables are on a
-   page of their own, [`review-figures.md`](review-figures.md), and what was said of one pull
-   request in the sentences around them is a cell of its row. The row rule changed with that: the
-   two added lines are the whole edit, and a pull request's figures go nowhere in this file. The
-   same day (#661) one tracked script, `tools/review-usage.py`, took the place of the script in the
-   skill's step and of the one #656's session wrote for the plugin pass's cells, and the section
-   says which word the session puts in each subagent's description so that the script can sort it.
+   it](#a-review-before-the-pull-request-and-the-plugin-pass-after-it)**: the two passes every pull
+   request gets, and what the session does around them.
+
+**Two pages hold what this file carried beside its rules until 2026-10-10** (#672).
+[`code-review-history.md`](code-review-history.md) has who decided each rule and each amendment
+since, by date. Read it when a rule is being changed, and when the date or the origin of a sentence
+here is in question. [`code-review-evidence.md`](code-review-evidence.md) has the measurements and
+the cases the rules rest on. Read it when a rule is revisited or doubted, and when a sentence here
+names a case by its pull request and the case is wanted in full. Reviewing a branch needs neither.
+**A change to a rule adds its date and its ticket to the first page and its measurements to the
+second**, in the commit that changes the rule here. This file gets the rule and a sentence of why.
 
 **A rule is changed in this file** (2026-10-07, #630). `CLAUDE.md` and the intro of
-`.claude/skills/pre-pr-review/SKILL.md` each stated parts of the four until then, so a rule that
-changed had three files to change in: #627 edited all three to write one verdict. Both now name the
-section to read and when to read it, and state no rule. The skill's steps are the pre-PR review's
-procedure, and they still say what they carry out: what the reviewer is handed, that it confirms the
-fixes of its own findings and reads a fix's added sentence as a new claim, that every finding goes
-in the pull request's body, and that a planted change takes a worktree. Since 2026-10-08 they carry
-out two more: the session answers for what the reviewer did not check (#636), and rewords a commit
-message a review corrected (#640). Two of the earlier ones changed the same day: what the reviewer
-is handed now names the files it reads whole (#647), and which of its confirmations answers for a
-fix depends on the finding's score (#643). They carry out one more from that day: the session ends
-its turn to receive what the reviewer sends (#648), which a question put to the user does not end
-(#654). Since 2026-10-09 the step that spawns the reviewer gives it the description the usage
-script sorts it by (#661), and they carry out one more: after the last fix commit the session reads
-again what the branch and the body count and quote (#663), and sends no message for a fix from
-that reading that only corrects a count (#665). A change to one of those is made here
-first and then in the steps.
+`.claude/skills/pre-pr-review/SKILL.md` each name the section to read and when to read it, and state
+no rule. The skill's steps are the pre-PR review's procedure, and they say what they carry out. A
+change to one of those is made here first and then in the steps.
 
-**This file, `docs/agents/review-figures.md` and `.claude/skills/pre-pr-review/SKILL.md` are wrapped
-at 100 characters** (2026-10-09, #646). Section 12 of `scripts/ship-check.ps1` fails a longer line
-of prose in any of the three. It leaves alone a table row, a line inside a code fence, a heading,
-the skill's front matter, and a line with no space to break it at, which is what a long link alone
-on its line is. A fence opened inside a blockquote it does not see: it reads that fence's lines as
-prose, and fails a long one. **A figure grouped in thousands stays on one line when a paragraph is
-rewrapped**, and since 2026-10-09 (#662) section 12 fails one that is split across a line end.
-`python tools/rewrap.py <file> <line>` rewraps the paragraph that line sits in, at this width, and
-keeps such a figure together; section 12's failures give the file and the line. The check cannot
-tell a split figure from two numbers, so it also fails a line that ends in a number of one to three
-digits above a line that opens with an unrelated one of exactly three, and the way out is to break
-the line a word earlier or later. #646 has the findings that asked for a stated width.
+**This file, `docs/agents/review-figures.md`, `docs/agents/code-review-history.md`,
+`docs/agents/code-review-evidence.md` and `.claude/skills/pre-pr-review/SKILL.md` are wrapped at 100
+characters** (2026-10-09, #646; the two pages beside this file since 2026-10-10, #672). Section 12
+of `scripts/ship-check.ps1` fails a longer line of prose in any of them. It leaves alone a table
+row, a line inside a code fence, a heading, the skill's front matter, and a line with no space to
+break it at, which is what a long link alone on its line is. A fence opened inside a blockquote it
+does not see: it reads that fence's lines as prose, and fails a long one. **A figure grouped in
+thousands stays on one line when a paragraph is rewrapped**, and since 2026-10-09 (#662) section 12
+fails one that is split across a line end. `python tools/rewrap.py <file> <line>` rewraps the
+paragraph that line sits in, at this width, and keeps such a figure together; section 12's failures
+give the file and the line. The check cannot tell a split figure from two numbers, so it also fails
+a line that ends in a number of one to three digits above a line that opens with an unrelated one of
+exactly three, and the way out is to break the line a word earlier or later. #646 has the findings
+that asked for a stated width.
 
 ## The threshold gates the comment, not the report
 
 Decided by Truls, 2026-08-26, settling
-[#128](https://github.com/trulsjo/realistic-fusion-refreshed/issues/128). Where the findings under
-the threshold are posted was changed on 2026-10-05, settling
-[#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592).
+[#128](https://github.com/trulsjo/realistic-fusion-refreshed/issues/128).
 
 The `code-review:code-review` workflow scores each candidate finding and leaves anything below 80
 out of its comment. **That filter governs what the workflow's own comment carries. It does not
@@ -142,17 +106,7 @@ fixed only because they were reported outside the workflow's own output.
 ## Review the prose, not only the code
 
 Decided by Truls, 2026-09-03, after
-[#230](https://github.com/trulsjo/realistic-fusion-refreshed/pull/230). Its third rule widened from
-the file to the repository on 2026-09-14, settling
-[#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331). Its last rule, on the
-fixed state, was narrowed on 2026-10-05, settling
-[#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592). The rule for a note's
-`## Current figures` table was added on 2026-10-06 (#602). What the last rule says of the plugin
-pass was changed on 2026-10-07, when Truls's verdict on #593 had it run on every pull request. A
-rule for the session that writes a fix was added on 2026-10-07 (#632), and widened on 2026-10-08
-(#637) to the session that writes a ticket or a retrospective. A rule for the older text a fix
-leaves behind was added on 2026-10-09 (#663), and narrowed the same day for a fix that only
-corrects a count (#665).
+[#230](https://github.com/trulsjo/realistic-fusion-refreshed/pull/230).
 
 **Every gate in this repository checks machinery. None of them reads English.** `load-check.ps1`
 proves the prototypes load and the invariants hold; `ship-check.ps1` proves the mods say what ADR
@@ -251,33 +205,13 @@ commits it, sends the reviewer no message for it, and says in the body's line fo
 this fix was not confirmed. No later message confirms it: unlike a fix held under #643, nothing
 follows the reading. A fix that changes any other word is a new claim and keeps its message.
 
-The reason is what a message costs. On #664, the first use of the reading, it found one thing: a
-row of `review-figures.md` that said 15 findings and 14 fixed, where the reviewer had by then
-raised 17. The fix changed one cell, and confirming it cost about what confirming a round of fixes
-does. Read from the reviewer's transcript on 2026-10-09, over the requests each message took:
-
-| The session's message | Requests | Tokens |
-|---|---|---|
-| the first review | 11 | 1 623 969 |
-| the fixes after the first review | 4 | 782 832 |
-| the diff after the plugin pass | 4 | 846 067 |
-| the fixes of findings 16 and 17 | 3 | 660 802 |
-| the one changed cell | 3 | 669 308 |
-
-That cell's fix also changed words beside its two numbers, so this rule would not have covered
-it as it was written. Its two numbers alone would have gone unconfirmed.
-
-Three of #656's 22 pre-PR findings were of this kind, and the reviewer raised all three in its last
-confirmation, the one of the plugin pass's fixes:
-
-| Finding | What the text said | What had made it false |
-|---|---|---|
-| 19 | this file's "Across the seven rows of the second table, read 2026-10-09" | the table gained an eighth row that day, #656's own |
-| 20 | a commit message's "A loop body is no longer judged" | the fix for the plugin pass's finding F, which corrected that claim |
-| 22 | the body's "prints `32 of 32 cases judged as wanted.`" | later fixes added cases, and the last commit printed 34 of 34 |
-
-Six of the 22 were raised in a confirmation and not in the first read: 17 and 18 while the fixes
-were confirmed, and 19 to 22 while the plugin pass's were. #656's body has the table.
+The reason is what a message costs. On #664, the first use of the reading, confirming one changed
+cell cost 669 308 tokens over three requests, about what confirming a round of fixes does. The
+evidence page has [the five
+messages](code-review-evidence.md#what-a-message-to-the-reviewer-cost-on-664-665), with what this
+rule would not have covered of that fix, and [the three findings on
+#656](code-review-evidence.md#older-text-that-a-later-commit-made-false-on-656-663) that the reading
+after the last fix commit is for.
 
 **A ticket's evidence and a retrospective's are read from their source the same way** (2026-10-08,
 #637). Each is written after the work, from what the session remembers, and whoever acts on it
@@ -285,56 +219,14 @@ trusts it. A figure, or a claim about a past pull request, issue or commit, is r
 request, issue or commit before the ticket is published or the retrospective's candidate is put
 forward. That makes three kinds of text under one rule: a fix, a ticket and a retrospective.
 
-- **A ticket: #632's own body.** It was written without opening the pull requests it cites and was
-  wrong on two facts. It said a fix on #607 added a false sentence, where the fix corrected one row
-  of a group and left the others. It said three of #628's five plugin findings came from one fix,
-  where it was two. The session that implemented #632 wrote the right
-  facts into the paragraph above, and the pre-PR reviewer on #633 checked them there. No rule asked
-  for that: the ticket's evidence was read because the change restated it.
-- **A retrospective: the one run on 2026-10-07 after #633.** It said the session "did nothing else
-  with" the list of things the pre-PR reviewer had not checked. #633's body shows the session
-  checked the three pull request bodies the reviewer named. The candidate's facts were read from
-  the pull request before #636 was published from it, and #636 states what the body says.
+[The ticket and the retrospective that showed
+it](code-review-evidence.md#a-ticket-and-a-retrospective-written-from-memory-637) are on the
+evidence page.
 
-### Measured, not assumed
-
-**#230 passed a first review, a full verification pass and a poison test of every gate it added,
-and a second review then found four more defects — three of them wrong prose about correct
-measurements.**
-
-| finding | shape |
-|---|---|
-| "not one of the six ratios clears the 1.35× floor" | **falsified by a table two paragraphs below it in the same commit** — four of six do |
-| #34's "20 to 50 reactors pays well under 1%" | 1.45% at fifty collected reactors, in the sentence that called itself the one needing no correction |
-| the ADR's "at 2.5 µs neither lever is worth pulling" | a superseded figure left standing in a permanent decision record |
-| the `-Mixed` blanket gate's threshold of literal `1` | a real code defect: a regression idling 109 of 110 blankets would have passed |
-
-The first round of the same review had already caught the one that mattered most, and it was also
-invisible to every gate: at the default `-Gap 5` a five-tile fitting reached half a tile into the
-next row's pairing area, so **every reactor from row 1 on paired with the row above's fitting**. The
-cost barely moved, so no figure looked wrong — and a complete set of measurements had to be thrown
-away and re-taken. Nothing errored, and nothing could have.
-
-**And the same shape again, one level up.** Three review rounds in one session on 2026-09-12 and
--13 each let a superseded claim through, and every one of them sat in a file the change never
-opened while the change's own file was correct. Each was found by a reviewer reading a file outside
-the diff — which the rule, as it then read, did not ask for. That is what widened it; see
-[#331](https://github.com/trulsjo/realistic-fusion-refreshed/issues/331).
-
-| round | what escaped | where it was |
-|---|---|---|
-| [#328](https://github.com/trulsjo/realistic-fusion-refreshed/pull/328), round 1 | 7.01 µs and 6.33 µs per reactor, and 8.41% of a tick, all inflated by the census walk | **ADR 0005** — the change edited `borrowed-base.md` and `bench-reactors.ps1` |
-| [#328](https://github.com/trulsjo/realistic-fusion-refreshed/pull/328), round 2 | *"the rig control reproduces the record … 1.16×"*, a clean figure compared against a contaminated one | **`reactor-runtime-cost.md`** |
-| [#329](https://github.com/trulsjo/realistic-fusion-refreshed/pull/329) | *"#235 is open … still that ticket's to settle"*, and the spike still called "the borrowed base's own Lua" | **`reactor-runtime-cost.md`** again |
-
-The third scored 75 against the 80 posting gate partly *because* the rule said "file" — the scorer
-noted the wording did not obviously reach across them.
-
-**What that says about where to look.** Three of five defects across two rounds were claims rather
-than code. This repository writes long prose deliberately — the reasoning is the deliverable, and
-`CLAUDE.md` says verification here is by running the game rather than by reading. Both of those make
-unchecked prose the most likely place for a wrong thing to survive, because running the game cannot
-contradict it.
+**What this rule was measured on is on the evidence page**: [#230's second review, and three rounds
+on 2026-09-12 and -13 that each let a superseded claim
+through](code-review-evidence.md#measured-not-assumed-230-328-and-329). There, three of five defects
+across two rounds were claims rather than code.
 
 ## A review that plants takes its own worktree
 
@@ -383,11 +275,8 @@ lives here.
 
 Decided by Truls, 2026-10-05, settling
 [#592](https://github.com/trulsjo/realistic-fusion-refreshed/issues/592), under the name "One review
-before the pull request". On 2026-10-07 he reversed the part of it that gave the section that name:
-the plugin pass, which ran only when it was asked for, runs on every pull request. The verdict is in
-[a comment on
-#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6037668590) and
-was written here by #627.
+before the pull request", and renamed on 2026-10-07 when he had the plugin pass run on every pull
+request (#593).
 
 ### The rule
 
@@ -415,19 +304,10 @@ other was a passage of the skill that restated this file's reasons for the rewor
 line left out "never `main`".
 
 **The reviewer's report, and each confirmation, reach the session as a message once the session's
-turn has ended** (2026-10-08, #648). The session ends its turn to receive one. The transcript of the
-session that ran the reviews of #641 and #642 holds 18 messages from the two reviewers up to
-#642's merge, nine replies and nine idle notices, and each of the 18 came directly after a turn of
-the session ended. **A question put to the user does not end the turn.** The first report of #641's
-reviewer was sent at 22:21:12 UTC on 2026-10-07, while the session waited on a question it had
-asked at 22:15:18. The answer came at 04:11:05, and the turn ran on until 06:20:44. The report
-arrived two seconds after that, 7 h 59 min after it was sent, with the reviewer's idle notice
-beside it. In between, the session had read the report from the reviewer's transcript.
-
-Until #654 this paragraph gave eight replies and ten idle notices, and said the first report was
-not in the transcript. Both were a miscount by the session that wrote it: it classed a whole
-transcript entry as an idle notice when any message in it was one, and the first report shares its
-entry with its notice.
+turn has ended** (2026-10-08, #648). The session ends its turn to receive one. **A question put to
+the user does not end the turn** (#654). [What the session that reviewed #641 and #642
+saw](code-review-evidence.md#when-a-reviewers-message-reaches-the-session-648-654) is on the
+evidence page.
 
 **The reviewer that raised a finding confirms its fix.** Continue the same subagent and have it read
 each fix against its own finding. That is a confirmation and not a second round. **A fix that adds a
@@ -449,16 +329,8 @@ as before. So is a defect that an item of the reviewer's unchecked list turns up
 its fix gets a message of its own.
 
 The reason is what a message costs: the reviewer's whole context again, for every request it makes
-in answering. Read from the two reviewers' transcripts on 2026-10-08, over all their requests:
-
-| Pull request | The review | Its confirmations | The one message this rule is about |
-|---|---|---|---|
-| #641 | 1 026 249 tokens, 9 requests | 2 969 221 tokens, 18 requests, 4 messages | 619 654 tokens, for finding 13, scored 75 |
-| #642 | 605 802 tokens, 7 requests | 1 445 257 tokens, 13 requests, 3 messages | 309 042 tokens, for finding 6, scored 25 |
-
-Each of those two messages carried one finding, raised in the confirmation before it, and the
-message for the plugin pass's fixes was still to come. Under this rule #642's would not have been
-sent. #641's would: its finding scored 75.
+in answering. On #642 one such message, for a finding scored 25, cost 309 042 tokens; [the evidence
+page](code-review-evidence.md#what-one-message-cost-on-641-and-642-643) has it beside #641's.
 
 **Its findings go in the pull request's body, every one of them**, each with its score and whether
 it was fixed. No pull request exists when they are made, so the body is the first place that can
@@ -493,6 +365,18 @@ repository beside its replacement, and the diff of the fixes is taken from the t
 measurement was first counted over 16 subagents, the pre-PR review showed there were 27, and this
 file says 27. The body of commit `15b5b46` on `main` still says "on the 16 subagents of one
 session".
+
+**A commit body takes its reason from the ticket, and leaves what the change says to the diff**
+(2026-10-10, #671). This binds every commit on a branch from the first, before a review has read it.
+The body says why the change was made and cites the ticket, and names the file or the symbol the
+commit changes. It neither quotes nor paraphrases a sentence the diff adds. A review does not change
+the ticket, and it does change the diff: a body that restates a sentence of the diff is made false
+when a finding corrects that sentence, and the reword above is then owed for words the body had no
+need of. It rests on the first sentence of the shared commit convention's *Body* section,
+`vendor/grado-factorio-tools/docs/commit-convention.md`, and holds a branch under review to it. Six
+of #669's 16 pre-PR findings were about a commit message, 2, 6, 11, 14, 15 and 16, and five commits
+were rewritten in two rounds; [the evidence page has
+each](code-review-evidence.md#commit-bodies-that-a-fix-made-false-on-669-671).
 
 **Every pull request gets the plugin pass, after it is opened** (Truls, 2026-10-07, #593). It is the
 full second round. This holds for every pull request opened after the verdict was given on
@@ -603,16 +487,25 @@ pull request's body has the later figure. A figure that was not measured is writ
 one that covers the whole pass as not split, and one the pull request does not give as not recorded.
 A figure with no record behind it is not estimated.
 
+**The main session's own cost goes in the pull request's body, and in neither table** (2026-10-10,
+#670). It is what the session that wrote the change and ran both passes used itself, and none of its
+subagents is in it: its requests, their tokens summed as the second table sums them, the share that
+is cache reads, and the context of its first request, which is what the session carried into the
+work. `tools/review-usage.py` prints the four after the tables' figures. A session that did other
+work before the branch bounds the part with the two texts the script's docstring describes. On #669
+it was 21 101 666 tokens in 48 requests, against about 3.9 million for the two passes together,
+because the session began the work with 396 207 tokens of context; [the evidence page has the
+figures](code-review-evidence.md#what-the-main-session-used-on-669-670).
+
 **The verdict, 2026-10-07: the one-review rule fell** ([comment on
 #593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6037668590),
 written here by #627). #593 had the rule revisited once the table had five rows, with the verdict
 Truls's. It had six, the first six of the first table, and he gave it: the plugin pass runs on every
 pull request, and the pre-PR review stays as it was.
 
-**#604, #605 and #607 count towards the five** (Truls, 2026-10-07, #593). They were added on
-2026-10-07 when he asked for them, and not by the sessions that ran their plugin passes, which #593
-had not provided for. Their counts are read from their own pull requests by the same test as the
-other three rows.
+[What the verdict rests on and its limits, and what #579's two passes
+showed](code-review-evidence.md#what-the-verdict-of-2026-10-07-rested-on-593), are on the evidence
+page, with the ruling that #604, #605 and #607 count towards the five.
 
 **The test was how serious a finding was, and not how many there were.** A finding the plugin pass
 raised and that was then fixed is serious when it would have left a wrong figure, a false claim in a
@@ -631,16 +524,6 @@ sentence on #607 saying a skill writes what it only holds templates for is not, 
 in this file or in `CLAUDE.md` is. A later row is graded by the same test and those rulings, and its
 last cell has what the session wrote of its grade.
 
-**What the verdict rests on, and its limits.** None of the eight was broken code: seven were prose,
-and one was what a tool would do on a reinstall (#604). The six are branches where the pass was
-asked for, two of them the changes that wrote this rule and the first table, so they are not a
-sample of branches. Three of the six had a cost for the plugin pass: about 400 000 tokens on #579,
-about 580 000 for #594's scorers alone, and 629 193 for #625's reviewers and scorers, or 762 616
-with the three steps before them. #594's is a floor. The verdict took the cost as about half a
-million tokens a pass, from the first two figures and 629 193. Whether the scorers' share of it
-stays is #626. Truls accepted on 2026-10-07 (#593) that the six are not a sample and that three cost
-figures are enough.
-
 **The rule is revisited at ten routine rows, which is sixteen in the first table** (Truls,
 2026-10-07, #593). A routine row is one for a pull request opened after the verdict, when the pass
 stopped waiting to be asked for: #628's is the first, the pull request that closed #627, and #625's
@@ -649,21 +532,6 @@ opened that day before the verdict. "After the verdict" is this file's reading o
 that put the verdict to him Truls confirmed that #625's row is not routine and that this change's is
 the first, and the seventh point of #627 is the only written record of that. The wording of the cut
 is his to correct. The test is the same, no pass mark is set in advance, and the verdict is his.
-
-**On #579 only the pre-PR review could check a figure against what a probe printed.** The plugin's
-reviewers are given the change, its blame, earlier pull requests and the comments on them, and the
-comments in the code it touches, and a probe's output is in none
-of those.
-
-**#579's seven were real, and on 2026-10-05 all seven were read as small.** One commit fixed all of
-them and no figure moved. The one that scored 100 was a temperature written without its exponent,
-and on 2026-10-07 Truls ruled that one serious, as a wrong figure. The scorer gave the
-false positive 0 — a claim that a table did not add up to its sum, which it does once rounded.
-
-**#579's pre-PR review happened by accident.** The session read `/code-review` in the
-`mattpocock-skills:implement` skill as the official plugin, which needs a pull request, and none
-existed, so it improvised a reviewer. The `code-review` skill that ships beside `implement` needs no
-pull request. That confusion is why the head of this file names all three.
 
 ## Why it is written here rather than fixed at source
 

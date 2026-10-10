@@ -75,13 +75,14 @@ that is not its header's: the part of how a table renders on GitHub that needs n
 a table that has a delimiter row and whose lines start with a pipe, or since #652 with a pipe
 after their blockquote marks, and no other. Inside a blockquote it also fails a row that has lost
 its `>`. Since #646 it proves section 12 too, which fails a prose line over 100 characters in the
-three files `docs/agents/code-review.md` names as wrapped at that width: that file,
-`docs/agents/review-figures.md` and the pre-PR review skill. It leaves alone a table row, a line
+files `docs/agents/code-review.md` names as wrapped at that width: that file,
+`docs/agents/review-figures.md`, the pre-PR review skill, and since #672 the two pages beside that
+file, `code-review-history.md` and `code-review-evidence.md`. It leaves alone a table row, a line
 inside a code fence, a heading, front matter, and a line with no space to break it at; a fence
 opened inside a blockquote it does not see, and reads as prose. Its two
 halves prove that scan of the lines; the check of the sentence against the script's own width and
 file list names what it requires, and has none. Since #662 section 12 also fails a figure grouped
-in thousands that is split across a line end in those three files, with two more halves that prove
+in thousands that is split across a line end in those files, with two more halves that prove
 that scan, and its failures name `tools/rewrap.py`, which rewraps the paragraph a line sits in. It
 fails two unrelated numbers the same way when the first has one to three digits and the second
 exactly three; the section comment says why. The other eight sections it
@@ -404,6 +405,8 @@ none of them** (#630). Read the section named when its condition holds:
 - **A branch is ready for its pull request, or an implement skill says to close out with
   `/code-review`**: *A review before the pull request, and the plugin pass after it*, for the
   pre-PR review. `/pre-pr-review` runs it.
+- **A commit is about to be written on a branch**: the same section, for what its body takes from
+  the ticket and leaves to the diff (#671).
 - **A pull request has been opened**: the same section, for the plugin pass
   (`code-review:code-review`), who confirms its fixes, and the row it adds to each of the two
   tables, which since #644 are in `docs/agents/review-figures.md`.
@@ -416,6 +419,8 @@ none of them** (#630). Read the section named when its condition holds:
   retrospective's candidate is about to be published**: *Review the prose, not only the code*.
 - **A review pass is about to edit the working tree, or a gate fails once and passes on every
   re-run**: *A review that plants takes its own worktree*.
+- **A rule there is being changed or revisited**: its head, for the two pages that hold who
+  decided each rule and what each was measured on (#672).
 
 Before a review of a branch that combines more than one ticket, run `scripts/run-gates.ps1` on it,
 or `scripts/ship-check.ps1` alone when the branch is markdown-only; the State section says what
