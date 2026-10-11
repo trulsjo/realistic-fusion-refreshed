@@ -1261,7 +1261,8 @@ foreach ($row in $tableRows.Found) {
 # tracked file stated; #646 has the findings. That file states the width now and names the files it
 # binds, and this section holds those files to it. The sentence and the two constants below say
 # the same thing twice, so the sentence is required to be the one the constants make. The
-# first five are review docs; #667 added the two CLAUDE.md, where reviewers found the same.
+# first five are review docs; #667 added the two CLAUDE.md, after reviewers found the same in
+# the root one.
 #
 # WHAT IS LEFT ALONE, whatever its length:
 #   - a table row: a line whose first character is a pipe, once its indentation, blockquote marks
