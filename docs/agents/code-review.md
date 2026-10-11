@@ -439,10 +439,10 @@ tables. The first table has the counts of findings, the token counts each pass's
 and the grade. The second has what each pass used over all its requests. Read that page to add a
 pull request's rows, when this rule is revisited, and when a decision needs what a pass found or
 cost, as #626 does. **Since the move, a pull request's figures go in its two rows and nowhere in
-this file.** What this section keeps is the row rule, the verdict and its test, and what was
+this file.** What this section keeps is the row rule, the two verdicts and their test, and what was
 concluded across rows, each with its date and the number of rows it was drawn from. What the pass
-cost on the branches the verdict rested on, and the verdict's limits, are on the evidence page since
-2026-10-10 (#672).
+cost on the branches the verdict of 2026-10-07 rested on, and that verdict's limits, are on the
+evidence page since 2026-10-10 (#672).
 
 **A reported count is a floor on what a pass used** (measured 2026-10-07, #631, on the 27
 subagents of two plugin passes). The count a subagent reports when it finishes was 1.000 to 1.095
@@ -459,9 +459,9 @@ the three steps before the reviewers counted in. Whether the scoring step stays 
 
 **The session that runs the plugin pass on a branch adds that branch's row to each table of
 `review-figures.md`, in one commit** (#624, 2026-10-07; the second table since 2026-10-08, #634),
-each time, whether or not a verdict is pending and including when the pass raises nothing. Since
-the verdict below that is every pull request. Both rows are then there when the reviewer confirms
-the plugin pass's fixes.
+each time, whether or not a verdict is pending and including when the pass raises nothing. Since the
+verdict of 2026-10-07 that is every pull request. Both rows are then there when the reviewer
+confirms the plugin pass's fixes.
 
 **The two added lines are the whole edit** (2026-10-09, #644). What there is to say about one pull
 request is a cell of its row, and no sentence here or on that page changes for it. A share that
@@ -540,13 +540,13 @@ its pull request changes a file under `realistic-fusion-refreshed-assets/`,
 `realistic-fusion-refreshed-core/` or `realistic-fusion-refreshed/`; that is this file's reading of
 "touch a mod", and the wording is his to correct. None of the first ten does. The first revisit was
 set at ten routine rows, which was sixteen in the first table (Truls, 2026-10-07, #593). A routine
-row is one for a pull request opened after the verdict, when the pass
-stopped waiting to be asked for: #628's is the first, the pull request that closed #627, and #625's
-is not one. The comment on #593 words the cut as "opened from 2026-10-07 on", and #622 and #625 were
-opened that day before the verdict. "After the verdict" is this file's reading of it. In the session
-that put the verdict to him Truls confirmed that #625's row is not routine and that this change's is
-the first, and the seventh point of #627 is the only written record of that. The wording of the cut
-is his to correct. The test is the same, no pass mark is set in advance, and the verdict is his.
+row is one for a pull request opened after the verdict of 2026-10-07, when the pass stopped waiting
+to be asked for: #628's is the first, the pull request that closed #627, and #625's is not one. The
+comment on #593 words the cut as "opened from 2026-10-07 on", and #622 and #625 were opened that day
+before the verdict. "After the verdict" is this file's reading of it. In the session that put the
+verdict to him Truls confirmed that #625's row is not routine and that this change's is the first,
+and the seventh point of #627 is the only written record of that. The wording of the cut is his to
+correct. The test is the same, no pass mark is set in advance, and the verdict is his.
 
 ## Why it is written here rather than fixed at source
 
