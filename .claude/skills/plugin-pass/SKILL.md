@@ -1,0 +1,129 @@
+---
+name: plugin-pass
+description: Run this repository's plugin pass on an open pull request. The session checks eligibility itself, five independent reviewers read the change, one verifier checks every candidate they raise against the tree, and the result is two comments on the pull request and its two rows in docs/agents/review-figures.md. Use when a pull request has been opened.
+---
+
+# /plugin-pass
+
+Runs **the plugin pass** that `docs/agents/code-review.md` defines under *A review before the pull
+request, and the plugin pass after it*. That file is the rule; this is the procedure. The pass is
+the `code-review:code-review` plugin's, with the two departures that file names (#626): the session
+does the plugin's three opening steps itself, and one verifier takes the place of its scorers.
+`/pre-pr-review` is the other pass and comes first; its reviewer is still running and step 6 needs
+it.
+
+Every subagent here is read-only, and is told so. Each is spawned with the Agent tool as
+`general-purpose`, never a fork, with a `description` that holds the pull request's number and the
+word `tools/review-usage.py` sorts it by: `plugin pass #<n>: reviewer 2, shallow bug scan`,
+`plugin pass #<n>: verifier, <how many> candidates`.
+
+## Steps
+
+1. **Do the opening steps yourself.** No subagent.
+
+   ```
+   gh pr view <n> --json state,isDraft,comments --jq "[.state, .isDraft, ([.comments[].body | select(startswith(\"### Code review\"))] | length)]"
+   git ls-files "CLAUDE.md" "*/CLAUDE.md"
+   gh pr view <n> --json body --jq .body
+   ```
+
+   Stop when the pull request is closed, is a draft, or already has a `### Code review` comment,
+   and say which. Nothing else stops the pass: no kind of change is exempt. The second line is the
+   `CLAUDE.md` paths the reviewers are given, and the body is the summary of the change.
+
+   Done when the three have been read.
+
+2. **Spawn the five reviewers in one message**, on Sonnet (`model: sonnet`). Each brief is the
+   block below with one task from the list under it, and nothing about what the author thinks is
+   right:
+
+   > You are one of five independent reviewers of pull request `<n>` of this repository
+   > (`gh pr diff <n>`; its branch is checked out). `<your task>` The tracked `CLAUDE.md` files
+   > are `<paths>`. In this repository a false sentence or a wrong figure in tracked prose is a
+   > bug: `docs/agents/code-review.md`, *Review the prose, not only the code*, says what to
+   > check.
+   >
+   > You are read-only: edit, commit and run nothing that changes the working tree.
+   >
+   > Return a list of issues. For each: the file, the quoted words or code, what is wrong, the one
+   > source that shows it, and why it was flagged. Leave out a pre-existing issue, a nitpick, what
+   > a linter or the workflow would catch, and an issue on a line the pull request did not change.
+   > List separately what you noticed and decided not to raise. Say so plainly if you found
+   > nothing. Keep the reply under 400 words.
+
+   The five tasks, as the plugin words them:
+
+   1. Audit the changes to make sure they comply with the `CLAUDE.md` files. They are guidance
+      for writing code, so not every instruction applies during review.
+   2. Read the file changes in the pull request, then do a shallow scan for obvious bugs. Avoid
+      reading extra context beyond the changes. Focus on large bugs, and avoid small issues and
+      nitpicks. Ignore likely false positives.
+   3. Read the git blame and history of the code modified, to identify any bugs in light of that
+      historical context.
+   4. Read previous pull requests that touched these files, and check for any comments on those
+      pull requests that may also apply to this one.
+   5. Read code comments in the modified files, and make sure the changes comply with any
+      guidance in the comments.
+
+   Each report arrives as a message once this session's turn has ended, as the pre-PR reviewer's
+   does. Done when all five have reported.
+
+3. **Merge the candidates.** A candidate is an issue a reviewer raised; what a reviewer listed as
+   noticed and not raised is a mention and goes to no verifier. Two reviewers raising the same
+   fault is one candidate. Letter them A, B, C.
+
+   **No candidate, no verifier**: go to step 5.
+
+4. **Spawn one verifier for all of them**, on Sonnet. Its brief:
+
+   > You are the verifier of the candidates five reviewers raised on pull request `<n>` of this
+   > repository (its branch is checked out). For each candidate below you are given the quoted
+   > words or code and the one source to check them against. Check that source, and nothing
+   > else unless it sends you on.
+   >
+   > `<for each: its letter, the file, the quoted words, what the reviewer says is wrong, the
+   > source>`
+   >
+   > You are read-only: edit, commit and run nothing that changes the working tree.
+   >
+   > Return one line for each candidate: its letter, a verdict, and the evidence in a sentence.
+   > The verdict is **real** when the source shows the fault, **not real** when the source shows
+   > there is none or the fault is not this pull request's, and **not verified** when you could
+   > not check it from the tree. Give no score.
+
+   A verifier told only to "verify one sentence" explores the repository: ten scorers briefed so
+   used about 580 000 tokens on #594. The quoted words and the one source are what keep it short.
+
+   Done when every candidate has a verdict.
+
+5. **Check eligibility again** with step 1's first line, and **post two comments** with
+   `gh pr comment <n> --body-file`. The first:
+
+   ```
+   ### Code review
+
+   Found <k> issues:
+
+   1. <the fault, in a line> (<real | not verified>: <the verifier's evidence>)
+
+      <link to the file and lines, with the full commit hash>
+   ```
+
+   It lists every candidate found real or not verified, each said to be which. With none it says
+   `No issues found. Checked for bugs and CLAUDE.md compliance.` The second comment, under
+   `### What the plugin pass raised and did not post`, lists each candidate found not real with
+   the verifier's reason, and each mention with what was done about it. It is posted when either
+   list has an entry, and it says which reviewers raised nothing.
+
+6. **Fix, and have the pre-PR reviewer confirm.** A candidate found real or not verified is
+   fixed, or left with its reason written in the pull request's body. The fixes go to the pre-PR
+   reviewer as `docs/agents/code-review.md` says, in the paragraph on who confirms the plugin
+   pass's fixes; a fix held under #643 is in that diff.
+
+7. **Add the pull request's row to each table of `docs/agents/review-figures.md`, in one
+   commit.** `python tools/review-usage.py "<subagents directory>" "#<n>" "<reviewer's name>"`
+   prints the figures; step 6 of `/pre-pr-review` says where the directory is. The cells for the
+   three steps say the session did them, and the scorers' cells hold the verifier's figures and
+   say so. `docs/agents/code-review.md` has what a row holds and how it is graded.
+
+Then run step 7 of `/pre-pr-review`, the reading after the last fix commit.

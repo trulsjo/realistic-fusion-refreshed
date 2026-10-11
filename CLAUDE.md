@@ -408,13 +408,13 @@ none of them** (#630). Read the section named when its condition holds:
   pre-PR review. `/pre-pr-review` runs it.
 - **A commit is about to be written on a branch**: the same section, for what its body takes from
   the ticket and leaves to the diff (#671).
-- **A pull request has been opened**: the same section, for the plugin pass
-  (`code-review:code-review`), who confirms its fixes, and the row it adds to each of the two
-  tables, which since #644 are in `docs/agents/review-figures.md`.
+- **A pull request has been opened**: the same section, for the plugin pass, who confirms its fixes,
+  and the row it adds to each of the two tables, which since #644 are in
+  `docs/agents/review-figures.md`. `/plugin-pass` runs it (#626).
 - **The last fix on a branch has been committed, the plugin pass's included**: *Review the prose,
   not only the code*, for what is read again before the body is last edited (#663). Step 7 of
   `/pre-pr-review` carries it out.
-- **A review's findings are about to be reported or posted**: *The threshold gates the comment, not
+- **A review's findings are about to be reported or posted**: *The verdict sorts the comment, not
   the report*.
 - **A change is being reviewed, a fix a review asked for is being written, or a ticket or a
   retrospective's candidate is about to be published**: *Review the prose, not only the code*.

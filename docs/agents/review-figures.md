@@ -6,8 +6,7 @@ was concluded across these rows. This page has the rows. It was part of that fil
 (#644), and no figure changed in the move.
 
 **Read this page** to add a pull request's rows, when the rule is revisited, and when a decision
-needs what a pass found or cost, as
-[#626](https://github.com/trulsjo/realistic-fusion-refreshed/issues/626) does. Reviewing a branch
+needs what a pass found or cost. Reviewing a branch
 does not need it.
 
 **A pull request has one row in each table, and what there is to say about it is a cell of that
@@ -16,12 +15,15 @@ row.** Adding a pull request is one added line in each table and no other edit, 
 
 ## What each pass found, and the counts its subagents reported
 
-Each pull request here had both kinds of pass, and each is a row since 2026-10-07 (#624). Each
-count of findings is read from that pull request's body and comments. Two rows have the plugin
-pass's cost from elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in
-#595. The three steps before the reviewers check eligibility, list the `CLAUDE.md` files and
-summarise the change. The last two columns are the grade. `code-review.md` has its test, and the
-last cell has the day the row was graded and what the session that graded it wrote of it.
+Each pull request here had both kinds of pass, and each is a row since 2026-10-07 (#624). Each count
+of findings is read from that pull request's body and comments. Two rows have the plugin pass's cost
+from elsewhere: #579's is in #592's body, and #594's is in the comment on #593 and in #595. The
+three steps before the reviewers check eligibility, list the `CLAUDE.md` files and summarise the
+change. **From the first pass that `/plugin-pass` runs** (2026-10-11, #626) the session does those
+itself and one verifier takes the place of the scorers: that row's cell for the steps says so, and
+its scorers' cell holds the verifier's figure and says so, in both tables. The last two columns are
+the grade. `code-review.md` has its test, and the last cell has the day the row was graded and what
+the session that graded it wrote of it.
 
 | branch | had both passes on | the pre-PR review found | pre-PR review's cost | the plugin pass found | plugin pass's cost: the three steps before the reviewers | plugin pass's cost: reviewers | plugin pass's cost: scorers | of the plugin pass's fixed findings, serious | the grade: when it was made, and what the session wrote of it |
 |---|---|---|---|---|---|---|---|---|---|
@@ -110,13 +112,13 @@ That holds for the first three rows, which were filled in afterwards; a row writ
 session is read before the reviewer's last confirmation, as the row rule in `code-review.md` says,
 and #641's is the first of those. The three steps are the subagents that checked eligibility,
 listed the `CLAUDE.md` files and summarised the change. The reviewers are the five numbered 1 to 5,
-and the scorers are one for each candidate.
+and the scorers are one for each candidate, or since #626 the one verifier.
 
 **A total is a count of tokens and not a price.** A cache read is not priced as an input token, and
 most of every total is cache reads: the two columns of shares say how much. The passes also ran on
 different models. Each pre-PR reviewer ran on Opus, the plugin's reviewers on Sonnet, and its
 scorers and three steps on Haiku, so a scorer's token and a reviewer's are not the same spend
-either.
+either. The verifier runs on Sonnet.
 
 **The scorers' share of a plugin pass is not written in a row.** In this unit it is the scorers'
 cell over the summed cell. In the reported counts of the first table it is the scorers' cell over
