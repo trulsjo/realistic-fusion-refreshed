@@ -214,5 +214,5 @@ pass.
 
 ## What this does not do
 
-The reviewer scores its own findings, and the score decides nothing here: every finding is
-reported. Nothing checks a finding but the session that fixes it.
+It briefs no scorer and no verifier. The reviewer scores its own findings, and every finding is
+reported whatever it scores; step 4 has the one thing a score decides.

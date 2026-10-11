@@ -54,13 +54,13 @@ and #606 have neither.
 
 The cost of the pre-PR review was not measured on #579, and none of the first seven pull requests
 states one. Since 2026-10-07 (#631) `/pre-pr-review` has the session write it in the pull request's
-body, and the table has a column for it. #633's row is the first written under that rule. #625's
-and #628's rows were filled in on the same day from the transcripts of their reviewers, which the
+body, and the table has a column for it. #633's row is the first written under that rule. #625's and
+#628's rows were filled in on the same day from the transcripts of their reviewers, which the
 session that ran both still had. Being filled in afterwards, those two were read after the
 reviewer's last confirmation, where a row written by its own session is read before it, as the row
 rule in `code-review.md` says. #604, #605 and #607 each say five reviewers ran in the plugin pass,
-and none gives a time or a token count. From #625's row on, each of a row's three figures for the
-plugin pass is the usage its subagents reported.
+and none gives a time or a token count. From #625's row on, each figure a row has for the plugin
+pass is the usage its subagents reported.
 
 **A reported figure is about the size of a subagent's last request, and not what the subagent used**
 (measured 2026-10-07, #631). The plugin pass's subagents on #625 and #628 each sent a notice with a
