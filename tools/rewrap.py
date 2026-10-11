@@ -21,9 +21,15 @@ WITH NO LINE NUMBER IT LISTS AND WRITES NOTHING (#680): each prose line of the f
 the width, with its number and its length, which are the lines to give it next. A length is a
 count of UTF-16 code units, as section 12 counts one, so an em dash is 1 and not the 3 bytes that
 `awk 'length($0) > 100'` makes of it in Git Bash. It lists what section 12 fails for length, with
-two differences. A line inside a fence that is opened inside a blockquote is left out here, and
-section 12 reads it as prose and fails it. A figure split across a line end, which section 12
-also fails, is not a long line and is not listed.
+the differences below. None is in a wrapped file on 2026-10-11, when each was tried.
+
+  - a line inside a fence that is opened inside a blockquote: left out here, failed there, which
+    reads it as prose.
+  - a heading inside a blockquote or after indentation, `> ## ...`: left out here, failed there,
+    which looks for the `#` at the start of the raw line.
+  - a line whose only whitespace is a tab: left out here as having no space, failed there.
+  - a table row after a list marker, `- | ... |`: listed here, left alone there.
+  - a figure split across a line end, which section 12 also fails: not a long line, not listed.
 
 WHAT IS LEFT AS IT IS, and said so: a table row, a line inside a code fence or a fence line, a
 heading, and front matter. Asked for one of those, it prints that it left the line and goes on.
@@ -42,7 +48,7 @@ WHAT IT CANNOT SEE:
     out, and of UTF-16 code units in the listing; the two differ only outside the basic plane.
 
 `--self-test` rewraps a document made up below and exits non-zero when a line of it is not the
-line wanted. It is run by scripts/run-gates.ps1 and by .github/workflows/gates.yml.
+line wanted, or when the listing of its long lines is not the one wanted. It is run by scripts/run-gates.ps1 and by .github/workflows/gates.yml.
 """
 import re
 import sys

@@ -131,7 +131,8 @@ pass.
    **`-c core.commentChar=";"` keeps a body line that starts with `#`** (#681). Git takes the
    message `cp` puts in place as one an editor wrote and drops each line that starts with its
    comment character, which is `#` unless it is set. On #679 a body that began "#626 asked"
-   lost that line. With the character set, no body line starts with `;`.
+   lost that line. With the character set, a body line must not start with `;`: git drops that
+   one in its place.
 
    The same section says why the rebase starts at the commit's parent and why the `fixes.diff`
    line above gives the same diff after a reword. Delete the tag when the branch has merged.
