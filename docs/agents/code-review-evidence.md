@@ -1,10 +1,11 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but two was part of that file until 2026-10-10 (#672) and is as it stood there, so "this file" in
+but three was part of that file until 2026-10-10 (#672) and is as it stood there, so "this file" in
 one is `code-review.md`, and "this rule", "this paragraph" and "the paragraph above" are that
-file's. The two written for this page are the ones for #670 and #671. What each pull request's two
-passes found and cost is on a third page, [`review-figures.md`](review-figures.md).
+file's. The three written for this page are the ones for #670 and #671 and the one on the verdict of
+2026-10-10. What each pull request's two passes found and cost is on a third page,
+[`review-figures.md`](review-figures.md).
 
 **Read this page** when a rule is revisited or doubted, and when a sentence of `code-review.md`
 names a case by its pull request and the case is wanted in full. Reviewing a branch does not need
@@ -241,14 +242,17 @@ every pull request opened from the verdict of 2026-10-07 to 2026-10-10.
 **4 of the 25 findings the plugin pass raised and that were fixed were serious, on 3 of the 10
 branches**: two on #628, one on #650 and one on #656. The six rows of the first verdict had 8 of 26
 on 5 of 6. Each of the four is serious by the ruling on a false sentence in `code-review.md` or in
-`CLAUDE.md`, and none is a wrong figure or broken code. Truls ruled a third finding on #628 not
-serious. The three passes after #656 fixed one finding between them, and it was not serious. The
-pre-PR review found 143 things on the same ten and 134 were fixed.
+`CLAUDE.md`. One of #628's two is a wrong number in such a sentence, the first routine row named by
+its ticket's number, and none of the four is broken code. Truls ruled a third finding on #628 not
+serious. Of the candidates the three passes after #656 raised, one survived scoring and was fixed,
+and it was not serious; a long line that scored 0 on #664 was rewrapped all the same. The 25 counts
+findings that survived scoring. The pre-PR review found 143 things on the same ten and 134 were
+fixed.
 
 | The plugin pass on the ten | Summed | A pass |
 |---|---|---|
 | the counts its subagents reported | 7 291 826 tokens | 729 183 |
-| over all requests | 33 559 513 tokens | 3 355 951 |
+| over all requests | 33 559 533 tokens | 3 355 953 |
 | of that, the scorers | 11 148 320 tokens, 33.2% | |
 
 The first verdict took a pass as about half a million tokens, in reported counts. A total is a count

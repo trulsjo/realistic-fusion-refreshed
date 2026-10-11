@@ -68,9 +68,9 @@ count. So a figure in the table says how large each subagent's context had grown
 on what the pass used. The pre-PR reviewer is reached by name, goes idle without finishing and sends
 no notice, so its figure is its last request and response read from its transcript, the reading that
 on the 27 was up to a tenth under the notice's count. The table below has the sum over all its
-requests. The verdict's figure of about half a million tokens a pass rests on #625's two in this
-unit and on two older ones. What #579's and #594's figures measure was not checked, and the check
-does not explain why #594's reviewers reported no count.
+requests. The 2026-10-07 verdict's figure of about half a million tokens a pass rests on #625's two
+in this unit and on two older ones. What #579's and #594's figures measure was not checked, and the
+check does not explain why #594's reviewers reported no count.
 
 ## What each pass used over all its requests
 
