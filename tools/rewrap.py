@@ -1,6 +1,7 @@
-"""Rewrap, at 100 characters, the paragraph each given line sits in (#662).
+"""Rewrap, at 100 characters, the paragraph each given line sits in (#662), or list the lines.
 
     python tools/rewrap.py <file> <line> [<line> ...]
+    python tools/rewrap.py <file>
 
 The lines are the ones scripts/ship-check.ps1 section 12 prints, counted from 1. The width is the
 one docs/agents/code-review.md states and section 12 holds the files it names to; that section fails
@@ -16,8 +17,18 @@ digits after it is not a place to break, so "580 000" and "1 565 019" are each o
 That is wider than what section 12 fails, which wants the digits before the space to be a group
 of their own: "in 2026 100 lines" is kept together here and would pass there either way.
 
+WITH NO LINE NUMBER IT LISTS AND WRITES NOTHING (#680): each prose line of the file that is over
+the width, with its number and its length, which are the lines to give it next. A length is a
+count of UTF-16 code units, as section 12 counts one, so an em dash is 1 and not the 3 bytes that
+`awk 'length($0) > 100'` makes of it in Git Bash. It lists what section 12 fails for length, with
+two differences. A line inside a fence that is opened inside a blockquote is left out here, and
+section 12 reads it as prose and fails it. A figure split across a line end, which section 12
+also fails, is not a long line and is not listed.
+
 WHAT IS LEFT AS IT IS, and said so: a table row, a line inside a code fence or a fence line, a
 heading, and front matter. Asked for one of those, it prints that it left the line and goes on.
+The listing leaves those out, and with them a line with no space to break it at, which section 12
+leaves alone and which rewrapping its paragraph does not shorten.
 
 WHAT IT REFUSES: a result in which a later line would open with something markdown reads as
 structure, a list marker, `>`, `#`, a pipe or a fence. The file is then not written. Break that
@@ -27,7 +38,8 @@ WHAT IT CANNOT SEE:
 
   - a hard line break, two spaces or a backslash at a line's end. It is joined like any other.
   - an indented code block, which it takes for a paragraph. The wrapped files use fences.
-  - how wide a line renders. A line's length is its count of characters.
+  - how wide a line renders. A line's length is its count of characters when a paragraph is laid
+    out, and of UTF-16 code units in the listing; the two differ only outside the basic plane.
 
 `--self-test` rewraps a document made up below and exits non-zero when a line of it is not the
 line wanted. It is run by scripts/run-gates.ps1 and by .github/workflows/gates.yml.
@@ -61,6 +73,16 @@ def kinds(lines):
         else:
             out.append("prose" if bare.strip() else "blank")
     return out
+
+
+def overlong(lines):
+    """The number and the length of each prose line over the width that has a space to break at."""
+    found = []
+    for n, (line, kind) in enumerate(zip(lines, kinds(lines)), 1):
+        length = len(line.encode("utf-16-le")) // 2
+        if kind == "prose" and length > WIDTH and " " in line[LEAD.match(line).end():].strip():
+            found.append((n, length))
+    return found
 
 
 def rewrap(lines, targets):
@@ -156,21 +178,34 @@ def self_test():
         wrong.append("a result with a line opening on a list marker was not refused")
     except ValueError:
         pass
+    # The listing. Of the document above it leaves out the four lines that are never rewrapped.
+    # Of the four added here it lists the first: the second is 100 characters and 102 bytes, and
+    # the last two have no space to break at.
+    listed = overlong(doc + ["\u2014 " + "x" * 99, "\u2014 " + "x" * 98, "x" * 101,
+                             "[a](" + "x" * 101 + ")"])
+    if listed != [(13, 141), (16, 109), (19, 109), (22, 107), (23, 101)]:
+        wrong.append(f"the listing of the long prose lines was {listed!r}")
     for w in wrong:
         print(f"WRONG: {w}", file=sys.stderr)
-    print(f"rewrap: {'a line is wrong' if wrong else 'four paragraphs rewrapped as wanted, four lines left, one result refused'}.")
+    print(f"rewrap: {'a line is wrong' if wrong else 'four paragraphs rewrapped as wanted, four lines left, one result refused, five long lines listed'}.")
     return 1 if wrong else 0
 
 
 def main():
     if sys.argv[1:] == ["--self-test"]:
         return self_test()
-    if len(sys.argv) < 3 or not all(a.isdigit() for a in sys.argv[2:]):
+    if len(sys.argv) < 2 or not all(a.isdigit() for a in sys.argv[2:]):
         print(__doc__.split("\n\n")[1], file=sys.stderr)
         return 2
     path = sys.argv[1]
     text = open(path, encoding="utf-8", newline="").read()
     eol = "\r\n" if "\r\n" in text else "\n"
+    if len(sys.argv) == 2:
+        found = overlong(text.split(eol))
+        for n, length in found:
+            print(f"{path}: line {n} is {length} characters")
+        print(f"{path}: {len(found)} prose line(s) over {WIDTH}. Nothing was written.")
+        return 0
     try:
         lines, said = rewrap(text.split(eol), [int(a) for a in sys.argv[2:]])
     except ValueError as e:
