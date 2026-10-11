@@ -6,9 +6,9 @@ than changes to it; see *Why it is written here rather than fixed at source* at 
 **Three skills answered to `/code-review` in the session that wrote this, and this file means one of
 them.** Which are installed is a fact about a machine and not about this repository.
 `code-review:code-review` is the official plugin: five reviewers, then a scorer for each candidate
-finding, and it needs a pull request. It is what this file calls **the plugin pass**, and what "the
-workflow" and "the plugin" mean below. **Since 2026-10-11 the session runs the pass from
-`/plugin-pass` (`.claude/skills/plugin-pass/SKILL.md`), and it departs from the plugin in two
+finding, and it needs a pull request. It is what "the workflow" and "the plugin" mean below, and
+**the plugin pass** is this repository's run of it. **Since 2026-10-11 the session runs the pass
+from `/plugin-pass` (`.claude/skills/plugin-pass/SKILL.md`), and it departs from the plugin in two
 things** (Truls, #626): the session does the plugin's three steps before the reviewers itself, and
 one verifier that gives each candidate a verdict takes the place of the scorers and their numbers.
 The five reviewers and their tasks, the pull request it needs and the name are the plugin's.
@@ -35,10 +35,11 @@ names a case by its pull request and the case is wanted in full. Reviewing a bra
 **A change to a rule adds its date and its ticket to the first page and its measurements to the
 second**, in the commit that changes the rule here. This file gets the rule and a sentence of why.
 
-**A rule is changed in this file** (2026-10-07, #630). `CLAUDE.md` and the intro of
-`.claude/skills/pre-pr-review/SKILL.md` each name the section to read and when to read it, and state
-no rule. The skill's steps are the pre-PR review's procedure, and they say what they carry out. A
-change to what a step carries out is made here first and then in the step.
+**A rule is changed in this file** (2026-10-07, #630). `CLAUDE.md` and the intro of each of the two
+skills, `.claude/skills/pre-pr-review/SKILL.md` and since #626
+`.claude/skills/plugin-pass/SKILL.md`, name the section to read and when to read it, and state no
+rule. A skill's steps are its pass's procedure, and they say what they carry out. A change to what a
+step carries out is made here first and then in the step.
 
 **This file, `docs/agents/review-figures.md`, `docs/agents/code-review-history.md`,
 `docs/agents/code-review-evidence.md`, `.claude/skills/pre-pr-review/SKILL.md`, `CLAUDE.md` and
@@ -426,9 +427,10 @@ candidates, on Sonnet. It is handed, for each candidate, the quoted words and th
 check them against, and it returns real, not real or not verified, each with its evidence; not
 verified is for a candidate it could not check from the tree. The session merges a candidate that
 two reviewers raised before it hands them over, and a pass with no candidate has no verifier. The
-first rule says what a verdict decides. The reason is what the scores decided: over the eleven
-passes from #628's to #674's a score placed 3 of 33 candidates in the posted comment, and the
-scorers used 30.8% of the passes' tokens; [the evidence page has both
+first rule says what a verdict decides. **A candidate found real or not verified is fixed, or left
+with its reason written in the pull request's body.** The reason for the verifier is what the scores
+decided: over the eleven passes from #628's to #674's a score placed 3 of 33 candidates in the
+posted comment, and the scorers used 30.8% of the passes' tokens; [the evidence page has both
 tables](code-review-evidence.md#what-the-scores-decided-on-eleven-passes-626). **The verifier is
 judged when this rule is next revisited**, and has no count of its own.
 
@@ -487,14 +489,14 @@ count of requests and the share that is cache reads, read from the transcripts i
 `subagents` directory, the one step 6 of `/pre-pr-review` names. Each `agent-*.jsonl` there has an
 `agent-*.meta.json` beside it whose `description` is what the session called that subagent when it
 spawned it. `python tools/review-usage.py <that directory>` sorts them by description and prints the
-figures of both rows (#661): for the first table the counts the three groups of the plugin pass
-reported, and for the second each group's total, the sum of the three, and the share of that sum
-that is cache reads. Run on #656's directory on 2026-10-09 it printed each figure the two rows of
-#656 have for the plugin pass, and one subagent as unsorted, described "PR 656 eligibility check".
-The pre-PR review's cell is read when the row is written, as its cell in the other table is, and the
-pull request's body has the later figure. A figure that was not measured is written as not measured,
-one that covers the whole pass as not split, and one the pull request does not give as not recorded.
-A figure with no record behind it is not estimated. **From the first pass that `/plugin-pass` runs**
+figures of both rows (#661): for the first table the count each group of the plugin pass reported,
+and for the second each group's total, the sum of them, and the share of that sum that is cache
+reads. Run on #656's directory on 2026-10-09 it printed each figure the two rows of #656 have for
+the plugin pass, and one subagent as unsorted, described "PR 656 eligibility check". The pre-PR
+review's cell is read when the row is written, as its cell in the other table is, and the pull
+request's body has the later figure. A figure that was not measured is written as not measured, one
+that covers the whole pass as not split, and one the pull request does not give as not recorded. A
+figure with no record behind it is not estimated. **From the first pass that `/plugin-pass` runs**
 (#626), a row's two cells for the three steps before the reviewers say the session did them, and its
 two scorers' cells hold the verifier's figures and say so. The columns keep their names.
 
@@ -568,8 +570,8 @@ before running.
 Until 2026-10-11 nothing about the scoring, the rubric or the 80 was changed, and no rule asked the
 workflow to do anything it did not already do. **Since then the session runs the pass from this
 repository's own skill, `/plugin-pass`, and the plugin in the cache is still untouched** (#626). The
-skill words the five reviewers' tasks as the plugin does. It does not follow the plugin when the
-plugin changes: a change there reaches this repository when someone edits the skill.
+skill gives the five reviewers the plugin's five tasks in the plugin's words. It does not follow the
+plugin when the plugin changes: a change there reaches this repository when someone edits the skill.
 
 The first rule says what a verdict decides, and that nothing a reviewer raised goes unreported. The
 second adds one obligation the plugin never mentions, because a plugin that reviews code cannot know

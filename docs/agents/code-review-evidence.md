@@ -307,16 +307,16 @@ runs here: at the same commit 115 lines in 18 of the 22 files were over 100 char
 
 ### What the threshold dropped on #124, #126 and #127 (#128)
 
-The first rule as it stood in `code-review.md` until 2026-10-11, when the plugin's scorers gave
-each candidate a number: its opening, its section *The rule*, and under the bold line below its
-section *Why the threshold cannot be read as "these findings do not matter"*.
+The first rule as it stood in `code-review.md` until 2026-10-11, when the plugin's scorers gave each
+candidate a number: its opening, and under a bold line each its two sections, *The rule* and *Why
+the threshold cannot be read as "these findings do not matter"*. None of it is the rule now.
 
 The `code-review:code-review` workflow scores each candidate finding and leaves anything below 80
 out of its comment. **That filter governs what the workflow's own comment carries. It does not
 govern what gets told to the person who ran the review** — or, since 2026-10-05, what reaches the
 pull request.
 
-### The rule
+**The rule, until 2026-10-11.**
 
 **Report every finding that survived verification, whatever it scored.** The workflow's own comment
 carries only what clears the threshold, exactly as the workflow says. **Every other surviving
@@ -360,8 +360,9 @@ fixed only because they were reported outside the workflow's own output.
 ### What the scores decided on eleven passes (#626)
 
 What Truls's decision of 2026-10-11 rested on. The token figures are sums over the rows of
-[`review-figures.md`](review-figures.md) from #628's to #674's, the eleven routine rows there were
-that day, and the counts of candidates are read from the same rows' cells.
+[`review-figures.md`](review-figures.md) from #628's to #674's, the eleven routine rows on `main` at
+`c48fadf`, and the counts of candidates are read from the same rows' cells. #678's row was added
+later the same day; its pass had scorers too, and it is in none of these figures.
 
 | Of 33 candidates, one scorer each | Count |
 |---|---|
@@ -386,5 +387,4 @@ left unfixed was left on its scorer's reasoning. That is the part the verifier k
 
 **The three steps before the reviewers had one answer each on every routine row.** The session set
 the eligibility answer aside (#593), the `CLAUDE.md` paths did not change between pull requests, and
-the pull request's body was already a summary. On #674 the session checked eligibility again with
-one `gh` command.
+the pull request's body was already a summary.
