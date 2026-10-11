@@ -38,19 +38,26 @@ no rule. The skill's steps are the pre-PR review's procedure, and they say what 
 change to what a step carries out is made here first and then in the step.
 
 **This file, `docs/agents/review-figures.md`, `docs/agents/code-review-history.md`,
-`docs/agents/code-review-evidence.md` and `.claude/skills/pre-pr-review/SKILL.md` are wrapped at 100
-characters** (2026-10-09, #646; the two pages beside this file since 2026-10-10, #672). Section 12
-of `scripts/ship-check.ps1` fails a longer line of prose in any of them. It leaves alone a table
-row, a line inside a code fence, a heading, the skill's front matter, and a line with no space to
-break it at, which is what a long link alone on its line is. A fence opened inside a blockquote it
-does not see: it reads that fence's lines as prose, and fails a long one. **A figure grouped in
-thousands stays on one line when a paragraph is rewrapped**, and since 2026-10-09 (#662) section 12
-fails one that is split across a line end. `python tools/rewrap.py <file> <line>` rewraps the
-paragraph that line sits in, at this width, and keeps such a figure together; section 12's failures
-give the file and the line. The check cannot tell a split figure from two numbers, so it also fails
-a line that ends in a number of one to three digits above a line that opens with an unrelated one of
-exactly three, and the way out is to break the line a word earlier or later. #646 has the findings
-that asked for a stated width.
+`docs/agents/code-review-evidence.md`, `.claude/skills/pre-pr-review/SKILL.md`, `CLAUDE.md` and
+`scripts/CLAUDE.md` are wrapped at 100 characters** (2026-10-09, #646; the two pages beside this
+file since 2026-10-10, #672; the two `CLAUDE.md` since 2026-10-11, #667). Section 12 of
+`scripts/ship-check.ps1` fails a longer line of prose in any of them. It leaves alone a table row, a
+line inside a code fence, a heading, the skill's front matter, and a line with no space to break it
+at, which is what a long link alone on its line is. A fence opened inside a blockquote it does not
+see: it reads that fence's lines as prose, and fails a long one. **A figure grouped in thousands
+stays on one line when a paragraph is rewrapped**, and since 2026-10-09 (#662) section 12 fails one
+that is split across a line end. `python tools/rewrap.py <file> <line>` rewraps the paragraph that
+line sits in, at this width, and keeps such a figure together; section 12's failures give the file
+and the line. The check cannot tell a split figure from two numbers, so it also fails a line that
+ends in a number of one to three digits above a line that opens with an unrelated one of exactly
+three, and the way out is to break the line a word earlier or later. #646 has the findings that
+asked for a stated width.
+
+**A file that is not one of those seven has no width** (Truls, 2026-10-11, #667). A long line in
+it is not a finding, and a reviewer does not report one. That covers the Python under `tools/`,
+the PowerShell under `scripts/`, the Lua and every markdown page that sentence does not name.
+Reviewers had raised such a line four times and scored the same fault 0 and 50; the evidence page
+has the four.
 
 ## The threshold gates the comment, not the report
 

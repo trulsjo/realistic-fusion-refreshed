@@ -1255,12 +1255,13 @@ foreach ($row in $tableRows.Found) {
     $failures.Add("$($row.File), line $($row.Line): a table $what -- $($row.Detail). $hint")
 }
 
-# 12. A PROSE LINE OF THE REVIEW DOCS IS NO LONGER THAN THEIR WRAP WIDTH (#646).
+# 12. A PROSE LINE OF A WRAPPED FILE IS NO LONGER THAN THE WRAP WIDTH (#646, #667).
 #
 # Pre-PR reviewers kept finding over-long lines in docs/agents/code-review.md, against a width no
 # tracked file stated; #646 has the findings. That file states the width now and names the files it
 # binds, and this section holds those files to it. The sentence and the two constants below say
-# the same thing twice, so the sentence is required to be the one the constants make.
+# the same thing twice, so the sentence is required to be the one the constants make. The
+# first five are review docs; #667 added the two CLAUDE.md, where reviewers found the same.
 #
 # WHAT IS LEFT ALONE, whatever its length:
 #   - a table row: a line whose first character is a pipe, once its indentation, blockquote marks
@@ -1295,7 +1296,8 @@ foreach ($row in $tableRows.Found) {
 $WRAP_WIDTH = 100
 # The first is where the sentence is; it calls itself "this file" there.
 $WRAPPED    = @('docs/agents/code-review.md', 'docs/agents/review-figures.md', 'docs/agents/code-review-history.md',
-                'docs/agents/code-review-evidence.md', '.claude/skills/pre-pr-review/SKILL.md')
+                'docs/agents/code-review-evidence.md', '.claude/skills/pre-pr-review/SKILL.md',
+                'CLAUDE.md', 'scripts/CLAUDE.md')
 
 function Find-OverlongProseLines {
     <#  Every prose line of these markdown files that is longer than the width and could be broken.
@@ -1374,7 +1376,7 @@ $rewrap = Join-Path $repoRoot 'tools/rewrap.py'
 if (Test-Path -LiteralPath $rewrap) {
     # One kind of space, so the needle can end in one and "WIDTH = 1000" is not taken for it.
     Test-Claim -Where 'tools/rewrap.py' -Text ([regex]::Replace((Get-Content -LiteralPath $rewrap -Raw), '\s+', ' ')) -Needles @{
-        'the width section 12 holds the review docs to' = @("WIDTH = $WRAP_WIDTH ")
+        'the width section 12 holds the wrapped files to' = @("WIDTH = $WRAP_WIDTH ")
     }
 } else {
     $failures.Add('tools/rewrap.py is the tool section 12 names in its failures, and it is not there.')
@@ -1822,6 +1824,6 @@ Write-Host 'licence and the scope rule ship inside all three; the assets floor m
 Write-Host 'ships art, every accent named for a fluid still carries that fluid''s own colour, and'
 Write-Host 'no prose cites a self-test half by position, every Current figures row still names a'
 Write-Host 'heading and a figure its note has, every table row has as many cells as its header, and'
-Write-Host 'no prose line of the review docs is over the width they are wrapped at or splits a'
+Write-Host 'no prose line of the wrapped files is over the width they are wrapped at or splits a'
 Write-Host 'grouped figure across its end.'
 exit 0
