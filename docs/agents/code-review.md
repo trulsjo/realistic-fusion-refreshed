@@ -165,8 +165,8 @@ measured.** Fresh eyes found #230's four, and a reviewer confirming its own find
 eyes. From 2026-10-05 the plugin pass ran only when it was asked for, a choice made on what it cost
 on one branch. Since 2026-10-07 it runs on every pull request, so every branch gets the second round
 as well as the confirmation; [A review before the pull request, and the plugin pass after
-it](#a-review-before-the-pull-request-and-the-plugin-pass-after-it) has the verdict and what it
-rests on.
+it](#a-review-before-the-pull-request-and-the-plugin-pass-after-it) has the verdict of 2026-10-07
+and what it rests on.
 
 **A fix is checked against its source before it is written, whoever supplied its words**
 (2026-10-07, #632). An enumeration or a figure taken from a reviewer, from a finding or from an

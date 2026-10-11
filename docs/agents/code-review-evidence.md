@@ -244,9 +244,10 @@ branches**: two on #628, one on #650 and one on #656. The six rows of the first 
 on 5 of 6. Each of the four is serious by the ruling on a false sentence in `code-review.md` or in
 `CLAUDE.md`. One of #628's two is a wrong number in such a sentence, the first routine row named by
 its ticket's number, and none of the four is broken code. Truls ruled a third finding on #628 not
-serious. Of the candidates the three passes after #656 raised, two survived scoring and one of them
-was fixed, and it was not serious; a long line that scored 0 on #664 was rewrapped all the same. The
-25 leaves that line out. The pre-PR review found 143 things on the same ten and 134 were fixed.
+serious. Of the candidates the three passes after #656 raised, one was fixed, and it was not
+serious. One on #669 that scored 20 was left as it was, and a long line that scored 0 on #664 was
+rewrapped all the same. The 25 counts neither. The pre-PR review found 143 things on the same ten
+and 134 were fixed.
 
 | The plugin pass on the ten | Summed | A pass |
 |---|---|---|
