@@ -56,8 +56,9 @@ asked for a stated width.
 **A file that is not one of those seven has no width** (Truls, 2026-10-11, #667). A long line in
 it is not a finding, and a reviewer does not report one. That covers the Python under `tools/`,
 the PowerShell under `scripts/`, the Lua and every markdown page that sentence does not name.
-Reviewers had raised such a line four times and scored the same fault 0 and 50; the evidence page
-has the four.
+Reviewers had raised a long line in a file with no stated width four times, three of them in
+`CLAUDE.md`, and scored the same fault 0 and 50; [the evidence page has the
+four](code-review-evidence.md#long-lines-in-files-with-no-stated-width-667).
 
 ## The threshold gates the comment, not the report
 

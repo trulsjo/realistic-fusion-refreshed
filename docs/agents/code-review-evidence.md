@@ -292,11 +292,12 @@ line, in UTF-16 code units:
 | `CLAUDE.md` | 444 | 45 | 133 |
 | `scripts/CLAUDE.md` | 31 | 0 | 100 |
 
-The rewrap left two lines of `CLAUDE.md` over 100, at 114 and 123, each a link with no space to
-break it at, which section 12 leaves alone. **#667 and its comments give larger figures, 54 lines
-over 100 with the longest 135 in the one file and 2 over 100 in the other, and those counted
-bytes**: an em dash is one character and three bytes. No script read either file by the shape of its
-lines, checked the same day by searching `scripts/`, `tools/` and the workflow for `CLAUDE.md`.
+The rewrap left two lines of `CLAUDE.md` over 100, at 114 and 123, a link and the tail of one, with
+no space to break either at, which section 12 leaves alone. **#667 and its comments give larger
+figures, 54 lines over 100 with the longest 135 in the one file, 2 over 100 in the other and 116
+lines for the Python, and those counted bytes**: an em dash is one character and three bytes. No
+script read either file by the shape of its lines, checked the same day by searching `scripts/`,
+`tools/` and the workflow for `CLAUDE.md`.
 
 **The Python under `tools/` has no width** because holding it to one needed a check, and no linter
 runs here: at the same commit 115 lines in 18 of the 22 files were over 100 characters.
