@@ -7,10 +7,10 @@ description: Run this repository's pre-PR review on the current branch. One fres
 
 Runs the **pre-PR review** that `docs/agents/code-review.md` defines under *A review before the pull
 request, and the plugin pass after it*. That file is the rule; this is the procedure. It needs no
-pull request and it is not `code-review:code-review`, which is the plugin pass, and this skill does
-not run that. The same section says when the plugin pass runs and who confirms its fixes. Leave the
-reviewer from step 3 running after step 6: that section has more for it to do. Step 7 is done
-after the plugin pass.
+pull request and it is not the plugin pass, which `/plugin-pass` runs once the pull request is open.
+The same section says when the plugin pass runs and who confirms its fixes. Leave the reviewer from
+step 3 running after step 6: that section has more for it to do. Step 7 is done after the plugin
+pass.
 
 ## Steps
 
@@ -214,7 +214,5 @@ after the plugin pass.
 
 ## What this does not do
 
-It briefs no scorers. The reviewer scores its own findings, and the score decides nothing here:
-every finding is reported. If a later version briefs one scorer per finding, each gets the quoted
-lines and the one source to check them against — ten scorers told only to "verify one sentence"
-used about 580 000 tokens exploring the repository on #594.
+The reviewer scores its own findings, and the score decides nothing here: every finding is
+reported. Nothing checks a finding but the session that fixes it.

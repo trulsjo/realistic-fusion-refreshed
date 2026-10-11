@@ -14,10 +14,13 @@ HOW A SUBAGENT IS SORTED: by its description, in upper case or lower.
     step         the three steps             "plugin pass #<n>: eligibility step"
     reviewer     the plugin's reviewers      "plugin pass #<n>: reviewer 2, shallow bug scan"
     scorer       its scorers                 "plugin pass #<n>: scorer C, <the candidate>"
+    verifier     the one verifier (#626)     "plugin pass #<n>: verifier, 3 candidates"
 
 A description that starts with `Pre-PR` is the pre-PR reviewer's. Any other is sorted by whichever
-of `step`, `reviewer` and `scorer` comes first in it as a whole word, so a scorer whose candidate
-is about a step or a reviewer is still a scorer: "scorer B, step 7 names only md". A subagent
+of `step`, `reviewer`, `scorer` and `verifier` comes first in it as a whole word, so a scorer whose
+candidate is about a step or a reviewer is still a scorer: "scorer B, step 7 names only md". A
+pass run since #626 has no step and no scorer: the session does the steps, and one verifier
+takes every candidate. A subagent
 whose description holds none of them is printed as UNSORTED and is in no sum, and so is a
 transcript with no `.meta.json` beside it. docs/agents/code-review.md tells the session that
 spawns them to name them so.
@@ -34,7 +37,7 @@ WHAT IT PRINTS, in the units the two tables hold:
 
   - reported: the count a subagent sent in the notice when it finished, read from the session's
     transcript, `<session id>.jsonl` beside the `<session id>` directory. The first table's three
-    cells for the plugin pass are sums of these. A subagent with no notice there is said to have
+    cells for the plugin pass are sums of these, the verifier's going in the scorers' cell. A subagent with no notice there is said to have
     none, and its group's sum is then short.
   - last request: the tokens of a subagent's last request and its response. The first table's
     cell for the pre-PR reviewer, which is reached by name and sends no notice.
@@ -66,7 +69,7 @@ notice and the summary a compaction leaves are each a turn of the user's in the 
 text that one of them holds can start or end the part there: `--until=merge` stopped #669's part
 at a hand-back, 34 requests in. Give a text that the user's own turn holds and those do not.
 
-`--self-test` builds a session of six subagents and five requests of its own in a temporary
+`--self-test` builds a session of seven subagents and five requests of its own in a temporary
 directory and exits non-zero when a figure printed for it is not the one worked out by hand
 below. It is run by scripts/run-gates.ps1 and by .github/workflows/gates.yml.
 """
@@ -77,7 +80,9 @@ import re
 import sys
 import tempfile
 
-GROUPS = {"step": "steps", "reviewer": "reviewers", "scorer": "scorers"}
+GROUPS = {"step": "steps", "reviewer": "reviewers", "scorer": "scorers", "verifier": "verifier"}
+CELLS = (("steps", "the three steps"), ("reviewers", "reviewers"), ("scorers", "scorers"),
+         ("verifier", "the verifier"))
 NOTICE = re.compile(r"<tool-use-id>(\w+)</tool-use-id>.*?<subagent_tokens>(\d+)</subagent_tokens>",
                     re.S)
 
@@ -161,7 +166,7 @@ def collect(directory, texts=()):
         meta = json.load(open(beside, encoding="utf-8")) if os.path.exists(beside) else {}
         said = meta.get("description", "")
         named = said + " " + meta.get("name", "")
-        word = re.search(r"\b(step|reviewer|scorer)\b", said, re.I)
+        word = re.search(r"\b(step|reviewer|scorer|verifier)\b", said, re.I)
         group = "pre-PR" if said.lower().startswith("pre-pr") else \
             GROUPS[word.group(1).lower()] if word else "UNSORTED"
         if texts and not any(re.search(re.escape(t) + r"(?!\d)", named, re.I) for t in texts):
@@ -173,7 +178,7 @@ def collect(directory, texts=()):
 
 
 def summarise(rows):
-    """Each group's sums, and the plugin pass's three groups summed."""
+    """Each group's sums, and the plugin pass's groups summed."""
     sums = {}
     for r in rows:
         s = sums.setdefault(r["group"], {"subagents": 0, "reported": 0, "unreported": 0, "last": 0,
@@ -183,7 +188,7 @@ def summarise(rows):
         s["unreported"] += r["reported"] is None
         for k in ("last", "all", "reads", "requests"):
             s[k] += r[k]
-    plugin = [sums[g] for g in ("steps", "reviewers", "scorers") if g in sums]
+    plugin = [sums[g] for g, _ in CELLS if g in sums]
     sums["plugin pass"] = {k: sum(s[k] for s in plugin) for k in ("all", "reads")}
     return sums
 
@@ -227,7 +232,7 @@ def report(rows):
     if pre:
         out.append(f"  pre-PR review's cost                {n(pre['last'])} tokens at its last "
                    f"request, {pre['subagents']} reviewer(s)")
-    for g, cell in (("steps", "the three steps"), ("reviewers", "reviewers"), ("scorers", "scorers")):
+    for g, cell in CELLS:
         s = sums.get(g)
         if s:
             short = f"; {s['unreported']} sent no notice, so this is short" if s["unreported"] else ""
@@ -237,13 +242,13 @@ def report(rows):
     if pre:
         out.append(f"  pre-PR review                    {n(pre['all'])} tokens in "
                    f"{pre['requests']} requests; of that, cache reads {share(pre['reads'], pre['all'])}")
-    for g, cell in (("steps", "the three steps"), ("reviewers", "reviewers"), ("scorers", "scorers")):
+    for g, cell in CELLS:
         s = sums.get(g)
         if s:
             out.append(f"  plugin pass: {cell:20}{n(s['all'])} tokens, {s['subagents']} subagent(s)")
     plugin = sums["plugin pass"]
     if plugin["all"]:
-        out.append(f"  plugin pass: those three summed  {n(plugin['all'])} tokens; of that sum, "
+        out.append(f"  plugin pass: those summed        {n(plugin['all'])} tokens; of that sum, "
                    f"cache reads {share(plugin['reads'], plugin['all'])}")
     for g in ("UNSORTED", "LEFT OUT"):
         if g in sums:
@@ -254,7 +259,7 @@ def report(rows):
 
 
 def self_test():
-    """Six subagents with small figures, and the sums of them worked out by hand."""
+    """Seven subagents with small figures, and the sums of them worked out by hand."""
     def usage(i, o, w, r):
         return {"input_tokens": i, "output_tokens": o, "cache_creation_input_tokens": w,
                 "cache_read_input_tokens": r, "service_tier": "standard"}
@@ -274,6 +279,9 @@ def self_test():
                [said("m5", usage(100, 0, 0, 0)), said("m6", usage(0, 50, 0, 150))]),
         "a5": ("PR #95 eligibility check", "toolu_5", [said("m7", usage(1000, 0, 0, 0))]),
         "a6": (None, None, [said("m8", usage(7, 0, 0, 0))]),        # no .meta.json beside it
+        # A verifier whose candidates are a reviewer's is still the verifier.
+        "a7": ("plugin pass #9: verifier, two candidates of reviewer 1", "toolu_7",
+               [said("m9", usage(2, 3, 5, 20))]),
     }
     with tempfile.TemporaryDirectory() as scratch:
         directory = os.path.join(scratch, "session", "subagents")
@@ -287,7 +295,7 @@ def self_test():
         notice = ("<task-notification>\n<tool-use-id>{}</tool-use-id>\n<usage><subagent_tokens>{}"
                   "</subagent_tokens></usage>\n</task-notification>")
         with open(os.path.join(scratch, "session.jsonl"), "w", encoding="utf-8") as f:
-            for call, count in (("toolu_2", 1), ("toolu_2", 105)):
+            for call, count in (("toolu_2", 1), ("toolu_2", 105), ("toolu_7", 31)):
                 f.write(json.dumps({"message": {"role": "user",
                                                 "content": notice.format(call, count)}}) + "\n")
             f.write(json.dumps({"type": "queue-operation",
@@ -324,6 +332,7 @@ def self_test():
         "reviewers last": sums["reviewers"]["last"], "reviewers requests": sums["reviewers"]["requests"],
         "scorers reported": sums["scorers"]["reported"], "scorers unreported": sums["scorers"]["unreported"],
         "scorers all": sums["scorers"]["all"],
+        "verifier reported": sums["verifier"]["reported"], "verifier all": sums["verifier"]["all"],
         "plugin all": sums["plugin pass"]["all"], "plugin reads": sums["plugin pass"]["reads"],
         "pre-PR last": sums["pre-PR"]["last"], "pre-PR all": sums["pre-PR"]["all"],
         "pre-PR reads": sums["pre-PR"]["reads"], "pre-PR requests": sums["pre-PR"]["requests"],
@@ -338,11 +347,12 @@ def self_test():
         "steps reported": 11, "steps all": 10,
         "reviewers reported": 105, "reviewers all": 110, "reviewers last": 10, "reviewers requests": 2,
         "scorers reported": 0, "scorers unreported": 1, "scorers all": 100,
-        "plugin all": 220, "plugin reads": 141,        # 10 + 110 + 100, and 4 + 47 + 90
+        "verifier reported": 31, "verifier all": 30,
+        "plugin all": 250, "plugin reads": 161,        # 10 + 110 + 100 + 30, and 4 + 47 + 90 + 20
         "pre-PR last": 200, "pre-PR all": 300, "pre-PR reads": 150, "pre-PR requests": 2,
         "unsorted all": 1007, "unsorted reported": 999,     # the two with no word to sort by
         # The pre-PR reviewer, "PR #95 eligibility check" and the one with no description.
-        "left out with #9 given": 3, "plugin all with #9 given": 220,
+        "left out with #9 given": 3, "plugin all with #9 given": 250,
         "session requests": 5, "session all": 1348,     # 10 + 2 + 135 + 201 + 1000
         # s3 and s4. s3 is streamed twice and counts once; its context is 10 + 20 + 100.
         "part requests": 2, "part all": 336, "part reads": 300, "part first context": 130,

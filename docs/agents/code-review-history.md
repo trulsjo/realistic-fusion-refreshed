@@ -17,7 +17,7 @@ The head of `code-review.md` until 2026-10-10. Its list there now names the four
 what each is about.
 
 1. **[The threshold gates the comment, not the
-   report](code-review.md#the-threshold-gates-the-comment-not-the-report)** — decided by Truls,
+   report](code-review.md#the-verdict-sorts-the-comment-not-the-report)** — decided by Truls,
    2026-08-26, settling [#128](https://github.com/trulsjo/realistic-fusion-refreshed/issues/128);
    amended 2026-10-05 (#592).
 2. **[Review the prose, not only the code](code-review.md#review-the-prose-not-only-the-code)** —
@@ -145,3 +145,11 @@ One line for each, newest last. The passages above are not edited.
   `scripts/CLAUDE.md` are wrapped at 100 characters and are in section 12's list, which is now
   seven paths, each named. A file off that list has no width: a long line in it is not a finding
   and a reviewer does not report one. The Python under `tools/` is such a file.
+- **2026-10-11, #626: Truls's decision on the plugin pass's scoring step.** One verifier for all of
+  a pass's candidates replaced the scorer for each, and gives a verdict of real, not real or not
+  verified, and no number. The session does the plugin's three steps before the reviewers itself.
+  The first rule was renamed from "The threshold gates the comment, not the report" to "The verdict
+  sorts the comment, not the report", and the link to it in the first passage above was changed to
+  match, and no other word there. `/plugin-pass` holds the procedure. The pre-PR reviewer's own
+  scores stay, and the verifier is judged at the fourth rule's next revisit. "Should the pass run as
+  one workflow so its cost is reported" was closed as answered by `tools/review-usage.py` (#661).

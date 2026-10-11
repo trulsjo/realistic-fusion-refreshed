@@ -7,14 +7,17 @@ than changes to it; see *Why it is written here rather than fixed at source* at 
 them.** Which are installed is a fact about a machine and not about this repository.
 `code-review:code-review` is the official plugin: five reviewers, then a scorer for each candidate
 finding, and it needs a pull request. It is what this file calls **the plugin pass**, and what "the
-workflow" and "the plugin" mean below.
+workflow" and "the plugin" mean below. **Since 2026-10-11 the session runs the pass from
+`/plugin-pass` (`.claude/skills/plugin-pass/SKILL.md`), and it departs from the plugin in two
+things** (Truls, #626): the session does the plugin's three steps before the reviewers itself, and
+one verifier that gives each candidate a verdict takes the place of the scorers and their numbers.
+The five reviewers and their tasks, the pull request it needs and the name are the plugin's.
 `mattpocock-skills:code-review` and the built-in `code-review` both read a diff and need no pull
-request, and neither is the plugin pass. Write the qualified name
-when it matters which.
+request, and neither is the plugin pass. Write the qualified name when it matters which.
 
-1. **[The threshold gates the comment, not the
-   report](#the-threshold-gates-the-comment-not-the-report)**: what a review reports and posts,
-   whatever a finding scored.
+1. **[The verdict sorts the comment, not the
+   report](#the-verdict-sorts-the-comment-not-the-report)**: what a review reports and posts,
+   whatever was found of a candidate.
 2. **[Review the prose, not only the code](#review-the-prose-not-only-the-code)**: what a reviewer
    checks in prose, and what the session checks when it writes a fix, a ticket or a retrospective.
 3. **[A review that plants takes its own worktree](#a-review-that-plants-takes-its-own-worktree)**:
@@ -60,56 +63,42 @@ Reviewers had raised a long line in a file with no stated width four times, thre
 `CLAUDE.md`, and scored the same fault 0 and 50; [the evidence page has the
 four](code-review-evidence.md#long-lines-in-files-with-no-stated-width-667).
 
-## The threshold gates the comment, not the report
+## The verdict sorts the comment, not the report
 
 Decided by Truls, 2026-08-26, settling
-[#128](https://github.com/trulsjo/realistic-fusion-refreshed/issues/128).
-
-The `code-review:code-review` workflow scores each candidate finding and leaves anything below 80
-out of its comment. **That filter governs what the workflow's own comment carries. It does not
-govern what gets told to the person who ran the review** — or, since 2026-10-05, what reaches the
-pull request.
+[#128](https://github.com/trulsjo/realistic-fusion-refreshed/issues/128), as "The threshold gates
+the comment, not the report". Renamed on 2026-10-11, when he had one verifier replace the plugin's
+scorers ([#626](https://github.com/trulsjo/realistic-fusion-refreshed/issues/626)).
 
 ### The rule
 
-**Report every finding that survived verification, whatever it scored.** The workflow's own comment
-carries only what clears the threshold, exactly as the workflow says. **Every other surviving
-finding goes in a second comment on the same pull request, with its score** — so the pull request
-holds the plugin pass's whole report, and not the transcript of the session that ran it. Until
-2026-10-05 this said to post only what cleared the threshold. Sessions had been posting the rest
-anyway — on #305, #309 and #361 in September, and on
-[#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579) as a comment of its own — and
-#592 made that the rule.
+**Report every candidate a reviewer raised, whatever the verifier found of it.** The plugin pass's
+verifier gives each candidate one of three verdicts: real, not real, or not verified. **The verdict
+decides which of two comments on the pull request a candidate is listed in, and nothing else.** The
+`### Code review` comment lists each candidate found real or not verified, and says which it is. A
+second comment lists each one found not real, with the verifier's reason, and what a reviewer
+mentioned without raising. So the pull request holds the pass's whole report, and not the transcript
+of the session that ran it.
 
-**A review that posts nothing must still say what it filtered.** Name each finding, its score, and
-whether it was independently verified. A silent pass and a filtered pass must never look the same —
-that is the whole point of this file.
+**A review that posts no issue must still say what it set aside.** Name each candidate, its verdict
+and the evidence the verifier gave. A silent pass and a filtered pass must never look the same —
+that is the whole point of this rule.
 
-**Do not re-score to move a finding into the first comment.** The threshold is deliberately
-conservative and stays where it is. If a filtered finding matters, say so in the report and let a
-human decide; inflating a score to route around the filter destroys the only signal the score
-carries. Until 2026-10-05 the rule kept a filtered finding off the pull request, and this was
-written against re-scoring to get one published.
+**The session does not change a verdict to move a candidate.** Where it reads the source differently
+from the verifier, it says so beside the verdict, in the comment the verdict put the candidate in,
+and a human decides.
 
-### Why the threshold cannot be read as "these findings do not matter"
+**Until 2026-10-11 a score sorted the comments.** The plugin's scorers gave each candidate 0, 25,
+50, 75 or 100, and the plugin's own comment took 80 or over, which of those five is 100 alone. A
+candidate at 75, verified and important by the rubric's own words, was left out by construction.
+From 2026-08-26 the rule was that such a finding is still reported, and from 2026-10-05 (#592) that
+it is posted in the second comment. The evidence page has [what the threshold dropped on #124, #126
+and #127](code-review-evidence.md#what-the-threshold-dropped-on-124-126-and-127-128), and [what the
+scores decided on eleven
+passes](code-review-evidence.md#what-the-scores-decided-on-eleven-passes-626).
 
-The rubric offers exactly five values — **0, 25, 50, 75, 100** — and the filter admits scores of 80
-or more. So it admits exactly one of them. The effective rule is *score exactly 100*, and the 75
-band, which the rubric itself defines as
-
-> Highly confident. The agent double checked the issue, and verified that it is very likely it is a
-> real issue that will be hit in practice … The issue is very important
-
-is discarded by construction. A finding can be verified, important, and dropped. Since 2026-10-05
-(#592) read "discarded" and "dropped" as left out of the workflow's own comment: such a finding is
-now posted in the second one.
-
-**Measured, not assumed.** Across PRs #124, #126 and #127: ten findings, **zero posted, nine real
-and subsequently fixed** — in `954338d`, `8fdbd24` and `971adef` respectively. Two were not
-nitpicks: a mod-portal token surviving in PowerShell's `$Error` after the thrown message had been
-scrubbed (scored 75), and an ADR justifying a scope decision with a fact true only of a mod version
-the same ADR declines to target (scored 75, merged into a permanent decision record). Both were
-fixed only because they were reported outside the workflow's own output.
+**The pre-PR reviewer still scores its own findings**, 0, 25, 50, 75 or 100, and every one is
+reported whatever it scores. The 75 of the fourth rule (#643) is that score.
 
 ## Review the prose, not only the code
 
@@ -387,29 +376,34 @@ were reworded five times in two rounds; [the evidence page has
 each](code-review-evidence.md#commit-bodies-that-a-fix-made-false-on-669-671).
 
 **Every pull request gets the plugin pass, after it is opened** (Truls, 2026-10-07, #593). It is the
-full second round. This holds for every pull request opened after the verdict was given on
-2026-10-07, a documentation-only one included; #622 and #625 were opened earlier that day. From
-2026-10-05 until then the rule was "the plugin pass is run when it is asked for, and not otherwise";
-*Measured, not assumed* below has what ended it.
+full second round, and `/plugin-pass` runs it (#626). This holds for every pull request opened after
+the verdict was given on 2026-10-07, a documentation-only one included; #622 and #625 were opened
+earlier that day. From 2026-10-05 until then the rule was "the plugin pass is run when it is asked
+for, and not otherwise"; *Measured, not assumed* below has what ended it.
 
-**The session sets aside the plugin's eligibility answer.** The plugin's first step can answer that
-a change needs no review, and it did for #625 because that change was documentation only. The
-session runs the pass anyway and says in the pull request that it did. No kind of change is exempt
-(Truls, 2026-10-07, #593).
+**The session checks eligibility itself, and no kind of change is exempt** (Truls, 2026-10-07, #593;
+the session's own check since 2026-10-11, #626). The pass stops for a pull request that is closed,
+is a draft, or already has its `### Code review` comment, and for nothing else. The plugin's first
+step could also answer that a change needs no review, and did for #625 because that change was
+documentation only. The session set that answer aside then, and since #626 the question is not
+asked. The session also reads the `CLAUDE.md` paths from `git ls-files`, and takes the pull
+request's body as the summary of the change.
 
-**The session puts one of four words in each subagent's description** (2026-10-09, #661). The
-description is what the Agent tool is given when a subagent is spawned, and it is all that says
-afterwards which transcript was which. `tools/review-usage.py` sorts a session's subagents by it, in
-upper case or lower: `Pre-PR` at its start for the pre-PR reviewer, and `step`, `reviewer` or
-`scorer` as a whole word for the plugin pass's three steps before the reviewers, its reviewers and
-its scorers. Where a description holds more than one of those three, the script takes the first, so
-the word for what the subagent is comes before what it is about. The plugin pass's descriptions also
-carry the pull request's number, as in `plugin pass #656: reviewer 2, shallow bug scan`, so that a
-session which reviews two pull requests can give the script one of them. A subagent whose
-description holds none of the four is printed as unsorted and is in no sum. Giving the script a
-number leaves out the pre-PR reviewer, whose description has none, so the session gives its name as
-well. On #656 the session had named its subagents with those words by its own choice, and a script
-it wrote for the purpose sorted them; no tracked file asked for either.
+**The session puts one of its words in each subagent's description** (2026-10-09, #661; `verifier`
+since 2026-10-11, #626). The description is what the Agent tool is given when a subagent is spawned,
+and it is all that says afterwards which transcript was which. `tools/review-usage.py` sorts a
+session's subagents by it, in upper case or lower: `Pre-PR` at its start for the pre-PR reviewer,
+and `reviewer` or `verifier` as a whole word for the plugin pass's reviewers and its verifier. It
+sorts `step` and `scorer` the same way, for a pass run as the plugin has it, which each was up to
+#678's: three subagents for the steps before the reviewers and a scorer for each candidate. Where a
+description holds more than one of those four, the script takes the first, so the word for what the
+subagent is comes before what it is about. The plugin pass's descriptions also carry the pull
+request's number, as in `plugin pass #656: reviewer 2, shallow bug scan`, so that a session which
+reviews two pull requests can give the script one of them. A subagent whose description holds none
+of the five is printed as unsorted and is in no sum. Giving the script a number leaves out the
+pre-PR reviewer, whose description has none, so the session gives its name as well. On #656 the
+session had named its subagents with those words by its own choice, and a script it wrote for the
+purpose sorted them; no tracked file asked for either.
 
 **The pre-PR reviewer confirms the plugin pass's fixes** (Truls, 2026-10-07, #593). Continue the
 subagent that ran the pre-PR review and hand it the diff of the fixes, with no list of what was
@@ -426,12 +420,17 @@ pull request's body to what the reviewer answered.
 means the pre-PR review, and no pull request is needed for it. The plugin pass follows once the pull
 request is open.
 
-**The scoring step stays.** It is inside the plugin, so it runs whenever the plugin pass does. Every
-surviving finding is reported whatever it scores, so the score decides only which comment a finding
-is posted in — and it is still the step that verifies a candidate. Whether it stays now that the
-pass runs on every pull request is
-[#626](https://github.com/trulsjo/realistic-fusion-refreshed/issues/626), which is open and Truls's.
-The verdict of 2026-10-07 changed nothing about it.
+**One verifier checks every candidate, and gives no score** (Truls, 2026-10-11, #626). The plugin
+has a scorer for each candidate. This repository's pass has one verifier for all of a pass's
+candidates, on Sonnet. It is handed, for each candidate, the quoted words and the one source to
+check them against, and it returns real, not real or not verified, each with its evidence; not
+verified is for a candidate it could not check from the tree. The session merges a candidate that
+two reviewers raised before it hands them over, and a pass with no candidate has no verifier. The
+first rule says what a verdict decides. The reason is what the scores decided: over the eleven
+passes from #628's to #674's a score placed 3 of 33 candidates in the posted comment, and the
+scorers used 30.8% of the passes' tokens; [the evidence page has both
+tables](code-review-evidence.md#what-the-scores-decided-on-eleven-passes-626). **The verifier is
+judged when this rule is next revisited**, and has no count of its own.
 
 **A plugin-pass finding the pre-PR review missed gets its class named**, by the session that fixes
 it, in the pull request. A class a script can detect becomes a section of `scripts/ship-check.ps1`.
@@ -446,7 +445,7 @@ what each pull request's two passes found and cost, one row for a pull request i
 tables. The first table has the counts of findings, the token counts each pass's subagents reported
 and the grade. The second has what each pass used over all its requests. Read that page to add a
 pull request's rows, when this rule is revisited, and when a decision needs what a pass found or
-cost, as #626 does. **Since the move, a pull request's figures go in its two rows and nowhere in
+cost. **Since the move, a pull request's figures go in its two rows and nowhere in
 this file.** What this section keeps is the row rule, the two verdicts and their test, and what was
 concluded across rows, each with its date and the number of rows it was drawn from. What the pass
 cost on the branches the verdict of 2026-10-07 rested on, and that verdict's limits, are on the
@@ -463,7 +462,8 @@ passes run on different models. That page has both measurements in full.
 were 71.1% to 92.2% of a pre-PR review's total and 74.4% to 82.1% of a plugin pass's. The 71.1% is
 #650's, as it was when its row was written; the other six rows are 87.7% or over. The scorers' share
 of a plugin pass was 13.9% to 60.2% over all requests, and 10.8% to 47.7% in reported counts with
-the three steps before the reviewers counted in. Whether the scoring step stays is #626.
+the three steps before the reviewers counted in. Each of those passes had scorers; #626 has what
+became of them.
 
 **The session that runs the plugin pass on a branch adds that branch's row to each table of
 `review-figures.md`, in one commit** (#624, 2026-10-07; the second table since 2026-10-08, #634),
@@ -494,7 +494,9 @@ that is cache reads. Run on #656's directory on 2026-10-09 it printed each figur
 The pre-PR review's cell is read when the row is written, as its cell in the other table is, and the
 pull request's body has the later figure. A figure that was not measured is written as not measured,
 one that covers the whole pass as not split, and one the pull request does not give as not recorded.
-A figure with no record behind it is not estimated.
+A figure with no record behind it is not estimated. **From the first pass that `/plugin-pass` runs**
+(#626), a row's two cells for the three steps before the reviewers say the session did them, and its
+two scorers' cells hold the verifier's figures and say so. The columns keep their names.
 
 **The main session's own cost goes in the pull request's body, and in neither table** (2026-10-10,
 #670). It is what the session that wrote the change and ran both passes used itself, and none of its
@@ -560,15 +562,17 @@ correct. The test is the same, no pass mark is set in advance, and the verdict i
 
 The workflow is a plugin, installed in Claude Code's plugin cache on each machine and not in this
 repository. It is not this repository's to edit, and editing a cache would be undone by the next
-plugin update. So
-this is a convention, and `CLAUDE.md` points at it so a review session loads it before running.
+plugin update. So this is a convention, and `CLAUDE.md` points at it so a review session loads it
+before running.
 
-Nothing about the scoring, the rubric or the 80 is changed, and none of the four rules asks the
-workflow to do anything it does not already do. The first drops one assumption -- that a filtered
-finding is a discarded one. The second adds one obligation the rubric never mentions, because a
-plugin that reviews code cannot know that in this repository the prose is part of the deliverable.
-The third governs the passes that run beside the workflow rather than inside it. The fourth says
-when the workflow is run, and what is run before it. Since 2026-10-07 it also has the session run
-the workflow where the workflow's own first step would have stopped, so there the session goes
-against an answer the workflow gives, as it does under the first rule when it posts what the
-threshold filtered.
+Until 2026-10-11 nothing about the scoring, the rubric or the 80 was changed, and no rule asked the
+workflow to do anything it did not already do. **Since then the session runs the pass from this
+repository's own skill, `/plugin-pass`, and the plugin in the cache is still untouched** (#626). The
+skill words the five reviewers' tasks as the plugin does. It does not follow the plugin when the
+plugin changes: a change there reaches this repository when someone edits the skill.
+
+The first rule says what a verdict decides, and that nothing a reviewer raised goes unreported. The
+second adds one obligation the plugin never mentions, because a plugin that reviews code cannot know
+that in this repository the prose is part of the deliverable. The third governs the passes that run
+beside the plugin pass rather than inside it. The fourth says when the pass is run, what is run
+before it, and who checks what it raises.

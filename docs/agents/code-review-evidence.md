@@ -1,11 +1,12 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but four was part of that file until 2026-10-10 (#672) and is as it stood there, so "this file" in
-one is `code-review.md`, and "this rule", "this paragraph" and "the paragraph above" are that
-file's. The four written for this page are the ones for #670 and #671, the one on the verdict of
-2026-10-10 and the one on the wrap width. What each pull request's two passes found and cost is on a
-third page, [`review-figures.md`](review-figures.md).
+but five was part of that file and is as it stood there, so "this file" in one is `code-review.md`,
+and "this rule", "this paragraph" and "the paragraph above" are that file's. All but one of those
+were moved on 2026-10-10 (#672), and the one on what the threshold dropped on 2026-10-11 (#626). The
+five written for this page are the ones for #670 and #671, the one on the verdict of 2026-10-10, the
+one on the wrap width and the one on what the scores decided. What each pull request's two passes
+found and cost is on a third page, [`review-figures.md`](review-figures.md).
 
 **Read this page** when a rule is revisited or doubted, and when a sentence of `code-review.md`
 names a case by its pull request and the case is wanted in full. Reviewing a branch does not need
@@ -301,3 +302,89 @@ script read either file by the shape of its lines, checked the same day by searc
 
 **The Python under `tools/` has no width** because holding it to one needed a check, and no linter
 runs here: at the same commit 115 lines in 18 of the 22 files were over 100 characters.
+
+## The verdict sorts the comment, not the report
+
+### What the threshold dropped on #124, #126 and #127 (#128)
+
+The first rule as it stood in `code-review.md` until 2026-10-11, when the plugin's scorers gave
+each candidate a number: its opening, its section *The rule*, and under the bold line below its
+section *Why the threshold cannot be read as "these findings do not matter"*.
+
+The `code-review:code-review` workflow scores each candidate finding and leaves anything below 80
+out of its comment. **That filter governs what the workflow's own comment carries. It does not
+govern what gets told to the person who ran the review** — or, since 2026-10-05, what reaches the
+pull request.
+
+### The rule
+
+**Report every finding that survived verification, whatever it scored.** The workflow's own comment
+carries only what clears the threshold, exactly as the workflow says. **Every other surviving
+finding goes in a second comment on the same pull request, with its score** — so the pull request
+holds the plugin pass's whole report, and not the transcript of the session that ran it. Until
+2026-10-05 this said to post only what cleared the threshold. Sessions had been posting the rest
+anyway — on #305, #309 and #361 in September, and on
+[#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579) as a comment of its own — and
+#592 made that the rule.
+
+**A review that posts nothing must still say what it filtered.** Name each finding, its score, and
+whether it was independently verified. A silent pass and a filtered pass must never look the same —
+that is the whole point of this file.
+
+**Do not re-score to move a finding into the first comment.** The threshold is deliberately
+conservative and stays where it is. If a filtered finding matters, say so in the report and let a
+human decide; inflating a score to route around the filter destroys the only signal the score
+carries. Until 2026-10-05 the rule kept a filtered finding off the pull request, and this was
+written against re-scoring to get one published.
+
+**Why the threshold cannot be read as "these findings do not matter".**
+
+The rubric offers exactly five values — **0, 25, 50, 75, 100** — and the filter admits scores of 80
+or more. So it admits exactly one of them. The effective rule is *score exactly 100*, and the 75
+band, which the rubric itself defines as
+
+> Highly confident. The agent double checked the issue, and verified that it is very likely it is a
+> real issue that will be hit in practice … The issue is very important
+
+is discarded by construction. A finding can be verified, important, and dropped. Since 2026-10-05
+(#592) read "discarded" and "dropped" as left out of the workflow's own comment: such a finding is
+now posted in the second one.
+
+**Measured, not assumed.** Across PRs #124, #126 and #127: ten findings, **zero posted, nine real
+and subsequently fixed** — in `954338d`, `8fdbd24` and `971adef` respectively. Two were not
+nitpicks: a mod-portal token surviving in PowerShell's `$Error` after the thrown message had been
+scrubbed (scored 75), and an ADR justifying a scope decision with a fact true only of a mod version
+the same ADR declines to target (scored 75, merged into a permanent decision record). Both were
+fixed only because they were reported outside the workflow's own output.
+
+### What the scores decided on eleven passes (#626)
+
+What Truls's decision of 2026-10-11 rested on. The token figures are sums over the rows of
+[`review-figures.md`](review-figures.md) from #628's to #674's, the eleven routine rows there were
+that day, and the counts of candidates are read from the same rows' cells.
+
+| Of 33 candidates, one scorer each | Count |
+|---|---|
+| fixed | 25 |
+| scored 0 or marked a false positive (#650, #656, three on #664, #674) | 6 |
+| left unfixed on the scorer's reasoning (#642 at 35, #669 at 20) | 2 |
+| placed in the posted comment by scoring 80 or over (two on #628, one on #633) | 3 |
+
+The first three rows are the 33, and the fourth counts three of the 25. Every candidate above 0
+other than the two left unfixed was fixed whatever it scored, one at 25 included. Two of the six at
+0 were changed all the same. Three scores were off the rubric: 35, 60 and 20.
+
+| Over all requests, eleven passes | Tokens | Share |
+|---|---|---|
+| the passes | 36 636 565 | |
+| the scorers | 11 269 237 | 30.8% |
+| the three steps before the reviewers | 4 708 050 | 12.9% |
+
+That is about 341 000 tokens a candidate for the scorers, on Haiku. A total is a count of tokens and
+not a price. **What a scorer did that the number did not** was say why: each of the two candidates
+left unfixed was left on its scorer's reasoning. That is the part the verifier keeps.
+
+**The three steps before the reviewers had one answer each on every routine row.** The session set
+the eligibility answer aside (#593), the `CLAUDE.md` paths did not change between pull requests, and
+the pull request's body was already a summary. On #674 the session checked eligibility again with
+one `gh` command.
