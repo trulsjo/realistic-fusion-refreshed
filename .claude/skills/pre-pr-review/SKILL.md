@@ -120,13 +120,18 @@ pass.
    ```
    git log main..HEAD --format='%h %s' --grep='<the old figure or words>'
    GIT_SEQUENCE_EDITOR="sed -i 's/^pick <short hash>/reword <short hash>/'" \
-     GIT_EDITOR="cp <scratch>/msg.txt" git rebase -i <short hash>~1
+     GIT_EDITOR="cp <scratch>/msg.txt" git -c core.commentChar=";" rebase -i <short hash>~1
    git push --force-with-lease             # a pushed, unmerged branch only; never main
    ```
 
    **Run the `git log` line again before each reword.** A reword gives every later commit a new
    hash, and a rebase handed a hash that is no longer on the branch exits 0, rewords nothing and
    puts the earlier commit's old message back.
+
+   **`-c core.commentChar=";"` keeps a body line that starts with `#`** (#681). Git takes the
+   message `cp` puts in place as one an editor wrote and drops each line that starts with its
+   comment character, which is `#` unless it is set. On #679 a body that began "#626 asked"
+   lost that line. With the character set, no body line starts with `;`.
 
    The same section says why the rebase starts at the commit's parent and why the `fixes.diff`
    line above gives the same diff after a reword. Delete the tag when the branch has merged.
