@@ -1,11 +1,11 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but three was part of that file until 2026-10-10 (#672) and is as it stood there, so "this file" in
+but four was part of that file until 2026-10-10 (#672) and is as it stood there, so "this file" in
 one is `code-review.md`, and "this rule", "this paragraph" and "the paragraph above" are that
-file's. The three written for this page are the ones for #670 and #671 and the one on the verdict of
-2026-10-10. What each pull request's two passes found and cost is on a third page,
-[`review-figures.md`](review-figures.md).
+file's. The four written for this page are the ones for #670 and #671, the one on the verdict of
+2026-10-10 and the one on the wrap width. What each pull request's two passes found and cost is on a
+third page, [`review-figures.md`](review-figures.md).
 
 **Read this page** when a rule is revisited or doubted, and when a sentence of `code-review.md`
 names a case by its pull request and the case is wanted in full. Reviewing a branch does not need
@@ -263,3 +263,40 @@ figure and was not split out.
 `tools/` or `.github/`, or `CLAUDE.md`, and nothing else, read from each pull request's list of
 files on 2026-10-10. So the ten say nothing of what the pass finds in Lua or in a prototype, which
 is why the next revisit also falls due at five rows that touch one.
+
+## The wrap width
+
+The sentence in the head of `code-review.md` that names the wrapped files, and the one under it for
+every other file.
+
+### Long lines in files with no stated width (#667)
+
+Four times a reviewer raised a long line in a file that no sentence gave a width, and the same
+fault was scored 0 once and 50 three times. The lengths are as each reviewer gave them.
+
+| Pull request | Who raised it | What | Score |
+|---|---|---|---|
+| #656 | the pre-PR reviewer, finding 11 | a line added to `CLAUDE.md`, 103 characters | 50, fixed |
+| #664 | the plugin pass, candidate A | a line added to `CLAUDE.md`, 114 characters | 0, rewrapped all the same |
+| #664 | the pre-PR reviewer, finding 17 | the line under it, left at 119 by the fix for A | 50, fixed |
+| #669 | the pre-PR reviewer, finding 3 | a docstring line of `tools/refuse-hanging-bash.py`, 145 characters | 50, fixed |
+
+The scorer's reason for the 0, as #667 quotes it: "No rule is broken. No CLAUDE.md states a wrap
+width for itself".
+
+**What the two files held on `main` at `c48fadf`, counted on 2026-10-11** as section 12 counts a
+line, in UTF-16 code units:
+
+| File | Lines | Over 100 | Longest |
+|---|---|---|---|
+| `CLAUDE.md` | 444 | 45 | 133 |
+| `scripts/CLAUDE.md` | 31 | 0 | 100 |
+
+The rewrap left two lines of `CLAUDE.md` over 100, at 114 and 123, each a link with no space to
+break it at, which section 12 leaves alone. **#667 and its comments give larger figures, 54 lines
+over 100 with the longest 135 in the one file and 2 over 100 in the other, and those counted
+bytes**: an em dash is one character and three bytes. No script read either file by the shape of its
+lines, checked the same day by searching `scripts/`, `tools/` and the workflow for `CLAUDE.md`.
+
+**The Python under `tools/` has no width** because holding it to one needed a check, and no linter
+runs here: at the same commit 115 lines in 18 of the 22 files were over 100 characters.

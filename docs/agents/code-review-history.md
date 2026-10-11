@@ -141,3 +141,7 @@ One line for each, newest last. The passages above are not edited.
   stays on every pull request. The rule is next revisited at ten more routine rows or at the first
   five that touch a mod, whichever comes first. He saw the grades of the ten routine rows, ruled
   the third finding on #628 not serious and let the others stand.
+- **2026-10-11, #667: Truls's decision on which files have a wrap width.** `CLAUDE.md` and
+  `scripts/CLAUDE.md` are wrapped at 100 characters and are in section 12's list, which is now
+  seven paths, each named. A file off that list has no width: a long line in it is not a finding
+  and a reviewer does not report one. The Python under `tools/` is such a file.

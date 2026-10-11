@@ -75,18 +75,19 @@ with a pipe, or since #652 with a pipe after their blockquote marks, and no othe
 blockquote it also fails a row that has lost its `>`. Since #646 it proves section 12 too, which
 fails a prose line over 100 characters in the files `docs/agents/code-review.md` names as wrapped at
 that width: that file, `docs/agents/review-figures.md`, the pre-PR review skill, and since #672 the
-two pages beside that file, `code-review-history.md` and `code-review-evidence.md`. It leaves alone
-a table row, a line inside a code fence, a heading, front matter, and a line with no space to break
-it at; a fence opened inside a blockquote it does not see, and reads as prose. Its two halves prove
-that scan of the lines; the check of the sentence against the script's own width and file list names
-what it requires, and has none. Since #662 section 12 also fails a figure grouped in thousands that
-is split across a line end in those files, with two more halves that prove that scan, and its
-failures name `tools/rewrap.py`, which rewraps the paragraph a line sits in. It fails two unrelated
-numbers the same way when the first has one to three digits and the second exactly three; the
-section comment says why. The other eight sections it runs on a plain invocation are unchanged and
-still have no self-test, for the reason its help block gives. Run them rather than reasoning about
-whether a change is safe. How two of the self-tests are built, where the packer's went, and the two
-traps the `-FromZips` one already fell into, is in `scripts/CLAUDE.md`.
+two pages beside that file, `code-review-history.md` and `code-review-evidence.md`, and since #667
+this file and `scripts/CLAUDE.md`. It leaves alone a table row, a line inside a code fence, a
+heading, front matter, and a line with no space to break it at; a fence opened inside a blockquote
+it does not see, and reads as prose. Its two halves prove that scan of the lines; the check of the
+sentence against the script's own width and file list names what it requires, and has none. Since
+#662 section 12 also fails a figure grouped in thousands that is split across a line end in those
+files, with two more halves that prove that scan, and its failures name `tools/rewrap.py`, which
+rewraps the paragraph a line sits in. It fails two unrelated numbers the same way when the first has
+one to three digits and the second exactly three; the section comment says why. The other eight
+sections it runs on a plain invocation are unchanged and still have no self-test, for the reason its
+help block gives. Run them rather than reasoning about whether a change is safe. How two of the
+self-tests are built, where the packer's went, and the two traps the `-FromZips` one already fell
+into, is in `scripts/CLAUDE.md`.
 
 **`load-check.ps1` loads the mods two ways, and the default is not the player's.** Without arguments
 it junctions the repository's directories in, so the game reads the working tree; `-FromZips` builds
