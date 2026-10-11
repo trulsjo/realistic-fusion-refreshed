@@ -375,9 +375,9 @@ The first three rows are the 33, and the fourth counts three of the 25. Every ca
 other than the two left unfixed was fixed whatever it scored, one at 25 included. Two of the six at
 0 were changed all the same. Three scores were off the rubric: 35, 60 and 20.
 
-| Over all requests, eleven passes | Tokens | Share |
+| Over all requests, eleven plugin passes | Tokens | Share |
 |---|---|---|
-| the passes | 36 636 565 | |
+| the plugin passes, the pre-PR reviews left out | 36 636 565 | |
 | the scorers | 11 269 237 | 30.8% |
 | the three steps before the reviewers | 4 708 050 | 12.9% |
 
