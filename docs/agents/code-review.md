@@ -52,10 +52,11 @@ see: it reads that fence's lines as prose, and fails a long one. **A figure grou
 stays on one line when a paragraph is rewrapped**, and since 2026-10-09 (#662) section 12 fails one
 that is split across a line end. `python tools/rewrap.py <file> <line>` rewraps the paragraph that
 line sits in, at this width, and keeps such a figure together; section 12's failures give the file
-and the line. The check cannot tell a split figure from two numbers, so it also fails a line that
-ends in a number of one to three digits above a line that opens with an unrelated one of exactly
-three, and the way out is to break the line a word earlier or later. #646 has the findings that
-asked for a stated width.
+and the line. With the file alone it lists the prose lines over the width and writes nothing (#680),
+which is how a line is counted here: `awk` in Git Bash counts bytes. The check cannot tell a split
+figure from two numbers, so it also fails a line that ends in a number of one to three digits above
+a line that opens with an unrelated one of exactly three, and the way out is to break the line a
+word earlier or later. #646 has the findings that asked for a stated width.
 
 **A file that is not one of those seven has no width** (Truls, 2026-10-11, #667). A long line in
 it is not a finding, and a reviewer does not report one. That covers the Python under `tools/`,
