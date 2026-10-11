@@ -155,4 +155,4 @@ One line for each, newest last. The passages above are not edited.
   one workflow so its cost is reported" was closed as answered by `tools/review-usage.py` (#661).
   The fourth rule also gained a sentence that is not one of his ten decisions: a candidate found
   real or not verified is fixed, or left with its reason written in the pull request's body. It is
-  the session's wording of what sessions already did with a scored candidate, and his to correct.
+  the session's wording, and his to correct.
