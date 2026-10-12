@@ -120,7 +120,7 @@ read as a pipe doing something.
 **Three of the nine sockets are refused, by name rather than dropped.** `socket_strip` measures a
 north or south connection on the `-e` sheet — the same machine with the camera a quarter turn on —
 because only there does the socket run left-to-right on screen. A frame of a north-facing machine
-draws the `` sheet, so the `-e` window names pixels that frame does not hold. Refused: the
+draws the sheet with no suffix, so the `-e` window names pixels that frame does not hold. Refused: the
 collector's north helium-3, and the exchanger's north reactor energy and south steam.
 
 **The way in is a zoom-1 frame of a machine facing east**, which would draw exactly the `-e` sheet.

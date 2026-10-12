@@ -110,7 +110,7 @@
     -SelfTest here does NOT re-prove sections 1 to 8, unlike the checks that read a Factorio dump.
     Those need one because they can pass by finding nothing; sections 1 to 4 name every file and
     string they require, so a mistake in them fails rather than goes quiet. What it proves is the
-    shared self-test runner in factorio-lib.ps1, which every other gate's -SelfTest now calls: a
+    shared self-test runner the tools submodule holds, which every other gate's -SelfTest now calls: a
     runner that skipped a half, or counted one it never ran, would report a clean pass over a gate
     that did not execute, in all of them at once. It lives here because this gate starts no game.
 
@@ -140,13 +140,11 @@
     a loose row beside a good one. It cannot tell whether a row is the figure the note currently
     stands behind; the section comment has the rest of what it cannot see.
 
-    SECTION 11 HAS BOTH AS WELL (#649). It reads every table in the tracked markdown and fails a
-    delimiter row or a body row whose cell count is not its header's, which is the part of how a
-    table renders on GitHub that can be checked without a browser. Since #652 it reads a table
-    inside a blockquote as well, and fails a row there that has lost its `>`. A floor holds the
-    number of tables it found, and the table-row-cells-caught, quoted-table-caught and
-    table-shape-not-flagged halves plant the shapes it must and must not report. It cannot see a
-    table that has no delimiter row; the section comment has the rest.
+    SECTION 11 HAS NEITHER, AND IS NOT THIS SCRIPT'S CHECK (#658). It runs the tools submodule's
+    scripts/markdown-check.ps1 over every tracked Markdown file and fails on what that finds. The
+    check's own -SelfTest, which the tools repository runs, is what proves it can fail; here a
+    missing script fails by name, and so does a run that does not say it read a file. It reads the
+    index and not the working tree; the section comment has the rest.
 
     SECTION 12 HAS A -SelfTest AND NO FLOOR (#646). It fails a prose line over the wrap width in
     the files docs/agents/code-review.md names as wrapped, and fails when that file's sentence
@@ -171,10 +169,10 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove five things a green run cannot: the shared -SelfTest runner
-    in factorio-lib.ps1 -- that it numbers halves from the list it was given and refuses a half it
+    Run the checks as usual, then prove four things a green run cannot: the shared -SelfTest runner
+    the tools submodule holds -- that it numbers halves from the list it was given and refuses a half it
     cannot show ran -- section 9, in both directions, section 10's two assertions, each in both
-    directions, section 11, in both directions and inside a blockquote, and section 12's two scans
+    directions, and section 12's two scans
     of the lines, each in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
     memory and the planted documents live in the scratch directory the run removes on its way out.
 
@@ -824,8 +822,8 @@ if ($inScope -lt 2) {
 #
 # WHAT COUNTS AS PROSE, and this is the whole of the discrimination: every line of a tracked .md,
 # and in code only the lines that are COMMENTS -- a line-comment, or a line inside a block comment.
-# A label a script PRINTS is not a citation; factorio-lib.ps1's runner canary holds numbered lines
-# as the output it expects. That is code
+# A label a script PRINTS is not a citation; a self-test may hold numbered lines as the output it
+# expects. That is code
 # doing its job, and a gate that failed them would be asking prose rules of a string literal.
 #
 # WHAT IT CANNOT SEE, stated here rather than left to be discovered, exactly as section 7 states its
@@ -1119,140 +1117,40 @@ foreach ($row in $figureRows.Found) {
         '(docs/agents/code-review.md, "Review the prose, not only the code").'))
 }
 
-# 11. A ROW OF A MARKDOWN TABLE MUST HAVE AS MANY CELLS AS ITS HEADER (#649).
+# 11. THE TRACKED MARKDOWN PASSES THE SHARED MARKDOWN CHECK (#658).
 #
-# Four pull requests running, #625 to #641, the pre-PR reviewer said it had not checked how a table
-# renders on GitHub, and nobody looked. This is the part of rendering a script can hold. GitHub
-# reads a header and the delimiter row under it as a table only when the two have the same number
-# of cells; a body row with too many loses the extra ones, and one with too few gets empty cells.
-# None of the three changes anything another gate reads.
+# The tools submodule's scripts/markdown-check.ps1, run with -All: emphasis or a code span left
+# open at the end of its paragraph, a table row whose column count is not its header's, and a link
+# to a file git does not track. Its header says what it reads as what and what it cannot see. The
+# pre-commit hook runs the same script on the staged files; this is where a clone that never opted
+# into the hooks, and the workflow, are held to it.
 #
-# A TABLE IS a run of lines that each start with a pipe, outside a code fence, whose second line is
-# a delimiter row: pipes, hyphens, colons and spaces and nothing else. Every tracked `.md` is read.
+# IT REPLACED THIS SECTION'S OWN TABLE CHECK (#649, #652), ruled by Truls on 2026-10-09: the shared
+# check runs in its place, not beside it. One thing that check caught is not caught now, a row of
+# a quoted table that has lost its `>`.
 #
-# A BLOCKQUOTED TABLE IS READ TOO (#652). A line's `>` marks are taken off before any of the above
-# is asked of it, and counted. A row with a different count from its header is reported: it is the
-# row that lost its `>`, which GitHub renders below the quote and outside the table. Two things
-# follow from reading through the marks, and both are handled where the run is walked. A table
-# that follows another with no blank line between, at a different depth, is a table of its own
-# when its second line is a delimiter row at its own depth. And a fence opened inside a quote is
-# closed by the quote's end as well as by a fence line, or one unclosed quoted fence would hide
-# every table after it.
+# IT READS THE INDEX, NOT THE WORKING TREE, unlike every other section here. An edit that is not
+# staged is not read, and a staged one is read as staged.
 #
-# A CELL IS COUNTED THE WAY GITHUB COUNTS IT: a pipe ends a cell unless a backslash is before it,
-# and a pipe inside inline code ends one like any other.
-#
-# WHAT IT CANNOT SEE:
-#   - a table with no delimiter row at all. Such a run is not a table to GitHub, and neither is a
-#     wrapped line of prose that happens to start with a pipe, and nothing here tells them apart.
-#     One such run is in the tracked notes, a wrapped line of prose in
-#     docs/research/icon-conventions-2-0.md.
-#   - a table written without leading pipes, or whose first line follows a list marker on the
-#     same line. Its lines do not start with a pipe. One that is only indented under a list item
-#     is read, since a line is trimmed first.
-#   - two rows in a row that have both lost their `>`, when the second is cells of hyphens and
-#     nothing else. The pair reads as the header and delimiter row of a table of its own.
-#   - a delimiter row that is malformed some other way, a cell of colons and no hyphen for one.
-#   - anything about how a table looks: its width, its alignment, what a cell's markdown becomes.
-$TABLE_DELIMITER = '^\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?$'
-# How many tables the tracked markdown held on 2026-10-08 was 456, of which 16 are in a blockquote.
-# A scan that found none would pass every row it never read; the floor is set under the count so
-# that removing a note does not trip it.
-$TABLE_FLOOR = 420
-
-function Split-TableRow {
-    <#  The cells of one table line. The outer pipes are the row's edges and not separators.  #>
-    param([Parameter(Mandatory)] [string] $Line)
-
-    $inner = $Line.Trim() -replace '^\|', '' -replace '(?<!\\)\|$', ''
-    return , @([regex]::Split($inner, '(?<!\\)\|'))
-}
-
-function Find-MisshapenTableRows {
-    <#  Every delimiter row and body row whose cell count is not its header's, or that sits at a
-        different blockquote depth from its header, and how many tables were read.
-
-        Returns one object: Tables, the count, and Found, a list of the file, the line, which kind
-        of fault it is and the two counts. The count of tables is returned beside the findings for
-        the reason Find-LooseFigureRows returns its own.  #>
-    param([Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Files, [string] $Root)
-
-    $found  = [System.Collections.Generic.List[object]]::new()
-    $tables = 0
-    foreach ($rel in $Files) {
-        $full = if ($Root) { Join-Path $Root $rel } else { $rel }
-        if (-not (Test-Path -LiteralPath $full)) { continue }   # tracked, deleted, not yet staged
-        $lines  = @(Get-Content -LiteralPath $full -Encoding utf8)
-        # Each line with its blockquote marks taken off, and how many it had. A quoted table is a
-        # table like any other once the marks are gone, and the count is what catches a row that
-        # lost one.
-        $texts  = [string[]]::new($lines.Count)
-        $depths = [int[]]::new($lines.Count)
-        for ($i = 0; $i -lt $lines.Count; $i++) {
-            $text = $lines[$i].Trim()
-            if ($text.StartsWith('>')) {
-                $marks      = [regex]::Match($text, '^(?:>\s*)+')
-                $depths[$i] = ($marks.Value -replace '[^>]', '').Length
-                $text       = $text.Substring($marks.Length)
-            }
-            $texts[$i] = $text
-        }
-        $fenced     = $false
-        $fenceDepth = 0
-        for ($i = 0; $i -lt $lines.Count; $i++) {
-            if ($fenced -and $depths[$i] -lt $fenceDepth) { $fenced = $false }
-            if ($texts[$i] -match '^(?:```|~~~)') { $fenced = -not $fenced; $fenceDepth = $depths[$i]; continue }
-            if ($fenced -or -not $texts[$i].StartsWith('|')) { continue }
-            $end = $i + 1
-            while ($end -lt $lines.Count -and $texts[$end].StartsWith('|')) {
-                $newTable = $depths[$end] -ne $depths[$i] -and $end + 1 -lt $lines.Count -and
-                            $depths[$end + 1] -eq $depths[$end] -and $texts[$end + 1] -match $TABLE_DELIMITER
-                if ($newTable) { break }
-                $end++
-            }
-            if ($end - $i -ge 2 -and $texts[$i + 1] -match $TABLE_DELIMITER) {
-                $tables++
-                $want = (Split-TableRow -Line $texts[$i]).Count
-                for ($row = $i + 1; $row -lt $end; $row++) {
-                    $have = (Split-TableRow -Line $texts[$row]).Count
-                    if ($have -ne $want) {
-                        $found.Add([pscustomobject]@{ File = $rel; Line = $row + 1
-                            Kind   = if ($row -eq $i + 1) { 'delimiter' } else { 'row' }
-                            Detail = "$have cells where the header has $want" })
-                    }
-                    if ($depths[$row] -ne $depths[$i]) {
-                        $found.Add([pscustomobject]@{ File = $rel; Line = $row + 1; Kind = 'quote'
-                            Detail = "$($depths[$row]) blockquote mark(s) where the header has $($depths[$i])" })
-                    }
-                }
-            }
-            $i = $end - 1
-        }
-    }
-    return [pscustomobject]@{ Tables = $tables; Found = $found }
-}
-
-$tableRows = Find-MisshapenTableRows -Files @($tracked | Where-Object { $_ -match '\.md$' }) -Root $repoRoot
-
+# IT HAS NO HALF IN -SelfTest. What proves the check can fail is its own -SelfTest, which the tools
+# repository runs. What fails here when the wiring stops reaching it: a missing script fails by
+# name, and so does a run that exits 0 without saying how many files it read, or that read none.
+$markdownCheck = Join-Path $repoRoot 'vendor/grado-factorio-tools/scripts/markdown-check.ps1'
 $checks++
-if ($tableRows.Tables -lt $TABLE_FLOOR) {
-    $failures.Add(("only $($tableRows.Tables) table(s) were found in the tracked markdown, against a " +
-        "floor of $TABLE_FLOOR set under the count section 11 last recorded. Either a great many were removed, " +
-        'which is a decision to record by lowering the floor, or the scan stopped finding them.'))
-}
-$checks++
-foreach ($row in $tableRows.Found) {
-    $what = switch ($row.Kind) {
-        'delimiter' { 'has a delimiter row that does not match its header, so GitHub renders no table' }
-        'quote'     { 'has a row with a different number of blockquote marks from its header, so GitHub ends the table above it' }
-        default     { 'has a row GitHub will pad or cut' }
+if (-not (Test-Path -LiteralPath $markdownCheck)) {
+    $failures.Add("the shared Markdown check is not at $markdownCheck. Run: git submodule update --init")
+} else {
+    Push-Location $repoRoot   # it reads the repository it is run in
+    try     { $markdownOut = @(& pwsh -NoProfile -File $markdownCheck -All 2>&1 | ForEach-Object { "$_" }); $markdownExit = $LASTEXITCODE }
+    finally { Pop-Location }
+    $markdownRead = [regex]::Match(($markdownOut -join "`n"), '(?m)^OK - markdown-check: (\d+) Markdown file')
+    if ($markdownExit -ne 0) {
+        foreach ($line in $markdownOut | Where-Object { $_ -match '^\S+\.md:\d+: ' }) { $failures.Add("markdown-check: $line") }
+        $failures.Add("the shared Markdown check exited $markdownExit. Its last line: $($markdownOut | Where-Object { $_ } | Select-Object -Last 1)")
+    } elseif (-not $markdownRead.Success -or [int]$markdownRead.Groups[1].Value -lt 1) {
+        $failures.Add('the shared Markdown check exited 0 without saying it read a Markdown file, so nothing says it ran. ' +
+            "It printed: $($markdownOut -join ' / ')")
     }
-    $hint = if ($row.Kind -ceq 'quote') {
-        'Every line of a quoted table carries the same marks.'
-    } else {
-        'A pipe inside a cell is written with a backslash before it, inline code included.'
-    }
-    $failures.Add("$($row.File), line $($row.Line): a table $what -- $($row.Detail). $hint")
 }
 
 # 12. A PROSE LINE OF A WRAPPED FILE IS NO LONGER THAN THE WRAP WIDTH (#646, #667).
@@ -1554,125 +1452,6 @@ if ($SelfTest) {
                            'Wanted exactly two findings, kind value, on lines 9 and 10.')
                 }
                 'a row whose figure is written nowhere below the table is caught on its line, as is one whose figure is only the tail of a longer grouped one; a wrapped thousands figure, a two-figure cell and an exponent with a plus sign are left alone.'
-            } }
-
-            @{ Name = 'table-row-cells-caught'; Body = {
-                # Section 11 passes by finding nothing misshapen. One table with a row too long and
-                # a row too short, and a second whose delimiter row is a cell short. The long row
-                # is the shape that is easy to write: a pipe inside inline code, which GitHub
-                # counts.
-                $doc = Join-Path $planted 'misshapen.md'
-                @(
-                    '| Gate | Reads | Runs a game |'
-                    '|---|---|---|'
-                    '| ship-check | prose | no |'
-                    '| load-check | `a | b` | yes |'
-                    '| name-check | a dump |'
-                    ''
-                    '| Gate | Reads | Runs a game |'
-                    '|---|---|'
-                    '| ship-check | prose | no |'
-                ) | Set-Content -LiteralPath $doc -Encoding utf8
-
-                $read = Find-MisshapenTableRows -Files @($doc)
-                $rows = @($read.Found | ForEach-Object { "$($_.Line) $($_.Kind)" })
-                if ($read.Tables -ne 2 -or ($rows -join '; ') -cne '4 row; 5 row; 8 delimiter') {
-                    throw ("two planted tables, one with a row of four cells and a row of two under a " +
-                           "header of three, one with a delimiter row of two, were read as $($read.Tables) " +
-                           "table(s) with: $($rows -join '; '). Wanted two tables and exactly " +
-                           "'4 row; 5 row; 8 delimiter'.")
-                }
-                'a row with a cell too many, a row with a cell too few and a delimiter row a cell short are each caught on their line; the long row is a pipe inside inline code.'
-            } }
-
-            @{ Name = 'quoted-table-caught'; Body = {
-                # A blockquoted table is held to the same counts, and to one more thing: every row
-                # carries the mark its header carries. The second planted table is the defect
-                # #650's review found by reading, a last row that had lost its `>`.
-                $doc = Join-Path $planted 'quoted.md'
-                @(
-                    '> | Release | Attribution |'
-                    '> |---|---|'
-                    '> | 0.2.0 | one | two |'
-                    ''
-                    '> | Release | Attribution |'
-                    '> |---|---|'
-                    '> | 1.2.0 | kept its mark |'
-                    '| 1.8.0 | lost its mark |'
-                    ''
-                    '> | Release | Attribution | Source |'
-                    '> |---|---|'
-                    '> | 1.3.13 | a credit | a changelog |'
-                    ''
-                    '> ```'
-                    '> a fence the end of the quote closes'
-                    ''
-                    '| Release | Attribution |'
-                    '|---|---|'
-                    '| 1.8.18 | one | two |'
-                ) | Set-Content -LiteralPath $doc -Encoding utf8
-
-                $read = Find-MisshapenTableRows -Files @($doc)
-                $rows = @($read.Found | ForEach-Object { "$($_.Line) $($_.Kind)" })
-                if ($read.Tables -ne 4 -or ($rows -join '; ') -cne '3 row; 8 quote; 11 delimiter; 19 row') {
-                    throw ("four planted tables -- three blockquoted, with a row of three cells under a " +
-                           "header of two, a last row with no blockquote mark and a delimiter row a " +
-                           "cell short, then one after a quoted fence that only the quote's end closes -- " +
-                           "were read as $($read.Tables) table(s) with: $($rows -join '; '). Wanted four " +
-                           "tables and exactly '3 row; 8 quote; 11 delimiter; 19 row'.")
-                }
-                'inside a blockquote, a row with a cell too many, a row that has lost its mark and a delimiter row a cell short are each caught on their line, and a table after a quoted fence that only the end of the quote closes is still read.'
-            } }
-
-            @{ Name = 'table-shape-not-flagged'; Body = {
-                # The other direction. An escaped pipe is one cell, a row may leave off its closing
-                # pipe, a cell may be empty, a misshapen table inside a fence is quoted text, a
-                # wrapped line of prose that starts with a pipe is no table, and a well-formed
-                # table inside a blockquote, nested or not, is a table.
-                $doc = Join-Path $planted 'shapely.md'
-                @(
-                    '| Gate | Reads | Runs a game |'
-                    '|:---|---:|:---:|'
-                    '| ship-check | `a \| b` | no |'
-                    '| load-check | a dump | yes'
-                    '| name-check | | no |'
-                    ''
-                    '```'
-                    '| Gate | Reads |'
-                    '|---|---|'
-                    '| ship-check | prose | no |'
-                    '```'
-                    ''
-                    'The layer is one of `"entity-info-icon"`'
-                    '| `"air-entity-info-icon"`, and vanilla uses the first.'
-                    ''
-                    '> | Release | Attribution |'
-                    '> |---|---|'
-                    '> | 0.2.0 | a credit |'
-                    ''
-                    '> > | Release | Attribution |'
-                    '>> |---|---|'
-                    '> >| 1.2.0 | another |'
-                    ''
-                    # Two tables with no blank line between them, the second in a quote. They are
-                    # two tables, and the second is not the first one's rows gone astray.
-                    '| Gate | Reads |'
-                    '|---|---|'
-                    '| ship-check | prose |'
-                    '> | Release | Attribution | Source |'
-                    '> |---|---|---|'
-                    '> | 0.2.0 | a credit | a changelog |'
-                ) | Set-Content -LiteralPath $doc -Encoding utf8
-
-                $read = Find-MisshapenTableRows -Files @($doc)
-                if ($read.Tables -ne 5 -or $read.Found.Count) {
-                    throw ("a well-formed table, a table inside a fence, a line of prose starting " +
-                           "with a pipe, two well-formed blockquoted tables and a plain table with a " +
-                           "quoted one directly under it were read as $($read.Tables) table(s) with: " +
-                           "$(($read.Found | ForEach-Object { "line $($_.Line) $($_.Kind) ($($_.Detail))" }) -join '; '). " +
-                           'Wanted five tables and no finding.')
-                }
-                'an escaped pipe, a row with no closing pipe, an empty cell, a table inside a fence, prose that starts with a pipe, a well-formed table inside a blockquote, nested or not, and a quoted table directly under a plain one are all left alone.'
             } }
 
             @{ Name = 'overlong-prose-caught'; Body = {

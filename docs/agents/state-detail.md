@@ -64,11 +64,11 @@ can see, checkable without starting a game. Since #416 it has a `-SelfTest` of i
 new: it proves the shared self-test runner in `factorio-lib.ps1` and section 9's citation rule, in
 both directions. Since #616 it also proves section 10, which fails a row of a research note's `##
 Current figures` table whose Section link names no heading or whose figure the note does not write.
-Since #649 it proves section 11 as well, which fails a table in tracked markdown whose delimiter
-row, or any row under it, has a cell count that is not its header's: the part of how a table renders
-on GitHub that needs no browser. It reads a table that has a delimiter row and whose lines start
-with a pipe, or since #652 with a pipe after their blockquote marks, and no other. Inside a
-blockquote it also fails a row that has lost its `>`. Since #646 it proves section 12 too, which
+From #649 until #658 it proved a section 11 of its own as well, which failed a table in tracked
+markdown whose delimiter row, or any row under it, had a cell count that was not its header's. It
+read a table that had a delimiter row and whose lines started with a pipe, or from #652 with a pipe
+after their blockquote marks, and no other, and inside a blockquote it also failed a row that had
+lost its `>`. The foot of this page has what section 11 is since. Since #646 it proves section 12 too, which
 fails a prose line over 100 characters in the files `docs/agents/code-review.md` names as wrapped at
 that width: that file, `docs/agents/review-figures.md`, the pre-PR review skill, and since #672 the
 two pages beside that file, `code-review-history.md` and `code-review-evidence.md`, and since #667
@@ -98,11 +98,11 @@ same step the commit hook already asks for — and the fetcher caches under `.mo
 directory it runs in, so run it from the repository root. Since #458 `factorio-lib.ps1` takes the
 same harness for every script that sources it, so every gate here needs the submodule, the one that
 starts no game (`ship-check.ps1`) included. From #462 until #608 none of the harness's functions
-was defined a second time in this repo. **Five are again since #608's pin**, `733821b`
-(2026-10-12): `Get-ModLinks`, `Get-LocaleFailure`, `Invoke-FactorioStep`, `Invoke-SelfTestHalves`
-and `Test-SelfTestRunner`, which the tools repository took from `scripts/factorio-lib.ps1`
-(grado-factorio-tools#100). That file defines its own after it sources the harness, so its own are
-the ones that run; #675 deletes them.
+was defined a second time in this repo. Five were from #608's pin, `733821b` (2026-10-12), until
+#675 the same day: `Get-ModLinks`, `Get-LocaleFailure`, `Invoke-FactorioStep`,
+`Invoke-SelfTestHalves` and `Test-SelfTestRunner`, which the tools repository took from
+`scripts/factorio-lib.ps1` (grado-factorio-tools#100). #675 deleted that file's own, so **none is
+defined twice again** and every script that sources it runs the shared five.
 
 ## What `run-gates.ps1` runs, why, and how long it took
 
@@ -135,8 +135,9 @@ the ones that need neither Factorio nor Blender — on a pull request and on a p
 `tests/test-*.lua`, `ship-check.ps1`, and `commit-check.ps1` over the commits that event brought.
 Since #659 a third job runs the `--self-test` of the same three scripts under `tools/` that
 `run-gates.ps1` runs. A pull request with a merge conflict gets no run at all, which looks the same
-as one not yet run. The one other check nobody starts by hand is the `commit-msg` hook in the Commit
-messages section, which a clone opts into and a commit triggers. **What stays manual is the rest of
+as one not yet run. The other checks nobody starts by hand are the two hooks in the Commit
+messages section, `commit-msg` and since #658 `pre-commit`, which a clone opts into and a commit
+triggers. **What stays manual is the rest of
 what `run-gates.ps1` runs, and all of what it leaves out**: the default `load-check.ps1` and each
 `scripts/check-*.ps1`, then `load-check.ps1 -FromZips`, `locale-check.ps1`, `name-check.ps1`, the
 probes and the gates' own self-tests. A green check says nothing about any of those. **The check is
@@ -156,4 +157,15 @@ through one rung walk since #424.
 
 ## Added since 2026-10-12
 
-One line for each change to a gate, newest last, with its date and its ticket. None yet.
+One line for each change to a gate, newest last, with its date and its ticket.
+
+- 2026-10-12, #675: `scripts/factorio-lib.ps1` no longer defines `Get-ModLinks`,
+  `Get-LocaleFailure`, `Invoke-FactorioStep`, `Invoke-SelfTestHalves` or `Test-SelfTestRunner`.
+  Every script that sources it runs the tools submodule's, and `ship-check.ps1 -SelfTest`'s
+  `self-test-runner` half runs the canary in the submodule's `scripts/self-test-halves.ps1`.
+- 2026-10-12, #658: `ship-check.ps1`'s section 11 is the tools submodule's
+  `scripts/markdown-check.ps1 -All` and no longer a table check of its own. It reads every tracked
+  `.md` as staged, not as it is on disk. Its three `-SelfTest` halves and its floor of 420 tables
+  went with the old section. A row of a quoted table that has lost its `>` is no longer caught. The
+  check took 144 s over 114 files on 2026-10-12, inside a `ship-check.ps1` that took 66 to 80 s
+  without it by #658's account. A `pre-commit` hook runs the same check on the staged `.md` files.

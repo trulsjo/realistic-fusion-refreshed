@@ -1170,7 +1170,7 @@ temperature, that is a balance effect rather than a rounding one.
 **Nothing is settled here about what to do**, and nothing should be. The engine's share may be
 something to accept and design around; ~~the mod's share looks more like a defect in the two-pass
 update and is worth its own ticket~~ — **it is not the two-pass update, and it is not writer count
-either; both were measured and both are false. ~~What is left is fill and temperature, plus a ~1.1
+either; both were measured and both are false.** ~~What is left is fill and temperature, plus a ~1.1
 point positional ramp inside the engine that nothing reachable from Lua explains~~ — **the ramp was
 the six-tick window and is gone by two seconds (#271), so what is left is fill and temperature and
 nothing else** — and reopening

@@ -74,8 +74,9 @@ pass.
    > — 0 a false positive, 25 possibly real and unverified, 50 real but minor or rare, 75
    > verified and important, 100 certain and it will be hit. Report every one whatever it scores.
    > Say so plainly if you found nothing, and say what you did not check. A table's cell counts
-   > in a tracked `.md` are held by `scripts/ship-check.ps1`, each row to its header, in a
-   > blockquote or out of one; a table in the pull request's body it does not read.
+   > in a tracked `.md` are held by `scripts/ship-check.ps1`, each row to its header; a row of a
+   > quoted table that has lost its `>` it does not catch, and a table in the pull request's body
+   > it does not read.
    >
    > Reply with one line per finding first: its number, the file, the fault and the score. Give
    > the detail for a finding when you are asked for it. A long reply arrives cut off.

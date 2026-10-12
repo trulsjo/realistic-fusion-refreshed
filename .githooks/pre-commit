@@ -1,0 +1,23 @@
+#!/bin/sh
+# Runs the shared Markdown check, vendor/grado-factorio-tools/scripts/markdown-check.ps1, on the
+# staged Markdown as it is staged (#658). What it reads and what it cannot see are in that
+# script's header; this is only the wiring. scripts/ship-check.ps1 runs the same check over every
+# tracked Markdown file, which is where a clone without this hook is held to it.
+#
+# INSTALL: the same two steps as commit-msg, which has them.
+#
+# A missing pwsh or an uninitialised submodule says the Markdown was NOT checked and lets the
+# commit through, the posture commit-msg takes and for its reasons.
+if ! command -v pwsh >/dev/null 2>&1; then
+    echo "pre-commit: pwsh not found, so the staged Markdown was NOT checked." >&2
+    exit 0
+fi
+
+CHECK="$(git rev-parse --show-toplevel)/vendor/grado-factorio-tools/scripts/markdown-check.ps1"
+if [ ! -f "$CHECK" ]; then
+    echo "pre-commit: $CHECK not found, so the staged Markdown was NOT checked." >&2
+    echo "pre-commit: run 'git submodule update --init' to wire up the shared check." >&2
+    exit 0
+fi
+
+exec pwsh -NoProfile -File "$CHECK"
