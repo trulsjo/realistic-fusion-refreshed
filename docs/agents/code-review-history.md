@@ -171,3 +171,9 @@ One line for each, newest last. The passages above are not edited.
   account. Its own sentences were not changed, so there is no old wording to keep. The
   commit-body rule the same ticket names is the shared commit convention's and is stated nowhere
   here; `CLAUDE.md`'s *What a body has to name* and its example were read against it and left.
+- **2026-10-12, #651.** The fourth rule gained a paragraph and four items: the plugin pass's
+  reviewers and its verifier work in a worktree that is not the session's, by the Agent tool's
+  isolation, or in one the session makes where a hook refuses that. Steps 2 and 4 of
+  `/plugin-pass` carry it out. No one ruled on it: the ticket was `ready-for-agent`, and which of
+  the routes its comment lists is used where the isolation is refused is the session's choice,
+  and Truls's to change.

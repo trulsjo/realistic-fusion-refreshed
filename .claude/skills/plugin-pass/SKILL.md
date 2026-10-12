@@ -17,6 +17,18 @@ Every subagent here is read-only, and is told so. Each is spawned with the Agent
 word `tools/review-usage.py` sorts it by: `plugin pass #<n>: reviewer 2, shallow bug scan`,
 `plugin pass #<n>: verifier, <how many> candidates`.
 
+**None of them works in this session's checkout** (#651; the rule is in that file). Spawn each
+with `isolation: "worktree"`. Where a hook refuses that, do not go round it: make one worktree
+for the pass, outside the repository, and remove it after step 4:
+
+```
+git worktree add --detach "<scratch>/plugin-pass-<n>" <hash>
+git worktree remove "<scratch>/plugin-pass-<n>"
+```
+
+`<where>` in the two briefs below is then "Your own worktree is your working directory" or "Work
+only in `<that directory>`: start every command there".
+
 ## Steps
 
 1. **Do the opening steps yourself.** No subagent. Each line runs unchanged in Git Bash and in
@@ -26,26 +38,32 @@ word `tools/review-usage.py` sorts it by: `plugin pass #<n>: reviewer 2, shallow
    gh pr view <n> --json state,isDraft,comments --jq ".state, .isDraft, (.comments[].body | .[0:15])"
    git ls-files "CLAUDE.md" "*/CLAUDE.md"
    gh pr view <n> --json body --jq .body
+   gh pr view <n> --json headRefOid --jq .headRefOid
+   git rev-parse HEAD
    ```
 
    The first prints the state, whether it is a draft, and the first 15 characters of each
    comment. Stop when the pull request is closed, is a draft, or has a comment that starts
    `### Code review`, and say which. Nothing else stops the pass. The second line is the
-   `CLAUDE.md` paths the reviewers are given, and the body is the summary of the change.
+   `CLAUDE.md` paths the reviewers are given, and the body is the summary of the change. The last
+   two print the same hash, the `<hash>` of the briefs; if they differ, push or check out first.
 
-   Done when the three have been read.
+   Done when the five have been read.
 
 2. **Spawn the five reviewers in one message**, on Sonnet (`model: sonnet`). Each brief is the
    block below with one task from the list under it, and nothing about what the author thinks is
    right:
 
    > You are one of five independent reviewers of pull request `<n>` of this repository
-   > (`gh pr diff <n>`; its branch is checked out). `<your task>` The tracked `CLAUDE.md` files
+   > (`gh pr diff <n>`). `<your task>` The tracked `CLAUDE.md` files
    > are `<paths>`. In this repository a false sentence or a wrong figure in tracked prose is a
    > bug: `docs/agents/code-review.md`, *Review the prose, not only the code*, says what to
    > check.
    >
-   > You are read-only: edit, commit and run nothing that changes the working tree.
+   > `<where>`. Your first command there is `git checkout --detach <hash>`, the pull request's
+   > head; `git rev-parse HEAD` then prints that hash. After it you are read-only: edit and
+   > commit nothing, and run no `git checkout`, `switch`, `stash`, `reset` or `worktree`. Run no
+   > gate, leave nothing running in the background, and send no message to another agent.
    >
    > Return a list of issues. For each: the file, the quoted words or code, what is wrong, the one
    > source that shows it, and why it was flagged. Leave out a pre-existing issue, a nitpick, and
@@ -80,21 +98,25 @@ word `tools/review-usage.py` sorts it by: `plugin pass #<n>: reviewer 2, shallow
 4. **Spawn one verifier for all of them**, on Sonnet. Its brief:
 
    > You are the verifier of the candidates five reviewers raised on pull request `<n>` of this
-   > repository (its branch is checked out). For each candidate below you are given the quoted
+   > repository. For each candidate below you are given the quoted
    > words or code and the one source to check them against. Check that source, and nothing
    > else unless it sends you on.
    >
    > `<for each: its letter, the file, the quoted words, what the reviewer says is wrong, the
    > source>`
    >
-   > You are read-only: edit, commit and run nothing that changes the working tree.
+   > `<where>`. Your first command there is `git checkout --detach <hash>`, the pull request's
+   > head; `git rev-parse HEAD` then prints that hash. After it you are read-only: edit and
+   > commit nothing, and run no `git checkout`, `switch`, `stash`, `reset` or `worktree`. Run no
+   > gate, leave nothing running in the background, and ask no other agent: send no message.
    >
    > Return one line for each candidate: its letter, a verdict, and the evidence in a sentence.
    > The verdict is **real** when the source shows the fault, **not real** when the source shows
    > there is none or the fault is not this pull request's, and **not verified** when you could
    > not check it from the tree. Give no score.
 
-   Done when every candidate has a verdict.
+   Done when every candidate has a verdict. Then remove the worktree if you made one, and read
+   `git reflog -20`: the pull request's body says whether it shows a checkout since step 2.
 
 5. **Check eligibility again** with step 1's first line, and **post two comments** with
    `gh pr comment <n> --body-file`. The first:

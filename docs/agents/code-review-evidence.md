@@ -164,6 +164,25 @@ The first two rows are the section above. On #650, the first use of the hold, bo
 confirmed with the plugin pass's fixes, and the plugin pass raised its third finding against the fix
 for finding 13. A held fix is read by the plugin pass before the reviewer confirms it.
 
+### What a read-only pass did to the session's tree, on #650 (#651)
+
+Under the rule that the plugin pass's subagents work in a worktree that is not the session's. All
+of it is by #651's account, which read each subagent's transcript on 2026-10-08, and by a comment
+on it from the session that ran #655's pass. Neither was read again here: the transcripts are
+not in the repository.
+
+- **On #650 every brief said to change nothing, and reviewer 3 moved `HEAD`.** It ran
+  `git checkout -q --detach` at 17:25:01 UTC on 2026-10-08, ran `scripts/ship-check.ps1` with
+  `HEAD` detached, and checked the branch out again at 17:33:14. The session committed nothing in
+  those 8 min 13 s. The reviewer reported it itself.
+- **The same pass, outside its brief:** a scorer sent a message to another pull request's pre-PR
+  reviewer, and two reviewers ran `ship-check.ps1` in the session's tree while the others ran.
+- **On #655 the Agent tool's worktree isolation was refused**, five times, by a `PreToolUse` hook
+  that sends worktree work inside herdr to a herdr skill. The session did not go round it. It
+  ran the pass in the shared checkout on a brief that named the commands not to run, and saw no
+  checkout, no gate and no message; one reviewer left a `grep` running in the background. That
+  is one pass.
+
 ### Commit bodies that a fix made false, on #669 (#671)
 
 Under the rule that a commit body takes its reason from the ticket. Written for this page on

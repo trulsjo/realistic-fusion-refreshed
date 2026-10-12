@@ -412,6 +412,31 @@ documentation only. The session set that answer aside then, and since #626 the q
 asked. The session also reads the `CLAUDE.md` paths from `git ls-files`, and takes the pull
 request's body as the summary of the change.
 
+**The plugin pass's subagents work in a worktree that is not the session's** (2026-10-12, #651).
+The five reviewers and the verifier are told to change nothing, and on #650 one reviewer detached
+the session's `HEAD` for eight minutes all the same; [the evidence page has what that pass
+did](code-review-evidence.md#what-a-read-only-pass-did-to-the-sessions-tree-on-650-651). So where
+they work does not rest on the brief alone. The third rule is for a pass that means to edit the
+tree; this is for one told not to, and it adds only where such a pass runs.
+
+- **Each of the six is spawned with the Agent tool's `isolation: "worktree"`**, which gives it a
+  checkout of its own. That checkout need not start at the pull request's head, so the brief gives
+  the head's full hash, from `gh pr view <n> --json headRefOid`, and the subagent's first command
+  is `git checkout --detach <hash>`, there. The session checks before it spawns that the hash is
+  its own `git rev-parse HEAD`.
+- **Where a hook refuses that spawn, the session does not go round the hook.** One on the machine
+  this was written on refuses it inside herdr (#655). The session then makes one worktree for the
+  pass, `git worktree add --detach <dir> <hash>`, in a directory of its own outside the
+  repository, names that directory in each brief as the only place to run a command, and removes
+  it when the verifier has answered. This half rests on the brief again, and the brief says so by
+  naming what is not run: `git checkout`, `switch`, `stash`, `reset` and `worktree`.
+- **Every brief also says: no gate, nothing left running in the background, and no message to
+  another agent.** A verifier checks a candidate against its source and asks nobody.
+- **The steps before the reviewers have no subagent to place**: the session does them (#626).
+
+The session reads `git reflog` when the pass is over, and the pull request says whether it shows
+a checkout during the pass.
+
 **The session puts one of its words in each subagent's description** (2026-10-09, #661; `verifier`
 since 2026-10-11, #626). The description is what the Agent tool is given when a subagent is spawned,
 and it is all that says afterwards which transcript was which. `tools/review-usage.py` sorts a
