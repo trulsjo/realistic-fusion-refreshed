@@ -101,7 +101,7 @@ scores decided on eleven
 passes](code-review-evidence.md#what-the-scores-decided-on-eleven-passes-626).
 
 **The pre-PR reviewer still scores its own findings**, 0, 25, 50, 75 or 100, and every one is
-reported whatever it scores. The 75 of the fourth rule (#643) is that score.
+reported whatever it scores. Since #653 a score decides nothing in the fourth rule's procedure.
 
 ## Review the prose, not only the code
 
@@ -326,13 +326,15 @@ sentence adds a claim, and the confirmation checks it like any other.** On
 rule, one of the three findings the plugin pass posted was in a sentence a fix had added after the
 pre-PR review, and the confirmation had passed it.
 
-**A finding under 75 that the reviewer raises while it confirms the fixes has its own fix confirmed
-with the plugin pass's fixes** (2026-10-08, #643). The session fixes it and sends no message for
-it. The pull request is opened with that fix marked `yes, not confirmed`, and the session changes
-the mark when the reviewer answers for it after the plugin pass. **A finding at 75 or over is the
-exception.** It is verified and important, so its fix gets a message of its own and is confirmed
-before the pull request is opened. Where that message's diff holds a waiting fix as well, the
-reviewer answers for both and nothing waits. Where the plugin pass leaves nothing to fix, no message
+**A finding that the reviewer raises while it confirms the fixes has its own fix confirmed with the
+plugin pass's fixes, whatever it scores** (2026-10-08, #643; decided by Truls on 2026-10-12,
+settling #653). The session fixes it and sends no message for it. The pull request is opened with
+that fix marked `yes, not confirmed`, and the session changes the mark when the reviewer answers
+for it after the plugin pass. Until #653 a finding at 75 or over was the exception and had its fix
+confirmed before the pull request opened. Holding it moves the confirmation and skips none of it,
+and the plugin pass reads the held fix first: on #650 it raised a finding against one. Where a
+later message's diff holds a waiting fix as well, the reviewer answers for both and nothing waits.
+Where the plugin pass leaves nothing to fix, no message
 for its fixes is sent, and the waiting fix gets a message of its own then. A finding raised in the
 confirmation of the plugin pass's fixes has no later message to wait for, and its fix is confirmed
 as before. So is a defect that an item of the reviewer's unchecked list turns up, whoever finds it:

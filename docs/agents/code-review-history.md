@@ -160,3 +160,9 @@ One line for each, newest last. The passages above are not edited.
   report in `.probe-reports/`, and a figure is checked against that file. Step 2 of the pre-PR
   review skill carries it out. No one ruled on it; the ticket was `ready-for-agent`, and the
   wording is the session's.
+- **2026-10-12, #653: Truls's decision on the exception #650 wrote.** A finding raised while the
+  pre-PR reviewer confirms the fixes has its fix held and confirmed with the plugin pass's fixes,
+  whatever it scores; one at 75 or over no longer gets a message of its own before the pull
+  request opens. Holding moves the confirmation and skips none of it, and the plugin pass reads the
+  held fix first. A defect from the reviewer's unchecked list still gets a message of its own. Step
+  4 of the pre-PR review skill carries it out, and a score now decides nothing in that skill.
