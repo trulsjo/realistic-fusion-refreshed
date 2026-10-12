@@ -1196,11 +1196,13 @@ function Test-SelfTestRunner {
     $copy = Join-Path ([IO.Path]::GetTempPath()) ('rf-runner-floor-' + [guid]::NewGuid().ToString('N').Substring(0, 8) + '.ps1')
     try {
         # NORMALISED TO LF BEFORE ANYTHING IS MATCHED. `n here is a bare line feed and this file
-        # arrives CRLF on an ordinary clone -- core.autocrlf is Git for Windows' own default and
-        # there is no .gitattributes -- so the comparison below failed on every machine this
+        # arrived CRLF on an ordinary clone -- core.autocrlf is Git for Windows' own default and
+        # there was no .gitattributes -- so the comparison below failed on every machine this
         # repository is actually run on, and the case threw "could not be broken" instead of
         # reaching the floor. Found in review of #417, on the one canary nobody would think to
-        # doubt: it had passed on a working tree whose files happened to be LF.
+        # doubt: it had passed on a working tree whose files happened to be LF. Since #590 a
+        # .gitattributes checks this file out LF; a working tree checked out before it is still
+        # CRLF until its files are written again, so the line stays.
         $loop = "    `$ran   = 0`n    foreach (`$half in `$Halves) {"
         $source = (Get-Content -LiteralPath $mine -Raw) -replace "`r`n", "`n"
         if (-not $source.Contains($loop)) {
