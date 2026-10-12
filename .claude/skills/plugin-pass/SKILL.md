@@ -17,21 +17,28 @@ Every subagent here is read-only, and is told so. Each is spawned with the Agent
 word `tools/review-usage.py` sorts it by: `plugin pass #<n>: reviewer 2, shallow bug scan`,
 `plugin pass #<n>: verifier, <how many> candidates`.
 
-**None of them works in this session's checkout** (#651; the rule is in that file). Spawn each
-with `isolation: "worktree"`. Where a hook refuses that, do not go round it, and do not run
-`git worktree` yourself: ask the user to make one worktree for the pass, outside the
-repository, and to remove it after step 4:
+**None of them works in this session's checkout where a worktree can be had** (#651; the rule is
+in that file). Spawn each with `isolation: "worktree"`. Where a hook refuses that, do not go
+round it, and do not run `git worktree` yourself: ask the user to make one worktree for the
+pass, outside the repository, and to remove it after step 4:
 
 ```
 ! git worktree add --detach "<scratch>/plugin-pass-<n>" <hash>
 ! git worktree remove "<scratch>/plugin-pass-<n>"
 ```
 
-`<where>` in the two briefs below is then "Your own worktree is your working directory" or "Work
-only in `<that directory>`: start every command there". With nobody there to make it, `<where>`
-is "Work in the repository's checkout" and the pull request's body says the pass ran there. Either way it ends: "It has no
-submodule contents and no git-ignored file. Read one of those from `<this session's checkout>`
-by its full path, and run no command there."
+`<where>` in the two briefs below is one of three, by which of those happened:
+
+- **Isolation:** "Your own worktree is your working directory. Your first command there is
+  `git checkout --detach <hash>`, the pull request's head, and `git rev-parse HEAD` then
+  prints that hash. `<what it lacks>`"
+- **The user's worktree:** "Work only in `<that directory>`, which is at `<hash>`, the pull
+  request's head: start every command there. `<what it lacks>`"
+- **Nobody there to make one:** "Work in the repository's checkout, which is at `<hash>`, the
+  pull request's head." The pull request's body then says the pass ran there.
+
+`<what it lacks>` is "It has no submodule contents and no git-ignored file. Read one of those
+from `<this session's checkout>` by its full path, and run no command there."
 
 ## Steps
 
@@ -64,10 +71,9 @@ by its full path, and run no command there."
    > bug: `docs/agents/code-review.md`, *Review the prose, not only the code*, says what to
    > check.
    >
-   > `<where>`. Your first command there is `git checkout --detach <hash>`, the pull request's
-   > head; `git rev-parse HEAD` then prints that hash. After it you are read-only: edit and
-   > commit nothing, and run no `git checkout`, `switch`, `stash`, `reset` or `worktree`. Run no
-   > gate, leave nothing running in the background, and send no message to another agent.
+   > `<where>` You are read-only: edit and commit nothing. Run no `git checkout` but one named
+   > above, and no `git switch`, `stash`, `reset` or `worktree`. Run no gate, leave nothing
+   > running in the background, and send no message to another agent.
    >
    > Return a list of issues. For each: the file, the quoted words or code, what is wrong, the one
    > source that shows it, and why it was flagged. Leave out a pre-existing issue, a nitpick, and
@@ -109,10 +115,9 @@ by its full path, and run no command there."
    > `<for each: its letter, the file, the quoted words, what the reviewer says is wrong, the
    > source>`
    >
-   > `<where>`. Your first command there is `git checkout --detach <hash>`, the pull request's
-   > head; `git rev-parse HEAD` then prints that hash. After it you are read-only: edit and
-   > commit nothing, and run no `git checkout`, `switch`, `stash`, `reset` or `worktree`. Run no
-   > gate, leave nothing running in the background, and ask no other agent: send no message.
+   > `<where>` You are read-only: edit and commit nothing. Run no `git checkout` but one named
+   > above, and no `git switch`, `stash`, `reset` or `worktree`. Run no gate, leave nothing
+   > running in the background, and ask no other agent: send no message.
    >
    > Return one line for each candidate: its letter, a verdict, and the evidence in a sentence.
    > The verdict is **real** when the source shows the fault, **not real** when the source shows
