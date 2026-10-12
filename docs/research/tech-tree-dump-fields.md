@@ -277,11 +277,11 @@ Two consequences for anything reading the dump:
   diagnosis — and a viewer is still right to refuse it as a label, for that reason rather than the
   one #169 gave.
 
-`scripts/factorio-lib.ps1` holds the result as two lists behind `Get-LocaleFailure`, because the
-two consumers ask different questions. `locale-check.ps1` calls it `-EngineOnly` and fails: a
+`Get-LocaleFailure` holds the result as two lists, because the two consumers ask different questions. `locale-check.ps1` calls it `-EngineOnly` and fails: a
 foreign placeholder is a true finding about a label and a false one about a locale entry, and that
 check can never load a mod that ships one. `tree-viewer.ps1` reads both and falls through past
-either, which is what #169 needed.
+either, which is what #169 needed. The function was in `scripts/factorio-lib.ps1` until #675 and
+is the tools submodule's `scripts/load-harness-lib.ps1`'s since.
 
 ## The field map, in one place
 

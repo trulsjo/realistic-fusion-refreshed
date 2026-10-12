@@ -25,7 +25,7 @@
     -- a rich-text reference to a renamed item, a control code that names nothing -- by writing
     "Unknown key" or "Unknown control sequence" into the text and carrying on. That value is
     present, so membership alone reports it clean, and the player reads the error on the tooltip.
-    Get-LocaleFailure in factorio-lib.ps1 holds what those strings are, and its comment records
+    Get-LocaleFailure in the shared load-harness-lib.ps1 holds what those strings are, and its comment records
     what the engine does and does not do here. This check passes it -EngineOnly, so it fails on
     the engine's own errors and not on a placeholder another mod ships deliberately -- which no
     run of this check can see anyway, since it loads this repo's mods and Wube's bundled ones and

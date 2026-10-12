@@ -298,7 +298,7 @@ def run_halves(halves):
     body never ran" and "the body ran and proved nothing" are the same silence from outside.
 
     tools/check-socket-height.py carries this same runner, and the PowerShell gates call
-    Invoke-SelfTestHalves in scripts/factorio-lib.ps1. Two files in this language is not enough to
+    Invoke-SelfTestHalves in the tools submodule's self-test-halves.ps1. Two files in this language is not enough to
     justify a library between them; a third would be.
     """
     total = len(halves)

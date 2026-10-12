@@ -794,8 +794,8 @@ function Invoke-Rig {
         calls Invoke-FactorioStep, which throws and tails both streams: a rig that built its map and
         then died is a broken rig in every half, and nothing here should be re-writing that. Found
         in review, which caught this function claiming exactly that arrangement while inlining a
-        third copy of Invoke-FactorioStep's body -- the copy its own docstring in factorio-lib.ps1
-        exists to prevent.
+        third copy of Invoke-FactorioStep's body -- the copy that function exists to
+        prevent.
 
         The canary is named in $Disabled whenever it is not wanted, never merely left out:
         Factorio AUTO-ENABLES a mod present on disk and absent from mod-list.json, so a half after
