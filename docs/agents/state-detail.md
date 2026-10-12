@@ -83,7 +83,7 @@ one to three digits and the second exactly three; the section comment says why. 
 sections it runs on a plain invocation are unchanged and still have no self-test, for the reason its
 help block gives. Run them rather than reasoning about whether a change is safe. How two of the
 self-tests are built, where the packer's went, and the two traps the `-FromZips` one already fell
-into, is in `scripts/CLAUDE.md`.
+into, and what a `ship-check.ps1` result describes (#687), are in `scripts/CLAUDE.md`.
 
 ## What the harness shares
 
