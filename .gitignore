@@ -36,6 +36,10 @@ __pycache__/
 # The raw --dump-data tools/extract-geometry.py takes when not handed one; 14 MB, rebuildable
 .dump/
 
+# What each probe last printed, one file for a probe and its arguments (#589). Written by
+# Start-ProbeReport in scripts/factorio-lib.ps1; a rerun replaces its own.
+.probe-reports/
+
 # Blender's save-over backups beside models/<machine>/<machine>.blend; the model is the .blend
 *.blend1
 

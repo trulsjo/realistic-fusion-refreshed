@@ -293,6 +293,15 @@ is handed and not by a skill's name:
 brief and the confirmation's as templates for the session to fill in. The list above is still the
 definition, and a review handed those three things is the pre-PR review whatever started it.
 
+**A probe's raw output is its last report, in `.probe-reports/`** (2026-10-12, #589). A
+`scripts/probe-*.ps1` that sources `scripts/factorio-lib.ps1` leaves what it printed there, in a
+file named for the probe and its arguments. The file opens with the command line, the date and the
+game's version, and a run with the same arguments replaces it. The directory is git-ignored, so a
+report is on the machine that ran the probe and nowhere else. The session hands the reviewer the
+report of each probe a figure came from, and **a figure is checked against that file**: the
+reviewer does not start the game for it. A report whose arguments, date or game version are not the
+ones the note gives is not that figure's evidence, and the probe is run again.
+
 **The reviewer reads whole each agent-facing file the diff changes** (2026-10-08, #647): a skill
 file, a page under `docs/agents/`, a `CLAUDE.md`. Its brief names them. A sentence that a change
 made false and did not touch is in no hunk of the diff. **Where the diff changes a step of a skill,
