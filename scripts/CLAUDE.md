@@ -5,13 +5,6 @@ them; this file says how two gates' self-tests are built, where the build tool's
 (#466), the two traps one of them already fell into, and what a `ship-check.ps1` result describes
 (#687).
 
-**`scripts/ship-check.ps1` reads the working tree as each section reaches it, so an edit made during
-a run can make it pass on a tree that fails** (#687). Its result describes the files as each section
-found them, not a commit. Section 12 reads the wrapped files in the last second of a run. On #685 a
-run started on 7fc4224, whose evidence page had a line of 113 characters, reported 233 checks and 0
-failures, because the line was rewrapped while the run was going; the same tree with no edit during
-the run fails on that line.
-
 **Since #280 `scripts/check-hc.ps1` carries a `-SelfTest` too, and it is the second gate here that
 starts the game to prove itself.** Its four halves are about the neutronic plant that section builds
 — `repo-plant-passes` is the floor, `exchanger-input-only` and `reactor-sells-south` are canary mods
@@ -37,3 +30,12 @@ copy that was here is deleted. It is a build tool rather than a gate; it uploads
 no version, and its own `-SelfTest` proves that a **git-ignored** file planted inside a mod cannot
 reach a zip — ignored specifically, since merely-untracked would be excluded for the wrong reason.
 The mod it plants in is a fixture in the self-test's own scratch repository, not one of ours.
+
+**`scripts/ship-check.ps1` reads its files as each section reaches it, so an edit made during a run
+can make it pass on a tree that fails** (#687). Every section but 11 reads a file's contents from
+the working tree; section 11 reads the index, so there a staged edit is what counts. The result
+describes the files as each section found them, and not a commit. On 2026-10-12, at 7fc4224, section
+12 read the wrapped files one second before the run ended. On #685 a run started on 7fc4224, whose
+`docs/agents/code-review-evidence.md` had a line of 113 characters, reported 233 checks and 0
+failures, because the line was rewrapped while the run was going; the same tree with no edit during
+the run fails on that line.
