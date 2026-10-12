@@ -35,7 +35,7 @@ Create a GitHub issue. Two things come first:
 
 - **The rule for a ticket's evidence** (#637). It is in `docs/agents/code-review.md`, under
   *Review the prose, not only the code*: the paragraph on a ticket's evidence and a
-  retrospective's.
+  retrospective's, and since #657 the one on a statement marked as an account.
 - **Search the open issues for the ticket's concept, not only for its wording** (a comment on
   #637, 2026-10-07). This one is stated here and nowhere else. Say in the pull request or in the
   session's report what was searched for. #639 was published on 2026-10-07 and closed as a

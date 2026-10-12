@@ -219,15 +219,15 @@ trusts it. A figure, or a claim about a past pull request, issue or commit, is r
 request, issue or commit before the ticket is published or the retrospective's candidate is put
 forward. That makes three kinds of text under one rule: a fix, a ticket and a retrospective.
 
+[The ticket and the retrospective that showed
+it](code-review-evidence.md#a-ticket-and-a-retrospective-written-from-memory-637) are on the
+evidence page.
+
 **A statement that was not read is marked as an account** (Truls, 2026-10-09, #657). It says whose
 account it is and that it was not read again. The tools repository's tracker page gives the form,
 quoting its own #89: "by its #195's account and not re-read here". That is for a source the
 session could not read when it wrote the ticket. A statement that can be read is still read, and
 the mark does not stand in for the reading.
-
-[The ticket and the retrospective that showed
-it](code-review-evidence.md#a-ticket-and-a-retrospective-written-from-memory-637) are on the
-evidence page.
 
 **What this rule was measured on is on the evidence page**: [#230's second review, and three rounds
 on 2026-09-12 and -13 that each let a superseded claim
@@ -426,12 +426,16 @@ tree; this is for one told not to, and it adds only where such a pass runs.
   its own `git rev-parse HEAD`.
 - **Where a hook refuses that spawn, the session does not go round the hook.** One on the machine
   this was written on refuses it inside herdr (#655). The session then makes one worktree for the
-  pass, `git worktree add --detach <dir> <hash>`, in a directory of its own outside the
-  repository, names that directory in each brief as the only place to run a command, and removes
-  it when the verifier has answered. This half rests on the brief again, and the brief says so by
-  naming what is not run: `git checkout`, `switch`, `stash`, `reset` and `worktree`.
+  pass, `git worktree add --detach <dir> <hash>`, in a directory of its own outside the repository,
+  names that directory in each brief as the only place to run a command, and removes it when the
+  verifier has answered, or when the reviewers have and raised nothing. This half rests on the brief
+  again, and the brief says so by naming what is not run: `git checkout`, `switch`, `stash`, `reset`
+  and `worktree`.
 - **Every brief also says: no gate, nothing left running in the background, and no message to
   another agent.** A verifier checks a candidate against its source and asks nobody.
+- **A worktree made either way has no submodule contents and no git-ignored file.** The shared
+  commit convention is one such. A subagent reads those from the session's checkout by full
+  path, and runs no command there.
 - **The steps before the reviewers have no subagent to place**: the session does them (#626).
 
 The session reads `git reflog` when the pass is over, and the pull request says whether it shows

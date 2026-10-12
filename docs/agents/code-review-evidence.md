@@ -1,10 +1,10 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but six was part of that file and is as it stood there, so "this file" in one is `code-review.md`,
+but seven was part of that file and is as it stood there, so "this file" in one is `code-review.md`,
 and "this rule", "this paragraph" and "the paragraph above" are that file's. All but one of those
 were moved on 2026-10-10 (#672), and the one on what the threshold dropped on 2026-10-11 (#626). The
-six written for this page are the ones for #653, #670 and #671, the one on the verdict of
+seven written for this page are the ones for #651, #653, #670 and #671, the one on the verdict of
 2026-10-10, the one on the wrap width and the one on what the scores decided. What each pull
 request's two passes found and cost is on a third page, [`review-figures.md`](review-figures.md).
 
@@ -166,10 +166,10 @@ for finding 13. A held fix is read by the plugin pass before the reviewer confir
 
 ### What a read-only pass did to the session's tree, on #650 (#651)
 
-Under the rule that the plugin pass's subagents work in a worktree that is not the session's. All
-of it is by #651's account, which read each subagent's transcript on 2026-10-08, and by a comment
-on it from the session that ran #655's pass. Neither was read again here: the transcripts are
-not in the repository.
+Under the rule that the plugin pass's subagents work in a worktree that is not the session's.
+Written for this page on 2026-10-12. All of it is by #651's account, which read each subagent's
+transcript on 2026-10-08, and by a comment on it from the session that ran #655's pass. Neither was
+read again here: the transcripts are not in the repository.
 
 - **On #650 every brief said to change nothing, and reviewer 3 moved `HEAD`.** It ran
   `git checkout -q --detach` at 17:25:01 UTC on 2026-10-08, ran `scripts/ship-check.ps1` with

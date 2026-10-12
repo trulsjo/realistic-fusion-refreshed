@@ -313,11 +313,11 @@ longer depends on every clone opting in. The hook is still the only thing that s
 before it is written; the workflow reports one after it is pushed.
 
 **A second hook, `.githooks/pre-commit`, reads the staged Markdown** (#658). It runs the tools
-submodule's `scripts/markdown-check.ps1` on the staged `.md` files as staged, and refuses the
-commit on emphasis or a code span left open, a table row whose column count is not its header's,
-or a link to a file git does not track. The same two steps install it, and a clone that skipped
-one is told the Markdown was not checked. `ship-check.ps1` runs the same check over every tracked
-`.md`, so the workflow holds a clone without the hook to it.
+submodule's `scripts/markdown-check.ps1` on the staged `.md` files as staged, and refuses the commit
+on emphasis or a code span left open, a table row whose column count is not its header's, or a link
+to a file git does not track. The same two steps install it, and a clone that set the hooks path and
+has no submodule is told the Markdown was not checked. `ship-check.ps1` runs the same check over
+every tracked `.md`, so the workflow holds a clone without the hook to it.
 
 **The `commit-msg` hook exists because the wrap rule had rotted.** Measured on 2026-09-06 by
 `commit-check.ps1 -Range '-50 main'`: 21 of the last 50 commits fail, on 183 body lines and 5
