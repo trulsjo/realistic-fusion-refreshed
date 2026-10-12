@@ -161,9 +161,8 @@ is held whatever it scores. Under it #641's message would not have been sent eit
 | #650 | not sent: findings 13 and 14 were held | 25 each | no | no |
 
 The first two rows are the section above. On #650, the first use of the hold, both held fixes were
-confirmed with the plugin pass's fixes, and the plugin pass raised a finding, the plugin pass's
-third, against the fix for finding 13. A held fix is read by the plugin pass before the reviewer
-confirms it.
+confirmed with the plugin pass's fixes, and the plugin pass raised its third finding against the fix
+for finding 13. A held fix is read by the plugin pass before the reviewer confirms it.
 
 ### Commit bodies that a fix made false, on #669 (#671)
 
