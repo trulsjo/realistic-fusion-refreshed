@@ -1,0 +1,9 @@
+# One line ending for tracked text on every machine (#590). Without this file a clone with
+# core.autocrlf=true checked text out as CRLF and one without it as LF, and a scripted edit
+# written for one failed on the other. The index was already LF; this makes the working tree LF too.
+* text=auto eol=lf
+
+# The binary kinds this repository tracks, or would: never converted, never diffed as text.
+*.png binary
+*.blend binary
+*.zip binary
