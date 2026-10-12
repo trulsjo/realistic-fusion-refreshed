@@ -18,16 +18,18 @@ word `tools/review-usage.py` sorts it by: `plugin pass #<n>: reviewer 2, shallow
 `plugin pass #<n>: verifier, <how many> candidates`.
 
 **None of them works in this session's checkout** (#651; the rule is in that file). Spawn each
-with `isolation: "worktree"`. Where a hook refuses that, do not go round it: make one worktree
-for the pass, outside the repository, and remove it after step 4:
+with `isolation: "worktree"`. Where a hook refuses that, do not go round it, and do not run
+`git worktree` yourself: ask the user to make one worktree for the pass, outside the
+repository, and to remove it after step 4:
 
 ```
-git worktree add --detach "<scratch>/plugin-pass-<n>" <hash>
-git worktree remove "<scratch>/plugin-pass-<n>"
+! git worktree add --detach "<scratch>/plugin-pass-<n>" <hash>
+! git worktree remove "<scratch>/plugin-pass-<n>"
 ```
 
 `<where>` in the two briefs below is then "Your own worktree is your working directory" or "Work
-only in `<that directory>`: start every command there". Either way it ends: "It has no
+only in `<that directory>`: start every command there". With nobody there to make it, `<where>`
+is "Work in the repository's checkout" and the pull request's body says the pass ran there. Either way it ends: "It has no
 submodule contents and no git-ignored file. Read one of those from `<this session's checkout>`
 by its full path, and run no command there."
 
@@ -117,7 +119,7 @@ by its full path, and run no command there."
    > there is none or the fault is not this pull request's, and **not verified** when you could
    > not check it from the tree. Give no score.
 
-   Done when every candidate has a verdict. Then remove the worktree if you made one, and read
+   Done when every candidate has a verdict. Then have the worktree removed if one was made, and read
    `git reflog -20`: the pull request's body says whether it shows a checkout since step 2.
 
 5. **Check eligibility again** with step 1's first line, and **post two comments** with

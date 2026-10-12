@@ -167,9 +167,9 @@ for finding 13. A held fix is read by the plugin pass before the reviewer confir
 ### What a read-only pass did to the session's tree, on #650 (#651)
 
 Under the rule that the plugin pass's subagents work in a worktree that is not the session's.
-Written for this page on 2026-10-12. All of it is by #651's account, which read each subagent's
-transcript on 2026-10-08, and by a comment on it from the session that ran #655's pass. Neither was
-read again here: the transcripts are not in the repository.
+Written for this page on 2026-10-12. All but its last item is by #651's account, which read each
+subagent's transcript on 2026-10-08, and by a comment on it from the session that ran #655's pass.
+Neither was read again here: the transcripts are not in the repository.
 
 - **On #650 every brief said to change nothing, and reviewer 3 moved `HEAD`.** It ran
   `git checkout -q --detach` at 17:25:01 UTC on 2026-10-08, ran `scripts/ship-check.ps1` with
@@ -182,6 +182,9 @@ read again here: the transcripts are not in the repository.
   ran the pass in the shared checkout on a brief that named the commands not to run, and saw no
   checkout, no gate and no message; one reviewer left a `grep` running in the background. That
   is one pass.
+- **On 2026-10-12 the same hook refused the session's own `git worktree add`**, tried once by
+  the session that wrote the rule, inside herdr. This one is not an account: it is that
+  session's own command. The hook's message says the user can run the command with `!`.
 
 ### Commit bodies that a fix made false, on #669 (#671)
 
