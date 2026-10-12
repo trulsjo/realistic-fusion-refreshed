@@ -412,12 +412,12 @@ documentation only. The session set that answer aside then, and since #626 the q
 asked. The session also reads the `CLAUDE.md` paths from `git ls-files`, and takes the pull
 request's body as the summary of the change.
 
-**The plugin pass's subagents work in a worktree that is not the session's** (2026-10-12, #651).
-The five reviewers and the verifier are told to change nothing, and on #650 one reviewer detached
-the session's `HEAD` for eight minutes all the same; [the evidence page has what that pass
-did](code-review-evidence.md#what-a-read-only-pass-did-to-the-sessions-tree-on-650-651). So where
-they work does not rest on the brief alone. The third rule is for a pass that means to edit the
-tree; this is for one told not to, and it adds only where such a pass runs.
+**The plugin pass's subagents work in a worktree that is not the session's, where one can be had**
+(2026-10-12, #651). The five reviewers and the verifier are told to change nothing, and on #650 one
+reviewer detached the session's `HEAD` for eight minutes all the same; [the evidence page has what
+that pass did](code-review-evidence.md#what-a-read-only-pass-did-to-the-sessions-tree-on-650-651).
+So where they work does not rest on the brief alone. The third rule is for a pass that means to edit
+the tree; this is for one told not to, and it adds only where such a pass runs.
 
 - **Each of the six is spawned with the Agent tool's `isolation: "worktree"`**, which gives it a
   checkout of its own. That checkout need not start at the pull request's head, so the brief gives
