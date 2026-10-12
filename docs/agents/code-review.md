@@ -219,6 +219,12 @@ trusts it. A figure, or a claim about a past pull request, issue or commit, is r
 request, issue or commit before the ticket is published or the retrospective's candidate is put
 forward. That makes three kinds of text under one rule: a fix, a ticket and a retrospective.
 
+**A statement that was not read is marked as an account** (Truls, 2026-10-09, #657). It says whose
+account it is and that it was not read again, as #675 does with "by the account of
+`grado-factorio-tools`' `docs/extraction-plan.md`". That is for a source the session could not
+read when it wrote the ticket. A statement that can be read is still read, and the mark does not
+stand in for the reading.
+
 [The ticket and the retrospective that showed
 it](code-review-evidence.md#a-ticket-and-a-retrospective-written-from-memory-637) are on the
 evidence page.
