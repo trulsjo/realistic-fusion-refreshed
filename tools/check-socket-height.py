@@ -496,8 +496,8 @@ def run_halves(halves):
     A half returns what it proved, and returning nothing is a failure rather than a pass -- "the
     body never ran" and "the body ran and proved nothing" are the same silence from outside.
 
-    The PowerShell gates run their halves through Invoke-SelfTestHalves in scripts/factorio-lib.ps1,
-    which is the same idea and shares no code with this. Two files in a second language is not
+    The PowerShell gates run their halves through Invoke-SelfTestHalves in the tools submodule's
+    self-test-halves.ps1, which is the same idea and shares no code with this. Two files in a second language is not
     enough to justify a library between them.
     """
     total = len(halves)
