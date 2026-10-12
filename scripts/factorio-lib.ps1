@@ -1257,9 +1257,15 @@ function Start-ProbeReport {
 
        A probe printed its report and deleted its temp directory, and every figure was then copied
        by hand from output that was nowhere afterwards. This starts a transcript, which holds what
-       the probe writes from here on, whether it ends, throws or exits. The file opens with the
-       command line, the date and the game's version, to match the sentence in a note that names
-       them. The directory is git-ignored and inside no mod, so nothing of it reaches a zip.
+       the probe writes from here on, whether it ends, throws or exits. Under the transcript's own
+       four opening lines the file has the command line, the date and the game's version, to match
+       the sentence in a note that names them. The directory is git-ignored and inside no mod, so
+       nothing of it reaches a zip.
+
+       WHAT IT HOLDS THAT THE PROBE DID NOT PRINT. The five lines this function writes, which go to
+       the console as well. And PowerShell's own: four lines at the head of a transcript, four at
+       its foot, `PS>$global:?` and its answer before the foot of a run that finished, and a
+       `PS>TerminatingError()` line above the error of one that threw.
 
        IT IS CALLED AT THE FOOT OF THIS FILE, for a script named probe-*.ps1 that dot-sources it.
        No probe calls it, so a new probe has it without being told.
@@ -1267,8 +1273,7 @@ function Start-ProbeReport {
        WHAT IT DOES NOT HOLD. A line written before this file is dot-sourced. What a native program
        writes straight to the console and not through the pipeline; the probes pipe or capture what
        they start. And nothing at all when the transcript cannot start, which is a warning and not
-       a failure. And it holds two lines the probe did not print: PowerShell ends the transcript of
-       a run that finished with `PS>$global:?` and its answer. A probe dot-sourced into a session that stays open keeps writing to its report
+       a failure. A probe dot-sourced into a session that stays open keeps writing to its report
        until that session ends; run one with `pwsh -File`, as each probe's help has it. #>
     param([Parameter(Mandatory)] [Management.Automation.InvocationInfo] $Invocation)
     $script  = $Invocation.MyCommand.Path
