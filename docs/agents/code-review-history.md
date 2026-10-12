@@ -173,7 +173,8 @@ One line for each, newest last. The passages above are not edited.
   `CLAUDE.md`'s *What a body has to name* and its example were read against it and left.
 - **2026-10-12, #651.** The fourth rule gained a paragraph and five items: the plugin pass's
   reviewers and its verifier work in a worktree that is not the session's, by the Agent tool's
-  isolation, or in one the session makes where a hook refuses that. Steps 1, 2 and 4 of
-  `/plugin-pass` carry it out. No one ruled on it: the ticket was `ready-for-agent`, and which of
-  the routes its comment lists is used where the isolation is refused is the session's choice,
-  and Truls's to change.
+  isolation, or where a hook refuses that in one the user makes. Steps 1, 2 and 4 of
+  `/plugin-pass` carry it out. The ticket was `ready-for-agent` and the rule's wording is the
+  session's. **Truls ruled on one thing, the same day:** inside herdr, where the hook refuses the
+  session's own `git worktree add` too, the user makes the worktree; of the other three routes
+  put to him, the shared checkout on a strict brief is what the pass falls back to.
