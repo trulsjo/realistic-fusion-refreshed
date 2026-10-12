@@ -32,7 +32,9 @@ pass.
 
 2. **Save the evidence to a file** in the same directory. Which evidence depends on the branch:
 
-   - a branch that records measurements: the raw output of each probe a figure came from;
+   - a branch that records measurements: the raw output of each probe a figure came from. That
+     is the probe's report in `.probe-reports/` (#589); copy it, since the next run with the same
+     arguments replaces it;
    - any other branch: the output of the gates that were run — `scripts/run-gates.ps1` when the
      branch combines more than one ticket, otherwise the gates the change touches. A
      markdown-only branch, one where every path `git diff --name-only --no-renames main...HEAD`

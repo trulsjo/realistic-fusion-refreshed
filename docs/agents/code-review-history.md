@@ -156,3 +156,7 @@ One line for each, newest last. The passages above are not edited.
   The fourth rule also gained a sentence that is not one of his ten decisions: a candidate found
   real or not verified is fixed, or left with its reason written in the pull request's body. It is
   the session's wording, and his to correct.
+- **2026-10-12, #589.** The fourth rule gained a paragraph: a probe's raw output is its last
+  report in `.probe-reports/`, and a figure is checked against that file. Step 2 of the pre-PR
+  review skill carries it out. No one ruled on it; the ticket was `ready-for-agent`, and the
+  wording is the session's.

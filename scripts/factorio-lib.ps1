@@ -1234,3 +1234,64 @@ function Test-SelfTestRunner {
             'duplicate name, a throwing body, an empty list, a failure that names its half, and a ' +
             'copy of the runner that skips one, caught by the floor).')
 }
+
+function Get-ProbeReportName {
+    <# The file a probe's report is kept in: the probe's name and the arguments it was given, so
+       two runs with different arguments keep a report each and a rerun replaces its own.
+       -FactorioExe is left out of the name, being a path on one machine; the report's command
+       line still has it. #>
+    param([Parameter(Mandatory)] [string] $Script, [Collections.IDictionary] $Bound = @{}, [object[]] $Unbound = @())
+    $words = @([IO.Path]::GetFileNameWithoutExtension($Script))
+    foreach ($key in ($Bound.Keys | Where-Object { $_ -ne 'FactorioExe' } | Sort-Object)) {
+        $words += "-$key"
+        if ($Bound[$key] -isnot [switch]) { $words += (@($Bound[$key]) -join ',') }
+    }
+    $name = ((@($words) + @($Unbound)) -join '_') -replace '[^A-Za-z0-9._,=-]', '_'
+    # ponytail: cut at 150 characters, so two long argument lists that agree that far share a file.
+    return $name.Substring(0, [Math]::Min(150, $name.Length)) + '.txt'
+}
+
+function Start-ProbeReport {
+    <# Keeps what a probe prints in .probe-reports/ at the repository's root (#589), so a figure in
+       a research note can be checked against the run it came from without starting the game again.
+
+       A probe printed its report and deleted its temp directory, and every figure was then copied
+       by hand from output that was nowhere afterwards. This starts a transcript, which holds what
+       the probe writes from here on, whether it ends, throws or exits. The file opens with the
+       command line, the date and the game's version, to match the sentence in a note that names
+       them. The directory is git-ignored and inside no mod, so nothing of it reaches a zip.
+
+       IT IS CALLED AT THE FOOT OF THIS FILE, for a script named probe-*.ps1 that dot-sources it.
+       No probe calls it, so a new probe has it without being told.
+
+       WHAT IT DOES NOT HOLD. A line written before this file is dot-sourced. What a native program
+       writes straight to the console and not through the pipeline; the probes pipe or capture what
+       they start. And nothing at all when the transcript cannot start, which is a warning and not
+       a failure. And it holds two lines the probe did not print: PowerShell ends the transcript of
+       a run that finished with `PS>$global:?` and its answer. A probe dot-sourced into a session that stays open keeps writing to its report
+       until that session ends; run one with `pwsh -File`, as each probe's help has it. #>
+    param([Parameter(Mandatory)] [Management.Automation.InvocationInfo] $Invocation)
+    $script  = $Invocation.MyCommand.Path
+    $bound   = $Invocation.BoundParameters
+    $unbound = @($Invocation.UnboundArguments)
+    $root    = Split-Path -Parent $PSScriptRoot
+    $path    = Join-Path $root ".probe-reports/$(Get-ProbeReportName -Script $script -Bound $bound -Unbound $unbound)"
+    $given   = @(foreach ($key in $bound.Keys) { "-$key"; if ($bound[$key] -isnot [switch]) { @($bound[$key]) -join ',' } }) + $unbound
+    $version = try { "$(& (Resolve-FactorioExe -Path $bound['FactorioExe']) --version 2>$null | Select-Object -First 1)" }
+               catch { "not read: $($_.Exception.Message)" }
+    try {
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $path) | Out-Null
+        Start-Transcript -LiteralPath $path -UseMinimalHeader -Force | Out-Null
+    } catch { Write-Warning "This run's report is not kept: $($_.Exception.Message)"; return }
+    Write-Host "probe report  $([IO.Path]::GetRelativePath($root, $path).Replace([IO.Path]::DirectorySeparatorChar, '/'))"
+    Write-Host "  command     pwsh -File scripts/$(Split-Path -Leaf $script) $($given -join ' ')".TrimEnd()
+    Write-Host "  date        $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss zzz', [cultureinfo]::InvariantCulture))"
+    Write-Host "  game        $version"
+    Write-Host ''
+}
+
+$rfSourcedBy = @(Get-PSCallStack)[1]
+if ($rfSourcedBy -and $rfSourcedBy.ScriptName -and (Split-Path -Leaf $rfSourcedBy.ScriptName) -like 'probe-*.ps1') {
+    Start-ProbeReport -Invocation $rfSourcedBy.InvocationInfo
+}
+Remove-Variable rfSourcedBy

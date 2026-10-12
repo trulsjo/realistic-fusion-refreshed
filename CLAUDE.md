@@ -164,7 +164,9 @@ advisory**: `main` has no branch protection, so a red one blocks no merge.
 `scripts/probe-*` are **not** gates, and `run-gates.ps1` runs none of them. A probe asserts nothing
 and answers a question a decision is waiting on — exit 0 means it ran and reported, never that the
 answer was the hoped-for one. Its findings belong in `docs/research/`, and it stays committed so the
-next engine version can be asked the same question.
+next engine version can be asked the same question. Since #589 a `probe-*.ps1` that sources
+`scripts/factorio-lib.ps1` leaves what it last printed in the git-ignored `.probe-reports/`, in a
+file named for the probe and its arguments: a figure in a note is checked against that file.
 
 ## The rule that matters most here
 
