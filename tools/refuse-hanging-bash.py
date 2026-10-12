@@ -40,7 +40,8 @@ WHAT IS LET THROUGH ON PURPOSE:
   - `<<` inside a quoted argument. Quoted text is blanked before anything is looked for, so
     `echo "a << b"` holds no heredoc and no command of its own.
   - A here-string, `<<<`. It feeds the command a line and ends, so nothing hangs.
-  - A heredoc of HEREDOC_LINES lines or fewer that feeds the command. It does not hang.
+  - A heredoc of HEREDOC_LINES lines or fewer that feeds the command. It does not hang. On
+    Windows it is refused all the same when the command holds a pair of backslashes (#682).
 
 A LONG HEREDOC IS REFUSED TOO (#666), though it does not hang: one whose body is over
 HEREDOC_LINES lines, 60, counted without the line that ends it. The trouble a heredoc has here is
@@ -133,11 +134,14 @@ WHAT IT CANNOT SEE:
     `timeout` is skipped with its `-s` and `-k` values; another option of its that takes a
     value is not known.
   - a command that hangs for any reason other than its stdin.
+  - a pair of backslashes, when this script is run by a Python that does not report "win32" on
+    Windows. One built for MSYS or Cygwin is said to report its own name; none was tried.
 
 WHAT IS KEPT (#660). Each refusal appends one line of JSON to `.claude/refused-bash.log` at the
 root of the repository this script is in: the time, the reason and the command. `.claude/*` is
 git-ignored, so the log is this machine's. It is where a false refusal is counted from: read the
-commands there and see which would not have hung, or which heredoc would have run. A command let
+commands there and see which would not have hung, which heredoc would have run, or which pair of
+backslashes was in one of the three shapes that run as written. A command let
 through writes nothing, so a false pass is not in it; the hook does not see how a command ended.
 A log that cannot be written is passed over, and the call is refused just the same.
 
@@ -333,7 +337,7 @@ CASES = [
     ("python - <<'PY'\nprint(r\"\\s+\")\nPY", False),
     ("sed 's/a\\\\/b/' f.txt", True),                                    # and on a command line
     ("echo 'p\\\\\"q' # a\\\\b", True),                                  # refused though it would run
-    ("echo a \\\n  \\\n  b", False),                # a line's last character and the next line's first
+    ("echo a \\\n\\ b", False),                     # a line's last character and the next line's first
 ]
 
 

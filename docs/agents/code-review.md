@@ -295,8 +295,9 @@ definition, and a review handed those three things is the pre-PR review whatever
 
 **A probe's raw output is its last report, in `.probe-reports/`** (2026-10-12, #589). A
 `scripts/probe-*.ps1` that sources `scripts/factorio-lib.ps1` leaves what it printed there, in a
-file named for the probe and its arguments. The file opens with the command line, the date and the
-game's version, and a run with the same arguments replaces it. The directory is git-ignored, so a
+file named for the probe and its arguments. Under the four lines PowerShell opens a transcript
+with, the file has the command line, the date and the game's version, and a run with the same
+arguments replaces it. The directory is git-ignored, so a
 report is on the machine that ran the probe and nowhere else. The session hands the reviewer the
 report of each probe a figure came from, and **a figure is checked against that file**: the
 reviewer does not start the game for it. A report whose arguments, date or game version are not the

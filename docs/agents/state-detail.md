@@ -9,14 +9,14 @@ gained each check and by which ticket, what each check cannot see, and what was 
 self-test is being changed, and when a sentence of the State section is wanted with its date or its
 ticket. Working on a mod does not need it.
 
-**Each passage below is as it stood in `CLAUDE.md` when it was moved**, word for word, so "this
-file" and "here" in one mean `CLAUDE.md`, and "the paragraph above" means the one that stood above
-it there. Each heading says which paragraph of that section it was. Four of the five were whole
-paragraphs. Where the State section keeps a shorter paragraph in a passage's place, that paragraph
-is what is current and the passage here is its detail.
+**Each of the five passages below is as it stood in `CLAUDE.md` when it was moved**, word for word,
+so "this file" and "here" in one mean `CLAUDE.md`. Four of the five were whole paragraphs. Where the
+State section keeps a shorter paragraph in a passage's place, that paragraph is what is current and
+the passage here is its detail. **The passages are not edited.**
 
-**A change to a gate adds its sentence here**, to the passage about that gate, in the commit that
-changes the gate. `CLAUDE.md` changes only when what the gate proves in a line has changed.
+**A change to a gate adds a dated line here**, under *Added since 2026-10-12* at the foot, in the
+commit that changes the gate. `CLAUDE.md` changes only when what the gate proves in a line has
+changed.
 
 ## What each gate checks, and since when
 
@@ -153,3 +153,7 @@ three to move a spec field a density curve depends on, which is why `control.lua
 keyed on confinement time AND heating power; the plant-efficiency ladder is the odd one out there,
 reaching `step()` as an argument and never as a spec field (ADR 0020 decision 5). All three resolve
 through one rung walk since #424.
+
+## Added since 2026-10-12
+
+One line for each change to a gate, newest last, with its date and its ticket. None yet.
