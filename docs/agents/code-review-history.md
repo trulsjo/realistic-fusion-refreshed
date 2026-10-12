@@ -166,3 +166,8 @@ One line for each, newest last. The passages above are not edited.
   request opens. Holding moves the confirmation and skips none of it, and the plugin pass reads the
   held fix first. A defect from the reviewer's unchecked list still gets a message of its own. Step
   4 of the pre-PR review skill carries it out, and a score now decides nothing in that skill.
+- **2026-10-12, #657: Truls's request of 2026-10-09.** The second rule's paragraph on a ticket's
+  evidence gained the alternative: a statement that was not read from its source is marked as an
+  account. Its own sentences were not changed, so there is no old wording to keep. The
+  commit-body rule the same ticket names is the shared commit convention's and is stated nowhere
+  here; `CLAUDE.md`'s *What a body has to name* and its example were read against it and left.
