@@ -141,12 +141,11 @@ pass.
 
    The confirmation arrives as step 3's report does.
 
-   **A new finding at 75 or over gets this step again. One under 75 is fixed, committed and
-   held** (#643): send no message for it, and write it `yes, not confirmed` in step 6.
-   `docs/agents/code-review.md`, in the same section, says when its fix is confirmed.
+   **A new finding is fixed, committed and held, whatever it scores** (#643, #653): send no
+   message for it, and write it `yes, not confirmed` in step 6. `docs/agents/code-review.md`, in
+   the same section, says when its fix is confirmed.
 
-   Done when the reviewer has answered for every finding of its review and for each new one at 75
-   or over.
+   Done when the reviewer has answered for every finding of its review.
 
 5. **Answer for each thing the reviewer said it did not check** (#636). The same section of
    `docs/agents/code-review.md` says how an item is checked and what the pull request's body
@@ -223,4 +222,4 @@ pass.
 ## What this does not do
 
 It briefs no scorer and no verifier. The reviewer scores its own findings, and every finding is
-reported whatever it scores; step 4 has the one thing a score decides.
+reported whatever it scores, and a score decides nothing in these steps (#653).
