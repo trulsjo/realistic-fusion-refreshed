@@ -13,6 +13,7 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | `rf-reactor` `energy_consumption`, normal → legendary | 1 W → 2.5 W | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
 | `rf-lithium-blanket` `inventory_size`, normal → legendary | 100 → 250 | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
 | `rf-heater` `crafting_speed` and `energy_usage`, normal → legendary | 1 → 2.5; 5 MW → 5 MW | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
+| `rf-heat-exchanger` `energy_consumption`, normal → legendary | 90 MW → 225 MW | 2026-10-12 | 2.0.77 | n/a (prototype getter; does not move with research) | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
 | `rf-hc-exchanger` `energy_consumption`, normal → legendary | 400 MW → 1000 MW | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
 | `rf-hc-turbine` `max_power_output` and `fluid_usage_per_tick`, normal → legendary | 58.2 MW → 145.5 MW; 10 → 25 | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
 | `rf-direct-energy-converter` `max_power_output` and `fluid_usage_per_tick`, normal → legendary | 100 MW → 250 MW; 1.6667 → 4.1667 | 2026-08-21 | 2.0.77 | not stated | [Power](#power--realistic-fusion-refreshedprototypesentitieslua) |
@@ -433,7 +434,8 @@ read at all five levels; only the two ends are shown, and "flat" means all five 
 | `rf-heater` | `assembling-machine` | **`crafting_speed`** | 1 | **2.5** | No. Plasma supply, which ADR 0016 makes a player lever anyway |
 | | | `energy_usage` | 5 MW | **5 MW** | — (`quality_affects_energy_usage` is `false`) |
 | | | fluid boxes | 1000/1000/100/100 | flat | — |
-| `rf-heat-exchanger` | `boiler` | **`energy_consumption`** | 40 MW | **100 MW** | No. **This row predates #227**: it was read on 2026-08-21 at a 40 MW base, and the base has been 90 MW since 2026-09-10 — see the callout under this table. The legendary figure at that base is not measured; [#609](https://github.com/trulsjo/realistic-fusion-refreshed/issues/609) is to measure it (marked 2026-10-06, #615) |
+| `rf-heat-exchanger` | `boiler` | **`energy_consumption`** | 40 MW | **100 MW** | No. **This row predates #227**: it was read on 2026-08-21 at a 40 MW base, and the base has been 90 MW since 2026-09-10 — see the callout under this table. The row below replaced it on 2026-10-12 ([#609](https://github.com/trulsjo/realistic-fusion-refreshed/issues/609)) |
+| | | **`energy_consumption`**, re-read 2026-10-12 | 90 MW | **225 MW** | No. Read off the prototype at all five levels on 2026-10-12, Factorio 2.0.77 (#609): 90 / 117 / 144 / 171 / 225 MW — see the callout under this table |
 | | | fluid boxes | 200 / 200 | flat | — |
 | `rf-hc-exchanger` | `boiler` | **`energy_consumption`** | 400 MW | **1000 MW** | No |
 | | | fluid boxes | 1000 / 1000 | flat | — |
@@ -456,6 +458,16 @@ read at all five levels; only the two ends are shown, and "flat" means all five 
 > on 2026-08-21 rather than rewritten to a number nobody measured — **what this note establishes is
 > the factor, 2.5x, and that is what survives the change.** `rf-hc-exchanger` is untouched at
 > 400 MW, so the two exchangers' bases now differ by 4.44x where this table was taken at 10x.
+>
+> **The 225 MW was measured on 2026-10-12** (#609), on Factorio 2.0.77 (build 84539) with bundled
+> `quality` alone, by `pwsh -File scripts/probe-quality.ps1`. `get_max_energy_usage` on the
+> `rf-heat-exchanger` prototype returned, in joules per tick from normal to legendary,
+> 1 500 000, 1 949 999.9284744, 2 400 000.0357628, 2 849 999.9642372 and 3 750 000. Times 60 ticks
+> that is 90, 117.00, 144.00, 171.00 and 225 MW: the two ends are exact, and the three between
+> are off by under 5 W, the way *The floating point does not come back clean* describes. So the
+> factor is 2.5x at the 90 MW base as it was at 40 MW, and the figure is the one predicted. The
+> same run read `rf-hc-exchanger` at 6 666 666.6666667 and 16 666 666.666667 J per tick, which is
+> the 400 MW and 1000 MW of its row.
 
 ### Core — `realistic-fusion-refreshed-core/prototypes/entities.lua`
 
