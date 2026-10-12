@@ -115,8 +115,12 @@ since #456 the third-party sets come from the shared `fetch-mods.ps1`, pinned in
 same step the commit hook already asks for — and the fetcher caches under `.mod-cache/<set>` of the
 directory it runs in, so run it from the repository root. Since #458 `factorio-lib.ps1` takes the
 same harness for every script that sources it, so every gate here needs the submodule, the one that
-starts no game (`ship-check.ps1`) included. Since #462 none of the harness's functions
-is defined a second time in this repo.
+starts no game (`ship-check.ps1`) included. From #462 until #608 none of the harness's functions
+was defined a second time in this repo. **Five are again since #608's pin**, `733821b`
+(2026-10-12): `Get-ModLinks`, `Get-LocaleFailure`, `Invoke-FactorioStep`, `Invoke-SelfTestHalves`
+and `Test-SelfTestRunner`, which the tools repository took from `scripts/factorio-lib.ps1`
+(grado-factorio-tools#100). That file defines its own after it sources the harness, so its own are
+the ones that run; #675 deletes them.
 
 **`scripts/run-gates.ps1` runs them all in one step** (#567): the Lua suites, `ship-check.ps1`,
 the default `load-check.ps1` and every `scripts/check-*.ps1` it finds, one at a time, one line
