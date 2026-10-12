@@ -96,9 +96,11 @@ Four files do the work. None of them is what the description implies.
 Then `prototypes/override-final/negative-quality.lua`, at the data-final-fixes stage, runs one line
 over **every** quality in the game:
 
-    for _, quality in pairs(data.raw.quality) do
-        quality.level = quality.level + 3
-    end
+```lua
+for _, quality in pairs(data.raw.quality) do
+    quality.level = quality.level + 3
+end
+```
 
 So the negatives are transient. They exist only between two prototype-stage files and are gone before
 the stage ends. Final levels:

@@ -35,8 +35,9 @@ about whether a change is safe. What each proves, in a line:
   the two statements ADR 0003 and ADR 0006 oblige them to make, the credits, the licence files and
   the assets dependency floor (ADR 0023). It also checks prose no other gate can see: that a script
   with a `.SYNOPSIS` answers `Get-Help`, the two citation rules under Conventions, the rows of a
-  research note's `## Current figures` table, the cell counts of markdown tables, and the width of
-  the files `docs/agents/code-review.md` names as wrapped.
+  research note's `## Current figures` table, what the shared Markdown check reads in every
+  tracked `.md` as staged (#658), and the width of the files `docs/agents/code-review.md` names as
+  wrapped.
 - **`scripts/locale-check.ps1` and `scripts/name-check.ps1`** only dump prototypes and create no
   map, so a pass there says nothing about runtime.
 
@@ -311,7 +312,14 @@ the same check over a pull request's commits and over each push to `main`, so th
 longer depends on every clone opting in. The hook is still the only thing that stops a bad message
 before it is written; the workflow reports one after it is pushed.
 
-**It exists because the wrap rule had rotted.** Measured on 2026-09-06 by
+**A second hook, `.githooks/pre-commit`, reads the staged Markdown** (#658). It runs the tools
+submodule's `scripts/markdown-check.ps1` on the staged `.md` files as staged, and refuses the
+commit on emphasis or a code span left open, a table row whose column count is not its header's,
+or a link to a file git does not track. The same two steps install it, and a clone that skipped
+one is told the Markdown was not checked. `ship-check.ps1` runs the same check over every tracked
+`.md`, so the workflow holds a clone without the hook to it.
+
+**The `commit-msg` hook exists because the wrap rule had rotted.** Measured on 2026-09-06 by
 `commit-check.ps1 -Range '-50 main'`: 21 of the last 50 commits fail, on 183 body lines and 5
 subject lines over 72, the longest subject being 82. History is left alone; the hook stops it
 growing. `-Range origin/main..HEAD` checks a branch before a pull request, and `-SelfTest` proves

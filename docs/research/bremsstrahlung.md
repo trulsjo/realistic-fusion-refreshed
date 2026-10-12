@@ -209,8 +209,8 @@ fusion systems not in thermodynamic equilibrium", *Physics of Plasmas* **4**, 10
 (21):
 
 > The bremsstrahlung power loss density, including relativistic corrections, is given in [ref 1]
-> `P_brem = 1.69 × 10⁻³² n_e² √T_e [ (Σᵢ Zᵢ² nᵢ / n_e)(1 + 0.7936 T_e/m_ec² + 1.874 (T_e/m_ec²)²)
->  + (3/2) T_e/m_ec² ] W/cm³`,
+> `P_brem = 1.69 × 10⁻³² n_e² √T_e [ (Σᵢ Zᵢ² nᵢ / n_e)(1 + 0.7936 T_e/m_ec² + 1.874 (T_e/m_ec²)²) +
+>  (3/2) T_e/m_ec² ] W/cm³`,
 > in which the electron temperature `T_e` and rest energy `m_e c²` are in eV.
 
 The two disagree, and by more as the plasma gets hotter:
