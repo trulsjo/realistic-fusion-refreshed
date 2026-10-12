@@ -202,8 +202,8 @@ that fix changed is read again, and the body names the head after it.
 is one whose every changed line differs from the line it replaces in digits alone, or in a number
 written as a word, where the number counts rows, cases, findings, files or commits. The session
 commits it, sends the reviewer no message for it, and says in the body's line for the reading that
-this fix was not confirmed. No later message confirms it: unlike a fix held under #643, nothing
-follows the reading. A fix that changes any other word is a new claim and keeps its message.
+this fix was not confirmed. No later message confirms it: unlike a fix held under #643 and #653,
+nothing follows the reading. A fix that changes any other word is a new claim and keeps its message.
 
 The reason is what a message costs. On #664, the first use of the reading, confirming one changed
 cell cost 669 308 tokens over three requests, about what confirming a round of fixes does. The
@@ -329,20 +329,22 @@ pre-PR review, and the confirmation had passed it.
 **A finding that the reviewer raises while it confirms the fixes has its own fix confirmed with the
 plugin pass's fixes, whatever it scores** (2026-10-08, #643; decided by Truls on 2026-10-12,
 settling #653). The session fixes it and sends no message for it. The pull request is opened with
-that fix marked `yes, not confirmed`, and the session changes the mark when the reviewer answers
-for it after the plugin pass. Until #653 a finding at 75 or over was the exception and had its fix
+that fix marked `yes, not confirmed`, and the session changes the mark when the reviewer answers for
+it after the plugin pass. Until #653 a finding at 75 or over was the exception and had its fix
 confirmed before the pull request opened. Holding it moves the confirmation and skips none of it,
-and the plugin pass reads the held fix first: on #650 it raised a finding against one. Where a
-later message's diff holds a waiting fix as well, the reviewer answers for both and nothing waits.
-Where the plugin pass leaves nothing to fix, no message
-for its fixes is sent, and the waiting fix gets a message of its own then. A finding raised in the
-confirmation of the plugin pass's fixes has no later message to wait for, and its fix is confirmed
-as before. So is a defect that an item of the reviewer's unchecked list turns up, whoever finds it:
-its fix gets a message of its own.
+and the plugin pass reads the held fix first: on #650 it raised a finding against one. Where a later
+message's diff holds a waiting fix as well, the reviewer answers for both and nothing waits. Where
+the plugin pass leaves nothing to fix, no message for its fixes is sent, and the waiting fix gets a
+message of its own then. A finding raised in the confirmation of the plugin pass's fixes has no
+later message to wait for, and its fix is confirmed as before. So is a defect that an item of the
+reviewer's unchecked list turns up, whoever finds it: its fix gets a message of its own.
 
 The reason is what a message costs: the reviewer's whole context again, for every request it makes
 in answering. On #642 one such message, for a finding scored 25, cost 309 042 tokens; [the evidence
-page](code-review-evidence.md#what-one-message-cost-on-641-and-642-643) has it beside #641's.
+page](code-review-evidence.md#what-one-message-cost-on-641-and-642-643) has it beside #641's, and
+[what holding every finding would have
+cost](code-review-evidence.md#what-holding-every-finding-would-have-cost-653) on those two and on
+#650.
 
 **Its findings go in the pull request's body, every one of them**, each with its score and whether
 it was fixed. No pull request exists when they are made, so the body is the first place that can
