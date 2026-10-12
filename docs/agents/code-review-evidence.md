@@ -1,11 +1,11 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but five was part of that file and is as it stood there, so "this file" in one is `code-review.md`,
+but six was part of that file and is as it stood there, so "this file" in one is `code-review.md`,
 and "this rule", "this paragraph" and "the paragraph above" are that file's. All but one of those
 were moved on 2026-10-10 (#672), and the one on what the threshold dropped on 2026-10-11 (#626). The
-five written for this page are the ones for #670 and #671, the one on the verdict of 2026-10-10, the
-one on the wrap width and the one on what the scores decided. What each pull request's two passes
+six written for this page are the ones for #653, #670 and #671, the one on the verdict of
+2026-10-10, the one on the wrap width and the one on what the scores decided. What each pull request's two passes
 found and cost is on a third page, [`review-figures.md`](review-figures.md).
 
 **Read this page** when a rule is revisited or doubted, and when a sentence of `code-review.md`
@@ -147,6 +147,22 @@ in answering. Read from the two reviewers' transcripts on 2026-10-08, over all t
 Each of those two messages carried one finding, raised in the confirmation before it, and the
 message for the plugin pass's fixes was still to come. Under this rule #642's would not have been
 sent. #641's would: its finding scored 75.
+
+### What holding every finding would have cost (#653)
+
+Written for this page with Truls's decision of 2026-10-12, that a finding raised in a confirmation
+is held whatever it scores. Under it #641's message would not have been sent either. The table is
+#653's, which put three options to him:
+
+| Pull request | The message for one finding raised in a confirmation | Its score | Sent with the exception at 75 | Sent with every finding held |
+|---|---|---|---|---|
+| #641 | 619 654 tokens | 75 | yes | no |
+| #642 | 309 042 tokens | 25 | no | no |
+| #650 | not sent: findings 13 and 14 were held | 25 each | no | no |
+
+The first two rows are the section above. On #650, the first use of the hold, both held fixes were
+confirmed with the plugin pass's fixes, and the plugin pass raised a finding, its third, against
+the fix for finding 13. A held fix is read by the plugin pass before the reviewer confirms it.
 
 ### Commit bodies that a fix made false, on #669 (#671)
 

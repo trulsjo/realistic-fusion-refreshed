@@ -125,6 +125,6 @@ word `tools/review-usage.py` sorts it by: `plugin pass #<n>: reviewer 2, shallow
 7. **Fix, and have the pre-PR reviewer confirm.** `docs/agents/code-review.md` says, in the
    fourth rule, what becomes of a candidate found real or not verified, who confirms the fixes
    and from which diff, and that the class of a finding the pre-PR review missed is named in the
-   pull request. A fix held under #643 is in that diff.
+   pull request. A fix held under #643 and #653 is in that diff.
 
 Then run step 7 of `/pre-pr-review`, the reading after the last fix commit.
