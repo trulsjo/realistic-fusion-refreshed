@@ -1603,7 +1603,7 @@ Write-Host 'The clean break and the quality gap are stated in both code mods and
 Write-Host 'licence and the scope rule ship inside all three; the assets floor matches, no code mod'
 Write-Host 'ships art, every accent named for a fluid still carries that fluid''s own colour, and'
 Write-Host 'no prose cites a self-test half by position, every Current figures row still names a'
-Write-Host 'heading and a figure its note has, the staged Markdown passes the shared check, and'
+Write-Host 'heading and a figure its note has, every tracked Markdown file passes the shared check as staged, and'
 Write-Host 'no prose line of the wrapped files is over the width they are wrapped at or splits a'
 Write-Host 'grouped figure across its end.'
 exit 0

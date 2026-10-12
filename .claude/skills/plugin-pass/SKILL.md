@@ -27,7 +27,9 @@ git worktree remove "<scratch>/plugin-pass-<n>"
 ```
 
 `<where>` in the two briefs below is then "Your own worktree is your working directory" or "Work
-only in `<that directory>`: start every command there".
+only in `<that directory>`: start every command there". Either way it ends: "It has no
+submodule contents and no git-ignored file. Read one of those from `<this session's checkout>`
+by its full path, and run no command there."
 
 ## Steps
 
@@ -93,7 +95,7 @@ only in `<that directory>`: start every command there".
    noticed and not raised is a mention and goes to no verifier. Two reviewers raising the same
    fault is one candidate. Letter them A, B, C.
 
-   **No candidate, no verifier**: go to step 5.
+   **No candidate, no verifier**: do the last two lines of step 4, then go to step 5.
 
 4. **Spawn one verifier for all of them**, on Sonnet. Its brief:
 
