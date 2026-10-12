@@ -2,7 +2,15 @@
 
 Loads when working under `scripts/`. The root `CLAUDE.md` says which gates exist and when to run
 them; this file says how two gates' self-tests are built, where the build tool's third one went
-(#466), and the two traps one of them already fell into.
+(#466), the two traps one of them already fell into, and what a `ship-check.ps1` result describes
+(#687).
+
+**`scripts/ship-check.ps1` reads the working tree as each section reaches it, so an edit made during
+a run can make it pass on a tree that fails** (#687). Its result describes the files as each section
+found them, not a commit. Section 12 reads the wrapped files in the last second of a run. On #685 a
+run started on 7fc4224, whose evidence page had a line of 113 characters, reported 233 checks and 0
+failures, because the line was rewrapped while the run was going; the same tree with no edit during
+the run fails on that line.
 
 **Since #280 `scripts/check-hc.ps1` carries a `-SelfTest` too, and it is the second gate here that
 starts the game to prove itself.** Its four halves are about the neutronic plant that section builds
