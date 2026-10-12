@@ -83,7 +83,7 @@ one to three digits and the second exactly three; the section comment says why. 
 sections it runs on a plain invocation are unchanged and still have no self-test, for the reason its
 help block gives. Run them rather than reasoning about whether a change is safe. How two of the
 self-tests are built, where the packer's went, and the two traps the `-FromZips` one already fell
-into, and what a `ship-check.ps1` result describes (#687), are in `scripts/CLAUDE.md`.
+into, is in `scripts/CLAUDE.md`.
 
 ## What the harness shares
 
@@ -171,3 +171,6 @@ One line for each change to a gate, newest last, with its date and its ticket.
   Run by hand on 2026-10-12 with a staged page linking to a file git does not track, the hook
   exited 1 and named the page and its line 3. In a scratch repository with the hook and no
   submodule, it said the staged Markdown was NOT checked and the commit went through.
+- 2026-10-12, #687: `scripts/CLAUDE.md` says that `ship-check.ps1` reads its files as each section
+  reaches it, the working tree for every section but 11, so an edit made during a run can make it
+  pass on a tree that fails.
