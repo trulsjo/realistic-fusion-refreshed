@@ -37,6 +37,7 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | Heaters a settled D-T reactor eats | 9.18 heaters | not stated | none (pure simulation) | fully researched — 60 s, 75 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
 | Tritium a settled D-T reactor burns | 12.97 u/s | not stated | none (pure simulation) | unresearched — 30 s, 50 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
 | Tritium a settled D-T reactor burns | 11.47 u/s | not stated | none (pure simulation) | fully researched — 60 s, 75 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
+| Deuterium a settled D-D reactor burns (#623) | 0.548 u/s | 2026-10-13 | none (pure simulation) | unresearched — 30 s, 50 MW | [The equilibrium that isn't](#the-equilibrium-that-isnt) |
 | Tritium a settled D-D reactor breeds | 0.137 u/s | not stated | none (pure simulation) | unresearched — 30 s, 50 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
 | Tritium a settled D-D reactor breeds, top confinement rung at base heating | 0.627 u/s | not stated | none (pure simulation) | 60 s, 50 MW | [What research does to it: two ladders, and a grid rather than a line](#what-research-does-to-it-two-ladders-and-a-grid-rather-than-a-line) |
 | Tritium a settled D-D reactor breeds, top heating rung at entry confinement | 0.393 u/s | not stated | none (pure simulation) | 30 s, 75 MW | [What research does to it: two ladders, and a grid rather than a line](#what-research-does-to-it-two-ladders-and-a-grid-rather-than-a-line) |
@@ -97,7 +98,7 @@ note, which `GLOSSARY.md` names and which a heater-fed reactor is not (#109):
 | | settles at | Q | thermal out | burn |
 |---|---|---|---|---|
 | ~~D-D, 20 min~~ | ~~8.77×10⁸ °C~~ | ~~2.14~~ | ~~133 MW~~ | ~~3.7 u/s~~ |
-| **D-D, 20 min (#52)** | **2.42×10⁸ °C** | **0.32** | **56.1 MW** | 1.0 u/s |
+| **D-D, 20 min (#52)** | **2.42×10⁸ °C** | **0.32** | **56.1 MW** | ~~1.0 u/s~~ **0.548 u/s** |
 | ~~D-T, 1 min~~ | ~~2×10⁹ °C~~ — the clamp *as it then was; 3.25×10⁹ since #58* | ~~96~~ | ~~4 127 MW~~ | ~~34 u/s~~ |
 
 > **The D-T row is struck as pre-#52 and at the old ceiling (marked 2026-10-06, #613).** Its Q, its
@@ -106,12 +107,16 @@ note, which `GLOSSARY.md` names and which a heater-fed reactor is not (#109):
 > minute** ("Both readings of the supply ratio" below), and Q 73.1 quoted beside that temperature in
 > the blockquote under the next table. No thermal output at one minute is on record since.
 >
-> **The D-D row's 1.0 u/s is flagged, not struck (2026-10-06, #613).** It counts plasma, and a unit
-> of D-D plasma is a unit of deuterium, one for one — recipe `rf-d-d-plasma` in
+> **The D-D row's 1.0 u/s is struck: the settled burn is 0.548 u/s (2026-10-13, #623).** It counts
+> plasma, and a unit of D-D plasma is a unit of deuterium, one for one — recipe `rf-d-d-plasma` in
 > `realistic-fusion-refreshed/prototypes/recipes/d-d.lua`. So it is the same quantity as the
-> **0.548 u/s of deuterium** "Both readings of the supply ratio" gives for the same settled reactor,
-> and the two disagree. 0.548 is the one that section ties to the 0.137 u/s of tritium
-> `tests/test-reactor-logic.lua` pins; what produced 1.0 is not on record.
+> **0.548 u/s of deuterium** "Both readings of the supply ratio" gives for the same settled reactor.
+> `M.settle` in `realistic-fusion-refreshed/scripts/reactor-logic.lua`, run on 2026-10-13 at the
+> shipped constants with the box full, nothing researched and unlimited power, gives 0.548050 u/s at
+> twenty minutes, and the same at sixty. The same run gives the row's other three cells: 2.4222×10⁸ °C,
+> Q 0.3205 and 56.121 MW. No horizon and no fill of that run gives 1.0: it burns 0.426 u/s at one
+> minute, and a half-full box settles at 0.708. What produced 1.0 is not on record.
+> `tests/test-reactor-logic.lua` pins 0.548 since this ticket, beside the 0.137 u/s of tritium.
 
 D-D balances: heating plus alpha self-heating against the confinement loss, partway up the curve.
 D-T does not. At n = 10²⁰ m⁻³ and τ_E = 30 s this reactor passes the Lawson criterion for D-T by
@@ -352,8 +357,8 @@ of heating. The grid below carries the other twenty-three.
   **13.0 u/s of tritium**.
 - A settled D-D reactor burns **0.548 u/s** of deuterium and breeds a quarter of that back as
   tritium: **0.137 u/s**. *(Deuterium and D-D plasma are one count — recipe `rf-d-d-plasma` is one
-  for one — so this is the quantity the equilibrium table's D-D row gives as 1.0 u/s, and the two
-  disagree. See the note under that table; flagged 2026-10-06, #613.)*
+  for one — so this is the quantity the equilibrium table's D-D row gave as 1.0 u/s. That cell is
+  struck and 0.548 stands: see the note under that table, 2026-10-13, #623.)*
 
 **94.7 D-D reactors feed one D-T reactor** — the supply ratio **per saturated reactor**; per heater
 it is 9.12. Together that is 8 465 MW from 95.7 reactors, **88.5 MW
