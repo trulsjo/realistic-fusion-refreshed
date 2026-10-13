@@ -637,6 +637,11 @@ exchanger.icons = { { icon = rendered.icon("heat-exchanger"), icon_size = 64 } }
 --     states are measured the same way and the other 76 are not. All twenty sit on the fed model:
 --     docs/research/exchanger-coverage.md, "The fed reactor, one heater".
 --
+--     THE 76 IS THE COUNT ON ONE HEATER (marked 2026-10-13, #620). On any fuel line it is 75 of
+--     the ninety-six: confinement and plant efficiency at rung 3 each is measured on four heaters
+--     only, which makes twenty-one distinct states. That note's Current figures table has the
+--     count, made 2026-10-06 (#615), and the next paragraph here has that state's reading.
+--
 --     THE SAME TABLE READS 103 MW AT TWO HEATERS AND IT SATURATES THERE -- radiation-free, like its
 --     one-heater cell, and unre-measured at two -- so a player who over-feeds
 --     one reactor outruns one exchanger. bench-mod-links.ps1 runs FOUR heaters by design -- its

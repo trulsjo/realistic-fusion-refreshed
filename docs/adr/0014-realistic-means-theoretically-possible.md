@@ -192,6 +192,18 @@ project rather than a state to be avoided.
   density and confinement time and stays ignited with the radiation term counted; the term moves its
   equilibrium to 3.26×10⁹ K, still above the int32 ceiling that the clamp actually rests on.
 
+  > **"Still above the int32 ceiling that the clamp actually rests on" is retired (marked
+  > 2026-10-13, #620).** When this was written `max_temperature_c` was 2×10⁹ °C and the reason
+  > given for it was that a circuit signal is an int32. Both went on 2026-08-25 under
+  > [ADR 0025](0025-a-plasma-temperature-ships-in-kilodegrees.md): #57 rescaled the signal to
+  > kilodegrees and #58 raised the ceiling to 5×10⁹ °C. The 3.26×10⁹ K stands and is under that
+  > ceiling, so no clamp holds D-T now; the block at the head of
+  > [`bremsstrahlung.md`](../research/bremsstrahlung.md) says both. The same goes for "the clamp",
+  > `max_temperature_c` and "the pinned temperature reading the D-T tier has" in the bullet on the
+  > slope above: each is the 2×10⁹ ceiling, and the D-T reading is not pinned since. Where a D-D
+  > reactor far up the ladder ends against the 5×10⁹ ceiling, this ADR does not say. **The decision
+  > does not rest on any of them**: the Decision section above names no ceiling and no signal.
+
 - **This is a lens for future tiers, not only a verdict on D-D.** D-He3 and He3-He3 (#31) are far
   harder reactions than D-T, and this ADR says in advance that they are allowed to arrive
   net negative and be researched into viability, rather than being quietly given whatever

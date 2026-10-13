@@ -121,10 +121,18 @@ and **two of them are one `M.fuels` row each with no model change whatever**:
   temperature, but on the model **as it ships today**, radiation-free, it reaches **Q 16.6** at the
   clamp in `rf-aneutronic-reactor` against the shipped He3-He3 tier's Q 1.31. It also has a prior
   implementation in this mod's own lineage, and that implementation gave it the largest fudge factor
-  of seven.
+  of seven. (**Marked 2026-10-13, #620**: "as it ships today" was true when this was written and
+  stopped being true on 2026-08-21, when #52 added the radiation term. Q 16.6 and the He3-He3
+  tier's Q 1.31 are both radiation-free, and both at the 2×10⁹ K clamp #58 retired;
+  `tests/test-further-reactions.lua` still asserts the 16.6 there as a fixed reference point. With
+  bremsstrahlung, the table under
+  [T-He3, which the corrections promoted](#t-he3-which-the-corrections-promoted) has T-He3
+  quenching at 1.4×10⁷ K and the shipped He3-He3 tier at Q 9×10⁻⁴⁸.)
 - **T-T** — tritium against tritium, 11.33 MeV, tritium bred two ways already. With the radiation term
   it lands at **Q 0.35**, almost exactly where D-D lands; radiation-free it is **Q 0.95** in
-  `rf-reactor` and Q 14.5 at the clamp in the aneutronic one. It is 89% neutrons, needs no new fuel
+  `rf-reactor` and Q 14.5 at the clamp in the aneutronic one (**marked 2026-10-13, #620**: the
+  2×10⁹ K clamp #58 retired; with bremsstrahlung the same table has T-T in that reactor at
+  1.4×10⁸ K and Q 0.43). It is 89% neutrons, needs no new fuel
   fluid, no new isotope and no new chain step — only a plasma fluid and a row — and it is a strictly
   worse use of a triton than D-T.
 - **Catalysed D-D** — do not extract the tritium and helium-3, burn them where they are made.
@@ -1135,7 +1143,12 @@ against the shipped He3-He3 tier's 1.31. *Cost*: one `M.fuels` row, one plasma f
 No model change, no new item, no resource, no enrichment. *Trade-off*: it dies with #52 like everything
 else here — radiation ratio 0.58, so it never ignites; its 77% charged fraction wants both conversion
 routes at once, which ADR 0018's one-category-per-box design cannot express; and the redesign gave this
-channel the largest fudge of its seven.
+channel the largest fudge of its seven. (**Marked 2026-10-13, #620**: "the model as it ships" is the
+radiation-free one, which stopped shipping with #52 on 2026-08-21, and "the clamp" is the 2×10⁹ K
+#58 retired. Q 16.6 and 1.31 are both figures of that model. With bremsstrahlung, the table under
+[T-He3, which the corrections promoted](#t-he3-which-the-corrections-promoted) has T-He3 quenching
+at 1.4×10⁷ K and the shipped He3-He3 tier at Q 9×10⁻⁴⁸, which is the "dies with #52" of the
+trade-off above.)
 
 **D. T-T as a tritium sink.** One row in `M.fuels`, one plasma fluid, no mixer at all because it is like
 species. Q 0.35 in the shipped reactor with the radiation term and 0.95 without, and two neutrons per
@@ -1244,6 +1257,9 @@ where a balance decision becomes unavoidable rather than where one is avoided.
   interpolated. T-T's Q 0.349 should be read as "about the same as D-D's", and T-He3's Q 16.6 as "about
   the same as T-T's 14.5 and an order above the shipped He3-He3 tier" — not as three digits. This is
   the thinnest data behind any number in this note, and it is behind the two cheapest candidates.
+  (**Marked 2026-10-13, #620**: 16.6, 14.5 and "an order above the shipped He3-He3 tier" are the
+  radiation-free figures at the 2×10⁹ K clamp, marked under Option C above; 0.349 is with the
+  radiation term.)
 - **T-He3's branching ratios disagree between the two sources by about five points** — 41/55/4 in
   ORNL/TM-6914 against 51/43/6 in the NRL formulary, matched branch for branch. That moves the charged
   fraction from 0.768 to 0.783 and nothing else in the assessment. Both sources also warn that

@@ -73,6 +73,16 @@ expansion the D-T reactor still ignites and parks at the top of its range (2×10
 of 2×10⁹), the D-D reactor beside it is unchanged, both sold energy over the run, and D-T still yields
 37.1× D-D at the same feed temperature — the same numbers the base-2.0 run produces.
 
+> **Both figures are the run of 2026-08-18: pre-#52 and at the old ceiling (marked 2026-10-13,
+> #620).** 2×10⁹ °C was the clamp of the time, which #58 moved to 5×10⁹ on 2026-08-25 (ADR 0025),
+> and the 37.1× was taken on a model with no radiation term, which #52 added.
+> [`docs/research/d-t-ignition.md`](../research/d-t-ignition.md) marks the same transcript under
+> *In the game*, and its `## Current figures` table has one later reading from this rig:
+> `scripts/check-d-t.ps1` sees the D-T plasma at 3.13×10⁹ °C (2026-08-25, Factorio 2.0.77). That
+> note has no later 37.1×, and this ADR records no later run with the expansion enabled. **The
+> decision does not rest on either figure.** What discharged the obligation is that the three
+> commands passed under the expansion and read what the base-2.0 run read on the same day.
+
 **What this does not verify, and none of it is a regression:**
 
 - **Balance against the vanilla fusion reactor.** Explicitly not claimed above, and still not claimed.

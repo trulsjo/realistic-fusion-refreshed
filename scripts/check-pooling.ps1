@@ -1140,6 +1140,11 @@ script.on_init(function()
   -- never held alone, so the inference had no support, and this repo believed it anyway. These rows
   -- hold it alone.
   --
+  -- THE 75.2% IS FROM ONE RUN (marked 2026-10-13, #620). solopipe reads 75.2% or 75.4% depending on
+  -- the run, and the re-measurement of 2026-10-01 (#443) reads it at 75.4% and bare at 57.6%:
+  -- docs/research/reactor-runtime-cost.md, section 5 and its Current figures table. The argument
+  -- here does not turn on the two tenths.
+  --
   -- HOW THEY ARE THE SAME. One geometry, built by one call with one argument different: three
   -- rf-reactor bridged, no tail, unregistered so control.lua never steps them and unpowered so the
   -- rig alone decides what heating each receives. They are seeded by the same pass as every other

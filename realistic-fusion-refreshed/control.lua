@@ -925,6 +925,11 @@ end
 -- sittings, and the absolute delta is what a paired design supports. See
 -- docs/research/reactor-runtime-cost.md.
 --
+-- THE 3.11 AND THE 3.99 ARE THAT SITTING'S AND NO LATER ONE'S (marked 2026-10-13, #620). It was
+-- 2026-09-06. #430's sitting of 2026-09-20 reads the arm this has at 3.99 as 4.42, and the
+-- shipped step with #425's lookup as 5.26: the paragraph headed MEASURED below, and the note's
+-- Current figures table. The +0.88 is still the delta on record for #72.
+--
 -- ~~SPECS rather than spec_for(): heating_power_w is the same for every force, because the
 -- confinement ladder moves confinement_time_s and nothing else, so this path never touches the
 -- per-force cache at all.~~ #425 made heating power the second researchable lever (ADR 0038), so

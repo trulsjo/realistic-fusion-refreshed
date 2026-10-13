@@ -206,11 +206,26 @@ claim.
   > **Overloaded past what it can make**, a closed plant — reactor, heater, exchanger, two turbines,
   > load bank — stayed at the clamp. The spiral was made to happen on purpose and did not.
   >
+  > *(Marked 2026-10-13, #620: every figure in the paragraph above is a pre-#52 reading, and "the
+  > clamp" in it is the 2×10⁹ °C ceiling as it then was. #611 re-took them on 2026-10-13, on
+  > Factorio 2.0.77 with everything researched. At half supply: 3.036×10⁹ °C and +207.0 MW net.
+  > Through the blackout: 18.5% kept, ending at 1.731×10⁹ °C with 113.5 units, and +158.0 MW net.
+  > Five minutes after the supply returned: 3.544×10⁹ °C with 214.8 units against the 312.5 it held
+  > lit, which is not the clamp, +43.66 MW net on average and net negative for the first fifty
+  > seconds. The closed plant stayed at 3.439×10⁹ °C under the overload. The readings are in
+  > `docs/research/d-t-ignition.md`, "Re-taken on the shipped model, 2026-10-13 (#611)". The lit
+  > reactor is still a net contributor through the shortfall and still recovers unattended. "Net
+  > positive the whole way up" no longer holds.)*
+  >
   > **What stands:** everything in the Decision above. The plasma cooling on brownout is accepted,
   > the arrest is the player's to build, and letting the plasma hold its heat unpowered stays
   > rejected — all of it decided for the D-D tier, all of it still true of the D-D tier, which the
   > same rig measures falling to **0.44%** of its lit output through the same blackout where the D-T
   > reactor keeps 15.3%, a factor of thirty-five.
+  >
+  > *(Marked 2026-10-13, #620: 0.44% and 15.3% are pre-#52 readings. #611's run on 2026-10-13 gives
+  > 2.39% against 18.5%, a factor of 7.7. The direction is the same. Whether the smaller factor
+  > changes anything decided here is not settled by this mark.)*
   >
   > **What is void:** that D-T's loss is self-amplifying, and with it the reason #70 gave for treating
   > the tiers differently. Both tiers are safe under a shortfall. They are safe for opposite reasons,
