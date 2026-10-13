@@ -171,3 +171,9 @@ One line for each change to a gate, newest last, with its date and its ticket.
   Run by hand on 2026-10-12 with a staged page linking to a file git does not track, the hook
   exited 1 and named the page and its line 3. In a scratch repository with the hook and no
   submodule, it said the staged Markdown was NOT checked and the commit went through.
+- 2026-10-13, #677: `scripts/locale-check.ps1` is deleted, and the locale check is the tools
+  submodule's `scripts/locale-check.ps1`, run by the command in the root `CLAUDE.md` with the three
+  mods and `-Prefix rf-`. Run once each on 2026-10-13 against Factorio 2.0.77, before the deletion,
+  the two printed the same but for their first line: 135 prototypes on base 2.0 and 165 with
+  `-With space-age`. The shared one declares `custom-input` nameless beside `animation`; this
+  repository defines no custom input.

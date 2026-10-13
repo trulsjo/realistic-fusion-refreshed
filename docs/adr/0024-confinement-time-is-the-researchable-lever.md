@@ -259,6 +259,8 @@ own thermometer stays a player's choice under ADR 0016 and is not a defect in th
 - **A technology whose name ends in `-<number>` is a *level* to Factorio.** The locale name key is
   `technology-name.rf-plasma-confinement` with no number; numbering it leaves all three showing
   "Unknown key". Caught by `scripts/locale-check.ps1`, which is what that check is for.
+  *(Since 2026-10-13, #677, that check is the tools submodule's:
+  `vendor/grado-factorio-tools/scripts/locale-check.ps1`.)*
 - **The icon is `rf-d-d-fusion`'s.** There is no confinement art in the assets mod
   ([ADR 0023](0023-art-ships-in-its-own-mod.md)) and inventing a placeholder is a separate job; it
   joins the backlog [#108](https://github.com/trulsjo/realistic-fusion-refreshed/issues/108) carries.

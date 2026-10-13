@@ -410,7 +410,7 @@ equal(status_of(running, 0.0005).key, "starved",
 -- ---------------------------------------------------------------- locale keys
 --
 -- Every status has to name a key that exists, or the player sees "Unknown key" in the one place
--- this ticket exists to make readable. scripts/locale-check.ps1 does not cover these -- it checks
+-- this ticket exists to make readable. The shared locale-check.ps1 does not cover these -- it checks
 -- prototype names against a dump, and these are runtime strings assembled in Lua -- so the file is
 -- read here and the keys are looked up in it.
 
