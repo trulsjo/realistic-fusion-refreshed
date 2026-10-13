@@ -219,6 +219,8 @@ near(unpowered_dt.heating_used_j, 0, 0, "and it is climbing on nothing: no heati
 -- Left alone with no power for five minutes the two end up three and a half orders apart, which is
 -- the figure the ADR 0015 correction quotes. Asserted as a separation rather than as two values,
 -- because both move with the balance and the separation is the claim.
+-- (Three and a half orders is the pre-#52 reading. With radiation they end eight orders apart,
+-- 3.147e9 C against the 15 C floor: docs/research/d-t-ignition.md, re-taken 2026-10-13, #611.)
 local held_dt, held_dd = HOT, HOT
 for _ = 1, math.floor(300 / TICK) do
   held_dt = L.step(SPEC, "rf-d-t-plasma", FULL, held_dt, 0, TICK).temperature_c
@@ -816,6 +818,10 @@ near(aneutronic_hot.fusion_power_w / aneutronic_thin.fusion_power_w, 9, 1e-9,
 --     1500 u  clamp      Q 20.7      ignited, and the optimum
 --      500 u  clamp      Q 2.3        thinner: lights easily, fuses less
 --
+-- THE TWO "clamp" ROWS ARE AT THE OLD 2e9 CEILING (marked 2026-10-13, #620). Since #58 the 1500 u
+-- row settles free at 4.41e9 and Q 18.8, not 20.7 -- the comment above the half-fill assertion
+-- below, and ADR 0025. No later reading of the 500 u row is recorded in this file.
+--
 -- This is ADR 0016's operating-density lever, arriving on a tier that had no use for it before: "a
 -- reaction has a density at which it makes the most power, and it is not necessarily a full one".
 -- Here it is not a full one by a factor of two.
@@ -863,6 +869,11 @@ near(lit_t, 4.584e9, 0.01,
 -- cold root to climb to at any heating power -- docs/research/further-reactions.md sweeps it and
 -- finds the clamp reachable only on about 10.2 GW, radiating 9 672 MW to make 261 MW. The Q of 1.31
 -- this tier used to report was an artefact of the missing channel, in exactly the way D-D's 2.14 was.
+--
+-- THE 1.7% FLOOR IS WRONG AND THE 6% STANDS (marked 2026-10-13, #620). That note corrected its own
+-- sentence on 2026-10-06 (#614) to "never more than 6%": its ratio grid gives 0.010 at 100 keV, so
+-- the range is 1.0% to 5.9%. The argument needs only the upper end. And "the clamp" the 10.2 GW
+-- reaches is the 2e9 ceiling #58 retired, which that note marks under its settling table.
 --
 -- The raised-clamp check that used to live here is gone with it: it asked whether Q at the ceiling
 -- depends on where the ceiling is, and the plasma no longer reaches any ceiling, so the question has

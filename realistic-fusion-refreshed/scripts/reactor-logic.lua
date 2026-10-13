@@ -314,9 +314,11 @@ M.fuels = {
   -- With the term counted, no fill ignites this reaction. Thinning the plasma does reach the clamp,
   -- but on heater power rather than on fusion -- ~~Q peaks at 0.0131 around 300 units~~ Q reaches
   -- 0.0131 at 300 units and peaks at 0.0177 around 349, which is not
-  -- ignition in GLOSSARY.md's sense at all. D-He3 in the same machine is fine at half fill (Q 20.7)
-  -- and trapped at full, so the two tiers now differ in kind rather than in degree: one has an
-  -- operating density and the other has no operating point.
+  -- ignition in GLOSSARY.md's sense at all. D-He3 in the same machine is fine at half fill
+  -- (~~Q 20.7~~ Q 18.8) and trapped at full, so the two tiers now differ in kind rather than in
+  -- degree: one has an operating density and the other has no operating point. (Marked 2026-10-13,
+  -- #620: 20.7 was D-He3 held at the 2e9 clamp. Since #58 it settles free at 4.41e9 and Q 18.8 --
+  -- ADR 0025, and the half-fill block of tests/test-reactor-logic.lua.)
   --
   -- AND THE CLAMP WAS NEVER THE LEVER, which mattered because #58 existed to raise it. #58 has since
   -- raised it, and this held: measured with the term carried, the tier goes from a best Q of 0.0177

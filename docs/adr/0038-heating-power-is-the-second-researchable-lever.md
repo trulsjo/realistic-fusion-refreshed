@@ -304,6 +304,14 @@ unchanged beside the researched one.
   taking more, so a second heater past saturation is wasted throughput rather than an interesting
   choice. Raised here and deferred.
 
+  > **The 34 u/s is the pre-#52 burn, at the old 2×10⁹ °C ceiling (marked 2026-10-13, #620).**
+  > [`docs/research/d-t-ignition.md`](../research/d-t-ignition.md) marks it in two tables, and
+  > its `## Current figures` table gives a D-T reactor's burn with radiation as 26.0 u/s at one
+  > minute and 25.9 u/s settled, unresearched. The bullet above this one already counts in the
+  > later figure: 10.4 heaters at the 2.5 u/s that note gives one heater is 26.0 u/s. **Nothing
+  > here rests on the 34.** The deferral rests on a reactor taking no more than it burns, at
+  > whichever rate, and ADR 0039 decided it.
+
   > **Decided 2026-10-05 (#421)** by
   > [ADR 0039](0039-over-supply-is-a-density-limit-behind-an-option.md): nothing by default, and an
   > optional density limit with a disruption hazard behind a startup setting.

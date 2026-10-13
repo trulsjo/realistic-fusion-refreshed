@@ -93,8 +93,12 @@ local M_E_C2_KEV = 511
 local MODELS = {
   {
     key = "none",
-    label = "none (shipped)",
-    xi = nil,   -- no term at all, which is what the simulation actually does
+    -- The label read "none (shipped)" until 2026-10-13 (#620). The radiation-free balance stopped
+    -- shipping on 2026-08-21 with #52, and docs/research/bremsstrahlung.md's table heads these
+    -- two rows "none (shipped until #52)". Kept as the baseline the other models are measured
+    -- against.
+    label = "none (until #52)",
+    xi = nil,   -- no term at all, which is what the simulation did until #52
   },
   {
     key = "nonrel",
@@ -322,6 +326,11 @@ print("")
 -- The reproduction check, and the reason anything below it can be believed. If this harness did
 -- not land on the shipped model's own equilibrium it would be a different model, and its
 -- bremsstrahlung numbers would be about a different reactor.
+--
+-- "THE SHIPPED MODEL" AND "THE SHIPPED EQUILIBRIUM" ARE THE PRE-#52 ONES (marked 2026-10-13, #620),
+-- here, in the two names below and in the comment above balance_w. 8.769e8 K and Q 2.139 are what
+-- the model settled at with no radiation term. What ships since #52 settles on the D-D/wurzel
+-- root, which the block headed "the shipped term agrees (#52)" at the foot of this file asserts.
 near_pct(found["D-D/none"], 8.769e8, "radiation-free D-D reproduces the shipped equilibrium")
 -- Through num(), like every other arithmetic on a root here: a missing equilibrium would otherwise
 -- reach reactivity.rate as nil and take down the two assertions below that carry the finding.

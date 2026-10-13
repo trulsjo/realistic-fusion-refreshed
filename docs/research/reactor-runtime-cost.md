@@ -1001,6 +1001,9 @@ recorded (marked 2026-10-06, #612).**
 between them is whether there is a run to mix across. One writer both times, so no reactor can
 overwrite another. **Mixing alone costs about twenty points**, which is the same finding as §4 arrived
 at from the other direction, on a rig where the simulation is running.
+(**Marked 2026-10-13, #620**: the twenty points are the gap between the table's `solo` and
+`solopipe` rows, 94.9% and 75.2%. The 2026-10-01 re-measurement under the table reads the two at
+94.6% and 75.4%, and "about twenty" holds on either pair.)
 
 ~~**And three reactors lose more than mixing alone accounts for.** 57.6% on three writers against
 75.2% on one.~~ **The sentence is true and the emphasis is wrong, and that wrong emphasis is what
@@ -1160,6 +1163,11 @@ same stored energy to within a tenth"*. The cancellation argument is sound as ar
 is not: between five and forty percent of the energy never arrives, and the figure moves with both
 the plumbing and the number of reactors. 57.6% against 94.9% is not within a tenth of anything.
 (**94.6% as re-measured 2026-10-01, #443; marked 2026-10-06, #612.**)
+(**Marked 2026-10-13, #620**: "between five and forty percent" is read off the same four rows, from
+`solo`'s 94.9% to `bare`'s 57.6%. The re-measurement reads those two at 94.6% and 57.6%, so the
+range holds on either sitting. "The number of reactors" is the reading #73 and #271 corrected in
+the block above: `bare` is lower than `solopipe` because it is fuller and hotter, not because three
+reactors write to it.)
 
 **What this does and does not mean.** It does *not* mean reactors are producing less energy than the
 mod intends — the reactor sells `rf-reactor-energy` out of its own step, and that is unaffected. It
