@@ -308,7 +308,8 @@ unchanged beside the researched one.
   > [`docs/research/d-t-ignition.md`](../research/d-t-ignition.md) marks it in two tables, and
   > its `## Current figures` table gives a D-T reactor's burn with radiation as 26.0 u/s at one
   > minute and 25.9 u/s settled, unresearched. The bullet above this one already counts in the
-  > later figure: 10.4 heaters at the 2.5 u/s that note gives one heater is 26.0 u/s. **Nothing
+  > later figure: that note gets 10.4 heaters from the settled 25.9 u/s over the 2.5 u/s one heater
+  > makes. **Nothing
   > here rests on the 34.** The deferral rests on a reactor taking no more than it burns, at
   > whichever rate, and ADR 0039 decided it.
 

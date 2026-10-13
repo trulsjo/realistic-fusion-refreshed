@@ -182,3 +182,8 @@ One line for each change to a gate, newest last, with its date and its ticket.
   and `docs/`, so the three research notes those files cite are no longer checked from them:
   `get-history-semantics.md`, `tech-tree-dump-fields.md` and `tree-layout-levers.md`. Nothing
   replaces that. No check was changed, only the section's comments.
+- 2026-10-13, #611 and #620: `check-brownout.ps1` asserts what it did. The line its recover check
+  prints no longer says "net positive throughout": it says the 300 s are net positive taken
+  together, which is what the check measures. One sentence of the report it writes with `-Report`
+  no longer places the D-T cells on the clamp. On 2026-10-13 the `recover` cell was net negative
+  for its first fifty seconds; `docs/research/d-t-ignition.md` has the reading.

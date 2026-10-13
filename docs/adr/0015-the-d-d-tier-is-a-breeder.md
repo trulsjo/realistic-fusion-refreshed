@@ -237,7 +237,10 @@ claim.
   > **What is now open: nothing.** The one thing the correction left was the sub-ignition drain, and
   > it is **accepted — Truls, 2026-08-20, closing #70.** A reactor holding plasma too thin to carry
   > itself runs at **−7.1 MW**: a seventh of its heating rather than the whole of it, because
-  > `capture_efficiency` sells what leaves the plasma whether or not fusion put it there. It is
+  > `capture_efficiency` sells what leaves the plasma whether or not fusion put it there.
+  > *(Marked 2026-10-13, #620: −7.1 MW is a pre-#52 reading. #611's run on 2026-10-13, with
+  > everything researched, gives −4.82 MW, which is 6.4% of the 75 MW of heating that reactor
+  > draws: `docs/research/d-t-ignition.md`.)* It is
   > accepted on two grounds and not on its size alone. **It is self-clearing** — an empty reactor
   > draws nothing at all, so the state ends by itself rather than needing a player to notice it. And
   > **nothing a player does reaches it**: no cell in the rig got there by losing power, and fifteen
