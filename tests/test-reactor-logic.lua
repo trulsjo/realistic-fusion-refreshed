@@ -2053,8 +2053,8 @@ near(TOPPED.heaters, 9.1780, 0.01,
 -- reader rather than for the grid: realistic-fusion-refreshed/prototypes/entities.lua sizes
 -- rf-isotope-collector's boxes against it, and the sentence there quotes all three of these.
 near(BARE.bred, 0.137012, 0.01, "unresearched, a D-D reactor breeds 0.137 u/s of tritium")
--- THE BURN IT IS A QUARTER OF, pinned since #623: d-t-ignition.md once gave this as 1.0 u/s in one
--- table and 0.548 in another, and nothing here said which.
+-- THE BURN IT IS A QUARTER OF, pinned since #623: d-t-ignition.md once gave this as 1.0 u/s in a
+-- table and 0.548 in a bullet, and nothing here said which.
 near(BARE.burned, 0.548050, 0.01, "and burns 0.548 u/s of deuterium to do it")
 near(TOP_TAU_ONLY.bred, 0.627339, 0.01, "at the top of the confinement ladder alone, 0.627 u/s")
 near(TOPPED.bred, 1.285164, 0.01, "and at the top of both ladders, 1.285 u/s")

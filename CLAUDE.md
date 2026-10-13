@@ -84,8 +84,9 @@ pwsh -File vendor/grado-factorio-tools/scripts/locale-check.ps1 -Prefix rf- `
 
 **Every gate here needs the submodule initialised**, the one that starts no game (`ship-check.ps1`)
 included: `git submodule update --init`, the same step the commit hook asks for. The harness under
-`load-check.ps1`, the packer and the fetcher of the third-party sets are
-`vendor/grado-factorio-tools`'s; the checks are this repository's. The sets are pinned in
+`load-check.ps1`, the packer, the fetcher of the third-party sets, the locale check, the Markdown
+check and the commit check are `vendor/grado-factorio-tools`'s; the other checks are this
+repository's. The sets are pinned in
 `scripts/mod-sets.psd1`, and the fetcher caches under `.mod-cache/<set>` of the directory it runs
 in, so run it from the repository root.
 

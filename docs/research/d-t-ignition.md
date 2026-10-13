@@ -52,7 +52,7 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | D-D temperature after one unpowered step from 6×10⁸ °C, and after five unpowered minutes (#611) | 5.996×10⁸ °C and 15 °C | 2026-10-13 | none (pure simulation) | unresearched — 30 s | [What ignition does to a brownout](#what-ignition-does-to-a-brownout) |
 | Brownout rig settle curve, `full`, trailing-minute output at 300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700 and 3000 s (#611) | 80.6, 204.9, 294.0, 337.1, 355.3, 362.5, 365.4, 366.5, 367.0 and 367.2 MW | 2026-10-13 | 2.0.77 | all ladders complete | [In the game](#in-the-game-1) |
 | Brownout rig, `full` lit, last minute of the settle (#611) | 362.5 MW at 3.44×10⁹ °C and 312.5 units, drawing 80.17 MW | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
-| Brownout rig, `half`, end of a 900 s cut to 40.05 MW (#611) | 3.036×10⁹ °C, 218.6 units, 195.6 MW (53.9% of lit), +207.0 MW net across the cut | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
+| Brownout rig, `half`, end of a 900 s cut to half supply, drawing 40.05 MW (#611) | 3.036×10⁹ °C, 218.6 units, 195.6 MW (53.9% of lit), +207.0 MW net across the cut | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
 | Brownout rig, `dark`, end of a 900 s blackout (#611) | 1.731×10⁹ °C, 113.5 units, 66.97 MW (18.5% of lit), +158.0 MW net across it and +337.5 MW over its first minute | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
 | Brownout rig, `recover`, 300 s after the supply returned (#611) | 3.544×10⁹ °C, 214.8 units, 184.6 MW over the last ten seconds, +43.66 MW net on average, net negative for the first fifty seconds (−16.0 MW over the first ten) | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
 | Brownout rig, `boundary`, a seeded thin charge at full power (#611) | 22.75 units (2.28% of the box), −4.82 MW net | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
@@ -646,7 +646,7 @@ What it found, against that settled baseline:
 - **Half supply is barely an event.** Cut to 27.6 MW against the 55.2 MW it was drawing, the cell
   stayed at 1.96×10⁹ °C with 191 units in the box and contributed **+178 MW net** across the
   shortfall — about half its lit output, for half its supply.
-  *(Pre-#52, old ceiling. Re-taken 2026-10-13, #611: cut to 40.05 MW against 80.17, the cell
+  *(Pre-#52, old ceiling. Re-taken 2026-10-13, #611: drawing 40.05 MW against 80.17, the cell
   stayed at 3.036×10⁹ °C with 218.6 units and contributed +207.0 MW net.)*
 - **A total blackout is a slow decline, and the reactor fights it the whole way.** Fifteen minutes
   with no power at all left the plasma at 9.48×10⁸ °C with 93.5 units still in the box, still
@@ -695,15 +695,17 @@ What it found, against that settled baseline:
 
 ### Re-taken on the shipped model, 2026-10-13 (#611)
 
-One run of `scripts/check-brownout.ps1` at its defaults (`-Settle 1800 -Cut 900 -Restore 300
--Thin 0.025`), on Factorio 2.0.77 with base 2.0 only: `PASS: 24 checks, 0 failures`.
+`scripts/check-brownout.ps1` at its defaults (`-Settle 1800 -Cut 900 -Restore 300
+-Thin 0.025`), on Factorio 2.0.77 with base 2.0 only: `PASS: 24 checks, 0 failures`. It was run
+twice that day and every data line of the two traces is the same.
 **Everything is researched**, because the rig calls `force.research_all_technologies()`: 60 s of
 confinement, 75 MW of heating and the top plant-efficiency rung. No reading of this rig with
-nothing researched is on record. [`brownout-rig.md`](brownout-rig.md) is that run's report.
+nothing researched is on record. [`brownout-rig.md`](brownout-rig.md) is the report of a run
+of it.
 
 - **Lit, before the cut.** `full` sold 362.5 MW over the last minute of the settle, at
   3.44×10⁹ °C with 312.5 units in the box, drawing 80.17 MW. It settles short of the 5×10⁹ ceiling.
-- **Half supply.** Cut to 40.05 MW, `half` ended the shortfall at 3.036×10⁹ °C with 218.6 units,
+- **Half supply.** Drawing 40.05 MW, `half` ended the shortfall at 3.036×10⁹ °C with 218.6 units,
   selling 195.6 MW over its last minute, 53.9% of the lit 362.5, and +207.0 MW net across it.
   *About half its lit output for half its supply* holds.
 - **Blackout.** `dark` ended fifteen minutes with no power at 1.731×10⁹ °C with 113.5 units,

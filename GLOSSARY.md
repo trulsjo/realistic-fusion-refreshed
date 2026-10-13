@@ -266,11 +266,16 @@ each other (#109):
   [`brownout-rig.md`](docs/research/brownout-rig.md) was **589.7 units at 1.1×10⁹ °C, selling
   85.2 MW** on 2026-09-09 — dated rather than stated, because unlike the settled figure this one
   moves, and that note is generated from a run and stamped with the revision that produced it.
+  *(On 2026-10-13, #611, the row read **497 units at 1.785×10⁹ °C, selling 108.83 MW**. The rig
+  researches everything, and the heating ladder of #425 came after the run of 2026-09-09.)*
 
 **Never quote a reactor's output without naming which.** The two are 52% apart on one prototype at one
 tier, and the heater-fed figure MOVES: `brownout-rig.md`'s `dd` row read 70.58 MW on 2026-08-20,
 60.6 MW on 2026-08-23 and 85.23 MW on 2026-09-09, with the operating point moving under it each time
-— 589.7 units and 1.1×10⁹ °C today against 718.3 units and 4.37×10⁸ °C a fortnight ago. **What caused
+— 589.7 units and 1.1×10⁹ °C today against 718.3 units and 4.37×10⁸ °C a fortnight ago.
+*("Today" is 2026-09-09. The row read 108.83 MW at 497 units and 1.785×10⁹ °C on 2026-10-13, #611,
+and the 52% is the 85.23 MW of 2026-09-09 against the settled figure. This entry gives no settled
+figure at the research state the rig runs at, so it gives no later percentage.)* **What caused
 those moves is not on record**, which is why that note now names the repository revision it was
 rendered from; the settled figure has not moved at all over the same period.
 

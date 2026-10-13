@@ -125,6 +125,15 @@
     So 300 s caught the reactor at about a quarter of its output and still climbing 40% a minute, and
     every percentage quoted against it was a ratio to a number on the way up.
 
+    THAT CURVE IS PRE-#52 (marked 2026-10-13, #611). Re-taken on Factorio 2.0.77 with everything
+    researched, from the trace of the default run:
+
+      300 s   80.6 MW    900 s  294.0 MW   1500 s  355.3 MW   2100 s  365.4 MW
+      600 s  204.9 MW   1200 s  337.1 MW   1800 s  362.5 MW   3000 s  367.2 MW
+
+    At 300 s that is 22% of the last figure. At the default 1800 s it is 1.3% under it, drifting
+    +0.27% a minute, where the paragraph on the default below says 0.6% and 0.26% of the old curve.
+
     THE REASON IT IS SLOW IS THE PIPE, NOT THE PLASMA. The equilibrium the game reaches -- 324 MW at
     270 units -- is the one the pure-Lua model predicts, to three figures. Both are pre-#52, from
     before radiation. With it, one heater and nothing researched, the game measured 282.1 to 338.5
@@ -1248,6 +1257,10 @@ script.on_nth_tick(REPORT, function()
   -- 8.8e8 C is a FULL reactor's, and a heater-fed one is nowhere near full. So temperature does not
   -- separate the tiers here; what they sell for the same fuel does, and so does how long each goes on
   -- selling once the power stops.
+  -- (Marked 2026-10-13, #611: neither tier runs up to the clamp since #58. That day's run has the
+  -- D-T cell lit at 3.44e9 C and `dd` at 1.785e9 C under a 5e9 ceiling, so they sit a factor of two
+  -- apart and both short of it. 8.8e8 C is the pre-#52 settling point; docs/research/d-t-ignition.md
+  -- gives a full D-D reactor 2.42e8 C with radiation.)
   -- A modest ratio, and it is meant to be. scripts/check-d-t.ps1 sees five times, because it feeds
   -- both tiers plasma at a fixed 6e8 C from an infinity pipe. Here the fuel is a heater's, most of
   -- what either reactor sells at this density is its own heating coming back through
@@ -1813,7 +1826,7 @@ across the whole shortfall.
 **Every "MW lit" here is a HEATER-FED figure and not a settled one**, which is the distinction
 ``GLOSSARY.md`` names under **operating point** and the thing that made ``dd`` look like it contradicted
 the rest of the repository (#109). These reactors are held by a heater that cannot fill them, so every
-one of them is supply-limited -- the cell readings above say ``reactor low_power, heater low_power`` --
+one of them is supply-limited -- the rig prints ``reactor low_power`` for every cell with a heater while it is lit --
 and a thinner plasma settles hotter and sells more. This run's ``dd`` cell was lit at
 **$('{0:0.#}' -f $dd.LitU) units and $('{0:0.###e+0}' -f $dd.LitT) C**, selling
 **$('{0:0.##}' -f $dd.Lit) MW**. The same reactor sitting FULL at its own equilibrium sells far
