@@ -47,3 +47,5 @@ __pycache__/
 /graft/
 # `graft build` also writes this, to keep graft/ searchable by ripgrep while git ignores it.
 /.ignore
+# One machine's MCP server list. The one written here starts graft's server.
+/.mcp.json
