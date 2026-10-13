@@ -160,7 +160,7 @@ next section.
 
 ## The rank split, measured on two lanes (#182)
 
-Measured 2026-08-30 in Chrome with `scripts/tree-layout-probe.js`, against
+Measured 2026-08-30 in Chrome with `vendor/grado-factorio-tools/scripts/tree-layout-probe.js`, against
 `tree-viewer-out/angels-lane.html` and a `tree-viewer-out/krastorio2-lane.html` regenerated the same
 day so both lanes carry the shipped 170px card. **The answer is that no rank-split rule holds: the
 split wins on Angels and loses on Krastorio 2, in every variant tried. Nothing was shipped to the
@@ -298,8 +298,8 @@ Nor does the orientation, in `rankdir LR`:
   version }` — checked against the cdnjs bundle the viewer loads. `rank`, `order` and `position`
   are internal, so there is no way to obtain a ranking, and therefore no rank-space score,
   without paying for the coordinate phase that is the expensive part.
-- **The viewer is unchanged.** `scripts/tree-viewer.template.html` still runs one layout per cache
-  key, and `scripts/tree-viewer.ps1` still asserts nothing and stays out of every check sweep.
+- **The viewer is unchanged.** `vendor/grado-factorio-tools/scripts/tree-viewer.template.html` still runs one layout per cache
+  key, and `vendor/grado-factorio-tools/scripts/tree-viewer.ps1` still asserts nothing and stays out of every check sweep.
 
 The lever that was left unspent when this section was written is the one recorded in
 `docs/research/dag-layout-algorithms.md`: `edgesep`, which the viewer never set. It is spent now —
@@ -313,7 +313,7 @@ Angels graph, and repeats of identical work on the same page varied by a factor 
 
 ## `edgesep`: the lever that took nothing back — shipped 2026-08-30 (#182)
 
-Measured with `scripts/tree-layout-probe.js` on both lanes and both orientations, and **shipped at
+Measured with `vendor/grado-factorio-tools/scripts/tree-layout-probe.js` on both lanes and both orientations, and **shipped at
 `edgesep: 6`** — Truls's call, made by looking at the busiest rank gap rather than at the table.
 
 dagre separates two **dummy** nodes by `edgesep` and two cards by `nodesep`, and its dummies carry
@@ -368,7 +368,7 @@ touch somewhere along their length whatever this number is.
 
 ### The version it was measured against, and the move that followed
 
-All of it is dagre **0.8.5**, which is what `scripts/tree-viewer.template.html` loaded from cdnjs and
+All of it is dagre **0.8.5**, which is what `vendor/grado-factorio-tools/scripts/tree-viewer.template.html` loaded from cdnjs and
 [the only version cdnjs has](https://api.cdnjs.com/libraries?search=dagre) — its dagre list is
 `0.8.5`, `dagre-d3 0.6.4`, `graphlib 4.0.5`, and the maintained `@dagrejs/dagre` is not on it at
 all. Checked again 2026-08-30. Two neighbours were run against the same graph while the question was

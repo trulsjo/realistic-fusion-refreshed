@@ -28,7 +28,7 @@ dist/
 # large -- Krastorio 2 alone is 30 MB. Never this repo's own code.
 .mod-cache*/
 
-# Rendered tech-tree viewers -- rebuildable from any mod set with scripts/tree-viewer.ps1
+# Rendered tech-tree viewers -- rebuildable from any mod set with vendor/grado-factorio-tools/scripts/tree-viewer.ps1
 tree-viewer-out/
 # Bytecode Blender's bundled Python writes beside docs/research/*/ scripts it runs
 __pycache__/
