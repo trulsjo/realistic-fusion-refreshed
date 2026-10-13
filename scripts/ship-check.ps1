@@ -416,13 +416,20 @@ foreach ($ps1 in $documented) {
 # 6. Every docs/ path this repo cites in prose actually exists. Two research notes were written for
 # #158 and #159, committed to their own branches, cited from three files on main -- and never
 # merged. Both tickets read as completed while the findings they produced could not be opened, and
-# scripts/tree-viewer.ps1 sent a reader to a field-semantics note that was not there. Nothing could
+# the tree viewer, then scripts/tree-viewer.ps1, sent a reader to a field-semantics note that was
+# not there. Nothing could
 # see it: the citing line is a comment or a link, so no parser reads it, and the branch it lived on
 # looked merged from anywhere except `git merge-base`. Same shape as section 5 -- a claim made in
 # prose, invisible to every other gate, checkable without starting a game (#183).
 # Every file in scripts/, not only the .ps1 ones: the help above promises "anywhere in scripts/",
-# and scripts/tree-layout-probe.js cites a research note from a JavaScript comment, which a .ps1
-# filter would have walked straight past (#182).
+# and the viewer's layout probe cited a research note from a JavaScript comment, which a .ps1
+# filter would have walked straight past (#182). scripts/probe-supply-ratio.lua cites one from a
+# Lua comment today.
+# THE VIEWER LEFT THIS SECTION'S REACH WITH #676. The viewer, its template and its layout probe are
+# the tools submodule's now, and vendor/ is in neither list below. Their comments cite three notes
+# here: get-history-semantics.md, tech-tree-dump-fields.md and tree-layout-levers.md under
+# docs/research/. Renaming one of the three breaks a citation over there and nothing here says so.
+# Nothing replaces it.
 $citing = @(Get-ChildItem $PSScriptRoot -File) +
           @(Get-ChildItem (Join-Path $repoRoot 'docs') -File -Filter *.md -Recurse)
 $cited = [System.Collections.Generic.List[object]]::new()
@@ -547,7 +554,7 @@ $tracked = @(& git -C $repoRoot ls-files | Where-Object { $_ })
 #
 # IT NARROWS AS WELL AS WIDENS, and only the widening is obvious. $citing reads EVERY file directly
 # in scripts/; this reads only tracked ones with the five extensions, so scripts/mockup-machines.psd1
-# and scripts/tree-viewer.template.html leave scope, and so does any file not yet `git add`ed. A new
+# and scripts/mod-sets.psd1 leave scope, and so does any file not yet `git add`ed. A new
 # doc is therefore ungated until it is staged. Nothing violates the rule in either place today; the
 # trade is deliberate, because a list built from the index is what keeps the generated trees out.
 $citingCode = @($tracked | Where-Object { $_ -match '\.(?:md|lua|ps1|py|js)$' })

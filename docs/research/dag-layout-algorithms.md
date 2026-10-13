@@ -1,7 +1,7 @@
 # What the layout literature and the reachable libraries offer a 4:1 technology DAG
 
 Read 2026-08-30 for [#182](https://github.com/trulsjo/realistic-fusion-refreshed/issues/182),
-against **dagre 0.8.5**, which is what `scripts/tree-viewer.template.html` loaded from cdnjs when
+against **dagre 0.8.5**, which is what `vendor/grado-factorio-tools/scripts/tree-viewer.template.html` loaded from cdnjs when
 this was written — it loads `@dagrejs/dagre` 3.1.1 from jsdelivr now, Truls's call on the strength
 of §4 below, and the three versions were measured to draw this graph identically. **d3 7.9.0**,
 and the Factorio modding API pinned at **2.0.77**. **Facts only.** The decision this feeds — whether

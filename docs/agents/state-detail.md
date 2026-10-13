@@ -177,3 +177,8 @@ One line for each change to a gate, newest last, with its date and its ticket.
   the two printed the same but for their first line: 135 prototypes on base 2.0 and 165 with
   `-With space-age`. The shared one declares `custom-input` nameless beside `animation`; this
   repository defines no custom input.
+- 2026-10-13, #676: the tree viewer, its template and its layout probe are deleted from `scripts/`
+  and are the tools submodule's. `ship-check.ps1`'s check of cited `docs/` paths reads `scripts/`
+  and `docs/`, so the three research notes those files cite are no longer checked from them:
+  `get-history-semantics.md`, `tech-tree-dump-fields.md` and `tree-layout-levers.md`. Nothing
+  replaces that. No check was changed, only the section's comments.
