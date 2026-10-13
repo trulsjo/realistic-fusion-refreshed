@@ -1780,7 +1780,7 @@ turbines rather than at its reactor, because a real exchanger is drinking its ou
 ![temperature]($rel/temperature.svg)
 
 Log scale, floored at the temperature plasma is injected at -- below that there is nothing to draw, and
-a box with no plasma in it reads on the floor. The D-T cells fall off the clamp when their power goes and then flatten:
+a box with no plasma in it reads on the floor. The D-T cells fall from where they had settled when their power goes and then flatten:
 that flattening is ignition, and it is the answer to the ticket. ``dd`` does not flatten -- a D-D plasma
 at this density was never carrying itself, so it falls all the way.
 
