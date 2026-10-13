@@ -48,5 +48,5 @@ __pycache__/
 # `graft build` also writes this, to keep graft/ searchable by ripgrep while git ignores it.
 /.ignore
 # Claude Code's project-scoped MCP server list. The copy one machine has starts graft's server,
-# and graft is optional. Take this rule out to share a server with every clone.
+# and graft is optional. To share a server with every clone, take this rule out and commit the file.
 /.mcp.json
