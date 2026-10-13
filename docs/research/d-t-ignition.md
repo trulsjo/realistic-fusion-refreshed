@@ -700,8 +700,8 @@ What it found, against that settled baseline:
 twice that day and every data line of the two traces is the same.
 **Everything is researched**, because the rig calls `force.research_all_technologies()`: 60 s of
 confinement, 75 MW of heating and the top plant-efficiency rung. No reading of this rig with
-nothing researched is on record. [`brownout-rig.md`](brownout-rig.md) is the report of a run
-of it.
+nothing researched is on record. [`brownout-rig.md`](brownout-rig.md) is the report of a third
+run, on 2026-10-14: its check lines are the same but for the count of enemy entities removed.
 
 - **Lit, before the cut.** `full` sold 362.5 MW over the last minute of the settle, at
   3.44×10⁹ °C with 312.5 units in the box, drawing 80.17 MW. It settles short of the 5×10⁹ ceiling.
