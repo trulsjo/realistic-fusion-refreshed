@@ -48,6 +48,17 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | D-T plasma in the fuel segment beside the box, three pipes, one heater, 300 000 ticks (#532) | 334.9 units beside 275.7 in the box | 2026-10-04 | 2.0.77 | unresearched | [In the game](#in-the-game-1) |
 | D-T plasma in the fuel segment beside the box, six pipes, one heater, 300 000 ticks (#532) | 417.9 units beside 275.8 in the box | 2026-10-04 | 2.0.77 | unresearched | [In the game](#in-the-game-1) |
 | Brownout rig's own fuel line, 32 `rf-pipe`, one heater, tick 108 001 (#546) | a segment capacity of 4200 holding 1282.82 units, beside 312.48 in the box | 2026-10-04 | 2.0.77 | all ladders complete | [In the game](#in-the-game-1) |
+| D-T temperature after one unpowered step from 6×10⁸ °C, and after five unpowered minutes (#611) | 6.044×10⁸ °C and 3.147×10⁹ °C | 2026-10-13 | none (pure simulation) | unresearched — 30 s | [What ignition does to a brownout](#what-ignition-does-to-a-brownout) |
+| D-D temperature after one unpowered step from 6×10⁸ °C, and after five unpowered minutes (#611) | 5.996×10⁸ °C and 15 °C | 2026-10-13 | none (pure simulation) | unresearched — 30 s | [What ignition does to a brownout](#what-ignition-does-to-a-brownout) |
+| Brownout rig settle curve, `full`, trailing-minute output at 300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700 and 3000 s (#611) | 80.6, 204.9, 294.0, 337.1, 355.3, 362.5, 365.4, 366.5, 367.0 and 367.2 MW | 2026-10-13 | 2.0.77 | all ladders complete | [In the game](#in-the-game-1) |
+| Brownout rig, `full` lit, last minute of the settle (#611) | 362.5 MW at 3.44×10⁹ °C and 312.5 units, drawing 80.17 MW | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
+| Brownout rig, `half`, end of a 900 s cut to 40.05 MW (#611) | 3.036×10⁹ °C, 218.6 units, 195.6 MW (53.9% of lit), +207.0 MW net across the cut | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
+| Brownout rig, `dark`, end of a 900 s blackout (#611) | 1.731×10⁹ °C, 113.5 units, 66.97 MW (18.5% of lit), +158.0 MW net across it and +337.5 MW over its first minute | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
+| Brownout rig, `recover`, 300 s after the supply returned (#611) | 3.544×10⁹ °C, 214.8 units, 184.6 MW over the last ten seconds, +43.66 MW net on average, net negative for the first fifty seconds (−16.0 MW over the first ten) | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
+| Brownout rig, `boundary`, a seeded thin charge at full power (#611) | 22.75 units (2.28% of the box), −4.82 MW net | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
+| Brownout rig, `plant`, starter off and then 200 MW of load (#611) | 3.439×10⁹ °C, turbines and heater working | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
+| Brownout rig, `pooled`, two reactors on one pool, end of the blackout (#611) | 1.382×10⁹ °C each (spread 6784 °C), +184.4 MW net | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
+| Brownout rig, D-T against D-D off one heater (#611) | 3.09× sold over the settle phase; through the blackout 18.5% of lit output kept against 2.39% (108.8 MW to 2.6, ending at 2.80×10⁷ °C), a factor of 7.7 | 2026-10-13 | 2.0.77 | all ladders complete | [Re-taken on the shipped model, 2026-10-13 (#611)](#re-taken-on-the-shipped-model-2026-10-13-611) |
 
 Measured 2026-08-17 while implementing
 [#28](https://github.com/trulsjo/realistic-fusion-refreshed/issues/28). Everything here comes from
@@ -553,10 +564,19 @@ Outside Factorio, at the same density and the same temperature and with no power
 
 > **Both rows are pre-#52 readings, and the D-T one is at the old ceiling (marked 2026-10-06,
 > #613).** They fall under "every figure in this note below this line is the radiation-free one".
-> No later reading exists; #611 re-takes them, and until it does none of the four is a current
-> figure.
+> **Re-taken 2026-10-13 (#611)**, and the table under this block replaces all four.
 
-Three and a half orders apart, from the same starting point, on the same reactor. That is ignition,
+| with radiation, 2026-10-13 | one step from 6×10⁸ °C | after five unpowered minutes |
+|---|---|---|
+| **D-T** | **rises** to 6.044×10⁸ | 3.147×10⁹ °C — its own equilibrium, under the 5×10⁹ ceiling |
+| **D-D** | falls to 5.996×10⁸ | 15 °C — the floor; 9.91×10⁶ after one minute |
+
+Pure simulation, `M.step` in `realistic-fusion-refreshed/scripts/reactor-logic.lua` at the shipped
+constants: box full, nothing researched, no power, one step of a sixtieth of a second and then
+18 000 of them. The D-T plasma is at 3.147×10⁹ after twenty unpowered minutes too.
+
+~~Three and a half orders apart~~ **Eight orders apart, and D-D is on the floor**, from the same
+starting point, on the same reactor. That is ignition,
 and `tests/test-reactor-logic.lua` asserts it as a separation rather than as two values because both
 move with the balance and the separation is the claim.
 
@@ -573,6 +593,12 @@ within a few percent of equilibrium by then. In the game it is at about a quarte
 still climbing 40% a minute, so every percentage quoted against it was a ratio to a number on the way
 up. The measured curve of `full`'s trailing-minute output: 86 MW at 300 s, 204 at 600, 277 at 900, 307
 at 1200, 322 at 1800, 324 at 2100 and flat thereafter.
+
+**That curve is pre-#52. Re-taken 2026-10-13 (#611)** on Factorio 2.0.77, everything researched, by
+the run the list below is read from: 80.6 MW at 300 s, 204.9 at 600, 294.0 at 900, 337.1 at 1200,
+355.3 at 1500, 362.5 at 1800, 365.4 at 2100, 366.5 at 2400, 367.0 at 2700 and 367.2 at 3000. It is
+not flat after 2100: it rises 1.3% between 1800 s and 3000 s. At 300 s the cell sells 22% of the
+367.2.
 
 **The reason it is slow is the pipe, not the plasma.** The equilibrium the game reaches — 324 MW at
 270 units — is the one the pure-Lua model predicts, to three figures. *(Both are pre-#52, from
@@ -603,11 +629,14 @@ quietly rebasing every figure in the report.
 
 What it found, against that settled baseline:
 
-> **Every figure in the bullets below is a pre-#52, old-ceiling reading awaiting #611 (marked
-> 2026-10-06, #613).** They fall under "every figure in this note below this line is the
-> radiation-free one", and "the clamp" in them is the 2×10⁹ °C ceiling as it then was, not the
-> 5×10⁹ of #58. No later reading of any of them is on record; #611 re-takes them, and until it does
-> none is a current figure. The settle curve above, 86 MW to 324, is the same pre-#52 run.
+> **Every figure in the bullets below is a pre-#52, old-ceiling reading (marked 2026-10-06,
+> #613).** They fall under "every figure in this note below this line is the radiation-free one",
+> and "the clamp" in them is the 2×10⁹ °C ceiling as it then was, not the 5×10⁹ of #58. The settle
+> curve above, 86 MW to 324, is the same pre-#52 run.
+>
+> **Re-taken 2026-10-13 (#611).** Each bullet with a figure ends with its new reading, and
+> [the list under the bullets](#re-taken-on-the-shipped-model-2026-10-13-611) has the run and what
+> the new readings do to each conclusion.
 
 - **A brownout is not a power cut, and the rig had to be built so.** `rf-reactor`'s energy source is
   `usage_priority = "secondary-input"` — *"used for all other machines"* in the 2.0.77 docs, the same
@@ -617,11 +646,16 @@ What it found, against that settled baseline:
 - **Half supply is barely an event.** Cut to 27.6 MW against the 55.2 MW it was drawing, the cell
   stayed at 1.96×10⁹ °C with 191 units in the box and contributed **+178 MW net** across the
   shortfall — about half its lit output, for half its supply.
+  *(Pre-#52, old ceiling. Re-taken 2026-10-13, #611: cut to 40.05 MW against 80.17, the cell
+  stayed at 3.036×10⁹ °C with 218.6 units and contributed +207.0 MW net.)*
 - **A total blackout is a slow decline, and the reactor fights it the whole way.** Fifteen minutes
   with no power at all left the plasma at 9.48×10⁸ °C with 93.5 units still in the box, still
   selling **15.3%** of its lit output — 49.5 MW — and **+123.6 MW net** across the shortfall, since
   it is no longer paying for heating either. Over the first minute of the blackout it was
   **+276.5 MW net**. The same blackout took the D-D cell to **0.44%** and 3.5×10⁶ °C.
+  *(Pre-#52, old ceiling. Re-taken 2026-10-13, #611: 1.731×10⁹ °C with 113.5 units, selling
+  18.5% of its lit output, 66.97 MW, and +158.0 MW net across the shortfall; +337.5 MW net over the
+  first minute. The D-D cell: 2.39% and 2.80×10⁷ °C.)*
 - **There is no cut length that finishes it.** A reactor holding plasma sells that plasma's own loss
   whether or not any fusion is happening, so the output decays towards nothing and never arrives.
   The rig asked "when did it stop selling" first, got "still selling" from every cell, and was
@@ -630,24 +664,71 @@ What it found, against that settled baseline:
   the reactor was back at the clamp inside five minutes — and **net positive throughout the climb**
   (+58.8 MW average). The cost that was expected here did not appear: the plasma never got thin
   enough to stop, and `capture_efficiency` sells what leaves it whether or not fusion put it there.
+  *(Pre-#52, old ceiling. Re-taken 2026-10-13, #611: +43.66 MW average, and not net positive
+  throughout. The list under the bullets has the first fifty seconds.)*
 - **The one genuine drain had to be seeded by hand.** A reactor holding a charge too thin to carry
   itself — 2.5% of its box, injected cold, full power — runs at **−7.1 MW**. That is the only
   negative number the rig produces, it is a seventh of the heating rather than the whole of it, and
   **no cell reached that state by losing power**. Fifteen minutes of blackout left the D-T reactor
   far above it.
+  *(Pre-#52, old ceiling. Re-taken 2026-10-13, #611: 2.28% of its box, −4.82 MW, which is 6.4%
+  of the 75 MW of heating the researched reactor draws.)*
 - **The loop closes without eating itself.** One cell is a whole plant: reactor, heater,
   `rf-hc-exchanger`, two `rf-hc-turbines` and a load bank, with the supply interface as a starter
   motor. Switched off, the plant carried its own confinement heating out of what that heating
   produced. Overloaded to 200 MW — past what it can make — it stayed at the clamp. The spiral was
   made to happen on purpose and did not.
+  *(Pre-#52, old ceiling. Re-taken 2026-10-13, #611: it stayed at 3.439×10⁹ °C, where it had
+  settled, which is not the clamp.)*
 - **A row behaves like a reactor.** Two reactors bridged by `rf-pipe` on one plasma pool took the
   same blackout with a temperature spread of 0.0% — 6.607×10⁸ °C each — and **+132.2 MW net**: they
   share the fall rather than one starving the other.
+  *(Pre-#52, old ceiling. Re-taken 2026-10-13, #611: 0.0% again, 1.382×10⁹ °C each, and
+  +184.4 MW net.)*
 - **And the tier gap is wider than the first run suggested.** Off the same heater over the settle
   phase, D-T sold **4.45×** what D-D did; through the same blackout D-T kept 15.3% of its output
   against D-D's 0.44%, a factor of 35. The D-D cell is the one cell deliberately left unconverged —
   a plasma that never ignites climbs on temperature as well as density and would need far longer —
   which makes its own retained fraction an understatement, so the real gap is wider still.
+  *(Pre-#52, old ceiling. Re-taken 2026-10-13, #611: 3.09× over the settle phase, and 18.5%
+  against 2.39%, a factor of 7.7 and not of 35.)*
+
+### Re-taken on the shipped model, 2026-10-13 (#611)
+
+One run of `scripts/check-brownout.ps1` at its defaults (`-Settle 1800 -Cut 900 -Restore 300
+-Thin 0.025`), on Factorio 2.0.77 with base 2.0 only: `PASS: 24 checks, 0 failures`.
+**Everything is researched**, because the rig calls `force.research_all_technologies()`: 60 s of
+confinement, 75 MW of heating and the top plant-efficiency rung. No reading of this rig with
+nothing researched is on record. [`brownout-rig.md`](brownout-rig.md) is that run's report.
+
+- **Lit, before the cut.** `full` sold 362.5 MW over the last minute of the settle, at
+  3.44×10⁹ °C with 312.5 units in the box, drawing 80.17 MW. It settles short of the 5×10⁹ ceiling.
+- **Half supply.** Cut to 40.05 MW, `half` ended the shortfall at 3.036×10⁹ °C with 218.6 units,
+  selling 195.6 MW over its last minute, 53.9% of the lit 362.5, and +207.0 MW net across it.
+  *About half its lit output for half its supply* holds.
+- **Blackout.** `dark` ended fifteen minutes with no power at 1.731×10⁹ °C with 113.5 units,
+  selling 66.97 MW, 18.5% of lit, and +158.0 MW net across the shortfall; +337.5 MW net over the
+  first minute. *A slow decline* holds.
+- **Recovery.** Five minutes after the supply returned, `recover` was at 3.544×10⁹ °C, above the
+  3.44×10⁹ it was lit at, with 214.8 units against 312.5 lit, selling 184.6 MW over the last ten
+  seconds against 362.5 lit. **The temperature is back inside five minutes; the box and the output
+  are not**, and "back at the clamp" describes neither. It recovered unattended, which holds.
+- **Recovery is not net positive throughout, and that conclusion does not hold.** Over the 300 s
+  the cell was +43.66 MW net on average. Read from the trace at ten-second grain, it was net
+  negative for the first fifty seconds: −16.0 MW over the first ten, −0.7 over the fifth, and
+  +3.4 over the sixth. The rig's own line said "net positive throughout" of the same run, from the
+  total alone; since this ticket it says what it measures.
+- **The seeded drain.** `boundary` held 22.75 units, 2.28% of its box, and ran at −4.82 MW across
+  the shortfall. It is still the only negative cell.
+- **The closed plant.** `plant` stayed at 3.439×10⁹ °C with its starter off and under 200 MW of
+  load, its turbines and its heater working. *The loop closes without eating itself* holds.
+- **A row.** `pooled` ended the blackout at 1.382×10⁹ °C in both reactors, a spread of 6784 °C,
+  and +184.4 MW net. *They share the fall* holds.
+- **The tier gap is narrower than this note said, not wider.** Over the settle phase the D-T cell
+  sold 3.09× what the D-D cell did. Through the blackout `dd` kept 2.39% of its lit output, 108.8 MW
+  down to 2.6, ending at 2.80×10⁷ °C with 419.8 units, against D-T's 18.5%: a factor of 7.7. *D-D
+  fades far further* holds; "a factor of 35" does not. `dd` was still drifting +0.81% a minute
+  when it was cut, so it is unconverged as before.
 
 ### Two things the rig had to work out, for whoever writes the next one
 
