@@ -38,7 +38,7 @@ about whether a change is safe. What each proves, in a line:
   research note's `## Current figures` table, what the shared Markdown check reads in every
   tracked `.md` as staged (#658), and the width of the files `docs/agents/code-review.md` names as
   wrapped.
-- **`scripts/locale-check.ps1` and `scripts/name-check.ps1`** only dump prototypes and create no
+- **The shared locale check and `scripts/name-check.ps1`** only dump prototypes and create no
   map, so a pass there says nothing about runtime.
 
 **The three art gates inside `load-check.ps1` need Python on PATH, and the two that read sprites
@@ -71,6 +71,17 @@ pwsh -File vendor/grado-factorio-tools/scripts/pack-mods.ps1 -OutputDirectory di
 It deletes any other version's zip of the same mod in the output directory, which the old script
 did not.
 
+**Nor is the locale check.** Since #677 it is
+`vendor/grado-factorio-tools/scripts/locale-check.ps1`, and `scripts/locale-check.ps1` is gone. It
+is handed the mods and the prefix that marks a prototype as this repository's, and this command is
+the one place the repository says either to it. No gate runner starts it: run it by hand before
+anything ships, once as below and once with `-With space-age`.
+
+```
+pwsh -File vendor/grado-factorio-tools/scripts/locale-check.ps1 -Prefix rf- `
+    realistic-fusion-refreshed-assets realistic-fusion-refreshed-core realistic-fusion-refreshed
+```
+
 **Every gate here needs the submodule initialised**, the one that starts no game (`ship-check.ps1`)
 included: `git submodule update --init`, the same step the commit hook asks for. The harness under
 `load-check.ps1`, the packer and the fetcher of the third-party sets are
@@ -83,7 +94,7 @@ three scripts under `tools/` that are not gates and that nothing else checks, `s
 default `load-check.ps1` and every `scripts/check-*.ps1` it finds, one at a time, one line per
 gate, exiting non-zero and naming each gate that failed. **Run it on a branch that combines more
 than one ticket, before the review**, and **before or after a subagent fan-out, not during one**
-(#617). It runs no probe, no gate's `-SelfTest`, and not `load-check.ps1 -FromZips`,
+(#617). It runs no probe, no gate's `-SelfTest`, and not `load-check.ps1 -FromZips`, the shared
 `locale-check.ps1` or `name-check.ps1`.
 
 **A markdown-only branch runs `ship-check.ps1` alone**, however many tickets it combines (decided

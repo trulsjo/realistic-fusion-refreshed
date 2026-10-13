@@ -303,6 +303,6 @@ above condensed; defaults per the 2.0.77 docs, applied by the consumer because t
 | display names | `<category>-locale.json` → `names[prototype-name]` | resolved string, one language per run; fallback chains and `-<level>` stripping already applied; absent = would show "Unknown key" |
 
 Reproduction: junction the three repo mods, disable the bundled expansions, and run Factorio once
-with `--dump-data` and once with `--dump-prototype-locale` — `scripts/locale-check.ps1`'s
+with `--dump-data` and once with `--dump-prototype-locale` — `vendor/grado-factorio-tools/scripts/locale-check.ps1`'s
 `Invoke-Dumps` does precisely this; the outputs land in the run's
 `write-data/script-output/`.
