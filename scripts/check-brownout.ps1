@@ -84,6 +84,11 @@
     back up, because it never gets thin enough to stop. A drain does exist and `boundary` measures it,
     but reaching it took seeding a charge by hand: fifteen minutes of total blackout does not.
 
+    NOT THE WHOLE WAY, MEASURED 2026-10-13 (#611). On Factorio 2.0.77 with everything researched,
+    `recover` was +43.66 MW net over its 300 s and net negative for the first fifty of them: -16.0 MW
+    over the first ten seconds, +3.4 over the sixth ten. The check below asks about the 300 s taken
+    together, and its line says so. docs/research/d-t-ignition.md has the reading.
+
     Every figure is reported as well as asserted, and the assertions are on directions and bounds
     rather than on megawatts -- balance in this repository is provisional everywhere, and a rig that
     pins it fails on a rebalance instead of on a regression.
@@ -1170,7 +1175,8 @@ script.on_nth_tick(REPORT, function()
   -- reactor climbing back from a blackout should be spending its confinement heating before it has
   -- any fusion to pay for it. On the trajectory a blackout actually leaves, it is not -- the plasma
   -- never got thin enough, and capture_efficiency sells what leaves it whether or not fusion put it
-  -- there, so the reactor is ahead the whole way up. The bound is asserted anyway, because it is the
+  -- there, so the reactor is ahead the whole way up. (Not for its first fifty seconds, measured
+  -- 2026-10-13, #611: the header has the reading.) The bound is asserted anyway, because it is the
   -- thing that would catch a reactor that HAD become a 50 MW hole; the sign is reported, because it
   -- is the answer.
   local rs, rd = span("recover", "deep", "back")
@@ -1178,7 +1184,7 @@ script.on_nth_tick(REPORT, function()
     "recover: and coming back never costs more than a fraction of what it draws",
     string.format("%+.4g MJ net over the %ds it took (%+.4g MW) against %.4g MJ drawn -- %s",
       rs - rd, RESTORE / 60, mw(rs - rd, RESTORE), rd,
-      rs > rd and "net positive throughout, so re-igniting cost nothing at all"
+      rs > rd and "net positive over those seconds taken together"
               or string.format("a cost of %.1f%% of the draw", 100 * (rd - rs) / math.max(rd, 1))))
 
   -- ------------------------------------------------------------ 3. the drain is bounded
