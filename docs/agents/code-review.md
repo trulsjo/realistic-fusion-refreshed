@@ -147,8 +147,7 @@ finds the copies that share it and misses the rest, so the search is by the clai
 synonyms, and each hit is read. **The search is done when the report lists each claim, the files
 searched for it, and each hit, as a finding or as checked.** On #694 the plugin pass found two
 statements the branch had made false in other words, `GLOSSARY.md`'s Sub-ignition entry and the
-brownout report's quoted check, and on #690 three of its reviewers raised a sentence naming a script
-the branch deleted. The pre-PR review had passed all three.
+brownout report's quoted check, and the pre-PR review had passed both.
 
 **This binds the reviewer.** All three escapes #331 records were reviewer misses on changes whose
 own files were correct. An author who greps before opening the pull request saves a round, but the
