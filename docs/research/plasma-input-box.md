@@ -421,7 +421,8 @@ Built 2H1:
   east of the first in all four builds. That is the fitted rule's account, not a reading of how
   the engine orders them.
 - **The colder box on the full line is the one the fitting order takes just before the
-  heater, not the one it takes first.** That box pushes 468.69 units of its own plasma into
+  heater.** Built 1H2 and 2H1 that is also the box it takes first; built 21H and 12H it is not,
+  so it is the place before the heater that names the box, and not the place first. That box pushes 468.69 units of its own plasma into
   the full line over the 49 245 ticks, and the other 19.90 to 20.01, in every build. With both
   powered the two boxes read 2.4052 and 2.4137×10⁸ °C at 296 000 in each:
 

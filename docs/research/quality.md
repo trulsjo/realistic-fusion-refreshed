@@ -1534,7 +1534,7 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   and which order that is follows the order the three were built in (#572, #583). It is still
   fitted, not found, and not run on a D-He3 line that fills, which 48 heaters do and 40 do
   not (#586).
-  Factorio 2.0.77, 2026-10-04 and 2026-10-05.
+  Factorio 2.0.77, 2026-10-04, 2026-10-05 and 2026-10-14.
 - **Whether a mod may add a sixth quality level is unknown.** FFF #375 refers to restrictions without
   stating them and no 2.0.77 doc page found in this pass covers it. Narrowed but not measured by
   [`inverted-quality.md`](inverted-quality.md).
