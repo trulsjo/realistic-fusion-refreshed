@@ -45,7 +45,7 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | The same cell, what the box gave in float32 ULPs, 1000 s; 10 000 s | 31 800 of 60 000; 316 200 of 600 000 | 2026-10-04 | 2.0.77 | n/a (rig subjects are unregistered; no ladder reaches them) | [The 1.887 is the box's share, and a fitted rule reproduces it](#the-1887-is-the-boxs-share-and-a-fitted-rule-reproduces-it) |
 | Where a lone 1000-unit box nothing drains settles | 526.3158023 | 2026-10-04 | 2.0.77 | n/a (rig subjects are unregistered; no ladder reaches them) | [The 1.887 is the box's share, and a fitted rule reproduces it](#the-1887-is-the-boxs-share-and-a-fitted-rule-reproduces-it) |
 | Fitted fixed-point variant, run from the seed, ticks missed | none of 60 300 in either cell; none of 600 300 with `-Seconds 10000` | 2026-10-04 | 2.0.77 | n/a (rig subjects are unregistered; no ladder reaches them) | [The 1.887 is the box's share, and a fitted rule reproduces it](#the-1887-is-the-boxs-share-and-a-fitted-rule-reproduces-it) |
-| The same variant on fed fuel lines, every fill floored, ticks missed | none of 2 082 000 ticks of thirteen fed lines | 2026-10-05 and 2026-10-14 | 2.0.77 (build 84539) | nothing researched, except two D-D lines at confinement rung 3 and two at heating rung 5 | [The 1.887 is the box's share, and a fitted rule reproduces it](#the-1887-is-the-boxs-share-and-a-fitted-rule-reproduces-it) |
+| The same variant on fed fuel lines, every fill floored, ticks missed | none of 2 082 000 ticks of thirteen fed lines, eleven at normal quality and two with a legendary reactor and heater | 2026-10-05 and 2026-10-14 | 2.0.77 (build 84539) | nothing researched, except two D-D lines at confinement rung 3 and two at heating rung 5 | [The 1.887 is the box's share, and a fitted rule reproduces it](#the-1887-is-the-boxs-share-and-a-fitted-rule-reproduces-it) |
 | Settled D-D temperature, `rf-reactor`, all five quality levels | 242382 kC, spread zero (242258 kC at 1200 s, 242382 kC at 2400 s, agreeing to 0.051%) | 2026-08-31 | 2.0.77 | nothing researched | [The equilibrium, measured](#the-equilibrium-measured) |
 | Settled Q, `rf-reactor`, all five quality levels | 32% | 2026-08-31 | 2.0.77 | nothing researched | [The equilibrium, measured](#the-equilibrium-measured) |
 
@@ -1401,11 +1401,12 @@ enabled, and asserts it on both machines.
   5.96×10⁻⁶ without, the sizes #564 and #573 read.
 - All four lines fill inside the run. The box first ends a heater cycle at 99.9% on tick
   101 522 at three pipes and 114 722 at six on heating rung 5, and on 24 193 and 27 361 when
-  legendary. The legendary heater has plasma to give on 89% of the ticks, against about half
-  on rung 5, so its line is fed for most of the run.
+  legendary. So the heater's output box backing up against a full line is covered at both:
+  its "feeding" ticks track the ticks after the fill, 175 857 and 172 982 of the 198 000 when
+  legendary, which fills sooner, and 100 077 and 87 316 on rung 5.
 - It is still **fitted, not found**. D-He3 on a line that fills was not run: #586 built one, in
-  [`plasma-input-box.md`](plasma-input-box.md#a-d-he3-line-that-fills-is-cold), and it takes 48
-  heaters, where both probes' `-Fixed` follows one.
+  [`plasma-input-box.md`](plasma-input-box.md#a-d-he3-line-that-fills-is-cold), with 48
+  heaters, where 40 did not fill a solo line; both probes' `-Fixed` follows one heater.
 
 **The 1.28×10⁻⁵ excess and the factor's gap have one cause on this reading.** The same
 variant, with nothing changed between the two cells, gives the normal cell's 526.3158023 and
@@ -1531,7 +1532,8 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   (#564, #573, #587), and the D-D and He3-He3 lines settle the rounding of the destination's
   fill: floored. With two reactors on one segment it misses no tick in one order of the six,
   and which order that is follows the order the three were built in (#572, #583). It is still
-  fitted, not found, and not run on a D-He3 line that fills, which takes 48 heaters (#586).
+  fitted, not found, and not run on a D-He3 line that fills, which 48 heaters do and 40 do
+  not (#586).
   Factorio 2.0.77, 2026-10-04 and 2026-10-05.
 - **Whether a mod may add a sixth quality level is unknown.** FFF #375 refers to restrictions without
   stating them and no 2.0.77 doc page found in this pass covers it. Narrowed but not measured by

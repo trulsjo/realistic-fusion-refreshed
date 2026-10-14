@@ -26,7 +26,7 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | Shipped `input-output` box, D-D pair, both reactors powered: the two box temperatures at tick 1 980 000 | 2.368459 and 2.394605×10⁸ °C, 1.10% apart | 2026-10-05 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Two powered canary boxes on one line settle at the same temperature](#two-powered-canary-boxes-on-one-line-settle-at-the-same-temperature) |
 | Canary `input` box, D-D pair, both reactors powered: the two box temperatures at tick 1 980 000 | both read 2.381512×10⁸ °C | 2026-10-05 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Two powered canary boxes on one line settle at the same temperature](#two-powered-canary-boxes-on-one-line-settle-at-the-same-temperature) |
 | Shipped `input-output` box, D-D pair: the one order of the fitted rule that misses no tick, and of how many | 1H2 (the first reactor, the heater, the second reactor), none of 592 000 ticks | 2026-10-05 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The order the engine takes the two boxes in](#the-order-the-engine-takes-the-two-boxes-in) |
-| Shipped `input-output` box, D-D pair built in four orders (1H2, 21H, 12H, 2H1), 1 heater, 3 and 12 pipes: the one order of the fitted rule that misses no tick in each | the build order, none of 592 000 ticks in each | 2026-10-14 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Built in another order](#built-in-another-order) |
+| Shipped `input-output` box, D-D pair built in four orders (1H2, 21H, 12H, 2H1), 1 heater, 3 and 12 pipes: the one order of the fitted rule that misses no tick in each | the build order, none of 592 000 ticks in each | 2026-10-05 (1H2) and 2026-10-14 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Built in another order](#built-in-another-order) |
 | Shipped `input-output` box, D-D pair, both powered, full, in each build: the colder box at 296 000 | the one the fitting order takes just before the heater, 2.4052 against 2.4137×10⁸ °C | 2026-10-14 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Built in another order](#built-in-another-order) |
 | Shipped `input-output` box, D-D pair built 12H or 2H1, one powered: the unpowered box on the full line, rows 152 000 to 296 000 | never 15 °C; 1.083×10³ to 1.303×10⁴ °C | 2026-10-14 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Built in another order](#built-in-another-order) |
 | Shipped `input-output` box, He3-He3 pair, 1 heater, 3 and 12 pipes: the one order of the fitted rule that misses no tick | 1H2, the build order, none of 992 000 ticks | 2026-10-14 | 2.0.77 | unresearched (all 11 rungs asserted off) | [On the aneutronic reactor](#on-the-aneutronic-reactor) |
@@ -307,8 +307,9 @@ same point of that cycle. The table prints five figures, so "the same" below mea
   one-way trade of this kind would hold the gap open instead of closing it. That it is the only
   coupling left was not shown.
 - **The order is read since #572: the first reactor, then the heater, then the second
-  reactor.** That the first box is taken before the second is what the heat implied; the
-  heater's place between them is new. See
+  reactor, which is the order this rig builds them in.** Built in another order, the order that
+  fits is that one (#583). That the first box is taken before the second is what the heat
+  implied; the heater's place between them is new. See
   [The order the engine takes the two boxes in](#the-order-the-engine-takes-the-two-boxes-in).
 
 #### The order the engine takes the two boxes in
@@ -378,20 +379,47 @@ segment per cell in each. `-NoCanary` runs the shipped variant alone.
 asserted off), one heater a cell, three pipes to the first reactor and twelve between the two,
 counted to 296 000. The fill ticks are those of the 1H2 run to within three ticks, so
 "filling" and "full" split the ticks as above: 148 946 and 147 054 with one reactor unpowered
-(148 943 and 147 057 built 2H1), 246 755 and 49 245 with both powered. Each cell is the one
-order that misses no tick in that build, and the most any other order misses:
+(148 943 and 147 057 built 2H1), 246 755 and 49 245 with both powered. #572's table above
+is the 1H2 build. Each cell is ticks missed, and the first:
 
-| built | order that misses no tick | the others, one unpowered, filling | full | both powered, filling | full |
-|---|---|---|---|---|---|
-| 1H2, #572's run | 1H2 | 5004 to 146 162, from tick 122 | 165 to 24 510, from 149 049 | 8294 to 243 561, from 122 | 8194 to 8208, from 246 839 |
-| 21H, second reactor first, heater last | 21H | 5004 to 146 174, from 122 | 11 to 24 510, from 149 049 | 8294 to 243 500, from 122 | 8196 to 16 377, from 246 840 |
-| 12H, heater last | 12H | 5004 to 146 126, from 122 | 12 to 24 511, from 149 049 | 8294 to 243 500, from 122 | 8196 to 16 377, from 246 840 |
-| 2H1, second reactor first | 2H1 | 5004 to 146 163, from 122 | 183 to 24 511, from 149 049 | 8294 to 243 561, from 122 | 8194 to 8208, from 246 839 |
+Built 21H:
+
+| order | one unpowered, filling | one unpowered, full | both powered, filling | both powered, full |
+|---|---|---|---|---|
+| H12 | 146 174, tick 122 | 24 510, tick 149 049 | 243 500, tick 122 | 16 377, tick 246 840 |
+| H21 | 5004, tick 122 | 24 510, tick 149 049 | 8294, tick 122 | 16 374, tick 246 842 |
+| 1H2 | 146 174, tick 122 | 165, tick 149 049 | 243 500, tick 122 | 8198, tick 246 840 |
+| 2H1 | 5004, tick 122 | 24 510, tick 149 049 | 8294, tick 122 | 16 374, tick 246 842 |
+| 12H | 146 130, tick 123 | 11, tick 149 050 | 243 442, tick 123 | 8196, tick 246 840 |
+| **21H** | **0** | **0** | **0** | **0** |
+
+Built 12H:
+
+| order | one unpowered, filling | one unpowered, full | both powered, filling | both powered, full |
+|---|---|---|---|---|
+| H12 | 5004, tick 122 | 24 511, tick 149 049 | 8294, tick 122 | 16 374, tick 246 842 |
+| H21 | 146 126, tick 122 | 24 511, tick 149 049 | 243 500, tick 122 | 16 377, tick 246 840 |
+| 1H2 | 5004, tick 122 | 192, tick 149 049 | 8294, tick 122 | 16 374, tick 246 842 |
+| 2H1 | 146 126, tick 122 | 24 502, tick 149 049 | 243 500, tick 122 | 8198, tick 246 840 |
+| **12H** | **0** | **0** | **0** | **0** |
+| 21H | 146 078, tick 123 | 12, tick 149 050 | 243 442, tick 123 | 8196, tick 246 840 |
+
+Built 2H1:
+
+| order | one unpowered, filling | one unpowered, full | both powered, filling | both powered, full |
+|---|---|---|---|---|
+| H12 | 146 163, tick 122 | 183, tick 149 053 | 243 561, tick 122 | 8208, tick 246 839 |
+| H21 | 5004, tick 122 | 192, tick 149 049 | 8294, tick 122 | 8205, tick 246 842 |
+| 1H2 | 146 163, tick 122 | 24 511, tick 149 049 | 243 561, tick 122 | 8208, tick 246 839 |
+| **2H1** | **0** | **0** | **0** | **0** |
+| 12H | 146 163, tick 122 | 24 501, tick 149 049 | 243 561, tick 122 | 8197, tick 246 839 |
+| 21H | 5004, tick 122 | 24 501, tick 149 049 | 8294, tick 122 | 8194, tick 246 842 |
 
 - **In each build exactly one order misses none of 592 000 ticks, and it is the build
-  order.** Every other order misses in all four columns. So on this rig the engine takes the
-  two boxes and the heater in the order they were placed, and not by position: the second
-  reactor is east of the first in all four builds.
+  order.** Every other order misses in all four columns. So on this rig the order that fits
+  follows the order the parts were placed in, and not their position: the second reactor is
+  east of the first in all four builds. That is the fitted rule's account, not a reading of how
+  the engine orders them.
 - **The colder box on the full line is the one the fitting order takes just before the
   heater, not the one it takes first.** That box pushes 468.69 units of its own plasma into
   the full line over the 49 245 ticks, and the other 19.90 to 20.01, in every build. With both
@@ -409,7 +437,7 @@ order that misses no tick in that build, and the most any other order misses:
 - **With one reactor unpowered, the build moves where the unpowered box ends.** Built 1H2 or
   21H, it is the box taken first or third, and it reads 15 °C from tick 150 012 to 296 000.
   Built 12H or 2H1 it is the box taken just before the heater, and it never reads 15 °C full:
-  1.1225×10⁴ °C at 152 000 and 3.1011×10³ at 296 000, between 1.083×10³ and 1.303×10⁴ at every
+  1.1225×10⁴ °C at 152 000 built 12H and 1.1226×10⁴ built 2H1, and 3.1011×10³ at 296 000, between 1.083×10³ and 1.303×10⁴ at every
   row from 152 000, beside a powered box at 2.39×10⁸. In those two builds the fitting order has
   it push 1313.77 and 1314.08 units into the full line over 147 054 and 147 057 ticks, against
   the 10.29 and 10.39 the unpowered box pushes at the floor, built 1H2 and 21H. Why that holds it above the floor was not read.
@@ -448,6 +476,11 @@ reactor and twelve between the two, built 1H2, counted to 496 000. The fill tick
   engine.
 
 #### Once the shipped line is full, the unpowered reactor falls to the floor
+
+Every run in this section built its cell 1H2: the first reactor, then the heater, then the
+second. **Built 12H or 2H1, where the unpowered reactor is placed just before the heater, it
+does not fall to the floor**, and reads 1.083×10³ to 1.303×10⁴ °C on the full line (#583); see
+[Built in another order](#built-in-another-order).
 
 The 600 000-tick run also read the shipped pair with one reactor powered past 96 000. The two
 boxes fill together at 148 946 and 148 939. The unpowered reactor read 3.5294×10⁷ °C at 148 000
@@ -586,8 +619,8 @@ is `-Pipes 3 -Every 2000` and the arguments its row names:
 | pair, heating rung 5 and no other | `-Rungs heating_ladder=5 -Ticks 240000` | 12 | 3500 | 179 299 | 182 000 | 4.4330×10⁸ at 238 000, still falling |
 | three reactors, nothing researched | `-Trio -Ticks 280000` | 12 and 12 | 5700 | 224 297, both | 226 000, both | 2.3887×10⁸ at 278 000 |
 
-In every shape the unpowered reactor reads 15 °C within 2800 ticks of its box filling, and at
-every row after. The first row is the traced run of #558, where the tick is exact. In the
+In every shape, each built 1H2, the unpowered reactor reads 15 °C within 2800 ticks of its box
+filling, and at every row after. The first row is the traced run of #558, where the tick is exact. In the
 others it is the first 2000-tick row after the fill for twenty pipes and for three reactors,
 and the second for thirty pipes and for heating rung 5, whose rows at 198 000 and 180 000 were
 still above the floor. The three-reactor run's two unpowered boxes read 5.4122 and
@@ -746,8 +779,9 @@ mod steps on 1000 of the 6000 ticks.
 | 203 000 | 1896.17 | 9.8132×10⁶ | 1896.17 | 1.3722×10⁶ | 4645.32 | 5.5791×10⁶ |
 | 206 000 | 1923.43 | 9.5386×10⁶ | 1923.43 | 1.1860×10⁶ | 4715.81 | 5.3493×10⁶ |
 
-Box 2 swings between 1.0×10⁶ and 1.7×10⁶ °C inside each 120-tick heater cycle; the rows
-above are three of them.
+Box 2's lowest reading in the window is 1.0205×10⁶ °C, on tick 205 998, and the trace's
+rows 500 ticks apart read between 1.0481×10⁶ and 1.7191×10⁶; the rows above are three of
+them.
 
 | term | unit-°C removed from box 2 over the 1000 steps | of the total |
 |---|---|---|
@@ -791,7 +825,9 @@ probe's `-Heaters` builds a bank of heaters on one line, as `bench-mod-links.ps1
 heater past the first adds three pipes west and sits on the last three, and the line gets a
 substation and power source every 18 tiles along. `M.settle_fed`, the fed model, run outside
 the game with 36 heaters' feed holds the box at 2770.66 of 3000 at 4.137×10⁹ °C, and with 40
-or more fills it at 1.369×10⁷. So 40 and 48 were built.
+or more fills it at 1.369×10⁷. So 40 and 48 were built. **The game does not agree at 40**: the
+solo box there holds 2902 to 2924, hot, and does not fill. At 48 it agrees, to four places.
+The fed model has no segment, which may be the difference; that was not read.
 `pwsh -File scripts/probe-plasma-input-box.ps1 -Plasma rf-d-he3-plasma -Heaters <n> -Pipes 3 -Ticks 200000 -Every 2000`,
 2026-10-14, Factorio 2.0.77 (build 84539), normal quality, nothing researched (all 11 rungs
 asserted off in both runs), the pair's second reactor twelve pipes east. A fill tick is the
@@ -807,7 +843,8 @@ last heater cycles, which repeat.
 | 48 | pair, one powered, segment 21 600 | fill at 13 957 and 13 925; powered box 1.369335×10⁷ °C from 16 000; unpowered 15 °C from 13 926 | powered never fills, 2944.44 at 4.16×10⁹ °C at 198 000; unpowered full of cold plasma from 3206 |
 | 48 | both powered | never fills: 2245.86 and 2245.95 at 4.13×10⁹ °C | never fills: 2240.94 and 2245.71 at 4.14×10⁹ |
 
-- **It takes 48 heaters to fill a solo D-He3 line, and the full line is cold.** At 40 the
+- **48 heaters fill a solo D-He3 line and 40 do not, and the full line is cold.** No count
+  between was built, so the fewest that fills is 41 to 48. At 40 the
   solo box holds 2902 to 2924 of 3000, hot. At 48 the box fills on tick 10 339 and reads
   1.369335×10⁷ °C at every row from 12 000 to 198 000, 300 times under the 4.15×10⁹ of the
   line that does not fill. The fed model's cold branch is the same figure to
@@ -815,13 +852,15 @@ last heater cycles, which repeat.
 - **With one reactor unpowered, the line fills at 40 already, because the unpowered box burns
   nothing.** The unpowered box reads 15 °C from tick 15 282 at 40 heaters and 13 926 at 48,
   four and one ticks after its fill, and at every row after; the powered box beside it sits at
-  1.369335×10⁷. So the unpowered reactor is at the floor on a full D-He3 line, as on D-D and on
-  He3-He3, but the line is cold, so this is not the hot full line #558 read on `rf-reactor`.
+  1.369335×10⁷. So the unpowered reactor is at the floor on a full D-He3 line built 1H2, as on
+  D-D and He3-He3 built that way, but the line is cold, so this is not the hot full line #558 read on `rf-reactor`.
 - Both powered, neither count fills: two boxes burn twice what one does.
 - **Canary.** The solo box fills 5.7 times sooner at 48 heaters and ends on the same
   temperature. In the pair the unpowered box takes cold plasma until it is full and the powered
   one never fills, at 40 or at 48. `control.lua` never changed the unpowered canary box: 0 of
   33 001 step ticks.
+
+## The repository's gates under the canary
 
 [#549](https://github.com/trulsjo/realistic-fusion-refreshed/issues/549). 2026-10-04, Factorio
 2.0.77, base game only. Each gate was run twice from the same working tree: once as it ships and
@@ -1147,7 +1186,8 @@ Each option lists what it changes. None is chosen.
    `M.settle_fed` describes: a fill at 30 975 against 31 000, settling at 2.3815×10⁸ against
    2.381×10⁸, with no dependence on pipe count. The segment becomes a queue in front of the box
    rather than a second store. **It ends ADR 0011's heat pooling, which the shipped box keeps
-   only while the line fills (#548).** Reactors on one run share feed plasma but not heat, and a
+   only while the line fills (#548)**, in the cells built 1H2; built 12H or 2H1 an unpowered
+   box on a full D-D line stays at 10³ to 10⁴ °C (#583). Reactors on one run share feed plasma but not heat, and a
    reactor without power sits at the 15 °C floor beside a hot one. ADR 0011 would need
    superseding. The pooling rows of `check-pooling.ps1`, 27 of whose 125 checks fail under the
    canary (see

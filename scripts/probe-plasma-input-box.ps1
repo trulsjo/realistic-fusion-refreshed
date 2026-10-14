@@ -443,8 +443,6 @@ local function power(surface, force, x, dx)
   eei.power_production = 8e6
 end
 
---- One heater, `pipe_count` pipes and a reactor; with `bridge`, `chain` more reactors (one if
---- nil) each that many pipes east of the last, powered only when `both` is set.
 --- One heater bank, `pipe_count` pipes and a reactor; with `bridge`, `chain` more reactors (one if
 --- nil) each that many pipes east of the last, powered only when `both` is set. A cell of two
 --- reactors places its three parts in BUILD_ORDER (#583); the layout on the ground is the same.
