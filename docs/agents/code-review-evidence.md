@@ -1,12 +1,13 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but seven was part of that file and is as it stood there, so "this file" in one is `code-review.md`,
+but eight was part of that file and is as it stood there, so "this file" in one is `code-review.md`,
 and "this rule", "this paragraph" and "the paragraph above" are that file's. All but one of those
 were moved on 2026-10-10 (#672), and the one on what the threshold dropped on 2026-10-11 (#626). The
-seven written for this page are the ones for #651, #653, #670 and #671, the one on the verdict of
-2026-10-10, the one on the wrap width and the one on what the scores decided. What each pull
-request's two passes found and cost is on a third page, [`review-figures.md`](review-figures.md).
+eight written for this page are the ones for #651, #653, #670 and #671, the ones on the verdicts of
+2026-10-10 and 2026-10-14, the one on the wrap width and the one on what the scores decided. What
+each pull request's two passes found and cost is on a third page,
+[`review-figures.md`](review-figures.md).
 
 **Read this page** when a rule is revisited or doubted, and when a sentence of `code-review.md`
 names a case by its pull request and the case is wanted in full. Reviewing a branch does not need
@@ -316,9 +317,9 @@ the same day.
 branches**: #688's, an edit inside a passage of `docs/agents/state-detail.md` that the page says is
 not edited. It is serious as a false claim in a file agents act on, and the edit was the fix a
 pre-PR finding had asked for. The other, on #684, was a sentence of a callout that left no wrong
-figure. The passes raised 14 candidates in all; on #674, #679 and #685 a sentence a candidate
-quoted was reworded although the candidate did not survive, and the 2 counts none of them. The
-pre-PR review found 112 things on the same ten and 106 were fixed.
+figure. The passes raised 14 candidates in all; on #674 and #685 a sentence a candidate quoted was
+reworded, and on #679 a table one quoted was relabelled, although the candidate did not survive, and
+the 2 counts none of them. The pre-PR review found 112 things on the same ten and 106 were fixed.
 
 | The plugin pass on the ten | Summed | A pass |
 |---|---|---|
@@ -331,12 +332,18 @@ count; they include the three subagents #674 and #678 ran before their reviewers
 used 27 255 782 tokens over all requests on the same ten. What the main session used to run a pass
 is in neither figure.
 
+**The verifier, judged at the same revisit as #626 set.** Six of the ten passes had a candidate and
+so a verifier: #679, #684, #685, #686, #688 and #690. It was handed 11 candidates and found 2 real,
+both posted and fixed, 9 not real and none not verified; no row records that a candidate found not
+real was later shown to be real. It used 1 193 813 tokens over all requests, 8.4% of those six
+passes' 14 142 623, where the scorers used 30.8% of the eleven passes before it. Truls kept it.
+
 **Truls was shown the summed figures, not each row's grade**, so the ten rows' last cells still say
-he has not seen it. **One of the ten touches a mod**, #690, with seven files under the three mods'
-directories, read from each pull request's list of files on 2026-10-14; its plugin pass raised one
-candidate and it was found not real. So the ten still say almost nothing of what the pass finds in
-Lua or in a prototype. **On #683 and #690 the reviewer asked to read earlier pull requests read
-none**, so that task was not done on two of the ten.
+he has not seen it. **One of the ten touches a mod**, #690, with seven files under
+`realistic-fusion-refreshed/`, read from each pull request's list of files on 2026-10-14; its plugin
+pass raised one candidate and it was found not real. So the ten still say almost nothing of what the
+pass finds in Lua or in a prototype. **On #683 and #690 the reviewer asked to read earlier pull
+requests said it read none.** The other eight rows do not say whether theirs did.
 
 ## The wrap width
 
