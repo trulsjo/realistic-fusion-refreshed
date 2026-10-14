@@ -352,18 +352,15 @@ local function to_floor(spec, amount, c, sum)
   return steps
 end
 
--- THE FITTED FIXED-POINT RULE ON TWO BOXES (#572). fixed_flow is probe-plasma-segment.ps1's with
--- its `round` argument fixed at math.floor, the rounding #564 settled. That one still runs all
--- three roundings and nothing holds the two copies together: change one and change the other. There one
--- box pushes and pulls and then the heater pushes twice. Here there are two boxes, and the order
--- the engine takes the three in is what is being read, so all six are run.
-local UNITS = 2 ^ 24
-local FLOOR_UNITS = math.floor(0.1 * UNITS)
+-- THE FITTED FIXED-POINT RULE ON TWO BOXES (#572). The transfer is Get-FixedRuleLua's, which
+-- probe-plasma-segment.ps1 runs too (#588), with the destination's fill floored, the rounding #564
+-- settled. There one box pushes and pulls and then the heater pushes twice. Here there are two
+-- boxes, and the order the engine takes the three in is what is being read, so all six are run.
+__FIXEDRULE__
+local UNITS = rf_fixed_units
 local ORDERS = { "H12", "H21", "1H2", "2H1", "12H", "21H" }
 local function fixed_flow(from, from_volume, to, to_volume)
-  local rate = math.max(FLOOR_UNITS,
-    100 * math.min(math.floor(from / from_volume), UNITS - math.floor(to / to_volume)))
-  return math.max(0, math.min(rate, from, to_volume * UNITS - to))
+  return rf_fixed_flow(math.floor, from, from_volume, to, to_volume)
 end
 --- One engine tick from `fx` (2^-24 units), the heater (H) and the boxes (1, 2) taken in `order`:
 --- where it ends, and what each box pushed into the segment on the way.
@@ -571,8 +568,8 @@ script.on_event(defines.events.on_tick, function()
           t.split = new_tally()
           local sum = new_tally()
           local steps = to_floor(SPEC, t.cap, temp, sum)
-          say_tally("descent", sum, string.format("r=%d from=%.9g amount=%g radiation_only_steps=%d",
-            t.r, temp, t.cap, to_floor(NO_CONFINEMENT_LOSS, t.cap, temp)))
+          say_tally("descent", sum, string.format("r=%d from=%.9g amount=%g radiation_only_steps=%d cap=%d step_ticks=%d",
+            t.r, temp, t.cap, to_floor(NO_CONFINEMENT_LOSS, t.cap, temp), STEP_CAP, STEP_TICKS))
         end
         local s = tick % STEP_TICKS == 0 and tick < TRACE_TO and unheated(pre[i], pre_c[i])
         if s then
@@ -671,6 +668,7 @@ $inv = [cultureinfo]::InvariantCulture
 [cultureinfo]::CurrentCulture = $inv
 $lua = $lua.
     Replace('__RIGBUILD__', (Get-RigBuildLua)).
+    Replace('__FIXEDRULE__', (Get-FixedRuleLua)).
     Replace('__QUIETMAP__', (Get-QuietMapLua)).
     Replace('__QUIETFN__', $script:QuietMapFunction).
     Replace('__PIPES__', ($pipeCounts -join ', ')).
@@ -839,8 +837,9 @@ function Write-Split {
             $s['close'], $s['steps'], (Num $s['worst_c']), $s['worst_c_tick'], (Num $s['worst_box']))
     }
     foreach ($d in $Descent) {
-        # 100000 is the rig's STEP_CAP: a descent that long did not land.
-        $ticks = { param($n) if ([int]$n -ge 100000) { 'not in 100000 steps' } else { "after $n steps, $(6 * [int]$n) ticks" } }
+        # The rig's STEP_CAP and STEP_TICKS, from its own record: a descent that long did not land.
+        $cap = [int]$d['cap']; $per = [int]$d['step_ticks']
+        $ticks = { param($n) if ([int]$n -ge $cap) { "not in $cap steps" } else { "after $n steps, $($per * [int]$n) ticks" } }
         Write-Host ("  box {0}, held at {1} units and unheated from {2:E4} degC: at the floor {3}; with no confinement loss, {4}" -f
             $d['r'], $d['amount'], (Num $d['from']), (& $ticks $d['steps']), (& $ticks $d['radiation_only_steps']))
         Write-Host ("         " + (& $terms $d))
