@@ -181,4 +181,5 @@ One line for each, newest last. The passages above are not edited.
 - **2026-10-14, #691: Truls's verdict on the fourth rule's second revisit.** The plugin pass
   stays on every pull request, and the rule is next revisited by the same trigger, ten more routine
   rows or the first five that touch a mod, counted from the row after #690's. He was shown the ten
-  rows' figures summed, not each row's grade.
+  rows' figures summed, not each row's grade. He also judged the verifier, as #626 set: it stays,
+  and is judged again at the next revisit.

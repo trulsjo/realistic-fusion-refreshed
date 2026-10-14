@@ -484,8 +484,9 @@ first rule says what a verdict decides. **A candidate found real or not verified
 with its reason written in the pull request's body.** The reason for the verifier is what the scores
 decided: over the eleven passes from #628's to #674's a score placed 3 of 33 candidates in the
 posted comment, and the scorers used 30.8% of the passes' tokens; [the evidence page has both
-tables](code-review-evidence.md#what-the-scores-decided-on-eleven-passes-626). **The verifier is
-judged when this rule is next revisited**, and has no count of its own.
+tables](code-review-evidence.md#what-the-scores-decided-on-eleven-passes-626). **The verifier
+stays** (Truls, 2026-10-14, at this rule's second revisit), is judged again at the next, and has no
+count of its own.
 
 **A plugin-pass finding the pre-PR review missed gets its class named**, by the session that fixes
 it, in the pull request. A class a script can detect becomes a section of `scripts/ship-check.ps1`.
@@ -604,7 +605,7 @@ test above 1 of the 2 fixed findings in those ten rows was serious, on 1 of the 
 shown the ten rows' figures summed and not each row's grade, so their cells still say he has not
 seen it. [What the verdict
 rested on](code-review-evidence.md#what-the-verdict-of-2026-10-14-rested-on) is on the evidence
-page.
+page. The verifier was judged at the same revisit, and stays.
 
 **The rule is next revisited at ten more routine rows, or at the first five that touch a mod,
 whichever comes first** (Truls, 2026-10-14, the trigger he set on 2026-10-10). Both are counted from
@@ -612,7 +613,7 @@ the row after #690's. Ten more is the thirtieth routine row, which is the thirty
 table. A row touches a mod when its pull request changes a file under
 `realistic-fusion-refreshed-assets/`, `realistic-fusion-refreshed-core/` or
 `realistic-fusion-refreshed/`; that is this file's reading of "touch a mod", and the wording is his
-to correct. Of the ten counted from #673's, only #690's does, and it was the tenth. The second
+to correct. Of the ten after #673's, only #690's does, and it was the tenth. The second
 revisit was set on 2026-10-10 by the same trigger. The first was
 set at ten routine rows, which was sixteen in the first table (Truls, 2026-10-07, #593). A routine
 row is one for a pull request opened after the verdict of 2026-10-07, when the pass stopped waiting
