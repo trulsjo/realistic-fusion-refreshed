@@ -24,7 +24,7 @@
     WHAT IS BUILT, IN EACH RUN
 
       solo     One cell per entry of -Pipes: one rf-heater, that many rf-pipe, one reactor, the
-               layout probe-plasma-segment.ps1 builds. The heater's feed is unbounded and reactor
+               layout probe-plasma-segment.ps1 builds. -Heaters adds heaters and pipes west. The heater's feed is unbounded and reactor
                energy is drained as it arrives.
       pair     One rf-heater and -Pipes' first count of rf-pipe into a reactor, and -Bridge more
                rf-pipe from its east face into a second. ONLY THE FIRST IS ON AN ELECTRIC NETWORK
@@ -104,6 +104,17 @@
 .PARAMETER Trio
     Also build a run of three reactors with only the first powered (#559).
 
+.PARAMETER Heaters
+    rf-heater per cell, every one after the first three pipes further west along the run, as
+    bench-mod-links.ps1 lays a bank (#586). The line then has -Pipes plus three per added heater.
+    -Fixed follows one heater and is refused with more.
+
+.PARAMETER BuildOrder
+    The order a two-reactor cell's three parts are placed in (#583): 1 the first reactor, H the
+    heater bank and the pipes from it to the first reactor, 2 the bridge and the second reactor.
+    The layout on the ground is the same in every order. 1H2, the default, is the order every run
+    before #583 built; the trio and the solo cells are always built 1H2.
+
 .PARAMETER Rungs
     Hold a chosen number of rungs per ladder instead of none, as probe-plasma-segment.ps1's -Rungs
     does: comma-separated <ladder>=<rungs> pairs. Asserted the same way.
@@ -118,6 +129,10 @@
     Run the fitted fixed-point rule beside each two-reactor cell, one tick at a time, in every
     order of the two boxes and the heater (#572). probe-plasma-segment.ps1 -Fixed is the same rule
     on one reactor. It is the input-output box's rule, so under the canary its misses are a reading.
+
+.PARAMETER NoCanary
+    Run the shipped variant alone. For a reading that is about the shipped box only, at half the
+    time; the canary's rows are then not printed at all.
 
 .PARAMETER KeepTemp
     Keep the saves, the rig mods and the captured output.
@@ -143,10 +158,13 @@ param(
     [ValidateSet('rf-d-d-plasma', 'rf-d-t-plasma', 'rf-d-he3-plasma', 'rf-he3-he3-plasma')]
     [string] $Plasma = 'rf-d-d-plasma',
     [switch] $Trio,
+    [ValidateRange(1, 60)] [int] $Heaters = 1,
+    [ValidateSet('1H2', '12H', '21H', '2H1', 'H12', 'H21', IgnoreCase = $false)] [string] $BuildOrder = '1H2',
     [switch] $Fixed,
     # Case-sensitive: the names are Lua table keys.
     [ValidatePattern('^((confinement|heating|capture)_ladder=\d+)(,(confinement|heating|capture)_ladder=\d+)*$', Options = 'None')]
     [string] $Rungs,
+    [switch] $NoCanary,
     [switch] $KeepTemp
 )
 
@@ -170,6 +188,7 @@ if ($Trace -and ($traceTo -lt $traceFrom -or $traceTo -ge $Ticks)) { throw "-Tra
 $named = @($Rungs -split ',' | Where-Object { $_ } | ForEach-Object { ($_ -split '=')[0] })
 if ($named.Count -ne @($named | Sort-Object -Unique).Count) { throw "-Rungs names a ladder twice: $Rungs" }
 $rungsLua = if ($Rungs) { '{ ' + (($Rungs -split ',') -join ', ') + ' }' } else { 'nil' }
+if ($Fixed -and $Heaters -gt 1) { throw "-Fixed follows one heater, and -Heaters is $Heaters." }
 if ($Every -ge $Ticks) { throw "-Every $Every is not less than -Ticks $Ticks, so no row would be sampled." }
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
@@ -255,6 +274,8 @@ local FULL_AT = __FULLAT__
 local TRACE_FROM, TRACE_TO = __TRACEFROM__, __TRACETO__
 local TRACE_CELL = "__TRACECELL__"
 local TRIO  = __TRIO__
+local HEATERS = __HEATERS__
+local BUILD_ORDER = "__BUILDORDER__"
 local RUNGS = __RUNGS__
 local FIXED = __FIXED__
 local ENERGY_FEED = "__ENERGYFEED__"
@@ -263,7 +284,8 @@ local REACTOR = "__REACTOR__"
 local LONE    = "rf-input-box-lone"
 -- The fluid's default_temperature and the spec's min_temperature_c: quality.md's cold seed.
 local LONE_C  = 15
-local PITCH   = 100
+-- A bank of heaters runs west three tiles a heater, so the cells move apart by as much.
+local PITCH   = 100 + 3 * (HEATERS - 1)
 -- control.lua's UPDATE_INTERVAL; only the instrument's own check reads it.
 local STEP_TICKS = 6
 
@@ -423,42 +445,69 @@ end
 
 --- One heater, `pipe_count` pipes and a reactor; with `bridge`, `chain` more reactors (one if
 --- nil) each that many pipes east of the last, powered only when `both` is set.
+--- One heater bank, `pipe_count` pipes and a reactor; with `bridge`, `chain` more reactors (one if
+--- nil) each that many pipes east of the last, powered only when `both` is set. A cell of two
+--- reactors places its three parts in BUILD_ORDER (#583); the layout on the ground is the same.
 local function build(surface, force, ox, label, pipe_count, bridge, both, chain)
-  for _, dx in ipairs({ 9, -9 }) do power(surface, force, ox, dx) end
-  local first = reactor_at(surface, force, ox + 0.5)
+  -- A power island every 18 tiles west along the bank, one substation's supply area apiece.
+  for k = -1, math.ceil(3 * (HEATERS - 1) / 18) do power(surface, force, ox, -9 - 18 * k) end
   -- Both reactors' west plasma connection is 7 tiles out, so the first pipe is 8.
   local west = { ox + 0.5 - 8, 0.5 }
-  local run = pipes_from(surface, force, west, { -1, 0 }, pipe_count)
-  local heater = rf_place_facing(surface, force, {
-    name = "rf-heater", fluid = PLASMA,
-    prepare = function(entity) entity.set_recipe(PLASMA) end,
-    target = { west[1] - (pipe_count - 1), west[2] }, seed = { ox - 24.5, 20.5 },
-  })
-  local feed = prototypes.recipe[PLASMA].ingredients[1].name
-  rf_unbound(surface, force, heater, rf_box_of(heater, feed),
-    { name = feed, percentage = 1, mode = "at-least" })
-  if not (heater.electric_network_id and first.electric_network_id) then
-    error("a machine in the " .. label .. " cell is on no electric network")
-  end
+  local cell = { label = label, sides = {}, at = {} }
+  local first, run, heaters, seconds = nil, nil, {}, {}
 
-  local cell = { label = label, reactors = { first }, sides = { run[1] }, run = run,
-    heater = heater, heater_box = rf_box_of(heater, PLASMA), at = {} }
-  local from = ox + 0.5
-  for _ = 1, bridge and (chain or 1) or 0 do
-    local east = { from + 8, 0.5 }
-    local span = pipes_from(surface, force, east, { 1, 0 }, bridge)
-    local second = reactor_at(surface, force, east[1] + (bridge - 1) + 8)
+  local parts = {
+    ["1"] = function() first = reactor_at(surface, force, ox + 0.5) end,
+    -- THE HEATER BANK, as bench-mod-links.ps1 lays it (#586): every heater past the first adds
+    -- three pipes to the run and sits on the last three.
+    H = function()
+      run = pipes_from(surface, force, west, { -1, 0 }, pipe_count + 3 * (HEATERS - 1))
+      local feed = prototypes.recipe[PLASMA].ingredients[1].name
+      for i = 0, HEATERS - 1 do
+        local heater = rf_place_facing(surface, force, {
+          name = "rf-heater", fluid = PLASMA,
+          prepare = function(entity) entity.set_recipe(PLASMA) end,
+          target = { west[1] - (pipe_count - 1) - 3 * i, west[2] }, seed = { ox - 24.5 - 4 * i, 20.5 },
+        })
+        rf_unbound(surface, force, heater, rf_box_of(heater, feed),
+          { name = feed, percentage = 1, mode = "at-least" })
+        heaters[#heaters + 1] = heater
+      end
+    end,
+    ["2"] = function()
+      local from = ox + 0.5
+      for _ = 1, bridge and (chain or 1) or 0 do
+        local east = { from + 8, 0.5 }
+        local span = pipes_from(surface, force, east, { 1, 0 }, bridge)
+        local x = east[1] + (bridge - 1) + 8
+        if both then power(surface, force, x - 0.5, 9) end
+        seconds[#seconds + 1] = { reactor = reactor_at(surface, force, x), span = span }
+        from = x
+      end
+    end,
+  }
+  local order = (bridge and not chain) and BUILD_ORDER or "1H2"
+  for who in order:gmatch(".") do parts[who]() end
+
+  for _, heater in ipairs(heaters) do
+    if not (heater.electric_network_id and first.electric_network_id) then
+      error("a machine in the " .. label .. " cell is on no electric network")
+    end
+  end
+  cell.reactors, cell.run, cell.sides[1] = { first }, run, run[1]
+  -- The first heater is the one the fixed-point rule follows; with more than one it is not run.
+  cell.heater, cell.heater_box, cell.heaters = heaters[1], rf_box_of(heaters[1], PLASMA), heaters
+  for _, s in ipairs(seconds) do
+    local second = s.reactor
     if both then
-      power(surface, force, second.position.x - 0.5, 9)
       if not second.electric_network_id then error("the " .. label .. " cell's second reactor is unpowered") end
     -- THE DISCRIMINATOR: what heats this one arrived along the pipe.
     elseif second.electric_network_id then
       error("the " .. label .. " cell's unpowered reactor is on an electric network, so its heat would not say pooling")
     end
     cell.reactors[#cell.reactors + 1] = second
-    cell.sides[#cell.sides + 1] = span[1]
-    cell.span = cell.span or span
-    from = second.position.x
+    cell.sides[#cell.sides + 1] = s.span[1]
+    cell.span = cell.span or s.span
   end
   return cell
 end
@@ -489,7 +538,7 @@ script.on_init(function()
   surface.request_to_generate_chunks({ east / 2, 0 }, math.ceil(east / 32) + 4)
   surface.force_generate_chunk_requests()
   storage.quieted = __QUIETFN__(surface)
-  local clear = { { -60, -40 }, { east, 40 } }
+  local clear = { { -60 - 3 * (HEATERS - 1), -40 }, { east, 40 } }
   local tiles = {}
   for x = clear[1][1], clear[2][1] do
     for y = clear[1][2], clear[2][2] do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
@@ -681,6 +730,8 @@ $lua = $lua.
     Replace('__PLASMA__', $Plasma).
     Replace('__REACTOR__', $reactorName).
     Replace('__TRIO__', $(if ($Trio) { 'true' } else { 'false' })).
+    Replace('__HEATERS__', "$Heaters").
+    Replace('__BUILDORDER__', $BuildOrder).
     Replace('__RUNGS__', $rungsLua).
     Replace('__FIXED__', $(if ($Fixed) { 'true' } else { 'false' })).
     Replace('__ENERGYFEED__', (Write-EnergyFeed -RigDirectory $rigDir))
@@ -915,19 +966,21 @@ try {
         Write-FactorioTail $shipped.Run
         throw "the shipped variant's run failed (exit $($shipped.RunCode)), so the rig is broken."
     }
-    $canary = Invoke-Variant -Tag 'canary' -WithCanary
+    $canary = if (-not $NoCanary) { Invoke-Variant -Tag 'canary' -WithCanary }
 
     $version = 'unknown'
     $hit = $shipped.Created | Select-String -Pattern 'Factorio (\d+\.\d+\.\d+) \(build (\d+)' | Select-Object -First 1
     if ($hit) { $version = "$($hit.Matches[0].Groups[1].Value) (build $($hit.Matches[0].Groups[2].Value))" }
     Write-Host ''
-    Write-Host "Factorio $version -- $Ticks ticks per variant, one heater per cell, $Plasma into $reactorName"
-    Write-Host "solo cells at $Pipes pipe(s); the pair at $($pipeCounts[0]) pipe(s) to the first reactor and $Bridge between them"
+    $added = 3 * ($Heaters - 1)
+    Write-Host "Factorio $version -- $Ticks ticks per variant, $Heaters heater(s) per cell, $Plasma into $reactorName"
+    Write-Host ("solo cells at {0} pipe(s); the pair at {1} pipe(s) to the first reactor and $Bridge between them; two-reactor cells built in the order $BuildOrder" -f
+        (($pipeCounts | ForEach-Object { $_ + $added }) -join ','), ($pipeCounts[0] + $added))
     Write-Variant $shipped
-    Write-Variant $canary
+    if ($canary) { Write-Variant $canary }
 
     Write-Host ''
-    if ($canary.Code -ne 0 -or $canary.RunCode -ne 0) {
+    if ($canary -and ($canary.Code -ne 0 -or $canary.RunCode -ne 0)) {
         Write-Host 'OK - the probe ran. The shipped variant reported every row; the canary did not run to the'
         Write-Host '     end, which is a reading, and its tail is printed above.'
     } else {

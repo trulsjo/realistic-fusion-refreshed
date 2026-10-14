@@ -122,6 +122,10 @@
     2^-24 units, and a tick is a miss when any predicted figure differs at all. Reported every 6000 ticks, split into ticks the heater had nothing to give and
     ticks it was feeding, and by how the destination's fill is rounded, which the fit left open.
 
+.PARAMETER Quality
+    Place every reactor and heater at this quality, with the bundled quality mod enabled (#587).
+    Asserted on each machine. Normal, with no quality mod, unless given.
+
 .PARAMETER KeepTemp
     Keep the save, the rig mods and the captured output.
 
@@ -151,6 +155,7 @@ param(
     [string] $Rungs,
     [switch] $Heater,
     [switch] $Fixed,
+    [ValidateSet('uncommon', 'rare', 'epic', 'legendary', IgnoreCase = $false)] [string] $Quality,
     [switch] $KeepTemp
 )
 
@@ -224,6 +229,8 @@ local SPAN  = __SPAN__
 local RUNGS = __RUNGS__
 local HEATER = __HEATER__
 local FIXED  = __FIXED__
+-- nil places every machine at normal quality and asserts nothing about it.
+local QUALITY = __QUALITY__
 
 local PLASMA = "__PLASMA__"
 local ENERGY_FEED = "__ENERGYFEED__"
@@ -300,7 +307,7 @@ local function build(surface, force, ox, pipe_count)
     eei.power_production = 8e6   -- J/tick, 480 MW a side against a reactor's 200 at most and a heater's 5
   end
   local reactor = rf_place_or_die(surface,
-    { name = REACTOR, position = { ox + 0.5, 0.5 }, force = force, raise_built = true }, REACTOR)
+    { name = REACTOR, position = { ox + 0.5, 0.5 }, force = force, raise_built = true, quality = QUALITY }, REACTOR)
   if rf_box_of(reactor, ENERGY) ~= 2 then error(REACTOR .. "'s boxes are not where they were") end
 
   -- The plasma run leaves the reactor's west connection, reactor end first, as the bench's does.
@@ -315,8 +322,14 @@ local function build(surface, force, ox, pipe_count)
   local heater = rf_place_facing(surface, force, {
     name = "rf-heater", fluid = PLASMA,
     prepare = function(entity) entity.set_recipe(PLASMA) end,
-    target = { west[1] - (pipe_count - 1), west[2] }, seed = { ox - 24.5, 20.5 },
+    target = { west[1] - (pipe_count - 1), west[2] }, seed = { ox - 24.5, 20.5 }, quality = QUALITY,
   })
+  -- A machine the engine placed at another quality than asked would read as that quality's.
+  for _, machine in ipairs({ reactor, heater }) do
+    if machine.quality.name ~= (QUALITY or "normal") then
+      error(string.format("%s was placed at %s, not %s", machine.name, machine.quality.name, QUALITY or "normal"))
+    end
+  end
   local feed = prototypes.recipe[PLASMA].ingredients[1].name
   rf_unbound(surface, force, heater, rf_box_of(heater, feed),
     { name = feed, percentage = 1, mode = "at-least" })
@@ -516,6 +529,7 @@ $lua = $lua.
     Replace('__RUNGS__', $rungsLua).
     Replace('__HEATER__', $(if ($Heater) { 'true' } else { 'false' })).
     Replace('__FIXED__', $(if ($Fixed) { 'true' } else { 'false' })).
+    Replace('__QUALITY__', $(if ($Quality) { "`"$Quality`"" } else { 'nil' })).
     Replace('__ENERGYFEED__', (Write-EnergyFeed -RigDirectory $rigDir))
 Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
 
@@ -594,7 +608,8 @@ function Num { param($Value) [double]::Parse($Value, $inv) }
 
 try {
     New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
-    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled @() -Mods ($ourMods + $rigName + $preName)
+    $enabled = if ($Quality) { Resolve-BundledSelection -Requested @('quality') -Bundled $bundled } else { @() }
+    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabled -Mods ($ourMods + $rigName + $preName)
 
     $save = Join-Path $temp 'plasma-segment.zip'
     $createOut = Invoke-FactorioStep @invoke -Arguments @('--create', $save) -Tag 'create'
@@ -627,7 +642,7 @@ try {
     }
 
     Write-Host ''
-    Write-Host "Factorio $version -- $Ticks ticks, one heater per cell, $Plasma"
+    Write-Host "Factorio $version -- $Ticks ticks, one heater per cell, $Plasma, reactor and heater at $(if ($Quality) { "$Quality quality, the bundled quality mod enabled" } else { "normal quality, no quality mod" })"
     $research = @($created | Select-String -Pattern 'SEGPROBE research ' | ForEach-Object { "$_" -replace '^.*SEGPROBE research ', '' })
     Write-Host ("research: {0} rung(s) asserted, {1}" -f $research.Count,
         $(if ($Rungs) { "-Rungs $Rungs, every other ladder OFF" } else { 'every ladder OFF' }))
