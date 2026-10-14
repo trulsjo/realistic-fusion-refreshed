@@ -199,10 +199,12 @@ One line for each, newest last. The passages above are not edited.
 - **2026-10-14, #701.** The second rule's paragraph on a fix checked against its source gained a
   ticket among those sources: a claim a ticket makes about an earlier pull request, issue or commit
   is read from it before the implementing session restates it, and where they disagree the source
-  wins and the pull request says so. It rests on #700's first pre-PR finding. The ticket was
+  wins and the pull request says so. It rests on #700's first pre-PR finding. The rule's head and
+  the #637 paragraph name the text that implements a ticket, and `CLAUDE.md`'s pointer to the rule
+  names implementing a ticket. The ticket was
   `ready-for-agent`, and the wording is the session's.
-- **2026-10-14, #702.** The fourth rule's item on a hook that refuses the spawn gained the herdr
-  case: where `HERDR_ENV` is set the session asks for the worktree before it spawns, and spawns
-  without isolation. It rests on #700, where the hook refused all five reviewers' spawns.
-  `/plugin-pass` carries it out. The ticket was `ready-for-agent`, and the wording is the
+- **2026-10-14, #702.** The fourth rule's first two items on where the plugin pass's subagents work
+  gained the herdr case: where `HERDR_ENV` is set the session asks for the worktree before it
+  spawns, and spawns without isolation. It rests on #700, where the hook refused all five reviewers'
+  spawns. `/plugin-pass` carries it out. The ticket was `ready-for-agent`, and the wording is the
   session's.
