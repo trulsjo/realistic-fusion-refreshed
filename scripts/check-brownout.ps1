@@ -47,8 +47,9 @@
 
       boundary  A reactor with no heater and no feed line at all, given one thin cold charge at the
                 cut tick and full power throughout. Below a certain density a D-T plasma cannot carry
-                itself, and this is the only state in which the reactor is a net drain -- so the cell
-                exists to put a number on that drain rather than leave it as a worry. It has to be
+                itself, and this is the only state in which the reactor stays a net drain -- a
+                recovering one is a drain only for its opening seconds -- so the cell exists to put a
+                number on that drain rather than leave it as a worry. It has to be
                 SEEDED rather than piped: holding a segment thin with an infinity pipe means
                 injecting cold fluid into it for ever, and the cell would be measuring the hosing.
 
@@ -1194,29 +1195,33 @@ script.on_nth_tick(REPORT, function()
       rs > rd and "net positive over those seconds taken together"
               or string.format("a cost of %.1f%% of the draw", 100 * (rd - rs) / math.max(rd, 1))))
   -- WHERE IN THOSE SECONDS IT IS A DRAIN (#693). The total above hides an opening: on 2026-10-13 the
-  -- cell was net negative for its first fifty seconds back. Read off the ten-second trace, so the
-  -- opening is a multiple of ten seconds; reported and not asserted, like every megawatt here.
+  -- cell was net negative for its first fifty seconds back. Read off the ten-second trace, from the
+  -- deep sample a tick after the supply returns, so a -Settle and -Cut that do not end on a trace
+  -- tick lose none of the opening; reported and not asserted, like every megawatt here.
   local key = consume == "input" and "din" or "dout"
-  local opening, worst, prev = 0, nil, nil
+  local deep = snaps.deep.recover
+  local prev = { tick = DEEP, sold = deep.sold,
+    [key] = deep.flows["rf-reactor"][consume] + deep.flows["rf-heater"][consume] }
+  local opening, worst = 0, nil
   local still_negative = true
   for _, e in ipairs(cells.recover.trace or {}) do
-    if e.tick >= SETTLE + CUT then
-      if prev then
-        local net = mw((e.sold - prev.sold) - (e[key] - prev[key]) / 1e6, e.tick - prev.tick)
-        if not worst or net < worst then worst = net end
-        if net < 0 and still_negative then opening = opening + (e.tick - prev.tick) / 60
-        else still_negative = false end
-      end
+    if e.tick > DEEP then
+      local net = mw((e.sold - prev.sold) - (e[key] - prev[key]) / 1e6, e.tick - prev.tick)
+      if not worst or net < worst then worst = net end
+      if net < 0 and still_negative then opening = opening + (e.tick - prev.tick) / 60
+      else still_negative = false end
       prev = e
     end
   end
   note("recover: how long it is a net drain once the supply returns",
-    worst and string.format("net negative for its first %ds back; its worst ten seconds were %+.4g MW",
-      math.floor(opening + 0.5), worst) or "no trace")
+    not worst and "no trace"
+      or opening > 0 and string.format("net negative for its first %ds back; its worst ten seconds were %+.4g MW",
+        math.floor(opening + 0.5), worst)
+      or string.format("net positive from its first ten seconds back; its worst were %+.4g MW", worst))
 
   -- ------------------------------------------------------------ 3. the drain is bounded
   --
-  -- boundary is the only cell in the rig where the reactor is genuinely a net drain, and it is held
+  -- boundary is the only cell in the rig where the reactor stays a net drain, and it is held
   -- there deliberately: plasma present, full power, and a density too low for the reaction to carry
   -- itself. The bound matters more than the sign. capture_efficiency is what sets it -- the reactor
   -- sells most of what leaves the plasma whether or not any of it came from fusion -- so a thin
@@ -1229,7 +1234,7 @@ script.on_nth_tick(REPORT, function()
       seeded.amount, capacity, 100 * seeded.amount / capacity, 100 * THIN) or "no plasma")
   local bs, bd = span("boundary", "lit", "deep")
   record(bs < bd, "boundary: a reactor holding plasma too thin to carry itself is a net drain",
-    string.format("%+.4g MJ net (%+.4g MW) -- the only cell in this rig where the sign is negative",
+    string.format("%+.4g MJ net (%+.4g MW) -- the only cell in this rig whose sign is negative over a whole phase",
       bs - bd, mw(bs - bd, DEEP - LIT)))
   local ended = snaps.deep.boundary.plasma[1]
   note("boundary  end", ended
@@ -1922,7 +1927,7 @@ try {
 
     Write-Host ''
     Write-Host 'OK - a lit reactor rides out a shortfall as a contributor, recovers unattended, and the'
-    Write-Host '     only drain is the bounded sub-ignition window.'
+    Write-Host '     only lasting drain is the bounded sub-ignition window.'
 }
 finally {
     if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }

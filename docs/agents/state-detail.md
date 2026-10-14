@@ -187,7 +187,7 @@ One line for each change to a gate, newest last, with its date and its ticket.
   together, which is what the check measures. One sentence of the report it writes with `-Report`
   no longer places the D-T cells on the clamp. On 2026-10-13 the `recover` cell was net negative
   for its first fifty seconds; `docs/research/d-t-ignition.md` has the reading.
-- 2026-10-14, #693: `check-brownout.ps1` asserts what it did and reports one thing more. Beside
+- 2026-10-14, #693: `check-brownout.ps1` asserts what it did and prints one line more. Beside
   its recover check it prints how long the `recover` cell is net negative once the supply returns
   and its worst ten seconds, read off the ten-second trace, as a note and not a check, so the
   count of checks is unchanged.
