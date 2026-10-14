@@ -1262,7 +1262,8 @@ if (-not (Test-Path -LiteralPath $markdownCheck)) {
 $WRAP_WIDTH = 100
 # The first is where the sentence is; it calls itself "this file" there.
 $WRAPPED    = @('docs/agents/code-review.md', 'docs/agents/review-figures.md', 'docs/agents/code-review-history.md',
-                'docs/agents/code-review-evidence.md', '.claude/skills/pre-pr-review/SKILL.md',
+                'docs/agents/code-review-evidence.md', 'docs/agents/plugin-pass.md',
+                '.claude/skills/pre-pr-review/SKILL.md',
                 'CLAUDE.md', 'scripts/CLAUDE.md')
 
 function Find-OverlongProseLines {

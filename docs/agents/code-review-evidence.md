@@ -11,9 +11,9 @@ each pull request's two passes found and cost is on a third page,
 
 **Read this page** when a rule is revisited or doubted, and when a sentence of `code-review.md`
 names a case by its pull request and the case is wanted in full. Reviewing a branch does not need
-it. **The rule is the one `code-review.md` words**: where a passage here states one, that file's
-wording is the rule and this is what it rested on. **A new measurement is added here**, under the
-rule it is evidence for, in the commit that changes the rule.
+it. **The rule is the one `code-review.md` or `plugin-pass.md` words**: where a passage here states
+one, that page's wording is the rule and this is what it rested on. **A new measurement is added
+here**, under the rule it is evidence for, in the commit that changes the rule.
 
 ## Review the prose, not only the code
 
@@ -214,7 +214,8 @@ body is no longer judged", which a later fix made false.
 ### What the verdict of 2026-10-07 rested on (#593)
 
 Five paragraphs of the section *Measured, not assumed* of that rule, until 2026-10-10. The verdict
-itself, the test it used and when the rule is revisited are still in `code-review.md`.
+itself, the test it used and when the rule is revisited are in `plugin-pass.md`, which held them
+in `code-review.md` until 2026-10-14 (#703).
 
 **#604, #605 and #607 count towards the five** (Truls, 2026-10-07, #593). They were added on
 2026-10-07 when he asked for them, and not by the sessions that ran their plugin passes, which #593

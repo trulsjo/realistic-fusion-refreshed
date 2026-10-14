@@ -375,9 +375,9 @@ none of them** (#630). Read the section named when its condition holds:
   pre-PR review. `/pre-pr-review` runs it.
 - **Before the first commit on a branch, and each one after**: the same section, for a body that
   says why, from the ticket, and leaves what to the diff (#671).
-- **A pull request has been opened**: the same section, for the plugin pass, who confirms its fixes,
-  and the row it adds to each of the two tables, which since #644 are in
-  `docs/agents/review-figures.md`. `/plugin-pass` runs it (#626).
+- **A pull request has been opened**: the same section, for who confirms the plugin pass's fixes,
+  and `docs/agents/plugin-pass.md`, which it points at, for the pass and the row it adds to each
+  table of `docs/agents/review-figures.md` (#703). `/plugin-pass` runs it (#626).
 - **The last fix on a branch has been committed, the plugin pass's included**: *Review the prose,
   not only the code*, for what is read again before the body is last edited (#663). Step 7 of
   `/pre-pr-review` carries it out.
