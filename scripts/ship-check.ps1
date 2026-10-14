@@ -3,7 +3,7 @@
     Fails if the claims the shipped mods make about themselves have stopped being true, if the
     scripts in this directory have stopped answering Get-Help, if any prose cites one of our own
     files by line number, if an accent named for a fluid has stopped being that fluid's colour,
-    or if a docs/ note this repo cites
+    or if a docs/ note or a script this repo cites
     is not there to be read.
 
 .DESCRIPTION
@@ -69,7 +69,9 @@
     to a file that exists. Two notes were researched, written and committed for #158 and #159, and
     never merged; three files on main cited them, both tickets read as completed, and the findings
     could not be opened. The citing line is a comment or a markdown link, so no parser reads it,
-    and an unmerged branch looks merged from everywhere except `git merge-base`.
+    and an unmerged branch looks merged from everywhere except `git merge-base`. Since #697 it
+    asserts the same of every scripts/ or tools/ path cited in those of them that say how things
+    are; the section comment states which pages are records and left out, and why.
 
     Since #151 it also asserts one thing that is not about the mods at all: that every script in
     scripts/ which declares a .SYNOPSIS actually answers Get-Help. It lives here because it is the
@@ -121,7 +123,8 @@
     citations to believe -- section 7 twice over, once per shape it matches -- and section 8 carries
     four: one on each of the three things it scans, and one on the pairing between two of them. That is narrower than a -SelfTest would be, because a floor
     cannot see a mistake in the scan itself -- break that and there is nothing left to check and so
-    nothing left to fail.
+    nothing left to fail. Section 6 has both since #697: the dangling-script-caught half plants a
+    page citing a deleted script and a deleted tool beside citations that resolve.
 
     SECTION 9 HAS NO FLOOR AND A -SelfTest INSTEAD (#416), because there is no count to hold it to:
     prose that cites a self-test half by ordinal should be absent, and after #411 through #415 it is,
@@ -140,8 +143,8 @@
     a loose row beside a good one. It cannot tell whether a row is the figure the note currently
     stands behind; the section comment has the rest of what it cannot see.
 
-    SECTION 11 HAS NEITHER, AND IS NOT THIS SCRIPT'S CHECK (#658). It runs the tools submodule's
-    scripts/markdown-check.ps1 over every tracked Markdown file and fails on what that finds. The
+    SECTION 11 HAS NEITHER, AND IS NOT THIS SCRIPT'S CHECK (#658). It runs
+    vendor/grado-factorio-tools/scripts/markdown-check.ps1 over every tracked Markdown file and fails on what that finds. The
     check's own -SelfTest, which the tools repository runs, is what proves it can fail; here a
     missing script fails by name, and so does a run that does not say it read a file. It reads the
     index and not the working tree; the section comment has the rest.
@@ -169,9 +172,9 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove four things a green run cannot: the shared -SelfTest runner
+    Run the checks as usual, then prove five things a green run cannot: the shared -SelfTest runner
     the tools submodule holds -- that it numbers halves from the list it was given and refuses a half it
-    cannot show ran -- section 9, in both directions, section 10's two assertions, each in both
+    cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both directions, section 10's two assertions, each in both
     directions, and section 12's two scans
     of the lines, each in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
     memory and the planted documents live in the scratch directory the run removes on its way out.
@@ -416,7 +419,7 @@ foreach ($ps1 in $documented) {
 # 6. Every docs/ path this repo cites in prose actually exists. Two research notes were written for
 # #158 and #159, committed to their own branches, cited from three files on main -- and never
 # merged. Both tickets read as completed while the findings they produced could not be opened, and
-# the tree viewer, then scripts/tree-viewer.ps1, sent a reader to a field-semantics note that was
+# the tree viewer, then a script in this directory, sent a reader to a field-semantics note that was
 # not there. Nothing could
 # see it: the citing line is a comment or a link, so no parser reads it, and the branch it lived on
 # looked merged from anywhere except `git merge-base`. Same shape as section 5 -- a claim made in
@@ -430,21 +433,67 @@ foreach ($ps1 in $documented) {
 # here: get-history-semantics.md, tech-tree-dump-fields.md and tree-layout-levers.md under
 # docs/research/. Renaming one of the three breaks a citation over there and nothing here says so.
 # Nothing replaces it.
-$citing = @(Get-ChildItem $PSScriptRoot -File) +
-          @(Get-ChildItem (Join-Path $repoRoot 'docs') -File -Filter *.md -Recurse)
-$cited = [System.Collections.Generic.List[object]]::new()
-foreach ($file in $citing) {
-    $n = 0
-    foreach ($line in (Get-Content $file.FullName)) {
-        $n++
-        # A path pointing into docs/ and ending .md. Globs are patterns, not citations, and a
-        # fenced or inline code span naming a directory is not a promise that a file is in it.
-        foreach ($m in [regex]::Matches($line, '(?<![\w./-])docs/[\w./-]+\.md')) {
-            if ($m.Value -match '\*') { continue }
-            $cited.Add([pscustomobject]@{ Path = $m.Value; From = $file.Name; Line = $n })
+#
+# SINCE #697 IT ALSO CHECKS A scripts/ OR tools/ PATH. On #690 three reviewers found
+# docs/agents/state-detail.md naming the old locale check under scripts/ after #677 had deleted it,
+# and nothing here could say so. A path counts when it ends in an extension: "check-*.ps1" and a
+# bare "scripts/" name a pattern or a directory, not a file. It resolves at the repository's root
+# or inside one of the three mods, where "scripts/" is a mod's own runtime directory. A path into
+# the tools submodule is checked when it is written from the root, as section 11's comment writes
+# the Markdown check's.
+#
+# THE RULE FOR WHAT THIS HALF DOES NOT READ: a page that records how things stood is out of its
+# reach, and a page or script that says how things are is in it. The records are docs/adr/, where
+# each ADR is the decision as made; docs/research/, where each note is what was found and with
+# what, and which cites the predecessors' and third parties' trees, whose scripts/ is not ours; and
+# under docs/agents/ the three history pages, state-detail.md, code-review-history.md and
+# code-review-evidence.md, and review-figures.md, which is dated rows. On main at #697 every hit
+# was in a record but three, all in this script's comments, and those three were fixed. The docs/
+# half still reads the records, because a note they cite is one a reader is sent to now.
+#
+# WHAT IT CANNOT SEE: a script deleted here whose name a mod's scripts/ still holds; a path without
+# an extension; a path cited from a record, or from any file outside scripts/ and docs/, CLAUDE.md
+# and the skills among them; and a live sentence placed in a record.
+$DOCS_CITED    = '(?<![\w./-])docs/[\w./-]+\.md'
+$SCRIPTS_CITED = '(?<![\w./-])(?:vendor/grado-factorio-tools/)?(?:scripts|tools)/[\w./-]+\.\w+(?![\w*])'
+$RECORDS       = '^docs/(?:adr|research)/|^docs/agents/(?:state-detail|code-review-history|code-review-evidence|review-figures)\.md$'
+$RESOLVED_IN   = @('.', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core',
+                   'realistic-fusion-refreshed-assets')
+
+function Find-DanglingCitations {
+    <#  Every path matching the pattern that these files cite and that is under none of the
+        directories, each taken from the root. A glob is a pattern, not a citation.
+
+        Returns every citation found, and the ones that do not resolve.  #>
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Files, [Parameter(Mandatory)] [string] $Pattern,
+          [Parameter(Mandatory)] [string] $Root, [Parameter(Mandatory)] [string[]] $Under)
+
+    $cited = [System.Collections.Generic.List[object]]::new()
+    foreach ($file in $Files) {
+        $n = 0
+        foreach ($line in (Get-Content -LiteralPath $file)) {
+            $n++
+            foreach ($m in [regex]::Matches($line, $Pattern)) {
+                if ($m.Value -match '\*') { continue }
+                $cited.Add([pscustomobject]@{ Path = $m.Value; From = (Split-Path $file -Leaf); Line = $n })
+            }
         }
     }
+    $dangling = @($cited | Where-Object {
+        $path = $_.Path
+        -not ($Under | Where-Object { Test-Path -LiteralPath (Join-Path (Join-Path $Root $_) $path) })
+    } | Sort-Object Path, From)
+    return @{ Cited = $cited; Dangling = $dangling }
 }
+
+$citing = @(Get-ChildItem $PSScriptRoot -File) +
+          @(Get-ChildItem (Join-Path $repoRoot 'docs') -File -Filter *.md -Recurse)
+$live   = @($citing | Where-Object {
+              [IO.Path]::GetRelativePath($repoRoot, $_.FullName).Replace('\', '/') -notmatch $RECORDS
+          } | ForEach-Object FullName)
+$docsRead    = Find-DanglingCitations -Files @($citing | ForEach-Object FullName) -Pattern $DOCS_CITED -Root $repoRoot -Under '.'
+$scriptsRead = Find-DanglingCitations -Files $live -Pattern $SCRIPTS_CITED -Root $repoRoot -Under $RESOLVED_IN
+$cited       = $docsRead.Cited
 
 # The floor, as in section 5: everything below passes by finding nothing, so a regex that stops
 # matching would take this check out of scope while still printing green. The repo cites its own
@@ -456,11 +505,22 @@ if ($cited.Count -lt 10) {
 }
 
 $checks++
-$dangling = @($cited | Where-Object { -not (Test-Path (Join-Path $repoRoot $_.Path)) } |
-              Sort-Object Path, From)
-if ($dangling) {
-    $shown = ($dangling | ForEach-Object { "$($_.Path) (cited by $($_.From):$($_.Line))" }) -join '; '
+if ($docsRead.Dangling) {
+    $shown = ($docsRead.Dangling | ForEach-Object { "$($_.Path) (cited by $($_.From):$($_.Line))" }) -join '; '
     $failures.Add("these docs/ paths are cited but do not exist: $shown")
+}
+
+# The same floor for the second half, over the files it reads.
+$checks++
+if ($scriptsRead.Cited.Count -lt 10) {
+    $failures.Add(("only $($scriptsRead.Cited.Count) scripts/ or tools/ citations found across $($live.Count) " +
+        'files, which means the pattern above stopped matching rather than that the repo stopped citing'))
+}
+
+$checks++
+if ($scriptsRead.Dangling) {
+    $shown = ($scriptsRead.Dangling | ForEach-Object { "$($_.Path) (cited by $($_.From):$($_.Line))" }) -join '; '
+    $failures.Add("these scripts/ or tools/ paths are cited but do not exist: $shown")
 }
 
 # ----------------------------------------------------------------------------- our own files, by line
@@ -1126,7 +1186,7 @@ foreach ($row in $figureRows.Found) {
 
 # 11. THE TRACKED MARKDOWN PASSES THE SHARED MARKDOWN CHECK (#658).
 #
-# The tools submodule's scripts/markdown-check.ps1, run with -All: emphasis or a code span left
+# vendor/grado-factorio-tools/scripts/markdown-check.ps1, the tools submodule's, run with -All: emphasis or a code span left
 # open at the end of its paragraph, a table row whose column count is not its header's, and a link
 # to a file git does not track. Its header says what it reads as what and what it cannot see. The
 # pre-commit hook runs the same script on the staged files; this is where a clone that never opted
@@ -1387,6 +1447,38 @@ if ($SelfTest) {
                 }
                 ('prose that names its halves, a measurement after the same word whole or decimal, ' +
                  'and a pasted transcript inside a fence, are all left alone.')
+            } }
+
+            @{ Name = 'dangling-script-caught'; Body = {
+                # Section 6's second half passes by finding nothing dangling. A planted root holds
+                # one script and one mod's runtime script; a planted page cites both, a deleted
+                # script and a deleted tool, a glob and a directory. The names are built, because
+                # this file is one the section reads.
+                $s, $t = 'scripts', 'tools'
+                New-Item -ItemType Directory -Force -Path (Join-Path $planted $s), (Join-Path $planted "mod/$s") | Out-Null
+                Set-Content -LiteralPath (Join-Path $planted "$s/kept.ps1") -Value ''
+                Set-Content -LiteralPath (Join-Path $planted "mod/$s/runtime.lua") -Value ''
+                $doc = Join-Path $planted 'cites.md'
+                @(
+                    "Run ``$s/kept.ps1``, which reads ``$s/runtime.lua``."
+                    "The check was ``$s/gone-check.ps1``, and ``$t/gone.py`` rewrapped it."
+                    "Every ``$s/check-*.ps1`` under ``$s/``, ending a sentence at $s/kept.ps1."
+                ) | Set-Content -LiteralPath $doc -Encoding utf8
+
+                $read = Find-DanglingCitations -Files @($doc) -Pattern $SCRIPTS_CITED -Root $planted -Under '.', 'mod'
+                $rows = @($read.Dangling | ForEach-Object { "$($_.Line):$($_.Path)" })
+                if (($rows -join '; ') -cne "2:$s/gone-check.ps1; 2:$t/gone.py" -or $read.Cited.Count -ne 5) {
+                    throw ("a page citing a kept script, a mod's runtime script, a deleted script, a deleted tool, " +
+                           "a glob and a directory found $($read.Cited.Count) citation(s) and reported as " +
+                           "dangling: $($rows -join '; '). Wanted five, and exactly the deleted script and tool on line 2.")
+                }
+                $d = 'docs'
+                $wrong = @(@("$d/adr/0024-a.md", "$d/research/a.md", "$d/agents/state-detail.md") |
+                             Where-Object { $_ -notmatch $RECORDS }) +
+                         @(@("$d/agents/code-review.md", "$s/ship-check.ps1") | Where-Object { $_ -match $RECORDS })
+                if ($wrong) { throw "the rule for records sorts these the wrong way: $($wrong -join ', ')." }
+                ('a deleted script and a deleted tool cited in a live page are caught with their line; a kept script, ' +
+                 "a mod's runtime script, a glob and a directory are left alone, and an ADR, a note and a history page are records.")
             } }
 
             @{ Name = 'figure-anchor-resolves'; Body = {
