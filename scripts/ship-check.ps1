@@ -441,23 +441,27 @@ foreach ($ps1 in $documented) {
 # bare "scripts/" name a pattern or a directory, not a file. It resolves at the repository's root
 # or inside one of the three mods, where "scripts/" is a mod's own runtime directory. A path into
 # the tools submodule is checked when it is written from the root, as section 11's comment writes
-# the Markdown check's.
+# the Markdown check's. A path with a line number after it, "constants.lua:37", is left alone: ADR
+# 0032 has this repository cite its own files by symbol, and section 7 fails one of ours cited by
+# line, so such a path is a predecessor's or a third party's.
 #
 # THE RULE FOR WHAT THIS HALF DOES NOT READ: a page that records how things stood is out of its
 # reach, and a page or script that says how things are is in it. The records are docs/adr/, where
-# each ADR is the decision as made; docs/research/, where each note is what was found and with
-# what, and which cites the predecessors' and third parties' trees, whose scripts/ is not ours; and
-# under docs/agents/ the three history pages, state-detail.md, code-review-history.md and
-# code-review-evidence.md, and review-figures.md, which is dated rows. On main at #697 every hit
-# was in a record but three, all in this script's comments, and those three were fixed. The docs/
-# half still reads the records, because a note they cite is one a reader is sent to now.
+# each ADR is the decision as made, and under docs/agents/ the three history pages, state-detail.md,
+# code-review-history.md and code-review-evidence.md, and review-figures.md, which is dated rows.
+# A research note is read (Truls, 2026-10-14, on #706): it cites the probes its figures came from,
+# 29 of them in 275 citations on main, and its Current figures table is in use. On main at #697
+# the notes held five hits: one a predecessor's path with a line number, and four rewritten to
+# the path the script has now or, for a third party's, to its name alone. Three more were in this
+# script's comments and were fixed; the rest were in records. The docs/ half still reads the
+# records, because a note they cite is one a reader is sent to now.
 #
 # WHAT IT CANNOT SEE: a script deleted here whose name a mod's scripts/ still holds; a path without
-# an extension; a path cited from a record, or from any file outside scripts/ and docs/, CLAUDE.md
+# an extension; a deleted script of ours cited by line, which section 7 fails; a path cited from a record, or from any file outside scripts/ and docs/, CLAUDE.md
 # and the skills among them; and a live sentence placed in a record.
 $DOCS_CITED    = '(?<![\w./-])docs/[\w./-]+\.md'
-$SCRIPTS_CITED = '(?<![\w./-])(?:vendor/grado-factorio-tools/)?(?:scripts|tools)/[\w./-]+\.\w+(?![\w*])'
-$RECORDS       = '^docs/(?:adr|research)/|^docs/agents/(?:state-detail|code-review-history|code-review-evidence|review-figures)\.md$'
+$SCRIPTS_CITED = '(?<![\w./-])(?:vendor/grado-factorio-tools/)?(?:scripts|tools)/[\w./-]+\.\w+(?![\w*]|:\d)'
+$RECORDS       = '^docs/adr/|^docs/agents/(?:state-detail|code-review-history|code-review-evidence|review-figures)\.md$'
 $RESOLVED_IN   = @('.', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core',
                    'realistic-fusion-refreshed-assets')
 
@@ -1465,22 +1469,23 @@ if ($SelfTest) {
                     "Run ``$s/kept.ps1``, which reads ``$s/runtime.lua``."
                     "The check was ``$s/gone-check.ps1``, and ``$t/gone.py`` rewrapped it."
                     "Every ``$s/check-*.ps1`` under ``$s/``, ending a sentence at $s/kept.ps1."
+                    "A predecessor's ``$s/gone.lua:37`` is cited by line."
                 ) | Set-Content -LiteralPath $doc -Encoding utf8
 
                 $read = Find-DanglingCitations -Files @($doc) -Pattern $SCRIPTS_CITED -Root $planted -Under '.', 'mod'
                 $rows = @($read.Dangling | ForEach-Object { "$($_.Line):$($_.Path)" })
                 if (($rows -join '; ') -cne "2:$s/gone-check.ps1; 2:$t/gone.py" -or $read.Cited.Count -ne 5) {
                     throw ("a page citing a kept script, a mod's runtime script, a deleted script, a deleted tool, " +
-                           "a glob and a directory found $($read.Cited.Count) citation(s) and reported as " +
+                           "a glob, a directory and a path cited by line found $($read.Cited.Count) citation(s) and reported as " +
                            "dangling: $($rows -join '; '). Wanted five, and exactly the deleted script and tool on line 2.")
                 }
                 $d = 'docs'
-                $wrong = @(@("$d/adr/0024-a.md", "$d/research/a.md", "$d/agents/state-detail.md") |
+                $wrong = @(@("$d/adr/0024-a.md", "$d/agents/state-detail.md") |
                              Where-Object { $_ -notmatch $RECORDS }) +
-                         @(@("$d/agents/code-review.md", "$s/ship-check.ps1") | Where-Object { $_ -match $RECORDS })
+                         @(@("$d/agents/code-review.md", "$d/research/a.md", "$s/ship-check.ps1") | Where-Object { $_ -match $RECORDS })
                 if ($wrong) { throw "the rule for records sorts these the wrong way: $($wrong -join ', ')." }
                 ('a deleted script and a deleted tool cited in a live page are caught with their line; a kept script, ' +
-                 "a mod's runtime script, a glob and a directory are left alone, and an ADR, a note and a history page are records.")
+                 "a mod's runtime script, a glob, a directory and a path cited by line are left alone, and an ADR and a history page are records where a note is not.")
             } }
 
             @{ Name = 'figure-anchor-resolves'; Body = {
