@@ -212,7 +212,8 @@ Both readings have something to stand on, and this note takes neither.
 ## Sources
 
 `scripts/probe-hidden-prototypes.ps1`, run 2026-09-12 with `-With quality -KeepTemp` against Factorio
-2.0.77 (build 84539) on Windows, over the eleven lanes cached by `vendor/grado-factorio-tools/scripts/fetch-mods.ps1` at the
+2.0.77 (build 84539) on Windows, over the eleven lanes cached by this repository's fetcher of the time, since 2026-09-24
+`vendor/grado-factorio-tools/scripts/fetch-mods.ps1`, at the
 ADR 0026 pins. **Every figure here is the SECOND run of that day**, after the derived-barrel blindness
 above was fixed; the first run's 22 is superseded and no number from it survives in this note. The
 `seablock` fluid reading reproduces the one taken by hand on 2026-09-11 from a
