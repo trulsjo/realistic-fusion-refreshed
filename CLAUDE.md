@@ -383,8 +383,9 @@ none of them** (#630). Read the section named when its condition holds:
   `/pre-pr-review` carries it out.
 - **A review's findings are about to be reported or posted**: *The verdict sorts the comment, not
   the report*.
-- **A change is being reviewed, a fix a review asked for is being written, or a ticket or a
-  retrospective's candidate is about to be published**: *Review the prose, not only the code*.
+- **A change is being reviewed, a fix a review asked for is being written, a ticket is being
+  implemented, or a ticket or a retrospective's candidate is about to be published**: *Review the
+  prose, not only the code*.
 - **A review pass is about to edit the working tree, or a gate fails once and passes on every
   re-run**: *A review that plants takes its own worktree*.
 - **A rule there is being changed or revisited**: its head, for the two pages that hold who
