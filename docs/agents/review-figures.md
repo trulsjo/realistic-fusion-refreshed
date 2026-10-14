@@ -1,9 +1,10 @@
 # Review figures — what each pull request's two passes found and cost
 
 The record behind the fourth rule of [`code-review.md`](code-review.md), *A review before the pull
-request, and the plugin pass after it*. That file has the rules, the row rule among them, and what
-was concluded across these rows. This page has the rows. It was part of that file until 2026-10-09
-(#644), and no figure changed in the move.
+request, and the plugin pass after it*. That file has the rules, and
+[`plugin-pass.md`](plugin-pass.md), which its fourth rule points at, has the row rule and what was
+concluded across these rows (since 2026-10-14, #703). This page has the rows. It was part of that
+file until 2026-10-09 (#644), and no figure changed in the move.
 
 **Read this page** to add a pull request's rows, when the rule is revisited, and when a decision
 needs what a pass found or cost. Reviewing a branch
@@ -11,7 +12,7 @@ does not need it.
 
 **A pull request has one row in each table, and what there is to say about it is a cell of that
 row.** Adding a pull request is one added line in each table and no other edit, here or in
-`code-review.md`. A share that can be worked out from a row's own cells is not written.
+`plugin-pass.md`. A share that can be worked out from a row's own cells is not written.
 
 ## What each pass found, and the counts its subagents reported
 
@@ -22,7 +23,7 @@ three steps before the reviewers check eligibility, list the `CLAUDE.md` files a
 change. **From the first pass that `/plugin-pass` runs** (2026-10-11, #626) the session does those
 itself and one verifier takes the place of the scorers: that row's cell for the steps says so, and
 its scorers' cell holds the verifier's figure and says so, in both tables. The last two columns are
-the grade. `code-review.md` has its test, and the last cell has the day the row was graded and what
+the grade. `plugin-pass.md` has its test, and the last cell has the day the row was graded and what
 the session that graded it wrote of it.
 
 | branch | had both passes on | the pre-PR review found | pre-PR review's cost | the plugin pass found | plugin pass's cost: the three steps before the reviewers | plugin pass's cost: reviewers | plugin pass's cost: scorers | of the plugin pass's fixed findings, serious | the grade: when it was made, and what the session wrote of it |
@@ -69,7 +70,7 @@ body, and the table has a column for it. #633's row is the first written under t
 #628's rows were filled in on the same day from the transcripts of their reviewers, which the
 session that ran both still had. Being filled in afterwards, those two were read after the
 reviewer's last confirmation, where a row written by its own session is read before it, as the row
-rule in `code-review.md` says. #604, #605 and #607 each say five reviewers ran in the plugin pass,
+rule in `plugin-pass.md` says. #604, #605 and #607 each say five reviewers ran in the plugin pass,
 and none gives a time or a token count. From #625's row on, each figure a row has for the plugin
 pass is the usage its subagents reported.
 
@@ -111,7 +112,7 @@ transcript and so no row here.
 | #656 | 2 120 501 tokens in 14 requests | 90.8% | 602 867 tokens, three subagents | 2 819 828 tokens, five reviewers | 3 793 176 tokens, six scorers | 7 215 871 tokens | 87.4% | Two of its six scorers sent 15 and 16 requests, 950 309 and 1 160 664 tokens, for candidates scored 50 and 25 |
 | #664 | 2 406 801 tokens in 15 requests | 83.9% | 707 560 tokens, three subagents | 2 673 413 tokens, five reviewers | 466 702 tokens, three scorers | 3 847 675 tokens | 80.8% | The first pull request whose figures were read with `tools/review-usage.py`, its own |
 | #669 | 1 329 066 tokens in 11 requests | 90.8% | 347 587 tokens, three subagents | 1 294 794 tokens, five reviewers | 320 103 tokens, two scorers | 1 962 484 tokens | 67.0% | The second pull request of one session, read by giving `tools/review-usage.py` its number and its reviewer's name |
-| #673 | 3 153 356 tokens in 19 requests | 86.6% | 534 965 tokens, three subagents | 2 311 555 tokens, five reviewers | no scorer ran | 2 846 520 tokens | 84.5% | The tenth routine row, and the sixteenth of the first table: the rule's revisit is due, and the verdict is Truls's. He gave it on 2026-10-10: the rule stands, and `code-review.md` has when it is next revisited. The session's `subagents` directory also holds the passes on #664 and #669, so the script was given the pull request's number and the reviewer's name |
+| #673 | 3 153 356 tokens in 19 requests | 86.6% | 534 965 tokens, three subagents | 2 311 555 tokens, five reviewers | no scorer ran | 2 846 520 tokens | 84.5% | The tenth routine row, and the sixteenth of the first table: the rule's revisit is due, and the verdict is Truls's. He gave it on 2026-10-10: the rule stands, and `plugin-pass.md` has when it is next revisited. The session's `subagents` directory also holds the passes on #664 and #669, so the script was given the pull request's number and the reviewer's name |
 | #674 | 1 162 890 tokens in 10 requests | 88.2% | 466 774 tokens, three subagents | 2 489 341 tokens, five reviewers | 120 917 tokens, one scorer | 3 077 032 tokens | 79.1% | The first routine row counted towards the next revisit, and its pull request touches no mod. The session's `subagents` directory also holds the passes on #664, #669 and #673, so the script was given the pull request's number and the reviewer's name |
 | #678 | 1 753 546 tokens in 13 requests | 90.5% | 456 800 tokens, three subagents | 2 337 462 tokens, five reviewers | 292 197 tokens, two scorers | 3 086 459 tokens | 78.7% | The second routine row counted towards the next revisit, and its pull request touches no mod. The session's `subagents` directory also holds the passes on #664, #669, #673 and #674, so the script was given the pull request's number and the reviewer's name |
 | #679 | 2 636 328 tokens in 16 requests | 91.8% | none: the session did the three steps itself | 2 687 681 tokens, five reviewers | the verifier, in place of scorers: 311 659 tokens, one verifier | 2 999 340 tokens | 83.8% | The third routine row counted towards the next revisit, and its pull request touches no mod. The first pass with a verifier: the summed cell is the reviewers and the verifier. The session's `subagents` directory also holds the passes on #664, #669, #673, #674 and #678, so the script was given the pull request's number and the reviewer's name |
@@ -127,11 +128,11 @@ transcript and so no row here.
 | #700 | 1 205 238 tokens in 14 requests | 90.7% | none: the session did the three steps itself | 1 206 906 tokens, five reviewers | the verifier, in place of scorers: 139 912 tokens, one verifier | 1 346 818 tokens | 79.9% | The third routine row counted towards the next revisit, and its pull request touches no mod |
 
 Which subagents a cell sums is told by the description the session gave each when it spawned it,
-which the transcript's `.meta.json` keeps. `code-review.md` says which word each description holds
+which the transcript's `.meta.json` keeps. `plugin-pass.md` says which word each description holds
 (#661). The pre-PR review's is the one named reviewer, over its
 whole transcript, so its confirmations are in it, the one of the plugin pass's fixes included.
 That holds for the first three rows, which were filled in afterwards; a row written by its own
-session is read before the reviewer's last confirmation, as the row rule in `code-review.md` says,
+session is read before the reviewer's last confirmation, as the row rule in `plugin-pass.md` says,
 and #641's is the first of those. The three steps are the subagents that checked eligibility,
 listed the `CLAUDE.md` files and summarised the change. The reviewers are the five numbered 1 to 5,
 and the scorers are one for each candidate, or since #626 the one verifier.
@@ -144,4 +145,4 @@ either. The verifier runs on Sonnet.
 
 **The scorers' share of a plugin pass is not written in a row.** In this unit it is the scorers'
 cell over the summed cell. In the reported counts of the first table it is the scorers' cell over
-the three cost cells of the plugin pass. `code-review.md` has the range of both across the rows.
+the three cost cells of the plugin pass. `plugin-pass.md` has the range of both across the rows.

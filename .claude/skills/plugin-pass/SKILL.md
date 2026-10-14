@@ -6,7 +6,8 @@ description: Run this repository's plugin pass on an open pull request. The sess
 # /plugin-pass
 
 Runs **the plugin pass** that `docs/agents/code-review.md` defines under *A review before the pull
-request, and the plugin pass after it*. That file is the rule; this is the procedure. The pass is
+request, and the plugin pass after it*, and `docs/agents/plugin-pass.md`, which that section
+points at, holds the pass's own half. Those are the rule; this is the procedure. The pass is
 the `code-review:code-review` plugin's, with the two departures that file names (#626): the session
 does the plugin's three opening steps itself, and one verifier takes the place of its scorers.
 `/pre-pr-review` is the other pass and comes first; its reviewer is still running and step 7 needs
@@ -17,9 +18,9 @@ Every subagent here is read-only, and is told so. Each is spawned with the Agent
 word `tools/review-usage.py` sorts it by: `plugin pass #<n>: reviewer 2, shallow bug scan`,
 `plugin pass #<n>: verifier, <how many> candidates`.
 
-**None of them works in this session's checkout where a worktree can be had** (#651, #699; the
-rule is in that file). Where `HERDR_ENV` is set, make the worktree at the end of step 1, from the
-repository's root, and spawn without isolation:
+**None of them works in this session's checkout where a worktree can be had** (#651, #699; the rule
+is in `docs/agents/plugin-pass.md`). Where `HERDR_ENV` is set, make the worktree at the end of step
+1, from the repository's root, and spawn without isolation:
 
 ```
 herdr worktree create --cwd "<repo root>" --branch plugin-pass-<n> --base <hash> --path "<repo root>/../rf-plugin-pass-<n>" --label plugin-pass-<n> --no-focus
@@ -169,7 +170,7 @@ from `<this session's checkout>` by its full path, and run no command there."
    commit.** `python tools/review-usage.py "<subagents directory>" "#<n>" "<reviewer's name>"`
    prints the figures; step 6 of `/pre-pr-review` says where the directory is. The cells for the
    three steps say the session did them, and the scorers' cells hold the verifier's figures and
-   say so. `docs/agents/code-review.md` has what a row holds and how it is graded.
+   say so. `docs/agents/plugin-pass.md` has what a row holds and how it is graded.
 
 7. **Fix, and have the pre-PR reviewer confirm.** `docs/agents/code-review.md` says, in the
    fourth rule, what becomes of a candidate found real or not verified, who confirms the fixes

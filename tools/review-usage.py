@@ -22,7 +22,7 @@ candidate is about a step or a reviewer is still a scorer: "scorer B, step 7 nam
 pass run since #626 has no step and no scorer: the session does the steps, and one verifier
 takes every candidate. A subagent
 whose description holds none of them is printed as UNSORTED and is in no sum, and so is a
-transcript with no `.meta.json` beside it. docs/agents/code-review.md tells the session that
+transcript with no `.meta.json` beside it. docs/agents/plugin-pass.md tells the session that
 spawns them to name them so.
 
 WHAT THAT GETS WRONG: a step whose description names a reviewer or a scorer before the word

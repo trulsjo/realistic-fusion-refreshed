@@ -217,3 +217,15 @@ One line for each, newest last. The passages above are not edited.
   given none, and has no option for a detached worktree, so the pass names a throwaway branch and
   deletes it after removing the worktree, which leaves the branch behind. `/plugin-pass` carries
   it out. The wording is the session's.
+- **2026-10-14, #703.** The plugin pass's half of the fourth rule moved to
+  [`plugin-pass.md`](plugin-pass.md), and the fourth rule points at it with when to read it. The
+  test that sorted the paragraphs: a paragraph stayed when a pre-PR reviewer, or the session around
+  the pre-PR review, acts on it, and moved when only the session running the plugin pass acts on it
+  or it is read only when the rule is revisited. So the eligibility check, where the pass's
+  subagents work, their descriptions, the verifier, *Measured, not assumed* and *What the next
+  revisit decides* moved; when each pass runs, who confirms the plugin pass's fixes, the class of a
+  missed finding and the commit-body rule stayed, and so did the verifier paragraph's sentence on a
+  candidate found real or not verified, which step 7 of `/plugin-pass` reads there. The words moved
+  unchanged but for the ones that named the file they now sit outside of. `code-review.md` was
+  49 656 bytes at #700's merge, over a read-budget hook's 45 000 on the machine this was written
+  on, and the pre-PR brief has it read in full.
