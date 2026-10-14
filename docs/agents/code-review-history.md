@@ -208,3 +208,12 @@ One line for each, newest last. The passages above are not edited.
   spawns, and spawns without isolation. It rests on #700, where the hook refused all five reviewers'
   spawns. `/plugin-pass` carries it out. The ticket was `ready-for-agent`, and the wording is the
   session's.
+- **2026-10-14, #699: Truls changed his 2026-10-12 ruling.** Inside herdr the session makes the
+  plugin pass's worktree itself with `herdr worktree create`, which the hook allows, and removes it
+  with `herdr worktree remove` after the verifier, instead of asking the user for both. The fourth
+  rule's first item says so and keeps the earlier route as history; the user's worktree is now the
+  fallback where herdr's command fails, as it already was where a hook refuses isolation. Run on
+  2026-10-14 with herdr 0.9.4, the command made a branch it named itself, `worktree/<words>`, when
+  given none, and has no option for a detached worktree, so the pass names a throwaway branch and
+  deletes it after removing the worktree, which leaves the branch behind. `/plugin-pass` carries
+  it out. The wording is the session's.
