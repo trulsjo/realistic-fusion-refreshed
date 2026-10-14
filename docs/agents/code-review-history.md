@@ -7,9 +7,9 @@ changed four links in the first passage, which pointed at headings of that file,
 
 **Read this page** when a rule is being changed, and when the date or the origin of a sentence in
 `code-review.md` is in question. Reviewing a branch does not need it. **The rule is the one
-`code-review.md` words.** A passage here says what a rule was when the passage was written, and that
-file says what it is. **An amendment is added here**, as a dated line under *Amendments since
-2026-10-10* at the foot, in the commit that changes the rule.
+`code-review.md` or `plugin-pass.md` words.** A passage here says what a rule was when the passage
+was written, and that page says what it is. **An amendment is added here**, as a dated line under
+*Amendments since 2026-10-10* at the foot, in the commit that changes the rule.
 
 ## The four rules, and what changed each
 
@@ -226,6 +226,9 @@ One line for each, newest last. The passages above are not edited.
   revisit decides* moved; when each pass runs, who confirms the plugin pass's fixes, the class of a
   missed finding and the commit-body rule stayed, and so did the verifier paragraph's sentence on a
   candidate found real or not verified, which step 7 of `/plugin-pass` reads there. The words moved
-  unchanged but for the ones that named the file they now sit outside of. `code-review.md` was
-  49 656 bytes at #700's merge, over a read-budget hook's 45 000 on the machine this was written
-  on, and the pre-PR brief has it read in full.
+  unchanged but for the ones that named the file they now sit outside of: two of those now name this
+  page beside `code-review.md`, so a pull request's figures go on neither, and Truls's ruling on a
+  false sentence in `code-review.md` covers the part of it that moved. The paragraph on the main
+  session's own cost moved and was put back, since step 6 of `/pre-pr-review` acts on it.
+  `code-review.md` was 49 656 bytes at #700's merge, over a read-budget hook's 45 000 on the machine
+  this was written on, and the pre-PR brief has it read in full.

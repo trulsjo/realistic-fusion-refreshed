@@ -109,7 +109,7 @@
     one naming the wrong field, one quoting a fragment that greps to nothing -- so read that bet as
     a bet.
 
-    -SelfTest here does NOT re-prove sections 1 to 8, unlike the checks that read a Factorio dump.
+    -SelfTest here does NOT re-prove sections 1 to 5, 7 or 8, unlike the checks that read a Factorio dump.
     Those need one because they can pass by finding nothing; sections 1 to 4 name every file and
     string they require, so a mistake in them fails rather than goes quiet. What it proves is the
     shared self-test runner the tools submodule holds, which every other gate's -SelfTest now calls: a
@@ -120,7 +120,8 @@
     Each selects by scanning and matching a predicate, so each is exactly the shape that can pass by
     finding nothing. What stands in for a self-test is a floor: section 5 fails when a script opens
     with a comment block but is not in scope, sections 6 and 7 fail when they find too few
-    citations to believe -- section 7 twice over, once per shape it matches -- and section 8 carries
+    citations to believe -- each twice over, section 6 once per half and section 7 once per shape
+    it matches -- and section 8 carries
     four: one on each of the three things it scans, and one on the pairing between two of them. That is narrower than a -SelfTest would be, because a floor
     cannot see a mistake in the scan itself -- break that and there is nothing left to check and so
     nothing left to fail. Section 6 has both since #697: the dangling-script-caught half plants a

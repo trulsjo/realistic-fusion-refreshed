@@ -60,7 +60,8 @@ pass.
    >
    > Read whole each of these, which the diff changes: `<each skill file, page under
    > docs/agents/ and CLAUDE.md in the diff, or "none">`. Where the diff changes a step of a
-   > skill, hold the step against the rule in `docs/agents/code-review.md` that it carries out:
+   > skill, hold the step against the rule in `docs/agents/code-review.md`, or in
+   > `docs/agents/plugin-pass.md`, that it carries out:
    > it restates none of the rule's reasons and leaves out nothing the rule requires. Say in your
    > report which files you read whole.
    >
@@ -179,9 +180,9 @@ pass.
    directory, where the reviewer's transcript is the one file matching `agent-a<name>-*.jsonl`.
    **The session ID is the running session's**, which the environment holds as
    `CLAUDE_CODE_SESSION_ID`, and the configuration directory is `CLAUDE_CONFIG_DIR` where that is
-   set (#705). The output-file path the Agent tool reports for a background subagent is no guide to
-   it: on #700 it named an earlier session, whose directory held none of that pass's transcripts.
-   Give the directory to the tracked script (#661):
+   set and `~/.claude` where it is not (#705). The output-file path the Agent tool reports for a
+   background subagent is no guide to it: on #700 it named an earlier session, whose directory held
+   none of that pass's transcripts. Give the directory to the tracked script (#661):
 
    ```
    python tools/review-usage.py "<that directory>"

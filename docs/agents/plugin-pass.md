@@ -153,17 +153,6 @@ figure with no record behind it is not estimated. **From the first pass that `/p
 (#626), a row's two cells for the three steps before the reviewers say the session did them, and its
 two scorers' cells hold the verifier's figures and say so. The columns keep their names.
 
-**The main session's own cost goes in the pull request's body, and in neither table** (2026-10-10,
-#670). It is what the session that wrote the change and ran both passes used itself, and none of its
-subagents is in it: its requests, their tokens summed as the second table sums them, the share that
-is cache reads, and the context of its first request, which is what the session carried into the
-work. `tools/review-usage.py` prints the four after the tables' figures. A session that did other
-work before the branch gives the script the text the work began with, as its docstring says. The
-figure runs from there to when it is read: the body's is read when the body is last edited, and
-leaves out what the session does after. On #669 the main session used about five times what the two
-passes did together, because it began the work with a context already large; [the evidence page has
-the figures](code-review-evidence.md#what-the-main-session-used-on-669-670).
-
 **The verdict, 2026-10-07: the one-review rule fell** ([comment on
 #593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6037668590),
 written here by #627). #593 had the rule revisited once the table had five rows, with the verdict

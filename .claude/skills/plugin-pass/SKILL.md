@@ -6,12 +6,12 @@ description: Run this repository's plugin pass on an open pull request. The sess
 # /plugin-pass
 
 Runs **the plugin pass** that `docs/agents/code-review.md` defines under *A review before the pull
-request, and the plugin pass after it*, and `docs/agents/plugin-pass.md`, which that section
-points at, holds the pass's own half. Those are the rule; this is the procedure. The pass is
-the `code-review:code-review` plugin's, with the two departures that file names (#626): the session
-does the plugin's three opening steps itself, and one verifier takes the place of its scorers.
-`/pre-pr-review` is the other pass and comes first; its reviewer is still running and step 7 needs
-it.
+request, and the plugin pass after it*, and `docs/agents/plugin-pass.md`, which that section points
+at, holds the pass's own half. Those are the rule; this is the procedure. The pass is the
+`code-review:code-review` plugin's, with the two departures `code-review.md` names (#626): the
+session does the plugin's three opening steps itself, and one verifier takes the place of its
+scorers. `/pre-pr-review` is the other pass and comes first; its reviewer is still running and step
+7 needs it.
 
 Every subagent here is read-only, and is told so. Each is spawned with the Agent tool as
 `general-purpose`, never a fork, with a `description` that holds the pull request's number and the
