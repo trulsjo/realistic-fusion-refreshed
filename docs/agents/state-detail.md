@@ -189,5 +189,5 @@ One line for each change to a gate, newest last, with its date and its ticket.
   for its first fifty seconds; `docs/research/d-t-ignition.md` has the reading.
 - 2026-10-14, #693: `check-brownout.ps1` asserts what it did and prints one line more. Beside
   its recover check it prints how long the `recover` cell is net negative once the supply returns
-  and its worst ten seconds, read off the ten-second trace, as a note and not a check, so the
+  and its worst stretch of the ten-second trace, as a note and not a check, so the
   count of checks is unchanged.

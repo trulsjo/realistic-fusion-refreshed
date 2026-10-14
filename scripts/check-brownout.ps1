@@ -1195,17 +1195,21 @@ script.on_nth_tick(REPORT, function()
       rs > rd and "net positive over those seconds taken together"
               or string.format("a cost of %.1f%% of the draw", 100 * (rd - rs) / math.max(rd, 1))))
   -- WHERE IN THOSE SECONDS IT IS A DRAIN (#693). The total above hides an opening: on 2026-10-13 the
-  -- cell was net negative for its first fifty seconds back. Read off the ten-second trace, from the
-  -- deep sample a tick after the supply returns, so a -Settle and -Cut that do not end on a trace
-  -- tick lose none of the opening; reported and not asserted, like every megawatt here.
+  -- cell was net negative for its first fifty seconds back. Read off the ten-second trace from the
+  -- tick the supply returns on when that is a trace tick, as it is at the defaults, and otherwise
+  -- from the deep sample a tick later, so the first stretch is shorter than the rest and the
+  -- tick of the return is lost. Reported and not asserted, like every megawatt here.
   local key = consume == "input" and "din" or "dout"
   local deep = snaps.deep.recover
   local prev = { tick = DEEP, sold = deep.sold,
     [key] = deep.flows["rf-reactor"][consume] + deep.flows["rf-heater"][consume] }
+  for _, e in ipairs(cells.recover.trace or {}) do
+    if e.tick == SETTLE + CUT then prev = e end
+  end
   local opening, worst = 0, nil
   local still_negative = true
   for _, e in ipairs(cells.recover.trace or {}) do
-    if e.tick > DEEP then
+    if e.tick > prev.tick then
       local net = mw((e.sold - prev.sold) - (e[key] - prev[key]) / 1e6, e.tick - prev.tick)
       if not worst or net < worst then worst = net end
       if net < 0 and still_negative then opening = opening + (e.tick - prev.tick) / 60
@@ -1215,9 +1219,9 @@ script.on_nth_tick(REPORT, function()
   end
   note("recover: how long it is a net drain once the supply returns",
     not worst and "no trace"
-      or opening > 0 and string.format("net negative for its first %ds back; its worst ten seconds were %+.4g MW",
+      or opening > 0 and string.format("net negative for its first %ds back; its worst stretch of trace was %+.4g MW",
         math.floor(opening + 0.5), worst)
-      or string.format("net positive from its first ten seconds back; its worst were %+.4g MW", worst))
+      or string.format("net positive from its first stretch of trace back; its worst was %+.4g MW", worst))
 
   -- ------------------------------------------------------------ 3. the drain is bounded
   --
