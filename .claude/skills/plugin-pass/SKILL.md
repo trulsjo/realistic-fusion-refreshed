@@ -18,9 +18,10 @@ word `tools/review-usage.py` sorts it by: `plugin pass #<n>: reviewer 2, shallow
 `plugin pass #<n>: verifier, <how many> candidates`.
 
 **None of them works in this session's checkout where a worktree can be had** (#651; the rule is
-in that file). Spawn each with `isolation: "worktree"`. Where a hook refuses that, do not go
-round it, and do not run `git worktree` yourself: ask the user to make one worktree for the
-pass, outside the repository, and to remove it after step 4:
+in that file). Where `HERDR_ENV` is set, ask for the worktree below at the end of step 1, and
+spawn without isolation (#702). Elsewhere spawn each with `isolation: "worktree"`. Where a hook
+refuses that, do not go round it, and do not run `git worktree` yourself: ask the user to make
+one worktree for the pass, outside the repository, and to remove it after step 4:
 
 ```
 ! git worktree add --detach "<scratch>/plugin-pass-<n>" <hash>
