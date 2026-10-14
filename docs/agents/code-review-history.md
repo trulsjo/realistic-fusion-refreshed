@@ -183,3 +183,15 @@ One line for each, newest last. The passages above are not edited.
   rows or the first five that touch a mod, counted from the row after #690's. He was shown the ten
   rows' figures summed, not each row's grade. He also judged the verifier, as #626 set: it stays,
   and is judged again at the next revisit.
+- **2026-10-14, #696.** The second rule gained a paragraph: a claim the diff narrows, retracts or
+  deletes the subject of is searched for in the tracked files by its meaning and not only its
+  wording, and the search is done when the report lists each claim, the files searched and each
+  hit. It rests on #694, where the plugin pass found two statements the branch had made false in
+  other words, and #690, where three of its reviewers raised a sentence naming a deleted script.
+  Step 3 of the pre-PR review skill carries it out. The ticket was `ready-for-agent`, and the
+  wording is the session's.
+- **2026-10-14, #698.** The fourth rule gained *What the next revisit decides*, a list beside the
+  paragraph that says when the rule is next revisited, holding the rule and the verifier, and the
+  instruction that anything deferred to a revisit is added to it where it is deferred. The
+  verifier's paragraph points at the list instead of stating the deferral. The ticket was
+  `ready-for-agent`, and the wording is the session's.
