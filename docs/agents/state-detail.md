@@ -200,4 +200,4 @@ One line for each change to a gate, newest last, with its date and its ticket.
   floor of ten citations and the `dangling-script-caught` half hold it.
 - 2026-10-14, #703: `ship-check.ps1`'s section 12 holds `docs/agents/plugin-pass.md` to the wrap
   width too, the page that took the plugin pass's half of `code-review.md`'s fourth rule, and the
-  sentence it checks there names the page. No check was changed but the list of files.
+  sentence it checks in `code-review.md` names the page. No check was changed but the list of files.
