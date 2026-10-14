@@ -654,7 +654,7 @@ local function $placeFacing(surface, force, spec)
   local position = { seed[1] + (tx - chosen.x), seed[2] + (ty - chosen.y) }
   probe.destroy()
 
-  local entity = $placeOrDie(surface, { name = name, position = position, force = force },
+  local entity = $placeOrDie(surface, { name = name, position = position, force = force, quality = spec.quality },
     string.format("%s at (%g, %g)", name, position[1], position[2]))
   if spec.prepare then spec.prepare(entity) end
   return entity
