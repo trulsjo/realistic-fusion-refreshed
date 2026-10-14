@@ -700,7 +700,10 @@ What it found, against that settled baseline:
 twice that day and every data line of the two traces is the same.
 **Everything is researched**, because the rig calls `force.research_all_technologies()`: 60 s of
 confinement, 75 MW of heating and the top plant-efficiency rung. No reading of this rig with
-nothing researched is on record. [`brownout-rig.md`](brownout-rig.md) is the report of a third
+nothing researched is on record. The run of 2026-09-09 above researched everything too, before
+#425's heating ladder existed: it drew 55.2 MW where this one draws 80.17. So each change from its
+figures to these is partly radiation (#52) and partly that ladder, and neither run separates the
+two. [`brownout-rig.md`](brownout-rig.md) is the report of a third
 run, on 2026-10-14: its check lines are the same but for the count of enemy entities removed.
 
 - **Lit, before the cut.** `full` sold 362.5 MW over the last minute of the settle, at
