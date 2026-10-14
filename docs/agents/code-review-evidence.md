@@ -336,7 +336,10 @@ is in neither figure.
 so a verifier: #679, #684, #685, #686, #688 and #690. It was handed 11 candidates and found 2 real,
 both posted and fixed, 9 not real and none not verified; no row records that a candidate found not
 real was later shown to be real. It used 1 193 813 tokens over all requests, 8.4% of those six
-passes' 14 142 623, where the scorers used 30.8% of the eleven passes before it. Truls kept it.
+passes' 14 142 623, where the scorers used 30.8% of the eleven passes before it. Truls kept it, in
+the same session, when the review of #691 found the branch silent on it: he was shown the counts
+above and the 1 193 813 tokens as 7.3%, which is the verifier's share of all eight passes from
+#679's, and the 8.4% was given him after.
 
 **Truls was shown the summed figures, not each row's grade**, so the ten rows' last cells still say
 he has not seen it. **One of the ten touches a mod**, #690, with seven files under
