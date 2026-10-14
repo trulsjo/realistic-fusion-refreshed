@@ -43,7 +43,7 @@ the page since 2026-10-14, #703). `CLAUDE.md` and the intro of each of the two
 skills, `.claude/skills/pre-pr-review/SKILL.md` and since #626
 `.claude/skills/plugin-pass/SKILL.md`, name the section to read and when to read it, and state no
 rule. A skill's steps are its pass's procedure, and they say what they carry out. A change to what a
-step carries out is made here first and then in the step.
+step carries out is made here or on `plugin-pass.md` first and then in the step.
 
 **This file, `docs/agents/review-figures.md`, `docs/agents/code-review-history.md`,
 `docs/agents/code-review-evidence.md`, `docs/agents/plugin-pass.md`,
@@ -179,9 +179,8 @@ whichever review is being run. **That confirmation is a weaker check than the on
 measured.** Fresh eyes found #230's four, and a reviewer confirming its own finding is not fresh
 eyes. From 2026-10-05 the plugin pass ran only when it was asked for, a choice made on what it cost
 on one branch. Since 2026-10-07 it runs on every pull request, so every branch gets the second round
-as well as the confirmation; [A review before the pull request, and the plugin pass after
-it](#a-review-before-the-pull-request-and-the-plugin-pass-after-it) has the verdict of 2026-10-07
-and what it rests on.
+as well as the confirmation; [`plugin-pass.md`](plugin-pass.md#measured-not-assumed) has the verdict
+of 2026-10-07 and what it rests on.
 
 **A fix is checked against its source before it is written, whoever supplied its words**
 (2026-10-07, #632). An enumeration or a figure taken from a reviewer, from a finding or from an
@@ -238,8 +237,9 @@ after the last fix commit is for.
 #637). Each is written after the work, from what the session remembers, and whoever acts on it
 trusts it. A figure, or a claim about a past pull request, issue or commit, is read from that pull
 request, issue or commit before the ticket is published or the retrospective's candidate is put
-forward. That makes three kinds of text under one rule: a fix, a ticket and a retrospective. Since
-#701 the text that implements a ticket is held to its source by the paragraph on a fix, above.
+forward. That made three kinds of text under one rule: a fix, a ticket and a retrospective. Since
+#701 there are four: the text that implements a ticket is held to its source by the paragraph on
+a fix, above.
 
 [The ticket and the retrospective that showed
 it](code-review-evidence.md#a-ticket-and-a-retrospective-written-from-memory-637) are on the
@@ -334,7 +334,8 @@ ones the note gives is not that figure's evidence, and the probe is run again.
 **The reviewer reads whole each agent-facing file the diff changes** (2026-10-08, #647): a skill
 file, a page under `docs/agents/`, a `CLAUDE.md`. Its brief names them. A sentence that a change
 made false and did not touch is in no hunk of the diff. **Where the diff changes a step of a skill,
-the reviewer holds the step against the rule in this file that it carries out**: the step restates
+the reviewer holds the step against the rule in this file, or on `plugin-pass.md`, that it
+carries out**: the step restates
 none of the rule's reasons and leaves out nothing the rule requires. On #641 the plugin pass found
 two things at 75 that the pre-PR review had not, and a rule for each was already in this file. One
 was a sentence in step 6 of the skill that the new step 5 superseded; it was outside the diff. The
@@ -443,6 +444,17 @@ this message (#643), the diff starts at the parent of that fix's commit, `git di
 --output="<scratch>/plugin-fixes.diff" <that commit>~1..HEAD`, and the reviewer is told the
 finding's number and that its fix is in the diff. The session then changes the fix's mark in the
 pull request's body to what the reviewer answered.
+
+**The main session's own cost goes in the pull request's body, and in neither table** (2026-10-10,
+#670). It is what the session that wrote the change and ran both passes used itself, and none of its
+subagents is in it: its requests, their tokens summed as the second table sums them, the share that
+is cache reads, and the context of its first request, which is what the session carried into the
+work. `tools/review-usage.py` prints the four after the tables' figures. A session that did other
+work before the branch gives the script the text the work began with, as its docstring says. The
+figure runs from there to when it is read: the body's is read when the body is last edited, and
+leaves out what the session does after. On #669 the main session used about five times what the two
+passes did together, because it began the work with a context already large; [the evidence page has
+the figures](code-review-evidence.md#what-the-main-session-used-on-669-670).
 
 **When an implement skill says to close out with `/code-review`**, in this repository that still
 means the pre-PR review, and no pull request is needed for it. The plugin pass follows once the pull
