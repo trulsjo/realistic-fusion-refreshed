@@ -178,3 +178,7 @@ One line for each, newest last. The passages above are not edited.
   session's. **Truls ruled on one thing, the same day:** inside herdr, where the hook refuses the
   session's own `git worktree add` too, the user makes the worktree; of the other three routes
   put to him, the shared checkout on a strict brief is what the pass falls back to.
+- **2026-10-14, #691: Truls's verdict on the fourth rule's second revisit.** The plugin pass
+  stays on every pull request, and the rule is next revisited by the same trigger, ten more routine
+  rows or the first five that touch a mod, counted from the row after #690's. He was shown the ten
+  rows' figures summed, not each row's grade.

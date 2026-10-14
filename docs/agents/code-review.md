@@ -598,12 +598,22 @@ fixed findings in those ten rows were serious, on 3 of the 10 branches. [What th
 the verdict's limits](code-review-evidence.md#what-the-verdict-of-2026-10-10-rested-on), are on the
 evidence page.
 
+**The verdict of 2026-10-14: the rule stands again.** The second revisit fell due at #690's row,
+the tenth routine one after #673's, and Truls kept the plugin pass on every pull request. By the
+test above 1 of the 2 fixed findings in those ten rows was serious, on 1 of the 10 branches. He was
+shown the ten rows' figures summed and not each row's grade, so their cells still say he has not
+seen it. [What the verdict
+rested on](code-review-evidence.md#what-the-verdict-of-2026-10-14-rested-on) is on the evidence
+page.
+
 **The rule is next revisited at ten more routine rows, or at the first five that touch a mod,
-whichever comes first** (Truls, 2026-10-10). Both are counted from the row after #673's. Ten more is
-the twentieth routine row, which is the twenty-sixth of the first table. A row touches a mod when
-its pull request changes a file under `realistic-fusion-refreshed-assets/`,
-`realistic-fusion-refreshed-core/` or `realistic-fusion-refreshed/`; that is this file's reading of
-"touch a mod", and the wording is his to correct. None of the first ten does. The first revisit was
+whichever comes first** (Truls, 2026-10-14, the trigger he set on 2026-10-10). Both are counted from
+the row after #690's. Ten more is the thirtieth routine row, which is the thirty-sixth of the first
+table. A row touches a mod when its pull request changes a file under
+`realistic-fusion-refreshed-assets/`, `realistic-fusion-refreshed-core/` or
+`realistic-fusion-refreshed/`; that is this file's reading of "touch a mod", and the wording is his
+to correct. Of the ten counted from #673's, only #690's does, and it was the tenth. The second
+revisit was set on 2026-10-10 by the same trigger. The first was
 set at ten routine rows, which was sixteen in the first table (Truls, 2026-10-07, #593). A routine
 row is one for a pull request opened after the verdict of 2026-10-07, when the pass stopped waiting
 to be asked for: #628's is the first, the pull request that closed #627, and #625's is not one. The

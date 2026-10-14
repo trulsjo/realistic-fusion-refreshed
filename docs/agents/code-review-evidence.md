@@ -303,6 +303,41 @@ figure and was not split out.
 files on 2026-10-10. So the ten say nothing of what the pass finds in Lua or in a prototype, which
 is why the next revisit also falls due at five rows that touch one.
 
+### What the verdict of 2026-10-14 rested on
+
+Under the same rule, at its second revisit. Written for this page on 2026-10-14 (#691), from the
+rows of [`review-figures.md`](review-figures.md) as they were that day.
+
+The ten routine rows are #674, #678, #679, #683, #684, #685, #686, #688, #689 and #690, which are
+every pull request opened after #673 up to #690, read from the repository's list of pull requests
+the same day.
+
+**1 of the 2 findings the plugin pass raised and that were fixed was serious, on 1 of the 10
+branches**: #688's, an edit inside a passage of `docs/agents/state-detail.md` that the page says is
+not edited. It is serious as a false claim in a file agents act on, and the edit was the fix a
+pre-PR finding had asked for. The other, on #684, was a sentence of a callout that left no wrong
+figure. The passes raised 14 candidates in all; on #674, #679 and #685 a sentence a candidate
+quoted was reworded although the candidate did not survive, and the 2 counts none of them. The
+pre-PR review found 112 things on the same ten and 106 were fixed.
+
+| The plugin pass on the ten | Summed | A pass |
+|---|---|---|
+| the counts its subagents reported, eight rows | 3 806 117 tokens | 475 765 |
+| over all requests | 22 514 382 tokens | 2 251 438 |
+| of that, the scorers or the verifier | 1 606 927 tokens, 7.1% | |
+
+The reported counts leave out #684 and #689, whose reviewers were spawned with a name and sent no
+count; they include the three subagents #674 and #678 ran before their reviewers. The pre-PR review
+used 27 255 782 tokens over all requests on the same ten. What the main session used to run a pass
+is in neither figure.
+
+**Truls was shown the summed figures, not each row's grade**, so the ten rows' last cells still say
+he has not seen it. **One of the ten touches a mod**, #690, with seven files under the three mods'
+directories, read from each pull request's list of files on 2026-10-14; its plugin pass raised one
+candidate and it was found not real. So the ten still say almost nothing of what the pass finds in
+Lua or in a prototype. **On #683 and #690 the reviewer asked to read earlier pull requests read
+none**, so that task was not done on two of the ten.
+
 ## The wrap width
 
 The sentence in the head of `code-review.md` that names the wrapped files, and the one under it for
