@@ -139,6 +139,10 @@ occurrence" and "change every occurrence" are not the same instruction. Read the
 block carries that note — a date, an issue number, or both — and move on. What the rule looks for
 is an old figure still presented as current.
 
+**This binds the reviewer.** All three escapes #331 records were reviewer misses on changes whose
+own files were correct. An author who greps before opening the pull request saves a round, but the
+obligation lives here, in the review.
+
 **A claim the diff narrows, retracts or deletes the subject of is searched for by its meaning**
 (2026-10-14, #696). A figure has one spelling; a claim has many. For each such claim, every other
 statement of it in the tracked files is found: the glossary entry, the generated report, the note,
@@ -148,10 +152,6 @@ synonyms, and each hit is read. **The search is done when the report lists each 
 searched for it, and each hit, as a finding or as checked.** On #694 the plugin pass found two
 statements the branch had made false in other words, `GLOSSARY.md`'s Sub-ignition entry and the
 brownout report's quoted check, and the pre-PR review had passed both.
-
-**This binds the reviewer.** All three escapes #331 records were reviewer misses on changes whose
-own files were correct. An author who greps before opening the pull request saves a round, but the
-obligation lives here, in the review.
 
 **A change to a figure in a note changes its row in that note's table in the same commit.** Since
 2026-10-06 (#602) seven notes under `docs/research/` open with a `## Current figures` table: the
