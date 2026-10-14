@@ -247,25 +247,22 @@ local function say(fmt, ...) log("SEGPROBE " .. string.format(fmt, ...)) end
 -- the destination's. The fit could not say how the DESTINATION's fill is rounded, so all three
 -- are run. Here it is asked to predict the next tick of a FED line from the game's own reading
 -- of this one: the box after the mod's step, the segment, and what the heater has to give.
--- The order and the 0.1-unit floor are M.settle_segment's; the floor is 0.1 x 2^24 floored.
-local UNITS = 2 ^ 24
-local FLOOR_UNITS = math.floor(0.1 * UNITS)
+-- The order is M.settle_segment's; the transfer is Get-FixedRuleLua's, shared with
+-- probe-plasma-input-box.ps1 (#588).
+__FIXEDRULE__
+local UNITS = rf_fixed_units
 local ROUNDINGS = {
   floor = math.floor,
   ceil  = math.ceil,
   round = function(x) return math.floor(x + 0.5) end,
 }
-local function fixed_flow(round, from, from_volume, to, to_volume)
-  local rate = math.max(FLOOR_UNITS, 100 * math.min(math.floor(from / from_volume), UNITS - round(to / to_volume)))
-  return math.max(0, math.min(rate, from, to_volume * UNITS - to))
-end
 --- One engine tick from `s` (2^-24 units): the box pushes, then pulls, then the heater pushes twice.
 local function fixed_step(round, s, V, C, H)
   local box, seg, heater = s.box, s.segment, s.had
-  local push = fixed_flow(round, box, V, seg, C); box, seg = box - push, seg + push
-  local pull = fixed_flow(round, seg, C, box, V); box, seg = box + pull, seg - pull
+  local push = rf_fixed_flow(round, box, V, seg, C); box, seg = box - push, seg + push
+  local pull = rf_fixed_flow(round, seg, C, box, V); box, seg = box + pull, seg - pull
   for _ = 1, 2 do
-    local give = fixed_flow(round, heater, H, seg, C); heater, seg = heater - give, seg + give
+    local give = rf_fixed_flow(round, heater, H, seg, C); heater, seg = heater - give, seg + give
   end
   return box, seg, heater
 end
@@ -509,6 +506,7 @@ end)
 $inv = [cultureinfo]::InvariantCulture
 $lua = $lua.
     Replace('__RIGBUILD__', (Get-RigBuildLua)).
+    Replace('__FIXEDRULE__', (Get-FixedRuleLua)).
     Replace('__QUIETMAP__', (Get-QuietMapLua)).
     Replace('__QUIETFN__', $script:QuietMapFunction).
     Replace('__PLASMA__', $Plasma).
