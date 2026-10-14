@@ -139,6 +139,17 @@ occurrence" and "change every occurrence" are not the same instruction. Read the
 block carries that note — a date, an issue number, or both — and move on. What the rule looks for
 is an old figure still presented as current.
 
+**A claim the diff narrows, retracts or deletes the subject of is searched for by its meaning**
+(2026-10-14, #696). A figure has one spelling; a claim has many. For each such claim, every other
+statement of it in the tracked files is found: the glossary entry, the generated report, the note,
+the skill, the sentence that names a script the diff deletes. Searching for the diff's old wording
+finds the copies that share it and misses the rest, so the search is by the claim's subject and its
+synonyms, and each hit is read. **The search is done when the report lists each claim, the files
+searched for it, and each hit, as a finding or as checked.** On #694 the plugin pass found two
+statements the branch had made false in other words, `GLOSSARY.md`'s Sub-ignition entry and the
+brownout report's quoted check, and on #690 three of its reviewers raised a sentence naming a script
+the branch deleted. The pre-PR review had passed all three.
+
 **This binds the reviewer.** All three escapes #331 records were reviewer misses on changes whose
 own files were correct. An author who greps before opening the pull request saves a round, but the
 obligation lives here, in the review.
@@ -485,8 +496,8 @@ with its reason written in the pull request's body.** The reason for the verifie
 decided: over the eleven passes from #628's to #674's a score placed 3 of 33 candidates in the
 posted comment, and the scorers used 30.8% of the passes' tokens; [the evidence page has both
 tables](code-review-evidence.md#what-the-scores-decided-on-eleven-passes-626). **The verifier
-stays** (Truls, 2026-10-14, at this rule's second revisit), is judged again at the next, and has no
-count of its own.
+stays** (Truls, 2026-10-14, at this rule's second revisit), has no count of its own, and is on
+[what the next revisit decides](#what-the-next-revisit-decides).
 
 **A plugin-pass finding the pre-PR review missed gets its class named**, by the session that fixes
 it, in the pull request. A class a script can detect becomes a section of `scripts/ship-check.ps1`.
@@ -623,6 +634,17 @@ before the verdict. "After the verdict" is this file's reading of it. In the ses
 verdict to him Truls confirmed that #625's row is not routine and that this change's is the first,
 and the seventh point of #627 is the only written record of that. The wording of the cut is his to
 correct. The test is the same, no pass mark is set in advance, and the verdict is his.
+
+### What the next revisit decides
+
+Anything deferred to a revisit of this rule is added to this list where it is deferred, with the
+ruling that put it here (2026-10-14, #698). At the second revisit the verifier was first left out of
+the verdict, because #626 had deferred it in the verifier's own paragraph and in a history line.
+
+- **This rule**: whether the plugin pass still runs on every pull request (Truls, 2026-10-14, #691,
+  by the trigger he set on 2026-10-10).
+- **The verifier**: whether one verifier with no score still checks the plugin pass's candidates
+  (Truls, 2026-10-14, #691, as #626 set on 2026-10-11).
 
 ## Why it is written here rather than fixed at source
 

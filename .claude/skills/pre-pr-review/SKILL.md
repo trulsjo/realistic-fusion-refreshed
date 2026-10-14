@@ -64,6 +64,10 @@ pass.
    > it restates none of the rule's reasons and leaves out nothing the rule requires. Say in your
    > report which files you read whole.
    >
+   > List each claim the diff narrows, retracts or deletes the subject of, and search the tracked
+   > files for every other statement of it by its meaning, as the second rule says. Your report
+   > lists each claim, the files searched for it, and each hit, as a finding or as checked.
+   >
    > You are read-only: edit, commit and run nothing that changes the working tree. If proving a
    > finding takes a planted change, make your own worktree first, as the third rule says. Scratch
    > files go in `<scratch>/reviewer/`.
