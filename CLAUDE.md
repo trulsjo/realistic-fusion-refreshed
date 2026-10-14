@@ -367,9 +367,9 @@ vocabulary is `GLOSSARY.md`'s Art section.
 
 ### Code review
 
-**`docs/agents/code-review.md` states this repository's four review rules, the plugin pass's half
-of the fourth on `docs/agents/plugin-pass.md`, and this file states
-none of them** (#630). Read the section named when its condition holds:
+**`docs/agents/code-review.md` states this repository's four review rules,
+`docs/agents/plugin-pass.md` holds the plugin pass's half of the fourth, and this file states none
+of them** (#630). Read the section named when its condition holds:
 
 - **A branch is ready for its pull request, or an implement skill says to close out with
   `/code-review`**: *A review before the pull request, and the plugin pass after it*, for the
