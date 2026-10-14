@@ -351,8 +351,9 @@ fuel line rather than the temperature.
 
 **Sub-ignition** — holding plasma, but below the density at which the reaction carries itself. A third
 state, and not either of the two above: it is not **under-supplied**, because nobody chose it, and not
-**starved**, because the plasma is there. It is the only state in which a reactor is a net drain on its
-network, and the only one a player has to climb out of.
+**starved**, because the plasma is there. It is the only state in which a reactor stays a net drain on
+its network, and the only one a player has to climb out of. A reactor re-igniting after a blackout is
+a drain too, but only for its opening seconds: fifty on 2026-10-13 (#611).
 
 **Cold-parked** — a plasma sitting at the bottom of its temperature range, where the model's domain
 ends. A fourth state, and a *temperature* one where the three above are about density: the plasma is
