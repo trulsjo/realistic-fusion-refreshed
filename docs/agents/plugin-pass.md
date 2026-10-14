@@ -85,8 +85,8 @@ candidates, on Sonnet. It is handed, for each candidate, the quoted words and th
 check them against, and it returns real, not real or not verified, each with its evidence; not
 verified is for a candidate it could not check from the tree. The session merges a candidate that
 two reviewers raised before it hands them over, and a pass with no candidate has no verifier. The
-first rule of `code-review.md` says what a verdict decides. **A candidate found real or not verified
-is fixed, or left with its reason written in the pull request's body.** The reason for the verifier
+first rule of `code-review.md` says what a verdict decides, and its fourth what becomes of a
+candidate found real or not verified. The reason for the verifier
 is what the scores decided: over the eleven passes from #628's to #674's a score placed 3 of 33
 candidates in the posted comment, and the scorers used 30.8% of the passes' tokens; [the evidence
 page has both tables](code-review-evidence.md#what-the-scores-decided-on-eleven-passes-626). **The
