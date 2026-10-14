@@ -281,7 +281,7 @@ Two consequences for anything reading the dump:
 foreign placeholder is a true finding about a label and a false one about a locale entry, and that
 check can never load a mod that ships one. `tree-viewer.ps1` reads both and falls through past
 either, which is what #169 needed. The function was in `scripts/factorio-lib.ps1` until #675 and
-is the tools submodule's `scripts/load-harness-lib.ps1`'s since.
+is the tools submodule's `vendor/grado-factorio-tools/scripts/load-harness-lib.ps1`'s since.
 
 ## The field map, in one place
 

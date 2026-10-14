@@ -73,7 +73,7 @@ factorio-test's documentation.
 
 - **Headless Factorio server in Docker**, via [factorio-docker](https://github.com/factoriotools/factorio-docker).
 - `entrypoint.sh` — configurable runner that syncs mods and mod settings and runs multiple suites.
-- **JUnit-style XML** from the JSON reports, via a Ruby script (`scripts/parse_funit_json.rb`).
+- **JUnit-style XML** from the JSON reports, via a Ruby script (`parse_funit_json.rb`).
 - `.gitlab-ci.yml` — the maintained pipeline template.
 - `.github/workflows/funit.yml` — described by its own README as *"a WIP that is less actively
   maintained, and may not be up to date"*. **This repository is on GitHub, so the less-maintained half is

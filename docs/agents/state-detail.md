@@ -194,10 +194,13 @@ One line for each change to a gate, newest last, with its date and its ticket.
 - 2026-10-14, #697: `ship-check.ps1`'s section 6 also fails a `scripts/` or `tools/` path cited in
   prose that does not exist at the root, in one of the three mods or, written from the root, in the
   tools submodule. It reads `scripts/` and the pages under `docs/` that say how things are, and
-  leaves out the records: `docs/adr/`, `docs/research/`, this page, the two review history pages and
-  `review-figures.md`. Its pattern run over every file on `main`, records included, found sixteen
-  hits; thirteen were in records, and the three in `ship-check.ps1`'s own comments were fixed. A
-  floor of ten citations and the `dangling-script-caught` half hold it.
+  leaves out the records: `docs/adr/`, this page, the two review history pages and
+  `review-figures.md`. A path with a line number after it is a predecessor's or a third party's,
+  and is left alone. Research notes are read, by Truls's choice on #706: they cite 29 probes in
+  275 citations. Its pattern run over every file on `main`, records and notes included, found
+  sixteen hits. Three were in `ship-check.ps1`'s own comments and five in notes; all eight were
+  fixed but one note's predecessor path, cited by line. The other eight are in records. A floor of
+  ten citations and the `dangling-script-caught` half hold it.
 - 2026-10-14, #703: `ship-check.ps1`'s section 12 holds `docs/agents/plugin-pass.md` to the wrap
   width too, the page that took the plugin pass's half of `code-review.md`'s fourth rule, and the
   sentence it checks in `code-review.md` names the page. No check was changed but the list of files.

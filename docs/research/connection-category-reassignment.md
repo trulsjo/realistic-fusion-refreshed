@@ -26,7 +26,7 @@ opened by finding that PR's central claim false. **Nothing here decides anything
 
 Measured on **2026-09-01** against **Factorio 2.0.77** (file version 2.0.77.84539) by
 `scripts/probe-connection-categories.ps1`, on the `seablock` lane — 46 mods from
-`scripts/fetch-mods.ps1 -Set seablock`, `-With quality`, the lane as ADR 0007 runs it. The mod under
+`vendor/grado-factorio-tools/scripts/fetch-mods.ps1 -Set seablock`, `-With quality`, the lane as ADR 0007 runs it. The mod under
 suspicion is **`no-pipe-touching` 1.1.28**. The script is committed rather than the numbers alone,
 because these are facts about a version of an engine and of somebody else's mod, and the next version
 of either is entitled to different ones.
