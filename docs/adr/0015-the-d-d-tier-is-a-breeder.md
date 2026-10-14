@@ -217,6 +217,12 @@ claim.
   > reactor is still a net contributor through the shortfall and still recovers unattended. "Net
   > positive the whole way up" no longer holds.)*
   >
+  > *(Amended 2026-10-14, #693, at Truls's request: re-igniting does cost the network, for a short
+  > while. On #611's run the recovering reactor was net negative for its first fifty seconds back,
+  > −16.0 MW over the first ten, before the five minutes came out at +43.66 MW net on average.
+  > `scripts/check-brownout.ps1` reports the length of that opening and its worst ten seconds on
+  > every run. It still recovers unattended, and nothing in the Decision changes.)*
+  >
   > **What stands:** everything in the Decision above. The plasma cooling on brownout is accepted,
   > the arrest is the player's to build, and letting the plasma hold its heat unpowered stays
   > rejected — all of it decided for the D-D tier, all of it still true of the D-D tier, which the

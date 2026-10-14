@@ -79,15 +79,14 @@
       2. It recovers to full unattended once the supply returns.
       3. While it is re-igniting it IS a drain, that drain is bounded, and the rig states the bound.
 
-    The third came out stronger than it was written. On the trajectory a blackout actually produces,
-    re-igniting is not a drain at all -- the reactor is still selling more than it draws the whole way
-    back up, because it never gets thin enough to stop. A drain does exist and `boundary` measures it,
-    but reaching it took seeding a charge by hand: fifteen minutes of total blackout does not.
-
-    NOT THE WHOLE WAY, MEASURED 2026-10-13 (#611). On Factorio 2.0.77 with everything researched,
-    `recover` was +43.66 MW net over its 300 s and net negative for the first fifty of them: -16.0 MW
-    over the first ten seconds, +3.4 over the sixth ten. The check below asks about the 300 s taken
-    together, and its line says so. docs/research/d-t-ignition.md has the reading.
+    The third holds, and the drain is short. On the trajectory a blackout actually produces,
+    re-igniting is a drain only for its opening seconds: on 2026-10-13 (#611), on Factorio 2.0.77
+    with everything researched, `recover` was net negative for its first fifty seconds back, -16.0 MW
+    over the first ten, and +43.66 MW net over the 300 s taken together. The reactor never gets thin
+    enough to stay a drain. The check below bounds the 300 s, and since #693 the rig also reports how
+    long the opening lasts and its worst ten seconds. A lasting drain does exist and `boundary`
+    measures it, but reaching it took seeding a charge by hand: fifteen minutes of total blackout does
+    not. docs/research/d-t-ignition.md has the reading.
 
     Every figure is reported as well as asserted, and the assertions are on directions and bounds
     rather than on megawatts -- balance in this repository is provisional everywhere, and a rig that
@@ -1180,14 +1179,13 @@ script.on_nth_tick(REPORT, function()
     "recover: the supply comes back and the reactor re-ignites with no help of any kind",
     back and string.format("%.4g C, %.4g u, %.1fs after the supply returned",
       back.temperature, back.amount, RESTORE / 60) or "no plasma")
-  -- The third claim, and the one the measurement improved on. It was written expecting a cost: a
-  -- reactor climbing back from a blackout should be spending its confinement heating before it has
-  -- any fusion to pay for it. On the trajectory a blackout actually leaves, it is not -- the plasma
-  -- never got thin enough, and capture_efficiency sells what leaves it whether or not fusion put it
-  -- there, so the reactor is ahead the whole way up. (Not for its first fifty seconds, measured
-  -- 2026-10-13, #611: the header has the reading.) The bound is asserted anyway, because it is the
-  -- thing that would catch a reactor that HAD become a 50 MW hole; the sign is reported, because it
-  -- is the answer.
+  -- The third claim. It was written expecting a cost: a reactor climbing back from a blackout
+  -- should be spending its confinement heating before it has any fusion to pay for it. It does, but
+  -- only for its opening seconds (fifty on 2026-10-13, #611): the plasma never gets thin enough to
+  -- stay a drain, and capture_efficiency sells what leaves it whether or not fusion put it there, so
+  -- the reactor is ahead over the 300 s taken together. The bound is asserted, because it is the
+  -- thing that would catch a reactor that HAD become a 50 MW hole; the sign and the opening are
+  -- reported, because they are the answer.
   local rs, rd = span("recover", "deep", "back")
   record(rd - rs < rd * 0.5,
     "recover: and coming back never costs more than a fraction of what it draws",
@@ -1195,6 +1193,26 @@ script.on_nth_tick(REPORT, function()
       rs - rd, RESTORE / 60, mw(rs - rd, RESTORE), rd,
       rs > rd and "net positive over those seconds taken together"
               or string.format("a cost of %.1f%% of the draw", 100 * (rd - rs) / math.max(rd, 1))))
+  -- WHERE IN THOSE SECONDS IT IS A DRAIN (#693). The total above hides an opening: on 2026-10-13 the
+  -- cell was net negative for its first fifty seconds back. Read off the ten-second trace, so the
+  -- opening is a multiple of ten seconds; reported and not asserted, like every megawatt here.
+  local key = consume == "input" and "din" or "dout"
+  local opening, worst, prev = 0, nil, nil
+  local still_negative = true
+  for _, e in ipairs(cells.recover.trace or {}) do
+    if e.tick >= SETTLE + CUT then
+      if prev then
+        local net = mw((e.sold - prev.sold) - (e[key] - prev[key]) / 1e6, e.tick - prev.tick)
+        if not worst or net < worst then worst = net end
+        if net < 0 and still_negative then opening = opening + (e.tick - prev.tick) / 60
+        else still_negative = false end
+      end
+      prev = e
+    end
+  end
+  note("recover: how long it is a net drain once the supply returns",
+    worst and string.format("net negative for its first %ds back; its worst ten seconds were %+.4g MW",
+      math.floor(opening + 0.5), worst) or "no trace")
 
   -- ------------------------------------------------------------ 3. the drain is bounded
   --
