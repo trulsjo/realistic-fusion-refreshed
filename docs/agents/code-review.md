@@ -190,6 +190,14 @@ a fix corrected one row of a group and not the others, and the confirmation pass
 of the plugin pass's five findings were what the fix for the pre-PR review's first finding had left
 behind.
 
+**A ticket is such a source too** (2026-10-14, #701). A claim a ticket makes about an earlier pull
+request, issue or commit is read from that pull request, issue or commit before the session that
+implements the ticket restates it in tracked prose or a commit body. Where the source disagrees, the
+source wins, and the pull request says where the change departs from the ticket. On #700 the
+session wrote #696's account of #690 into a rule, a history line and a commit body unread, and the
+pre-PR review raised it as its first finding, at 75: #690's own pre-PR review had raised the
+sentence #696 said it passed.
+
 **What a fix leaves behind is read again after the last fix commit** (2026-10-09, #663). The rule
 above is about a fix's own text. This one is about older text on the same branch, which a later
 commit can make false without touching it: a count, a quoted output, a statement of what the change
@@ -435,14 +443,16 @@ the tree; this is for one told not to, and it adds only where such a pass runs.
   is `git checkout --detach <hash>`, there. The session checks before it spawns that the hash is
   its own `git rev-parse HEAD`.
 - **Where a hook refuses that spawn, the session does not go round the hook.** One on the machine
-  this was written on refuses it inside herdr (#655), and refuses the session's own
-  `git worktree add` as well. There the user makes one worktree for the pass (Truls, 2026-10-12):
-  the session asks for `! git worktree add --detach <dir> <hash>`, in a directory outside the
-  repository, names that directory in each brief as the only place to run a command, and asks for
-  its removal when the verifier has answered, or when the reviewers have and raised nothing. With
+  this was written on refuses it inside herdr (#655), and refuses the session's own `git worktree
+  add` as well. There the user makes one worktree for the pass (Truls, 2026-10-12): the session asks
+  for `! git worktree add --detach <dir> <hash>`, in a directory outside the repository, names that
+  directory in each brief as the only place to run a command, and asks for its removal when the
+  verifier has answered, or when the reviewers have and raised nothing. **Where `HERDR_ENV` is set,
+  the session asks for that worktree before it spawns anything, and spawns without isolation**
+  (2026-10-14, #702): on #700 the hook refused all five reviewers' spawns, as it is known to. With
   nobody there to make it, the pass runs in the session's checkout and the pull request says so.
-  Both of those rest on the brief again, and the brief says so by naming what is not run:
-  `git checkout`, `switch`, `stash`, `reset` and `worktree`.
+  Both of those rest on the brief again, and the brief says so by naming what is not run: `git
+  checkout`, `switch`, `stash`, `reset` and `worktree`.
 - **Every brief also says: no gate, nothing left running in the background, and no message to
   another agent.** A verifier checks a candidate against its source and asks nobody.
 - **A worktree made either way has no submodule contents and no git-ignored file.** The shared

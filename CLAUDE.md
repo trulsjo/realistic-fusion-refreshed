@@ -373,8 +373,8 @@ none of them** (#630). Read the section named when its condition holds:
 - **A branch is ready for its pull request, or an implement skill says to close out with
   `/code-review`**: *A review before the pull request, and the plugin pass after it*, for the
   pre-PR review. `/pre-pr-review` runs it.
-- **A commit is about to be written on a branch**: the same section, for what its body takes from
-  the ticket and leaves to the diff (#671).
+- **Before the first commit on a branch, and each one after**: the same section, for a body that
+  says why, from the ticket, and leaves what to the diff (#671).
 - **A pull request has been opened**: the same section, for the plugin pass, who confirms its fixes,
   and the row it adds to each of the two tables, which since #644 are in
   `docs/agents/review-figures.md`. `/plugin-pass` runs it (#626).

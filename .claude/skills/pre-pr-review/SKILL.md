@@ -175,9 +175,13 @@ pass.
 
    **Under the table, write what the reviewer cost** (#631). A reviewer reached by name goes idle
    and sends no completion notice, so nothing reports its usage. Read it from the session's own
-   `subagents` directory, `projects/<project>/<session id>/subagents` under the Claude
-   configuration directory, where the reviewer's transcript is the one file matching
-   `agent-a<name>-*.jsonl`. Give the directory to the tracked script (#661):
+   `subagents` directory, `projects/<project>/<session id>/subagents` under the Claude configuration
+   directory, where the reviewer's transcript is the one file matching `agent-a<name>-*.jsonl`.
+   **The session ID is the running session's**, which the environment holds as
+   `CLAUDE_CODE_SESSION_ID`, and the configuration directory is `CLAUDE_CONFIG_DIR` where that is
+   set (#705). The output-file path the Agent tool reports for a background subagent is no guide to
+   it: on #700 it named an earlier session, whose directory held none of that pass's transcripts.
+   Give the directory to the tracked script (#661):
 
    ```
    python tools/review-usage.py "<that directory>"
