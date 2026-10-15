@@ -727,7 +727,8 @@ ticks to 496 000. A He3-He3 reactor burns almost none of its feed, so the line f
 heater holds a D-He3 box at 467 to 470 of 3000; 48 fill its line, and it is cold, in
 [A D-He3 line that fills is cold](#a-d-he3-line-that-fills-is-cold). The fill ticks are exact, read every tick; the first tick a full box
 reads 15 °C is exact too, since #571. A fill tick here is the first tick the box reads 99.9%.
-[`quality.md`](quality.md) gives the same three-pipe line 151 562, which is another measure:
+[`quality.md`](quality.md) and [`exchanger-coverage.md`](exchanger-coverage.md) give the same
+three-pipe line 151 562, which is another measure:
 the end of the first heater cycle to close at 99.9%.
 
 | 500 000 ticks, 1 heater | solo, 3 pipes, segment 3300 | pair, one powered: powered box | unpowered box | both powered: box 1 | box 2 |
