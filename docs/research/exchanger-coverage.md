@@ -950,7 +950,9 @@ from 32 844 to 32 881.
 240 -Every 50`: helium-3 plasma, one heater a cell, `rf-aneutronic-reactor`, which no ladder
 reaches, Factorio 2.0.77 (build 84539), 2026-10-04. Each reactor burned under 16 units in the
 whole run, so the line fills: the box first read 2997 units at the cycle ending on tick 151 562 at
-three pipes and 158 762 at six. **Both branches scale with the box, and the 100 in them does
+three pipes and 158 762 at six.
+[`plasma-input-box.md`](plasma-input-box.md#an-aneutronic-line-that-fills-he3-he3) gives the
+three-pipe line 151 531, which is another measure: the first tick the box reads 99.9%. **Both branches scale with the box, and the 100 in them does
 not.** At three pipes the cycle ending on 60 002 read 1199.98 in the box and 1283.73 in the
 segment, which is 3.75 over 1199.98 × 3200 / 3000 = 1279.98. The one ending on 120 002 read
 2382.56 and 2601.15, and 100 + 2900 × (2601.15 − 3.75) / 3300 is 2382.56. The step does not
