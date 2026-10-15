@@ -264,14 +264,16 @@ One line for each, newest last. The passages above are not edited.
   says so where it says what a row holds, and step 7 of `/pre-pr-review` lists the command that
   finds the row. The ticket preferred this to leaving the cell to step 7, and the wording is the
   session's.
-- **2026-10-15, #716.** A change to a rule writes its line here at the start of the reading after
-  the last fix commit, from the rule's final wording, and not in the commit that changes the rule.
-  The line is committed, `scripts/ship-check.ps1` is run again, the line is sent to the pre-PR
-  reviewer as a fix is, and the reading waits for the answer. This page keeps restating a rule;
-  `code-review-evidence.md` keeps its own timing. `issue-tracker.md` has a comment that records
-  Truls's decisions on a ticket record what he decided, and leave the session's wording to the pull
-  request. Truls decided all three on #716, on 2026-10-15, in [its
-  comment](https://github.com/trulsjo/realistic-fusion-refreshed/issues/716). The wording is the
+- **2026-10-15, #716.** Truls decided three things on #716 on 2026-10-15, in [its
+  comment](https://github.com/trulsjo/realistic-fusion-refreshed/issues/716#issuecomment-6200973092):
+  this page keeps restating a rule, and a rule's line here is written at the reading after the last
+  fix commit, from its final wording, and not in the commit that changes the rule; a comment that
+  records his decisions on a ticket records what he decided, and leaves the session's wording to the
+  pull request, which `issue-tracker.md` now says; and the pull request's body is left out, since
+  that reading already rewrites it. The rest is the session's, from the pre-PR review of #719: the
+  line is written first in that reading, committed, `scripts/ship-check.ps1` is run again, the line
+  is sent to the pre-PR reviewer as a fix is, and the reading waits for the answer. The comment
+  leaves `code-review-evidence.md`'s timing out of the decision, and it stays. The wording is the
   session's, and step 7 of `/pre-pr-review` carries the line out. These four lines are the first
   written that way.
 - **2026-10-15, #717.** The paragraph on a file with no width says `tools/rewrap.py` refuses to
