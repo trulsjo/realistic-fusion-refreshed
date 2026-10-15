@@ -250,3 +250,31 @@ One line for each, newest last. The passages above are not edited.
   The paragraph carries #579's two figures, as #708's does its case, so `code-review-evidence.md`
   gains nothing. Step 3 of the pre-PR review skill has the reviewer read `code-review.md` whole and
   lists no checks, so it is unchanged. The wording is the session's.
+- **2026-10-15, #714.** The second rule has a change that adds or rewords a review rule apply it
+  to the case that prompted it, across the tracked files and by the rule's own search where it
+  gives one, before its first commit, and the pull request's body list what it found. It sits
+  beside the #632 paragraph, which binds a fix, and a rule's example is not one. It rests on #713,
+  where three findings came from not doing so, and its paragraph carries them, as #708's does its
+  case, so `code-review-evidence.md` gains nothing. Step 3 of the pre-PR review skill has the
+  reviewer read `code-review.md` whole, so it is unchanged. The wording is the session's.
+- **2026-10-15, #715.** The second rule's reading after the last fix commit names, among the counts
+  it reads again, the pre-PR review's cell in the pull request's row of `review-figures.md`: its
+  count of findings and how many were fixed and confirmed. The row is written before the last
+  confirmation, which can raise more, and on #713 the count went stale twice. `plugin-pass.md`
+  says so where it says what a row holds, and step 7 of `/pre-pr-review` lists the command that
+  finds the row. The ticket preferred this to leaving the cell to step 7, and the wording is the
+  session's.
+- **2026-10-15, #716.** A change to a rule writes its line here at the start of the reading after
+  the last fix commit, from the rule's final wording, and not in the commit that changes the rule.
+  The line is committed, `scripts/ship-check.ps1` is run again, the line is sent to the pre-PR
+  reviewer as a fix is, and the reading waits for the answer. This page keeps restating a rule;
+  `code-review-evidence.md` keeps its own timing. `issue-tracker.md` has a comment that records
+  Truls's decisions on a ticket record what he decided, and leave the session's wording to the pull
+  request. Truls decided all three on #716, on 2026-10-15, in [its
+  comment](https://github.com/trulsjo/realistic-fusion-refreshed/issues/716). The wording is the
+  session's, and step 7 of `/pre-pr-review` carries the line out. These four lines are the first
+  written that way.
+- **2026-10-15, #717.** The paragraph on a file with no width says `tools/rewrap.py` refuses to
+  rewrap one, reading the list from section 12. The tool reads section 12's `$WRAPPED`, so the two
+  lists cannot differ, and its `--self-test` fails when a wrapped file is refused or another is
+  not.
