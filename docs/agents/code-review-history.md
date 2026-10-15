@@ -240,3 +240,10 @@ One line for each, newest last. The passages above are not edited.
   carries its figures, as its sentence on #694 does, so `code-review-evidence.md` gains nothing.
   Step 3 of the pre-PR review skill points at the rule and does not restate the list, so it is
   unchanged. The ticket was `ready-for-agent`, and the wording is the session's.
+- **2026-10-15, #593.** The second rule reads a figure for a named quantity against every other
+  statement of that quantity in the tracked files, and asks that two values either agree or each
+  say what it measures. It is the one class of #579's seven plugin-pass findings that Truls gave a
+  line; the other six are one-off, no rule, on
+  [#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593). The paragraph carries
+  #579's two figures, as #708's does its case, so `code-review-evidence.md` gains nothing. The
+  wording is the session's.
