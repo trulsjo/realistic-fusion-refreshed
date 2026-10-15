@@ -213,7 +213,8 @@ pass.
 
    **Where the branch changes a rule, first write its line on `docs/agents/code-review-history.md`**
    (#716), from the rule's wording at the head. Commit it, run `scripts/ship-check.ps1`, and send
-   its diff to the reviewer as step 4 sends a fix. The reading below is made on the head after it.
+   its diff to the reviewer as step 4 sends a fix, and wait for the answer: a finding in it is fixed
+   and confirmed before the reading below, which is made on the head after it.
 
    These lines list what the rule names:
 
