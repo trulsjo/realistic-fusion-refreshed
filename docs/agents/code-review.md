@@ -67,6 +67,7 @@ findings that asked for a stated width.
 **A file that is not one of those eight has no width** (Truls, 2026-10-11, #667). A long line in
 it is not a finding, and a reviewer does not report one. That covers the Python under `tools/`,
 the PowerShell under `scripts/`, the Lua and every markdown page that sentence does not name.
+`tools/rewrap.py` refuses to rewrap such a file, reading the list from section 12 (#717).
 Reviewers had raised a long line in a file with no stated width four times, three of them in
 `CLAUDE.md`, and scored the same fault 0 and 50; [the evidence page has the
 four](code-review-evidence.md#long-lines-in-files-with-no-stated-width-667).
@@ -221,7 +222,6 @@ a fix corrected one row of a group and not the others, and the confirmation pass
 of the plugin pass's five findings were what the fix for the pre-PR review's first finding had left
 behind.
 
-**What a fix leaves behind is read again after the last fix commit** (2026-10-09, #663). The rule
 **A change that adds or rewords a review rule applies it to the case that prompted it, before its
 first commit** (2026-10-15, #714). The session runs the rule's own search for that case across the
 tracked files and reads each hit against the new wording, and the pull request's body lists what
@@ -234,6 +234,7 @@ measured (pre-PR finding 6, at 75). Its example said neither note named the othe
 `docs/research/exchanger-coverage.md` gave 151 562 and named neither other note, which the rule's
 own search finds (pre-PR finding 12, at 50).
 
+**What a fix leaves behind is read again after the last fix commit** (2026-10-09, #663). The rule
 above is about a fix's own text. This one is about older text on the same branch, which a later
 commit can make false without touching it: a count, a quoted output, a statement of what the change
 does. After the last fix commit on the branch, the plugin pass's fixes included, and before the pull

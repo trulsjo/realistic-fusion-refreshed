@@ -261,3 +261,6 @@ One line for each, newest last. The passages above are not edited.
   reads again, since the row is written before the last confirmation; on #713 it went stale twice.
   `plugin-pass.md` says so where it says what a row holds, and step 7 of `/pre-pr-review` lists the
   command that finds the row. The ticket preferred this to leaving the cell empty until step 7.
+- **2026-10-15, #717.** The paragraph on a file with no width says `tools/rewrap.py` refuses to
+  rewrap one. The tool reads the files from section 12's `$WRAPPED`, so the two lists cannot
+  differ, and its `--self-test` fails when a wrapped file is refused or another is not.
