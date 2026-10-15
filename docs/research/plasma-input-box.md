@@ -31,10 +31,10 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | Shipped `input-output` box, D-D pair built 12H or 2H1, one powered: the unpowered box on the full line, rows 152 000 to 296 000 | never 15 °C; 1.083×10³ to 1.303×10⁴ °C | 2026-10-14 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Built in another order](#built-in-another-order) |
 | Shipped `input-output` box, He3-He3 pair, 1 heater, 3 and 12 pipes: the one order of the fitted rule that misses no tick | 1H2, the build order, none of 992 000 ticks | 2026-10-14 and 2026-10-15 | 2.0.77 | unresearched (all 11 rungs asserted off) | [On the aneutronic reactor](#on-the-aneutronic-reactor) |
 | Shipped `input-output` box, He3-He3 pair, both powered, full: what the fitting order has each box push into the line over 170 646 ticks | 22.39 and 19.38 units | 2026-10-14 and 2026-10-15 | 2.0.77 | unresearched (all 11 rungs asserted off) | [On the aneutronic reactor](#on-the-aneutronic-reactor) |
-| Shipped `input-output` box, D-D pair, one reactor unpowered: ticks the two boxes fill | 148 946 and 148 939 | 2026-10-04 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Once the shipped line is full, the unpowered reactor falls to the floor](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor) |
-| Shipped `input-output` box, D-D pair, one reactor unpowered: first tick the unpowered box reads 15 °C | tick 150 012 | 2026-10-05 | 2.0.77 | unresearched | [Once the shipped line is full, the unpowered reactor falls to the floor](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor) |
-| Shipped `input-output` box, D-D pair, one reactor unpowered: the powered reactor's temperature at 596 000 | 2.3859×10⁸ °C | 2026-10-04 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Once the shipped line is full, the unpowered reactor falls to the floor](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor) |
-| Shipped `input-output` box, five shapes of line with an unpowered reactor, each built 1H2: how soon after its box fills the unpowered reactor reads 15 °C | within 2800 ticks | 2026-10-05 | 2.0.77 | unresearched in four shapes; heating rung 5 and no other in one | [Once the shipped line is full, the unpowered reactor falls to the floor](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor) |
+| Shipped `input-output` box, D-D pair, one reactor unpowered: ticks the two boxes fill | 148 946 and 148 939 | 2026-10-04 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Once the shipped line is full, the unpowered reactor falls to the floor, built 1H2](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor-built-1h2) |
+| Shipped `input-output` box, D-D pair, one reactor unpowered: first tick the unpowered box reads 15 °C | tick 150 012 | 2026-10-05 | 2.0.77 | unresearched | [Once the shipped line is full, the unpowered reactor falls to the floor, built 1H2](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor-built-1h2) |
+| Shipped `input-output` box, D-D pair, one reactor unpowered: the powered reactor's temperature at 596 000 | 2.3859×10⁸ °C | 2026-10-04 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Once the shipped line is full, the unpowered reactor falls to the floor, built 1H2](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor-built-1h2) |
+| Shipped `input-output` box, five shapes of line with an unpowered reactor, each built 1H2: how soon after its box fills the unpowered reactor reads 15 °C | within 2800 ticks | 2026-10-05 | 2.0.77 | unresearched in four shapes; heating rung 5 and no other in one | [Once the shipped line is full, the unpowered reactor falls to the floor, built 1H2](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor-built-1h2) |
 | Shipped `input-output` box, D-D pair, the unpowered box: heat `control.lua`'s step removed over the 916 steps of the traced window | 1.9788×10¹¹ unit-°C | 2026-10-05 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Which of the step's terms takes it](#which-of-the-steps-terms-takes-it) |
 | Shipped `input-output` box, D-D pair, the unpowered box: share of that heat taken by radiation and by the confinement loss | 65.8% and 35.1% | 2026-10-05 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Which of the step's terms takes it](#which-of-the-steps-terms-takes-it) |
 | Shipped `input-output` box's traced temperature run on in `M.step`: time for a box held full and left unheated to reach the floor | 1818 ticks (303 steps, 30.3 s) | 2026-10-05 | not stated | unresearched (all 11 rungs asserted off) | [Which of the step's terms takes it](#which-of-the-steps-terms-takes-it) |
@@ -187,7 +187,7 @@ report **one segment id in both variants**: 9 = 9 = 9 = 9. The segment reports a
   The unpowered reactor stays within 3.0% of the powered one's temperature (1.9721 against
   2.0330×10⁸ at 96 000), which is heat that came through the pipe. Neither box reached 99.9% in
   100 000 ticks. That holds only while the line fills: see
-  [Once the shipped line is full](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor). The segment held 2164.29 of its 3500 at tick 96 000.
+  [Once the shipped line is full](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor-built-1h2). The segment held 2164.29 of its 3500 at tick 96 000.
 - **Canary: one segment, but not one pool of heat.** The plasma still reaches both boxes: until
   tick 48 000, each box takes about half the heater's feed, and the unpowered box fills first at
   47 774. The powered box fills at 61 093. **Heat does not travel.** The unpowered box read
@@ -476,7 +476,7 @@ reactor and twelve between the two, built 1H2, counted to 496 000. The fill tick
   496 000, within the settle test's 10⁻⁴. This is the rule's account, not a reading of the
   engine.
 
-#### Once the shipped line is full, the unpowered reactor falls to the floor
+#### Once the shipped line is full, the unpowered reactor falls to the floor, built 1H2
 
 Every run in this section built its cell 1H2: the first reactor, then the heater, then the
 second. **Built 12H or 2H1, where the unpowered reactor is placed just before the heater, it
@@ -700,7 +700,7 @@ from 468 000 to 496 000.
   the powered one at every row of the last cycle, and `control.lua` changes it on 82 644 step
   ticks, the same count as a powered one: it is hot enough to burn what reaches it. The line
   never fills, so the full-line loss
-  [read on `rf-reactor`](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor)
+  [read on `rf-reactor`](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor-built-1h2)
   is not reached here. He3-He3 fills this reactor's line; see
   [An aneutronic line that fills](#an-aneutronic-line-that-fills-he3-he3).
 - **Canary: heat does not travel.** The unpowered box read 4.1473×10⁴ °C at 4000 and 15 °C at
@@ -1062,7 +1062,7 @@ segment.
   against 1.3966×10⁸ at 120 000). This is the pooling loss the fresh canary pair showed,
   reached from a running save.
   The pair was saved while its line was still filling. The shipped pair run further, in
-  [Once the shipped line is full, the unpowered reactor falls to the floor](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor),
+  [Once the shipped line is full, the unpowered reactor falls to the floor, built 1H2](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor-built-1h2),
   drops to the same 15 °C when its line fills near tick 149 000, so the control load's warmth
   at 120 000 is that of a line still filling.
 - **Settled:** the canary's powered box 1 is still cooling at 120 000, at 2.3962×10⁸ °C, moving
