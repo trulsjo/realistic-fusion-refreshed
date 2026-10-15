@@ -1030,9 +1030,11 @@ foreach ($cite in (Find-NumberedHalves -Files $citingCode -Root $repoRoot)) {
 #
 # A SECTION LINK THAT NAMES NO HEADING IS SECTION 11'S since #710: the shared Markdown check fails
 # every dangling #fragment, with the anchor GitHub gives the heading. This section's own anchor code
-# was removed then, by Truls's decision, since it made the anchor from the text as written and
-# differed from GitHub's wherever a heading renders otherwise. What is left here is a row whose
-# Section cell holds no link at all, which the Markdown check has nothing to resolve.
+# was removed then, decided by Truls on 2026-10-15 and recorded on #710's pull request, since it
+# made the anchor from the text as written and differed from GitHub's wherever a heading renders
+# otherwise. What is left here is a row whose Section cell holds no link at all, which the Markdown
+# check has nothing to resolve. Section 11 reads the index where this section reads the working
+# tree, so a heading renamed and not yet staged passes a run until it is staged.
 #
 # THE NOTES ARE FOUND BY THE HEADING, never by a list of names, so a note that gains a table is
 # gated from the commit that adds it. The table is the one under that heading whose header row names
@@ -1458,8 +1460,8 @@ if ($SelfTest) {
 
             @{ Name = 'figure-section-linked'; Body = {
                 # Section 10 passes by finding nothing loose. Two rows whose Section cells differ
-                # only in whether they hold a link. The link names no heading on purpose: since
-                # #710 that is section 11's to fail, so here it must pass.
+                # in whether they hold a link. The link names no heading on purpose: since #710
+                # that is section 11's to fail, so here it must pass.
                 $doc = Join-Path $planted 'anchors.md'
                 @(
                     '# A note'
@@ -1468,7 +1470,7 @@ if ($SelfTest) {
                     ''
                     '| Figure | Value | Measured | Game version | Research state | Section |'
                     '|---|---|---|---|---|---|'
-                    '| Cost, second sitting | 5.257 µs | 2026-09-20 | 2.0.77 | not stated | [Results](#results-2) |'
+                    '| Cost, linked | 5.257 µs | 2026-09-20 | 2.0.77 | not stated | [Results](#results-2) |'
                     '| Cost, unlinked | 5.257 µs | 2026-09-20 | 2.0.77 | not stated | Results |'
                     ''
                     '## Results'
