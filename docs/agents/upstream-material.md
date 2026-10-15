@@ -1,9 +1,8 @@
 # Upstream material
 
 The rules for taking a file, code or art, from a predecessor or from upstream. The root `CLAUDE.md`
-keeps two of them, the ones that rule material out outright: NonCommercial or NoDerivatives
-material is never lifted, and no asset is taken from UFP. This page holds the rest. It was the
-`## Upstream material` section of `CLAUDE.md` until 2026-10-15 (#709).
+keeps the two that rule material out outright, and this page holds the rest. It was a section of
+`CLAUDE.md` until 2026-10-15 (#709).
 
 **Everything is governed per directory — Lua included.** There is no blanket permission to lift
 code: check for a licence file in the directory a file comes from before taking it. The redesign's

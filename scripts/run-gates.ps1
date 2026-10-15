@@ -39,7 +39,8 @@
     WHAT IT DOES NOT RUN. No probe: a probe asserts nothing, and exit 0 from one means it reported.
     No -SelfTest of any gate, and not load-check.ps1 -FromZips, locale-check.ps1 or name-check.ps1:
     the first two prove a gate or a packaging and the last two read a prototype dump, and none of
-    them is what an integration breaks first. Run them as CLAUDE.md says, before anything ships.
+    them is what an integration breaks first. Run them as CLAUDE.md and
+    docs/agents/shipping.md say, before anything ships.
 
     ONE GAME AT A TIME. The gates start Factorio, and they run in sequence here on purpose.
 

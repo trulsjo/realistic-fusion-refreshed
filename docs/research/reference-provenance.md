@@ -64,7 +64,8 @@ Both are extracted trees, each one directory deep — `RealisticFusionPower_1.8.
 is where the `info.json` is, and the same doubling applies to both ports. **The zips themselves are
 not on disk.** [`predecessor-survey.md`](predecessor-survey.md) records them arriving —
 *"Resolved 2026-08-17 (#38). Both zips are readable now, in `C:\src\factorio\_reference\`"* — and
-`CLAUDE.md` still says that survey was verified "against the zips". Only the extracted trees remain,
+`CLAUDE.md` once said that survey was verified "against the zips"; it no longer does
+(checked 2026-10-15). Only the extracted trees remain,
 so a re-check works from those.
 
 | | Original | Port 1.9.0 | Port 1.9.2 |

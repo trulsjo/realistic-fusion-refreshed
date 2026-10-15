@@ -203,8 +203,8 @@ worse than a box that admits what it is.
 Rejected on provenance, which is [ADR 0001](0001-liftable-predecessor-material.md)'s ground rather
 than taste: `graphics/entity/heat-exchanger.png` is a 383x1088 sheet in a directory with no
 `license.txt` and no `legal-note.txt`, and the changelog credits YuokiTani, angel's discarded thread
-and PreLeyZero for unmarked art without saying which files are whose. CLAUDE.md says ask rather than
-assume. Asked; the answer was no.
+and PreLeyZero for unmarked art without saying which files are whose. `docs/agents/upstream-material.md` says ask rather
+than assume. Asked; the answer was no.
 
 **Commission or draw real art before moving the footprints.** The clean route and the slow one. It
 would have parked all five machines at sizes already judged wrong, for an unknown length of time.

@@ -38,7 +38,7 @@ Two facts shaped the scope half of this decision:
    but it falls outside the three predecessors and **was not surveyed**. Including Weaponry would mean
    porting an unsurveyed mod or writing new content.
 2. **Antimatter carries an art-provenance problem on top of a code problem.** Beyond the 7 missing
-   icons, its models are exactly the PreLeyZero donated art that `CLAUDE.md` says must not be assumed
+   icons, its models are exactly the PreLeyZero donated art that `docs/agents/upstream-material.md` says must not be assumed
    free — Romner credits them for "all the antimatter-related and 2.0 models". Shipping it needs that
    question answered first.
 

@@ -222,7 +222,7 @@ does not have to be untangled, only deleted or left un-required. It also means t
 a working precedent, should a `v1` want an off-by-default WIP flag.
 
 The one caveat is provenance, not code: the entity art for the accelerator and decelerator sits in the
-GPLv3 `graphics/particle-accelerator/` directory, and `CLAUDE.md` flags the rest of the antimatter models
+GPLv3 `graphics/particle-accelerator/` directory, and `docs/agents/upstream-material.md` flags the rest of the antimatter models
 as PreLeyZero's unmarked donation. The *code* is separable; the *assets* are the part with the open
 question, exactly as ADR 0002 says.
 
@@ -239,7 +239,7 @@ question, exactly as ADR 0002 says.
 
 Note the `author` field still reads **`Romner_set`**, not Durikkan, in both 1.9.0 and 1.9.2. There is no
 `contact` field (the original had one pointing at Romner's Discord); dropping it is consistent with
-`CLAUDE.md`'s "do not try to contact Romner_set".
+`docs/agents/upstream-material.md`'s "do not try to contact Romner_set".
 
 ### 2.1 Lua line count and file layout
 
@@ -340,7 +340,7 @@ licence file and is permissive under the root `license.txt`.
 The changelog names their source: *"Changed a lot of the recipe icons to the graphics Romner had in his
 Realistic Fusion 2.0 build."* That build is the dev repo's `RFP-2.0/` directory, which carries no licence
 file and is therefore WTFPL by the redesign's own convention. **Who drew them is not established.** One of
-the 18, `antihydrogen.png`, is antimatter art — the category `CLAUDE.md` flags as PreLeyZero's unmarked
+the 18, `antihydrogen.png`, is antimatter art — the category `docs/agents/upstream-material.md` flags as PreLeyZero's unmarked
 donation. Whether any of the other 20 are theirs could not be determined from any file in any of the three
 trees.
 
@@ -708,8 +708,8 @@ Also closed:
    with quality alongside throughput — is engine behaviour, not prototype data, and needs the game to
    answer. ADR 0003's "named known-gap" obligation stands unchanged.
 3. **Who drew the 21 icons the port took from Romner's RFP-2.0 build is not established** (§2.2). They
-   carry no licence file and are WTFPL by the redesign's convention, but `CLAUDE.md`'s PreLeyZero caveat
-   applies and one of them (`antihydrogen.png`) is antimatter art. No file in any of the three trees
+   carry no licence file and are WTFPL by the redesign's convention, but the unmarked-graphics exception in
+   `docs/agents/upstream-material.md` applies and one of them (`antihydrogen.png`) is antimatter art. No file in any of the three trees
    attributes individual images.
 4. **Whether Romner's blanket relicensing covered contributors' work** is untouched here — the archives
    contain no contributor records at all, only the two per-directory notes reproduced in §1.2.

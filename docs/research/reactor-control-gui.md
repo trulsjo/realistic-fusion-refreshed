@@ -18,8 +18,8 @@ source in the archived four-module redesign —
 > counts. Two things changed and both are marked in place: the **reaction rates are multiplied by
 > hand-tuned constants**, which the first pass did not mention and which is the most important fact
 > about `reactor-logic.lua`; and the licensing section reached the right answer by the wrong route.
-> Cloning it is not a git relationship with the archive — `CLAUDE.md` forbids a remote, a fork or a
-> graft, and this is a sibling directory of reading material alongside the other predecessors.
+> Cloning it is not a git relationship with the archive — `docs/agents/upstream-material.md` forbids a remote, a fork
+> or a graft, and this is a sibling directory of reading material alongside the other predecessors.
 
 The short version: **the GUI exists, it is liftable, and three of its four levers are nearly free
 here while the fourth reaches into ADR 0011's state model.** The recording is not the archived HEAD —
@@ -199,7 +199,7 @@ ADR 0011 deliberately does not have, so "liftable" is not the same as "droppable
 > `legal-note.txt` text.
 
 The marked directories were verified against the clone at the same time, and all four match what
-`CLAUDE.md` already says — so nothing there needs revising, only confirming:
+`docs/agents/upstream-material.md` already says — so nothing there needs revising, only confirming:
 
 | Directory | Licence | What its legal note says it is |
 |---|---|---|

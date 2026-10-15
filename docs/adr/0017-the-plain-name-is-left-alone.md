@@ -101,7 +101,7 @@ for a gain measured in two words of listing width.
 
 **Take `RealisticFusion` and give it up if he ever returns.** Rejected as a promise that cannot be
 kept: it would require either sitting on the name indefinitely or contacting him to hand it over, and
-`CLAUDE.md` rules the second out. A name held for someone who cannot be told it is held for them is
+`docs/agents/upstream-material.md` rules the second out. A name held for someone who cannot be told it is held for them is
 simply taken.
 
 **`RealisticFusionRefreshed` plus `RealisticFusionRefreshedCore`.** ADR 0009's own rejected
