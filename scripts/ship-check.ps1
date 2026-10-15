@@ -138,11 +138,12 @@
     half without the word, and any file outside the tracked list.
 
     SECTION 10 HAS BOTH (#616). It reads the `## Current figures` table at the top of a research
-    note and fails a row whose Section link names no heading of that file, or whose figure is
-    written nowhere below the table. A floor holds the number of tables it found, because it finds
-    the notes by scanning; and the figure-anchor-resolves and figure-value-in-note halves each plant
-    a loose row beside a good one. It cannot tell whether a row is the figure the note currently
-    stands behind; the section comment has the rest of what it cannot see.
+    note and fails a row whose Section cell holds no link, or whose figure is written nowhere
+    below the table; a link that names no heading is section 11's since #710. A floor holds the
+    number of tables it found, because it finds the notes by scanning; and the
+    figure-section-linked and figure-value-in-note halves each plant a loose row beside a good
+    one. It cannot tell whether a row is the figure the note currently stands behind; the section
+    comment has the rest of what it cannot see.
 
     SECTION 11 HAS NEITHER, AND IS NOT THIS SCRIPT'S CHECK (#658). It runs
     vendor/grado-factorio-tools/scripts/markdown-check.ps1 over every tracked Markdown file and fails on what that finds. The
@@ -1023,19 +1024,19 @@ foreach ($cite in (Find-NumberedHalves -Files $citingCode -Root $repoRoot)) {
 #
 # Seven notes under docs/research/ open with a table of the figures the note stands behind, and
 # docs/agents/code-review.md says a figure and its row change in the same commit. That rule is prose,
-# and this is the half of it a script can hold: a row whose Section link names a heading the file
-# does not have, and a row whose value is written nowhere in the note below the table. Both are what
-# an edit to a section leaves behind when the row is forgotten -- a heading renamed, a figure
-# re-measured -- and neither changes anything another gate reads.
+# and this is the half of it a script can hold: a row whose value is written nowhere in the note
+# below the table, which is what an edit to a section leaves behind when the row is forgotten and a
+# figure is re-measured.
+#
+# A SECTION LINK THAT NAMES NO HEADING IS SECTION 11'S since #710: the shared Markdown check fails
+# every dangling #fragment, with the anchor GitHub gives the heading. This section's own anchor code
+# was removed then, by Truls's decision, since it made the anchor from the text as written and
+# differed from GitHub's wherever a heading renders otherwise. What is left here is a row whose
+# Section cell holds no link at all, which the Markdown check has nothing to resolve.
 #
 # THE NOTES ARE FOUND BY THE HEADING, never by a list of names, so a note that gains a table is
 # gated from the commit that adds it. The table is the one under that heading whose header row names
 # the six columns; a row is every `|` line after the separator until the first line that is not one.
-#
-# AN ANCHOR IS COMPUTED THE WAY GITHUB COMPUTES IT, because that is where the link is followed:
-# lowercased, everything but letters, marks, decimal digits, underscores, hyphens and spaces dropped,
-# spaces to hyphens, and a repeated heading suffixed -1, -2 in order. A superscript is not a decimal
-# digit and a multiplication sign is not a letter, so both drop, which is what GitHub does to them.
 #
 # A VALUE IS HELD TO ITS NUMBERS, not to its words. Every number in the Value cell must be written
 # somewhere below the table, whole: 0.32 is not found inside 0.3205, and 5.4 is not found inside
@@ -1057,9 +1058,6 @@ foreach ($cite in (Find-NumberedHalves -Files $citingCode -Root $repoRoot)) {
 #     wrapped as "rung 5" then "102.4 MW" hides the 102.4, since a line end is a space here. That
 #     is a false FAILURE, the cheap direction, and only when the note writes the figure nowhere
 #     else.
-#   - a heading written with underscore emphasis. GitHub drops those underscores from the anchor
-#     and this keeps them, so such a heading's row fails until the heading is written with
-#     asterisks. No heading in the seven notes is.
 #   - a unit, a sign, or which of two figures in one cell is which.
 #   - the Measured, Game version and Research state cells, which are not read at all.
 $FIGURE_HEADING = '^##\s+Current figures\s*$'
@@ -1070,29 +1068,6 @@ $FIGURE_NUMBER  = '\d+(?:[ ,]\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?(?:e[+-]?\d+)?'
 # How many notes carried a table when this section was written (#616). A scan that found none would
 # pass every row it never read.
 $FIGURE_TABLE_FLOOR = 7
-
-function Get-HeadingAnchors {
-    <#  The anchor GitHub gives each heading of a markdown file, fenced blocks left out.  #>
-    param([Parameter(Mandatory)] [AllowEmptyCollection()] [AllowEmptyString()] [string[]] $Lines)
-
-    $anchors = [System.Collections.Generic.HashSet[string]]::new()
-    $seen    = @{}
-    $fenced  = $false
-    foreach ($text in $Lines) {
-        if ($text.TrimStart() -match '^(?:```|~~~)') { $fenced = -not $fenced; continue }
-        if ($fenced -or $text -notmatch '^#{1,6}\s+(.*?)\s*$') { continue }
-        # A link in a heading renders as its text, and the anchor is made from what renders.
-        $shown  = [regex]::Replace($Matches[1], '\[([^\]]*)\]\([^)]*\)', '$1')
-        $anchor = [regex]::Replace($shown.ToLowerInvariant(), '[^\p{L}\p{M}\p{Nd}\p{Pc}\- ]', '').Replace(' ', '-')
-        # A repeat takes the first suffix not already taken, so a heading that is itself
-        # called "results-1" does not share an anchor with the second "results".
-        $base = $anchor
-        if (-not $seen.ContainsKey($base)) { $seen[$base] = 0 }
-        while ($anchors.Contains($anchor)) { $seen[$base]++; $anchor = "$base-$($seen[$base])" }
-        [void] $anchors.Add($anchor)
-    }
-    return , $anchors
-}
 
 function Find-LooseFigureRows {
     <#  Every row of a `## Current figures` table that has come loose from its note, and how many
@@ -1124,7 +1099,6 @@ function Find-LooseFigureRows {
         $end = $head + 2                                        # past the header and its separator
         while ($end -lt $lines.Count -and $lines[$end].StartsWith('|')) { $end++ }
 
-        $anchors = Get-HeadingAnchors -Lines $lines
         # One line, one kind of space: a number wrapped across a line end, or grouped with a
         # no-break or thin space, is still that number.
         $below = if ($end -lt $lines.Count) { $lines[$end..($lines.Count - 1)] -join ' ' } else { '' }
@@ -1137,16 +1111,9 @@ function Find-LooseFigureRows {
                     Detail = "$($cells.Count) cells where the header has 6" })
                 continue
             }
-            $links = @([regex]::Matches($cells[5], '\]\(#([^)\s]+)\)') | ForEach-Object { $_.Groups[1].Value })
-            if (-not $links) {
+            if ($cells[5] -notmatch '\]\(#[^)\s]+\)') {
                 $found.Add([pscustomobject]@{ File = $rel; Line = $i + 1; Kind = 'anchor'
                     Detail = "the Section cell links to no heading: $($cells[5])" })
-            }
-            foreach ($link in $links) {
-                if (-not $anchors.Contains($link)) {
-                    $found.Add([pscustomobject]@{ File = $rel; Line = $i + 1; Kind = 'anchor'
-                        Detail = "#$link is no heading of this file" })
-                }
             }
             $value = [regex]::Replace($cells[1], '[\s   ]+', ' ')
             foreach ($number in ([regex]::Matches($value, $FIGURE_NUMBER) | ForEach-Object { $_.Value } | Select-Object -Unique)) {
@@ -1179,7 +1146,7 @@ if ($figureRows.Tables -lt $FIGURE_TABLE_FLOOR) {
 $checks++
 foreach ($row in $figureRows.Found) {
     $what = switch ($row.Kind) {
-        'anchor' { 'points at a section the note does not have' }
+        'anchor' { 'points at no section' }
         'value'  { 'carries a figure the note does not' }
         'cells'  { 'is not a six-cell row' }
         default  { 'has no table to read' }
@@ -1192,10 +1159,11 @@ foreach ($row in $figureRows.Found) {
 # 11. THE TRACKED MARKDOWN PASSES THE SHARED MARKDOWN CHECK (#658).
 #
 # vendor/grado-factorio-tools/scripts/markdown-check.ps1, the tools submodule's, run with -All: emphasis or a code span left
-# open at the end of its paragraph, a table row whose column count is not its header's, and a link
-# to a file git does not track. Its header says what it reads as what and what it cannot see. The
-# pre-commit hook runs the same script on the staged files; this is where a clone that never opted
-# into the hooks, and the workflow, are held to it.
+# open at the end of its paragraph, a table row whose column count is not its header's, a link
+# to a file git does not track, and since #710 a link whose #fragment names no heading of its
+# file, with the anchor GitHub gives the heading. Its header says what it reads as what and what
+# it cannot see. The pre-commit hook runs the same script on the staged files; this is where a
+# clone that never opted into the hooks, and the workflow, are held to it.
 #
 # IT REPLACED THIS SECTION'S OWN TABLE CHECK (#649, #652), ruled by Truls on 2026-10-09: the shared
 # check runs in its place, not beside it. One thing that check caught is not caught now, a row of
@@ -1488,11 +1456,10 @@ if ($SelfTest) {
                  "a mod's runtime script, a glob, a directory and a path cited by line are left alone, and an ADR and a history page are records where a note is not.")
             } }
 
-            @{ Name = 'figure-anchor-resolves'; Body = {
-                # Section 10 passes by finding nothing loose. Two rows whose Section links differ
-                # only in whether a heading answers them: the second "Results" is reachable as
-                # results-1 and as nothing else, which is the suffix a renamed or added heading
-                # moves.
+            @{ Name = 'figure-section-linked'; Body = {
+                # Section 10 passes by finding nothing loose. Two rows whose Section cells differ
+                # only in whether they hold a link. The link names no heading on purpose: since
+                # #710 that is section 11's to fail, so here it must pass.
                 $doc = Join-Path $planted 'anchors.md'
                 @(
                     '# A note'
@@ -1501,10 +1468,8 @@ if ($SelfTest) {
                     ''
                     '| Figure | Value | Measured | Game version | Research state | Section |'
                     '|---|---|---|---|---|---|'
-                    '| Cost, second sitting | 5.257 µs | 2026-09-20 | 2.0.77 | not stated | [Results](#results-1) |'
-                    '| Cost, a sitting nobody wrote | 5.257 µs | 2026-09-20 | 2.0.77 | not stated | [Results](#results-2) |'
-                    ''
-                    '## Results'
+                    '| Cost, second sitting | 5.257 µs | 2026-09-20 | 2.0.77 | not stated | [Results](#results-2) |'
+                    '| Cost, unlinked | 5.257 µs | 2026-09-20 | 2.0.77 | not stated | Results |'
                     ''
                     '## Results'
                     ''
@@ -1515,11 +1480,11 @@ if ($SelfTest) {
                 $rows = @($read.Found)
                 if ($read.Tables -ne 1) { throw "the planted note's table was counted $($read.Tables) time(s), not once." }
                 if ($rows.Count -ne 1 -or $rows[0].Kind -cne 'anchor' -or $rows[0].Line -ne 8) {
-                    throw ('a row linking to a heading the note has and a row linking to one it does not ' +
+                    throw ('a row with a Section link and a row without one ' +
                            "produced: $(($rows | ForEach-Object { "line $($_.Line) $($_.Kind) ($($_.Detail))" }) -join '; '). " +
                            'Wanted exactly one finding, kind anchor, on line 8.')
                 }
-                'a row whose Section link names no heading is caught on its line, and the row beside it, linking to a repeated heading by its suffix, is left alone.'
+                'a row whose Section cell holds no link is caught on its line, and the row beside it, whose link names no heading, is left to section 11.'
             } }
 
             @{ Name = 'figure-value-in-note'; Body = {

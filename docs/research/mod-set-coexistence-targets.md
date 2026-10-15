@@ -25,7 +25,7 @@ satisfiable*, which is a strictly weaker claim than "loads" and much weaker than
 
 Survey date: **2026-08-18**. Locally installed game: **Factorio 2.0.77** (the version
 `scripts/factorio-lib.ps1` resolves by default). That version number turns out to matter more than
-anything else here — see [The 2.0/2.1 wall](#the-2021-wall-the-single-most-decision-relevant-fact).
+anything else here — see [The 2.0/2.1 wall](#the-2021-wall--the-single-most-decision-relevant-fact).
 
 ---
 

@@ -204,3 +204,8 @@ One line for each change to a gate, newest last, with its date and its ticket.
 - 2026-10-14, #703: `ship-check.ps1`'s section 12 holds `docs/agents/plugin-pass.md` to the wrap
   width too, the page that took the plugin pass's half of `code-review.md`'s fourth rule, and the
   sentence it checks in `code-review.md` names the page. No check was changed but the list of files.
+- 2026-10-15, #710: the tools pin moved to `94d7c56`, whose Markdown check fails a link whose
+  `#fragment` names no heading, so section 11 now fails a `## Current figures` row's dangling
+  Section link. Section 10's own anchor code was removed, by Truls's decision: it still fails a row
+  whose Section cell holds no link, and its `figure-anchor-resolves` half became
+  `figure-section-linked`, which plants a row with no link beside one with a dangling link.
