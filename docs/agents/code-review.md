@@ -222,6 +222,18 @@ of the plugin pass's five findings were what the fix for the pre-PR review's fir
 behind.
 
 **What a fix leaves behind is read again after the last fix commit** (2026-10-09, #663). The rule
+**A change that adds or rewords a review rule applies it to the case that prompted it, before its
+first commit** (2026-10-15, #714). The session runs the rule's own search for that case across the
+tracked files and reads each hit against the new wording, and the pull request's body lists what
+the search found. The paragraph above binds a fix, and a rule's example is not one. On #713 the rule
+on a named quantity's other statements was written with #579's 151 531 and 151 562 as its example
+and was not applied to them, and three findings came of that alone. Its first wording, "or each says
+what it measures", would have passed #579's own case, since each note said what its own figure
+measured (pre-PR finding 6, at 75). Its example said neither note named the other until the fix in
+`5c27826`, which touched `plasma-input-box.md` only (the plugin pass's one posted finding). And
+`docs/research/exchanger-coverage.md` gave 151 562 and named neither other note, which the rule's
+own search finds (pre-PR finding 12, at 50).
+
 above is about a fix's own text. This one is about older text on the same branch, which a later
 commit can make false without touching it: a count, a quoted output, a statement of what the change
 does. After the last fix commit on the branch, the plugin pass's fixes included, and before the pull
