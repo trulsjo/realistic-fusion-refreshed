@@ -44,7 +44,7 @@ did not fit them:
   measured"*.
 
 Both objections were sound arithmetic about the wrong comparison, and the second paragraph of
-[the model](#the-model) says why.
+[the model](#the-model-and-it-fits-nothing) says why.
 
 ## The model, and it fits nothing
 

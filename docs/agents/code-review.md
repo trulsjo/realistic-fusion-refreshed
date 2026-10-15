@@ -173,8 +173,9 @@ note's every figure. A figure that moves in a section and not in its row leaves 
 top of the note, presented as current. A figure a change supersedes loses its row.
 
 **A gate holds part of this, and the review holds the rest** (#616). Section 10 of
-`scripts/ship-check.ps1` fails a row whose Section link names no heading of its note, and a row
-whose figure is written nowhere below the table. It cannot tell whether the row is the figure the
+`scripts/ship-check.ps1` fails a row whose Section cell holds no link, and a row whose figure is
+written nowhere below the table; since #710 its section 11, the shared Markdown check, fails a row
+whose Section link names no heading of its note. It cannot tell whether the row is the figure the
 note currently stands behind: a superseded figure is still written in the note, marked, so it
 passes. That is still read for.
 
