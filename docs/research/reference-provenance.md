@@ -4,7 +4,7 @@
 project's sprites come from, a borrowed megabase and a screen recording. None of it is this
 repository's work and none of it is committed here.
 
-[ADR 0001][adr1] and `CLAUDE.md` own the **rules** — what may be lifted, from where, under what
+[ADR 0001][adr1], `CLAUDE.md` and `docs/agents/upstream-material.md` own the **rules** — what may be lifted, from where, under what
 conditions. This note owns the **inventory**: which file on disk is which, where it was obtained,
 when, and what terms it states about itself. That is the part that decays, because a directory name
 outlives the memory of downloading it. [#65][65] wrote the same record for the borrowed base in
@@ -101,7 +101,7 @@ writes *"angel's petrochem"*, and is the only one of the four that does.
 
 **Everything else in their `graphics/` trees is unmarked and its origin is unrecorded.** The
 original's own changelog credits YuokiTani, angel's discarded thread and PreLeyZero for material it
-leaves bare. Nothing on disk says which files those are. ADR 0001 and `CLAUDE.md` carry what follows
+leaves bare. Nothing on disk says which files those are. ADR 0001 and `docs/agents/upstream-material.md` carry what follows
 from that.
 
 ## The redesign — `realistic-fusion-dev/`
@@ -109,7 +109,7 @@ from that.
 A git clone of <https://github.com/4881e05257b099383da78c50269d2ceb/realistic-fusion-dev>, cloned
 2026-08-21 12:38. **22 commits**, HEAD `03748ec` *"Indicate deprecation in README.md"*, dated
 2024-10-25. The account name is Romner_set's anonymised GitHub account; the repository is archived
-read-only. It is a sibling directory of reading material, not a git relationship — `CLAUDE.md`
+read-only. It is a sibling directory of reading material, not a git relationship — `docs/agents/upstream-material.md`
 forbids a remote, a fork or a graft.
 
 Its own `README.md` calls it **Realistic Fusion 2.0**, which is the mod series' own version number
@@ -172,7 +172,7 @@ against the asset repo's 1,338.
 | `sounds/` | `SUB-LICENSE.txt` | MIT — *"this only applies on sounds ogg files"* |
 | `sounds/ambient/` | `readme-licence.txt` | CC BY 3.0 for one track, *"nyoko - Flowing Into The Darkness"* |
 
-**The first row matters and is easy to miss.** `CLAUDE.md` says upstream Krastorio 2 assets are
+**The first row matters and is easy to miss.** `docs/agents/upstream-material.md` says upstream Krastorio 2 assets are
 LGPLv3, which is true of the root and true of everything this project has taken. It is not true of
 `compatibility/IndustrialRevolution/`, whose five PNGs are NonCommercial **and** NoDerivatives —
 exactly the terms ADR 0001 rules out outright. The directory holds
@@ -268,7 +268,7 @@ reuse statement of any kind. The mod's root WTFPL governs files inside the mod; 
 a video posted to a discussion thread, so this is the borrowed base's situation rather than the
 predecessors': a publicly posted file with no terms attached. Reading it is ordinary use. Publishing a
 frame of it, or anything cut from it, needs an answer that does not exist yet, and asking Romner_set
-is not an option for the reason `CLAUDE.md` gives.
+is not an option for the reason `docs/agents/upstream-material.md` gives.
 
 It was the one item in this inventory whose origin nothing on disk could recover, and it took a person
 to answer. That is the argument for writing the rest down while the answers are still cheap.

@@ -192,7 +192,7 @@ ADR 0011 deliberately does not have, so "liftable" is not the same as "droppable
 > **Corrected 2026-08-21.** This said `scripts/` "falls under the archive's root WTFPL", checked
 > against the repo's *file list* rather than the files. The conclusion was right and the route to it
 > was wrong: there is a nearer WTFPL, at the module root, and it is the one that governs. The
-> distinction is not pedantic — `CLAUDE.md` requires lifting a whole directory *with its licence file
+> distinction is not pedantic — `docs/agents/upstream-material.md` requires lifting a whole directory *with its licence file
 > and its legal note*, so which pair travels with the code depends on which one governs. Verified
 > against the clone: the archive root, and all three of `RealisticFusionPower`,
 > `RealisticFusionCore` and `RealisticFusionAntimatter`, each carry a WTFPL `license.txt` and the same
