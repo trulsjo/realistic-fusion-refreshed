@@ -146,7 +146,10 @@ def refused(path):
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     script = open(os.path.join(root, "scripts", "ship-check.ps1"), encoding="utf-8").read()
     listed = re.search(r"^\$WRAPPED\s*=\s*@\((.*?)\)", script, re.M | re.S).group(1)
-    rel = os.path.relpath(os.path.abspath(path), root).replace(os.sep, "/")
+    try:
+        rel = os.path.relpath(os.path.abspath(path), root).replace(os.sep, "/")
+    except ValueError:                                   # on another drive than the repository
+        rel = os.path.abspath(path)
     if rel in re.findall(r"'([^']+)'", listed):
         return None
     return (f"{rel} is not one of the files scripts/ship-check.ps1 section 12 holds to a width, so "

@@ -136,10 +136,10 @@ from the pull request's body and comments; four costs, each the token count repo
 subagents where there is one; and the grade, with the day it was made and its reason in the last
 cell. The pre-PR review's cost is its one reviewer's, read from its transcript as `/pre-pr-review`
 says when the row is written; the reviewer confirms after that, and the pull request's body has the
-later figure. Its count of findings is read again after the last fix commit, as `code-review.md`
-says under *Review the prose, not only the code* (#715). Anything else there is to say of the pull
-request goes in the last cell of its row in the second table.
-In the second table: the totals over all requests, and for the pre-PR review its
+later figure. The pre-PR review's count of findings, and how many were fixed and confirmed, are
+read again after the last fix commit, as `code-review.md` says under *Review the prose, not only the
+code* (#715). Anything else there is to say of the pull request goes in the last cell of its row in
+the second table. In the second table: the totals over all requests, and for the pre-PR review its
 count of requests and the share that is cache reads, read from the transcripts in the session's own
 `subagents` directory, the one step 6 of `/pre-pr-review` names. Each `agent-*.jsonl` there has an
 `agent-*.meta.json` beside it whose `description` is what the session called that subagent when it
