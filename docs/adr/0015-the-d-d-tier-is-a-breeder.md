@@ -70,7 +70,7 @@ downgrade the player opts into.
 against it rests on his design rather than replacing it: he chose break-even at the reactor and
 net-negative variants a player opts into for fuel, which is the same mechanic reached here by a
 different route. ADR 0014 quotes him directly and records the reading in full. Attribution stated
-because it is derived work, per `CLAUDE.md` — a community norm rather than a licence obligation.
+because it is derived work, per `docs/agents/upstream-material.md` — a community norm rather than a licence obligation.
 
 His Alt-F4 interview's *"cannot even sustain itself"* reconciles with Q 1.00 because
 the **reactor** breaks even while the **plant** does not, on Girdler sulfide and electrolysis and

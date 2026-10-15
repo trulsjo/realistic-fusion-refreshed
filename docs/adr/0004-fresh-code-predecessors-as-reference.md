@@ -68,7 +68,7 @@ reference of exactly the kind this decision keeps.
   recipes is now an open design decision rather than a consequence of the base, and graduates to its own
   ticket.
 - Attribution to Romner_set, Durikkan and PreLeyZero still applies to anything derived from their work,
-  per `CLAUDE.md` — a norm here, not a licence obligation.
+  per `docs/agents/upstream-material.md` — a norm here, not a licence obligation.
 
 ## Alternatives considered
 

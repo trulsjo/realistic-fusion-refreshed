@@ -132,7 +132,7 @@ decision is a factor of 8.93, and it is entirely fictional physics.
 ### Krastorio 2 (2.1.3, LGPLv3)
 
 Read from `C:\src\factorio\_reference\Krastorio2`, whose root `LICENSE` is the **GNU LGPLv3** — the
-same licence as this repository, and `Krastorio2Assets`' root likewise. Under `CLAUDE.md`'s rules that
+same licence as this repository, and `Krastorio2Assets`' root likewise. Under the rules in `docs/agents/upstream-material.md` that
 makes K2 material liftable into its own directory with the licence text and modifications stated.
 `Krastorio2` is a single root licence with no per-directory marking to check.
 
@@ -188,7 +188,7 @@ criticism of Bob's — it is evidence that when the engine offers only crafting 
 committed chain becomes chemistry.
 
 **Licensing: `bobplates_2.1.1.zip` contains no licence file of any kind**, and `info.json` and
-`changelog.txt` name none. `CLAUDE.md`'s "no licence file means permissive" rule is a rule about
+`changelog.txt` name none. The "no licence file means permissive" rule in `docs/agents/upstream-material.md` is a rule about
 *directories inside the predecessors*, whose repository roots declared WTFPL or the Unlicence. It does
 not transfer to a third-party mod with no declaration anywhere: the default is all rights reserved.
 **Nothing from Bob's mods is liftable without asking.** Recorded here so the question is not

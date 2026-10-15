@@ -116,7 +116,7 @@ proof.
 > PreLeyZero exception for unmarked donated art" now reads too narrowly: the original's changelog credits
 > **three** outside sources for material it leaves unmarked — YuokiTani (0.2.0), angel's discarded thread
 > (1.2.0) and PreLeyZero (1.3.13, 1.8.0). Read that clause as covering the unmarked `graphics/` set
-> entire, not one donor's part of it. `CLAUDE.md` carries the full statement.
+> entire, not one donor's part of it. `docs/agents/upstream-material.md` carries the full statement.
 
 > **A fourth predecessor, checked 2026-08-19 — and it breaks the other half of the rule.** Truls found
 > [UFP: Ultimate Fusion Power Fixed](https://mods.factorio.com/mod/ufpFixed) by

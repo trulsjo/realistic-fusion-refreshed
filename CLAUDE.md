@@ -59,28 +59,9 @@ against the unpacked archive rather than against the repo. A file that resolves 
 and never reaches a zip passes the default and breaks a player's game. Use `-FromZips` before
 anything that ships.
 
-**The packer is not this repository's.** Since #466 it is
-`vendor/grado-factorio-tools/scripts/pack-mods.ps1`, and `scripts/pack-mods.ps1` is gone. It has no
-default mod list and no default output directory, so building the zips by hand names all three:
-
-```
-pwsh -File vendor/grado-factorio-tools/scripts/pack-mods.ps1 -OutputDirectory dist `
-    realistic-fusion-refreshed-assets realistic-fusion-refreshed-core realistic-fusion-refreshed
-```
-
-It deletes any other version's zip of the same mod in the output directory, which the old script
-did not.
-
-**Nor is the locale check.** Since #677 it is
-`vendor/grado-factorio-tools/scripts/locale-check.ps1`, and `scripts/locale-check.ps1` is gone. It
-is handed the mods and the prefix that marks a prototype as this repository's, and this command is
-the one place the repository says either to it. No gate runner starts it: run it by hand before
-anything ships, once as below and once with `-With space-age`.
-
-```
-pwsh -File vendor/grado-factorio-tools/scripts/locale-check.ps1 -Prefix rf- `
-    realistic-fusion-refreshed-assets realistic-fusion-refreshed-core realistic-fusion-refreshed
-```
+**Before building the zips or anything that ships: read
+[`docs/agents/shipping.md`](docs/agents/shipping.md)**, which has the commands for the packer and
+for the locale check. Neither is this repository's, and no gate runner starts the locale check.
 
 **Every gate here needs the submodule initialised**, the one that starts no game (`ship-check.ps1`)
 included: `git submodule update --init`, the same step the commit hook asks for. The harness under
@@ -158,81 +139,18 @@ choosing between them is not.
 
 ## Upstream material
 
-**Everything is governed per directory — Lua included.** There is no blanket permission to lift
-code: check for a licence file in the directory a file comes from before taking it. The redesign's
-`RealisticFusionCore/electric-boiler/` holds 167 lines of Lua under **CC BY-NC-ND 4.0**, so "the
-repo licence is WTFPL" does not settle what a given file is. See
-`docs/adr/0001-liftable-predecessor-material.md`.
+**Before taking any file, code or art, from a predecessor or from upstream: read
+[`docs/agents/upstream-material.md`](docs/agents/upstream-material.md).** Everything is governed
+per directory, Lua included, and that page has the rules and how each predecessor marks its
+material. Two rules are kept here because they rule material out outright:
 
 - **NonCommercial or NoDerivatives material is never lifted**, whatever its source. That rules out
   `electric-boiler/` and `angels-numerals/` outright.
-- **Permissive material is free** — a directory with neither a `license.txt` nor a `legal-note.txt`,
-  subject to the unmarked-graphics exception below, which is a large one.
-- **Copyleft (GPL/LGPL) is allowed only in its own directory**, with its licence file alongside and
-  modifications stated.
-- **Lift only from Realistic Fusion Power 1.8.18 or later.** Earlier releases are CC BY-SA 4.0;
-  1.8.18 changed the primary licence to WTFPL.
-- **A declared licence is evidence, not proof — read the mod's own credits against it.** A fourth
-  predecessor, **UFP: Ultimate Fusion Power Fixed** (`ufpFixed`, `ultimateCoreLib`, `ultimateCore`,
-  `ultimateCore-2`, `ultimateCore-3`), declares LGPLv3 across all five zips with no per-directory
-  marking at all, while its listings credit Games Workshop, Dreamhaven, Blizzard, Hello Games and
-  Arch666Angel. **Take no asset from any of the five**, including `ufp_boiler-*.png`, which is the
-  CC BY-NC-ND `electric-boiler/` art upscaled. Reading its Lua for 2.0/2.1 prototype patterns is
-  fine. Checked 2026-08-19; see ADR 0001.
-
-**Both predecessors already mark their assets this way.** Realistic Fusion Power and Durikkan's 2.0
-port keep graphics derived from **Krastorio 2** in their own directories with the licence text
-alongside, while everything else stays permissive. Upstream K2 assets
-(<https://codeberg.org/raiguard/Krastorio2Assets>) are **LGPLv3**; the copy inside the four-module
-redesign is marked **GPLv3** — read the file next to the sprites rather than assuming either. **The
-upstream LGPLv3 is the root, not the whole tree**:
-`Krastorio2Assets/compatibility/IndustrialRevolution/` carries a `SUB-LICENSE.txt` putting its five
-PNGs under **CC BY-NC-ND 4.0**, which is the one clause above that rules material out outright.
-Nothing from it is in any of the three mods and nothing from it is committed, checked 2026-09-12 —
-the directory is present three times under the git-ignored `.mod-cache*/`, which is where the gates
-unpack upstream. This repo uses the same scheme — see `legal-note.txt`.
-
-**Every item in `C:\src\factorio\_reference\` — what it is, where it came from, when it was obtained
-and what terms it states — is inventoried in `docs/research/reference-provenance.md`** (#234). This
-section states the rules; that note says which file on disk is which.
-
-Two things to know about how the predecessors mark material:
-
-- **Marking is by `legal-note.txt` as much as by `license.txt`.** The provenance lives in the legal
-  note; the licence file is only the licence text. Searching for licence files alone finds the
-  directory and misses what it is — which is exactly the mistake that produced a wrong version of
-  this section.
-- **A directory is named for what it depicts, not for where the art came from.** The Krastorio 2
-  material in both predecessors is in `particle-accelerator/`. Of the three older predecessors only
-  the redesign has a directory actually called `krastorio-2/`, so not finding that name means
-  nothing. (This repo has two of its own, which are its own doing and come from upstream — not from
-  the redesign.)
-
-Two rules follow:
-
-- **Lift whole directories, with their license file *and* their legal note.** Never copy loose files
-  out of a licensed directory into one governed by `LICENSE`. Free means neither file is present —
-  see the unmarked-graphics exception below before concluding that settles it.
-- **Modifying a file from a licensed directory yields a derivative under that license.** A
-  recoloured or re-composited LGPL sprite is still LGPL, and the change must be stated. Modified
-  sprites belong in the licensed directory, not beside your own work.
-
-**The exception to "no licence file means free": the predecessors' unmarked `graphics/`.** It is not
-one donor's art — the original's changelog credits at least three outside sources for material that
-is left unmarked, and says which files came from where for none of them. ADR 0001 names the three
-and the releases that credit them.
-
-So: **do not take unmarked graphics from the predecessors on the assumption they are free.** Ask
-before using them, or use art with known provenance — which in practice means upstream Krastorio 2,
-and is why every sprite in this repo comes from there. Do not relabel them GPL either; that would be
-guessing in the other direction.
-
-- **Attribute Romner_set, Durikkan and PreLeyZero** for anything derived from their work, in the
-  commit and in the file. Not a licence obligation — a community norm and simple honesty.
-- **Do not try to contact Romner_set.** He deprecated the mod, archived the successor read-only and
-  anonymised his GitHub account. That is someone stepping away deliberately; respect it.
-- **This repo is a fresh history on purpose.** Bring code across as ordinary commits; do not add the
-  archive as a remote, fork it, or graft its history in.
+- **Take no asset from UFP: Ultimate Fusion Power Fixed** (`ufpFixed`, `ultimateCoreLib`,
+  `ultimateCore`, `ultimateCore-2`, `ultimateCore-3`), any of the five, including
+  `ufp_boiler-*.png`, which is the CC BY-NC-ND `electric-boiler/` art upscaled. Its declared LGPLv3
+  is not what its credits say. Reading its Lua for 2.0/2.1 prototype patterns is fine. Checked
+  2026-08-19; see ADR 0001.
 
 ## Conventions
 
