@@ -249,3 +249,10 @@ One line for each, newest last. The passages above are not edited.
   The paragraph carries #579's two figures, as #708's does its case, so `code-review-evidence.md`
   gains nothing. Step 3 of the pre-PR review skill has the reviewer read `code-review.md` whole and
   lists no checks, so it is unchanged. The wording is the session's.
+- **2026-10-15, #714.** The second rule has a change that adds or rewords a review rule apply it
+  to the case that prompted it, across the tracked files, before its first commit, and the pull
+  request's body list what the search found. It rests on #713, where three findings came from not
+  doing so, and its paragraph carries them, as #708's does its case, so `code-review-evidence.md`
+  gains nothing. It sits beside the #632 paragraph, which binds a fix and not a rule's example.
+  Step 3 of the pre-PR review skill has the reviewer read `code-review.md` whole, so it is
+  unchanged. The wording is the session's.
