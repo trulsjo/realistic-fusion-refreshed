@@ -9,7 +9,8 @@ changed four links in the first passage, which pointed at headings of that file,
 `code-review.md` is in question. Reviewing a branch does not need it. **The rule is the one
 `code-review.md` or `plugin-pass.md` words.** A passage here says what a rule was when the passage
 was written, and that page says what it is. **An amendment is added here**, as a dated line under
-*Amendments since 2026-10-10* at the foot, in the commit that changes the rule.
+*Amendments since 2026-10-10* at the foot, at the reading after the last fix commit on the branch
+that changes the rule, from its final wording (#716).
 
 ## The four rules, and what changed each
 

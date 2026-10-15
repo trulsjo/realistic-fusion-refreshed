@@ -12,6 +12,7 @@ Issues and PRDs for this repo live as GitHub issues. Use the `gh` CLI for all op
 - **Not `--comments` without `--json`**: under the Bash tool here `gh issue view <number> --comments` prints the comments and no body, so nothing at all for an issue with no comments (gh 2.102.0, 2026-10-06).
 - **List issues**: `gh issue list --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
 - **Comment on an issue**: `gh issue comment <number> --body "..."`
+- **A comment that records Truls's decisions on a ticket records what he decided**, and leaves the wording the session writes for it to the pull request (#716). On #713 [the comment on #593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6191194343) restated the rule's wording, and by #716's account it went stale twice before the merge as the wording moved; GitHub shows it edited after it was posted.
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
 - **Close**: `gh issue close <number> --comment "..."`
 
