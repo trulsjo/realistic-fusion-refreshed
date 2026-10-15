@@ -205,7 +205,9 @@ One line for each change to a gate, newest last, with its date and its ticket.
   width too, the page that took the plugin pass's half of `code-review.md`'s fourth rule, and the
   sentence it checks in `code-review.md` names the page. No check was changed but the list of files.
 - 2026-10-15, #710: the tools pin moved to `94d7c56`, whose Markdown check fails a link whose
-  `#fragment` names no heading, so section 11 now fails a `## Current figures` row's dangling
-  Section link. Section 10's own anchor code was removed, by Truls's decision: it still fails a row
+  `#fragment` names no heading and reads the links in a table's body rows, which it skipped
+  before, so section 11 and the pre-commit hook now fail a `## Current figures` row's dangling
+  Section link. Section 10's own anchor code was removed, decided by Truls on 2026-10-15 in the
+  session that implemented #710, and recorded on #710's pull request: section 10 still fails a row
   whose Section cell holds no link, and its `figure-anchor-resolves` half became
   `figure-section-linked`, which plants a row with no link beside one with a dangling link.

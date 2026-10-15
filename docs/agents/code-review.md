@@ -174,10 +174,10 @@ top of the note, presented as current. A figure a change supersedes loses its ro
 
 **A gate holds part of this, and the review holds the rest** (#616). Section 10 of
 `scripts/ship-check.ps1` fails a row whose Section cell holds no link, and a row whose figure is
-written nowhere below the table; since #710 its section 11, the shared Markdown check, fails a row
-whose Section link names no heading of its note. It cannot tell whether the row is the figure the
-note currently stands behind: a superseded figure is still written in the note, marked, so it
-passes. That is still read for.
+written nowhere below the table. Section 10 cannot tell whether the row is the figure the note
+currently stands behind: a superseded figure is still written in the note, marked, so it passes.
+That is still read for. Since #710 a row whose Section link names no heading of its note is failed
+by section 11, the shared Markdown check.
 
 **Review the fixed state, not just the original.** A second round on work that has already passed
 review and verification is worth running, and this file exists because it found more than the first.
