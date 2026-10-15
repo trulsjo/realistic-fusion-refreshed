@@ -258,11 +258,12 @@ that fix changed is read again, and the body names the head after it.
 
 **A change to a rule writes its line on `code-review-history.md` first, at the start of this
 reading** (2026-10-15, #716), once, from the rule's final wording, and not in the commit that
-changes the rule. The line is committed, `scripts/ship-check.ps1` is run again, and the line is
-sent to the reviewer in a message of its own, as a fix is, because it restates the rule and is a
-claim. The reading above is then made on the head after that commit. On #713 the rule's wording
-moved twice on the branch, in `db2aed5` and `0291a9d`, and each move was made in the history line
-as well.
+changes the rule. The line is committed, `scripts/ship-check.ps1` is run again, and the line is sent
+to the reviewer in a message of its own, as a fix is, because it restates the rule and is a claim.
+The reading waits for the reviewer's answer, and a finding in it is fixed and confirmed like one
+raised in the last confirmation. The reading above is then made on the head after that. On #713 the
+rule's wording moved twice on the branch, in `db2aed5` and `0291a9d`, and each move was made in the
+history line as well.
 
 **A fix that only corrects a count is the exception, and goes unconfirmed** (2026-10-09, #665). It
 is one whose every changed line differs from the line it replaces in digits alone, or in a number
