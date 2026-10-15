@@ -36,7 +36,9 @@ heading, and front matter. Asked for one of those, it prints that it left the li
 The listing leaves those out, and with them a line with no space to break it at, which section 12
 leaves alone and which rewrapping its paragraph does not shorten.
 
-WHAT IT REFUSES: a result in which a later line would open with something markdown reads as
+WHAT IT REFUSES: a file section 12 does not hold to the width (#717), read from that section's
+$WRAPPED, so the tool's list and the gate's are one list. A file outside it has no width, and
+nothing is written to it; the listing is still given for any file. And a result in which a later line would open with something markdown reads as
 structure, a list marker, `>`, `#`, a pipe or a fence. The file is then not written. Break that
 paragraph by hand.
 
@@ -48,8 +50,10 @@ WHAT IT CANNOT SEE:
     out, and of UTF-16 code units in the listing; the two differ only outside the basic plane.
 
 `--self-test` rewraps a document made up below and exits non-zero when a line of it is not the
-line wanted, or when the listing of its long lines is not the one wanted. It is run by scripts/run-gates.ps1 and by .github/workflows/gates.yml.
+line wanted, when the listing of its long lines is not the one wanted, or when a file in section
+12's list is refused or one outside it is not. It is run by scripts/run-gates.ps1 and by .github/workflows/gates.yml.
 """
+import os
 import re
 import sys
 import textwrap
@@ -134,6 +138,21 @@ def rewrap(lines, targets):
     return lines, said[::-1]
 
 
+def refused(path):
+    """Why the file is not rewrapped, or None when section 12 holds it to the width (#717).
+
+    The files are read from section 12's $WRAPPED in scripts/ship-check.ps1, so the two lists are
+    one list."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    script = open(os.path.join(root, "scripts", "ship-check.ps1"), encoding="utf-8").read()
+    listed = re.search(r"^\$WRAPPED\s*=\s*@\((.*?)\)", script, re.M | re.S).group(1)
+    rel = os.path.relpath(os.path.abspath(path), root).replace(os.sep, "/")
+    if rel in re.findall(r"'([^']+)'", listed):
+        return None
+    return (f"{rel} is not one of the files scripts/ship-check.ps1 section 12 holds to a width, so "
+            "it has no stated width (docs/agents/code-review.md) and is not rewrapped.")
+
+
 def self_test():
     long = " ".join(["word"] * 21)                         # 104 characters
     doc = [
@@ -191,9 +210,15 @@ def self_test():
                              "[a](" + "x" * 101 + ")"])
     if listed != [(13, 141), (16, 109), (19, 109), (22, 107), (23, 101)]:
         wrong.append(f"the listing of the long prose lines was {listed!r}")
+    # The files: one section 12 holds to the width is let through, one it does not is refused.
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if refused(os.path.join(root, "docs/agents/code-review.md")):
+        wrong.append("docs/agents/code-review.md, a wrapped file, was refused")
+    if not refused(os.path.join(root, "docs/research/quality.md")):
+        wrong.append("docs/research/quality.md, a file with no width, was not refused")
     for w in wrong:
         print(f"WRONG: {w}", file=sys.stderr)
-    print(f"rewrap: {'a line is wrong' if wrong else 'four paragraphs rewrapped as wanted, four lines left, one result refused, five long lines listed'}.")
+    print(f"rewrap: {'a line is wrong' if wrong else 'four paragraphs rewrapped as wanted, four lines left, one result refused, five long lines listed, one file refused'}.")
     return 1 if wrong else 0
 
 
@@ -212,6 +237,10 @@ def main():
             print(f"{path}: line {n} is {length} characters")
         print(f"{path}: {len(found)} prose line(s) over {WIDTH}. Nothing was written.")
         return 0
+    why = refused(path)
+    if why:
+        print(f"{path}: {why} Nothing was written.", file=sys.stderr)
+        return 1
     try:
         lines, said = rewrap(text.split(eol), [int(a) for a in sys.argv[2:]])
     except ValueError as e:
