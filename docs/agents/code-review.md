@@ -167,14 +167,15 @@ and three sentences, as the diff of `f3238c5` shows: the commit that renamed it 
 the merge, by its hash on `main`.
 
 **A figure the diff writes for a named quantity is read against every other statement of that
-quantity in the tracked files** (2026-10-15, #593). Either the values agree, or each statement names
-the other as a different measure. The supersede search above finds an old figure a change has
-replaced, and misses two current figures that measure one thing differently. On #579 the branch gave
-the He3-He3 three-pipe line's fill as tick 151 531 in `docs/research/plasma-input-box.md` and
-151 562 in `quality.md`: the first is the box first at 99.9% of 3000, the second the end of the
-first heater cycle to close there. Each note said what its own figure measured, and neither named
-the other's as a different measure. The fix in `5c27826` named it in `plasma-input-box.md` only, and
-`quality.md` still does not. The pre-PR review passed it and the plugin pass raised it at 75.
+quantity in the tracked files** (2026-10-15, #593). Either the values agree, or each statement says
+what it measures and names the others as different measures. The supersede search above finds an old
+figure a change has replaced, and misses two current figures that measure one thing differently. On
+#579 the branch gave the He3-He3 three-pipe line's fill as tick 151 531 in
+`docs/research/plasma-input-box.md` and 151 562 in `quality.md`: the first is the box first at 99.9%
+of 3000, the second the end of the first heater cycle to close there. Each note said what its own
+figure measured, and neither named the other's as a different measure. The fix in `5c27826` named it
+in `plasma-input-box.md` only, and `quality.md` did not on 2026-10-15. The pre-PR review passed it
+and the plugin pass raised it at 75.
 
 **A change to a figure in a note changes its row in that note's table in the same commit.** Since
 2026-10-06 (#602) seven notes under `docs/research/` open with a `## Current figures` table: the
