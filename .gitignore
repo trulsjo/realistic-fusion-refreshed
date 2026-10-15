@@ -21,7 +21,7 @@ graphify-out/
 !.claude/skills/plugin-pass/
 
 # Built mod zips — reproducible from the working tree with the shared packer,
-# vendor/grado-factorio-tools/scripts/pack-mods.ps1 (see CLAUDE.md)
+# vendor/grado-factorio-tools/scripts/pack-mods.ps1 (see docs/agents/shipping.md)
 dist/
 
 # Third-party mods fetched at the pins in scripts/mod-sets.psd1. Reproducible, and

@@ -152,7 +152,7 @@ a legal-note.txt in its directory is licensed under the WTFPL."*
 - Everything else — `graphics/entity/`, `graphics/entity/shadows/`, `graphics/icons/` (48 PNG),
   `graphics/technology/` (21 PNG), `sounds/` (6 OGG), `locale/`, all Lua outside `electric-boiler/` — has
   no licence file and is permissive under the root WTFPL, subject to the standing PreLeyZero /
-  YuokiTani / forum-sprites caveat in `CLAUDE.md`, which this inspection does nothing to resolve.
+  YuokiTani / forum-sprites caveat in `docs/agents/upstream-material.md`, which this inspection does nothing to resolve.
 
 **The NC-ND Lua is wired in, and is modified.** `ORIG/data.lua:28` reads
 `if not mods["angelspetrochem"] then require("electric-boiler.electric-boiler") end` — a fallback boiler
