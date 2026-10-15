@@ -214,6 +214,7 @@ pass.
    ```
    gh pr view <n> --json body --jq .body         # its counts, and each output it quotes
    git diff -U0 main...HEAD                      # each count the branch added to tracked prose
+   grep -n "#<n>" docs/agents/review-figures.md  # the row's pre-PR count of findings (#715)
    git log main..HEAD --format="%h %s%n%b"       # the branch's own commit messages
    ```
 

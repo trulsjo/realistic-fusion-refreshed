@@ -256,3 +256,8 @@ One line for each, newest last. The passages above are not edited.
   gains nothing. It sits beside the #632 paragraph, which binds a fix and not a rule's example.
   Step 3 of the pre-PR review skill has the reviewer read `code-review.md` whole, so it is
   unchanged. The wording is the session's.
+- **2026-10-15, #715.** The second rule's reading after the last fix commit names the pre-PR
+  review's count of findings in the pull request's row of `review-figures.md` among the counts it
+  reads again, since the row is written before the last confirmation; on #713 it went stale twice.
+  `plugin-pass.md` says so where it says what a row holds, and step 7 of `/pre-pr-review` lists the
+  command that finds the row. The ticket preferred this to leaving the cell empty until step 7.
