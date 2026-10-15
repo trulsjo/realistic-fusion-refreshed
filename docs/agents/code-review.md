@@ -241,7 +241,9 @@ request's body is last edited, the session reads each of these again against the
 
 - **quoted output in the body**, by running the command on the head and comparing what it prints;
 - **a count in the body, and a count the branch added to tracked prose**, by counting the rows,
-  cases, findings or files it counts;
+  cases, findings or files it counts. The pre-PR review's count of findings in the pull request's
+  row of `docs/agents/review-figures.md` is one (#715): the row is written before the last
+  confirmation, which can raise more, and on #713 it went stale twice, at 7 and at 11 of 14;
 - **the branch's own commit messages**, each statement of what the change does against the code at
   the head. A message that a later commit made false is reworded, as the fourth rule says of one a
   review corrects.
