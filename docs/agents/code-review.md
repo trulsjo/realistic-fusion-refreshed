@@ -156,14 +156,15 @@ quotes it. A heading's words are repeated in every link to it, a `## Current fig
 link among them, so a heading that states a claim states it again wherever it is linked. Searching
 for the diff's old wording finds the copies that share it and misses the rest, so the search is by
 the claim's subject and its synonyms, and each hit is read. **The search is done when the report
-lists each claim, the files searched for it, and each hit, as a finding or as checked.** On #694
-the plugin pass found two statements the branch had made false in other words, `GLOSSARY.md`'s
-Sub-ignition entry and the brownout report's quoted check, and the pre-PR review had passed both.
-On #707 (2026-10-15) the branch narrowed to cells built 1H2 the claim that an unpowered reactor
-falls to the floor on a full line. The pre-PR review and its confirmation found six other
-statements of it, and neither they nor the plugin pass raised the heading of the section that
-reads it, which stated it for every build and was linked from four Current figures rows and three
-sentences. A side agent raised it after both passes, and the branch renamed it before the merge.
+lists each claim, the files searched for it, and each hit, as a finding or as checked.** On #694 the
+plugin pass found two statements the branch had made false in other words, `GLOSSARY.md`'s
+Sub-ignition entry and the brownout report's quoted check, and the pre-PR review had passed both. On
+#707 (2026-10-15) the branch narrowed to cells built 1H2 the claim that an unpowered reactor falls
+to the floor on a full line. The pre-PR review found four other statements of it and its
+confirmation two more (#707's findings 2 and 17), and no pass raised the heading of the section that
+reads it. The heading stated the claim for every build and was linked from four Current figures rows
+and three sentences, as the diff of `f3238c5` shows: the commit that renamed it on the branch before
+the merge, by its hash on `main`.
 
 **A change to a figure in a note changes its row in that note's table in the same commit.** Since
 2026-10-06 (#602) seven notes under `docs/research/` open with a `## Current figures` table: the

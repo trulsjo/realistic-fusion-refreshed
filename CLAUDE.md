@@ -145,12 +145,11 @@ per directory, Lua included, and that page has the rules and how each predecesso
 material. Two rules are kept here because they rule material out outright:
 
 - **NonCommercial or NoDerivatives material is never lifted**, whatever its source. That rules out
-  `electric-boiler/` and `angels-numerals/` outright.
+  the redesign's `RealisticFusionCore/electric-boiler/` and `angels-numerals/` outright.
 - **Take no asset from UFP: Ultimate Fusion Power Fixed** (`ufpFixed`, `ultimateCoreLib`,
   `ultimateCore`, `ultimateCore-2`, `ultimateCore-3`), any of the five, including
-  `ufp_boiler-*.png`, which is the CC BY-NC-ND `electric-boiler/` art upscaled. Its declared LGPLv3
-  is not what its credits say. Reading its Lua for 2.0/2.1 prototype patterns is fine. Checked
-  2026-08-19; see ADR 0001.
+  `ufp_boiler-*.png`, which is the CC BY-NC-ND `electric-boiler/` art upscaled. Reading its Lua for
+  2.0/2.1 prototype patterns is fine. Checked 2026-08-19; see ADR 0001.
 
 ## Conventions
 

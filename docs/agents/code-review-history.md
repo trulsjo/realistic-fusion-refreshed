@@ -233,3 +233,10 @@ One line for each, newest last. The passages above are not edited.
   own cost stayed, since step 6 of `/pre-pr-review` acts on it. `code-review.md` was 49 656 bytes at
   #700's merge, over a read-budget hook's 45 000 on the machine this was written on, and the pre-PR
   brief has it read in full.
+- **2026-10-15, #708.** The second rule's #696 paragraph names a heading, with each link that
+  quotes it, among the places a narrowed claim is stated, since every link to a heading repeats its
+  words. It rests on #707, where a heading kept stating for every build a claim the branch had
+  narrowed to cells built 1H2, and neither pass raised it. The paragraph's own sentence on #707
+  carries its figures, as its sentence on #694 does, so `code-review-evidence.md` gains nothing.
+  Step 3 of the pre-PR review skill points at the rule and does not restate the list, so it is
+  unchanged. The ticket was `ready-for-agent`, and the wording is the session's.

@@ -250,7 +250,7 @@ has adopted.
    *"I'm also moving everything to the Do What the Fuck You Want to Public License"* disposed of
    contributors' work is not something this survey can answer — but note it names PreLeyZero's ICF and
    antimatter models specifically as third-party creations, which is exactly the material this project's
-   `CLAUDE.md` already flags as not-known-to-be-free.
+   `docs/agents/upstream-material.md` already flags as not-known-to-be-free.
 
 ---
 

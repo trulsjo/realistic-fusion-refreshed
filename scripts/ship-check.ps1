@@ -32,8 +32,8 @@
         NOT exempt from the licence files, the description match or the credits -- it is the mod that
         actually carries the Krastorio 2 art, so it is the one that most needs them (ADR 0023).
       - Romner_set, Durikkan and PreLeyZero are credited, in all three.  No licence asks for it (see
-        CLAUDE.md); it is a community norm, which is exactly the kind of thing that quietly
-        disappears in an edit.
+        docs/agents/upstream-material.md); it is a community norm, which is exactly the kind of
+        thing that quietly disappears in an edit.
       - Each code mod's declared floor on realistic-fusion-refreshed-assets equals the version that
         mod actually declares, and no .png is left behind in a code mod. Both guard the split ADR 0023
         made, and neither can fail on this machine: art paths resolve against whatever assets version

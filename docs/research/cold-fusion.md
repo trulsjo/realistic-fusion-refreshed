@@ -261,7 +261,7 @@ fission of the blanket, driven by μCF's 14 MeV neutrons — the fusion itself i
 is being used as a neutron source. That is a materially different machine from anything in ADR 0010,
 and it would import fission into a fusion mod.
 
-Attribution note, since the mod's `CLAUDE.md` cares about it: the idea of muons as fusion catalysts is
+Attribution note, since `docs/agents/upstream-material.md` cares about it: the idea of muons as fusion catalysts is
 credited in Petrov's paper to **A. D. Sakharov and Ya. B. Zel'dovich**; the observation is Alvarez's
 group's; the first full theory is Jackson's.
 

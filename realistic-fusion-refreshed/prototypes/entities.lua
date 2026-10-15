@@ -487,8 +487,9 @@ contain(reactor.output_fluid_box, REACTOR_ENERGY_CATEGORY)
 -- derivation. It is also UNMARKED: no license.txt and no legal-note.txt in that directory, only in
 -- graphics/particle-accelerator/. The port's root Unlicense covers it formally, but a public-domain
 -- dedication disposes only of what its declarer owned, and the changelog credits YuokiTani, angel's
--- discarded thread and PreLeyZero for unmarked art without saying which files are whose. CLAUDE.md's
--- rule is to ask rather than assume, it was asked, and the answer was no.
+-- discarded thread and PreLeyZero for unmarked art without saying which files are whose. The
+-- rule in docs/agents/upstream-material.md is to ask rather than assume, it was asked, and the
+-- answer was no.
 --
 -- SO IT IS ORIGINAL ART, DRAWN FOR THIS MOD (Route C), AND IT EXISTS. #108 closed on #252: the
 -- machine wears the rendered set in graphics/rendered/heat-exchanger/, built from the Blender model

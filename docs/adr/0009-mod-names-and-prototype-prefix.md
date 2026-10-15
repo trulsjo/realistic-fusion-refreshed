@@ -61,7 +61,7 @@ to the portal; the only mod that might otherwise clash is 1.1-only and so cannot
 - **The naming does not impersonate a predecessor.** `RealisticFusionPower` and
   `RealisticFusionPowerPort` remain theirs, and are actively maintained in Durikkan's case. Taking
   `RealisticFusion` reads as a successor without claiming to *be* either.
-- **Attribution still applies.** `CLAUDE.md` requires crediting Romner_set, Durikkan and PreLeyZero for
+- **Attribution still applies.** `docs/agents/upstream-material.md` requires crediting Romner_set, Durikkan and PreLeyZero for
   anything derived from their work — a name similar to theirs makes that more important, not less.
 - **Titles are localisable**, so the display names can be translated later without touching the internal
   names.

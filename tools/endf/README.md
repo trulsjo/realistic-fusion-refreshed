@@ -31,7 +31,7 @@ directory carries **no licence file**, so under
 [ADR 0001](../../docs/adr/0001-liftable-predecessor-material.md) it is permissive; the
 repository's default licence is WTFPL. The underlying nuclear data is published by the IAEA.
 
-Attribution to **Romner_set** for assembling these tables, per `CLAUDE.md`.
+Attribution to **Romner_set** for assembling these tables, per `docs/agents/upstream-material.md`.
 
 **The reactivities from that same upstream directory were not taken.** Its generator paired
 reactivities computed on a temperature grid against the cross-section energy grid, putting the
