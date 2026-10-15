@@ -1362,7 +1362,10 @@ the researched run has confinement at rung 3 and the other eight rungs off, all 
   grid.
 - **The two He3-He3 lines fill inside the run.** The box first ends a heater cycle at 99.9% of
   its 3000 on tick 151 562 at three pipes and 158 762 at six, and both cells end the run with
-  the box at 3000.00 and the segment at its capacity, 3300.00 and 3600.00. The reactor burned
+  the box at 3000.00 and the segment at its capacity, 3300.00 and 3600.00.
+  [`plasma-input-box.md`](plasma-input-box.md#an-aneutronic-line-that-fills-he3-he3) gives the
+  three-pipe line 151 531, which is another measure: the first tick the box reads 99.9%. The
+  reactor burned
   15.03 of the 6315.03 units fed at three pipes and 15.76 of 6615.76 at six. The rule is
   counted for 46 438 and 39 238 ticks past that cycle. The heater's output box held plasma on
   51 464 and 44 501 ticks of the 198 000, where a line with room has it on four ticks of each
