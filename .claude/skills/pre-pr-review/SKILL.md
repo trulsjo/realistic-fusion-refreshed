@@ -209,12 +209,18 @@ pass.
    `docs/agents/code-review.md` has the rule under *Review the prose, not only the code*: what is
    read again and how. This step comes after the skill's others and after the plugin pass: run it
    when the reviewer has confirmed that pass's fixes and no fix is left to commit, before the body
-   is edited for the last time. These lines list what the rule names:
+   is edited for the last time.
+
+   **Where the branch changes a rule, first write its line on `docs/agents/code-review-history.md`**
+   (#716), from the rule's wording at the head. Commit it, run `scripts/ship-check.ps1`, and send
+   its diff to the reviewer as step 4 sends a fix. The reading below is made on the head after it.
+
+   These lines list what the rule names:
 
    ```
    gh pr view <n> --json body --jq .body         # its counts, and each output it quotes
    git diff -U0 main...HEAD                      # each count the branch added to tracked prose
-   grep -n "#<n>" docs/agents/review-figures.md  # the row's pre-PR count of findings (#715)
+   grep -n "#<n>" docs/agents/review-figures.md  # the row's pre-PR findings cell (#715)
    git log main..HEAD --format="%h %s%n%b"       # the branch's own commit messages
    ```
 
@@ -224,10 +230,6 @@ pass.
    committed, its diff is sent to the reviewer in a message of its own as step 4 sends one, and
    what that fix changed is read again. **A fix that only corrects a count gets no message**
    (#665): the rule says which fix that is. Commit it and read again what it changed.
-
-   **Where the branch changes a rule, write its line on `docs/agents/code-review-history.md` now**
-   (#716), from the rule's wording at the head, and commit it. The rule says so; the line has not
-   been written before this step.
 
    Done when the body has, under the `## Pre-PR review` heading, a line that names what was read
    again and the head it was read on, the last one if a fix moved it: `Read again on <short hash>:

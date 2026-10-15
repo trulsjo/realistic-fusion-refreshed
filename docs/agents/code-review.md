@@ -224,16 +224,16 @@ of the plugin pass's five findings were what the fix for the pre-PR review's fir
 behind.
 
 **A change that adds or rewords a review rule applies it to the case that prompted it, before its
-first commit** (2026-10-15, #714). The session runs the rule's own search for that case across the
-tracked files and reads each hit against the new wording, and the pull request's body lists what
-the search found. The paragraph above binds a fix, and a rule's example is not one. On #713 the rule
-on a named quantity's other statements was written with #579's 151 531 and 151 562 as its example
-and was not applied to them, and three findings came of that alone. Its first wording, "or each says
-what it measures", would have passed #579's own case, since each note said what its own figure
-measured (pre-PR finding 6, at 75). Its example said neither note named the other until the fix in
-`5c27826`, which touched `plasma-input-box.md` only (the plugin pass's one posted finding). And
-`docs/research/exchanger-coverage.md` gave 151 562 and named neither other note, which the rule's
-own search finds (pre-PR finding 12, at 50).
+first commit** (2026-10-15, #714). The session applies the rule to that case across the tracked
+files, by the rule's own search where it gives one, and reads each hit against the new wording; the
+pull request's body lists what it found. The paragraph above binds a fix, and a rule's example is
+not one. On #713 the rule on a named quantity's other statements was written with #579's 151 531 and
+151 562 as its example and was not applied to them, and three findings came of that alone. Its first
+wording, "or each says what it measures", would have passed #579's own case, since each note said
+what its own figure measured (pre-PR finding 6, at 75). Its example said neither note named the
+other until the fix in `5c27826`, which touched one note, `plasma-input-box.md` (the plugin pass's
+one posted finding). And `docs/research/exchanger-coverage.md` gave 151 562 and named neither other
+note, which the rule's own search finds (pre-PR finding 12, at 50).
 
 **What a fix leaves behind is read again after the last fix commit** (2026-10-09, #663). The rule
 above is about a fix's own text. This one is about older text on the same branch, which a later
@@ -243,22 +243,26 @@ request's body is last edited, the session reads each of these again against the
 
 - **quoted output in the body**, by running the command on the head and comparing what it prints;
 - **a count in the body, and a count the branch added to tracked prose**, by counting the rows,
-  cases, findings or files it counts. The pre-PR review's count of findings in the pull request's
-  row of `docs/agents/review-figures.md` is one (#715): the row is written before the last
-  confirmation, which can raise more, and on #713 it went stale twice, at 7 and at 11 of 14;
+  cases, findings or files it counts. The pre-PR review's cell in the pull request's row of
+  `docs/agents/review-figures.md` is one (#715), its count of findings and how many were fixed and
+  confirmed: the row is written before the last confirmation, which can raise more, and on #713
+  the count went stale twice, at 7 and at 11 of 14;
 - **the branch's own commit messages**, each statement of what the change does against the code at
   the head. A message that a later commit made false is reworded, as the fourth rule says of one a
   review corrects.
-
-**A change to a rule writes its line on `code-review-history.md` at this reading** (2026-10-15,
-#716), once, from the rule's final wording, and not in the commit that changes the rule. The line
-restates the rule as it was decided. On #713 the rule's wording moved twice on the branch, in
-`db2aed5` and `0291a9d`, and each move was made in the history line as well.
 
 **The body then says what was read again, and on which commit.** A reading that names no commit
 cannot be told from one made before the last fix. **What the reading turns up is fixed like any
 finding raised in the last confirmation**: the fix gets a message of its own to the reviewer, what
 that fix changed is read again, and the body names the head after it.
+
+**A change to a rule writes its line on `code-review-history.md` first, at the start of this
+reading** (2026-10-15, #716), once, from the rule's final wording, and not in the commit that
+changes the rule. The line is committed, `scripts/ship-check.ps1` is run again, and the line is
+sent to the reviewer in a message of its own, as a fix is, because it restates the rule and is a
+claim. The reading above is then made on the head after that commit. On #713 the rule's wording
+moved twice on the branch, in `db2aed5` and `0291a9d`, and each move was made in the history line
+as well.
 
 **A fix that only corrects a count is the exception, and goes unconfirmed** (2026-10-09, #665). It
 is one whose every changed line differs from the line it replaces in digits alone, or in a number
