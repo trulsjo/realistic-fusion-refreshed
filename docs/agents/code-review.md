@@ -34,9 +34,10 @@ since, by date. Read it when a rule is being changed, and when the date or the o
 here is in question. [`code-review-evidence.md`](code-review-evidence.md) has the measurements and
 the cases the rules rest on. Read it when a rule is revisited or doubted, and when a sentence here
 names a case by its pull request and the case is wanted in full. Reviewing a branch needs neither.
-**A change to a rule adds its date and its ticket to the first page and its measurements to the
-second**, in the commit that changes the rule here. This file, or `plugin-pass.md`, gets the rule
-and a sentence of why.
+**A change to a rule adds its measurements to the second page**, in the commit that changes the
+rule here, **and its date and its ticket to the first at the reading after the last fix commit**,
+from the rule's final wording (#716). This file, or `plugin-pass.md`, gets the rule and a sentence
+of why.
 
 **A rule is changed in this file, or on `plugin-pass.md` where it is there** (2026-10-07, #630;
 the page since 2026-10-14, #703). `CLAUDE.md` and the intro of each of the two
@@ -248,6 +249,11 @@ request's body is last edited, the session reads each of these again against the
 - **the branch's own commit messages**, each statement of what the change does against the code at
   the head. A message that a later commit made false is reworded, as the fourth rule says of one a
   review corrects.
+
+**A change to a rule writes its line on `code-review-history.md` at this reading** (2026-10-15,
+#716), once, from the rule's final wording, and not in the commit that changes the rule. The line
+restates the rule as it was decided. On #713 the rule's wording moved twice on the branch, in
+`db2aed5` and `0291a9d`, and each move was made in the history line as well.
 
 **The body then says what was read again, and on which commit.** A reading that names no commit
 cannot be told from one made before the last fix. **What the reading turns up is fixed like any

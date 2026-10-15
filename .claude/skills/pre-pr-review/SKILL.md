@@ -225,6 +225,10 @@ pass.
    what that fix changed is read again. **A fix that only corrects a count gets no message**
    (#665): the rule says which fix that is. Commit it and read again what it changed.
 
+   **Where the branch changes a rule, write its line on `docs/agents/code-review-history.md` now**
+   (#716), from the rule's wording at the head, and commit it. The rule says so; the line has not
+   been written before this step.
+
    Done when the body has, under the `## Pre-PR review` heading, a line that names what was read
    again and the head it was read on, the last one if a fix moved it: `Read again on <short hash>:
    <each count and each quoted output, and that the commit messages were read>`. The line names
