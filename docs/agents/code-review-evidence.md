@@ -1,11 +1,11 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but nine was part of that file and is as it stood there, so "this file" in one is `code-review.md`,
+but ten was part of that file and is as it stood there, so "this file" in one is `code-review.md`,
 and "this rule", "this paragraph" and "the paragraph above" are that file's. All but one of those
 were moved on 2026-10-10 (#672), and the one on what the threshold dropped on 2026-10-11 (#626). The
-nine written for this page are the ones for #651, #653, #670, #671 and #720, the ones on the
-verdicts of 2026-10-10 and 2026-10-14, the one on the wrap width and the one on what the scores
+ten written for this page are the ones for #651, #653, #670, #671 and #720, the ones on the verdicts
+of 2026-10-10, 2026-10-14 and 2026-10-16, the one on the wrap width and the one on what the scores
 decided. What each pull request's two passes found and cost is on a third page,
 [`review-figures.md`](review-figures.md).
 
@@ -369,6 +369,46 @@ he has not seen it. **One of the ten touches a mod**, #690, with seven files und
 pass raised one candidate and it was found not real. So the ten still say almost nothing of what the
 pass finds in Lua or in a prototype. **On #683 and #690 the reviewer asked to read earlier pull
 requests said it read none.** The other eight rows do not say whether theirs did.
+
+### What the verdict of 2026-10-16 rested on
+
+Under the same rule, at its third revisit. Written for this page on 2026-10-16 (#722), from the
+rows of [`review-figures.md`](review-figures.md) as they were that day.
+
+The ten routine rows are #692, #694, #700, #706, #707, #711, #712, #713, #719 and #721, which are
+every pull request opened after #690 up to #721, read from the repository's list of pull requests
+the same day.
+
+**5 of the 10 findings the plugin pass raised and that were fixed were serious, on 5 of the 10
+branches**, each a sentence the branch had made false: on #694 `GLOSSARY.md`'s Sub-ignition entry,
+on #706 `CLAUDE.md` reading as if `code-review.md` stated the half that moved to `plugin-pass.md`,
+on #707 a build-order note its own table contradicted, on #711 a research note still placing a
+caveat in `CLAUDE.md`, and on #713 the new rule's example reading as if a fix had touched both
+notes. The passes raised 22 candidates in all: 10 were found real, and all 10 were posted and
+fixed, and 12 not real. #692, #712, #719 and #721 posted nothing. The pre-PR review found 121
+things on the same ten and 110 were fixed.
+
+| The plugin pass on the ten | Summed | A pass |
+|---|---|---|
+| the counts its subagents reported, all ten rows | 4 104 835 tokens | 410 484 |
+| over all requests | 21 417 370 tokens | 2 141 737 |
+| of that, the verifier | 1 718 754 tokens, 8.0% | |
+
+The pre-PR review used 33 720 799 tokens over all requests on the same ten, and that is a floor:
+the rows of #713 and #721 keep the figures read before that reviewer's last confirmation. What the
+main session used to run a pass is in neither figure.
+
+**The verifier, judged at the same revisit.** Nine of the ten passes had a candidate and so a
+verifier, all but #692's. It was handed 22 candidates and found 10 real, 12 not real and none not
+verified; no row records that a candidate found not real was later shown to be real, and the pull
+requests were not read again for it. It used 1 718 754 tokens over all requests, 8.7% of those
+nine passes' 19 843 640, where at the second revisit it used 8.4% of six.
+
+**Truls was shown the summed figures, not each row's grade**, so the ten rows' last cells still say
+he has not seen it. **One of the ten touches a mod**, #711, with one file under
+`realistic-fusion-refreshed/`, a comment in `realistic-fusion-refreshed/prototypes/entities.lua`,
+read from each pull request's list of files on 2026-10-16. So the ten still say almost nothing of
+what the pass finds in Lua or in a prototype.
 
 ## The wrap width
 
