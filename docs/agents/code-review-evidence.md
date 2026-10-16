@@ -380,13 +380,13 @@ every pull request opened after #690 up to #721, read from the repository's list
 the same day.
 
 **5 of the 10 findings the plugin pass raised and that were fixed were serious, on 5 of the 10
-branches**, each a false sentence the branch would have merged: on #694 `GLOSSARY.md`'s Sub-ignition
-entry, on #706 `CLAUDE.md` reading as if `code-review.md` stated the half that moved to
-`plugin-pass.md`, on #707 a build-order note its own table contradicted, on #711 a research note
-still placing a caveat in `CLAUDE.md`, and on #713 the new rule's example reading as if a fix had
-touched both notes. The passes raised 22 candidates in all: 10 were found real, and all 10 were
-posted and fixed, and 12 not real. #692, #712, #719 and #721 posted nothing. The pre-PR review found
-121 things on the same ten and 110 were fixed.
+branches**, each a sentence the branch would have merged that was false, or on #706 read as false:
+on #694 `GLOSSARY.md`'s Sub-ignition entry, on #706 `CLAUDE.md` reading as if `code-review.md`
+stated the half that moved to `plugin-pass.md`, on #707 a build-order note its own table
+contradicted, on #711 a research note still placing a caveat in `CLAUDE.md`, and on #713 the new
+rule's example reading as if a fix had touched both notes. The passes raised 22 candidates in all:
+10 were found real, and all 10 were posted and fixed, and 12 not real. #692, #712, #719 and #721
+posted nothing. The pre-PR review found 121 things on the same ten and 110 were fixed.
 
 | The plugin pass on the ten | Summed | A pass |
 |---|---|---|
