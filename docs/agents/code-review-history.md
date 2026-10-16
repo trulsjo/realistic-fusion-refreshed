@@ -280,3 +280,14 @@ One line for each, newest last. The passages above are not edited.
   rewrap one, reading the list from section 12. The tool reads section 12's `$WRAPPED`, so the two
   lists cannot differ, and its `--self-test` fails when a wrapped file is refused or another is
   not.
+- **2026-10-16, #720.** Truls decided on #720 on 2026-10-16, in [its decision
+  comment](https://github.com/trulsjo/realistic-fusion-refreshed/issues/720#issuecomment-6210947744),
+  to take the modpack's three claim grades, *Measured*, *Read from source* and *Inferred*, with
+  their rules of review, for `docs/adr/` and `docs/research/` only: new prose there, and any
+  paragraph a change edits. Nothing is graded retroactively, review enforces it and no gate does,
+  and the text lives on the tools repository's shared page rather than in `GLOSSARY.md`. In the
+  session that implemented it he settled the rest: the pin moves to `0125895`, the shared page's
+  rules are five and not four, the paragraph links to them without restating or counting them, and
+  an edited paragraph is graded whole. The second rule's paragraph says so and links to the page at
+  the pinned commit, and the evidence page lists the six escapes the decision names. The wording is
+  the session's.
