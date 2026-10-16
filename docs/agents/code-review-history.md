@@ -294,3 +294,10 @@ One line for each, newest last. The passages above are not edited.
   `code-review-evidence.md`. The second rule's paragraph states the scope and links to the page at
   the pinned commit, and the evidence page lists the six escapes the decision names. The wording is
   the session's.
+- **2026-10-16, #722: Truls's verdict on the fourth rule's third revisit.** The plugin pass
+  stays on every pull request, and the rule is next revisited by the same trigger, ten more routine
+  rows or the first five that touch a mod, counted from the row after #721's. He was shown the ten
+  rows' figures summed, not each row's grade. He also judged the verifier: it stays, and both it and
+  the rule are judged again at the next revisit, which [his comment on
+  #722](https://github.com/trulsjo/realistic-fusion-refreshed/issues/722#issuecomment-6214875076)
+  records.
