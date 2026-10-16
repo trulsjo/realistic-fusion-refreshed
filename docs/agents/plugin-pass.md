@@ -101,10 +101,10 @@ tables. The first table has the counts of findings, the token counts each pass's
 and the grade. The second has what each pass used over all its requests. Read that page to add a
 pull request's rows, when this rule is revisited, and when a decision needs what a pass found or
 cost. **Since the move, a pull request's figures go in its two rows and nowhere in `code-review.md`
-or on this page.** What this section keeps is the row rule, the two verdicts and their test, and
-what was concluded across rows, each with its date and the number of rows it was drawn from. What
-the pass cost on the branches the verdict of 2026-10-07 rested on, and that verdict's limits, are on
-the evidence page since 2026-10-10 (#672).
+or on this page.** What this section keeps is the row rule, the verdicts and their test, and what
+was concluded across rows, each with its date and the number of rows it was drawn from. What the
+pass cost on the branches the verdict of 2026-10-07 rested on, and that verdict's limits, are on the
+evidence page since 2026-10-10 (#672).
 
 **A reported count is a floor on what a pass used** (measured 2026-10-07, #631, on the 27
 subagents of two plugin passes). The count a subagent reports when it finishes was 1.000 to 1.095
@@ -201,7 +201,8 @@ page. The verifier was judged at the same revisit, and stays.
 row, the tenth routine one after #690's, and Truls kept the plugin pass on every pull request, and
 the verifier. By the test above 5 of the 10 fixed findings in those ten rows were serious, on 5 of
 the 10 branches. As at the second, he was shown the ten rows' figures summed and not each row's
-grade, so their cells still say he has not seen it. [What the verdict rested
+grade, so nine of their cells still say he has not seen it; #712's, with nothing to grade, says
+nothing of it. [What the verdict rested
 on](code-review-evidence.md#what-the-verdict-of-2026-10-16-rested-on) is on the evidence page.
 
 **The rule is next revisited at ten more routine rows, or at the first five that touch a mod,
@@ -229,6 +230,6 @@ ruling that put it here (2026-10-14, #698). At the second revisit the verifier w
 the verdict, because #626 had deferred it in the verifier's own paragraph and in a history line.
 
 - **This rule**: whether the plugin pass still runs on every pull request (Truls, 2026-10-14, #691,
-  by the trigger he set on 2026-10-10).
+  by the trigger he set on 2026-10-10, and again on 2026-10-16, #722).
 - **The verifier**: whether one verifier with no score still checks the plugin pass's candidates
-  (Truls, 2026-10-14, #691, as #626 set on 2026-10-11).
+  (Truls, 2026-10-14, #691, as #626 set on 2026-10-11, and again on 2026-10-16, #722).
