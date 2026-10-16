@@ -298,6 +298,20 @@ quoting its own #89: "by its #195's account and not re-read here". That is for a
 session could not read when it wrote the ticket. A statement that can be read is still read, and
 the mark does not stand in for the reading.
 
+**A claim in `docs/adr/` or `docs/research/` is graded** (Truls, 2026-10-16, #720). The three
+grades, *Measured*, *Read from source* and *Inferred*, and the five rules a reviewer checks them by
+are defined on the tools repository's page,
+[`vendor/grado-factorio-tools/docs/claim-grades.md`](../../vendor/grado-factorio-tools/docs/claim-grades.md)
+at the pinned commit, and are not restated here. They apply to new prose in those two directories,
+and to the whole of any paragraph there that a change edits, not only the sentence it changed.
+Nothing is graded retroactively, and no gate checks it: telling a measured claim from an inferred
+one means reading the claim. The reason is this repository's own history. About eight claims reached
+`main` and were later corrected, of a kind the grades would have caught, and seven of them were in
+those two directories, most often an inference written as a measurement. The review pages show one,
+and the other errors they record are out-of-date figures, which the grades do not catch. [The six
+the decision names](code-review-evidence.md#claims-later-corrected-in-adrs-and-research-notes-720)
+are on the evidence page.
+
 **What this rule was measured on is on the evidence page**: [#230's second review, and three rounds
 on 2026-09-12 and -13 that each let a superseded claim
 through](code-review-evidence.md#measured-not-assumed-230-328-and-329). There, three of five defects

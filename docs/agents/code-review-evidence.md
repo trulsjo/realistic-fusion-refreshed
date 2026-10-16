@@ -1,11 +1,12 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but eight was part of that file and is as it stood there, so "this file" in one is `code-review.md`,
+but nine was part of that file and is as it stood there, so "this file" in one is `code-review.md`,
 and "this rule", "this paragraph" and "the paragraph above" are that file's. All but one of those
 were moved on 2026-10-10 (#672), and the one on what the threshold dropped on 2026-10-11 (#626). The
-eight written for this page are the ones for #651, #653, #670 and #671, the ones on the verdicts of
-2026-10-10 and 2026-10-14, the one on the wrap width and the one on what the scores decided. What
+nine written for this page are the ones for #651, #653, #670, #671 and #720, the ones on the
+verdicts of 2026-10-10 and 2026-10-14, the one on the wrap width and the one on what the scores
+decided. What
 each pull request's two passes found and cost is on a third page,
 [`review-figures.md`](review-figures.md).
 
@@ -110,6 +111,28 @@ confirmation, the one of the plugin pass's fixes:
 
 Six of the 22 were raised in a confirmation and not in the first read: 17 and 18 while the fixes
 were confirmed, and 19 to 22 while the plugin pass's were. #656's body has the table.
+
+### Claims later corrected in ADRs and research notes (#720)
+
+Truls took the claim grades for `docs/adr/` and `docs/research/` on 2026-10-16, in [#720's
+decision comment](https://github.com/trulsjo/realistic-fusion-refreshed/issues/720). The test was
+whether this repository's own history showed a few real escapes, not one. The comment counts about
+eight: seven in those two directories and one on the review pages. It names six, and each one's
+correction is recorded in the file it was made in:
+
+| File | Kind, as the comment names it | The correction, in its own words |
+|---|---|---|
+| `docs/research/energy-containment-probe.md` | an inference written as a measurement | "an inference dressed as a measurement" |
+| `docs/adr/0012-reactor-signals-need-a-companion-entity.md` | an inference written as a measurement | "The one claim here that was reasoned rather than measured turned out to be false" |
+| `docs/research/reactor-runtime-cost.md` | an inference written as a measurement | "so the output-box row was an extrapolation" |
+| `docs/adr/0011-per-reactor-simulation-fluid-coupled.md` | a cause joined to a measured effect | "The premise of that decision was measured and is false. Corrected 2026-08-19 (#73)." |
+| `docs/adr/0015-the-d-d-tier-is-a-breeder.md` | an untested premise | "The premise of that question was measured and is false. Corrected 2026-08-20 (#70)." |
+| `docs/research/hidden-prototypes-by-lane.md` | a count drawn from a filtered search | "A first version of this note said four items and NINE recipes" |
+
+The other two, one in those directories and one on the review pages, are counted by the comment's
+account and not named there, and were not re-read here. The comment also says the other errors
+the review pages record are out-of-date figures, which the grades do not catch, and that is why the
+grades stop at the two directories.
 
 ## A review before the pull request, and the plugin pass after it
 
