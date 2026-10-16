@@ -285,9 +285,11 @@ One line for each, newest last. The passages above are not edited.
   to take the modpack's three claim grades, *Measured*, *Read from source* and *Inferred*, with
   their rules of review, for `docs/adr/` and `docs/research/` only: new prose there, and any
   paragraph a change edits. Nothing is graded retroactively, review enforces it and no gate does,
-  and the text lives on the tools repository's shared page rather than in `GLOSSARY.md`. In the
-  session that implemented it he settled the rest: the pin moves to `0125895`, the shared page's
-  rules are five and not four, the paragraph links to them without restating or counting them, and
-  an edited paragraph is graded whole. The second rule's paragraph says so and links to the page at
-  the pinned commit, and the evidence page lists the six escapes the decision names. The wording is
-  the session's.
+  and the text lives on the tools repository's shared page rather than in `GLOSSARY.md`. In #720's
+  later comments of the same day he settled the details: the pin moves to `0125895`, the shared
+  page's rules are five and not four, the paragraph links to them without restating or counting
+  them, an edited paragraph is graded whole, and the pull request's body says the cases that
+  prompted the rule are out of its scope. A correction to those details put this line at the reading
+  after the last fix commit (#716) and the measurements on `code-review-evidence.md`. The second
+  rule's paragraph states the scope and links to the page at the pinned commit, and the evidence
+  page lists the six escapes the decision names. The wording is the session's.
