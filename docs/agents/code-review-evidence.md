@@ -380,13 +380,13 @@ every pull request opened after #690 up to #721, read from the repository's list
 the same day.
 
 **5 of the 10 findings the plugin pass raised and that were fixed were serious, on 5 of the 10
-branches**, each a sentence the branch had made false: on #694 `GLOSSARY.md`'s Sub-ignition entry,
-on #706 `CLAUDE.md` reading as if `code-review.md` stated the half that moved to `plugin-pass.md`,
-on #707 a build-order note its own table contradicted, on #711 a research note still placing a
-caveat in `CLAUDE.md`, and on #713 the new rule's example reading as if a fix had touched both
-notes. The passes raised 22 candidates in all: 10 were found real, and all 10 were posted and
-fixed, and 12 not real. #692, #712, #719 and #721 posted nothing. The pre-PR review found 121
-things on the same ten and 110 were fixed.
+branches**, each a false sentence the branch would have merged: on #694 `GLOSSARY.md`'s Sub-ignition
+entry, on #706 `CLAUDE.md` reading as if `code-review.md` stated the half that moved to
+`plugin-pass.md`, on #707 a build-order note its own table contradicted, on #711 a research note
+still placing a caveat in `CLAUDE.md`, and on #713 the new rule's example reading as if a fix had
+touched both notes. The passes raised 22 candidates in all: 10 were found real, and all 10 were
+posted and fixed, and 12 not real. #692, #712, #719 and #721 posted nothing. The pre-PR review found
+121 things on the same ten and 110 were fixed.
 
 | The plugin pass on the ten | Summed | A pass |
 |---|---|---|
@@ -395,8 +395,8 @@ things on the same ten and 110 were fixed.
 | of that, the verifier | 1 718 754 tokens, 8.0% | |
 
 The pre-PR review used 33 720 799 tokens over all requests on the same ten, and that is a floor:
-the rows of #713 and #721 keep the figures read before that reviewer's last confirmation. What the
-main session used to run a pass is in neither figure.
+each of the ten rows keeps the figures read before that reviewer's last confirmation, as the row
+rule in `plugin-pass.md` says. What the main session used to run a pass is in neither figure.
 
 **The verifier, judged at the same revisit.** Nine of the ten passes had a candidate and so a
 verifier, all but #692's. It was handed 22 candidates and found 10 real, 12 not real and none not
@@ -404,11 +404,11 @@ verified; no row records that a candidate found not real was later shown to be r
 requests were not read again for it. It used 1 718 754 tokens over all requests, 8.7% of those
 nine passes' 19 843 640, where at the second revisit it used 8.4% of six.
 
-**Truls was shown the summed figures, not each row's grade**, so the ten rows' last cells still say
-he has not seen it. **One of the ten touches a mod**, #711, with one file under
-`realistic-fusion-refreshed/`, a comment in `realistic-fusion-refreshed/prototypes/entities.lua`,
-read from each pull request's list of files on 2026-10-16. So the ten still say almost nothing of
-what the pass finds in Lua or in a prototype.
+**Truls was shown the summed figures, not each row's grade**, so nine of the ten rows' last cells
+still say he has not seen it; #712's, with nothing to grade, says nothing of it. **One of the ten
+touches a mod**, #711, with one file under `realistic-fusion-refreshed/`, a comment in
+`realistic-fusion-refreshed/prototypes/entities.lua`, read from each pull request's list of files on
+2026-10-16. So the ten still say almost nothing of what the pass finds in Lua or in a prototype.
 
 ## The wrap width
 
