@@ -6,8 +6,7 @@ and "this rule", "this paragraph" and "the paragraph above" are that file's. All
 were moved on 2026-10-10 (#672), and the one on what the threshold dropped on 2026-10-11 (#626). The
 nine written for this page are the ones for #651, #653, #670, #671 and #720, the ones on the
 verdicts of 2026-10-10 and 2026-10-14, the one on the wrap width and the one on what the scores
-decided. What
-each pull request's two passes found and cost is on a third page,
+decided. What each pull request's two passes found and cost is on a third page,
 [`review-figures.md`](review-figures.md).
 
 **Read this page** when a rule is revisited or doubted, and when a sentence of `code-review.md`
@@ -114,11 +113,11 @@ were confirmed, and 19 to 22 while the plugin pass's were. #656's body has the t
 
 ### Claims later corrected in ADRs and research notes (#720)
 
-Truls took the claim grades for `docs/adr/` and `docs/research/` on 2026-10-16, in [#720's
-decision comment](https://github.com/trulsjo/realistic-fusion-refreshed/issues/720). The test was
-whether this repository's own history showed a few real escapes, not one. The comment counts about
-eight: seven in those two directories and one on the review pages. It names six, and each one's
-correction is recorded in the file it was made in:
+Truls took the claim grades for `docs/adr/` and `docs/research/` on 2026-10-16, in [#720's decision
+comment](https://github.com/trulsjo/realistic-fusion-refreshed/issues/720#issuecomment-6210947744).
+The test was whether this repository's own history showed a few real escapes, not one. The comment
+counts about eight: seven in those two directories and one on the review pages. It names six, and
+each one's correction is recorded in the file it was made in:
 
 | File | Kind, as the comment names it | The correction, in its own words |
 |---|---|---|
@@ -130,9 +129,8 @@ correction is recorded in the file it was made in:
 | `docs/research/hidden-prototypes-by-lane.md` | a count drawn from a filtered search | "A first version of this note said four items and NINE recipes" |
 
 The other two, one in those directories and one on the review pages, are counted by the comment's
-account and not named there, and were not re-read here. The comment also says the other errors
-the review pages record are out-of-date figures, which the grades do not catch, and that is why the
-grades stop at the two directories.
+account and not named there, and were not re-read here. The comment also says the other errors the
+review pages record are out-of-date figures, which the grades do not catch.
 
 ## A review before the pull request, and the plugin pass after it
 
