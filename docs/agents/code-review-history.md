@@ -301,3 +301,9 @@ One line for each, newest last. The passages above are not edited.
   the rule are judged again at the next revisit, which [his comment on
   #722](https://github.com/trulsjo/realistic-fusion-refreshed/issues/722#issuecomment-6214875076)
   records.
+- **2026-10-18, #629: Truls ruled on the wording of the cut.** A routine row is one for a pull
+  request opened after the verdict of 2026-10-07, which `plugin-pass.md` had given as its own
+  reading of the verdict's "opened from 2026-10-07 on". [His reply on
+  #593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6249100930)
+  records it, and the verdict's comment is left as written. The two grades #629 also asked about,
+  #628's and #633's, he had seen on 2026-10-10.
