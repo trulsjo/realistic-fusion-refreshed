@@ -919,8 +919,8 @@ the box has not settled.
   with the reactor alone at legendary reads as the run at normal quality.
 - **Legendary heaters fill the line sooner and leave the full box where it was.** At 41 the
   solo line fills on tick 4369 where at normal it fills on 10 870, and both powered now fill.
-  Every full powered box reads 1.369335×10⁷ °C, the figure at normal. The run with the heaters alone
-  at legendary reads every row as the run with the reactor at legendary too.
+  Every full powered box reads 1.369335×10⁷ °C, the figure at normal. The run with the heaters
+  alone at legendary reads every row as the run with the heaters and the reactor at legendary.
 - **17 legendary heaters fill a solo line and 16 do not**, as 41 and 40 do at normal. Below
   the fill the box holds 2908 to 2920 of 3000, hot; at the fill it is cold.
 - **So no route the shipped mod allows gives a hot full D-He3 line.** That is *inferred* from
