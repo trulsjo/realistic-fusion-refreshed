@@ -216,12 +216,12 @@ to correct. Of the ten after #673's, only #690's does, and it was the tenth; of 
 third on 2026-10-14. The first was set at ten routine rows, which was sixteen in the first table
 (Truls, 2026-10-07, #593). A routine row is one for a pull request opened after the verdict of
 2026-10-07, when the pass stopped waiting to be asked for: #628's is the first, the pull request
-that closed #627, and #625's is not one. The comment on #593 words the cut as "opened from
-2026-10-07 on", and #622 and #625 were opened that day before the verdict. "After the verdict" is
-this page's reading of it. In the session that put the verdict to him Truls confirmed that #625's
-row is not routine and that this change's is the first, and the seventh point of #627 is the only
-written record of that. The wording of the cut is his to correct. The test is the same, no pass mark
-is set in advance, and the verdict is his.
+that closed #627, and #625's is not one. The cut is "opened after the verdict" (Truls, 2026-10-18,
+#629, in [a reply on
+#593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6249100930)).
+The verdict's own comment says "opened from 2026-10-07 on" and is left as written; #622 and #625
+were opened that day before it. The test is the same, no pass mark is set in advance, and the
+verdict is his.
 
 ## What the next revisit decides
 
