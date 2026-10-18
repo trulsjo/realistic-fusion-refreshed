@@ -867,8 +867,10 @@ same game, at normal quality, with nothing researched (all 11 rungs asserted off
   branch is the same figure to four places.
 - **So no count of heaters read here gives a hot full D-He3 line.** Past the fill the
   temperature is the same to seven figures at the four counts built from 41 to 48: at those,
-  more heaters fill the box sooner and do not move where it ends. No researched D-He3 line was
-  built.
+  more heaters fill the box sooner and do not move where it ends. Research cannot move it
+  either: `M.aneutronic_reactor` in `realistic-fusion-refreshed/scripts/reactor-logic.lua` has
+  no ladder of any kind, read from source at this note's head on 2026-10-18. A quality
+  reactor or heater was not built on this line.
 - **With one reactor unpowered, the line fills at 40 already.** That this is because the
   unpowered box burns nothing is *inferred* from its reading 15 °C, where nothing fuses, and
   was not read. The unpowered box reads 15 °C from tick 15 282 at 40 heaters and 13 926 at 48,
