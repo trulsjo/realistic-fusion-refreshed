@@ -375,10 +375,11 @@ local function to_floor(spec, amount, c, sum)
   return steps
 end
 
--- THE FITTED FIXED-POINT RULE ON TWO BOXES (#572). The transfer is Get-FixedRuleLua's, which
--- probe-plasma-segment.ps1 runs too (#588), with the destination's fill floored, the rounding #564
--- settled. There one box pushes and pulls and then the heater pushes twice. Here there are two
--- boxes, and the order the engine takes the three in is what is being read, so all six are run.
+-- THE FITTED FIXED-POINT RULE ON ONE BOX OR TWO (#572, #587). The transfer is Get-FixedRuleLua's,
+-- which probe-plasma-segment.ps1 runs too (#588), with the destination's fill floored, the
+-- rounding #564 settled. There one box pushes and pulls and then the heater pushes twice. Here the
+-- order the engine takes the boxes and the heater bank in is what is being read, so every order
+-- is run: two on a solo cell, six on a pair.
 __FIXEDRULE__
 local UNITS = rf_fixed_units
 -- A solo cell has one box, so two orders; since #587 it is run too, for the D-He3 line that fills.
