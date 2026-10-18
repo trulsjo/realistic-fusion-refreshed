@@ -928,8 +928,8 @@ the box has not settled.
   built, at normal and at legendary, with 16 to 48 heaters and the reactor at either quality,
   reads 1.369335×10⁷ °C, and research has no ladder on this reactor. Uncommon, rare and epic
   were not built; that they fall between normal and legendary is *inferred*. Every line was
-  three pipes plus three per heater, built 1H2; another pipe count, another build order, a
-  heater with a module in it and a beacon were not built.
+  three pipes plus three per heater, the two-reactor cells built 1H2; another pipe count,
+  another build order, a heater with a module in it and a beacon were not built.
 
 ##### The fitted rule beside the line that fills
 
