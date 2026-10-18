@@ -885,8 +885,9 @@ function Write-Variant {
 }
 
 function Write-Fixed {
-    <#  THE ORDER THE ENGINE TAKES TWO BOXES IN (#572): the last sampled row of each order, split
-        into the ticks before both boxes had read -FullAt and the ticks from then on.  #>
+    <#  THE ORDER THE ENGINE TAKES THE BOXES AND THE HEATERS IN (#572, #587): per cell, the last
+        sampled row of each order, and of each way of taking a bank, split into the ticks before
+        every box in the cell had read -FullAt and the ticks from then on.  #>
     param([object[]] $Rows)
 
     Write-Host ''
