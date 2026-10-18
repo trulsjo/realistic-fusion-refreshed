@@ -1407,9 +1407,11 @@ enabled, and asserts it on both machines.
   legendary. So the heater's output box backing up against a full line is covered at both:
   its "feeding" ticks track the ticks after the fill, 175 857 and 172 982 of the 198 000 when
   legendary, which fills sooner, and 100 077 and 87 316 on rung 5.
-- It is still **fitted, not found**. D-He3 on a line that fills was not run: #586 built one, in
-  [`plasma-input-box.md`](plasma-input-box.md#a-d-he3-line-that-fills-is-cold), with 48
-  heaters, where 40 did not fill a solo line; both probes' `-Fixed` follows one heater.
+- It is still **fitted, not found**. D-He3 on a line that fills is run in
+  [`plasma-input-box.md`](plasma-input-box.md#the-fitted-rule-beside-the-line-that-fills)
+  (#587): beside 48 heaters, with the bank taken in build order and each heater pushing twice
+  before the next, it misses none of 594 000 ticks, floored. That probe runs no other
+  rounding.
 
 **The 1.28×10⁻⁵ excess and the factor's gap have one cause on this reading.** The same
 variant, with nothing changed between the two cells, gives the normal cell's 526.3158023 and
@@ -1535,8 +1537,8 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   (#564, #573, #587), and the D-D and He3-He3 lines settle the rounding of the destination's
   fill: floored. With two reactors on one segment it misses no tick in one order of the six,
   and which order that is follows the order the three were built in (#572, #583). It is still
-  fitted, not found, and not run on a D-He3 line that fills, which 48 heaters do and 40 do
-  not (#586).
+  fitted, not found. Beside a D-He3 line that fills, with 48 heaters, it misses none of
+  594 000 ticks more, with the bank taken in build order (#586, #587, 2026-10-18).
   Factorio 2.0.77, 2026-10-04, 2026-10-05 and 2026-10-14.
 - **Whether a mod may add a sixth quality level is unknown.** FFF #375 refers to restrictions without
   stating them and no 2.0.77 doc page found in this pass covers it. Narrowed but not measured by
