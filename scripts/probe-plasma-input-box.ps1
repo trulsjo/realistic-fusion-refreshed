@@ -110,6 +110,15 @@
     bench-mod-links.ps1 lays a bank (#586). The line then has -Pipes plus three per added heater.
     -Fixed follows every heater (#587).
 
+.PARAMETER Quality
+    Place the reactors, the heaters or both, as -QualityOn says, at this quality, with the bundled
+    quality mod enabled, as probe-plasma-segment.ps1 -Quality does (#726). Asserted on each
+    machine. Normal, with no quality mod, unless given. The lone box is always normal.
+
+.PARAMETER QualityOn
+    Which machines -Quality is for: both, the default, reactor or heaters (#726). The others are
+    placed at normal quality, and that is asserted too.
+
 .PARAMETER BuildOrder
     The order a two-reactor cell's three parts are placed in (#583): 1 the first reactor, H the
     heater bank and the pipes from it to the first reactor, 2 the bridge and the second reactor.
@@ -163,6 +172,8 @@ param(
     [ValidateRange(1, 60)] [int] $Heaters = 1,
     [ValidateSet('1H2', '12H', '21H', '2H1', 'H12', 'H21', IgnoreCase = $false)] [string] $BuildOrder = '1H2',
     [switch] $Fixed,
+    [ValidateSet('uncommon', 'rare', 'epic', 'legendary', IgnoreCase = $false)] [string] $Quality,
+    [ValidateSet('both', 'reactor', 'heaters')] [string] $QualityOn = 'both',
     # Case-sensitive: the names are Lua table keys.
     [ValidatePattern('^((confinement|heating|capture)_ladder=\d+)(,(confinement|heating|capture)_ladder=\d+)*$', Options = 'None')]
     [string] $Rungs,
@@ -190,6 +201,9 @@ if ($Trace -and ($traceTo -lt $traceFrom -or $traceTo -ge $Ticks)) { throw "-Tra
 $named = @($Rungs -split ',' | Where-Object { $_ } | ForEach-Object { ($_ -split '=')[0] })
 if ($named.Count -ne @($named | Sort-Object -Unique).Count) { throw "-Rungs names a ladder twice: $Rungs" }
 $rungsLua = if ($Rungs) { '{ ' + (($Rungs -split ',') -join ', ') + ' }' } else { 'nil' }
+if ($PSBoundParameters.ContainsKey('QualityOn') -and -not $Quality) { throw '-QualityOn needs -Quality.' }
+$reactorQuality = if ($Quality -and $QualityOn -ne 'heaters') { "`"$Quality`"" } else { 'nil' }
+$heaterQuality  = if ($Quality -and $QualityOn -ne 'reactor') { "`"$Quality`"" } else { 'nil' }
 if ($Every -ge $Ticks) { throw "-Every $Every is not less than -Ticks $Ticks, so no row would be sampled." }
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
@@ -282,6 +296,8 @@ local FIXED = __FIXED__
 local ENERGY_FEED = "__ENERGYFEED__"
 local PLASMA  = "__PLASMA__"
 local REACTOR = "__REACTOR__"
+-- nil places those machines at normal quality (#726); either way the quality is asserted.
+local REACTOR_QUALITY, HEATER_QUALITY = __REACTORQUALITY__, __HEATERQUALITY__
 local LONE    = "rf-input-box-lone"
 -- The fluid's default_temperature and the spec's min_temperature_c: quality.md's cold seed.
 local LONE_C  = 15
@@ -438,9 +454,17 @@ local function segment_of(entity)
   return total
 end
 
+-- A machine the engine placed at another quality than asked would read as that quality's.
+local function at_quality(machine, quality)
+  if machine.quality.name ~= (quality or "normal") then
+    error(string.format("%s was placed at %s, not %s", machine.name, machine.quality.name, quality or "normal"))
+  end
+  return machine
+end
+
 local function reactor_at(surface, force, x)
-  local reactor = rf_place_or_die(surface,
-    { name = REACTOR, position = { x, 0.5 }, force = force, raise_built = true }, REACTOR)
+  local reactor = at_quality(rf_place_or_die(surface, { name = REACTOR, position = { x, 0.5 },
+    force = force, raise_built = true, quality = REACTOR_QUALITY }, REACTOR), REACTOR_QUALITY)
   if rf_box_of(reactor, ENERGY) ~= 2 then error(REACTOR .. "'s boxes are not where they were") end
   local out = reactor.fluidbox.get_pipe_connections(2)[1]
   local drain = rf_place_or_die(surface,
@@ -487,11 +511,12 @@ local function build(surface, force, ox, label, pipe_count, bridge, both, chain)
       run = pipes_from(surface, force, west, { -1, 0 }, pipe_count + 3 * (HEATERS - 1))
       local feed = prototypes.recipe[PLASMA].ingredients[1].name
       for i = 0, HEATERS - 1 do
-        local heater = rf_place_facing(surface, force, {
+        local heater = at_quality(rf_place_facing(surface, force, {
           name = "rf-heater", fluid = PLASMA,
           prepare = function(entity) entity.set_recipe(PLASMA) end,
           target = { west[1] - (pipe_count - 1) - 3 * i, west[2] }, seed = { ox - 24.5 - 4 * i, 20.5 },
-        })
+          quality = HEATER_QUALITY,
+        }), HEATER_QUALITY)
         rf_unbound(surface, force, heater, rf_box_of(heater, feed),
           { name = feed, percentage = 1, mode = "at-least" })
         heaters[#heaters + 1] = heater
@@ -768,6 +793,8 @@ $lua = $lua.
     Replace('__TRACECELL__', $TraceCell).
     Replace('__PLASMA__', $Plasma).
     Replace('__REACTOR__', $reactorName).
+    Replace('__REACTORQUALITY__', $reactorQuality).
+    Replace('__HEATERQUALITY__', $heaterQuality).
     Replace('__TRIO__', $(if ($Trio) { 'true' } else { 'false' })).
     Replace('__HEATERS__', "$Heaters").
     Replace('__BUILDORDER__', $BuildOrder).
@@ -795,7 +822,7 @@ function Invoke-Variant {
     param([Parameter(Mandatory)] [string] $Tag, [switch] $WithCanary)
 
     $mods = $ourMods + $rigName + $preName + @(if ($WithCanary) { $canaryName })
-    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled @() -Mods $mods `
+    Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabled -Mods $mods `
         -Disabled @(if (-not $WithCanary) { $canaryName })
     $save   = Join-Path $temp "$Tag.zip"
     $create = Invoke-Factorio @invoke -Arguments @('--create', $save) -Tag "$Tag-create"
@@ -1001,6 +1028,7 @@ function Write-Trace {
 
 try {
     New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
+    $enabled = if ($Quality) { Resolve-BundledSelection -Requested @('quality') -Bundled $bundled } else { @() }
     $shipped = Invoke-Variant -Tag 'shipped'
     if ($shipped.Code -ne 0) {
         Write-FactorioTail $shipped.Create
@@ -1018,6 +1046,8 @@ try {
     Write-Host ''
     $added = 3 * ($Heaters - 1)
     Write-Host "Factorio $version -- $Ticks ticks per variant, $Heaters heater(s) per cell, $Plasma into $reactorName"
+    Write-Host $(if (-not $Quality) { 'reactor and heaters at normal quality, no quality mod' }
+        else { "$(@{ both = 'reactor and heaters'; reactor = 'reactor'; heaters = 'heaters' }[$QualityOn]) at $Quality quality, the rest normal, the bundled quality mod enabled" })
     Write-Host ("solo cells at {0} pipe(s); the pair at {1} pipe(s) to the first reactor and $Bridge between them; two-reactor cells built in the order $BuildOrder" -f
         (($pipeCounts | ForEach-Object { $_ + $added }) -join ','), ($pipeCounts[0] + $added))
     Write-Variant $shipped
