@@ -216,7 +216,7 @@ to correct. Of the ten after #673's, only #690's does, and it was the tenth; of 
 third on 2026-10-14. The first was set at ten routine rows, which was sixteen in the first table
 (Truls, 2026-10-07, #593). A routine row is one for a pull request opened after the verdict of
 2026-10-07, when the pass stopped waiting to be asked for: #628's is the first, the pull request
-that closed #627, and #625's is not one. The cut is "opened after the verdict" (Truls, 2026-10-18,
+that closed #627, and #625's is not one. That cut is Truls's ruling (2026-10-18,
 #629, in [a reply on
 #593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6249100930)).
 The verdict's own comment says "opened from 2026-10-07 on" and is left as written; #622 and #625
