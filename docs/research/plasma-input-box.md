@@ -58,8 +58,8 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | Shipped `input-output` box, D-He3 solo, 48 heaters, 144 pipes: fill tick and temperature after it | 10 339; 1.369335×10⁷ °C | 2026-10-14 | 2.0.77 | unresearched (all 11 rungs asserted off) | [A D-He3 line that fills is cold](#a-d-he3-line-that-fills-is-cold) |
 | Canary `input` box, D-He3 solo, 48 heaters, 144 pipes: fill tick and temperature after it | 1805; 1.369335×10⁷ °C | 2026-10-14 | 2.0.77 | unresearched (all 11 rungs asserted off) | [A D-He3 line that fills is cold](#a-d-he3-line-that-fills-is-cold) |
 | Shipped `input-output` box, D-He3 pair, one powered, 48 heaters, 144 and 12 pipes: fill ticks, and first tick the unpowered box reads 15 °C | 13 957 and 13 925; 13 926 | 2026-10-14 | 2.0.77 | unresearched (all 11 rungs asserted off) | [A D-He3 line that fills is cold](#a-d-he3-line-that-fills-is-cold) |
-| Shipped `input-output` box, D-He3 solo, 3 pipes plus three per added heater: the fewest of the counts built (1, 40, 41, 42, 44 and 48) that fill the line, its fill tick and temperature after it | 41 heaters, 123 pipes; 10 870; 1.369335×10⁷ °C | 2026-10-18 (41) and 2026-10-14 (40) | 2.0.77 | unresearched (all 11 rungs asserted off) | [A D-He3 line that fills is cold](#a-d-he3-line-that-fills-is-cold) |
-| Shipped `input-output` box, D-He3 solo, 41, 42, 44 and 48 heaters: temperature of the full box | 1.369335×10⁷ °C at every count | 2026-10-14 (48) and 2026-10-18 | 2.0.77 | unresearched (all 11 rungs asserted off) | [A D-He3 line that fills is cold](#a-d-he3-line-that-fills-is-cold) |
+| Shipped `input-output` box, D-He3 solo, normal quality, 3 pipes plus three per added heater: the fewest of the counts built (1, 40, 41, 42, 44 and 48) that fill the line, its fill tick and temperature after it | 41 heaters, 123 pipes; 10 870; 1.369335×10⁷ °C | 2026-10-18 (41) and 2026-10-14 (40) | 2.0.77 | unresearched (all 11 rungs asserted off) | [A D-He3 line that fills is cold](#a-d-he3-line-that-fills-is-cold) |
+| Shipped `input-output` box, D-He3 solo, normal quality, 41, 42, 44 and 48 heaters: temperature of the full box | 1.369335×10⁷ °C at every count | 2026-10-14 (48) and 2026-10-18 | 2.0.77 | unresearched (all 11 rungs asserted off) | [A D-He3 line that fills is cold](#a-d-he3-line-that-fills-is-cold) |
 | Shipped `input-output` box, D-He3, 48 heaters, normal quality, solo, pair and both: the one way of taking the heater bank that misses no tick of the fitted rule, and of how many | each heater in build order, pushing twice before the next, the boxes in build order; none of 594 000 ticks | 2026-10-18 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The fitted rule beside the line that fills](#the-fitted-rule-beside-the-line-that-fills) |
 | Shipped `input-output` box, D-He3 solo, 41 heaters, 123 pipes, the reactor at legendary and the heaters at normal: fill tick and temperature after it | 10 870; 1.369335×10⁷ °C, every row as at normal quality | 2026-10-18 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Above normal quality](#above-normal-quality) |
 | Shipped `input-output` box, D-He3 solo, heaters and reactor at legendary, 3 pipes plus three per added heater: the fewest of the counts built (16, 17 and 41) that fill the line, its fill tick and temperature after it | 17 heaters, 51 pipes; 6364; 1.369335×10⁷ °C | 2026-10-18 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Above normal quality](#above-normal-quality) |
@@ -730,7 +730,7 @@ on 2026-10-05, Factorio 2.0.77 (build 84539): He3-He3 into `rf-aneutronic-reacto
 3000-unit box, one heater per cell, three pipes to the first reactor and twelve between the
 two of a pair, nothing researched (all 11 rungs asserted off in both runs), rows every 4000
 ticks to 496 000. A He3-He3 reactor burns almost none of its feed, so the line fills. One
-heater holds a D-He3 box at 467 to 470 of 3000; 41 fill its line, and it is cold, in
+heater holds a D-He3 box at 467 to 470 of 3000; 41 at normal quality fill its line, and it is cold, in
 [A D-He3 line that fills is cold](#a-d-he3-line-that-fills-is-cold). The fill ticks are exact, read every tick; the first tick a full box
 reads 15 °C is exact too, since #571. A fill tick here is the first tick the box reads 99.9%.
 [`quality.md`](quality.md) and [`exchanger-coverage.md`](exchanger-coverage.md) give the same
@@ -872,7 +872,8 @@ same game, at normal quality, with nothing researched (all 11 rungs asserted off
   temperature is the same to seven figures at the four counts built from 41 to 48: at those,
   more heaters fill the box sooner and do not move where it ends. Research cannot move it
   either: `M.aneutronic_reactor` in `realistic-fusion-refreshed/scripts/reactor-logic.lua` has
-  no ladder of any kind, read from source at 273938e on 2026-10-18. Nor can quality:
+  no ladder of any kind, read from source at 273938e on 2026-10-18. Nor does legendary
+  quality, and that no level between does is *inferred*:
   [Above normal quality](#above-normal-quality) (#726).
 - **With one reactor unpowered, the line fills at 40 already.** That this is because the
   unpowered box burns nothing is *inferred* from its reading 15 °C, where nothing fuses, and
@@ -898,6 +899,8 @@ does, and asserts each machine's quality as it is placed.
 2026-10-18, Factorio 2.0.77 (build 84539), nothing researched (all 11 rungs asserted off),
 shipped box only, 3 pipes plus three per added heater, rows every 2000 ticks to 198 000. The
 same command without `-Quality`, at 41 heaters, reads every row as the 41-heater run above.
+A range in the table below is the rows of the last heater cycle, or of the last two rows where
+the box has not settled.
 
 | heaters, pipes to the first reactor | at legendary | cell | shipped |
 |---|---|---|---|
@@ -916,16 +919,17 @@ same command without `-Quality`, at 41 heaters, reads every row as the 41-heater
   with the reactor alone at legendary reads as the run at normal quality.
 - **Legendary heaters fill the line sooner and leave the full box where it was.** At 41 the
   solo line fills on tick 4369 where at normal it fills on 10 870, and both powered now fill.
-  Every full box reads 1.369335×10⁷ °C, the figure at normal. The run with the heaters alone
+  Every full powered box reads 1.369335×10⁷ °C, the figure at normal. The run with the heaters alone
   at legendary reads every row as the run with the reactor at legendary too.
 - **17 legendary heaters fill a solo line and 16 do not**, as 41 and 40 do at normal. Below
   the fill the box holds 2908 to 2920 of 3000, hot; at the fill it is cold.
 - **So no route the shipped mod allows gives a hot full D-He3 line.** That is *inferred* from
-  the readings above and from the heater counts at normal quality: every full box built, at
-  normal and at legendary, with 16 to 48 heaters and the reactor at either quality, reads
-  1.369335×10⁷ °C, and research has no ladder on this reactor. Uncommon, rare and epic were
-  not built; that they fall between normal and legendary is *inferred*. A heater with a
-  module in it was not built.
+  the readings above and from the heater counts at normal quality: every full powered box
+  built, at normal and at legendary, with 16 to 48 heaters and the reactor at either quality,
+  reads 1.369335×10⁷ °C, and research has no ladder on this reactor. Uncommon, rare and epic
+  were not built; that they fall between normal and legendary is *inferred*. Every line was
+  three pipes plus three per heater, built 1H2; another pipe count, another build order, a
+  heater with a module in it and a beacon were not built.
 
 ##### The fitted rule beside the line that fills
 
@@ -1276,7 +1280,7 @@ choice between the options below.
 ## What was not measured
 
 - D-T, and any researched state but the one pair at heating rung 5. A hot full line on the
-  aneutronic reactor: He3-He3 fills cold (#571), and D-He3 fills at 41 heaters, the fewest
+  aneutronic reactor: He3-He3 fills cold (#571), and D-He3 fills at 41 heaters at normal quality, the fewest
   of the counts built, and is cold at each of 41, 42, 44 and 48 (#586). The canary was not
   run at 41, 42 or 44, and the fitted rule was run beside a bank at 48 heaters only, and not
   under the canary (#587). Above normal quality, D-He3 was built at legendary only, not at
