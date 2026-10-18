@@ -1409,9 +1409,9 @@ enabled, and asserts it on both machines.
   legendary, which fills sooner, and 100 077 and 87 316 on rung 5.
 - It is still **fitted, not found**. D-He3 on a line that fills is run in
   [`plasma-input-box.md`](plasma-input-box.md#the-fitted-rule-beside-the-line-that-fills)
-  (#587): beside 48 heaters, with the box or boxes taken before the bank, both in build
-  order, and each heater pushing twice before the next, it misses none of 594 000 ticks,
-  floored. That probe runs no other
+  (#587): beside 48 heaters, with the boxes and the bank taken in the order they were built,
+  1H on a solo line and 1H2 on a pair, and each heater pushing twice before the next, it
+  misses none of 594 000 ticks, floored. That probe runs no other
   rounding.
 
 **The 1.28×10⁻⁵ excess and the factor's gap have one cause on this reading.** The same
@@ -1539,8 +1539,8 @@ Stated plainly, because this repository treats an unverified claim as a defect.
   fill: floored. With two reactors on one segment it misses no tick in one order of the six,
   and which order that is follows the order the three were built in (#572, #583). It is still
   fitted, not found. Beside a D-He3 line that fills, with 48 heaters, it misses none of
-  594 000 ticks more, with the boxes and then the bank taken in build order (#586, #587,
-  2026-10-18).
+  594 000 ticks more, with the boxes and the bank taken in the order they were built (#586,
+  #587, 2026-10-18).
   Factorio 2.0.77, 2026-10-04, 2026-10-05 and 2026-10-14.
 - **Whether a mod may add a sixth quality level is unknown.** FFF #375 refers to restrictions without
   stating them and no 2.0.77 doc page found in this pass covers it. Narrowed but not measured by
