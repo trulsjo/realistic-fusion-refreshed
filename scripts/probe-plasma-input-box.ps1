@@ -67,10 +67,11 @@
                           far the prediction is from the reading (#570); and, from that box's
                           temperature on the window's first tick, how many steps a box held full
                           and unheated takes to reach the floor.
-      with -Fixed         every tick, for the pair and for both: the fitted fixed-point rule run
-                          from the game's reading of one tick to the next, with the two boxes and
-                          the heater taken in each of the six orders (#572). A tick is a miss
-                          when any of the four predicted figures differs at all.
+      with -Fixed         every tick, for each solo cell, the pair and both: the fitted
+                          fixed-point rule run from the game's reading of one tick to the next,
+                          with the boxes and the heater bank taken in every order (#572), and a
+                          bank of more than one heater taken in four ways (#587). A tick is a
+                          miss when any predicted figure differs at all.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
@@ -107,7 +108,7 @@
 .PARAMETER Heaters
     rf-heater per cell, every one after the first three pipes further west along the run, as
     bench-mod-links.ps1 lays a bank (#586). The line then has -Pipes plus three per added heater.
-    -Fixed follows one heater and is refused with more.
+    -Fixed follows every heater (#587).
 
 .PARAMETER BuildOrder
     The order a two-reactor cell's three parts are placed in (#583): 1 the first reactor, H the
@@ -126,8 +127,9 @@
     Which two-reactor cell -Trace reads: pair, the default, or both (#560).
 
 .PARAMETER Fixed
-    Run the fitted fixed-point rule beside each two-reactor cell, one tick at a time, in every
-    order of the two boxes and the heater (#572). probe-plasma-segment.ps1 -Fixed is the same rule
+    Run the fitted fixed-point rule beside each heated cell, one tick at a time, in every order of
+    its boxes and the heater bank (#572), and with more than one heater in four orders of the bank
+    (#587). probe-plasma-segment.ps1 -Fixed is the same rule
     on one reactor. It is the input-output box's rule, so under the canary its misses are a reading.
 
 .PARAMETER NoCanary
@@ -188,7 +190,6 @@ if ($Trace -and ($traceTo -lt $traceFrom -or $traceTo -ge $Ticks)) { throw "-Tra
 $named = @($Rungs -split ',' | Where-Object { $_ } | ForEach-Object { ($_ -split '=')[0] })
 if ($named.Count -ne @($named | Sort-Object -Unique).Count) { throw "-Rungs names a ladder twice: $Rungs" }
 $rungsLua = if ($Rungs) { '{ ' + (($Rungs -split ',') -join ', ') + ' }' } else { 'nil' }
-if ($Fixed -and $Heaters -gt 1) { throw "-Fixed follows one heater, and -Heaters is $Heaters." }
 if ($Every -ge $Ticks) { throw "-Every $Every is not less than -Ticks $Ticks, so no row would be sampled." }
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
@@ -380,18 +381,38 @@ end
 -- boxes, and the order the engine takes the three in is what is being read, so all six are run.
 __FIXEDRULE__
 local UNITS = rf_fixed_units
-local ORDERS = { "H12", "H21", "1H2", "2H1", "12H", "21H" }
+-- A solo cell has one box, so two orders; since #587 it is run too, for the D-He3 line that fills.
+local ORDERS = { { "H1", "1H" }, { "H12", "H21", "1H2", "2H1", "12H", "21H" } }
+-- HOW A BANK IS TAKEN (#587). One heater's output box pushes twice. With more, which heater comes
+-- first, and whether each pushes twice before the next or the bank is gone through twice, is not
+-- known, so four are run: heaters in build order (1 nearest the reactor) or reversed, each twice
+-- in a row or the whole bank twice. With one heater they are one, and are not named.
+local BANKS = {}
+do
+  local fwd, rev = {}, {}
+  for j = 1, HEATERS do fwd[j], rev[HEATERS + 1 - j] = j, j end
+  for _, bank in ipairs(HEATERS == 1 and { "" } or { "/fwd", "/rev", "/pass", "/revpass" }) do
+    local list, seq = bank:find("rev") and rev or fwd, {}
+    for _, j in ipairs(list) do
+      seq[#seq + 1] = j
+      if not bank:find("pass") then seq[#seq + 1] = j end
+    end
+    if bank:find("pass") then for j = 1, HEATERS do seq[#seq + 1] = list[j] end end
+    BANKS[#BANKS + 1] = { name = bank, seq = seq }
+  end
+end
 local function fixed_flow(from, from_volume, to, to_volume)
   return rf_fixed_flow(math.floor, from, from_volume, to, to_volume)
 end
---- One engine tick from `fx` (2^-24 units), the heater (H) and the boxes (1, 2) taken in `order`:
---- where it ends, and what each box pushed into the segment on the way.
-local function fixed_step(order, fx)
-  local box, seg, heater, pushed = { fx.box[1], fx.box[2] }, fx.segment, fx.had, {}
+--- One engine tick from `fx` (2^-24 units), the heater bank (H, its heaters in `seq`) and the
+--- boxes (1, 2) taken in `order`: the boxes, the segment and each heater where it ends, in that
+--- order, and what each box pushed into the segment on the way.
+local function fixed_step(order, seq, fx)
+  local box, seg, heater, pushed = { table.unpack(fx.box) }, fx.segment, { table.unpack(fx.had) }, {}
   for who in order:gmatch(".") do
     if who == "H" then
-      for _ = 1, 2 do
-        local give = fixed_flow(heater, fx.H, seg, fx.C); heater, seg = heater - give, seg + give
+      for _, j in ipairs(seq) do
+        local give = fixed_flow(heater[j], fx.H, seg, fx.C); heater[j], seg = heater[j] - give, seg + give
       end
     else
       local k = tonumber(who)
@@ -400,7 +421,10 @@ local function fixed_step(order, fx)
       local pull = fixed_flow(seg, fx.C, box[k], fx.V); box[k], seg = box[k] + pull, seg - pull
     end
   end
-  return { box[1], box[2], seg, heater }, pushed
+  local told = { table.unpack(box) }
+  told[#told + 1] = seg
+  for _, h in ipairs(heater) do told[#told + 1] = h end
+  return told, pushed
 end
 
 __RIGBUILD__
@@ -493,7 +517,7 @@ local function build(surface, force, ox, label, pipe_count, bridge, both, chain)
     end
   end
   cell.reactors, cell.run, cell.sides[1] = { first }, run, run[1]
-  -- The first heater is the one the fixed-point rule follows; with more than one it is not run.
+  -- Every heater shares one output box index and capacity, so the first's stand for the bank's.
   cell.heater, cell.heater_box, cell.heaters = heaters[1], rf_box_of(heaters[1], PLASMA), heaters
   for _, s in ipairs(seconds) do
     local second = s.reactor
@@ -654,40 +678,54 @@ script.on_event(defines.events.on_tick, function()
   end
 
   for _, cell in ipairs(FIXED and storage.cells or {}) do
-    if cell.heater and #cell.reactors == 2 then
+    -- Every heated cell of one reactor or two; the trio is not followed.
+    if cell.heaters and #cell.reactors <= 2 then
       local fx = cell.fx
-      local out = cell.heater.fluidbox[cell.heater_box]
-      local held, crafts = (out and out.amount or 0) * UNITS, cell.heater.products_finished
-      local segment = segment_of(cell.span[1]) * UNITS
+      local boxes = #cell.reactors
+      local held, crafts = {}, {}
+      for j, heater in ipairs(cell.heaters) do
+        local out = heater.fluidbox[cell.heater_box]
+        held[j], crafts[j] = (out and out.amount or 0) * UNITS, heater.products_finished
+      end
+      -- A solo cell has no bridge, so its segment is read through the heater's run.
+      local segment = segment_of((cell.span or cell.run)[1]) * UNITS
       if fx then
-        fx.had = fx.held + (crafts - fx.crafts) * storage.per_craft * UNITS
-        local seen = { pre[cell.at[1]] * UNITS, pre[cell.at[2]] * UNITS, segment, held }
+        fx.had = {}
+        for j = 1, HEATERS do fx.had[j] = fx.held[j] + (crafts[j] - fx.crafts[j]) * storage.per_craft * UNITS end
+        local seen = {}
+        for k = 1, boxes do seen[k] = pre[cell.at[k]] * UNITS end
+        seen[#seen + 1] = segment
+        for j = 1, HEATERS do seen[#seen + 1] = held[j] end
         for _, reading in ipairs(seen) do
           if reading ~= math.floor(reading) then fx.off_grid = fx.off_grid + 1 end
         end
         local phase = fx.brimmed and "full" or "filling"
         fx[phase] = fx[phase] + 1
-        for _, order in ipairs(ORDERS) do
-          local told, pushed = fixed_step(order, fx)
-          local off, m = 0, fx[phase .. order]
-          for n = 1, 4 do off = math.max(off, math.abs(told[n] - seen[n])) end
-          -- What the order has each box push, whether or not it fits: an order that fits says
-          -- which box gives its own plasma to the line.
-          for k = 1, 2 do m.pushed[k] = m.pushed[k] + pushed[k] end
-          if off > 0 then
-            m.missed, m.first = m.missed + 1, m.first or tick
-            if off > m.worst then m.worst = off end
+        for _, order in ipairs(ORDERS[boxes]) do
+          for _, bank in ipairs(BANKS) do
+            local told, pushed = fixed_step(order, bank.seq, fx)
+            local off, m = 0, fx[phase .. order .. bank.name]
+            for n = 1, #seen do off = math.max(off, math.abs(told[n] - seen[n])) end
+            -- What the order has each box push, whether or not it fits: an order that fits says
+            -- which box gives its own plasma to the line.
+            for k = 1, boxes do m.pushed[k] = m.pushed[k] + pushed[k] end
+            if off > 0 then
+              m.missed, m.first = m.missed + 1, m.first or tick
+              if off > m.worst then m.worst = off end
+            end
           end
         end
       else
         fx = { filling = 0, full = 0, off_grid = 0, V = cell.reactors[1].fluidbox.get_capacity(1),
-          C = cell.span[1].fluidbox.get_capacity(1), H = cell.heater.fluidbox.get_capacity(cell.heater_box) }
+          C = (cell.span or cell.run)[1].fluidbox.get_capacity(1), H = cell.heater.fluidbox.get_capacity(cell.heater_box) }
         for _, phase in ipairs({ "filling", "full" }) do
-          for _, order in ipairs(ORDERS) do fx[phase .. order] = { missed = 0, worst = 0, pushed = { 0, 0 } } end
+          for _, order in ipairs(ORDERS[boxes]) do
+            for _, bank in ipairs(BANKS) do fx[phase .. order .. bank.name] = { missed = 0, worst = 0, pushed = { 0, 0 } } end
+          end
         end
         cell.fx = fx
       end
-      -- The state the next tick is predicted from: both boxes AFTER the mod's step.
+      -- The state the next tick is predicted from: each box AFTER the mod's step.
       fx.box, fx.brimmed = {}, true
       for k, reactor in ipairs(cell.reactors) do
         local plasma = reactor.fluidbox[1]
@@ -697,11 +735,13 @@ script.on_event(defines.events.on_tick, function()
       fx.segment, fx.held, fx.crafts = segment, held, crafts
       if sample then
         for _, phase in ipairs({ "filling", "full" }) do
-          for _, order in ipairs(ORDERS) do
-            local m = fx[phase .. order]
-            say("fixed cell=%s tick=%d phase=%s order=%s ticks=%d missed=%d first=%s worst=%.17g off_grid=%d push1=%.17g push2=%.17g",
-              cell.label, tick, phase, order, fx[phase], m.missed, tostring(m.first or "never"),
-              m.worst / UNITS, fx.off_grid, m.pushed[1] / UNITS, m.pushed[2] / UNITS)
+          for _, order in ipairs(ORDERS[boxes]) do
+            for _, bank in ipairs(BANKS) do
+              local m = fx[phase .. order .. bank.name]
+              say("fixed cell=%s tick=%d phase=%s order=%s ticks=%d missed=%d first=%s worst=%.17g off_grid=%d boxes=%d push1=%.17g push2=%.17g",
+                cell.label, tick, phase, order .. bank.name, fx[phase], m.missed, tostring(m.first or "never"),
+                m.worst / UNITS, fx.off_grid, boxes, m.pushed[1] / UNITS, m.pushed[2] / UNITS)
+            end
           end
         end
       end
@@ -856,9 +896,13 @@ function Write-Fixed {
         Write-Host ("  === {0}: the fitted fixed-point rule, one tick at a time, to tick {1}; {2} reading(s) were not whole 2^-24 units" -f
             $cell, $at, $of[-1]['off_grid'])
         Write-Host '  an order names what the rule takes first: H the heater, 1 the first reactor, 2 the second'
+        if ($Heaters -gt 1) {
+            Write-Host '  and after the slash how H takes the bank: fwd and rev heater 1 (nearest the reactor) first or last, each pushing twice in a row; pass and revpass the same, the whole bank twice'
+        }
         foreach ($f in ($of | Where-Object { $_['tick'] -eq $at })) {
-            Write-Host ("    {0}, {1,-7}: missed {2} of {3} ticks, first on {4}, worst {5:E2} units; it has box 1 push {6:F4} units and box 2 {7:F4}" -f
-                $f['order'], $f['phase'], $f['missed'], $f['ticks'], $f['first'], (Num $f['worst']), (Num $f['push1']), (Num $f['push2']))
+            $second = if ($f['boxes'] -eq '2') { ' and box 2 {0:F4}' -f (Num $f['push2']) } else { '' }
+            Write-Host ("    {0}, {1,-7}: missed {2} of {3} ticks, first on {4}, worst {5:E2} units; it has box 1 push {6:F4} units{7}" -f
+                $f['order'], $f['phase'], $f['missed'], $f['ticks'], $f['first'], (Num $f['worst']), (Num $f['push1']), $second)
         }
     }
 }
