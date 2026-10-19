@@ -77,7 +77,7 @@ of 2×10⁹), the D-D reactor beside it is unchanged, both sold energy over the 
 > #620).** 2×10⁹ °C was the clamp of the time, which #58 moved to 5×10⁹ on 2026-08-25 (ADR 0025),
 > and the 37.1× was taken on a model with no radiation term, which #52 added.
 > [`docs/research/d-t-ignition.md`](../research/d-t-ignition.md) marks the same transcript under
-> *In the game*, and its `## Current figures` table has one later reading from this rig:
+> *In the game*, and its `## Current figures` table has two later readings from this rig:
 > `scripts/check-d-t.ps1` sees the D-T plasma at 3.13×10⁹ °C (2026-08-25, Factorio 2.0.77), and
 > 3.188×10⁹ °C on 2026-10-19 at the top of all three research ladders (#445). That
 > note has no later 37.1×, and this ADR records no later run with the expansion enabled. **The

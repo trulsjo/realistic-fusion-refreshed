@@ -720,7 +720,7 @@ script.on_nth_tick(60, function(event)
     -- and a construction robot does the work; a benchmark map has no roboport, so the row above is
     -- a row of ORDERS and sections 1, 2, 3 and 6 would be unanswered if this stopped there. This
     -- does it directly with a fast replace, on the reasoning that a robot does the same -- which
-    -- section 8 tested (#408): read again 600 ticks on, the two agree on every box.
+    -- section 8 tested (#408): read again long after the swap, the two agree on every box.
     -- 3. FILL THE BOXES FIRST, or "what happens to the fluid" is answered about nothing. Every box
     -- gets whatever its own filter says it takes, found rather than assumed: the three families
     -- here are two contained energies and water/steam, and a hard-coded fluid name would silently
