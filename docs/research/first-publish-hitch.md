@@ -23,7 +23,10 @@
 > | *n* = 4, three reactors moved to three unresearched forces — four forces, ONE key | 12 | **147 ms** | 115 – 228 |
 > | *n* = 4, the three on forces holding 1, 2 and 3 confinement rungs — FOUR keys | 12 | **564 ms** | 490 – 962 |
 >
-> The spike is tick 30 in every run, as before; the median of the 141 runs' own median ticks is
+> In the dumps kept from each variant's last round, tick 30 is the worst tick of every run, except
+> under the surfaces and map variants, whose worst is tick 7 — the generation the variant itself
+> does there, before the first publish; the earlier rounds' dumps were overwritten and read only
+> at tick 30. The median of the 141 runs' own median ticks is
 > 16.1 µs (9.3 to 38.1), so the spike is still thousands of times the ordinary tick. One round of the
 > research variant did not run — the harness's load reading failed before launch — so it has
 > nine runs.
