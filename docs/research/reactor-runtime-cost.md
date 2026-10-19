@@ -2367,7 +2367,7 @@ and a property read, and none of them builds a table.
 > **The four-plasma assumption below is replaced rather than confirmed.** The bound needed the
 > neutronic delta on the `-Mixed` rig to equal the one-plasma rig's. With each entity measured on
 > a fleet of its own, the bound is no longer needed, and the D-D fleet reads +0.689 in this sitting
-> against #430's +0.833: same arms, three weeks apart. Put through the bound's own arithmetic, 110
+> against #430's +0.833: same arms, four weeks apart. Put through the bound's own arithmetic, 110
 > reactors at +0.689 and 90 at +0.273 average +0.50 µs over 200, against the +0.391 the `-Mixed`
 > lane read on 2026-09-20. **`-Mixed` was not re-taken in this sitting**, so that comparison spans
 > two sittings and says only that the bound's "indistinguishable from zero" was the noise of a
