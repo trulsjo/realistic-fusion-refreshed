@@ -55,6 +55,10 @@
                           is a difference between two readings rather than one reading against a
                           prediction, which is what #390 asks for.
       exchanger-north-*   THE REACTOR CONTACT, standing alone.
+      reactor-south-*     rf-reactor's south energy face, and aneutronic-south-* the aneutronic
+                          reactor's (#403). The cover is the only art on both, and ADR 0036 names
+                          the first, photographed bare, as what must be measured before the cover
+                          is ever dropped.
       exchanger-bolted-*  The same connection with a reactor actually bolted to it, which is how a
                           player meets that face. Whether the miss shows there IN PRACTICE is a
                           question about what covers what, and only this frame answers it.
@@ -280,10 +284,15 @@ script.on_nth_tick(60, function()
     local e = place(surface, s.name, x, 0.5)
     local west = connection_facing(e, "west")
     local north = connection_facing(e, "north")
+    -- The south face too, on the two reactors only (#403): ADR 0036 names rf-reactor's south energy
+    -- face, bare, as what must be photographed before the cover is ever dropped, and
+    -- rf-aneutronic-reactor's is the other face the cover is the only art on.
+    local south = (s.key == "reactor" or s.key == "aneutronic") and connection_facing(e, "south") or nil
     storage.subjects[#storage.subjects + 1] = {
       key = s.key, name = s.name, x = x, y = 0.5, w = w, h = h,
       west = west and { x = west.position.x, y = west.position.y } or nil,
       north = north and { x = north.position.x, y = north.position.y } or nil,
+      south = south and { x = south.position.x, y = south.position.y } or nil,
     }
     say(string.format("%s at %g,%g, %dx%d tiles", s.name, x, 0.5, w, h))
     x = x + math.max(w, 24) + 16
@@ -333,6 +342,7 @@ script.on_event(defines.events.on_tick, function()
   for _, s in ipairs(storage.subjects) do
     if s.west then pair_of_shots(s.key .. "-west", s.west.x, s.west.y) end
     if s.north then pair_of_shots(s.key .. "-north", s.north.x, s.north.y) end
+    if s.south then pair_of_shots(s.key .. "-south", s.south.x, s.south.y) end
     -- The whole machine at zoom 1 as well, so a reader can see where the close frames were cut.
     tiles_shot(s.key .. "-whole-z1.png", s.x, s.y, s.w + 6, s.h + 6, 1, 0)
   end

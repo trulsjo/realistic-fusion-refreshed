@@ -116,6 +116,11 @@ face photographed bare. #390 photographed its west plasma face and its north ene
 one, so the claim that a Krastorio 2 machine looks no worse without its cover does not yet cover the
 face that depends on it.
 
+> **Photographed bare, 2026-10-19 (#403).** Without its cover, `rf-reactor`'s south face shows the
+> Krastorio 2 sprite's own port; see `docs/research/pipe-cover-miss.md`, *On the levelled sheets*.
+> The same re-run measured the levelled cover concentric to within 0.009 tiles. Neither reopens
+> this decision; they are what it asked to have measured.
+
 `contain()` in `realistic-fusion-refreshed/prototypes/entities.lua` marks every contained box and is
 the only place that does. It stays the chokepoint where this would be applied once rather than ten
 times.
