@@ -98,7 +98,7 @@ same step the commit hook already asks for — and the fetcher caches under `.mo
 directory it runs in, so run it from the repository root. Since #458 `factorio-lib.ps1` takes the
 same harness for every script that sources it, so every gate here needs the submodule, the one that
 starts no game (`ship-check.ps1`) included. From #462 until #608 none of the harness's functions
-was defined a second time in this repo. **Five are again since #608's pin**, tools `733821b`
+was defined a second time in this repo. **Five are again since #608's pin**, `733821b`
 (2026-10-12): `Get-ModLinks`, `Get-LocaleFailure`, `Invoke-FactorioStep`, `Invoke-SelfTestHalves`
 and `Test-SelfTestRunner`, which the tools repository took from `scripts/factorio-lib.ps1`
 (grado-factorio-tools#100). That file defines its own after it sources the harness, so its own are
