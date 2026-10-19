@@ -312,7 +312,8 @@ reproduction of anything. That paragraph now carries a note saying so.
 ADR 0005 is the one that matters most, because a superseded figure left standing in a permanent
 decision record reads as deliberate — [#230][230]'s lesson, recorded in `docs/agents/code-review.md`.
 Its verdict survives and its numbers do not. Re-taking any of these is [#327][327], and a decision
-about a published record rather than a correction to a script.
+about a published record rather than a correction to a script. *(#327 re-took the #67 sitting on
+2026-10-19 and ADR 0005 now carries its figures; the #72 row above was not re-taken.)*
 
 ### What the spike is — answered 2026-09-13
 

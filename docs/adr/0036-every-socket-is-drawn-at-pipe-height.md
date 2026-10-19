@@ -105,7 +105,7 @@ thing that could change:
 - It is the only art on two machines' south energy face. `realistic-fusion-refreshed/prototypes/entities.lua`
   says so at `rf-reactor`'s `output_fluid_box` — *"The south socket is drawn by pipe_covers, the
   same as the north one has always been."* — and again, without the last three words, at
-  `rf-aneutronic-reactor`'s. Both still wear Krastorio 2 or mockup art.
+  `rf-aneutronic-reactor`'s. Both still wear Krastorio 2 or mockup art. *(Not so on `rf-reactor`, photographed bare on 2026-10-19 (#403): its Krastorio 2 sprite draws a port of its own on that face. The aneutronic reactor's, a mockup, was not looked at.)*
 - Removing it is one line per box at `contain()` and is reversible; re-adding art to a machine that
   lost it is not.
 
@@ -193,7 +193,7 @@ can ever arrive, so nothing should be drawn as though one might. #390 establishe
 permits it: 2.0.77 strips `pipe_covers` from all 12 contained boxes, loads, draws nothing in their
 place and logs zero Error and zero Warning lines across 113 lines. Rejected on two counts. It leaves
 the socket at an unchosen height, which is the thing this ticket exists to settle; and it removes
-the only art on two machines' south energy face, on evidence that never photographed either of them.
+the only art on two machines' south energy face, on evidence that never photographed either of them. *(Not so on `rf-reactor`, photographed bare on 2026-10-19 (#403): its Krastorio 2 sprite draws a port of its own on that face. The aneutronic reactor's, a mockup, was not looked at.)*
 
 **Leave it.** The miss is 12 px at zoom 1 and only on an unconnected machine — in a built factory a
 contained connection is bolted to a reactor and the cover is hidden. Rejected because the miss was

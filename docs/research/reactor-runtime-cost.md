@@ -57,7 +57,7 @@ same sitting, and this table holds no later per-reactor cost for those configura
 | Shipped D-D step with the lookup, vented rig, *n* = 200, median of nine rounds | 5.257 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [The sitting](#the-sitting) |
 | The same step without the lookup (parent of the #425 commit), median of nine rounds | 4.424 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [The sitting](#the-sitting) |
 | `luaGarbageIncremental`, D-D rig with the lookup, *n* = 200, nine rounds | 0.1108 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [Nothing allocates](#nothing-allocates) |
-| What the lookup added on the `-Mixed` rig, 110 `rf-reactor` and 90 `rf-aneutronic-reactor` | +0.391 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [The aneutronic floor is bounded, not measured](#the-aneutronic-floor-bounded-by-430-measured-by-436) |
+| What the lookup added on the `-Mixed` rig, 110 `rf-reactor` and 90 `rf-aneutronic-reactor` | +0.391 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [The aneutronic floor: bounded by #430, measured by #436](#the-aneutronic-floor-bounded-by-430-measured-by-436) |
 | What #425 and its fixes added on a single-reaction `rf-aneutronic-reactor` fleet, D-He3, *n* = 200, paired alternating arms in one sitting, median of ten rounds | +0.273 µs per reactor | 2026-10-19 | 2.0.77 | unresearched (the rig researches nothing; not asserted) | [The aneutronic floor: bounded by #430, measured by #436](#the-aneutronic-floor-bounded-by-430-measured-by-436) |
 | The same arms on a single-reaction D-D fleet, same sitting | +0.689 µs per reactor | 2026-10-19 | 2.0.77 | unresearched (the rig researches nothing; not asserted) | [The aneutronic floor: bounded by #430, measured by #436](#the-aneutronic-floor-bounded-by-430-measured-by-436) |
 | The lookup's +0.83 µs as a share of a 16.67 ms tick at 200 reactors | 1.0% | 2026-09-20 | 2.0.77 | not stated | [What is not taken](#what-is-not-taken) |
@@ -1858,13 +1858,18 @@ asks for.
 
 **The mod is #67's, and only the harness is today's.** The sitting ran in a `git worktree` of
 `89a9f4e` — the commit that recorded #67, whose mods are the ones #67 measured, before #72 added
-per-tick confinement spending — with this branch's `scripts/bench-reactors.ps1` and
-`scripts/factorio-lib.ps1` copied in. So the only difference from the table above is the
-harness, and the drop is what the census fix did and nothing else. The same two commands as
+per-tick confinement spending — with `scripts/bench-reactors.ps1` and `scripts/factorio-lib.ps1`
+as of `c7bde68` copied in. So the mod is the same as in the table above and the harness is not.
+**That the drop is the census fix is inferred, not isolated**: the harness has changed in other ways
+since `89a9f4e`, and the sitting is six weeks later on a machine in a different state. The size of
+the drop matching #235's 2.18 µs is what the inference rests on. The same two commands as
 *Method*, nine runs a count, statistic as ADR 0037 settles it: the pooled mean over surviving runs.
 
 **No launch flagged `BUSY`** — 44%, 17% and 9% of the part in other hands on the borrowed base, 15%,
-6% and 7% on the rig — and no run was flagged as stalled, so nothing was discarded. An earlier
+6% and 7% on the rig — and no run was flagged as stalled, so nothing was discarded. The 44% is the
+*n* = 0 launch on the borrowed base, the subtrahend under that column, and it is checked only this
+far: its `scriptUpdate` mean is 8.93 µs over runs of 7.2 to 10.5, against 8.82 in the discarded
+attempt below, whose launch read 72%. An earlier
 attempt the same morning is not quoted: two of its borrowed-base launches flagged `BUSY` at 72% and
 68%. Both sweeps passed every gate: 200 of 200 reactors hot, powered and burning `rf-d-d-plasma`,
 every collector holding fluid, every blanket breeding, the fullest tritium box at 2.1%.
@@ -1907,7 +1912,9 @@ estimate of about 1.31 said. The two are also three days of commits apart (`2e44
 
 **There is no factory penalty.** 7.01 µs against the rig control's 6.33 is a ratio of **1.11**, well
 inside the 1.35× floor this note has recorded since #39 — which is to say the same number.
-`wholeUpdate` corroborates independently at 8.23 against 7.01, a ratio of 1.17, also inside it. A
+`wholeUpdate` corroborates independently at 8.23 against 7.01, a ratio of 1.17, also inside it
+*(not on the 2026-10-19 re-take, #327, where the base's own drift put it at −2.25 µs per reactor; see
+[Re-taken at the corrected cadence](#re-taken-at-the-corrected-cadence-2026-10-19-327))*. A
 reactor costs what a reactor costs, and an engine already spending 10.8 ms of its tick does not make
 it cost more.
 
@@ -1923,7 +1930,7 @@ columns above are apples to apples.
 > same day.** So 5.44 is clean and this section's 6.33 is inflated by about 2.2 µs. Corrected, the
 > pair is nearer 5.44 against 4.15 — about **1.31×**, still under the 1.35× floor but against it
 > rather than inside it, and not a reproduction. **The 1.16× is withdrawn; what replaces it is a
-> measurement nobody has taken.** The two columns above remain apples to apples with each other,
+> measurement nobody has taken.** *(Taken 2026-10-19, #327: 5.44 against 4.07, 1.34×.)* The two columns above remain apples to apples with each other,
 > since both come from the #67 sitting and are inflated alike — it is only the cross-check against
 > #62 that mixes clean with contaminated. See [`borrowed-base.md`](borrowed-base.md) and
 > [#327](https://github.com/trulsjo/realistic-fusion-refreshed/issues/327).
@@ -2021,7 +2028,10 @@ the physics on, which is the question the ADR pre-authorised a coarser cadence f
 That range is the loaded-tick figure's, and ADR 0005 records **0.3% to 1.6%** for the same ten to
 fifty reactors. **The two are one claim, not two.** The first comes from this sweep's 7.01 µs and the
 second from #62's 5.44; the ratio between them is 1.29, inside the floor, so they are the same number
-scaled the same way. Quote whichever, and expect the other.
+scaled the same way. Quote whichever, and expect the other. *(Marked 2026-10-19, #327: the re-taken
+loaded figure is 1.43% at fifty reactors, from 4.78 µs, below #62's 1.6% on the rig rather than
+above it; the two are still inside one floor of each other, and #62's range stays the one this
+note's table carries.)*
 
 **Two shares, two statistics, and they are not one claim.** The 8.41% is this mod's Lua as a *mean*
 over every tick, which is what UPS spends. What the megabase's *median* tick did is smaller: 64.8%
@@ -2322,13 +2332,15 @@ and a property read, and none of them builds a table.
 > gave `bench-reactors.ps1` `-Reaction`, so a fleet of 200 `rf-aneutronic-reactor` burning D-He3
 > could be built (`-Reaction d-he3 -Counts 0,200`) and its census gate refuses a run that burned
 > anything else. The same two trees as below — `227eb9d` with the lookup, `33ba491` without, as
-> `git worktree` checkouts with this branch's `bench-reactors.ps1` and `factorio-lib.ps1` copied
+> `git worktree` checkouts with `bench-reactors.ps1` and `factorio-lib.ps1` as of `c7bde68` copied
 > into both, so the rig is byte-identical across arms — alternated within each round, the arm that
 > went first alternating between rounds, and a single-reaction D-D fleet measured in the same rounds.
 >
-> **Twenty rounds were run and the first ten are discarded as a block.** Six of those ten, in
-> each lane, had an arm flag `BUSY` — other sessions on the machine — so dropping each in both
-> arms left six D-He3 pairs and four D-D pairs, short of ten. Rounds 11 to 20 followed at once, in
+> **Twenty rounds were run and the first ten are discarded as a block.** Four of those ten in the
+> D-He3 lane and six in the D-D lane had an arm flag `BUSY` — other sessions on the machine — so
+> dropping each in both arms left six D-He3 pairs and four D-D pairs, short of ten. Those six
+> D-He3 pairs did not all go one way: rounds 6 and 7 read −0.04 and −0.14, and their median is
+> about +0.13 — which is part of why ten clean pairs were wanted rather than six. Rounds 11 to 20 followed at once, in
 > the same sitting, with no arm flagged `BUSY`, and they are the measurement:
 >
 > | fleet | arm | µs per reactor, rounds 11 to 20 | median |
@@ -2339,13 +2351,13 @@ and a property read, and none of them builds a table.
 > | D-D | with it | 4.830 4.907 4.879 4.891 5.057 5.167 5.589 5.089 5.071 5.053 | **5.055** |
 >
 > **The aneutronic delta is +0.273 µs and the D-D one +0.689.** On D-D the bands do not touch
-> (fastest with, 4.830; slowest without, 4.466). On D-He3 they overlap by one round — 4.142
-> without against 4.090 with — but every one of the ten pairs went the same way, from +0.18 to
-> +0.43. So the floor is about two fifths of the neutronic figure, not nothing.
+> (fastest with, 4.830; slowest without, 4.466). On D-He3 they overlap: four of the ten rounds
+> with the lookup read below the slowest round without it, 4.142. But every one of the ten pairs
+> in rounds 11 to 20 went the same way, from +0.18 to +0.43. So the floor is about two fifths of the neutronic figure, not nothing.
 >
 > **What it is spent on is not attributed.** The aneutronic path never reads `force_index`;
-> `spec_for()` returns at `HAS_SPEC_LADDER`. The arms differ by the whole #425 commit and the
-> four fixes after it, so the 0.27 is that difference on this entity, and the argument for which
+> `spec_for()` returns at `HAS_SPEC_LADDER`. The arms differ by every commit from the #425
+> commit to `227eb9d`, fixes and a docs commit that also touches `entities.lua` among them, so the 0.27 is that difference on this entity, and the argument for which
 > line pays it is an argument, as it is for the D-D figure below.
 >
 > **Nothing allocates.** `luaGarbageIncremental`, same rounds, medians per reactor: D-He3 0.0902

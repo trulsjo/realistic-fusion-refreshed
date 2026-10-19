@@ -88,10 +88,11 @@
     IT RUNS RESEARCHED EXCEPT FOR CONFINEMENT, AND SINCE #445 IT SAYS SO. on_init researches
     everything and then puts the confinement ladder back down, so every rf-reactor here holds every
     rung of plasma heating and plant efficiency and none of confinement, and the check tick asserts
-    exactly that, rung by rung. ITS RATIOS DO NOT MOVE WITH RESEARCH, THE AMOUNTS DO: breeding
-    follows the neutron count and the neutron count follows the reaction rate, so the tritium bred
-    and the energy sold are this state's, while a ratio of the two is what the confinement ladder
-    could be put down for.
+    exactly that, rung by rung. ITS FIGURES MOVE WITH RESEARCH, the breeding ratio excepted:
+    breeding follows the neutron count and the neutron count follows the reaction rate, so the
+    tritium bred and the energy sold are this state's, and the blanket's energy uplift moves with
+    temperature, which heating moves. What the confinement ladder could be put down for is the
+    ratio this rig gates on.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.

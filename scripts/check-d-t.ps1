@@ -39,7 +39,9 @@
     so both reactors here hold every rung of all three of rf-reactor's ladders -- confinement, plasma
     heating and plant efficiency -- and the check tick asserts that rung by rung. THE FIGURES IT
     PUBLISHES MOVE WITH RESEARCH: the D-T temperature docs/research/d-t-ignition.md quotes from this
-    rig is a fully researched reactor's, not the shipped entry state's.
+    rig is a researched reactor's, not the shipped entry state's -- its 2026-08-25 reading at the
+    top of the only ladder that then existed, confinement, and its 2026-10-19 one at the top of all
+    three.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.

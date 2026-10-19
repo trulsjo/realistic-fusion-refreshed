@@ -1,4 +1,4 @@
-# The hitch on the first circuit publish (104 to 142 ms, re-measured 2026-10-01)
+# The hitch on the first circuit publish (104 to 142 ms per key in use, re-measured 2026-10-01)
 
 > **2026-10-19: IT SCALES WITH THE NUMBER OF KEYS IN USE AT LOAD, AND WITH NONE OF THE FOUR
 > OTHERS.** ([#409](https://github.com/trulsjo/realistic-fusion-refreshed/issues/409), at
@@ -19,18 +19,18 @@
 > | surface 1 generated out to 3 025 chunks | 12 | **148 ms** | 115 – 294 |
 > | 50 more forces (53 in all) | 12 | **135 ms** | 118 – 153 |
 > | the player's force researched everything | 9 | **141 ms** | 113 – 244 |
-> | control, *n* = 4 | 24 | **134 ms** | 115 – 176 |
+> | control, *n* = 4 | 24 | **132 ms** | 115 – 176 |
 > | *n* = 4, three reactors moved to three unresearched forces — four forces, ONE key | 12 | **147 ms** | 115 – 228 |
 > | *n* = 4, the three on forces holding 1, 2 and 3 confinement rungs — FOUR keys | 12 | **564 ms** | 490 – 962 |
 >
-> The spike is tick 30 in every run, as before; the median tick across all 141 runs is 16.0 µs
-> (9.3 to 38.1), so the spike is still thousands of times the ordinary tick. One round of the
+> The spike is tick 30 in every run, as before; the median of the 141 runs' own median ticks is
+> 16.1 µs (9.3 to 38.1), so the spike is still thousands of times the ordinary tick. One round of the
 > research variant did not run — the harness's load reading failed before launch — so it has
 > nine runs.
 >
 > **Surface count, map size, force count and technology state do not move it**: each median sits
 > inside the controls' own spread, with two or more rounds of three behind it. **What moves it is
-> the number of distinct keys in use**: four confinement states cost **4.2×** the *n* = 4 control,
+> the number of distinct keys in use**: four confinement states cost **4.3×** the *n* = 4 control,
 > which is four sweeps for four keys, paid together on one tick. Four forces at one state cost one
 > sweep, so it is the keys and not the forces. That is what keying `curves` on prototype,
 > confinement, heating and plasma predicts, and what #480 measured one rung at a time mid-game; this
@@ -316,6 +316,37 @@ otherwise pauses and never reaches the tick. Create `write-data/saves` first; th
 without it. Kill the server once `write-data/saves/ran.zip` appears. Start every Factorio call
 with `Start-Process -Wait`: a bare `&` returns before the GUI binary exits, and the next call
 then hits the lock file.
+
+**The #409 runs** reuse a directory kept by `pwsh -Command "& ./scripts/bench-reactors.ps1
+-Counts 0,1,4 -Ticks 200 -Runs 1 -KeepTemp"`. For each variant, append to the kept
+`mods/rf-bench-rig/control.lua` a `script.on_nth_tick(7, ...)` handler that acts only on tick 7,
+junction the three mods back into `mods/`, and run `--benchmark` on `n1.zip` (or `n4.zip`) with
+`--benchmark-ticks 200 --benchmark-runs 3 --benchmark-verbose all`, restoring the original
+`control.lua` for each control run. The handler bodies, one per row of the banner's table:
+
+```lua
+-- surfaces: 50 more, one generated chunk radius each
+for i = 1, 50 do
+  local s = game.create_surface("v409-" .. i)
+  s.request_to_generate_chunks({ 0, 0 }, 1); s.force_generate_chunk_requests()
+end
+-- map: surface 1 generated out to radius 24 chunks
+game.surfaces[1].request_to_generate_chunks({ 0, 0 }, 24)
+game.surfaces[1].force_generate_chunk_requests()
+-- forces: 50 more
+for i = 1, 50 do game.create_force("v409-" .. i) end
+-- research
+game.forces.player.research_all_technologies()
+-- n = 4, one key: reactors 2..4 each to a fresh force, nothing researched
+-- n = 4, four keys: the same, force k also holding rf-plasma-confinement-1 .. k
+for k = 1, 3 do
+  local f = game.create_force("v409-" .. k)
+  for level = 1, k do f.technologies["rf-plasma-confinement-" .. level].researched = true end
+  storage.reactors[k + 1].force = f
+end
+```
+
+Each variant ran beside a control in each of four rounds; tick 30's `scriptUpdate` is the spike.
 
 **The #480 runs** reuse a directory kept by `pwsh -Command "& ./scripts/bench-reactors.ps1
 -Counts 2 -Ticks 600 -Runs 1 -KeepTemp"`. Append this to the kept `mods/rf-bench-rig/control.lua`,
