@@ -967,12 +967,15 @@ end
 -- AND THE CHEAP HALF WAS REMOVED ANYWAY: spec_for()'s short-circuit was a walk over
 -- logic.spec_ladders and is now one index into HAS_SPEC_LADDER, built at load. That is what an
 -- rf-aneutronic-reactor pays on this path in total, which is the case with the most reactors on a
--- settled map and the one with nothing per force to look up. A MIXED RIG BOUNDS IT AND DOES NOT
--- MEASURE IT: the same ten rounds with -Mixed put 110 rf-reactors beside 90 aneutronic ones and
--- read +0.39 microseconds averaged over all 200, where 110 reactors at the figure above would
--- already account for +0.46. The residue is negative and inside the noise, so the aneutronic
--- share is not distinguishable from zero -- which is the floor, bounded rather than measured,
--- because bench-reactors.ps1 cannot build an aneutronic-only fleet.
+-- settled map and the one with nothing per force to look up. ~~A MIXED RIG BOUNDS IT AND DOES NOT
+-- MEASURE IT~~ -- #430's -Mixed lane put the aneutronic share at "not distinguishable from zero".
+-- MEASURED SINCE (#436, 2026-10-19, Factorio 2.0.77), AND IT IS NOT ZERO: +0.27 microseconds per
+-- reactor on a fleet of 200 rf-aneutronic-reactors burning D-He3 (bench-reactors.ps1 -Reaction
+-- d-he3), 3.98 to 4.26, against the same two trees #430 swapped, ten alternated rounds, none busy.
+-- Every round's pair went the same way. The same sitting read the D-D fleet at +0.69, so the floor
+-- is about two fifths of the neutronic figure rather than nothing. What the 0.27 is spent on is not
+-- attributed: the arms differ by the whole #425 commit and its fixes, and the force_index read is
+-- not on the aneutronic path at all. See docs/research/reactor-runtime-cost.md.
 --
 -- WHAT IS NOT TAKEN, and it is a decision rather than an oversight: the draw could be hoisted onto
 -- storage.heating_spent's entries, so the per-tick loop reads a number it already holds instead of
