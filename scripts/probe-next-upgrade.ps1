@@ -33,7 +33,8 @@
     engine swaps cleanly -- probe-native-heat.ps1's header records a reactor-as-crafting-machine
     that loaded perfectly and then moved no fluid at all.
 
-    WHAT IT MEASURES, one section each: #396's six questions, and a seventh from #478:
+    WHAT IT MEASURES, one section each: #396's six questions, a seventh from #478 and an eighth
+    from #408:
 
       1. DOES THE SWAP HAPPEN between two entities differing only in energy_consumption, driven by
          an upgrade planner over an area the way a player drives one.
@@ -55,6 +56,14 @@
          its energy box. A lone exchanger, energy box full and a control saying no energy face reaches
          anything, is swapped, and the total across every holder is read before and after in one
          tick, so the answer is kept, moved or lost from two readings.
+      8. WHETHER A ROBOT DOES WHAT fast_replace DOES (#408). A second site with a roboport, robots
+         and tier-2 items in a storage chest: the planner's order is left for a robot, on a bolted
+         row and then on a lone machine, read the same way as 2 to 7 -- and a twin row, filled the
+         same and never ordered, is fast_replaced directly in the tick the robot's swap is seen, so
+         the two operations are compared from one state.
+
+    AND THE BLUEPRINT LEAD (#408) is asked in section 4 with the capture area held constant: two
+    fresh blueprints over one area, one before the order and one with it pending.
 
     THE SCRATCH TIER IS SCRATCH. #315 owns the shipped second tier and its capacity is not decided
     here, so the pair this stands up differs from rf-heat-exchanger in energy_consumption and in
@@ -69,8 +78,9 @@
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
 .PARAMETER Ticks
-    Ticks to run past the build. The planner is applied on a scheduled tick and the report follows
-    it, so this only needs to be long enough to contain both.
+    Ticks to run past the build. Since #408 the report waits for construction robots, which take
+    hundreds of ticks per swap, so the default is a minute of game time; a swap no robot performed
+    by then is reported UNANSWERED rather than waited for.
 
 .PARAMETER KeepTemp
     Keep the scratch mod directory and the save, for reading the rig's Lua or re-running by hand.
@@ -81,7 +91,7 @@
 [CmdletBinding()]
 param(
     [string] $FactorioExe,
-    [int]    $Ticks = 600,
+    [int]    $Ticks = 3600,
     [switch] $KeepTemp
 )
 
@@ -267,6 +277,33 @@ local function energy_total(es)
   return t
 end
 
+-- The union of some entities' bounding boxes, as an area, and its printed form.
+local function row_area(es)
+  local l, t, r, b = math.huge, math.huge, -math.huge, -math.huge
+  for _, e in ipairs(es) do
+    local bb = e.bounding_box
+    l, t = math.min(l, bb.left_top.x), math.min(t, bb.left_top.y)
+    r, b = math.max(r, bb.right_bottom.x), math.max(b, bb.right_bottom.y)
+  end
+  return { { l, t }, { r, b } }
+end
+local function area_text(a)
+  return string.format("%.1f,%.1f .. %.1f,%.1f", a[1][1], a[1][2], a[2][1], a[2][2])
+end
+
+-- What a fresh blueprint taken over AREA holds, as the sorted names of its entities. A fresh stack
+-- per capture, so nothing one capture left behind can be read as the other's.
+local function capture(surface, force, area, at)
+  local bp = surface.create_entity{ name = "item-on-ground", position = at, stack = { name = "blueprint" } }
+  if not (bp and bp.stack and bp.stack.valid_for_read) then return "NO BLUEPRINT STACK" end
+  bp.stack.create_blueprint{ surface = surface, force = force, area = area }
+  local names = {}
+  for _, e in ipairs(bp.stack.get_blueprint_entities() or {}) do names[#names + 1] = e.name end
+  table.sort(names)
+  bp.destroy()
+  return #names > 0 and table.concat(names, ",") or "nothing"
+end
+
 -- BOLT, borrowed from check-hc.ps1: place `name` so its `fluid` connection facing `side` STANDS ON
 -- `tile`, the other machine's target_position. Placed once at `seed` to ask where that connection
 -- is, destroyed, and placed again by the difference -- a remembered offset is a hostage to the next
@@ -281,6 +318,284 @@ local function bolt(surface, force, name, fluid, side, tile, seed)
                                    force = force, raise_built = true }
   if not e then error("probe-next-upgrade: could not bolt " .. name) end
   return e
+end
+
+-- THE ROW AND ITS TWO CONTROLS, one function so the direct swap and the robot site (#408) stand on
+-- the same geometry. PREFIX tells their lines apart; OX is the x of the reactor's centre.
+local function build_row(surface, force, t1, ox, prefix)
+  local function sayp(line) say(prefix .. line) end
+  -- A reactor, and a row of three chained short end to short end, BOLTED TO IT (#401). The
+  -- reactor sells energy north and south (ADR 0031), so the row stands south of it: row[2] -- the
+  -- one the swap is pointed at -- bolts its north energy face onto the reactor's south output,
+  -- and row[1] and row[3] chain off its west and east short ends. Until #401 the row was laid
+  -- east of the reactor, where the two share no face, and `reactor joins=-/-` in every run.
+  --
+  -- NOT raise_built for the reactor: control.lua then never hears of it and nothing fills or
+  -- drains its box but this rig, as in check-hc.ps1's plant.
+  local reactor = surface.create_entity{ name = "rf-reactor", position = { ox + 0.5, 0.5 },
+                                         force = force }
+  local south = connection_facing(reactor, ENERGY, "south")
+  if not south then error("probe-next-upgrade: rf-reactor has no south-facing energy output") end
+  sayp(string.format("geometry: rf-reactor south energy output at %.1f,%.1f targets %.1f,%.1f",
+                    south.position.x, south.position.y,
+                    south.target_position.x, south.target_position.y))
+  local seed = { ox + 0.5, 60.5 }
+  local row = {}
+  row[2] = bolt(surface, force, t1, ENERGY, "north", south.target_position, seed)
+  row[1] = bolt(surface, force, t1, ENERGY, "east",
+                connection_facing(row[2], ENERGY, "west").target_position, seed)
+  row[3] = bolt(surface, force, t1, ENERGY, "west",
+                connection_facing(row[2], ENERGY, "east").target_position, seed)
+  for i = 1, 3 do
+    sayp(string.format("geometry: row[%d] at %.1f,%.1f", i, row[i].position.x, row[i].position.y))
+  end
+
+  -- 1 + 2. What the joints look like BEFORE anything is swapped, so the after-reading is a
+  -- difference rather than a lone observation.
+  for i = 1, 3 do
+    sayp(string.format("before: row[%d] %s joins=%s contents=%s", i, row[i].name,
+                      joins(row[i]), contents(row[i])))
+  end
+  sayp("before: reactor joins=" .. joins(reactor))
+
+  -- THE CONTROL, AND IT COMES BEFORE THE SWAP. Every "after" line below is a DIFFERENCE, so a row
+  -- that was never joined in the first place would report a swap that broke nothing -- the same
+  -- confident wrong answer a rig gives whenever nothing in it had to succeed. If this line says
+  -- NOT JOINED, sections 2 and 6 are unanswered and the layout is what needs fixing, not the
+  -- conclusion.
+  local chained = 0
+  for i = 1, 2 do
+    for _, c in ipairs(row[i].fluidbox.get_pipe_connections(1)) do
+      if c.target and c.target.owner and c.target.owner.valid
+         and c.target.owner.unit_number == row[i + 1].unit_number then
+        chained = chained + 1
+      end
+    end
+  end
+  sayp("control: neighbouring pairs actually joined = " .. chained .. " of 2 -- " ..
+      (chained == 2 and "ROW IS CHAINED, the after-readings below are differences"
+                     or "ROW IS NOT CHAINED, so sections 2 and 6 are UNANSWERED"))
+
+  -- THE REACTOR CONTROL, the same guard for the joint #401 is about: a reactor joint that was
+  -- never made would report a swap that broke nothing. Asked from BOTH sides, because a bolt is
+  -- one connection on each machine and either could report alone.
+  local r_to = reaches(reactor, ENERGY, "south")
+  local x_to = reaches(row[2], ENERGY, "north")
+  local bolted = r_to == tostring(row[2].unit_number) and x_to == tostring(reactor.unit_number)
+  sayp("control: reactor south reaches " .. r_to .. ", row[2] north reaches " .. x_to ..
+      " (row[2] is " .. row[2].unit_number .. ", reactor " .. reactor.unit_number .. ") -- " ..
+      (bolted and "REACTOR IS BOLTED to row[2], the reactor after-readings are differences"
+               or "REACTOR IS NOT BOLTED, so the reactor-face question is UNANSWERED"))
+  return reactor, row
+end
+
+-- ------------------------------------------------------------------ 8. a robot does it (#408)
+--
+-- Every swap above is a direct create_entity{ fast_replace = true }, on the reasoning that a robot
+-- carries an order out as a fast replace. That is an assumption, and everything #396 concluded about
+-- the joints and the energy box rests on it. So this site has a roboport, construction robots and a
+-- storage chest holding the tier-2 items, and the planner's order is LEFT for a robot to perform.
+--
+-- Two swaps, one after the other so neither can be attributed to the other: the bolted row's middle
+-- machine first, read the way the direct swap reads it, and then a LONE exchanger, energy box full
+-- and nothing joined, read the way #478's lone case reads it.
+--
+-- STEAM BOXES ARE FILLED TO CAPACITY, which the direct swap does not need: that one happens in the
+-- tick its boxes are filled, and a robot takes hundreds. A machine with water, reactor energy and
+-- room for steam BOILS in that time and spends the energy the totals below are watching. A full
+-- steam box stops it, so every change in a total is the swap's.
+--
+-- The before-reading is the last one taken while the old machine was still standing -- every tick,
+-- so it is at most one tick old -- and the after-reading is the first tick it is gone.
+local ROBOT_X = -200
+local ROBOT_DEADLINE = __DEADLINE__
+
+-- Every holder of reactor energy at the robot site, and only there: the direct section's machines
+-- still hold water and room for steam, so they boil and would move a surface-wide total.
+local function site_holders(surface, t1, t2)
+  return surface.find_entities_filtered{
+    area = { { ROBOT_X - 40, -60 }, { ROBOT_X + 40, 60 } }, name = { t1, t2, "rf-reactor" } }
+end
+
+local function fill_steam_full(e)
+  for i = 1, #e.fluidbox do
+    local f = e.fluidbox.get_filter(i)
+    if f and f.name == "steam" then
+      e.fluidbox[i] = { name = "steam", amount = e.fluidbox.get_capacity(i), temperature = 500 }
+    end
+  end
+end
+
+-- The row's boxes, filled as the direct swap fills them, plus the steam boxes full (see above).
+local function fill_row(reactor, row)
+  for i = 1, 3 do fill_steam_full(row[i]) end
+  local water = box_for(row[2], "water")
+  if water then row[2].fluidbox[water] = { name = "water", amount = 100 } end
+  row[2].fluidbox[box_for(row[2], ENERGY)] = { name = ENERGY, amount = 100 }
+  reactor.fluidbox[box_for(reactor, ENERGY)] = { name = ENERGY, amount = 500 }
+end
+
+-- What a row reads before a swap, and the report after one -- the same lines for the robot's swap
+-- and for the twin's direct one, so the two can be set side by side line for line.
+local function read_before(tick, reactor, row)
+  return { tick = tick, contents = contents(row[2]), reactor = contents(reactor),
+           total = energy_total({ reactor, row[1], row[2], row[3] }) }
+end
+local function report_after(prefix, reactor, row, new, joins_before, b)
+  say(string.format("%s: last reading before, tick %d: row[2] contents=%s reactor=%s " ..
+                    "rf-reactor-energy across reactor + row = %.1f", prefix, b.tick, b.contents, b.reactor, b.total))
+  if not new then return end
+  say(prefix .. ": row[2] joins before=" .. joins_before .. " after=" .. joins(new))
+  say(prefix .. ": row[2] contents after=" .. contents(new))
+  say(prefix .. ": neighbours row[1] joins=" .. joins(row[1]) .. " row[3] joins=" .. joins(row[3]))
+  local still = 0
+  for _, c in ipairs(new.fluidbox.get_pipe_connections(1)) do
+    if c.target and c.target.owner and c.target.owner.valid then still = still + 1 end
+  end
+  say(prefix .. ": row[2] box 1 still reaches " .. still .. " neighbour(s) -- was 2 before")
+  say(prefix .. ": reactor south reaches " .. reaches(reactor, ENERGY, "south") ..
+      ", new row[2] north reaches " .. reaches(new, ENERGY, "north") ..
+      " (new row[2] is " .. new.unit_number .. ")")
+  say(prefix .. ": reactor contents after=" .. contents(reactor))
+  say(string.format("%s: rf-reactor-energy across reactor + row = %.1f", prefix,
+                    energy_total({ reactor, row[1], new, row[3] })))
+end
+
+local function robot_site(surface, force, t1, t2)
+  say("")
+  say("=== 8. a robot performs the swap (#408) ===")
+  surface.request_to_generate_chunks({ ROBOT_X, 0 }, 3)
+  surface.force_generate_chunk_requests()
+  force.chart(surface, { { ROBOT_X - 64, -64 }, { ROBOT_X + 64, 64 } })
+
+  local reactor, row = build_row(surface, force, t1, ROBOT_X, "robot ")
+
+  fill_row(reactor, row)
+  say("robot fill: row[2] contents now " .. contents(row[2]) .. "; reactor " .. contents(reactor))
+
+  -- THE TWIN: the same row, filled the same way in the same tick, that no order ever touches. When
+  -- the robot performs its swap, the twin's middle machine is fast_replaced directly in the next
+  -- tick, so the two operations are compared from the same state rather than from the direct
+  -- section's, whose boxes were filled differently and swapped in the tick they were filled.
+  local twin_reactor, twin = build_row(surface, force, t1, ROBOT_X + 70, "twin ")
+  fill_row(twin_reactor, twin)
+
+  -- The lone machine, north of the row and clear of it, box full, nothing on any energy face.
+  -- Inside the roboport's construction area, which reaches 55 tiles from its centre at y = 30.
+  local lone = surface.create_entity{ name = t1, position = { ROBOT_X + 0.5, -20.5 }, force = force,
+                                      raise_built = true }
+  local lbox = box_for(lone, ENERGY)
+  lone.fluidbox[lbox] = { name = ENERGY, amount = lone.fluidbox.get_capacity(lbox) }
+  local touched, seen = 0, {}
+  for _, c in ipairs(lone.fluidbox.get_pipe_connections(lbox)) do
+    local hit = (c.target and c.target.owner and c.target.owner.valid) and c.target.owner.unit_number
+    if hit then touched = touched + 1 end
+    seen[#seen + 1] = facing(c) .. "->" .. (hit and tostring(hit) or "-")
+  end
+  say("robot control: lone energy connections " .. table.concat(seen, " ") .. " -- " ..
+      (touched == 0 and "NOTHING JOINED" or "JOINED TO " .. touched .. ", so the lone question is UNANSWERED"))
+
+  -- The network: a roboport south of the row, powered, with robots, and a storage chest holding the
+  -- tier-2 items the two upgrades consume.
+  local function place(name, at)
+    local e = surface.create_entity{ name = name, position = at, force = force }
+    if not e then error("probe-next-upgrade: could not place " .. name) end
+    return e
+  end
+  local port = place("roboport", { ROBOT_X, 30 })
+  place("substation", { ROBOT_X - 4, 30 })
+  local eei = place("electric-energy-interface", { ROBOT_X - 7, 30 })
+  eei.power_production = 2e6
+  port.insert{ name = "construction-robot", count = 10 }
+  local chest = place("storage-chest", { ROBOT_X + 4.5, 30.5 })
+  chest.insert{ name = t2, count = 4 }
+  say(string.format("robot site: roboport at %.1f,%.1f, %d robots, %d %s in a storage chest",
+                    port.position.x, port.position.y,
+                    port.get_inventory(defines.inventory.roboport_robot).get_item_count("construction-robot"),
+                    chest.get_item_count(t2), t2))
+
+  storage.robot = {
+    phase = "row", t1 = t1, t2 = t2, reactor = reactor, row = row, lone = lone,
+    pos = row[2].position, old = row[2].unit_number, lone_pos = lone.position,
+    joins_before = joins(row[2]),
+    twin_reactor = twin_reactor, twin = twin, twin_joins = joins(twin[2]),
+  }
+  local planner = surface.create_entity{ name = "item-on-ground", position = { ROBOT_X, -60 },
+                                         stack = { name = "upgrade-planner" } }
+  surface.upgrade_area{ area = row[2].bounding_box, item = planner.stack, force = force }
+  say("robot order: row[2] to_be_upgraded=" .. tostring(row[2].to_be_upgraded()) ..
+      " at tick " .. game.tick .. "; waiting for a robot")
+end
+
+local function robot_finish(why)
+  if why then say("robot: " .. why) end
+  storage.robot.phase = "done"
+  say("")
+  say("done")
+end
+
+local function robot_watch(tick)
+  local rb = storage.robot
+  if not rb or rb.phase == "done" then return end
+  local surface = game.surfaces[1]
+  if tick > ROBOT_DEADLINE then
+    return robot_finish("NO ROBOT performed the " .. rb.phase .. " swap by tick " .. ROBOT_DEADLINE ..
+                        "; that swap is UNANSWERED")
+  end
+
+  if rb.phase == "row" then
+    local old = rb.row[2]
+    if old.valid then
+      rb.before = read_before(tick, rb.reactor, rb.row)
+      return
+    end
+    local new = surface.find_entities_filtered{ position = rb.pos, name = { rb.t1, rb.t2 } }[1]
+    say("robot perform: at tick " .. tick .. " the order was carried out, producing " ..
+        (new and new.name or "NOTHING") .. " (old unit " .. rb.old .. ")")
+    report_after("robot perform", rb.reactor, rb.row, new, rb.joins_before, rb.before)
+
+    -- The twin, swapped directly NOW: one tick after the robot's, from the state the robot's row was
+    -- in, read the same way.
+    local tb = read_before(tick, rb.twin_reactor, rb.twin)
+    local t2e = surface.create_entity{ name = rb.t2, position = rb.twin[2].position,
+                                       direction = rb.twin[2].direction, force = game.forces.player,
+                                       fast_replace = true, spill = false, raise_built = true }
+    say("twin perform: at tick " .. tick .. " fast_replace produced " .. (t2e and t2e.name or "NOTHING"))
+    report_after("twin perform", rb.twin_reactor, rb.twin, t2e, rb.twin_joins, tb)
+    -- And now the lone one, so its swap cannot land in the same tick as the row's.
+    local planner = surface.create_entity{ name = "item-on-ground", position = { ROBOT_X, -64 },
+                                           stack = { name = "upgrade-planner" } }
+    surface.upgrade_area{ area = rb.lone.bounding_box, item = planner.stack, force = game.forces.player }
+    say("robot order: lone to_be_upgraded=" .. tostring(rb.lone.to_be_upgraded()) .. " at tick " .. tick)
+    rb.phase = "lone"
+    rb.before = nil
+    return
+  end
+
+  if rb.phase == "lone" then
+    if rb.lone.valid then
+      rb.before = { tick = tick, own = energy_total({ rb.lone }),
+                    site = energy_total(site_holders(surface, rb.t1, rb.t2)) }
+      return
+    end
+    local new = surface.find_entities_filtered{ position = rb.lone_pos, name = { rb.t1, rb.t2 } }[1]
+    local b = rb.before
+    say("lone robot: at tick " .. tick .. " the order was carried out, producing " ..
+        (new and new.name or "NOTHING"))
+    say(string.format("lone robot: last reading before, tick %d: lone box %.1f, every holder at the site %.1f",
+                      b.tick, b.own, b.site))
+    if new then
+      local own_after = energy_total({ new })
+      local site_after = energy_total(site_holders(surface, rb.t1, rb.t2))
+      say(string.format("lone robot: after, lone box %.1f, every holder at the site %.1f", own_after, site_after))
+      local verdict
+      if math.abs(own_after - b.own) < 0.05 then verdict = "KEPT by the replacement"
+      elseif math.abs(site_after - b.site) < 0.05 then verdict = "MOVED to another holder"
+      else verdict = string.format("LOST, %.1f gone from the site", b.site - site_after) end
+      say("lone robot: the energy was " .. verdict)
+    end
+    return robot_finish(nil)
+  end
 end
 
 script.on_nth_tick(60, function(event)
@@ -321,68 +636,16 @@ script.on_nth_tick(60, function(event)
     say("=== pair " .. suffix .. " (fast_replaceable_group " ..
         (suffix == "grouped" and "SET" or "ABSENT") .. ") ===")
 
-    -- A reactor, and a row of three chained short end to short end, BOLTED TO IT (#401). The
-    -- reactor sells energy north and south (ADR 0031), so the row stands south of it: row[2] -- the
-    -- one the swap is pointed at -- bolts its north energy face onto the reactor's south output,
-    -- and row[1] and row[3] chain off its west and east short ends. Until #401 the row was laid
-    -- east of the reactor, where the two share no face, and `reactor joins=-/-` in every run.
-    --
-    -- NOT raise_built for the reactor: control.lua then never hears of it and nothing fills or
-    -- drains its box but this rig, as in check-hc.ps1's plant.
-    local reactor = surface.create_entity{ name = "rf-reactor", position = { ox + 0.5, 0.5 },
-                                           force = force }
-    local south = connection_facing(reactor, ENERGY, "south")
-    if not south then error("probe-next-upgrade: rf-reactor has no south-facing energy output") end
-    say(string.format("geometry: rf-reactor south energy output at %.1f,%.1f targets %.1f,%.1f",
-                      south.position.x, south.position.y,
-                      south.target_position.x, south.target_position.y))
-    local seed = { ox + 0.5, 60.5 }
-    local row = {}
-    row[2] = bolt(surface, force, t1, ENERGY, "north", south.target_position, seed)
-    row[1] = bolt(surface, force, t1, ENERGY, "east",
-                  connection_facing(row[2], ENERGY, "west").target_position, seed)
-    row[3] = bolt(surface, force, t1, ENERGY, "west",
-                  connection_facing(row[2], ENERGY, "east").target_position, seed)
-    for i = 1, 3 do
-      say(string.format("geometry: row[%d] at %.1f,%.1f", i, row[i].position.x, row[i].position.y))
-    end
+    local reactor, row = build_row(surface, force, t1, ox, "")
 
-    -- 1 + 2. What the joints look like BEFORE anything is swapped, so the after-reading is a
-    -- difference rather than a lone observation.
-    for i = 1, 3 do
-      say(string.format("before: row[%d] %s joins=%s contents=%s", i, row[i].name,
-                        joins(row[i]), contents(row[i])))
-    end
-    say("before: reactor joins=" .. joins(reactor))
-
-    -- THE CONTROL, AND IT COMES BEFORE THE SWAP. Every "after" line below is a DIFFERENCE, so a row
-    -- that was never joined in the first place would report a swap that broke nothing -- the same
-    -- confident wrong answer a rig gives whenever nothing in it had to succeed. If this line says
-    -- NOT JOINED, sections 2 and 6 are unanswered and the layout is what needs fixing, not the
-    -- conclusion.
-    local chained = 0
-    for i = 1, 2 do
-      for _, c in ipairs(row[i].fluidbox.get_pipe_connections(1)) do
-        if c.target and c.target.owner and c.target.owner.valid
-           and c.target.owner.unit_number == row[i + 1].unit_number then
-          chained = chained + 1
-        end
-      end
-    end
-    say("control: neighbouring pairs actually joined = " .. chained .. " of 2 -- " ..
-        (chained == 2 and "ROW IS CHAINED, the after-readings below are differences"
-                       or "ROW IS NOT CHAINED, so sections 2 and 6 are UNANSWERED"))
-
-    -- THE REACTOR CONTROL, the same guard for the joint #401 is about: a reactor joint that was
-    -- never made would report a swap that broke nothing. Asked from BOTH sides, because a bolt is
-    -- one connection on each machine and either could report alone.
-    local r_to = reaches(reactor, ENERGY, "south")
-    local x_to = reaches(row[2], ENERGY, "north")
-    local bolted = r_to == tostring(row[2].unit_number) and x_to == tostring(reactor.unit_number)
-    say("control: reactor south reaches " .. r_to .. ", row[2] north reaches " .. x_to ..
-        " (row[2] is " .. row[2].unit_number .. ", reactor " .. reactor.unit_number .. ") -- " ..
-        (bolted and "REACTOR IS BOLTED to row[2], the reactor after-readings are differences"
-                 or "REACTOR IS NOT BOLTED, so the reactor-face question is UNANSWERED"))
+    -- 4a. THE BLUEPRINT LEAD (#408), asked deliberately. One capture area -- the union of the reactor's
+    -- and the row's own bounding boxes, computed ONCE here -- and two captures over it: one before
+    -- the order and one with it pending, before anything is performed. The 2026-09-17 lead differed
+    -- in its capture area as well as in its order, so it could not say which of the two put a t2 in
+    -- the blueprint; here the order is the only difference.
+    local lead_area = row_area({ reactor, row[1], row[2], row[3] })
+    say("lead: capture area " .. area_text(lead_area) .. ", the same for both captures")
+    say("lead: before the order, the blueprint holds " .. capture(surface, force, lead_area, { ox, -68 }))
 
     -- 1. THE SWAP, driven the way a player drives it: an upgrade planner over an area, with no
     -- configuration, which is exactly the case next_upgrade's own documentation describes.
@@ -400,6 +663,10 @@ script.on_nth_tick(60, function(event)
     else
       say("swap: NO upgrade-planner stack could be made; sections 1, 4 and 6 are unanswered")
     end
+
+    say("lead: with the order pending (to_be_upgraded=" ..
+        tostring(row[2].valid and row[2].to_be_upgraded()) .. "), the blueprint holds " ..
+        capture(surface, force, lead_area, { ox, -72 }))
 
     -- The order is a construction-robot job in a real game; with no roboport the engine leaves a
     -- ghost-like order rather than performing it, so ask the surface what is actually there now.
@@ -424,9 +691,9 @@ script.on_nth_tick(60, function(event)
 
     -- AND THEN PERFORM IT, because the planner only ORDERS the swap. upgrade_area marks the entity
     -- and a construction robot does the work; a benchmark map has no roboport, so the row above is
-    -- a row of ORDERS and sections 1, 2, 3 and 6 would be unanswered if this stopped there. A robot
-    -- carries the order out as a FAST REPLACE, so that is what this does directly -- the same
-    -- operation, without needing a logistic network in a rig whose subject is not logistics.
+    -- a row of ORDERS and sections 1, 2, 3 and 6 would be unanswered if this stopped there. This
+    -- does it directly with a fast replace, on the reasoning that a robot does the same -- which
+    -- section 8 tested (#408): the joints, water and steam agree, the energy box does not.
     -- 3. FILL THE BOXES FIRST, or "what happens to the fluid" is answered about nothing. Every box
     -- gets whatever its own filter says it takes, found rather than assumed: the three families
     -- here are two contained energies and water/steam, and a hard-coded fluid name would silently
@@ -559,11 +826,19 @@ script.on_nth_tick(60, function(event)
     end
   end
 
-  say("")
-  say("done")
+  -- 8. A ROBOT DOES IT (#408). Built only for the grouped pair, which is the only one that loads.
+  if prototypes.entity["upgprobe-grouped-t1"] then
+    robot_site(surface, force, "upgprobe-grouped-t1", "upgprobe-grouped-t2")
+  else
+    say("")
+    say("done")
+  end
 end)
+
+script.on_event(defines.events.on_tick, function(event) robot_watch(event.tick) end)
 '@
-Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $control -Encoding utf8
+Set-Content -Path (Join-Path $rigDir 'control.lua') -Encoding utf8 `
+    -Value $control.Replace('__DEADLINE__', [string]($Ticks + 60))
 
 # ---------------------------------------------------------------------------- run it
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }
