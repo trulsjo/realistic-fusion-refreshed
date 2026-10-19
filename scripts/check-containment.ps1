@@ -95,6 +95,11 @@
                   fluid and must work exactly as before -- containment is per box, and this is what
                   says so.
 
+    IT RUNS FULLY RESEARCHED, AND SINCE #445 IT SAYS SO. on_init calls research_all_technologies(),
+    and the check tick asserts every rung of all three of rf-reactor's ladders rung by rung. NOTHING
+    IT CHECKS MOVES WITH RESEARCH: every assertion is about which box joins which, and no ladder
+    changes a connection.
+
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
@@ -156,6 +161,12 @@ local function record(ok, name, detail)
   lines[#lines + 1] = string.format("%s  %s%s", ok and "ok  " or "FAIL", name,
     detail and ("  -- " .. detail) or "")
 end
+
+-- The shared rig helpers, for rf_assert_research (#445): the research state this rig runs at is
+-- asserted rung by rung rather than described. Get-RigBuildLua in scripts/factorio-lib.ps1 defines
+-- them, and LOGIC is the shipped reactor-logic they read the ladders off.
+__RIGBUILD__
+local LOGIC = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
 
 local function must(entity, what)
   if not entity then error(what .. " refused") end
@@ -596,6 +607,9 @@ end)
 script.on_nth_tick(600, function()
   if game.tick == 0 or storage.done then return end
   storage.done = true
+
+  -- ------------------------------------------------- the research state this rig runs at (#445)
+  rf_assert_research(record, game.forces.player, LOGIC, LOGIC.reactor, true)
   local r = storage.rig
 
   -- ------------------------------------------------------------ plasma cannot enter a vanilla pipe
@@ -726,7 +740,7 @@ script.on_nth_tick(600, function()
 end)
 '@
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') `
-        -Value $lua.Replace('__PLASMAFEED__', $feed).Replace('__ENERGYFEED__', $energyFeed)
+        -Value $lua.Replace('__RIGBUILD__', (Get-RigBuildLua)).Replace('__PLASMAFEED__', $feed).Replace('__ENERGYFEED__', $energyFeed)
 }
 
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }

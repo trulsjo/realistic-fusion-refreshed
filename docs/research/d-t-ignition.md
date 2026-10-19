@@ -201,6 +201,14 @@ reactor**, whatever it is doing.~~ **It is not pinned any more.** Measured throu
 moves with the ladder to **3.92×10⁹ °C** at the top rung — so the reading is a measurement again, and
 it moves with the reactor. `scripts/check-d-t.ps1` sees 3.13×10⁹ °C in game.
 
+> **Which state that reading is, marked 2026-10-19 (#445).** `check-d-t.ps1` researches everything,
+> and since #445 asserts it rung by rung: its reactor holds the top of all three ladders, not the
+> 30 s and 50 MW the 3.25×10⁹ beside it describes. On 2026-10-19, at that state, it read
+> **3.188×10⁹ °C** — below both simulated figures, the top-rung 3.92×10⁹ included. The rig feeds
+> its reactor through an infinity pipe held at 6×10⁸ °C and the simulated figures have no feed
+> at all, so the two are not the same measurement; which difference accounts for the gap is not
+> established. Reported, not re-pinned.
+
 The correction below stands and is worth keeping, because it is why the fix was the signal rather
 than the physics:
 

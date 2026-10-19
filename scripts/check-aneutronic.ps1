@@ -70,6 +70,12 @@
     The technology gate is checked without building anything, off the force's own technology and
     recipe tables, before research_all_technologies is called.
 
+    IT RUNS FULLY RESEARCHED, AND SINCE #445 IT SAYS SO. on_init calls research_all_technologies()
+    once the technology gate is read, and the check tick asserts every rung of rf-reactor's ladders
+    rung by rung AND that rf-aneutronic-reactor carries none. NOTHING IT MEASURES MOVES WITH
+    RESEARCH, and that second assertion is why: M.aneutronic_reactor has no ladder of any kind (ADR
+    0020 decision 4, ADR 0024, ADR 0038 decision 5), so this rig reads the same researched or not.
+
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
@@ -149,6 +155,12 @@ local function record(ok, name, detail)
   storage.report.lines[#storage.report.lines + 1] = string.format("%s  %s%s",
     ok and "ok  " or "FAIL", name, detail and ("  -- " .. detail) or "")
 end
+
+-- The shared rig helpers, for rf_assert_research (#445): the research state this rig runs at is
+-- asserted rung by rung rather than described. Get-RigBuildLua in scripts/factorio-lib.ps1 defines
+-- them, and LOGIC is the shipped reactor-logic they read the ladders off.
+__RIGBUILD__
+local LOGIC = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
 
 local function must(entity, what)
   if not entity then error(what .. " refused") end
@@ -635,6 +647,15 @@ end)
 script.on_nth_tick(CHECK_AT, function()
   if game.tick == 0 or storage.done then return end
   storage.done = true
+
+  -- ------------------------------------------------- the research state this rig runs at (#445)
+  rf_assert_research(record, game.forces.player, LOGIC, LOGIC.reactor, true)
+  local aneutronic_rungs = 0
+  for _, row in ipairs(rf_ladders(LOGIC)) do
+    aneutronic_rungs = aneutronic_rungs + #(LOGIC.aneutronic_reactor[row.rungs] or {})
+  end
+  record(aneutronic_rungs == 0, "and rf-aneutronic-reactor carries no ladder, so research moves " ..
+    "nothing this rig measures", string.format("%d rungs", aneutronic_rungs))
   local r = storage.rig
 
   -- ------------------------------------------------------------ the aneutronic reactor burns
@@ -821,7 +842,7 @@ script.on_nth_tick(CHECK_AT, function()
 end)
 '@
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') `
-        -Value $lua.Replace('__PLASMAFEED__', $feed).Replace('__ENERGYFEED__', $energyFeed).Replace('__TICKS__', "$Ticks")
+        -Value $lua.Replace('__RIGBUILD__', (Get-RigBuildLua)).Replace('__PLASMAFEED__', $feed).Replace('__ENERGYFEED__', $energyFeed).Replace('__TICKS__', "$Ticks")
 }
 
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }
