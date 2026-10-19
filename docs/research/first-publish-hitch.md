@@ -1,5 +1,47 @@
 # The hitch on the first circuit publish (104 to 142 ms, re-measured 2026-10-01)
 
+> **2026-10-19: IT SCALES WITH THE NUMBER OF KEYS IN USE AT LOAD, AND WITH NONE OF THE FOUR
+> OTHERS.** ([#409](https://github.com/trulsjo/realistic-fusion-refreshed/issues/409), at
+> `7aae2cd`, Factorio 2.0.77.)
+>
+> One kept rig (`bench-reactors.ps1 -Counts 0,1,4 -Ticks 200 -Runs 1 -KeepTemp`), replayed with
+> `--benchmark --benchmark-runs 3 --benchmark-verbose all` and one dimension changed on tick 7 —
+> before the first publish at 30, so the cache, empty at every load, meets the change on its first
+> use exactly as a save that already had it would. Each variant ran **beside a control in every
+> round, four rounds**, because the machine was not quiet: another session's work had it at 9 to
+> 98% of the part at launch, and an alternation lands that on both alike. Tick 30's
+> `scriptUpdate`, every run:
+>
+> | variant | runs | tick 30, median | range |
+> |---|---:|---:|---|
+> | control, *n* = 1 | 48 | **140 ms** | 114 – 321 |
+> | 50 more surfaces, one generated chunk radius each (51 in all) | 12 | **151 ms** | 124 – 299 |
+> | surface 1 generated out to 3 025 chunks | 12 | **148 ms** | 115 – 294 |
+> | 50 more forces (53 in all) | 12 | **135 ms** | 118 – 153 |
+> | the player's force researched everything | 9 | **141 ms** | 113 – 244 |
+> | control, *n* = 4 | 24 | **134 ms** | 115 – 176 |
+> | *n* = 4, three reactors moved to three unresearched forces — four forces, ONE key | 12 | **147 ms** | 115 – 228 |
+> | *n* = 4, the three on forces holding 1, 2 and 3 confinement rungs — FOUR keys | 12 | **564 ms** | 490 – 962 |
+>
+> The spike is tick 30 in every run, as before; the median tick across all 141 runs is 16.0 µs
+> (9.3 to 38.1), so the spike is still thousands of times the ordinary tick. One round of the
+> research variant did not run — the harness's load reading failed before launch — so it has
+> nine runs.
+>
+> **Surface count, map size, force count and technology state do not move it**: each median sits
+> inside the controls' own spread, with two or more rounds of three behind it. **What moves it is
+> the number of distinct keys in use**: four confinement states cost **4.2×** the *n* = 4 control,
+> which is four sweeps for four keys, paid together on one tick. Four forces at one state cost one
+> sweep, so it is the keys and not the forces. That is what keying `curves` on prototype,
+> confinement, heating and plasma predicts, and what #480 measured one rung at a time mid-game; this
+> is the load case #480 left open.
+>
+> **So "a fixed, one-time cost" below is revised rather than left beside this.** It is fixed PER
+> KEY: one sweep, about 110 to 140 ms, for every distinct (prototype, spec, plasma) the map's
+> reactors are at when it loads. A single-player map at one research state pays one; a
+> multiplayer map with forces at different rungs, or a map burning several plasmas, pays one per
+> combination, on the same tick. Four keys was the most measured.
+
 > **2026-10-01: NO COMMIT GREW IT. THE MACHINE DID.**
 > ([#479](https://github.com/trulsjo/realistic-fusion-refreshed/issues/479), at `98cab4c`.)
 >
@@ -131,6 +173,7 @@ Put beside #330's own figures, the cost is flat across the whole range:
 | 200 | ~116 000 µs (#330) |
 
 **So it is a fixed, one-time cost, triggered by the first reactor and independent of reactor count.**
+*(Revised 2026-10-19, #409: fixed per key in use, not per map — see the banner at the top.)*
 That is the signature of a first-use initialisation reached through the publish path, not of
 per-reactor work. #330 asked for the dependency to be confirmed rather than left as "not reactors";
 this is that, from the other end — 200× the reactors costs nothing extra, and 0 reactors costs
@@ -259,8 +302,6 @@ is left for a human.
 ## What this does NOT answer
 
 - **Whether a player notices the load hitch** — see the section above. Measured, not played.
-- **Whether it scales with force count, technology state, surface count or map size.** Reactor count
-  is now settled at both ends; the other four #330 lists are untouched.
 
 ## Reproducing it
 
