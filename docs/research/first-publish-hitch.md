@@ -16,7 +16,7 @@
 > |---|---:|---:|---|
 > | control, *n* = 1 | 48 | **140 ms** | 114 – 321 |
 > | 50 more surfaces, one generated chunk radius each (51 in all) | 12 | **151 ms** | 124 – 299 |
-> | surface 1 generated out to 3 025 chunks | 12 | **148 ms** | 115 – 294 |
+> | surface 1 generated out to a radius of 24 chunks, after which it held 3 025 | 12 | **148 ms** | 115 – 294 |
 > | 50 more forces (53 in all) | 12 | **135 ms** | 118 – 153 |
 > | the player's force researched everything | 9 | **141 ms** | 113 – 244 |
 > | control, *n* = 4 | 24 | **132 ms** | 115 – 176 |

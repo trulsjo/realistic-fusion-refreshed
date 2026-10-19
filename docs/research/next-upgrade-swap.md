@@ -32,7 +32,7 @@ will not load at all** — which is a loud failure rather than a quiet one, and 
 **The swap empties the contained energy box and keeps the other two** — on the swapped machine.
 Where that energy goes is the two dated blocks below: with a reactor bolted on, it moves into the
 reactor (2026-09-30); with nothing joined, it is lost (2026-10-01). *(All three are readings in
-the tick of the swap. Read again 600 ticks later on 2026-10-19, a bolted row had all but 1.6 of its
+the tick of the swap. Read again on 2026-10-19, about 965 ticks after the swap, a bolted row had all but 1.6 of its
 energy back and a lone box was still empty — see the #408 block below.)*
 
 | box | filter | before | after the swap |
@@ -85,7 +85,7 @@ note's to answer.
 
 > **2026-10-19, [#408](https://github.com/trulsjo/realistic-fusion-refreshed/issues/408): a
 > ROBOT'S swap and a direct one agree, and what a same-tick reading calls lost on a bolted row is
-> back 600 ticks later.** Every figure above is a direct `create_entity{ fast_replace = true }`,
+> back by the next reading taken, about 965 ticks later.** Every figure above is a direct `create_entity{ fast_replace = true }`,
 > read in the tick of the swap. The probe now builds a second site with a roboport, ten
 > construction robots and a storage chest of tier-2 items, leaves the planner's order for a robot,
 > and builds a TWIN row beside it — same geometry, same fill, never ordered — whose middle machine
@@ -103,7 +103,9 @@ note's to answer.
 > | water and steam in row[2] after | 100.0 and 200.0, kept | 100.0 and 200.0, kept |
 > | joints: row[2], both neighbours, reactor face | re-formed, same relations | re-formed, same relations |
 >
-> Two runs, identical to the tenth, settled at tick 2014 and 2019. **So the two operations agree on
+> Two runs, identical to the tenth, settled at tick 2019 and 2014. **When the energy came back is
+> not measured**, only that it had: the rows were swapped at tick 449, and the first reading
+> after that, the lone swap's site total at tick 1418 and 1413, already held them at 596.8. **So the two operations agree on
 > every settled reading — joints, water, steam and energy — and neither loses the energy of a box
 > with a peer**: both rows end 1.6 short of where they started, the same 1.6 each. The same-tick
 > readings differ, 166.0 against 200.0 missing, and neither is a loss: it had not arrived yet.
@@ -116,7 +118,7 @@ note's to answer.
 > **A lone machine loses its buffer either way, and stays lost.** A lone exchanger inside the
 > roboport's reach, energy box full at 200 and its three energy connections reaching nothing
 > (`north->- west->- east->-`), was ordered once the row's swap was done and swapped by a robot at
-> tick 1413 and, in the second run, 1418: lone box 200.0 → 0.0, every holder at the site 796.8 →
+> tick 1419 and, in the second run, 1414: lone box 200.0 → 0.0, every holder at the site 796.8 →
 > 596.8. Settled, the robot's lone box and the direct section's, swapped by `fast_replace` as on
 > 2026-10-01, both read 0.0 — so #478's loss is a loss, measured both ways.
 
@@ -169,7 +171,7 @@ with every relation the same.
 re-forms in the same tick, from both sides.** And the reactor's own box is not emptied: it GAINS
 the swapped machine's energy, as the fluid section above records. *(In the tick of the swap, with
 the reactor's box holding 500. On 2026-10-19 an empty reactor box gained nothing in that tick, and
-the row had its energy back 600 ticks later; see the #408 block above.)*
+the row had its energy back by the next reading, about 965 ticks later; see the #408 block above.)*
 
 ## A planner ORDERS the swap; it does not perform it
 
