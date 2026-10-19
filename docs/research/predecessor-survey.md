@@ -191,7 +191,7 @@ reads `Version: 1.0.0 / Date: XXXX / - First version.` — never released. `_TOD
 ### What is in `RealisticFusionWeaponry`
 
 `info.json` alone (`version 2.0.0`, `factorio_version 1.1`, depends on `RealisticFusionCore`). Zero code,
-zero graphics. It has been a stub since the repo's first commit (verified against tree `ccd87d8`).
+zero graphics. It has been a stub since the redesign repository's first commit (verified against tree `ccd87d8`).
 `_TODO.txt`: "RFW: Revamp ? - incl. resource destruction on impact setting".
 
 ### Non-module directories
