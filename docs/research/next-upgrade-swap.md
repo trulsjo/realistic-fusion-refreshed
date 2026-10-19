@@ -1,6 +1,7 @@
 # What an upgrade-planner swap does to a chained row of exchangers
 
-Measured 2026-09-17, the reactor face on 2026-09-30 and the lone swap on 2026-10-01, with `scripts/probe-next-upgrade.ps1`, against Factorio 2.0.77, for
+Measured 2026-09-17, the reactor face on 2026-09-30, the lone swap on 2026-10-01 and a robot's
+swap and the blueprint on 2026-10-19, with `scripts/probe-next-upgrade.ps1`, against Factorio 2.0.77, for
 [#396](https://github.com/trulsjo/realistic-fusion-refreshed/issues/396). **This note is a probe's
 findings.** It draws no threshold and proposes nothing;
 [#315](https://github.com/trulsjo/realistic-fusion-refreshed/issues/315) chose route 1 during triage
@@ -80,6 +81,44 @@ note's to answer.
 > not measured, only that the two cases differ. Whether the loss matters is a balance question, as
 > above. One run.
 
+> **2026-10-19, [#408](https://github.com/trulsjo/realistic-fusion-refreshed/issues/408): a
+> ROBOT'S swap does not destroy the same amount as a direct `fast_replace`, and neither moves
+> anything into an EMPTY reactor box.** Every figure above is a direct
+> `create_entity{ fast_replace = true }`. The probe now builds a second site with a roboport, ten
+> construction robots and a storage chest of tier-2 items, leaves the planner's order for a robot,
+> and builds a TWIN row beside it — same geometry, same fill, never ordered — whose middle machine
+> is fast_replaced directly in the tick the robot's swap is first seen. Steam boxes are filled to
+> capacity on both, so nothing boils away while the robot travels. Both rows pass both controls
+> (`2 of 2`, `REACTOR IS BOLTED`) before anything is swapped. By tick 449 the reactor's 500 had
+> flowed into the row, so both swaps started from the reactor box empty and row[2]'s full:
+>
+> | | robot (tick 449) | direct, the twin (tick 449) |
+> |---|---:|---:|
+> | row[2] `rf-reactor-energy` before | 200.0 | 200.0 |
+> | row[2] `rf-reactor-energy` after | **33.2** | **empty** |
+> | the reactor's box after | empty | empty |
+> | `rf-reactor-energy` across reactor + row, before → after | 598.4 → **432.4** | 598.4 → **398.4** |
+> | water and steam in row[2] after | 100.0 and 200.0, kept | 100.0 and 200.0, kept |
+> | joints: row[2], both neighbours, reactor face | re-formed, same relations | re-formed, same relations |
+>
+> Two runs, identical to the tenth. **So the two operations agree on the joints, the water and the
+> steam, and disagree on the energy box: a robot's swap loses 166.0 where a direct one loses 200.0
+> from the same state.** Where the robot's 33.2 comes from is not measured; the neighbours did not
+> give it up (their sum moved 0.8). **The direct figures above therefore measure a direct swap, not
+> what a robot does** to an energy box with a peer: the 2026-09-17 "empty" and the 2026-09-30 "moved
+> into the reactor" are both readings of an operation a player's robots do not perform exactly.
+>
+> **And the 2026-09-30 move is not general.** There the reactor's box held 500 and gained the
+> swapped machine's 100; here it held nothing and gained nothing, under either operation. That a
+> box already holding the fluid receives it and an empty one does not is inferred from those two
+> readings, which also differ in amounts, and is not tested.
+>
+> **The lone case agrees.** A lone exchanger inside the roboport's reach, energy box full at 200
+> and its three energy connections reaching nothing (`north->- west->- east->-`), was ordered once
+> the row's swap was done and swapped by a robot at tick 1414: lone box 200.0 → 0.0, every holder
+> at the site 796.8 → 596.8, **200.0 lost** — what the direct `fast_replace` of 2026-10-01 read.
+> So upgrading an unbolted machine loses its buffer whichever way it is done.
+
 ## The joints survive, and the row re-joins the replacement
 
 The row is three exchangers chained short end to short end. **The control says the row was actually
@@ -134,12 +173,27 @@ the swapped machine's energy, as the fluid section above records.
 `surface.upgrade_area` with an upgrade-planner stack returns ok and leaves `to_be_upgraded()` true,
 and the entity is **still tier 1**. A construction robot carries the order out, and a benchmark map
 has no roboport. So the probe performs the swap directly with `create_entity{ fast_replace = true }`,
-which is the same operation a robot performs, and every "after" figure above comes from that.
+~~which is the same operation a robot performs~~, and every "after" figure in the sections dated
+before 2026-10-19 comes from that. **#408 put a roboport in the rig, and the two are not the same
+operation on the energy box** — see the 2026-10-19 block above.
 
 **This matters for reading any result about upgrade planners in a headless rig.** A probe that
 stopped at `upgrade_area` would report a row of orders and conclude nothing had changed.
 
 ## The blueprint
+
+> **2026-10-19, [#408](https://github.com/trulsjo/realistic-fusion-refreshed/issues/408): settled.
+> A blueprint taken while an upgrade order is pending captures the upgrade TARGET.** One capture
+> area, the union of the reactor's and the row's bounding boxes (`-21.8,-6.8 .. 22.8,12.8`),
+> computed once and used for two fresh blueprints, before anything is performed:
+>
+> | | the blueprint holds |
+> |---|---|
+> | before the order | `rf-reactor, upgprobe-grouped-t1, upgprobe-grouped-t1, upgprobe-grouped-t1` |
+> | with the order pending, row[2] still tier 1 on the map (`to_be_upgraded=true`) | `rf-reactor, upgprobe-grouped-t1, upgprobe-grouped-t1, upgprobe-grouped-t2` |
+>
+> The area is the same and only the order differs, so the `t2` is the order's doing. Two runs, the
+> same both times. The paragraph below is the lead as it was first recorded.
 
 A blueprint over the row captures and re-places (`re-place ok=true`). One reading is worth recording
 because it surprised the run that produced it: **a blueprint taken while an upgrade order is pending
@@ -158,8 +212,8 @@ finding.** Anyone acting on it should re-take it deliberately.
 
 - **Anything about a real second tier.** The scratch pair differs in `energy_consumption` and in
   nothing else, on purpose. #315 owns the shipped tier.
-- **Robots doing it.** Every swap here is a direct `fast_replace`. A robot-performed upgrade in a
-  real game was not observed.
+- **Why a robot's swap keeps 33.2 of the energy box where a direct one keeps none**, or whether
+  that fraction depends on the fill. Two runs at one state.
 
 ## Reproducing it
 
