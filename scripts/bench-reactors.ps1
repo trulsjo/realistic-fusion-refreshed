@@ -147,9 +147,9 @@
     contain would be a claim about the wrong map. Here the switches are HONOURED, because this mode
     is what built the configuration -- and -Save's contract is untouched.
 
-    All eight of them, enumerated rather than gestured at, since seven behave and one does not:
-    -Counts, -Pooled, -Mixed, -Collectors, -Blankets, -Gap and -ReportEvery mean exactly what they
-    mean in a rig. -Ablate is REFUSED, and the reason is below.
+    All nine of them, enumerated rather than gestured at, since seven behave and one does not:
+    -Counts, -Pooled, -Mixed, -Reaction, -Collectors, -Blankets, -Gap and -ReportEvery mean exactly
+    what they mean in a rig. -Ablate is REFUSED, and the reason is below.
 
     WHY THIS GETS A PER-REACTOR FIGURE AND -Save CANNOT. Every per-reactor number here is
     (cost at n minus cost at 0) / n, and -Save has no n = 0 because a factory cannot be un-built.
@@ -254,6 +254,10 @@
     that is asserted too: a throw from inside the sweep would take every count already measured
     with it.
 
+    THE SINGLE-REACTION HALF (#435) holds Assert-SingleReaction the same way: a -Reaction fleet
+    burning exactly the plasma asked for at the full count passes, and a second plasma, the wrong
+    one, a reactor short and an empty census are each refused.
+
     Those and no more, because every one of them produces a confident wrong answer rather than an
     error, and three of the save halves produce the SAME wrong answer by different routes: a
     run that loads the save without the mod the save names, reports a clean pass, and is believed. A
@@ -316,6 +320,24 @@
     quiet, every reaction costs about the same, so a shifted split moves the number by little or
     nothing. The rule stands anyway, because "little or nothing" is a measurement rather than a
     guarantee and the next reaction added need not be as cheap.
+
+.PARAMETER Reaction
+    Build a fleet that burns ONE named reaction, every reactor of it (#435): d-d or d-t in
+    rf-reactor, d-he3 or he3-he3 in rf-aneutronic-reactor. Unset, the rig builds what it always has.
+
+    WHY IT EXISTS. Neither other shape can attribute a per-tick cost to one entity. The default is
+    D-D alone, and -Mixed puts both reactors in one fleet -- at n = 200, 110 rf-reactor beside 90
+    rf-aneutronic-reactor -- so a cost that differs between the two entities can only be BOUNDED
+    from it. That is where #430 stopped on the aneutronic floor, and #436 is what this is for.
+
+    `-Reaction d-d` builds the default rig exactly, power included, so it changes nothing and is
+    there for symmetry. An aneutronic fleet gets -Mixed's four times the power per cell, because
+    rf-aneutronic-reactor draws four times rf-reactor's heating and a clamped reactor is not the
+    thing worth measuring; an rf-reactor fleet keeps the default's power.
+
+    Refused with -Mixed, which asks the opposite question. And the census is the gate, as it is for
+    -Mixed: a run at n above zero refuses to report unless every reactor counted was burning the
+    plasma asked for and no other -- see Assert-SingleReaction.
 
 .PARAMETER Ablate
     Replace the shipped simulation with a cut-down one, to say where the per-reactor cost actually
@@ -460,6 +482,7 @@ Compared against a reading taken just BEFORE
     pwsh -File scripts/bench-reactors.ps1
     pwsh -File scripts/bench-reactors.ps1 -Pooled
     pwsh -File scripts/bench-reactors.ps1 -Mixed
+    pwsh -File scripts/bench-reactors.ps1 -Reaction he3-he3
     pwsh -File scripts/bench-reactors.ps1 -Collectors -Gap 6
     pwsh -File scripts/bench-reactors.ps1 -Mixed -Collectors -Blankets -Gap 6
     pwsh -File scripts/bench-reactors.ps1 -Save "$env:APPDATA\Factorio\saves\my-factory.zip"
@@ -493,6 +516,7 @@ param(
     [ValidateRange(1, [int]::MaxValue)] [int] $Runs   = 5,
     [switch] $Pooled,
     [switch] $Mixed,
+    [ValidateSet('d-d', 'd-t', 'd-he3', 'he3-he3')] [string] $Reaction,
     [switch] $Collectors,
     [switch] $Blankets,
     [ValidateSet('none', 'loop', 'read', 'physics', 'write')] [string] $Ablate = 'none',
@@ -815,7 +839,7 @@ function Resolve-SaveMods {
 # refusal: ignoring them would print a report about a save while the caller believed they had asked
 # for a mixed, collectored or ablated one, and nothing in the output would contradict them. Read off
 # $PSBoundParameters so a default is not mistaken for a request.
-$rigOnly = @('Counts', 'Pooled', 'Mixed', 'Collectors', 'Blankets', 'Ablate', 'Gap', 'ReportEvery')
+$rigOnly = @('Counts', 'Pooled', 'Mixed', 'Reaction', 'Collectors', 'Blankets', 'Ablate', 'Gap', 'ReportEvery')
 # The same rule applied to -SelfTest itself, and it has to come first: -SelfTest returns below,
 # before the rest of the script runs at all, so anything passed with it would be discarded in
 # silence -- which is the fault the paragraph above refuses.
@@ -853,6 +877,23 @@ function Assert-CensusCadence {
     }
 }
 
+# THE SINGLE-REACTION GATE (#435), lifted out of the sweep for the reason Assert-CensusCadence was:
+# a pure comparison a -SelfTest half can reach. `Burning` is the census's burning= field, which
+# tallies the fluid each reactor is ACTUALLY holding -- not the entity, and not what the rig meant
+# to build -- so a fleet asked for one reaction passes only if that field names exactly that plasma
+# against exactly the reactor count. A second plasma, a reactor holding none, or a count short are
+# all refusals: a figure from any of them is a mixture again.
+function Assert-SingleReaction {
+    param(
+        [Parameter(Mandatory)] [AllowEmptyString()] [string] $Burning,
+        [Parameter(Mandatory)] [string] $Plasma,
+        [Parameter(Mandatory)] [int] $Count
+    )
+    if ($Burning -cne "${Plasma}:$Count") {
+        throw ("rig at n=$Count was asked for $Plasma alone but burned '$Burning'. A fleet of one " +
+               'reaction cannot be measured from this run.')
+    }
+}
 
 function Get-Median {
     param([System.Collections.Generic.List[double]] $Values)
@@ -1485,6 +1526,34 @@ if ($SelfTest) {
             ('a stalled run leaves the pool and the mean is the clean one; a clean sitting is ' +
              'untouched; one surviving run is refused by return rather than by throw, and two is not refused.')
         } }
+
+        @{ Name = 'single-reaction'; Body = {
+            # THE SINGLE-REACTION GATE (#435). Without it a -Reaction run that degenerated -- a case
+            # table fed the wrong plasma, a feed pipe that never reached its reactor -- would report
+            # the right reactor count and a per-reactor figure for a fleet that was not the one asked
+            # for, which is the mixture the switch exists to get away from.
+            $fired = {
+                param($Burning, $Plasma, $Count)
+                try { Assert-SingleReaction -Burning $Burning -Plasma $Plasma -Count $Count; return $null }
+                catch { return $_.Exception.Message }
+            }
+            if (& $fired 'rf-he3-he3-plasma:200' 'rf-he3-he3-plasma' 200) {
+                throw 'a fleet burning exactly the plasma asked for was refused.'
+            }
+            $refused = @(
+                @('rf-d-he3-plasma:90,rf-he3-he3-plasma:110', 'a second plasma'),
+                @('rf-d-he3-plasma:200', 'the wrong plasma'),
+                @('rf-he3-he3-plasma:199', 'one reactor holding no plasma'),
+                @('', 'an empty census')
+            )
+            foreach ($case in $refused) {
+                $msg = & $fired $case[0] 'rf-he3-he3-plasma' 200
+                if (-not $msg) { throw "$($case[1]) ('$($case[0])') was reported as a fleet of one reaction." }
+                if (-not $msg.Contains('rf-he3-he3-plasma')) { throw "the refusal does not name the plasma asked for: $msg" }
+            }
+            ('exactly the asked-for plasma at the full count passes; a second plasma, the wrong one, ' +
+             'a reactor short and an empty census are each refused, naming the plasma.')
+        } }
     )
 
     Write-Host '-SelfTest: PASS'
@@ -1498,6 +1567,11 @@ $bundled     = Get-BundledMods -FactorioExe $FactorioExe
 # never calls blanket_breed() at all, because spending a real item for nothing is a trap rather
 # than a mechanic. So -Blankets alone would place a hundred idle containers and measure the cost of
 # owning them, and the lithium gate below would fail with no way to say which of the two it meant.
+# -Mixed asks for every reaction and -Reaction for one, so the pair is a contradiction rather than
+# a combination; honouring either would silently drop the other.
+if ($Mixed -and $Reaction) {
+    throw '-Mixed builds all four reactions and -Reaction builds one. Pick one.'
+}
 if ($Blankets -and -not $Collectors) {
     throw ('-Blankets requires -Collectors: a blanket on a reactor with no collector is idle by ' +
            'design (control.lua apply()), so there would be nothing to measure.')
@@ -1623,6 +1697,7 @@ local GRID   = __GRID__      -- cells per side; the same at every count, so the 
 local POOLED = __POOLED__
 local GAP    = __GAP__       -- clear tiles between one reactor and the next
 local MIXED  = __MIXED__
+local REACTION = "__REACTION__"   -- empty unless -Reaction named one; see .PARAMETER Reaction
 -- Fittings (#62). Off, the rig measures a reactor that vents -- which is every figure this project
 -- had on record before #62, and not what a player builds. See .PARAMETER Collectors.
 local COLLECTORS = __COLLECTORS__
@@ -1656,6 +1731,13 @@ local CASES = MIXED and {
   { entity = "rf-reactor",            plasma = "rf-d-t-plasma"     },
   { entity = "rf-aneutronic-reactor", plasma = "rf-d-he3-plasma"   },
   { entity = "rf-aneutronic-reactor", plasma = "rf-he3-he3-plasma" },
+} or REACTION ~= "" and {
+  ({
+    ["d-d"]     = { entity = "rf-reactor",            plasma = "rf-d-d-plasma"     },
+    ["d-t"]     = { entity = "rf-reactor",            plasma = "rf-d-t-plasma"     },
+    ["d-he3"]   = { entity = "rf-aneutronic-reactor", plasma = "rf-d-he3-plasma"   },
+    ["he3-he3"] = { entity = "rf-aneutronic-reactor", plasma = "rf-he3-he3-plasma" },
+  })[REACTION],
 } or {
   { entity = "rf-reactor",            plasma = "rf-d-d-plasma"     },
 }
@@ -1911,8 +1993,9 @@ script.on_init(function()
       if not eei then error(string.format("power source refused at cell %d,%d", col, row)) end
       -- J/tick. 2e6 is ~120 MW, ample for rf-reactor's 50 MW; the aneutronic reactor draws four
       -- times that, so a mixed rig needs headroom or half its reactors sit clamped. Raised only
-      -- when MIXED, so an unmixed run is byte-for-byte the rig #24 measured.
-      eei.power_production = MIXED and 8e6 or 2e6
+      -- when an aneutronic reactor is in play, so an unmixed run is byte-for-byte the rig #24
+      -- measured and an aneutronic -Reaction fleet is powered as -Mixed is (#435).
+      eei.power_production = (MIXED or CASES[1].entity == "rf-aneutronic-reactor") and 8e6 or 2e6
     end
   end
 
@@ -2043,8 +2126,8 @@ script.on_init(function()
     end
   end
 
-  log(string.format("BENCH-RIG grid=%d size=%d spacing=%d requested=%d placed=%d pooled=%s mixed=%s cases=%d collectors=%d blankets=%d",
-    GRID, SIZE, SPACING, COUNT, placed, tostring(POOLED), tostring(MIXED), #CASES,
+  log(string.format("BENCH-RIG grid=%d size=%d spacing=%d requested=%d placed=%d pooled=%s mixed=%s reaction=%s cases=%d collectors=%d blankets=%d",
+    GRID, SIZE, SPACING, COUNT, placed, tostring(POOLED), tostring(MIXED), (REACTION ~= "" and REACTION or "-"), #CASES,
     #storage.collectors, #storage.blankets))
 end)
 
@@ -2280,6 +2363,7 @@ end)
                 Replace('__PLASMAFEED__', (Write-PlasmaFeed -RigDirectory $rigDir)).
                 Replace('__POOLED__', $(if ($Pooled) { 'true' } else { 'false' })).
                 Replace('__MIXED__', $(if ($Mixed) { 'true' } else { 'false' })).
+                Replace('__REACTION__', "$Reaction").
                 Replace('__COLLECTORS__', $(if ($Collectors) { 'true' } else { 'false' })).
                 Replace('__BLANKETS__', $(if ($Blankets) { 'true' } else { 'false' })).
                 Replace('__LITHIUM__', "$lithiumPerBlanket").
@@ -3352,6 +3436,12 @@ try {
                 throw ("rig at n=$count was -Mixed but burned $($distinct.Count) plasma(s), not 4: " +
                        "'$burning'. The four-reaction measurement cannot be taken from this run.")
             }
+        }
+        # And a -Reaction fleet is exactly one plasma at exactly n (#435). Every n above zero, since
+        # unlike -Mixed there is no row a small count leaves empty.
+        if ($Reaction -and $count -gt 0) {
+            $burning = if ("$state" -match 'burning=(\S+)') { $Matches[1] } else { '' }
+            Assert-SingleReaction -Burning $burning -Plasma "rf-$Reaction-plasma" -Count $count
         }
 
         $cols = Get-Timings -Path $benchOut
