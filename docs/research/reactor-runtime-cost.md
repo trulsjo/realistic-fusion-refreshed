@@ -54,7 +54,9 @@ same sitting, and this table holds no later per-reactor cost for those configura
 | Shipped D-D step with the lookup, vented rig, *n* = 200, median of nine rounds | 5.257 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [The sitting](#the-sitting) |
 | The same step without the lookup (parent of the #425 commit), median of nine rounds | 4.424 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [The sitting](#the-sitting) |
 | `luaGarbageIncremental`, D-D rig with the lookup, *n* = 200, nine rounds | 0.1108 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [Nothing allocates](#nothing-allocates) |
-| What the lookup added on the `-Mixed` rig, 110 `rf-reactor` and 90 `rf-aneutronic-reactor` | +0.391 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [The aneutronic floor is bounded, not measured](#the-aneutronic-floor-is-bounded-not-measured) |
+| What the lookup added on the `-Mixed` rig, 110 `rf-reactor` and 90 `rf-aneutronic-reactor` | +0.391 µs per reactor | 2026-09-20 | 2.0.77 | not stated | [The aneutronic floor is bounded, not measured](#the-aneutronic-floor-bounded-by-430-measured-by-436) |
+| What #425 and its fixes added on a single-reaction `rf-aneutronic-reactor` fleet, D-He3, *n* = 200, paired alternating arms in one sitting, median of ten rounds | +0.273 µs per reactor | 2026-10-19 | 2.0.77 | unresearched (the rig researches nothing; not asserted) | [The aneutronic floor: bounded by #430, measured by #436](#the-aneutronic-floor-bounded-by-430-measured-by-436) |
+| The same arms on a single-reaction D-D fleet, same sitting | +0.689 µs per reactor | 2026-10-19 | 2.0.77 | unresearched (the rig researches nothing; not asserted) | [The aneutronic floor: bounded by #430, measured by #436](#the-aneutronic-floor-bounded-by-430-measured-by-436) |
 | The lookup's +0.83 µs as a share of a 16.67 ms tick at 200 reactors | 1.0% | 2026-09-20 | 2.0.77 | not stated | [What is not taken](#what-is-not-taken) |
 
 The first UPS reading on v1's reactor simulation, taken as soon as one existed
@@ -592,8 +594,8 @@ the same number. It also passes the check #39 leaves behind for future sweeps: p
 > 4.48 µs and 5.4% of a tick with collectors, and #72 and #425 have each added per-tick work since:
 > +0.88 µs per reactor on the D-D rig, and +0.391 on the `-Mixed` rig for #425's lookup. See
 > *[Collectors attached](#collectors-attached-62)*, *[Per-tick confinement spending
-> (#72)](#per-tick-confinement-spending-72)* and *[The aneutronic floor is bounded, not
-> measured](#the-aneutronic-floor-is-bounded-not-measured)*.
+> (#72)](#per-tick-confinement-spending-72)* and *[The aneutronic floor: bounded by #430,
+> measured by #436](#the-aneutronic-floor-bounded-by-430-measured-by-436)*.
 
 **The first attempt at this sweep is discarded rather than quoted.** It flagged `BUSY` at *n* = 0 —
 84% of the part already in other hands when the baseline launched — and returned 3.07 µs. Under #39's
@@ -2249,7 +2251,53 @@ control was taken fresh in the same sitting rather than subtracted from a number
 reading #94's note reports for its own change, and the expected one: the addition is table indexes
 and a property read, and none of them builds a table.
 
-### The aneutronic floor is bounded, not measured
+### The aneutronic floor: bounded by #430, measured by #436
+
+> **2026-10-19, [#436](https://github.com/trulsjo/realistic-fusion-refreshed/issues/436): measured,
+> and it is NOT zero. +0.27 µs per reactor**, Factorio 2.0.77. [#435](https://github.com/trulsjo/realistic-fusion-refreshed/issues/435)
+> gave `bench-reactors.ps1` `-Reaction`, so a fleet of 200 `rf-aneutronic-reactor` burning D-He3
+> could be built (`-Reaction d-he3 -Counts 0,200`) and its census gate refuses a run that burned
+> anything else. The same two trees as below — `227eb9d` with the lookup, `33ba491` without, as
+> `git worktree` checkouts with this branch's `bench-reactors.ps1` and `factorio-lib.ps1` copied
+> into both, so the rig is byte-identical across arms — alternated within each round, the arm that
+> went first alternating between rounds, and a single-reaction D-D fleet measured in the same rounds.
+>
+> **Twenty rounds were run and the first ten are discarded as a block.** Six of those ten, in
+> each lane, had an arm flag `BUSY` — other sessions on the machine — so dropping each in both
+> arms left six D-He3 pairs and four D-D pairs, short of ten. Rounds 11 to 20 followed at once, in
+> the same sitting, with no arm flagged `BUSY`, and they are the measurement:
+>
+> | fleet | arm | µs per reactor, rounds 11 to 20 | median |
+> |---|---|---|---:|
+> | D-He3 | without the lookup | 3.893 3.895 3.854 3.924 3.980 3.986 4.142 4.014 4.032 4.077 | **3.983** |
+> | D-He3 | with it | 4.129 4.134 4.090 4.131 4.289 4.223 4.320 4.442 4.350 4.344 | **4.256** |
+> | D-D | without the lookup | 4.173 4.190 4.149 4.147 4.375 4.389 4.357 4.445 4.466 4.398 | **4.366** |
+> | D-D | with it | 4.830 4.907 4.879 4.891 5.057 5.167 5.589 5.089 5.071 5.053 | **5.055** |
+>
+> **The aneutronic delta is +0.273 µs and the D-D one +0.689.** On D-D the bands do not touch
+> (fastest with, 4.830; slowest without, 4.466). On D-He3 they overlap by one round — 4.142
+> without against 4.090 with — but every one of the ten pairs went the same way, from +0.18 to
+> +0.43. So the floor is about two fifths of the neutronic figure, not nothing.
+>
+> **What it is spent on is not attributed.** The aneutronic path never reads `force_index`;
+> `spec_for()` returns at `HAS_SPEC_LADDER`. The arms differ by the whole #425 commit and the
+> four fixes after it, so the 0.27 is that difference on this entity, and the argument for which
+> line pays it is an argument, as it is for the D-D figure below.
+>
+> **Nothing allocates.** `luaGarbageIncremental`, same rounds, medians per reactor: D-He3 0.0902
+> with against 0.0968 without, which is lower on the arm that added work; D-D 0.0911 against
+> 0.0852. Neither has a direction worth a figure.
+>
+> **The four-plasma assumption below is replaced rather than confirmed.** The bound needed the
+> neutronic delta on the `-Mixed` rig to equal the one-plasma rig's. With each entity measured on
+> a fleet of its own, the bound is no longer needed, and the D-D fleet reads +0.689 in this sitting
+> against #430's +0.833: same arms, three weeks apart. Put through the bound's own arithmetic, 110
+> reactors at +0.689 and 90 at +0.273 average +0.50 µs over 200, against the +0.391 the `-Mixed`
+> lane read on 2026-09-20. **`-Mixed` was not re-taken in this sitting**, so that comparison spans
+> two sittings and says only that the bound's "indistinguishable from zero" was the noise of a
+> cross-entity subtraction, which a fleet of one entity does not have.
+>
+> The section below is #430's bound as it was written.
 
 `rf-aneutronic-reactor` has no research ladder on any axis (ADR 0020 decision 4, ADR 0038
 decision 5), so `spec_for()` short-circuits at `HAS_SPEC_LADDER` and never reaches a force. It is
