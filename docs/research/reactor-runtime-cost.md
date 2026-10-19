@@ -44,7 +44,10 @@ same sitting, and this table holds no later per-reactor cost for those configura
 | D-D blanketed, share of a tick at ten to fifty reactors | 0.3% to 1.6% | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
 | What a collector costs over the same rig vented, six pairs, D-D and mixed | about 1.4×, bracketed by 1.3 and 1.7 | 2026-09-03 | 2.0.77 | not stated | [What the collector costs](#what-the-collector-costs) |
 | D-D blanketed over D-D collected, rig, `-Gap 6`, *n* = 200 — inside the floor | 1.12 | 2026-09-03 | 2.0.77 | not stated | [The blanket, decided rather than omitted](#the-blanket-decided-rather-than-omitted) |
-| Loaded tick over rig control, `scriptUpdate` per reactor, D-D blanketed, `-Gap 6`, *n* = 200, borrowed 10k SPM megabase — both operands inflated by the census walk (#235); `borrowed-base.md` puts the ratio without it at about 1.16 | 1.11 | 2026-09-06 | 2.0.77 | not stated | [The answer, and it is the dull one](#the-answer-and-it-is-the-dull-one) |
+| Loaded tick over rig control, `scriptUpdate` per reactor, D-D blanketed, `-Gap 6`, *n* = 200, borrowed 10k SPM megabase, census at its corrected cadence, #67's tree | 1.13 | 2026-10-19 | 2.0.77 | unresearched (the rig researches nothing; not asserted) | [Re-taken at the corrected cadence, 2026-10-19 (#327)](#re-taken-at-the-corrected-cadence-2026-10-19-327) |
+| Borrowed base, `scriptUpdate` per reactor, the same configuration and sitting | 4.60 µs | 2026-10-19 | 2.0.77 | unresearched (the rig researches nothing; not asserted) | [Re-taken at the corrected cadence, 2026-10-19 (#327)](#re-taken-at-the-corrected-cadence-2026-10-19-327) |
+| Rig control, `scriptUpdate` per reactor, the same configuration and sitting | 4.07 µs | 2026-10-19 | 2.0.77 | unresearched (the rig researches nothing; not asserted) | [Re-taken at the corrected cadence, 2026-10-19 (#327)](#re-taken-at-the-corrected-cadence-2026-10-19-327) |
+| This mod's Lua at *n* = 200 on the borrowed base, as a share of a 16.67 ms tick | 5.52% | 2026-10-19 | 2.0.77 | unresearched (the rig researches nothing; not asserted) | [Re-taken at the corrected cadence, 2026-10-19 (#327)](#re-taken-at-the-corrected-cadence-2026-10-19-327) |
 | Borrowed base, median tick with 0 reactors, over 9,000 sampled ticks | 10.81 ms | 2026-09-06 | 2.0.77 | not stated | [The answer, and it is the dull one](#the-answer-and-it-is-the-dull-one) |
 | Rig control, median tick with 0 reactors, over 9,000 sampled ticks | 0.27 ms | 2026-09-06 | 2.0.77 | not stated | [The answer, and it is the dull one](#the-answer-and-it-is-the-dull-one) |
 | Largest one-tick change in the electric buffer of a driven, plasma-fed, powered `rf-reactor`, 600 settled ticks, since #72 | 0 J | 2026-09-06 | 2.0.77 | not stated | [The shape it fixed, measured rather than argued](#the-shape-it-fixed-measured-rather-than-argued) |
@@ -1207,7 +1210,8 @@ owns it, and observing it is a different ticket.
    the same sitting. **The interaction this item feared is not there**: 7.01 µs per reactor on a
    loaded tick against the control's 6.33, a ratio of 1.11 and so the same number. (**Both
    absolutes carry the harness's census walk, noted 2026-09-12 under #235 in that section; marked
-   here 2026-10-06, #612.**) The save this
+   here 2026-10-06, #612. Re-taken 2026-10-19, #327: 4.60 against 4.07, a ratio of 1.13 — see
+   *[Re-taken at the corrected cadence, 2026-10-19 (#327)](#re-taken-at-the-corrected-cadence-2026-10-19-327)*.**) The save this
    item says the project does not have is a save it borrows and does not own — see *[On a loaded
    tick, not a rig](#on-a-loaded-tick-not-a-rig-67--adr-0005s-last-residue)* at the foot of this
    note.
@@ -1803,8 +1807,9 @@ the fullest tritium box at 3.3%, so nothing saturated.
 > records it: the walk sat in every per-reactor figure taken after `0b43649`, the rig control's
 > 6.33 µs is inflated by about 2.2 µs, and the two columns are "inflated alike". So every
 > per-reactor figure in this section, and each share of a tick taken from one — the 8.41% and the
-> 0.4% to 2.1% of the *Verdict* among them — is too high as an absolute, and no re-taken figure is
-> recorded here. The block leaves the two columns comparable with each other. See
+> 0.4% to 2.1% of the *Verdict* among them — is too high as an absolute. ~~and no re-taken figure is
+> recorded here~~ **Re-taken 2026-10-19 — see *[Re-taken at the corrected cadence, 2026-10-19 (#327)](#re-taken-at-the-corrected-cadence-2026-10-19-327)* below.** The block leaves the
+> two columns comparable with each other. See
 > [`borrowed-base.md`](borrowed-base.md) and
 > [#327](https://github.com/trulsjo/realistic-fusion-refreshed/issues/327).
 
@@ -1843,6 +1848,60 @@ And the tick each map spends, as a median over 9,000 sampled ticks per count:
 | 0 | 10.81 ms | 0.27 ms |
 | 50 | 11.29 ms | 0.30 ms |
 | 200 | 11.51 ms | 0.37 ms |
+
+### Re-taken at the corrected cadence, 2026-10-19 (#327)
+
+**4.60 µs per reactor on the borrowed base against 4.07 on the rig control, a ratio of 1.13**, at
+*n* = 200, measured 2026-10-19 on Factorio 2.0.77. The table above is the same configuration with
+the census walk running a hundred times too often (#235); this is it at the cadence `-ReportEvery`
+asks for.
+
+**The mod is #67's, and only the harness is today's.** The sitting ran in a `git worktree` of
+`89a9f4e` — the commit that recorded #67, whose mods are the ones #67 measured, before #72 added
+per-tick confinement spending — with this branch's `scripts/bench-reactors.ps1` and
+`scripts/factorio-lib.ps1` copied in. So the only difference from the table above is the
+harness, and the drop is what the census fix did and nothing else. The same two commands as
+*Method*, nine runs a count, statistic as ADR 0037 settles it: the pooled mean over surviving runs.
+
+**No launch flagged `BUSY`** — 44%, 17% and 9% of the part in other hands on the borrowed base, 15%,
+6% and 7% on the rig — and no run was flagged as stalled, so nothing was discarded. An earlier
+attempt the same morning is not quoted: two of its borrowed-base launches flagged `BUSY` at 72% and
+68%. Both sweeps passed every gate: 200 of 200 reactors hot, powered and burning `rf-d-d-plasma`,
+every collector holding fluid, every blanket breeding, the fullest tritium box at 2.1%.
+
+`scriptUpdate` mean, baseline subtracted, µs per reactor:
+
+| reactors | borrowed base | rig control | ratio |
+|---:|---:|---:|---:|
+| 50 | 4.78 | 4.03 | 1.19 |
+| 200 | **4.60** | **4.07** | **1.13** |
+
+**Against the inflated table, both columns fell by about the census walk**: 7.01 to 4.60 is 2.41 µs,
+6.33 to 4.07 is 2.26, beside the 2.18 µs #235 measured for the walk. The ratio moved 1.11 to 1.13,
+where #235's reasoning predicted about 1.16. **The verdict does not move**: 1.13 is inside the 1.35×
+floor, so a loaded engine still does not change what a reactor costs, and `UPDATE_INTERVAL` stays
+at 6.
+
+**This mod's Lua at *n* = 200 on the borrowed base is 919.7 µs, 5.52% of a 16.67 ms tick**, which
+replaces the 8.41% below; #235 put the corrected figure nearer 5.8%. At *n* = 50 it is 239 µs, 1.43%.
+On the rig control: 814.7 µs, 4.89%.
+
+**The median-tick move does NOT reproduce, and that is a finding about the base, not the mod.** #67
+saw the megabase's median tick rise 10.81 to 11.51 ms with 200 reactors. Here it read **11.79 ms at
+*n* = 0 and 11.12 ms at *n* = 200** — lower with the reactors in — because the base's own tick
+drifted more between counts than the reactors add: the nine *n* = 0 runs' medians spread from 10.87
+to 14.88 ms. The rig control's median tick, where nothing else runs, went 0.216 to 0.310 ms. So on
+this sitting the median tick of the borrowed base cannot show a move of 0.7 ms, and only
+`scriptUpdate` isolates the reactors, as *What the engine columns do not say* argues below.
+`wholeUpdate` per reactor on the borrowed base reads −2.25 µs at *n* = 200 for the same reason, and
+corroborates nothing this time.
+
+**The cross-check against #62 is now a measurement.** #62's clean 5.44 µs on the rig, beside this
+sitting's 4.07, is 1.34× — under the 1.35× floor, against it rather than inside it, as #235's
+estimate of about 1.31 said. The two are also three days of commits apart (`2e4411f` against
+`89a9f4e`), so the comparison is weaker than the same-sitting pair above, which is the one to quote.
+
+`luaGarbageIncremental` per reactor at *n* = 200: 0.142 µs on the borrowed base, 0.150 on the rig.
 
 ### The answer, and it is the dull one
 
@@ -1953,7 +2012,9 @@ the physics on, which is the question the ADR pre-authorised a coarser cadence f
 
 > **8.41% and 0.4% to 2.1% both come from this sweep's 7.01 µs, which the #235 block under *[The
 > answer, and it is the dull one](#the-answer-and-it-is-the-dull-one)* records as inflated by the
-> census walk — marked 2026-10-06 (#612).** Neither has been re-taken here. The range this note's
+> census walk — marked 2026-10-06 (#612).** ~~Neither has been re-taken here.~~ **Re-taken
+> 2026-10-19 (#327): 5.52% at 200 reactors and 1.43% at fifty**, from 4.60 and 4.78 µs — see
+> *[Re-taken at the corrected cadence, 2026-10-19 (#327)](#re-taken-at-the-corrected-cadence-2026-10-19-327)*. The range this note's
 > `## Current figures` table carries for ten to fifty reactors is #62's 0.3% to 1.6%, from the
 > 5.44 µs that block calls clean.
 
@@ -1977,6 +2038,9 @@ says the record should.
 > the corrected rig control nearer 4.15 µs against #62's 5.44, about 1.31×: under the floor "but
 > against it rather than inside it". The figure on record stays #62's 5.44 µs, which that block
 > calls clean.
+>
+> **Re-taken 2026-10-19 (#327):** 4.60 µs on the loaded tick and 4.07 on the rig control beside it,
+> 1.13 apart; against #62's 5.44 the control is 1.34×. See *[Re-taken at the corrected cadence, 2026-10-19 (#327)](#re-taken-at-the-corrected-cadence-2026-10-19-327)*.
 
 **This sweep measured one configuration and not five, so it moves nothing about the other four.**
 Blanketed D-D was chosen because #62 measured it as the dearest; the mixed reaction set, the vented
