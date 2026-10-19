@@ -25,8 +25,10 @@
 >
 > In the dumps kept from each variant's last round, tick 30 is the worst tick of every run, except
 > under the surfaces and map variants, whose worst is tick 7 — the generation the variant itself
-> does there, before the first publish; the earlier rounds' dumps were overwritten and read only
-> at tick 30. The median of the 141 runs' own median ticks is
+> does there, before the first publish, at 7.0 to 7.3 s and 8.9 to 9.1 s of `scriptUpdate`, which
+> is 45 to 60 times their tick-30 spike and leaves the tick-30 figures in the table untouched. The
+> two controls share one dump file, so its last round is the *n* = 4 control's: seven dumps for
+> eight rows. The earlier rounds' dumps were overwritten and read only at tick 30. The median of the 141 runs' own median ticks is
 > 16.1 µs (9.3 to 38.1), so the spike is still thousands of times the ordinary tick. One round of the
 > research variant did not run — the harness's load reading failed before launch — so it has
 > nine runs.
