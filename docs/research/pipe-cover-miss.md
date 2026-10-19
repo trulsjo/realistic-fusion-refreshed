@@ -11,6 +11,12 @@ is Truls's.
 > and the miss below zero, and keeps the `pipe_covers` declaration **provisionally**. Nothing in
 > this note changes: it is the measurement the decision acts on, and the figures below are what a
 > re-measurement after #392 has to be compared against.
+>
+> **Re-measured, 2026-10-19 ([#403](https://github.com/trulsjo/realistic-fusion-refreshed/issues/403)).
+> The cover is concentric to within 0.009 tiles**, which is 0.3 screen pixels at zoom 1, against
+> the 0.376 to 0.378 below. See [On the levelled sheets](#on-the-levelled-sheets-2026-10-19-403).
+> And `rf-reactor`'s south face is photographed bare: its Krastorio 2 sprite draws a port of its
+> own there, so the cover is not the only thing drawn on that face.
 
 ## What was seen, and what it turned out to be
 
@@ -71,6 +77,38 @@ The socket's **drawn axis** comes off the committed sheet through `tools/socket_
 `Strip.axis_row` and is put on the frame by `tools/measure-frame-accents.py`'s `sheet_to_frame` —
 the #385 sidecar is what makes that possible at all, and the #387 mapping is borrowed rather than
 rewritten.
+
+## On the levelled sheets (2026-10-19, #403)
+
+The same three runs at the same `-MapSeed 7`, on the art as of `704c6c3`, where #392 has levelled
+every contained socket to the plumbable one's height, against Factorio 2.0.77, read by the same
+tool:
+
+| frame | socket | cover's drop below the socket's drawn axis |
+|---|---|---:|
+| `exchanger-west-x8`, zoom 8 | west `rf-reactor-energy`, **contained** | +8.2 px = **+0.032 tiles** |
+| | west water, **plumbable** (the control) | +5.8 px = **+0.023 tiles** |
+| | **the residual** | 2.4 px = **0.009 tiles** |
+| `exchanger-west-z1`, zoom 1 | west `rf-reactor-energy`, **contained** | −0.1 px = **−0.003 tiles** |
+| | west water, **plumbable** (the control) | −0.4 px = **−0.014 tiles** |
+| | **the residual** | 0.3 px = **0.009 tiles** |
+
+**So the cover is concentric to within 0.009 tiles at both zooms**, a fortieth of the 0.377 it
+missed by, and still a difference between two sockets on one short end in one frame. The tool
+prints one decimal of a pixel, so at zoom 1 the residual is 0.3 ± 0.1 px. **A residual remains**,
+in the same direction as before — the contained cover sits lower — and it is the size of the
+0.010 to 0.012 tiles by which the 2026-09-17 miss exceeded the projection; whether it is the same
+thing is not measured. What to do about it is not settled here: ADR 0036 says what would reopen
+the cover decision. The covers' reach outboard agrees too, 19.7 against 20.1 px at zoom 8 and 3.0
+against 3.1 at zoom 1.
+
+**`rf-reactor`'s south face, photographed bare.** The probe now shoots both reactors' south energy
+faces (`reactor-south-*`, `aneutronic-south-*`). On `rf-reactor` the cover is 294 × 202 px at zoom 8
+and 37 × 25 at zoom 1. With it, a ringed cap sits over the port and overhangs the machine's edge
+onto the grass; without it, **the Krastorio 2 sprite's own dark flanged port is there**, finished
+and attached to nothing missing. That is what the west face showed on 2026-09-17, now on the face
+ADR 0036 names. One run; `rf-aneutronic-reactor`'s south face is a mockup, and its frames were
+taken and not looked at for this.
 
 ## What Factorio does when a contained box declares no covers
 
@@ -155,7 +193,8 @@ kinds.
   cover survives the `contained` run, so the control #390 asks for would otherwise be unmeasurable.
 - **The 0.011-tile residue is unexplained**, and is recorded rather than rounded away.
 - **One machine per art source.** `rf-reactor` stands for Krastorio 2's art and two mockups stand for
-  the mockups; the other five contained boxes were not photographed.
+  the mockups; the other five contained boxes were not photographed. (`rf-reactor`'s south face was
+  added on 2026-10-19; see above.)
 
 ## Reproducing it
 
