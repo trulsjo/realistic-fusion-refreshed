@@ -965,14 +965,14 @@ end
 -- has no direction at all.
 --
 -- AND THE CHEAP HALF WAS REMOVED ANYWAY: spec_for()'s short-circuit was a walk over
--- logic.spec_ladders and is now one index into HAS_SPEC_LADDER, built at load. That is what an
--- rf-aneutronic-reactor pays on this path in total, which is the case with the most reactors on a
--- settled map and the one with nothing per force to look up. ~~A MIXED RIG BOUNDS IT AND DOES NOT
--- MEASURE IT~~ -- #430's -Mixed lane put the aneutronic share at "not distinguishable from zero".
--- MEASURED SINCE (#436, 2026-10-19, Factorio 2.0.77), AND IT IS NOT ZERO: +0.27 microseconds per
--- reactor on a fleet of 200 rf-aneutronic-reactors burning D-He3 (bench-reactors.ps1 -Reaction
--- d-he3), 3.98 to 4.26, against the same two trees #430 swapped, ten alternated rounds, none busy.
--- Every round's pair went the same way. The same sitting read the D-D fleet at +0.69, so the floor
+-- logic.spec_ladders and is now one index into HAS_SPEC_LADDER, built at load. That index is all
+-- spec_for() asks of an rf-aneutronic-reactor, which is the case with the most reactors on a
+-- settled map and the one with nothing per force to look up. #430 could only bound what it costs
+-- with a -Mixed rig, and put the aneutronic share at "not distinguishable from zero". MEASURED
+-- SINCE (#436, 2026-10-19, Factorio 2.0.77), AND IT IS NOT ZERO: +0.27 microseconds per reactor on
+-- a fleet of 200 rf-aneutronic-reactors burning D-He3 (bench-reactors.ps1 -Reaction d-he3), 3.98 to
+-- 4.26, against the same two trees #430 swapped, ten alternated rounds, none busy -- a first ten
+-- were discarded for busy arms. Every pair of the ten went the same way. The same sitting read the D-D fleet at +0.69, so the floor
 -- is about two fifths of the neutronic figure rather than nothing. What the 0.27 is spent on is not
 -- attributed: the arms differ by the whole #425 commit and its fixes, and the force_index read is
 -- not on the aneutronic path at all. See docs/research/reactor-runtime-cost.md.

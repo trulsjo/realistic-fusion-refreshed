@@ -18,7 +18,8 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | D-T Q at 30 s of confinement, with radiation, quoted beside 3.25×10⁹ °C | 73.1 | 2026-08-25 | none (pure simulation) | unresearched (30 s of confinement) | [The equilibrium that isn't](#the-equilibrium-that-isnt) |
 | D-T temperature at the top confinement rung, with radiation | 3.92×10⁹ °C | 2026-08-25 | none (pure simulation) | top confinement rung; heating not stated | [The equilibrium that isn't](#the-equilibrium-that-isnt) |
 | D-T Q at the top confinement rung, with radiation | 65.4 | 2026-08-25 | none (pure simulation) | top confinement rung; heating not stated | [The equilibrium that isn't](#the-equilibrium-that-isnt) |
-| D-T temperature `scripts/check-d-t.ps1` sees in game | 3.13×10⁹ °C | 2026-08-25 | 2.0.77 | not stated | [Both of those are settled, 2026-08-25 (#57, #58, ADR 0025)](#both-of-those-are-settled-2026-08-25-57-58-adr-0025) |
+| D-T temperature `scripts/check-d-t.ps1` sees in game | 3.13×10⁹ °C | 2026-08-25 | 2.0.77 | everything then researchable: the confinement ladder at its top; the heating and plant-efficiency ladders did not exist yet | [Both of those are settled, 2026-08-25 (#57, #58, ADR 0025)](#both-of-those-are-settled-2026-08-25-57-58-adr-0025) |
+| D-T temperature `scripts/check-d-t.ps1` sees in game, at the top of all three ladders (#445) | 3.188×10⁹ °C | 2026-10-19 | 2.0.77 | every rung of confinement, heating and plant efficiency, asserted | [Both of those are settled, 2026-08-25 (#57, #58, ADR 0025)](#both-of-those-are-settled-2026-08-25-57-58-adr-0025) |
 | D-T temperature and burn at one minute, with radiation | 3.25×10⁹ °C and 26.0 u/s | not stated | none (pure simulation) | unresearched — 30 s, 50 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
 | D-T temperature and burn settled (twenty minutes), with radiation | 3.27×10⁹ °C and 25.9 u/s | not stated | none (pure simulation) | unresearched — 30 s, 50 MW | [Both readings of the supply ratio](#both-readings-of-the-supply-ratio) |
 | One-heater D-D output, in game, 870 000 ticks, fuel line finished cooling (#503) | 48.3 – 58.0 MW | 2026-10-03 | not stated | unresearched | [Ignition is a control change, not a runaway](#ignition-is-a-control-change-not-a-runaway) |
@@ -201,9 +202,11 @@ reactor**, whatever it is doing.~~ **It is not pinned any more.** Measured throu
 moves with the ladder to **3.92×10⁹ °C** at the top rung — so the reading is a measurement again, and
 it moves with the reactor. `scripts/check-d-t.ps1` sees 3.13×10⁹ °C in game.
 
-> **Which state that reading is, marked 2026-10-19 (#445).** `check-d-t.ps1` researches everything,
-> and since #445 asserts it rung by rung: its reactor holds the top of all three ladders, not the
-> 30 s and 50 MW the 3.25×10⁹ beside it describes. On 2026-10-19, at that state, it read
+> **Which state that reading is, marked 2026-10-19 (#445).** `check-d-t.ps1` researches everything.
+> On 2026-08-25 that was the confinement ladder alone, at its top: plant efficiency arrived on
+> 2026-09-09 and heating on 2026-09-19. So the 3.13×10⁹ is a reading at 60 s of confinement, not the
+> 30 s and 50 MW the 3.25×10⁹ beside it describes. Since #445 the rig asserts its state rung by rung,
+> and it now holds the top of all three ladders: on 2026-10-19, at that state, it read
 > **3.188×10⁹ °C** — below both simulated figures, the top-rung 3.92×10⁹ included. The rig feeds
 > its reactor through an infinity pipe held at 6×10⁸ °C and the simulated figures have no feed
 > at all, so the two are not the same measurement; which difference accounts for the gap is not
@@ -537,7 +540,8 @@ the plasma heater turns Core's D-T mix into D-T plasma  -- 200 units of rf-d-t-p
 > "every figure in this note below this line is the radiation-free one", `2e+09` is the clamp as it
 > was before #58, and the 133 MW the next paragraph compares it with is struck in the equilibrium
 > table. The one later reading this note has from this rig is the D-T temperature: 3.13×10⁹ °C
-> (2026-08-25, "Both of those are settled" above). No later 37.1×, 3924 MW, 105.8 MW or D-D
+> (2026-08-25, "Both of those are settled" above), and since 2026-10-19 (#445) 3.188×10⁹ °C at the
+> top of all three ladders. No later 37.1×, 3924 MW, 105.8 MW or D-D
 > temperature from it is on record here.
 
 The D-D figure is 106 MW rather than the 133 MW above because two minutes is not twenty: that

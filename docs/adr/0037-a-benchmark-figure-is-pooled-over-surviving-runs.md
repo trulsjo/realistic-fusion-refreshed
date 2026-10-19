@@ -109,7 +109,8 @@ spread to compare against is
 borrowed base in the same sitting: **1.08× at *n* = 0** (38.0 to 36.3 µs), **1.08× at *n* = 50**
 (350.2 to 324.1), **1.09× at *n* = 200** (1,312.9 to 1,204.6). A figure quoted **without** its
 per-run line is unverifiable, and is re-taken only if something turns on it. The 2026-09-06 sitting
-is being re-taken anyway, under #327 and for a different reason.
+is being re-taken anyway, under #327 and for a different reason. *(Re-taken 2026-10-19, under this
+ADR's statistic; see `docs/research/reactor-runtime-cost.md`.)*
 
 **A count can now report nothing, and the sitting survives it.** A count that loses four of five
 runs produces no row and says so. That is deliberate — it is the same shape as the rig refusing to

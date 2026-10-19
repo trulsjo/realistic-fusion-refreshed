@@ -441,7 +441,9 @@ contain(reactor.fluid_box, PLASMA_CATEGORY)
 -- not depend on which of those the reader has.
 --
 -- Not east or west: those are plasma, and freeing one would spend ADR 0011's shared pool. The
--- south socket is drawn by pipe_covers, the same as the north one has always been.
+-- south socket is drawn by pipe_covers, the same as the north one has always been. Photographed
+-- bare (#403, 2026-10-19), the Krastorio 2 sprite draws a port of its own on that face too, and
+-- the cover is drawn over it; docs/research/pipe-cover-miss.md has the frames' figures.
 --
 -- One connection per face on purpose. More inlets down a face is a throughput change -- #47
 -- measured throughput as near linear in connection count -- and #227 still owns how much one

@@ -147,7 +147,7 @@
     contain would be a claim about the wrong map. Here the switches are HONOURED, because this mode
     is what built the configuration -- and -Save's contract is untouched.
 
-    All nine of them, enumerated rather than gestured at, since seven behave and one does not:
+    All nine of them, enumerated rather than gestured at, since eight behave and one does not:
     -Counts, -Pooled, -Mixed, -Reaction, -Collectors, -Blankets, -Gap and -ReportEvery mean exactly
     what they mean in a rig. -Ablate is REFUSED, and the reason is below.
 

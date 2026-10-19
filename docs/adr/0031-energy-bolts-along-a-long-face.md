@@ -240,7 +240,8 @@ an energy box is `input-output`. And each tier chains on its own axis.**
 - **`rf-reactor` keeps Krastorio 2's art and skips the mockup round.** Its art already fits its
   footprint, which is not the condition `make-mockup-art.ps1` exists for, and `entities.lua` records
   that the art is what tells the two 15×15 reactors apart. Its new south socket is drawn by
-  `pipe_covers`, the same as its north one. #278 renders it properly.
+  `pipe_covers`, the same as its north one. #278 renders it properly. *(2026-10-19, #403: photographed
+  bare, the Krastorio 2 sprite draws a port of its own on that face, and the cover is drawn over it.)*
 - **The mockup script's hand-copied connection table becomes a gate.** It duplicates every machine's
   footprint and connections with nothing enforcing agreement, and this change moves connections on
   five machines. #275 adds the check beside `load-check`'s render gate.

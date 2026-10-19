@@ -56,9 +56,10 @@
                           prediction, which is what #390 asks for.
       exchanger-north-*   THE REACTOR CONTACT, standing alone.
       reactor-south-*     rf-reactor's south energy face, and aneutronic-south-* the aneutronic
-                          reactor's (#403). The cover is the only art on both, and ADR 0036 names
-                          the first, photographed bare, as what must be measured before the cover
-                          is ever dropped.
+                          reactor's (#403). ADR 0036 named the cover as the only art on both,
+                          and the first, photographed bare, as what must be measured before the
+                          cover is ever dropped. Photographed: rf-reactor's sprite draws a port of
+                          its own there.
       exchanger-bolted-*  The same connection with a reactor actually bolted to it, which is how a
                           player meets that face. Whether the miss shows there IN PRACTICE is a
                           question about what covers what, and only this frame answers it.

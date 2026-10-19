@@ -60,7 +60,9 @@
          and tier-2 items in a storage chest: the planner's order is left for a robot, on a bolted
          row and then on a lone machine, read the same way as 2 to 7 -- and a twin row, filled the
          same and never ordered, is fast_replaced directly in the tick the robot's swap is seen, so
-         the two operations are compared from one state.
+         the two operations are compared from one state. Every swapped holder is read again
+         SETTLE ticks after the last swap, because a same-tick total cannot tell lost energy from
+         energy that has not arrived yet.
 
     AND THE BLUEPRINT LEAD (#408) is asked in section 4 with the capture area held constant: two
     fresh blueprints over one area, one before the order and one with it pending.
@@ -409,6 +411,7 @@ end
 -- so it is at most one tick old -- and the after-reading is the first tick it is gone.
 local ROBOT_X = -200
 local ROBOT_DEADLINE = __DEADLINE__
+local SETTLE = 600   -- ticks after the last swap before every swapped holder is read again
 
 -- Every holder of reactor energy at the robot site, and only there: the direct section's machines
 -- still hold water and room for steam, so they boil and would move a surface-wide total.
@@ -562,6 +565,7 @@ local function robot_watch(tick)
                                        fast_replace = true, spill = false, raise_built = true }
     say("twin perform: at tick " .. tick .. " fast_replace produced " .. (t2e and t2e.name or "NOTHING"))
     report_after("twin perform", rb.twin_reactor, rb.twin, t2e, rb.twin_joins, tb)
+    rb.robot_new, rb.twin_new = new, t2e
     -- And now the lone one, so its swap cannot land in the same tick as the row's.
     local planner = surface.create_entity{ name = "item-on-ground", position = { ROBOT_X, -64 },
                                            stack = { name = "upgrade-planner" } }
@@ -594,6 +598,29 @@ local function robot_watch(tick)
       else verdict = string.format("LOST, %.1f gone from the site", b.site - site_after) end
       say("lone robot: the energy was " .. verdict)
     end
+    rb.lone_new = new
+    rb.phase = "settle"
+    rb.settle_at = tick + SETTLE
+    return
+  end
+
+  -- THE SETTLED READING (#408). Every "after" above is read in the tick of the swap, and a first
+  -- run showed why that is not enough: the robot row read 432.4 just after its swap and 596.8 a
+  -- thousand ticks later, so what a same-tick total calls lost may only not have arrived yet. Each
+  -- swapped holder is read again here, SETTLE ticks after the last swap.
+  if rb.phase == "settle" then
+    if tick < rb.settle_at then return end
+    local function row_now(reactor, row, new)
+      return energy_total({ reactor, row[1], new, row[3] })
+    end
+    say(string.format("settled, tick %d: robot row reactor + row %.1f",
+                      tick, rb.robot_new and rb.robot_new.valid and row_now(rb.reactor, rb.row, rb.robot_new) or -1))
+    say(string.format("settled, tick %d: twin row reactor + row %.1f", tick,
+                      rb.twin_new and rb.twin_new.valid and row_now(rb.twin_reactor, rb.twin, rb.twin_new) or -1))
+    say(string.format("settled, tick %d: lone robot box %.1f", tick,
+                      rb.lone_new and rb.lone_new.valid and energy_total({ rb.lone_new }) or -1))
+    say(string.format("settled, tick %d: direct lone box %.1f", tick,
+                      storage.direct_lone and storage.direct_lone.valid and energy_total({ storage.direct_lone }) or -1))
     return robot_finish(nil)
   end
 end
@@ -693,7 +720,7 @@ script.on_nth_tick(60, function(event)
     -- and a construction robot does the work; a benchmark map has no roboport, so the row above is
     -- a row of ORDERS and sections 1, 2, 3 and 6 would be unanswered if this stopped there. This
     -- does it directly with a fast replace, on the reasoning that a robot does the same -- which
-    -- section 8 tested (#408): the joints, water and steam agree, the energy box does not.
+    -- section 8 tested (#408): read again 600 ticks on, the two agree on every box.
     -- 3. FILL THE BOXES FIRST, or "what happens to the fluid" is answered about nothing. Every box
     -- gets whatever its own filter says it takes, found rather than assumed: the three families
     -- here are two contained energies and water/steam, and a hard-coded fluid name would silently
@@ -751,14 +778,8 @@ script.on_nth_tick(60, function(event)
                                       stack = { name = "blueprint" } }
     if bp and bp.stack and bp.stack.valid_for_read then
       -- The reactor and the whole row, read off their own boxes rather than typed.
-      local l, t, r, b = math.huge, math.huge, -math.huge, -math.huge
-      for _, e in ipairs(everyone) do
-        local bb = e.bounding_box
-        l, t = math.min(l, bb.left_top.x), math.min(t, bb.left_top.y)
-        r, b = math.max(r, bb.right_bottom.x), math.max(b, bb.right_bottom.y)
-      end
       local n = bp.stack.create_blueprint{ surface = surface, force = force,
-                                           area = { { l, t }, { r, b } } }
+                                           area = row_area(everyone) }
       -- table_size, not table.size: the helper is a GLOBAL in 2.0 and the dotted spelling is nil.
       say("blueprint: captured " .. tostring(n and table_size(n) or 0) .. " entity/entities")
       local ents = bp.stack.get_blueprint_entities()
@@ -823,6 +844,10 @@ script.on_nth_tick(60, function(event)
       elseif math.abs(all_after - all_before) < 0.05 then verdict = "MOVED to another holder"
       else verdict = string.format("LOST, %.1f gone from the surface", all_before - all_after) end
       say("lone: the energy was " .. verdict)
+      -- Kept for the settled reading (#408): a same-tick reading cannot tell lost from not yet
+      -- arrived. The direct row is NOT kept: its boxes hold water with room for steam, so it boils
+      -- and spends the energy a later total would read.
+      storage.direct_lone = lone2
     end
   end
 
