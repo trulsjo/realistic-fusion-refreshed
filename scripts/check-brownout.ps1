@@ -107,6 +107,12 @@
     declared input_flow_limit is taken as consumption. That calibration is asserted, so a wrong
     reading cannot quietly become a net figure.
 
+    IT RUNS FULLY RESEARCHED, AND SINCE #445 IT SAYS SO. on_init calls research_all_technologies(),
+    so every reactor here holds every rung of all three of rf-reactor's ladders, and the report tick
+    asserts that rung by rung. THE BRACKETS IT PUBLISHES MOVE WITH RESEARCH: the heating ladder
+    raises what each reactor draws, so a brownout bracket measured here is the top heating rung's
+    and not one for a player at entry heating.
+
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
@@ -299,6 +305,12 @@ local function record(ok, name, detail)
   storage.report.lines[#storage.report.lines + 1] = string.format("%s  %s%s",
     ok and "ok  " or "FAIL", name, detail and ("  -- " .. detail) or "")
 end
+
+-- The shared rig helpers, for rf_assert_research (#445): the research state this rig runs at is
+-- asserted rung by rung rather than described. Get-RigBuildLua in scripts/factorio-lib.ps1 defines
+-- them, and LOGIC is the shipped reactor-logic they read the ladders off.
+__RIGBUILD__
+local LOGIC = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
 
 -- A measurement that is reported and not asserted. Every number this rig produces goes through here
 -- or through record's detail, so a rebalance shows up as a figure moving rather than as a check that
@@ -948,6 +960,9 @@ end)
 script.on_nth_tick(REPORT, function()
   if game.tick == 0 or storage.done then return end
   storage.done = true
+
+  -- ------------------------------------------------- the research state this rig runs at (#445)
+  rf_assert_research(record, game.forces.player, LOGIC, LOGIC.reactor, true)
   local cells, snaps = storage.cells, storage.snaps
 
   for _, phase in ipairs(PHASES) do
@@ -1354,7 +1369,7 @@ script.on_nth_tick(REPORT, function()
 end)
 '@
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value (
-        $lua.Replace('__QUIETMAP__', (Get-QuietMapLua)).
+        $lua.Replace('__QUIETMAP__', (Get-QuietMapLua)).Replace('__RIGBUILD__', (Get-RigBuildLua)).
              Replace('__QUIETFN__', $script:QuietMapFunction).
              Replace('__PLASMAFEED__', $feed).
              Replace('__SETTLE__',  "$settleTicks").

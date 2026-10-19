@@ -50,6 +50,13 @@
     The technology gate and the prerequisite closure are checked off the force's own tables before
     anything is researched.
 
+    IT RUNS FULLY RESEARCHED, AND SINCE #445 IT SAYS SO. on_init calls research_all_technologies()
+    once the technology gate is read, and the check tick asserts every rung of all three of
+    rf-reactor's ladders rung by rung. ITS FIGURES DO NOT MOVE WITH RESEARCH: the turbines and
+    exchangers carry no ladder, and the plant's reactor is not lit, so nothing measured here passes
+    through a researched field. Whether a researched reactor outruns the plant is #432's question
+    and this rig does not answer it.
+
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
@@ -200,6 +207,12 @@ local function record(ok, name, detail)
   storage.report.lines[#storage.report.lines + 1] = string.format("%s  %s%s",
     ok and "ok  " or "FAIL", name, detail and ("  -- " .. detail) or "")
 end
+
+-- The shared rig helpers, for rf_assert_research (#445): the research state this rig runs at is
+-- asserted rung by rung rather than described. Get-RigBuildLua in scripts/factorio-lib.ps1 defines
+-- them, and LOGIC is the shipped reactor-logic they read the ladders off.
+__RIGBUILD__
+local LOGIC = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
 
 --- Reported without a pass or fail, for facts that are worth having on the record but are not this
 --- ticket's to bound -- see the quality section.
@@ -557,6 +570,9 @@ end)
 script.on_nth_tick(CHECK_AT, function()
   if game.tick == 0 or storage.done then return end
   storage.done = true
+
+  -- ------------------------------------------------- the research state this rig runs at (#445)
+  rf_assert_research(record, game.forces.player, LOGIC, LOGIC.reactor, true)
   local r = storage.rig
   local seconds = CHECK_AT / 60
 
@@ -770,7 +786,7 @@ script.on_nth_tick(CHECK_AT, function()
 end)
 '@
     $energyFeed = Write-EnergyFeed -RigDirectory $rigDir
-    $body = $lua.Replace('__TICKS__', "$Ticks").
+    $body = $lua.Replace('__RIGBUILD__', (Get-RigBuildLua)).Replace('__TICKS__', "$Ticks").
         Replace('__QUALITY__', $(if ($Quality) { 'true' } else { 'false' })).
         Replace('__PLANTPIPE__', $(if ($PlantPipe) { 'true' } else { 'false' })).
         Replace('__ENERGYFEED__', $energyFeed)

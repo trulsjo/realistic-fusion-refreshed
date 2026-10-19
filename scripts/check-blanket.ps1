@@ -85,6 +85,14 @@
                  than helium-3 -- the by-product route and the blanket route arriving in the same
                  box -- where an unblanketed D-D reactor collects them in equal measure.
 
+    IT RUNS RESEARCHED EXCEPT FOR CONFINEMENT, AND SINCE #445 IT SAYS SO. on_init researches
+    everything and then puts the confinement ladder back down, so every rf-reactor here holds every
+    rung of plasma heating and plant efficiency and none of confinement, and the check tick asserts
+    exactly that, rung by rung. ITS RATIOS DO NOT MOVE WITH RESEARCH, THE AMOUNTS DO: breeding
+    follows the neutron count and the neutron count follows the reaction rate, so the tritium bred
+    and the energy sold are this state's, while a ratio of the two is what the confinement ladder
+    could be put down for.
+
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
@@ -183,7 +191,8 @@ local function record(ok, name, detail)
 end
 
 -- The shared map-building helpers: rf_place_or_die, rf_box_of, rf_unbound, rf_place_facing,
--- rf_pipe_run and rf_assert_segments. Get-RigBuildLua in scripts/factorio-lib.ps1 defines them.
+-- rf_pipe_run and rf_assert_segments, and since #445 rf_unresearch and rf_assert_research, which
+-- read the ladders off LOGIC below. Get-RigBuildLua in scripts/factorio-lib.ps1 defines them.
 --
 -- THIS RIG IS A GATE, WHICH IS WHY #226 REACHED IT. It was run to decide whether a change was safe
 -- while nothing in it checked that its own plumbing went where it thought: `must` proved only that
@@ -192,6 +201,7 @@ end
 -- box which fluid segment it is really in. `must` is gone rather than kept beside them -- it did
 -- strictly less, and leaving it available is leaving the weaker check to be reached for.
 __RIGBUILD__
+local LOGIC = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
 
 local function holds(entity, fluid)
   local total = 0
@@ -488,15 +498,12 @@ script.on_init(function()
   -- researched, the D-D collector takes 70.6 units of helium-3 in the default 7200 ticks and
   -- saturates near 51 000; held down, 31.4 units and near 115 000.
   --
-  -- Discovered from the technologies rather than read off reactor-logic's ladder, because this rig
-  -- does not require that module and pulling it in for four lines would be the larger change. A
-  -- rung renamed leaves this loop finding nothing and the headroom halving quietly, which is a
-  -- worse failure than it looks and is why the number above is stated rather than trusted.
-  for level = 1, 20 do
-    local t = force.technologies["rf-plasma-confinement-" .. level]
-    if not t then break end
-    t.researched = false
-  end
+  -- Through the shared rf_unresearch, which reads reactor-logic's ladders, since #445 made this rig
+  -- require that module for its research assertion. It used to discover the rungs by technology
+  -- name, where a rung renamed left the loop finding nothing and the headroom halving quietly; the
+  -- check tick now asserts the state this arranges, so that failure is a FAIL rather than a number.
+  rf_unresearch(force, LOGIC, LOGIC.reactor,
+    { heating_ladder = #LOGIC.reactor.heating_ladder, capture_ladder = #LOGIC.reactor.capture_ladder })
 
   surface.request_to_generate_chunks({ 0, 0 }, CHUNK_RADIUS)
   surface.force_generate_chunk_requests()
@@ -741,6 +748,11 @@ end)
 script.on_nth_tick(CHECK_AT, function()
   if game.tick == 0 or storage.done then return end
   storage.done = true
+
+  -- ------------------------------------------------- the research state this rig runs at (#445)
+  --
+  -- Every rung of heating and plant efficiency, none of confinement: what on_init arranged.
+  rf_assert_research(record, game.forces.player, LOGIC, LOGIC.reactor, { heating_ladder = #LOGIC.reactor.heating_ladder, capture_ladder = #LOGIC.reactor.capture_ladder })
   local r = storage.rig
 
   -- ------------------------------------------------------------ the technology gate

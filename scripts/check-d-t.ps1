@@ -35,6 +35,12 @@
     recipe tables: rf-tritium-breeding must come before rf-d-t-fusion, and the plasma recipe must be
     locked until the second one is researched.
 
+    IT RUNS FULLY RESEARCHED, AND SINCE #445 IT SAYS SO. on_init calls research_all_technologies(),
+    so both reactors here hold every rung of all three of rf-reactor's ladders -- confinement, plasma
+    heating and plant efficiency -- and the check tick asserts that rung by rung. THE FIGURES IT
+    PUBLISHES MOVE WITH RESEARCH: the D-T temperature docs/research/d-t-ignition.md quotes from this
+    rig is a fully researched reactor's, not the shipped entry state's.
+
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
@@ -121,6 +127,12 @@ local function record(ok, name, detail)
   storage.report.lines[#storage.report.lines + 1] = string.format("%s  %s%s",
     ok and "ok  " or "FAIL", name, detail and ("  -- " .. detail) or "")
 end
+
+-- The shared rig helpers, for rf_assert_research (#445): the research state this rig runs at is
+-- asserted rung by rung rather than described. Get-RigBuildLua in scripts/factorio-lib.ps1 defines
+-- them, and LOGIC is the shipped reactor-logic they read the ladders off.
+__RIGBUILD__
+local LOGIC = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
 
 local function must(entity, what)
   if not entity then error(what .. " refused") end
@@ -285,6 +297,9 @@ end)
 script.on_nth_tick(CHECK_AT, function()
   if game.tick == 0 or storage.done then return end
   storage.done = true
+
+  -- ------------------------------------------------- the research state this rig runs at (#445)
+  rf_assert_research(record, game.forces.player, LOGIC, LOGIC.reactor, true)
   local r = storage.rig
 
   -- ------------------------------------------------------------ the reactor burns D-T at all
@@ -350,7 +365,7 @@ script.on_nth_tick(CHECK_AT, function()
 end)
 '@
     Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') `
-        -Value $lua.Replace('__PLASMAFEED__', $feed).Replace('__TICKS__', "$Ticks")
+        -Value $lua.Replace('__RIGBUILD__', (Get-RigBuildLua)).Replace('__PLASMAFEED__', $feed).Replace('__TICKS__', "$Ticks")
 }
 
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }
