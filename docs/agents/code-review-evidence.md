@@ -496,7 +496,7 @@ is discarded by construction. A finding can be verified, important, and dropped.
 now posted in the second one.
 
 **Measured, not assumed.** Across PRs #124, #126 and #127: ten findings, **zero posted, nine real
-and subsequently fixed** — in `954338d`, `8fdbd24` and `971adef` respectively. Two were not
+and subsequently fixed** — in `954338d`, `87afc28` and `971adef` respectively. Two were not
 nitpicks: a mod-portal token surviving in PowerShell's `$Error` after the thrown message had been
 scrubbed (scored 75), and an ADR justifying a scope decision with a fact true only of a mod version
 the same ADR declines to target (scored 75, merged into a permanent decision record). Both were

@@ -1045,7 +1045,7 @@ confinement rung 2 and nothing else (asserted), Factorio 2.0.77 (build 84539), 2
 Every one of the 1333 cycles ending from 640 000 to 800 000 ticks is printed, and the pipes'
 temperature is on every cycle of the run. **A cycle first ends on 998 units at tick 779 282**,
 at 998.0012; the cycle before, ending on 779 162, read 997.9990. "Arithmetic" is
-`M.settle_segment` as #543 committed it (commit c76cbb8; HEAD no longer runs that version), with the heater giving three quarters of what it holds
+`M.settle_segment` as #543 committed it (commit e7cce49; HEAD no longer runs that version), with the heater giving three quarters of what it holds
 a tick; "the heater's rule" is the same function since #540, with step 3 and the floor above.
 
 | ticks | game: box | box, °C | pipes, °C | arithmetic: box | box, °C | pipes, °C | the heater's rule: box | pipes, °C |

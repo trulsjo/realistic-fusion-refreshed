@@ -514,7 +514,7 @@ script.on_init(function()
   -- THE ONE THING IN THIS RIG THAT EXISTS ONLY UNDER -SelfTest, and the reason it is here rather
   -- than in a canary mod: the flaw it plants is in the WORLD THE RIG BUILDS, not in a prototype,
   -- and the data stage cannot express it. The section's tally row says no pipe in the plant's area
-  -- carries reactor energy; it counted nothing until #281, because until ce0701e it filtered on the
+  -- carries reactor energy; it counted nothing until #281, because until 83f3896 it filtered on the
   -- NAME `infinity-pipe` while every energy feed here is Write-EnergyFeed's own prototype, so the
   -- branch that trips the assertion was unreachable and `energy 0` was true by construction.
   --

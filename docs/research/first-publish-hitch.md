@@ -2,7 +2,7 @@
 
 > **2026-10-19: IT SCALES WITH THE NUMBER OF KEYS IN USE AT LOAD, AND WITH NONE OF THE FOUR
 > OTHERS.** ([#409](https://github.com/trulsjo/realistic-fusion-refreshed/issues/409), at
-> `a511da6`, whose mods the runs loaded, Factorio 2.0.77.)
+> `2bd763c`, whose mods the runs loaded, Factorio 2.0.77.)
 >
 > One kept rig (`bench-reactors.ps1 -Counts 0,1,4 -Ticks 200 -Runs 1 -KeepTemp`), replayed with
 > `--benchmark --benchmark-runs 3 --benchmark-verbose all` and one dimension changed on tick 7 —

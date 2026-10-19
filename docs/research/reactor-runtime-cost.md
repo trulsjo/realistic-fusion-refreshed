@@ -1859,7 +1859,7 @@ asks for.
 **The mod is #67's, and only the harness is today's.** The sitting ran in a `git worktree` of
 `89a9f4e` — the commit that recorded #67, whose mods are the ones #67 measured, before #72 added
 per-tick confinement spending — with `scripts/bench-reactors.ps1` and `scripts/factorio-lib.ps1`
-as of `c7bde68` copied in. So the mod is the same as in the table above and the harness is not.
+as of `42f718f` copied in. So the mod is the same as in the table above and the harness is not.
 **That the drop is the census fix is inferred, not isolated**: the harness has changed in other ways
 since `89a9f4e`, and the sitting is six weeks later on a machine in a different state. The size of
 the drop matching #235's 2.18 µs is what the inference rests on. The same two commands as
@@ -2332,7 +2332,7 @@ and a property read, and none of them builds a table.
 > gave `bench-reactors.ps1` `-Reaction`, so a fleet of 200 `rf-aneutronic-reactor` burning D-He3
 > could be built (`-Reaction d-he3 -Counts 0,200`) and its census gate refuses a run that burned
 > anything else. The same two trees as below — `227eb9d` with the lookup, `33ba491` without, as
-> `git worktree` checkouts with `bench-reactors.ps1` and `factorio-lib.ps1` as of `c7bde68` copied
+> `git worktree` checkouts with `bench-reactors.ps1` and `factorio-lib.ps1` as of `42f718f` copied
 > into both, so the rig is byte-identical across arms — alternated within each round, the arm that
 > went first alternating between rounds, and a single-reaction D-D fleet measured in the same rounds.
 >
