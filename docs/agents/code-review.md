@@ -175,7 +175,7 @@ figure a change has replaced, and misses two current figures that measure one th
 #579 the branch gave the He3-He3 three-pipe line's fill as tick 151 531 in
 `docs/research/plasma-input-box.md` and 151 562 in `quality.md`: the first is the box first at 99.9%
 of 3000, the second the end of the first heater cycle to close there. Each note said what its own
-figure measured, and neither named the other's as a different measure. The fix in `5c27826` named it
+figure measured, and neither named the other's as a different measure. The fix in `54c663d` named it
 in `plasma-input-box.md`, and #713 named it in `quality.md` and in
 `docs/research/exchanger-coverage.md`, which had given 151 562 since 2026-10-04. The pre-PR review
 passed it and the plugin pass raised it at 75.
@@ -231,7 +231,7 @@ not one. On #713 the rule on a named quantity's other statements was written wit
 151 562 as its example and was not applied to them, and three findings came of that alone. Its first
 wording, "or each says what it measures", would have passed #579's own case, since each note said
 what its own figure measured (pre-PR finding 6, at 75). Its example said neither note named the
-other until the fix in `5c27826`, which touched one note, `plasma-input-box.md` (the plugin pass's
+other until the fix in `54c663d`, which touched one note, `plasma-input-box.md` (the plugin pass's
 one posted finding). And `docs/research/exchanger-coverage.md` gave 151 562 and named neither other
 note, which the rule's own search finds (pre-PR finding 12, at 50).
 

@@ -14,7 +14,7 @@ Two kinds of evidence, kept separate throughout:
   `locale-check.ps1` produce theirs. **Mod list for every observation below:** `base` 2.0.77 plus
   this repo's three mods junctioned from the working tree —
   `realistic-fusion-refreshed-assets` 0.1.0, `realistic-fusion-refreshed-core` 0.1.0,
-  `realistic-fusion-refreshed` 0.1.0 (commit b27791c) — with the bundled `elevated-rails`,
+  `realistic-fusion-refreshed` 0.1.0 (commit c6a9b17) — with the bundled `elevated-rails`,
   `quality` and `space-age` written explicitly disabled. Numbers like "210 technologies" are
   numbers for that mod list, not constants.
 

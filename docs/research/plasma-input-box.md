@@ -872,7 +872,7 @@ same game, at normal quality, with nothing researched (all 11 rungs asserted off
   temperature is the same to seven figures at the four counts built from 41 to 48: at those,
   more heaters fill the box sooner and do not move where it ends. Research cannot move it
   either: `M.aneutronic_reactor` in `realistic-fusion-refreshed/scripts/reactor-logic.lua` has
-  no ladder of any kind, read from source at 273938e on 2026-10-18. Nor does legendary
+  no ladder of any kind, read from source at 1b1ff91 on 2026-10-18. Nor does legendary
   quality, and that no level between does is *inferred*:
   [Above normal quality](#above-normal-quality) (#726).
 - **With one reactor unpowered, the line fills at 40 already.** That this is because the

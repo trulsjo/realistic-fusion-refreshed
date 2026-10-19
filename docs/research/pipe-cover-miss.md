@@ -80,7 +80,7 @@ rewritten.
 
 ## On the levelled sheets (2026-10-19, #403)
 
-The same three runs at the same `-MapSeed 7`, on the art as of `a511da6`, where #392 has levelled
+The same three runs at the same `-MapSeed 7`, on the art as of `2bd763c`, where #392 has levelled
 every contained socket to the plumbable one's height, against Factorio 2.0.77, read by the same
 tool:
 
