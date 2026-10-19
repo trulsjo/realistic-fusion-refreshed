@@ -119,26 +119,29 @@ requires restructuring is not a fallback.
   and this consequence is now closed in full.** The per-reactor cost was re-measured on a **borrowed
   base** — TimEv's vanilla 10k SPM megabase, spending 10.8 ms of its 16.67 ms tick before any reactor
   arrived — with a rig control taken in the same sitting so the two differ in the ground and in
-  nothing else. **A loaded engine does not change what a reactor costs**: 7.01 µs per reactor against
-  the control's 6.33, a ratio of 1.11 and so the same number under this project's 1.35× floor, with
-  `wholeUpdate` corroborating at 1.17. **The verdict is unchanged and no throttling is taken**:
+  nothing else. **A loaded engine does not change what a reactor costs**: 4.60 µs per reactor against
+  the control's 4.07, a ratio of 1.13 and so the same number under this project's 1.35× floor.
+  **The verdict is unchanged and no throttling is taken**:
   `UPDATE_INTERVAL` stays at 6. 200 blanketed D-D reactors — the worst of the five configurations
-  #62 measured at 200 reactors, and the top count this project sweeps to — cost 8.41% of a tick on
-  that megabase as a mean over every tick, and 0.4% to 2.1% at the ten to fifty an ordinary build
+  #62 measured at 200 reactors, and the top count this project sweeps to — cost 5.52% of a tick on
+  that megabase as a mean over every tick, and 1.43% at fifty, the top of what an ordinary build
   has.
 
-  > **The absolutes in this bullet are inflated and the verdict is not — noted 2026-09-12 (#235).**
-  > The harness's own census walk was running a hundred times more often than `-ReportEvery` asked
-  > for, and it scales with reactor count, so it sat in the numerator of every per-reactor figure
-  > taken from `0b43649` (2026-09-03) on. Measured at 2.18 µs per reactor in this configuration:
-  > **7.01 and 6.33 are each about 2.2 µs too high, and 8.41% is nearer 5.8%.** The ratio is what
-  > this bullet actually rests on and it barely moves — 1.11 to about 1.16, still inside the 1.35×
-  > floor — so **`UPDATE_INTERVAL` stays at 6 and nothing here is reopened.** The figures are left
-  > standing rather than quietly restated, because re-taking them is a measurement nobody has made
-  > yet. See [`docs/research/borrowed-base.md`](../research/borrowed-base.md).
+  > **Re-taken 2026-10-19 (#327), and the verdict did not move.** The figures this bullet carried
+  > until then — **7.01 µs against 6.33, a ratio of 1.11, and 8.41% of a tick**, with `wholeUpdate`
+  > at 1.17 and 0.4% to 2.1% at ten to fifty reactors — were taken while the harness's census walk
+  > ran a hundred times too often (#235), which put about 2.2 µs into each per-reactor figure. The
+  > re-take ran #67's own tree with the corrected harness, the same two sweeps in one sitting, no
+  > launch `BUSY`: **4.60 against 4.07, 1.13, and 5.52%**, the figures above. Both fell by about
+  > the walk's cost, the ratio stayed inside the 1.35× floor, and **`UPDATE_INTERVAL` stays at 6**.
+  > `wholeUpdate` is no longer quoted as corroboration: on this sitting the megabase's own tick
+  > drifted more between counts than 200 reactors add, so its per-reactor `wholeUpdate` read
+  > negative. See *Re-taken at the corrected cadence* in
+  > [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md).
 
   The megabase's *median* tick moved less, 64.8% of the budget to 69.0%, because the simulation
-  steps one tick in six. **Only that one configuration was re-run**,
+  steps one tick in six. *(Not reproduced on 2026-10-19, #327: that sitting's base read 11.79 ms at
+  no reactors and 11.12 at 200, its own drift larger than the move.)* **Only that one configuration was re-run**,
   so the 4.5 µs above stays #62's figure on #62's evidence; what #67 establishes is that the ground a
   figure is taken on does not change it. See *On a loaded tick, not a rig* in
   [`docs/research/reactor-runtime-cost.md`](../research/reactor-runtime-cost.md).

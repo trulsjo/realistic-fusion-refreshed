@@ -290,20 +290,22 @@ included.
 
 **What is affected is every per-reactor figure taken from 2026-09-03 on, and not only the borrowed
 base's** — the rig runs the same handler. Two documents carry such figures, across **three**
-sittings. **None has been re-taken and none is restated here:**
+sittings. ~~**None has been re-taken and none is restated here:**~~ **The #67 sitting was re-taken
+on 2026-10-19 (#327)**, in the rows below that say so; the #72 row was not.
 
 | Document | The figures | Does its conclusion turn on them? |
 |---|---|---|
-| [`reactor-runtime-cost.md`](reactor-runtime-cost.md) | the **#67** sitting of 2026-09-06 — 7.01 µs against a rig control's 6.33 | the absolutes move, and *these two* are inflated alike |
+| [`reactor-runtime-cost.md`](reactor-runtime-cost.md) | the **#67** sitting of 2026-09-06 — 7.01 µs against a rig control's 6.33 | the absolutes move, and *these two* are inflated alike. **Re-taken 2026-10-19 (#327)** on #67's own tree with the fixed harness: **4.60 against 4.07, ratio 1.13**, no launch `BUSY` — see [`reactor-runtime-cost.md`](reactor-runtime-cost.md#re-taken-at-the-corrected-cadence-2026-10-19-327) |
 | the same | the **#72** confinement-heating sitting, also 2026-09-06 — 3.112 and 3.989 µs, *"the delta is +0.88 µs per reactor"* | unknown. The delta is between two counts in one sweep, so the census may cancel out of it; nobody has checked |
-| [ADR 0005][adr5] | **7.01 µs** per reactor against the control's **6.33**, and **8.41%** of a tick at 200 blanketed D-D | **No.** Both absolutes are inflated by the census; the ratio moves 1.11 to about 1.16 and stays inside the 1.35× floor, so `UPDATE_INTERVAL` still stays at 6 |
+| [ADR 0005][adr5] | **7.01 µs** per reactor against the control's **6.33**, and **8.41%** of a tick at 200 blanketed D-D | **No.** Both absolutes are inflated by the census; the ratio moves 1.11 to about 1.16 and stays inside the 1.35× floor, so `UPDATE_INTERVAL` still stays at 6. **Re-taken 2026-10-19 (#327)**: the ADR now carries 4.60, 4.07, 1.13 and 5.52%, and the verdict did not move |
 
 **One comparison in `reactor-runtime-cost.md` is NOT between figures inflated alike, and it is the
 one that licenses the rest.** Its *"The rig control reproduces the record"* paragraph sets the #67
 sitting's 6.33 µs rig control against **#62's 5.44 µs** and calls the 1.16× between them proof that
 *"the two columns above are apples to apples"*. But #62's figures landed in `2e4411f` at
 **2026-09-03 14:05**, and the collision landed in `0b43649` at **19:56 the same day** — so **5.44 is
-clean and 6.33 is not.** Corrected, the pair is nearer 5.44 against 4.15, a ratio of about **1.31**:
+clean and 6.33 is not.** Corrected, the pair is nearer 5.44 against 4.15, a ratio of about **1.31**
+(*measured 2026-10-19, #327: 5.44 against 4.07, 1.34*):
 still under the 1.35× floor, but against it rather than comfortably inside it, and no longer a
 reproduction of anything. That paragraph now carries a note saying so.
 
