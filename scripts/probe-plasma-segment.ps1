@@ -573,13 +573,14 @@ function Step-HeaterRule {
 
 function Measure-HeaterRule {
     <#  THE RULE AGAINST THE ROWS (#563). #540 and #552 each checked the heater rows with arithmetic
-        that was never committed, and their worst misses differed. This is that check, printed.
+        that was never committed, and their worst misses differed. This is that check, returned
+        for the caller to print.
 
         A TICK PAIR is two rows on consecutive ticks. The rule is run from the first row's reading
         -- the box before the mod's step, the segment, and what the heater had to give on the next
         tick, which carries any craft that landed -- and compared with the second row's box, segment
         and heater. A pair whose first tick is a step tick is left out: the box is read before the
-        mod steps it there, so the rule would start from a box the engine never saw. It reports and
+        mod steps it there, so the rule would start from a box the engine never saw. It prints and
         asserts nothing.  #>
     param([object[]] $Rows, [double] $BoxVolume, [double] $HeaterVolume, [int] $StepTicks, [int] $Decimals = -1)
 
@@ -587,7 +588,8 @@ function Measure-HeaterRule {
     # the rig read them (#577); load-check.ps1 holds those to the prototypes. With -Decimals, each
     # reading is first rounded as the table above prints it, so the worst miss is the one a reader
     # checking that table by hand would find.
-    $Num = if ($Decimals -ge 0) { { param($v) [math]::Round((Num $v), $Decimals) } } else { { param($v) Num $v } }
+    # Through the same format string the table uses, so a reading rounds as it is printed.
+    $Num = if ($Decimals -ge 0) { { param($v) Num ((Num $v).ToString("F$Decimals", $inv)) } } else { { param($v) Num $v } }
     $pairs = 0; $missed = 0; $worst = 0.0; $worstAt = 0; $bare = 0.0
     for ($i = 0; $i -lt $Rows.Count - 1; $i++) {
         $a = $Rows[$i]; $b = $Rows[$i + 1]
@@ -738,7 +740,9 @@ try {
                 $rule = @{ Rows = $drips; BoxVolume = $boxCap; HeaterVolume = (Num $built['heater_output_box'])
                            StepTicks = [int]$built['step_ticks'] }
                 $r = Measure-HeaterRule @rule
-                Write-Host ("  the rule against these rows: {0} tick pairs, {1} missed by over 1e-4 units; worst miss {2:E1} on tick {3}; without the 0.1 floor the worst is {4:G2}" -f
+                Write-Host ("  the rule against these rows, with reactor-logic.lua's heater output box of {0} units and a step every {1} ticks:" -f
+                    $rule.HeaterVolume, $rule.StepTicks)
+                Write-Host ("  {0} tick pairs, {1} missed by over 1e-4 units; worst miss {2:E1} on tick {3}; without the 0.1 floor the worst is {4:G2}" -f
                     $r.Pairs, $r.Missed, $r.Worst, $r.WorstAt, $r.Bare)
                 # THE SAME RULE OVER THE TABLE AS PRINTED (#577), each reading to its five decimals:
                 # #540 checked the table by hand and its worst misses were this rounding's.
