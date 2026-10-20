@@ -64,9 +64,10 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | Shipped `input-output` box, D-He3 solo, 41 heaters, 123 pipes, the reactor at legendary and the heaters at normal: fill tick and temperature after it | 10 870; 1.369335×10⁷ °C, every row as at normal quality | 2026-10-18 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Above normal quality](#above-normal-quality) |
 | Shipped `input-output` box, D-He3 solo, heaters and reactor at legendary, 3 pipes plus three per added heater: the fewest of the counts built (16, 17 and 41) that fill the line, its fill tick and temperature after it | 17 heaters, 51 pipes; 6364; 1.369335×10⁷ °C | 2026-10-18 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Above normal quality](#above-normal-quality) |
 | Shipped `input-output` box, D-He3 solo, 16 heaters and the reactor at legendary, 48 pipes: where the box settles | never fills; 2908.27 to 2919.99 of 3000 at 4.15 to 4.16×10⁹ °C | 2026-10-18 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Above normal quality](#above-normal-quality) |
-| Shipped `input-output` box: `check-pooling.ps1` verdict | `PASS: 125 checks, 0 failures` | 2026-10-05 | 2.0.77 | not stated for this run (the 2026-10-04 run asserted all 11 rungs off) | [The pooling check: 23 of 125 checks failed, and 27 do since #565](#the-pooling-check-23-of-125-checks-failed-and-27-do-since-565) |
-| Canary `input` box: `check-pooling.ps1` verdict | `FAIL: 125 checks, 27 failures` | 2026-10-05 | 2.0.77 | not stated for this run (the 2026-10-04 run asserted all 11 rungs off) | [The pooling check: 23 of 125 checks failed, and 27 do since #565](#the-pooling-check-23-of-125-checks-failed-and-27-do-since-565) |
-| Shipped `input-output` box: the four "the run gains most of what its reactors spent, and not all of it" rows (solo, solopipe, bare, piped) | 94.6%, 75.4%, 57.6% and 67.0% | 2026-10-05 | 2.0.77 | not stated for this run (the 2026-10-04 run asserted all 11 rungs off) | [The pooling check: 23 of 125 checks failed, and 27 do since #565](#the-pooling-check-23-of-125-checks-failed-and-27-do-since-565) |
+| Shipped `input-output` box: `check-pooling.ps1` verdict | `PASS: 125 checks, 0 failures` | 2026-10-20 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The pooling check: 23 of 125 checks failed, and 36 do since #565 and #575](#the-pooling-check-23-of-125-checks-failed-and-36-do-since-565-and-575) |
+| Canary `input` box: `check-pooling.ps1` verdict | `FAIL: 125 checks, 36 failures` | 2026-10-20 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The pooling check: 23 of 125 checks failed, and 36 do since #565 and #575](#the-pooling-check-23-of-125-checks-failed-and-36-do-since-565-and-575) |
+| Shipped `input-output` box: the four "the run gains most of what its reactors spent, and not all of it" rows (solo, solopipe, bare, piped) | 94.6%, 75.4%, 57.6% and 67.0% | 2026-10-05 | 2.0.77 | not stated for this run (the 2026-10-04 run asserted all 11 rungs off) | [The pooling check: 23 of 125 checks failed, and 36 do since #565 and #575](#the-pooling-check-23-of-125-checks-failed-and-36-do-since-565-and-575) |
+| Shipped `input-output` box: the three write-shape rows and the six writer rows, each bounded below 0.98 since #575 | 72.2% in each shape; 72.19%, 71.92%, 71.64%, 71.65%, 71.10% and 71.10% | 2026-10-20 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The pooling check: 23 of 125 checks failed, and 36 do since #565 and #575](#the-pooling-check-23-of-125-checks-failed-and-36-do-since-565-and-575) |
 | Shipped `input-output` box and canary `input` box alike: load-time invariants that hold in `load-check.ps1` | sixteen | not stated | 2.0.77 | not stated | [The load check: everything holds](#the-load-check-everything-holds) |
 | Neither box (the canary cannot be loaded into them): the Lua suites | 968 checks, 0 failures | 2026-10-04 | none (pure simulation) | not stated | [The Lua suites: the canary cannot reach them](#the-lua-suites-the-canary-cannot-reach-them) |
 | Save made on the shipped `input-output` box at tick 80 001, loaded under the canary `input` box, D-D pair: what each box took and the segment gave up in the first tick | 43.9732 and 87.9464 | 2026-10-04 | 2.0.77 | unresearched (all 11 rungs asserted off at build and at the canary load) | [An existing save loaded under the canary](#an-existing-save-loaded-under-the-canary) |
@@ -998,7 +999,7 @@ The canary refuses to load unless the box is `input-output` before it changes it
 reads the plasma box's production type back, so the change itself is the canary's own assertion plus
 #542's runtime reading above.
 
-### The pooling check: 23 of 125 checks failed, and 27 do since #565
+### The pooling check: 23 of 125 checks failed, and 36 do since #565 and #575
 
 **Since [#565](https://github.com/trulsjo/realistic-fusion-refreshed/issues/565) four more rows
 fail under the canary, which is what they should have done.** The readings below are #549's, of
@@ -1010,10 +1011,18 @@ so the nearest has 3.4 points of room; canary, `FAIL: 125 checks, 27 failures`, 
 and those four. `scripts/check-pooling.ps1 -SelfTest` proves it: its `all-arrives-refused` half
 loads this canary and requires the four rows to fail by name.
 
-Nine other rows keep the old bound of above 0.4 and below 1.02, and still pass at 100% under the
-canary: the three write shapes and the six writer rows, which read 72.2% and 71.10% to 72.19%
-as shipped. Their names state a shape, not a loss, so #565 left them; the rows that compare
-them with each other are among the 23.
+**Since [#575](https://github.com/trulsjo/realistic-fusion-refreshed/issues/575) nine more
+fail under the canary.** The three write shapes and the six writer rows kept the old bound of
+above 0.4 and below 1.02 after #565, and passed at 100% under the canary, because their names
+state a shape and not a loss. Each is still a share of what one run's reactors spent that
+arrived, so #575 gave them the same bound of below 0.98. Run on 2026-10-20, Factorio 2.0.77,
+nothing researched (all 11 rungs asserted off): the nine read 72.2% in each shape and 72.19%,
+71.92%, 71.64%, 71.65%, 71.10% and 71.10% at the default `-Tail`, at `-Tail 40` and with
+`-With space-age` alike, so the nearest has 25.8 points of room. Shipped,
+`PASS: 125 checks, 0 failures` with and without Space Age; canary,
+`FAIL: 125 checks, 36 failures`, the 27 above and these nine, all nine at 100% arrived. The
+`all-arrives-refused` half of `scripts/check-pooling.ps1 -SelfTest` requires the nine to fail by
+name too.
 
 
 Defaults: 1801 ticks, a simulation step every 6, a 20-pipe tail on `piped`. Nothing researched:
@@ -1043,7 +1052,8 @@ differently. These are the 23 that fail:
 | and what reaches the pool DEPENDS on what else is plumbed into the run | 57.6% against 67.0% | 100.0% against 100.0% |
 
 These 45 checks still passed on 2026-10-04, with different figures. Since #565 the first row's
-four fail, which leaves 41:
+four fail, and since #575 the two rows of the write shapes and of what the six writer rows
+arrived, nine checks, which leaves 32:
 
 | row | shipped | canary |
 |---|---|---|
@@ -1054,11 +1064,11 @@ four fail, which leaves 41:
 | idle: left flat and alone, the run holds its heat | 0.000898% apart | 0% apart |
 | idle: no plasma entered or left the untouched run | 1785.8695 units | 3025 units |
 | twopass, onepass, rebased: started from the same state as the other shapes | 1.17974×10⁹ unit-K predicted | 1.08356×10⁹ |
-| twopass, onepass, rebased: the three write shapes | 72.2% arrived in each | 100.0% in each |
+| twopass, onepass, rebased: the three write shapes | 72.2% arrived in each | 100.0% in each; below 0.98 since #575, so these three now fail |
 | onepass, and rebased, against the shipped shape | 72.19% against 72.19% | 100.00% against 100.00% |
 | writers1, writers2, writers3, middle, east, reversed: same segment, same fill, same temperature, same total heating | 1785.87 of 4000 units, 44.6% full | 3025 of 4000, 75.6% full |
 | the same six: the shipped physics predicts the same gain as every other row | 1.17974×10⁹ unit-K | 1.08356×10⁹ |
-| the same six: what arrived | 72.19%, 71.92%, 71.64%, 71.65%, 71.10%, 71.10% | 100.00% in each |
+| the same six: what arrived | 72.19%, 71.92%, 71.64%, 71.65%, 71.10%, 71.10% | 100.00% in each; below 0.98 since #575, so these six now fail |
 | write order does not matter | 71.10% against 71.10% | 100.00% against 100.00% |
 | 2 writers, and 3 writers, keep the MEAN of the positions they occupy | 71.92%, 71.64% | 100.00% in both |
 | the shape rows, and the one-writer row, were uneven the instant the writes landed | 3.667×10⁶ against 9.797×10⁵ °C, spread 73.28% | 2.166×10⁶ against 9.588×10⁵, spread 55.73% |
