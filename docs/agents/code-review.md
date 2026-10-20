@@ -473,7 +473,11 @@ sent** (Truls, 2026-10-19, #730): the first `gh pr create` and every `gh pr edit
 review pass's included. The review sections, the `## Pre-PR review` and what the plugin pass adds,
 stand below the template's `## Summary`, `## Evidence` and `## Merge Danger`, which the script
 checks and the tracker page, `docs/agents/issue-tracker.md`, requires. Where the review sections
-stand the script does not read.
+stand the script does not read. **The three headings are filled by invoking the
+`mattpocock-skills:pr` skill**, before the first `gh pr create`, and are written by hand to that
+skill's template where it is not installed (2026-10-20, #738). The script reads only that the
+headings stand: #737's body was written by hand, passed it, and had none of the template's
+**Door:**, **Blast Radius:**, **Before:** or **After:**.
 
 **The session answers for each thing the reviewer says it did not check** (2026-10-08, #636). The
 reviewer ends its report with that list. Before the findings table is written, and so before the
