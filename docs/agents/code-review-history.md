@@ -307,3 +307,26 @@ One line for each, newest last. The passages above are not edited.
   #593](https://github.com/trulsjo/realistic-fusion-refreshed/issues/593#issuecomment-6249100930)
   records it, and the verdict's comment is left as written. The two grades #629 also asked about,
   #628's and #633's, he had seen on 2026-10-10.
+- **2026-10-16, #610: Truls took all four differences of the modpack's review rules.** [His decision
+  comment](https://github.com/trulsjo/realistic-fusion-refreshed/issues/610#issuecomment-6210061846)
+  records them. The pre-PR reviewer gives its findings no score, for this repository's reason, that
+  since #653 a score decided nothing, and `code-review.md` says beside the rule how that differs
+  from the modpack's; its findings table loses its score column, an unfixed finding gives its
+  reason, and a new row of `review-figures.md` says "left unfixed: <reason>". Under *Treat a
+  quantifier as an instruction to enumerate*, a fix that adds a figure re-walks every quantifier
+  covering the place it lands. A change that alters a rule has every sentence of that rule's section
+  read against the new wording, as its own paragraph after the supersede rule, with #594 as the
+  local case. The sentence on what the plugin's reviewers read gives its source, the installed
+  plugin's `commands/code-review.md`, read 2026-10-16, and says why it carries no grade. The wording
+  is the session's.
+- **2026-10-16, #724: Truls added an item to what the fourth rule's next revisit decides**: whether
+  the review's findings on its own records are counted apart from its findings on the change.
+  `plugin-pass.md` says which findings count as on records, that the wording is his to correct, and
+  that the split is not applied to rows already written. The wording is the session's.
+- **2026-10-19, #730: Truls ruled that a pull request body carries the pr template's three
+  headings**, in a grill recorded on #730 that applies trulsjo/grado-factorio-modpack#320's ruling
+  here. `code-review.md`'s fourth rule says that the body names a commit of the branch by its
+  subject in quotes and not by its hash, that the body is checked with the shared
+  `pr-body-check.ps1` before each time it is sent, and that the review sections stand below the
+  three headings; the reading after the last fix commit names its head by its subject. The tracker
+  page states the headings and the check. The wording is the session's.
