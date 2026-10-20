@@ -68,6 +68,60 @@ function Get-RepoMods {
     )
 }
 
+function Get-ModTreeFingerprint {
+    <#  Every file under each of our mod directories, as path, size and last write time.
+
+        A self-test's one hazard is that its canaries break OUR prototypes to prove OUR checks
+        fire. They do it in `data-final-fixes`, in memory, so nothing on disk should move -- and
+        #125 asked for that to be ASSERTED rather than reasoned about, because a self-test in
+        load-check.ps1 once deleted the repository's own sprite. Here rather than there since #578,
+        so the self-tests of check-pooling.ps1 and check-hc.ps1, which load canaries too, assert it.
+
+        Path, size and write time rather than a hash of the contents: it walks the assets mod, so
+        reading every sprite would cost more than the loads it is guarding, and a canary that
+        rewrote a file in place without changing its length is not a failure mode this has.  #>
+    param([Parameter(Mandatory)] [string[]] $Mods)
+
+    $repoRoot = Split-Path $PSScriptRoot -Parent
+    $rows = foreach ($mod in $Mods) {
+        $root = Join-Path $repoRoot $mod
+        foreach ($file in (Get-ChildItem -LiteralPath $root -Recurse -File -Force)) {
+            $rel = $file.FullName.Substring($root.Length + 1).Replace('\', '/')
+            "$mod/$rel|$($file.Length)|$($file.LastWriteTimeUtc.Ticks)"
+        }
+    }
+    return @($rows | Sort-Object)
+}
+
+function Test-ModTreeUnchanged {
+    <#  Whether our mod directories are still exactly where they were, REPORTED rather than thrown.
+
+        Called twice by each self-test that uses it, and the second call is why it reports: once on
+        the pass path, where a moved file is a failure of its own, and once from the finally block,
+        so a half that exited early still says whether it left anything behind on the way out. By
+        the time the finally runs the exit code is already committed, so exiting again there would
+        only replace one wrong answer with another.
+
+        FILES, NOT ROWS. Compare-Object emits one object per side, so a single modified file
+        arrives as two -- reporting that as "2 file(s) changed" was a defect found in review of
+        this very guard. The rows are still printed, because both sides are what places the change;
+        the COUNT is of distinct paths.  #>
+    param([Parameter(Mandatory)] [string[]] $Before, [Parameter(Mandatory)] [string[]] $Mods)
+
+    $moved = @(Compare-Object -ReferenceObject $Before -DifferenceObject (Get-ModTreeFingerprint -Mods $Mods))
+    if (-not $moved) { return $false }
+
+    $paths = @($moved | ForEach-Object { ($_.InputObject -split '\|')[0] } | Sort-Object -Unique)
+    Write-Host ''
+    Write-Host "FAILED - self-test: $($paths.Count) file(s) under our mod directories changed during"
+    Write-Host '         the run. Every half must break our prototypes in memory only.'
+    foreach ($m in $moved) {
+        $side = if ($m.SideIndicator -eq '=>') { 'now' } else { 'was' }
+        Write-Host "           $side  $($m.InputObject)"
+    }
+    return $true
+}
+
 function Find-MissingAssets {
     <#  Every __mod__/... file the loaded prototypes name, that is not on disk.
 

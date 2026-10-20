@@ -82,6 +82,10 @@
     pipe carries reactor energy" passes by counting nothing, which is a check that says nothing
     until something has been counted.
 
+    AND THE TREE IS ASSERTED UNTOUCHED (#578): every canary half mutates one of our prototypes in
+    memory, so the run fails when a file under our mod directories changed during it, by
+    load-check.ps1's check, which now lives in factorio-lib.ps1 as Test-ModTreeUnchanged.
+
     REFUSED WITH -Quality, the way load-check refuses -SelfTest -AlsoModDirectory: quality changes
     the mod set, and a half that reasons about what a broken prototype does to the plant would be
     reasoning about a different game.
@@ -879,6 +883,11 @@ function Write-Canary {
     $Lua | Set-Content -Path (Join-Path $canaryDir 'data-final-fixes.lua') -Encoding utf8
 }
 
+# Every canary half mutates one of our prototypes in memory; this says so rather than assuming it,
+# the way load-check.ps1's self-tests do (#578).
+$treeBefore  = if ($SelfTest) { Get-ModTreeFingerprint -Mods $ourMods } else { $null }
+$treeChecked = $false
+
 try {
     New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
 
@@ -1073,9 +1082,13 @@ box.pipe_connections = kept
             } }
         )
 
+        $treeChecked = $true
+        if (Test-ModTreeUnchanged -Before $treeBefore -Mods $ourMods) { exit 1 }
+
         Write-Host ''
         Write-Host 'OK - the plant section can fail: a chain that stopped carrying, a pipe that should'
-        Write-Host '     not be there, and a reactor that stopped selling south are each caught by name.'
+        Write-Host '     not be there, and a reactor that stopped selling south are each caught by name,'
+        Write-Host "     and $($treeBefore.Count) files under our mod directories untouched by the run."
         exit 0
     }
 
@@ -1102,5 +1115,8 @@ box.pipe_connections = kept
 finally {
     if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }
     Remove-ModJunctions -ModDirectory $modDir
+    # After a half that exited early, reported rather than exited on: the code is already set. After
+    # the junctions, so a delete that went through one is included.
+    if ($treeBefore -and -not $treeChecked) { [void](Test-ModTreeUnchanged -Before $treeBefore -Mods $ourMods) }
     if (-not $KeepTemp) { Remove-TempDirectory -Path $temp -Label 'check-hc' }
 }

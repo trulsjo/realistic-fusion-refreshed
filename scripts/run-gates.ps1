@@ -67,7 +67,11 @@
 .PARAMETER SelfTest
     Prove the runner with stand-in gates and no game: a gate that fails, or whose executable is
     missing, is returned by name as failed, and one that passes beside it is still reported as
-    passing. The exit code this script turns that list into is not exercised.
+    passing. Since #578 two more halves run this script itself, as its own process, over stand-in
+    gates in place of the real ones: `exit-code-names-failure` requires a non-zero exit and the
+    failing stand-in named in what it prints, and `exit-code-clean` requires exit 0 when every
+    stand-in passes. Deleting the branch that turns the failed list into an exit code fails the
+    first.
 
 .EXAMPLE
     pwsh -File scripts/run-gates.ps1
@@ -79,7 +83,10 @@
 [CmdletBinding()]
 param(
     [string] $Only = '*',
-    [switch] $SelfTest
+    [switch] $SelfTest,
+    # The self-test's alone: comma-separated exit codes, one stand-in gate each, run in place of
+    # every real gate, so the exit code below is reached by the same lines a real run takes.
+    [Parameter(DontShow)] [string] $StandInExits
 )
 
 $ErrorActionPreference = 'Stop'
@@ -140,6 +147,20 @@ if ($SelfTest) {
             if (@($failed).Count -ne 1) { throw 'a gate whose executable does not exist was reported as passing.' }
             'a gate whose executable is missing fails rather than being skipped.'
         } }
+        @{ Name = 'exit-code-names-failure'; Body = {
+            $out = & $pwsh -NoProfile -File $PSCommandPath -StandInExits '0,3,0' 2>&1
+            $code = $LASTEXITCODE
+            if ($code -eq 0) { throw "the script exited 0 with a stand-in gate exiting 3:`n$($out | Out-String)" }
+            if (-not ($out | Where-Object { "$_" -match '^FAIL - 1 of 3 gate\(s\) failed .*: stand-in-2$' })) {
+                throw "the script exited $code but its last line did not name stand-in-2 alone:`n$($out | Out-String)"
+            }
+            "a failing stand-in gate makes the script exit $code, naming it."
+        } }
+        @{ Name = 'exit-code-clean'; Body = {
+            $out = & $pwsh -NoProfile -File $PSCommandPath -StandInExits '0,0' 2>&1
+            if ($LASTEXITCODE -ne 0) { throw "the script exited $LASTEXITCODE with every stand-in gate passing:`n$($out | Out-String)" }
+            'every stand-in gate passing makes the script exit 0.'
+        } }
     ) } finally { Remove-Item -Recurse -Force $temp -ErrorAction SilentlyContinue }
     Write-Host '-SelfTest: PASS' -ForegroundColor Green
     exit 0
@@ -159,6 +180,13 @@ $scripts = @('ship-check.ps1', 'load-check.ps1') +
 foreach ($script in $scripts) {
     $gates += @{ Name = [IO.Path]::GetFileNameWithoutExtension($script); Exe = $pwsh
                  Arguments = @('-NoProfile', '-File', (Join-Path $PSScriptRoot $script)) }
+}
+if ($StandInExits) {
+    $i = 0
+    $gates = @(foreach ($exit in $StandInExits -split ',') {
+        $i++
+        @{ Name = "stand-in-$i"; Exe = $pwsh; Arguments = @('-NoProfile', '-Command', "exit $([int]$exit)") }
+    })
 }
 $gates = @($gates | Where-Object { $_.Name -like $Only })
 if ($gates.Count -eq 0) { throw "-Only '$Only' matches no gate." }
