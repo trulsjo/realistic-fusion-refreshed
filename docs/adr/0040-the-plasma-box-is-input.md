@@ -23,7 +23,8 @@ the model's, run outside the game. "The canary" is the shipped reactor with its 
 to `input` for those runs, and nothing else changed.
 
 Both reactors carry their plasma box as `input-output` on a boiler in `output-to-separate-pipe`
-mode. #531 found that box trades with its segment every tick, so a fuel line is two stores. A D-D
+mode. By #551's account, not re-read here, #531 found that box trades with its segment every tick,
+so a fuel line is two stores. A D-D
 reactor alone on its line fills 2.30 times slower than under `input` at three pipes and 2.60 times
 at six, and settles at the same 2.381512×10⁸ °C either way. Under `input` the box first reads 99.9%
 at tick 30 975 at both pipe counts (#542), against `M.settle_fed`'s 31 000, and two reactors on one
