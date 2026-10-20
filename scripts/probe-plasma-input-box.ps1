@@ -93,9 +93,13 @@
     The fraction of a box's capacity that counts as full.
 
 .PARAMETER Settle
-    The settle test: a box's temperature has settled from the first sampled row after which every
-    row reads within this fraction of the last row's. A pass means "within this of where the run
-    ended", not "stopped": a drift slower than this over the run's tail passes (#560).
+    The settle test (#576): each sampled row is compared with the row a lag earlier, the fewest
+    ticks that are a whole multiple of both -Every and the heater's cycle, read off the recipe and
+    the heater's crafting speed, so both rows are at the same point of that cycle. The box has
+    settled from the first row after which every such step, relative to the later row, is within
+    this fraction, and the report gives that tick. A box whose last step is over it is "NOT
+    settled", with the two temperatures and the step. Until #576 it compared every row with the
+    run's last, which passed a box still drifting slower than this over the run's tail (#560).
 
 .PARAMETER Plasma
     The plasma the heaters make, and so which reactor is read (#562): rf-d-d-plasma and
@@ -621,8 +625,11 @@ script.on_init(function()
   storage.cells, storage.tracked = cells, tracked
   storage.per_craft = prototypes.recipe[PLASMA].products[1].amount
   local production = prototypes.entity[REACTOR].fluidbox_prototypes[1].production_type
-  say("built cells=%d quieted=%d production_type=%s lone_production_type=%s", #cells, storage.quieted,
-    production, prototypes.entity[LONE].fluidbox_prototypes[1].production_type)
+  -- The heater's cycle, the period the settle test compares rows across (#576).
+  local heater_ticks = 60 * prototypes.recipe[PLASMA].energy
+    / prototypes.entity["rf-heater"].get_crafting_speed(HEATER_QUALITY)
+  say("built cells=%d quieted=%d production_type=%s lone_production_type=%s heater_ticks=%.17g", #cells,
+    storage.quieted, production, prototypes.entity[LONE].fluidbox_prototypes[1].production_type, heater_ticks)
   for _, t in ipairs(tracked) do
     say("reactor cell=%s r=%d box_cap=%g side_cap=%g powered=%s", t.cell.label, t.r, t.cap,
       t.side.fluidbox.get_capacity(1), tostring(t.reactor.electric_network_id ~= nil))
@@ -858,6 +865,14 @@ function Write-Variant {
     $built = @(Read-Records $Run.Created 'built')[0]
     Write-Host "  $reactorName's box 1 production_type, as the runtime prototype reads: $($built['production_type'])"
     Write-Host "  the lone copy's box 1 production_type: $($built['lone_production_type'])"
+    # The settle test's lag: the fewest ticks that are whole multiples of both -Every and the
+    # heater's cycle, so a row is compared with one at the same point of that cycle.
+    $cycle = [math]::Round((Num $built['heater_ticks']))
+    $gcd = [long]$Every; $b = [long]$cycle
+    while ($b) { $gcd, $b = $b, ($gcd % $b) }
+    $lag = [long]$Every / $gcd * $cycle
+    Write-Host ("  the heater's cycle is {0:G9} ticks{1}; the settle test compares each row with the row {2} ticks before it" -f
+        (Num $built['heater_ticks']), $(if ($cycle -ne (Num $built['heater_ticks'])) { ", taken as $cycle" } else { '' }), $lag)
     $research = @($Run.Created | Select-String -Pattern 'IBOXPROBE research ')
     Write-Host ("  research: $($research.Count) rung(s) asserted, " +
         $(if ($Rungs) { "-Rungs $Rungs, every other ladder OFF" } else { 'every ladder OFF' }))
@@ -884,22 +899,29 @@ function Write-Variant {
         Write-Host ("  the box first reached {0:P1} on tick {1}; to tick {2} control.lua changed it across its handler on {3} of {4} step ticks" -f
             $FullAt, $end['full'], $end['tick'], $end['writes'], $end['steps'])
         Write-Host "  full, it first read the floor's temperature on tick $($end['floor'])"
-        Write-Host ('  {0,8}{1,13}{2,13}{3,13}{4,11}' -f 'tick', 'box', 'segment', 'box degC', 'seg/1000')
-        # THE SETTLE TEST: the first row from which every row to the end reads a temperature within
-        # $Settle of the last row's, relative. The canary box passed it by tick 44 000 in #542's run.
-        $last = Num $end['temp']
-        $from = $mine.Count - 1
-        while ($from -gt 0 -and [math]::Abs((Num $mine[$from - 1]['temp']) - $last) -le $Settle * [math]::Abs($last)) { $from-- }
-        if ($from -lt $mine.Count - 1) {
-            Write-Host ("  settled: every row from tick {0} to {1} reads within {2:G3} of {3:E6} degC; the box reads {4:F4} at {0} and {5:F4} at {1}" -f
-                $mine[$from]['tick'], $end['tick'], $Settle, $last, (Num $mine[$from]['box']), (Num $end['box']))
+        Write-Host ('  {0,8}{1,13}{2,13}{3,15}{4,11}' -f 'tick', 'box', 'segment', 'box degC', 'seg/1000')
+        # THE SETTLE TEST (#576): each row against the row $lag ticks before it, the same point of
+        # the heater's cycle, so the cycle's own swing is not read as drift; settled from the first
+        # row after which every such step is within $Settle, relative, and only if the last one is.
+        # Until #576 it compared every row with the run's LAST row, which passes any drift slower
+        # than $Settle over the tail, and passed #560's shipped box 360 000 ticks early.
+        $k = $lag / $Every
+        $step = { param($i) $t = Num $mine[$i]['temp']; [math]::Abs($t - (Num $mine[$i - $k]['temp'])) / [math]::Max([math]::Abs($t), [double]::Epsilon) }
+        $rowCount = $mine.Count
+        if ($rowCount -le $k) {
+            Write-Host ("  NOT settled by tick {0}: {1} row(s), too few to compare any with the row {2} ticks before it" -f $end['tick'], $rowCount, $lag)
+        } elseif ((& $step ($rowCount - 1)) -gt $Settle) {
+            Write-Host ("  NOT settled by tick {0}: it reads {1:E9} degC against {2:E9} at {3}, a step of {4:E3}, over {5:G3}" -f
+                $end['tick'], (Num $end['temp']), (Num $mine[$rowCount - 1 - $k]['temp']), $mine[$rowCount - 1 - $k]['tick'], (& $step ($rowCount - 1)), $Settle)
         } else {
-            Write-Host ("  NOT settled by tick {0}: the last two rows read {1:E6} and {2:E6} degC" -f
-                $end['tick'], (Num $mine[[math]::Max(0, $mine.Count - 2)]['temp']), $last)
+            $from = $rowCount - 1
+            while ($from -gt $k -and (& $step ($from - 1)) -le $Settle) { $from-- }
+            Write-Host ("  settled from tick {0}: every row from it to {1} reads within {2:G3} of the row {3} ticks before it; {4:E9} degC at {0} and {5:E9} at {1}; the box reads {6:F4} at {0} and {7:F4} at {1}" -f
+                $mine[$from]['tick'], $end['tick'], $Settle, $lag, (Num $mine[$from]['temp']), (Num $end['temp']), (Num $mine[$from]['box']), (Num $end['box']))
         }
         foreach ($row in $mine) {
             $box = Num $row['box']; $seg = Num $row['seg']
-            Write-Host ('  {0,8}{1,13:F4}{2,13:F4}{3,13:E4}{4,11:F1}' -f [int]$row['tick'], $box, $seg,
+            Write-Host ('  {0,8}{1,13:F4}{2,13:F4}{3,15:E7}{4,11:F1}' -f [int]$row['tick'], $box, $seg,
                 (Num $row['temp']), $(if ($box -gt 0) { 1000 * $seg / $box } else { 0 }))
         }
     }
