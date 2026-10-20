@@ -138,7 +138,9 @@ cell. The pre-PR review's cost is its one reviewer's, read from its transcript a
 says when the row is written; the reviewer confirms after that, and the pull request's body has the
 later figure. The pre-PR review's count of findings, and how many were fixed and confirmed, are
 read again after the last fix commit, as `code-review.md` says under *Review the prose, not only the
-code* (#715). Anything else there is to say of the pull request goes in the last cell of its row in
+code* (#715). Since the pre-PR reviewer gives no score (#610), a new row says of each pre-PR
+finding left unfixed "left unfixed: <reason>"; an older row keeps its scores as written. Anything
+else there is to say of the pull request goes in the last cell of its row in
 the second table. In the second table: the totals over all requests, and for the pre-PR review its
 count of requests and the share that is cache reads, read from the transcripts in the session's own
 `subagents` directory, the one step 6 of `/pre-pr-review` names. Each `agent-*.jsonl` there has an
@@ -233,3 +235,13 @@ the verdict, because #626 had deferred it in the verifier's own paragraph and in
   by the trigger he set on 2026-10-10, and again on 2026-10-16, #722).
 - **The verifier**: whether one verifier with no score still checks the plugin pass's candidates
   (Truls, 2026-10-14, #691, as #626 set on 2026-10-11, and again on 2026-10-16, #722).
+- **Findings on the change, and findings on the review's own records**: whether the review's
+  findings on the records the review process writes itself are counted apart from its findings on
+  the change, with each figure given both ways for the ten rows when the revisit falls due (Truls,
+  2026-10-16, #724). A finding on records is one about a commit message, a row of
+  `review-figures.md`, the line on `code-review-history.md`, or the pull request's body; this is
+  this page's reading of "records", and the wording is his to correct. On #721, 8 of the pre-PR
+  review's 15 findings were on records, all of them raised while it confirmed fixes, and the sums
+  behind the verdict of 2026-10-16 count every finding together, so they cannot show that. The split
+  is not applied to rows already written, and no column is added for it; whether to add one is for
+  the revisit.

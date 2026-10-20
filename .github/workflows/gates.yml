@@ -1,8 +1,16 @@
 # The game-free gates (#599): the ones that need neither Factorio nor Blender, so a hosted runner
 # can run them. Every other gate starts the game and runs only where a person starts it -- see
-# scripts/run-gates.ps1. No gate's -SelfTest runs here, the same as there. Three tools under
+# scripts/run-gates.ps1. No gate's -SelfTest runs here, the same as there; the body check's below,
+# which no gate there runs, is the one -SelfTest here. Three tools under
 # tools/ are not gates and have a --self-test that is all that checks them; those run here, as
 # they do there (#659).
+#
+#
+# The pull request's body is checked by the shared pr-body-check.ps1 (#730): the pr template's
+# three headings, no commit cited that is not on main, and no closing keyword outside a lone
+# `Closes #N` line. `edited` is among the triggers so an edited body is checked again, and every
+# other job skips that event, so a body edit runs the body check alone. The body reaches the script
+# through the environment, never pasted into the command. The script refuses a shallow clone.
 #
 # Advisory: main has no branch protection, so a red check blocks nothing.
 name: gates
@@ -11,10 +19,27 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, edited, synchronize, reopened]
 
 jobs:
+  body:
+    name: Pull request body
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0   # the check tells a commit on main from one that is not
+      - name: pr-body-check.ps1
+        shell: pwsh
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: ./vendor/grado-factorio-tools/scripts/pr-body-check.ps1 -Body "$env:PR_BODY"
+
   lua:
     name: Lua suites
+    if: github.event.action != 'edited'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,6 +56,7 @@ jobs:
 
   tools:
     name: Tools' self-tests
+    if: github.event.action != 'edited'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,6 +73,7 @@ jobs:
 
   pwsh:
     name: ship-check and commit-check
+    if: github.event.action != 'edited'
     # Windows because that is the only place these scripts have ever passed.
     runs-on: windows-latest
     steps:
@@ -68,3 +95,7 @@ jobs:
                 && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha)
                 || format('{0}..{1}', github.event.before, github.event.after) }}
         run: ./vendor/grado-factorio-tools/scripts/commit-check.ps1 -Range $env:RANGE
+      - name: pr-body-check.ps1 -SelfTest
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: ./vendor/grado-factorio-tools/scripts/pr-body-check.ps1 -SelfTest

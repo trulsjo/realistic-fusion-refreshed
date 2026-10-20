@@ -73,17 +73,15 @@ pass.
    > finding takes a planted change, make your own worktree first, as the third rule says. Scratch
    > files go in `<scratch>/reviewer/`.
    >
-   > Return every finding as a numbered list, one you could not verify included, at 25. For
-   > each: the file and the quoted words or code, what is wrong, the source that shows it, and a
-   > score of 0, 25, 50, 75 or 100
-   > — 0 a false positive, 25 possibly real and unverified, 50 real but minor or rare, 75
-   > verified and important, 100 certain and it will be hit. Report every one whatever it scores.
+   > Return every finding as a numbered list, one you could not verify included, said to be
+   > unverified. For each: the file and the quoted words or code, what is wrong, and the source
+   > that shows it. Give no score.
    > Say so plainly if you found nothing, and say what you did not check. A table's cell counts
    > in a tracked `.md` are held by `scripts/ship-check.ps1`, each row to its header; a row of a
    > quoted table that has lost its `>` it does not catch, and a table in the pull request's body
    > it does not read.
    >
-   > Reply with one line per finding first: its number, the file, the fault and the score. Give
+   > Reply with one line per finding first: its number, the file and the fault. Give
    > the detail for a finding when you are asked for it. A long reply arrives cut off.
 
    **Ask for a finding's detail with SendMessage when its line does not name the place and the
@@ -110,7 +108,7 @@ pass.
    > say whether it is fixed, from the diff alone. Where your finding named a group, check the
    > fix against each member. Then review every other added line in that
    > diff as new work: a fix that adds a sentence adds a claim. Number any new finding on from
-   > your last and score it the same way. Reply with one line per finding.
+   > your last, with no score. Reply with one line per finding.
 
    **Do not send a list of what was done for each finding.** On #594 the reviewer was sent one,
    confirmed against the list, and passed a false sentence a fix had added. A finding left unfixed
@@ -147,7 +145,7 @@ pass.
 
    The confirmation arrives as step 3's report does.
 
-   **A new finding is fixed, committed and held, whatever it scores** (#643, #653): send no
+   **A new finding is fixed, committed and held, every one alike** (#643, #653): send no
    message for it, and write it `yes, not confirmed` in step 6. `docs/agents/code-review.md`, in
    the same section, says when its fix is confirmed.
 
@@ -156,7 +154,9 @@ pass.
 5. **Answer for each thing the reviewer said it did not check** (#636). The same section of
    `docs/agents/code-review.md` says how an item is checked and what the pull request's body
    records for it. Check each item, or send it to the reviewer by name with SendMessage, and write
-   the outcome of each for the pull request's body, under a `## Pre-PR review` heading. A defect
+   the outcome of each for the pull request's body, under a `## Pre-PR review` heading. That
+   section stands below the body's `## Summary`, `## Evidence` and `## Merge Danger`, which
+   `docs/agents/issue-tracker.md` requires (#730). A defect
    that an item turns up is fixed, and its fix is sent to the reviewer in a message of its own
    with the diff, as step 4 sends one. It is never held.
 
@@ -165,14 +165,25 @@ pass.
 6. **Write the findings table** and put it in the pull request's body under the same heading,
    below step 5's outcomes, every finding in it:
 
-   | # | Finding | Where | Score | Fixed |
-   |---|---|---|---|---|
-   | 1 | one line, in the reviewer's terms | file, and the symbol or quoted words | 75 | yes, confirmed |
-   | 2 | … | … | 50 | no: the reason it was left |
+   | # | Finding | Where | Fixed |
+   |---|---|---|---|
+   | 1 | one line, in the reviewer's terms | file, and the symbol or quoted words | yes, confirmed |
+   | 2 | … | … | no: the reason it was left |
 
    **Fixed** is `yes, confirmed` only when the reviewer has said so; otherwise
-   `yes, not confirmed` or `no: <reason>`. A review that found nothing says that in the body in
-   place of the table, below step 5's outcomes for what the reviewer said it did not check.
+   `yes, not confirmed` or `no: <reason>`. The findings carry no score (#610). A review that found
+   nothing says that in the body in place of the table, below step 5's outcomes for what the
+   reviewer said it did not check. A cell that names a commit of the branch names it by its
+   subject in quotes, not its hash (#730).
+
+   **Check the body before it is sent** (#730), each time, the first `gh pr create` and every
+   `gh pr edit` after it, this step's and step 7's included:
+
+   ```
+   pwsh -NoProfile -File vendor/grado-factorio-tools/scripts/pr-body-check.ps1 "<scratch>/body.md" && gh pr edit <n> --body-file "<scratch>/body.md"
+   ```
+
+   A body it fails is not sent; `docs/agents/issue-tracker.md` has what it checks.
 
    **Under the table, write what the reviewer cost** (#631). A reviewer reached by name goes idle
    and sends no completion notice, so nothing reports its usage. Read it from the session's own
@@ -233,11 +244,12 @@ pass.
    (#665): the rule says which fix that is. Commit it and read again what it changed.
 
    Done when the body has, under the `## Pre-PR review` heading, a line that names what was read
-   again and the head it was read on, the last one if a fix moved it: `Read again on <short hash>:
-   <each count and each quoted output, and that the commit messages were read>`. The line names
-   each fix that got no message, as not confirmed.
+   again and the head it was read on, the last one if a fix moved it, by its subject (#730):
+   `Read again on "<the head's subject>": <each count and each quoted output, and that the commit
+   messages were read>`. The line names each fix that got no message, as not confirmed. The body
+   is checked before it is sent, as step 6 says.
 
 ## What this does not do
 
-It briefs no scorer and no verifier. The reviewer scores its own findings, and every finding is
-reported whatever it scores, and a score decides nothing in these steps (#653).
+It briefs no scorer and no verifier, and the reviewer gives its findings no score (#610). Every
+finding is reported.
