@@ -16,15 +16,20 @@ ADR 0011 carries a dated note pointing here.
 
 ## Context
 
+Every figure in this section was measured on Factorio 2.0.77 with nothing researched, between
+2026-10-04 and 2026-10-14, by the probes [`plasma-input-box.md`](../research/plasma-input-box.md)
+names; each figure's day is in that note's `## Current figures` table.
+
 Both reactors carry their plasma box as `input-output` on a boiler in `output-to-separate-pipe`
-mode. #531 found that box trades with its segment every tick, so a fuel line is two stores and
-fills in 2.3 to 2.6 times `M.settle_fed`'s time, though it settles where that model says. #542
-measured `input`: the line fills at 30 975 ticks against the model's 31 000, at any pipe count,
-and reactors on one run share a segment but not heat. #558 and #559 found that the shipped box
-pools heat only while the line has room: a full box and a full segment stop trading, and an unheated
-reactor beside them falls to 15 °C — in cells built 1H2, though built 12H or 2H1 it does not
-(#583), for a reason not measured. The readings are in
-[`plasma-input-box.md`](../research/plasma-input-box.md).
+mode. #531 found that box trades with its segment every tick, so a fuel line is two stores. A D-D
+reactor alone on its line fills 2.30 times slower than under `input` at three pipes and 2.60 times
+at six, and settles at the same 2.381512×10⁸ °C either way. Under `input` the box first reads 99.9%
+at tick 30 975 at both pipe counts (#542), against `M.settle_fed`'s 31 000, and two reactors on one
+run share a segment but not heat. #558 and #559 found that the shipped box pools heat only while
+the line has room. Once the line is full, a full box and a full segment stop trading, and an
+unheated reactor beside them reads 15 °C from tick 150 012 in a pair built 1H2. Built 12H or 2H1,
+the unheated box stays at 1.083×10³ to 1.303×10⁴ °C on the full line instead (#583), for a reason
+not measured.
 
 ## Decision
 
@@ -32,15 +37,20 @@ reactor beside them falls to 15 °C — in cells built 1H2, though built 12H or 
    engine's fluid system gives them. It does not promise that neighbours keep an unheated reactor
    warm, and a reactor without heaters of its own is not a design the mod supports.
 2. **Both reactors' plasma box becomes `input`.** The game moves to the model rather than the model
-   to the game: the fill no longer depends on pipe count or on build order, neither of which a
-   player can reason about. `rf-aneutronic-reactor` changes with `rf-reactor`, so there is one fill
-   model and one meaning of fluid-coupled.
-3. **An unheated reactor is cold on any line, full or not.** That answers #569: a full line is not
-   a special case once heat does not travel.
-4. **The change is breaking.** A save loads intact and loses no plasma (#550, #561), but a reactor
-   heated only through the pipe falls to 15 °C on load. The commit carries the `!` and a
-   `BREAKING CHANGE:` footer. No migration is needed.
-5. **Before it ships**, D-T is read under `input`, which no canary run reached, and a D-D pair is
+   to the game. *Inferred* from the solo fills above, which match at three and six pipes, and from
+   a full line's dependence on build order: under `input` the fill does not depend on pipe count or
+   on build order, neither of which a player can reason about. Point 5 measures the build-order
+   half. `rf-aneutronic-reactor` changes with `rf-reactor`, so there is one fill model and one
+   meaning of fluid-coupled.
+3. **An unheated reactor is cold on any line, full or not.** That answers #569: once heat does not
+   travel, a full line is not a special case. *Inferred* from the canary pair above, whose
+   unpowered box shares no heat, measured on D-D, D-He3 and He3-He3 and not on D-T.
+4. **The change is breaking.** A save loads under `input` without complaint and loses no plasma
+   (#550, #561, measured 2026-10-04 and later). A reactor heated only through the pipe on a line
+   still filling falls to 15 °C on load. The commit carries the `!` and a `BREAKING CHANGE:` footer.
+   *Inferred* from those loads, in which the box's type changed under a saved map and nothing
+   needed rewriting: no migration is needed.
+5. **Before it ships**, D-T is read under `input`, since no canary run reached it, and a D-D pair is
    read built 12H and 2H1, to confirm the build-order effect of #583 goes with the box.
 
 ## Considered options
@@ -49,7 +59,8 @@ reactor beside them falls to 15 °C — in cells built 1H2, though built 12H or 
   stays unmodelled, and a full line's behaviour stays dependent on build order.
 - **Keep `input-output` and move `M.settle_fed` onto the two-store rule** (#551's option 4).
   Rejected: the model would track the game, but the game would still depend on pipe count and build
-  order. The modelling work open in `exchanger-coverage.md` for it is no longer needed.
+  order. *Inferred* from point 2: the modelling work open in `exchanger-coverage.md` for that rule
+  is no longer needed.
 - **`input` on one reactor only** (#551's option 3). Rejected: two fill models and two meanings of
   the coupling, to keep D-He3 heat travelling while a line fills, which point 1 says is not owed.
 - **Stop the step cooling an unheated reactor** (#569's option 2). Rejected: a plasma above the
@@ -65,10 +76,11 @@ advisory, not decisive: the gates read the behaviour directly.
 
 - The pooling check's rows are rewritten to assert shared feed, unshared heat and an unheated box at
   15 °C, in at least one cell that reaches a full line. That absorbs
-  [#574](https://github.com/trulsjo/realistic-fusion-refreshed/issues/574). 27 of its 125 checks
-  fail under the canary today.
+  [#574](https://github.com/trulsjo/realistic-fusion-refreshed/issues/574). By
+  `plasma-input-box.md`'s account, not re-run here, 27 of its 125 checks fail under the canary since
+  #565.
 - The comments in `control.lua` that call box 1 "the input-output box ADR 0011's fluid coupling
   rests on" are rewritten, and `GLOSSARY.md`'s **Fluid-coupled** loses "at one mixed temperature"
   when the box ships.
-- "Build a bank where one reactor rides on its neighbours" is not available, as ADR 0011 already
-  said of scale.
+- A bank where one reactor rides on its neighbours is not available, as ADR 0011 already said of
+  scale.
