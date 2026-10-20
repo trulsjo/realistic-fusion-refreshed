@@ -260,7 +260,7 @@ against the heater, so a row is compared with the row 60 000 ticks before it, wh
 same point of that cycle. The table prints five figures, so "the same" below means within
 1×10⁴ °C, 4×10⁻⁵ of the reading.
 
-| 2 000 000 ticks, 1 heater | °C at 1 980 000 | every later row reads the same as the one 60 000 before it, from | `-Settle` 10⁻⁴ passes from |
+| 2 000 000 ticks, 1 heater | °C at 1 980 000 | every later row reads the same as the one 60 000 before it, from | `-Settle` 10⁻⁴ passes from, the test as it stood before #576 |
 |---|---|---|---|
 | shipped, 3 pipes | 2.381512×10⁸ | 1 160 000 | 800 000 |
 | shipped, 6 pipes | 2.381512×10⁸ | 1 400 000 | 980 000 |
@@ -272,7 +272,7 @@ same point of that cycle. The table prints five figures, so "the same" below mea
   same box on another row of the 12 000-tick cycle: at 1 960 000 all four read 2.3814×10⁸, and
   at 1 980 000 all four read 2.3815×10⁸.
 - The shipped box takes far longer to get there. The canary's 120 000 is the earliest this
-  comparison can report on rows 20 000 apart (#576 corrects this below: the earliest is 60 000), and the 600 000-tick run had the canary settled
+  comparison can report on rows 20 000 apart (#576 corrects this below: it is 60 000), and the 600 000-tick run had the canary settled
   by 44 000; against that the shipped box's 1 160 000 and 1 400 000 are about 26 and 32 times
   as long.
 - **The settle test as written can pass a box that is still drifting, and did.** It asks that
@@ -295,7 +295,7 @@ to ten figures in that line and eight in the table. #560's command again, 2026-1
 2.0.77 (build 84539), nothing researched (all 11 rungs asserted off), one heater a cell, three
 pipes and six, 2 000 000 ticks:
 
-| 2 000 000 ticks, 1 heater, rows every 20 000 | settled from, since #576 | #560 by hand | the test before #576 |
+| 2 000 000 ticks, 1 heater, rows every 20 000 | settled from, since #576 | #560 by hand, 2026-10-05 | the test before #576, #560's run of 2026-10-05 |
 |---|---|---|---|
 | shipped, 3 pipes | 820 000 | 1 160 000 | 800 000 |
 | shipped, 6 pipes | 1 000 000 | 1 400 000 | 980 000 |
@@ -307,9 +307,11 @@ pipes and six, 2 000 000 ticks:
   agreed to the five figures the table printed then, about 4×10⁻⁵ of a reading near 2.38×10⁸;
   the probe compares every pair within 10⁻⁴. Which of the two differences moves the tick was
   not measured: no run took one without the other.
-- **The canary boxes read 60 000, the first row that has a row 60 000 before it**, and the
-  earliest this comparison can report. #560's 120 000 is not that, as the bullet above says it
-  is; why #560 read 120 000 was not traced.
+- **The canary boxes read 60 000.** The test reports the first row from which every like pair
+  agrees, so it can report tick 0: the lone boxes read settled from 0, and the canary pair's
+  unpowered box from 20 000. #560 compared each row only with the one 60 000 before it, so the
+  earliest its comparison could report was 60 000, not the 120 000 the bullet above gives; why
+  #560 read 120 000 was not traced.
 
 #### Two powered canary boxes on one line settle at the same temperature
 
