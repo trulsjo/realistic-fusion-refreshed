@@ -228,9 +228,12 @@
     Prove the rig can fail where #565 found it could not. Two halves, each a run of this script:
     `repo-passes`, the floor, and `all-arrives-refused`, which loads a canary making rf-reactor's
     plasma box "input" -- under it every bookkeeping row reads 100% arrived -- and requires the four
-    "gains most of what its reactors spent, and not all of it" rows to FAIL by name. The canary is
+    "gains most of what its reactors spent, and not all of it" rows to FAIL by name, and since
+    #575 the three write-shape rows and the six writer rows too. The canary is
     the one probe-plasma-input-box.ps1 writes, duplicated here as check-hc.ps1 duplicates
-    load-check.ps1's. Refused with -AlsoModDirectory and -With.
+    load-check.ps1's. Refused with -AlsoModDirectory and -With. Since #578 it also fails when a
+    file under our mod directories changed during the run, by load-check.ps1's check, which now
+    lives in factorio-lib.ps1 as Test-ModTreeUnchanged.
 
 .PARAMETER KeepTemp
     Keep the save, the rig mod and the captured output.
@@ -278,6 +281,9 @@ box.production_type = "input"
 '@
     $common = @('-NoProfile', '-File', $PSCommandPath, '-Ticks', "$Ticks", '-Tail', "$Tail")
     if ($FactorioExe) { $common += @('-FactorioExe', $FactorioExe) }
+    # The canary mutates rf-reactor in memory; this says so rather than assuming it (#578).
+    $treeBefore  = Get-ModTreeFingerprint -Mods (Get-RepoMods)
+    $treeChecked = $false
     try {
         Invoke-SelfTestHalves -Halves @(
             @{ Name = 'repo-passes'; Body = {
@@ -294,13 +300,23 @@ box.production_type = "input"
                         throw "under the canary the '$cell' row did not FAIL as '$row'."
                     }
                 }
-                'a run in which everything a reactor spent arrives is refused, by the four rows that say it should not.'
+                # And the nine rows that took the same bound in #575, by the name each prints.
+                foreach ($cell in 'twopass', 'onepass', 'rebased', 'writers1', 'writers2', 'writers3', 'middle', 'east', 'reversed') {
+                    if (-not ($out | Where-Object { "$_" -match "^\s*FAIL\s+${cell}: .* of what its reactors spent arrived" })) {
+                        throw "under the canary the '$cell' row did not FAIL."
+                    }
+                }
+                'a run in which everything a reactor spent arrives is refused, by the thirteen rows that say it should not.'
             } }
         )
+        $treeChecked = $true
+        if (Test-ModTreeUnchanged -Before $treeBefore -Mods (Get-RepoMods)) { exit 1 }
     } finally {
+        # After a half that threw, the tree still gets its answer; the exit code is already set.
+        if (-not $treeChecked) { [void](Test-ModTreeUnchanged -Before $treeBefore -Mods (Get-RepoMods)) }
         if (-not $KeepTemp) { Remove-Item -Recurse -Force $scratch -ErrorAction SilentlyContinue }
     }
-    Write-Host '-SelfTest: PASS' -ForegroundColor Green
+    Write-Host "-SelfTest: PASS, and $($treeBefore.Count) files under our mod directories untouched by the run." -ForegroundColor Green
     exit 0
 }
 
@@ -1794,9 +1810,12 @@ script.on_nth_tick(CHECK_AT, function()
       -- 83.6%, 57.6% and 73.0% at -Tail 40 (read 2026-10-05), so 0.98 leaves the nearest, `solo`,
       -- 3.4 points of room. The measured fraction is the number to read.
       --
-      -- ONLY THESE FOUR MOVED. The three write-shape rows and the six writer rows further down
-      -- keep 0.4 to 1.02 and still pass at 100% arrived under that canary: their names state a
-      -- shape, not a loss, and the rows that compare them with each other are what fail there.
+      -- THE NINE ROWS FURTHER DOWN TOOK THE SAME BOUND IN #575: the three write shapes and the six
+      -- writer rows. Their names state a shape and not a loss, but each is a fraction that arrived
+      -- of what one run's reactors spent, and a run that loses nothing to mixing is as wrong there
+      -- as here. They read 72.2% and 71.10% to 72.19% at the default -Tail, at -Tail 40 and with
+      -- -With space-age alike (read 2026-10-20, Factorio 2.0.77), so 0.98 leaves the nearest 25.8
+      -- points, and all nine read 100% under the canary.
       local kept = measured / predicted
       record(kept > 0.4 and kept < 0.98,
         string.format("%s: the run gains most of what its reactors spent, and not all of it", name),
@@ -1834,7 +1853,8 @@ script.on_nth_tick(CHECK_AT, function()
         local before, after = storage.shape_before[shape.name], storage.shape_after[shape.name]
         local kept = (after.heat - before.heat) / before.predicted
         shape_kept[shape.name] = kept
-        record(kept > 0.4 and kept < 1.02,
+        -- Below 0.98 since #575; see the bookkeeping rows above.
+        record(kept > 0.4 and kept < 0.98,
           string.format("%s: %s", shape.name, shape.label),
           string.format("%.1f%% of what its reactors spent arrived", kept * 100))
       end
@@ -1941,7 +1961,8 @@ script.on_nth_tick(CHECK_AT, function()
       for _, row in ipairs(storage.writers) do
         local w, after = storage.writers_before[row.name], storage.writers_after[row.name]
         kept[row.name] = (after.heat - w.heat) / w.predicted
-        record(kept[row.name] > 0.4 and kept[row.name] < 1.02,
+        -- Below 0.98 since #575; see the bookkeeping rows above.
+        record(kept[row.name] > 0.4 and kept[row.name] < 0.98,
           string.format("%s: %s", row.name, row.label),
           string.format("%.2f%% of what its reactors spent arrived", kept[row.name] * 100))
       end
