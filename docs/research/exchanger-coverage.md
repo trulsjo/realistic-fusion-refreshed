@@ -1167,10 +1167,15 @@ is the six-pipe unresearched cell's "without the floor", which the probe prints 
 **#540's higher worst misses are what the printed table gives.** #540's checker and #552's
 were both scratch and neither was committed, so the difference between 1.8e-5, 1.8e-5, 2.2e-5,
 2.1e-5 and 1.5e-5, 1.5e-5, 2.0e-5, 2.1e-5 was not traced. The probe's rows carry nine
-significant digits, and its report prints them to five decimals. The same rule run over the
-printed five-decimal table, on #540's own pairs, in scratch arithmetic that is not committed,
-gives 1.82e-5 over the 153, 1.80e-5 over the
-91, 2.17e-5 over the 8780 and 2.10e-5 over the 4348: #540's four figures. So #540 read the
+significant digits, and its report prints them to five decimals. Since
+[#577](https://github.com/trulsjo/realistic-fusion-refreshed/issues/577) the probe runs the same
+rule over the printed five-decimal table too, over every pair and over #540's own pairs from
+the first tick under 0.74, where it was scratch arithmetic before. The same two commands,
+2026-10-20, Factorio 2.0.77 (build 84539), D-D, one heater a cell, research asserted, 100 000
+and 801 000 ticks, three pipes and six: 1.82e-5 over the 153, 1.80e-5 over the 91, 2.17e-5 over
+the 8780 and 2.10e-5 over the 4348, the figures the scratch arithmetic gave and #540's four.
+The checker now takes the heater's output box, 200, and the step interval, 6, from
+`reactor-logic.lua` as the rig reads them, where it carried copies of its own. So #540 read the
 rounded table and #552 and the probe read the rows, and the up to 0.3e-5 between them is
 the rounding of three five-decimal readings. The probe's figures stand. That #540 worked from
 the printed table is inferred from the match; its arithmetic is not on record. Every one of

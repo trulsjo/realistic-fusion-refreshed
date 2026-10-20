@@ -555,12 +555,19 @@ under a hundredth on 149 616, and 15 °C on tick 150 012.
   147 832, 0.231 at 148 748 and 0 at 149 206. The engine last moved that box on tick 149 982.
 - **The rule predicts what the engine moved.** Applied to each box alone, it is within 0.001
   units of the engine's move on 5123 of the 5500 ticks for the unpowered box and 4956 for the
-  powered one. The worst misses are 0.093 units on tick 146 041 and 0.087 on 149 054. By scratch
-  arithmetic over the same trace rows, which the probe does not print: the 199 ticks on which
-  the unpowered box misses by more than 0.01 come in pairs 120 ticks apart, which is the
-  heater's cycle, and running the two boxes in either order moves neither worst miss. A craft
-  landing in the segment inside the tick is what the rule, applied to one box against the
-  segment as it stood, does not see.
+  powered one. The worst misses are 0.093 units on tick 146 041 and 0.087 on 149 054. Since
+  [#577](https://github.com/trulsjo/realistic-fusion-refreshed/issues/577) the trace report
+  prints the rest, where it was scratch arithmetic before. Run again on 2026-10-20, Factorio
+  2.0.77 (build 84539), same command, same research, heater and pipes, 152 000 ticks: the
+  unpowered box misses by over 0.01 units on 199 ticks, as before. They fall on consecutive
+  ticks, 174 of the 198 gaps between them one tick, and the next most common gaps are 119
+  ticks twelve times, 118 five times and 114 twice, about the heater's 120-tick cycle. The
+  probe prints the four most common; "in pairs 120 ticks apart" was the scratch reading. Run on one box and then the other, with
+  the segment moved between, the worst misses are 0.08743 and 0.09329 units taking the powered
+  box first, and 0.08725 and 0.09324 taking the unpowered box first, against 0.08743 and
+  0.09324 with each box alone: the order moves each by under 2×10⁻⁴ units, nothing at the two
+  figures quoted above. A craft landing in the segment inside the tick is what the rule,
+  applied to one box against the segment as it stood, does not see.
 - **The heat went into the mod's step.** Over the window the unpowered box held 5.6685×10¹⁰
   unit-°C at the start. The engine brought it 1.4119×10¹¹ more, and `control.lua`'s step took
   1.9788×10¹¹ out, leaving 1.5×10⁴: 1000 units at 15 °C. An unpowered reactor is stepped with no

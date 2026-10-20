@@ -320,8 +320,6 @@ end)
 '@
 
 $inv = [cultureinfo]::InvariantCulture
-# Every figure prints with a point, whatever the machine's culture says, so a row can be quoted as is.
-[cultureinfo]::CurrentCulture = $inv
 $lua = $lua.
     Replace('__RIGBUILD__', (Get-RigBuildLua)).
     Replace('__QUIETMAP__', (Get-QuietMapLua)).
