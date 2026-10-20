@@ -151,7 +151,7 @@ if ($SelfTest) {
             $out = & $pwsh -NoProfile -File $PSCommandPath -StandInExits '0,3,0' 2>&1
             $code = $LASTEXITCODE
             # A failing run keeps its logs, which a real one should; this one's are the self-test's.
-            $logs = "$out" -replace '(?s).*Logs: (\S+).*', '$1'
+            $logs = @($out | ForEach-Object { "$_" } | Where-Object { $_ -match 'Logs: (.+)$' } | ForEach-Object { $Matches[1].Trim() })[0]
             if ($logs -like '*rf-gates-*') { Remove-Item -Recurse -Force $logs -ErrorAction SilentlyContinue }
             if ($code -eq 0) { throw "the script exited 0 with a stand-in gate exiting 3:`n$($out | Out-String)" }
             if (-not ($out | Where-Object { "$_" -match '^FAIL - 1 of 3 gate\(s\) failed .*: stand-in-2$' })) {
