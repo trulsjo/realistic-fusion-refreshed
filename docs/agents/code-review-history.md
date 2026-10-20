@@ -331,3 +331,10 @@ One line for each, newest last. The passages above are not edited.
   each time it is sent, and that the review sections stand below the three headings. Its second
   rule has the reading after the last fix commit name its head by its subject. The tracker page
   states the headings and the check. The wording is the session's.
+- **2026-10-20, #738: the pr skill fills the body's three headings.** Truls asked for the ticket
+  after #737's body, written by hand, passed the body check without the template's shape, and moved
+  it to `ready-for-agent`. The fourth rule of `code-review.md` says the headings are filled by
+  invoking `mattpocock-skills:pr` before the first `gh pr create`, and by hand to that template's
+  shape where it is not installed, which it lists: a diagram, diff-sketch or tree, **Before:** and
+  **After:**, and **Door:** and **Blast Radius:**. Step 6 of `/pre-pr-review` invokes it. No check
+  reads that shape, and one that did would be a new rule. The wording is the session's.
