@@ -86,9 +86,10 @@ This is what distinguishes the decision from bare per-reactor simulation: the sh
 motivated networks is kept, and the code that implemented it is not written.
 
 > **Amended 2026-10-20 by [ADR 0040](0040-the-plasma-box-is-input.md) (#551, #569).** The plasma
-> box becomes `input`: reactors on one run share feed plasma and not heat, and fluid coupling names
-> the mechanism rather than a promise that neighbours keep an unheated reactor warm. The
-> per-reactor decision above stands.
+> box is to become `input` (#740, not yet built): reactors on one run will share feed plasma and not
+> heat, and fluid coupling names the mechanism rather than a promise that neighbours keep an
+> unheated reactor warm. The per-reactor decision above stands. Every statement in this ADR that
+> reactors on a run share heat describes the `input-output` box, until #740 ships.
 
 > **"One mixed temperature" is the intent and not quite the behaviour** — see Consequences. Measured
 > under #40: a run does share and an idle one does flatten, but the mixing loses heat, and a box the

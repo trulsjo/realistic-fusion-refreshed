@@ -1309,7 +1309,7 @@ reactors; see [ADR 0040](../adr/0040-the-plasma-box-is-input.md).
    only while the line fills (#548)**, in the cells built 1H2; built 12H or 2H1 an unpowered
    box on a full D-D line stays at 10³ to 10⁴ °C (#583). Reactors on one run share feed plasma but not heat, and a
    reactor without power sits at the 15 °C floor beside a hot one. ADR 0011 would need
-   superseding. The pooling rows of `check-pooling.ps1`, 27 of whose 125 checks fail under the
+   superseding. (Chosen as amending ADR 0011 instead, whose per-reactor decision stands: ADR 0040.) The pooling rows of `check-pooling.ps1`, 27 of whose 125 checks fail under the
    canary (see
    [The repository's gates under the canary](#the-repositorys-gates-under-the-canary)), and the
    comments in `control.lua` that describe box 1 as "the input-output box ADR 0011's fluid
