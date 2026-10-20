@@ -178,8 +178,8 @@ pass.
 
    **Before the first `gh pr create`, invoke the `mattpocock-skills:pr` skill** with the Skill tool
    for `## Summary`, `## Evidence` and `## Merge Danger` (#738); where it is not installed, write
-   them by hand to its template, which `docs/agents/code-review.md` names. Put one `Closes #N` line
-   per ticket above them, and the `## Pre-PR review` section below them.
+   them by hand to the shape of its template, which `docs/agents/code-review.md` lists. Put one
+   `Closes #N` line per ticket above them, and the `## Pre-PR review` section below them.
 
    **Check the body before it is sent** (#730), each time, the first `gh pr create` and every
    `gh pr edit` after it, this step's and step 7's included:

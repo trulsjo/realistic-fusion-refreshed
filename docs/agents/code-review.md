@@ -475,10 +475,11 @@ stand below the template's `## Summary`, `## Evidence` and `## Merge Danger`, wh
 checks and the tracker page, `docs/agents/issue-tracker.md`, requires. Where the review sections
 stand the script does not read. **The three headings are filled by invoking the
 `mattpocock-skills:pr` skill**, before the first `gh pr create`, and are written by hand to that
-skill's template where it is not installed (2026-10-20, #738): a diagram, diff-sketch or tree
-under Summary, **Before:** and **After:** under Evidence, and **Door:** and **Blast Radius:** under
-Merge Danger. Of the headings, the script reads only that each stands once and in order: #737's
-body was written by hand, passed it, and had none of those four markers.
+skill's template where it is not installed (2026-10-20, #738): a diagram, diff-sketch or tree under
+Summary, **Before:** and **After:** under Evidence, and **Door:** and **Blast Radius:** under Merge
+Danger. Of the headings, the script reads only the heading lines, as the tracker page says, and
+nothing that stands under them: #737's body was written by hand, passed it, and had none of those
+four markers.
 
 **The session answers for each thing the reviewer says it did not check** (2026-10-08, #636). The
 reviewer ends its report with that list. Before the findings table is written, and so before the
