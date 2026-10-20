@@ -23,8 +23,10 @@ the model's, run outside the game. "The canary" is the shipped reactor with its 
 to `input` for those runs, and nothing else changed.
 
 Both reactors carry their plasma box as `input-output` on a boiler in `output-to-separate-pipe`
-mode. By #551's account, not re-read here, #531 found that box trades with its segment every tick,
-so a fuel line is two stores. A D-D
+mode. #531 found that box trades with its segment through its one connection, at most 100 units a
+tick each way, so a fuel line is two stores
+([`exchanger-coverage.md`](../research/exchanger-coverage.md#the-rule-behind-the-split), measured
+2026-10-04). A D-D
 reactor alone on its line fills 2.30 times slower than under `input` at three pipes and 2.60 times
 at six, and settles at the same 2.381512×10⁸ °C either way. Under `input` the box first reads 99.9%
 at tick 30 975 at both pipe counts (#542), against `M.settle_fed`'s 31 000, and two reactors on one
@@ -76,7 +78,8 @@ The numbered options of #551 are those of `plasma-input-box.md`'s `## Options`; 
   step.
 
 The 2.0.77 docs' advice that `input-output` "should only be used for boilers in fluid heating mode"
-(by #551's account of the 2.0.77 docs, not re-read here) was
+(*Read from source*: the 2.0.77
+[`FluidBox`](https://lua-api.factorio.com/2.0.77/types/FluidBox.html) page, read 2026-10-20) was
 weighed as advisory, not decisive: the gates read the behaviour directly.
 
 ## Consequences
