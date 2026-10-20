@@ -40,7 +40,7 @@ not measured.
 
 1. **Fluid coupling names the mechanism, not an outcome.** Reactors on one run share whatever the
    engine's fluid system gives them. It does not promise that neighbours keep an unheated reactor
-   warm, and a reactor without heaters of its own is not a design the mod supports.
+   warm.
 2. **Both reactors' plasma box becomes `input`.** The game moves to the model rather than the model
    to the game. *Inferred* from the solo fills above, which match at three and six pipes, and from
    a full line's dependence on build order: under `input` the fill does not depend on pipe count or
