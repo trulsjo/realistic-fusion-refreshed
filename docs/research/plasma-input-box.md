@@ -1290,7 +1290,8 @@ choice between the options below.
 
 ## Options
 
-Each option lists what it changes. None is chosen.
+Each option lists what it changes. **Option 2 was chosen on 2026-10-20**, by Truls, for both
+reactors; see [ADR 0040](../adr/0040-the-plasma-box-is-input.md).
 
 1. **Do nothing; keep `input-output`.** Nothing moves. The fuel line remains two stores trading
    through the box's connection, the box fills in 2.3 to 2.6 times the fed model's time, and
