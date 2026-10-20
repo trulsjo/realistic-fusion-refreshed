@@ -136,7 +136,7 @@ the remaining gap to a ceiling of 0.95.**
   not enter it. A player will see output rise with no movement in either signal.
 - ~~**It carries runtime state the rest of the simulation does not.** A per-force cache and an
   `on_research_finished` handler are both new, and both are things a save has to survive.~~
-  *(Wrong on both halves, corrected 2026-09-08 when #94 built it.* **Neither was new:**
+  *(Wrong on both halves, corrected 2026-09-08 when #94 built it. **Neither was new:**
   [#53](https://github.com/trulsjo/realistic-fusion-refreshed/issues/53) had already shipped a
   per-force cache and the handler that drops it, for confinement time, so #94 added a second cache
   beside an existing one and wired no new event. **And a save has nothing to survive:** Factorio
