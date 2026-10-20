@@ -50,7 +50,7 @@ not measured.
 4. **The change is breaking.** A save loads under `input` without complaint and loses no plasma,
    but on a pair whose line is still filling, the reactor heated only through the pipe falls from
    above 10⁸ °C to 15 °C within 6000 ticks of the load (#550 and #561, Factorio 2.0.77, unresearched;
-   #550's on 2026-10-04, #561's day by `plasma-input-box.md`'s account and not re-read). The commit carries the `!` and a `BREAKING CHANGE:` footer.
+   #550's on 2026-10-04 and #561's on 2026-10-05). The commit carries the `!` and a `BREAKING CHANGE:` footer.
    *Inferred* from those loads, in which the box's type changed under a saved map and nothing
    needed rewriting: no migration is needed.
 5. **Before it ships**, D-T is read under `input`, since no canary run reached it, and a D-D pair is
@@ -75,7 +75,7 @@ The numbered options of #551 are those of `plasma-input-box.md`'s `## Options`; 
   step.
 
 The 2.0.77 docs' advice that `input-output` "should only be used for boilers in fluid heating mode"
-(*Read from source*, the 2.0.77 prototype API docs, as #551 quotes them and not re-read here) was
+(by #551's account of the 2.0.77 docs, not re-read here) was
 weighed as advisory, not decisive: the gates read the behaviour directly.
 
 ## Consequences
@@ -85,7 +85,10 @@ weighed as advisory, not decisive: the gates read the behaviour directly.
   [#574](https://github.com/trulsjo/realistic-fusion-refreshed/issues/574). By
   `plasma-input-box.md`'s account, not re-run here, 27 of its 125 checks fail under the canary since
   #565.
-- When the box ships, every statement that reactors on a run share heat is rewritten with it: the
+- When the box ships, the current statements that reactors on a run share heat are rewritten with
+  it; dated records, such as ADR 0010's note, ADR 0018's #44 paragraph and
+  `reactor-runtime-cost.md`, are kept as they are. Those found on 2026-10-20 are the help of
+  `scripts/check-pooling.ps1` ("really do work from a single pool"), the
   `rf-reactor` descriptions in `realistic-fusion-refreshed/locale/en/d-d.cfg` ("share one pool at
   one temperature"), the comments in `control.lua` (box 1 as "the input-output box ADR 0011's fluid
   coupling rests on", and `update()`'s on writing the plasma back), in
