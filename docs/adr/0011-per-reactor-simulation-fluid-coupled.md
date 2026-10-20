@@ -85,6 +85,11 @@ as circuit signals. Per-reactor scratch state lives in `storage`, keyed by `unit
 This is what distinguishes the decision from bare per-reactor simulation: the sharing behaviour that
 motivated networks is kept, and the code that implemented it is not written.
 
+> **Amended 2026-10-20 by [ADR 0040](0040-the-plasma-box-is-input.md) (#551, #569).** The plasma
+> box becomes `input`: reactors on one run share feed plasma and not heat, and fluid coupling names
+> the mechanism rather than a promise that neighbours keep an unheated reactor warm. The
+> per-reactor decision above stands.
+
 > **"One mixed temperature" is the intent and not quite the behaviour** — see Consequences. Measured
 > under #40: a run does share and an idle one does flatten, but the mixing loses heat, and a box the
 > simulation writes every step sits a few percent above the rest of its run for as long as it is
