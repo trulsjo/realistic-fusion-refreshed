@@ -16,9 +16,11 @@ ADR 0011 carries a dated note pointing here.
 
 ## Context
 
-Every figure in this section was measured on Factorio 2.0.77 with nothing researched, between
+Every game figure in this section was measured on Factorio 2.0.77 with nothing researched, between
 2026-10-04 and 2026-10-14, by the probes [`plasma-input-box.md`](../research/plasma-input-box.md)
-names; each figure's day is in that note's `## Current figures` table.
+names; each figure's day is in that note's `## Current figures` table. `M.settle_fed`'s figure is
+the model's, run outside the game. "The canary" is the shipped reactor with its plasma box changed
+to `input` for those runs, and nothing else changed.
 
 Both reactors carry their plasma box as `input-output` on a boiler in `output-to-separate-pipe`
 mode. #531 found that box trades with its segment every tick, so a fuel line is two stores. A D-D
@@ -42,18 +44,21 @@ not measured.
    on build order, neither of which a player can reason about. Point 5 measures the build-order
    half. `rf-aneutronic-reactor` changes with `rf-reactor`, so there is one fill model and one
    meaning of fluid-coupled.
-3. **An unheated reactor is cold on any line, full or not.** That answers #569: once heat does not
-   travel, a full line is not a special case. *Inferred* from the canary pair above, whose
+3. **An unheated reactor is cold on any line, full or not.** That answers #569 by its option 4,
+   letting #551 settle it: once heat does not travel, a full line is not a special case. *Inferred* from the canary pair above, whose
    unpowered box shares no heat, measured on D-D, D-He3 and He3-He3 and not on D-T.
-4. **The change is breaking.** A save loads under `input` without complaint and loses no plasma
-   (#550, #561, measured 2026-10-04 and later). A reactor heated only through the pipe on a line
-   still filling falls to 15 °C on load. The commit carries the `!` and a `BREAKING CHANGE:` footer.
+4. **The change is breaking.** A save loads under `input` without complaint and loses no plasma,
+   but on a pair whose line is still filling, the reactor heated only through the pipe falls from
+   above 10⁸ °C to 15 °C within 6000 ticks of the load (#550 and #561, Factorio 2.0.77, unresearched;
+   #550's on 2026-10-04, #561's day by `plasma-input-box.md`'s account and not re-read). The commit carries the `!` and a `BREAKING CHANGE:` footer.
    *Inferred* from those loads, in which the box's type changed under a saved map and nothing
    needed rewriting: no migration is needed.
 5. **Before it ships**, D-T is read under `input`, since no canary run reached it, and a D-D pair is
    read built 12H and 2H1, to confirm the build-order effect of #583 goes with the box.
 
 ## Considered options
+
+The numbered options of #551 are those of `plasma-input-box.md`'s `## Options`; #569's are its own.
 
 - **Keep `input-output` and document it** (#551's option 1, #569's option 1). Rejected: the fill
   stays unmodelled, and a full line's behaviour stays dependent on build order.
@@ -69,8 +74,9 @@ not measured.
 - **Keep a full line trading** (#569's option 3). Rejected: engine behaviour worked around every
   step.
 
-The 2.0.77 docs' advice that `input-output` is only for boilers in fluid heating mode was weighed as
-advisory, not decisive: the gates read the behaviour directly.
+The 2.0.77 docs' advice that `input-output` "should only be used for boilers in fluid heating mode"
+(*Read from source*, the 2.0.77 prototype API docs, as #551 quotes them and not re-read here) was
+weighed as advisory, not decisive: the gates read the behaviour directly.
 
 ## Consequences
 
@@ -79,8 +85,12 @@ advisory, not decisive: the gates read the behaviour directly.
   [#574](https://github.com/trulsjo/realistic-fusion-refreshed/issues/574). By
   `plasma-input-box.md`'s account, not re-run here, 27 of its 125 checks fail under the canary since
   #565.
-- The comments in `control.lua` that call box 1 "the input-output box ADR 0011's fluid coupling
-  rests on" are rewritten, and `GLOSSARY.md`'s **Fluid-coupled** loses "at one mixed temperature"
-  when the box ships.
+- When the box ships, every statement that reactors on a run share heat is rewritten with it: the
+  `rf-reactor` descriptions in `realistic-fusion-refreshed/locale/en/d-d.cfg` ("share one pool at
+  one temperature"), the comments in `control.lua` (box 1 as "the input-output box ADR 0011's fluid
+  coupling rests on", and `update()`'s on writing the plasma back), in
+  `realistic-fusion-refreshed/prototypes/entities.lua` and `prototypes/fluids.lua`, the help of
+  `scripts/check-breeding.ps1`, and `GLOSSARY.md`'s **Fluid-coupled**, which loses "at one mixed
+  temperature".
 - A bank where one reactor rides on its neighbours is not available, as ADR 0011 already said of
   scale.
