@@ -176,6 +176,11 @@ pass.
    reviewer said it did not check. A cell that names a commit of the branch names it by its
    subject in quotes, not its hash (#730).
 
+   **Before the first `gh pr create`, invoke the `mattpocock-skills:pr` skill** with the Skill
+   tool for `## Summary`, `## Evidence` and `## Merge Danger` (#738); where it is not installed,
+   write them by hand to its template. Put one `Closes #N` line per ticket above them, and the
+   `## Pre-PR review` section below them.
+
    **Check the body before it is sent** (#730), each time, the first `gh pr create` and every
    `gh pr edit` after it, this step's and step 7's included:
 
