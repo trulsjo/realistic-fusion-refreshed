@@ -88,7 +88,7 @@ weighed as advisory, not decisive: the gates read the behaviour directly.
   15 °C, in at least one cell that reaches a full line. That absorbs
   [#574](https://github.com/trulsjo/realistic-fusion-refreshed/issues/574). By
   `plasma-input-box.md`'s account, not re-run here, 27 of its 125 checks fail under the canary since
-  #565.
+  #565, and 36 since #575.
 - When the box ships, the current statements that reactors on a run share heat are rewritten with
   it; dated records, such as ADR 0010's note, ADR 0018's #44 paragraph and
   `reactor-runtime-cost.md`, are kept as they are. Those found on 2026-10-20 are the help of

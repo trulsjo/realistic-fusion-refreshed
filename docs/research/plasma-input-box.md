@@ -21,8 +21,8 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | Canary `input` box, D-D solo, 3 and 6 pipes: first row of the 10⁻⁴ settle test as it stood before #576, against the last row, rows every 4000 ticks | 44 000 | 2026-10-04 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Past tick 96 000, both reactors powered, and a lone box](#past-tick-96-000-both-reactors-powered-and-a-lone-box) |
 | Shipped `input-output` box and canary `input` box alike, D-D solo, 3 and 6 pipes: box temperature at tick 1 980 000 | 2.381512×10⁸ °C | 2026-10-05 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The shipped box passes the settle test near the canary's, and is still moving](#the-shipped-box-passes-the-settle-test-near-the-canarys-and-is-still-moving) |
 | Shipped `input-output` box, D-D solo: tick from which every later row reads the same as the one 60 000 before it | 1 160 000 at three pipes, 1 400 000 at six | 2026-10-05 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The shipped box passes the settle test near the canary's, and is still moving](#the-shipped-box-passes-the-settle-test-near-the-canarys-and-is-still-moving) |
-| Shipped `input-output` box, D-D solo, 1 heater, 3 and 6 pipes, 2 000 000 ticks, rows every 20 000: first tick of the settle test since #576, each row within 10⁻⁴ of the row 60 000 before it | 740 000 at three pipes, 860 000 at six | 2026-10-20 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The shipped box passes the settle test near the canary's, and is still moving](#the-shipped-box-passes-the-settle-test-near-the-canarys-and-is-still-moving) |
-| Canary `input` box, D-D solo, 1 heater, 3 and 6 pipes, 2 000 000 ticks, rows every 20 000: first tick of the settle test since #576 | 120 000 at both | 2026-10-20 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The shipped box passes the settle test near the canary's, and is still moving](#the-shipped-box-passes-the-settle-test-near-the-canarys-and-is-still-moving) |
+| Shipped `input-output` box, D-D solo, 1 heater, 3 and 6 pipes, 2 000 000 ticks, rows every 20 000: first tick of the settle test since #576, every two rows a multiple of 60 000 ticks apart within 10⁻⁴ of each other | 820 000 at three pipes, 1 000 000 at six | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The shipped box passes the settle test near the canary's, and is still moving](#the-shipped-box-passes-the-settle-test-near-the-canarys-and-is-still-moving) |
+| Canary `input` box, D-D solo, 1 heater, 3 and 6 pipes, 2 000 000 ticks, rows every 20 000: first tick of the settle test since #576 | 60 000 at both | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The shipped box passes the settle test near the canary's, and is still moving](#the-shipped-box-passes-the-settle-test-near-the-canarys-and-is-still-moving) |
 | Shipped `input-output` box, D-D pair, both reactors powered: tick both boxes fill | 246 755 | 2026-10-04 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Two powered canary boxes on one line settle at the same temperature](#two-powered-canary-boxes-on-one-line-settle-at-the-same-temperature) |
 | Canary `input` box, D-D pair, both reactors powered: tick box 1 and box 2 fill | 89 651 and 88 694 | 2026-10-04 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Two powered canary boxes on one line settle at the same temperature](#two-powered-canary-boxes-on-one-line-settle-at-the-same-temperature) |
 | Shipped `input-output` box, D-D pair, both reactors powered: the two box temperatures at tick 1 980 000 | 2.368459 and 2.394605×10⁸ °C, 1.10% apart | 2026-10-05 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Two powered canary boxes on one line settle at the same temperature](#two-powered-canary-boxes-on-one-line-settle-at-the-same-temperature) |
@@ -237,7 +237,7 @@ next section.
 
 #### The shipped box passes the settle test near the canary's, and is still moving
 
-| 600 000 ticks, 1 heater | first row of the settle test | °C at 596 000 | box at 596 000 |
+| 600 000 ticks, 1 heater | first row of the settle test as it stood before #576 | °C at 596 000 | box at 596 000 |
 |---|---|---|---|
 | shipped, 3 pipes | 580 000 | 2.382469×10⁸ | 1000.0000 |
 | shipped, 6 pipes | 580 000 | 2.383660×10⁸ | 1000.0000 |
@@ -272,7 +272,7 @@ same point of that cycle. The table prints five figures, so "the same" below mea
   same box on another row of the 12 000-tick cycle: at 1 960 000 all four read 2.3814×10⁸, and
   at 1 980 000 all four read 2.3815×10⁸.
 - The shipped box takes far longer to get there. The canary's 120 000 is the earliest this
-  comparison can report on rows 20 000 apart, and the 600 000-tick run had the canary settled
+  comparison can report on rows 20 000 apart (#576 corrects this below: the earliest is 60 000), and the 600 000-tick run had the canary settled
   by 44 000; against that the shipped box's 1 160 000 and 1 400 000 are about 26 and 32 times
   as long.
 - **The settle test as written can pass a box that is still drifting, and did.** It asks that
@@ -282,31 +282,38 @@ same point of that cycle. The table prints five figures, so "the same" below mea
   rows stop moving. A pass means "within 10⁻⁴ of where the run ended", not "stopped".
 
 **Since [#576](https://github.com/trulsjo/realistic-fusion-refreshed/issues/576) the settle test
-compares like rows, as #560 did by hand.** The probe reads the heater's cycle off the recipe and
-the heater's crafting speed, 120 ticks, and compares each row with the row a lag earlier: the
-fewest ticks that are a whole multiple of both `-Every` and the cycle, so 60 000 at rows every
-20 000 and 12 000 at rows every 4000. A box has settled from the first row after which every
-such step is within `-Settle` of the later row, and only if the last step is; otherwise the
-report says "NOT settled" and prints the last step. Temperatures print to ten figures in that
-line and eight in the table. #560's command again, 2026-10-20, Factorio 2.0.77 (build 84539),
-nothing researched (all 11 rungs asserted off), one heater a cell, 2 000 000 ticks:
+compares like rows, and a pass means the box has stopped to within the bound.** The probe reads
+the heater's cycle off the recipe and the heater's crafting speed, 120 ticks, and compares rows
+only with rows a whole number of lags away: the lag is the fewest ticks that are a whole
+multiple of both `-Every` and the cycle, so 60 000 at rows every 20 000 and 12 000 at rows every
+4000. A box has settled from the first row after which every two such rows read within
+`-Settle` of each other. That is every pair and not only neighbours, because a drift under the
+bound a lag passes a test of steps: run over this run's rows, a test of steps passed the
+shipped three-pipe box from 740 000, and it fell 1.7×10⁻⁴ after that. A box whose last row and
+the row a lag before it are further apart than the bound is "NOT settled". Temperatures print
+to ten figures in that line and eight in the table. #560's command again, 2026-10-21, Factorio
+2.0.77 (build 84539), nothing researched (all 11 rungs asserted off), one heater a cell, three
+pipes and six, 2 000 000 ticks:
 
-| 2 000 000 ticks, 1 heater, rows every 20 000 | settled from, since #576 | #560 by hand |
-|---|---|---|
-| shipped, 3 pipes | 740 000 | 1 160 000 |
-| shipped, 6 pipes | 860 000 | 1 400 000 |
-| canary, 3 pipes | 120 000 | 120 000 |
-| canary, 6 pipes | 120 000 | 120 000 |
+| 2 000 000 ticks, 1 heater, rows every 20 000 | settled from, since #576 | #560 by hand | the test before #576 |
+|---|---|---|---|
+| shipped, 3 pipes | 820 000 | 1 160 000 | 800 000 |
+| shipped, 6 pipes | 1 000 000 | 1 400 000 | 980 000 |
+| canary, 3 pipes | 60 000 | 120 000 | 60 000 |
+| canary, 6 pipes | 60 000 | 120 000 | 60 000 |
 
-- **The canary boxes read #560's tick. The shipped boxes read earlier because #560's bound was
-  tighter.** #560 called two rows "the same" when they agreed to the five figures the table
-  printed then, about 4×10⁻⁵ of a reading near 2.38×10⁸, where `-Settle` defaults to 10⁻⁴. The
-  shipped box at three pipes still moves in its fifth figure between 740 000 and 1 160 000, by
-  under 10⁻⁴ a step. A tighter `-Settle` asks the stricter question.
+- **The shipped boxes settle later than the old test said and earlier than #560 read by hand.**
+  #560 compared each row with the one 60 000 before it and called two rows "the same" when they
+  agreed to the five figures the table printed then, about 4×10⁻⁵ of a reading near 2.38×10⁸;
+  the probe compares every pair within 10⁻⁴. Which of the two differences moves the tick was
+  not measured: no run took one without the other.
+- **The canary boxes read 60 000, the first row that has a row 60 000 before it**, and the
+  earliest this comparison can report. #560's 120 000 is not that, as the bullet above says it
+  is; why #560 read 120 000 was not traced.
 
 #### Two powered canary boxes on one line settle at the same temperature
 
-| 600 000 ticks, 1 heater, 3 + 12 pipes | box 1 full at | box 2 full at | °C at 96 000, 1 and 2 | first settle row, 1 and 2 | °C at 596 000, both |
+| 600 000 ticks, 1 heater, 3 + 12 pipes | box 1 full at | box 2 full at | °C at 96 000, 1 and 2 | first settle row before #576, 1 and 2 | °C at 596 000, both |
 |---|---|---|---|---|---|
 | canary | 89 651 | 88 694 | 2.3840 and 2.3826×10⁸ | 104 000 and 100 000 | 2.381386×10⁸ |
 | shipped | 246 755 | 246 755 | 6.8839 and 6.8839×10⁸ | 592 000 and 584 000 | 2.371960 and 2.396459×10⁸ |
@@ -507,7 +514,7 @@ reactor and twelve between the two, built 1H2, counted to 496 000. The fill tick
   A He3-He3 box burns almost nothing, so neither box makes room in the full line and neither
   trades its own plasma for the segment's. On D-D the box taken just before the heater burns,
   gives 468.69 units and runs colder. Both He3-He3 boxes read 3.105680×10⁶ °C from 328 000 to
-  496 000, within the settle test's 10⁻⁴. This is the rule's account, not a reading of the
+  496 000, within the settle test's 10⁻⁴ as it stood before #576. This is the rule's account, not a reading of the
   engine.
 
 #### Once the shipped line is full, the unpowered reactor falls to the floor, built 1H2
@@ -566,8 +573,9 @@ under a hundredth on 149 616, and 15 °C on tick 150 012.
   the segment moved between, the worst misses are 0.08743 and 0.09329 units taking the powered
   box first, and 0.08725 and 0.09324 taking the unpowered box first, against 0.08743 and
   0.09324 with each box alone: the order moves each by under 2×10⁻⁴ units, nothing at the two
-  figures quoted above. A craft landing in the segment inside the tick is what the rule,
-  applied to one box against the segment as it stood, does not see.
+  figures quoted above. That a craft landing in the segment inside the tick is what the rule,
+  applied to one box against the segment as it stood, does not see is inferred from the
+  spacing; no tick was traced to a craft.
 - **The heat went into the mod's step.** Over the window the unpowered box held 5.6685×10¹⁰
   unit-°C at the start. The engine brought it 1.4119×10¹¹ more, and `control.lua`'s step took
   1.9788×10¹¹ out, leaving 1.5×10⁴: 1000 units at 15 °C. An unpowered reactor is stepped with no

@@ -123,9 +123,7 @@ on this machine on 2026-10-05 with nothing else running, and 24 min 50 s the nex
 subagents: **run it before or after a subagent fan-out, not during one** (#617; the script's help
 has the figures; the 21 was before #659 added three). It runs no probe, no gate's
 `-SelfTest`, and not `load-check.ps1 -FromZips`, `locale-check.ps1` or `name-check.ps1`; its
-own `-SelfTest` proves with stand-in gates that a failing gate is named and not swallowed, and
-since #578 its `exit-code-names-failure` and `exit-code-clean` halves run the script itself over
-stand-ins and require the exit code it turns that list into.
+own `-SelfTest` proves with stand-in gates that a failing gate is named and not swallowed.
 
 ## What the workflow runs
 
