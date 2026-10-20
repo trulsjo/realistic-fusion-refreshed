@@ -107,8 +107,11 @@ and #127](code-review-evidence.md#what-the-threshold-dropped-on-124-126-and-127-
 scores decided on eleven
 passes](code-review-evidence.md#what-the-scores-decided-on-eleven-passes-626).
 
-**The pre-PR reviewer still scores its own findings**, 0, 25, 50, 75 or 100, and every one is
-reported whatever it scores. Since #653 a score decides nothing in the fourth rule's procedure.
+**The pre-PR reviewer gives its findings no score** (Truls, 2026-10-16, #610), and every one is
+reported. It scored each 0, 25, 50, 75 or 100 until then, and since #653 a score had decided nothing
+in the fourth rule's procedure, which is the reason here. The modpack dropped the score for another
+reason, that one reviewer has no scorers and a score it gave itself would read as the plugin
+pass's; here the plugin pass gives none either, so that reason does not apply.
 
 ## Review the prose, not only the code
 
@@ -130,7 +133,10 @@ diff.
 
 **Treat a quantifier as an instruction to enumerate.** "No run clears the floor", "every reactor
 pairs", "the one sentence that did not need correcting" — a claim about *all* or *none* of a set is
-checked by walking the set, never by agreeing with its tone.
+checked by walking the set, never by agreeing with its tone. **A fix that adds a figure re-walks
+every quantifier that covers the place it lands** (2026-10-16, #610): in the modpack a fix added a
+figure under a standing "every figure is quoted from", made it false, and the repair of that was
+false again.
 
 **When a change supersedes a figure, grep the repository for the old one, and read every hit in a
 file that records a measurement** — start in `docs/adr/` and `docs/research/`, where most of them
@@ -149,6 +155,14 @@ is an old figure still presented as current.
 **This binds the reviewer.** All three escapes #331 records were reviewer misses on changes whose
 own files were correct. An author who greps before opening the pull request saves a round, but the
 obligation lives here, in the review.
+
+**When a change alters a rule, every sentence of that rule's section is read against the new
+wording** (2026-10-16, #610). The search above finds an old figure in other files; a sentence beside
+the amended rule, in its own section, can still read the old way with no figure in it. On #594 the
+plugin pass's second finding was rule 1's explanation still calling a finding at 75 "discarded by
+construction" after the change had such a finding posted, and in the modpack two sentences beside
+an amended threshold rule were left reading the old way. This reads in place, and the search by
+meaning below searches across files; the two are kept apart.
 
 **A claim the diff narrows, retracts or deletes the subject of is searched for by its meaning**
 (2026-10-14, #696). A figure has one spelling; a claim has many. For each such claim, every other
@@ -251,10 +265,11 @@ request's body is last edited, the session reads each of these again against the
   the head. A message that a later commit made false is reworded, as the fourth rule says of one a
   review corrects.
 
-**The body then says what was read again, and on which commit.** A reading that names no commit
-cannot be told from one made before the last fix. **What the reading turns up is fixed like any
-finding raised in the last confirmation**: the fix gets a message of its own to the reviewer, what
-that fix changed is read again, and the body names the head after it.
+**The body then says what was read again, and on which commit**, named by its subject in quotes
+(#730). A reading that names no commit cannot be told from one made before the last fix. **What the
+reading turns up is fixed like any finding raised in the last confirmation**: the fix gets a message
+of its own to the reviewer, what that fix changed is read again, and the body names the head after
+it.
 
 **A change to a rule writes its line on `code-review-history.md` first, at the start of this
 reading** (2026-10-15, #716), once, from the rule's final wording, and not in the commit that
@@ -356,7 +371,10 @@ had made its own worktree with `git worktree add --detach` saw none of it; that 
 
 **No, and nothing there can.** The plugin's own instructions launch five reviewers that read the
 change, its blame, earlier pull requests and the comments on them, and the comments in the code it
-touches; none of them is told to modify the tree, so the plugin never plants. The plugin is also not
+touches; none of them is told to modify the tree, so the plugin never plants. That is read from the
+installed plugin's `commands/code-review.md` on 2026-10-16, whose agents #3 to #5 say it (#610). The
+modpack's copy of this sentence carries a claim grade; this one gives its source and no grade,
+because grades here cover `docs/adr/` and `docs/research/` alone (#720). The plugin is also not
 this repository's to edit, for the reason the next section gives. The rule binds whatever runs
 alongside it — a gate-poisoning pass, a review agent asked to prove a finding — and that is why it
 lives here.
@@ -418,10 +436,10 @@ rule, one of the three findings the plugin pass posted was in a sentence a fix h
 pre-PR review, and the confirmation had passed it.
 
 **A finding that the reviewer raises while it confirms the fixes has its own fix confirmed with the
-plugin pass's fixes, whatever it scores** (2026-10-08, #643; decided by Truls on 2026-10-12,
+plugin pass's fixes, every such finding alike** (2026-10-08, #643; decided by Truls on 2026-10-12,
 settling #653). The session fixes it and sends no message for it. The pull request is opened with
 that fix marked `yes, not confirmed`, and the session changes the mark when the reviewer answers for
-it after the plugin pass. Until #653 a finding at 75 or over was the exception and had its fix
+it after the plugin pass. Until #653 a finding scored 75 or over was the exception and had its fix
 confirmed before the pull request opened. Holding it moves the confirmation and skips none of it,
 and the plugin pass reads the held fix first: on #650 it raised a finding against one. Where a later
 message's diff holds a waiting fix as well, the reviewer answers for both and nothing waits. Where
@@ -437,11 +455,19 @@ page](code-review-evidence.md#what-one-message-cost-on-641-and-642-643) has it b
 cost](code-review-evidence.md#what-holding-every-finding-would-have-cost-653) on those two and on
 #650.
 
-**Its findings go in the pull request's body, every one of them**, each with its score and whether
-it was fixed. No pull request exists when they are made, so the body is the first place that can
+**Its findings go in the pull request's body, every one of them**, each with whether it was fixed,
+and one left unfixed with the reason (#610). No pull request exists when they are made, so the body
+is the first place that can
 hold them. [#579](https://github.com/trulsjo/realistic-fusion-refreshed/pull/579)'s body gave the
 counts and the one finding left unfixed, and the eleven that were fixed are in no record. Decided by
 Truls on 2026-10-05, after the plugin pass on #594 found the rule did not say.
+
+**The body names a commit of the branch by its subject in quotes, and not by its hash** (Truls,
+2026-10-19, #730). A merge here can be a rebase merge, which gives every commit of the branch a new
+hash: #731's head reached `main` as `d87a02a`, under a hash the branch never had. A commit already
+on `main` is still named by its hash. `vendor/grado-factorio-tools/scripts/pr-body-check.ps1` fails
+a body that cites a commit not on `main`, and the tracker page, `docs/agents/issue-tracker.md`, says
+when it is run.
 
 **The session answers for each thing the reviewer says it did not check** (2026-10-08, #636). The
 reviewer ends its report with that list. Before the findings table is written, and so before the
