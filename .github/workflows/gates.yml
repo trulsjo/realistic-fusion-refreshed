@@ -1,10 +1,9 @@
 # The game-free gates (#599): the ones that need neither Factorio nor Blender, so a hosted runner
 # can run them. Every other gate starts the game and runs only where a person starts it -- see
-# scripts/run-gates.ps1. No gate's -SelfTest runs here, the same as there; the body check's below,
-# which no gate there runs, is the one -SelfTest here. Three tools under
+# scripts/run-gates.ps1. No gate's -SelfTest runs here, the same as there. The body check below is
+# not one of those gates, and its -SelfTest runs here and not there. Three tools under
 # tools/ are not gates and have a --self-test that is all that checks them; those run here, as
 # they do there (#659).
-#
 #
 # The pull request's body is checked by the shared pr-body-check.ps1 (#730): the pr template's
 # three headings, no commit cited that is not on main, and no closing keyword outside a lone

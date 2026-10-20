@@ -88,15 +88,16 @@ the paragraph above applies to it as it would to any other.
 The exception rests on one fact: no other gate reads a `.md` file, checked 2026-10-07. A gate
 that starts reading one ends it.
 
-**One workflow runs the game-free gates unattended** (#599, #659). `.github/workflows/gates.yml`
-is the only file under `.github/`, and it runs on a pull request and on a push to `main`: each
+**One workflow runs the game-free gates unattended** (#599, #659). `.github/workflows/gates.yml` is
+the only file under `.github/`, and it runs on a pull request and on a push to `main`: each
 `tests/test-*.lua`, `ship-check.ps1`, `commit-check.ps1` over the commits that event brought, and
 the `--self-test` of the same three scripts under `tools/`. **It also runs the shared
-`pr-body-check.ps1 -SelfTest`, and on a pull request the check itself on the body** (#730); an
-edit to the body runs the body check alone. A pull request with a merge conflict
-gets no run at all, which looks the same as one not yet run. **Everything else `run-gates.ps1`
-runs, and all of what it leaves out, stays manual**, and a green check says nothing about any of
-it. **The check is advisory**: `main` has no branch protection, so a red one blocks no merge.
+`pr-body-check.ps1 -SelfTest`, and on a pull request the check itself on the body** (#730); an edit
+to the body runs the body check alone; `run-gates.ps1` runs neither. A pull request with a merge
+conflict gets no run at all, which looks the same as one not yet run. **Everything else
+`run-gates.ps1` runs, and everything else it leaves out, stays manual**, and a green check says
+nothing about any of it. **The check is advisory**: `main` has no branch protection, so a red one
+blocks no merge.
 
 `scripts/probe-*` are **not** gates, and `run-gates.ps1` runs none of them. A probe asserts nothing
 and answers a question a decision is waiting on — exit 0 means it ran and reported, never that the

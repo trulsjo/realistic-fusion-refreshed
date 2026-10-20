@@ -129,13 +129,15 @@ own `-SelfTest` proves with stand-in gates that a failing gate is named and not 
 
 The State section keeps what runs unattended, what stays manual and that the check is advisory.
 
-**One workflow runs three gates and three tools' self-tests unattended** (#599, #659).
+**One workflow runs four checks and four self-tests unattended** (#599, #659, #730).
 `.github/workflows/gates.yml` is the only file under `.github/`, and it runs the game-free gates —
 the ones that need neither Factorio nor Blender — on a pull request and on a push to `main`: each
 `tests/test-*.lua`, `ship-check.ps1`, and `commit-check.ps1` over the commits that event brought.
 Since #659 a third job runs the `--self-test` of the same three scripts under `tools/` that
-`run-gates.ps1` runs. A pull request with a merge conflict gets no run at all, which looks the same
-as one not yet run. The one other check nobody starts by hand is the `commit-msg` hook in the Commit
+`run-gates.ps1` runs. Since #730 a job runs the shared `pr-body-check.ps1` on a pull request's
+body, again when the body is edited, which no other job runs on, and the `ship-check` job runs that
+script's `-SelfTest`; `run-gates.ps1` runs neither. A pull request with a merge conflict gets no
+run at all, which looks the same as one not yet run. The one other check nobody starts by hand is the `commit-msg` hook in the Commit
 messages section, which a clone opts into and a commit triggers. **What stays manual is the rest of
 what `run-gates.ps1` runs, and all of what it leaves out**: the default `load-check.ps1` and each
 `scripts/check-*.ps1`, then `load-check.ps1 -FromZips`, `locale-check.ps1`, `name-check.ps1`, the
@@ -211,3 +213,7 @@ One line for each change to a gate, newest last, with its date and its ticket.
   session that implemented #710, and recorded on #710's pull request: section 10 still fails a row
   whose Section cell holds no link, and its `figure-anchor-resolves` half became
   `figure-section-linked`, which plants a row with no link beside one with a dangling link.
+- 2026-10-20, #730: `.github/workflows/gates.yml` runs the tools submodule's `pr-body-check.ps1`
+  on each pull request's body, with `edited` among its triggers and every other job skipping that
+  event, and its `-SelfTest` in the `ship-check` job. The pin moves to the commit that gave the
+  script its heading check.
