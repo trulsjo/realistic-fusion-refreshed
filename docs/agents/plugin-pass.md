@@ -237,11 +237,12 @@ the verdict, because #626 had deferred it in the verifier's own paragraph and in
   (Truls, 2026-10-14, #691, as #626 set on 2026-10-11, and again on 2026-10-16, #722).
 - **Findings on the change, and findings on the review's own records**: whether the review's
   findings on the records the review process writes itself are counted apart from its findings on
-  the change, with each figure given both ways for the ten rows when the revisit falls due (Truls,
-  2026-10-16, #724). A finding on records is one about a commit message, a row of
+  the change, with each figure given both ways for the rows the revisit is drawn from when it falls
+  due (Truls, 2026-10-16, #724). A finding on records is one about a commit message, a row of
   `review-figures.md`, the line on `code-review-history.md`, or the pull request's body; this is
-  this page's reading of "records", and the wording is his to correct. On #721, 8 of the pre-PR
-  review's 15 findings were on records, all of them raised while it confirmed fixes, and the sums
-  behind the verdict of 2026-10-16 count every finding together, so they cannot show that. The split
+  this page's reading of "records", and the wording is his to correct. On #721, 9 of the pre-PR
+  review's 15 findings were on records by that reading: finding 7, in its first report, and the
+  eight it raised while it confirmed fixes. The sums behind the verdict of 2026-10-16 count every
+  finding together, so they cannot show that. The split
   is not applied to rows already written, and no column is added for it; whether to add one is for
   the revisit.

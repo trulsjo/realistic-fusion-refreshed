@@ -466,8 +466,14 @@ Truls on 2026-10-05, after the plugin pass on #594 found the rule did not say.
 2026-10-19, #730). A merge here can be a rebase merge, which gives every commit of the branch a new
 hash: #731's head reached `main` as `d87a02a`, under a hash the branch never had. A commit already
 on `main` is still named by its hash. `vendor/grado-factorio-tools/scripts/pr-body-check.ps1` fails
-a body that cites a commit not on `main`, and the tracker page, `docs/agents/issue-tracker.md`, says
-when it is run.
+a body that cites a commit not on `main`.
+
+**The body is checked with that script before each time it is sent, and a body it fails is not
+sent** (Truls, 2026-10-19, #730): the first `gh pr create` and every `gh pr edit` after it, each
+review pass's included. The review sections, the `## Pre-PR review` and what the plugin pass adds,
+stand below the template's `## Summary`, `## Evidence` and `## Merge Danger`, which the script
+checks and the tracker page, `docs/agents/issue-tracker.md`, requires. Where the review sections
+stand the script does not read.
 
 **The session answers for each thing the reviewer says it did not check** (2026-10-08, #636). The
 reviewer ends its report with that list. Before the findings table is written, and so before the
