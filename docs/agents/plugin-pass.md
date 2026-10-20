@@ -241,8 +241,9 @@ the verdict, because #626 had deferred it in the verifier's own paragraph and in
   due (Truls, 2026-10-16, #724). A finding on records is one about a commit message, a row of
   `review-figures.md`, the line on `code-review-history.md`, or the pull request's body; this is
   this page's reading of "records", and the wording is his to correct. On #721, 9 of the pre-PR
-  review's 15 findings were on records by that reading: finding 7, in its first report, and the
-  eight it raised while it confirmed fixes. The sums behind the verdict of 2026-10-16 count every
+  review's 15 findings were on records alone by that reading: finding 7, in its first report, and
+  the eight it raised while it confirmed fixes. Its finding 1 was on both, a paragraph and a commit
+  body, and is counted with the change. The sums behind the verdict of 2026-10-16 count every
   finding together, so they cannot show that. The split
   is not applied to rows already written, and no column is added for it; whether to add one is for
   the revisit.
