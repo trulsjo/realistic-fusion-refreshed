@@ -323,10 +323,11 @@ One line for each, newest last. The passages above are not edited.
   the review's findings on its own records are counted apart from its findings on the change.
   `plugin-pass.md` says which findings count as on records, that the wording is his to correct, and
   that the split is not applied to rows already written. The wording is the session's.
-- **2026-10-19, #730: Truls ruled that a pull request body carries the pr template's three
-  headings**, in a grill recorded on #730 that applies trulsjo/grado-factorio-modpack#320's ruling
-  here. `code-review.md`'s fourth rule says that the body names a commit of the branch by its
-  subject in quotes and not by its hash, that the body is checked with the shared
-  `pr-body-check.ps1` before each time it is sent, and that the review sections stand below the
-  three headings; the reading after the last fix commit names its head by its subject. The tracker
-  page states the headings and the check. The wording is the session's.
+- **2026-10-19, #730: Truls ruled how a pull request body carries the pr template's three
+  headings here**, in a grill recorded on #730. The headings themselves he had ruled the same day
+  in a grill recorded on trulsjo/grado-factorio-modpack#320, which reaches this repository. The
+  fourth rule of `code-review.md` says that the body names a commit of the branch by its subject in
+  quotes and not by its hash, that the body is checked with the shared `pr-body-check.ps1` before
+  each time it is sent, and that the review sections stand below the three headings. Its second
+  rule has the reading after the last fix commit name its head by its subject. The tracker page
+  states the headings and the check. The wording is the session's.
