@@ -108,7 +108,10 @@
     the rows on that tick: nothing was read before it, so what it gave is not known.
     Under the rows the report runs the two-store rule over every pair of consecutive ticks and
     prints how many it predicts, how many it misses by over 1e-4 units, and the worst miss with
-    and without the 0.1-unit floor (#563). It reports and asserts nothing.
+    and without the 0.1-unit floor (#563). Since #577 it runs the rule again over the rows rounded
+    to the five decimals the table prints, over every pair and over the pairs from the first tick
+    under 0.74, #540's start, and takes the heater's output box and the step interval from the
+    mod's reactor-logic.lua as the rig reads them. It reports and asserts nothing.
 
     "Under three quarters" is tested as under 0.74999 of what it held (#552). The engine's
     amounts are single precision: the first craft's exact three quarters, 3.75 of 5 on tick 122,
@@ -389,7 +392,9 @@ script.on_init(function()
   remote.call("rf-segment-pre", "watch", reactors)
   storage.cells = cells
   storage.per_craft = prototypes.recipe[PLASMA].products[1].amount
-  say("built cells=%d quieted=%d per_craft=%g", #cells, storage.quieted, storage.per_craft)
+  -- The mod's own simulation constants, which Measure-HeaterRule runs the rule with (#577).
+  say("built cells=%d quieted=%d per_craft=%g heater_output_box=%.17g step_ticks=%d", #cells,
+    storage.quieted, storage.per_craft, logic.heater_output_box, logic.step_ticks)
   for _, cell in ipairs(cells) do
     say("cell pipes=%d capacity=%g box=%g heater_box=%g segment_id=%d", cell.pipe_count,
       cell.pipes[1].fluidbox.get_capacity(1), cell.reactor.fluidbox.get_capacity(1),
@@ -566,7 +571,7 @@ function Step-HeaterRule {
     @{ Box = $Box; Segment = $Segment; Heater = $Heater }
 }
 
-function Write-HeaterRule {
+function Measure-HeaterRule {
     <#  THE RULE AGAINST THE ROWS (#563). #540 and #552 each checked the heater rows with arithmetic
         that was never committed, and their worst misses differed. This is that check, printed.
 
@@ -576,32 +581,32 @@ function Write-HeaterRule {
         and heater. A pair whose first tick is a step tick is left out: the box is read before the
         mod steps it there, so the rule would start from a box the engine never saw. It reports and
         asserts nothing.  #>
-    param([object[]] $Rows, [double] $BoxVolume)
+    param([object[]] $Rows, [double] $BoxVolume, [double] $HeaterVolume, [int] $StepTicks, [int] $Decimals = -1)
 
-    # The mod's reactor-logic.lua names these M.heater_output_box and M.step_ticks, and
-    # load-check.ps1 holds THOSE to the prototypes. These two are this probe's own copies and
-    # nothing holds them to the mod's: change one there and change it here.
-    $heaterVolume = 200.0; $stepTicks = 6
+    # $HeaterVolume and $StepTicks are reactor-logic.lua's M.heater_output_box and M.step_ticks as
+    # the rig read them (#577); load-check.ps1 holds those to the prototypes. With -Decimals, each
+    # reading is first rounded as the table above prints it, so the worst miss is the one a reader
+    # checking that table by hand would find.
+    $Num = if ($Decimals -ge 0) { { param($v) [math]::Round((Num $v), $Decimals) } } else { { param($v) Num $v } }
     $pairs = 0; $missed = 0; $worst = 0.0; $worstAt = 0; $bare = 0.0
     for ($i = 0; $i -lt $Rows.Count - 1; $i++) {
         $a = $Rows[$i]; $b = $Rows[$i + 1]
         $tick = [int]$a['tick']
-        if ([int]$b['tick'] -ne $tick + 1 -or $tick % $stepTicks -eq 0) { continue }
+        if ([int]$b['tick'] -ne $tick + 1 -or $tick % $StepTicks -eq 0) { continue }
         $pairs++
-        $from = @{ Box = (Num $a['pre']); Segment = (Num $a['seg']); Heater = (Num $b['had'])
-                   BoxVolume = $BoxVolume; Capacity = (Num $a['cap']); HeaterVolume = $heaterVolume }
+        $from = @{ Box = (& $Num $a['pre']); Segment = (& $Num $a['seg']); Heater = (& $Num $b['had'])
+                   BoxVolume = $BoxVolume; Capacity = (Num $a['cap']); HeaterVolume = $HeaterVolume }
         $miss = @{}
         foreach ($floor in 0.1, 0.0) {
             $to = Step-HeaterRule @from -Floor $floor
-            $miss[$floor] = [math]::Max([math]::Max([math]::Abs($to.Box - (Num $b['pre'])),
-                [math]::Abs($to.Segment - (Num $b['seg']))), [math]::Abs($to.Heater - (Num $b['held'])))
+            $miss[$floor] = [math]::Max([math]::Max([math]::Abs($to.Box - (& $Num $b['pre'])),
+                [math]::Abs($to.Segment - (& $Num $b['seg']))), [math]::Abs($to.Heater - (& $Num $b['held'])))
         }
         if ($miss[0.1] -gt $worst) { $worst = $miss[0.1]; $worstAt = $tick }
         if ($miss[0.1] -gt 1e-4) { $missed++ }
         if ($miss[0.0] -gt $bare) { $bare = $miss[0.0] }
     }
-    Write-Host ("  the rule against these rows: {0} tick pairs, {1} missed by over 1e-4 units; worst miss {2:E1} on tick {3}; without the 0.1 floor the worst is {4:G2}" -f
-        $pairs, $missed, $worst, $worstAt, $bare)
+    @{ Pairs = $pairs; Missed = $missed; Worst = $worst; WorstAt = $worstAt; Bare = $bare }
 }
 
 function Num { param($Value) [double]::Parse($Value, $inv) }
@@ -622,6 +627,7 @@ try {
     $hit = $created | Select-String -Pattern 'Factorio (\d+\.\d+\.\d+) \(build (\d+)' | Select-Object -First 1
     if ($hit) { $version = "$($hit.Matches[0].Groups[1].Value) (build $($hit.Matches[0].Groups[2].Value))" }
 
+    $built = @(Read-Records $created 'built')[0]
     $cells = @(Read-Records $created 'cell')
     if ($cells.Count -ne $pipeCounts.Count) { throw "the rig built $($cells.Count) cell(s) of $($pipeCounts.Count)." }
     $cycles = @(Read-Records $ran 'cycle')
@@ -729,7 +735,24 @@ try {
                         (Num $d['seg']), ((Num $d['cap']) - (Num $d['seg'])), (Num $d['pre']), (Num $d['ptemp']))
                 }
                 Write-Host '  "had" is what it held after the last tick plus any craft since; "gave" is what left it this tick.'
-                Write-HeaterRule -Rows $drips -BoxVolume $boxCap
+                $rule = @{ Rows = $drips; BoxVolume = $boxCap; HeaterVolume = (Num $built['heater_output_box'])
+                           StepTicks = [int]$built['step_ticks'] }
+                $r = Measure-HeaterRule @rule
+                Write-Host ("  the rule against these rows: {0} tick pairs, {1} missed by over 1e-4 units; worst miss {2:E1} on tick {3}; without the 0.1 floor the worst is {4:G2}" -f
+                    $r.Pairs, $r.Missed, $r.Worst, $r.WorstAt, $r.Bare)
+                # THE SAME RULE OVER THE TABLE AS PRINTED (#577), each reading to its five decimals:
+                # #540 checked the table by hand and its worst misses were this rounding's.
+                $r = Measure-HeaterRule @rule -Decimals 5
+                Write-Host ("  and against the table as printed, each reading to five decimals: {0} missed by over 1e-4 units; worst miss {1:E2} on tick {2}; without the 0.1 floor {3:G2}" -f
+                    $r.Missed, $r.Worst, $r.WorstAt, $r.Bare)
+                # And over #540's own pairs, from the first tick the box gave under 0.74 of what it had.
+                $start = @($drips | Where-Object { (Num $_['had']) -gt 0 -and (Num $_['gave']) / (Num $_['had']) -lt 0.74 })[0]
+                if ($start) {
+                    $rule.Rows = @($drips | Where-Object { [int]$_['tick'] -ge [int]$start['tick'] })
+                    $r = Measure-HeaterRule @rule -Decimals 5
+                    Write-Host ("  the table as printed from tick {0}, the first under 0.74, #540's start: {1} tick pairs; worst miss {2:E2} on tick {3}" -f
+                        $start['tick'], $r.Pairs, $r.Worst, $r.WorstAt)
+                }
             }
         }
         if ($Fixed) {

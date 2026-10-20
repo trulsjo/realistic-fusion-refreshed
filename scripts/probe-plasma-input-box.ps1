@@ -784,8 +784,6 @@ end)
 '@
 
 $inv = [cultureinfo]::InvariantCulture
-# Every figure prints with a point, whatever the machine's culture says, so a row can be quoted as is.
-[cultureinfo]::CurrentCulture = $inv
 $lua = $lua.
     Replace('__RIGBUILD__', (Get-RigBuildLua)).
     Replace('__FIXEDRULE__', (Get-FixedRuleLua)).
@@ -1008,18 +1006,24 @@ function Write-Trace {
         [int]$t[0]['tick'], [int]$t[-1]['tick'], $t.Count, $t[0]['segcap'], $TraceCell)
     Write-Host "  the rule below is the input-output box's; under the canary its misses are a reading, not a fault"
     $volume = $BoxVolume
+    # #531's rule for one box against a segment: what the box gains, pull less push.
+    $gain = {
+        param($box, $seg, $cap)
+        $push = 100 * [math]::Min($box / $volume, 1 - $seg / $cap)
+        $pull = 100 * [math]::Min(($seg + $push) / $cap, 1 - ($box - $push) / $volume)
+        $pull - $push
+    }
     foreach ($k in 1, 2) {
         $worst = 0.0; $worstAt = 0; $small = 0; $engine = 0.0; $mod = 0.0; $engineHeat = 0.0; $modHeat = 0.0
-        $lastMove = 'never'
+        $lastMove = 'never'; $large = @()
         for ($i = 0; $i -lt $t.Count - 1; $i++) {
             $a = $t[$i]; $n = $t[$i + 1]
-            $box = $a["b$k"]; $seg = $a['seg']; $cap = $a['segcap']
-            $push = 100 * [math]::Min($box / $volume, 1 - $seg / $cap)
-            $pull = 100 * [math]::Min(($seg + $push) / $cap, 1 - ($box - $push) / $volume)
+            $box = $a["b$k"]
             $moved = $n["b${k}pre"] - $box
-            $miss = [math]::Abs($moved - ($pull - $push))
+            $miss = [math]::Abs($moved - (& $gain $box $a['seg'] $a['segcap']))
             if ($miss -gt $worst) { $worst = $miss; $worstAt = [int]$a['tick'] }
             if ($miss -lt 1e-3) { $small++ }
+            if ($miss -gt 0.01) { $large += [int]$a['tick'] }
             if ($moved -ne 0 -or $n["c${k}pre"] -ne $a["c$k"]) { $lastMove = [int]$a['tick'] }
             $engine += $moved; $mod += $a["b$k"] - $a["b${k}pre"]
             $engineHeat += $n["b${k}pre"] * $n["c${k}pre"] - $box * $a["c$k"]
@@ -1029,6 +1033,29 @@ function Write-Trace {
             $k, $engine, $mod, $engineHeat, $modHeat, ($t[0]["b$k"] * $t[0]["c$k"]), ($t[-1]["b$k"] * $t[-1]["c$k"]))
         Write-Host ("         the rule misses the engine's move by under 0.001 units on {0} of {1} ticks, worst {2:G4} on tick {3}; the engine last moved the box on tick {4}" -f
             $small, ($t.Count - 1), $worst, $worstAt, $lastMove)
+        # Where the large misses fall (#577): the gaps between one and the next, most common first.
+        $gaps = for ($j = 1; $j -lt $large.Count; $j++) { $large[$j] - $large[$j - 1] }
+        $spacing = @($gaps | Group-Object | Sort-Object Count -Descending | Select-Object -First 4 |
+            ForEach-Object { "$($_.Name) ticks x$($_.Count)" }) -join ', '
+        Write-Host ("         it misses by over 0.01 units on {0} tick(s){1}" -f $large.Count,
+            $(if ($large.Count -gt 1) { "; the gaps between them, most common first: $spacing" } else { '' }))
+    }
+    # THE BOXES TAKEN IN TURN (#577): the rule run on one box, the segment moved by what it gave,
+    # and then on the other, in each order. A worst miss that moves with the order would mean
+    # applying the rule to each box alone against the segment as it stood is what misses.
+    foreach ($order in @(1, 2), @(2, 1)) {
+        $worstOf = @{ 1 = 0.0; 2 = 0.0 }; $atOf = @{ 1 = 0; 2 = 0 }
+        for ($i = 0; $i -lt $t.Count - 1; $i++) {
+            $a = $t[$i]; $n = $t[$i + 1]; $seg = $a['seg']
+            foreach ($k in $order) {
+                $g = & $gain $a["b$k"] $seg $a['segcap']
+                $seg -= $g
+                $miss = [math]::Abs(($n["b${k}pre"] - $a["b$k"]) - $g)
+                if ($miss -gt $worstOf[$k]) { $worstOf[$k] = $miss; $atOf[$k] = [int]$a['tick'] }
+            }
+        }
+        Write-Host ("  the rule run on box {0} and then box {1}, the segment moved between: worst miss box 1 {2:G4} on tick {3}, box 2 {4:G4} on tick {5}" -f
+            $order[0], $order[1], $worstOf[1], $atOf[1], $worstOf[2], $atOf[2])
     }
     foreach ($under in 0.5, 0.1, 0.01) {
         $hit = $t | Where-Object { $_['c1'] -gt 0 -and $_['c2'] / $_['c1'] -lt $under } | Select-Object -First 1

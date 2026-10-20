@@ -1086,6 +1086,10 @@ function Start-ProbeReport {
 
 $rfSourcedBy = @(Get-PSCallStack)[1]
 if ($rfSourcedBy -and $rfSourcedBy.ScriptName -and (Split-Path -Leaf $rfSourcedBy.ScriptName) -like 'probe-*.ps1') {
+    # Every figure a probe prints carries a point, whatever the machine's culture says, so a row can
+    # be quoted as is (#577). Until then two probes set it themselves, and the segment probe printed
+    # its tables with decimal commas and its raw rows with points.
+    [cultureinfo]::CurrentCulture = [cultureinfo]::InvariantCulture
     Start-ProbeReport -Invocation $rfSourcedBy.InvocationInfo
 }
 Remove-Variable rfSourcedBy
