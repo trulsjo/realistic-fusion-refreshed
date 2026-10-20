@@ -139,7 +139,7 @@ body, again when the body is edited, which no other job runs on, and the `ship-c
 script's `-SelfTest`; `run-gates.ps1` runs neither. A pull request with a merge conflict gets no
 run at all, which looks the same as one not yet run. The one other check nobody starts by hand is the `commit-msg` hook in the Commit
 messages section, which a clone opts into and a commit triggers. **What stays manual is the rest of
-what `run-gates.ps1` runs, and all of what it leaves out**: the default `load-check.ps1` and each
+what `run-gates.ps1` runs, and everything else it leaves out**: the default `load-check.ps1` and each
 `scripts/check-*.ps1`, then `load-check.ps1 -FromZips`, `locale-check.ps1`, `name-check.ps1`, the
 probes and the gates' own self-tests. A green check says nothing about any of those. **The check is
 advisory**: `main` has no branch protection, so a red one blocks no merge.
