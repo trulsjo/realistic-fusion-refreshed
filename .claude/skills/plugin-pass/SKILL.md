@@ -178,8 +178,8 @@ from `<this session's checkout>` by its full path, and run no command there."
    pull request. A fix held under #643 and #653 is in that diff.
 
    **Each edit of the body is checked before it is sent** (#730), as step 6 of `/pre-pr-review`
-   runs `pr-body-check.ps1`, this step's and step 4's line on the reflog included. The body names
-   a commit of the branch by its subject in quotes, not its hash, and its review sections stay
-   below `## Summary`, `## Evidence` and `## Merge Danger`.
+   runs `pr-body-check.ps1`: the edit that adds step 4's line on the reflog, and each edit for
+   this step's fixes. The body names a commit of the branch by its subject in quotes, not its
+   hash, and its review sections stay below `## Summary`, `## Evidence` and `## Merge Danger`.
 
 Then run step 7 of `/pre-pr-review`, the reading after the last fix commit.
