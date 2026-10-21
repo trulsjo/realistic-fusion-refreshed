@@ -226,3 +226,6 @@ One line for each change to a gate, newest last, with its date and its ticket.
   `check-hc.ps1` now fail when a file under the mod directories changed during the run, as
   `load-check.ps1`'s did. `run-gates.ps1 -SelfTest` gained `exit-code-names-failure` and
   `exit-code-clean`, which run the script as its own process over stand-in gates.
+- 2026-10-21, #740: both reactors' plasma box is `input` (ADR 0040), so every gate that builds a
+  reactor now runs on that box. `check-breeding.ps1`'s help names the box as `input`; nothing it
+  asserts changed.

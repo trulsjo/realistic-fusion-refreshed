@@ -14,9 +14,9 @@ data:extend({
   -- conditions rather than Factorio's usual few hundred degrees. The shipped reactor settles
   -- around 6e8 C; the cross-section data runs to about 7e9.
   --
-  -- Because temperature is a native fluid property, two reactors joined by rf-pipe already share
-  -- one pool at one mixed temperature with no Lua tracking connectivity. That is the whole of
-  -- ADR 0011's fluid coupling.
+  -- Two reactors joined by rf-pipe share this fluid's feed with no Lua tracking connectivity, and
+  -- that is the whole of ADR 0011's fluid coupling. They do not share its heat: each reactor's box
+  -- is "input" and gives nothing back to the run (ADR 0040).
   {
     type = "fluid",
     name = "rf-d-d-plasma",

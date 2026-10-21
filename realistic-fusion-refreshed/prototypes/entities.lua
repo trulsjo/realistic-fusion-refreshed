@@ -246,10 +246,11 @@ end
 -- not work: with no recipe set it moves no fluid at all -- pipes connect to it and nothing ever
 -- crosses, filter or no filter -- and a crafting machine's fluid boxes may only be "input" or
 -- "output" types, which are one-way. A boiler fills its input box from whatever it is plumbed to
--- whether or not it is doing anything, and its input box may be "input-output": the storage-style
--- kind that joins the fluid segment it is connected to rather than being a one-way sink. That is
--- what makes every reactor on one run of rf-pipe work from a single pool at a single mixed
--- temperature, maintained by the engine, with no connectivity code anywhere in this mod.
+-- whether or not it is doing anything, with no connectivity code anywhere in this mod. The box is
+-- "input" (ADR 0040): it takes plasma from the run and gives none back, so reactors on one run of
+-- rf-pipe share the feed and not the heat, and a reactor nothing heats sits at the plasma's 15 C
+-- floor beside a hot one. It was "input-output" until #740, a box that traded plasma back into the
+-- run and filled 2.3 to 2.6 times slower than M.settle_fed (docs/research/plasma-input-box.md).
 --
 -- The boiler's own conversion is neutered rather than used, and #101 measured how -- correcting
 -- this comment, which had it backwards. It used to say "at 1 W the engine can move on the order of
@@ -387,9 +388,9 @@ local covers = table.deepcopy(reactor.fluid_box.pipe_covers)
 -- Both boxes connect at the edge of the new footprint rather than the old one. Whole numbers
 -- because fifteen is odd: the tile centres of a 15x15 entity sit on integers, where the 3x2 it
 -- replaced had them on halves. West and east still both take plasma, which is what lets a run of
--- rf-pipe feed a row of reactors from one pool (ADR 0011), and the energy leaves north AND south.
+-- rf-pipe feed a row of reactors (ADR 0011, ADR 0040), and the energy leaves north AND south.
 reactor.fluid_box = {
-  production_type = "input-output",
+  production_type = "input",
   -- A PHYSICS INPUT, WHICH IS WHY THIS BOX IS ASSIGNED RATHER THAN EDITED. The amount of plasma a
   -- full reactor holds sets its density, and density sets power in and out: control.lua memoises
   -- this box's volume from the loaded prototype and reactor-logic's step() divides by volume_m3 to
@@ -423,7 +424,8 @@ reactor.fluid_box = {
   -- refuses to load when a plasma-heating recipe makes a fluid the simulation has no row for.
   -- (check_plasma_bounds beside it is a different seam: temperature range, not fuel.)
 }
--- Plasma in and plasma out of the shared pool, so both faces are plasma-safe only. The energy box
+-- Plasma in from the shared run and on along it to the next reactor, so both faces are plasma-safe
+-- only. The energy box
 -- below is deliberately not: reactor energy is an ordinary fluid and a player plumbs it with
 -- ordinary pipes.
 contain(reactor.fluid_box, PLASMA_CATEGORY)
@@ -440,7 +442,8 @@ contain(reactor.fluid_box, PLASMA_CATEGORY)
 -- every ladder at its top (#533). The halving is what the second face buys, and it does
 -- not depend on which of those the reader has.
 --
--- Not east or west: those are plasma, and freeing one would spend ADR 0011's shared pool. The
+-- Not east or west: those are plasma, and freeing one would cut the run that feeds the next
+-- reactor (ADR 0011, ADR 0040). The
 -- south socket is drawn by pipe_covers, the same as the north one has always been. Photographed
 -- bare (#403, 2026-10-19), the Krastorio 2 sprite draws a port of its own on that face too, and
 -- the cover is drawn over it; docs/research/pipe-cover-miss.md has the frames' figures.
@@ -1085,8 +1088,8 @@ hc_turbine.energy_source = {
 -- and this is the fitting a player bolts to one to collect what it breeds.
 --
 -- It exists because the reactor has nowhere to put them. A boiler has exactly two fluid boxes and
--- rf-reactor spends both -- plasma in and out on the input-output box that ADR 0011's whole fluid
--- coupling rests on, reactor energy on the other. Tritium and helium-3 need a third and a fourth,
+-- rf-reactor spends both -- plasma in on the box that ADR 0011's fluid coupling rests on, reactor
+-- energy on the other. Tritium and helium-3 need a third and a fourth,
 -- so they need another entity. Truls chose this over an extraction recipe on the plasma line,
 -- because a recipe would breed at a fixed ratio while the reactor's actual reaction rate moves by
 -- orders of magnitude with temperature -- which is the "physics implied through recipe ratios"
@@ -1369,9 +1372,10 @@ blanket.picture = mockup.still("lithium-blanket", 5, 5)
 -- there. This prototype is the parts of it the engine has to know about.
 --
 -- A boiler again, and for exactly the reasons rf-reactor is one: it is the prototype that will
--- hold and move fluid with no recipe, and its input box may be "input-output" so a row of them on
--- one run of rf-pipe works from a single pool at a single mixed temperature (ADR 0011). Nothing
--- about that argument is different on this tier, so nothing about the choice is.
+-- hold and move fluid with no recipe, and its box is "input" so a row of them on one run of
+-- rf-pipe shares the feed and not the heat (ADR 0011, ADR 0040). Nothing about that argument is
+-- different on this tier, so nothing about the choice is: one fill model and one meaning of
+-- fluid-coupled for both reactors.
 local aneutronic = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-aneutronic-reactor", {
   mining_time = 4,
 })
@@ -1442,7 +1446,7 @@ local aneutronic_covers = table.deepcopy(aneutronic.fluid_box.pipe_covers)
 -- ten is even, so the tile centres of a 10x10 entity sit on halves where a 15x15's sit on integers.
 -- The outermost tile centre either side is 4.5.
 aneutronic.fluid_box = {
-  production_type = "input-output",
+  production_type = "input",
   -- THREE THOUSAND, where rf-reactor holds one thousand, and this is the machine's whole physical
   -- difference. Density is what buys ignition -- the fusion rate goes as n^2 while the transport
   -- loss goes as n -- so a reactor that holds three times the plasma in the same confinement volume
@@ -1471,8 +1475,8 @@ aneutronic.fluid_box = {
 contain(aneutronic.fluid_box, PLASMA_CATEGORY)
 -- NORTH AND SOUTH, one connection per face (ADR 0031 item 1, #87). The same addition rf-reactor
 -- took in #275, and for the same reason: a converter hangs off either face, so one reactor drives
--- two stacks of them instead of one. West and east stay plasma, so ADR 0011's shared pool is
--- untouched here as well. The south socket is drawn by pipe_covers, the same as the north one.
+-- two stacks of them instead of one. West and east stay plasma, so the run that feeds the next
+-- reactor is untouched here as well. The south socket is drawn by pipe_covers, the same as the north one.
 --
 -- One connection per face on purpose -- intake width is #227's and ADR 0031 item 6 defers it.
 aneutronic.output_fluid_box = {

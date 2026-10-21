@@ -667,10 +667,13 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
   -- it paid rather than a bill to settle now -- deducting it again would charge the reactor twice.
   local box = entity.fluidbox
 
-  -- Writing the plasma back is also how it is shared. Box 1 is the reactor's input-output box, so
-  -- it belongs to the fluid segment it is plumbed into: a temperature written here is one every
-  -- reactor on that run of rf-pipe works from next tick, mixed by the engine and by no code of
-  -- ours (ADR 0011).
+  -- Writing the plasma back keeps it in this reactor and no other. Box 1 is "input" since #740
+  -- (ADR 0040): it takes plasma from the run it is plumbed into and gives none back, so a
+  -- temperature written here stays in this box, and reactors on one run of rf-pipe share the feed
+  -- and not the heat. A reactor nothing heats on that run sits at the plasma's 15 C floor.
+  --
+  -- WHAT FOLLOWS IS THE RECORD OF THE input-output BOX this one replaced, which traded plasma with
+  -- its run every tick, and is kept as the measurement it was rather than as what the box does now.
   --
   -- Each reactor reads and writes only its own share: a share of n out of a segment of N is given a
   -- rise computed against n, and the engine's mixing then dilutes it by n/N. As arithmetic that
@@ -1056,11 +1059,13 @@ end
 
 --- Read every reactor, then write every reactor.
 --
--- Split in two on purpose. Reactors on one run of rf-pipe share a fluid segment, so if the steps
--- were interleaved a reactor would compute against a pool its neighbour had already written to
--- this tick, and the result would depend on the order entities.registry() happens to iterate in.
--- Reading first makes every reactor see the same start-of-tick pool, which is both what
--- simultaneous confinement means physically and one less thing to argue about in multiplayer.
+-- Split in two on purpose, and the reason it was given has gone with the input-output box. It was
+-- that reactors on one run of rf-pipe share a fluid segment, so interleaved steps would compute
+-- against a pool a neighbour had already written to this tick. Since #740 each box is "input" and
+-- a write reaches no neighbour (ADR 0040); #73 had already measured that even the input-output box
+-- moved nothing between boxes inside a tick. Reading first still makes every reactor's step
+-- independent of the order entities.registry() happens to iterate in, which is one less thing to
+-- argue about in multiplayer.
 local function update()
   local dt = UPDATE_INTERVAL / 60
   local pending = {}
@@ -1295,7 +1300,7 @@ end
 -- depend on, and it is deliberate: a plasma density is not a number this mod can be flexible about.
 --
 -- THE INPUT BOX SPECIFICALLY, because a reactor has two and only one holds plasma. Box 1 is the
--- input-output box ADR 0011's fluid coupling rests on and the one update() reads the plasma out
+-- input box ADR 0011's fluid coupling rests on (ADR 0040) and the one update() reads the plasma out
 -- of; box 2 carries the reactor's energy fluid out and its volume means nothing to the
 -- simulation. Indexed by position the way check_ladder_clamp indexes it, and for the same reason:
 -- the two must not come to disagree about which box this is.
