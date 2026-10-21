@@ -31,7 +31,7 @@
         },
         @{
             # Energy sells NORTH AND SOUTH since ADR 0031 item 1 (#87), so a converter hangs off
-            # either face. Plasma keeps both west and east -- ADR 0011's shared pool uses them.
+            # either face. Plasma keeps both west and east -- ADR 0011's shared feed uses them.
             Mod = 'realistic-fusion-refreshed-assets'; Name = 'aneutronic-reactor'; Label = "ANEUTRONIC`nREACTOR"
             Prototype = 'boiler'
             Width = 15; Height = 15; Core = $true

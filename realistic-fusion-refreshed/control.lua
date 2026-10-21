@@ -696,7 +696,7 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
   --     writes so that a reactor writing second overwrites the share of its neighbour's rise it had
   --     just been handed.
   --
-  -- THAT MECHANISM DOES NOT EXIST, measured under #73 by scripts/check-pooling.ps1's `probe` row.
+  -- THAT MECHANISM DOES NOT EXIST, measured under #73 by scripts/check-pooling.ps1's `probe` row (removed in #741).
   -- A Lua write to one box on a run changes NO other box on that run in the same tick -- 0 of 12,
   -- against 12 of 12 moved six ticks later through the same instrument, which is the control that
   -- makes the nil a finding rather than a broken probe. The engine re-splits between TICKS, in its
@@ -744,7 +744,8 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
   -- ~17.6-point gap is
   -- FILL AND TEMPERATURE -- `bare` sits at 44.6% full and `solopipe` at 27.6% -- which is a property
   -- of the plumbing a player builds rather than a defect, and nothing else.
-  -- docs/research/reactor-runtime-cost.md carries the numbers and scripts/check-pooling.ps1 the rig.
+  -- docs/research/reactor-runtime-cost.md carries the numbers. The rig was scripts/check-pooling.ps1,
+  -- whose rows that took them #741 removed with the box.
   local remaining = plasma.amount - result.plasma_consumed
   if remaining > 0 then
     box[1] = { name = plasma.name, amount = remaining, temperature = result.temperature_c }

@@ -613,7 +613,7 @@ local function build_cell(surface, force, o)
     -- exactly like a broken mod -- and is the mistake check-d-t.ps1's own notes were written about.
     --
     -- Asked of the PIPE at the heater's outlet rather than of the heater's own box, because the
-    -- heater's plasma box is declared "output" and only an input-output box joins the segment it is
+    -- heater's plasma box is declared "output", and an output box does not join the segment it is
     -- plumbed to -- so the heater has no segment to ask (#47, ADR 0011; check-breeding.ps1 carries
     -- the same finding about the collector's boxes). The heater's connection into that pipe is
     -- checked separately, since a pipe run reaching the reactor says nothing about its far end.

@@ -9,7 +9,8 @@ plasma box's production type, and
 [#569](https://github.com/trulsjo/realistic-fusion-refreshed/issues/569), what ADR 0011 says about
 a full line. **Decided by Truls, 2026-10-20**, in one grilling session that took #551 first because
 #569's answer depended on it. Built on 2026-10-21: #740 made both boxes `input` and #741 rewrote
-the pooling check.
+the pooling check. Point 5's readings, D-T included, are in `plasma-input-box.md`'s
+[Under the shipped `input` box](../research/plasma-input-box.md#under-the-shipped-input-box).
 
 **Amends [ADR 0011](0011-per-reactor-simulation-fluid-coupled.md)**, whose per-reactor decision
 stands. What changes is its clause that reactors on one run share "one pool, one mixed temperature";

@@ -12,8 +12,9 @@
     floor beside a hot one, on any line, full or not. This rig asserts that, and asserts it in
     shapes the old input-output box fails, so a box that started sharing heat again would be caught.
 
-    Nothing here uses an infinity pipe on the plasma. Every cell but two is seeded and then left
-    alone; `feed` and `full` are fed by an rf-heater.
+    Nothing here uses an infinity pipe on the plasma. Every plasma cell but `feed` is seeded, and
+    every one but `feed` and `full` is then left alone; those two have an rf-heater feeding them.
+    `outlets` holds no plasma and is not seeded.
 
     UNTIL #741 THIS CHECK CHARACTERISED THE input-output BOX, which traded plasma with its run every
     tick: one pool at one mixed temperature, the engine's mixing destroying a fifth of a temperature
@@ -21,8 +22,9 @@
     count and positional-ramp rows of #73 and #271 that ruled two of this mod's mechanisms out.
     Those findings are records, in the pooling section of docs/research/reactor-runtime-cost.md and
     in docs/research/plasma-input-box.md, and the rows that made them went with the box. Under
-    "input" a reactor's write never leaves its box, so every one of them read 100% arrived and could
-    no longer tell anything apart.
+    "input" a reactor's write never leaves its box: the bookkeeping, write-shape and writer rows
+    read 100% arrived and the probe 0 of 12 moved, so they told nothing apart, and the share, mix
+    and idle rows read the seed held in the reactors' boxes.
 
     WHAT IS BUILT
 
@@ -56,9 +58,10 @@
 
       full      The same layout BUILT 2H1, the order #583 found the input-output box holding an
                 unpowered reactor at 10^3 to 10^4 C on a full line where 1H2 let it fall to the
-                floor. Seeded full like the rows above, and kept full by the heater. THIS IS THE
-                CELL THAT REACHES A FULL LINE inside the run (#574): the line is not filled from
-                empty, which takes 30 975 ticks on one heater, but seeded at 1e6 C like the rows
+                floor. Seeded like the rows above, with the heater feeding it. THIS IS THE CELL
+                THAT REACHES A FULL LINE inside the run (#574): the line is not filled from empty,
+                which was not measured on these three and five pipes and took the probe's pair on
+                three and twelve to row 168 000 on one heater, but seeded at 1e6 C like the rows
                 above, its segment then topped up to its capacity with insert_fluid at tick 61,
                 and asserted full when the check is read: the segment at 99.9% of what
                 get_capacity reports for it, and both boxes at 99.9% of theirs.
@@ -131,7 +134,7 @@
     `shared-heat-refused` (#741), which loads a canary putting rf-reactor's plasma box back to
     "input-output" -- the box that shared heat -- and requires the rows that say heat is not shared
     to FAIL by name: `mix`'s, the floor rows of `pair`, `trio`, `five` and `full`, `feed`'s, and the
-    four bookkeeping rows. Until #741 the second half was `all-arrives-refused`, which loaded the
+    four bookkeeping rows. Until #741 `shared-heat-refused`'s place was taken by `all-arrives-refused`, which loaded the
     "input" box as a canary against the input-output one; #740 shipped that box. Refused with
     -AlsoModDirectory and -With. Since #578 it also fails when a file under our mod directories
     changed during the run, by load-check.ps1's check, which now lives in factorio-lib.ps1 as
@@ -850,7 +853,8 @@ script.on_event(defines.events.on_tick, function()
   -- 2800 get_capacity reports for it, against 2799.98 with it (2026-10-21, Factorio 2.0.77). The
   -- segment's capacity counts the two boxes' volumes and its contents do not count theirs, the
   -- way probe-plasma-input-box.ps1 reads a full line. So the segment is topped up through one pipe
-  -- with insert_fluid, which adds to it rather than replacing a box, and the heater keeps it full.
+  -- with insert_fluid, which adds to it rather than replacing a box. Whether the heater alone would
+  -- hold it full was not separated.
   if tick == SEED_UNTIL + 1 then
     local pipe = cells.full.pipe
     local room = pipe.fluidbox.get_capacity(1) - segment_holds(pipe)
@@ -1100,7 +1104,7 @@ script.on_nth_tick(CHECK_AT, function()
 
   -- ------------------------------------------------------------ the full line: `full` (#574)
   --
-  -- Seeded full, kept full by the heater, read full. Built 2H1, the order #583 found the
+  -- Seeded, topped up, fed by the heater, read full. Built 2H1, the order #583 found the
   -- input-output box holding its unpowered reactor at 1.083e3 to 1.303e4 C on a full line.
   do
     local cell = cells.full

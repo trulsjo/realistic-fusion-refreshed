@@ -29,7 +29,7 @@ to a figure below changes its row here in the same commit (docs/agents/code-revi
 | Fed map, the one cell `X` by a hair | 90.02 MW at full feed | not stated | none (pure simulation) | capture 0.9, τ 40 s, 60 MW | [The fed map, all ninety-six states](#the-fed-map-all-ninety-six-states) |
 | Fed map, largest gain from under-feeding | 4.6 MW: 60.95 MW at full feed and 65.56 at 30% of it | not stated | none (pure simulation) | plant efficiency rung 3, nothing else | [The fed map, all ninety-six states](#the-fed-map-all-ninety-six-states) |
 | Bench run-to-run spread, three runs each of D-T and D-D | zero, in each state | 2026-10-03 | 2.0.77 | unresearched | [Repeated runs read the same](#repeated-runs-read-the-same) |
-| Game, D-T, one heater | 275.6 units at 2.193×10⁹ °C, 282.1 – 338.5 MW | 2026-10-03 | 2.0.77 | unresearched | [Repeated runs read the same](#repeated-runs-read-the-same) |
+| Game, D-T, one heater | 275.6 units at 2.193×10⁹ °C, 282.1 – 338.5 MW, on the `input-output` box | 2026-10-03 | 2.0.77 | unresearched | [Repeated runs read the same](#repeated-runs-read-the-same) |
 | Temperature the heater makes plasma at | 1×10⁶ °C | 2026-10-03 | 2.0.77 | nothing researched and confinement rung 2 | [The fuel line, measured](#the-fuel-line-measured) |
 | Fuel-line transient, pipes within 2× the heater's °C | 880 000 ticks at three pipes, 1 470 000 at twelve; about 65 000 ticks a pipe | 2026-10-03 | 2.0.77 | unresearched | [A longer line cools slower and settles in the same place](#a-longer-line-cools-slower-and-settles-in-the-same-place) |
 | Game, D-D, one heater, settled point at six, nine and twelve pipes | 2.38139×10⁸ °C, each at 1000.0 units and 48.3 – 58.0 MW | 2026-10-03 | 2.0.77 | unresearched | [A longer line cools slower and settles in the same place](#a-longer-line-cools-slower-and-settles-in-the-same-place) |
@@ -319,7 +319,10 @@ read 277.3 units at 2.180×10⁹ °C after 252 000 ticks; #510 read 275.6 at 2.1
 282.1 – 338.5 MW, flat from 78 000 ticks. It reads the same on an export of `1df5855`, the
 commit that recorded #486. What produced 277.3 and 2.180×10⁹ is not on record. The game's figure
 is #510's, and the fed model's 276.9 units at 2.183×10⁹ °C is 0.5% over it in plasma and 0.5%
-under it in temperature, not between two readings.
+under it in temperature, not between two readings. All three are the `input-output` box's. The
+`input` box that #740 shipped is a different measure, read by a probe and not this bench:
+[`plasma-input-box.md`](plasma-input-box.md#d-t-under-the-input-box) gives 276.36 to 276.42
+units at 2.187×10⁹ °C.
 
 ### What the earlier readings were
 
@@ -645,8 +648,8 @@ four heaters on 2026-10-04, under
 ### Why the box fills slower than the fed model
 
 [#516](https://github.com/trulsjo/realistic-fusion-refreshed/issues/516). **There is more to
-fill than the box.** The reactor's plasma box is `input-output`, so it joins the fluid segment
-its pipes are in, and the engine counts the box's volume in that segment's capacity. Three
+fill than the box.** The reactor's plasma box was `input-output` until #740, so it joined the
+fluid segment its pipes are in, and the engine counts the box's volume in that segment's capacity. Three
 `rf-pipe` are 300 units of pipe, and `LuaFluidBox.get_capacity` on any of them answers 1300.
 The segment holds that plasma itself, beside the 1000 the box reads. `M.settle_fed` fills the
 box alone.

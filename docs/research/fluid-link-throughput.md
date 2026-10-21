@@ -100,6 +100,10 @@ the meter having counted the ticks the update cadence predicts.
 | heater → reactor (plasma) | output into **input-output** | 0.0968 units/tick | 49.9 units/tick | **~516×** |
 | reactor → exchangers (energy) | output into input, **bolted** | 1.6768 units/tick | 100 units/tick | **~60×** |
 
+**Since #740 (2026-10-21) the reactor's plasma box is `input`**, so the plasma link is output into
+input, whose control below is 100 units/tick on one connection. The plasma row above is the
+`input-output` box's and was not re-run; *inferred*, the link's ceiling is now that 100.
+
 Sustained over every tick rather than only the ticks fluid was seen moving, those are 0.0320 and
 1.3974 units/tick; the higher "while flowing" figure is quoted above because it yields the *smaller*
 headroom. At 1 MJ a unit the energy link is carrying **83.8 MW**, and one connection would pass 6 GW.
@@ -279,7 +283,7 @@ look and how legible the reactor-to-exchanger relationship is — it is not a th
 
 ### The plasma link is a third arrangement, and it needed measuring separately
 
-The heater's box is output-only and the reactor's is `input-output`, which is neither row the matrix
+The heater's box is output-only and the reactor's was `input-output` until #740, which is neither row the matrix
 above sweeps. It is not the merged case either — only one end is in the segment, so a boundary
 survives. Measured as its own control:
 

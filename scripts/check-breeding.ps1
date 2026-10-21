@@ -166,8 +166,9 @@ end
 -- breeding being broken.
 --
 -- get_fluid_segment_contents would have been the tidy way to ask and returns nil here, which is a
--- fact worth recording rather than working around silently: only an input-output box joins the
--- fluid segment it is plumbed to (#47, ADR 0011). The collector's two boxes are declared "output",
+-- fact worth recording rather than working around silently: an output box does not join the
+-- fluid segment it is plumbed to, where an input-output box and, since #740, the reactor's input
+-- box do (#47, ADR 0011). The collector's two boxes are declared "output",
 -- so they push into the pipe's segment without belonging to it, and there is no segment to ask.
 local function nearby_holds(entity, fluid, radius)
   local at = entity.position
