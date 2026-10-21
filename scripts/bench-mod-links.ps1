@@ -9,7 +9,8 @@
 
     Two links are candidates, both because a predecessor built them flush and multi-connected:
 
-      plasma   rf-heater's output box into the reactor's input-output plasma box, through pipe.
+      plasma   rf-heater's output box into the reactor's plasma box, through pipe: input-output
+               until #740, input since.
       energy   The reactor's rf-reactor-energy output box into rf-heat-exchanger's input, BOLTED
                face to face with no pipe at all -- since #86 there is no pipe in the game that
                carries the fluid.
@@ -1186,15 +1187,17 @@ try {
     # range is printed as it stands rather than narrowed, because #47's own numbers are what the
     # band is quoted from and re-deriving a single-ratio ceiling for a bolt is #227's question.
     #
-    # plasma is the heater's output-only box into the reactor's *input-output* one, which is
-    # neither row #47 published. Measured since, by this repo's own rig
+    # Until #740 plasma was the heater's output-only box into the reactor's *input-output* one,
+    # which is neither row #47 published. Measured since, by this repo's own rig
     # (bench-fluid-links.ps1's sinkio control): 49.9 units/tick on one connection, and -- unlike
     # output-into-input -- it does not scale with connection count, 3 connections carrying 75
     # rather than 150. Quoted here as the single-connection figure, which is the geometry the mod
     # has, and as a band only because the pipe count moves it a little.
     $CEILING = @{
         energy = @{ Min = 50.0; Max = 100.0; What = 'output into input' }
-        plasma = @{ Min = 45.0; Max = 50.0;  What = 'output into input-output' }
+        # Since #740 the reactor's box is "input", so the link is output into input, the row #47
+        # published and energy's band; the 45-50 band was the input-output box's. Not re-run.
+        plasma = @{ Min = 50.0; Max = 100.0; What = 'output into input' }
     }
 
     Write-Host ''

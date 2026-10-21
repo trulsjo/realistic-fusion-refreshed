@@ -583,7 +583,7 @@ local function build_cell(surface, force, o)
   -- That the feed line really did reach the reactor. Without this the failure mode is a reactor
   -- reporting itself starved on a cell whose pipe run missed by a tile, which reads exactly like a
   -- broken mod. Asked of the PIPE rather than of the heater's own box: a heater's plasma box is
-  -- declared "output" and only an input-output box joins the segment it is plumbed to, so the heater
+  -- declared "output" and an output box does not join the segment it is plumbed to, so the heater
   -- has no segment to ask (#47, ADR 0011).
   local from = line[1].fluidbox.get_fluid_segment_id(1)
   local to   = reactor.fluidbox.get_fluid_segment_id(1)

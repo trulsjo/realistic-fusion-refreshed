@@ -816,7 +816,7 @@ script.on_event(defines.events.on_tick, function(event)
   local tick = event.tick
 
   -- Seeded for sixty ticks rather than once. A segment seeded box by box in a single pass keeps
-  -- only about 45% of what was written (scripts/check-pooling.ps1, #73), and this row asks whether
+  -- only about 45% of what was written (scripts/check-pooling.ps1, #73, on the input-output box; #741 removed the row), and this row asks whether
   -- plasma crosses at all -- not how much of a write survives.
   if storage.pool and tick <= 60 then
     storage.pool.west.fluidbox[1] = {

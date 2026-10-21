@@ -66,10 +66,6 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | Shipped `input-output` box, D-He3 solo, 41 heaters, 123 pipes, the reactor at legendary and the heaters at normal: fill tick and temperature after it | 10 870; 1.369335×10⁷ °C, every row as at normal quality | 2026-10-18 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Above normal quality](#above-normal-quality) |
 | Shipped `input-output` box, D-He3 solo, heaters and reactor at legendary, 3 pipes plus three per added heater: the fewest of the counts built (16, 17 and 41) that fill the line, its fill tick and temperature after it | 17 heaters, 51 pipes; 6364; 1.369335×10⁷ °C | 2026-10-18 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Above normal quality](#above-normal-quality) |
 | Shipped `input-output` box, D-He3 solo, 16 heaters and the reactor at legendary, 48 pipes: where the box settles | never fills; 2908.27 to 2919.99 of 3000 at 4.15 to 4.16×10⁹ °C | 2026-10-18 | 2.0.77 | unresearched (all 11 rungs asserted off) | [Above normal quality](#above-normal-quality) |
-| Shipped `input-output` box: `check-pooling.ps1` verdict | `PASS: 125 checks, 0 failures` | 2026-10-20 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The pooling check: 23 of 125 checks failed, and 36 do since #565 and #575](#the-pooling-check-23-of-125-checks-failed-and-36-do-since-565-and-575) |
-| Canary `input` box: `check-pooling.ps1` verdict | `FAIL: 125 checks, 36 failures` | 2026-10-20 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The pooling check: 23 of 125 checks failed, and 36 do since #565 and #575](#the-pooling-check-23-of-125-checks-failed-and-36-do-since-565-and-575) |
-| Shipped `input-output` box: the four "the run gains most of what its reactors spent, and not all of it" rows (solo, solopipe, bare, piped) | 94.6%, 75.4%, 57.6% and 67.0% | 2026-10-05 | 2.0.77 | not stated for this run (the 2026-10-04 run asserted all 11 rungs off) | [The pooling check: 23 of 125 checks failed, and 36 do since #565 and #575](#the-pooling-check-23-of-125-checks-failed-and-36-do-since-565-and-575) |
-| Shipped `input-output` box: the three write-shape rows and the six writer rows, each bounded below 0.98 since #575 | 72.2% in each shape; 72.19%, 71.92%, 71.64%, 71.65%, 71.10% and 71.10% | 2026-10-20 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The pooling check: 23 of 125 checks failed, and 36 do since #565 and #575](#the-pooling-check-23-of-125-checks-failed-and-36-do-since-565-and-575) |
 | Shipped `input-output` box and canary `input` box alike: load-time invariants that hold in `load-check.ps1` | sixteen | not stated | 2.0.77 | not stated | [The load check: everything holds](#the-load-check-everything-holds) |
 | Neither box (the canary cannot be loaded into them): the Lua suites | 968 checks, 0 failures | 2026-10-04 | none (pure simulation) | not stated | [The Lua suites: the canary cannot reach them](#the-lua-suites-the-canary-cannot-reach-them) |
 | Save made on the shipped `input-output` box at tick 80 001, loaded under the canary `input` box, D-D pair: what each box took and the segment gave up in the first tick | 43.9732 and 87.9464 | 2026-10-04 | 2.0.77 | unresearched (all 11 rungs asserted off at build and at the canary load) | [An existing save loaded under the canary](#an-existing-save-loaded-under-the-canary) |
@@ -84,12 +80,14 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | Shipped `input` box since #740, D-D pair built 12H and 2H1, one powered, 1 heater, 3 and 12 pipes, 300 000 ticks: the unpowered box on the full line, rows 168 000 to 296 000 | 15 °C at every row, in both builds | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The D-D pair built 12H and 2H1](#the-d-d-pair-built-12h-and-2h1) |
 | Shipped `input` box since #740, D-D pair built 12H and 2H1, one powered, 1 heater, 3 and 12 pipes, 300 000 ticks: tick the unpowered box fills, then the powered one, and first row the segment reads 3500 of 3500 | 48 258, then 61 124 built 12H and 61 123 built 2H1; row 168 000 in both | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The D-D pair built 12H and 2H1](#the-d-d-pair-built-12h-and-2h1) |
 | Shipped `input` box since #740, rewritten in #741: `check-pooling.ps1` verdict, 1801 ticks, the `feed` and `full` cells on 1 heater and 3 and 5 pipes | `PASS: 65 checks, 0 failures`, at the default `-Tail`, at `-Tail 40` and with `-With space-age` | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The pooling check since #741](#the-pooling-check-since-741) |
-| `check-pooling.ps1` since #741 under a canary putting the `input-output` box back, 1801 ticks | `FAIL: 65 checks, 11 failures` | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The pooling check since #741](#the-pooling-check-since-741) |
+| `check-pooling.ps1` since #741 under a canary putting the `input-output` box back, 1801 ticks, the `feed` and `full` cells on 1 heater and 3 and 5 pipes | `FAIL: 65 checks, 11 failures` | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The pooling check since #741](#the-pooling-check-since-741) |
 
 [#542](https://github.com/trulsjo/realistic-fusion-refreshed/issues/542), following #531.
 **Readings for a decision that is Truls's. This note changes no shipped prototype and does not
 choose an option.** Truls chose option 2 on 2026-10-20 (ADR 0040), and #740 shipped it; what the
-shipped box reads is in [Under the shipped `input` box](#under-the-shipped-input-box).
+shipped box reads is in [Under the shipped `input` box](#under-the-shipped-input-box). Every
+section before that one was written while the `input-output` box shipped, so "shipped" there
+means `input-output`, and "the canary" means the `input` box that now ships.
 
 The 2.0.77 docs for [`FluidBox`](https://lua-api.factorio.com/2.0.77/types/FluidBox.html) say of
 `production_type`: "input-output should only be used for boilers in fluid heating mode."
@@ -706,11 +704,13 @@ probe's readings would fail these rows of `pair`, `trio` and `five`, were a cell
 full line has every box full. Neither would be evidence of pooling there. #559 changed no gate.
 
 **Since #741 the check has a cell at a full line**, and none of the rows above is in it any more.
-Its `full` cell is seeded at 10⁶ °C, has its segment topped up to its capacity at tick 61, is kept
-full by a heater, and asserts the line full and its unpowered reactor at the floor when it is read
-at tick 1801. It is built 2H1, the build in which the `input-output` box held that reactor above
-the floor. What it does not cover: a line filled from empty, which takes 30 975 ticks on one
-heater; the other four builds; D-T and the aneutronic reactor, which the check does not build;
+Its `full` cell is seeded at 10⁶ °C, has its segment topped up to its capacity at tick 61, has a
+heater feeding it, and asserts the line full and its unpowered reactor at the floor when it is read
+at tick 1801. Whether the heater alone would hold it full was not separated: without the top-up
+the segment read 167.04 of 2800 at 1801. It is built 2H1, the build in which the `input-output`
+box held that reactor above the floor. What it does not cover: a line filled from empty, which
+was not measured on its three and five pipes (the probe's pair, on three and twelve, first read
+its segment full at row 168 000); the other four builds; D-T and the aneutronic reactor, which the check does not build;
 and any researched state. See [The pooling check since #741](#the-pooling-check-since-741).
 
 #### The lone box
@@ -1066,14 +1066,18 @@ built 1H2, counted to 296 000. The heater's cycle is 120 ticks, so the settle te
 
 - **One heater does not fill a powered D-T reactor's line.** The box settles at about 276 units
   of 1000, swinging between 274.69 and 278.18 with the heater's cycle, and the segment beside it
-  read 0 at every row. A D-T reactor burns what one heater makes, as a D-He3 reactor does at one
-  heater (#562). So D-T has no fill tick at three pipes and one heater; it has a settled box.
+  read 0 at every row. *Inferred* from that: a D-T reactor burns what one heater makes, as a
+  D-He3 reactor does at one heater (#562). So D-T has no fill tick at three pipes and one heater;
+  it has a settled box. [`exchanger-coverage.md`](exchanger-coverage.md)'s "275.6 units at
+  2.193×10⁹ °C" for D-T on one heater is a different measure: the bench's, on the `input-output`
+  box, on 2026-10-03.
 - **The unpowered reactor beside a powered one is cold on D-T too.** It read 1.8779×10⁵ °C at
   4000, 15 °C at every row from 20 000, filled at tick 47 774, and read the floor full from tick
   47 778 to 296 000. `control.lua` changed its box on 1128 of the 49 334 step ticks. That is
   ADR 0040's point 3, until now measured on D-D, D-He3 and He3-He3 and not on D-T.
-- **The pair's segment never fills on D-T either.** It read 0 or 0.96 units at every row: once
-  the unpowered box is full, everything the heater makes goes to the powered reactor.
+- **The pair's segment never fills on D-T either.** It read 0 or 0.96 units at every row.
+  *Inferred* from that: once the unpowered box is full, everything the heater makes goes to the
+  powered reactor.
 
 ### The D-D pair built 12H and 2H1
 
@@ -1097,9 +1101,12 @@ the unpowered reactor at 1.083×10³ to 1.303×10⁴ °C on the full line; see
   builds. The solo cell, which the probe always builds 1H2, first read 99.9% on tick 30 975 in
   both runs, the canary's figure of 2026-10-04.
 - **The fill ticks are not those of the 1H2 canary pair of 2026-10-04**, 47 774 and 61 093,
-  but 484 ticks later for the unpowered box and 30 or 31 for the powered one. No 1H2 run of the
-  shipped box was taken on 2026-10-21, so whether that is the build order or the canary run's
-  conditions was not separated. The two builds here agree with each other to a tick.
+  but 484 ticks later for the unpowered box and 30 or 31 for the powered one. No D-D pair of the
+  shipped box was built 1H2 on 2026-10-21, so whether that is the build order or the canary run's
+  conditions was not separated. The D-T pair above is a 1H2 run of the shipped box on that day,
+  and its unpowered box filled at 47 774, the canary D-D pair's tick; whether a D-T and a D-D
+  unpowered fill can be compared was not measured. The two builds here agree with each other to a
+  tick.
 
 ## The repository's gates under the canary
 
@@ -1123,7 +1130,7 @@ The canary refuses to load unless the box is `input-output` before it changes it
 reads the plasma box's production type back, so the change itself is the canary's own assertion plus
 #542's runtime reading above.
 
-### The pooling check: 23 of 125 checks failed, and 36 do since #565 and #575
+### The pooling check: 23 of 125 checks failed, and 36 did after #565 and #575
 
 **Since [#565](https://github.com/trulsjo/realistic-fusion-refreshed/issues/565) four more rows
 fail under the canary, which is what they should have done.** The readings below are #549's, of
@@ -1217,8 +1224,9 @@ Everything above in this section is the check as it stood before #740 shipped th
 #741 rewrote it to assert what ADR 0040 says pooling is. The rows that characterised the
 `input-output` box are gone with it: one pool at one mixed temperature, the `idle` mixing loss,
 the three write shapes, the six writer rows, the positional ramp and the intra-tick probe. Under
-`input` every one of them read 100% arrived or 0 moved and told nothing apart, which the readings
-above show. They stay recorded here and in `reactor-runtime-cost.md`. What it asserts now:
+`input` the bookkeeping, write-shape and writer rows read 100% arrived and the probe 0 of 12
+moved, so they told nothing apart, and the share, `mix` and `idle` rows read the seed held in the
+reactors' boxes; the readings above show each. They stay recorded here and in `reactor-runtime-cost.md`. What it asserts now:
 
 - **Shared feed.** A new `feed` cell, one heater, three pipes into a powered reactor and five
   into an unpowered one, nothing seeded: both boxes hold plasma the heater made.
@@ -1229,7 +1237,7 @@ above show. They stay recorded here and in `reactor-runtime-cost.md`. What it as
   each keep 98% to 102% of what their reactors spent across one step, where the four rows that
   stood there asserted under 98%.
 - **A full line.** A new `full` cell, the `feed` layout built 2H1, seeded at 10⁶ °C, its segment
-  topped up to its capacity with `insert_fluid` at tick 61, and kept full by its heater. It
+  topped up to its capacity with `insert_fluid` at tick 61, with its heater feeding it. It
   asserts the segment and both boxes at 99.9% or more when the check is read, the unpowered box
   at the floor, and the powered one far above the seed. 2H1 because that is the build #583
   found the `input-output` box holding an unpowered box above the floor on a full line.
@@ -1460,9 +1468,9 @@ choice between the options below.
 
 ## What was not measured
 
-- D-T beyond one heater and three pipes under the `input` box (#740), and D-T under the
-  `input-output` box at all; at one heater the line never fills, so a full D-T line was not
-  read. Any researched state but the one pair at heating rung 5. A hot full line on the
+- D-T beyond one heater and three pipes under the `input` box (#740). Under the `input-output`
+  box D-T was read only by the bench of `exchanger-coverage.md`, on one heater, and not by this
+  note's probe. At one heater the line never fills, so a full D-T line was not read. Any researched state but the one pair at heating rung 5. A hot full line on the
   aneutronic reactor: He3-He3 fills cold (#571), and D-He3 fills at 41 heaters at normal quality, the fewest
   of the counts built, and is cold at each of 41, 42, 44 and 48 (#586). The canary was not
   run at 41, 42 or 44, and the fitted rule was run beside a bank at 48 heaters only, and not
