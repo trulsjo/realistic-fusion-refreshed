@@ -218,6 +218,9 @@ One line for each change to a gate, newest last, with its date and its ticket.
   on each pull request's body, with `edited` among its triggers and every other job skipping that
   event, and its `-SelfTest` in the `pwsh` job. The pin moves to the commit that gave the
   script its heading check.
+- 2026-10-20, #575: `check-pooling.ps1` bounds its three write-shape rows and six writer rows
+  below 0.98, as #565 bounded its four bookkeeping rows, and its `all-arrives-refused` half
+  requires all thirteen to fail by name under the input-box canary.
 - 2026-10-20, #578: `Get-ModTreeFingerprint` and `Test-ModTreeUnchanged` moved from
   `load-check.ps1` to `scripts/factorio-lib.ps1`, and the `-SelfTest`s of `check-pooling.ps1` and
   `check-hc.ps1` now fail when a file under the mod directories changed during the run, as
