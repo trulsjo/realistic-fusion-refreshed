@@ -1191,8 +1191,7 @@ try {
     # which is neither row #47 published. Measured since, by this repo's own rig
     # (bench-fluid-links.ps1's sinkio control): 49.9 units/tick on one connection, and -- unlike
     # output-into-input -- it does not scale with connection count, 3 connections carrying 75
-    # rather than 150. Quoted here as the single-connection figure, which is the geometry the mod
-    # has, and as a band only because the pipe count moves it a little.
+    # rather than 150. It was quoted as a 45-50 band, the single-connection figure, until #740.
     $CEILING = @{
         energy = @{ Min = 50.0; Max = 100.0; What = 'output into input' }
         # Since #740 the reactor's box is "input", so the link is output into input, the row #47
