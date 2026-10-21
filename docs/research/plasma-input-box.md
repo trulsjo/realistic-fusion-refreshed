@@ -83,6 +83,8 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | Shipped `input` box since #740, D-T pair built 1H2, one powered, 1 heater, 3 and 12 pipes, 300 000 ticks: the unpowered box from row 20 000 to 296 000, beside the powered one at 296 000 | 15 °C at every row; 276.91 units at 2.1832×10⁹ °C | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [D-T under the `input` box](#d-t-under-the-input-box) |
 | Shipped `input` box since #740, D-D pair built 12H and 2H1, one powered, 1 heater, 3 and 12 pipes, 300 000 ticks: the unpowered box on the full line, rows 168 000 to 296 000 | 15 °C at every row, in both builds | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The D-D pair built 12H and 2H1](#the-d-d-pair-built-12h-and-2h1) |
 | Shipped `input` box since #740, D-D pair built 12H and 2H1, one powered, 1 heater, 3 and 12 pipes, 300 000 ticks: tick the unpowered box fills, then the powered one, and first row the segment reads 3500 of 3500 | 48 258, then 61 124 built 12H and 61 123 built 2H1; row 168 000 in both | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The D-D pair built 12H and 2H1](#the-d-d-pair-built-12h-and-2h1) |
+| Shipped `input` box since #740, rewritten in #741: `check-pooling.ps1` verdict, 1801 ticks, the `feed` and `full` cells on 1 heater and 3 and 5 pipes | `PASS: 65 checks, 0 failures`, at the default `-Tail`, at `-Tail 40` and with `-With space-age` | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The pooling check since #741](#the-pooling-check-since-741) |
+| `check-pooling.ps1` since #741 under a canary putting the `input-output` box back, 1801 ticks | `FAIL: 65 checks, 11 failures` | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [The pooling check since #741](#the-pooling-check-since-741) |
 
 [#542](https://github.com/trulsjo/realistic-fusion-refreshed/issues/542), following #531.
 **Readings for a decision that is Truls's. This note changes no shipped prototype and does not
@@ -703,6 +705,14 @@ probe's readings would fail these rows of `pair`, `trio` and `five`, were a cell
 "every box holds its share of one pool, not its own contents" would pass on amounts, since a
 full line has every box full. Neither would be evidence of pooling there. #559 changed no gate.
 
+**Since #741 the check has a cell at a full line**, and none of the rows above is in it any more.
+Its `full` cell is seeded at 10⁶ °C, has its segment topped up to its capacity at tick 61, is kept
+full by a heater, and asserts the line full and its unpowered reactor at the floor when it is read
+at tick 1801. It is built 2H1, the build in which the `input-output` box held that reactor above
+the floor. What it does not cover: a line filled from empty, which takes 30 975 ticks on one
+heater; the other four builds; D-T and the aneutronic reactor, which the check does not build;
+and any researched state. See [The pooling check since #741](#the-pooling-check-since-741).
+
 #### The lone box
 
 | 600 000 ticks, 0 heaters, 0 pipes | box at 0 | box from 4000 to 596 000 | its segment | °C |
@@ -1122,8 +1132,8 @@ rows were bounded above 0.4 and below 1.02 and so passed at 100.0% arrived. #565
 upper bound to 0.98. Run again on 2026-10-05, Factorio 2.0.77: shipped,
 `PASS: 125 checks, 0 failures`, the four rows reading 94.6%, 75.4%, 57.6% and 67.0% as before,
 so the nearest has 3.4 points of room; canary, `FAIL: 125 checks, 27 failures`, the 23 below
-and those four. `scripts/check-pooling.ps1 -SelfTest` proves it: its `all-arrives-refused` half
-loads this canary and requires the four rows to fail by name.
+and those four. Until #741 `scripts/check-pooling.ps1 -SelfTest` proved it: its `all-arrives-refused` half
+loaded this canary and required the four rows to fail by name.
 
 **Since [#575](https://github.com/trulsjo/realistic-fusion-refreshed/issues/575) nine more
 fail under the canary.** The three write shapes and the six writer rows kept the old bound of
@@ -1135,7 +1145,7 @@ nothing researched (all 11 rungs asserted off): the nine read 72.2% in each shap
 `-With space-age` alike, so the nearest has 25.8 points of room. Shipped,
 `PASS: 125 checks, 0 failures` with and without Space Age; canary,
 `FAIL: 125 checks, 36 failures`, the 27 above and these nine, all nine at 100% arrived. The
-`all-arrives-refused` half of `scripts/check-pooling.ps1 -SelfTest` requires the nine to fail by
+`all-arrives-refused` half of `scripts/check-pooling.ps1 -SelfTest` required the nine to fail by
 name too.
 
 
@@ -1199,6 +1209,53 @@ fuller (75.6% where they read 44.6%). Every bookkeeping row reads 100% arrived, 
 leaves a box to be lost in mixing. The unpowered reactors read the 15 °C floor, which is #542's
 pair reading again, on three row lengths. Whether the seed ever reached the pipes, or the boxes
 emptied into them, was not separated: the rig reads totals, not the order things moved in.
+
+### The pooling check since #741
+
+([#741](https://github.com/trulsjo/realistic-fusion-refreshed/issues/741), absorbing #574.)
+Everything above in this section is the check as it stood before #740 shipped the `input` box.
+#741 rewrote it to assert what ADR 0040 says pooling is. The rows that characterised the
+`input-output` box are gone with it: one pool at one mixed temperature, the `idle` mixing loss,
+the three write shapes, the six writer rows, the positional ramp and the intra-tick probe. Under
+`input` every one of them read 100% arrived or 0 moved and told nothing apart, which the readings
+above show. They stay recorded here and in `reactor-runtime-cost.md`. What it asserts now:
+
+- **Shared feed.** A new `feed` cell, one heater, three pipes into a powered reactor and five
+  into an unpowered one, nothing seeded: both boxes hold plasma the heater made.
+- **Unshared heat.** `mix`'s ends stay fifty times apart with nothing driving them. Every
+  unpowered reactor on `pair`, `trio` and `five` reads the plasma's floor, read off its
+  `default_temperature`, beside a powered one far above the 10⁶ °C seed. `feed`'s unpowered
+  reactor reads under a tenth of the powered one. And `solo`, `solopipe`, `bare` and `piped`
+  each keep 98% to 102% of what their reactors spent across one step, where the four rows that
+  stood there asserted under 98%.
+- **A full line.** A new `full` cell, the `feed` layout built 2H1, seeded at 10⁶ °C, its segment
+  topped up to its capacity with `insert_fluid` at tick 61, and kept full by its heater. It
+  asserts the segment and both boxes at 99.9% or more when the check is read, the unpowered box
+  at the floor, and the powered one far above the seed. 2H1 because that is the build #583
+  found the `input-output` box holding an unpowered box above the floor on a full line.
+
+`pwsh -File scripts/check-pooling.ps1`, 2026-10-21, Factorio 2.0.77, nothing researched (all 11
+rungs asserted off), 1801 ticks, `feed` and `full` on one heater each with three pipes to the
+near reactor and five between: `PASS: 65 checks, 0 failures`, and the same at `-Tail 40` and with
+`-With space-age`. `-SelfTest` passes both halves: `repo-passes`, and `shared-heat-refused`,
+which loads a canary putting `rf-reactor`'s box back to `input-output` and requires the ten rows
+that say heat is not shared to fail by name. It replaces `all-arrives-refused`, whose canary was
+the box #740 shipped. Run directly under that canary, the check reads
+`FAIL: 65 checks, 11 failures`:
+
+| row | shipped `input` | canary `input-output` |
+|---|---|---|
+| mix: the ends stay apart, 180 ticks after one was raised | spread 98% | spread 0.000119% |
+| pair, trio, five: every unpowered reactor is at the floor | 15 °C in all seven | 1.18592×10⁸, 7.99×10⁷ and 4.77×10⁷ °C |
+| pair, trio, five: the powered reactor far above the seed | 1.59768×10⁸ °C in all three | 1.23492×10⁸, 8.50956×10⁷ and 5.31646×10⁷ °C; passes, as it should |
+| feed: both reactors hold the heater's plasma | 34.08 and 35.72 units, 14 crafts | 14.88 and 14.88 |
+| feed: the unpowered one against the powered one | 5.42×10⁵ against 5×10⁹ °C, 1.08×10⁻⁴ of it | 0.961 of it |
+| full: the line is full when it is read | 2799.98 of 2800, both boxes at 100% | 2736.83 of 2800, a box at 97.97% |
+| full: the unpowered reactor on the full line | 15 °C | 1.82594×10⁷ °C |
+| solo, solopipe, bare, piped: kept of what was spent | 100.0% in all four | 94.6%, 75.4%, 57.6% and 67.0% |
+
+The eleventh failure is the full line's fill, which the self-test does not require: under
+`input-output` the run was not full when it was read.
 
 ### The load check: everything holds
 

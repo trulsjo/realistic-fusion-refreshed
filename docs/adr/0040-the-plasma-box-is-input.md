@@ -8,7 +8,8 @@ Accepted. Settles [#551](https://github.com/trulsjo/realistic-fusion-refreshed/i
 plasma box's production type, and
 [#569](https://github.com/trulsjo/realistic-fusion-refreshed/issues/569), what ADR 0011 says about
 a full line. **Decided by Truls, 2026-10-20**, in one grilling session that took #551 first because
-#569's answer depended on it. Built on 2026-10-21: #740 made both boxes `input`.
+#569's answer depended on it. Built on 2026-10-21: #740 made both boxes `input` and #741 rewrote
+the pooling check.
 
 **Amends [ADR 0011](0011-per-reactor-simulation-fluid-coupled.md)**, whose per-reactor decision
 stands. What changes is its clause that reactors on one run share "one pool, one mixed temperature";
