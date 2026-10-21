@@ -430,9 +430,10 @@ pays nothing, as it always did.
 in `storage` and its own circuit signals. Not "per network": v1 has no network concept and no
 connectivity tracking. See [ADR 0011](docs/adr/0011-per-reactor-simulation-fluid-coupled.md).
 
-**Fluid-coupled** — how connected reactors interact: through the engine's own fluid system, sharing one
-plasma pool at one mixed temperature, rather than through anything this mod computes. Reserve the word
-for that mechanism; do not call it a network. **It names the mechanism, not an outcome**: whatever
+**Fluid-coupled** — how connected reactors interact: through the engine's own fluid system, sharing the
+plasma feed on their run, rather than through anything this mod computes. Each reactor's plasma box is
+`input` ([ADR 0040](docs/adr/0040-the-plasma-box-is-input.md)), so they share the feed and not the heat.
+Reserve the word for that mechanism; do not call it a network. **It names the mechanism, not an outcome**: whatever
 the engine does with the shared fluid is the coupling, and it does not promise that neighbours keep an
 unheated reactor warm.
 

@@ -17,8 +17,8 @@
 
     WHY THERE IS A COLLECTOR AT ALL
 
-    A boiler has exactly two fluid boxes and rf-reactor spends both: plasma in and out on the
-    input-output box ADR 0011's fluid coupling rests on, reactor energy on the other. By-products
+    A boiler has exactly two fluid boxes and rf-reactor spends both: plasma in on the input box
+    ADR 0011's fluid coupling rests on (ADR 0040), reactor energy on the other. By-products
     need a third and a fourth, so they need another entity. rf-isotope-collector is bolted to the
     reactor and filled by control.lua from the same reaction count the energy output comes from --
     so what it collects follows the simulation rather than a recipe's fixed ratio.

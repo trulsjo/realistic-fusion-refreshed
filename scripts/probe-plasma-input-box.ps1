@@ -5,6 +5,11 @@
     control.lua still writes the box, whether two bridged reactors still share one pool (#542), and
     where a lone box with no pipes relaxes to (#548).
 
+    SINCE #740 THE SHIPPED BOX IS "input" (ADR 0040), so the canary refuses to load, which it
+    reports, and a run with -NoCanary reads the shipped input box. The runtime production_type the
+    report prints says which box a run read; "shipped" in its labels means input-output only for
+    runs before #740.
+
 .DESCRIPTION
     A PROBE, NOT A CHECK. Every line it prints is a measurement, and exit 0 means the probe ran and
     every row reported, never that the answer was the one anybody hoped for. A canary that refuses

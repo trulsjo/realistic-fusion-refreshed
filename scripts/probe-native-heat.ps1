@@ -157,8 +157,9 @@ local reactor = data.raw["reactor"]["nuclear-reactor"]
 -- What #44 would build if the reactor became a heat source: a reactor prototype, because that is
 -- the only vanilla type whose whole job is emitting heat, carrying the three things rf-reactor
 -- cannot give up -- an electric energy source for confinement heating, a neutered consumption so
--- the draw follows the simulation rather than a declared constant, and the input-output plasma box
--- that lets one run of rf-pipe feed a row of reactors from one pool (ADR 0011).
+-- the draw follows the simulation rather than a declared constant, and the plasma box that lets one
+-- run of rf-pipe feed a row of reactors (ADR 0011; input-output when this probe was written, input
+-- since #740).
 local function probe_reactor(name, consumption, max_transfer)
   local e = table.deepcopy(reactor)
   e.name = name

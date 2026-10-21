@@ -2038,6 +2038,9 @@ script.on_init(function()
       -- 52.6% each within a second and the reactor simulates half the plasma it appears to hold.
       -- Overfilling does not help; the clamp happens first. Verified against a reactor no Lua
       -- ever touched, which splits identically -- this is the engine's model, not this mod's.
+      -- That was the input-output box; since #740 the box is "input" and a seeded lone box keeps
+      -- its 1000 (docs/research/plasma-input-box.md, "The lone box"), and the pipe stays for the
+      -- reasons below.
       --
       -- The pipe holds the segment at 100% at a fixed temperature, which is a reactor whose
       -- heater keeps up, and is the state worth measuring. It also pins the temperature rather
