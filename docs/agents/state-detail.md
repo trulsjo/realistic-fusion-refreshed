@@ -229,3 +229,9 @@ One line for each change to a gate, newest last, with its date and its ticket.
 - 2026-10-21, #740: both reactors' plasma box is `input` (ADR 0040), so every gate that builds a
   reactor now runs on that box. `check-breeding.ps1`'s help names the box as `input`; nothing it
   asserts changed.
+- 2026-10-21, #741: `check-pooling.ps1` asserts shared feed and unshared heat in 65 checks, where
+  it characterised the `input-output` box in 125. It gains a heater-fed `feed` cell and a `full`
+  cell built 2H1 that reaches a full line inside the run (#574), and loses the mixing-loss,
+  write-shape, writer-count, ramp and probe rows. Its `-SelfTest`'s second half is
+  `shared-heat-refused`, which loads a canary putting the `input-output` box back and requires
+  the ten rows that say heat is not shared to fail by name; it replaces `all-arrives-refused`.

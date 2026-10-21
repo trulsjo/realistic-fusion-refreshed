@@ -1,40 +1,67 @@
 <#
 .SYNOPSIS
-    Checks that reactors on one run of rf-pipe really do work from a single pool, under supply that
-    is allowed to run out. Discharges #40.
+    Checks that reactors on one run of rf-pipe share its feed and not its heat, as ADR 0040 says an
+    "input" plasma box does, on a line that is filling and on one that is full. Discharges #40, and
+    since #741 #574.
 
 .DESCRIPTION
-    ADR 0011 rests on the engine mixing plasma across a fluid segment so that no Lua in this mod
-    tracks connectivity. Until now that claim rested on two things and neither was the right shape:
-    a one-off headless smoke test during #23 that no longer exists, and bench-reactors.ps1 -Pooled,
-    which CANNOT test it -- every segment there is pinned at 100% by an infinity pipe filter, so the
-    box-versus-segment write semantics never come under strain. That measures the cost of sharing,
-    not the correctness of it.
+    ADR 0011 rests on the engine's fluid system coupling reactors on one run, so that no Lua in this
+    mod tracks connectivity. ADR 0040 says what that coupling is since both reactors' plasma box
+    became "input" (#740): the run carries plasma to every reactor on it, each box takes plasma and
+    gives none back, and so heat does not travel. A reactor nothing heats sits at the plasma's 15 C
+    floor beside a hot one, on any line, full or not. This rig asserts that, and asserts it in
+    shapes the old input-output box fails, so a box that started sharing heat again would be caught.
 
-    So nothing here uses an infinity pipe. Every cell is seeded and then left alone to burn down.
+    Nothing here uses an infinity pipe on the plasma. Every cell but two is seeded and then left
+    alone; `feed` and `full` are fed by an rf-heater.
+
+    UNTIL #741 THIS CHECK CHARACTERISED THE input-output BOX, which traded plasma with its run every
+    tick: one pool at one mixed temperature, the engine's mixing destroying a fifth of a temperature
+    difference, the run keeping 58% to 95% of what its reactors spent, and the write-shape, writer
+    count and positional-ramp rows of #73 and #271 that ruled two of this mod's mechanisms out.
+    Those findings are records, in the pooling section of docs/research/reactor-runtime-cost.md and
+    in docs/research/plasma-input-box.md, and the rows that made them went with the box. Under
+    "input" a reactor's write never leaves its box, so every one of them read 100% arrived and could
+    no longer tell anything apart.
 
     WHAT IS BUILT
-
-      mix       Three reactors on one run, NOTHING POWERED, seeded fifty times apart end to end.
-                The engine's mixing on its own, with no simulation driving it. If a run shares at
-                all, this must flatten -- and it does, from fifty times to under a tenth of a
-                percent, inside two seconds.
 
       pair      Two reactors bridged by rf-pipe, and ONLY THE WESTMOST IS ON AN ELECTRIC NETWORK.
       trio      Three, the same way.
       five      Five, the same way.
 
-                One powered reactor per row is what makes these discriminating rather than
-                decorative: an unpowered reactor runs its whole simulation step with heating clamped
-                to zero, so any heat it holds arrived along the pipe. Three counts, because a
-                two-reactor result is a coincidence waiting to be found out.
+                One powered reactor per row is what makes these discriminating: an unpowered reactor
+                runs its whole simulation step with heating clamped to zero, so any heat it holds
+                arrived along the pipe. Seeded at 1e6 C and read at the floor.
 
-      solo      ONE reactor and no pipe: the run is its own box, so nothing can mix and no other
-                reactor can write to it.
-      solopipe  The same one reactor with a tail of rf-pipe. Still a single writer, but now there is
-                a run to mix across.
+      mix       Three reactors on one run, NOTHING POWERED and unregistered, seeded alike and then
+                one end raised fifty times. The engine on its own, with no simulation driving it.
+                Under input-output it flattened to a tenth of a percent inside two seconds; under
+                "input" the ends stay apart.
+
+      solo      ONE reactor and no pipe.
+      solopipe  The same one reactor with a tail of rf-pipe.
       bare      Three reactors, all powered, bridged and nothing else.
       piped     The same three, plus a tail of rf-pipe.
+
+                The four the bookkeeping is measured on: across ONE simulation step, the sum of
+                amount x absolute temperature over every box on the run against what the shipped
+                physics says the reactors spent. Under "input" each reactor keeps all of it, with a
+                run beside it or not; the input-output box kept 95%, 75%, 58% and 67%.
+
+      feed      One rf-heater, three rf-pipe into a powered reactor, and the bridge into an
+                unpowered one. NOTHING SEEDED: every unit either box holds is one the heater made,
+                so plasma in the far box crossed the run past the near reactor. That is the shared
+                feed. The far reactor is read against the near one for the unshared heat.
+
+      full      The same layout BUILT 2H1, the order #583 found the input-output box holding an
+                unpowered reactor at 10^3 to 10^4 C on a full line where 1H2 let it fall to the
+                floor. Seeded full like the rows above, and kept full by the heater. THIS IS THE
+                CELL THAT REACHES A FULL LINE inside the run (#574): the line is not filled from
+                empty, which takes 30 975 ticks on one heater, but seeded at 1e6 C like the rows
+                above, its segment then topped up to its capacity with insert_fluid at tick 61,
+                and asserted full when the check is read: the segment at 99.9% of what
+                get_capacity reports for it, and both boxes at 99.9% of theirs.
 
       outlets   An rf-isotope-collector with its TRITIUM output box piped into a run of vanilla
                 pipe and a tank, and -- since #86 -- an rf-reactor with an rf-heat-exchanger BOLTED
@@ -47,172 +74,47 @@
                 The bolt is the shape that IS real, so the two "run bigger than the box" assertions
                 go with the run and the get_capacity one stays.
 
-                The four the bookkeeping is measured on, and the reason there are four is that a
-                shortfall on a row of three has two candidate causes which predict the same
-                ordering: the engine's mixing losing heat, and reactors overwriting each other
-                inside one step. One reactor cannot overwrite anyone, so solo and solopipe separate
-                them.
+    WHAT IS ASSERTED
 
-      writers1  Three reactors bridged, unregistered and rig-driven, with the whole of one step's
-      writers2  heating delivered by one, two or three of them. The same segment, the same fill, the
-      writers3  same starting temperature and the same TOTAL heating in every row -- each equality
-                asserted at the moment of the step -- so the only thing that differs is how many
-                machines put the energy in.
-      middle    The same again with a single writer, moved to the centre reactor and then to the
-      east      eastern one. They are what say the first three rows are not measuring writer count.
-      reversed  The eastern reactor once more, written FIRST instead of last, which separates where
-                a reactor sits on the run from when the driver reaches it.
+      shared feed     `feed`: both reactors hold plasma the heater made. `full`: the line is full.
+      unshared heat   `mix`'s ends stay apart. Every unpowered reactor on `pair`, `trio`, `five`
+                      and `full` reads the plasma's floor (default_temperature, read off the
+                      prototype) beside a powered one far above the seed. `feed`'s unpowered
+                      reactor reads under a tenth of the powered one's temperature. And `solo`,
+                      `solopipe`, `bare` and `piped` each keep at least 98% of what their reactors
+                      spent across one step.
+      get_capacity    A pipe reports its whole run; a reactor and a connected output box report
+                      their own box. The 2.0 API documents neither, and this repo once wrote down
+                      the opposite.
 
-    WHAT IS ASSERTED, AND WHY NOT TEMPERATURE ALONE
-
-    Temperature converging is necessary and nowhere near sufficient: reactors seeded alike and
-    running alike converge without sharing anything. So the run also checks the semantics control.lua
-    is written against, none of which the 2.0 API documents. See the pooling section of
-    docs/research/reactor-runtime-cost.md, which this script is the source for.
-
-    The check that decides whether apply() is right is the bookkeeping. A reactor computes a
-    temperature rise against its own share and writes it back; the engine then dilutes that rise by
-    exactly that share. apply()'s comment claims the two errors cancel, so the pool gains what the
-    reactor spent whatever else is plumbed into the run. That is measured across ONE step against
-    the sum of amount x absolute temperature over every box -- proportional to the 3NkT the
-    simulation works in -- with the step predicted by requiring reactor-logic out of the shipped mod
-    rather than by reimplementing it.
-
-    IT DOES NOT BALANCE. A lone reactor with nothing plumbed to it keeps 95% of what it spent; the
-    same reactor on a twenty-pipe run keeps 75%, which is the engine's mixing and nothing else; three
-    reactors bridged together keep 58%, which is more than mixing accounts for.
-
-    THE EXCESS IS NOT update()'S WRITE SHAPE, AND THIS SCRIPT USED TO SAY IT WAS. Measured under #73
-    by the `probe` row and the three shape rows: a Lua write reaches no other box on the run in the
-    same tick, and the shipped two-pass shape, a single-pass shape and a relative write all keep the
-    same 72.18% on identical rows.
-
-    AND IT IS NOT WRITER COUNT EITHER, which is what the rest of #73 measured and what the six rows
-    below the shape rows exist for. `bare` against `solopipe` differs in fill and temperature as well
-    as in how many reactors write, so the seventeen-point gap was never a measurement of any one of
-    the three. Held alone -- one geometry, one fill, one starting temperature, one total of injected
-    heating -- the rows come out, MEASURED OVER ONE SIX-TICK INTERVAL WITH THE WRITES AT THE START
-    OF IT, which is the window every figure in this block belongs to and not a standing loss (#271,
-    below):
-
-      one writer, west reactor       72.19%
-      two writers, western pair      71.92%
-      three writers                  71.64%
-      one writer, MIDDLE reactor     71.65%
-      one writer, EAST reactor       71.10%
-      east reactor, written FIRST    71.10%
-
-    Read down that list rather than across the first three. The first three look exactly like a small
-    writer-count effect and are not one: the last three say that a SINGLE writer moves over the same
-    range depending on which reactor it is, and that the count rows land on the arithmetic mean of
-    the positions they occupy -- 71.92% is (72.19 + 71.65) / 2 and 71.64% is the mean of all three,
-    both to two decimal places, with nothing fitted.
-
-    So the variable is WHERE the energy enters the segment, and writer count enters only through the
-    mean of it. Two things are excluded by controls rather than by argument: it is not the write
-    ORDER, because the east reactor keeps 71.10% whether the driver reaches it first or last; and it
-    is not the gradient the writes create, because the flat three-writer row and the steeply uneven
-    middle row agree to a hundredth of a point.
-
-    AND THE RAMP IS THE MEASUREMENT WINDOW, NOT THE ENGINE (#271). It was left open on the reading
-    that the engine treats one end of a run differently from the other, and it does not. The same
-    three rows, read again at longer windows with nothing driven a second time:
-
-       6 ticks    west 72.188%   middle 71.648%   east 71.099%   ramp  1.089 points
-      12 ticks    west 62.725%   middle 62.255%   east 61.781%   ramp  0.944
-      30 ticks    west 57.883%   middle 57.775%   east 57.669%   ramp  0.214
-      60 ticks    west 57.614%   middle 57.609%   east 57.604%   ramp  0.010
-     120 ticks    west 57.609%   middle 57.609%   east 57.609%   ramp  0.000
-     960 ticks    west 57.609%   middle 57.609%   east 57.609%   ramp  0.000
-
-    The ramp is a hundredth of a point by one second and zero by two, and the three positions then
-    agree to the five figures the report prints. So the one-interval figure was redistribution still
-    in flight when the
-    window closed. NOTHING about position survives the run settling.
-
-    WHY THE TRANSIENT RUNS WEST TO EAST RATHER THAN SYMMETRICALLY IS NOT ANSWERED HERE, and is not
-    narrated either -- this rig exists because a gap was once explained instead of measured, and a
-    plausible story about dilution would be the same mistake one level down. What IS measured is
-    that whatever it is, it is gone by two seconds and the run's three positions are then the same
-    to six figures, so there is no standing effect for a mechanism to be owed for.
-
-    That the longest window is past the end of the movement is asserted rather than assumed -- the
-    rows' heat does not change at all over the last 480 ticks and every run is flat to a part in a
-    million. The LONGER windows are reported and asserted at none of them: the one-interval band
-    above stays as the characterisation it is, and a second band on a float comparison is not what
-    should guard a figure that is zero.
-
-    WHAT THIS FOUND THAT WAS NOT EXPECTED
-
-    Three things, all recorded in the research note rather than only here.
-
-    THE ENGINE'S FLUID MIXING DESTROYS HEAT. The `idle` cell is three reactors built with
-    raise_built = false, so nothing this mod or this rig writes ever touches them again: no
-    simulation runs on them at all. One box is raised fourfold, once, and the run is left to flatten.
-    Its plasma AMOUNT does not move by a part in a hundred thousand -- nothing is consuming or
-    supplying -- and yet 18% of the sum of amount x temperature is gone by the time it has flattened.
-    Mixing is supposed to be a mass-weighted average, which conserves that sum exactly. The control
-    is the same run undisturbed, which holds its heat to nine parts in a million over the same
-    window, so these entities do not leak on their own.
-
-    It is why several checks here are written as characterisations with a band rather than as
-    equalities: a future version of Factorio that mixed conservatively would fail them, and should,
-    because the note would then be wrong.
-
-    A REACTOR'S get_capacity REPORTS ITS OWN BOX, NOT THE RUN. A pipe's reports the run. This repo
-    believed and wrote down the opposite, in control.lua's apply() and in the research note.
-
-    AND THAT HOLDS FOR AN OUTPUT BOX WITH A NEIGHBOUR (#68), which is the shape all THREE call
-    sites in control.lua that clamp against get_capacity actually have -- deposit() into a
-    collector box, apply() into the reactor's energy box, and apply()'s blanket headroom off the
-    collector again. It used to be asked only of an
-    output box plumbed into NOTHING -- the case where the box and the segment are the same object,
-    which cannot tell the two answers apart. The `outlets` row pipes an rf-isotope-collector's
-    tritium box into twenty pipes and a tank, a 27000-unit run against a 500-unit box, and the box
-    still answers its own volume.
-
-    THE REACTOR HALF OF THAT ROW BOLTS RATHER THAN PIPES SINCE #86, and it had to change or go.
-    Reactor energy took a vanilla pipe only while ADR 0018's containment had not shipped; it has
-    shipped, no pipe in the game carries the fluid, and the twenty-pipe run simply cannot be built.
-    What a player builds instead is an rf-heat-exchanger bolted flat to the reactor's energy face,
-    so that is what the row builds, and apply()'s clamp is asked the same question against it: the
-    reactor's 1000-unit output box must still report 1000 with a 200-unit exchanger box joined to it.
-    What the bolt cannot carry over is "the run is materially larger than the box" -- a bolt has no
-    run -- so those assertions stay with the collector, which is the shape they were written for.
-    The collector half is otherwise unaffected: tritium is ordinary by design.
-
-    A BOX THAT IS WRITTEN EVERY STEP SITS PERSISTENTLY HOTTER THAN THE REST OF ITS RUN. In `five`
-    the four unpowered reactors agree with each other to two parts in ten thousand, and the powered
-    one sits about a tenth above all of them -- steadily, not as a transient, and it does not close
-    when the sample is taken off the simulation's beat. Heat enters at one box and leaves it no
-    faster than the pipe carries it away, so "one pool at one mixed temperature" is an idealisation
-    with a source-side gradient in it. Nothing in this mod depends on it being otherwise and the
-    bookkeeping is unaffected, but it is the kind of thing otherwise discovered by a player
-    wondering why one reactor of six reads differently from its neighbours.
+    A REACTOR'S get_capacity REPORTS ITS OWN BOX, NOT THE RUN. A pipe's reports the run. And that
+    holds for an output box with a neighbour (#68), which is the shape all THREE call sites in
+    control.lua that clamp against get_capacity actually have -- deposit() into a collector box,
+    apply() into the reactor's energy box, and apply()'s blanket headroom off the collector again.
+    The `outlets` row pipes an rf-isotope-collector's tritium box into twenty pipes and a tank, a
+    27000-unit run against a 500-unit box, and the box still answers its own volume. Since #86 the
+    reactor's energy box is asked the same question with an rf-heat-exchanger bolted to it: its
+    1000-unit box must still report 1000 with a 200-unit exchanger box joined to it.
 
     WHAT IT DOES NOT COVER
 
-    One surface, one plasma, no pumps and no pipe-to-ground on the run. Nothing here says anything
-    about a segment being split or merged while running: ADR 0011 has no code for that because the
-    engine owns it, and observing it is a different ticket.
+    One surface, one plasma (D-D), one reactor (rf-reactor; rf-aneutronic-reactor's box is the same
+    production type and was read by probe-plasma-input-box.ps1, not here), no pumps and no
+    pipe-to-ground on the run. The full line is seeded full rather than filled from empty, and is
+    built in one order. Nothing here says anything about a segment being split or merged while
+    running: ADR 0011 has no code for that because the engine owns it.
 
 .PARAMETER FactorioExe
     Path to Factorio.exe. Defaults to $env:FACTORIO_EXE, then the Steam install on this machine.
 
 .PARAMETER Ticks
-    Ticks to run before the final check. Long enough that a pool fed by one reactor is visibly hot
-    and visibly down on plasma, and -- since #271 -- long enough to contain the last of the longer
-    windows, which closes at tick 1266. Forced off the simulation's beat -- see the adjustment below.
-
-    THE 1267 FLOOR IS A REMEMBERED NUMBER AND THE RIG PROVES IT. The real floor is derived inside
-    control.lua from the same constants the windows are, and the rig refuses to load if this range
-    ever stops covering it -- so moving SEED_UNTIL or LATE_WINDOWS fails here rather than silently
-    dropping the last two windows and blaming the engine for it.
+    Ticks to run before the final check. Forced off the simulation's beat -- see the adjustment
+    below. The floor is the default: every unpowered reactor seeded at 1e6 C read the floor at tick
+    1801 (2026-10-21, Factorio 2.0.77, nothing researched), and a shorter run was not measured.
 
 .PARAMETER Tail
-    How many rf-pipe to hang off the end of the `piped` row. The bookkeeping check is only as strong
-    as the gap between the two runs' capacities, so this wants to be enough pipe to matter: twenty
-    doubles a bridged three-reactor row's pipe count and adds half again to its volume.
+    How many rf-pipe to hang off the end of the `piped` and `solopipe` rows, so the bookkeeping is
+    asked of a reactor with a run beside it as well as without.
 
 .PARAMETER With
     Bundled mods to enable, e.g. -With space-age. Off by default, so the rig keeps checking base 2.0
@@ -225,15 +127,15 @@
     canary here, recorded in docs/research/plasma-input-box.md.
 
 .PARAMETER SelfTest
-    Prove the rig can fail where #565 found it could not. Two halves, each a run of this script:
-    `repo-passes`, the floor, and `all-arrives-refused`, which loads a canary making rf-reactor's
-    plasma box "input" -- under it every bookkeeping row reads 100% arrived -- and requires the four
-    "gains most of what its reactors spent, and not all of it" rows to FAIL by name, and since
-    #575 the three write-shape rows and the six writer rows too. The canary is
-    the one probe-plasma-input-box.ps1 writes, duplicated here as check-hc.ps1 duplicates
-    load-check.ps1's. Refused with -AlsoModDirectory and -With. Since #578 it also fails when a
-    file under our mod directories changed during the run, by load-check.ps1's check, which now
-    lives in factorio-lib.ps1 as Test-ModTreeUnchanged.
+    Prove the rig can fail. Two halves, each a run of this script: `repo-passes`, the floor, and
+    `shared-heat-refused` (#741), which loads a canary putting rf-reactor's plasma box back to
+    "input-output" -- the box that shared heat -- and requires the rows that say heat is not shared
+    to FAIL by name: `mix`'s, the floor rows of `pair`, `trio`, `five` and `full`, `feed`'s, and the
+    four bookkeeping rows. Until #741 the second half was `all-arrives-refused`, which loaded the
+    "input" box as a canary against the input-output one; #740 shipped that box. Refused with
+    -AlsoModDirectory and -With. Since #578 it also fails when a file under our mod directories
+    changed during the run, by load-check.ps1's check, which now lives in factorio-lib.ps1 as
+    Test-ModTreeUnchanged.
 
 .PARAMETER KeepTemp
     Keep the save, the rig mod and the captured output.
@@ -248,7 +150,7 @@
 [CmdletBinding()]
 param(
     [string] $FactorioExe,
-    [ValidateRange(1267, 200000)] [int] $Ticks = 1800,
+    [ValidateRange(1800, 200000)] [int] $Ticks = 1800,
     [ValidateRange(1, 500)]      [int] $Tail  = 20,
     [string[]] $With = @(),
     [string]   $AlsoModDirectory,
@@ -263,21 +165,21 @@ if ($SelfTest) {
     if ($AlsoModDirectory -or $With.Count) { throw '-SelfTest loads its own canary on the base game; it takes neither -AlsoModDirectory nor -With.' }
     $pwsh    = (Get-Process -Id $PID).Path
     $scratch = Join-Path ([IO.Path]::GetTempPath()) ('rf-pool-st-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
-    $canary  = Join-Path $scratch 'rf-pooling-all-arrives'
+    $canary  = Join-Path $scratch 'rf-pooling-shares-heat'
     New-Item -ItemType Directory -Path $canary -Force | Out-Null
     @{
-        name = 'rf-pooling-all-arrives'; version = '0.0.1'; title = 'Pooling check canary'
+        name = 'rf-pooling-shares-heat'; version = '0.0.1'; title = 'Pooling check canary'
         author = 'check-pooling.ps1'; factorio_version = '2.0'
         dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $canary 'info.json') -Encoding utf8
     Set-Content -Encoding utf8 -Path (Join-Path $canary 'data-final-fixes.lua') -Value @'
 -- Generated by check-pooling.ps1 -SelfTest. Nothing here ships.
 local box = data.raw.boiler["rf-reactor"].fluid_box
-if box.production_type ~= "input-output" then
+if box.production_type ~= "input" then
   error("pooling canary: rf-reactor's plasma box is '" .. tostring(box.production_type)
-    .. "', not input-output, so there is nothing for the canary to change")
+    .. "', not input, so there is nothing for the canary to change")
 end
-box.production_type = "input"
+box.production_type = "input-output"
 '@
     $common = @('-NoProfile', '-File', $PSCommandPath, '-Ticks', "$Ticks", '-Tail', "$Tail")
     if ($FactorioExe) { $common += @('-FactorioExe', $FactorioExe) }
@@ -291,22 +193,27 @@ box.production_type = "input"
                 if ($LASTEXITCODE -ne 0) { throw "the repository as it stands fails the pooling check:`n$($out | Select-Object -Last 8 | Out-String)" }
                 'the repository as it stands passes.'
             } }
-            @{ Name = 'all-arrives-refused'; Body = {
+            @{ Name = 'shared-heat-refused'; Body = {
                 $out = & $pwsh @common -AlsoModDirectory $scratch 2>&1
-                if ($LASTEXITCODE -eq 0) { throw 'a run in which every row reads 100% arrived passed the pooling check.' }
-                $row = 'the run gains most of what its reactors spent, and not all of it'
+                if ($LASTEXITCODE -eq 0) { throw 'a run on the input-output box, which shares heat, passed the pooling check.' }
+                # Every row that says heat is not shared, by the name each prints.
+                $rows = @(
+                    'mix: and with nothing driving it, the ends stay apart'
+                    'pair: every unpowered reactor is at the floor'
+                    'trio: every unpowered reactor is at the floor'
+                    'five: every unpowered reactor is at the floor'
+                    'feed: and the unpowered one holds none of the powered one''s heat'
+                    'full: and the unpowered reactor on the full line is at the floor'
+                )
                 foreach ($cell in 'solo', 'solopipe', 'bare', 'piped') {
-                    if (-not ($out | Where-Object { "$_" -match "^\s*FAIL\s+${cell}: $row" })) {
-                        throw "under the canary the '$cell' row did not FAIL as '$row'."
+                    $rows += "${cell}: the reactors keep all of what they spent"
+                }
+                foreach ($row in $rows) {
+                    if (-not ($out | Where-Object { "$_" -match "^\s*FAIL\s+$([regex]::Escape($row))" })) {
+                        throw "under the input-output canary '$row' did not FAIL."
                     }
                 }
-                # And the nine rows that took the same bound in #575, by the name each prints.
-                foreach ($cell in 'twopass', 'onepass', 'rebased', 'writers1', 'writers2', 'writers3', 'middle', 'east', 'reversed') {
-                    if (-not ($out | Where-Object { "$_" -match "^\s*FAIL\s+${cell}: .* of what its reactors spent arrived" })) {
-                        throw "under the canary the '$cell' row did not FAIL."
-                    }
-                }
-                'a run in which everything a reactor spent arrives is refused, by the thirteen rows that say it should not.'
+                "a run on the box that shares heat is refused, by the $($rows.Count) rows that say heat is not shared."
             } }
         )
         $treeChecked = $true
@@ -324,9 +231,8 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 $ourMods  = Get-RepoMods
 $rigName  = 'rf-pooling-rig'
 
-# The shipped cadence, read rather than remembered. The rig samples on and around the simulation's
-# own beat to catch a single step, and UPDATE_INTERVAL is a local in control.lua that nothing
-# exports.
+# The shipped cadence, read rather than remembered. The bookkeeping window is one simulation step
+# wide, and UPDATE_INTERVAL is a local in control.lua that nothing exports.
 $controlLua = Join-Path $repoRoot 'realistic-fusion-refreshed/control.lua'
 if ((Get-Content $controlLua -Raw) -match '(?m)^local UPDATE_INTERVAL = (\d+)') {
     $interval = [int]$Matches[1]
@@ -335,10 +241,7 @@ if ((Get-Content $controlLua -Raw) -match '(?m)^local UPDATE_INTERVAL = (\d+)') 
 }
 
 # Off the beat on purpose. A check landing on a simulation tick reads every driven box in the
-# instant after it was written and before the engine has moved any of it, which makes a shared run
-# look more like a set of islands than it is. That is not the whole of the gradient this rig found
-# -- see the note above, the rest of it is real and does not close -- but it is a needless part, and
-# one nobody would think to look for.
+# instant after it was written and before the engine has moved any fluid.
 if ($Ticks % $interval -eq 0) { $Ticks++ }
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
@@ -376,113 +279,46 @@ local PLASMA = "rf-d-d-plasma"
 
 -- The shipped physics, required out of the mod rather than reimplemented, the same way the
 -- ablation ladder in bench-reactors.ps1 does it. The bookkeeping check below asks this module what
--- a reactor's step should do and then asks the pool whether it got it; a copy would only ever
+-- a reactor's step should do and then asks the run whether it got it; a copy would only ever
 -- confirm the copy.
 local logic = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
 local SPEC  = logic.reactor
 
--- Seeded well below anything that fuses hard, so an unpowered reactor that ends up hot can only
--- have got there through the pipe. Nothing below depends on the reaction being negligible -- every
--- claim here is about sharing rather than about physics -- but it makes that one result mean the
--- single thing it is meant to mean.
+-- Seeded well below anything that fuses hard, so an unpowered reactor that ended up hot could only
+-- have got there through the pipe, and well above the floor, so one that reads the floor cooled
+-- there by its own step rather than starting there.
 local SEED_C = 1e6
 
--- What `mix` starts fifty times hotter at. Big enough that flattening is unmistakable rather than a
+-- What `mix` raises one end to. Big enough that flattening would be unmistakable rather than a
 -- rounding difference, and still well inside the plasma's declared range.
 local HOT_C = SEED_C * 50
 
 local GAP = 5      -- clear tiles between one reactor and the next, and so the bridge length
 
--- Seeding runs for a while rather than once. This used to be explained by saying that a Lua write
--- REPLACES a box and the engine re-splits the run between writes, so a single seeding pass throws
--- away most of what the earlier writes put in -- "measured, a three-reactor run seeded in one pass
--- settles at 45% of capacity rather than 100%".
---
--- THE 45% IS REAL AND THE EXPLANATION WAS WRONG (#73). The `seedonce` row below is seeded exactly
--- once and sits at 44.6% of declared capacity; `mix` is the same geometry seeded sixty times and
--- sits at 44.6% too. One pass leaves the run as full as sixty do, so the writes are not throwing
--- each other away. 44.6% is simply what a three-reactor bridged run holds against the SUM OF ITS
--- BOXES' DECLARED VOLUMES -- a fact about the segment, not about the write pattern.
---
--- Seeding for sixty ticks is kept anyway, and still earns its place: it is what puts every row at
--- the same known fill and gives the pool time to stop moving, which is the only reason the rows'
--- one-step gains are comparable.
+-- Every seeded cell is written for sixty ticks rather than once, which puts every row at the same
+-- known fill before anything is read.
 local SEED_UNTIL = 60
 
--- How long the runs are left to settle before the bookkeeping step is measured. Seeding leaves the
--- pool moving -- a write replaces a box and the engine spends the next second or two re-splitting
--- the run -- and a "before" reading taken while that is still happening describes a state the step
--- was not computed against. Measured: the fill stops moving inside two seconds of the last write.
+-- How long the runs are left before the bookkeeping step is measured, so the seeding has stopped
+-- moving fluid.
 local SETTLE_UNTIL = SEED_UNTIL + 240
 
 -- The window the bookkeeping is measured across: one whole interval, opening ON a simulation tick.
 --
--- Both parts of that are load-bearing and both were arrived at by getting them wrong. THIS MOD'S
--- HANDLERS RUN BEFORE realistic-fusion-refreshed'S, because the rig depends on it and so loads after it. That
--- was not assumed -- it was measured: a window from tick 305 to 306, either side of a step, showed
--- the pool LOSING heat, which is what a window containing no step at all looks like. So a reading
--- taken on a step tick is the state that step is about to see, which is exactly what the prediction
--- needs as its input, and a window of one whole interval from there holds precisely one step.
---
--- If that order ever changed, this check fails loudly with a factor-sized discrepancy rather than
--- quietly: the prediction would be of a step the window does not contain.
---
--- The ticks of fluid movement inside the window cost nothing, because the quantity measured is
--- conserved by mixing: moving fluid about the run does not change the sum of amount x temperature.
+-- THIS MOD'S HANDLERS RUN BEFORE realistic-fusion-refreshed'S, because the rig depends on it and so
+-- loads after it. That was measured, not assumed: a window from tick 305 to 306, either side of a
+-- step, once showed the run LOSING heat, which is what a window containing no step looks like. So a
+-- reading taken on a step tick is the state that step is about to see, which is what the
+-- prediction needs as its input, and a window of one whole interval from there holds one step.
 local STEP_BEFORE = math.ceil(SETTLE_UNTIL / INTERVAL) * INTERVAL + INTERVAL
 local STEP_AFTER  = STEP_BEFORE + INTERVAL
 
--- THE SAME WRITE, READ AGAIN MUCH LATER (#271).
---
--- The bookkeeping pair above is one interval wide and stays one interval wide: a wider window would
--- be a prediction of a step the window does not contain, which is the failure STEP_BEFORE's note
--- records falling into once already. These are extra READINGS of the writer rows and of nothing
--- else. Those rows are unregistered, so after their single drive at STEP_BEFORE nothing simulates
--- them and the only thing happening between one reading and the next is the engine moving fluid
--- about a run that nothing is adding to or taking from.
---
--- The question they answer is whether the positional ramp measured over one interval is a standing
--- loss or redistribution still in flight when that window closes. Six ticks is long enough for the
--- engine to move fluid and not obviously long enough for it to finish.
---
--- Counted in INTERVALS, and the first entry IS the existing window, so the table is the whole
--- x-axis of the report rather than only the part of it that is new. The longest is 160 intervals --
--- 960 ticks, sixteen seconds -- against a measured flattening time of about two. That it is long
--- enough is ASSERTED at report time rather than read off a number that looked generous, which is
--- the mistake JOLT_END had to be corrected for.
-local LATE_WINDOWS = { 1, 2, 5, 10, 20, 40, 80, 160 }
-local LATE_TICK = {}
-for _, n in ipairs(LATE_WINDOWS) do
-  if n > 1 then LATE_TICK[STEP_BEFORE + n * INTERVAL] = n end
-end
-
--- AND THE RUN HAS TO BE LONG ENOUGH TO CONTAIN THEM, checked here rather than trusted to the
--- -Ticks range in the PowerShell above. A run that stops before the last window does not fail
--- quietly -- the "every window was sampled" check catches it -- but it fails with the report's
--- generic message, which sends the reader to look at the engine for what is a too-short run. This
--- says the actual thing, and it is derived from the same constants the windows are, so it is the
--- gate on that hard-coded 1267 rather than a second copy of it.
-local LAST_LATE = STEP_BEFORE + LATE_WINDOWS[#LATE_WINDOWS] * INTERVAL
-if CHECK_AT <= LAST_LATE then
-  error(string.format(
-    "-Ticks %d is too short: the last of #271's windows closes at tick %d and the report runs at %d. Pass -Ticks %d or more, and raise the ValidateRange in check-pooling.ps1 to match.",
-    CHECK_AT, LAST_LATE, CHECK_AT, LAST_LATE + 1))
-end
-
--- When `mix` is read. Three seconds after it is left alone, against a measured flattening time of
--- about two.
+-- When `mix` is read: three seconds after it is left alone, against the two the input-output box
+-- took to flatten it.
 local MIX_AT = SEED_UNTIL + 180
 
--- The isolated mixing measurement: one box on the untouched run is raised fourfold, and the run is
--- read again once it has stopped moving. Two seconds, not the thirty ticks tried first -- at thirty
--- the run was still nine percent apart end to end, so the loss read then was a lower bound on the
--- loss rather than the figure. The reading now asserts that it flattened, so a window that was
--- still too short would say so instead of quietly understating the number.
--- Kept clear of MIX_AT and of the bookkeeping window: these all share one elseif chain, so two
--- landing on the same tick means the later one silently never runs. It did, and the check that
--- noticed was the one asking whether `mix` had been sampled at all.
-local JOLT_AT  = SEED_UNTIL + 120
-local JOLT_END = JOLT_AT + 120
+-- What counts as full, the fraction probe-plasma-input-box.ps1's -FullAt defaults to.
+local FULL_AT = 0.999
 
 local function report_out()
   storage.report = storage.report or { lines = {}, failures = 0, checks = 0 }
@@ -497,24 +333,14 @@ local function record(ok, name, detail)
     ok and "ok  " or "FAIL", name, detail and ("  -- " .. detail) or "")
 end
 
---- A line that is printed and asserts nothing, and is not counted as a check.
----
---- #271's longer windows are reported this way on purpose. Whichever way the ramp lands out there,
---- a second band on a float comparison is not what should guard it, and a `record` that can only
---- ever pass is a check in name only. The verdict counts `checks` rather than lines, so these
---- cannot pad it either.
-local function note(text)
-  local r = report_out()
-  r.lines[#r.lines + 1] = "note  " .. text
-end
-
 local function must(entity, what)
   if not entity then error(what .. " refused") end
   return entity
 end
 
--- The shared rig helpers, for rf_assert_research (#444). Get-RigBuildLua in scripts/factorio-lib.ps1
--- defines them; the map-building ones go unused here.
+-- The shared rig helpers (#444): rf_assert_research and rf_unresearch, and rf_place_facing,
+-- rf_box_of and rf_unbound for the heater (#741). Get-RigBuildLua in scripts/factorio-lib.ps1
+-- defines them.
 __RIGBUILD__
 
 -- Relative difference, which is the shape every tolerance here is written in so none of them is an
@@ -526,9 +352,6 @@ local function rel(a, b)
 end
 
 -- ---------------------------------------------------------------- reading a run
---
--- Every quantity below is taken over EVERY entity on the run rather than off one reactor, which is
--- the point: whether those are the same thing is exactly what is under test.
 
 --- Sum of amount x absolute temperature over the run. Proportional to the 3NkT the simulation works
 --- in, because every box holds the same fluid at the same particles-per-unit, so the constants
@@ -539,15 +362,6 @@ local function heat(cell)
   for _, e in ipairs(cell.all) do
     local box = e.fluidbox[1]
     if box then total = total + box.amount * (box.temperature + 273.15) end
-  end
-  return total
-end
-
-local function pooled(cell)
-  local total = 0
-  for _, e in ipairs(cell.all) do
-    local box = e.fluidbox[1]
-    if box then total = total + box.amount end
   end
   return total
 end
@@ -567,6 +381,20 @@ end
 local function temperature_of(entity)
   local box = entity.fluidbox[1]
   return box and box.temperature or nil
+end
+
+local function amount_of(entity)
+  local box = entity.fluidbox[1]
+  return box and box.amount or 0
+end
+
+--- What the segment a pipe is on holds. Under "input" the reactor boxes share the run's segment id
+--- (#542) and get_capacity counts their volumes, but this does not count their contents; a full
+--- line is this at get_capacity, as probe-plasma-input-box.ps1 reads one. One pipe's own fluidbox
+--- reads a share and not the run.
+local function segment_holds(pipe)
+  local contents = pipe.fluidbox.get_fluid_segment_contents(1)
+  return contents and contents[PLASMA] or 0
 end
 
 --- Hottest and coldest reactor over a range of the row, and the spread between them.
@@ -598,14 +426,9 @@ local function reactor_footprint()
   return size, (size % 2 == 1) and 0.5 or 0.0
 end
 
---- The nearest centre a reactor's own parity allows, on either axis.
----
---- bench-reactors.ps1 carries the same function for the same reason, and this script wanted it for
---- the same reason again: x was derived from the footprint here and y was passed in already ending
---- in .5 by every caller, which is correct only while the reactor is odd-sized. rf-reactor is
---- fifteen tiles and rf-aneutronic-reactor is ten, so pointing a row at the second one would have
---- put every reactor half a tile out in y, every connection half a tile from its bridge pipe, and
---- nothing would have errored -- which is #49 exactly.
+--- The nearest centre a reactor's own parity allows, on either axis. bench-reactors.ps1 carries the
+--- same function for the same reason: a y passed in already ending in .5 is right only while the
+--- reactor is odd-sized.
 local function centre(v, origin)
   if origin == 0.5 then return math.floor(v) + 0.5 else return math.floor(v + 0.5) end
 end
@@ -623,67 +446,66 @@ local function edge_connection(entity, westward)
   return best
 end
 
+--- A substation and a power source south of (x, y), asserted to be one network.
+---
+--- A 2x2 entity centres on a tile BOUNDARY and a 1x1 on a tile CENTRE, so the substation wants whole
+--- numbers and the interface wants halves. Placing either off its own grid shifts it half a tile,
+--- which moves an 18x18 supply area by half a tile -- and the failure is silent, because everything
+--- still places. check-containment.ps1 carries the same note.
+local function power(surface, force, x, y, down, label)
+  local sx, sy = math.floor(x + 0.5), math.floor(y + 0.5) + down
+  local sub = must(surface.create_entity({
+    name = "substation", position = { sx, sy }, force = force,
+  }), label .. ": substation")
+  local eei = must(surface.create_entity({
+    name = "electric-energy-interface", position = { sx + 2.5, sy + 0.5 }, force = force,
+  }), label .. ": power source")
+  eei.power_production = 8e6
+  if not eei.electric_network_id or eei.electric_network_id ~= sub.electric_network_id then
+    error(string.format("%s: the power source at (%g, %g) is not on the substation's network",
+      label, sx + 2.5, sy + 0.5))
+  end
+end
+
+--- One reactor at (cx, cy), and the bridge of rf-pipe west from it to `prev` when there is one.
+local function place_reactor(surface, force, cell, cx, cy, bridge, unregistered)
+  local reactor = must(surface.create_entity({
+    -- Suppressing the build event is the only way one mod can keep another's per-tick handler
+    -- off an entity: realistic-fusion-refreshed registers a reactor from that event and rescans
+    -- only at on_init, which has already run. bench-reactors.ps1 -Ablate leans on the same seam.
+    name = "rf-reactor", position = { cx, cy }, force = force, raise_built = not unregistered,
+  }), cell.label .. ": rf-reactor")
+  if bridge then
+    local west = edge_connection(reactor, true)
+    for j = 1, bridge do
+      cell.all[#cell.all + 1] = must(surface.create_entity({
+        name = "rf-pipe", position = { west.x - bridge + j, west.y }, force = force,
+      }), cell.label .. ": bridge pipe")
+    end
+  end
+  cell.all[#cell.all + 1] = reactor
+  return reactor
+end
+
 --- One row of `count` reactors on a single run of rf-pipe, plus `tail` further pipes off the end.
 ---
 --- `powered` is how many reactors get an electric network, counting from the west. A row that
 --- passes fewer than all of them is one that can demonstrate sharing at all: an unpowered reactor
---- cannot heat its own plasma, so whatever it holds came along the pipe.
+--- cannot heat its own plasma, so whatever heat it holds came along the pipe.
 local function build_row(surface, force, oy, count, tail, powered, label, unregistered)
   local size, origin = reactor_footprint()
   local pitch  = size + GAP
-  local bridge = pitch - size          -- GAP by construction, derived rather than assumed
-
   local cell = { label = label, reactors = {}, all = {}, powered = powered }
-
-  -- Both axes snapped to the parity the reactor's own footprint demands, rather than x derived and
-  -- y remembered.
   local cy = centre(oy, origin)
 
   for i = 0, count - 1 do
     local cx = centre(origin + i * pitch, origin)
-    local reactor = must(surface.create_entity({
-      -- Suppressing the build event is the only way one mod can keep another's per-tick handler
-      -- off an entity: realistic-fusion-refreshed registers a reactor from that event and rescans only at
-      -- on_init, which has already run. bench-reactors.ps1 -Ablate leans on the same seam.
-      name = "rf-reactor", position = { cx, cy }, force = force, raise_built = not unregistered,
-    }), label .. ": rf-reactor " .. i)
-    cell.reactors[#cell.reactors + 1] = reactor
-    cell.all[#cell.all + 1] = reactor
-
-    if i > 0 then
-      local west = edge_connection(reactor, true)
-      for j = 1, bridge do
-        cell.all[#cell.all + 1] = must(surface.create_entity({
-          name = "rf-pipe", position = { west.x - bridge + j, west.y }, force = force,
-        }), label .. ": bridge pipe")
-      end
-    end
-
-    if i < powered then
-      -- South of the row, so it neither collides with this reactor nor reaches the next: a
-      -- substation covers eighteen tiles and the pitch is twenty, so the neighbour's near edge
-      -- falls outside it. Asserted rather than trusted -- see the "on an electric network" check.
-      -- A 2x2 entity centres on a tile BOUNDARY and a 1x1 on a tile CENTRE, so the substation
-      -- wants whole numbers and the interface wants halves. Placing either off its own grid shifts
-      -- it half a tile, which moves an 18x18 supply area by half a tile -- and the failure is
-      -- silent, because everything still places. check-containment.ps1 carries the same note.
-      local sx, sy = math.floor(cx + 0.5), math.floor(cy + 0.5) + 10
-      local sub = must(surface.create_entity({
-        name = "substation", position = { sx, sy }, force = force,
-      }), label .. ": substation")
-      local eei = must(surface.create_entity({
-        name = "electric-energy-interface",
-        position = { sx + 2.5, sy + 0.5 }, force = force,
-      }), label .. ": power source")
-      eei.power_production = 8e6
-      -- And that the interface actually landed inside the substation's supply area, rather than
-      -- being inferred from the reactor being powered later. Two entities on one network is the
-      -- thing being built here; asserting it where it is built names the culprit if it breaks.
-      if not eei.electric_network_id or eei.electric_network_id ~= sub.electric_network_id then
-        error(string.format("%s: the power source at (%g, %g) is not on the substation's network",
-          label, sx + 2.5, sy + 0.5))
-      end
-    end
+    cell.reactors[#cell.reactors + 1] =
+      place_reactor(surface, force, cell, cx, cy, i > 0 and (pitch - size) or nil, unregistered)
+    -- South of the row, so it neither collides with this reactor nor reaches the next: a
+    -- substation covers eighteen tiles and the pitch is twenty, so the neighbour's near edge falls
+    -- outside it. Asserted rather than trusted -- see the "on an electric network" checks.
+    if i < powered then power(surface, force, cx, cy, 10, label) end
   end
 
   if tail > 0 then
@@ -698,8 +520,63 @@ local function build_row(surface, force, oy, count, tail, powered, label, unregi
   return cell
 end
 
---- Fill every box on the run to its own volume. Clamped to the box by the engine and then re-split
---- across the run, so one pass reaches nothing like capacity -- see SEED_UNTIL.
+-- How many rf-pipe run from the heater to the first reactor of `feed` and `full`, as
+-- probe-plasma-input-box.ps1's -Pipes defaults to.
+local HEATER_PIPES = 3
+
+--- One rf-heater, HEATER_PIPES of rf-pipe into a powered reactor, and a bridge into an unpowered
+--- one, placed in `order` (#583): 1 the first reactor, H the heater and its run, 2 the bridge and
+--- the second reactor. The layout on the ground is the same in every order.
+---
+--- The first reactor's west connection is read off the second one, placed or probed, rather than
+--- remembered: its offset from the reactor's centre is the same on both.
+local function build_line(surface, force, oy, label, order)
+  local size, origin = reactor_footprint()
+  local pitch = size + GAP
+  local cy = centre(oy, origin)
+  local cx1, cx2 = centre(origin, origin), centre(origin + pitch, origin)
+  local cell = { label = label, reactors = {}, all = {}, powered = 1, order = order }
+
+  local probe = must(surface.create_entity({
+    name = "rf-reactor", position = { cx1, cy + 40 }, force = force, raise_built = false,
+  }), label .. ": probe reactor")
+  local w = edge_connection(probe, true)
+  local west = { x = cx1 + (w.x - probe.position.x), y = cy + (w.y - probe.position.y) }
+  probe.destroy()
+
+  local parts = {
+    ["1"] = function()
+      cell.reactors[1] = place_reactor(surface, force, cell, cx1, cy)
+      power(surface, force, cx1, cy, 10, label)
+    end,
+    H = function()
+      for j = 0, HEATER_PIPES - 1 do
+        cell.all[#cell.all + 1] = must(surface.create_entity({
+          name = "rf-pipe", position = { west.x - j, west.y }, force = force,
+        }), label .. ": heater pipe")
+        cell.pipe = cell.pipe or cell.all[#cell.all]
+      end
+      local feed = prototypes.recipe[PLASMA].ingredients[1].name
+      local heater = rf_place_facing(surface, force, {
+        name = "rf-heater", fluid = PLASMA,
+        prepare = function(entity) entity.set_recipe(PLASMA) end,
+        target = { west.x - (HEATER_PIPES - 1), west.y }, seed = { cx1 - 30, cy + 25 },
+      })
+      rf_unbound(surface, force, heater, rf_box_of(heater, feed),
+        { name = feed, percentage = 1, mode = "at-least" })
+      -- Its own island, west of the reactor's and short of the second reactor.
+      power(surface, force, heater.position.x, heater.position.y, 6, label .. " heater")
+      cell.heater = heater
+    end,
+    ["2"] = function()
+      cell.reactors[2] = place_reactor(surface, force, cell, cx2, cy, pitch - size)
+    end,
+  }
+  for who in order:gmatch(".") do parts[who]() end
+  return cell
+end
+
+--- Fill every box on the run to its own volume.
 local function top_up(cell, celsius)
   for _, e in ipairs(cell.all) do
     e.fluidbox[1] = { name = PLASMA, amount = box_volume(e), temperature = celsius }
@@ -708,8 +585,8 @@ end
 
 -- ---------------------------------------------------------------- output boxes that have a neighbour
 --
--- WHY THIS EXISTS (#68). The capacity checks below used to ask their question of one shape only: an
--- input-output box on a run of rf-pipe, and an OUTPUT box that was plumbed into nothing. An
+-- WHY THIS EXISTS (#68). The capacity checks below used to ask their question of one shape only: a
+-- reactor's plasma box on a run of rf-pipe, and an OUTPUT box that was plumbed into nothing. An
 -- unconnected box reporting its own volume is not a measurement of the thing in doubt -- it is the
 -- case where the box and the segment are the same object -- so the answer for a CONNECTED output
 -- box was an extrapolation.
@@ -732,8 +609,7 @@ end
 -- against the right number, which is the reason the row exists. #258 asks whether a contained energy
 -- pipe should exist; while it does not, a bolt is the only neighbour that box can have.
 
--- 2000 units of pipe, so the run beats the collector's 500-unit box on pipe alone -- and it beat a
--- reactor's 1000-unit energy box too, while that box was on a run (#86 took it off one).
+-- 2000 units of pipe, so the run beats the collector's 500-unit box on pipe alone.
 local RUN_PIPES = 20
 local RUN_TANK  = "storage-tank"
 
@@ -841,14 +717,7 @@ end
 --- An rf-reactor with an rf-heat-exchanger BOLTED to its energy face, which is what apply()'s
 --- clamp is actually written against since #86.
 ---
---- IT WAS A TWENTY-PIPE RUN AND IT CANNOT BE ONE ANY MORE. ADR 0018 gives rf-reactor-energy a
---- connection category of its own and ships no pipe that carries it, so plumb() has nothing to lay:
---- the row either bolts or is retired, and bolting keeps the question being asked on the shape a
---- player builds. #258 asks whether a contained energy pipe should exist; while it does not, this is
---- the only neighbour that box can have.
----
---- Unregistered, so control.lua never steps it: nothing here is about what a reactor DOES, and a
---- simulated reactor on this row would only add a writer to a measurement about geometry. The
+--- Unregistered, so control.lua never steps it: nothing here is about what a reactor DOES. The
 --- exchanger is unpowered and unwatered for the same reason -- what is being asked is what
 --- get_capacity reports, not whether anything burns.
 ---
@@ -897,329 +766,64 @@ local function build_energy_bolt(surface, force, ox, oy)
   return { entity = reactor, index = index, neighbour = exchanger, label = "reactor energy" }
 end
 
--- ---------------------------------------------------------------- the three candidate write shapes
---
--- WHY THESE EXIST (#73). The bookkeeping below establishes that three writers on a run lose more
--- than the engine's mixing accounts for, and #40 could not say WHICH part of update()'s shape did
--- it -- only that the excess was ours. These three rows answer that by running the candidate shapes
--- against each other on identical geometry from an identical state.
---
--- They are driven BY THIS RIG and built unregistered, so control.lua never touches them. That is
--- what makes them comparable in a way the cells above are not: an unregistered reactor is not
--- simulated at all, so three identically seeded rows sit in exactly the same state until this file
--- steps them, where `bare` and `piped` have been burning down at their own rates for four seconds.
---
--- The mechanism under test is stated once, here, because all three shapes are defined against it:
--- a Lua write REPLACES a box's contents, and the engine RE-SPLITS the run between writes. This rig
--- already depends on that second fact elsewhere -- it is why SEED_UNTIL seeds for sixty ticks
--- instead of once, a three-reactor run seeded in a single pass settling at 45% of capacity rather
--- than 100%. So any write of an absolute value computed from an earlier read discards whatever
--- arrived in that box since the read, including a neighbour's contribution.
-
---- The SHIPPED shape: read every reactor, then write every reactor.
---
--- Each write replaces a box using an amount and a temperature computed against the start-of-step
--- pool, so a reactor writing second overwrites the share of its neighbour's rise the engine handed
--- it between the two writes.
-local function drive_two_pass(cell, dt, energy)
-  local pending = {}
-  for i, r in ipairs(cell.reactors) do
-    local box = r.fluidbox[1]
-    if box then
-      local result = logic.step(SPEC, PLASMA, box.amount, box.temperature, energy(i), dt)
-      if result then
-        pending[#pending + 1] = { r = r, amount = box.amount, result = result }
-      end
-    end
-  end
-  for _, p in ipairs(pending) do
-    local remaining = p.amount - p.result.plasma_consumed
-    if remaining > 0 then
-      p.r.fluidbox[1] = { name = PLASMA, amount = remaining, temperature = p.result.temperature_c }
-    end
-  end
-end
-
---- Read and write in ONE iteration, so no box is ever written from a stale read.
---
--- Nothing is discarded, because a reactor only ever replaces its box with a value computed from
--- what that box held a moment earlier. The cost is that the pool a reactor computes against now
--- depends on iteration order: the second reactor works from a pool the first has already heated,
--- so reactors on a shared run stop being symmetric within a step.
-local function drive_one_pass(cell, dt, energy)
-  for i, r in ipairs(cell.reactors) do
-    local box = r.fluidbox[1]
-    if box then
-      local result = logic.step(SPEC, PLASMA, box.amount, box.temperature, energy(i), dt)
-      if result then
-        local remaining = box.amount - result.plasma_consumed
-        if remaining > 0 then
-          r.fluidbox[1] = { name = PLASMA, amount = remaining, temperature = result.temperature_c }
-        end
-      end
-    end
-  end
-end
-
---- Two passes, so the PHYSICS stays order-independent -- but a RELATIVE write.
---
--- Every reactor computes against the same start-of-step pool, exactly as the shipped shape does.
--- What changes is the write: the reactor's contribution is taken as a delta in amount x absolute
--- temperature and applied to whatever the box actually holds at the instant of writing, so a
--- neighbour's rise that has already arrived is added to rather than replaced.
---
--- The delta is in unit-K rather than joules because that is the quantity the engine's mixing
--- conserves and the quantity every measurement here is written in; particles-per-unit and k_B
--- cancel out of it. A real implementation in reactor-logic.lua would work in joules.
-local function drive_rebased(cell, dt, energy)
-  local pending = {}
-  for i, r in ipairs(cell.reactors) do
-    local box = r.fluidbox[1]
-    if box then
-      local result = logic.step(SPEC, PLASMA, box.amount, box.temperature, energy(i), dt)
-      if result then
-        pending[#pending + 1] = {
-          r = r,
-          consumed = result.plasma_consumed,
-          delta = (box.amount - result.plasma_consumed) * (result.temperature_c + 273.15)
-                - box.amount * (box.temperature + 273.15),
-        }
-      end
-    end
-  end
-  for _, p in ipairs(pending) do
-    local now = p.r.fluidbox[1]
-    if now then
-      local remaining = now.amount - p.consumed
-      if remaining > 0 then
-        local celsius = (now.amount * (now.temperature + 273.15) + p.delta) / remaining - 273.15
-        -- Guarded rather than trusted: a write past the fluid's declared range is the engine's
-        -- error to raise and would take the whole rig down with it. It cannot fire from the seeded
-        -- state in one step, and if it ever does the check below says so instead of the run dying.
-        if celsius > SPEC.max_temperature_c then
-          celsius = SPEC.max_temperature_c
-          storage.rebase_clamped = true
-        end
-        p.r.fluidbox[1] = { name = PLASMA, amount = remaining, temperature = celsius }
-      end
-    end
-  end
-end
-
--- ONLY THE FIRST REACTOR ON THE ROW IS GIVEN A BUFFER, and this is what makes the rows able to tell
--- the shapes apart at all.
---
--- With every reactor heating equally the row stays symmetric: identical reads, identical rises,
--- identical writes, and redistribution between writes has no difference to carry -- so all three
--- shapes came back at 71.6% to three figures, which says nothing about any of them. Heating one
--- reactor of three makes the writes differ while leaving the STARTING pool flat, so there is no
--- pre-existing gradient for the engine's mixing to charge against inside the window.
---
--- The other two still run a full step and still write: an unpowered reactor computes its confinement
--- loss and its (negligible) fusion against whatever its box holds. Those are precisely the writes
--- that can discard a neighbour's rise, which is the thing under test.
-local function first_only(i)
-  return i == 1 and math.huge or 0
-end
-
--- ONE STEP'S HEATING, SPREAD OVER `count` REACTORS STARTING AT `from` (#73).
---
--- first_only above hands the whole of a step's heating to reactor 1 -- math.huge, which step()
--- clamps to heating_power_w * dt -- and nothing to the other two. This hands an equal share of
--- exactly that figure to `count` consecutive reactors, so every row driven with it receives the
--- SAME total energy over the step whatever `count` and `from` are, and the rows differ only in HOW
--- MANY machines put it in and WHERE on the run they sit.
---
--- Those two are separate variables and this rig exists because they were once conflated with a
--- third. So the writer-count block builds rows for both: 1, 2 and 3 writers from the west end, and
--- then single writers in the MIDDLE and EAST reactors. A count effect and a position effect predict
--- the same ordering across the first three and different answers for the rest.
---
--- IT IS EXACT RATHER THAN math.huge EVEN AT count = 1, so that all six rows go through one
--- expression and none of them depends on step()'s internal clamp to make its total come out right.
--- The totals are asserted from the step results regardless; this is about the rows being driven by
--- the same code.
---
--- A closure over dt rather than a bare function, because a share is a quantity of joules and only
--- the caller knows how long a step is. first_only can be a plain function precisely because
--- math.huge means "whatever it asks for" and needs no interval.
-local function heat_among(count, dt, from)
-  from = from or 1
-  local share = SPEC.heating_power_w * dt / count
-  return function(i) return (i >= from and i < from + count) and share or 0 end
-end
-
-local SHAPES = {
-  { name = "twopass",  drive = drive_two_pass, label = "the shipped read-all-then-write-all" },
-  { name = "onepass",  drive = drive_one_pass, label = "read and write in one iteration" },
-  { name = "rebased",  drive = drive_rebased,  label = "two passes, relative write" },
-}
-
 script.on_init(function()
   local surface = game.surfaces[1]
   local force   = game.forces.player
   force.research_all_technologies()
-  -- AND THEN PUT EVERY LADDER BACK (#53, #443), which is the one thing this rig must not have
-  -- researched. Every prediction below is computed with logic.reactor -- the module's own spec --
-  -- against a reactor the game is simulating, and each ladder makes a spec field a per-force number,
-  -- so a researched force runs a reactor this rig would be predicting the wrong physics for. It
-  -- shows up as the pool gaining MORE than the reactors were predicted to spend (102.5% of it, at
-  -- the top confinement rung), which reads exactly like energy appearing from nowhere and is not.
-  --
-  -- Held at the shipped values rather than followed, because this rig is a controlled experiment
-  -- about what the ENGINE does to a fluid segment, and no ladder's field is one of its variables.
-  -- What research does to a reactor is scripts/check-confinement.ps1's subject.
-  --
-  -- READ OFF rf_ladders, which is logic.spec_ladders plus plant efficiency. The loop here used to walk
-  -- confinement_ladder alone, and the heating ladder (#425) arrived afterwards and walked straight
-  -- past it -- every reactor here ran at the top heating rung until #443. Plant efficiency cannot
-  -- move a prediction here (it scales only what a reactor SELLS), and it goes off anyway so the
-  -- state asserted below is "nothing researched" and not a third exception to remember. Then
-  -- ASSERTED rather than arranged silently: a rung rf_unresearch missed fails rf_assert_research.
-  --
-  -- The rungs unlock nothing, so nothing else here loses anything by their going.
+  -- AND THEN PUT EVERY LADDER BACK (#53, #443). Every prediction below is computed with
+  -- logic.reactor -- the module's own spec -- against a reactor the game is simulating, and each
+  -- ladder makes a spec field a per-force number, so a researched force runs a reactor this rig
+  -- would be predicting the wrong physics for. Held at the shipped values rather than followed,
+  -- because no ladder's field is one of this rig's variables; what research does to a reactor is
+  -- scripts/check-confinement.ps1's subject. READ OFF rf_ladders, and ASSERTED rather than arranged
+  -- silently: a rung rf_unresearch missed fails rf_assert_research.
   rf_unresearch(force, logic, logic.reactor)
   rf_assert_research(record, force, logic, logic.reactor, false)
 
   local size = reactor_footprint()
   local span_x = 6 * (size + GAP) + TAIL + 40
-  -- Twenty-two rows at sixty apart since #73 added the writer-count group, where fifteen covered the
-  -- map before them. A row built on ungenerated ground is a row that silently is not there.
-  local span_y = 22 * 60 + 40
+  -- Thirteen rows at sixty apart. A row built on ungenerated ground is a row that silently is not
+  -- there.
+  local span_y = 13 * 60 + 40
 
   surface.request_to_generate_chunks({ span_x / 2, span_y / 2 },
     math.ceil((math.max(span_x, span_y) / 2 + 96) / 32))
   surface.force_generate_chunk_requests()
 
   local tiles = {}
-  for x = -40, span_x do
+  for x = -60, span_x do
     for y = -40, span_y do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
   end
   surface.set_tiles(tiles)
-  for _, e in pairs(surface.find_entities_filtered({ area = { { -40, -40 }, { span_x, span_y } } })) do
+  for _, e in pairs(surface.find_entities_filtered({ area = { { -60, -40 }, { span_x, span_y } } })) do
     if e.type ~= "character" then e.destroy() end
   end
 
   -- Rows sixty apart: fifteen tiles of reactor, ten more down to the substation below it, and clear
-  -- ground between. Two rows that touched would be one run, and every count here would be measuring
-  -- the same pool.
+  -- ground between. Two rows that touched would be one run.
   storage.cells = {
     pair  = build_row(surface, force,   0.5, 2, 0,    1, "pair"),
     trio  = build_row(surface, force,  60.5, 3, 0,    1, "trio"),
     five  = build_row(surface, force, 120.5, 5, 0,    1, "five"),
     bare  = build_row(surface, force, 180.5, 3, 0,    3, "bare"),
     piped = build_row(surface, force, 240.5, 3, TAIL, 3, "piped"),
-    -- Unregistered as well as unpowered. It was only unpowered at first, which meant the
-    -- simulation was still stepping it -- confinement loss, fusion, a box rewrite every six ticks
-    -- -- while this file and the note both described its flattening as the engine's alone. It was
-    -- not, until this argument was added.
+    -- Unregistered as well as unpowered, so no simulation steps it: what happens to it is the
+    -- engine's alone.
     mix   = build_row(surface, force, 300.5, 3, 0,    0, "mix", true),
-    -- ONE reactor and no pipe: the run is its own box, so no mixing is possible and no other
-    -- reactor can write to it. If the bookkeeping does not balance here, nothing further along is
-    -- about sharing.
-    solo  = build_row(surface, force, 420.5, 1, 0,    1, "solo"),
-    -- ONE reactor with a long tail: still a single writer, so still no reactor can overwrite
-    -- another, but now there is a run to mix across. This is the cell that says whether mixing
-    -- costs anything on its own.
-    solopipe = build_row(surface, force, 480.5, 1, TAIL, 1, "solopipe"),
+    -- ONE reactor and no pipe: the run is its own box.
+    solo  = build_row(surface, force, 360.5, 1, 0,    1, "solo"),
+    -- ONE reactor with a long tail: a run beside it to give heat to, if it gave any.
+    solopipe = build_row(surface, force, 420.5, 1, TAIL, 1, "solopipe"),
+    -- Seeded full; built 2H1, see the header.
+    full  = build_line(surface, force, 540.5, "full", "2H1"),
   }
-  -- The cell that isolates the ENGINE, and the one that turned a puzzling shortfall in the
-  -- bookkeeping into a finding. Three reactors on a bridged run built with raise_built = false, so
-  -- realistic-fusion-refreshed never registers them and no simulation ever runs on them. Every other cell here
-  -- has our Lua on it, and a loss seen there could always have been ours.
-  storage.idle = build_row(surface, force, 540.5, 3, 0, 0, "idle", true)
-  -- The three write shapes (#73), each on its own identical row: three reactors bridged, no tail,
-  -- unregistered so control.lua never steps them. Kept OUT of storage.cells deliberately -- several
-  -- loops below iterate that table wholesale, and a row driven by this file rather than by the mod
-  -- would quietly join measurements it does not belong in.
-  storage.shapes = {}
-  for i, shape in ipairs(SHAPES) do
-    storage.shapes[shape.name] = build_row(surface, force, 600.5 + (i - 1) * 60, 3, 0, 0, shape.name, true)
-  end
-  -- THE DECISIVE PROBE (#73). Everything above measures the CONSEQUENCE of a write shape. This row
-  -- measures the premise directly: does a Lua write to one box on a run change any OTHER box on that
-  -- run within the SAME tick? If it does not, no write can overwrite a neighbour's contribution and
-  -- the mechanism #40 proposed cannot exist, whatever the arrived fractions say.
-  storage.probe = build_row(surface, force, 780.5, 3, 0, 0, "probe", true)
-  -- The cross-check that has to be run because it is the one piece of evidence AGAINST that: this
-  -- file's own seeding note says a three-reactor run seeded box-by-box in a single pass settles at
-  -- 45% of capacity rather than 100%, which only makes sense if writes interact. Seeded exactly
-  -- once, and read later. If it comes back full, the note is describing something else.
-  storage.onepass_seed = build_row(surface, force, 840.5, 3, 0, 0, "seedonce", true)
-  -- THE WRITER-COUNT ROWS (#73). Six rows that differ in ONE variable at a time, which is the thing
-  -- the bookkeeping above has never had.
-  --
-  -- WHAT IT IS FOR. `bare` keeps 57.6% of what its reactors spend and `solopipe` keeps 75.2%, and
-  -- that gap was read as the cost of having three reactors write to one run instead of one. It
-  -- cannot be: those two cells differ in three things at once -- writer count, fill (44.6% against
-  -- 27.6%) and therefore temperature and the gradient the engine has to flatten. Writer count was
-  -- never held alone, so the inference had no support, and this repo believed it anyway. These rows
-  -- hold it alone.
-  --
-  -- THE 75.2% IS FROM ONE RUN (marked 2026-10-13, #620). solopipe reads 75.2% or 75.4% depending on
-  -- the run, and the re-measurement of 2026-10-01 (#443) reads it at 75.4% and bare at 57.6%:
-  -- docs/research/reactor-runtime-cost.md, section 5 and its Current figures table. The argument
-  -- here does not turn on the two tenths.
-  --
-  -- HOW THEY ARE THE SAME. One geometry, built by one call with one argument different: three
-  -- rf-reactor bridged, no tail, unregistered so control.lua never steps them and unpowered so the
-  -- rig alone decides what heating each receives. They are seeded by the same pass as every other
-  -- row, so they start at the same capacity, the same fill and the same temperature -- and each of
-  -- those equalities is ASSERTED at the moment of the step rather than assumed from the symmetry.
-  --
-  -- HOW THEY DIFFER. `writers1` gets its whole step's heating through reactor 1 and `writers3`
-  -- splits the identical total three ways. Both rows still WRITE all three boxes: an unheated
-  -- reactor computes its confinement loss and its radiation against whatever it holds and writes
-  -- that back, exactly as it does in the game. What differs is how many machines put energy in,
-  -- which is what "three reactors bridged" versus "one reactor with pipe" actually meant.
-  --
-  -- A NULL RESULT IS THE ANSWER IF THAT IS WHAT IT IS, and it is: the count rows come out on the
-  -- MEAN of the positional rows below, so writer count costs nothing and the excess belongs to fill
-  -- and gradient. That closes #73 and retires the last of #40's unexplained findings. The report
-  -- states every difference as a number either way.
-  --
-  -- AND A FOURTH ROW THAT IS NOT ABOUT COUNT AT ALL. Three rows at one, two and three writers can
-  -- only ever say that something changes as the injection spreads out; they cannot say it is the
-  -- COUNT that did it, because spreading the heating also moves where it lands on the run. `middle`
-  -- has the same single writer as `writers1` and puts it in the centre reactor instead of the west
-  -- one. If the two agree, count is the variable; if they do not, position is, and a count effect
-  -- read off the first three would be this rig repeating the mistake it was built to correct.
-  storage.writers = {
-    { name = "writers1", cell = build_row(surface, force,  960.5, 3, 0, 0, "writers1", true),
-      count = 1, from = 1, label = "one reactor of three, at the west end, delivers all the heating" },
-    { name = "writers2", cell = build_row(surface, force, 1020.5, 3, 0, 0, "writers2", true),
-      count = 2, from = 1, label = "the same total heating, split between the western two" },
-    { name = "writers3", cell = build_row(surface, force, 1080.5, 3, 0, 0, "writers3", true),
-      count = 3, from = 1, label = "the same total heating, split evenly across all three" },
-    { name = "middle",   cell = build_row(surface, force, 1140.5, 3, 0, 0, "middle", true),
-      count = 1, from = 2, label = "one writer again, in the MIDDLE rather than at the end" },
-    { name = "east",     cell = build_row(surface, force, 1200.5, 3, 0, 0, "east", true),
-      count = 1, from = 3, label = "one writer at the FAR end, which the rig reaches last" },
-    -- AND THE ROW THAT SEPARATES *WHERE* FROM *WHEN*. `east` heats the eastmost reactor, which is
-    -- also the LAST one the driver writes, so its position on the run and its place in the write
-    -- order are the same variable wearing two names -- the exact confound #73 exists to stop being
-    -- read as a mechanism. This row heats the eastmost reactor too and reverses the list the driver
-    -- walks, so that reactor is written FIRST while sitting in the same place. It is the same
-    -- geometry, the same heating and the same total; only the order of three writes changes.
-    { name = "reversed", cell = build_row(surface, force, 1260.5, 3, 0, 0, "reversed", true),
-      count = 1, from = 1, reverse = true,
-      label = "the same eastmost reactor heated, but written FIRST instead of last" },
-  }
-  -- In place, and only the reactor list: cell.all is what heat() and pooled() sum over and a sum
-  -- does not care about order, so reversing here changes exactly one thing -- which reactor
-  -- drive_two_pass reaches first.
-  for _, row in ipairs(storage.writers) do
-    if row.reverse then
-      local r = row.cell.reactors
-      for i = 1, math.floor(#r / 2) do r[i], r[#r + 1 - i] = r[#r + 1 - i], r[i] end
-    end
-  end
+  -- Kept OUT of storage.cells, which is seeded wholesale: every unit in it is the heater's.
+  storage.feed = build_line(surface, force, 480.5, "feed", "1H2")
   -- The OUTPUT box that is actually on a run (#68), and the one that has a bolted neighbour instead
-  -- (#86). Kept out of storage.cells for the same reason the shape rows are: every loop over that
-  -- table is about plasma sharing, and these carry tritium and reactor energy.
-  storage.outlets = { build_collector_outlet(surface, force, 7.5, 900.5) }
-  storage.energy_bolt = build_energy_bolt(surface, force, 60.5, 900.5)
-  storage.order = { "mix", "pair", "trio", "five", "solo", "solopipe", "bare", "piped" }
+  -- (#86). Kept out of storage.cells too: these carry tritium and reactor energy.
+  storage.outlets = { build_collector_outlet(surface, force, 7.5, 660.5) }
+  storage.energy_bolt = build_energy_bolt(surface, force, 60.5, 660.5)
+  storage.order = { "mix", "pair", "trio", "five", "solo", "solopipe", "bare", "piped", "full" }
   log("POOL-RIG built")
 end)
 
@@ -1230,31 +834,6 @@ script.on_event(defines.events.on_tick, function()
 
   if tick <= SEED_UNTIL then
     for _, cell in pairs(cells) do top_up(cell, SEED_C) end
-    if storage.idle then top_up(storage.idle, SEED_C) end
-    -- Seeded the same way and for the same sixty ticks as everything else, which is what leaves all
-    -- three shape rows in one identical state: nothing simulates them, so they do not diverge
-    -- afterwards the way the powered cells do.
-    -- Seeded FLAT, like everything else, and made asymmetric by HEATING instead -- see the driver
-    -- comments. Seeding them uneven was tried first and is wrong twice over: an uneven row flattens
-    -- during the settle window, which is exactly what `mix` demonstrates, and any gradient that did
-    -- survive would bleed heat to the engine's lossy mixing inside the measurement window and swamp
-    -- the difference being looked for.
-    if storage.shapes then
-      for _, cell in pairs(storage.shapes) do top_up(cell, SEED_C) end
-    end
-    if storage.probe then top_up(storage.probe, SEED_C) end
-    -- The writer-count pair (#73), seeded exactly as the shape rows are and for the same reason:
-    -- nothing simulates them, so sixty flat passes leave the two in one identical state and the
-    -- only thing that ever separates them is how their heating is delivered.
-    if storage.writers then
-      for _, row in ipairs(storage.writers) do top_up(row.cell, SEED_C) end
-    end
-    -- Exactly one pass, on the first seeding tick only, and never touched again. This is the
-    -- comparison the seeding note's 45% is a claim about.
-    if storage.onepass_seed and tick == 1 then
-      top_up(storage.onepass_seed, SEED_C)
-      storage.seedonce_written = true
-    end
     if tick == SEED_UNTIL then
       -- The last thing done to `mix`, after which it is left alone: one end of the run fifty times
       -- hotter than the other, nothing powered, nothing driving it.
@@ -1266,21 +845,24 @@ script.on_event(defines.events.on_tick, function()
     return
   end
 
-  -- One step of the simulation, caught either side.
-  --
-  -- The rows are NOT in the same state when it is taken, and an earlier version of this comment
-  -- claimed they were. Seeding stops at tick 60 and the measurement is at 306, so for four seconds
-  -- each row burns at its own rate into a pool of its own size, and they diverge in fill and in
-  -- temperature. That is why the check below is a prediction made from each row's OWN state rather
-  -- than a comparison of the two gains: the model is asked what THIS row's reactors, at the amounts
-  -- and temperatures they actually hold, should put into their pool. The rows' differing states are
-  -- reported beside the answer rather than assumed away.
+  -- `full`'s segment, filled once the seeding has stopped. Seeding writes every box sixty times and
+  -- leaves both "input" boxes full and the segment nearly empty: without this it read 167.04 of the
+  -- 2800 get_capacity reports for it, against 2799.98 with it (2026-10-21, Factorio 2.0.77). The
+  -- segment's capacity counts the two boxes' volumes and its contents do not count theirs, the
+  -- way probe-plasma-input-box.ps1 reads a full line. So the segment is topped up through one pipe
+  -- with insert_fluid, which adds to it rather than replacing a box, and the heater keeps it full.
+  if tick == SEED_UNTIL + 1 then
+    local pipe = cells.full.pipe
+    local room = pipe.fluidbox.get_capacity(1) - segment_holds(pipe)
+    pipe.insert_fluid({ name = PLASMA, amount = room, temperature = SEED_C })
+  end
+
+  -- One step of the simulation, caught either side. The prediction is made from each row's OWN
+  -- state, the amounts and temperatures its reactors actually hold, because the rows have burnt
+  -- down at their own rates since the seeding stopped.
   if tick == STEP_BEFORE then
     storage.before = {}
     for name, cell in pairs(cells) do
-      -- Every reactor's own inputs to its own step, because that is what the prediction is made
-      -- from. Each reactor works from ITS box's share, and the whole claim under test is what the
-      -- engine then does with the answer.
       local inputs = {}
       for i, r in ipairs(cell.reactors) do
         local box = r.fluidbox[1]
@@ -1290,199 +872,14 @@ script.on_event(defines.events.on_tick, function()
           energy = r.energy,
         }
       end
-      storage.before[name] = { heat = heat(cell), plasma = pooled(cell), inputs = inputs }
+      storage.before[name] = { heat = heat(cell), inputs = inputs }
     end
-    -- The shape comparison (#73), in the same window and against the same prediction as above.
-    --
-    -- One step, driven here rather than by control.lua, with each row getting a different write
-    -- shape. The prediction is made from each row's own start-of-step boxes exactly as the cells
-    -- above are -- but because these rows are unsimulated and identically seeded, their predictions
-    -- come out equal, so the measured gains are directly comparable to each other and not only to
-    -- their own predictions.
-    storage.shape_before = {}
-    local dt = INTERVAL / 60
-    for _, shape in ipairs(SHAPES) do
-      local cell = storage.shapes[shape.name]
-      local predicted = 0
-      for i, r in ipairs(cell.reactors) do
-        local box = r.fluidbox[1]
-        if box then
-          local result = logic.step(SPEC, PLASMA, box.amount, box.temperature, first_only(i), dt)
-          if result then
-            predicted = predicted
-              + (box.amount - result.plasma_consumed) * (result.temperature_c + 273.15)
-              - box.amount * (box.temperature + 273.15)
-          end
-        end
-      end
-      storage.shape_before[shape.name] = {
-        heat = heat(cell), plasma = pooled(cell), predicted = predicted,
-      }
-      -- Driven AFTER the prediction is taken, so the prediction describes the state the step was
-      -- computed against rather than the state it produced.
-      shape.drive(cell, dt, first_only)
-      -- Sampled in the SAME tick as the writes, before the engine has had a fluid update to flatten
-      -- anything. Read at report time instead -- which is what this did first -- every row is long
-      -- since flat and the evidence that the writes differed at all is gone.
-      local hot, cold, sp = spread(cell.reactors)
-      storage.shape_before[shape.name].after_write = { hot = hot, cold = cold, spread = sp }
-    end
-
-    -- The writer-count group (#73), driven in the same window, from the same seeded state, with the
-    -- SHIPPED write shape on all six. The shape is deliberately not a variable here: the rows above
-    -- have already shown all three shapes indistinguishable, so using anything but the shipped one
-    -- would only add a second difference to a comparison that exists to have exactly one.
-    storage.writers_before = {}
-    for _, row in ipairs(storage.writers) do
-      local energy = heat_among(row.count, dt, row.from)
-      local predicted, heating = 0, 0
-      for i, r in ipairs(row.cell.reactors) do
-        local box = r.fluidbox[1]
-        if box then
-          local result = logic.step(SPEC, PLASMA, box.amount, box.temperature, energy(i), dt)
-          if result then
-            predicted = predicted
-              + (box.amount - result.plasma_consumed) * (result.temperature_c + 273.15)
-              - box.amount * (box.temperature + 273.15)
-            -- What step() says it ACTUALLY heated with, not what the policy offered it. The two
-            -- differ by the clamp inside step(), and it is the former that has to match across the
-            -- rows for "same total heating injected" to be a fact rather than an intention.
-            heating = heating + (result.heating_used_j or 0)
-          end
-        end
-      end
-      -- Every equality this comparison rests on, captured where it can be checked rather than
-      -- argued from the symmetry of the two build_row calls.
-      storage.writers_before[row.name] = {
-        heat = heat(row.cell), plasma = pooled(row.cell), capacity = declared_capacity(row.cell),
-        predicted = predicted, heating = heating,
-      }
-      drive_two_pass(row.cell, dt, energy)
-      -- Sampled in the SAME tick as the writes, for the reason the shape rows are: read at report
-      -- time every row is long since flat and the evidence that the two rows were written
-      -- differently at all is gone. This is what says the policy reached the boxes -- writers1 must
-      -- come out uneven and writers3 must not.
-      local hot, cold, sp = spread(row.cell.reactors)
-      storage.writers_before[row.name].after_write = { hot = hot, cold = cold, spread = sp }
-    end
-
-    -- THE PROBE. One write, and the whole run read either side of it inside one tick.
-    do
-      local probe = storage.probe
-      local function snapshot()
-        local out = {}
-        for i, e in ipairs(probe.all) do
-          local box = e.fluidbox[1]
-          out[i] = { name = e.name, amount = box and box.amount or 0,
-                     celsius = box and box.temperature or 0 }
-        end
-        return out
-      end
-      local pre = snapshot()
-      local target = probe.reactors[1]
-      local box = target.fluidbox[1]
-      target.fluidbox[1] =
-        { name = PLASMA, amount = box.amount, temperature = box.temperature * 4 }
-      local post = snapshot()
-      -- Which boxes moved, counted separately for the one that was written and for every other.
-      local others_moved, target_moved = 0, false
-      for i = 1, #pre do
-        local moved = rel(pre[i].amount, post[i].amount) > 1e-9
-                   or rel(pre[i].celsius, post[i].celsius) > 1e-9
-        if probe.all[i] == target then
-          target_moved = moved
-        elseif moved then
-          others_moved = others_moved + 1
-        end
-      end
-      storage.probe_result = {
-        target_moved = target_moved, others_moved = others_moved, boxes = #pre - 1,
-        pre = pre,
-      }
-    end
-  elseif tick == JOLT_AT - 60 then
-    -- The control for the jolt below, and the one the note used to cite without the harness ever
-    -- taking it: the same untouched run, an undisturbed second earlier. If these entities bled heat
-    -- on their own -- a boiler quietly cooling its input, which was the first suspect -- it would
-    -- show here, and the whole loss figure would be that instead of the mixing.
-    storage.idle_flat = { heat = heat(storage.idle), plasma = pooled(storage.idle) }
-  elseif tick == JOLT_AT then
-    -- One box on the untouched run raised fourfold, once. Nothing goes near it after this: no
-    -- simulation of ours, no rig, only the engine moving fluid about a run that is now uneven.
-    local idle = storage.idle
-    -- Read BEFORE the write, which is the whole point of it. The undisturbed control compares
-    -- against this, and comparing it against a reading taken after the jolt -- which is what this
-    -- did first -- makes a 43% difference out of the jolt itself and calls it a leak.
-    local flat = heat(idle)
-    local box = idle.reactors[1].fluidbox[1]
-    idle.reactors[1].fluidbox[1] =
-      { name = PLASMA, amount = box.amount, temperature = box.temperature * 4 }
-    storage.jolt = { heat = heat(idle), plasma = pooled(idle), flat = flat }
-  elseif tick == JOLT_END then
-    local idle = storage.idle
-    -- Extremes over EVERY box on the run, not two chosen reactors: a pipe left hotter or colder
-    -- than both of them would not show up in the guard the loss figure depends on.
-    local hot, cold
-    for _, e in ipairs(idle.all) do
-      local t = temperature_of(e)
-      if t then
-        hot  = (hot  == nil or t > hot)  and t or hot
-        cold = (cold == nil or t < cold) and t or cold
-      end
-    end
-    storage.jolt_end = { heat = heat(idle), plasma = pooled(idle), hot = hot, cold = cold }
   elseif tick == STEP_AFTER then
-    -- THE POSITIVE CONTROL for the intra-tick probe. "No other box moved" is only evidence that the
-    -- engine does not re-split between writes if this instrument can see it re-split at all. The
-    -- same run, the same snapshot code, a few ticks later: by now the engine has had fluid updates
-    -- and the jolt must have spread. If this does not move either, the probe measures nothing and
-    -- its null result must be thrown away rather than believed.
-    if storage.probe_result then
-      local probe, pre = storage.probe, storage.probe_result.pre
-      local moved = 0
-      for i, e in ipairs(probe.all) do
-        local box = e.fluidbox[1]
-        local amount = box and box.amount or 0
-        local celsius = box and box.temperature or 0
-        if e ~= probe.reactors[1]
-          and (rel(pre[i].amount, amount) > 1e-9 or rel(pre[i].celsius, celsius) > 1e-9) then
-          moved = moved + 1
-        end
-      end
-      storage.probe_result.later_moved = moved
-    end
     storage.after = {}
-    for name, cell in pairs(cells) do
-      storage.after[name] = { heat = heat(cell), plasma = pooled(cell) }
-    end
-    storage.shape_after = {}
-    for name, cell in pairs(storage.shapes) do
-      storage.shape_after[name] = { heat = heat(cell), plasma = pooled(cell) }
-    end
-    storage.writers_after = {}
-    for _, row in ipairs(storage.writers) do
-      storage.writers_after[row.name] = { heat = heat(row.cell), plasma = pooled(row.cell) }
-    end
+    for name, cell in pairs(cells) do storage.after[name] = { heat = heat(cell) } end
   elseif tick == MIX_AT then
     local hot, cold, s = spread(cells.mix.reactors)
     storage.mix_end = { hot = hot, cold = cold, spread = s }
-  elseif LATE_TICK[tick] and storage.writers_before then
-    -- #271. Read-only: the writer rows are read again and nothing is written to anything. LAST in
-    -- the chain on purpose, and it has to stay last -- every branch above owns its tick, and a late
-    -- window landing on one of theirs must go unsampled rather than displace it, because this is
-    -- the only branch whose absence is asserted for. The report says so if one never arrives.
-    --
-    -- Spread over EVERY box on the run and not the three reactors, which is the correction
-    -- JOLT_END's own comment records making: a bridge pipe left hotter or colder than both of them
-    -- is exactly what "the run has stopped moving" has to rule out, and ten of each row's thirteen
-    -- boxes are pipes.
-    storage.writers_late = storage.writers_late or {}
-    local sample = {}
-    for _, row in ipairs(storage.writers) do
-      local _, _, sp = spread(row.cell.all)
-      sample[row.name] = { heat = heat(row.cell), plasma = pooled(row.cell), spread = sp or 0 }
-    end
-    storage.writers_late[LATE_TICK[tick]] = sample
   end
 end)
 
@@ -1492,6 +889,9 @@ script.on_nth_tick(CHECK_AT, function()
   storage.done = true
 
   local cells = storage.cells
+  -- The plasma's floor, read off the prototype: check_plasma_bounds() in control.lua requires the
+  -- fluid's default_temperature and the simulation's min_temperature_c to be one number.
+  local FLOOR_C = prototypes.fluid[PLASMA].default_temperature
 
   -- ------------------------------------------------------------ what get_capacity actually says
   --
@@ -1522,17 +922,10 @@ script.on_nth_tick(CHECK_AT, function()
         from_reactor, box_volume(reactor), declared))
   end
 
-  -- The same question of an OUTPUT box, asked while that box is ON A RUN (#68).
-  --
-  -- It used to be asked of one reactor's energy box with nothing plumbed to it, which cannot
-  -- separate the two answers: an unconnected box IS its own segment. All three call sites in
-  -- control.lua that clamp against get_capacity are output boxes a player pipes -- deposit() into a
-  -- collector, apply() into the reactor's energy box, apply() again for a blanket's headroom -- so
-  -- this is the shape that decides whether those clamps are written against the right number.
-  -- That they were built AT ALL, before anything is asked of them. `ipairs(nil-or-empty)` is a loop
-  -- that runs zero times and reports nothing, so an on_init edit that dropped this row would delete
-  -- four checks and still print PASS -- the failure this file was already bitten by once, and the
-  -- reason the bookkeeping rows assert their own results are present.
+  -- The same question of an OUTPUT box, asked while that box is ON A RUN (#68). That they were
+  -- built AT ALL is asserted first: `ipairs(nil-or-empty)` is a loop that runs zero times and
+  -- reports nothing, so an on_init edit that dropped this row would delete checks and still print
+  -- PASS.
   record(storage.outlets ~= nil and #storage.outlets == 1,
     "the output-box run was built",
     storage.outlets and string.format("%d built", #storage.outlets)
@@ -1552,8 +945,7 @@ script.on_nth_tick(CHECK_AT, function()
       string.format("%d pipe(s) and a %s off %s box %d",
         #run.pipes, RUN_TANK, entity.name, run.index))
 
-    -- And that the run is big enough for the two answers to be told apart, which is the whole
-    -- weakness of the unconnected reading this replaces.
+    -- And that the run is big enough for the two answers to be told apart.
     record(segment > own * 4,
       string.format("%s: the run is materially larger than the box", run.label),
       string.format("run %.6g against a box of %.6g -- %.1fx; last pipe %.6g, tank %.6g at (%g, %g)",
@@ -1562,9 +954,8 @@ script.on_nth_tick(CHECK_AT, function()
         run.tank.fluidbox.get_capacity(1), run.tank.position.x, run.tank.position.y))
 
     -- The run is the PIPES AND THE TANK and nothing else, checked against their declared volumes.
-    -- Without this the segment figure is only ever asserted as "bigger than the box", and an engine
-    -- that started folding a machine's output box into the segment it is piped to would move this
-    -- number by exactly that box and no check here would notice which way it went.
+    -- An engine that started folding a machine's output box into the segment it is piped to would
+    -- move this number by exactly that box.
     local expected = RUN_PIPES * prototypes.entity["pipe"].fluidbox_prototypes[1].volume
       + prototypes.entity[RUN_TANK].fluidbox_prototypes[1].volume
     record(rel(segment, expected) < 1e-9,
@@ -1572,17 +963,14 @@ script.on_nth_tick(CHECK_AT, function()
       string.format("%.6g against %d pipe(s) plus a %s declaring %.6g -- the box's %.6g is not in it",
         segment, RUN_PIPES, RUN_TANK, expected, own))
 
-    -- One segment, not several. This is what the check above cannot see on its own: a tank placed
-    -- across the run leaves a big number on one side of the break and a small one on the other, and
-    -- reading either alone is how a split run passes for a long one.
+    -- One segment, not several: a tank placed across the run leaves a big number on one side of the
+    -- break and a small one on the other, and reading either alone is how a split run passes.
     local split
     for i, pipe in ipairs(run.pipes) do
       if rel(pipe.fluidbox.get_capacity(1), segment) > 1e-9 then split = i break end
     end
     local tank_says   = run.tank.fluidbox.get_capacity(1)
     local tank_agrees = rel(tank_says, segment) < 1e-9
-    -- Each of the two ways this fails prints what actually disagreed. Folded into one `and/or` the
-    -- tank half printed the success wording on a FAIL line.
     local detail
     if split then
       detail = string.format("pipe %d reports %.6g against the run's %.6g",
@@ -1603,17 +991,14 @@ script.on_nth_tick(CHECK_AT, function()
   -- ------------------------------------------------- and the same question of a BOLTED neighbour
   --
   -- apply() clamps what it writes into the reactor's energy box against get_capacity on that box,
-  -- and since #86 that box's only possible neighbour is a machine bolted flat to it. So the claim
-  -- has to be asked in that shape rather than inherited from the pipe run above: if the engine
-  -- folded a bolted neighbour's box into the reading, apply() would clamp against 1200 where the
-  -- box takes 1000 and the surplus would be discarded with nothing saying so.
+  -- and since #86 that box's only possible neighbour is a machine bolted flat to it. If the engine
+  -- folded a bolted neighbour's box into the reading, apply() would clamp against 1200 where the box
+  -- takes 1000 and the surplus would be discarded with nothing saying so.
   local bolt = storage.energy_bolt
   record(bolt ~= nil, "the bolted energy row was built",
     bolt and string.format("%s and %s", bolt.entity.name, bolt.neighbour.name)
       or "storage.energy_bolt is nil -- nothing below this line ran")
   if bolt then
-    -- Joined, from the connection itself. A bolt placed one tile out builds perfectly and measures
-    -- nothing, which is indistinguishable from a refused connection (ADR 0018's Consequences).
     local joined
     for _, c in pairs(bolt.entity.fluidbox.get_pipe_connections(bolt.index)) do
       if c.target and c.target.owner == bolt.neighbour then joined = c end
@@ -1633,48 +1018,28 @@ script.on_nth_tick(CHECK_AT, function()
         report, own, their))
   end
 
-  -- ------------------------------------------------------------ one pool, as a quantity
+  -- ------------------------------------------------------------ the engine alone: `mix`
   --
-  -- Every box holds the run's contents in proportion to its own volume -- approximately. The
-  -- reactors settle a couple of percent fuller than the pipes do, which is a property of the
-  -- engine's exchange rather than of anything here; the tolerance says so instead of hiding it.
-  for _, name in ipairs(storage.order) do
-    local cell = cells[name]
-    local total, capacity = pooled(cell), declared_capacity(cell)
-    local fill = total / capacity
-    local worst, worst_at = 0, nil
-    for _, e in ipairs(cell.all) do
-      local box = e.fluidbox[1]
-      local d = rel(box and box.amount or 0, fill * box_volume(e))
-      if d > worst then worst, worst_at = d, e.name end
-    end
-    record(worst < 0.05,
-      string.format("%s: every box holds its share of one pool, not its own contents", name),
-      string.format("run %.1f%% full, worst box off its share by %.3g%% (%s)",
-        fill * 100, worst * 100, worst_at))
-  end
-
-  -- ------------------------------------------------------------ the engine mixes: `mix`
-  --
-  -- Nothing powered, nothing driving it, seeded fifty times apart. This is the engine on its own,
-  -- and it is the cell that answers "converge to a single temperature" without argument.
+  -- Nothing powered, nothing simulated, one end fifty times hotter. Under input-output the run
+  -- flattened to a tenth of a percent in two seconds; under "input" a box gives nothing back to the
+  -- run, so nothing carries the hot end's heat to the others.
   local ms, me = storage.mix_start, storage.mix_end
   record(ms ~= nil and me ~= nil, "the passive run was sampled before and after it was left alone")
   if ms and me then
     record(ms.spread > 0.9, "mix: it really did start fifty times apart",
       string.format("%.4g C against %.4g C, spread %.1f%%", ms.hot, ms.cold, ms.spread * 100))
-    record(me.spread < 0.005,
-      "mix: and with nothing driving it, the run flattens to one temperature",
+    record(me.spread > 0.9,
+      "mix: and with nothing driving it, the ends stay apart, so heat does not cross the run",
       string.format("%.6g C against %.6g C after %d ticks, spread %.3g%%",
         me.hot, me.cold, MIX_AT - SEED_UNTIL, me.spread * 100))
   end
 
-  -- ------------------------------------------------------------ sharing under drive, three counts
-  for _, name in ipairs({ "pair", "trio", "five" }) do
+  -- ------------------------------------------------------------ the run's wiring
+  --
+  -- That every row is what it claims to be. If a substation reached further than intended, every
+  -- floor row below would pass and mean nothing.
+  for _, name in ipairs({ "pair", "trio", "five", "full" }) do
     local cell = cells[name]
-
-    -- First, that the row is what it claims to be. If a substation reached further than intended,
-    -- everything below would still pass and would mean nothing.
     local wired = 0
     for _, r in ipairs(cell.reactors) do
       if r.electric_network_id then wired = wired + 1 end
@@ -1683,569 +1048,115 @@ script.on_nth_tick(CHECK_AT, function()
       string.format("%s: exactly %d of %d reactors is on an electric network",
         name, cell.powered, #cell.reactors),
       string.format("%d wired", wired))
+  end
+  do
+    local feed = storage.feed
+    local wired = (feed.reactors[1].electric_network_id and 1 or 0)
+      + (feed.reactors[2].electric_network_id and 1 or 0)
+    record(wired == 1 and feed.reactors[1].electric_network_id ~= nil
+      and feed.heater.electric_network_id ~= nil,
+      "feed: the heater and the near reactor are on an electric network, and the far one is not",
+      string.format("%d of 2 reactors wired, heater %s", wired,
+        feed.heater.electric_network_id and "wired" or "NOT wired"))
+  end
 
-    -- The unpowered ones, which never spent a joule of their own.
-    local cold_t
-    if #cell.reactors > 1 then
-      local _, cold, s = spread(cell.reactors, 2, #cell.reactors)
-      cold_t = cold
-      -- Only where there is more than one unpowered reactor to compare. On `pair` there is exactly
-      -- one, and a spread over a single reading is zero by construction -- which this recorded as a
-      -- passing check reading "spread 0%", and the note then published as though it were evidence.
-      if #cell.reactors > 2 then
-        record(s < 0.005,
-          string.format("%s: every unpowered reactor on the run is at one temperature", name),
-          string.format("%.6g C across %d of them, spread %.3g%%", cold, #cell.reactors - 1, s * 100))
-      end
-      record(cold > SEED_C * 5,
-        string.format("%s: and far above the seed, so the pool carried heat to them", name),
-        string.format("%.6g C against a seed of %.6g C, a factor of %.1f", cold, SEED_C, cold / SEED_C))
-    end
-
-    -- The powered one sits above them, steadily. Bounded rather than asserted to be zero, because
-    -- the gap is real: heat enters at that box and leaves it no faster than the pipe carries it
-    -- away. The bound is what would fail if sharing stopped -- an island reactor would run orders
-    -- above its neighbours within seconds rather than a fraction above them.
+  -- ------------------------------------------------------------ unshared heat, three counts
+  --
+  -- The unpowered reactors never spent a joule of their own. Seeded at SEED_C, each reads the floor
+  -- by the check: its own step cools it and nothing on the run warms it. The input-output box held
+  -- them at 4.8e7 to 1.2e8 C, 48 to 119 times the seed.
+  for _, name in ipairs({ "pair", "trio", "five" }) do
+    local cell = cells[name]
+    local hot, cold = spread(cell.reactors, 2, #cell.reactors)
     local driven = temperature_of(cell.reactors[1])
-    if driven and cold_t then
-      record(driven / cold_t < 2,
-        string.format("%s: the powered reactor runs a little above the run, not away from it", name),
-        string.format("%.6g C against %.6g C, %.1f%% above", driven, cold_t,
-          (driven / cold_t - 1) * 100))
-    end
+    record(hot and math.abs(hot - FLOOR_C) < 0.5 and math.abs(cold - FLOOR_C) < 0.5,
+      string.format("%s: every unpowered reactor is at the floor, so no heat came along the pipe", name),
+      hot and string.format("%.6g to %.6g C across %d of them, against a floor of %.6g C and a seed of %.6g",
+        cold, hot, #cell.reactors - 1, FLOOR_C, SEED_C) or "no plasma")
+    record(driven and driven > SEED_C * 5,
+      string.format("%s: beside a powered reactor far above the seed, so the run is not simply dead", name),
+      driven and string.format("%.6g C against a seed of %.6g C", driven, SEED_C) or "no plasma")
+  end
 
-    -- Burnt down rather than held, which is the condition this whole rig exists to test under.
-    local fill = pooled(cell) / declared_capacity(cell)
-    record(fill < 0.999,
-      string.format("%s: the pool ran down, so nothing was holding it up", name),
-      string.format("%.4g%% of capacity left", fill * 100))
+  -- ------------------------------------------------------------ shared feed: `feed`
+  --
+  -- Nothing seeded, so every unit in either box is one the heater made, and the far box's crossed
+  -- the run past the near reactor. And the far reactor, unpowered, is read against the near one:
+  -- the input-output box held an unpowered reactor on a filling line within 3% of its powered
+  -- neighbour (plasma-input-box.md, the pair at 96 000 ticks).
+  do
+    local feed = storage.feed
+    local near, far = feed.reactors[1], feed.reactors[2]
+    local a, b = amount_of(near), amount_of(far)
+    record(a > 0 and b > 0,
+      "feed: one heater fed both reactors on its run, the far one past the near one",
+      string.format("%.6g and %.6g units, all of it made by a heater that finished %d crafts",
+        a, b, feed.heater.products_finished))
+    local tn, tf = temperature_of(near), temperature_of(far)
+    record(tn and tf and tf < tn * 0.1,
+      "feed: and the unpowered one holds none of the powered one's heat",
+      (tn and tf) and string.format("%.6g C against %.6g C, %.3g of it", tf, tn, tf / tn) or "no plasma")
+  end
+
+  -- ------------------------------------------------------------ the full line: `full` (#574)
+  --
+  -- Seeded full, kept full by the heater, read full. Built 2H1, the order #583 found the
+  -- input-output box holding its unpowered reactor at 1.083e3 to 1.303e4 C on a full line.
+  do
+    local cell = cells.full
+    local held, capacity, worst_box = segment_holds(cell.pipe), cell.pipe.fluidbox.get_capacity(1), 1
+    for _, r in ipairs(cell.reactors) do
+      worst_box = math.min(worst_box, amount_of(r) / box_volume(r))
+    end
+    record(held / capacity >= FULL_AT and worst_box >= FULL_AT,
+      "full: built 2H1, the line is full when it is read",
+      string.format("the run holds %.6g of %.6g, the emptier box at %.4g%%; the heater finished %d crafts",
+        held, capacity, worst_box * 100, cell.heater.products_finished))
+    local tp, tu = temperature_of(cell.reactors[1]), temperature_of(cell.reactors[2])
+    record(tu and math.abs(tu - FLOOR_C) < 0.5,
+      "full: and the unpowered reactor on the full line is at the floor",
+      tu and string.format("%.6g C against a floor of %.6g C and a seed of %.6g", tu, FLOOR_C, SEED_C)
+        or "no plasma")
+    record(tp and tp > SEED_C * 5,
+      "full: beside a powered reactor far above the seed",
+      tp and string.format("%.6g C against a seed of %.6g C", tp, SEED_C) or "no plasma")
   end
 
   -- ------------------------------------------------------------ the bookkeeping
+  --
+  -- What one step SHOULD add to a run, asked of the shipped physics, against what the run gained,
+  -- as the sum of amount x absolute temperature over every box on it. A box that gives nothing back
+  -- keeps the whole of its step whatever is plumbed beside it; the input-output box kept 94.6%
+  -- alone, 75.4% beside twenty pipes, 57.6% three to a run and 67.0% with a tail (2026-10-05).
   local before, after = storage.before, storage.after
   record(before ~= nil and after ~= nil, "one simulation step was captured",
     before and after and string.format("across ticks %d to %d, one interval holding one step",
       STEP_BEFORE, STEP_AFTER) or "not captured")
-
-  -- ------------------------------------------------------------ what mixing costs
-  --
-  -- The measurement that explains everything below it, and the one this rig was not built to make.
-  -- A run nothing simulates, disturbed once, left alone. Amount cannot change -- no reaction, no
-  -- consumer -- so anything that happens to the sum of amount x temperature is the engine's fluid
-  -- mixing, and mixing is supposed to be a mass-weighted average, which conserves that sum exactly.
-  --
-  -- It does not. This is a CHARACTERISATION rather than a requirement: the bounds below say what
-  -- 2.0.77 does, and a future version that conserved properly would fail them and should, because
-  -- every figure in the note that cites this would then be wrong.
-  local jf, j0, j1 = storage.idle_flat, storage.jolt, storage.jolt_end
-  record(jf ~= nil and j0 ~= nil and j1 ~= nil,
-    "the untouched run was sampled undisturbed, and then before and after its jolt")
-  if jf and j0 then
-    -- Compared against the pre-jolt reading, which is the same run one second later with nothing
-    -- done to it. `heat` here is before the jolt write, so both are the flat run.
-    record(rel(jf.heat, j0.flat) < 1e-4,
-      "idle: left flat and alone, the run holds its heat, so these entities do not leak it",
-      string.format("%.8g against %.8g unit-K over 60 undisturbed ticks, %.3g%% apart",
-        jf.heat, j0.flat, rel(jf.heat, j0.flat) * 100))
-  end
-  if j0 and j1 then
-    -- Loose only against float drift and the last of the seeding settling: a thousandth of a
-    -- percent. What it is guarding against is fluid arriving or leaving, which would be percent
-    -- sized and would make the heat figure below meaningless.
-    record(rel(j0.plasma, j1.plasma) < 1e-4,
-      "idle: no plasma entered or left the untouched run, so nothing below is fluid moving",
-      string.format("%.8g units against %.8g", j0.plasma, j1.plasma))
-    record(rel(j1.hot + 273.15, j1.cold + 273.15) < 0.02,
-      "idle: and it flattened, so the mixing had finished when the loss was read",
-      string.format("%.6g C against %.6g C end to end, %.3g%% apart",
-        j1.hot, j1.cold, rel(j1.hot + 273.15, j1.cold + 273.15) * 100))
-
-    local kept = j1.heat / j0.heat
-    record(kept > 0.5 and kept < 0.999,
-      "idle: BUT MIXING DOES NOT CONSERVE HEAT -- the run is cooler than the average it should reach",
-      string.format("%.6g of the heat survived flattening, %.3g%% of it destroyed by the engine",
-        kept, (1 - kept) * 100))
-  end
-
   if before and after then
-    -- What one step SHOULD add to a pool, asked of the shipped physics.
-    --
-    -- Each reactor reads its own share, computes against it and writes back a temperature for that
-    -- share; the engine then dilutes the rise by the same share when it re-splits the run. The
-    -- claim in apply()'s comment is that those two cancel, so the run gains exactly the energy the
-    -- reactors put in and it does not matter how much else is plumbed into it.
-    --
-    -- Written as amount x absolute temperature, which the engine's mixing conserves: it averages
-    -- temperature weighted by amount, so this total is unchanged by where the fluid ends up. That
-    -- is what makes it comparable against a measurement taken after the mixing has run.
     local dt = INTERVAL / 60
-    local results = {}
     for _, name in ipairs({ "solo", "solopipe", "bare", "piped" }) do
       local cell = cells[name]
       local predicted, clamped = 0, false
-      for i, input in ipairs(before[name].inputs) do
+      for _, input in ipairs(before[name].inputs) do
         local result = logic.step(SPEC, PLASMA, input.amount, input.celsius, input.energy, dt)
         if result then
           -- A reactor short of buffer would spend less than a full step's heating, and the
-          -- prediction would still be right -- but it would be right about a different thing than
-          -- the one this rig means to check, so it is reported.
+          -- prediction would still be right -- but about a different thing.
           if input.energy < SPEC.heating_power_w * dt then clamped = true end
           predicted = predicted
             + (input.amount - result.plasma_consumed) * (result.temperature_c + 273.15)
             - input.amount * (input.celsius + 273.15)
         end
       end
-
-      local measured = after[name].heat - before[name].heat
       record(not clamped,
         string.format("%s: every reactor had the buffer for a full step, so the prediction is of one", name))
-
-      -- The pool gains a large majority of what the reactors spent and NOT all of it, and the rest
-      -- goes to the mixing loss above rather than anywhere in this mod. Bounded on both sides:
-      -- below 0.4 would mean something worse than the loss already characterised, and 0.98 or
-      -- over would mean the loss had stopped. THE UPPER BOUND WAS 1.02 UNTIL #565, which only
-      -- refused energy appearing: under the plasma input-box canary all four rows read 100.0%
-      -- arrived and passed a row whose name says "not all of it". The four read 94.6%, 75.4%,
-      -- 57.6% and 67.0% at the default -Tail, with and without -With space-age, and 94.6%,
-      -- 83.6%, 57.6% and 73.0% at -Tail 40 (read 2026-10-05), so 0.98 leaves the nearest, `solo`,
-      -- 3.4 points of room. The measured fraction is the number to read.
-      --
-      -- THE NINE ROWS FURTHER DOWN TOOK THE SAME BOUND IN #575: the three write shapes and the six
-      -- writer rows. Their names state a shape and not a loss, but each is a fraction that arrived
-      -- of what one run's reactors spent, and a run that loses nothing to mixing is as wrong there
-      -- as here. They read 72.2% and 71.10% to 72.19% at the default -Tail, at -Tail 40 and with
-      -- -With space-age alike (read 2026-10-20, Factorio 2.0.77), so 0.98 leaves the nearest 25.8
-      -- points, and all nine read 100% under the canary.
-      local kept = measured / predicted
-      record(kept > 0.4 and kept < 0.98,
-        string.format("%s: the run gains most of what its reactors spent, and not all of it", name),
-        string.format("%.6g predicted against %.6g measured unit-K -- %.1f%% of it arrived; run capacity %.6g",
-          predicted, measured, kept * 100, declared_capacity(cell)))
-      results[name] = kept
-    end
-
-    -- ------------------------------------------------------------ which shape loses it (#73)
-    --
-    -- The cells above establish that the excess beyond mixing is ours. These rows say which part of
-    -- update()'s shape it is, by running the candidates against each other from one identical
-    -- state. Every row is three reactors bridged, unregistered, seeded alike and never simulated,
-    -- so the ONLY difference between them is how the rig wrote their boxes back.
-    record(storage.shape_before ~= nil and storage.shape_after ~= nil,
-      "the three write shapes were driven and sampled")
-
-    record(not storage.rebase_clamped,
-      "rebased: no write hit the plasma's declared ceiling, so its delta was applied in full")
-
-    local shape_kept = {}
-    if storage.shape_before and storage.shape_after then
-      -- The predictions must agree, or the rows were not in the same state and nothing below is a
-      -- comparison of shapes. Asserted rather than assumed: it is the premise of the whole cell.
-      local first_predicted
-      for _, shape in ipairs(SHAPES) do
-        local p = storage.shape_before[shape.name].predicted
-        first_predicted = first_predicted or p
-        record(rel(p, first_predicted) < 0.01,
-          string.format("%s: started from the same state as the other shapes", shape.name),
-          string.format("%.6g predicted against %.6g", p, first_predicted))
-      end
-
-      for _, shape in ipairs(SHAPES) do
-        local before, after = storage.shape_before[shape.name], storage.shape_after[shape.name]
-        local kept = (after.heat - before.heat) / before.predicted
-        shape_kept[shape.name] = kept
-        -- Below 0.98 since #575; see the bookkeeping rows above.
-        record(kept > 0.4 and kept < 0.98,
-          string.format("%s: %s", shape.name, shape.label),
-          string.format("%.1f%% of what its reactors spent arrived", kept * 100))
-      end
-
-      -- THE ISOLATION, AND IT IS A NULL ONE. The three shapes are indistinguishable: whatever
-      -- costs the excess, it is not which order this mod reads and writes in. That is what the
-      -- `probe` block below establishes the reason for -- a write reaches no other box on the run
-      -- until the engine's own fluid update, so there is no window in which one reactor's write
-      -- can discard another's.
-      --
-      -- An earlier version of this comment said the opposite, in this same position: that both
-      -- relative-to-fresh-state shapes beat the shipped one and that the stale absolute write was
-      -- therefore the defect. That was the hypothesis, written before the row had been run, and it
-      -- is exactly what the measurement disproved. Left here as a marker rather than deleted
-      -- silently, because a harness whose comments state the finding they were built to test is
-      -- how #40's inference became this repo's belief for two days.
-      --
-      -- Reported rather than asserted, and deliberately so even now the answer is known: an
-      -- equality between three floats is the wrong shape for a guard. What guards this finding is
-      -- the probe below, which is binary and cheap to reason about. These two lines are here so a
-      -- reader sees the numbers rather than taking the probe's word for the consequence.
-      record(true, "onepass against the shipped shape",
-        string.format("%.2f%% against %.2f%%, a difference of %.2f points",
-          shape_kept.onepass * 100, shape_kept.twopass * 100,
-          (shape_kept.onepass - shape_kept.twopass) * 100))
-      record(true, "rebased against the shipped shape, passes intact",
-        string.format("%.2f%% against %.2f%%, a difference of %.2f points",
-          shape_kept.rebased * 100, shape_kept.twopass * 100,
-          (shape_kept.rebased - shape_kept.twopass) * 100))
-
-      -- The shipped shape's loss on this row, stated against the single-writer figure so the
-      -- excess is readable as one number rather than derived from four.
-      -- The spread the row actually had when it was stepped, so a reader can see the experiment was
-      -- discriminating rather than take it on trust. A flat row reports ~0 here and means nothing.
-      -- Evidence the experiment was discriminating, read in the tick the writes happened rather
-      -- than at report time: with one reactor of three heating, the row must be uneven immediately
-      -- after the writes, or every write carried the same value and the comparison is empty.
-      local aw = storage.shape_before.twopass.after_write
-      record(aw and aw.spread > 0.001,
-        "the shape rows really were uneven the instant the writes landed, so an overwrite had something to destroy",
-        aw and string.format("%.4g C against %.4g C end to end, spread %.2f%%",
-          aw.hot, aw.cold, aw.spread * 100) or "not sampled")
-    end
-
-    -- ------------------------------------------- does writer count cost anything on its own? (#73)
-    --
-    -- IT DOES NOT. That is the finding, and everything below is the control that earns it.
-    --
-    -- THE COMPARISON #40 NEVER MADE, and the one its conclusion was drawn from anyway. The
-    -- bookkeeping cells above read `bare` at 57.6% against `solopipe` at 75.2-75.4% and called the
-    -- difference the price of three reactors writing to one run. Those two cells differ in THREE
-    -- things -- writer count, fill, and therefore temperature and the gradient the engine has to
-    -- flatten -- so the reading was an inference from a gap and not a measurement of a variable.
-    --
-    -- These rows hold the variable alone: one geometry, one seeding, one write shape and one total
-    -- of injected heating, delivered by one, two and three reactors. And then three more rows that
-    -- exist because holding one variable is not enough if the variable has a passenger:
-    --
-    --   middle    one writer, in the CENTRE reactor rather than the west one
-    --   east      one writer, in the EAST reactor
-    --   reversed  the east reactor again, written FIRST instead of last
-    --
-    -- Spreading heating over more reactors also moves where it lands, so `middle` and `east` ask
-    -- whether it was ever the count. And the east reactor is both the furthest along the run AND
-    -- the last one the driver writes, so `reversed` separates those two by turning the write order
-    -- round while leaving the heated reactor where it is.
-    record(storage.writers_before ~= nil and storage.writers_after ~= nil,
-      "the writer-count rows were driven and sampled")
-
-    if storage.writers_before and storage.writers_after then
-      -- EVERY EQUALITY THE COMPARISON RESTS ON, ASSERTED RATHER THAN ASSUMED. Six rows built by the
-      -- same call from the same argument list ought to be identical, and "ought to" is exactly what
-      -- put the claim this block exists to correct into the research note. If any of these fails,
-      -- the arrived fractions below are not comparable and nothing should be read from them.
-      --
-      -- Every row against the FIRST rather than pairwise, which is the same relation and six lines
-      -- instead of thirty.
-      local base = storage.writers_before.writers1
-      for _, row in ipairs(storage.writers) do
-        local w = storage.writers_before[row.name]
-        record(rel(w.capacity, base.capacity) < 1e-9
-           and rel(w.plasma, base.plasma) < 1e-6
-           and rel(w.heat / w.plasma, base.heat / base.plasma) < 1e-6
-           and rel(w.heating, base.heating) < 1e-9,
-          string.format("%s: same segment, same fill, same temperature, same total heating", row.name),
-          string.format("%.6g of %.6g units (%.1f%% full) at %.6g K, given %.6g J by %d reactor(s)",
-            w.plasma, w.capacity, w.plasma / w.capacity * 100, w.heat / w.plasma, w.heating,
-            row.count))
-      end
-
-      -- And the shipped physics predicts the same gain for all six, which is what makes the
-      -- fractions below shares of one number rather than each of its own. They agree for a reason
-      -- worth stating rather than noticing: every loss term in step() is computed against the
-      -- temperature the box STARTED at, which is identical in all six rows, and the heating enters
-      -- linearly -- so moving heating between reactors cannot move the predicted total at all.
-      for _, row in ipairs(storage.writers) do
-        record(rel(storage.writers_before[row.name].predicted, base.predicted) < 0.01,
-          string.format("%s: the shipped physics predicts the same gain as every other row", row.name),
-          string.format("%.6g against %.6g unit-K",
-            storage.writers_before[row.name].predicted, base.predicted))
-      end
-
-      local kept = {}
-      for _, row in ipairs(storage.writers) do
-        local w, after = storage.writers_before[row.name], storage.writers_after[row.name]
-        kept[row.name] = (after.heat - w.heat) / w.predicted
-        -- Below 0.98 since #575; see the bookkeeping rows above.
-        record(kept[row.name] > 0.4 and kept[row.name] < 0.98,
-          string.format("%s: %s", row.name, row.label),
-          string.format("%.2f%% of what its reactors spent arrived", kept[row.name] * 100))
-      end
-
-      -- ---- CONTROL ONE: IT IS NOT THE WRITE ORDER.
-      --
-      -- `east` and `reversed` heat the same reactor and differ only in whether the driver reaches
-      -- it first or last. If the loss depended on when a box is written -- which is the family of
-      -- mechanisms the shape rows above were about -- these two would differ. They do not, to two
-      -- decimal places, which is why the ramp below can be called positional at all.
-      local order = (kept.reversed - kept.east) * 100
-      record(math.abs(order) < 0.05,
-        "write order does not matter: the same reactor keeps the same written first or last",
-        string.format("%.2f%% written first against %.2f%% written last, a difference of %.2f points",
-          kept.reversed * 100, kept.east * 100, order))
-
-      -- ---- CONTROL TWO: WHAT DOES MATTER OVER ONE INTERVAL IS WHERE ON THE RUN THE HEAT GOES IN.
-      --
-      -- Three rows, one writer each, differing only in which of the three reactors is heated. They
-      -- come out on a ramp, monotone from the west reactor to the east one, and the ramp is about a
-      -- point across. It is not a symmetry of the geometry -- the west and east reactors are both
-      -- ENDS of the run and they do not agree.
-      --
-      -- IT IS ALSO NOT AN ASYMMETRY INSIDE THE ENGINE, WHICH IS WHAT THIS COMMENT USED TO SAY. The
-      -- block below reads the same rows again at longer windows (#271) and the ramp is gone by two
-      -- seconds: it was this window catching the engine part-way through redistributing. So the band
-      -- here characterises a SIX-TICK reading and nothing more, which is why the wording above says
-      -- what it is measured over. Kept as an assertion because it is the shape of the one-step
-      -- measurement everything else in this block is made from, not because a point is at stake.
-      local ramp = (kept.writers1 - kept.east) * 100
-      record(ramp > 0.5 and ramp < 2.0
-         and kept.writers1 > kept.middle and kept.middle > kept.east,
-        "over one interval, where the heat enters DOES matter, and monotonically along the run",
-        string.format("west %.2f%%, middle %.2f%%, east %.2f%% -- %.2f points across, all one writer",
-          kept.writers1 * 100, kept.middle * 100, kept.east * 100, ramp))
-
-      -- ---- AND WHETHER THAT RAMP IS THE ENGINE OR THE INSTRUMENT (#271).
-      --
-      -- Everything above is measured over ONE interval with the writes at the start of it. Six
-      -- ticks is long enough for the engine to move fluid and not obviously long enough for it to
-      -- finish, so a monotone half-point-per-position ramp is what redistribution still in flight
-      -- could look like -- and the `five` row already reports four unpowered reactors
-      -- agreeing to two parts in ten thousand at steady state, which a standing per-position loss
-      -- is hard to reconcile with.
-      --
-      -- So the same three rows are read again at longer windows. Nothing is driven a second time
-      -- and the one-step pair above is untouched: these are readings of a run that has already had
-      -- its single step and is now only being stirred by the engine.
-      --
-      -- REPORTED RATHER THAN ASSERTED, which is what `note` is for. Two things ARE asserted,
-      -- because both would fail silently: that every window was sampled at all, and that the rows
-      -- had stopped moving before the longest one closed.
-      local late = storage.writers_late or {}
-      local longest = LATE_WINDOWS[#LATE_WINDOWS]
-      local penult  = LATE_WINDOWS[#LATE_WINDOWS - 1]
-
-      local taken = 0
-      for _, n in ipairs(LATE_WINDOWS) do
-        if n == 1 or late[n] then taken = taken + 1 end
-      end
-      record(taken == #LATE_WINDOWS,
-        "every window the ramp is reported at was actually sampled",
-        string.format("%d of %d, the longest at %d ticks after the writes",
-          taken, #LATE_WINDOWS, longest * INTERVAL))
-
-      -- THE WINDOW REACHES PAST THE END OF THE MOVEMENT, ASSERTED. A ramp that shrinks with the
-      -- window says nothing unless the last window is past the end of it: shrinking is what a
-      -- too-short window looks like too. Two ways of being still, both required -- the run's heat
-      -- has stopped changing between the last two windows, and every box on the run, pipes
-      -- included, is at one temperature.
-      if late[longest] and late[penult] then
-        local drift, unflat, drift_row, unflat_row = -1, -1, "none", "none"
-        for _, row in ipairs(storage.writers) do
-          local a, b = late[penult][row.name], late[longest][row.name]
-          local d = rel(a.heat, b.heat)
-          if d > drift then drift, drift_row = d, row.name end
-          if b.spread > unflat then unflat, unflat_row = b.spread, row.name end
-        end
-        record(drift < 1e-6 and unflat < 1e-6,
-          "and the rows had stopped moving before the longest window closed",
-          string.format("over the %d ticks from the %d-tick window to the %d-tick one the worst row (%s) moved %.3g of its heat, and the worst (%s) is flat to %.3g",
-            (longest - penult) * INTERVAL, penult * INTERVAL, longest * INTERVAL,
-            drift_row, drift, unflat_row, unflat))
-      end
-
-      -- The same arithmetic as `kept` above, at an arbitrary window. Window 1 IS `kept`, read from
-      -- the one-step pair rather than recomputed, so the first line of the table below is the
-      -- asserted figure and not a second measurement of it.
-      local function kept_at(n, name)
-        if n == 1 then return kept[name] end
-        local s = late[n] and late[n][name]
-        if not s then return nil end
-        local w = storage.writers_before[name]
-        return (s.heat - w.heat) / w.predicted
-      end
-
-      note("the positional ramp against the window it is measured over (#271):")
-      for _, n in ipairs(LATE_WINDOWS) do
-        local west, mid, east = kept_at(n, "writers1"), kept_at(n, "middle"), kept_at(n, "east")
-        if west and mid and east then
-          note(string.format("  %4d ticks: west %.3f%%, middle %.3f%%, east %.3f%% -- ramp %+.3f points",
-            n * INTERVAL, west * 100, mid * 100, east * 100, (west - east) * 100))
-        end
-      end
-
-      -- STATED AS A NUMBER EITHER WAY, which is what #271 asks for: the ramp at one interval
-      -- against the ramp at the longest window, and which of the two readings the figure quoted in
-      -- the research note and in this file's header therefore belongs to.
-      local west_far, east_far = kept_at(longest, "writers1"), kept_at(longest, "east")
-      if west_far and east_far then
-        local far = (west_far - east_far) * 100
-        note(string.format("so: %.2f points across at %d ticks, %+.3f at %d -- %s",
-          ramp, INTERVAL, far, longest * INTERVAL,
-          math.abs(far) < 0.05
-            and "the ramp is a property of the six-tick window and not a standing loss"
-            or "the ramp outlives the window it was found in"))
-      end
-
-      -- ---- THE ANSWER: WRITER COUNT COSTS NOTHING, AND THE APPARENT EFFECT IS THAT RAMP'S MEAN.
-      --
-      -- The one-, two- and three-writer rows do come out different -- 72.19%, 71.92%, 71.64% on the
-      -- run that first measured this -- and read on their own that is exactly the writer-count
-      -- effect #40 inferred, an order of magnitude smaller. It is not one. Each row's heating is
-      -- spread over reactors 1..n, so its mean injection position walks 1, 1.5, 2 -- and the three
-      -- fractions are the arithmetic mean of the positional ramp above at those points, to two
-      -- decimal places.
-      --
-      -- ASSERTED AS THE PREDICTION IT IS, not as a resemblance. The per-position figures are
-      -- measured by the single-writer rows and the count rows are then required to land on their
-      -- mean. Nothing here is fitted: there is no free parameter, and a real per-writer cost of any
-      -- size would push a row off its own prediction.
-      --
-      -- It also settles a second thing on the way past. `writers3` is dead FLAT the instant its
-      -- writes land, where `middle` has a 73% gradient, and the two keep within a hundredth of a
-      -- point of each other. So the loss is linear and additive in the injections and has nothing
-      -- to do with whether they add up to a gradient for the engine to flatten -- which was the
-      -- obvious next explanation and is now excluded too.
-      local by_position = { kept.writers1, kept.middle, kept.east }
-      local function mean_over(n)
-        local total = 0
-        for i = 1, n do total = total + by_position[i] end
-        return total / n
-      end
-      for n = 2, 3 do
-        local name = (n == 2) and "writers2" or "writers3"
-        record(math.abs(kept[name] - mean_over(n)) * 100 < 0.05,
-          string.format("%d writers keep the MEAN of the positions they occupy, not a cost per writer", n),
-          string.format("%.2f%% measured against %.2f%% predicted from the single-writer ramp alone",
-            kept[name] * 100, mean_over(n) * 100))
-      end
-
-      -- ---- WHAT THAT LEAVES THE bare-AGAINST-solopipe GAP AS, which is the question #73 was
-      -- re-scoped around and the line a reader arrives at after the bookkeeping above.
-      --
-      -- Nothing of it is writer count. The whole positional ramp is about a point across the run
-      -- AT THIS WINDOW -- and zero at any window past two seconds (#271) -- against the seventeen
-      -- the gap it was invoked to explain needs. The qualifier is not decoration: without it this
-      -- line is the only one left in the file that reads the ramp as a standing loss, which is the
-      -- framing #271 retired. `bare` is lower than `solopipe` because it
-      -- is fuller and hotter, not because three reactors write to it.
-      local gap = ((results.solopipe or 0) - (results.bare or 0)) * 100
-      record(gap > 8 * ramp,
-        "so the gap #40 attributed to writer count is not writer count and not position either",
-        string.format("a %.2f point one-interval positional ramp (zero once settled) against a %.1f point gap -- bare %.1f%% at %.1f%% fill, solopipe %.1f%% at %.1f%% fill",
-          ramp, gap,
-          (results.bare or 0) * 100,
-          before.bare and (before.bare.plasma / declared_capacity(cells.bare) * 100) or 0,
-          (results.solopipe or 0) * 100,
-          before.solopipe and (before.solopipe.plasma / declared_capacity(cells.solopipe) * 100) or 0))
-
-      -- ---- EVIDENCE THE EXPERIMENT WAS DISCRIMINATING AT ALL.
-      --
-      -- On the same footing as the shape rows' spread check and load-bearing in a way theirs is
-      -- not. A null result is only worth anything if the rows really were driven differently: a
-      -- single writer puts a whole step's heating into one box and must come out uneven, three
-      -- writers split it and must come out flat. Both flat would mean the policy never reached the
-      -- driver, and the finding would be "identical rows behaved identically".
-      local wa, wb = base.after_write, storage.writers_before.writers3.after_write
-      record(wa and wa.spread > 0.001,
-        "writer count: the one-writer row was uneven the instant its writes landed",
-        wa and string.format("%.4g C against %.4g C end to end, spread %.2f%%",
-          wa.hot, wa.cold, wa.spread * 100) or "not sampled")
-      record(wb and wb.spread < 0.001,
-        "writer count: and the three-writer row was flat, which is what makes them different rows",
-        wb and string.format("%.4g C against %.4g C end to end, spread %.4f%%",
-          wb.hot, wb.cold, wb.spread * 100) or "not sampled")
-    end
-
-    -- ------------------------------------------------------------ does a write reach its neighbours?
-    --
-    -- The premise of the whole excess-loss story, measured directly instead of inferred from arrived
-    -- fractions. One box on an untouched run is raised fourfold and the entire run is read again in
-    -- the SAME tick.
-    local probe = storage.probe_result
-    record(probe ~= nil, "the intra-tick write probe ran")
-    if probe then
-      record(probe.target_moved,
-        "probe: the written box really did change, so the write landed",
-        "raised fourfold and read back inside one tick")
-      -- THE FINDING. If no other box moved, the engine does not re-split a run between Lua writes:
-      -- fluid moves in its own once-per-tick update, after every handler has run. A reactor writing
-      -- second therefore CANNOT overwrite a share of its neighbour's rise, because that share has not
-      -- arrived yet -- and update()'s read-then-write shape cannot be the source of the excess loss.
-      record(probe.others_moved == 0,
-        "probe: and NO other box on the run moved in that tick -- the engine re-splits between TICKS, not between WRITES",
-        string.format("%d of %d other boxes changed", probe.others_moved, probe.boxes))
-      -- Without this the line above is worthless: it would read the same if the snapshot were broken.
-      record((probe.later_moved or 0) > 0,
-        "probe: and the SAME instrument sees the run move once ticks have passed, so the null above is a finding and not a broken probe",
-        string.format("%d of %d other boxes had changed %d ticks later",
-          probe.later_moved or 0, probe.boxes, STEP_AFTER - STEP_BEFORE))
-    end
-
-    -- The cross-check, because this file's seeding note is the one thing that argued otherwise.
-    record(storage.seedonce_written == true, "the one-pass seeded run was written exactly once")
-    if storage.seedonce_written then
-      local cell = storage.onepass_seed
-      local fill = pooled(cell) / declared_capacity(cell)
-      local many = pooled(cells.mix) / declared_capacity(cells.mix)
-      -- THE CROSS-CHECK, and it is a comparison rather than a threshold because the absolute number
-      -- is not the point. This file's seeding note explains SEED_UNTIL by saying a run seeded
-      -- box-by-box in one pass "settles at 45% of capacity rather than 100%", i.e. that the writes
-      -- threw each other away. But `mix` is the same geometry seeded SIXTY times and it sits at the
-      -- same 44.6%. So 44.6% is what a three-reactor bridged run holds against the sum of its boxes'
-      -- declared volumes, whatever the write pattern -- a fact about the segment, not about writes.
-      --
-      -- Seeding for sixty ticks is still harmless, and is still worth keeping for the settling it
-      -- buys. What is wrong is the reason given for it.
-      record(rel(fill, many) < 0.02,
-        "seedonce: one seeding pass leaves the run as full as sixty do, so writes do not throw each other away",
-        string.format("%.1f%% from one pass against %.1f%% from sixty", fill * 100, many * 100))
-    end
-
-    -- The "whatever else is plumbed into the run" half of the claim, and the answer is a qualified
-    -- no: the shortfall is real on both runs and it is not the SAME shortfall, because how much
-    -- mixing there is to do depends on how much else is on the run. Reported as one line rather
-    -- than left for a reader to derive from the two above.
-    -- THE CONTROL THAT SEPARATES TWO EXPLANATIONS, and the reason `solo` and `solopipe` exist.
-    --
-    -- A shortfall on a row of three reactors has two candidate causes and they predict the same
-    -- ordering. One is the engine's mixing losing heat. The other is in THIS MOD: update() reads
-    -- every reactor and then writes every reactor, and each write REPLACES its box using an amount
-    -- and a temperature computed against the start-of-step pool -- so a reactor writing second can
-    -- overwrite the share of its neighbour's rise that the engine had already given it.
-    --
-    -- One reactor cannot overwrite anyone. So `solo` (no pipe, no mixing possible either) and
-    -- `solopipe` (the same single writer with a run to mix across) separate them: the step from one
-    -- to the other is mixing alone, and anything the three-reactor rows lose beyond that is ours.
-    if results.solo and results.solopipe then
-      record(results.solo > 0.9,
-        "solo: one reactor with no run to share into keeps nearly all of what it spent",
-        string.format("%.1f%% arrived, which is the floor everything else is measured against",
-          results.solo * 100))
-      record(results.solopipe < results.solo - 0.05,
-        "solopipe: the SAME single writer loses materially once there is a run to mix across",
-        string.format("%.1f%% against %.1f%% -- mixing alone, with no second reactor to blame",
-          results.solopipe * 100, results.solo * 100))
-      -- STATED AS A PROPERTY OF THE ROW, NOT OF ITS WRITERS (#73). This line used to end "the
-      -- excess is this mod's, not the engine's", which was the inference #40 drew from an ordering
-      -- and which the writer-count rows above have now falsified: the two cells differ in fill and
-      -- temperature as well, and writer count accounts for none of the gap. The ASSERTION is
-      -- unchanged and still worth making -- the bare row really does keep less -- so only the claim
-      -- attached to it has gone.
-      record(results.bare < results.solopipe,
-        "and the three-reactor run loses MORE than mixing alone accounts for",
-        string.format("%.1f%% on the bare run against %.1f%% on solopipe -- and see the writer-count rows for what that is NOT",
-          results.bare * 100, results.solopipe * 100))
-    end
-
-    record(results.bare ~= nil and results.piped ~= nil,
-      "both bookkeeping runs were measured")
-    if results.bare and results.piped then
-      record(declared_capacity(cells.piped) > declared_capacity(cells.bare) * 1.2,
-        "the two runs differ enough in capacity for the comparison to mean something",
-        string.format("%.6g against %.6g units, a factor of %.3g",
-          declared_capacity(cells.piped), declared_capacity(cells.bare),
-          declared_capacity(cells.piped) / declared_capacity(cells.bare)))
-      -- A real assertion rather than a printed remark: the two runs differ by more than the
-      -- repeatability of the figure, which is what makes "it depends on the plumbing" a finding.
-      record(math.abs(results.bare - results.piped) > 0.02,
-        "and what reaches the pool DEPENDS on what else is plumbed into the run",
-        string.format("%.1f%% arrived on the bare run against %.1f%% on the piped one",
-          results.bare * 100, results.piped * 100))
+      -- Bounded on both sides: under 0.98 is the input-output box's loss coming back, over 1.02 is
+      -- energy appearing.
+      local kept = (after[name].heat - before[name].heat) / predicted
+      record(kept > 0.98 and kept < 1.02,
+        string.format("%s: the reactors keep all of what they spent, so none of it leaves into the run", name),
+        string.format("%.6g predicted against %.6g measured unit-K -- %.1f%% of it kept; run capacity %.6g",
+          predicted, after[name].heat - before[name].heat, kept * 100, declared_capacity(cell)))
     end
   end
 
@@ -2278,7 +1189,7 @@ try {
     $runOut = Invoke-FactorioStep @step -Tag 'run' -Arguments @(
         '--benchmark', $save, '--benchmark-ticks', "$($Ticks + 60)", '--benchmark-runs', '1', '--disable-audio')
 
-    $reported = @(Get-Content $runOut | Select-String -Pattern 'POOL-RIG (ok|FAIL|PASS|note)' |
+    $reported = @(Get-Content $runOut | Select-String -Pattern 'POOL-RIG (ok|FAIL|PASS)' |
         ForEach-Object { ($_ -split 'POOL-RIG ', 2)[1].TrimEnd() })
     if ($reported.Count -eq 0) { throw 'the rig reported nothing; it never reached its check tick.' }
 
@@ -2286,21 +1197,16 @@ try {
 
     $verdict = $reported | Where-Object { $_ -match '^(PASS|FAIL): ' } | Select-Object -Last 1
     if (-not $verdict)              { throw 'the rig produced no verdict line.' }
-    # Deliberately does not blame ADR 0011. Several checks here CHARACTERISE the engine rather than
-    # requiring anything of this mod -- a Factorio version that mixed conservatively would fail them,
-    # and that would be an improvement rather than a regression. The message says where to look.
     if ($verdict -notmatch '^PASS') {
-        throw ("a pooling check failed: $verdict. Read the failing lines before assuming a " +
-               "regression here -- the mixing-loss checks describe what 2.0.77 does, and an engine " +
-               "that stopped doing it would fail them and would make " +
-               "docs/research/reactor-runtime-cost.md wrong rather than this mod.")
+        throw ("a pooling check failed: $verdict. A floor or bookkeeping row failing says heat is " +
+               "travelling between reactors again, which ADR 0040 says it must not: read the " +
+               "plasma box's production_type first.")
     }
 
     Write-Host ''
-    Write-Host 'OK - reactors on one run share a single pool with nothing holding it there, and an idle'
-    Write-Host '     run flattens to one temperature. The pool does NOT gain all of what they spent:'
-    Write-Host '     the engine destroys heat when it mixes, and how much depends on what else is on'
-    Write-Host '     the run. See docs/research/reactor-runtime-cost.md.'
+    Write-Host 'OK - reactors on one run share its feed and not its heat: an unpowered reactor sits at'
+    Write-Host '     the floor beside a powered one, on a filling line and a full one, and each reactor'
+    Write-Host '     keeps all of what it spends. See docs/adr/0040-the-plasma-box-is-input.md.'
 }
 finally {
     if ($KeepTemp) { Write-Host ''; Write-Host "temp kept at: $temp" }
