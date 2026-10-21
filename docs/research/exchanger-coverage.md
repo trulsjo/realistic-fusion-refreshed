@@ -319,8 +319,9 @@ read 277.3 units at 2.180×10⁹ °C after 252 000 ticks; #510 read 275.6 at 2.1
 282.1 – 338.5 MW, flat from 78 000 ticks. It reads the same on an export of `1df5855`, the
 commit that recorded #486. What produced 277.3 and 2.180×10⁹ is not on record. The game's figure
 is #510's, and the fed model's 276.9 units at 2.183×10⁹ °C is 0.5% over it in plasma and 0.5%
-under it in temperature, not between two readings. All three are the `input-output` box's. The
-`input` box that #740 shipped is a different measure, read by a probe and not this bench:
+under it in temperature, not between two readings. #510's 275.6 is the `input-output`
+box's, and the fed model is `M.settle_fed` outside the game. The `input` box that #740 shipped is
+a different measure, read by a probe and not this bench:
 [`plasma-input-box.md`](plasma-input-box.md#d-t-under-the-input-box) gives 276.36 to 276.42
 units at 2.187×10⁹ °C.
 

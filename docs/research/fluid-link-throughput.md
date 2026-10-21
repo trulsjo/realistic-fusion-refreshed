@@ -111,8 +111,8 @@ headroom. At 1 MJ a unit the energy link is carrying **83.8 MW**, and one connec
 **Both ceilings are this note's own measured controls rather than the script's bands**, and that is
 one argument applied to both rows. The control table below gives 100 units/tick for output into
 input and 49.9 for output into input-output, each on one connection — the two arrangements these
-links actually are. `bench-mod-links.ps1` prints wider bands, 30× to 60× and 465× to 517×, because
-its constants carry floors of 50 and 45: the 50 is the end of a long pipe run, which
+links were until #740. Until then `bench-mod-links.ps1` printed wider bands, 30× to 60× and 465× to
+517×, because its constants carried floors of 50 and 45: the 50 is the end of a long pipe run, which
 [#86](https://github.com/trulsjo/realistic-fusion-refreshed/issues/86) removed from this leg
 altogether, and the 45 nothing here measures at all. The 49.9 is also the smaller of the two figures
 its control measured — output into input-output does not scale with connection count, 3 connections
