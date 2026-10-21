@@ -57,7 +57,8 @@
 
     - sinkio   Output-only source into an input-output sink. One end joins the segment and the
                other does not, so a boundary survives where the io control has none. This is what
-               this mod's heater-to-reactor plasma link is, and it is neither row the matrix
+               this mod's heater-to-reactor plasma link was until #740, which made the reactor's
+               box "input" and the link output into input; it is neither row the matrix
                sweeps -- so without it #48's headroom would be quoted against the wrong ceiling.
                It carries markedly less than output-into-input does, and unlike that row it does
                not scale with connection count; both are measured here and neither is explained.
@@ -172,7 +173,7 @@ foreach ($d in $controlDistances) {
     }
 
     # Output-only into an input-output sink, which is neither row the matrix sweeps and is exactly
-    # what this mod's heater-to-reactor link is (#48). One end joins the segment and the other does
+    # what this mod's heater-to-reactor link was until #740 made the reactor's box "input" (#48). One end joins the segment and the other does
     # not, so a boundary survives -- but whether it is the same boundary as output-into-input is a
     # question, and #48's headroom figure is quoted against whichever answer comes back.
     # Deliberately not entered in $controlOf: that map drives the equal-rate gate, and whether this
@@ -593,7 +594,7 @@ try {
                 elseif ($r.Io)       { 'input-output both ends: ' +
                                        $(if ($r.Merged) { 'merged into one fluid segment, so nothing is transferred at all' }
                                          else { 'did NOT merge' }) }
-                elseif ($r.SinkIo)   { "output into an input-output sink -- this mod's plasma link (#48)" }
+                elseif ($r.SinkIo)   { "output into an input-output sink -- this mod's plasma link until #740 (#48)" }
                 else                 { "volume $($r.Volume), against $($controlOf[$r.Id])" }
         Write-Host ('  {0,-12} {1} units/s   {2}' -f $r.Id, $rate, $note)
     }
