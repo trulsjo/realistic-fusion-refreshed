@@ -73,7 +73,7 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | The same save, control (shipped `input-output`) load: how close the unpowered box stays to the powered one's temperature | within 7.1% (1.2979 against 1.3966×10⁸ at 120 000) | 2026-10-04 | 2.0.77 | unresearched (all 11 rungs asserted off at build and at the canary load) | [An existing save loaded under the canary](#an-existing-save-loaded-under-the-canary) |
 | Shipped-box saves loaded under the canary `input` box: cases in which the change would count as breaking | one case of the five loaded | 2026-10-05 | 2.0.77 | unresearched (11 rungs asserted off at build and at the canary load) | [The saves #550 did not load](#the-saves-550-did-not-load) |
 | Shipped-box save at 40 001 loaded under the canary `input` box, part-full D-D solo: row on which the box is full, against the control load's | 42 000, against 72 000 | 2026-10-05 | 2.0.77 | unresearched (11 rungs asserted off at build and at the canary load) | [The saves #550 did not load](#the-saves-550-did-not-load) |
-| Shipped `input` box since #740, D-T solo, 1 heater, 3 pipes, 300 000 ticks: first tick the box reads 99.9% | never; it settles between 274.69 and 278.18 units of 1000 over the heater's cycle, and reads 276.36 to 276.42 at one point of that cycle | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [D-T under the `input` box](#d-t-under-the-input-box) |
+| Shipped `input` box since #740, D-T solo, 1 heater, 3 pipes, 300 000 ticks: first tick the box reads 99.9% | never; from tick 32 000 its rows, every 4000 ticks, read between 274.67 and 278.18 units of 1000, at three points of the heater's 120-tick cycle, and 276.36 to 276.42 at one of them | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [D-T under the `input` box](#d-t-under-the-input-box) |
 | Shipped `input` box since #740, D-T solo, 1 heater, 3 pipes, 300 000 ticks: the settled temperature, and the first tick of the settle test | 2.187008×10⁹ °C at 32 000 and 2.187117×10⁹ at 296 000; from tick 32 000 | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [D-T under the `input` box](#d-t-under-the-input-box) |
 | Shipped `input` box since #740, D-T pair built 1H2, one powered, 1 heater, 3 and 12 pipes, 300 000 ticks: the unpowered box's fill tick, and first tick it reads the floor full | 47 774; 47 778 | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [D-T under the `input` box](#d-t-under-the-input-box) |
 | Shipped `input` box since #740, D-T pair built 1H2, one powered, 1 heater, 3 and 12 pipes, 300 000 ticks: the unpowered box from row 20 000 to 296 000, beside the powered one at 296 000 | 15 °C at every row; 276.91 units at 2.1832×10⁹ °C | 2026-10-21 | 2.0.77 | unresearched (all 11 rungs asserted off) | [D-T under the `input` box](#d-t-under-the-input-box) |
@@ -1065,8 +1065,9 @@ built 1H2, counted to 296 000. The heater's cycle is 120 ticks, so the settle te
 | both, reactor 2 | never | 200.70 at 40 000, 199.88 at 296 000 | 2.3415×10⁹ at 40 000, 2.3518×10⁹ at 296 000 | 40 000 |
 
 - **One heater does not fill a powered D-T reactor's line.** The box settles at about 276 units
-  of 1000, swinging between 274.69 and 278.18 with the heater's cycle, and the segment beside it
-  read 0 at every row. *Inferred* from that: a D-T reactor burns what one heater makes, as a
+  of 1000. Its rows from 32 000, every 4000 ticks, read between 274.67 and 278.18: rows 4000 ticks
+  apart sample the 120-tick heater cycle at three points only, so these are the sampled extremes
+  and not the cycle's own. The segment beside it read 0 at every row. *Inferred* from that: a D-T reactor burns what one heater makes, as a
   D-He3 reactor does at one heater (#562). So D-T has no fill tick at three pipes and one heater;
   it has a settled box. [`exchanger-coverage.md`](exchanger-coverage.md)'s "275.6 units at
   2.193×10⁹ °C" for D-T on one heater is a different measure: the bench's, on the `input-output`

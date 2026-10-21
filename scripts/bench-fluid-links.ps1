@@ -57,9 +57,10 @@
 
     - sinkio   Output-only source into an input-output sink. One end joins the segment and the
                other does not, so a boundary survives where the io control has none. This is what
-               this mod's heater-to-reactor plasma link was until #740, which made the reactor's
-               box "input" and the link output into input; it is neither row the matrix
-               sweeps -- so without it #48's headroom would be quoted against the wrong ceiling.
+               this mod's heater-to-reactor plasma link was until #740, and the arrangement is
+               neither row the matrix sweeps -- so without it #48's headroom would have been quoted
+               against the wrong ceiling. Since #740 the reactor's box is "input", and the link is
+               output into input, a row the matrix does sweep.
                It carries markedly less than output-into-input does, and unlike that row it does
                not scale with connection count; both are measured here and neither is explained.
 
