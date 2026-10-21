@@ -50,8 +50,8 @@ self-tests prove them, what the harness shares, the timings of `run-gates.ps1`, 
 about the research ladders. Read it when a gate's pass or failure has to be interpreted, when a
 gate or its self-test is being changed, and when a sentence here is wanted with its date or its
 ticket. A change to a gate adds a dated line at the foot of that page, in the commit that changes
-the gate, so a branch whose tickets each change one adds a line for each; it changes a line here
-only when what the gate proves in a line has changed.
+the gate, so a branch whose tickets each change one adds a line for each. A line here changes only
+when what the gate proves in a line has changed.
 
 **`load-check.ps1` loads the mods two ways, and the default is not the player's.** Without arguments
 it junctions the repository's directories in, so the game reads the working tree; `-FromZips` builds
