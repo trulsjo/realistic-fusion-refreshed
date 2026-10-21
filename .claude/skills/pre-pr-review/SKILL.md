@@ -151,12 +151,16 @@ pass.
 
    Done when the reviewer has answered for every finding of its review.
 
-5. **Answer for each thing the reviewer said it did not check** (#636). The same section of
-   `docs/agents/code-review.md` says how an item is checked and what the pull request's body
-   records for it. Check each item, or send it to the reviewer by name with SendMessage, and write
-   the outcome of each for the pull request's body, under a `## Pre-PR review` heading. That
-   section stands below the body's `## Summary`, `## Evidence` and `## Merge Danger`, which
-   `docs/agents/issue-tracker.md` requires (#730). A defect
+5. **Before anything is written to the body file, invoke the `mattpocock-skills:pr` skill** with
+   the Skill tool for `## Summary`, `## Evidence` and `## Merge Danger` (#738, #748); where it is
+   not installed, write them by hand to the shape of its template, which
+   `docs/agents/code-review.md` lists. Put one `Closes #N` line per ticket above them, and the
+   `## Pre-PR review` section below them, as `docs/agents/issue-tracker.md` requires (#730).
+
+   **Then answer for each thing the reviewer said it did not check** (#636). The section of
+   `docs/agents/code-review.md` that step 4 names says how an item is checked and what the pull
+   request's body records for it. Check each item, or send it to the reviewer by name
+   with SendMessage, and write the outcome of each under the `## Pre-PR review` heading. A defect
    that an item turns up is fixed, and its fix is sent to the reviewer in a message of its own
    with the diff, as step 4 sends one. It is never held.
 
@@ -175,11 +179,6 @@ pass.
    nothing says that in the body in place of the table, below step 5's outcomes for what the
    reviewer said it did not check. A cell that names a commit of the branch names it by its
    subject in quotes, not its hash (#730).
-
-   **Before the first `gh pr create`, invoke the `mattpocock-skills:pr` skill** with the Skill tool
-   for `## Summary`, `## Evidence` and `## Merge Danger` (#738); where it is not installed, write
-   them by hand to the shape of its template, which `docs/agents/code-review.md` lists. Put one
-   `Closes #N` line per ticket above them, and the `## Pre-PR review` section below them.
 
    **Check the body before it is sent** (#730), each time, the first `gh pr create` and every
    `gh pr edit` after it, this step's and step 7's included:
