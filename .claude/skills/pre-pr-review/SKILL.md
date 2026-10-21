@@ -151,20 +151,22 @@ pass.
 
    Done when the reviewer has answered for every finding of its review.
 
-5. **Before anything is written to the body file, invoke the `mattpocock-skills:pr` skill** with
-   the Skill tool for `## Summary`, `## Evidence` and `## Merge Danger` (#738, #748); where it is
-   not installed, write them by hand to the shape of its template, which
+5. **Before anything is written to the pull request's body, invoke the `mattpocock-skills:pr`
+   skill** with the Skill tool for `## Summary`, `## Evidence` and `## Merge Danger` (#738, #748);
+   where it is not installed, write them by hand to the shape of its template, which
    `docs/agents/code-review.md` lists. Put one `Closes #N` line per ticket above them, and the
    `## Pre-PR review` section below them, as `docs/agents/issue-tracker.md` requires (#730).
 
-   **Then answer for each thing the reviewer said it did not check** (#636). The section of
-   `docs/agents/code-review.md` that step 4 names says how an item is checked and what the pull
-   request's body records for it. Check each item, or send it to the reviewer by name
-   with SendMessage, and write the outcome of each under the `## Pre-PR review` heading. A defect
-   that an item turns up is fixed, and its fix is sent to the reviewer in a message of its own
-   with the diff, as step 4 sends one. It is never held.
+   **Then answer for each thing the reviewer said it did not check** (#636). *A review before the
+   pull request, and the plugin pass after it* in `docs/agents/code-review.md` says how an item is
+   checked and what the pull request's body records for it. Check each item, or send it to the
+   reviewer by name with SendMessage, and write the outcome of each under the `## Pre-PR review`
+   heading. A defect that an item turns up is fixed, and its fix is sent to the reviewer in a
+   message of its own with the diff, as step 4 sends one. It is never held.
 
-   Done when every item on the reviewer's list has an outcome written for it.
+   Done when the body has the three headings from the skill, or from its template by hand, with
+   the `Closes #N` lines above them, and every item on the reviewer's list has an outcome written
+   for it.
 
 6. **Write the findings table** and put it in the pull request's body under the same heading,
    below step 5's outcomes, every finding in it:
