@@ -339,3 +339,10 @@ One line for each, newest last. The passages above are not edited.
   it is not installed, which it lists: a diagram, diff-sketch or tree, **Before:** and **After:**,
   and **Door:** and **Blast Radius:**. Step 6 of `/pre-pr-review` invokes it. No check reads that
   shape, and one that did would be a new rule. The wording is the session's.
+- **2026-10-22, #752: a checked hit quotes the words it was checked on.** Truls had the ticket
+  filed from #750's retrospective, choosing it and #751 from its candidates. On #750 the pre-PR
+  reviewer's search by meaning listed `bench-fluid-links.ps1` as "(generic)", and the plugin pass
+  found that file stale. The second rule's #696 paragraph says the search is done when each hit
+  listed as checked quotes the words it was checked on, and that a hit listed by its file's name or
+  its kind alone is not yet checked. The brief in step 3 of `/pre-pr-review` asks for the quote. No
+  gate reads it. The wording is the session's.
