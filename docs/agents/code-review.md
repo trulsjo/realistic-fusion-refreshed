@@ -398,7 +398,7 @@ request (#593).
 it **the pre-PR review**. One fresh subagent runs it, and it is defined by what the subagent
 is handed and not by a skill's name:
 
-- the diff against `main`;
+- the diff against `main`, with the local `main` first brought up to `origin/main` (#755);
 - this file;
 - on a branch that records measurements, the probes' raw output; on any other, the result of the
   gates that were run.

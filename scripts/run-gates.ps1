@@ -11,7 +11,8 @@
     It was caught because the gates were run by hand on the combined tree. This is that step.
 
     NOT FOR A MARKDOWN-ONLY BRANCH (#618, decided 2026-10-07). When every path
-    `git diff --name-only --no-renames main...HEAD` prints ends in .md, the branch runs
+    `git diff --name-only --no-renames main...HEAD` prints ends in .md, with main first
+    fast-forwarded to origin/main (#755), the branch runs
     ship-check.ps1 alone, because no other gate here reads a .md file. --no-renames makes a file
     renamed to .md print the path it had. One path that does not end in .md, a comment-only
     edit to a script included, and it runs everything: check-pooling.ps1 reads control.lua by
@@ -67,8 +68,8 @@
 .PARAMETER SelfTest
     Prove the runner with stand-in gates and no game: `failing-gate-reported` requires a gate that
     fails to be returned by name as failed while one that passes beside it is still reported as
-    passing, and `missing-executable-fails` requires the same of a gate whose executable is
-    missing. Since #578 two more halves run this script itself, as its own process, over stand-in
+    passing, and `missing-executable-fails` requires a gate whose executable is missing to be
+    reported as failed and not as passing. Since #578 two more halves run this script itself, as its own process, over stand-in
     gates in place of the real ones: `exit-code-names-failure` requires a non-zero exit and the
     failing stand-in named in what it prints, and `exit-code-clean` requires exit 0 when every
     stand-in passes. Deleting the branch that turns the failed list into an exit code fails the

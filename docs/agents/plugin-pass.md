@@ -59,6 +59,11 @@ runs.
   shared commit convention is one such. A subagent reads those from the session's checkout by full
   path, and runs no command there.
 - **The steps before the reviewers have no subagent to place**: the session does them (#626).
+- **The session brings the local `main` up to `origin/main` first, and every brief says to read
+  the change with `gh pr diff <n>`, never with a local `git diff` against `main`** (2026-10-22,
+  #755). A worktree shares the repository's refs, so a stale `main` is every subagent's. On #754
+  the local one was nine commits behind, and a reviewer whose brief named `gh pr diff` ran `git
+  diff main...HEAD` instead and spent most of its tokens on a change already merged.
 
 The session reads `git reflog` when the pass is over, and the pull request says whether it shows
 a checkout during the pass.
