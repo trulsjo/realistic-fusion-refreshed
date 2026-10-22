@@ -208,6 +208,23 @@ Neither was read again here: the transcripts are not in the repository.
   the session that wrote the rule, inside herdr. This one is not an account: it is that
   session's own command. The hook's message says the user can run the command with `!`.
 
+### What a stale local main cost on #754 (#755)
+
+Under the rule that both passes read the change against `main` brought up to `origin/main`, and
+that the plugin pass's briefs name `gh pr diff`. Written for this page on 2026-10-22. The first
+item was read again here; the others are by #755's account, which read the reviewer's transcript,
+`agent-a646f27093851fd01.jsonl`, and was not read again: transcripts are not in the repository.
+
+- **The local `main` was at `c79339c`, nine commits behind `origin/main` at `a8a9d7d`**, because
+  #750 had been merged on GitHub and nothing had fetched it. `git reflog main` shows the two, and
+  `git rev-list --count c79339c..a8a9d7d` prints 9.
+- **Reviewer 5's brief named `gh pr diff 754`, and it ran `git diff main...HEAD` three times
+  instead.** The worktree shared the repository's refs, so its `main` was the stale one.
+- **Most of its 1 555 357 tokens went to #750**, a change already on `main`: four of its five
+  mentions were about #750.
+- **The session's own review diff was right** only because the session typed `origin/main` in
+  place of the skill's `main...HEAD`.
+
 ### Commit bodies that a fix made false, on #669 (#671)
 
 Under the rule that a commit body takes its reason from the ticket. Written for this page on

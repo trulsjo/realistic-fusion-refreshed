@@ -1357,9 +1357,10 @@ if (Test-Path -LiteralPath $wrapRule) {
 # WHAT IT CANNOT SEE: whether the help says the right thing about a half it names, prose that
 # describes kinds of half ("the canaries", "the two sprite gates"), any help but .PARAMETER
 # SelfTest, and a half built some other way than that shape. A gate is a scripts/*.ps1 with the
-# runner's name on a line that does not start with `#`, and a line of a help block counts: a script
-# that names the runner only there declares no half and is skipped. A half's entry is read only
-# from lines that do not start with `#`, so this comment's own `@{ Name` is not one.
+# runner's name on a line with no `#` before it, and a line of a help block counts: a script that
+# names the runner only there declares no half, is skipped, and still counts towards the floor. A
+# half's entry is read only from lines whose first character after indentation is not `#`, so this
+# comment's own `@{ Name` is not one.
 $HALF_ENTRY = "@\{\s*Name\s*=\s*'([^']+)'\s*;\s*Body"
 # The gates calling the runner when this section was written, 2026-10-22. It scans for them, so
 # it can pass by finding none.
