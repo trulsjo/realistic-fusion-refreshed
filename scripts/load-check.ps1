@@ -396,8 +396,10 @@
     with the same dump, so the planted copy is the only reason for the row. The committed file is
     not touched.
 
-    STARVED-REACTOR IS #72's, and it is the odd one out: every other half is about another mod
-    breaking our prototypes, where this is about a developer edit to our own. check_input_flow()
+    STARVED-REACTOR IS #72's, and it is the odd one out among the canary halves that break a
+    prototype: every other one is about another mod breaking our prototypes, where this is about a
+    developer edit to our own. stale-geometry is about a developer edit too, and breaks no
+    prototype. check_input_flow()
     replaced check_cadence() when per-tick confinement spending dissolved the coupling between
     UPDATE_INTERVAL and buffer_capacity, and what became load-bearing in its place is
     input_flow_limit >= heating_power_w. The canary cuts rf-reactor's limit to 1 W from outside,
@@ -417,7 +419,8 @@
     ordinary pipe in the game -- because a gate that tolerated everything would pass added-category
     just as happily.
 
-    NO OTHER GATE WATCHES THOSE CONNECTIONS, which is why the pair is here rather than left to the
+    NO GATE BUT GET-RENDERDISAGREEMENTS' TWO CALLERS WATCHES THOSE CONNECTIONS -- Test-RenderedArt,
+    and since #751 Test-ModelGeometry -- which is why the pair is here rather than left to the
     containment floor. Get-ContainmentBreaches skips any connection we left `default`, by design and
     by its own predicate, and all four of rf-heat-exchanger's are that shape. A gate, not a watcher:
     probe-connection-categories.ps1 reports on exactly this shape -- its REPLACED verdict is for it --
@@ -648,8 +651,8 @@ function Get-RenderDisagreements {
                 Live     = if ($onlyTheirs) { $onlyTheirs -join "`n                " } else { '(nothing the manifest lacks)' } })
         }
 
-        # The categories, as a SUBSET rather than as equality, and this is the only GATE that checks
-        # them on a connection like these. Get-ContainmentBreaches deliberately skips anything
+        # The categories, as a SUBSET rather than as equality, and this function is the only place a
+        # GATE checks them on a connection like these, for Test-RenderedArt and Test-ModelGeometry. Get-ContainmentBreaches deliberately skips anything
         # we left `default` -- its own $contained predicate is false for exactly that set -- and all
         # four of rf-heat-exchanger's connections are that shape, so "the containment floor covers it"
         # is not available here and the field cannot simply be dropped. What a coexisting mod does is
@@ -768,10 +771,11 @@ function Test-ModelGeometry {
     if ($rows) {
         Write-Host ''
         Write-Host "FAILED - model geometry: $($rows.Count) disagreement(s) between a committed geometry.json and"
-        Write-Host '         the live prototype. Regenerate it with `python tools/render-machine.py rf-<machine>`;'
-        Write-Host '         a machine with a model under models/ is then rebuilt with --regenerate. A lost'
-        Write-Host '         category is another mod taking it, as in the rendered-art check, and is not'
-        Write-Host '         regenerated.'
+        Write-Host '         the live prototype. Put the prototype back if it moved by mistake; otherwise'
+        Write-Host '         rewrite the file with `python tools/extract-geometry.py rf-<machine>`, and'
+        Write-Host '         rebuild a machine with a model under models/ with `python'
+        Write-Host '         tools/render-machine.py rf-<machine> --regenerate`. A lost category is another'
+        Write-Host '         mod taking it, as in the rendered-art check, and is not regenerated.'
         foreach ($r in $rows) {
             Write-Host "    $($r.Prototype)  $($r.Field)"
             Write-Host "      recorded: $($r.Recorded)"

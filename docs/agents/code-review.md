@@ -175,9 +175,10 @@ the claim's subject and its synonyms, and each hit is read. **The search is done
 lists each claim, the files searched for it, and each hit, as a finding or as checked, and each hit
 listed as checked quotes the words it was checked on.** A hit listed by its file's name or its kind
 alone is not yet checked (#752). On #750 the pre-PR reviewer's report listed
-`bench-fluid-links.ps1 (generic)` among its hits, as its transcript shows. That file's help, a
-comment and a printed label still said the output-into-`input-output` sink is "this mod's
-heater-to-reactor" link, which #740 had made false, and the plugin pass raised it. On #694 the
+`bench-fluid-links.ps1 (generic)` among its hits, as its transcript shows. That file's help and a
+comment still said the output-into-`input-output` sink is "this mod's heater-to-reactor" link, and
+a printed label called it "this mod's plasma link", which #740 had made false. The plugin pass
+raised it. On #694 the
 plugin pass found two statements the branch had made false in other words, `GLOSSARY.md`'s
 Sub-ignition entry and the brownout report's quoted check, and the pre-PR review had passed both. On
 #707 (2026-10-15) the branch narrowed to cells built 1H2 the claim that an unpowered reactor falls
