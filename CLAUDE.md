@@ -27,9 +27,10 @@ about whether a change is safe. What each proves, in a line:
 - **`tests/test-*.lua`** cover the pure simulation outside Factorio.
 - **`scripts/load-check.ps1`** creates a real map and asserts against it, and is where the
   invariants tying the simulation to the prototypes are enforced. It also fails when a rendered
-  machine's `manifest.json` disagrees with the live prototype's footprint or connections, when a
-  socket is drawn at a height no vanilla pipe would meet, and when a piece of a socket is not drawn
-  as far above its axis as below it or is not the width the model recorded.
+  machine's `manifest.json` or any committed `models/*/geometry.json` disagrees with the live
+  prototype's footprint or connections, when a socket is drawn at a height no vanilla pipe would
+  meet, and when a piece of a socket is not drawn as far above its axis as below it or is not the
+  width the model recorded.
 - **Each `scripts/check-*.ps1`** creates a real map and asserts against it.
 - **`scripts/ship-check.ps1`** runs no game. It checks the claims the mods make about themselves:
   the two statements ADR 0003 and ADR 0006 oblige them to make, the credits, the licence files and
