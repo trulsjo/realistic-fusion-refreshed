@@ -28,7 +28,7 @@
   "connections": [
     {
       "box": "fluid_box",
-      "production_type": "input-output",
+      "production_type": "input",
       "fluid": null,
       "flow": "input-output",
       "connection_type": "normal",
@@ -41,7 +41,7 @@
     },
     {
       "box": "fluid_box",
-      "production_type": "input-output",
+      "production_type": "input",
       "fluid": null,
       "flow": "input-output",
       "connection_type": "normal",
