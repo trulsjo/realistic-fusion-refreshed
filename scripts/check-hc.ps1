@@ -74,10 +74,11 @@
     Prove this rig can fail, and the plant section especially (#280, #281, #282).
 
     THE PLANT SECTION IS WHY THIS SWITCH EXISTS. Its rows are about RUNTIME STATE rather than the
-    data stage, and the only other self-test here that starts the game breaks a PROTOTYPE in every
-    half that breaks anything: load-check.ps1's canary halves are all data-stage, and its other
-    three break nothing at all -- repo-loads is its floor, and socket-height-gate and
-    socket-parts-gate run no canary mod because the gates they prove need no game RUN. So a row
+    data stage, and the only other self-test here that starts the game breaks nothing at runtime:
+    load-check.ps1's halves that break a prototype do it in the data stage, and its other four break
+    none -- repo-loads is its floor, stale-geometry (#751) breaks a copy of a committed geometry
+    file under a canary that changes nothing, and socket-height-gate and socket-parts-gate run no
+    canary mod because the gates they prove need no game RUN. So a row
     like "energy reaches the second exchanger" cannot be reached from there, and a row like "no
     pipe carries reactor energy" passes by counting nothing, which is a check that says nothing
     until something has been counted.

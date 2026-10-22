@@ -42,8 +42,9 @@ about whether a change is safe. What each proves, in a line:
 - **The shared locale check and `scripts/name-check.ps1`** only dump prototypes and create no
   map, so a pass there says nothing about runtime.
 
-**The three art gates inside `load-check.ps1` need Python on PATH, and the two that read sprites
-need `pillow` and `numpy` in it.** A missing one is a failure with a message, not a skip.
+**The three art gates and the model geometry gate inside `load-check.ps1` need Python on PATH, and
+the two that read sprites need `pillow` and `numpy` in it.** A missing one is a failure with a
+message, not a skip.
 
 **[`docs/agents/state-detail.md`](docs/agents/state-detail.md) has what this section carried until
 #591**: when each gate gained each check and by which ticket, what each check cannot see, how the
