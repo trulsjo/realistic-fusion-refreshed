@@ -17,9 +17,13 @@ pass.
 1. **Commit the work**, so the review and the fixes are two diffs. Each commit body on the branch,
    this one's and every later one's, is written as `docs/agents/code-review.md` says under *A
    review before the pull request, and the plugin pass after it* (#671). Write both diffs to the
-   session's scratchpad, never into the repository:
+   session's scratchpad, never into the repository. **First bring the local `main` up to
+   `origin/main`** (#755), so this diff, step 7's and the markdown-only test in step 2 read against
+   the `main` the branch merges into. Where the first line fails, it cannot fast-forward: stop, and
+   tell the user git's message.
 
    ```
+   git fetch origin main:main              # fast-forward only; refuses a main that has diverged
    git tag -f pre-pr-reviewed HEAD         # the reviewed commit; step 4 needs it. Never pushed
    git diff --output="<scratch>/branch.diff" main...HEAD
    ```

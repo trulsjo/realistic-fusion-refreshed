@@ -64,6 +64,7 @@ from `<this session's checkout>` by its full path, and run no command there."
    PowerShell.
 
    ```
+   git fetch origin main:main
    gh pr view <n> --json state,isDraft,comments --jq ".state, .isDraft, (.comments[].body | .[0:15])"
    git ls-files "CLAUDE.md" "*/CLAUDE.md"
    gh pr view <n> --json body --jq .body
@@ -71,9 +72,11 @@ from `<this session's checkout>` by its full path, and run no command there."
    git rev-parse HEAD
    ```
 
-   The first prints the state, whether it is a draft, and the first 15 characters of each
+   The first brings the local `main` up to `origin/main` (#755); a worktree shares its refs, so a
+   stale one would be every subagent's `main` too. Where it fails, it cannot fast-forward: stop,
+   and tell the user git's message. The second prints the state, whether it is a draft, and the first 15 characters of each
    comment. Stop when the pull request is closed, is a draft, or has a comment that starts
-   `### Code review`, and say which. Nothing else stops the pass. The second line is the
+   `### Code review`, and say which. Nothing else stops the pass. The third line is the
    `CLAUDE.md` paths the reviewers are given, and the body is the summary of the change. The last
    two print the same hash, the `<hash>` of the briefs; if they differ, push or check out first.
 
@@ -84,7 +87,8 @@ from `<this session's checkout>` by its full path, and run no command there."
    right:
 
    > You are one of five independent reviewers of pull request `<n>` of this repository
-   > (`gh pr diff <n>`). `<your task>` The tracked `CLAUDE.md` files
+   > (`gh pr diff <n>`). Read the change with `gh pr diff <n>`, never with a local `git diff`
+   > against `main`. `<your task>` The tracked `CLAUDE.md` files
    > are `<paths>`. In this repository a false sentence or a wrong figure in tracked prose is a
    > bug: `docs/agents/code-review.md`, *Review the prose, not only the code*, says what to
    > check.
@@ -129,7 +133,8 @@ from `<this session's checkout>` by its full path, and run no command there."
    > You are the verifier of the candidates five reviewers raised on pull request `<n>` of this
    > repository. For each candidate below you are given the quoted
    > words or code and the one source to check them against. Check that source, and nothing
-   > else unless it sends you on.
+   > else unless it sends you on. Where you need the change, read it with `gh pr diff <n>`,
+   > never with a local `git diff` against `main`.
    >
    > `<for each: its letter, the file, the quoted words, what the reviewer says is wrong, the
    > source>`
