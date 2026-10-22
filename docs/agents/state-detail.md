@@ -235,3 +235,11 @@ One line for each change to a gate, newest last, with its date and its ticket.
   write-shape, writer-count, ramp and probe rows. Its `-SelfTest` gains
   `shared-heat-refused`, which loads a canary putting the `input-output` box back and requires
   the ten rows that say heat is not shared to fail by name; it replaces `all-arrives-refused`.
+- 2026-10-22, #751: `load-check.ps1` holds every committed `models/*/geometry.json` against the
+  loaded dump, through the comparison its rendered-art check gives a manifest, so a machine with a
+  geometry and no render is held too. Three were held by nothing until then: the aneutronic
+  reactor, the direct energy converter and the lithium blanket. Its `-SelfTest` gains
+  `stale-geometry`, which plants a copy of the first committed geometry with one connection's
+  `production_type` flipped and requires a row on that machine's connections and no other. It
+  cannot see a geometry nobody committed, nor a model built from a geometry since regenerated:
+  `models/render.py` compares that hash.

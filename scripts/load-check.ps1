@@ -208,6 +208,12 @@
     what a player would see. Python 3 on PATH is a requirement of this gate; a missing interpreter
     is a failure, not a skip.
 
+    AND EVERY COMMITTED MODEL GEOMETRY THE SAME WAY (#751). A models/<machine>/geometry.json is what
+    a render or a model is built from, and the check above reads one only once a render's manifest
+    records it. Test-ModelGeometry holds every committed one against the loaded dump through the same
+    comparison, rendered or not. On #750 the aneutronic reactor's plasma box became `input`, its
+    geometry kept `input-output`, and no gate failed.
+
     AND IT OPENS THE SPRITES THEMSELVES, FOR ONE THING ONLY (#344): every socket a player can put an
     ordinary pipe on must be DRAWN at the height a vanilla pipe is drawn at. That is not the same
     question as the one above and neither covers it -- both rendered machines shipped for months
@@ -319,7 +325,8 @@
     ADDS a connection category to one must NOT be reported; replaced-category, a mod that REPLACES
     one must be; starved-reactor, a reactor whose input_flow_limit cannot cover its confinement
     heating must be refused; slid-mockup, a mod that moves a pipe connection on a machine wearing a
-    MOCKUP must be caught; unburnable-plasma, a mod that puts a plasma of its own through our
+    MOCKUP must be caught; stale-geometry, a committed model geometry the prototype has moved away
+    from must be caught; unburnable-plasma, a mod that puts a plasma of its own through our
     heating category must be refused; swapped-boxes, the isotope collector's two box filters
     swapped must be refused; widened-box, a reactor whose plasma fluid box is not the capacity its
     spec declares must be refused; widened-heater-box, a heater whose output boxes are not the
@@ -330,8 +337,8 @@
 
     repo-loads is required or the others prove nothing, since Factorio also exits non-zero when the
     repo is genuinely broken. missing-asset, reassigned-category, slid-socket, added-category,
-    replaced-category and slid-mockup are the ones Factorio exits 0 on, where the check has to
-    decide alone. THE OTHERS ARE THE MOD REFUSING ITSELF -- invalid-prototype, starved-reactor,
+    replaced-category, slid-mockup and stale-geometry are the ones Factorio exits 0 on, where the
+    check has to decide alone. THE OTHERS ARE THE MOD REFUSING ITSELF -- invalid-prototype, starved-reactor,
     unburnable-plasma, swapped-boxes, widened-box and widened-heater-box all end with Factorio
     exiting non-zero, which is why each of the last five has to match the refusal's own message as well as its exit code. THE TWO SPRITE
     GATES ARE NEITHER: they run no canary mod at all, because the gates they prove (#344, #373) need
@@ -380,6 +387,14 @@
     own header, nothing checked against entities.lua. The table now lives in mockup-machines.psd1
     and Test-MockupArt holds every row against the loaded dump; the canary slides the first
     connection of the first machine in that table one tile along its edge and requires the row.
+
+    STALE-GEOMETRY IS #751's, and it is slid-socket the other way round: the prototype is left as it
+    is, its canary changing nothing in data, and the geometry goes stale instead. It copies the
+    first committed models/*/geometry.json into the canary's directory with its first connection's
+    production_type flipped, the shape #750's aneutronic reactor shipped in, and requires a row on
+    that machine's connections and no other. It first requires the committed geometries to agree
+    with the same dump, so the planted copy is the only reason for the row. The committed file is
+    not touched.
 
     STARVED-REACTOR IS #72's, and it is the odd one out: every other half is about another mod
     breaking our prototypes, where this is about a developer edit to our own. check_input_flow()
@@ -572,7 +587,11 @@ function Get-RenderDisagreements {
         on, and a render does not go stale because the game was patched.
 
         An extractor that exits non-zero is a row, not an exception: a prototype it cannot read is a
-        prototype no render can be shown to agree with.  #>
+        prototype no render can be shown to agree with.
+
+        A file here is a manifest, whose `geometry` field holds what the render was built from, or a
+        models/<machine>/geometry.json, which is that geometry bare (#751). Test-ModelGeometry hands
+        it the second kind, so a model's geometry is held by the same comparison as a render's.  #>
     param(
         [Parameter(Mandatory)] [string] $DumpPath,
         [Parameter(Mandatory)] [AllowEmptyCollection()] [System.IO.FileInfo[]] $Manifests
@@ -581,7 +600,8 @@ function Get-RenderDisagreements {
     $extractor = Join-Path $repoRoot 'tools/extract-geometry.py'
     $rows = [System.Collections.Generic.List[object]]::new()
     foreach ($file in $Manifests) {
-        $recorded = (Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json).geometry
+        $document = Get-Content -LiteralPath $file.FullName -Raw | ConvertFrom-Json
+        $recorded = if ($document.PSObject.Properties['geometry']) { $document.geometry } else { $document }
         $name     = $recorded.name
 
         # 2>&1 so a Python traceback lands in the row rather than on the console; "$_" turns the
@@ -719,6 +739,47 @@ function Test-RenderedArt {
         exit 1
     }
     Write-Host "rendered art: all $($manifests.Count) manifest(s) agree with the live footprint, connections and recorded categories."
+}
+
+function Get-ModelGeometries {
+    <#  Every committed models/<machine>/geometry.json, in path order. The self-test picks its victim
+        from the same list.  #>
+    return @(Get-ChildItem -Path (Join-Path $repoRoot 'models/*/geometry.json') -File | Sort-Object FullName)
+}
+
+function Test-ModelGeometry {
+    <#  Every committed model geometry against the loaded dump (#751), through Get-RenderDisagreements.
+        Test-RenderedArt holds a geometry only once a render's manifest records it, so a machine with
+        a geometry and no render was held by nothing: on #750 the aneutronic reactor's plasma box became
+        `input` and its geometry.json kept `input-output` with every gate passing. A machine with a render
+        is held here as well, which costs one extractor call and keeps this gate free of a list of
+        exceptions.  #>
+    param([Parameter(Mandatory)] [string] $DumpPath)
+
+    # The floor Test-RenderedArt has, for its reason: nothing found reads as everything agreeing.
+    $geometries = Get-ModelGeometries
+    if (-not $geometries) {
+        Write-Host ''
+        Write-Host 'FAILED - model geometry: no models/*/geometry.json found. The heat exchanger has had one'
+        Write-Host '         since #249, so this check has stopped finding them.'
+        exit 1
+    }
+    $rows = @(Get-RenderDisagreements -DumpPath $DumpPath -Manifests $geometries)
+    if ($rows) {
+        Write-Host ''
+        Write-Host "FAILED - model geometry: $($rows.Count) disagreement(s) between a committed geometry.json and"
+        Write-Host '         the live prototype. Regenerate it with `python tools/render-machine.py rf-<machine>`;'
+        Write-Host '         a machine with a model under models/ is then rebuilt with --regenerate. A lost'
+        Write-Host '         category is another mod taking it, as in the rendered-art check, and is not'
+        Write-Host '         regenerated.'
+        foreach ($r in $rows) {
+            Write-Host "    $($r.Prototype)  $($r.Field)"
+            Write-Host "      recorded: $($r.Recorded)"
+            Write-Host "      live:     $($r.Live)"
+        }
+        exit 1
+    }
+    Write-Host "model geometry: all $($geometries.Count) committed geometry.json file(s) agree with the live footprint, connections and recorded categories."
 }
 
 # The one sheet the socket-height gate measures its reference off, named here so the plain run and
@@ -1903,6 +1964,50 @@ end
                 'a machine whose mockup no longer fits it is caught.'
             } }
 
+            @{ Name = 'stale-geometry'; Body = {
+                # A committed geometry.json the prototype has moved away from must be caught (#751). The
+                # other way round from slid-socket: the prototype stays as it is, with a canary that
+                # changes nothing in data, and a COPY of the first committed geometry is planted beside
+                # the canary with its first connection's production_type flipped -- the shape #750's
+                # aneutronic reactor shipped in. The committed file is not touched.
+                $geometries = Get-ModelGeometries
+                if (-not $geometries) {
+                    Write-Host ''
+                    Write-Host 'FAILED - self-test: no models/*/geometry.json, so this half has no geometry to plant.'
+                    exit 1
+                }
+                '-- load-check canary, stale-geometry: changes nothing in data.' |
+                    Set-Content -Path (Join-Path $canary 'data-final-fixes.lua') -Encoding utf8
+                $geometryDump = Invoke-HarnessDump -Harness $harness -Tag 'geometry-loaded'
+
+                $stale = Get-Content -LiteralPath $geometries[0].FullName -Raw | ConvertFrom-Json
+                $script:geometryName = $stale.name
+                $first = $stale.connections[0]
+                $first.production_type = if ($first.production_type -ceq 'input-output') { 'input' } else { 'input-output' }
+                $planted = Join-Path $canary 'stale-geometry.json'
+                $stale | ConvertTo-Json -Depth 20 | Set-Content -Path $planted -Encoding utf8
+
+                # The committed geometries first, to show the planted one is the only reason for a row.
+                $cleanRows = @(Get-RenderDisagreements -DumpPath $geometryDump -Manifests $geometries)
+                if ($cleanRows) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: the committed geometries already disagree with the dump, so"
+                    Write-Host '         a row on the planted one would prove nothing:'
+                    foreach ($d in $cleanRows) { Write-Host "           $($d.Prototype)  $($d.Field)" }
+                    exit 1
+                }
+                $staleRows = @(Get-RenderDisagreements -DumpPath $geometryDump -Manifests @(Get-Item -LiteralPath $planted))
+                $onStale = @($staleRows | Where-Object { $_.Prototype -eq $geometryName -and $_.Field -eq 'connections' })
+                if (-not $onStale -or $staleRows.Count -ne $onStale.Count) {
+                    Write-Host ''
+                    Write-Host "FAILED - self-test: a geometry of $geometryName with a production_type the prototype"
+                    Write-Host '         does not have was not reported on its connections alone. It reported:'
+                    foreach ($d in $staleRows) { Write-Host "           $($d.Prototype)  $($d.Field)" }
+                    exit 1
+                }
+                "a committed geometry the prototype has moved away from is caught, on $geometryName."
+            } }
+
             @{ Name = 'unburnable-plasma'; Body = {
                 # A plasma no reactor can burn must be refused (#125). The SECOND half to prove one
                 # of check_prototypes()'s invariants -- the checks that tie the simulation to the prototypes
@@ -2182,7 +2287,8 @@ end
         Write-Host "     $($renderVictim.name)'s rendered art, an added category tolerated on it,"
         Write-Host '     a replaced one caught by name, a reactor whose input_flow_limit'
         Write-Host '     cannot cover its heating refused by check_input_flow(), a slid'
-        Write-Host "     connection caught on $mockupName's mockup, an unburnable plasma"
+        Write-Host "     connection caught on $mockupName's mockup, a stale geometry caught on"
+        Write-Host "     $geometryName, an unburnable plasma"
         Write-Host '     refused by check_every_plasma_burns(), a swapped collector box'
         Write-Host '     refused by check_collector_boxes(), a doubled plasma box refused by'
         Write-Host '     check_plasma_capacity() and a widened heater box refused by'
@@ -2241,6 +2347,8 @@ end
         # Before the asset check for the same reason containment is: the upstream asset reds must
         # not hide it. Reads the loaded dump, so a set moving our connection fails it (#250).
         Test-RenderedArt -DumpPath $loadedDump
+        # The same comparison over every model's geometry, rendered or not (#751).
+        Test-ModelGeometry -DumpPath $loadedDump
 
         # The other half of the same question, and the only thing here that opens a sprite (#344).
         # Test-RenderedArt proves a socket is recorded where the machine has it; this proves it is
