@@ -37,8 +37,9 @@ about whether a change is safe. What each proves, in a line:
   the assets dependency floor (ADR 0023). It also checks prose no other gate can see: that a script
   with a `.SYNOPSIS` answers `Get-Help`, the two citation rules under Conventions, the rows of a
   research note's `## Current figures` table, what the shared Markdown check reads in every
-  tracked `.md` as staged (#658), and the width of the files `docs/agents/code-review.md` names as
-  wrapped.
+  tracked `.md` as staged (#658), the width of the files `docs/agents/code-review.md` names as
+  wrapped, and that a gate's `-SelfTest` help that names any of its halves names all of them
+  (#756).
 - **The shared locale check and `scripts/name-check.ps1`** only dump prototypes and create no
   map, so a pass there says nothing about runtime.
 

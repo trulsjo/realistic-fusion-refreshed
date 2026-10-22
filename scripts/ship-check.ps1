@@ -165,6 +165,13 @@
     two numbers from a split figure when the second has three digits; the section comment has the
     rest.
 
+    SECTION 13 HAS BOTH (#756). It fails a half a gate declares and its -SelfTest help leaves
+    out, where that help names at least one of the gate's halves, and it skips and lists a gate
+    whose help names none. A floor holds the number of gates it found, because it finds them by
+    scanning; the unnamed-half-caught and help-naming-none-skipped halves plant a gate of each
+    kind. It cannot see whether the help says the right thing about a half it names, nor prose
+    that describes kinds of half; the section comment has the rest.
+
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
     stopped saying no fails rather than turning every check below it green. It was also demonstrated
@@ -174,11 +181,11 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove five things a green run cannot: the shared -SelfTest runner
+    Run the checks as usual, then prove six things a green run cannot: the shared -SelfTest runner
     the tools submodule holds -- that it numbers halves from the list it was given and refuses a half it
     cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both directions, section 10's two assertions, each in both
-    directions, and section 12's two scans
-    of the lines, each in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
+    directions, section 12's two scans
+    of the lines, each in both directions, and section 13 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
     memory and the planted documents live in the scratch directory the run removes on its way out.
 
 .EXAMPLE
@@ -1334,6 +1341,70 @@ if (Test-Path -LiteralPath $wrapRule) {
     }
 }
 
+# 13. A GATE'S -SelfTest HELP THAT NAMES ITS HALVES NAMES EVERY ONE (#756).
+#
+# A gate declares its halves by name in the array it hands Invoke-SelfTestHalves, and its
+# .PARAMETER SelfTest help lists them by hand. On #754 a half was added to load-check.ps1 and
+# three pre-PR findings were sentences about the set of halves that the new one made false. The
+# help's list is the one place that set is mechanical: a name is there or it is not.
+#
+# A gate whose help names none of its halves is skipped and said to be (Truls, 2026-10-22): it
+# describes them and does not list them, and that prose is the reviewer's. A half's name is read
+# only from the shape the runner is handed, `@{ Name = '<name>'; Body`, because a pattern on every
+# Name = '...' also matches rig and mod names such as rf-links-rig. A name counts as named when it
+# stands in the help as a whole word, hyphens included.
+#
+# WHAT IT CANNOT SEE: whether the help says the right thing about a half it names, prose that
+# describes kinds of half ("the canaries", "the two sprite gates"), any help but .PARAMETER
+# SelfTest, and a half built some other way than that shape. A gate is a scripts/*.ps1 with a call
+# to the runner on a line that is not a comment.
+$HALF_ENTRY = "@\{\s*Name\s*=\s*'([^']+)'\s*;\s*Body"
+# The gates calling the runner when this section was written, 2026-10-22. It scans for them, so
+# it can pass by finding none.
+$HALVES_GATE_FLOOR = 8
+
+function Find-UnnamedHalves {
+    <#  Every half each of these scripts declares and its -SelfTest help leaves out, where the help
+        names at least one.
+
+        Returns the gates found, the ones skipped for naming none, and the missing halves.  #>
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Files)
+
+    $gates   = [System.Collections.Generic.List[string]]::new()
+    $skipped = [System.Collections.Generic.List[string]]::new()
+    $missing = [System.Collections.Generic.List[object]]::new()
+    foreach ($file in $Files) {
+        $text = Get-Content -LiteralPath $file -Raw
+        if ($text -notmatch '(?m)^[^#\r\n]*Invoke-SelfTestHalves\b') { continue }
+        $gates.Add($file)
+        $halves = @([regex]::Matches($text, $HALF_ENTRY) | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
+        $help   = [regex]::Match($text, '(?ms)^\s*\.PARAMETER\s+SelfTest\s*$(.*?)(?=^\s*\.[A-Z]+\b|^\s*#>)').Groups[1].Value
+        $named  = @($halves | Where-Object { $help -match "(?<![\w-])$([regex]::Escape($_))(?![\w-])" })
+        if (-not $named) { $skipped.Add($file); continue }
+        foreach ($half in $halves) {
+            if ($half -cnotin $named) { $missing.Add([pscustomobject]@{ File = $file; Half = $half }) }
+        }
+    }
+    return [pscustomobject]@{ Gates = $gates; Skipped = $skipped; Missing = $missing }
+}
+
+$checks++
+$halfRead = Find-UnnamedHalves -Files @(Get-ChildItem -LiteralPath (Join-Path $repoRoot 'scripts') -Filter '*.ps1' | ForEach-Object FullName)
+foreach ($row in $halfRead.Missing) {
+    $failures.Add(("scripts/$(Split-Path $row.File -Leaf) declares the -SelfTest half '$($row.Half)', and its " +
+        '.PARAMETER SelfTest help names other halves and not this one.'))
+}
+$checks++
+if ($halfRead.Gates.Count -lt $HALVES_GATE_FLOOR) {
+    $failures.Add(("section 13 found $($halfRead.Gates.Count) script(s) calling Invoke-SelfTestHalves, against the " +
+        "$HALVES_GATE_FLOOR there were when it was written. Either a gate was removed and the floor should " +
+        'follow, or the scan has stopped finding them.'))
+}
+if ($halfRead.Skipped.Count) {
+    Write-Host ("section 13 skipped, their -SelfTest help naming none of their halves: " +
+        (($halfRead.Skipped | ForEach-Object { Split-Path $_ -Leaf }) -join ', '))
+}
+
 if ($failures.Count) {
     Write-Host ''
     foreach ($f in $failures) { Write-Host "FAIL  $f" -ForegroundColor Red }
@@ -1349,6 +1420,26 @@ if ($SelfTest) {
     # After the sections, not instead of them: a gate proved against a repository that is already
     # failing tells nobody which of the two broke.
     Write-Host ''
+    # Section 13's planted gates. An entry is built in pieces, because this file is one the
+    # section reads, and a whole one here would be taken for a half of this script.
+    function New-PlantedGate([string] $Path, [string] $Help, [string[]] $Halves) {
+        @(
+            '<#'
+            '.SYNOPSIS'
+            '    A planted gate.'
+            ''
+            '.PARAMETER SelfTest'
+            "    $Help"
+            ''
+            '.EXAMPLE'
+            '    pwsh -File planted.ps1 -SelfTest'
+            '#>'
+            'Invoke-SelfTestHalves -Halves @('
+            ($Halves | ForEach-Object { '    @{ Name = ' + "'$_'" + '; Body = { ''ok'' } }' })
+            ')'
+        ) | Set-Content -LiteralPath $Path -Encoding utf8
+    }
+
     $planted = Join-Path ([IO.Path]::GetTempPath()) ('rf-shipcheck-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
     New-Item -ItemType Directory -Path $planted -Force | Out-Null
     try {
@@ -1664,6 +1755,33 @@ if ($SelfTest) {
                 }
                 'a line that ends in a year, an issue number, a decimal or a date is not the head of a figure, and three digits that open a line under a blank line, in a new list item, in a table row, inside a fence or in a heading do not carry one on.'
             } }
+
+            @{ Name = 'unnamed-half-caught'; Body = {
+                # Section 13 passes by finding nothing missing. A help naming one half of two, and
+                # the other's name as part of a longer word, which is not naming it.
+                $gate = Join-Path $planted 'check-planted.ps1'
+                New-PlantedGate $gate 'The listed-half proves one thing; the canary-run-ish rest is described.' 'listed-half', 'canary-run'
+                $read = Find-UnnamedHalves -Files @($gate)
+                $rows = @($read.Missing | ForEach-Object { $_.Half })
+                if (($rows -join '; ') -cne 'canary-run' -or $read.Gates.Count -ne 1 -or $read.Skipped.Count) {
+                    throw ("a gate whose -SelfTest help names listed-half and not canary-run found $($read.Gates.Count) gate(s), " +
+                           "skipped $($read.Skipped.Count) and reported as missing: '$($rows -join '; ')'. Wanted exactly canary-run.")
+                }
+                'a half the -SelfTest help leaves out, beside one it names, is caught by name, and a longer word holding its name does not name it.'
+            } }
+
+            @{ Name = 'help-naming-none-skipped'; Body = {
+                # The other direction, as Truls scoped it: a help that names no half describes them,
+                # and that is the reviewer's to read.
+                $gate = Join-Path $planted 'check-describing.ps1'
+                New-PlantedGate $gate 'Two halves, the floor and a canary, described and not listed.' 'floor-half', 'canary-half'
+                $read = Find-UnnamedHalves -Files @($gate)
+                if ($read.Missing.Count -or $read.Skipped.Count -ne 1 -or $read.Gates.Count -ne 1) {
+                    throw ("a gate whose -SelfTest help names none of its halves was reported missing " +
+                           "$($read.Missing.Count) half(s) and skipped $($read.Skipped.Count) time(s). Wanted skipped once, and nothing missing.")
+                }
+                'a gate whose -SelfTest help names none of its halves is skipped, and none of its halves is reported.'
+            } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
     Write-Host ''
@@ -1678,5 +1796,5 @@ Write-Host 'ships art, every accent named for a fluid still carries that fluid''
 Write-Host 'no prose cites a self-test half by position, every Current figures row still names a'
 Write-Host 'heading and a figure its note has, every tracked Markdown file passes the shared check as staged, and'
 Write-Host 'no prose line of the wrapped files is over the width they are wrapped at or splits a'
-Write-Host 'grouped figure across its end.'
+Write-Host 'grouped figure across its end, and every -SelfTest help that names a half names all of them.'
 exit 0
