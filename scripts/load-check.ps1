@@ -396,9 +396,9 @@
     with the same dump, so the planted copy is the only reason for the row. The committed file is
     not touched.
 
-    STARVED-REACTOR IS #72's, and it is the odd one out among the canary halves that break a
-    prototype: every other one is about another mod breaking our prototypes, where this is about a
-    developer edit to our own. stale-geometry is about a developer edit too, and breaks no
+    STARVED-REACTOR IS #72's, and it was the first half about a developer edit to our own
+    prototypes rather than another mod breaking them. swapped-boxes, widened-box and
+    widened-heater-box are the same kind, and stale-geometry is a developer edit that breaks no
     prototype. check_input_flow()
     replaced check_cadence() when per-tick confinement spending dissolved the coupling between
     UPDATE_INTERVAL and buffer_capacity, and what became load-bearing in its place is

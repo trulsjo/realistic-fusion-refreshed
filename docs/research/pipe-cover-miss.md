@@ -167,7 +167,8 @@ removed" is **no**. One machine is not six, and this note does not claim otherwi
 
 `rf-aneutronic-reactor` and `rf-direct-energy-converter` wear mockups — flat plates with labelled
 connection marks — and neither has a model or a render, so neither has a drawn axis to measure a
-drop against. What can be said is where the cover is, and on the converter
+drop against. That neither has one is *read from source* at a8a9d7d on 2026-10-22: neither has a
+`build.py` under `models/` nor a manifest under the Assets mod's `graphics/rendered/`. What can be said is where the cover is, and on the converter
 it is unmistakable: **a grey pipe-cover blob on the grass above the plate's north edge, clear of the
 machine altogether**, beside a yellow `energy` mark it does not touch.
 
