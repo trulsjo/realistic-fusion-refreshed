@@ -67,7 +67,8 @@ pass.
    >
    > List each claim the diff narrows, retracts or deletes the subject of, and search the tracked
    > files for every other statement of it by its meaning, as the second rule says. Your report
-   > lists each claim, the files searched for it, and each hit, as a finding or as checked.
+   > lists each claim, the files searched for it, and each hit, as a finding or as checked, with
+   > the words each checked hit was checked on.
    >
    > You are read-only: edit, commit and run nothing that changes the working tree. If proving a
    > finding takes a planted change, make your own worktree first, as the third rule says. Scratch
