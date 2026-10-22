@@ -72,15 +72,15 @@ from `<this session's checkout>` by its full path, and run no command there."
    git rev-parse HEAD
    ```
 
-   The first brings the local `main` up to `origin/main` (#755); a worktree shares its refs, so a
-   stale one would be every subagent's `main` too. Where it fails, it cannot fast-forward: stop,
-   and tell the user git's message. The second prints the state, whether it is a draft, and the first 15 characters of each
-   comment. Stop when the pull request is closed, is a draft, or has a comment that starts
+   The first brings the local `main` up to `origin/main` (#755). Where it fails, stop and tell the
+   user git's message: it fails on a `main` that has diverged, on one checked out in any worktree,
+   and with no network. The second prints the state, whether it is a draft, and the first 15
+   characters of each comment. Stop when the pull request is closed, is a draft, or has a comment that starts
    `### Code review`, and say which. Nothing else stops the pass. The third line is the
    `CLAUDE.md` paths the reviewers are given, and the body is the summary of the change. The last
    two print the same hash, the `<hash>` of the briefs; if they differ, push or check out first.
 
-   Done when the five have been read.
+   Done when the six have been read.
 
 2. **Spawn the five reviewers in one message**, on Sonnet (`model: sonnet`). Each brief is the
    block below with one task from the list under it, and nothing about what the author thinks is
@@ -152,7 +152,7 @@ from `<this session's checkout>` by its full path, and run no command there."
    was made, and read
    `git reflog -20`: the pull request's body says whether it shows a checkout since step 2.
 
-5. **Check eligibility again** with step 1's first line, and **post two comments** with
+5. **Check eligibility again** with step 1's second line, and **post two comments** with
    `gh pr comment <n> --body-file`. The first:
 
    ```

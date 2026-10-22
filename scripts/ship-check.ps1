@@ -1356,8 +1356,10 @@ if (Test-Path -LiteralPath $wrapRule) {
 #
 # WHAT IT CANNOT SEE: whether the help says the right thing about a half it names, prose that
 # describes kinds of half ("the canaries", "the two sprite gates"), any help but .PARAMETER
-# SelfTest, and a half built some other way than that shape. A gate is a scripts/*.ps1 with a call
-# to the runner on a line that is not a comment.
+# SelfTest, and a half built some other way than that shape. A gate is a scripts/*.ps1 with the
+# runner's name on a line that does not start with `#`, and a line of a help block counts: a script
+# that names the runner only there declares no half and is skipped. A half's entry is read only
+# from lines that do not start with `#`, so this comment's own `@{ Name` is not one.
 $HALF_ENTRY = "@\{\s*Name\s*=\s*'([^']+)'\s*;\s*Body"
 # The gates calling the runner when this section was written, 2026-10-22. It scans for them, so
 # it can pass by finding none.
@@ -1377,7 +1379,8 @@ function Find-UnnamedHalves {
         $text = Get-Content -LiteralPath $file -Raw
         if ($text -notmatch '(?m)^[^#\r\n]*Invoke-SelfTestHalves\b') { continue }
         $gates.Add($file)
-        $halves = @([regex]::Matches($text, $HALF_ENTRY) | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
+        $code   = ($text -split '\r?\n' | Where-Object { $_ -notmatch '^\s*#' }) -join "`n"
+        $halves = @([regex]::Matches($code, $HALF_ENTRY) | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
         $help   = [regex]::Match($text, '(?ms)^\s*\.PARAMETER\s+SelfTest\s*$(.*?)(?=^\s*\.[A-Z]+\b|^\s*#>)').Groups[1].Value
         $named  = @($halves | Where-Object { $help -match "(?<![\w-])$([regex]::Escape($_))(?![\w-])" })
         if (-not $named) { $skipped.Add($file); continue }
