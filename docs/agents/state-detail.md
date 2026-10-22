@@ -243,3 +243,11 @@ One line for each change to a gate, newest last, with its date and its ticket.
   `production_type` flipped and requires a row on that machine's connections and no other. It
   cannot see a geometry nobody committed, nor a model built from a geometry since regenerated:
   `models/render.py` compares that hash.
+- 2026-10-22, #756: `ship-check.ps1` section 13 reads each `scripts/*.ps1` that calls
+  `Invoke-SelfTestHalves`, takes its half names from the `@{ Name = '...'; Body` entries it hands
+  the runner, and fails each half its `.PARAMETER SelfTest` help leaves out when that help names at
+  least one; it prints the gates it skipped for naming none, `name-check.ps1` and `ship-check.ps1`
+  on that day, and a floor of eight gates holds the scan. `run-gates.ps1`'s help names
+  `failing-gate-reported` and `missing-executable-fails`. Its `-SelfTest` gains
+  `unnamed-half-caught` and `help-naming-none-skipped`. It cannot see whether what the help says of
+  a half it names is true, nor prose that describes kinds of half: that stays the reviewer's.

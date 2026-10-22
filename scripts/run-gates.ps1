@@ -65,9 +65,10 @@
     Run only the gates whose name matches this wildcard, e.g. 'check-p*' or 'test-*'.
 
 .PARAMETER SelfTest
-    Prove the runner with stand-in gates and no game: a gate that fails, or whose executable is
-    missing, is returned by name as failed, and one that passes beside it is still reported as
-    passing. Since #578 two more halves run this script itself, as its own process, over stand-in
+    Prove the runner with stand-in gates and no game: `failing-gate-reported` requires a gate that
+    fails to be returned by name as failed while one that passes beside it is still reported as
+    passing, and `missing-executable-fails` requires the same of a gate whose executable is
+    missing. Since #578 two more halves run this script itself, as its own process, over stand-in
     gates in place of the real ones: `exit-code-names-failure` requires a non-zero exit and the
     failing stand-in named in what it prints, and `exit-code-clean` requires exit 0 when every
     stand-in passes. Deleting the branch that turns the failed list into an exit code fails the
