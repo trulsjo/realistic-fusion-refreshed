@@ -76,7 +76,7 @@ from `<this session's checkout>` by its full path, and run no command there."
    user git's message: it fails on a `main` that has diverged, on one checked out in any worktree,
    and with no network. The second prints the state, whether it is a draft, and the first 15
    characters of each comment. Stop when the pull request is closed, is a draft, or has a comment that starts
-   `### Code review`, and say which. Nothing else stops the pass. The third line is the
+   `### Code review`, and say which. Nothing else about the pull request stops the pass. The third line is the
    `CLAUDE.md` paths the reviewers are given, and the body is the summary of the change. The last
    two print the same hash, the `<hash>` of the briefs; if they differ, push or check out first.
 
