@@ -1,6 +1,6 @@
 ---
 name: pre-pr-review
-description: Run this repository's pre-PR review on the current branch. One fresh read-only reviewer is handed the diff against main, docs/agents/code-review.md, and the gate result or the probes' raw output; the same reviewer then confirms the fixes; the result is the findings table for the pull request's body. Use when a branch is ready for its pull request, or when an implement skill says to close out with /code-review.
+description: Run this repository's pre-PR review on the current branch. One fresh read-only reviewer is handed the diff against origin/main, docs/agents/code-review.md, and the gate result or the probes' raw output; the same reviewer then confirms the fixes; the result is the findings table for the pull request's body. Use when a branch is ready for its pull request, or when an implement skill says to close out with /code-review.
 ---
 
 # /pre-pr-review
@@ -19,9 +19,9 @@ pass.
    review before the pull request, and the plugin pass after it* (#671). Write both diffs to the
    session's scratchpad, never into the repository. **First fetch `origin/main`** (#755,
    #758), so this diff, step 7's and the markdown-only test in step 2 read against the `main` the
-   branch merges into. Each reads `origin/main` and never the local `main`, which git will not
-   fetch into while it is checked out in any worktree. Where the first line fails, stop and tell
-   the user git's message: it fails with no network or no access to the remote.
+   branch merges into. Each reads `origin/main` and never the local `main`. Where the first line
+   fails, stop and tell the user git's message: it fails with no network or no access to the
+   remote.
 
    ```
    git fetch origin main                   # moves origin/main only
@@ -55,7 +55,7 @@ pass.
 
    > You are the pre-PR reviewer of a branch of this repository. Read
    > `docs/agents/code-review.md` in full first; its second rule, *Review the prose, not only the
-   > code*, binds you. Then review `<scratch>/branch.diff` (the diff against `main`) against
+   > code*, binds you. Then review `<scratch>/branch.diff` (the diff against `origin/main`) against
    > `<evidence files>`, which hold `<the probes' raw output | the gate results>`.
    >
    > The branch claims to resolve `<#n, #n>`. Read each with the **Read an issue** command in
