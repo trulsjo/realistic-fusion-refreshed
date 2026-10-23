@@ -366,3 +366,10 @@ One line for each, newest last. The passages above are not edited.
   `/pre-pr-review` reads the branch against `origin/main` in steps 1, 2, 4 and 7, and `CLAUDE.md`
   and `scripts/run-gates.ps1` give the markdown-only test the same way. No gate reads it. The
   wording is the session's.
+- **2026-10-23, #761: a plugin-pass subagent that stops before it has reported is resumed.**
+  Truls had the ticket filed from the retrospective on #757 and #759, as this session's transcript
+  shows. On #759 two reviewers stopped on the stream watchdog, one before it had reported.
+  `plugin-pass.md` says a subagent that stops before it has reported is resumed and one that has
+  reported is left, and step 2 of `/plugin-pass` sends the message, with step 4 pointing at it for
+  the verifier. The plugin pass on #764 found the change first made in the skill alone, and the
+  session moved it to the page. No gate reads it. The wording is the session's.
