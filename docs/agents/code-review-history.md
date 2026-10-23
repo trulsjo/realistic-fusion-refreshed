@@ -355,11 +355,14 @@ One line for each, newest last. The passages above are not edited.
   made step 1's "Nothing else stops the pass" false. The session amended the step and the
   eligibility rule's "for nothing else" alike: `plugin-pass.md` now says the pass stops for nothing
   else about the pull request. No gate reads it. The wording is the session's.
-- **2026-10-23, #758: both passes read against `origin/main`, never the local `main`.** Truls
-  asked for the ticket in the session that merged #757, after `git fetch origin main:main`
-  refused there to fetch into a `main` checked out in the repository's folder. The rule's list in
-  `code-review.md` now hands the pre-PR reviewer the diff against `origin/main`, fetched first, and
-  says why not the local `main`. Step 1 of each skill runs `git fetch origin main` and stops when
-  it fails. `/pre-pr-review` reads the branch against `origin/main` in steps 1, 2, 4 and 7, and
-  `CLAUDE.md` and `scripts/run-gates.ps1` give the markdown-only test the same way. No gate reads
-  it. The wording is the session's.
+- **2026-10-23, #758: neither pass fetches into the local `main`, and the pre-PR review reads
+  against `origin/main`.** Truls asked for the ticket in the session that merged #757, as that
+  session's transcript shows, after `git fetch origin main:main` refused there to fetch into a
+  `main` checked out in the repository's folder. The rule's list in `code-review.md` now hands the
+  pre-PR reviewer the diff against `origin/main`, fetched first, and says why not the local `main`.
+  `plugin-pass.md`'s fetch bullet now says the brief, not the fetch, keeps a subagent off a stale
+  local `main`, and that the fetch is for step 7 of `/pre-pr-review`, which fetches nothing
+  itself. Step 1 of each skill runs `git fetch origin main` and stops when it fails.
+  `/pre-pr-review` reads the branch against `origin/main` in steps 1, 2, 4 and 7, and `CLAUDE.md`
+  and `scripts/run-gates.ps1` give the markdown-only test the same way. No gate reads it. The
+  wording is the session's.
