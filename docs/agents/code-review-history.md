@@ -352,5 +352,6 @@ One line for each, newest last. The passages above are not edited.
   up to `origin/main`. `plugin-pass.md` says the session does the same before the plugin pass and
   every brief says to read the change with `gh pr diff`. Step 1 of each skill runs `git fetch origin
   main:main` and stops when it fails. On 2026-10-23 the plugin pass on #757 found that the fetch
-  made the eligibility rule's "for nothing else" false, and `plugin-pass.md` now says the pass stops
-  for nothing else about the pull request. No gate reads it. The wording is the session's.
+  made step 1's "Nothing else stops the pass" false. The session amended the step and the
+  eligibility rule's "for nothing else" alike: `plugin-pass.md` now says the pass stops for nothing
+  else about the pull request. No gate reads it. The wording is the session's.
