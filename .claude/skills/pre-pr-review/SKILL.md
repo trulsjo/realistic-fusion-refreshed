@@ -15,13 +15,15 @@ pass.
 ## Steps
 
 1. **Commit the work**, so the review and the fixes are two diffs. Each commit body on the branch,
-   this one's and every later one's, is written as `docs/agents/code-review.md` says under *A
-   review before the pull request, and the plugin pass after it* (#671). Write both diffs to the
-   session's scratchpad, never into the repository. **First fetch `origin/main`** (#755,
-   #758), so this diff, step 7's and the markdown-only test in step 2 read against the `main` the
-   branch merges into. Each reads `origin/main` and never the local `main`. Where the first line
-   fails, stop and tell the user git's message: it fails with no network or no access to the
-   remote.
+   this one's and every later one's, is written as `docs/agents/code-review.md` says under *A review
+   before the pull request, and the plugin pass after it* (#671). A branch that changes a rule
+   commits the rule and its measurements in this step, and its line on
+   `docs/agents/code-review-history.md` waits for step 7, as the head of
+   `docs/agents/code-review.md` says (#760). Write both diffs to the session's scratchpad, never
+   into the repository. **First fetch `origin/main`** (#755, #758), so this diff, step 7's and the
+   markdown-only test in step 2 read against the `main` the branch merges into. Each reads
+   `origin/main` and never the local `main`. Where the first line fails, stop and tell the user
+   git's message: it fails with no network or no access to the remote.
 
    ```
    git fetch origin main                   # moves origin/main only
