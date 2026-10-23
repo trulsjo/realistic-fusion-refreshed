@@ -85,9 +85,9 @@ than one ticket, before the review**, and **before or after a subagent fan-out, 
 
 **A markdown-only branch runs `ship-check.ps1` alone**, however many tickets it combines (decided
 by Truls, 2026-10-07, #618). A branch is markdown-only when every path
-`git diff --name-only --no-renames main...HEAD` prints ends in `.md`, with `main` first
-fast-forwarded to `origin/main` (#755); `--no-renames` is there so
-that a file renamed to `.md` prints the path it had. One path that does not end in `.md`, a
+`git diff --name-only --no-renames origin/main...HEAD` prints ends in `.md`, with `origin/main`
+fetched first (#755, #758); `--no-renames` is there so that a file renamed to `.md` prints the
+path it had. One path that does not end in `.md`, a
 `.gitignore` or a comment-only edit to a script included, and the branch is not markdown-only:
 the paragraph above applies to it as it would to any other.
 The exception rests on one fact: no other gate reads a `.md` file, checked 2026-10-07. A gate

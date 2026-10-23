@@ -17,16 +17,16 @@ pass.
 1. **Commit the work**, so the review and the fixes are two diffs. Each commit body on the branch,
    this one's and every later one's, is written as `docs/agents/code-review.md` says under *A
    review before the pull request, and the plugin pass after it* (#671). Write both diffs to the
-   session's scratchpad, never into the repository. **First bring the local `main` up to
-   `origin/main`** (#755), so this diff, step 7's and the markdown-only test in step 2 read against
-   the `main` the branch merges into. Where the first line fails, stop and tell the user git's
-   message: it fails on a `main` that has diverged, on one checked out in any worktree, and with
-   no network.
+   session's scratchpad, never into the repository. **First fetch `origin/main`** (#755,
+   #758), so this diff, step 7's and the markdown-only test in step 2 read against the `main` the
+   branch merges into. Each reads `origin/main` and never the local `main`, which git will not
+   fetch into while it is checked out in any worktree. Where the first line fails, stop and tell
+   the user git's message: it fails with no network or no access to the remote.
 
    ```
-   git fetch origin main:main              # fast-forward only
+   git fetch origin main                   # moves origin/main only
    git tag -f pre-pr-reviewed HEAD         # the reviewed commit; step 4 needs it. Never pushed
-   git diff --output="<scratch>/branch.diff" main...HEAD
+   git diff --output="<scratch>/branch.diff" origin/main...HEAD
    ```
 
    **Have git write the file, and quote the path** (#635). Both lines run unchanged in Git Bash
@@ -42,9 +42,9 @@ pass.
      version are the ones the note gives. Where they are not, run the probe again first;
    - any other branch: the output of the gates that were run — `scripts/run-gates.ps1` when the
      branch combines more than one ticket, otherwise the gates the change touches. A
-     markdown-only branch, one where every path `git diff --name-only --no-renames main...HEAD`
-     prints ends in `.md`, runs `scripts/ship-check.ps1` alone however many tickets it combines
-     (#618).
+     markdown-only branch, one where every path
+     `git diff --name-only --no-renames origin/main...HEAD` prints ends in `.md`, runs
+     `scripts/ship-check.ps1` alone however many tickets it combines (#618).
 
    Done when every figure or pass the branch claims has its output in a file.
 
@@ -130,7 +130,7 @@ pass.
    Git Bash, with `<scratch>` written with forward slashes: `cp` is handed the path unquoted.
 
    ```
-   git log main..HEAD --format='%h %s' --grep='<the old figure or words>'
+   git log origin/main..HEAD --format='%h %s' --grep='<the old figure or words>'
    GIT_SEQUENCE_EDITOR="sed -i 's/^pick <short hash>/reword <short hash>/'" \
      GIT_EDITOR="cp <scratch>/msg.txt" git -c core.commentChar=";" rebase -i <short hash>~1
    git push --force-with-lease             # a pushed, unmerged branch only; never main
@@ -243,9 +243,9 @@ pass.
 
    ```
    gh pr view <n> --json body --jq .body         # its counts, and each output it quotes
-   git diff -U0 main...HEAD                      # each count the branch added to tracked prose
+   git diff -U0 origin/main...HEAD               # each count the branch added to tracked prose
    grep -n "#<n>" docs/agents/review-figures.md  # the row's pre-PR findings cell (#715)
-   git log main..HEAD --format="%h %s%n%b"       # the branch's own commit messages
+   git log origin/main..HEAD --format="%h %s%n%b" # the branch's own commit messages
    ```
 
    Run each command the body quotes output from, on the head. Count what each count counts. A
