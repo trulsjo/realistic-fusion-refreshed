@@ -346,11 +346,11 @@ One line for each, newest last. The passages above are not edited.
   listed as checked quotes the words it was checked on, and that a hit listed by its file's name or
   its kind alone is not yet checked. The brief in step 3 of `/pre-pr-review` asks for the quote. No
   gate reads it. The wording is the session's.
-- **2026-10-22, #755: both passes read against the merged `main`.** The ticket was filed from
-  #754, where a reviewer read a diff against a local `main` nine commits behind. The fourth rule's
-  list of what the pre-PR review is handed says the diff is against `main` with the local one first
-  brought up to `origin/main`. `plugin-pass.md` says the session does the same before the plugin
-  pass and every brief says to read the change with `gh pr diff`, and that the pass stops for
-  nothing else about the pull request, where it said for nothing else. Step 1 of each skill runs
-  `git fetch origin main:main` and stops when it fails. No gate reads it. The wording is the
-  session's.
+- **2026-10-22, #755: both passes read against the merged `main`.** The ticket was filed from #754,
+  where a reviewer read a diff against a local `main` nine commits behind. The fourth rule's list of
+  what the pre-PR review is handed says the diff is against `main` with the local one first brought
+  up to `origin/main`. `plugin-pass.md` says the session does the same before the plugin pass and
+  every brief says to read the change with `gh pr diff`. Step 1 of each skill runs `git fetch origin
+  main:main` and stops when it fails. On 2026-10-23 the plugin pass on #757 found that the fetch
+  made the eligibility rule's "for nothing else" false, and `plugin-pass.md` now says the pass stops
+  for nothing else about the pull request. No gate reads it. The wording is the session's.
