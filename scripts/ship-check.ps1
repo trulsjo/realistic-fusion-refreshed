@@ -1422,8 +1422,9 @@ if ($halfRead.Skipped.Count) {
 # stopped a review whenever some folder sat on it, and one that diffed against it read a stale
 # base. Nothing else holds the commands to that: on #759 every reviewer grepped for them by hand.
 #
-# It reads a fixed list: the two review skills, and the files the markdown-only test is stated in,
-# both CLAUDE.md and scripts/run-gates.ps1. A missing one fails, so a moved skill is not passed
+# It reads a fixed list: the two review skills, the root CLAUDE.md and scripts/run-gates.ps1,
+# which state the markdown-only test, and scripts/CLAUDE.md, the agent notes for the scripts
+# directory, which #762 named with them. A missing one fails, so a moved skill is not passed
 # by finding nothing. A fixed list also keeps it off git-ignored skills, which differ by machine.
 # The dated pages, code-review-history.md and code-review-evidence.md, record #755's commands as
 # they were and are not read.

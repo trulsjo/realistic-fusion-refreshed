@@ -39,8 +39,8 @@ about whether a change is safe. What each proves, in a line:
   research note's `## Current figures` table, what the shared Markdown check reads in every
   tracked `.md` as staged (#658), the width of the files `docs/agents/code-review.md` names as
   wrapped, that a gate's `-SelfTest` help that names any of its halves names all of them
-  (#756), and that the two review skills and the markdown-only test diff, log and fetch against
-  `origin/main` and never the local `main` (#762).
+  (#756), and that neither the two review skills nor the markdown-only test reads the local
+  `main` (#762).
 - **The shared locale check and `scripts/name-check.ps1`** only dump prototypes and create no
   map, so a pass there says nothing about runtime.
 
