@@ -251,3 +251,10 @@ One line for each change to a gate, newest last, with its date and its ticket.
   `failing-gate-reported` and `missing-executable-fails`. Its `-SelfTest` gains
   `unnamed-half-caught` and `help-naming-none-skipped`. It cannot see whether what the help says of
   a half it names is true, nor prose that describes kinds of half: that stays the reviewer's.
+- 2026-10-23, #762: `ship-check.ps1` section 14 fails a line that diffs or logs against the local
+  `main` (`main...HEAD`, `main..HEAD`) or fetches into it (`main:main`) in each
+  `.claude/skills/*/SKILL.md`, both `CLAUDE.md` and `scripts/run-gates.ps1`, and fails a missing
+  one of those. Run over the two review skills as they were before #758 merged, at 3d04085, its
+  pattern finds the seven lines #758 changed. Its `-SelfTest` gains `local-main-read-caught` and
+  `origin-main-read-passes`. It cannot see a base written another way, such as
+  `git merge-base main HEAD` or a bare `git diff main`, nor any file it does not list.
