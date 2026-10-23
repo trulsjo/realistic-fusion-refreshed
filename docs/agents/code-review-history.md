@@ -355,3 +355,10 @@ One line for each, newest last. The passages above are not edited.
   made step 1's "Nothing else stops the pass" false. The session amended the step and the
   eligibility rule's "for nothing else" alike: `plugin-pass.md` now says the pass stops for nothing
   else about the pull request. No gate reads it. The wording is the session's.
+- **2026-10-23, #758: both passes read against `origin/main`.** Truls had the ticket filed after
+  #757 merged, when `git fetch origin main:main` refused to fetch into a `main` checked out in the
+  repository's folder. Step 1 of each skill now runs `git fetch origin main`, which moves
+  `origin/main` and leaves the local `main` alone, and every diff and log `/pre-pr-review` runs,
+  the markdown-only test in `CLAUDE.md` and `scripts/run-gates.ps1` included, reads
+  `origin/main`. Each still stops when the fetch fails. No gate reads it. The wording is the
+  session's.
