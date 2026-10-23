@@ -225,6 +225,18 @@ item was read again here; the others are by #755's account, which read the revie
 - **The session's own review diff was right** only because the session typed `origin/main` in
   place of the skill's `main...HEAD`.
 
+### Two reviewers that stopped on #759 (#761)
+
+Under the rule that a subagent that stops before it has reported is resumed. Read from the task
+notifications of the session that ran the pass, on 2026-10-23.
+
+- **Reviewers 1 and 4 each ended with `Agent stalled: no progress for 600s (stream watchdog did
+  not recover)`.** Reviewer 1 had sent its report before it stopped; reviewer 4 had not.
+- **Resumed with SendMessage and asked to finish within its brief, reviewer 4 reported 22 752 ms
+  later.** Its report raised the pass's one real candidate.
+- **`tools/review-usage.py` printed both as `no notice`**, and the #759 row on
+  `review-figures.md` counts their last request in their place.
+
 ### Commit bodies that a fix made false, on #669 (#671)
 
 Under the rule that a commit body takes its reason from the ticket. Written for this page on

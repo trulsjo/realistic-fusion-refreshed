@@ -59,6 +59,10 @@ runs.
   shared commit convention is one such. A subagent reads those from the session's checkout by full
   path, and runs no command there.
 - **The steps before the reviewers have no subagent to place**: the session does them (#626).
+- **A subagent that stops before it has reported is resumed, and one that has reported is left**
+  (2026-10-23, #761). The session asks it to finish within its brief, so the pass still has five
+  reports and the verifier's verdicts. [The evidence page has the two that stopped on
+  #759](code-review-evidence.md#two-reviewers-that-stopped-on-759-761).
 - **The session fetches `origin/main` first, and every brief says to read the change with
   `gh pr diff <n>`, never with a local `git diff` against `main`** (2026-10-22, #755;
   `origin/main` and not the local `main` since 2026-10-23, #758). A worktree shares the
