@@ -16,11 +16,11 @@ ticket on [`code-review-history.md`](code-review-history.md), as for one in `cod
 
 **The session checks eligibility itself, and no kind of change is exempt** (Truls, 2026-10-07, #593;
 the session's own check since 2026-10-11, #626). The pass stops for a pull request that is closed,
-is a draft, or already has its `### Code review` comment, and for nothing else. The plugin's first
-step could also answer that a change needs no review, and did for #625 because that change was
-documentation only. The session set that answer aside then, and since #626 the question is not
-asked. The session also reads the `CLAUDE.md` paths from `git ls-files`, and takes the pull
-request's body as the summary of the change.
+is a draft, or already has its `### Code review` comment, and for nothing else about the pull
+request. The plugin's first step could also answer that a change needs no review, and did for #625
+because that change was documentation only. The session set that answer aside then, and since #626
+the question is not asked. The session also reads the `CLAUDE.md` paths from `git ls-files`, and
+takes the pull request's body as the summary of the change.
 
 **The plugin pass's subagents work in a worktree that is not the session's, where one can be had**
 (2026-10-12, #651). The five reviewers and the verifier are told to change nothing, and on #650 one
