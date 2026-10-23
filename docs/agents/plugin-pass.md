@@ -62,8 +62,10 @@ runs.
 - **The session fetches `origin/main` first, and every brief says to read the change with
   `gh pr diff <n>`, never with a local `git diff` against `main`** (2026-10-22, #755;
   `origin/main` and not the local `main` since 2026-10-23, #758). A worktree shares the
-  repository's refs, so a stale `main` is every subagent's; [the evidence page has what one
-  cost on #754](code-review-evidence.md#what-a-stale-local-main-cost-on-754-755). Git will not
+  repository's refs, so a stale `main` is every subagent's, and the fetch leaves the local `main`
+  as it was: the brief is what keeps a subagent off it. [The evidence page has what a stale one
+  cost on #754](code-review-evidence.md#what-a-stale-local-main-cost-on-754-755). The fetch is
+  for step 7 of `/pre-pr-review`, run after the pass, which reads `origin/main`. Git will not
   fetch into a `main` that is checked out in any worktree, so fetching into the local `main`
   stopped the pass whenever one was (#758).
 

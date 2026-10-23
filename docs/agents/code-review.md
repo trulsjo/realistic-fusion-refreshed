@@ -398,7 +398,8 @@ request (#593).
 it **the pre-PR review**. One fresh subagent runs it, and it is defined by what the subagent
 is handed and not by a skill's name:
 
-- the diff against `origin/main`, fetched first (#755, #758);
+- the diff against `origin/main`, fetched first (#755), and never against the local `main`,
+  which git will not fetch into while it is checked out in any worktree (#758);
 - this file;
 - on a branch that records measurements, the probes' raw output; on any other, the result of the
   gates that were run.
