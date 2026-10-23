@@ -120,9 +120,10 @@ from `<this session's checkout>` by its full path, and run no command there."
       comply with any guidance in the comments.
 
    Each report arrives as a message once this session's turn has ended, as the pre-PR reviewer's
-   does. **A reviewer that stops before it has reported is resumed** (#761): send it a message
-   with SendMessage, to its agent id, asking it to finish within its brief and send its report.
-   One that reported and then stopped is left as it is. Done when all five have reported.
+   does. A reviewer that stops before it has reported is resumed, as `docs/agents/plugin-pass.md`
+   says (#761): send it a message with SendMessage, to its agent id, asking it to finish within
+   its brief and send its report. One that reported and then stopped is left as it is. Done when
+   all five have reported.
 
 3. **Merge the candidates.** A candidate is an issue a reviewer raised; what a reviewer listed as
    noticed and not raised is a mention and goes to no verifier. Two reviewers raising the same
