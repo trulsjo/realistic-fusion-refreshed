@@ -173,7 +173,7 @@
     that describes kinds of half; the section comment has the rest.
 
     SECTION 14 HAS A -SelfTest AND NO FLOOR (#762). It fails a line that diffs or logs against
-    the local main, or fetches into it, in each review skill, both CLAUDE.md and run-gates.ps1;
+    the local main, or fetches into it, in the two review skills, both CLAUDE.md and run-gates.ps1;
     the local-main-read-caught and origin-main-read-passes halves plant one of each. It reads a
     fixed list and fails a missing file, so it needs no floor. It cannot see a base written
     another way; the section comment has the rest.
@@ -1422,14 +1422,15 @@ if ($halfRead.Skipped.Count) {
 # stopped a review whenever some folder sat on it, and one that diffed against it read a stale
 # base. Nothing else holds the commands to that: on #759 every reviewer grepped for them by hand.
 #
-# It reads the files a review runs from or takes its markdown-only test from: every
-# .claude/skills/*/SKILL.md, both CLAUDE.md and scripts/run-gates.ps1. A missing one fails. The
-# dated pages, code-review-history.md and code-review-evidence.md, record #755's commands as they
-# were and are not read.
+# It reads a fixed list: the two review skills, and the files the markdown-only test is stated in,
+# both CLAUDE.md and scripts/run-gates.ps1. A missing one fails, so a moved skill is not passed
+# by finding nothing. A fixed list also keeps it off git-ignored skills, which differ by machine.
+# The dated pages, code-review-history.md and code-review-evidence.md, record #755's commands as
+# they were and are not read.
 #
 # WHAT IT CANNOT SEE: a base written another way (`git merge-base main HEAD`, `main^{}`, a bare
-# `git diff main`), a ref held in a variable, and any file not listed above, the rule pages under
-# docs/agents/ included. Prose that names one of the forms to forbid it is read like a command
+# `git diff main`), a ref held in a variable, and any file not listed above: the rule pages under
+# docs/agents/, another skill, and a third review skill until it is added here. Prose that names one of the forms to forbid it is read like a command
 # and fails; no file it reads does that on 2026-10-23.
 $LOCAL_MAIN_READ = '(?<![\w/.-])main\.\.\.?HEAD\b|\bmain:main\b'
 
@@ -1450,9 +1451,9 @@ function Find-LocalMainReads {
 
 $checks++
 $mainReaders = @(
-    Get-ChildItem -Path (Join-Path $repoRoot '.claude/skills/*/SKILL.md') | ForEach-Object FullName
-    'CLAUDE.md', 'scripts/CLAUDE.md', 'scripts/run-gates.ps1' | ForEach-Object { Join-Path $repoRoot $_ }
-)
+    '.claude/skills/pre-pr-review/SKILL.md', '.claude/skills/plugin-pass/SKILL.md'
+    'CLAUDE.md', 'scripts/CLAUDE.md', 'scripts/run-gates.ps1'
+) | ForEach-Object { Join-Path $repoRoot $_ }
 $absent = @($mainReaders | Where-Object { -not (Test-Path -LiteralPath $_) })
 foreach ($file in $absent) {
     $failures.Add("section 14 reads $([IO.Path]::GetRelativePath($repoRoot, $file)), which does not exist.")
@@ -1891,5 +1892,5 @@ Write-Host 'no prose cites a self-test half by position, every Current figures r
 Write-Host 'heading and a figure its note has, every tracked Markdown file passes the shared check as staged, and'
 Write-Host 'no prose line of the wrapped files is over the width they are wrapped at or splits a'
 Write-Host 'grouped figure across its end, every -SelfTest help that names a half names all of them,'
-Write-Host 'and no review skill reads the local main.'
+Write-Host 'and neither the review skills nor the markdown-only test reads the local main.'
 exit 0
