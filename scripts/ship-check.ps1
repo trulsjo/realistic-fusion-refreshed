@@ -172,6 +172,12 @@
     kind. It cannot see whether the help says the right thing about a half it names, nor prose
     that describes kinds of half; the section comment has the rest.
 
+    SECTION 14 HAS A -SelfTest AND NO FLOOR (#762). It fails a line that diffs or logs against
+    the local main, or fetches into it, in each review skill, both CLAUDE.md and run-gates.ps1;
+    the local-main-read-caught and origin-main-read-passes halves plant one of each. It reads a
+    fixed list and fails a missing file, so it needs no floor. It cannot see a base written
+    another way; the section comment has the rest.
+
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
     stopped saying no fails rather than turning every check below it green. It was also demonstrated
@@ -181,11 +187,11 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove six things a green run cannot: the shared -SelfTest runner
+    Run the checks as usual, then prove seven things a green run cannot: the shared -SelfTest runner
     the tools submodule holds -- that it numbers halves from the list it was given and refuses a half it
     cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both directions, section 10's two assertions, each in both
     directions, section 12's two scans
-    of the lines, each in both directions, and section 13 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
+    of the lines, each in both directions, section 13 in both directions, and section 14 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
     memory and the planted documents live in the scratch directory the run removes on its way out.
 
 .EXAMPLE
@@ -1409,6 +1415,53 @@ if ($halfRead.Skipped.Count) {
         (($halfRead.Skipped | ForEach-Object { Split-Path $_ -Leaf }) -join ', '))
 }
 
+# 14. NO REVIEW READS THE LOCAL MAIN (#762).
+#
+# Since #758 both review skills fetch origin/main and read the branch against it. Git refuses to
+# fetch into a `main` checked out in any worktree, so a skill that fetched into the local one
+# stopped a review whenever some folder sat on it, and one that diffed against it read a stale
+# base. Nothing else holds the commands to that: on #759 every reviewer grepped for them by hand.
+#
+# It reads the files a review runs from or takes its markdown-only test from: every
+# .claude/skills/*/SKILL.md, both CLAUDE.md and scripts/run-gates.ps1. A missing one fails. The
+# dated pages, code-review-history.md and code-review-evidence.md, record #755's commands as they
+# were and are not read.
+#
+# WHAT IT CANNOT SEE: a base written another way (`git merge-base main HEAD`, `main^{}`, a bare
+# `git diff main`), a ref held in a variable, and any file not listed above, the rule pages under
+# docs/agents/ included. Prose that names one of the forms to forbid it is read like a command
+# and fails; no file it reads does that on 2026-10-23.
+$LOCAL_MAIN_READ = '(?<![\w/.-])main\.\.\.?HEAD\b|\bmain:main\b'
+
+function Find-LocalMainReads {
+    <#  Each line of these files that diffs or logs against the local main, or fetches into it.  #>
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Files)
+
+    foreach ($file in $Files) {
+        $n = 0
+        foreach ($line in Get-Content -LiteralPath $file) {
+            $n++
+            if ($line -match $LOCAL_MAIN_READ) {
+                [pscustomobject]@{ File = $file; Line = $n; Text = $Matches[0] }
+            }
+        }
+    }
+}
+
+$checks++
+$mainReaders = @(
+    Get-ChildItem -Path (Join-Path $repoRoot '.claude/skills/*/SKILL.md') | ForEach-Object FullName
+    'CLAUDE.md', 'scripts/CLAUDE.md', 'scripts/run-gates.ps1' | ForEach-Object { Join-Path $repoRoot $_ }
+)
+$absent = @($mainReaders | Where-Object { -not (Test-Path -LiteralPath $_) })
+foreach ($file in $absent) {
+    $failures.Add("section 14 reads $([IO.Path]::GetRelativePath($repoRoot, $file)), which does not exist.")
+}
+foreach ($row in Find-LocalMainReads -Files @($mainReaders | Where-Object { $_ -notin $absent })) {
+    $failures.Add(("$([IO.Path]::GetRelativePath($repoRoot, $row.File) -replace '\\', '/') line $($row.Line) reads " +
+        "the local main ('$($row.Text)'). Since #758 a review fetches origin/main and reads against it."))
+}
+
 if ($failures.Count) {
     Write-Host ''
     foreach ($f in $failures) { Write-Host "FAIL  $f" -ForegroundColor Red }
@@ -1786,6 +1839,43 @@ if ($SelfTest) {
                 }
                 'a gate whose -SelfTest help names none of its halves is skipped, and none of its halves is reported.'
             } }
+
+            @{ Name = 'local-main-read-caught'; Body = {
+                # Section 14 passes by finding nothing. This plants each form it fails, one per line,
+                # and requires each to be reported with its line.
+                $skill = Join-Path $planted 'SKILL.md'
+                $m = 'main'
+                @(
+                    'Step 1.'
+                    "   git diff --output=branch.diff $m...HEAD"
+                    "   git log $m..HEAD --format=%s"
+                    "   git fetch origin ${m}:$m"
+                ) | Set-Content -LiteralPath $skill -Encoding utf8
+                $found = @(Find-LocalMainReads -Files @($skill))
+                $lines = ($found | ForEach-Object Line) -join ','
+                if ($lines -ne '2,3,4') {
+                    throw "a planted skill reading the local main on lines 2, 3 and 4 was reported on lines '$lines'."
+                }
+                'a skill that diffs or logs against the local main, or fetches into it, is caught on each line.'
+            } }
+
+            @{ Name = 'origin-main-read-passes'; Body = {
+                # The other direction: the commands the skills run since #758 are left alone.
+                $skill = Join-Path $planted 'SKILL.md'
+                $m = 'main'
+                @(
+                    'Step 1.'
+                    "   git fetch origin $m"
+                    "   git diff --output=branch.diff origin/$m...HEAD"
+                    "   git log origin/$m..HEAD --format=%s"
+                    "   git push --force-with-lease             # never $m"
+                ) | Set-Content -LiteralPath $skill -Encoding utf8
+                $found = @(Find-LocalMainReads -Files @($skill))
+                if ($found.Count) {
+                    throw "a planted skill reading origin/main was reported on line(s) $(($found | ForEach-Object Line) -join ', ')."
+                }
+                'a skill that fetches origin/main and reads against it is not reported.'
+            } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
     Write-Host ''
@@ -1800,5 +1890,6 @@ Write-Host 'ships art, every accent named for a fluid still carries that fluid''
 Write-Host 'no prose cites a self-test half by position, every Current figures row still names a'
 Write-Host 'heading and a figure its note has, every tracked Markdown file passes the shared check as staged, and'
 Write-Host 'no prose line of the wrapped files is over the width they are wrapped at or splits a'
-Write-Host 'grouped figure across its end, and every -SelfTest help that names a half names all of them.'
+Write-Host 'grouped figure across its end, every -SelfTest help that names a half names all of them,'
+Write-Host 'and no review skill reads the local main.'
 exit 0
