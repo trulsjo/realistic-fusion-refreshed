@@ -259,3 +259,10 @@ One line for each change to a gate, newest last, with its date and its ticket.
   markdown-only test and `run-gates.ps1`'s. Its `-SelfTest` gains `local-main-read-caught` and
   `origin-main-read-passes`. It cannot see a base written another way, such as
   `git merge-base main HEAD` or a bare `git diff main`, nor any file it does not list.
+- 2026-10-25, #765 and #753: the tools pin moves from `6385486` to `e68c331`. The body check in
+  `gates.yml` and the pre-PR review now also fails a body missing `**Before:**` or `**After:**`
+  under `## Evidence`, or `**Door:**` or `**Blast Radius:**` under `## Merge Danger`. The
+  harness's own self-test mods and `tree-viewer.ps1`'s exporter declare line 2.1, which a 2.1.23
+  game loads and refused at `6385486`. `markdown-check.ps1`'s `-All` and no-argument forms and
+  `commit-check.ps1`'s forms print the same as before. The other scripts the gates load,
+  `load-harness-lib.ps1` and `pack-mods.ps1`, change in comments only.
