@@ -9,7 +9,8 @@ Accepted. Resolves
 
 **Superseded 2026-10-24 by [ADR 0041](0041-the-mods-move-to-factorio-2-1.md)** (#763, #766). The trigger below fired: 2.1.23
 is stable. The mods move to `factorio_version` `"2.1"`, floored at `base >= 2.1.23`, and new
-claims pin to `/2.1.23/`. What follows is left as it was decided.
+claims pin to `/2.1.23/`. What follows is left as it was written, the 2026-08-26 note included:
+its "Nothing below is superseded" and "still unfired" were true that day and are not now.
 
 **Note added 2026-08-26 (#59, [ADR 0026](0026-third-party-mods-are-pinned-to-their-2-0-line.md)).**
 Nothing below is superseded — `factorio_version` is still `"2.0"`, the floor is still
