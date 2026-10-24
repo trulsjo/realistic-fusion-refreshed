@@ -173,8 +173,9 @@ pass.
    message of its own with the diff, as step 4 sends one. It is never held.
 
    Done when the body has the three headings from the skill, or from its template by hand, with
-   the `Closes #N` lines above them, and every item on the reviewer's list has an outcome written
-   for it.
+   **Before:** and **After:** under Evidence and **Door:** and **Blast Radius:**
+   under Merge Danger (#753), the `Closes #N` lines above them, and every item on the reviewer's
+   list has an outcome written for it.
 
 6. **Write the findings table** and put it in the pull request's body under the same heading,
    below step 5's outcomes, every finding in it:
