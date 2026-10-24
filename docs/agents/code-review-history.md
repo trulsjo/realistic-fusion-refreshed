@@ -375,9 +375,10 @@ One line for each, newest last. The passages above are not edited.
   session moved it to the page. No gate reads it. The wording is the session's.
 - **2026-10-25, #753 and #765: the body check reads the template's four markers.** Truls had #753
   filed on 2026-10-22 to move the tools pin past trulsjo/grado-factorio-tools#188, which gave the
-  shared `pr-body-check.ps1` the markers for #185 there; on #185 he ruled on 2026-10-21 that only
-  **Before:** and **After:** may say none. The fourth rule of `code-review.md` says that since
-  #753 the script fails a body missing **Before:** or **After:** under Evidence, or **Door:** or
-  **Blast Radius:** under Merge Danger, and step 5 of `/pre-pr-review` is done only when the body
-  has them. #738's "No check reads that shape" is no longer true. The check runs in `gates.yml`
-  and before each `gh pr create` and `gh pr edit`. The wording is the session's.
+  shared `pr-body-check.ps1` the markers for trulsjo/grado-factorio-tools#185. On that ticket he
+  ruled on 2026-10-21 that only **Before:** and **After:** may say none. The fourth rule of
+  `code-review.md` says that since #753 the script fails a body missing **Before:** or **After:**
+  under Evidence, or **Door:** or **Blast Radius:** under Merge Danger, and step 5 of
+  `/pre-pr-review` is done only when the body has them. #738's "No check reads that shape" is no
+  longer true. The check runs in `gates.yml` and before each `gh pr create` and `gh pr edit`. The
+  wording is the session's.
