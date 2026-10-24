@@ -127,8 +127,9 @@ reopens them by accident:
 - **The published name is Realistic Fusion Refreshed** (ADR 0017, superseding ADR 0009). The `rf-`
   prototype prefix is unaffected.
 - **The v1 target is the Factorio 2.1 base game, with Space Age tolerated but not integrated** (ADR
-  0003, and ADR 0041 for 2.1). What stays open is whether that ever becomes first-class support,
-  which is the item left in the list above — not the v1 target.
+  0003, and ADR 0041 for 2.1). The mods still declare 2.0 until #767, which is what the State
+  section describes. What stays open is whether that ever becomes first-class support, which is the
+  item left in the list above — not the v1 target.
 
 Do not settle any of them as a side effect of doing something else — no "I picked X to get started".
 If a task cannot proceed without one, say so and ask. Recording options with trade-offs is welcome;
