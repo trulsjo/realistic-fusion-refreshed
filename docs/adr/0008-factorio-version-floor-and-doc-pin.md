@@ -7,6 +7,10 @@ Date: 2026-08-14
 Accepted. Resolves
 [Which Factorio 2.0.x is the minimum supported version?](https://github.com/trulsjo/realistic-fusion-refreshed/issues/13).
 
+**Superseded 2026-10-24 by [ADR 0041](0041-the-mods-move-to-factorio-2-1.md)** (#763, #766). The trigger below fired: 2.1.23
+is stable. The mods move to `factorio_version` `"2.1"`, floored at `base >= 2.1.23`, and new
+claims pin to `/2.1.23/`. What follows is left as it was decided.
+
 **Note added 2026-08-26 (#59, [ADR 0026](0026-third-party-mods-are-pinned-to-their-2-0-line.md)).**
 Nothing below is superseded — `factorio_version` is still `"2.0"`, the floor is still
 `base >= 2.0.77`, and the trigger this ADR set is still unfired: stable was 2.0.77 on 2026-08-14 and

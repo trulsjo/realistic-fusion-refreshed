@@ -162,6 +162,11 @@ FUnit 0.5.3 declares `base >= 2.0.76`, which 2.0.77 satisfies. factorio-test 3.0
 Should current test tooling ever become a reason to move to 2.1, that is a **revisit of ADR 0008**, not a
 silent bump. ADR 0008 already says moving to 2.1 is a later decision to be taken when 2.1 is stable.
 
+> **Note, 2026-10-24.** 2.1 became stable, and [ADR 0041](../adr/0041-the-mods-move-to-factorio-2-1.md) moves the mods to it,
+> for that reason and not for test tooling. The 2.1 lines of both frameworks are therefore in
+> reach, but this note re-checks nothing above. The figures in this section are as read on the
+> date they carry.
+
 ## What this does not close
 
 1. **Neither framework was installed or run.** Every behavioural claim is from documentation.
