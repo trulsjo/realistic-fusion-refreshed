@@ -7,6 +7,10 @@ Date: 2026-08-13
 Accepted. Resolves
 [Space Age: supported or base 2.0 only?](https://github.com/trulsjo/realistic-fusion-refreshed/issues/4).
 
+**Note added 2026-10-24 ([ADR 0041](0041-the-mods-move-to-factorio-2-1.md), #763, #766).** The base game this targets moves
+from 2.0 to 2.1, so the decision below reads "the Factorio 2.1 base game". Space Age is
+still tolerated, not integrated, and whether it ever becomes first-class is still open.
+
 ## Context
 
 Space Age occupies this mod's exact subject. Per <https://wiki.factorio.com/Fusion_reactor>, the

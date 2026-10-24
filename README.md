@@ -81,7 +81,8 @@ Deliberately unanswered so far, and worth knowing before reading anything into t
 - Which other mods (K2, Angel's/Bob's, Space Exploration, IR2) are compatibility targets.
 
 Two that used to be on this list are settled and are stated above rather than here: the target is the
-Factorio 2.0 base game with Space Age tolerated but not integrated ([ADR 0003](docs/adr/0003-space-age-tolerated-not-targeted.md)),
+Factorio 2.1 base game with Space Age tolerated but not integrated ([ADR 0003](docs/adr/0003-space-age-tolerated-not-targeted.md),
+and [ADR 0041](docs/adr/0041-the-mods-move-to-factorio-2-1.md) for 2.1),
 and the published name is Realistic Fusion Refreshed ([ADR 0017](docs/adr/0017-the-plain-name-is-left-alone.md)).
 
 ## Licence

@@ -15,6 +15,12 @@ right trigger and is still unfired. What this ADR answers is a question ADR 0008
 to do when **the ecosystem moves before the trigger does**. ADR 0008 gains a dated note pointing
 here.
 
+**Note added 2026-10-24 ([ADR 0041](0041-the-mods-move-to-factorio-2-1.md), #763, #766).** ADR 0008's trigger fired, and the
+mods move to 2.1. Each family's pin moves to its 2.1 release, re-derived by the rule below
+(#772). **The `riteg` lane is dropped**: RITEG never got a 2.1 release, so it ended with 2.0.
+The scoping rule stands: a lane proves coexistence with the release it pinned, and nothing
+more. Until #772 lands, the table below is still what `scripts/mod-sets.psd1` holds.
+
 **Discharges nothing of [ADR 0007](0007-coexistence-without-integration.md), which was already
 met.** That ADR's minimum — *"at minimum, loading alongside Krastorio 2 should be verified before v1
 ships"* — is satisfied, for the 2.0 line and for name collision both. This ADR is about the coverage
