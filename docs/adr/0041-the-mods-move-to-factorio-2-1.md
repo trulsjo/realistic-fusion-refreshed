@@ -28,9 +28,9 @@ on any branch: `Incompatible Factorio version (current: 2.1, required: 2.0)`. Th
 or move to 2.1. He chose to measure the move first, and the measurement was run on 2.1.23 that
 day in a throwaway worktree, with nothing committed. In short:
 
-- **Every mod the gates write declares 2.0, and each has to move.** That covers the three mods and
-  47 embedded sites: every rig, probe, bench and harness that writes an `info.json`, 5 of them in
-  the shared tools repository's scripts.
+- **Every `info.json` involved declares 2.0, and each has to move.** That is the three mods' own,
+  and 47 sites in scripts that write one for the game to load: every rig, probe, bench and
+  harness, 5 of them in the shared tools repository's scripts.
 - **With the versions moved, the mods' own port is small.** Four fixes made `load-check.ps1` pass:
   - two in the data stage: `rf-hc-turbine`'s fluid box can no longer carry
     `minimum_temperature`, and a recipe's `category` merged into `categories`;
@@ -77,7 +77,7 @@ becomes a first-class target.
 - **The `check-*.ps1` gates stay red for longer than the mods do.** Their rigs are ported in
   [#768](https://github.com/trulsjo/realistic-fusion-refreshed/issues/768) to
   [#771](https://github.com/trulsjo/realistic-fusion-refreshed/issues/771). Until those land,
-  `load-check.ps1` is the only game gate that can pass, and the measurement showed what it misses.
+  `load-check.ps1` is the only gate that creates a map and can pass, and the measurement showed what it misses.
 - **The shared tools move first.** trulsjo/grado-factorio-tools#199 has the mods its scripts write
   declare 2.1, and [#765](https://github.com/trulsjo/realistic-fusion-refreshed/issues/765) moves
   this repository's pin past it. #767 waits on both.
@@ -99,12 +99,16 @@ becomes a first-class target.
 **Install 2.0.77 and keep the gates on it.** This needs no code change, and it keeps everything
 measured so far valid. Truls declined it (#763, Q2).
 
-ADR 0026 rejected moving on four grounds, and none of them holds against this move:
+ADR 0026 rejected moving on five grounds. Three no longer hold:
 
 - 2.1 was the experimental branch. It is now stable.
 - The mod would stop loading on stable. It now stops loading on 2.0 instead.
-- Every rig would run on an untested version. That cost is paid in #767 to #771.
 - RITEG would drop out. It has 2.1 releases.
+
+The other two are costs this move accepts:
+
+- Every rig runs on a version nothing here was tested on. That is paid in #767 to #771.
+- ADR 0003's base game reopens. Its dated note moves it to 2.1.
 
 **Floor at `base >= 2.1`.** Rejected for ADR 0008's reason: it claims patch versions nobody here
 has run the mod against.
