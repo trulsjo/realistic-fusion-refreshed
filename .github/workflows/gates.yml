@@ -6,8 +6,8 @@
 # they do there (#659).
 #
 # The pull request's body is checked by the shared pr-body-check.ps1 (#730): the pr template's
-# three headings, no commit cited that is not on main, and no closing keyword outside a lone
-# `Closes #N` line. `edited` is among the triggers so an edited body is checked again, and every
+# three headings and, since #753, its four markers, no commit cited that is not on main, and no
+# closing keyword outside a lone `Closes #N` line. `edited` is among the triggers so an edited body is checked again, and every
 # other job skips that event, so a body edit runs the body check alone. The body reaches the script
 # through the environment, never pasted into the command. The script refuses a shallow clone.
 #

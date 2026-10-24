@@ -484,8 +484,8 @@ stand the script does not read. **The three headings are filled by invoking the
 `mattpocock-skills:pr` skill**, before the first `gh pr create`, and are written by hand to that
 skill's template where it is not installed (2026-10-20, #738): a diagram, diff-sketch or tree under
 Summary, **Before:** and **After:** under Evidence, and **Door:** and **Blast Radius:** under Merge
-Danger. The script reads none of that shape beyond the three headings: #737's body was written by
-hand, passed it, and had none of those four markers.
+Danger. Since #753 the script fails a body missing one of those four markers under its heading;
+before it, #737's body was written by hand, passed it, and had none of them.
 
 **The session answers for each thing the reviewer says it did not check** (2026-10-08, #636). The
 reviewer ends its report with that list. Before the findings table is written, and so before the
