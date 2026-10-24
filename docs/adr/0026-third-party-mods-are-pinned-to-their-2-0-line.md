@@ -17,7 +17,8 @@ here.
 
 **Note added 2026-10-24 ([ADR 0041](0041-the-mods-move-to-factorio-2-1.md), #763, #766).** ADR 0008's trigger fired, and the
 mods move to 2.1. Each family's pin moves to its 2.1 release, re-derived by the rule below
-(#772). **The `riteg` lane is dropped**: RITEG never got a 2.1 release, so it ended with 2.0.
+(#772), `riteg` included. The table's "2.0 only — never got a 2.1 release" for RITEG is out
+of date: on 2026-10-24 the portal listed 2.1 releases 1.3.12 and 2.1.2, both from 2026-09-11.
 The scoping rule stands: a lane proves coexistence with the release it pinned, and nothing
 more. Until #772 lands, the table below is still what `scripts/mod-sets.psd1` holds.
 

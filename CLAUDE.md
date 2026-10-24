@@ -144,7 +144,7 @@ choosing between them is not.
   — and only Durikkan's port targets Factorio 2.0. The 1.1→2.0 break therefore runs straight through
   the material this project builds on, which is the whole reason the work exists.
 - `/stable/` and `/latest/` move, and `latest` is the **experimental** build. Pin an explicit
-  version (e.g. `/2.0.77/`) when recording a fact.
+  version (e.g. `/2.1.23/`, ADR 0041) when recording a fact.
 
 ## Upstream material
 
