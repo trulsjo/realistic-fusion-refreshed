@@ -237,6 +237,25 @@ notifications of the session that ran the pass, on 2026-10-23.
 - **`tools/review-usage.py` printed both as `no notice`**, and the #759 row on
   `review-figures.md` counts their last request in their place.
 
+### The body check's markers, on twelve merged bodies (#753)
+
+The fourth rule lists the template's shape, and #738 recorded that no check read it. From the
+tools pin `e68c331` (#765, #753) the shared `pr-body-check.ps1` fails a body missing
+`**Before:**` or `**After:**` under `## Evidence`, or `**Door:**` or `**Blast Radius:**` under
+`## Merge Danger`, as Truls ruled on trulsjo/grado-factorio-tools#185 (2026-10-21). Run on
+2026-10-25 at both pins on the bodies of the twelve latest merged pull requests, from a copy at
+GitHub's `main`, `a5c2c2c`:
+
+| Pull requests | At `6385486` | At `e68c331` | Missing at `e68c331` |
+|---|---|---|---|
+| #739, #742, #749, #750, #754, #757, #759, #764, #774 | exit 0 | exit 0 | none |
+| #743, #747 | exit 0 | exit 1 | all four markers |
+| #746 | exit 0 | exit 1 | `**Before:**` |
+
+The three that fail were opened after #739 and before #749, which had `/pre-pr-review` invoke the
+pr skill before the body is first written (#748). Each body from #749 on passes. A merged body is
+not checked again unless it is edited.
+
 ### Commit bodies that a fix made false, on #669 (#671)
 
 Under the rule that a commit body takes its reason from the ticket. Written for this page on
