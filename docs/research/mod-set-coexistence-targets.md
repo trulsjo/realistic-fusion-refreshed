@@ -82,6 +82,11 @@ Krastorio 2 is 2.1.2 (`base >= 2.1.7`); Angel's is 2.1.x (`base >= 2.1.0`); Bob'
 (`base >= 2.1.0`); Space Exploration is 0.7.61 (`base >= 2.1.7`); MadClown's is 2.1.01; SeaBlock NG is
 1.1.4. **None of them will load on the Factorio 2.0.77 this repository currently checks against.**
 
+> **Note, 2026-10-24 ([ADR 0041](../adr/0041-the-mods-move-to-factorio-2-1.md), #763, #766).** 2.1 is stable, and the mods move
+> to it. The 2.0 pins below are re-derived at each family's 2.1 release in #772. The RITEG row is
+> out of date: on 2026-10-24 the portal listed two `factorio_version` 2.1 releases, 1.3.12 and
+> 2.1.2, both from 2026-09-11, after this note was written. The rest of this note was not re-read.
+
 That leaves exactly two routes, and choosing between them is a decision, not a finding:
 
 > **Decided 2026-08-26 (#59, [ADR 0026](../adr/0026-third-party-mods-are-pinned-to-their-2-0-line.md)):

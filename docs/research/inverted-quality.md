@@ -273,10 +273,10 @@ Quality answers.
 
 **This repository targets 2.0.77** (`CLAUDE.md`), so none of the 2.1 route is available to it today.
 
-> **Note, 2026-10-24.** [ADR 0041](../adr/0041-the-mods-move-to-factorio-2-1.md) moves the mods to 2.1, floored at 2.1.23, so
-> the 2.1 route above is open to this repository once
-> [#767](https://github.com/trulsjo/realistic-fusion-refreshed/issues/767) has ported them.
-> Nothing above was re-measured on 2.1.23.
+> **Note, 2026-10-24.** [ADR 0041](../adr/0041-the-mods-move-to-factorio-2-1.md) moves the mods to 2.1, floored at 2.1.23.
+> *Inferred, not checked:* the 2.1 route above becomes available to this repository once
+> [#767](https://github.com/trulsjo/realistic-fusion-refreshed/issues/767) has ported them. That
+> route was read, not measured, and this note re-reads nothing.
 
 ## What this changes for this repository
 

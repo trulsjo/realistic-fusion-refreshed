@@ -163,9 +163,10 @@ Should current test tooling ever become a reason to move to 2.1, that is a **rev
 silent bump. ADR 0008 already says moving to 2.1 is a later decision to be taken when 2.1 is stable.
 
 > **Note, 2026-10-24.** 2.1 became stable, and [ADR 0041](../adr/0041-the-mods-move-to-factorio-2-1.md) moves the mods to it,
-> for that reason and not for test tooling. The 2.1 lines of both frameworks are therefore in
-> reach, but this note re-checks nothing above. The figures in this section are as read on the
-> date they carry.
+> for that reason and not for test tooling. The 2.0.77 floor this file is written against,
+> here and in its opening, is ADR 0008's, which ADR 0041 supersedes. *Inferred, not checked:* the
+> 2.1 lines of both frameworks come within reach once the mods declare 2.1. Nothing in this file
+> was re-read, and its figures are as read on the dates they carry.
 
 ## What this does not close
 

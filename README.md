@@ -80,10 +80,11 @@ Deliberately unanswered so far, and worth knowing before reading anything into t
 - Whether the four-module split survives at all, and whether Weaponry and Antimatter are in scope.
 - Which other mods (K2, Angel's/Bob's, Space Exploration, IR2) are compatibility targets.
 
-Two that used to be on this list are settled and are stated above rather than here: the target is the
-Factorio 2.1 base game with Space Age tolerated but not integrated ([ADR 0003](docs/adr/0003-space-age-tolerated-not-targeted.md),
-and [ADR 0041](docs/adr/0041-the-mods-move-to-factorio-2-1.md) for 2.1),
-and the published name is Realistic Fusion Refreshed ([ADR 0017](docs/adr/0017-the-plain-name-is-left-alone.md)).
+Two that used to be on this list are settled: the target is the Factorio 2.1 base game with Space
+Age tolerated but not integrated ([ADR 0003](docs/adr/0003-space-age-tolerated-not-targeted.md),
+and [ADR 0041](docs/adr/0041-the-mods-move-to-factorio-2-1.md) for 2.1), which the mods move to in
+[#767](https://github.com/trulsjo/realistic-fusion-refreshed/issues/767), so until then they load
+against 2.0.77 as stated above; and the published name is Realistic Fusion Refreshed ([ADR 0017](docs/adr/0017-the-plain-name-is-left-alone.md)).
 
 ## Licence
 
