@@ -259,10 +259,14 @@ One line for each change to a gate, newest last, with its date and its ticket.
   markdown-only test and `run-gates.ps1`'s. Its `-SelfTest` gains `local-main-read-caught` and
   `origin-main-read-passes`. It cannot see a base written another way, such as
   `git merge-base main HEAD` or a bare `git diff main`, nor any file it does not list.
-- 2026-10-25, #765 and #753: the tools pin moves from `6385486` to `e68c331`. The body check in
-  `gates.yml` and the pre-PR review now also fails a body missing `**Before:**` or `**After:**`
-  under `## Evidence`, or `**Door:**` or `**Blast Radius:**` under `## Merge Danger`. The
-  harness's own self-test mods and `tree-viewer.ps1`'s exporter declare line 2.1, which a 2.1.23
-  game loads and refused at `6385486`. `markdown-check.ps1`'s `-All` and no-argument forms and
-  `commit-check.ps1`'s forms print the same as before. The other scripts the gates load,
-  `load-harness-lib.ps1` and `pack-mods.ps1`, change in comments only.
+- 2026-10-25, #765 and #753: the tools pin moves from `6385486` to `e68c331`. Wherever the body
+  check runs, in `gates.yml` and before each `gh pr create` and `gh pr edit`, it now also fails a
+  body missing `**Before:**` or `**After:**` under `## Evidence`, or `**Door:**` or
+  `**Blast Radius:**` under `## Merge Danger`. The mods the tools scripts write for the game
+  declare line 2.1. At `6385486` a 2.1.23 game refused `tree-viewer.ps1`'s exporter,
+  `treeview-history`, and the locale check's self-test mod `localecheck-good`, each for declaring
+  2.0, and `load-harness.ps1 -SelfTest` failed the four cases that load one, printing no reason
+  from the game. `markdown-check.ps1`'s `-All` and no-argument forms and `commit-check.ps1`'s
+  forms print the same as before. `load-harness-lib.ps1`, `pack-mods.ps1` and `mod-info.ps1`,
+  which both of those dot-source, change in comments only. The locale check's run names no
+  bundled mod as "none (base only)", where it said "none (base 2.0 only)".
