@@ -918,8 +918,9 @@ only shape the reactor's energy box can be in since #86.
 
 > **Call sites are named, not numbered.** These three were cited by line and went stale twice in two
 > days — both times because a commit added comment lines above them and nothing grepped for the old
-> numbers. `control.lua` has exactly three `get_capacity` calls and they are one `grep` away, so the
-> function is the durable reference and the line is not.
+> numbers. `control.lua` had exactly three `get_capacity` calls and they were one `grep` away, so the
+> function is the durable reference and the line is not. Since #767 (Factorio 2.1) the three are
+> `get_fluid_capacity` calls, in the same functions.
 
 **Nothing is broken by this and one comment was wrong.** Three call sites clamp against it, and
 every one is an output box a player pipes — which is why #68 measured them piped: `apply()` clamps

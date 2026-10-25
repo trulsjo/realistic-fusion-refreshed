@@ -214,7 +214,8 @@ parts of it have not been tested:
    miss and is why it is written down: it is evaluated in `control.lua` BEFORE `publish` is entered,
    so every experiment above — all of which edited the body of `publish` — left it running.
    `plasma_capacity` memoises into `PLASMA_CAPACITY` and its first call reaches
-   `prototypes.entity[name].fluidbox_prototypes[1].volume`.
+   `prototypes.entity[name].fluidbox_prototypes[1].volume` (on 2.1, since #767, the method
+   `get_volume()`).
 
 A memoised first prototype access fits the measured shape exactly — paid once, needs one reactor,
 flat in reactor count — but **fitting the shape is not evidence**, and neither candidate has been

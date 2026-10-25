@@ -5,7 +5,7 @@ a fusion-power mod series left unfinished. The *2.0* there is the mod's own vers
 game's: the redesign carrying it was built for Factorio **1.1** and abandoned around the time Factorio
 2.0 arrived.
 
-**Status: in development.** Three mods load against Factorio 2.0.77 — the mod, its Core library, and
+**Status: in development.** Three mods load against Factorio 2.1.23 — the mod, its Core library, and
 an Assets mod holding the art so that a code update does not re-download it — and **all four fusion
 reactions are playable** — the extraction chain, D-D reactors that breed their own tritium, D-T fusion burning it,
 lithium blankets breeding more, and an aneutronic tier where D-He3 and He3-He3 run in a denser reactor
@@ -37,7 +37,8 @@ original cannot, and not for any reason of ours — it declares `factorio_versio
 2.0 will not load it at all. See [ADR 0006](docs/adr/0006-clean-break-from-predecessor-saves.md).
 
 **The buildings are not balanced for quality.** The mod loads and runs under Space Age with `quality`
-enabled — that much is verified, against Factorio 2.0.77 — and that is the whole of the claim. Nothing
+enabled — that much was verified against Factorio 2.0.77, and has not been run again on 2.1.23 — and
+that is the whole of the claim. Nothing
 here is tuned against quality, and nothing is reconciled with the vanilla fusion reactor. Durikkan's
 port warned that "certain buildings in this mod get insanely overpowered with quality" and named none
 of them; this one names the gap instead of leaving it to be found. See
@@ -82,9 +83,8 @@ Deliberately unanswered so far, and worth knowing before reading anything into t
 
 Two that used to be on this list are settled: the target is the Factorio 2.1 base game with Space
 Age tolerated but not integrated ([ADR 0003](docs/adr/0003-space-age-tolerated-not-targeted.md),
-and [ADR 0041](docs/adr/0041-the-mods-move-to-factorio-2-1.md) for 2.1), which the mods move to in
-[#767](https://github.com/trulsjo/realistic-fusion-refreshed/issues/767), so until then they load
-against 2.0.77 as stated above; and the published name is Realistic Fusion Refreshed ([ADR 0017](docs/adr/0017-the-plain-name-is-left-alone.md)).
+and [ADR 0041](docs/adr/0041-the-mods-move-to-factorio-2-1.md) for 2.1), which the mods moved to in
+[#767](https://github.com/trulsjo/realistic-fusion-refreshed/issues/767); and the published name is Realistic Fusion Refreshed ([ADR 0017](docs/adr/0017-the-plain-name-is-left-alone.md)).
 
 ## Licence
 
