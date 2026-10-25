@@ -93,8 +93,8 @@ New-Item -ItemType Directory -Path $rigDir -Force | Out-Null
 function Write-Rig {
     @{
         name = $rigName; version = '0.0.1'; title = 'D-D breeding check'
-        author = 'check-breeding.ps1'; factorio_version = '2.0'
-        dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
+        author = 'check-breeding.ps1'; factorio_version = '2.1'
+        dependencies = @('base >= 2.1.23', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
 
     $feed = Write-PlasmaFeed -RigDirectory $rigDir

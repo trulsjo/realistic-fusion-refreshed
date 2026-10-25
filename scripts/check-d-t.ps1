@@ -52,7 +52,7 @@
 
 .PARAMETER With
     Bundled mods to enable, e.g. -With space-age. Dependencies are pulled in automatically. Off by
-    default, so the rig keeps measuring base 2.0 unless asked otherwise (ADR 0003, ADR 0008).
+    default, so the rig keeps measuring base 2.1 unless asked otherwise (ADR 0003, ADR 0041).
 
     This is the rig half of ADR 0003's obligation. load-check.ps1 -With space-age proves the mod
     LOADS under the expansion; that is the data stage, and it says nothing about whether a reactor
@@ -98,8 +98,8 @@ New-Item -ItemType Directory -Path $rigDir -Force | Out-Null
 function Write-Rig {
     @{
         name = $rigName; version = '0.0.1'; title = 'D-T tier check'
-        author = 'check-d-t.ps1'; factorio_version = '2.0'
-        dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
+        author = 'check-d-t.ps1'; factorio_version = '2.1'
+        dependencies = @('base >= 2.1.23', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
 
     $feed = Write-PlasmaFeed -RigDirectory $rigDir
@@ -375,7 +375,7 @@ $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory =
 try {
     New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $repoRoot -Mods $ourMods)
     Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabledBundled -Mods ($ourMods + $rigName)
-    $bundledOn = if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.0 only)' }
+    $bundledOn = if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.1 only)' }
     Write-Host "bundled enabled: $bundledOn"
     Write-Rig
 

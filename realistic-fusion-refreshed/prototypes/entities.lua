@@ -1070,9 +1070,12 @@ hc_turbine.fluid_box = {
     { flow_direction = "input-output", direction = defines.direction.north, position = { 0, -3 } },
   },
   filter = "steam",
-  -- Vanilla's own floor, kept: below 100 C the steam is not worth turning a turbine with.
-  minimum_temperature = 100.0,
 }
+-- Vanilla's own floor, kept: below 100 C the steam is not worth turning a turbine with. 2.1.23 took
+-- it off the fluid box and put it on the generator, where vanilla's steam-turbine sets it
+-- (https://lua-api.factorio.com/2.1.23/prototypes/GeneratorPrototype.html#minimum_input_temperature).
+-- The deepcopy above already carries it; it is stated so that the floor is this file's, not luck.
+hc_turbine.minimum_input_temperature = 100.0
 hc_turbine.energy_source = {
   type = "electric",
   -- Secondary, deliberately, and this is where the predecessor offered a startup setting instead.

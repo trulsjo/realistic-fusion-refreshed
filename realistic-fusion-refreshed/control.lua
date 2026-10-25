@@ -282,7 +282,7 @@ local PLASMA_CAPACITY = {}
 local function plasma_capacity(name)
   local capacity = PLASMA_CAPACITY[name]
   if not capacity then
-    capacity = prototypes.entity[name].fluidbox_prototypes[1].volume
+    capacity = prototypes.entity[name].fluidbox_prototypes[1].get_volume()
     PLASMA_CAPACITY[name] = capacity
   end
   return capacity
@@ -457,12 +457,11 @@ local MIN_FLUID = 1e-6
 -- follows and for the same reason: a collector nobody is draining is a full collector, and it
 -- should show up as by-products backing up rather than as a reactor quietly storing them for ever.
 local function deposit(collector, products)
-  local box = collector.fluidbox
   for index = 1, #COLLECTOR_BOXES do
     local name = COLLECTOR_BOXES[index]
     local bred = products[name]
     if bred and bred > 0 then
-      local held = box[index]
+      local held = collector.get_fluid(index)
       local amount = bred + (held and held.amount or 0)
       -- The box's own declared volume, not the segment the player has piped it into -- measured
       -- on a collector with its outlet on a run under #68, which is the arrangement this call
@@ -473,7 +472,7 @@ local function deposit(collector, products)
       -- discard the excess rather than spend anything for it. That is not true one caller up, where
       -- the same figure decides how much LITHIUM to buy -- which is why that one is the subject of
       -- #69 and this one is a note.
-      local capacity = box.get_capacity(index)
+      local capacity = collector.get_fluid_capacity(index)
       if amount > capacity then amount = capacity end
       -- The threshold is tested against the box's new total, not against what was just bred, and
       -- that is the useful way round: a reactor breeding a millionth of a unit a step still has
@@ -485,7 +484,7 @@ local function deposit(collector, products)
         -- Temperature stated rather than omitted, for the reason apply() gives about the energy
         -- box: leaving it out resets the fluid to its default every time. These two are ambient
         -- gases and the prototype gives them no range to sit anywhere else in.
-        box[index] = { name = name, amount = amount, temperature = 15 }
+        collector.set_fluid(index, { name = name, amount = amount, temperature = 15 })
       end
     end
   end
@@ -665,8 +664,6 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
   -- NO ENERGY WRITE HERE, and that is #72 rather than an omission. spend() below has already paid
   -- for this step's heating, one tick at a time, and result.heating_used_j is the record of what
   -- it paid rather than a bill to settle now -- deducting it again would charge the reactor twice.
-  local box = entity.fluidbox
-
   -- Writing the plasma back keeps it in this reactor and no other. Box 1 is "input" since #740
   -- (ADR 0040): it takes plasma from the run it is plumbed into and gives none back, so a
   -- temperature written here stays in this box, and reactors on one run of rf-pipe share the feed
@@ -748,9 +745,9 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
   -- whose rows that took them #741 removed with the box.
   local remaining = plasma.amount - result.plasma_consumed
   if remaining > 0 then
-    box[1] = { name = plasma.name, amount = remaining, temperature = result.temperature_c }
+    entity.set_fluid(1, { name = plasma.name, amount = remaining, temperature = result.temperature_c })
   else
-    box[1] = nil
+    entity.clear_fluid(1)
   end
 
   -- What this step sells into the reactor's energy box, summed here and written at the bottom of
@@ -809,8 +806,8 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
   local collector = entities.collector(entity)
   if collector then
     local products = result.products
-    local held = collector.fluidbox[TRITIUM_BOX]
-    local headroom = collector.fluidbox.get_capacity(TRITIUM_BOX)
+    local held = collector.get_fluid(TRITIUM_BOX)
+    local headroom = collector.get_fluid_capacity(TRITIUM_BOX)
       - (held and held.amount or 0)
       - ((products and products[TRITIUM]) or 0)
     local bred, bred_j = blanket_breed(entity, spec, result.neutrons, headroom)
@@ -871,7 +868,7 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
     -- disagree, whatever the target is. That question -- #46's third item -- is now SETTLED: 550
     -- for rf-reactor and 165 for rf-aneutronic-reactor, for reasons that live beside each of them
     -- in prototypes/entities.lua.
-    local produced = box[2]
+    local produced = entity.get_fluid(2)
     local amount = sold + (produced and produced.amount or 0)
     -- This box's own capacity. It used to say "the segment's, because get_capacity reports the
     -- segment" -- measured under #40 and that is true of a pipe and false of a machine: asked of a
@@ -884,7 +881,7 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
     --
     -- Overflow is discarded, which is the right behaviour and not an oversight: a reactor whose
     -- heat is not being carried away does not get to bank it. It shows up as output backing up.
-    local capacity = box.get_capacity(2)
+    local capacity = entity.get_fluid_capacity(2)
     if amount > capacity then amount = capacity end
     -- The reactor's OWN energy fluid, not one name the whole mod shares (#31). An aneutronic
     -- reactor sells rf-aneutronic-reactor-energy into a direct energy converter where a neutronic
@@ -892,11 +889,11 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
     -- interchangeable -- see prototypes/fluids.lua. Writing the wrong one here would be rejected by
     -- the box's filter and lose the reactor's entire output silently, which is why
     -- check_energy_outlets() below ties this field to the prototype rather than trusting it.
-    box[2] = {
+    entity.set_fluid(2, {
       name = spec.energy_fluid,
       amount = amount,
       temperature = energy_temperature(entity.name),
-    }
+    })
   end
 end
 
@@ -1101,7 +1098,7 @@ local function update()
       -- it too, for the blanket's share, and the pending entry it already builds costs nothing to
       -- widen.
       local capture = capture_for(entity, spec)
-      local plasma = entity.fluidbox[1]
+      local plasma = entity.get_fluid(1)
       -- What this reactor was HEATED BY over the interval, not what its buffer happens to hold
       -- (#72). Read before the reset below, so a step that returns nil still consumes the payments
       -- made for it -- the plasma was heated either way and the joules are gone.
@@ -1308,7 +1305,7 @@ end
 local function check_plasma_capacity()
   for name, spec in pairs(SPECS) do
     local box = prototypes.entity[name].fluidbox_prototypes[1]
-    local found = box and box.volume
+    local found = box and box.get_volume()
     if found ~= spec.box_volume then
       -- THE DENSITY EACH IMPLIES is the number a reader actually needs, because that is what the
       -- disagreement changes -- a capacity in fluid units says nothing on its own about whether a
@@ -1852,9 +1849,17 @@ end
 -- whoever wrote it.
 local HEATING_CATEGORY = "rf-plasma-heating"
 
+-- 2.1 gives a recipe a list of categories rather than one, so the test is membership.
+local function in_heating_category(recipe)
+  for _, category in ipairs(recipe.categories) do
+    if category == HEATING_CATEGORY then return true end
+  end
+  return false
+end
+
 local function check_every_plasma_burns()
   for _, recipe in pairs(prototypes.recipe) do
-    if recipe.category == HEATING_CATEGORY then
+    if in_heating_category(recipe) then
       for _, product in pairs(recipe.products or {}) do
         if product.type == "fluid" and not logic.fuels[product.name] then
           error(string.format(
@@ -2049,7 +2054,7 @@ local function check_ladder_clamp()
       -- cannot come to disagree about which box this is. Full, which is the reference operating
       -- point rather than the hottest one: see the note on ladders_overrun, which is
       -- where the argument for checking that one point lives.
-      local volume = prototypes.entity[name].fluidbox_prototypes[1].volume
+      local volume = prototypes.entity[name].fluidbox_prototypes[1].get_volume()
       -- Two questions, not one, and they are asked in two places on purpose. This one is whether
       -- the spec NAMED a fuel; reactor-logic's is whether the name WORKS, and it raises rather
       -- than answering when it cannot simulate -- which is what stops a mistyped name switching
@@ -2130,12 +2135,12 @@ end
 local function check_segment_constants()
   local heater = 0
   for _, box in ipairs(prototypes.entity["rf-heater"].fluidbox_prototypes) do
-    if box.production_type == "output" then heater = heater + box.volume end
+    if box.production_type == "output" then heater = heater + box.get_volume() end
   end
   local pipe = prototypes.entity["rf-pipe"].fluidbox_prototypes[1]
   for _, row in ipairs({
     { "heater_output_box", heater, "rf-heater's output fluid boxes hold" },
-    { "pipe_volume", pipe and pipe.volume, "rf-pipe's fluid box holds" },
+    { "pipe_volume", pipe and pipe.get_volume(), "rf-pipe's fluid box holds" },
     { "step_ticks", UPDATE_INTERVAL, "control.lua's UPDATE_INTERVAL is" },
   }) do
     local field, found, what = row[1], row[2], row[3]

@@ -36,7 +36,7 @@ data:extend({
   {
     type = "recipe",
     name = "rf-hydrogen-from-water",
-    category = "rf-electrolysis",
+    categories = { "rf-electrolysis" },
     enabled = false,
     energy_required = 1,
     ingredients = { { type = "fluid", name = "water", amount = 100 } },
@@ -49,7 +49,7 @@ data:extend({
   {
     type = "recipe",
     name = "rf-hydrogen-sulfide",
-    category = "chemistry",
+    categories = { "chemistry" },
     enabled = false,
     energy_required = 2,
     ingredients = {
@@ -65,7 +65,7 @@ data:extend({
   {
     type = "recipe",
     name = "rf-heavy-water",
-    category = "rf-enrichment",
+    categories = { "rf-enrichment" },
     enabled = false,
     energy_required = 4,
     ingredients = {
@@ -99,7 +99,7 @@ data:extend({
   {
     type = "recipe",
     name = "rf-depleted-water-recycling",
-    category = "chemistry",
+    categories = { "chemistry" },
     enabled = false,
     energy_required = 2,
     ingredients = { { type = "fluid", name = "rf-depleted-water", amount = 100 } },
@@ -110,7 +110,7 @@ data:extend({
   {
     type = "recipe",
     name = "rf-deuterium",
-    category = "rf-electrolysis",
+    categories = { "rf-electrolysis" },
     enabled = false,
     energy_required = 2,
     ingredients = { { type = "fluid", name = "rf-heavy-water", amount = 100 } },

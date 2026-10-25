@@ -7,7 +7,7 @@
     The repo's mods are junctioned in, so editing a prototype and restarting the game is the whole
     edit-test loop -- nothing is copied and nothing needs reinstalling.
 
-    Base 2.0 only by default, which is what ADR 0003 and ADR 0008 actually target. -With enables
+    Base 2.1 only by default, which is what ADR 0003 and ADR 0041 actually target. -With enables
     the bundled expansion mods and resolves their dependencies.
 
     Your own mod directory is deliberately not used. It has other mods installed and the expansion
@@ -113,7 +113,7 @@ To remove it safely:
     pwsh -File scripts/dev-launch.ps1 -Clean
 "@ | Set-Content -Path (Join-Path $ModDirectory 'README-BEFORE-DELETING.txt') -Encoding utf8
 
-$bundledOn = if ($enabled) { $enabled -join ', ' } else { 'none (base 2.0 only)' }
+$bundledOn = if ($enabled) { $enabled -join ', ' } else { 'none (base 2.1 only)' }
 Write-Host "mods       : $($ourMods -join ', ')"
 Write-Host "bundled    : $bundledOn"
 Write-Host "mod dir    : $ModDirectory"

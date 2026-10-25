@@ -46,15 +46,15 @@
     WHY THE REFERENCE MODS ARE READ RATHER THAN LOADED
 
     Loading is the better instrument and it is available for Krastorio 2 -- `load-check.ps1
-    -AlsoModDirectory` runs the game with K2 2.0.19 and its four dependencies enabled, which is what
+    -AlsoModDirectory` runs the game with K2 and its four dependencies enabled, which is what
     actually discharges ADR 0007. This check is the complement, not a substitute for it, and it earns
     its place three ways.
 
-    It covers what cannot be loaded. K2's CURRENT release is 2.1.3 (factorio_version 2.1,
-    base >= 2.1.7) and this repo declares 2.0, so the two cannot be enabled together at all: Factorio
-    treats 2.0 and 2.1 as different major versions a mod cannot span. Only the 2.0 line loads here.
-    Reading names off disk is version-blind, so it says something about the release players actually
-    run while the load-check necessarily says something about an older one. Both predecessors are
+    It covers what cannot be loaded. Factorio treats 2.0 and 2.1 as different major versions a mod
+    cannot span, and since #767 this repo declares 2.1, so a set still pinned at a 2.0 release
+    (Krastorio 2 2.0.19, until #772 re-derives the sets) cannot be enabled beside it at all.
+    Reading names off disk is version-blind, so it says something about a release the load-check
+    cannot load. Both predecessors are
     1.1-era and can never be loaded beside this mod at all, so for them the scan is the ONLY
     instrument there is.
 
@@ -1224,7 +1224,7 @@ try {
                 New-Item -ItemType Directory -Path $canary -Force | Out-Null
                 @{
                     name = 'rf-namecheck-canary'; version = '0.0.1'; title = 'Name-check canary'
-                    author = 'name-check.ps1'; factorio_version = '2.0'; dependencies = @('base >= 2.0.77')
+                    author = 'name-check.ps1'; factorio_version = '2.1'; dependencies = @('base >= 2.1.23')
                 } | ConvertTo-Json | Set-Content -Path (Join-Path $canary 'info.json') -Encoding utf8
                 # One of each failure: a NEW prototype with no prefix, and a REPLACED vanilla one. iron-plate
                 # is chosen because nothing in this repo touches it, so a hit is unambiguous.
@@ -1807,7 +1807,7 @@ try {
         exit 1
     }
 
-    $bundledOn = if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.0 only)' }
+    $bundledOn = if ($enabledBundled) { $enabledBundled -join ', ' } else { 'none (base 2.1 only)' }
     $against   = if ($alsoMods) { "Krastorio 2, either predecessor, or the $($alsoMods.Count)-mod set at $AlsoModDirectory" }
                  else           { 'Krastorio 2 or either predecessor' }
     Write-Host ''

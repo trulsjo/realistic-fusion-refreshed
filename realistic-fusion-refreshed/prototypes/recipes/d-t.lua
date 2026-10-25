@@ -40,7 +40,7 @@ data:extend({
   {
     type = "recipe",
     name = "rf-d-t-plasma",
-    category = "rf-plasma-heating",
+    categories = { "rf-plasma-heating" },
     enabled = false,
     energy_required = logic.heater.craft_seconds,
     ingredients = { { type = "fluid", name = "rf-d-t-mix", amount = logic.heater.plasma_per_craft } },
