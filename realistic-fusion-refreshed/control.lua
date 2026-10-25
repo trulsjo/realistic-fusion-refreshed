@@ -1061,9 +1061,11 @@ end
 -- that reactors on one run of rf-pipe share a fluid segment, so interleaved steps would compute
 -- against a pool a neighbour had already written to this tick. Since #740 each box is "input" and
 -- a write reaches no neighbour (ADR 0040); #73 had already measured that even the input-output box
--- moved nothing between boxes inside a tick. Reading first still makes every reactor's step
--- independent of the order entities.registry() happens to iterate in, which is one less thing to
--- argue about in multiplayer.
+-- moved nothing between boxes inside a tick. That was 2.0.77: on 2.1.23 the box is a share of its
+-- segment and a write reaches the run beside it in the same call (#776, plasma-input-box.md's
+-- "On Factorio 2.1.23"), so the split's first reason holds there again. Reading first still makes
+-- every reactor's step independent of the order entities.registry() happens to iterate in, which
+-- is one less thing to argue about in multiplayer.
 local function update()
   local dt = UPDATE_INTERVAL / 60
   local pending = {}

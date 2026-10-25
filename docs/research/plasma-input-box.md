@@ -93,9 +93,9 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 choose an option.** Truls chose option 2 on 2026-10-20 (ADR 0040), and #740 shipped it; what the
 shipped box reads is in [Under the shipped `input` box](#under-the-shipped-input-box). Every
 section before that one was written while the `input-output` box shipped, so "shipped" there
-means `input-output`, and "the canary" means the `input` box that now ships. Every section is
-2.0.77's except [On Factorio 2.1.23](#on-factorio-2123) (#776), where the same box shares its
-segment.
+means `input-output`, and "the canary" means the `input` box that now ships. Every reading is
+2.0.77's except those of [On Factorio 2.1.23](#on-factorio-2123) (#776), where the same box
+shares its segment, and the `## Current figures` rows and the source that name 2.1.23.
 
 The 2.0.77 docs for [`FluidBox`](https://lua-api.factorio.com/2.0.77/types/FluidBox.html) say of
 `production_type`: "input-output should only be used for boilers in fluid heating mode."
@@ -1489,7 +1489,8 @@ puts:
 
 It also reads the probe's own cells again on 2.1.23.
 
-**The probe since #776.** 2.1.7 removed `LuaEntity::fluidbox`, so the probe and the shared rig Lua
+**The probe since #776.** 2.1.7 removed `LuaEntity::fluidbox` (*Read from source*: the game's
+`changelog.txt`, under 2.1.7), so the probe and the shared rig Lua
 in `scripts/factorio-lib.ps1` read through the
 [2.1.23 `LuaEntity`](https://lua-api.factorio.com/2.1.23/classes/LuaEntity.html) methods:
 `get_fluid`, `set_fluid`, `get_fluid_capacity`, `fluids_count`, `get_fluid_filter`,
@@ -1517,7 +1518,8 @@ neighbour sits on the box's first connection:
 `pwsh -File scripts/probe-plasma-input-box.ps1 -NoCanary -Reach` and the same with
 `-Plasma rf-d-t-plasma`, 2026-10-25, Factorio 2.1.23 (build 87750), normal quality, nothing
 researched (all 11 rungs asserted off), one heater a cell, 100 000 ticks. The reach cells read
-the same in both runs, and in a 1000-tick run before them.
+the same in both runs. A 1000-tick run before them, on an earlier version of the probe that had
+no inf-50-same cell, read the same in the other six.
 
 ### What a write to the box reaches
 
@@ -1565,8 +1567,8 @@ right after it, and then on tick 601. Ticks 602 to 605 read as 601 did in every 
 
 | cell | D-D: box first at 99.9% | D-D: box and °C at 96 000 | D-T: box and °C at 96 000 |
 |---|---|---|---|
-| solo, 3 pipes | 40 207 | 1000 at 2.3813×10⁸; settled from 60 000 | 274.87 at 2.199080×10⁹; settled from 40 000 |
-| solo, 6 pipes | 49 448 | 1000 at 2.3815×10⁸; settled from 72 000 | 275.25 at 2.196134×10⁹; settled from 48 000 |
+| solo, 3 pipes | 40 207 | 999.96 at 2.3814×10⁸; settled from 60 000 | 274.87 at 2.199080×10⁹; settled from 40 000 |
+| solo, 6 pipes | 49 448 | 999.97 at 2.3815×10⁸; settled from 72 000 | 275.25 at 2.196134×10⁹; settled from 48 000 |
 | pair, reactor 1, powered | 90 006 | 6.2334×10⁷, NOT settled | 198.03 at 1.695219×10⁹; settled from 80 000 |
 | pair, reactor 2, unpowered | 90 006 | the same as reactor 1 | the same as reactor 1 |
 | both, reactors 1 and 2 | never | 4.2620×10⁸ each, NOT settled | 213.59 at 2.305591×10⁹ each; settled from 64 000 |
@@ -1575,14 +1577,16 @@ right after it, and then on tick 601. Ticks 602 to 605 read as 601 did in every 
   three pipes. On 2.0.77 under the `input` box it was 276.42 at 2.187×10⁹
   ([D-T under the `input` box](#d-t-under-the-input-box)). *Inferred* from that and from the
   reach cells: the D-T reactors that never ignited were the rig's infinity-pipe feed, not the mod.
-  Every rig that feeds plasma through `at-least` at a temperature the step moves away from is
-  affected in the same way.
+  *Inferred* from the same: every rig that feeds plasma through `at-least` at a temperature the
+  step moves away from is affected in the same way.
 - **The segment holds the box's share and the pipes' together.** At every D-D solo row the
   segment read through the first pipe is 1300/1000 of the box at three pipes, and 1600/1000 at
   six: the two capacities' ratio. So the box fills with its line, and the line's length shows in
   the fill: 40 207 ticks at three pipes and 49 448 at six. On 2.0.77 the `input` box filled at
-  30 975 at both counts, the figure ADR 0040 point 2 rests on. The solo boxes settle where they
-  did on 2.0.77, 2.3813×10⁸ against 2.381386×10⁸ °C at 96 000.
+  30 975 at both counts, the figure ADR 0040 point 2 rests on. The solo boxes read about where
+  they did on 2.0.77 at 96 000: 2.3814 and 2.3815×10⁸ °C at three and six pipes, against the
+  2.0.77 `input` box's 2.3815×10⁸ at both
+  ([One reactor](#one-reactor-solo-3-and-solo-6)).
 - **Two reactors on one run are one pool again.** In both pairs and in both runs, the two boxes
   read the same amount and temperature at every row. That includes the pair whose second reactor
   has no power, which is the heat ADR 0040 point 3 says does not travel. On 2.0.77 under the
@@ -1595,7 +1599,8 @@ right after it, and then on tick 601. Ticks 602 to 605 read as 601 did in every 
 ### Options for the mod
 
 **Readings for a decision that is Truls's, recorded and not chosen.** The D-T ignition failure is
-the rigs', and #768 to #771 decide how the rigs feed. What reaches the mod is that ADR 0040's
+the rigs'. How the rigs feed plasma on 2.1.23 is in no ticket yet; #768 to #771 port the rigs,
+and none of them names the feed. What reaches the mod is that ADR 0040's
 points 2 and 3 describe a box that 2.1.23 no longer gives: the `input` box shares its segment,
 heat travels along a run, and the fill depends on pipe count.
 
@@ -1604,20 +1609,24 @@ heat travels along a run, and the fill depends on pipe count.
    the 2.0.77 `input-output` box did not do ([Once the shipped line is
    full](#once-the-shipped-line-is-full-the-unpowered-reactor-falls-to-the-floor-built-1h2)). That
    was read on one pair, to 96 000 ticks, and the line had not filled until 90 006. The fill
-   depends on pipe count, as it did under `input-output`, so the fed model's single fill time no
-   longer matches the game. `check-pooling.ps1` and the statements ADR 0040's Consequences
+   depends on pipe count, as it did under `input-output`. *Inferred* from that: the fed model's
+   single fill time no longer matches the game. `check-pooling.ps1` and the statements ADR 0040's Consequences
    rewrote would be rewritten back. Whether `input-output` and `input` differ at all on 2.1 was not
    measured.
-2. **Write the segment rather than the box.** `set_fluid_segment_fluid` sets what the whole
-   segment holds, which is what a write to the box now does in effect. The step would then say
-   what it does. But two reactors on one run would each write the shared segment once a step, so
+2. **Write the segment rather than the box.** `set_fluid_segment_fluid` "Sets the fluid within
+   the given storage's fluid segment" (*Read from source*: the 2.1.23 `runtime-api.json`). A write
+   to the box does not do that: it replaces the box's share and keeps the rest of the segment, as
+   the pipe cell's 509.09 shows. A segment write would set the line's plasma to the step's result,
+   so the step's temperature would be the line's and not a mix. But two reactors on one run would each write the shared segment once a step, so
    the step's result would depend on the order the reactors are stepped in. Nothing here measures
    that.
 3. **A box that joins no segment.** The bolted heater's box has no segment on 2.1.23, so
    a box can stay out of one. The plasma box could have no pipe connection, with the feed moved
-   across by script, or through `add_fluid_box_linked_connection` or a box of another kind. That
-   restores ADR 0040's behaviour, unheated reactors cold and the fill independent of the line. But it changes how a player plumbs a reactor and how
-   the containment of ADR 0018 is held, it breaks saves, and none of these was measured on 2.1.23.
+   across by script, or through `add_fluid_box_linked_connection` or a box of another kind.
+   *Inferred* from the heater cell, where the write stayed in the box: that would give back ADR
+   0040's behaviour, unheated reactors cold and the fill independent of the line. It changes how
+   a player plumbs a reactor and how the containment of ADR 0018 is held. None of these was
+   measured on 2.1.23.
 
 **For #767:** the D-T failure that held it is a property of the rigs' feed. *Inferred* from the
 reach cells and from the D-T run above. Whether #767 merges before an option above is taken, or
