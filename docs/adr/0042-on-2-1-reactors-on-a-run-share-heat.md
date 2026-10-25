@@ -64,8 +64,10 @@ or on build order". On 2.1.23 the first half is false. The second has not been m
    are the model's own and `tests/test-reactor-logic.lua`, so no gate reads a fill time against the
    game (searched 2026-10-25).
 5. **The move to 2.1 is breaking for a save in two ways this ADR names.** An unpowered reactor on
-   a run pools heat, and the fill depends on pipe count. #767's `BREAKING CHANGE:` footer is to
-   name both. *Inferred* from the probe's fresh maps: no 2.0 save has been loaded on 2.1.
+   a run pools heat, and the fill depends on pipe count. #767's `BREAKING CHANGE:` footer names
+   both. *Inferred* from the probe's fresh maps: no 2.0 save of this mod has been loaded on 2.1.
+   Two 2.0.77 saves of other mods loaded on 2.1.23 and ran 60 ticks, base game only
+   (2026-10-25).
 6. **Before the first portal release,
    [#778](https://github.com/trulsjo/realistic-fusion-refreshed/issues/778) reads five things on
    2.1**: build order, `input` against `input-output`, the D-D pair to a full and settled line, both
