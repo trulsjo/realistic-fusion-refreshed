@@ -152,7 +152,6 @@ local HELIUM3  = "rf-helium-3"
 local LITHIUM  = "rf-lithium"
 local ENERGY   = "rf-reactor-energy"
 local BLANKET  = "rf-lithium-blanket"
-local FEED     = "__PLASMAFEED__"
 
 -- How much lithium each loaded blanket starts with.
 --
@@ -206,8 +205,8 @@ local LOGIC = require("__realistic-fusion-refreshed__/scripts/reactor-logic")
 
 local function holds(entity, fluid)
   local total = 0
-  for index = 1, #entity.fluidbox do
-    local contents = entity.fluidbox[index]
+  for index = 1, #rf_fluidbox(entity) do
+    local contents = rf_fluidbox(entity)[index]
     if contents and contents.name == fluid then total = total + contents.amount end
   end
   return total
@@ -305,7 +304,7 @@ local function flood(surface, centre, radius, fluid)
     name = { "pipe", "storage-tank" },
   })) do
     entities[#entities + 1] = e
-    target = target + prototypes.entity[e.name].fluidbox_prototypes[1].volume
+    target = target + prototypes.entity[e.name].fluidbox_prototypes[1].get_volume()
   end
 
   -- LARGEST BOX LAST, and that ordering is the whole of whether this works. The last write wins --
@@ -313,14 +312,14 @@ local function flood(surface, centre, radius, fluid)
   -- writing a 100-unit pipe last would leave it at 100 and no number of passes would recover it.
   -- find_entities_filtered promises no order, so the order is imposed here rather than relied on.
   table.sort(entities, function(a, b)
-    return prototypes.entity[a.name].fluidbox_prototypes[1].volume
-         < prototypes.entity[b.name].fluidbox_prototypes[1].volume
+    return prototypes.entity[a.name].fluidbox_prototypes[1].get_volume()
+         < prototypes.entity[b.name].fluidbox_prototypes[1].get_volume()
   end)
 
   local held = 0
   for _ = 1, 8 do
     for _, e in ipairs(entities) do
-      e.fluidbox[1] = { name = fluid, amount = prototypes.entity[e.name].fluidbox_prototypes[1].volume }
+      rf_fluidbox(e)[1] = { name = fluid, amount = prototypes.entity[e.name].fluidbox_prototypes[1].get_volume() }
     end
     held = holds_across(entities, fluid)
     if held >= target - 1e-6 then break end
@@ -333,11 +332,7 @@ local function reactor_at(surface, force, ox, plasma, temperature)
   local reactor = rf_place_or_die(surface, {
     name = "rf-reactor", position = { ox, 0.5 }, force = force, raise_built = true,
   }, "rf-reactor")
-  local west = reactor.fluidbox.get_pipe_connections(1)[1].target_position
-  local feed = rf_place_or_die(surface, {
-    name = FEED, position = { west.x, west.y }, force = force,
-  }, "plasma feed")
-  feed.set_infinity_pipe_filter({
+  rf_plasma_feed(surface, force, reactor, 1, {
     name = plasma, percentage = 1, temperature = temperature, mode = "at-least",
   })
   return reactor
@@ -362,8 +357,8 @@ local function collector_on(surface, force, reactor, tank_seed)
   -- Only the tritium box is plumbed. Helium-3 is left to accumulate in the collector, which is
   -- where the d-d cell reads it from.
   local index
-  for i = 1, #collector.fluidbox do
-    local filter = collector.fluidbox.get_filter(i)
+  for i = 1, #rf_fluidbox(collector) do
+    local filter = rf_fluidbox(collector).get_filter(i)
     if filter and filter.name == TRITIUM then index = i end
   end
   if not index then error("the collector has no box filtered to " .. TRITIUM) end
@@ -372,7 +367,7 @@ local function collector_on(surface, force, reactor, tank_seed)
   -- its capacity and stays there, and the blanket has to notice.
   if not tank_seed then return collector, nil, index end
 
-  local at = collector.fluidbox.get_pipe_connections(index)[1].target_position
+  local at = rf_fluidbox(collector).get_pipe_connections(index)[1].target_position
   local step = { at.x - collector.position.x, at.y - collector.position.y }
   local length = math.max(math.abs(step[1]), math.abs(step[2]))
   step = { step[1] / length, step[2] / length }
@@ -434,7 +429,7 @@ local function cell_segments(name, reactor, plasma, collector, tank)
   -- filter, so asking for the plasma box by fluid returns nil. Index is safe for the reason
   -- rf_box_of's own note gives -- the reactor declares its boxes in a known order -- and the
   -- contract is asserted rather than assumed, one line below.
-  if reactor.fluidbox.get_filter(1) then
+  if rf_fluidbox(reactor).get_filter(1) then
     error("rf-reactor's input box has regained a filter; see prototypes/entities.lua")
   end
   local claims = {
@@ -593,7 +588,7 @@ script.on_init(function()
   local flooded_collector, flooded_tank, flooded_box = collector_on(surface, force, flooded, { 270.5, 25.5 })
   local flooded_blanket = blanket_on(surface, force, flooded, LOADED)
 
-  local flooded_capacity = flooded_collector.fluidbox.get_capacity(flooded_box)
+  local flooded_capacity = rf_fluidbox(flooded_collector).get_capacity(flooded_box)
   local flooded_filled, flooded_run, flooded_held = flood(surface, flooded_collector.position, NEARBY, TRITIUM)
   -- Refused at build time rather than measured around later. The run cannot be filled to the last
   -- unit -- see flood() -- but a run that is only half full would give the collector somewhere real
@@ -601,7 +596,7 @@ script.on_init(function()
   if flooded_held < 0.95 * flooded_filled then
     error(string.format("the flooded run would not fill: %.6g of %.6g", flooded_held, flooded_filled))
   end
-  flooded_collector.fluidbox[flooded_box] = { name = TRITIUM, amount = 0.95 * flooded_capacity }
+  rf_fluidbox(flooded_collector)[flooded_box] = { name = TRITIUM, amount = 0.95 * flooded_capacity }
 
   -- ------------------------------------------------------------------ sated
   --
@@ -630,8 +625,8 @@ script.on_init(function()
   power(surface, force, { -288, 8 })
   local sated_collector, _, sated_box = collector_on(surface, force, sated, nil)
   local sated_blanket = blanket_on(surface, force, sated, LOADED)
-  sated_collector.fluidbox[sated_box] = {
-    name = TRITIUM, amount = sated_collector.fluidbox.get_capacity(sated_box),
+  rf_fluidbox(sated_collector)[sated_box] = {
+    name = TRITIUM, amount = rf_fluidbox(sated_collector).get_capacity(sated_box),
   }
 
   -- ------------------------------------------------------------------ pulled
@@ -715,7 +710,7 @@ script.on_event(defines.events.on_tick, function()
   local collector = rig.throttled_collector
   if collector and collector.valid then
     storage.drained = (storage.drained or 0)
-      + collector.remove_fluid({ name = TRITIUM, amount = 0.05 })
+      + collector.extract_fluid({ name = TRITIUM, amount = 0.05 })
   end
 
   -- EMPTY THE ENERGY BOX AND KEEP THE RUNNING TOTAL, which is the only way to measure a production
@@ -733,7 +728,7 @@ script.on_event(defines.events.on_tick, function()
   for _, name in ipairs(METERED) do
     local reactor = rig[name]
     if reactor and reactor.valid then
-      sold[name] = sold[name] + reactor.remove_fluid({ name = ENERGY, amount = 1e9 })
+      sold[name] = sold[name] + reactor.extract_fluid({ name = ENERGY, amount = 1e9 })
     end
   end
 end)
@@ -777,7 +772,7 @@ script.on_nth_tick(CHECK_AT, function()
       or ("unreachable: " .. table.concat(missing, ", ")))
 
   -- ------------------------------------------------------------ it breeds
-  local plasma = r.fitted.fluidbox[1]
+  local plasma = rf_fluidbox(r.fitted)[1]
   record(plasma ~= nil and plasma.name == DT and plasma.temperature > 1e8,
     "the fitted reactor is burning D-T",
     plasma and string.format("%s at %.4g C", plasma.name, plasma.temperature) or "no plasma")
@@ -805,7 +800,7 @@ script.on_nth_tick(CHECK_AT, function()
   --
   -- The claim the whole cell rests on: a D-T reactor breeds NOTHING without a blanket, so every
   -- unit above came from the blanket rather than from the reaction.
-  local bare_plasma = r.bare.fluidbox[1]
+  local bare_plasma = rf_fluidbox(r.bare)[1]
   record(bare_plasma ~= nil and bare_plasma.temperature > 1e8,
     "the bare reactor is burning D-T just as hard",
     bare_plasma and string.format("%.4g C", bare_plasma.temperature) or "no plasma")
@@ -816,7 +811,7 @@ script.on_nth_tick(CHECK_AT, function()
   -- ------------------------------------------------------------ an empty blanket
   record(nearby_holds(r.empty_collector, TRITIUM, NEARBY) == 0,
     "a blanket that was never loaded breeds nothing")
-  local empty_plasma = r.empty.fluidbox[1]
+  local empty_plasma = rf_fluidbox(r.empty)[1]
   record(empty_plasma ~= nil and empty_plasma.temperature > 1e8,
     "and its reactor runs exactly as well",
     empty_plasma and string.format("%.4g C", empty_plasma.temperature) or "no plasma")
@@ -839,7 +834,7 @@ script.on_nth_tick(CHECK_AT, function()
   -- about 2 100 items for the same few hundred units of tritium. It is not a tolerance.
   local throttled_held = holds(r.throttled_collector, TRITIUM)
   local drained = storage.drained or 0
-  local capacity = r.throttled_collector.fluidbox.get_capacity(r.throttled_box)
+  local capacity = rf_fluidbox(r.throttled_collector).get_capacity(r.throttled_box)
 
   record(drained > 0 and throttled_held > 0.5 * capacity,
     "the throttled collector really is backed up and really is being drained",
@@ -858,13 +853,13 @@ script.on_nth_tick(CHECK_AT, function()
   -- collector's own box or has moved into the run beyond it. Anything above that was bought and
   -- thrown away by deposit()'s clamp.
   do
-    local capacity  = r.flooded_collector.fluidbox.get_capacity(r.flooded_box)
-    local segment   = r.flooded_tank.fluidbox.get_capacity(1)
+    local capacity  = rf_fluidbox(r.flooded_collector).get_capacity(r.flooded_box)
+    local segment   = rf_fluidbox(r.flooded_tank).get_capacity(1)
     local box_held  = holds(r.flooded_collector, TRITIUM)
     local run_held  = holds_across(r.flooded_run, TRITIUM)
     local gained    = (box_held - r.flooded_start_box) + (run_held - r.flooded_start_run)
     local spent     = LOADED - lithium_in(r.flooded_blanket)
-    local plasma    = r.flooded.fluidbox[1]
+    local plasma    = rf_fluidbox(r.flooded)[1]
 
     -- That the cell is in the state it claims, before anything is concluded from it. A run that is
     -- not actually full, or a box that drained, would make the bound below pass for the wrong
@@ -875,7 +870,7 @@ script.on_nth_tick(CHECK_AT, function()
     -- arrangement, where the box saturates at zero headroom and every check here still passes while
     -- measuring nothing #69 is about. check-pooling.ps1's outlet rows carry the same guard for the
     -- same reason.
-    local conn = r.flooded_collector.fluidbox.get_pipe_connections(r.flooded_box)[1]
+    local conn = rf_fluidbox(r.flooded_collector).get_pipe_connections(r.flooded_box)[1]
     record(conn ~= nil and conn.target ~= nil,
       "flooded: the collector's outlet really is plumbed into the run",
       conn and (conn.target and "joined" or "NOT joined -- the run is beside it, not on it")
@@ -945,7 +940,10 @@ script.on_nth_tick(CHECK_AT, function()
   -- neutron, and +27.5% at the 2.548e9 C these reactors actually settle at, where a plasma at the
   -- clamp radiates hard and left_j reaches 17%. Measured here at +27.96%, the difference being the
   -- cooler minute at the start of the run. So the floor is what is asserted and the figure is
-  -- printed beside it; a band would fail on the day the plasma settles somewhere else.
+  -- printed beside it; a band would fail on the day the plasma settles somewhere else. That was
+  -- 2.0.77 on 2026-09-08 (275cdcd). On 2.1.23, fed through rf_plasma_feed's pump and with the
+  -- rig's force holding every heating and plant-efficiency rung, it reads +27.83% at 2.599e9 C
+  -- (#768, #777).
   --
   -- Ten per cent, which is far below that +27.96% and far above anything that is not the blanket: the
   -- two reactors are identical prototypes on identical infinity feeds and the model is
@@ -969,11 +967,11 @@ script.on_nth_tick(CHECK_AT, function()
   -- as well as its tritium. That is deliberate rather than a defect: the alternatives were
   -- spending lithium for nothing or making heat from no material at all.
   local sated_held = holds(r.sated_collector, TRITIUM)
-  local sated_capacity = r.sated_collector.fluidbox.get_capacity(r.sated_box)
+  local sated_capacity = rf_fluidbox(r.sated_collector).get_capacity(r.sated_box)
   record(sated_held >= sated_capacity - 1e-6,
     "sated: the collector really is full, so the blanket has no headroom at all",
     string.format("%.6g of %.6g", sated_held, sated_capacity))
-  local sated_plasma = r.sated.fluidbox[1]
+  local sated_plasma = rf_fluidbox(r.sated)[1]
   record(sated_plasma ~= nil and sated_plasma.temperature > 1e8
       and lithium_in(r.sated_blanket) == LOADED,
     "sated: and its reactor is lit with a full blanket, so it could have bred and did not",
@@ -1032,13 +1030,13 @@ script.on_nth_tick(CHECK_AT, function()
 
   -- ------------------------------------------------------------ losing the blanket
   record(not r.pulled_blanket.valid, "the pulled reactor's blanket really was destroyed")
-  local pulled_plasma = r.pulled.fluidbox[1]
+  local pulled_plasma = rf_fluidbox(r.pulled)[1]
   record(pulled_plasma ~= nil and pulled_plasma.temperature > 1e8,
     "a reactor whose blanket is removed goes on running",
     pulled_plasma and string.format("%.4g C", pulled_plasma.temperature) or "no plasma")
-  record(r.pulled.fluidbox[2] ~= nil and r.pulled.fluidbox[2].amount > 0,
+  record(rf_fluidbox(r.pulled)[2] ~= nil and rf_fluidbox(r.pulled)[2].amount > 0,
     "and goes on producing reactor energy",
-    r.pulled.fluidbox[2] and string.format("%.6g", r.pulled.fluidbox[2].amount) or "nothing")
+    rf_fluidbox(r.pulled)[2] and string.format("%.6g", rf_fluidbox(r.pulled)[2].amount) or "nothing")
 
   -- ------------------------------------------------------------ both routes in one box
   local dd_t = nearby_holds(r.dd_collector, TRITIUM, NEARBY)
@@ -1077,9 +1075,9 @@ script.on_nth_tick(CHECK_AT, function()
   -- saturated denominator, a ratio far above 1.1, and a failure pointing at the blanket instead of
   -- at the rig. Capacity is read off the prototype rather than written down.
   local capacity = 0
-  for i = 1, #r.dd_collector.fluidbox do
-    local filter = r.dd_collector.fluidbox.get_filter(i)
-    if filter and filter.name == HELIUM3 then capacity = r.dd_collector.fluidbox.get_capacity(i) end
+  for i = 1, #rf_fluidbox(r.dd_collector) do
+    local filter = rf_fluidbox(r.dd_collector).get_filter(i)
+    if filter and filter.name == HELIUM3 then capacity = rf_fluidbox(r.dd_collector).get_capacity(i) end
   end
   record(dd_h < capacity,
     "the helium-3 the ratio is measured against has not saturated its box",

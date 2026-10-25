@@ -153,11 +153,12 @@
     on one reactor. It is the input-output box's rule, so under the canary its misses are a reading.
 
 .PARAMETER Reach
-    Also build seven unregistered copies of the reactor, built last so no other cell's segment id
+    Also build nine unregistered copies of the reactor, built last so no other cell's segment id
     moves, and write each box once with set_fluid (#776): one alone, one beside a single rf-pipe,
     one bolted to an unpowered rf-heater, and four beside a plasma infinity pipe in at-least mode
     at 1e6 degC: at 0%, 50% and 100%, written at 5e6 degC, and at 50% written at the pipe's own
-    1e6 (inf-50-same). The pipe and the heater are seeded full at 1e6 degC first. The box is read,
+    1e6 (inf-50-same). Since #777, two more beside the same pipe in add mode at 1%: one written
+    half full and one written full, both at 5e6 degC (add-1, add-1-full). The pipe and the heater are seeded full at 1e6 degC first. The box is read,
     and so are the neighbour and the box's segment, before the write, right after it and on each of
     the next five ticks. Needs -Ticks of at least 700.
 
@@ -320,7 +321,7 @@ local ENERGY_FEED = "__ENERGYFEED__"
 local REACH, PLASMA_FEED = __REACH__, "__PLASMAFEED__"
 local REACH_SEED, REACH_AT, REACH_C, SEED_C = 300, 600, 5e6, 1e6
 -- "same" writes at the feed's own temperature, so a reset shows whether it is the amount or the heat.
-local REACH_KINDS = { "none", "pipe", "heater", "inf-0", "inf-50", "inf-100", "inf-50-same" }
+local REACH_KINDS = { "none", "pipe", "heater", "inf-0", "inf-50", "inf-100", "inf-50-same", "add-1", "add-1-full" }
 local PLASMA  = "__PLASMA__"
 local REACTOR = "__REACTOR__"
 -- nil places those machines at normal quality (#726); either way the quality is asserted.
@@ -635,8 +636,8 @@ local function reach_cell(surface, force, x, kind)
   elseif kind ~= "none" then
     cell.other = rf_place_or_die(surface, { name = PLASMA_FEED, position = conn.target_position, force = force },
       "the plasma feed")
-    cell.other.set_infinity_pipe_filter({ name = PLASMA, percentage = tonumber(kind:match("inf%-(%d+)")) / 100,
-      mode = "at-least", temperature = SEED_C })
+    cell.other.set_infinity_pipe_filter({ name = PLASMA, percentage = tonumber(kind:match("%-(%d+)")) / 100,
+      mode = kind:find("^add") and "add" or "at-least", temperature = SEED_C })
   end
   return cell
 end
@@ -662,7 +663,7 @@ local function reach_tick(tick)
       reach_read(c, tick, "before")
       -- Half a box where nothing feeds it, so a write that spreads shows in the amount too; a
       -- full box against a feed that has filled it, so the feed's target is already met.
-      local fed = c.kind:find("^inf%-") and c.kind ~= "inf-0"
+      local fed = (c.kind:find("^inf%-") and c.kind ~= "inf-0") or c.kind:find("full")
       local amount = c.box.get_fluid_capacity(1) * (fed and 1 or 0.5)
       local c_at = c.kind:find("same") and SEED_C or REACH_C
       local set = c.box.set_fluid(1, { name = PLASMA, amount = amount, temperature = c_at })
@@ -738,7 +739,7 @@ script.on_init(function()
   -- Last, so no cell above moves its segment id.
   if REACH then
     storage.reach = {}
-    for k, kind in ipairs(REACH_KINDS) do storage.reach[k] = reach_cell(surface, force, 40 * (k - 1), kind) end
+    for k, kind in ipairs(REACH_KINDS) do storage.reach[k] = reach_cell(surface, force, 30 * (k - 1), kind) end
   end
 end)
 
