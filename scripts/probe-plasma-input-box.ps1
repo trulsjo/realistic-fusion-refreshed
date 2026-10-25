@@ -152,6 +152,14 @@
     (#587). probe-plasma-segment.ps1 -Fixed is the same rule
     on one reactor. It is the input-output box's rule, so under the canary its misses are a reading.
 
+.PARAMETER Reach
+    Also build six unregistered copies of the reactor, built last so no other cell's segment id
+    moves, and write each box once with set_fluid (#776): one alone, one beside a single rf-pipe,
+    one bolted to an unpowered rf-heater, and three beside a plasma infinity pipe in at-least mode,
+    at 0%, 50% and 100%. The pipe and the heater are seeded full at 1e6 degC first. The box is read,
+    and so are the neighbour and the box's segment, before the write, right after it and on each of
+    the next five ticks. Needs -Ticks of at least 700.
+
 .PARAMETER NoCanary
     Run the shipped variant alone. For a reading that is about the shipped box only, at half the
     time; the canary's rows are then not printed at all.
@@ -188,6 +196,7 @@ param(
     # Case-sensitive: the names are Lua table keys.
     [ValidatePattern('^((confinement|heating|capture)_ladder=\d+)(,(confinement|heating|capture)_ladder=\d+)*$', Options = 'None')]
     [string] $Rungs,
+    [switch] $Reach,
     [switch] $NoCanary,
     [switch] $KeepTemp
 )
@@ -215,6 +224,7 @@ $rungsLua = if ($Rungs) { '{ ' + (($Rungs -split ',') -join ', ') + ' }' } else 
 if ($PSBoundParameters.ContainsKey('QualityOn') -and -not $Quality) { throw '-QualityOn needs -Quality.' }
 $reactorQuality = if ($Quality -and $QualityOn -ne 'heaters') { "`"$Quality`"" } else { 'nil' }
 $heaterQuality  = if ($Quality -and $QualityOn -ne 'reactor') { "`"$Quality`"" } else { 'nil' }
+if ($Reach -and $Ticks -lt 700) { throw "-Reach writes on tick 600 and reads five more, so it needs -Ticks of at least 700." }
 if ($Every -ge $Ticks) { throw "-Every $Every is not less than -Ticks $Ticks, so no row would be sampled." }
 
 $FactorioExe = Resolve-FactorioExe -Path $FactorioExe
@@ -229,19 +239,19 @@ New-Item -ItemType Directory -Path $rigDir, $preDir, $canaryDir -Force | Out-Nul
 
 @{
     name = $rigName; version = '0.0.1'; title = 'Plasma input-box probe'
-    author = 'probe-plasma-input-box.ps1'; factorio_version = '2.0'
+    author = 'probe-plasma-input-box.ps1'; factorio_version = '2.1'
     # The canary is optional, so the rig's data-final-fixes runs after it and copies its box.
-    dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed', $preName, "? $canaryName")
+    dependencies = @('base >= 2.1.23', 'realistic-fusion-refreshed', $preName, "? $canaryName")
 } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
 @{
     name = $preName; version = '0.0.1'; title = 'Plasma input-box probe, the reading before the step'
-    author = 'probe-plasma-input-box.ps1'; factorio_version = '2.0'
-    dependencies = @('base >= 2.0.77')
+    author = 'probe-plasma-input-box.ps1'; factorio_version = '2.1'
+    dependencies = @('base >= 2.1.23')
 } | ConvertTo-Json | Set-Content -Path (Join-Path $preDir 'info.json') -Encoding utf8
 @{
     name = $canaryName; version = '0.0.1'; title = 'Plasma input-box canary'
-    author = 'probe-plasma-input-box.ps1'; factorio_version = '2.0'
-    dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed')
+    author = 'probe-plasma-input-box.ps1'; factorio_version = '2.1'
+    dependencies = @('base >= 2.1.23', 'realistic-fusion-refreshed')
 } | ConvertTo-Json | Set-Content -Path (Join-Path $canaryDir 'info.json') -Encoding utf8
 
 # THE CANARY: the one field the issue asks about, and nothing else. It asserts there was something
@@ -282,7 +292,7 @@ script.on_event(defines.events.on_tick, function()
   if not storage.watch then return end
   local pre, pre_c = {}, {}
   for i, reactor in ipairs(storage.watch) do
-    local plasma = reactor.fluidbox[1]
+    local plasma = reactor.get_fluid(1)
     pre[i] = plasma and plasma.amount or 0
     pre_c[i] = plasma and plasma.temperature or 0
   end
@@ -305,6 +315,11 @@ local BUILD_ORDER = "__BUILDORDER__"
 local RUNGS = __RUNGS__
 local FIXED = __FIXED__
 local ENERGY_FEED = "__ENERGYFEED__"
+-- #776's cells: seeded on REACH_SEED, written on REACH_AT, read for five ticks more.
+local REACH, PLASMA_FEED = __REACH__, "__PLASMAFEED__"
+local REACH_SEED, REACH_AT, REACH_C, SEED_C = 300, 600, 5e6, 1e6
+-- "same" writes at the feed's own temperature, so a reset shows whether it is the amount or the heat.
+local REACH_KINDS = { "none", "pipe", "heater", "inf-0", "inf-50", "inf-100", "inf-50-same" }
 local PLASMA  = "__PLASMA__"
 local REACTOR = "__REACTOR__"
 -- nil places those machines at normal quality (#726); either way the quality is asserted.
@@ -459,10 +474,20 @@ __RIGBUILD__
 
 __QUIETMAP__
 
+-- 2.1 reads a segment off the entity (/2.1.23/ LuaEntity), and a box with none answers nil or its own.
+local function segment_fluid(entity)
+  return entity.has_fluid_segment(1) and entity.get_fluid_segment_fluid(1) or nil
+end
 local function segment_of(entity)
-  local total = 0
-  for _, amount in pairs(entity.fluidbox.get_fluid_segment_contents(1) or {}) do total = total + amount end
-  return total
+  local fluid = segment_fluid(entity)
+  return fluid and fluid.amount or 0
+end
+local function segment_id(entity)
+  return entity.has_fluid_segment(1) and entity.get_fluid_segment_id(1) or nil
+end
+-- What 2.0's get_capacity answered on a pipe: the segment's, which the fixed rule's C is.
+local function segment_capacity(entity)
+  return entity.has_fluid_segment(1) and entity.get_fluid_segment_capacity(1) or entity.get_fluid_capacity(1)
 end
 
 -- A machine the engine placed at another quality than asked would read as that quality's.
@@ -477,7 +502,7 @@ local function reactor_at(surface, force, x)
   local reactor = at_quality(rf_place_or_die(surface, { name = REACTOR, position = { x, 0.5 },
     force = force, raise_built = true, quality = REACTOR_QUALITY }, REACTOR), REACTOR_QUALITY)
   if rf_box_of(reactor, ENERGY) ~= 2 then error(REACTOR .. "'s boxes are not where they were") end
-  local out = reactor.fluidbox.get_pipe_connections(2)[1]
+  local out = reactor.get_fluid_box_pipe_connections(2)[1]
   local drain = rf_place_or_die(surface,
     { name = ENERGY_FEED, position = out.target_position, force = force }, "the energy drain")
   drain.set_infinity_pipe_filter({ name = ENERGY, percentage = 0, mode = "at-most" })
@@ -574,11 +599,78 @@ end
 local function ids(cell)
   local parts = {}
   for r, reactor in ipairs(cell.reactors) do
-    parts[#parts + 1] = string.format("box%d=%s", r, tostring(reactor.fluidbox.get_fluid_segment_id(1)))
+    parts[#parts + 1] = string.format("box%d=%s", r, tostring(segment_id(reactor)))
   end
-  if cell.run then parts[#parts + 1] = "run=" .. tostring(cell.run[1].fluidbox.get_fluid_segment_id(1)) end
-  if cell.span then parts[#parts + 1] = "bridge=" .. tostring(cell.span[1].fluidbox.get_fluid_segment_id(1)) end
+  if cell.run then parts[#parts + 1] = "run=" .. tostring(segment_id(cell.run[1])) end
+  if cell.span then parts[#parts + 1] = "bridge=" .. tostring(segment_id(cell.span[1])) end
   return table.concat(parts, " ")
+end
+
+--- One unregistered copy of the reactor with `kind`'s neighbour on its box's first connection.
+local function reach_cell(surface, force, x, kind)
+  local box = rf_place_or_die(surface, { name = LONE, position = { x + 0.5, -60.5 }, force = force }, LONE)
+  local conn = box.get_fluid_box_pipe_connections(1)[1]
+  local cell = { kind = kind, box = box, other_box = 1 }
+  if kind == "pipe" then
+    cell.other = rf_place_or_die(surface, { name = "rf-pipe", position = conn.target_position, force = force }, "rf-pipe")
+  elseif kind == "heater" then
+    -- Bolted: an output connection facing east points at the box's own connection tile, so the
+    -- heater is turned until it has one. rf_place_facing does not turn. No power, no feed.
+    for _, direction in ipairs({ defines.direction.north, defines.direction.east, defines.direction.south, defines.direction.west }) do
+      local probe = surface.create_entity({ name = "rf-heater", position = { x + 0.5, -85.5 }, force = force, direction = direction })
+      probe.set_recipe(PLASMA)
+      local index = rf_box_of(probe, PLASMA)
+      for _, c in ipairs(probe.get_fluid_box_pipe_connections(index) or {}) do
+        if not cell.other and c.target_position.x - c.position.x > 0.5 then
+          local at = { probe.position.x + conn.position.x - c.target_position.x, probe.position.y + conn.position.y - c.target_position.y }
+          cell.other = rf_place_or_die(surface, { name = "rf-heater", position = at, force = force, direction = direction }, "rf-heater")
+          cell.other.set_recipe(PLASMA)
+          cell.other_box = index
+        end
+      end
+      probe.destroy()
+    end
+    if not cell.other then error("rf-heater has no plasma connection that faces east in any direction") end
+  elseif kind ~= "none" then
+    cell.other = rf_place_or_die(surface, { name = PLASMA_FEED, position = conn.target_position, force = force },
+      "the plasma feed")
+    cell.other.set_infinity_pipe_filter({ name = PLASMA, percentage = tonumber(kind:match("inf%-(%d+)")) / 100,
+      mode = "at-least", temperature = SEED_C })
+  end
+  return cell
+end
+
+local function reach_read(c, tick, what)
+  local b, s = c.box.get_fluid(1), segment_fluid(c.box)
+  local o = c.other and c.other.get_fluid(c.other_box)
+  local oseg = c.other and c.other.has_fluid_segment(c.other_box) and c.other.get_fluid_segment_id(c.other_box)
+  say("reach cell=%s tick=%d what=%s box=%.17g boxc=%.17g other=%.17g otherc=%.17g seg=%.17g segc=%.17g segcap=%s boxseg=%s otherseg=%s",
+    c.kind, tick, what, b and b.amount or 0, b and b.temperature or 0, o and o.amount or 0, o and o.temperature or 0,
+    s and s.amount or 0, s and s.temperature or 0,
+    tostring(c.box.has_fluid_segment(1) and c.box.get_fluid_segment_capacity(1)), tostring(segment_id(c.box)), tostring(oseg))
+end
+
+local function reach_tick(tick)
+  for _, c in ipairs(storage.reach or {}) do
+    if tick == REACH_SEED and (c.kind == "pipe" or c.kind == "heater") then
+      local set = c.other.set_fluid(c.other_box,
+        { name = PLASMA, amount = c.other.get_fluid_capacity(c.other_box), temperature = SEED_C })
+      say("reach cell=%s tick=%d what=seed set=%.17g", c.kind, tick, set)
+      reach_read(c, tick, "seeded")
+    elseif tick == REACH_AT then
+      reach_read(c, tick, "before")
+      -- Half a box where nothing feeds it, so a write that spreads shows in the amount too; a
+      -- full box against a feed that has filled it, so the feed's target is already met.
+      local fed = c.kind:find("^inf%-") and c.kind ~= "inf-0"
+      local amount = c.box.get_fluid_capacity(1) * (fed and 1 or 0.5)
+      local c_at = c.kind:find("same") and SEED_C or REACH_C
+      local set = c.box.set_fluid(1, { name = PLASMA, amount = amount, temperature = c_at })
+      say("reach cell=%s tick=%d what=write asked=%.17g at=%.17g set=%.17g", c.kind, tick, amount, c_at, set)
+      reach_read(c, tick, "after")
+    elseif tick > REACH_AT and tick <= REACH_AT + 5 then
+      reach_read(c, tick, "later")
+    end
+  end
 end
 
 script.on_init(function()
@@ -597,7 +689,7 @@ script.on_init(function()
   surface.request_to_generate_chunks({ east / 2, 0 }, math.ceil(east / 32) + 4)
   surface.force_generate_chunk_requests()
   storage.quieted = __QUIETFN__(surface)
-  local clear = { { -60 - 3 * (HEATERS - 1), -40 }, { east, 40 } }
+  local clear = { { -60 - 3 * (HEATERS - 1), REACH and -100 or -40 }, { east, 40 } }
   local tiles = {}
   for x = clear[1][1], clear[2][1] do
     for y = clear[1][2], clear[2][2] do tiles[#tiles + 1] = { name = "landfill", position = { x, y } } end
@@ -615,7 +707,7 @@ script.on_init(function()
   cells[#cells + 1] = build(surface, force, (#PIPES + 1) * PITCH, "both" .. PIPES[1], PIPES[1], BRIDGE, true)
   -- THE LONE BOX: no pipe, no heater, no power, seeded to the box's own capacity at the floor.
   local lone = rf_place_or_die(surface, { name = LONE, position = { 0.5, -24.5 }, force = force }, LONE)
-  lone.fluidbox[1] = { name = PLASMA, amount = lone.fluidbox.get_capacity(1), temperature = LONE_C }
+  lone.set_fluid(1, { name = PLASMA, amount = lone.get_fluid_capacity(1), temperature = LONE_C })
   cells[#cells + 1] = { label = "lone", reactors = { lone }, sides = { lone } }
   if TRIO then
     cells[#cells + 1] = build(surface, force, (#PIPES + 2) * PITCH, "trio" .. PIPES[1], PIPES[1], BRIDGE, false, 2)
@@ -625,7 +717,7 @@ script.on_init(function()
       watch[#watch + 1] = reactor
       if cell.at then cell.at[r] = #watch end
       tracked[#tracked + 1] = { cell = cell, r = r, reactor = reactor, side = cell.sides[r],
-        cap = reactor.fluidbox.get_capacity(1), writes = 0, steps = 0 }
+        cap = reactor.get_fluid_capacity(1), writes = 0, steps = 0 }
     end
   end
   remote.call("rf-input-box-pre", "watch", watch)
@@ -639,13 +731,19 @@ script.on_init(function()
     storage.quieted, production, prototypes.entity[LONE].fluidbox_prototypes[1].production_type, heater_ticks)
   for _, t in ipairs(tracked) do
     say("reactor cell=%s r=%d box_cap=%g side_cap=%g powered=%s", t.cell.label, t.r, t.cap,
-      t.side.fluidbox.get_capacity(1), tostring(t.reactor.electric_network_id ~= nil))
+      segment_capacity(t.side), tostring(t.reactor.electric_network_id ~= nil))
   end
   for _, cell in ipairs(cells) do say("ids cell=%s tick=%d %s", cell.label, game.tick, ids(cell)) end
+  -- Last, so no cell above moves its segment id.
+  if REACH then
+    storage.reach = {}
+    for k, kind in ipairs(REACH_KINDS) do storage.reach[k] = reach_cell(surface, force, 40 * (k - 1), kind) end
+  end
 end)
 
 script.on_event(defines.events.on_tick, function()
   local tick = game.tick
+  reach_tick(tick)
   local pre = remote.call("rf-input-box-pre", "read")
   if not pre then return end
   local sample = tick % EVERY == 0
@@ -653,7 +751,7 @@ script.on_event(defines.events.on_tick, function()
   local traced = tick >= TRACE_FROM and tick <= TRACE_TO and {}
   for i, t in ipairs(storage.tracked) do
     if not t.reactor.valid then error("the " .. t.cell.label .. " cell lost a reactor mid-run") end
-    local plasma = t.reactor.fluidbox[1]
+    local plasma = t.reactor.get_fluid(1)
     local box = plasma and plasma.amount or 0
     if tick % STEP_TICKS == 0 then
       t.steps = t.steps + 1
@@ -708,10 +806,10 @@ script.on_event(defines.events.on_tick, function()
     end
   end
   if traced and traced.cell then
-    local pipe = traced.cell.span[1].fluidbox[1]
+    local pipe = segment_fluid(traced.cell.span[1])
     say("trace tick=%d %s seg=%.17g segc=%.17g segcap=%.17g", tick, table.concat(traced, " "),
       segment_of(traced.cell.span[1]), pipe and pipe.temperature or 0,
-      traced.cell.span[1].fluidbox.get_capacity(1))
+      segment_capacity(traced.cell.span[1]))
   end
   if sample then
     for _, cell in ipairs(storage.cells) do say("ids cell=%s tick=%d %s", cell.label, tick, ids(cell)) end
@@ -724,7 +822,7 @@ script.on_event(defines.events.on_tick, function()
       local boxes = #cell.reactors
       local held, crafts = {}, {}
       for j, heater in ipairs(cell.heaters) do
-        local out = heater.fluidbox[cell.heater_box]
+        local out = heater.get_fluid(cell.heater_box)
         held[j], crafts[j] = (out and out.amount or 0) * UNITS, heater.products_finished
       end
       -- A solo cell has no bridge, so its segment is read through the heater's run.
@@ -756,8 +854,8 @@ script.on_event(defines.events.on_tick, function()
           end
         end
       else
-        fx = { filling = 0, full = 0, off_grid = 0, V = cell.reactors[1].fluidbox.get_capacity(1),
-          C = (cell.span or cell.run)[1].fluidbox.get_capacity(1), H = cell.heater.fluidbox.get_capacity(cell.heater_box) }
+        fx = { filling = 0, full = 0, off_grid = 0, V = cell.reactors[1].get_fluid_capacity(1),
+          C = segment_capacity((cell.span or cell.run)[1]), H = cell.heater.get_fluid_capacity(cell.heater_box) }
         for _, phase in ipairs({ "filling", "full" }) do
           for _, order in ipairs(ORDERS[boxes]) do
             for _, bank in ipairs(BANKS) do fx[phase .. order .. bank.name] = { missed = 0, worst = 0, pushed = { 0, 0 } } end
@@ -768,7 +866,7 @@ script.on_event(defines.events.on_tick, function()
       -- The state the next tick is predicted from: each box AFTER the mod's step.
       fx.box, fx.brimmed = {}, true
       for k, reactor in ipairs(cell.reactors) do
-        local plasma = reactor.fluidbox[1]
+        local plasma = reactor.get_fluid(1)
         fx.box[k] = (plasma and plasma.amount or 0) * UNITS
         fx.brimmed = fx.brimmed and storage.tracked[cell.at[k]].full ~= nil
       end
@@ -812,6 +910,8 @@ $lua = $lua.
     Replace('__BUILDORDER__', $BuildOrder).
     Replace('__RUNGS__', $rungsLua).
     Replace('__FIXED__', $(if ($Fixed) { 'true' } else { 'false' })).
+    Replace('__REACH__', $(if ($Reach) { 'true' } else { 'false' })).
+    Replace('__PLASMAFEED__', $(if ($Reach) { Write-PlasmaFeed -RigDirectory $rigDir } else { '' })).
     Replace('__ENERGYFEED__', (Write-EnergyFeed -RigDirectory $rigDir))
 Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
 
@@ -939,10 +1039,30 @@ function Write-Variant {
         }
     }
     if ($Fixed) { Write-Fixed -Rows @(Read-Records $Run.Ran 'fixed') }
+    if ($Reach) { Write-Reach -Rows @(Read-Records $Run.Ran 'reach') }
     if ($Trace) {
         $pairBox = @(Read-Records $Run.Created 'reactor' | Where-Object { $_['cell'] -like "$TraceCell*" })[0]
         Write-Trace -Rows @(Read-Records $Run.Ran 'trace') -BoxVolume (Num $pairBox['box_cap'])
         Write-Split -Split @(Read-Records $Run.Ran 'split') -Descent @(Read-Records $Run.Ran 'descent')
+    }
+}
+
+function Write-Reach {
+    <#  WHAT A WRITE TO THE BOX REACHES (#776): each copy's box, its neighbour and the box's segment,
+        seeded, before the write, after it and on the five ticks that follow.  #>
+    param([object[]] $Rows)
+
+    Write-Host ''
+    Write-Host '  === the reach cells: each box written once with set_fluid on tick 600'
+    foreach ($r in $Rows) {
+        if ($r['what'] -in 'seed', 'write') {
+            Write-Host ("  {0,-11} tick {1,4} {2}: asked {3}{5}, set_fluid returned {4}" -f $r['cell'], $r['tick'], $r['what'],
+                $(if ($r['asked']) { $r['asked'] } else { 'its capacity' }), $r['set'], $(if ($r['at']) { " at $($r['at']) degC" } else { ' at 1e6 degC' }))
+            continue
+        }
+        Write-Host ("  {0,-11} tick {1,4} {2,-7} box {3,14:F8} at {4,14:E7}  neighbour {5,12:F6} at {6,14:E7}  segment {7,14:F8} at {8,14:E7} of {9}; ids box {10} neighbour {11}" -f
+            $r['cell'], $r['tick'], $r['what'], (Num $r['box']), (Num $r['boxc']), (Num $r['other']), (Num $r['otherc']),
+            (Num $r['seg']), (Num $r['segc']), $r['segcap'], $r['boxseg'], $r['otherseg'])
     }
 }
 

@@ -550,8 +550,8 @@ end
 --- than to the boiler, and an assembling machine's come from whatever recipe is set -- so an index
 --- would be a guess in two of the three cases and a hostage to prototype edits in all of them.
 local function $boxOf(entity, fluid)
-  for index = 1, #entity.fluidbox do
-    local filter = entity.fluidbox.get_filter(index)
+  for index = 1, entity.fluids_count do
+    local filter = entity.get_fluid_filter(index)
     if filter and filter.name == fluid then return index end
   end
   return nil
@@ -594,7 +594,7 @@ local function $unbound(surface, force, entity, index, filter, opts)
   opts = opts or {}
   local name = opts.pipe or "infinity-pipe"
   local attached, total = 0, 0
-  for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
+  for _, connection in pairs(entity.get_fluid_box_pipe_connections(index) or {}) do
     total = total + 1
     local taken = #surface.find_entities_filtered({ position = connection.target_position }) > 0
     if not (taken and opts.skip_taken) then
@@ -670,7 +670,7 @@ local function $placeFacing(surface, force, spec)
     end
   end
   local label = spec.fluid or ("box " .. index)
-  local connections = probe.fluidbox.get_pipe_connections(index)
+  local connections = probe.get_fluid_box_pipe_connections(index) or {}
   if #connections == 0 then
     probe.destroy()
     error(name .. "'s " .. label .. " box has no connections")
@@ -766,16 +766,17 @@ local function $assertSegments(label, claims)
     -- it. The pipe on the other side of the connection always has one, so the segment is read
     -- through the connection's target.
     local ids = {}
-    for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
+    for _, connection in pairs(entity.get_fluid_box_pipe_connections(index) or {}) do
       if connection.target then
-        local id = connection.target.get_fluid_segment_id(connection.target_fluidbox_index)
+        local id = connection.target.has_fluid_segment(connection.target_fluidbox_index)
+          and connection.target.get_fluid_segment_id(connection.target_fluidbox_index)
         if id then ids[#ids + 1] = id end
       end
     end
     -- Flush against another machine there is no pipe to ask, and then the box's own id is the only
     -- one there is. Neither being available means nothing can be judged, which is not a pass.
     if #ids == 0 then
-      local own = entity.fluidbox.get_fluid_segment_id(index)
+      local own = entity.has_fluid_segment(index) and entity.get_fluid_segment_id(index)
       if not own then
         error(label .. ": " .. what .. ": in no fluid segment, and neither is anything it connects "
           .. "to -- this box cannot be judged")
