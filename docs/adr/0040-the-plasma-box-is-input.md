@@ -20,8 +20,9 @@ powered neighbour's temperature, and the fill depends on pipe count. Points 2 an
 
 **Amended 2026-10-25 by [ADR 0042](0042-on-2-1-reactors-on-a-run-share-heat.md)**, decided by
 Truls on #767. On Factorio 2.1, reactors on one run share heat. Point 1 stands. Point 2's box
-stays `input`, on a reason of ADR 0042's, since 2.1 removes this ADR's. Point 3 is reversed on
-2.1. Point 4 stays as the record of #740.
+stays `input`, on a reason of ADR 0042's, since on 2.1 half of this ADR's reason is false and the
+other half has not been read. Point 3 is reversed on 2.1. Point 4 stays as the record of #740.
+Point 5's readings are 2.0.77's.
 
 **Amends [ADR 0011](0011-per-reactor-simulation-fluid-coupled.md)**, whose per-reactor decision
 stands. What changes is its clause that reactors on one run share "one pool, one mixed temperature";

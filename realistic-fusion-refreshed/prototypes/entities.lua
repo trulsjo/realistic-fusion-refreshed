@@ -1378,7 +1378,8 @@ blanket.picture = mockup.still("lithium-blanket", 5, 5)
 --
 -- A boiler again, and for exactly the reasons rf-reactor is one: it is the prototype that will
 -- hold and move fluid with no recipe, and its box is "input", so a row of them on one run of
--- rf-pipe shares what the run carries, heat included on 2.1 (ADR 0011, ADR 0040, ADR 0042).
+-- rf-pipe shares what the run carries (ADR 0011, ADR 0040). On 2.1 that includes heat, read on
+-- rf-reactor and taken to hold here for the same box (ADR 0042); #778 reads this tier.
 -- Nothing about that argument is
 -- different on this tier, so nothing about the choice is: one fill model and one meaning of
 -- fluid-coupled for both reactors.
