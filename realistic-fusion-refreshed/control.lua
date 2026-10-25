@@ -796,10 +796,9 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
   -- fifty times, and neither is stale), and fluidbox[i].amount was that same box's contents. On 2.1
   -- the two are get_fluid_capacity and get_fluid; #68 has not been re-taken, and what holds them to
   -- it is the cell below passing on 2.1.23 (#767). So a capacity and a held amount subtract
-  -- cleanly instead of mixing a segment
-  -- with a share. Had it been the segment's, this expression would over-report the room by the
-  -- whole downstream volume in the arrangement a player actually builds -- collector piped to a
-  -- tank -- and the blanket would buy tritium the collector cannot take, which is exactly the trap
+  -- cleanly instead of mixing a segment with a share. Had it been the segment's, this expression
+  -- would over-report the room by the whole downstream volume in the arrangement a player actually
+  -- builds -- collector piped to a tank -- and the blanket would buy tritium the collector cannot take, which is exactly the trap
   -- the paragraph above is written about.
   --
   -- check-blanket.ps1's `flooded` cell holds that: a collector at 95% whose outlet is piped into a
@@ -2147,8 +2146,7 @@ end
 -- note's figures wrong. The heater's output box is the two output boxes together: a crafting
 -- machine merges them for a recipe making one fluid, which every rf-plasma-heating recipe is, and
 -- 2 x 100 is the 200 2.0's LuaFluidBox.get_capacity reported. The step interval is no prototype's:
--- it is
--- UPDATE_INTERVAL above, held to M.step_ticks by the same loop.
+-- it is UPDATE_INTERVAL above, held to M.step_ticks by the same loop.
 local function check_segment_constants()
   local heater = 0
   for _, box in ipairs(prototypes.entity["rf-heater"].fluidbox_prototypes) do

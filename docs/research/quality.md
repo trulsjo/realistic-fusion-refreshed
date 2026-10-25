@@ -421,7 +421,7 @@ read at all five levels; only the two ends are shown, and "flat" means all five 
 
 | Entity | Type | Property | normal | legendary | Does the simulation assume it constant? |
 |---|---|---|---|---|---|
-| `rf-reactor` | `boiler` | **fluid box 1 (plasma)** | 1000 | **1000** | **Yes — and it holds.** `volume_m3` and `particles_per_unit` are Lua constants; `control.lua` read `box.get_capacity` on 2.0; on 2.1 (#767) it reads the prototype's `get_volume()` |
+| `rf-reactor` | `boiler` | **fluid box 1 (plasma)** | 1000 | **1000** | **Yes — and it holds.** `volume_m3` and `particles_per_unit` are Lua constants; `control.lua` read `box.get_capacity` when this row was measured; on 2.1 (#767) it reads the prototype's `get_volume()` |
 | | | **fluid box 2 (energy)** | 1000 | **1000** | `apply()` in `control.lua` read `get_capacity(2)` to clamp the sale on 2.0; on 2.1 (#767) `get_fluid_capacity(2)` |
 | | | `buffer_capacity` | 10 MJ | **10 MJ** | No, since #72. Stated reserve; `check_cadence()` used to check `heating_power_w × interval` against it and is gone |
 | | | **`input_flow_limit`** | 60 MW | **150 MW** | **Yes, since #72 — and it holds.** `check_input_flow()` in `control.lua` requires it to cover `heating_power_w` at load, and since #425 the TOP of the heating ladder rather than the shipped value. Legendary raises it, which is the safe direction. The 60 MW is what the prototype declared when this was measured; the row was re-read at 90 → 225 MW on 2026-09-20 (#429) |
