@@ -112,7 +112,6 @@ local CHECK_AT = __TICKS__
 local DD   = "rf-d-d-plasma"
 local DT   = "rf-d-t-plasma"
 local MIX  = "rf-d-t-mix"
-local FEED = "__PLASMAFEED__"
 
 -- The temperature both cells are fed at. Chosen because D-D actually fuses there -- it is roughly
 -- where the shipped reactor settles -- so the comparison is against D-D at its best rather than
@@ -176,11 +175,7 @@ local function reactor_at(surface, force, ox, plasma)
   local reactor = must(surface.create_entity({
     name = "rf-reactor", position = { ox, 0.5 }, force = force, raise_built = true,
   }), "rf-reactor")
-  local west = reactor.fluidbox.get_pipe_connections(1)[1].target_position
-  local feed = must(surface.create_entity({
-    name = FEED, position = { west.x, west.y }, force = force,
-  }), "plasma feed")
-  feed.set_infinity_pipe_filter({
+  rf_plasma_feed(surface, force, reactor, 1, {
     name = plasma, percentage = 1, temperature = BOTH_AT, mode = "at-least",
   })
   return reactor

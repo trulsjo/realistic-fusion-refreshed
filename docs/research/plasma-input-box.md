@@ -1502,7 +1502,7 @@ amount is now `get_fluid_segment_fluid(1).amount`. Before, it was the sum of
 `get_fluid_segment_contents`. The canary still refuses to load, because the shipped box is
 already `input`, so every run here is `-NoCanary`.
 
-`-Reach` adds seven cells, built after every other cell. Each is an unregistered copy of
+`-Reach` adds seven cells, built after every other cell, and nine since #777. Each is an unregistered copy of
 `rf-reactor` that `control.lua` never steps, so only the engine and the probe move its plasma. A
 neighbour sits on the box's first connection:
 
@@ -1519,8 +1519,11 @@ neighbour sits on the box's first connection:
 `pwsh -File scripts/probe-plasma-input-box.ps1 -NoCanary -Reach` and the same with
 `-Plasma rf-d-t-plasma`, 2026-10-25, Factorio 2.1.23 (build 87750), normal quality, nothing
 researched (all 11 rungs asserted off), one heater a cell, 100 000 ticks. The reach cells read
-the same in both runs. A 1000-tick run before them, on an earlier version of the probe that had
-no inf-50-same cell, read the same in the other six.
+the same in both runs. A 1000-tick run, `-Every 500 -NoCanary -Pipes 3 -Reach -Ticks 1000` on
+the same day, read the same in all seven on the probe as #777 left it, with two more cells and
+30 tiles between cells rather than 40; its report replaced the one from an earlier 1000-tick
+run that had no inf-50-same cell. The two cells #777 added are under
+[An infinity pipe in add mode](#an-infinity-pipe-in-add-mode-777).
 
 ### What a write to the box reaches
 
@@ -1549,7 +1552,7 @@ right after it, and then on tick 601. Ticks 602 to 605 read as 601 did in every 
   `has_fluid_segment` false. The 200 units it was seeded with had moved into the reactor's box
   by tick 600. The write left the heater at 0 and the box at 500 at 5×10⁶ °C, as in the cell with
   nothing beside it. The box's segment id changed across the write, from 22 to 187 in the D-D
-  run and from 18 to 182 in the 1000-tick run; why was not looked into.
+  run and from 18 to 185 in the 1000-tick run; why was not looked into.
 - **An infinity pipe shares the box's segment as an `rf-pipe` does.** In every infinity cell the
   write spread over the box and the pipe in the same tick, 1000 : 100 by volume.
 - **An `at-least` pipe resets the segment when its temperature differs from the filter's, even
@@ -1563,6 +1566,25 @@ right after it, and then on tick 601. Ticks 602 to 605 read as 601 did in every 
   That is #776's D-T rig, where the box read 1000 units at 10⁶ °C again on each tick after a
   step. A D-D rig fed at 6×10⁸ °C showed no fault, as #776 reports, but this probe did not run
   one.
+
+### An infinity pipe in add mode (#777)
+
+#777 asked how a rig can feed plasma without the reset above. Two more cells put the same
+infinity pipe in `add` mode at 1%, 10⁶ °C, beside a box written on tick 600 at 5×10⁶ °C: half
+full in add-1, full in add-1-full. Read in the 1000-tick run above.
+
+| cell | before: box, neighbour, segment | after: segment | ticks 601 to 605: segment |
+|---|---|---|---|
+| add-1 | 1000 and 100 at 10⁶, 1100 | 600 at 4.333333×10⁶ | 11, 22, 33, 44, 55, all at 10⁶ |
+| add-1-full | 1000 and 100 at 10⁶, 1100 | 1100 at 4.636364×10⁶ | 11, 22, 33, 44, 55, all at 10⁶ |
+
+- **An `add` pipe resets the segment too.** On the tick after either write, the segment read 11
+  units at 10⁶ °C, the filter's temperature, and then 11 more each tick. Neither box kept the
+  write. *Inferred* from these two cells and the `at-least` ones: on 2.1.23 no infinity-pipe mode
+  can share a segment with a box the reactor writes. So `rf_plasma_feed` in
+  `scripts/factorio-lib.ps1` puts an `rf-pump` between the infinity pipe and the box, since a pump
+  is a segment boundary. The pump is a rig-only copy on a void energy source. The D-T cells of
+  `scripts/check-blanket.ps1` burn through it on 2.1.23, at 2.599×10⁹ °C.
 
 ### The probe's own cells on 2.1.23
 

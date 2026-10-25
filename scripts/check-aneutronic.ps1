@@ -132,7 +132,6 @@ local DT     = "rf-d-t-plasma"
 local DHE3   = "rf-d-he3-plasma"
 local HE3    = "rf-he3-he3-plasma"
 local HELIUM_3 = "rf-helium-3"
-local FEED   = "__PLASMAFEED__"
 -- The rigs' shared categorised energy feed (#84). An INSTRUMENT rather than something a player has:
 -- ADR 0018 ships no pipe carrying either energy fluid, so this is the only thing that can supply
 -- one, and the tank row below is measured against it.
@@ -271,11 +270,7 @@ local function reactor_at(surface, force, name, ox, plasma)
   local reactor = must(surface.create_entity({
     name = name, position = { ox + offset, offset }, force = force, raise_built = true,
   }), name)
-  local west = reactor.fluidbox.get_pipe_connections(1)[1].target_position
-  local feed = must(surface.create_entity({
-    name = FEED, position = { west.x, west.y }, force = force,
-  }), "plasma feed")
-  feed.set_infinity_pipe_filter({
+  rf_plasma_feed(surface, force, reactor, 1, {
     name = plasma, percentage = 1, temperature = BOTH_AT, mode = "at-least",
   })
   return reactor

@@ -118,7 +118,6 @@ local SEED_C   = 6e8
 local PLASMA   = "rf-d-d-plasma"
 local TRITIUM  = "rf-tritium"
 local HELIUM3  = "rf-helium-3"
-local FEED     = "__PLASMAFEED__"
 
 -- How far around a collector to look for what its reactor bred. Wide enough to take in its pipe
 -- run and both tanks, and well short of the next cell sixty tiles away.
@@ -195,11 +194,7 @@ local function reactor_at(surface, force, ox, temperature)
   local reactor = rf_place_or_die(surface, {
     name = "rf-reactor", position = { ox, 0.5 }, force = force, raise_built = true,
   }, "rf-reactor")
-  local west = reactor.fluidbox.get_pipe_connections(1)[1].target_position
-  local feed = rf_place_or_die(surface, {
-    name = FEED, position = { west.x, west.y }, force = force,
-  }, "plasma feed")
-  feed.set_infinity_pipe_filter({
+  rf_plasma_feed(surface, force, reactor, 1, {
     name = PLASMA, percentage = 1, temperature = temperature, mode = "at-least",
   })
   return reactor

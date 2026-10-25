@@ -270,3 +270,13 @@ One line for each change to a gate, newest last, with its date and its ticket.
   forms print the same as before. `load-harness-lib.ps1`, `pack-mods.ps1` and `mod-info.ps1`,
   which both of those dot-source, change in comments only. The locale check's run names no
   bundled mod as "none (base only)", where it said "none (base 2.0 only)".
+- 2026-10-25, #768 and #777: `scripts/factorio-lib.ps1`'s rig Lua gains `rf_fluidbox`, 2.0's
+  `LuaFluidBox` on 2.1.23's index methods, and `rf_plasma_feed`, which feeds a reactor's box
+  through a rig-only, unpowered `rf-pump`, declared beside the infinity pipe by `Write-PlasmaFeed`.
+  On 2.1.23 an infinity pipe in `at-least` or `add` mode resets a segment at another temperature
+  to its filter, and the reactor's box shares the segment on its face, so a feed bolted to it
+  undoes every step. `check-blanket.ps1` is ported onto both and passes on 2.1.23, 55 checks and
+  no failures. `check-aneutronic.ps1`, `check-breeding.ps1`, `check-buffer.ps1`, `check-d-t.ps1`,
+  `check-efficiency.ps1` and `check-observability.ps1` feed through `rf_plasma_feed` too, and the
+  buffer, efficiency and observability rigs load the rig Lua for it; their other `fluidbox` reads
+  are still #769 to #771's, so none of the six has run on it.
