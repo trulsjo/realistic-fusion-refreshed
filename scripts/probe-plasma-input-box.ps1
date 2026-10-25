@@ -153,10 +153,11 @@
     on one reactor. It is the input-output box's rule, so under the canary its misses are a reading.
 
 .PARAMETER Reach
-    Also build six unregistered copies of the reactor, built last so no other cell's segment id
+    Also build seven unregistered copies of the reactor, built last so no other cell's segment id
     moves, and write each box once with set_fluid (#776): one alone, one beside a single rf-pipe,
-    one bolted to an unpowered rf-heater, and three beside a plasma infinity pipe in at-least mode,
-    at 0%, 50% and 100%. The pipe and the heater are seeded full at 1e6 degC first. The box is read,
+    one bolted to an unpowered rf-heater, and four beside a plasma infinity pipe in at-least mode
+    at 1e6 degC: at 0%, 50% and 100%, written at 5e6 degC, and at 50% written at the pipe's own
+    1e6 (inf-50-same). The pipe and the heater are seeded full at 1e6 degC first. The box is read,
     and so are the neighbour and the box's segment, before the write, right after it and on each of
     the next five ticks. Needs -Ticks of at least 700.
 
