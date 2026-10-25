@@ -29,7 +29,7 @@ data:extend({
   {
     type = "recipe",
     name = "rf-d-t-mixing",
-    category = "rf-gas-mixing",
+    categories = { "rf-gas-mixing" },
     enabled = false,
     energy_required = 2,
     ingredients = {
@@ -47,7 +47,7 @@ data:extend({
   {
     type = "recipe",
     name = "rf-d-he3-mixing",
-    category = "rf-gas-mixing",
+    categories = { "rf-gas-mixing" },
     enabled = false,
     energy_required = 2,
     ingredients = {

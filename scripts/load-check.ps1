@@ -238,8 +238,8 @@
     temporary directory and writes a mod-list.json there.
 
     Bundled mods (space-age, elevated-rails, quality) live in the game's data/ directory, so they
-    load unless explicitly disabled. Disabled by default to get a genuine base-2.0 check
-    (ADR 0003, ADR 0008); -With re-enables them.
+    load unless explicitly disabled. Disabled by default to get a genuine base-2.1 check
+    (ADR 0003, ADR 0041); -With re-enables them.
 
     PowerShell 7 is required: 5.1's Remove-Item -Recurse follows junctions instead of skipping
     them, which would delete the repo's own source through the links the harness creates.
@@ -278,8 +278,10 @@
     both against every set.
 
     Note the version trap. A mod's factorio_version must match the game's major version exactly, so
-    Krastorio 2 2.1.x will NOT load next to this repo on 2.0.77 however the mod list is written --
-    the 2.0 line (2.0.19) is the one that loads. See docs/research/mod-set-coexistence-targets.md.
+    since #767, which moved this repo to 2.1, a set pinned at a 2.0 release will NOT load next to
+    it however the mod list is written. The sets in scripts/mod-sets.psd1 stay at their 2.0
+    releases (Krastorio 2 2.0.19) until #772 re-derives them against 2.1. See
+    docs/research/mod-set-coexistence-targets.md.
 
     The asset check half-covers the extra mods, and the distinction matters. Find-MissingAssets is
     given a directory only for this repo's mods, so a third-party mod's OWN assets are skipped --
@@ -1280,7 +1282,7 @@ try {
 
     $harness  = New-LoadHarness -Mods $sources -FactorioExe $FactorioExe -With $With
     $alsoMods = @($harness.Mods.Name | Where-Object { $_ -notin $ourMods })
-    $bundledOn = if ($harness.EnabledBundled) { $harness.EnabledBundled -join ', ' } else { 'none (base 2.0 only)' }
+    $bundledOn = if ($harness.EnabledBundled) { $harness.EnabledBundled -join ', ' } else { 'none (base 2.1 only)' }
     Write-Host "load-check: bundled enabled: $bundledOn"
     if ($alsoMods) { Write-Host "also loading: $($alsoMods -join ', ')" }
 
@@ -1434,7 +1436,7 @@ try {
                 New-Item -ItemType Directory -Path $canary -Force | Out-Null
                 @{
                     name = 'rf-loadcheck-canary'; version = '0.0.1'; title = 'Load-check canary'
-                    author = 'load-check.ps1'; factorio_version = '2.0'; dependencies = @('base >= 2.0.77')
+                    author = 'load-check.ps1'; factorio_version = '2.1'; dependencies = @('base >= 2.1.23')
                 } | ConvertTo-Json | Set-Content -Path (Join-Path $canary 'info.json') -Encoding utf8
                 # INTO THE HARNESS'S OWN LIST, or the harness could neither enable it nor name it
                 # disabled -- and a mod in the directory that mod-list.json leaves out is auto-enabled,

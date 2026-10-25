@@ -36,7 +36,7 @@ data:extend({
   {
     type = "recipe",
     name = "rf-brine",
-    category = "rf-concentration",
+    categories = { "rf-concentration" },
     enabled = false,
     energy_required = 3,
     ingredients = { { type = "fluid", name = "water", amount = 100 } },
@@ -47,7 +47,7 @@ data:extend({
   {
     type = "recipe",
     name = "rf-lithium-solution",
-    category = "rf-concentration",
+    categories = { "rf-concentration" },
     enabled = false,
     energy_required = 4,
     ingredients = { { type = "fluid", name = "rf-brine", amount = 100 } },
@@ -58,7 +58,7 @@ data:extend({
   {
     type = "recipe",
     name = "rf-lithium",
-    category = "rf-lithium-processing",
+    categories = { "rf-lithium-processing" },
     enabled = false,
     energy_required = 6,
     ingredients = { { type = "fluid", name = "rf-lithium-solution", amount = 50 } },

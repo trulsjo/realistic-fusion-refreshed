@@ -65,7 +65,7 @@ data:extend({
   {
     type = "recipe",
     name = "rf-d-he3-plasma",
-    category = "rf-plasma-heating",
+    categories = { "rf-plasma-heating" },
     enabled = false,
     energy_required = logic.heater.craft_seconds,
     ingredients = { { type = "fluid", name = "rf-d-he3-mix", amount = logic.heater.plasma_per_craft } },
@@ -83,7 +83,7 @@ data:extend({
   {
     type = "recipe",
     name = "rf-he3-he3-plasma",
-    category = "rf-plasma-heating",
+    categories = { "rf-plasma-heating" },
     enabled = false,
     energy_required = logic.heater.craft_seconds,
     ingredients = { { type = "fluid", name = "rf-helium-3", amount = logic.heater.plasma_per_craft } },
