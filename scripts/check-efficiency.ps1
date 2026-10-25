@@ -206,7 +206,7 @@ local function cell(surface, name, reactor_name, ox, plasma, seed_c, researched)
     name = reactor_name, position = { ox + offset, offset }, force = force, raise_built = true,
   }), reactor_name .. " for " .. name)
 
-  rf_plasma_feed(surface, force, reactor, 1, {
+  local pipe, pump = rf_plasma_feed(surface, force, reactor, 1, {
     name = plasma, percentage = 1, temperature = seed_c, mode = "at-least",
   })
 
@@ -229,7 +229,7 @@ local function cell(surface, name, reactor_name, ox, plasma, seed_c, researched)
   -- one number covers both machines.
   eei.power_production = AN_SPEC.heating_power_w / 60 * 3
 
-  return { force = force, reactor = reactor, feed = pipe, name = name }
+  return { force = force, reactor = reactor, feed = { pipe, pump }, name = name }
 end
 
 script.on_init(function()
@@ -267,7 +267,7 @@ script.on_init(function()
   }
   -- The unfusing cell's feed is taken away: its plasma is written directly every tick, and an
   -- infinity pipe would keep topping the box back up to full.
-  storage.cells.unfusing.feed.destroy()
+  for _, e in ipairs(storage.cells.unfusing.feed) do e.destroy() end
 
   storage.sold = { none = 0, full = 0, unfusing = 0, an_none = 0, an_full = 0 }
   log("EFF-RIG built")
