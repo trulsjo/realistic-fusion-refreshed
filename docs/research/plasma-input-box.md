@@ -1489,8 +1489,9 @@ puts:
 
 It also reads the probe's own cells again on 2.1.23.
 
-**The probe since #776.** 2.1.7 removed `LuaEntity::fluidbox` (*Read from source*: the game's
-`changelog.txt`, under 2.1.7), so the probe and the shared rig Lua
+**The probe since #776.** 2.1.23's `LuaEntity` has no `fluidbox` (*Read from source*: the
+`runtime-api.json` that ships with the game; the game's `changelog.txt` lists its removal under
+2.1.7), so the probe and the shared rig Lua
 in `scripts/factorio-lib.ps1` read through the
 [2.1.23 `LuaEntity`](https://lua-api.factorio.com/2.1.23/classes/LuaEntity.html) methods:
 `get_fluid`, `set_fluid`, `get_fluid_capacity`, `fluids_count`, `get_fluid_filter`,
@@ -1616,7 +1617,8 @@ heat travels along a run, and the fill depends on pipe count.
 2. **Write the segment rather than the box.** `set_fluid_segment_fluid` "Sets the fluid within
    the given storage's fluid segment" (*Read from source*: the 2.1.23 `runtime-api.json`). A write
    to the box does not do that: it replaces the box's share and keeps the rest of the segment, as
-   the pipe cell's 509.09 shows. A segment write would set the line's plasma to the step's result,
+   the pipe cell's 509.09 shows. *Inferred* from that description, not measured: a segment write
+would set the line's plasma to the step's result,
    so the step's temperature would be the line's and not a mix. But two reactors on one run would each write the shared segment once a step, so
    the step's result would depend on the order the reactors are stepped in. Nothing here measures
    that.
