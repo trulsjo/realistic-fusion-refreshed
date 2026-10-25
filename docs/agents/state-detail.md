@@ -280,5 +280,7 @@ One line for each change to a gate, newest last, with its date and its ticket.
   `check-efficiency.ps1` and `check-observability.ps1` feed through `rf_plasma_feed` too, and the
   buffer, efficiency and observability rigs load the rig Lua for it. `check-buffer.ps1` and
   `check-efficiency.ps1` build their pumped feeds on 2.1.23 and then stop on their own
-  `fluidbox` reads; the other four stop on theirs before any tick runs. Those reads are #769
-  to #771's, so none of the six has fed a reactor through it yet.
+  `fluidbox` reads, `check-buffer` in `on_init` and `check-efficiency` on its first tick (both
+  run 2026-10-25). The other four stop before any tick runs: three on a `fluidbox` read in
+  `on_init`, and `check-observability.ps1` at load, on a prototype's `.volume`. Those reads are
+  #769 to #771's, so none of the six has fed a reactor through it yet.

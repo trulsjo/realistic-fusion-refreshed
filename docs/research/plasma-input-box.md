@@ -1564,7 +1564,8 @@ right after it, and then on tick 601. Ticks 602 to 605 read as 601 did in every 
   605. *Inferred* from the two cells: on 2.1.23 a temperature other than the filter's counts as a
   miss, and the pipe then sets the segment to the target in both amount and temperature. The
   rigs' feed was `at-least` 100% at 10⁶ °C, so every step's write was undone on the next tick,
-  until #777 put a pump between the feed and the box.
+  until #777 put a pump between the feed and the box in the gates; `bench-reactors.ps1` still
+  bolts one.
   That is #776's D-T rig, where the box read 1000 units at 10⁶ °C again on each tick after a
   step. A D-D rig fed at 6×10⁸ °C showed no fault, as #776 reports, but this probe did not run
   one.

@@ -113,7 +113,8 @@ which that note words as superseding ADR 0040. It amends ADR 0040 instead, since
 - **The rigs' plasma feed is
   [#777](https://github.com/trulsjo/realistic-fusion-refreshed/issues/777)**, which blocks the rig
   ports. An `at-least` infinity pipe resets a segment at another temperature on 2.1.23, so the
-  rigs' feed undid every step while it was bolted to the box. That held whatever this ADR
-  decided; #777 put a pump between the two.
+  gates' feed undid every step while it was bolted to the box. That held whatever this ADR
+  decided; #777 put a pump between the two in the gates. `scripts/bench-reactors.ps1` still
+  bolts one.
 - **Dated records are kept as they are**: ADR 0040's own text, its readings in
   `plasma-input-box.md`, and the comments that say what the `input-output` box did until #740.
