@@ -202,7 +202,8 @@ function Find-MissingAssets {
 # Write-PlasmaFeed cannot drift apart.
 $script:PlasmaFeedName = 'rf-rig-plasma-infinity-pipe'
 
-# The unpowered rf-pump between that pipe and the box it feeds (#777); see rf_plasma_feed.
+# The rf-pump on a void energy source between that pipe and the box it feeds (#777); see
+# rf_plasma_feed.
 $script:PlasmaFeedPumpName = 'rf-rig-plasma-feed-pump'
 
 # The same, for the two energy fluids. One prototype for both tiers -- see Write-EnergyFeed below.
@@ -585,7 +586,9 @@ end
 ---
 ---   box[i]                         get_fluid(i)
 ---   box[i] = fluid                 set_fluid(i, fluid); nil, or an amount of 0, is clear_fluid(i)
----   #box                           fluids_count
+---   #box                           fluids_count, which the 2.1.23 API says also counts storages
+---                                  that are not fluid boxes, a fluid turret's or a fluid wagon's;
+---                                  2.0's #fluidbox did not. No rig reads either
 ---   box.owner, box.valid           the entity, and whether it is valid
 ---   get_capacity(i)                get_fluid_segment_capacity(i) on a pipe, tank or infinity pipe,
 ---                                  get_fluid_capacity(i) on anything else: on 2.0 a pipe or tank

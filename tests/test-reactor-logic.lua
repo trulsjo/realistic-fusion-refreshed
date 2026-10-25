@@ -690,7 +690,8 @@ near(bred.joules, bred.tritium_units * SPEC.particles_per_unit * L.capture_energ
 --
 -- 1.5 rather than something tighter, because the leakage term MOVES WITH TEMPERATURE and this
 -- assertion is about a double count rather than about a value: it is 1.027 at the 6e8 C here and
--- 1.173 at the 2.548e9 C a D-T reactor settles at in game, where the plasma sits on the clamp and
+-- 1.173 at the 2.548e9 C a D-T reactor settled at in game on 2.0.77 before the research ladders
+-- (2.599e9 C on 2.1.23 with every heating rung, #777), where the plasma sits on the clamp and
 -- radiates hard. Both are unmistakably one neutron and not two.
 local fusion_j  = dt_hot.fusion_power_w * TICK
 local neutron_j = fusion_j * (1 - L.fuels["rf-d-t-plasma"].charged_fraction)
