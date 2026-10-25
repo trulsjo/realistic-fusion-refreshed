@@ -798,8 +798,8 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
   -- it is the cell below passing on 2.1.23 (#767). So a capacity and a held amount subtract
   -- cleanly instead of mixing a segment with a share. Had it been the segment's, this expression
   -- would over-report the room by the whole downstream volume in the arrangement a player actually
-  -- builds -- collector piped to a tank -- and the blanket would buy tritium the collector cannot take, which is exactly the trap
-  -- the paragraph above is written about.
+  -- builds -- collector piped to a tank -- and the blanket would buy tritium the collector cannot
+  -- take, which is exactly the trap the paragraph above is written about.
   --
   -- check-blanket.ps1's `flooded` cell holds that: a collector at 95% whose outlet is piped into a
   -- run that has been filled, so the room is 25 units in the box and 300 downstream against a
@@ -875,13 +875,13 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
     -- This box's own capacity. It used to say "the segment's, because get_capacity reports the
     -- segment" -- measured under #40 and that is true of a pipe and false of a machine: asked of a
     -- reactor's box, 2.0's get_capacity answered the box's declared volume however long the run
-    -- beyond it was. #40 measured that with NOTHING plumbed to this box, which is the case where the
-    -- box and the segment are the same object; #68 re-took it with the box on a 27000-unit run and
-    -- the answer was unchanged at the declared 1000. On 2.1 the call is get_fluid_capacity, which
-    -- read 1000 on 2.1.23 (#767's instrumented check-blanket run); with the box on a run it has not
-    -- been read. Nothing changes here, because the box is what a
-    -- write is clamped to anyway; the reasoning was wrong rather than the code, and it would have
-    -- justified writing more than a box can hold.
+    -- beyond it was. #40 measured that with NOTHING plumbed to this box, which is the case where
+    -- the box and the segment are the same object; #68 re-took it with the box on a 27000-unit run
+    -- and the answer was unchanged at the declared 1000. On 2.1 the call is get_fluid_capacity,
+    -- which read 1000 on 2.1.23 (#767's instrumented check-blanket run); with the box on a run it
+    -- has not been read. Nothing changes here, because the box is what a write is clamped to
+    -- anyway; the reasoning was wrong rather than the code, and it would have justified writing
+    -- more than a box can hold.
     --
     -- Overflow is discarded, which is the right behaviour and not an oversight: a reactor whose
     -- heat is not being carried away does not get to bank it. It shows up as output backing up.
