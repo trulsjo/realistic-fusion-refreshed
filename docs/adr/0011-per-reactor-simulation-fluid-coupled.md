@@ -94,8 +94,9 @@ motivated networks is kept, and the code that implemented it is not written.
 > **Amended again 2026-10-25 by [ADR 0042](0042-on-2-1-reactors-on-a-run-share-heat.md) (#776,
 > #767).** On Factorio 2.1 the `input` box is a share of its fluid segment, so reactors on one
 > run share heat again, and "one pool, one mixed temperature" describes 2.1 as well. The note
-> above describes 2.0.77. The note below was measured on 2.0.77, under #40, and has not been
-> read on 2.1.
+> above describes 2.0.77. The note below was measured on 2.0.77, under #40. On 2.1.23 #776's
+> pairs read the powered and the unpowered box the same at every row, so the gap between two
+> boxes did not show there; the gap to the pipes, and the mixing's heat loss, were not read on 2.1.
 
 > **"One mixed temperature" is the intent and not quite the behaviour** — see Consequences. Measured
 > under #40: a run does share and an idle one does flatten, but the mixing loses heat, and a box the

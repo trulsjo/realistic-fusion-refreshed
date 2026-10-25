@@ -11,19 +11,23 @@ and posted as
 **Amends [ADR 0040](0040-the-plasma-box-is-input.md)** for Factorio 2.1:
 
 - its point 1 stands;
-- its point 2's box stands, on a reason of its own, since 2.1 removes the one ADR 0040 gave;
+- its point 2's box stands, on a reason of its own, since on 2.1 half of the reason ADR 0040 gave
+  is false and the other half has not been read;
 - its point 3 is reversed;
-- its point 4 stays as the record of #740.
+- its point 4 stays as the record of #740;
+- its point 5's readings were taken on 2.0.77. On 2.1, D-T was read by #776 and build order is
+  [#778](https://github.com/trulsjo/realistic-fusion-refreshed/issues/778)'s.
 
 ADR 0040 is not rewritten. It carries a dated note pointing here, and so does
 [ADR 0011](0011-per-reactor-simulation-fluid-coupled.md), whose "one pool" clause holds again.
 
 ## Context
 
-Every game figure here was measured by `scripts/probe-plasma-input-box.ps1 -NoCanary -Reach`, and
+Every 2.1.23 figure here was measured by `scripts/probe-plasma-input-box.ps1 -NoCanary -Reach`, and
 the same with `-Plasma rf-d-t-plasma`, on 2026-10-25, on Factorio 2.1.23 (build 87750), with
 nothing researched. The readings, and the three options this ADR chooses between, are in
 [`plasma-input-box.md`'s On Factorio 2.1.23](../research/plasma-input-box.md#on-factorio-2123).
+The 2.0.77 figures beside them are that note's earlier readings, each with its own day.
 
 - **On 2.1.23 the `input` box is a share of its fluid segment.** A `set_fluid` on it reaches an
   `rf-pipe` or an infinity pipe on its face in the same call. It does not reach a heater bolted to
@@ -60,8 +64,8 @@ or on build order". On 2.1.23 the first half is false. The second has not been m
    are the model's own and `tests/test-reactor-logic.lua`, so no gate reads a fill time against the
    game (searched 2026-10-25).
 5. **The move to 2.1 is breaking for a save in two ways this ADR names.** An unpowered reactor on
-   a run pools heat, and the fill depends on pipe count. #767's `BREAKING CHANGE:` footer names
-   both. *Inferred* from the probe's fresh maps: no 2.0 save has been loaded on 2.1.
+   a run pools heat, and the fill depends on pipe count. #767's `BREAKING CHANGE:` footer is to
+   name both. *Inferred* from the probe's fresh maps: no 2.0 save has been loaded on 2.1.
 6. **Before the first portal release,
    [#778](https://github.com/trulsjo/realistic-fusion-refreshed/issues/778) reads five things on
    2.1**: build order, `input` against `input-output`, the D-D pair to a full and settled line, both
@@ -100,8 +104,8 @@ which that note words as superseding ADR 0040. It amends ADR 0040 instead, since
   run share one plasma line, so heat travels along it, and a reactor without power stays as hot as
   its neighbours.
 - **`scripts/check-pooling.ps1` is rewritten in
-  [#769](https://github.com/trulsjo/realistic-fusion-refreshed/issues/769)**, when the reactor rigs
-  are ported. It will assert shared heat: both boxes on a run read the same amount and temperature
+  [#771](https://github.com/trulsjo/realistic-fusion-refreshed/issues/771)**, the ticket that ports
+  it. It will assert shared heat: both boxes on a run read the same amount and temperature
   within a tolerance, the unpowered reactor's included, and no fill time. Until then its help
   describes ADR 0040's box, and the gate does not run on 2.1.
 - **The rigs' plasma feed is

@@ -1427,6 +1427,12 @@ end
 -- control.lua's cadence the D-T reactor lands on the game's measured operating point, where held
 -- at the same fill it runs 16% hotter -- tests/test-reactor-logic.lua, "THE FED D-T REACTOR".
 --
+-- ON FACTORIO 2.1 IT GIVES THE SETTLED STATE AND NOT THE FILL TIME (ADR 0042). There the box is a
+-- share of its run's fluid segment, so the game's fill depends on pipe count: a D-D box alone on
+-- its line first reads 99.9% at tick 40 207 with three pipes and 49 448 with six, against this
+-- function's 31 000. The settled temperature still agrees (docs/research/plasma-input-box.md's
+-- "On Factorio 2.1.23"). The fill is not modelled.
+--
 -- @param spec, fluid_name, paid_j, capture   as M.settle's
 -- @param feed     plasma units arriving a second; one rf-heater's M.heater_plasma_rate() if nil
 -- @param seconds  how long to run, from empty. NOT M.settle's 1200: filling from empty leaves the
