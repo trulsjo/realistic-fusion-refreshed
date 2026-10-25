@@ -91,6 +91,12 @@ motivated networks is kept, and the code that implemented it is not written.
 > reactor warm. The per-reactor decision above stands. Every statement in this ADR that reactors
 > on a run share heat describes the `input-output` box that shipped until #740.
 
+> **Amended again 2026-10-25 by [ADR 0042](0042-on-2-1-reactors-on-a-run-share-heat.md) (#776,
+> #767).** On Factorio 2.1 the `input` box is a share of its fluid segment, so reactors on one
+> run share heat again, and "one pool, one mixed temperature" describes 2.1 as well. The note
+> above describes 2.0.77. The note below was measured on 2.0.77, under #40, and has not been
+> read on 2.1.
+
 > **"One mixed temperature" is the intent and not quite the behaviour** — see Consequences. Measured
 > under #40: a run does share and an idle one does flatten, but the mixing loses heat, and a box the
 > simulation writes every step sits a few percent above the rest of its run for as long as it is

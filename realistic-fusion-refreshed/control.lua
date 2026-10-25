@@ -664,10 +664,11 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
   -- NO ENERGY WRITE HERE, and that is #72 rather than an omission. spend() below has already paid
   -- for this step's heating, one tick at a time, and result.heating_used_j is the record of what
   -- it paid rather than a bill to settle now -- deducting it again would charge the reactor twice.
-  -- Writing the plasma back keeps it in this reactor and no other. Box 1 is "input" since #740
-  -- (ADR 0040): it takes plasma from the run it is plumbed into and gives none back, so a
-  -- temperature written here stays in this box, and reactors on one run of rf-pipe share the feed
-  -- and not the heat. A reactor nothing heats on that run sits at the plasma's 15 C floor.
+  -- Box 1 is "input" since #740 (ADR 0040). On Factorio 2.1 it is a share of its run's fluid
+  -- segment, so a temperature written here reaches the run beside it in the same call, reactors
+  -- on one run of rf-pipe share the heat as well as the feed, and a reactor nothing heats on that
+  -- run reads its neighbours' temperature (ADR 0042, #776). On 2.0.77 the same box gave nothing
+  -- back, the write stayed in this reactor, and a reactor nothing heats sat at the 15 C floor.
   --
   -- WHAT FOLLOWS IS THE RECORD OF THE input-output BOX this one replaced, which traded plasma with
   -- its run every tick, and is kept as the measurement it was rather than as what the box does now.
@@ -1300,9 +1301,9 @@ end
 -- depend on, and it is deliberate: a plasma density is not a number this mod can be flexible about.
 --
 -- THE INPUT BOX SPECIFICALLY, because a reactor has two and only one holds plasma. Box 1 is the
--- input box ADR 0011's fluid coupling rests on (ADR 0040) and the one update() reads the plasma out
--- of; box 2 carries the reactor's energy fluid out and its volume means nothing to the
--- simulation. Indexed by position the way check_ladder_clamp indexes it, and for the same reason:
+-- input box ADR 0011's fluid coupling rests on (ADR 0040, ADR 0042) and the one update() reads
+-- the plasma out of; box 2 carries the reactor's energy fluid out and its volume means nothing to
+-- the simulation. Indexed by position the way check_ladder_clamp indexes it, and for the same reason:
 -- the two must not come to disagree about which box this is.
 local function check_plasma_capacity()
   for name, spec in pairs(SPECS) do
