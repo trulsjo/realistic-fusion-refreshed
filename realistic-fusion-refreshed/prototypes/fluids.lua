@@ -15,8 +15,8 @@ data:extend({
   -- around 6e8 C; the cross-section data runs to about 7e9.
   --
   -- Two reactors joined by rf-pipe share this fluid's feed with no Lua tracking connectivity, and
-  -- that is the whole of ADR 0011's fluid coupling. They do not share its heat: each reactor's box
-  -- is "input" and gives nothing back to the run (ADR 0040).
+  -- that is the whole of ADR 0011's fluid coupling. On Factorio 2.1 they share its heat too: each
+  -- reactor's box is "input" (ADR 0040), and a share of the run's fluid segment (ADR 0042).
   {
     type = "fluid",
     name = "rf-d-d-plasma",

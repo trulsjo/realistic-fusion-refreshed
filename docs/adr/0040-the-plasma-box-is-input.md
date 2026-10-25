@@ -15,8 +15,13 @@ the pooling check. Point 5's readings, D-T included, are in `plasma-input-box.md
 **Read again on Factorio 2.1.23, 2026-10-25 (#776):** there the `input` box is a share of its
 segment, a write to it reaches the pipes beside it, an unpowered reactor on a run reads its
 powered neighbour's temperature, and the fill depends on pipe count. Points 2 and 3 describe
-2.0.77's box. What the mod does about it on 2.1.23 is undecided; the readings and the options are in
+2.0.77's box. The readings and the options are in
 [On Factorio 2.1.23](../research/plasma-input-box.md#on-factorio-2123).
+
+**Amended 2026-10-25 by [ADR 0042](0042-on-2-1-reactors-on-a-run-share-heat.md)**, decided by
+Truls on #767. On Factorio 2.1, reactors on one run share heat. Point 1 stands. Point 2's box
+stays `input`, on a reason of ADR 0042's, since 2.1 removes this ADR's. Point 3 is reversed on
+2.1. Point 4 stays as the record of #740.
 
 **Amends [ADR 0011](0011-per-reactor-simulation-fluid-coupled.md)**, whose per-reactor decision
 stands. What changes is its clause that reactors on one run share "one pool, one mixed temperature";

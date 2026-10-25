@@ -247,10 +247,12 @@ end
 -- crosses, filter or no filter -- and a crafting machine's fluid boxes may only be "input" or
 -- "output" types, which are one-way. A boiler fills its input box from whatever it is plumbed to
 -- whether or not it is doing anything, with no connectivity code anywhere in this mod. The box is
--- "input" (ADR 0040): it takes plasma from the run and gives none back, so reactors on one run of
--- rf-pipe share the feed and not the heat, and a reactor nothing heats sits at the plasma's 15 C
--- floor beside a hot one. It was "input-output" until #740, a box that traded plasma back into the
--- run and filled 2.3 to 2.6 times slower than M.settle_fed (docs/research/plasma-input-box.md).
+-- "input" (ADR 0040). On Factorio 2.1 that box is a share of its run's fluid segment, so reactors
+-- on one run of rf-pipe share the heat as well as the feed, and a reactor nothing heats reads its
+-- neighbours' temperature (ADR 0042). On 2.0.77 the same box gave nothing back to the run, and a
+-- reactor nothing heats sat at the plasma's 15 C floor beside a hot one. It was "input-output"
+-- until #740, a box that traded plasma back into the run and filled 2.3 to 2.6 times slower than
+-- M.settle_fed on 2.0.77 (docs/research/plasma-input-box.md).
 --
 -- The boiler's own conversion is neutered rather than used, and #101 measured how -- correcting
 -- this comment, which had it backwards. It used to say "at 1 W the engine can move on the order of
@@ -1375,8 +1377,9 @@ blanket.picture = mockup.still("lithium-blanket", 5, 5)
 -- there. This prototype is the parts of it the engine has to know about.
 --
 -- A boiler again, and for exactly the reasons rf-reactor is one: it is the prototype that will
--- hold and move fluid with no recipe, and its box is "input" so a row of them on one run of
--- rf-pipe shares the feed and not the heat (ADR 0011, ADR 0040). Nothing about that argument is
+-- hold and move fluid with no recipe, and its box is "input", so a row of them on one run of
+-- rf-pipe shares what the run carries, heat included on 2.1 (ADR 0011, ADR 0040, ADR 0042).
+-- Nothing about that argument is
 -- different on this tier, so nothing about the choice is: one fill model and one meaning of
 -- fluid-coupled for both reactors.
 local aneutronic = pin(table.deepcopy(data.raw["boiler"]["heat-exchanger"]), "rf-aneutronic-reactor", {

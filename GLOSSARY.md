@@ -358,7 +358,9 @@ a drain too, but only for its opening seconds: fifty on 2026-10-13 (#611).
 **Cold-parked** — a plasma sitting at the bottom of its temperature range, where the model's domain
 ends. A fourth state, and a *temperature* one where the three above are about density: the plasma is
 all there, and it is cold. A reactor reaches it within a second of losing its heating and stays
-indefinitely, so it is the state an unpowered reactor is in rather than a moment on the way anywhere.
+indefinitely, so it is the state an unpowered reactor is in rather than a moment on the way anywhere,
+unless it shares a run with a heated one: on Factorio 2.1 that one reads its neighbours' temperature
+([ADR 0042](docs/adr/0042-on-2-1-reactors-on-a-run-share-heat.md)).
 
 **A cold-parked plasma is inert.** It neither radiates nor leaks, because the floor is where this
 simulation stops having anything valid to say — see
@@ -431,11 +433,13 @@ in `storage` and its own circuit signals. Not "per network": v1 has no network c
 connectivity tracking. See [ADR 0011](docs/adr/0011-per-reactor-simulation-fluid-coupled.md).
 
 **Fluid-coupled** — how connected reactors interact: through the engine's own fluid system, sharing the
-plasma feed on their run, rather than through anything this mod computes. Each reactor's plasma box is
-`input` ([ADR 0040](docs/adr/0040-the-plasma-box-is-input.md)), so they share the feed and not the heat.
+plasma on their run, rather than through anything this mod computes. Each reactor's plasma box is
+`input` ([ADR 0040](docs/adr/0040-the-plasma-box-is-input.md)), and on Factorio 2.1 that box is a share
+of its run's fluid segment, so reactors on one run share the heat as well as the feed, and an unpowered
+reactor reads its neighbours' temperature ([ADR 0042](docs/adr/0042-on-2-1-reactors-on-a-run-share-heat.md)).
 Reserve the word for that mechanism; do not call it a network. **It names the mechanism, not an outcome**: whatever
-the engine does with the shared fluid is the coupling, and it does not promise that neighbours keep an
-unheated reactor warm.
+the engine does with the shared fluid is the coupling. On 2.0.77 the same box shared the feed and not
+the heat.
 
 **Network** — the *redesign's* model, in which reactors and heaters joined by confinement pipe were one
 simulated object sharing a mixed plasma. Named here only so the term is recognised when it appears in

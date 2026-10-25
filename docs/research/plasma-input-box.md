@@ -1599,9 +1599,12 @@ right after it, and then on tick 601. Ticks 602 to 605 read as 601 did in every 
 
 ### Options for the mod
 
-**Readings for a decision that is Truls's, recorded and not chosen.** The D-T ignition failure is
-the rigs'. How the rigs feed plasma on 2.1.23 is in no ticket yet; #768 to #771 port the rigs,
-and none of them names the feed. What reaches the mod is that ADR 0040's
+**Readings for a decision that is Truls's. He took option 1 on 2026-10-25, as an amendment of
+ADR 0040 rather than its supersession:
+[ADR 0042](../adr/0042-on-2-1-reactors-on-a-run-share-heat.md).** The D-T ignition failure is
+the rigs'. How the rigs feed plasma on 2.1.23 is
+[#777](https://github.com/trulsjo/realistic-fusion-refreshed/issues/777), which blocks the rig
+ports, #769 to #771. What reaches the mod is that ADR 0040's
 points 2 and 3 describe a box that 2.1.23 no longer gives: the `input` box shares its segment,
 heat travels along a run, and the fill depends on pipe count.
 
@@ -1618,10 +1621,10 @@ heat travels along a run, and the fill depends on pipe count.
    the given storage's fluid segment" (*Read from source*: the 2.1.23 `runtime-api.json`). A write
    to the box does not do that: it replaces the box's share and keeps the rest of the segment, as
    the pipe cell's 509.09 shows. *Inferred* from that description, not measured: a segment write
-would set the line's plasma to the step's result,
-   so the step's temperature would be the line's and not a mix. But two reactors on one run would each write the shared segment once a step, so
-   the step's result would depend on the order the reactors are stepped in. Nothing here measures
-   that.
+   would set the line's plasma to the step's result, so the step's temperature would be the
+   line's and not a mix. But two reactors on one run would each write the shared segment once a
+   step, so the step's result would depend on the order the reactors are stepped in. Nothing here
+   measures that.
 3. **A box that joins no segment.** The bolted heater's box has no segment on 2.1.23, so
    a box can stay out of one. The plasma box could have no pipe connection, with the feed moved
    across by script, or through `add_fluid_box_linked_connection` or a box of another kind.
@@ -1631,8 +1634,10 @@ would set the line's plasma to the step's result,
    measured on 2.1.23.
 
 **For #767:** the D-T failure that held it is a property of the rigs' feed. *Inferred* from the
-reach cells and from the D-T run above. Whether #767 merges before an option above is taken, or
-takes one with it, is Truls's call.
+reach cells and from the D-T run above. It carries ADR 0042 and the prose that ADR makes true.
+What has not been read on 2.1 is
+[#778](https://github.com/trulsjo/realistic-fusion-refreshed/issues/778)'s, before the first
+release.
 
 ## What was not measured
 
