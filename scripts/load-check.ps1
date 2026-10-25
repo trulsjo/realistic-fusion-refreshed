@@ -274,8 +274,8 @@
     THIS IS HALF THE COEXISTENCE QUESTION AND NOT THE HALF THAT FAILS SILENTLY. A prototype-name
     collision does not stop the game loading -- the second definition replaces the first and the
     map is created without a word -- so a pass here is no evidence at all about it.
-    `scripts/name-check.ps1 -AlsoModDirectory <same dir>` is the other half, and #61's lanes run
-    both against every set.
+    `scripts/name-check.ps1 -AlsoModDirectory <same dir>` is the other half, and #61's lanes ran
+    both against every set on 2.0; on 2.1 they wait on #772's sets.
 
     Note the version trap. A mod's factorio_version must match the game's major version exactly, so
     since #767, which moved this repo to 2.1, a set pinned at a 2.0 release will NOT load next to
@@ -463,7 +463,7 @@
 .EXAMPLE
     pwsh -File scripts/load-check.ps1
     pwsh -File scripts/load-check.ps1 -With space-age
-    pwsh -File scripts/load-check.ps1 -AlsoModDirectory C:\somewhere\k2-2.0
+    pwsh -File scripts/load-check.ps1 -AlsoModDirectory C:\somewhere\k2-2.1
     pwsh -File scripts/load-check.ps1 -FromZips
     pwsh -File scripts/load-check.ps1 -SelfTest
     pwsh -File scripts/load-check.ps1 -SelfTest -FromZips

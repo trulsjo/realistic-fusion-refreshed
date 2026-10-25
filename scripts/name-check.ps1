@@ -45,10 +45,10 @@
 
     WHY THE REFERENCE MODS ARE READ RATHER THAN LOADED
 
-    Loading is the better instrument and it is available for Krastorio 2 -- `load-check.ps1
-    -AlsoModDirectory` runs the game with K2 and its four dependencies enabled, which is what
-    actually discharges ADR 0007. This check is the complement, not a substitute for it, and it earns
-    its place three ways.
+    Loading is the better instrument, and for Krastorio 2 it was available on 2.0 --
+    `load-check.ps1 -AlsoModDirectory` ran the game with K2 and its four dependencies enabled, which
+    is what actually discharges ADR 0007 -- and is again once #772 pins a 2.1 release. This check is
+    the complement, not a substitute for it, and it earns its place three ways.
 
     It covers what cannot be loaded. Factorio treats 2.0 and 2.1 as different major versions a mod
     cannot span, and since #767 this repo declares 2.1, so a set still pinned at a 2.0 release

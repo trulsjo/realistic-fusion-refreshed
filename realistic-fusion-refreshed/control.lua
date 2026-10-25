@@ -275,7 +275,7 @@ local curves = {}
 --- A reactor's plasma box volume, from the prototype. Memoised per prototype name.
 --
 -- The denominator of the fill the status line is judged on. A reactor's own box, not the run's,
--- which is what #40 measured get_capacity to answer -- and per ADR 0016 the two are the same
+-- which is what #40 measured 2.0's get_capacity to answer -- and per ADR 0016 the two are the same
 -- number anyway: a box holds its share of its segment in proportion to capacity, so every reactor
 -- on a run sits at the same fill.
 local PLASMA_CAPACITY = {}
@@ -467,7 +467,7 @@ local function deposit(collector, products)
       -- on a collector with its outlet on a run under #68, which is the arrangement this call
       -- meets in ordinary play. See docs/research/reactor-runtime-cost.md, finding 2.
       --
-      -- REVIEWED UNDER #69 AND LEFT ALONE. This clamp is benign whichever way get_capacity reads,
+      -- REVIEWED UNDER #69 AND LEFT ALONE. This clamp is benign whichever way the capacity reads,
       -- because the engine clamps a Lua write to the box regardless: over-reporting here would
       -- discard the excess rather than spend anything for it. That is not true one caller up, where
       -- the same figure decides how much LITHIUM to buy -- which is why that one is the subject of
@@ -790,11 +790,13 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
   -- the blanket may pay for. Nothing is lost by being held back: unbred lithium stays as lithium.
   --
   -- ALL THREE TERMS ARE THE BOX'S, WHICH IS THE WHOLE OF #69 AND IS MEASURED RATHER THAN ASSUMED.
-  -- get_capacity answers a box's own declared volume even when that box is piped into a segment
-  -- fifty-four times its size (#68: 500 against a 27 000-unit run of twenty pipes and a tank; the
-  -- cell named below is a different rig with a shorter run, so its figures are 25 300 and fifty
-  -- times, and neither is stale), and fluidbox[i].amount is that same
-  -- box's contents -- so a capacity and a held amount subtract cleanly instead of mixing a segment
+  -- 2.0's get_capacity answered a box's own declared volume even when that box was piped into a
+  -- segment fifty-four times its size (#68: 500 against a 27 000-unit run of twenty pipes and a
+  -- tank; the cell named below is a different rig with a shorter run, so its figures are 25 300 and
+  -- fifty times, and neither is stale), and fluidbox[i].amount was that same box's contents. On 2.1
+  -- the two are get_fluid_capacity and get_fluid; #68 has not been re-taken, and what holds them to
+  -- it is the cell below passing on 2.1.23 (#767). So a capacity and a held amount subtract
+  -- cleanly instead of mixing a segment
   -- with a share. Had it been the segment's, this expression would over-report the room by the
   -- whole downstream volume in the arrangement a player actually builds -- collector piped to a
   -- tank -- and the blanket would buy tritium the collector cannot take, which is exactly the trap
@@ -873,10 +875,12 @@ local function apply(entity, spec, plasma, result, capture, blanket_sold)
     local amount = sold + (produced and produced.amount or 0)
     -- This box's own capacity. It used to say "the segment's, because get_capacity reports the
     -- segment" -- measured under #40 and that is true of a pipe and false of a machine: asked of a
-    -- reactor's box, get_capacity answers the box's declared volume however long the run beyond it
-    -- is. #40 measured that with NOTHING plumbed to this box, which is the case where the box and
-    -- the segment are the same object; #68 re-took it with the box on a 27000-unit run and the
-    -- answer is unchanged at the declared 1000. Nothing changes here, because the box is what a
+    -- reactor's box, 2.0's get_capacity answered the box's declared volume however long the run
+    -- beyond it was. #40 measured that with NOTHING plumbed to this box, which is the case where the
+    -- box and the segment are the same object; #68 re-took it with the box on a 27000-unit run and
+    -- the answer was unchanged at the declared 1000. On 2.1 the call is get_fluid_capacity, which
+    -- read 1000 on 2.1.23 (#767's instrumented check-blanket run); with the box on a run it has not
+    -- been read. Nothing changes here, because the box is what a
     -- write is clamped to anyway; the reasoning was wrong rather than the code, and it would have
     -- justified writing more than a box can hold.
     --
@@ -1022,7 +1026,7 @@ end
 --
 -- The price is a lag of at most one interval in each direction, a tenth of a second: a reactor
 -- freshly given plasma is stepped once before it starts paying, and one that has just run dry pays
--- out the interval it emptied in. Both are transients. Reading entity.fluidbox[1] here instead
+-- out the interval it emptied in. Both are transients. Reading entity.get_fluid(1) here instead
 -- would be exact and would put the allocating crossing this whole change exists to avoid back on
 -- every tick.
 --
@@ -1861,8 +1865,13 @@ local function in_heating_category(recipe)
 end
 
 local function check_every_plasma_burns()
+  -- Counted so that a category test that matches nothing fails here rather than passing having
+  -- checked nothing: 2.1 moved a recipe's one category into a list (#767), and a read of the wrong
+  -- shape would match no recipe at all.
+  local matched = 0
   for _, recipe in pairs(prototypes.recipe) do
     if in_heating_category(recipe) then
+      matched = matched + 1
       for _, product in pairs(recipe.products or {}) do
         if product.type == "fluid" and not logic.fuels[product.name] then
           error(string.format(
@@ -1875,6 +1884,10 @@ local function check_every_plasma_burns()
         end
       end
     end
+  end
+  if matched == 0 then
+    error(string.format("no recipe is in the %s category, so this check read none: the category " ..
+      "test no longer matches what the game gives a recipe", HEATING_CATEGORY))
   end
 end
 
@@ -2133,7 +2146,8 @@ end
 -- pin the game's own readings, so a prototype that moved under it would leave them green and the
 -- note's figures wrong. The heater's output box is the two output boxes together: a crafting
 -- machine merges them for a recipe making one fluid, which every rf-plasma-heating recipe is, and
--- 2 x 100 is the 200 LuaFluidBox.get_capacity reports. The step interval is no prototype's: it is
+-- 2 x 100 is the 200 2.0's LuaFluidBox.get_capacity reported. The step interval is no prototype's:
+-- it is
 -- UPDATE_INTERVAL above, held to M.step_ticks by the same loop.
 local function check_segment_constants()
   local heater = 0
