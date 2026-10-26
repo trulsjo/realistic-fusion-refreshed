@@ -165,8 +165,7 @@ pass.
    one in its place.
 
    The same section says why the rebase starts at the commit's parent and why the `fixes.diff` line
-   above gives the same diff after a reword. Delete the tag and `pre-pr-reviewed.txt` when the
-   branch has merged.
+   above gives the same diff after a reword. Delete the tag when the branch has merged.
 
    The confirmation arrives as step 3's report does.
 
