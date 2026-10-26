@@ -31,11 +31,10 @@ and in the mod description rather than in a changelog.
 Durikkan's 2.0 port, and no migration is provided. The prototype names here share no prefix with
 either (`rf-` against their `rfp-`), so the game cannot match one to the other even in principle — and
 the mod's own name is what a save binds to, which is not transferable at all. The practical effect on
-a port user is that their fusion setup has to be rebuilt. Neither predecessor can be enabled beside
-this mod, and not for any reason of ours: Durikkan's port declares `factorio_version` 2.0 and the
-original 1.1, and since #767 this mod declares 2.1, so no one game loads both. Until then the port
-could stay installed beside it, which is what the distinct prefix bought; what it never bought is
-continuity. See [ADR 0006](docs/adr/0006-clean-break-from-predecessor-saves.md).
+a port user is that their fusion setup has to be rebuilt. Durikkan's port can stay installed beside
+this mod, which is what the distinct prefix buys; what it does not buy is continuity. The 1.1
+original cannot, and not for any reason of ours — it declares `factorio_version` 1.1, so Factorio
+2.0 will not load it at all. See [ADR 0006](docs/adr/0006-clean-break-from-predecessor-saves.md).
 
 **The buildings are not balanced for quality.** The mod loads and runs under Space Age with `quality`
 enabled — that much was verified against Factorio 2.0.77, and has not been run again on 2.1.23 — and
