@@ -29,8 +29,12 @@ pass.
    git fetch origin main                   # moves origin/main only
    git tag -f pre-pr-reviewed HEAD         # the reviewed commit; step 4 needs it. Never pushed
    git diff --output="<scratch>/branch.diff" origin/main...HEAD
-   git log --format=%s origin/main..HEAD >> "<scratch>/reviewed.txt"   # the range handed; step 5 (#781)
+   git log --format=%s origin/main..HEAD >> "$(git rev-parse --git-path pre-pr-reviewed.txt)"   # the range handed; step 5 (#781)
    ```
+
+   **`pre-pr-reviewed.txt` is in the git directory, not the scratchpad** (#781): like the tag, it
+   outlives the session, so a review that spans two sessions still finds what the first was
+   handed, and it is never pushed. `--git-path` gives each worktree its own.
 
    **Have git write the file, and quote the path** (#635). Each line runs unchanged in Git Bash
    and in PowerShell, with `<scratch>` in either form of path. A `>` redirect to an unquoted
@@ -111,11 +115,11 @@ pass.
 
    ```
    git diff --output="<scratch>/fixes.diff" pre-pr-reviewed..HEAD
-   git log --format=%s pre-pr-reviewed..HEAD >> "<scratch>/reviewed.txt"
+   git log --format=%s pre-pr-reviewed..HEAD >> "$(git rev-parse --git-path pre-pr-reviewed.txt)"
    ```
 
    Every diff sent to the reviewer, here, in step 5, in step 7 and for the plugin pass's fixes,
-   adds its commits' subjects to `<scratch>/reviewed.txt` the same way, from its own range (#781).
+   adds its commits' subjects to `pre-pr-reviewed.txt` the same way, from its own range (#781).
 
    > `<scratch>/fixes.diff` is every change made since your review. For each of your findings,
    > say whether it is fixed, from the diff alone. Where your finding named a group, check the
@@ -143,7 +147,7 @@ pass.
    git log origin/main..HEAD --format='%h %s' --grep='<the old figure or words>'
    GIT_SEQUENCE_EDITOR="sed -i 's/^pick <short hash>/reword <short hash>/'" \
      GIT_EDITOR="cp <scratch>/msg.txt" git -c core.commentChar=";" rebase -i <short hash>~1
-   git log -1 --format=%s <new hash> >> "<scratch>/reviewed.txt"   # where the subject changed (#781)
+   git log -1 --format=%s <new hash> >> "$(git rev-parse --git-path pre-pr-reviewed.txt)"   # where the subject changed (#781)
    git push --force-with-lease             # a pushed, unmerged branch only; never main
    ```
 
@@ -157,8 +161,9 @@ pass.
    lost that line. With the character set, a body line must not start with `;`: git drops that
    one in its place.
 
-   The same section says why the rebase starts at the commit's parent and why the `fixes.diff`
-   line above gives the same diff after a reword. Delete the tag when the branch has merged.
+   The same section says why the rebase starts at the commit's parent and why the `fixes.diff` line
+   above gives the same diff after a reword. Delete the tag and `pre-pr-reviewed.txt` when the
+   branch has merged.
 
    The confirmation arrives as step 3's report does.
 
@@ -173,7 +178,7 @@ pass.
    request, and the plugin pass after it*. In Git Bash:
 
    ```
-   git log --format=%s origin/main..HEAD | LC_ALL=C grep -vxFf "<scratch>/reviewed.txt"
+   git log --format=%s origin/main..HEAD | LC_ALL=C grep -vxFf "$(git rev-parse --git-path pre-pr-reviewed.txt)"
    ```
 
    Each line it prints is the subject of a commit no reviewer was handed. `LC_ALL=C` makes Git
