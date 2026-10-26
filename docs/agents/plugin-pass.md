@@ -98,8 +98,10 @@ has a scorer for each candidate. This repository's pass has one verifier for all
 candidates, on Sonnet. It is handed, for each candidate, the quoted words and the one source to
 check them against, and it returns real, not real or not verified, each with its evidence; not
 verified is for a candidate it could not check from the tree, or, for a claim about another mod,
-from its portal entry, which `code-review.md` has it read (#780). The session merges a candidate
-that two reviewers raised before it hands them over, and a pass with no candidate has no verifier.
+from its portal entry, which `code-review.md` has it read (#780), or, for a claim about the
+game's API, from the game's own reference, `runtime-api.json` and `prototype-api.json`, which its
+brief points it at (#793). The session merges a candidate that two reviewers raised before it
+hands them over, and a pass with no candidate has no verifier.
 The first rule of `code-review.md` says what a verdict decides, and its fourth what becomes of a
 candidate found real or not verified. The reason for the verifier is what the scores decided: over
 the eleven passes from #628's to #674's a score placed 3 of 33 candidates in the posted comment, and
