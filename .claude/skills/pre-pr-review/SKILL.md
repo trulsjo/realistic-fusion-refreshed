@@ -85,6 +85,16 @@ pass.
    > lists each claim, the files searched for it, and each hit, as a finding or as checked, with
    > the words each checked hit was checked on.
    >
+   > A claim in the diff about a Factorio API class, method, parameter or attribute is checked
+   > in the game's own reference (#793): `runtime-api.json` and `prototype-api.json` in the
+   > `doc-html` directory of the install, beside the `bin` that holds the `Factorio.exe`
+   > `Resolve-FactorioExe` resolves, which is `$env:FACTORIO_EXE` where that is set and
+   > `D:\SteamLibrary\steamapps\common\Factorio\bin\x64\Factorio.exe` where it is not. Read the
+   > member there by name: a runtime class's under its `methods` or `attributes`, a
+   > prototype's under its `properties`, inheritance through `parent`. The files are the
+   > installed game's, so they hold the version the gates run against; `application_version`
+   > names it.
+   >
    > You are read-only: edit, commit and run nothing that changes the working tree. If proving a
    > finding takes a planted change, make your own worktree first, as the third rule says. Scratch
    > files go in `<scratch>/reviewer/`.
