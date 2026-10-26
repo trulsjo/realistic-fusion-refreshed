@@ -6,7 +6,7 @@ mod is and where it came from; this file is how to work in the repo.
 ## State
 
 **In development.** `realistic-fusion-refreshed-core` and `realistic-fusion-refreshed` load against
-Factorio 2.0.77, on top of `realistic-fusion-refreshed-assets`, which holds every sprite the two of
+Factorio 2.1.23, on top of `realistic-fusion-refreshed-assets`, which holds every sprite the two of
 them draw and nothing else (ADR 0023). All four of ADR 0010's reactions are playable: the
 water-to-deuterium extraction chain, D-D reactors that breed their own tritium and helium-3, D-T
 fusion burning it, lithium blankets breeding more, and an aneutronic tier running D-He3 and He3-He3
@@ -127,8 +127,8 @@ reopens them by accident:
 - **The published name is Realistic Fusion Refreshed** (ADR 0017, superseding ADR 0009). The `rf-`
   prototype prefix is unaffected.
 - **The v1 target is the Factorio 2.1 base game, with Space Age tolerated but not integrated** (ADR
-  0003, and ADR 0041 for 2.1). The mods still declare 2.0 until #767, which is what the State
-  section describes. What stays open is whether that ever becomes first-class support, which is the
+  0003, and ADR 0041 for 2.1). The mods declare 2.1 since #767, which is what the State section
+  describes. What stays open is whether that ever becomes first-class support, which is the
   item left in the list above — not the v1 target.
 
 Do not settle any of them as a side effect of doing something else — no "I picked X to get started".

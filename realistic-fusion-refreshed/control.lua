@@ -1864,13 +1864,18 @@ local function in_heating_category(recipe)
 end
 
 local function check_every_plasma_burns()
-  -- Counted so that a category test that matches nothing fails here rather than passing having
-  -- checked nothing: 2.1 moved a recipe's one category into a list (#767), and a read of the wrong
-  -- shape would match no recipe at all.
-  local matched = 0
+  -- Held to a recipe of our own so that a category test that matches nothing fails here rather
+  -- than passing having checked nothing: 2.1 moved a recipe's one category into a list (#767), and
+  -- a read of the wrong shape would match no recipe at all. Only our own, because another mod
+  -- deleting the recipe must not make this one unloadable, as check_steam_sinks() says of turbines.
+  local own = prototypes.recipe["rf-d-d-plasma"]
+  if own and not in_heating_category(own) then
+    error(string.format("rf-d-d-plasma is not in the %s category as read here, so this check " ..
+      "reads none: the category test no longer matches what the game gives a recipe",
+      HEATING_CATEGORY))
+  end
   for _, recipe in pairs(prototypes.recipe) do
     if in_heating_category(recipe) then
-      matched = matched + 1
       for _, product in pairs(recipe.products or {}) do
         if product.type == "fluid" and not logic.fuels[product.name] then
           error(string.format(
@@ -1883,10 +1888,6 @@ local function check_every_plasma_burns()
         end
       end
     end
-  end
-  if matched == 0 then
-    error(string.format("no recipe is in the %s category, so this check read none: the category " ..
-      "test no longer matches what the game gives a recipe", HEATING_CATEGORY))
   end
 end
 
