@@ -58,6 +58,13 @@ reruns. Neither ships: a model is not a sprite, so ADR 0023 keeps it out of Asse
 **Regenerate** — rebuild a model from its look note, discarding the stored one. An explicit option,
 never the default: the default is to render the model that exists, so that hand edits survive.
 
+**Kit part** — a modelled piece of plant machinery, such as a valve, a cable tray or a walkway,
+defined once for the whole set and placed by any machine's model. It is what a look note names when
+it asks for machinery a plant has, which is why the set grows denser as the kit grows rather than
+one machine at a time. **Not a socket**: a socket is drawn because a connection is declared, and a
+kit part declares nothing, so nothing pipe-shaped in the kit leaves a machine where no connection
+does. Not "part" alone, which the house style also uses loosely for any piece of a model.
+
 **Socket** — the drawn fitting where a pipe connection meets a machine: a bare-metal stub running
 from the body to the footprint edge on the connection's tile, carrying one **accent** band of the
 fluid it names. **A socket is a drawing and a connection is a declaration** — the prototype declares
