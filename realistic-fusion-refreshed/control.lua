@@ -1866,8 +1866,10 @@ end
 local function check_every_plasma_burns()
   -- Held to a recipe of our own so that a category test that matches nothing fails here rather
   -- than passing having checked nothing: 2.1 moved a recipe's one category into a list (#767), and
-  -- a read of the wrong shape would match no recipe at all. Only our own, because another mod
-  -- deleting the recipe must not make this one unloadable, as check_steam_sinks() says of turbines.
+  -- a read of the wrong shape would match no recipe at all. Only our own, so that another mod
+  -- deleting it cannot make this one unloadable: check_steam_sinks() gives that reason for not
+  -- erroring on a turbine another mod re-rates. A mod that moves rf-d-d-plasma out of the
+  -- category still stops the load here.
   local own = prototypes.recipe["rf-d-d-plasma"]
   if own and not in_heating_category(own) then
     error(string.format("rf-d-d-plasma is not in the %s category as read here, so this check " ..
