@@ -360,8 +360,9 @@ script.on_nth_tick(REPORT_AT, function()
     local source = prototypes.entity[w.name].electric_energy_source_prototype
     -- The flow limits are methods rather than attributes in 2.0 because quality scales them, and
     -- they are per tick, as the engine stores them; buffer_capacity is neither.
-    -- usage is on the entity prototype rather than on its energy source, and it is what the two
-    -- machines' ceilings turn out to be made of. Like the flow limits it is a method in 2.0,
+    -- usage is on the entity prototype rather than on its energy source, and on 2.0.77 it is what
+    -- the two machines' ceilings were made of; on 2.1.23 they hold 16/15 of the declared figure
+    -- like the rest, and the line is evidence only. Like the flow limits it is a method in 2.0,
     -- because quality scales it, and like them it is per tick.
     log(string.format("BUF-RIG proto %-12s declared=%.10g flow_per_tick=%.10g drain_per_tick=%.10g " ..
       "usage_per_tick=%.10g priority=%s",
@@ -530,7 +531,7 @@ try {
     Write-Host ''
     if ($failures) {
         foreach ($f in $failures) { Write-Host "  FAIL  $f" }
-        throw ('buffer behaviour has moved since 2.0.77: {0} of the recorded facts no longer hold.' -f $failures.Count)
+        throw ('buffer behaviour has moved: {0} of the recorded facts no longer hold on this game version.' -f $failures.Count)
     }
     Write-Host ('OK - every non-accumulator buffer holds 16/15 of its declared capacity ' +
         '({0:N2} MJ against a declared 10 MJ), assembling machines included, and both accumulators ' -f ($held['same'] / 1e6) +

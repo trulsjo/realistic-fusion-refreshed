@@ -313,7 +313,8 @@ One line for each change to a gate, newest last, with its date and its ticket.
   asserts ADR 0042: on `pair`, `trio`, `five`, `bare`, `piped`, `feed` and `full` every reactor
   reads the westmost's amount and temperature to a relative 1e-6, the unpowered ones included, and
   `mix` reads one temperature as soon as one end is written. The floor rows, `feed`'s unshared-heat
-  row and the four bookkeeping rows are gone. Its `-SelfTest` half `split-runs-refused` runs the
+  row and the nine bookkeeping rows are gone: the captured step, and for each of `solo`,
+  `solopipe`, `bare` and `piped` its buffer row and its share kept. Its `-SelfTest` half `split-runs-refused` runs the
   rig with `-BreakRuns`, which leaves one pipe out of every bridge, and requires the seven one-pool
   rows to fail by name. It replaces `shared-heat-refused`, whose `input-output` canary stood for a
   box that shares heat, which on 2.1 the shipped box does too. `run-gates.ps1` passes all 25 gates
