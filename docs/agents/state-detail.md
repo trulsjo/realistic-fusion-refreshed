@@ -319,3 +319,10 @@ One line for each change to a gate, newest last, with its date and its ticket.
   rows to fail by name. It replaces `shared-heat-refused`, whose `input-output` canary stood for a
   box that shares heat, which on 2.1 the shipped box does too. `run-gates.ps1` passes all 25 gates
   on 2.1.23.
+- 2026-10-26, #794: every `scripts/check-*.ps1` that dot-sources `scripts/factorio-lib.ps1` leaves
+  what it printed in the git-ignored `.rig-reports/`, through `Start-RunReport`, which was
+  `Start-ProbeReport` and still keeps a probe's in `.probe-reports/`. Rigs now print under the
+  invariant culture, as probes do since #577. `ship-check.ps1` section 15 fails a rig that does not
+  dot-source the library, and runs a stand-in rig that prints a line and throws in a scratch
+  directory, which must leave a report holding its head, its line and its throw. Its `-SelfTest`
+  halves `unsourcing-rig-caught` and `unreported-run-caught` prove each check can fail.
