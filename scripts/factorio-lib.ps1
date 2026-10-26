@@ -1180,9 +1180,9 @@ function Get-MissingCategories {
     })
 }
 
-function Get-ProbeReportName {
-    <# The file a probe's report is kept in: the probe's name and the arguments it was given, so
-       two runs with different arguments keep a report each and a rerun replaces its own.
+function Get-RunReportName {
+    <# The file a probe's or a rig's report is kept in: the script's name and the arguments it was
+       given, so two runs with different arguments keep a report each and a rerun replaces its own.
        -FactorioExe is left out of the name, being a path on one machine; the report's command
        line still has it. #>
     param([Parameter(Mandatory)] [string] $Script, [Collections.IDictionary] $Bound = @{}, [object[]] $Unbound = @())
@@ -1196,36 +1196,44 @@ function Get-ProbeReportName {
     return $name.Substring(0, [Math]::Min(150, $name.Length)) + '.txt'
 }
 
-function Start-ProbeReport {
-    <# Keeps what a probe prints in .probe-reports/ at the repository's root (#589), so a figure in
-       a research note can be checked against the run it came from without starting the game again.
+function Start-RunReport {
+    <# Keeps what a probe prints in .probe-reports/ at the repository's root (#589), and what a rig
+       prints in .rig-reports/ (#794), so a figure in a research note can be checked against the run
+       it came from without starting the game again, and the next engine move is a diff against a
+       rig's last report.
 
        A probe printed its report and deleted its temp directory, and every figure was then copied
-       by hand from output that was nowhere afterwards. This starts a transcript, which holds what
-       the probe writes from here on, whether it ends, throws or exits. Under the transcript's own
-       four opening lines the file has the command line, the date and the game's version, to match
-       the sentence in a note that names them. The directory is git-ignored and inside no mod, so
-       nothing of it reaches a zip.
+       by hand from output that was nowhere afterwards. A rig's output went the same way: on #791
+       naming which of the rigs' figures had moved from 2.0.77 found a baseline for one rig. This
+       starts a transcript, which holds what the script writes from here on, whether it ends,
+       throws or exits. Under the transcript's own four opening lines the file has the command
+       line, the date and the game's version, to match the sentence in a note that names them. Both
+       directories are git-ignored and inside no mod, so nothing of them reaches a zip.
 
-       WHAT IT HOLDS THAT THE PROBE DID NOT PRINT. The five lines this function writes, which go to
-       the console as well. And PowerShell's own: four lines at the head of a transcript, four at
-       its foot, `PS>$global:?` and its answer before the foot of a run that finished, and a
+       WHAT IT HOLDS THAT THE SCRIPT DID NOT PRINT. The five lines this function writes, which go
+       to the console as well. And PowerShell's own: four lines at the head of a transcript, four
+       at its foot, `PS>$global:?` and its answer before the foot of a run that finished, and a
        `PS>TerminatingError()` line above the error of one that threw.
 
-       IT IS CALLED AT THE FOOT OF THIS FILE, for a script named probe-*.ps1 that dot-sources it.
-       No probe calls it, so a new probe has it without being told.
+       IT IS CALLED AT THE FOOT OF THIS FILE, for a script named probe-*.ps1 or check-*.ps1 that
+       dot-sources it. No script calls it, so a new probe or rig has it without being told.
+       The root is the directory above the script's own, which is the repository's for every
+       script in scripts/; ship-check.ps1's section 15 runs a stand-in rig from a scratch
+       directory, and its report lands there.
 
        WHAT IT DOES NOT HOLD. A line written before this file is dot-sourced. What a native program
-       writes straight to the console and not through the pipeline; the probes pipe or capture what
-       they start. And nothing at all when the transcript cannot start, which is a warning and not
-       a failure. A probe dot-sourced into a session that stays open keeps writing to its report
-       until that session ends; run one with `pwsh -File`, as each probe's help has it. #>
-    param([Parameter(Mandatory)] [Management.Automation.InvocationInfo] $Invocation)
+       writes straight to the console and not through the pipeline; the probes and rigs pipe or
+       capture what they start. And nothing at all when the transcript cannot start, which is a
+       warning and not a failure. A script dot-sourced into a session that stays open keeps writing
+       to its report until that session ends; run one with `pwsh -File`, as each one's help has
+       it. #>
+    param([Parameter(Mandatory)] [Management.Automation.InvocationInfo] $Invocation,
+          [Parameter(Mandatory)] [ValidateSet('probe', 'rig')] [string] $Kind)
     $script  = $Invocation.MyCommand.Path
     $bound   = $Invocation.BoundParameters
     $unbound = @($Invocation.UnboundArguments)
-    $root    = Split-Path -Parent $PSScriptRoot
-    $path    = Join-Path $root ".probe-reports/$(Get-ProbeReportName -Script $script -Bound $bound -Unbound $unbound)"
+    $root    = Split-Path -Parent (Split-Path -Parent $script)
+    $path    = Join-Path $root ".$Kind-reports/$(Get-RunReportName -Script $script -Bound $bound -Unbound $unbound)"
     $given   = @(foreach ($key in $bound.Keys) { "-$key"; if ($bound[$key] -isnot [switch]) { @($bound[$key]) -join ',' } }) + $unbound
     $version = try { "$(& (Resolve-FactorioExe -Path $bound['FactorioExe']) --version 2>$null | Select-Object -First 1)" }
                catch { "not read: $($_.Exception.Message)" }
@@ -1233,7 +1241,7 @@ function Start-ProbeReport {
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $path) | Out-Null
         Start-Transcript -LiteralPath $path -UseMinimalHeader -Force | Out-Null
     } catch { Write-Warning "This run's report is not kept: $($_.Exception.Message)"; return }
-    Write-Host "probe report  $([IO.Path]::GetRelativePath($root, $path).Replace([IO.Path]::DirectorySeparatorChar, '/'))"
+    Write-Host ("$Kind report".PadRight(14) + [IO.Path]::GetRelativePath($root, $path).Replace([IO.Path]::DirectorySeparatorChar, '/'))
     Write-Host "  command     pwsh -File scripts/$(Split-Path -Leaf $script) $($given -join ' ')".TrimEnd()
     Write-Host "  date        $((Get-Date).ToString('yyyy-MM-dd HH:mm:ss zzz', [cultureinfo]::InvariantCulture))"
     Write-Host "  game        $version"
@@ -1241,11 +1249,15 @@ function Start-ProbeReport {
 }
 
 $rfSourcedBy = @(Get-PSCallStack)[1]
-if ($rfSourcedBy -and $rfSourcedBy.ScriptName -and (Split-Path -Leaf $rfSourcedBy.ScriptName) -like 'probe-*.ps1') {
-    # Every figure a probe prints carries a point, whatever the machine's culture says, so a row can
-    # be quoted as is (#577). Until then two probes set it themselves, and the segment probe printed
-    # its tables with decimal commas and its raw rows with points.
+$rfSourcedLeaf = if ($rfSourcedBy -and $rfSourcedBy.ScriptName) { Split-Path -Leaf $rfSourcedBy.ScriptName }
+if ($rfSourcedLeaf -like 'probe-*.ps1' -or $rfSourcedLeaf -like 'check-*.ps1') {
+    # Every figure a probe or a rig prints carries a point, whatever the machine's culture says, so
+    # a row can be quoted as is (#577) and two machines' reports diff line for line (#794). Until
+    # then two probes set it themselves, the segment probe printed its tables with decimal commas
+    # and its raw rows with points, and check-buffer.ps1 printed `10,67 MJ` on #791. No rig parses
+    # what it printed itself: each parses the game's lines, which Lua prints with a point, through
+    # PowerShell's [double] cast, which ignores the culture.
     [cultureinfo]::CurrentCulture = [cultureinfo]::InvariantCulture
-    Start-ProbeReport -Invocation $rfSourcedBy.InvocationInfo
+    Start-RunReport -Invocation $rfSourcedBy.InvocationInfo -Kind $(if ($rfSourcedLeaf -like 'probe-*') { 'probe' } else { 'rig' })
 }
-Remove-Variable rfSourcedBy
+Remove-Variable rfSourcedBy, rfSourcedLeaf

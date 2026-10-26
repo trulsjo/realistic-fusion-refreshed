@@ -37,8 +37,10 @@ __pycache__/
 .dump/
 
 # What each probe last printed, one file for a probe and its arguments (#589). Written by
-# Start-ProbeReport in scripts/factorio-lib.ps1; a rerun replaces its own.
+# Start-RunReport in scripts/factorio-lib.ps1; a rerun replaces its own.
 .probe-reports/
+# What each scripts/check-*.ps1 rig last printed, the same way (#794).
+.rig-reports/
 
 # Blender's save-over backups beside models/<machine>/<machine>.blend; the model is the .blend
 *.blend1

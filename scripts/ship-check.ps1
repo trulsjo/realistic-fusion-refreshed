@@ -178,6 +178,13 @@
     fixed list and fails a missing file, so it needs no floor. It cannot see a base written
     another way; the section comment has the rest.
 
+    SECTION 15 HAS A -SelfTest AND NO FLOOR (#794). It fails a scripts/check-*.ps1 that does not
+    dot-source factorio-lib.ps1, and runs a stand-in rig in a scratch directory that must leave a
+    report in .rig-reports/ there holding its head, its printed line and its throw. The
+    unsourcing-rig-caught half plants a rig of each kind, and the unreported-run-caught half
+    requires a stand-in named as no rig is to be caught leaving no report. It starts no game, so it
+    cannot see a real rig's report; the section comment has the rest.
+
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
     stopped saying no fails rather than turning every check below it green. It was also demonstrated
@@ -191,7 +198,8 @@
     the tools submodule holds -- that it numbers halves from the list it was given and refuses a half it
     cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both directions, section 10's two assertions, each in both
     directions, section 12's two scans
-    of the lines, each in both directions, section 13 in both directions, and section 14 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
+    of the lines, each in both directions, section 13 in both directions, section 14 in both directions, and section 15's two
+    checks, the first in both directions and the second on a stand-in the library keeps no report for, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
     memory and the planted documents live in the scratch directory the run removes on its way out.
 
 .EXAMPLE
@@ -1464,6 +1472,59 @@ foreach ($row in Find-LocalMainReads -Files @($mainReaders | Where-Object { $_ -
         "the local main ('$($row.Text)'). Since #758 a review fetches origin/main and reads against it."))
 }
 
+# 15. A RIG RUN LEAVES ITS REPORT (#794).
+#
+# Since #794 a scripts/check-*.ps1 that dot-sources factorio-lib.ps1 leaves what it printed in
+# .rig-reports/, through Start-RunReport, the function that keeps a probe's in .probe-reports/
+# (#589). Nothing proved either before. This checks two things, starting no game: that every rig
+# dot-sources the library, since a rig that does not has no report and nothing else says so; and
+# that a stand-in rig planted in a scratch directory, which prints a line and throws, leaves a
+# report there holding the head, its line and its throw. The library puts a report in the
+# directory above the script's own, so the stand-in's lands in the scratch directory and not here.
+#
+# WHAT IT CANNOT SEE: a real rig's report, which needs the game; run-gates.ps1 leaves one per rig.
+# A probe's: the probe branch is the same call with another directory. A dot-source written any
+# other way than `. "$PSScriptRoot/factorio-lib.ps1"` on a line of its own fails the first check.
+$RIG_SOURCES_LIB = '(?m)^\s*\.\s+"\$PSScriptRoot/factorio-lib\.ps1"'
+
+function Find-UnsourcedRigs {
+    <#  Each of these rigs that does not dot-source factorio-lib.ps1.  #>
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Files)
+    $Files | Where-Object { (Get-Content -Raw -LiteralPath $_) -notmatch $RIG_SOURCES_LIB }
+}
+
+function Test-RigReport {
+    <#  Plant a stand-in named $Name under $Root/scripts, run it, and return what its report lacks:
+        nothing when it left one holding its head, its printed line and its throw.  #>
+    param([Parameter(Mandatory)] [string] $Root, [Parameter(Mandatory)] [string] $Name)
+    $dir = New-Item -ItemType Directory -Force -Path (Join-Path $Root 'scripts')
+    $lib = Join-Path $PSScriptRoot 'factorio-lib.ps1'
+    @(
+        '$ErrorActionPreference = ''Stop'''
+        ". '$lib'"
+        'Write-Output ''rf-planted-line'''
+        'throw ''rf-planted-throw'''
+    ) | Set-Content -LiteralPath (Join-Path $dir $Name) -Encoding utf8
+    & (Get-Process -Id $PID).Path -NoProfile -File (Join-Path $dir $Name) *> $null
+    $report = Join-Path $Root ".rig-reports/$([IO.Path]::GetFileNameWithoutExtension($Name)).txt"
+    if (-not (Test-Path -LiteralPath $report)) { return @("no report at .rig-reports/$(Split-Path -Leaf $report)") }
+    $text = Get-Content -Raw -LiteralPath $report
+    @('rig report', '  command     pwsh -File scripts/', '  date        ', '  game        ',
+      'rf-planted-line', 'rf-planted-throw') | Where-Object { -not $text.Contains($_) } |
+        ForEach-Object { "the report lacks '$_'" }
+}
+
+$checks += 2
+foreach ($rig in Find-UnsourcedRigs -Files @(Get-ChildItem $PSScriptRoot -Filter 'check-*.ps1' | ForEach-Object FullName)) {
+    $failures.Add("scripts/$(Split-Path -Leaf $rig) does not dot-source factorio-lib.ps1, so its runs leave no report in .rig-reports/.")
+}
+$rigScratch = Join-Path ([IO.Path]::GetTempPath()) ('rf-rigreport-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+try {
+    foreach ($lack in Test-RigReport -Root $rigScratch -Name 'check-planted.ps1') {
+        $failures.Add("section 15's stand-in rig, which prints a line and throws: $lack. See Start-RunReport in scripts/factorio-lib.ps1.")
+    }
+} finally { Remove-Item -LiteralPath $rigScratch -Recurse -Force -ErrorAction SilentlyContinue }
+
 if ($failures.Count) {
     Write-Host ''
     foreach ($f in $failures) { Write-Host "FAIL  $f" -ForegroundColor Red }
@@ -1878,6 +1939,30 @@ if ($SelfTest) {
                 }
                 'a skill that fetches origin/main and reads against it is not reported.'
             } }
+
+            @{ Name = 'unsourcing-rig-caught'; Body = {
+                # Section 15's first check passes by finding nothing. A rig that dot-sources the
+                # library only in a comment is reported, and one that does is not.
+                $bare    = Join-Path $planted 'check-bare.ps1'
+                $sourced = Join-Path $planted 'check-sourced.ps1'
+                '# . "$PSScriptRoot/factorio-lib.ps1"' | Set-Content -LiteralPath $bare -Encoding utf8
+                '. "$PSScriptRoot/factorio-lib.ps1"'   | Set-Content -LiteralPath $sourced -Encoding utf8
+                $found = @(Find-UnsourcedRigs -Files @($bare, $sourced))
+                if ($found.Count -ne 1 -or $found[0] -ne $bare) {
+                    throw "of a rig that does not dot-source the library and one that does, '$($found -join ', ')' was reported."
+                }
+                'a rig that does not dot-source factorio-lib.ps1 is reported, and one that does is not.'
+            } }
+
+            @{ Name = 'unreported-run-caught'; Body = {
+                # Section 15's stand-in passes when the library keeps its report. The same stand-in
+                # under a name that is neither a rig's nor a probe's keeps none, and must be told.
+                $lack = @(Test-RigReport -Root (Join-Path $planted 'unnamed') -Name 'stand-in.ps1')
+                if (-not ($lack -like 'no report at *')) {
+                    throw "a stand-in the library keeps no report for was reported as: '$($lack -join '; ')'."
+                }
+                'a run that leaves no report in .rig-reports/ is caught.'
+            } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
     Write-Host ''
@@ -1893,5 +1978,6 @@ Write-Host 'no prose cites a self-test half by position, every Current figures r
 Write-Host 'heading and a figure its note has, every tracked Markdown file passes the shared check as staged, and'
 Write-Host 'no prose line of the wrapped files is over the width they are wrapped at or splits a'
 Write-Host 'grouped figure across its end, every -SelfTest help that names a half names all of them,'
-Write-Host 'and neither the review skills nor the markdown-only test reads the local main.'
+Write-Host 'neither the review skills nor the markdown-only test reads the local main, and every rig'
+Write-Host 'dot-sources the library that keeps its report, which a stand-in rig was seen to leave.'
 exit 0
