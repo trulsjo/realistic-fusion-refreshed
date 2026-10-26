@@ -382,3 +382,32 @@ One line for each, newest last. The passages above are not edited.
   `/pre-pr-review` is done only when the body has them. #738's "No check reads that shape" is no
   longer true. The check runs in `gates.yml` and before each `gh pr create` and `gh pr edit`. The
   wording is the session's.
+- **2026-10-26, #780: a claim about another mod is read from its portal entry before it is judged or
+  rewritten.** Truls decided it in the ticket's triage, after the plugin pass on #779 judged a claim
+  about Durikkan's port from `name-check.ps1`'s help and the fix made the claim false in five
+  player-facing texts. The second rule of `code-review.md` has a reviewer or a verifier read
+  `https://mods.factorio.com/api/mods/<name>/full` and name the release it read, and a fix read it
+  first. The verifier's brief in `/plugin-pass` step 4 and `plugin-pass.md`'s paragraph on the
+  verifier say the same. No gate reads it. The wording is the session's.
+- **2026-10-26, #781: every commit on a branch is in a diff some pre-PR reviewer was handed, before
+  the body is first written.** Truls chose a coverage check over one review of a whole branch, in
+  the ticket's triage and again when asked in the session that implemented it, after #779's port
+  commit had been handed to no reviewer when the session went to open the pull request. The fourth
+  rule has the session keep the subjects of each handed diff's commits, under the branch's name, in
+  a file in the git directory, and list `origin/main..HEAD` against them before the body is written
+  and after the last fix commit; held fixes and fixes that only correct a count are the commits left
+  out. Steps 1, 4, 5 and 7 of `/pre-pr-review` carry it out with `git log` and `LC_ALL=C grep
+  -vxFf`. No gate reads it. The wording is the session's.
+- **2026-10-26, #782: a fix that adds or widens a load-time `error()` in shipped Lua, or edits a
+  tracked `CLAUDE.md`, is put to Truls before it is written.** Truls decided it in the ticket's
+  triage, both cases and only these two, after two fixes on #779 settled his calls. The fourth rule
+  says so and has the finding's row read `no: waits on Truls` until he answers; step 4 of
+  `/pre-pr-review` and step 7 of `/plugin-pass` point at it, and step 6 lists the form. No gate
+  reads it. The wording is the session's.
+- **2026-10-26, #783: a message that a later commit on the same unmerged branch corrects is left
+  when the later message names the earlier commit by its subject and says what it narrows.** Truls
+  narrowed #640's reword rule in the ticket's triage, and, asked in the session that implemented it,
+  kept `git push --force-with-lease` prompting. The reword stays for a claim nothing later corrects,
+  for a correction that names nothing, and for a finding about a commit message itself. The fourth
+  rule says so, the #671 paragraph and the reading after the last fix commit read the same way, and
+  steps 4 and 7 of `/pre-pr-review` point at it. No gate reads it. The wording is the session's.

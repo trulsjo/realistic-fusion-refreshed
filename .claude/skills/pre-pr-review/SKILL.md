@@ -182,9 +182,9 @@ pass.
    git log --format="$(git branch --show-current) %s" origin/main..HEAD | LC_ALL=C grep -vxFf "$(git rev-parse --git-path pre-pr-reviewed.txt)"
    ```
 
-   Each line it prints is the subject of a commit no reviewer was handed. `LC_ALL=C` makes Git
-   Bash's grep match a gitmoji subject. A held fix (#643) may be printed; stop on any other line
-   and send its commit to the reviewer first, as step 4 sends a fix.
+   Each line it prints is the branch's name and the subject of a commit no reviewer was handed.
+   `LC_ALL=C` makes Git Bash's grep match a gitmoji subject. A held fix (#643) may be printed; stop
+   on any other line and send its commit to the reviewer first, as step 4 sends a fix.
 
    **Then invoke the `mattpocock-skills:pr` skill** with the Skill tool for `## Summary`,
    `## Evidence` and `## Merge Danger` (#738, #748); where it is not installed, write them by hand
