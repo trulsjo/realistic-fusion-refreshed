@@ -414,3 +414,10 @@ One line for each, newest last. The passages above are not edited.
   for a correction that names nothing, and for a finding about a commit message itself. The fourth
   rule says so, the #671 paragraph and the reading after the last fix commit read the same way, and
   steps 4 and 7 of `/pre-pr-review` point at it. No gate reads it. The wording is the session's.
+- **2026-10-26, #788: a fix that changes what a rule allows has the rule's section read again
+  before it is sent.** #785's pre-PR findings 19 to 21 were each a sentence beside #781's rule that
+  an earlier fix had made false, and the paragraph that would have caught them, #610's, binds the
+  reviewer. The second rule says so, beside #632's paragraph, with the case on the evidence page;
+  step 4 of `/pre-pr-review` and step 7 of `/plugin-pass` point at it. Truls said in the session
+  that implemented it that it is not his ruling, so it names no one. No gate reads it. The wording
+  is the session's.
