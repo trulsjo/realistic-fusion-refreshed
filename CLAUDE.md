@@ -112,7 +112,7 @@ answer was the hoped-for one. Its findings belong in `docs/research/`, and it st
 next engine version can be asked the same question. Since #589 a `probe-*.ps1` that sources
 `scripts/factorio-lib.ps1` leaves what it last printed in the git-ignored `.probe-reports/`, in a
 file named for the probe and its arguments: a figure in a note is checked against that file.
-Since #794 each `scripts/check-*.ps1` leaves its report the same way, in `.rig-reports/`.
+Since #794 each `scripts/check-*.ps1` keeps its last run's output in `.rig-reports/`.
 
 ## The rule that matters most here
 
