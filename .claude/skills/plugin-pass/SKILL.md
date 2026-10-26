@@ -58,6 +58,16 @@ make one worktree for the pass, outside the repository, and to remove it after s
 `<what it lacks>` is "It has no submodule contents and no git-ignored file. Read one of those
 from `<this session's checkout>` by its full path, and run no command there."
 
+`<api>`, in both briefs, is this (#793): "A claim about a Factorio API class, method, parameter
+or attribute is checked in the game's own reference, `runtime-api.json` and
+`prototype-api.json` in the `doc-html` directory of the install, beside the `bin` that holds
+the `Factorio.exe` `Resolve-FactorioExe` resolves, which is `$env:FACTORIO_EXE` where that is
+set and `D:\SteamLibrary\steamapps\common\Factorio\bin\x64\Factorio.exe` where it is not. Read
+the member there by name: a runtime class's under its `methods` or `attributes`, a
+prototype's under its `properties`, inheritance through `parent`. The files are the
+installed game's, so they hold the version the gates run against; `application_version` names
+it. They are outside the repository, so a worktree does not lack them."
+
 ## Steps
 
 1. **Do the opening steps yourself.** No subagent. Each line runs unchanged in Git Bash and in
@@ -91,7 +101,7 @@ from `<this session's checkout>` by its full path, and run no command there."
    > against `main`. `<your task>` The tracked `CLAUDE.md` files
    > are `<paths>`. In this repository a false sentence or a wrong figure in tracked prose is a
    > bug: `docs/agents/code-review.md`, *Review the prose, not only the code*, says what to
-   > check.
+   > check. `<api>`
    >
    > `<where>` You are read-only: edit and commit nothing. Run no `git checkout` but one named
    > above, and no `git switch`, `stash`, `reset` or `worktree`. Run no gate, leave nothing
@@ -137,7 +147,7 @@ from `<this session's checkout>` by its full path, and run no command there."
    > repository. For each candidate below you are given the quoted
    > words or code and the one source to check them against. Check that source, and nothing
    > else unless it sends you on. Where you need the change, read it with `gh pr diff <n>`,
-   > never with a local `git diff` against `main`.
+   > never with a local `git diff` against `main`. `<api>`
    >
    > `<for each: its letter, the file, the quoted words, what the reviewer says is wrong, the
    > source>`
