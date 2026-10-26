@@ -42,8 +42,9 @@ a body, never a whole panel, and never more than a few small elements on one mac
 a fluid accent and must never be used as one: the accents say what a socket carries, and a marking
 colour competing with them would cost the set the one thing its colours are for.
 
-HOW FAR IS NOT SETTLED. This is a direction, not a target, and no machine has been rebuilt to it
-yet. The detail floors under Materials are unchanged and still bind: more detail is wanted, detail
+HOW FAR IS NOT SETTLED. This is a direction, not a target. Only `rf-isotope-collector` has been
+rebuilt to it (c0ff100), and beside Krastorio 2's reactor in a real map on 2026-10-26 it still
+read as two mods. The detail floors under Materials are unchanged and still bind: more detail is wanted, detail
 too fine to read at 64 px per tile still is not.
 
 ## Palette
@@ -129,7 +130,8 @@ fluid is `dark` or `paint`, not a borrowed accent.
 
 ## Materials
 
-Principled BSDF only, procedural, no image textures, nothing imported (the licence rule). Painted
+Principled BSDF throughout. Meshes are never imported. An image texture may be, but only a CC0 one,
+recorded beside the model with its source and licence (ADR 0043, amending ADR 0030). Painted
 steel is roughness 0.6, metallic 0. Bare metal is roughness 0.35, metallic 0.8. Bevel every visible
 edge at 0.03 tiles so the key light catches it; a sharp edge reads as a rendering artefact at 64 px
 per tile.

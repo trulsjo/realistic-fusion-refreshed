@@ -10,6 +10,11 @@ when `rf-heat-exchanger` was accepted in the game and
 [#108](https://github.com/trulsjo/realistic-fusion-refreshed/issues/108) closed against every
 acceptance criterion.
 
+> **Amended in part, 2026-10-26, by [ADR 0043](0043-cc0-textures-may-be-imported.md).** Its
+> *"Nothing is imported"* paragraph no longer holds for CC0 image textures, which may now be
+> imported with their provenance recorded beside the model. Meshes are still never imported, and
+> the rest of this ADR is unchanged.
+
 **Written after the proof, not before it**, on Truls's instruction — the route was chosen on paper,
 and nothing was recorded until a machine actually wore it.
 
