@@ -135,9 +135,9 @@ pass.
    on purpose is named to the reviewer as left, with the reason, and nothing more.
 
    Before writing a fix, read what *Review the prose, not only the code* in
-   `docs/agents/code-review.md` asks of the session that writes one (#632), and the paragraph under
-   *A review before the pull request, and the plugin pass after it* on the fixes put to Truls
-   first (#782).
+   `docs/agents/code-review.md` asks of the session that writes one (#632), and of one that
+   changes what a rule allows (#788), and the paragraph under *A review before the pull request,
+   and the plugin pass after it* on the fixes put to Truls first (#782).
 
    **When a finding corrects a figure or a claim, reword the commits that state the old one**
    (#640), except where a later message spares one (#783). The rule, and where it

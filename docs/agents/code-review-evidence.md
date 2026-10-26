@@ -132,6 +132,24 @@ The other two, one in those directories and one on the review pages, are counted
 account and not named there, and were not re-read here. The comment also says the other errors the
 review pages record are out-of-date figures, which the grades do not catch.
 
+### Three sentences a fix left false, on #785 (#788)
+
+#785's pre-PR findings 19, 20 and 21, as its body's findings table gives them, each `yes,
+confirmed`:
+
+| # | Finding | Where |
+|---|---|---|
+| 19 | the brief calls every diff the one against `origin/main`, and its markdown-only test reads only the part | pre-pr-review step 3's brief |
+| 20 | the pre-PR review's definition names only the diff against `origin/main` | code-review.md, the fourth rule's list |
+| 21 | the definition's opening reads as one review by one subagent per branch | code-review.md, the fourth rule |
+
+Each was a sentence beside #781's rule that an earlier fix on the branch, one that let a review take
+part of a branch, had made false and not touched. By #788's account, and not re-read here, each fix
+went to the reviewer in a message of its own, with its whole context again. The paragraph on a
+change that alters a rule (#610) would have caught all three, and it binds the reviewer; step 4 of
+`/pre-pr-review` had the session read, of the second rule, only #632's paragraph before it wrote a
+fix.
+
 ## A review before the pull request, and the plugin pass after it
 
 ### When a reviewer's message reaches the session (#648, #654)
