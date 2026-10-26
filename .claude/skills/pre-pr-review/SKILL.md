@@ -29,10 +29,10 @@ pass.
    git fetch origin main                   # moves origin/main only
    git tag -f pre-pr-reviewed HEAD         # the reviewed commit; step 4 needs it. Never pushed
    git diff --output="<scratch>/branch.diff" origin/main...HEAD
-   git log --format=%s origin/main..HEAD >> "<scratch>/reviewed.txt"   # step 5 checks it (#781)
+   git log --format=%s origin/main..HEAD >> "<scratch>/reviewed.txt"   # the range handed; step 5 (#781)
    ```
 
-   **Have git write the file, and quote the path** (#635). Both lines run unchanged in Git Bash
+   **Have git write the file, and quote the path** (#635). Each line runs unchanged in Git Bash
    and in PowerShell, with `<scratch>` in either form of path. A `>` redirect to an unquoted
    backslash path does not: Git Bash drops the backslashes and writes a file named for the whole
    path into the current directory. Two `.diff` files of that shape sat in the repository root
@@ -133,7 +133,7 @@ pass.
    first (#782).
 
    **When a finding corrects a figure or a claim, reword the commits that state the old one**
-   (#640), unless the fix's own message names what it corrects (#783). The rule, and where it
+   (#640), except where a later message spares one (#783). The rule, and where it
    stops, is in `docs/agents/code-review.md` under *A review before the pull request, and the
    plugin pass after it*. Find them, write the corrected message to
    `<scratch>/msg.txt` with the Write tool, and reword one commit at a time. These lines are for
@@ -143,6 +143,7 @@ pass.
    git log origin/main..HEAD --format='%h %s' --grep='<the old figure or words>'
    GIT_SEQUENCE_EDITOR="sed -i 's/^pick <short hash>/reword <short hash>/'" \
      GIT_EDITOR="cp <scratch>/msg.txt" git -c core.commentChar=";" rebase -i <short hash>~1
+   git log -1 --format=%s <new hash> >> "<scratch>/reviewed.txt"   # where the subject changed (#781)
    git push --force-with-lease             # a pushed, unmerged branch only; never main
    ```
 
@@ -172,11 +173,12 @@ pass.
    request, and the plugin pass after it*. In Git Bash:
 
    ```
-   git log --format="%h %s" origin/main..HEAD | grep -vFf "<scratch>/reviewed.txt"
+   git log --format=%s origin/main..HEAD | LC_ALL=C grep -vxFf "<scratch>/reviewed.txt"
    ```
 
-   Each line it prints is a commit no reviewer was handed. A held fix (#643) is the one allowed;
-   stop on any other and send it to the reviewer first, as step 4 sends a fix.
+   Each line it prints is the subject of a commit no reviewer was handed. `LC_ALL=C` makes Git
+   Bash's grep match a gitmoji subject. A held fix (#643) may be printed; stop on any other line
+   and send its commit to the reviewer first, as step 4 sends a fix.
 
    **Then invoke the `mattpocock-skills:pr` skill** with the Skill tool for `## Summary`,
    `## Evidence` and `## Merge Danger` (#738, #748); where it is not installed, write them by hand
@@ -206,7 +208,7 @@ pass.
    | 2 | … | … | no: the reason it was left |
 
    **Fixed** is `yes, confirmed` only when the reviewer has said so; otherwise `yes, not confirmed`,
-   `left: waits on Truls` (#782) or `no: <reason>`. The findings carry no score (#610). A review
+   `no: waits on Truls` (#782) or `no: <reason>`. The findings carry no score (#610). A review
    that found nothing says that in the body in place of the table, below step 5's outcomes for what
    the reviewer said it did not check. A cell that names a commit of the branch names it by its
    subject in quotes, not its hash (#730).
@@ -272,13 +274,14 @@ pass.
    ```
 
    Run each command the body quotes output from, on the head. Count what each count counts. A
-   commit message that the head contradicts is reworded as step 4 says. Tracked prose is a
+   commit message that the head contradicts is reworded as step 4 says; one that a later message
+   names and narrows, as the rule has it, is not contradicted (#783). Tracked prose is a
    comment or a help block as much as a `.md` file. What the reading turns up is fixed and
    committed, its diff is sent to the reviewer in a message of its own as step 4 sends one, and
    what that fix changed is read again. **A fix that only corrects a count gets no message**
    (#665): the rule says which fix that is. Commit it and read again what it changed. Then run
-   step 5's `git log` line again (#781): a fix that only corrects a count is the one line it may
-   print now.
+   step 5's `git log` line again (#781): a fix that only corrects a count is the only kind it may
+   print now, and each it prints is named in the body as not confirmed.
 
    Done when the body has, under the `## Pre-PR review` heading, a line that names what was read
    again and the head it was read on, the last one if a fix moved it, by its subject (#730):

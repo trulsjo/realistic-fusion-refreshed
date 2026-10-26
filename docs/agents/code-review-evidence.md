@@ -280,6 +280,39 @@ reworded five times in two rounds, two of them and then all three, and 14 to 16 
 messages written or left during the first. #656's finding 20 was the same kind: a message's "A loop
 body is no longer judged", which a later fix made false.
 
+### Four gaps on #779 (#780 to #783)
+
+Under four rules written on 2026-10-26, one in the second rule and three in the fourth. Each case is
+read from #779's body and comments, from the commits named, which are on `main`, and from the
+portal, all on 2026-10-26; what is marked as an account was not read again.
+
+- **A claim about another mod judged from the tree (#780).** The plugin pass's verifier found real
+  that `README.md` and the mods' descriptions say Durikkan's port "can stay installed beside" the
+  mods. Its posted reason, item 5 of the first comment on #779, was "`name-check.ps1`'s help, as
+  this PR rewrote it, says a mod cannot span 2.0 and 2.1", which says nothing of the port. The fix
+  in `483a873` rewrote the sentence in five player-facing texts.
+  `https://mods.factorio.com/api/mods/RealisticFusionPowerPort/full` gives release 1.9.5, of
+  2026-10-24, with `factorio_version` 2.1 and `base >= 2.1`, and `c43cc45` put the sentence back.
+- **A commit no review was handed (#781).** The branch carried four groups of commits, each meant
+  for a review of its own. By #781's account, the port's commit, `605b960`, had none until the
+  session went to open the pull request, and the brief of ADR 0042's reviewer said the earlier
+  commits "were reviewed separately". Truls had the port reviewed before the pull request opened.
+- **Two fixes that settled Truls's calls (#782).** A pre-PR fix made `check_every_plasma_burns` call
+  `error()` when it matched no recipe. It runs from `check_prototypes()`, which
+  `check_steam_sinks()`'s comment in `realistic-fusion-refreshed/control.lua` says "runs from
+  on_configuration_changed as well as on_init", and a mod that deleted our plasma recipes would have
+  stopped a save in progress. Truls narrowed it in `7ac0276`. A plugin-pass fix added to `CLAUDE.md`
+  that 12 of the 13 `check-*.ps1` fail on 2.1.23 until #769 to #771 port them; it would go stale
+  when they land, and Truls dropped it in `0b86a84`.
+- **Rewords a later commit had made (#783).** #779's body records three messages reworded after the
+  pull request opened: the footer of "declare Factorio 2.1.23 and port the runtime to it" (finding 2
+  of ADR 0042's review), the message of "fix the plugin pass's findings on #779" (the port review's
+  finding 19), and "fix the pre-PR review's findings on the 2.1 port" (step 7's reading). By #783's
+  account there were five rewords in three force pushes, the first refused by Claude Code's auto
+  mode until Truls allowed it, and three of the five were of messages a later commit on the branch
+  already corrected: `483a873`'s twice, after `c43cc45` and `0b86a84`, and `1756548`'s, after
+  `7ac0276`.
+
 ### What the verdict of 2026-10-07 rested on (#593)
 
 Five paragraphs of the section *Measured, not assumed* of that rule, until 2026-10-10. The verdict

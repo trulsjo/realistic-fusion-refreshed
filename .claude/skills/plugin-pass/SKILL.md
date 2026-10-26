@@ -1,6 +1,6 @@
 ---
 name: plugin-pass
-description: Run this repository's plugin pass on an open pull request. The session checks eligibility itself, five independent reviewers read the change, one verifier checks every candidate they raise against the tree, and the result is two comments on the pull request and its two rows in docs/agents/review-figures.md. Use when a pull request has been opened.
+description: Run this repository's plugin pass on an open pull request. The session checks eligibility itself, five independent reviewers read the change, one verifier checks every candidate they raise against the tree or the mod portal, and the result is two comments on the pull request and its two rows in docs/agents/review-figures.md. Use when a pull request has been opened.
 ---
 
 # /plugin-pass
@@ -153,7 +153,7 @@ from `<this session's checkout>` by its full path, and run no command there."
    > Return one line for each candidate: its letter, a verdict, and the evidence in a sentence.
    > The verdict is **real** when the source shows the fault, **not real** when the source shows
    > there is none or the fault is not this pull request's, and **not verified** when you could
-   > not check it from the tree. Give no score.
+   > not check it from the tree, or from the portal for a claim about another mod. Give no score.
 
    A verifier that stops before it has reported is resumed as a reviewer is in step 2. Done when
    every candidate has a verdict. Then remove the worktree, or have it removed, if one
