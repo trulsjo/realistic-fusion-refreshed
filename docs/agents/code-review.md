@@ -402,8 +402,9 @@ request (#593).
 
 ### The rule
 
-**Every branch gets a review before its pull request exists.** This section and `CLAUDE.md` call
-it **the pre-PR review**. One fresh subagent runs it, and it is defined by what the subagent
+**Every branch gets a review before its pull request exists**, or one for each part of it that is
+reviewed apart (#781). This section and `CLAUDE.md` call it **the pre-PR review**. One fresh
+subagent runs each, and it is defined by what the subagent
 is handed and not by a skill's name:
 
 - the diff against `origin/main`, fetched first (#755), and never against the local `main`,
