@@ -297,3 +297,24 @@ One line for each change to a gate, newest last, with its date and its ticket.
   `--self-test`, `tools/review-coverage.py`'s, which builds a repository in a temporary directory.
   It proves that `check` names a commit no review was handed and exits 1, that a recorded reword
   covers the reworded commit, and that a subject recorded under another branch covers nothing.
+- 2026-10-26, #769: `check-aneutronic.ps1`, `check-breeding.ps1`, `check-d-t.ps1`,
+  `check-confinement.ps1` and `check-heating.ps1` read their boxes through `rf_fluidbox` and a
+  box prototype's volume through `get_volume()`, and pass on 2.1.23, with `check-blanket.ps1`,
+  which #768 ported. The confinement rig loads the rig Lua for it. What each asserts is unchanged.
+- 2026-10-26, #770: `check-brownout.ps1`, `check-buffer.ps1`, `check-containment.ps1`,
+  `check-efficiency.ps1` and `check-hc.ps1` are ported the same way, and pass on 2.1.23.
+  `check-efficiency.ps1` empties a reactor's energy box by reading it and clearing it, since 2.1's
+  `remove_fluid` takes a box index. `check-hc.ps1` reads a generator's fluid usage and power output
+  through `get_fluid_usage_per_tick()` and `get_max_power_output()`, and `check-containment.ps1` a
+  recipe's category through `categories`. `check-buffer.ps1` holds the two assembling machines to
+  16/15 of their declared buffer, like every other non-accumulator, since on 2.1.23 they hold
+  10,666,666.67 J where on 2.0.77 they held their usage plus drain times 16/15.
+- 2026-10-26, #771: `check-observability.ps1` passes on 2.1.23 as #768 left it. `check-pooling.ps1`
+  asserts ADR 0042: on `pair`, `trio`, `five`, `bare`, `piped`, `feed` and `full` every reactor
+  reads the westmost's amount and temperature to a relative 1e-6, the unpowered ones included, and
+  `mix` reads one temperature as soon as one end is written. The floor rows, `feed`'s unshared-heat
+  row and the four bookkeeping rows are gone. Its `-SelfTest` half `split-runs-refused` runs the
+  rig with `-BreakRuns`, which leaves one pipe out of every bridge, and requires the seven one-pool
+  rows to fail by name. It replaces `shared-heat-refused`, whose `input-output` canary stood for a
+  box that shares heat, which on 2.1 the shipped box does too. `run-gates.ps1` passes all 25 gates
+  on 2.1.23.
