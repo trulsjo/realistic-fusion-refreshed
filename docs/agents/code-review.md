@@ -419,17 +419,18 @@ definition, and a review handed those three things is the pre-PR review whatever
 **Every commit on the branch is in a diff a pre-PR reviewer was handed, before the body is first
 written** (Truls, 2026-10-26, #781). A review's diff, each confirmation's and each fix sent in a
 message of its own hold commits, and the session keeps the subjects of the commits in each diff, in
-a file in the repository's git directory that outlives the session and is never pushed, as it hands
-it over: the diff's own range, which is the whole branch only where the reviewer is handed the whole
-branch. A reword that changes a subject keeps the new one too, so a reword leaves a covered commit
-covered. Before the body is first written the session lists every commit of `origin/main..HEAD`
-against them and stops on each that none held, which goes to a reviewer first. The held fixes (#643)
-are the only commits left out then, each marked `yes, not confirmed`. After the last fix commit the
-list is made again, and the fixes that only correct a count (#665) are then the only ones left out.
-The body's `## Pre-PR review` names each diff by the subjects of its commits. A branch keeps a
-review for each group of commits, and Truls chose this check over one review of the whole branch,
-because one moved tag cannot show which commits a review was handed. [The commit on #779 that no
-review was handed](code-review-evidence.md#four-gaps-on-779-780-to-783) is on the evidence page.
+a file in the repository's git directory that outlives the session and is never pushed, each under
+the branch's name, as it hands it over: the diff's own range, which is the whole branch only where
+the reviewer is handed the whole branch. A reword that changes a subject keeps the new one too, so a
+reword leaves a covered commit covered. Before the body is first written the session lists every
+commit of `origin/main..HEAD` against them and stops on each that none held, which goes to a
+reviewer first. The held fixes (#643) are the only commits left out then, each marked `yes, not
+confirmed`. After the last fix commit the list is made again, and the fixes that only correct a
+count (#665) are then the only ones left out. The body's `## Pre-PR review` names each diff by the
+subjects of its commits. A branch keeps a review for each group of commits, and Truls chose this
+check over one review of the whole branch, because one moved tag cannot show which commits a review
+was handed. [The commit on #779 that no review was
+handed](code-review-evidence.md#four-gaps-on-779-780-to-783) is on the evidence page.
 
 **A probe's raw output is its last report, in `.probe-reports/`** (2026-10-12, #589). A
 `scripts/probe-*.ps1` that sources `scripts/factorio-lib.ps1` leaves what it printed there, in a
