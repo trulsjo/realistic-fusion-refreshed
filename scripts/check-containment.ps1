@@ -174,13 +174,13 @@ local function must(entity, what)
 end
 
 local function amount_of(entity, index)
-  local contents = entity.fluidbox[index]
+  local contents = rf_fluidbox(entity)[index]
   return contents and contents.amount or 0
 end
 
 local function box_of(entity, fluid)
-  for index = 1, #entity.fluidbox do
-    local filter = entity.fluidbox.get_filter(index)
+  for index = 1, #rf_fluidbox(entity) do
+    local filter = rf_fluidbox(entity).get_filter(index)
     if filter and filter.name == fluid then return index end
   end
   return nil
@@ -214,8 +214,8 @@ end
 -- an unguarded index would raise precisely when containment had regressed, killing the rig instead
 -- of letting it print the FAIL line it exists to print.
 local function joins(entity, index, other)
-  if index > #entity.fluidbox then return false end
-  for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
+  if index > #rf_fluidbox(entity) then return false end
+  for _, connection in pairs(rf_fluidbox(entity).get_pipe_connections(index)) do
     if connection.target and connection.target.owner == other then return true end
   end
   return false
@@ -233,7 +233,7 @@ end
 local function connection_facing(entity, fluid, side)
   local index = box_of(entity, fluid)
   if not index then error(entity.name .. " has no box filtered to " .. fluid) end
-  for _, c in pairs(entity.fluidbox.get_pipe_connections(index)) do
+  for _, c in pairs(rf_fluidbox(entity).get_pipe_connections(index)) do
     if facing(c) == side then return c end
   end
   return nil
@@ -261,7 +261,7 @@ local function bolt(surface, force, name, fluid, side, tile, seed)
     error(name .. " has no box filtered to " .. fluid)
   end
   local found
-  for _, c in pairs(probe.fluidbox.get_pipe_connections(index)) do
+  for _, c in pairs(rf_fluidbox(probe).get_pipe_connections(index)) do
     if facing(c) == side then found = c end
   end
   if not found then
@@ -332,7 +332,7 @@ script.on_init(function()
   }), "rf-reactor")
   power(surface, force, { 9, 5 })
 
-  local west = reactor.fluidbox.get_pipe_connections(1)[1].target_position
+  local west = rf_fluidbox(reactor).get_pipe_connections(1)[1].target_position
   local pipe_near = must(surface.create_entity({
     name = "rf-pipe", position = { west.x, west.y }, force = force }), "rf-pipe (near)")
   local pipe_far = must(surface.create_entity({
@@ -375,7 +375,7 @@ script.on_init(function()
   -- reactor sells energy north and south since #275 and this rig does not care which is which; it
   -- cares that the two rows use the same helper on the same box.
   local energy_box = box_of(reactor, ENERGY)
-  local energy_faces = reactor.fluidbox.get_pipe_connections(energy_box)
+  local energy_faces = rf_fluidbox(reactor).get_pipe_connections(energy_box)
   if #energy_faces < 2 then
     error(string.format("rf-reactor's energy box has %d connection(s); this rig needs two, one for "
       .. "the refused pipe and one for the categorised feed", #energy_faces))
@@ -486,7 +486,7 @@ script.on_init(function()
     -- The energy fluid is read off the reactor rather than named per row: which fluid a reactor
     -- sells is the prototype's business, and a row that wrote it down would be asserting a pairing
     -- it does not own.
-    local fluid = reactor.fluidbox.get_filter(box_of_output(reactor)).name
+    local fluid = rf_fluidbox(reactor).get_filter(box_of_output(reactor)).name
     local out = connection_facing(reactor, fluid, pair.face)
     if not out then
       error(string.format("%s has no %s-facing energy output", pair.reactor, pair.face))
@@ -534,7 +534,7 @@ script.on_init(function()
       -- through an output connection. The water control failed with 0 and the refusal rows passed,
       -- which is exactly the shape of a control that is not controlling anything.
       local conn
-      for _, c in pairs(vessel.fluidbox.get_pipe_connections(index)) do
+      for _, c in pairs(rf_fluidbox(vessel).get_pipe_connections(index)) do
         if c.flow_direction ~= "output" then conn = conn or c end
       end
       if not conn then
@@ -574,14 +574,19 @@ script.on_init(function()
   -- decided here instead of by iteration order.
   local recipe = prototypes.recipe["rf-d-d-plasma"]
   local categories = prototypes.entity["rf-heater"].crafting_categories
-  if not (recipe and categories[recipe.category]) then
+  -- 2.1 merged a recipe's category into a list, recipe.categories.
+  local craftable = false
+  for _, category in ipairs(recipe and recipe.categories or {}) do
+    craftable = craftable or categories[category] ~= nil
+  end
+  if not craftable then
     error("rf-heater cannot craft rf-d-d-plasma; this rig is built around the D-D tier")
   end
   heater.set_recipe(recipe.name)
   power(surface, force, { 66, 6 })
 
   local deuterium_box = box_of(heater, "rf-deuterium")
-  local deuterium_at = heater.fluidbox.get_pipe_connections(deuterium_box)[1].target_position
+  local deuterium_at = rf_fluidbox(heater).get_pipe_connections(deuterium_box)[1].target_position
   local deuterium_feed = must(surface.create_entity({
     name = "infinity-pipe", position = { deuterium_at.x, deuterium_at.y }, force = force,
   }), "vanilla infinity pipe for deuterium")
@@ -641,7 +646,7 @@ script.on_nth_tick(600, function()
   record(joins(r.under_near, 1, r.under_far), "the two underground plasma pipes join each other")
   record(joins(r.under_far, 1, r.feed), "the far underground pipe joins the feed")
 
-  local plasma = r.reactor.fluidbox[1]
+  local plasma = rf_fluidbox(r.reactor)[1]
   record(plasma ~= nil and plasma.amount > 0,
     "plasma reaches the reactor through pipe, pump and underground pipe",
     plasma and string.format("%g units at %.4g C", plasma.amount, plasma.temperature) or "nothing")
@@ -728,8 +733,8 @@ script.on_nth_tick(600, function()
     "an ordinary pipe still feeds the heater its deuterium")
 
   local produced = 0
-  for index = 1, #r.heater.fluidbox do
-    local contents = r.heater.fluidbox[index]
+  for index = 1, #rf_fluidbox(r.heater) do
+    local contents = rf_fluidbox(r.heater)[index]
     if contents and contents.name == PLASMA then produced = produced + contents.amount end
   end
   record(produced > 0, "and the heater makes plasma from it", string.format("%g", produced))

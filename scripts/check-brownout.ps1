@@ -330,8 +330,8 @@ for name, value in pairs(defines.entity_status) do STATUS[value] = name end
 local function status_name(v) return STATUS[v] or ("?" .. tostring(v)) end
 
 local function box_of(entity, fluid)
-  for index = 1, #entity.fluidbox do
-    local filter = entity.fluidbox.get_filter(index)
+  for index = 1, #rf_fluidbox(entity) do
+    local filter = rf_fluidbox(entity).get_filter(index)
     if filter and filter.name == fluid then return index end
   end
   return nil
@@ -360,7 +360,7 @@ end
 
 --- The extreme connection of an entity's fluid box `index`, along one axis.
 local function edge_connection(entity, index, pick)
-  local conns = entity.fluidbox.get_pipe_connections(index)
+  local conns = rf_fluidbox(entity).get_pipe_connections(index)
   if not conns or #conns == 0 then error(entity.name .. " has no connections on box " .. index) end
   local best = conns[1].target_position
   for _, c in ipairs(conns) do if pick(c.target_position, best) then best = c.target_position end end
@@ -382,7 +382,7 @@ end
 local function connection_facing(entity, fluid, side)
   local index = box_of(entity, fluid)
   if not index then return nil end
-  for _, c in pairs(entity.fluidbox.get_pipe_connections(index)) do
+  for _, c in pairs(rf_fluidbox(entity).get_pipe_connections(index)) do
     if facing(c) == side then return c end
   end
   return nil
@@ -460,7 +460,7 @@ local function feed(surface, force, entity, fluid, temperature, percentage, mode
   index = index or box_of(entity, fluid)
   if not index then error(label .. ": " .. entity.name .. " has no box that takes " .. fluid) end
   local pipes = {}
-  for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
+  for _, connection in pairs(rf_fluidbox(entity).get_pipe_connections(index)) do
     local pipe = must(surface.create_entity({
       -- The plasma set carries its own connection category (#26), so a vanilla infinity pipe cannot
       -- reach a plasma box at all. Write-PlasmaFeed exists for exactly that and FEED is its output.
@@ -617,13 +617,13 @@ local function build_cell(surface, force, o)
     -- plumbed to -- so the heater has no segment to ask (#47, ADR 0011; check-breeding.ps1 carries
     -- the same finding about the collector's boxes). The heater's connection into that pipe is
     -- checked separately, since a pipe run reaching the reactor says nothing about its far end.
-    local from = line[1].fluidbox.get_fluid_segment_id(1)
-    local to   = first.fluidbox.get_fluid_segment_id(1)
+    local from = rf_fluidbox(line[1]).get_fluid_segment_id(1)
+    local to   = rf_fluidbox(first).get_fluid_segment_id(1)
     if from == nil or from ~= to then
       error(string.format("%s: the feed line and the reactor are on segments %s and %s",
         label, tostring(from), tostring(to)))
     end
-    if #heater.fluidbox.get_connections(box_of(heater, o.plasma)) == 0 then
+    if #rf_fluidbox(heater).get_connections(box_of(heater, o.plasma)) == 0 then
       error(label .. ": the heater's plasma outlet is not connected to the feed line")
     end
     cell.line = line
@@ -727,7 +727,7 @@ end
 local function sample(cell)
   local s = { sold = cell.sold, flows = flows(cell.poles[1]), plasma = {}, buffer = {}, status = {} }
   for i, reactor in ipairs(cell.reactors) do
-    local box = reactor.fluidbox[1]
+    local box = rf_fluidbox(reactor)[1]
     s.plasma[i]  = box and { amount = box.amount, temperature = box.temperature, name = box.name } or nil
     s.buffer[i]  = reactor.energy
     s.status[i]  = status_name(reactor.status)
@@ -739,10 +739,10 @@ local function sample(cell)
   -- the box and the segment are two stores (#516), so the box's amount says nothing about this.
   if cell.line then
     local held = 0
-    for _, amount in pairs(cell.line[1].fluidbox.get_fluid_segment_contents(1) or {}) do
+    for _, amount in pairs(rf_fluidbox(cell.line[1]).get_fluid_segment_contents(1) or {}) do
       held = held + amount
     end
-    s.line = { pipes = #cell.line, capacity = cell.line[1].fluidbox.get_capacity(1), held = held }
+    s.line = { pipes = #cell.line, capacity = rf_fluidbox(cell.line[1]).get_capacity(1), held = held }
   end
   -- What the cell is actually being supplied at the moment of the reading. Sampled rather than
   -- assumed from the schedule: the first version of this rig scheduled cuts that never landed, and
@@ -860,10 +860,10 @@ script.on_event(defines.events.on_tick, function()
     if cell.drain then
       local moved = 0
       for _, reactor in ipairs(cell.reactors) do
-        local produced = reactor.fluidbox[cell.energy_index]
+        local produced = rf_fluidbox(reactor)[cell.energy_index]
         if produced then
           moved = moved + produced.amount
-          reactor.fluidbox[cell.energy_index] = nil
+          rf_fluidbox(reactor)[cell.energy_index] = nil
         end
       end
       cell.sold = cell.sold + moved
@@ -878,7 +878,7 @@ script.on_event(defines.events.on_tick, function()
   if tick % TRACE_EVERY == 0 then
     for _, label in ipairs(storage.order) do
       local cell = cells[label]
-      local box  = cell.reactors[1].fluidbox[1]
+      local box  = rf_fluidbox(cell.reactors[1])[1]
       local f    = flows(cell.poles[1])
       cell.trace = cell.trace or {}
       -- Both flow categories, because which of them is consumption is not known until the report
@@ -927,9 +927,9 @@ script.on_event(defines.events.on_tick, function()
       -- scripts/check-pooling.ps1 does, for the same reason.
       if cell.seed then
         local reactor = cell.reactors[1]
-        reactor.fluidbox[1] = {
+        rf_fluidbox(reactor)[1] = {
           name = cell.seed, temperature = 1e6,
-          amount = reactor.fluidbox.get_capacity(1) * THIN,
+          amount = rf_fluidbox(reactor).get_capacity(1) * THIN,
         }
       end
     end
@@ -1246,7 +1246,7 @@ script.on_nth_tick(REPORT, function()
   -- sells most of what leaves the plasma whether or not any of it came from fusion -- so a thin
   -- reactor costs a fraction of its heating and not the whole of it.
   local seeded   = snaps.lit.boundary.plasma[1]
-  local capacity = cells.boundary.reactors[1].fluidbox.get_capacity(1)
+  local capacity = rf_fluidbox(cells.boundary.reactors[1]).get_capacity(1)
   record(seeded ~= nil and seeded.amount <= capacity * THIN * 1.1,
     "boundary: the charge really did land thin, so the cell is measuring what it was built to",
     seeded and string.format("%.4g u of %.4g (%.2f%%), seeded at %.2f%% and cold",

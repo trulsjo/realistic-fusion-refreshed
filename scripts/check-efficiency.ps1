@@ -170,8 +170,8 @@ end
 
 local function holds(entity, fluid)
   local total = 0
-  for index = 1, #entity.fluidbox do
-    local contents = entity.fluidbox[index]
+  for index = 1, #rf_fluidbox(entity) do
+    local contents = rf_fluidbox(entity)[index]
     if contents and contents.name == fluid then total = total + contents.amount end
   end
   return total
@@ -295,7 +295,7 @@ script.on_event(defines.events.on_tick, function()
   -- accept, and a clamp raised without the fluid would have failed at load rather than here.
   local pinned = cells.unfusing.reactor
   if pinned.valid then
-    pinned.fluidbox[1] = {
+    rf_fluidbox(pinned)[1] = {
       name = DD, amount = 1, temperature = prototypes.fluid[DD].max_temperature,
     }
   end
@@ -308,7 +308,13 @@ script.on_event(defines.events.on_tick, function()
   local sold = storage.sold
   for key, one in pairs(cells) do
     if one.reactor.valid then
-      sold[key] = sold[key] + one.reactor.remove_fluid({ name = SELLS[key], amount = 1e9 })
+      local box = rf_fluidbox(one.reactor)
+      local index = rf_box_of(one.reactor, SELLS[key])
+      local energy = box[index]
+      if energy then
+        sold[key] = sold[key] + energy.amount
+        box[index] = nil
+      end
     end
   end
 end)
@@ -343,7 +349,7 @@ script.on_nth_tick(CHECK_AT, function()
 
   -- THE CONTROL FOR THAT EQUALITY. If the two plasmas had drifted apart the ratio above would be
   -- measuring two things at once, and would still be somewhere near 1.1.
-  local none_plasma, full_plasma = c.none.reactor.fluidbox[1], c.full.reactor.fluidbox[1]
+  local none_plasma, full_plasma = rf_fluidbox(c.none.reactor)[1], rf_fluidbox(c.full.reactor)[1]
   record(none_plasma ~= nil and full_plasma ~= nil
     and math.abs(full_plasma.temperature - none_plasma.temperature)
         <= 1e-6 * none_plasma.temperature,
@@ -379,7 +385,7 @@ script.on_nth_tick(CHECK_AT, function()
   local seconds = game.tick / 60
   local returned_w = sold.unfusing * SPEC.energy_fluid_j_per_unit / seconds
   local drawn_w = SPEC.heating_power_w
-  local pinned_plasma = c.unfusing.reactor.fluidbox[1]
+  local pinned_plasma = rf_fluidbox(c.unfusing.reactor)[1]
   record(pinned_plasma ~= nil
     and pinned_plasma.temperature >= prototypes.fluid[DD].max_temperature * (1 - 1e-9)
     and pinned_plasma.amount <= 1 + 1e-6,

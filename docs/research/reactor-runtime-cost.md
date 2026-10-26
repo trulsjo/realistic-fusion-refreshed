@@ -34,6 +34,7 @@ same sitting, and this table holds no later per-reactor cost for those configura
 | `rf-reactor` buffer ceiling, declared `buffer_capacity = "10MJ"` | 10,666,666.67 J | 2026-08-20 | 2.0.77 | not stated | [The rule](#the-rule) |
 | Vanilla `accumulator`, held against declared | Ratio 1.0 | 2026-08-20 | 2.0.77 | not stated | [What the ratio does **not** apply to, which is why this note claims a rule and not a law](#what-the-ratio-does-not-apply-to-which-is-why-this-note-claims-a-rule-and-not-a-law) |
 | `assembling-machine-2` with `buffer_capacity` forced to `"10MJ"`, energy held | 2,755.56 J | 2026-08-20 | 2.0.77 | not stated | [What the ratio does **not** apply to, which is why this note claims a rule and not a law](#what-the-ratio-does-not-apply-to-which-is-why-this-note-claims-a-rule-and-not-a-law) |
+| `assembling-machine-2` with `buffer_capacity` forced to `"10MJ"`, energy held, at 150 kW and at 300 kW | 10,666,666.67 J | 2026-10-26 | 2.1.23 | not stated | [What the ratio does **not** apply to, which is why this note claims a rule and not a law](#what-the-ratio-does-not-apply-to-which-is-why-this-note-claims-a-rule-and-not-a-law) |
 | D-D vented, rig, `-Gap 6`, *n* = 200, `scriptUpdate` | 3.68 µs per reactor | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
 | D-D collected, rig, `-Gap 6`, *n* = 200, `scriptUpdate` | 4.84 µs per reactor | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
 | D-D blanketed, rig, `-Gap 6`, *n* = 200, `scriptUpdate` — the worst of the five configurations | 5.44 µs per reactor | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
@@ -1413,6 +1414,11 @@ directly — rather than a declared capacity it holds 16/15 of.
   `(5000 + 166.67) * 16/15`, exactly double. So for that entity the declared figure is not a floor,
   not a ceiling and not a hint; it is discarded, and the buffer is sized from the machine's own
   consumption instead. The ratio survives; only the thing it multiplies changes.
+
+  **On Factorio 2.1.23 it no longer does** (2026-10-26, #770). Both machines hold
+  **10,666,666.67 J**, 16/15 of the declared 10 MJ, the same as every other non-accumulator here,
+  so on 2.1.23 the assembling machine is no exception. The figures above are 2.0.77's.
+  `check-buffer.ps1` now holds both machines to 16/15.
 
 **Where 16/15 comes from is not established.** It is 64/60, which looks like a per-tick conversion
 made against 64 rather than 60, and that is a guess about engine internals with no evidence behind

@@ -50,6 +50,11 @@
                     nothing else changed. It exists because one machine can only fit a formula to
                     one number.
 
+                    On 2.0.77 both ignored the declared figure and held their usage plus drain per
+                    tick, times 16/15: 2,755.56 J and 5,511.11 J. On 2.1.23 both hold 16/15 of the
+                    declared 10 MJ, 10,666,666.67 J, like every other non-accumulator here
+                    (2026-10-26, #770).
+
     The variants exist to tell the candidate explanations apart rather than to pick between them.
     A ratio that is the same at 1, 7, 10 and 100 MJ is not a rounding; one that is the same at
     6 MW, 60 MW, 600 MW and unlimited is not the engine reserving a tick of inflow; one that shows
@@ -295,7 +300,7 @@ script.on_init(function()
         name = "rf-d-d-plasma", percentage = 1, temperature = 6e8, mode = "at-least",
       })
       local joined = false
-      for _, connection in pairs(entity.fluidbox.get_pipe_connections(1)) do
+      for _, connection in pairs(rf_fluidbox(entity).get_pipe_connections(1)) do
         if connection.target then joined = true end
       end
       if not joined then error(case.label .. ": the plasma feed reaches nothing") end
@@ -415,7 +420,6 @@ try {
     $held        = @{}
     $ratio       = @{}
     $peak        = @{}
-    $consumption = @{}
     $swing       = @{}
     $heatingTick = 0
     foreach ($line in $reported) {
@@ -425,9 +429,6 @@ try {
         }
         elseif ($line -match '^peak\s+(?<label>\S+)\s+max=(?<max>\S+)\s') {
             $peak[$Matches.label] = [double] $Matches.max
-        }
-        elseif ($line -match '^proto\s+(?<label>\S+)\s+.*\sdrain_per_tick=(?<drain>\S+)\s+usage_per_tick=(?<usage>\S+)\s') {
-            $consumption[$Matches.label] = [double] $Matches.drain + [double] $Matches.usage
         }
         elseif ($line -match '^swing\s+(?<label>\S+)\s+max_step=(?<step>\S+)\s+heating_per_tick=(?<heat>\S+)$') {
             $swing[$Matches.label] = [double] $Matches.step
@@ -440,8 +441,10 @@ try {
     # merely nearby, and noticing exactly that is what this script is for.
     $expected = 16 / 15
     $failures = @()
+    # The two assembling machines joined this list on 2.1.23. On 2.0.77 they ignored the declared
+    # figure and held their usage plus drain per tick, times the same 16/15 (#770).
     foreach ($label in @('driven', 'dry', 'same', 'flow-6', 'flow-600', 'no-limit',
-                         'buffer-1', 'buffer-7', 'buffer-100', 'tertiary')) {
+                         'buffer-1', 'buffer-7', 'buffer-100', 'tertiary', 'machine-10', 'machine-2x')) {
         if (-not $ratio.ContainsKey($label)) { $failures += "${label}: no clamp reading"; continue }
         if ([math]::Abs($ratio[$label] - $expected) -gt 1e-9) {
             $failures += ('{0}: holds {1} times its declared capacity, not 16/15' -f $label, $ratio[$label])
@@ -451,22 +454,6 @@ try {
         if (-not $ratio.ContainsKey($label)) { $failures += "${label}: no clamp reading"; continue }
         if ([math]::Abs($ratio[$label] - 1) -gt 1e-9) {
             $failures += ('{0}: holds {1} times its declared capacity, not exactly it' -f $label, $ratio[$label])
-        }
-    }
-    # An assembling machine ignores the declared figure outright, which is a third behaviour again
-    # and the reason this script claims no single rule for every electric energy source.
-    foreach ($label in @('machine-10', 'machine-2x')) {
-        if (-not $ratio.ContainsKey($label)) { $failures += "${label}: no clamp reading"; continue }
-        if ($ratio[$label] -ge 1) {
-            $failures += ('{0}: honoured its declared 10 MJ ({1} J); it did not before' -f $label, $held[$label])
-        }
-        # What it holds instead: its own energy usage plus its drain, per tick, times the same
-        # 16/15. Asserted at both usages rather than fitted at one, which is the difference between
-        # a formula that describes a number and one that predicts the next.
-        $fromUsage = $consumption[$label] * $expected
-        if ([math]::Abs($held[$label] - $fromUsage) -gt 1e-6 * $fromUsage) {
-            $failures += ('{0}: holds {1} J, not the {2} J its usage plus drain would give' -f
-                $label, $held[$label], $fromUsage)
         }
     }
     # The reactor the simulation drives and the clone it never touches peak ONE TICK OF HEATING
@@ -546,8 +533,8 @@ try {
         throw ('buffer behaviour has moved since 2.0.77: {0} of the recorded facts no longer hold.' -f $failures.Count)
     }
     Write-Host ('OK - every non-accumulator buffer holds 16/15 of its declared capacity ' +
-        '({0:N2} MJ against a declared 10 MJ), both accumulators hold exactly theirs, and an ' -f ($held['same'] / 1e6) +
-        'assembling machine ignores the figure. See docs/research/reactor-runtime-cost.md.')
+        '({0:N2} MJ against a declared 10 MJ), assembling machines included, and both accumulators ' -f ($held['same'] / 1e6) +
+        'hold exactly theirs. See docs/research/reactor-runtime-cost.md.')
     Write-Host ('     The driven reactor''s buffer moved at most {0:N0} J in a tick, against the {1:N0} J a tick of heating costs, so its draw is steady (#72).' -f
         $swing['driven'], $heatingTick)
 }
