@@ -238,8 +238,8 @@ local function must(entity, what)
 end
 
 local function box_of(entity, fluid)
-  for index = 1, #entity.fluidbox do
-    local filter = entity.fluidbox.get_filter(index)
+  for index = 1, #rf_fluidbox(entity) do
+    local filter = rf_fluidbox(entity).get_filter(index)
     if filter and filter.name == fluid then return index end
   end
   return nil
@@ -250,7 +250,7 @@ end
 local function feed(surface, force, entity, fluid, temperature)
   local index = box_of(entity, fluid)
   if not index then error(entity.name .. " has no box that takes " .. fluid) end
-  for _, connection in pairs(entity.fluidbox.get_pipe_connections(index)) do
+  for _, connection in pairs(rf_fluidbox(entity).get_pipe_connections(index)) do
     local supply = must(surface.create_entity({
       -- Energy comes from the shared feed, water and steam from a vanilla pipe. They were the same
       -- entity until #86 contained reactor energy; a vanilla one cannot reach an energy box now.
@@ -312,7 +312,7 @@ local function bolt(surface, force, name, fluid, side, tile, seed)
   local index = box_of(probe, fluid)
   if not index then error(name .. " has no box filtered to " .. fluid) end
   local found
-  for _, c in pairs(probe.fluidbox.get_pipe_connections(index)) do
+  for _, c in pairs(rf_fluidbox(probe).get_pipe_connections(index)) do
     if facing(c) == side then found = c end
   end
   if not found then error(name .. " has no " .. side .. "-facing " .. fluid .. " connection") end
@@ -325,7 +325,7 @@ end
 
 --- The connection of `entity`'s box on `fluid` that faces `side`, or nil.
 local function connection_facing(entity, fluid, side)
-  for _, c in pairs(entity.fluidbox.get_pipe_connections(box_of(entity, fluid))) do
+  for _, c in pairs(rf_fluidbox(entity).get_pipe_connections(box_of(entity, fluid))) do
     if facing(c) == side then return c end
   end
   return nil
@@ -560,14 +560,14 @@ script.on_event(defines.events.on_tick, function()
   -- row holds is bounded by the joints and never by the supply.
   local p = storage.plant
   if p and p.reactor.valid then
-    p.reactor.fluidbox[p.energy_box] = { name = ENERGY, amount = 1000 }
+    rf_fluidbox(p.reactor)[p.energy_box] = { name = ENERGY, amount = 1000 }
   end
   for key, exchanger in pairs({ hc = r.hc_exchanger, ordinary = r.exchanger }) do
     local index = box_of(exchanger, "steam")
-    local produced = index and exchanger.fluidbox[index]
+    local produced = index and rf_fluidbox(exchanger)[index]
     if produced then
       storage.steam[key] = storage.steam[key] + produced.amount
-      exchanger.fluidbox[index] = nil
+      rf_fluidbox(exchanger)[index] = nil
     end
   end
 end)
@@ -590,16 +590,16 @@ script.on_nth_tick(CHECK_AT, function()
 
   local function derived(name)
     local p = prototypes.entity[name]
-    return p.fluid_usage_per_tick * 60
+    return p.get_fluid_usage_per_tick() * 60
       * (p.maximum_temperature - steam.default_temperature) * steam.heat_capacity
       * (p.effectivity or 1)
   end
 
   -- Vanilla first, as the control on the formula itself. If this line is wrong then every figure
   -- below it is measuring the formula rather than the machine.
-  near(derived(TURBINE), prototypes.entity[TURBINE].max_power_output * 60, 1e-6,
+  near(derived(TURBINE), prototypes.entity[TURBINE].get_max_power_output() * 60, 1e-6,
     "the output formula reproduces vanilla's steam turbine", "W")
-  near(derived(HC_TURBINE), prototypes.entity[HC_TURBINE].max_power_output * 60, 1e-6,
+  near(derived(HC_TURBINE), prototypes.entity[HC_TURBINE].get_max_power_output() * 60, 1e-6,
     "and rf-hc-turbine's declared max_power_output matches the steam it drinks", "W")
 
   -- ------------------------------------------------------------ measured, running
@@ -709,7 +709,7 @@ script.on_nth_tick(CHECK_AT, function()
   end
   local function held(entity, fluid)
     local index = box_of(entity, fluid)
-    local contents = index and entity.fluidbox[index]
+    local contents = index and rf_fluidbox(entity)[index]
     return contents and contents.amount or 0
   end
 
@@ -743,7 +743,7 @@ script.on_nth_tick(CHECK_AT, function()
     elseif f and f.name == ENERGY then tally.energy = tally.energy + 1
     else tally.other = tally.other + 1 end
   end
-  local control_water = #p.aloof.fluidbox.get_pipe_connections(box_of(p.aloof, "water"))
+  local control_water = #rf_fluidbox(p.aloof).get_pipe_connections(box_of(p.aloof, "water"))
   record(tally.energy == 0 and tally.other == 0 and tally.water == 1 + control_water,
     "one water feed serves the row, and no pipe carries reactor energy",
     string.format("water %d (row 1 + control %d), energy %d, other %d", tally.water, control_water, tally.energy, tally.other))
