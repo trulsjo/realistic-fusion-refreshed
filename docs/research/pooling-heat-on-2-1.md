@@ -45,8 +45,11 @@ and as `get_fluid_segment_fluid(1)` on the westmost reactor, the segment's own r
 
 **`realistic-fusion-refreshed`'s `on_tick` runs before the probe's.** *Measured*: `solo`, which
 has no pipe and so moves only when the mod steps it, read a different heat on tick 306 from tick
-305. #791's bookkeeping rows read on a step tick, after that tick's step, so their window held the
-next step. Their three-reactor figure was 77.1%, the share `w3` keeps here.
+305. *Inferred* from that: #791's bookkeeping rows, whose rig depended on the mod as this probe's
+does, read on a step tick after that tick's step, so their window held the next step. Their rig's
+comment said the opposite, that its handler ran first, "measured, not assumed"; that was on
+2.0.77, and the rows are gone from `check-pooling.ps1` since #791. Their three-reactor figure was
+77.1%, the share `w3` keeps here.
 
 Beside each figure the probe prints what reading 1 predicts. It replays the step's writes in Lua.
 Each write replaces its reactor's share of the run, and the run is then shared out by volume at
@@ -96,8 +99,8 @@ registered. `w3` is #791's `bare`.
 | `w2` | 2 of 3 | 1.94582×10⁹ | 1.70258×10⁹ | 87.50% | 87.50% |
 | `w3` | 3 of 3 | 2.79818×10⁹ | 2.15692×10⁹ | 77.08% | 77.08% |
 
-- **`w3` keeps #791's share.** *Measured*: 77.08%, where #791's `bare` kept 77.1% across the next
-  step, 2.14802×10⁹ of 2.78662×10⁹ predicted.
+- **`w3` keeps #791's share.** *Measured*: 77.08%, where #791's `bare` kept 77.1%, 2.14802×10⁹ of
+  2.78662×10⁹ predicted, across what was *Inferred* above to be the next step.
 - **The loss grows with the number of writers on a run, and the replay of reading 1 gives every
   figure.** *Measured*. One writer keeps all of it, whatever else is on the run.
 
@@ -110,7 +113,8 @@ the run and the east one's cools it. `o-ab` registers the west one first and `o-
 first. `o-ba-built` is also built east first, so the east reactor has the lower `unit_number`.
 
 The three are registered on tick 299, one step before the step read. `spend()` in `control.lua`
-pays only a reactor `update()` has stepped, so the step on tick 300 pays neither reactor and
+pays only a reactor `update()` has stepped (*Read from source*: it pays where
+`storage.heating_spent` holds the reactor's key, and `update()` writes that key), so the step on tick 300 pays neither reactor and
 leaves all three cells in one state. The step read is their second.
 
 | cell | registered | west, east `unit_number` | predicted, unit-K | kept | replay, registration order | replay, `unit_number` order |
