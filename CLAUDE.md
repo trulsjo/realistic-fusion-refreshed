@@ -39,9 +39,10 @@ about whether a change is safe. What each proves, in a line:
   research note's `## Current figures` table, what the shared Markdown check reads in every
   tracked `.md` as staged (#658), the width of the files `docs/agents/code-review.md` names as
   wrapped, that a gate's `-SelfTest` help that names any of its halves names all of them
-  (#756), that neither the two review skills nor the markdown-only test reads the local
-  `main` (#762), and that every `scripts/check-*.ps1` sources `scripts/factorio-lib.ps1` and a
-  stand-in rig's run leaves its report in `.rig-reports/` (#794).
+  (#756), and that neither the two review skills nor the markdown-only test reads the local
+  `main` (#762). It also checks that every `scripts/check-*.ps1` sources
+  `scripts/factorio-lib.ps1`, and that a stand-in rig's run leaves its report in
+  `.rig-reports/` (#794).
 - **The shared locale check and `scripts/name-check.ps1`** only dump prototypes and create no
   map, so a pass there says nothing about runtime.
 
