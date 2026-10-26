@@ -146,6 +146,10 @@ from `<this session's checkout>` by its full path, and run no command there."
    > above, and no `git switch`, `stash`, `reset` or `worktree`. Run no gate, leave nothing
    > running in the background, and ask no other agent: send no message.
    >
+   > A candidate about another mod's versions, dependencies or releases is checked against its
+   > portal entry, `https://mods.factorio.com/api/mods/<name>/full`, and its line names the
+   > release you read (#780).
+   >
    > Return one line for each candidate: its letter, a verdict, and the evidence in a sentence.
    > The verdict is **real** when the source shows the fault, **not real** when the source shows
    > there is none or the fault is not this pull request's, and **not verified** when you could
@@ -185,7 +189,9 @@ from `<this session's checkout>` by its full path, and run no command there."
 7. **Fix, and have the pre-PR reviewer confirm.** `docs/agents/code-review.md` says, in the
    fourth rule, what becomes of a candidate found real or not verified, who confirms the fixes
    and from which diff, and that the class of a finding the pre-PR review missed is named in the
-   pull request. A fix held under #643 and #653 is in that diff.
+   pull request. A fix held under #643 and #653 is in that diff. The same rule names the fixes put
+   to Truls before they are written (#782), and the diff's commits go into `reviewed.txt` as step
+   4 of `/pre-pr-review` says (#781).
 
    **Each edit of the body is checked before it is sent** (#730), as step 6 of `/pre-pr-review`
    runs `pr-body-check.ps1`: the edit that adds step 4's line on the reflog, and each edit for

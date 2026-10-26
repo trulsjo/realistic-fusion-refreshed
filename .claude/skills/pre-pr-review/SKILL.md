@@ -29,6 +29,7 @@ pass.
    git fetch origin main                   # moves origin/main only
    git tag -f pre-pr-reviewed HEAD         # the reviewed commit; step 4 needs it. Never pushed
    git diff --output="<scratch>/branch.diff" origin/main...HEAD
+   git log --format=%s origin/main..HEAD >> "<scratch>/reviewed.txt"   # step 5 checks it (#781)
    ```
 
    **Have git write the file, and quote the path** (#635). Both lines run unchanged in Git Bash
@@ -110,7 +111,11 @@ pass.
 
    ```
    git diff --output="<scratch>/fixes.diff" pre-pr-reviewed..HEAD
+   git log --format=%s pre-pr-reviewed..HEAD >> "<scratch>/reviewed.txt"
    ```
+
+   Every diff sent to the reviewer, here, in step 5, in step 7 and for the plugin pass's fixes,
+   adds its commits' subjects to `<scratch>/reviewed.txt` the same way, from its own range (#781).
 
    > `<scratch>/fixes.diff` is every change made since your review. For each of your findings,
    > say whether it is fixed, from the diff alone. Where your finding named a group, check the
@@ -123,11 +128,14 @@ pass.
    on purpose is named to the reviewer as left, with the reason, and nothing more.
 
    Before writing a fix, read what *Review the prose, not only the code* in
-   `docs/agents/code-review.md` asks of the session that writes one (#632).
+   `docs/agents/code-review.md` asks of the session that writes one (#632), and the paragraph under
+   *A review before the pull request, and the plugin pass after it* on the fixes put to Truls
+   first (#782).
 
    **When a finding corrects a figure or a claim, reword the commits that state the old one**
-   (#640). The rule, and where it stops, is in `docs/agents/code-review.md` under *A review before
-   the pull request, and the plugin pass after it*. Find them, write the corrected message to
+   (#640), unless the fix's own message names what it corrects (#783). The rule, and where it
+   stops, is in `docs/agents/code-review.md` under *A review before the pull request, and the
+   plugin pass after it*. Find them, write the corrected message to
    `<scratch>/msg.txt` with the Write tool, and reword one commit at a time. These lines are for
    Git Bash, with `<scratch>` written with forward slashes: `cp` is handed the path unquoted.
 
@@ -159,11 +167,23 @@ pass.
 
    Done when the reviewer has answered for every finding of its review.
 
-5. **Before anything is written to the pull request's body, invoke the `mattpocock-skills:pr`
-   skill** with the Skill tool for `## Summary`, `## Evidence` and `## Merge Danger` (#738, #748);
-   where it is not installed, write them by hand to the shape of its template, which
-   `docs/agents/code-review.md` lists. Put one `Closes #N` line per ticket above them, and the
-   `## Pre-PR review` section below them, as `docs/agents/issue-tracker.md` requires (#730).
+5. **Before anything is written to the pull request's body, show that a reviewer was handed every
+   commit** (#781). `docs/agents/code-review.md` has the rule under *A review before the pull
+   request, and the plugin pass after it*. In Git Bash:
+
+   ```
+   git log --format="%h %s" origin/main..HEAD | grep -vFf "<scratch>/reviewed.txt"
+   ```
+
+   Each line it prints is a commit no reviewer was handed. A held fix (#643) is the one allowed;
+   stop on any other and send it to the reviewer first, as step 4 sends a fix.
+
+   **Then invoke the `mattpocock-skills:pr` skill** with the Skill tool for `## Summary`,
+   `## Evidence` and `## Merge Danger` (#738, #748); where it is not installed, write them by hand
+   to the shape of its template, which `docs/agents/code-review.md` lists. Put one `Closes #N`
+   line per ticket above them, and the `## Pre-PR review` section below them, as
+   `docs/agents/issue-tracker.md` requires (#730). That section opens by naming each diff the
+   reviewer was handed by the subjects of its commits.
 
    **Then answer for each thing the reviewer said it did not check** (#636). *A review before the
    pull request, and the plugin pass after it* in `docs/agents/code-review.md` says how an item is
@@ -185,10 +205,10 @@ pass.
    | 1 | one line, in the reviewer's terms | file, and the symbol or quoted words | yes, confirmed |
    | 2 | … | … | no: the reason it was left |
 
-   **Fixed** is `yes, confirmed` only when the reviewer has said so; otherwise
-   `yes, not confirmed` or `no: <reason>`. The findings carry no score (#610). A review that found
-   nothing says that in the body in place of the table, below step 5's outcomes for what the
-   reviewer said it did not check. A cell that names a commit of the branch names it by its
+   **Fixed** is `yes, confirmed` only when the reviewer has said so; otherwise `yes, not confirmed`,
+   `left: waits on Truls` (#782) or `no: <reason>`. The findings carry no score (#610). A review
+   that found nothing says that in the body in place of the table, below step 5's outcomes for what
+   the reviewer said it did not check. A cell that names a commit of the branch names it by its
    subject in quotes, not its hash (#730).
 
    **Check the body before it is sent** (#730), each time, the first `gh pr create` and every
@@ -256,7 +276,9 @@ pass.
    comment or a help block as much as a `.md` file. What the reading turns up is fixed and
    committed, its diff is sent to the reviewer in a message of its own as step 4 sends one, and
    what that fix changed is read again. **A fix that only corrects a count gets no message**
-   (#665): the rule says which fix that is. Commit it and read again what it changed.
+   (#665): the rule says which fix that is. Commit it and read again what it changed. Then run
+   step 5's `git log` line again (#781): a fix that only corrects a count is the one line it may
+   print now.
 
    Done when the body has, under the `## Pre-PR review` heading, a line that names what was read
    again and the head it was read on, the last one if a fix moved it, by its subject (#730):

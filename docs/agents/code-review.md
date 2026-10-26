@@ -243,6 +243,15 @@ a fix corrected one row of a group and not the others, and the confirmation pass
 of the plugin pass's five findings were what the fix for the pre-PR review's first finding had left
 behind.
 
+**A claim about another mod is read from its portal entry before it is judged or rewritten**
+(2026-10-26, #780). Its versions, dependencies and releases are in
+`https://mods.factorio.com/api/mods/<name>/full`. A reviewer or a verifier that judges such a claim
+reads that entry and names the release it read, and a fix that rewrites one reads it first. On #779
+the plugin pass's verifier found false that Durikkan's port "can stay installed beside" the mods, on
+the grounds of `name-check.ps1`'s help, which says nothing of the port, and the fix rewrote the
+sentence in five player-facing texts. The port's release 1.9.5, of 2026-10-24, declares
+`factorio_version` 2.1, and `c43cc45` put the sentence back.
+
 **A change that adds or rewords a review rule applies it to the case that prompted it, before its
 first commit** (2026-10-15, #714). The session applies the rule to that case across the tracked
 files, by the rule's own search where it gives one, and reads each hit against the new wording; the
@@ -269,7 +278,7 @@ request's body is last edited, the session reads each of these again against the
   the count went stale twice, at 7 and at 11 of 14;
 - **the branch's own commit messages**, each statement of what the change does against the code at
   the head. A message that a later commit made false is reworded, as the fourth rule says of one a
-  review corrects.
+  review corrects, unless the later commit's message names what it corrects (#783).
 
 **The body then says what was read again, and on which commit**, named by its subject in quotes
 (#730). A reading that names no commit cannot be told from one made before the last fix. **What the
@@ -408,6 +417,17 @@ is handed and not by a skill's name:
 brief and the confirmation's as templates for the session to fill in. The list above is still the
 definition, and a review handed those three things is the pre-PR review whatever started it.
 
+**Every commit on the branch is in a diff a pre-PR reviewer was handed, before the body is first
+written** (Truls, 2026-10-26, #781). The review's diff, each confirmation's and each fix sent in a
+message of its own hold commits, and the session keeps the subjects of each one's. Before the body
+is first written it lists every commit of `origin/main..HEAD` against them and stops on one none
+held, which goes to a reviewer first. A held fix (#643) is the one commit left out then, and it is
+marked `yes, not confirmed`. After the last fix commit the list is made again, and a fix that only
+corrects a count (#665) is then the one left out. The body's `## Pre-PR review` names each diff by
+the subjects of its commits. On #779 the branch carried four groups of commits, each meant for a
+review of its own, and the port's commit had none until the pull request was open: the brief of ADR
+0042's reviewer said it had been reviewed. Truls chose this check over one review of a whole branch.
+
 **A probe's raw output is its last report, in `.probe-reports/`** (2026-10-12, #589). A
 `scripts/probe-*.ps1` that sources `scripts/factorio-lib.ps1` leaves what it printed there, in a
 file named for the probe and its arguments. Under the four lines PowerShell opens a transcript
@@ -515,6 +535,14 @@ measurement was first counted over 16 subagents, the pre-PR review showed there 
 file says 27. The body of commit `15b5b46` on `main` still says "on the 16 subagents of one
 session".
 
+**A message that a later commit on the same unmerged branch corrects is left, when the later
+commit's message names what it corrects** (Truls, 2026-10-26, #783). The reword stays for a claim
+that nothing later on the branch corrects. The push still asks Truls each time, as he ruled the same
+day: no permission rule lets `git push --force-with-lease` run without a prompt. On #779, by #783's
+account and not re-read here, five rewords after the pull request opened took three such pushes, the
+first refused by Claude Code's auto mode until Truls allowed it, and four of the five went back to a
+reviewer.
+
 **A commit body takes its reason from the ticket, and leaves what the change says to the diff**
 (2026-10-10, #671). This binds every commit on a branch from the first, before a review has read it.
 The body says why the change was made and cites the ticket, and names the file or the symbol the
@@ -568,6 +596,16 @@ request is open.
 
 **A candidate the plugin pass's verifier finds real or not verified is fixed, or left with its
 reason written in the pull request's body.** The first rule says what a verdict decides.
+
+**Two kinds of fix are put to Truls before they are written, whichever pass raised the finding**
+(2026-10-26, #782): one that adds or widens a load-time `error()` in a mod's shipped Lua, and one
+that edits `CLAUDE.md`. The first can decide whether a save loads, and the second what every session
+is told; `CLAUDE.md` says such things are not settled as a side effect. The finding's row reads
+`left: waits on Truls` until he answers. On #779 a pre-PR fix made `check_every_plasma_burns` call
+`error()` when it matched no recipe, which `check_steam_sinks()`'s comment in
+`realistic-fusion-refreshed/control.lua` says a third-party mod must not be able to cause, and Truls
+narrowed it in `7ac0276`. A plugin-pass fix added a sentence to `CLAUDE.md` that #769 to #771 would
+make stale, and he dropped it in `0b86a84`.
 
 **A plugin-pass finding the pre-PR review missed gets its class named**, by the session that fixes
 it, in the pull request. A class a script can detect becomes a section of `scripts/ship-check.ps1`.
