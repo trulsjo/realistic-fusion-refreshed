@@ -69,7 +69,7 @@ pass.
 
    > You are the pre-PR reviewer of a branch of this repository. Read `docs/agents/code-review.md`
    > in full first; its second rule, *Review the prose, not only the code*, binds you. Then review
-   > `<scratch>/branch.diff` (`<the diff against origin/main | the diff of range>`) against
+   > `<scratch>/branch.diff` (`<the diff against origin/main | the diff of <range>>`) against
    > `<evidence files>`, which hold `<the probes' raw output | the gate results>`.
    >
    > The branch claims to resolve `<#n, #n>`. Read each with the **Read an issue** command in
