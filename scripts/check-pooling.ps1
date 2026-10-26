@@ -87,8 +87,8 @@
                       their own box. On 2.1 rf_fluidbox in factorio-lib.ps1 reads a pipe's with
                       get_fluid_segment_capacity and a machine's with get_fluid_capacity. These rows
                       assert against declared volumes and not stored readings, so every one of
-                      them passing on 2.1.23 says the reads give what the same rows passed on
-                      2.0.77; no 2.0.77 reading is compared read by read.
+                      them passing on 2.1.23 says the reads give values that pass the same rows,
+                      as they did on 2.0.77; no 2.0.77 reading is compared read by read.
 
     A REACTOR'S get_capacity REPORTS ITS OWN BOX, NOT THE RUN. A pipe's reports the run. And that
     holds for an output box with a neighbour (#68), which is the shape all THREE call sites in
@@ -746,8 +746,9 @@ script.on_init(function()
   force.research_all_technologies()
   -- AND THEN PUT EVERY LADDER BACK (#53, #443). Until #771 the bookkeeping rows predicted a step
   -- with logic.reactor, the module's own spec, which a researched force would have run against
-  -- other physics. Those rows are gone, and the ladders are still held at the shipped values, so
-  -- the rig runs the unresearched reactor ADR 0042's 2.1.23 readings were taken on. What research
+  -- other physics. Those rows are gone, and the ladders are still held at the shipped values,
+  -- because no ladder's field is one of this rig's variables, and so the rig runs the unresearched
+  -- reactor ADR 0042's 2.1.23 readings were taken on. What research
   -- does to a reactor is scripts/check-confinement.ps1's subject. READ OFF rf_ladders, and
   -- ASSERTED rather than arranged silently: a rung rf_unresearch missed fails rf_assert_research.
   rf_unresearch(force, logic, logic.reactor)
