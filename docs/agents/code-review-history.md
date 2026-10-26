@@ -397,8 +397,10 @@ One line for each, newest last. The passages above are not edited.
   a file in the git directory, and list `origin/main..HEAD` against them before the body is written
   and after the last fix commit; held fixes and fixes that only correct a count are the commits left
   out. Steps 1, 4, 5 and 7 of `/pre-pr-review` carry it out with `git log` and `LC_ALL=C grep
-  -vxFf`. A commit the reviewer's brief excuses is not kept, and step 3's brief excuses none. No
-  gate reads it. The wording is the session's.
+  -vxFf`. A commit the reviewer's brief excuses is not kept, and step 3's brief excuses none. A
+  branch reviewed in parts gets a review for each part, and the fourth rule's definition of the
+  pre-PR review takes a part's diff; step 1 is given the part's range before it runs. No gate reads
+  it. The wording is the session's.
 - **2026-10-26, #782: a fix that adds or widens a load-time `error()` in shipped Lua, or edits a
   tracked `CLAUDE.md`, is put to Truls before it is written.** Truls decided it in the ticket's
   triage, both cases and only these two, after two fixes on #779 settled his calls. The fourth rule
@@ -411,6 +413,4 @@ One line for each, newest last. The passages above are not edited.
   kept `git push --force-with-lease` prompting. The reword stays for a claim nothing later corrects,
   for a correction that names nothing, and for a finding about a commit message itself. The fourth
   rule says so, the #671 paragraph and the reading after the last fix commit read the same way, and
-  steps 4 and 7 of `/pre-pr-review` point at it. A branch reviewed in parts gets a review for each
-  part, and the fourth rule's definition of the pre-PR review takes a part's diff; step 1 is given
-  the part's range before it runs. No gate reads it. The wording is the session's.
+  steps 4 and 7 of `/pre-pr-review` point at it. No gate reads it. The wording is the session's.
