@@ -411,4 +411,6 @@ One line for each, newest last. The passages above are not edited.
   kept `git push --force-with-lease` prompting. The reword stays for a claim nothing later corrects,
   for a correction that names nothing, and for a finding about a commit message itself. The fourth
   rule says so, the #671 paragraph and the reading after the last fix commit read the same way, and
-  steps 4 and 7 of `/pre-pr-review` point at it. No gate reads it. The wording is the session's.
+  steps 4 and 7 of `/pre-pr-review` point at it. A branch reviewed in parts gets a review for each
+  part, and the fourth rule's definition of the pre-PR review takes a part's diff; step 1 is given
+  the part's range before it runs. No gate reads it. The wording is the session's.
