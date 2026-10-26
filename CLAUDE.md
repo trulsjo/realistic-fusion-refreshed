@@ -275,7 +275,9 @@ until this repo opts in.
 ### Issue tracker
 
 GitHub Issues on `trulsjo/realistic-fusion-refreshed`, via the `gh` CLI. See
-`docs/agents/issue-tracker.md`.
+`docs/agents/issue-tracker.md`. **Read a ticket with that page's *Read an issue* command, which
+fetches its comments** (#786): a ticket's triage brief, which carries Truls's decisions, is in a
+comment, and a session that implements a ticket reads it before it writes anything.
 
 ### Triage labels
 
