@@ -425,7 +425,8 @@ One line for each, newest last. The passages above are not edited.
   decided it in the ticket's triage, after #791's pre-PR reviewer left a `remove_fluid` finding
   unverified and a plugin-pass reviewer could not check it without the 2.1 docs. The pointer goes
   in both review skills' briefs, and not in `code-review.md` or `CLAUDE.md`: `runtime-api.json`
-  and `prototype-api.json` beside the `Factorio.exe` that `Resolve-FactorioExe` resolves. The
+  and `prototype-api.json` in the install's `doc-html`, beside the `bin` that holds the
+  `Factorio.exe` that `Resolve-FactorioExe` resolves. The
   verifier's brief in `/plugin-pass` step 4 gives "not verified" for a claim it could not check
   there, and since #796 `plugin-pass.md`'s paragraph on the verifier says the same. No gate reads
   it. The wording is the session's.
