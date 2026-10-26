@@ -1,9 +1,9 @@
 # The game-free gates (#599): the ones that need neither Factorio nor Blender, so a hosted runner
 # can run them. Every other gate starts the game and runs only where a person starts it -- see
 # scripts/run-gates.ps1. No gate's -SelfTest runs here, the same as there. The body check below is
-# not one of those gates, and its -SelfTest runs here and not there. Three tools under
+# not one of those gates, and its -SelfTest runs here and not there. Four tools under
 # tools/ are not gates and have a --self-test that is all that checks them; those run here, as
-# they do there (#659).
+# they do there (#659, #787).
 #
 # The pull request's body is checked by the shared pr-body-check.ps1 (#730): the pr template's
 # three headings and, since #753, its four markers, no commit cited that is not on main, and no
@@ -59,11 +59,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # The runner's own Python: the three import nothing that has to be installed.
+      # The runner's own Python: the four import nothing that has to be installed, and
+      # review-coverage's builds a repository with the runner's git.
       - name: tools/*.py --self-test
         run: |
           failed=0
-          for tool in refuse-hanging-bash review-usage rewrap; do
+          for tool in refuse-hanging-bash review-usage rewrap review-coverage; do
             echo "::group::$tool"
             python3 "tools/$tool.py" --self-test || { failed=1; echo "::error::$tool failed"; }
             echo "::endgroup::"

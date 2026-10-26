@@ -190,8 +190,8 @@ from `<this session's checkout>` by its full path, and run no command there."
    fourth rule, what becomes of a candidate found real or not verified, who confirms the fixes
    and from which diff, and that the class of a finding the pre-PR review missed is named in the
    pull request. A fix held under #643 and #653 is in that diff. The same rule names the fixes put
-   to Truls before they are written (#782), and the diff's commits go into `pre-pr-reviewed.txt` as step
-   4 of `/pre-pr-review` says (#781).
+   to Truls before they are written (#782), and the diff's commits are recorded as step 4 of
+   `/pre-pr-review` says (#781).
 
    **Each edit of the body is checked before it is sent** (#730), as step 6 of `/pre-pr-review`
    runs `pr-body-check.ps1`: the edit that adds step 4's line on the reflog, and each edit for

@@ -111,10 +111,10 @@ The State section keeps what it runs, when to run it and what it leaves out.
 **`scripts/run-gates.ps1` runs them all in one step** (#567): the Lua suites, `ship-check.ps1`,
 the default `load-check.ps1` and every `scripts/check-*.ps1` it finds, one at a time, one line
 per gate, exiting non-zero and naming each gate that failed. Since #659 it also runs the
-`--self-test` of three scripts under `tools/` that are not gates and that nothing else checks:
-`refuse-hanging-bash.py`, the hook that refuses a Bash command which would hang, which holds
-a heredoc of over 60 lines (#666), or which on Windows holds two backslashes in a row (#682), and
-`review-usage.py` and `rewrap.py`, which a session runs by hand. Each is a line of its own, after
+`--self-test` of scripts under `tools/` that are not gates and that nothing else checks, four
+since #787: `refuse-hanging-bash.py`, the hook that refuses a Bash command which would hang,
+which holds a heredoc of over 60 lines (#666), or which on Windows holds two backslashes in a row
+(#682), and `review-usage.py`, `rewrap.py` and `review-coverage.py`, which a session runs by hand. Each is a line of its own, after
 the Lua suites. **Run it on a branch that combines
 more than one ticket, before the review.** Each ticket's author runs the gates its own change
 touches, and #557 was broken between tickets: #555 changed how `control.lua` writes
@@ -129,12 +129,12 @@ own `-SelfTest` proves with stand-in gates that a failing gate is named and not 
 
 The State section keeps what runs unattended, what stays manual and that the check is advisory.
 
-**One workflow runs four checks and four self-tests unattended** (#599, #659, #730).
+**One workflow runs four checks and five self-tests unattended** (#599, #659, #730, #787).
 `.github/workflows/gates.yml` is the only file under `.github/`, and it runs the game-free gates —
 the ones that need neither Factorio nor Blender — on a pull request and on a push to `main`: each
 `tests/test-*.lua`, `ship-check.ps1`, and `commit-check.ps1` over the commits that event brought.
-Since #659 a third job runs the `--self-test` of the same three scripts under `tools/` that
-`run-gates.ps1` runs. Since #730 a job runs the shared `pr-body-check.ps1` on a pull request's body,
+Since #659 a third job runs the `--self-test` of the same scripts under `tools/` that
+`run-gates.ps1` runs, four since #787. Since #730 a job runs the shared `pr-body-check.ps1` on a pull request's body,
 again when the body is edited, which no other job runs on, and the `pwsh` job, "ship-check and
 commit-check", runs that script's `-SelfTest`; `run-gates.ps1` runs neither. A pull request with a
 merge conflict gets no run at all, which looks the same as one not yet run. The one other check
@@ -293,3 +293,7 @@ One line for each change to a gate, newest last, with its date and its ticket.
   `load-check.ps1`, its `-FromZips` and `name-check.ps1` pass; no gate's `-SelfTest` has been run
   on 2.1.23. Twelve of the 24 gates `run-gates.ps1` runs fail there, each on its own 2.0 read,
   until #769 to #771.
+- 2026-10-26, #787: `run-gates.ps1` and the workflow's tools job run a fourth tool's
+  `--self-test`, `tools/review-coverage.py`'s, which builds a repository in a temporary directory.
+  It proves that `check` names a commit no review was handed and exits 1, that a recorded reword
+  covers the reworded commit, and that a subject recorded under another branch covers nothing.

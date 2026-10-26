@@ -29,19 +29,15 @@ pass.
    git fetch origin main                   # moves origin/main only
    git tag -f pre-pr-reviewed HEAD         # the reviewed commit; step 4 needs it. Never pushed
    git diff --output="<scratch>/branch.diff" origin/main...HEAD
-   git log --format="$(git branch --show-current) %s" origin/main..HEAD >> "$(git rev-parse --git-path pre-pr-reviewed.txt)"   # the range handed; step 5 (#781)
+   python tools/review-coverage.py record origin/main..HEAD   # the range handed; step 5 (#781, #787)
    ```
 
    **A review of part of the branch gives these lines that part's range, before they run**
-   (#781): the `git diff` and the `git log` line both, so the file records only what the reviewer
-   is handed.
+   (#781): the `git diff` and the `record` line both, so the script records only what the
+   reviewer is handed. Its docstring says where it keeps what it records and how a subject
+   matches.
 
-   **`pre-pr-reviewed.txt` is in the git directory, not the scratchpad** (#781): like the tag, it
-   outlives the session, so a review that spans two sessions still finds what the first was
-   handed, and it is never pushed. `--git-path` gives each worktree its own, and each line starts
-   with the branch's name, so a subject left by another branch covers nothing on this one.
-
-   **Have git write the file, and quote the path** (#635). Each line runs unchanged in Git Bash
+   **Have git write the diff, and quote the path** (#635). Each line runs unchanged in Git Bash
    and in PowerShell, with `<scratch>` in either form of path. A `>` redirect to an unquoted
    backslash path does not: Git Bash drops the backslashes and writes a file named for the whole
    path into the current directory. Two `.diff` files of that shape sat in the repository root
@@ -122,11 +118,11 @@ pass.
 
    ```
    git diff --output="<scratch>/fixes.diff" pre-pr-reviewed..HEAD
-   git log --format="$(git branch --show-current) %s" pre-pr-reviewed..HEAD >> "$(git rev-parse --git-path pre-pr-reviewed.txt)"
+   python tools/review-coverage.py record pre-pr-reviewed..HEAD
    ```
 
    Every diff sent to the reviewer, here, in step 5, in step 7 and for the plugin pass's fixes,
-   adds its commits' subjects to `pre-pr-reviewed.txt` the same way, from its own range (#781).
+   is recorded the same way, from its own range (#781).
 
    > `<scratch>/fixes.diff` is every change made since your review. For each of your findings,
    > say whether it is fixed, from the diff alone. Where your finding named a group, check the
@@ -154,7 +150,7 @@ pass.
    git log origin/main..HEAD --format='%h %s' --grep='<the old figure or words>'
    GIT_SEQUENCE_EDITOR="sed -i 's/^pick <short hash>/reword <short hash>/'" \
      GIT_EDITOR="cp <scratch>/msg.txt" git -c core.commentChar=";" rebase -i <short hash>~1
-   git log -1 --format="$(git branch --show-current) %s" <new hash> >> "$(git rev-parse --git-path pre-pr-reviewed.txt)"   # where the subject changed (#781)
+   python tools/review-coverage.py record -1 <new hash>   # where the subject changed (#781)
    git push --force-with-lease             # a pushed, unmerged branch only; never main
    ```
 
@@ -182,15 +178,14 @@ pass.
 
 5. **Before anything is written to the pull request's body, show that a reviewer was handed every
    commit** (#781). `docs/agents/code-review.md` has the rule under *A review before the pull
-   request, and the plugin pass after it*. In Git Bash:
+   request, and the plugin pass after it*:
 
    ```
-   git log --format="$(git branch --show-current) %s" origin/main..HEAD | LC_ALL=C grep -vxFf "$(git rev-parse --git-path pre-pr-reviewed.txt)"
+   python tools/review-coverage.py check
    ```
 
-   Each line it prints is the branch's name and the subject of a commit no reviewer was handed.
-   `LC_ALL=C` makes Git Bash's grep match a gitmoji subject. A held fix (#643) may be printed; stop
-   on any other line and send its commit to the reviewer first, as step 4 sends a fix.
+   Each commit it lists is one no reviewer was handed (#787). A held fix (#643) may be listed; stop
+   on any other and send its commit to the reviewer first, as step 4 sends a fix.
 
    **Then invoke the `mattpocock-skills:pr` skill** with the Skill tool for `## Summary`,
    `## Evidence` and `## Merge Danger` (#738, #748); where it is not installed, write them by hand
@@ -292,8 +287,8 @@ pass.
    committed, its diff is sent to the reviewer in a message of its own as step 4 sends one, and
    what that fix changed is read again. **A fix that only corrects a count gets no message**
    (#665): the rule says which fix that is. Commit it and read again what it changed. Then run
-   step 5's `git log` line again (#781): a fix that only corrects a count is the only kind it may
-   print now, and each it prints is named in the body as not confirmed.
+   step 5's `check` again (#781): a fix that only corrects a count is the only kind it may list
+   now, and each it lists is named in the body as not confirmed.
 
    Done when the body has, under the `## Pre-PR review` heading, a line that names what was read
    again and the head it was read on, the last one if a fix moved it, by its subject (#730):
