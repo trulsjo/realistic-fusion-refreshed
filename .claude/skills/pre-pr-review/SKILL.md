@@ -67,15 +67,15 @@ pass.
    and nothing that excuses a commit in the diff: step 1 recorded every commit in it as handed
    (#781).
 
-   > You are the pre-PR reviewer of a branch of this repository. Read
-   > `docs/agents/code-review.md` in full first; its second rule, *Review the prose, not only the
-   > code*, binds you. Then review `<scratch>/branch.diff` (the diff against `origin/main`) against
+   > You are the pre-PR reviewer of a branch of this repository. Read `docs/agents/code-review.md`
+   > in full first; its second rule, *Review the prose, not only the code*, binds you. Then review
+   > `<scratch>/branch.diff` (`<the diff against origin/main | the diff of range>`) against
    > `<evidence files>`, which hold `<the probes' raw output | the gate results>`.
    >
    > The branch claims to resolve `<#n, #n>`. Read each with the **Read an issue** command in
    > `docs/agents/issue-tracker.md` and hold the diff against its acceptance criteria. If the
    > branch resolves more than one ticket and the evidence is `ship-check.ps1` alone, confirm
-   > that every path in the diff ends in `.md`.
+   > that every path `git diff --name-only --no-renames origin/main...HEAD` prints ends in `.md`.
    >
    > Read whole each of these, which the diff changes: `<each skill file, page under
    > docs/agents/ and CLAUDE.md in the diff, or "none">`. Where the diff changes a step of a
