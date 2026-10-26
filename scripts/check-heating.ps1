@@ -112,7 +112,7 @@ local TRITIUM = "rf-tritium"
 -- check_plasma_capacity() then refuses to load without (#296). So this is the capacity the
 -- simulation is actually running -- a literal here would go on seeding 1000 units into a box that
 -- had moved, and the rig would report a full reactor while filling a fraction of one.
-local FULL    = prototypes.entity["rf-reactor"].fluidbox_prototypes[1].volume
+local FULL    = prototypes.entity["rf-reactor"].fluidbox_prototypes[1].get_volume()
 -- Where an unresearched D-D reactor settles, so every cell starts from one state and separates
 -- only because of research. tests/test-reactor-logic.lua pins it; if it moves, the control line
 -- below reports the drift and names the number, which is the right way round.
@@ -197,7 +197,7 @@ local function cell(surface, name, x, researched)
   }, "power source")
   eei.power_production = SUPPLY_J_PER_TICK
 
-  reactor.fluidbox[1] = { name = PLASMA, amount = FULL, temperature = SEED_C }
+  rf_fluidbox(reactor)[1] = { name = PLASMA, amount = FULL, temperature = SEED_C }
 
   -- Bolted flush to the south face, computed from both selection boxes rather than written down:
   -- the collector has to land inside the one-tile margin entity-management's attach() searches, and
@@ -250,15 +250,15 @@ end)
 
 --- This reactor's plasma temperature, or nil if it has none.
 local function temperature(c)
-  local plasma = c.reactor.fluidbox[1]
+  local plasma = rf_fluidbox(c.reactor)[1]
   return plasma and plasma.temperature or nil
 end
 
 --- Total tritium across every box of this cell's collector.
 local function tritium(c)
   local total = 0
-  for index = 1, #c.collector.fluidbox do
-    local contents = c.collector.fluidbox[index]
+  for index = 1, #rf_fluidbox(c.collector) do
+    local contents = rf_fluidbox(c.collector)[index]
     if contents and contents.name == TRITIUM then total = total + contents.amount end
   end
   return total
@@ -269,9 +269,9 @@ end
 -- and the four curves would separate for two reasons instead of one.
 script.on_nth_tick(60, function()
   for _, c in pairs(storage.cells) do
-    local plasma = c.reactor.fluidbox[1]
+    local plasma = rf_fluidbox(c.reactor)[1]
     if plasma and plasma.amount < FULL then
-      c.reactor.fluidbox[1] = { name = plasma.name, amount = FULL, temperature = plasma.temperature }
+      rf_fluidbox(c.reactor)[1] = { name = plasma.name, amount = FULL, temperature = plasma.temperature }
     end
   end
 end)

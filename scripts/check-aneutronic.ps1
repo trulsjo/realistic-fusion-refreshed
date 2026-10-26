@@ -168,16 +168,16 @@ end
 
 local function holds(entity, fluid)
   local total = 0
-  for index = 1, #entity.fluidbox do
-    local contents = entity.fluidbox[index]
+  for index = 1, #rf_fluidbox(entity) do
+    local contents = rf_fluidbox(entity)[index]
     if contents and contents.name == fluid then total = total + contents.amount end
   end
   return total
 end
 
 local function box_of(entity, fluid)
-  for index = 1, #entity.fluidbox do
-    local filter = entity.fluidbox.get_filter(index)
+  for index = 1, #rf_fluidbox(entity) do
+    local filter = rf_fluidbox(entity).get_filter(index)
     if filter and filter.name == fluid then return index end
   end
   return nil
@@ -211,7 +211,7 @@ end
 local function connection_facing(entity, fluid, side)
   local index = box_of(entity, fluid)
   if not index then error(entity.name .. " has no box filtered to " .. fluid) end
-  for _, c in pairs(entity.fluidbox.get_pipe_connections(index)) do
+  for _, c in pairs(rf_fluidbox(entity).get_pipe_connections(index)) do
     if facing(c) == side then return c end
   end
   return nil
@@ -240,7 +240,7 @@ local function bolt(surface, force, name, fluid, side, tile, seed)
     error(name .. " has no box filtered to " .. fluid)
   end
   local found
-  for _, c in pairs(probe.fluidbox.get_pipe_connections(index)) do
+  for _, c in pairs(rf_fluidbox(probe).get_pipe_connections(index)) do
     if facing(c) == side then found = c end
   end
   if not found then
@@ -545,7 +545,7 @@ script.on_init(function()
     power(surface, force, { 80 + index * 12, 6 }, 8e6)
     local box = box_of(heater, pair[2])
     if not box then error("the heater has no box that will take " .. pair[2]) end
-    for _, connection in pairs(heater.fluidbox.get_pipe_connections(box)) do
+    for _, connection in pairs(rf_fluidbox(heater).get_pipe_connections(box)) do
       local supply = must(surface.create_entity({
         name = "infinity-pipe", position = connection.target_position, force = force,
       }), "supply for " .. pair[2])
@@ -578,7 +578,7 @@ script.on_init(function()
     }), "rf-aneutronic-composite-tank for the " .. supply[2] .. " row")
     -- The supply goes on the tile the TANK's own connection points at -- pipe-run alignment, read
     -- off the entity rather than written down.
-    local conn = tank.fluidbox.get_pipe_connections(1)[1]
+    local conn = rf_fluidbox(tank).get_pipe_connections(1)[1]
     local pipe = must(surface.create_entity({
       name = supply[1], position = conn.target_position, force = force,
     }), supply[2] .. " supply for the composite tank")
@@ -622,18 +622,18 @@ script.on_event(defines.events.on_tick, function()
     dd = NEUTRONIC_ENERGY, dt = NEUTRONIC_ENERGY,
   }
   for key, reactor in pairs({ dhe3 = r.dhe3, he3 = r.he3, dd = r.dd, dt = r.dt }) do
-    local produced = reactor.fluidbox[2]
+    local produced = rf_fluidbox(reactor)[2]
     if produced then
       if produced.name ~= expected[key] then
         storage.wrong_fluid[key] = storage.wrong_fluid[key] + produced.amount
       end
       if key ~= "dhe3" then
         storage.sold[key] = storage.sold[key] + produced.amount
-        reactor.fluidbox[2] = nil
+        rf_fluidbox(reactor)[2] = nil
       end
     end
   end
-  local held = r.converter.fluidbox[1]
+  local held = rf_fluidbox(r.converter)[1]
   if held and held.amount > storage.converter_held then
     storage.converter_held = held.amount
   end
@@ -654,7 +654,7 @@ script.on_nth_tick(CHECK_AT, function()
   local r = storage.rig
 
   -- ------------------------------------------------------------ the aneutronic reactor burns
-  local plasma = r.dhe3.fluidbox[1]
+  local plasma = rf_fluidbox(r.dhe3)[1]
   record(plasma ~= nil and plasma.name == DHE3, "the aneutronic reactor accepts D-He3 plasma",
     plasma and plasma.name or "nothing in the box")
 
@@ -676,7 +676,7 @@ script.on_nth_tick(CHECK_AT, function()
   record(crossed == 0, "no reactor ever wrote the other tier's energy fluid into its box",
     string.format("%.6g units of the wrong fluid seen across four reactors", crossed))
 
-  local an_out = r.dhe3.fluidbox[2]
+  local an_out = rf_fluidbox(r.dhe3)[2]
   record(an_out ~= nil and an_out.name == ANEUTRONIC_ENERGY,
     "the aneutronic reactor sells aneutronic reactor energy",
     an_out and an_out.name or "nothing in its output box")
@@ -720,8 +720,8 @@ script.on_nth_tick(CHECK_AT, function()
   -- This converter has exactly two chances to have a neighbour: the reactor below it and the second
   -- converter above.
   local joined = 0
-  for index = 1, #r.converter.fluidbox do
-    joined = joined + #r.converter.fluidbox.get_connections(index)
+  for index = 1, #rf_fluidbox(r.converter) do
+    joined = joined + #rf_fluidbox(r.converter).get_connections(index)
   end
   record(joined >= 2, "two converters laid back to back join, the way a row of turbines does",
     string.format("%d of the first converter's connections are joined -- reactor below, " ..
@@ -747,7 +747,7 @@ script.on_nth_tick(CHECK_AT, function()
     string.format("%d boilers, exchangers or turbines", steam_machines))
 
   -- ------------------------------------------------------------ He3-He3 burns, and is weaker
-  local he3_plasma = r.he3.fluidbox[1]
+  local he3_plasma = rf_fluidbox(r.he3)[1]
   record(he3_plasma ~= nil and he3_plasma.name == HE3,
     "the same reactor prototype accepts He3-He3 plasma",
     he3_plasma and he3_plasma.name or "nothing in the box")
@@ -784,12 +784,12 @@ script.on_nth_tick(CHECK_AT, function()
   -- ------------------------------------------------------------ all four reactions in one save
   local burning = {}
   for key, reactor in pairs({ dd = r.dd, dt = r.dt, dhe3 = r.dhe3, he3 = r.he3 }) do
-    local held = reactor.fluidbox[1]
+    local held = rf_fluidbox(reactor)[1]
     burning[#burning + 1] = string.format("%s=%s", key, held and held.name or "none")
   end
   table.sort(burning)
-  local all_four = (r.dd.fluidbox[1] ~= nil) and (r.dt.fluidbox[1] ~= nil)
-    and (r.dhe3.fluidbox[1] ~= nil) and (r.he3.fluidbox[1] ~= nil)
+  local all_four = (rf_fluidbox(r.dd)[1] ~= nil) and (rf_fluidbox(r.dt)[1] ~= nil)
+    and (rf_fluidbox(r.dhe3)[1] ~= nil) and (rf_fluidbox(r.he3)[1] ~= nil)
   record(all_four, "all four of ADR 0010's reactions are burning in one save",
     table.concat(burning, ", "))
   record(storage.sold.dd > 0 and storage.sold.dt > 0,
@@ -820,11 +820,11 @@ script.on_nth_tick(CHECK_AT, function()
   -- role away. Both rows below go through plumbing, and the helium-3 one is the control that makes
   -- the refusal mean something.
   local he3_tank, energy_tank = r.tanks[1], r.tanks[2]
-  record(#he3_tank.tank.fluidbox.get_connections(1) > 0,
+  record(#rf_fluidbox(he3_tank.tank).get_connections(1) > 0,
     "the composite tank joins an ordinary helium-3 line, which is the role ADR 0018 leaves it")
   record(holds(he3_tank.tank, HELIUM_3) > 0, "and fills with helium-3 through it",
     string.format("%.6g units", holds(he3_tank.tank, HELIUM_3)))
-  record(#energy_tank.tank.fluidbox.get_connections(1) == 0,
+  record(#rf_fluidbox(energy_tank.tank).get_connections(1) == 0,
     "the same tank does NOT join a live aneutronic-energy line -- no vessel takes it through plumbing")
   record(holds(energy_tank.tank, ANEUTRONIC_ENERGY) == 0,
     "and holds not a unit of the tier's energy fluid",

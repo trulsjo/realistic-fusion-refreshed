@@ -144,15 +144,15 @@ end
 __RIGBUILD__
 
 local function amount_of(entity, index)
-  local contents = entity.fluidbox[index]
+  local contents = rf_fluidbox(entity)[index]
   return contents and contents.amount or 0
 end
 
 --- Total of one fluid across every box of an entity, whatever box it landed in.
 local function holds(entity, fluid)
   local total = 0
-  for index = 1, #entity.fluidbox do
-    local contents = entity.fluidbox[index]
+  for index = 1, #rf_fluidbox(entity) do
+    local contents = rf_fluidbox(entity)[index]
     if contents and contents.name == fluid then total = total + contents.amount end
   end
   return total
@@ -229,7 +229,7 @@ local function bolt_on(surface, force, reactor, tank_seed)
     local index = rf_box_of(collector, fluid)
     if not index then error("the collector has no box filtered to " .. fluid) end
     boxes[fluid] = index
-    local at = collector.fluidbox.get_pipe_connections(index)[1].target_position
+    local at = rf_fluidbox(collector).get_pipe_connections(index)[1].target_position
     local step = { at.x - collector.position.x, at.y - collector.position.y }
     local length = math.max(math.abs(step[1]), math.abs(step[2]))
     step = { step[1] / length, step[2] / length }
@@ -350,7 +350,7 @@ script.on_init(function()
   -- rf_box_of's own note gives -- the reactor declares its boxes in a known order -- and the
   -- contract is asserted rather than assumed, one line below.
   local function cell(name, reactor, collector, boxes)
-    if reactor.fluidbox.get_filter(1) then
+    if rf_fluidbox(reactor).get_filter(1) then
       error("rf-reactor's input box has regained a filter; see prototypes/entities.lua")
     end
     local claims = { { entity = reactor, index = 1, fluid = PLASMA,
@@ -410,7 +410,7 @@ script.on_nth_tick(CHECK_AT, function()
   rf_assert_research(record, r.reactor.force, LOGIC, LOGIC.reactor, true)
 
   -- ------------------------------------------------------------ the reactor breeds
-  local plasma = r.reactor.fluidbox[1]
+  local plasma = rf_fluidbox(r.reactor)[1]
   record(plasma ~= nil and plasma.temperature > 1e8,
     "the reactor is fusing rather than merely warm",
     plasma and string.format("%.4g C", plasma.temperature) or "no plasma")
@@ -460,7 +460,7 @@ script.on_nth_tick(CHECK_AT, function()
   -- fused. The cool cell is the same reactor and the same collector, given plasma at the
   -- temperature a heater injects it at and no power to raise it. A fixed recipe ratio would breed
   -- the same in both; the simulation must not.
-  local cool_plasma = r.cool.fluidbox[1]
+  local cool_plasma = rf_fluidbox(r.cool)[1]
   record(cool_plasma ~= nil and cool_plasma.temperature < 1e8,
     "the cool reactor really is cool",
     cool_plasma and string.format("%.4g C", cool_plasma.temperature) or "no plasma")
@@ -480,13 +480,13 @@ script.on_nth_tick(CHECK_AT, function()
     string.format("%.6g units of tritium in the survivor", spare_bred))
 
   -- ------------------------------------------------------------ a reactor with no collector
-  local bare_plasma = r.bare.fluidbox[1]
+  local bare_plasma = rf_fluidbox(r.bare)[1]
   record(bare_plasma ~= nil and bare_plasma.temperature > 1e8,
     "a reactor with no collector runs exactly as well",
     bare_plasma and string.format("%.4g C", bare_plasma.temperature) or "no plasma")
-  record(r.bare.fluidbox[2] ~= nil and r.bare.fluidbox[2].amount > 0,
+  record(rf_fluidbox(r.bare)[2] ~= nil and rf_fluidbox(r.bare)[2].amount > 0,
     "and still produces reactor energy",
-    r.bare.fluidbox[2] and string.format("%.6g", r.bare.fluidbox[2].amount) or "nothing")
+    rf_fluidbox(r.bare)[2] and string.format("%.6g", rf_fluidbox(r.bare)[2].amount) or "nothing")
 
   -- ------------------------------------------------------------ the module seam
   local mix = holds(r.mixer, "rf-d-t-mix")
