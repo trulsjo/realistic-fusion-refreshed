@@ -54,7 +54,8 @@ or on build order". On 2.1.23 the first half is false. The second has not been m
    taking the box out of the segment, and so working around the engine on every step. ADR 0040
    rejected that for #569's option 3.
 2. **The plasma box stays `input`** on `rf-reactor` and on `rf-aneutronic-reactor`, with no
-   prototype change. It is what ships and what the 2.1.23 readings were taken on. Whether `input`
+   prototype change. It is what ships, and what #776's 2.1.23 readings were taken on, on
+   `rf-reactor` only; the aneutronic reactor is #778's to read. Whether `input`
    and `input-output` behave differently on 2.1 has not been measured. If they do, this point goes
    back to Truls.
 3. **ADR 0040's point 3 is reversed on 2.1.** An unheated reactor on a run beside a heated one is

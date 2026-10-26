@@ -284,3 +284,12 @@ One line for each change to a gate, newest last, with its date and its ticket.
   run 2026-10-25). The other four stop before any tick runs: three on a `fluidbox` read in
   `on_init`, and `check-observability.ps1` at load, on a prototype's `.volume`. Those reads are
   #769 to #771's, so none of the six has fed a reactor through it yet.
+- 2026-10-25, #767: every mod a gate here writes for the game, each `check-*.ps1` rig and the
+  canaries of `load-check.ps1` and `check-hc.ps1` included, declares `factorio_version` 2.1 and
+  `base >= 2.1.23` where it declared 2.0 and `base >= 2.0.77`. `load-check.ps1`, `name-check.ps1`,
+  `check-brownout.ps1`, `check-d-t.ps1` and `check-pooling.ps1` print "none (base 2.1 only)"
+  when no bundled mod is enabled. `name-check.ps1`'s help says a set pinned at a 2.0 release does not load
+  beside the mods, so its `-AlsoModDirectory` lanes wait on #772. On 2.1.23 the default
+  `load-check.ps1`, its `-FromZips` and `name-check.ps1` pass; no gate's `-SelfTest` has been run
+  on 2.1.23. Twelve of the 24 gates `run-gates.ps1` runs fail there, each on its own 2.0 read,
+  until #769 to #771.
