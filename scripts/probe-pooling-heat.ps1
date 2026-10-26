@@ -40,15 +40,18 @@
                 is #791's `bare`.
       five      Five bridged, all powered and registered.
       o-ab      Two bridged, the west one powered and the east one not, both registered: the
-                west one's step heats and the east one's cools. Registered west first.
+                west one's step heats and the east one's cools. Registered west first. On a 2.1
+                run both boxes read one plasma, so the two steps differ by what each is paid and
+                not by what each holds. The o- cells are registered one step before the step read,
+                and that first step pays neither, so all three start the step read from one state.
       o-ba      The same, registered east first.
       o-ba-built  The same, BUILT east first as well, so the east reactor has the lower
                 unit_number. entity-management.lua keys its registry by unit_number and update()
                 walks it with pairs, so the three o- cells together say which order the mod
                 writes in, and whether the kept share depends on it.
 
-    WHAT IS READ. For the stepped cells, one interval across one step, opening on a step tick, as
-    #791's bookkeeping rows read it: each reactor's box before the step, the prediction M.step
+    WHAT IS READ. For the stepped cells, one interval holding one step, read on the tick before
+    it and on the tick before the next, so either on_tick order gives the same window: each reactor's box before the step, the prediction M.step
     makes from it, and the run's gain as the box sum and as get_fluid_segment_fluid on the
     westmost reactor, which is the segment's own reading. Beside each, what reading 1 predicts:
     the writes replayed in Lua, each replacing its writer's share of the run, the run then shared
@@ -124,12 +127,17 @@ local HOT_C      = SEED_C * 50
 local GAP        = 5
 local SEED_UNTIL = 60
 local SETTLE     = SEED_UNTIL + 240
--- A step tick, read on: this mod's on_tick runs before realistic-fusion-refreshed's, as
--- check-pooling.ps1 measured on 2.0.77, so a reading here is the state the step is about to see.
--- `solo` is the control for that on 2.1.23: a window holding no step would not keep 100%.
-local STEP_BEFORE = math.ceil(SETTLE / INTERVAL) * INTERVAL + INTERVAL
+-- The step read, and a window around it read on the tick before it and the tick before the next,
+-- so the window holds that step and no other whichever of the two on_tick handlers runs first.
+-- The report says which did.
+local STEP_TICK   = math.ceil(SETTLE / INTERVAL) * INTERVAL + INTERVAL
+local STEP_BEFORE = STEP_TICK - 1
 local STEP_AFTER  = STEP_BEFORE + INTERVAL
--- The engine cells are written on the step tick too; nothing steps them.
+-- The o- cells are registered here, between two steps, so the first step that sees them pays
+-- neither reactor (spend() pays only a reactor update() has stepped) and leaves both cells in one
+-- state. The step read is their second, the west reactor's paid in full.
+local LATE_AT     = STEP_TICK - INTERVAL - 1
+-- The engine cells are written on the same tick; nothing steps them.
 local WRITE_AT    = STEP_BEFORE
 local OFFSETS     = { 1, 2, 5, 10, 30, 60 }
 local DONE_AT     = WRITE_AT + 61
@@ -294,9 +302,12 @@ script.on_init(function()
   }
   storage.order = { "eng1", "eng3", "eng3x2", "solo", "w1", "w2", "w3", "five", "o-ab", "o-ba", "o-ba-built" }
   storage.writes = { eng1 = { 1 }, eng3 = { 1 }, eng3x2 = { 1, 2 } }
+  storage.late = { ["o-ab"] = true, ["o-ba"] = true, ["o-ba-built"] = true }
   for _, name in ipairs(storage.order) do
-    for _, i in ipairs(storage.cells[name].register) do
-      script.raise_script_built({ entity = storage.cells[name].reactors[i] })
+    if not storage.late[name] then
+      for _, i in ipairs(storage.cells[name].register) do
+        script.raise_script_built({ entity = storage.cells[name].reactors[i] })
+      end
     end
   end
   log("POOLHEAT built")
@@ -318,6 +329,19 @@ script.on_event(defines.events.on_tick, function()
   if tick <= SEED_UNTIL then
     for _, cell in pairs(cells) do seed(cell) end
     return
+  end
+
+  if tick == LATE_AT then
+    for _, name in ipairs({ "o-ab", "o-ba", "o-ba-built" }) do
+      for _, i in ipairs(cells[name].register) do
+        script.raise_script_built({ entity = cells[name].reactors[i] })
+      end
+    end
+  end
+
+  -- Which handler runs first: `solo` has no pipe, so its heat moves only when the mod steps it.
+  if tick == STEP_TICK then
+    storage.solo_at_step = segment(cells.solo)
   end
 
   if tick == STEP_BEFORE then
@@ -383,8 +407,13 @@ end)
 
 report = function()
   local cells, before, after = storage.cells, storage.before, storage.after
-  say("interval %d ticks; step read from tick %d to %d; engine cells written on tick %d",
-    INTERVAL, STEP_BEFORE, STEP_AFTER, WRITE_AT)
+  say("interval %d ticks; the step on tick %d read from tick %d to %d; o- cells registered on tick %d; engine cells written on tick %d",
+    INTERVAL, STEP_TICK, STEP_BEFORE, STEP_AFTER, LATE_AT, WRITE_AT)
+  local same = storage.solo_at_step == before.solo.seg
+  say("order  solo's heat as this mod read it on tick %d %s its heat on tick %d, so %s",
+    STEP_TICK, same and "equals" or "differs from", STEP_BEFORE,
+    same and "this mod's on_tick ran before realistic-fusion-refreshed's"
+      or "realistic-fusion-refreshed's on_tick ran before this mod's")
 
   -- The engine alone.
   for _, name in ipairs({ "eng1", "eng3", "eng3x2" }) do

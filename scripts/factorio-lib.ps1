@@ -1255,8 +1255,9 @@ if ($rfSourcedLeaf -like 'probe-*.ps1' -or $rfSourcedLeaf -like 'check-*.ps1') {
     # a row can be quoted as is (#577) and two machines' reports diff line for line (#794). Until
     # then two probes set it themselves, the segment probe printed its tables with decimal commas
     # and its raw rows with points, and check-buffer.ps1 printed `10,67 MJ` on #791. No rig parses
-    # what it printed itself: each parses the game's lines, which Lua prints with a point, through
-    # PowerShell's [double] cast, which ignores the culture.
+    # a number it printed itself: each parses the game's lines, which Lua prints with a point,
+    # through PowerShell's [double] cast, which ignores the culture. check-pooling.ps1 -SelfTest
+    # reads its child run's FAIL rows by name, and no number in them.
     [cultureinfo]::CurrentCulture = [cultureinfo]::InvariantCulture
     Start-RunReport -Invocation $rfSourcedBy.InvocationInfo -Kind $(if ($rfSourcedLeaf -like 'probe-*') { 'probe' } else { 'rig' })
 }

@@ -91,7 +91,8 @@ pass.
    > `Resolve-FactorioExe` resolves, which is `$env:FACTORIO_EXE` where that is set and
    > `D:\SteamLibrary\steamapps\common\Factorio\bin\x64\Factorio.exe` where it is not. Read the
    > member there by name: a runtime class's under its `methods` or `attributes`, a
-   > prototype's under its `properties`, inheritance through `parent`. The files are the
+   > prototype's under its `properties`, inheritance through `parent`, and a concept, event,
+   > define or prototype type under `concepts`, `events`, `defines` or `types`. The files are the
    > installed game's, so they hold the version the gates run against; `application_version`
    > names it.
    >
