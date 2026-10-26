@@ -138,7 +138,7 @@ end
 local function connection_facing(entity, fluid, side)
   local index = box_of(entity, fluid)
   if not index then error(entity.name .. " has no box filtered to " .. fluid) end
-  for _, c in pairs(entity.fluidbox.get_pipe_connections(index)) do
+  for _, c in pairs(rf_fluidbox(entity).get_pipe_connections(index)) do
     if facing(c) == side then return c end
   end
   error(entity.name .. " has no " .. side .. "-facing " .. fluid .. " connection")
@@ -269,9 +269,9 @@ script.on_event(defines.events.on_tick, function()
   if not storage.shoot_at then return end
   local w = storage.working
   if w and w.valid then
-    w.fluidbox[box_of(w, ENERGY)] = { name = ENERGY, amount = 200 }
-    w.fluidbox[box_of(w, "water")] = { name = "water", amount = 200 }
-    w.fluidbox[box_of(w, "steam")] = nil
+    rf_fluidbox(w)[box_of(w, ENERGY)] = { name = ENERGY, amount = 200 }
+    rf_fluidbox(w)[box_of(w, "water")] = { name = "water", amount = 200 }
+    rf_fluidbox(w)[box_of(w, "steam")] = nil
   end
   if game.tick < storage.shoot_at then return end
   storage.shoot_at = nil
