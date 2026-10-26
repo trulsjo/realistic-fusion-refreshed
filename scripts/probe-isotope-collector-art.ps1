@@ -160,7 +160,7 @@ local function contents(entity)
   local parts = {}
   for _, fluid in ipairs({ TRITIUM, HELIUM3 }) do
     local i = box_of(entity, fluid)
-    local box = i and entity.fluidbox[i]
+    local box = i and rf_fluidbox(entity)[i]
     parts[#parts + 1] = string.format("%s %s", fluid,
       box and string.format("%.0f", box.amount) or "(no box)")
   end
@@ -172,7 +172,7 @@ local function fill(entity, amount)
   for _, fluid in ipairs({ TRITIUM, HELIUM3 }) do
     local i = box_of(entity, fluid)
     if not i then error(entity.name .. " has no box filtered to " .. fluid) end
-    entity.fluidbox[i] = { name = fluid, amount = amount }
+    rf_fluidbox(entity)[i] = { name = fluid, amount = amount }
   end
 end
 
@@ -180,8 +180,8 @@ end
 --- is a tile nothing may be built over, which is what the pairing below has to respect.
 local function connection_tiles(entity)
   local tiles = {}
-  for i = 1, #entity.fluidbox do
-    for _, c in pairs(entity.fluidbox.get_pipe_connections(i)) do
+  for i = 1, #rf_fluidbox(entity) do
+    for _, c in pairs(rf_fluidbox(entity).get_pipe_connections(i)) do
       if c.target_position then
         tiles[string.format("%g,%g", c.target_position.x, c.target_position.y)] = true
       end
@@ -199,8 +199,8 @@ end
 --- side it can afford to lose; bolting by any other is asking a player to give up a pipe run.
 local function blind_face(entity)
   local used = {}
-  for i = 1, #entity.fluidbox do
-    for _, c in pairs(entity.fluidbox.get_pipe_connections(i)) do
+  for i = 1, #rf_fluidbox(entity) do
+    for _, c in pairs(rf_fluidbox(entity).get_pipe_connections(i)) do
       local dx = c.target_position.x - c.position.x
       local dy = c.target_position.y - c.position.y
       if dy < 0 then used.north = true elseif dy > 0 then used.south = true

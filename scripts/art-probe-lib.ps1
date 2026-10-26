@@ -99,8 +99,8 @@ end
 --- Which fluidbox index carries a given fluid, asked rather than assumed: the order of a boiler's
 --- boxes is the engine's business, and an energy source can add one of its own.
 local function box_of(entity, fluid)
-  for i = 1, #entity.fluidbox do
-    local f = entity.fluidbox.get_filter(i)
+  for i = 1, #rf_fluidbox(entity) do
+    local f = rf_fluidbox(entity).get_filter(i)
     if f and f.name == fluid then return i end
   end
 end
@@ -127,12 +127,12 @@ end
 --- uncontained today.
 local function pipe_up(surface, entity)
   local made, refused = 0, 0
-  for i = 1, #entity.fluidbox do
-    for _, c in pairs(entity.fluidbox.get_pipe_connections(i)) do
+  for i = 1, #rf_fluidbox(entity) do
+    for _, c in pairs(rf_fluidbox(entity).get_pipe_connections(i)) do
       if c.target_position and #surface.find_entities_filtered({ position = c.target_position }) == 0 then
         local p = place(surface, "pipe", c.target_position.x, c.target_position.y)
         local joined = false
-        for _, pc in pairs(p.fluidbox.get_pipe_connections(1)) do
+        for _, pc in pairs(rf_fluidbox(p).get_pipe_connections(1)) do
           if pc.target and pc.target.owner and pc.target.owner.unit_number == entity.unit_number then
             joined = true
           end
@@ -310,6 +310,9 @@ local function finish()
   say("done")
 end
 '@
+# 2.1 removed LuaEntity.fluidbox (ADR 0041), so the art probes read boxes through the rigs' own
+# rf_fluidbox, which needs scripts/factorio-lib.ps1 dot-sourced first, as every art probe does.
+$ArtProbeLua = (Get-RigBuildLua) + "`n" + $ArtProbeLua
 
 # ------------------------------------------------------------------------- the PowerShell half
 function Invoke-ArtProbe {
@@ -349,8 +352,8 @@ function Invoke-ArtProbe {
 
     @{
         name = $RigName; version = '0.0.1'; title = $RigTitle
-        author = $Author; factorio_version = '2.0'
-        dependencies = @('base >= 2.0.77', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
+        author = $Author; factorio_version = '2.1'
+        dependencies = @('base >= 2.1.23', 'realistic-fusion-refreshed', 'realistic-fusion-refreshed-core')
     } | ConvertTo-Json | Set-Content -Path (Join-Path $rigDir 'info.json') -Encoding utf8
     Set-Content -Path (Join-Path $rigDir 'control.lua') -Value $Control -Encoding utf8
     # A PROBE THAT ASKS A QUESTION ABOUT PROTOTYPES NEEDS THE DATA STAGE (#390): whether Factorio
