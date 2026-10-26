@@ -1623,6 +1623,13 @@ full in add-1, full in add-1-full. Read in the 1000-tick run above.
   one's. *Inferred*: the powered reactor's write reaches its neighbour through the shared segment,
   so each step is undone and reapplied on both boxes.
 - The D-D pair and both cells had not settled by 96 000, and were not run longer.
+- **`check-pooling.ps1` reads the same on its own rows** (2026-10-26, Factorio 2.1.23, nothing
+  researched, 1801 ticks). Before #771 rewrote its assertions, every unpowered reactor failed the
+  rows that put it at 15 °C: in `pair` it read 3.75053×10⁷ °C, the same as its powered neighbour,
+  and in `feed` 2.38619×10⁹ °C. A write to one box of `mix` reached the whole run at once, so
+  its ends could not be started fifty times apart. Rewritten to ADR 0042, it passes 60 checks
+  with 0 failures, and on every row every reactor reads the westmost's amount and temperature
+  with a relative difference of 0.
 
 ### Options for the mod
 

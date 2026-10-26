@@ -209,7 +209,7 @@ local SCALE = circuit.TEMPERATURE_SCALE
 -- passing, and "ignited-full" would quietly be a partly-filled reactor reporting a status this rig
 -- asserts. The box is not the thing under test, so reading it costs this rig none of the
 -- independence the paragraph above is about.
-local FULL = prototypes.entity["rf-reactor"].fluidbox_prototypes[1].volume
+local FULL = prototypes.entity["rf-reactor"].fluidbox_prototypes[1].get_volume()
 
 local CASES = {
   -- Named for its arrangement, not for its answer: a full, hot, powered D-D reactor is PAST its
@@ -307,7 +307,7 @@ script.on_init(function()
       })
       -- A feed that lines up with nothing looks exactly like a reactor that is meant to be starved.
       local joined = false
-      for _, connection in pairs(reactor.fluidbox.get_pipe_connections(1)) do
+      for _, connection in pairs(rf_fluidbox(reactor).get_pipe_connections(1)) do
         if connection.target then joined = true end
       end
       if not joined then error("the plasma feed for " .. case.name .. " reaches nothing") end
@@ -322,7 +322,7 @@ script.on_init(function()
     -- box and topped back up below, temperature preserved, which is the same instrument
     -- scripts/check-confinement.ps1 uses and for the same reason.
     if case.seed then
-      reactor.fluidbox[1] = { name = case.fuel, amount = case.units, temperature = case.seed }
+      rf_fluidbox(reactor)[1] = { name = case.fuel, amount = case.units, temperature = case.seed }
     end
 
     -- The far end of the wire: an ordinary constant combinator a player could have placed, ten
@@ -432,7 +432,7 @@ local function verify()
       local q = network.get_signal(Q_FACTOR)
       wire_kc_by_case[name] = wire_kc
 
-      local plasma = reactor.fluidbox[1]
+      local plasma = rf_fluidbox(reactor)[1]
       local plasma_c = plasma and plasma.temperature or 0
 
       if name == "starved" then
@@ -581,7 +581,7 @@ end
 script.on_nth_tick(60, function()
   for _, entry in ipairs(storage.cases or {}) do
     if entry.case.units then
-      local plasma = entry.reactor.fluidbox[1]
+      local plasma = rf_fluidbox(entry.reactor)[1]
       -- A box that has drained COMPLETELY is re-seeded rather than skipped. Reading the name and
       -- temperature off the plasma that is there only works while some is; with nothing there the
       -- old guard gave up for the rest of the run and the case quietly degraded into a fourth
@@ -589,10 +589,10 @@ script.on_nth_tick(60, function()
       -- reachable at the shipped burn -- measured drawdown between top-ups is 4.3% held full and
       -- 1.5% held thin -- but a hotter tier or a longer interval would reach it.
       if not plasma then
-        entry.reactor.fluidbox[1] =
+        rf_fluidbox(entry.reactor)[1] =
           { name = entry.case.fuel, amount = entry.case.units, temperature = entry.case.seed }
       elseif plasma.amount < entry.case.units then
-        entry.reactor.fluidbox[1] =
+        rf_fluidbox(entry.reactor)[1] =
           { name = plasma.name, amount = entry.case.units, temperature = plasma.temperature }
       end
     end
