@@ -1467,7 +1467,7 @@ end
 -- check can hold them to it (#555): control.lua's check_segment_constants() refuses to load when
 -- rf-heater, rf-pipe or control.lua's own UPDATE_INTERVAL stops agreeing with its number.
 --
--- The capacity LuaFluidBox.get_capacity reports on rf-heater's output box, as
+-- The capacity 2.0's LuaFluidBox.get_capacity reported on rf-heater's output box, as
 -- scripts/probe-plasma-segment.ps1 prints it. Its fill is what the heater's pushes go by. It is the
 -- two output boxes' volumes together, 100 each in the prototype: a crafting machine merges boxes
 -- "due to recipe" (LuaFluidBox.get_prototype, 2.0.77), and every rf-plasma-heating recipe makes one

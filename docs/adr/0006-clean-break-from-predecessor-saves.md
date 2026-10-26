@@ -39,6 +39,10 @@ the break creates: if a player has both this mod and Durikkan's port installed, 
 same name is a load error, not a graceful degradation. A distinct prefix keeps the two installable side
 by side, which is the courteous outcome for a player evaluating both.
 
+> **Note 2026-10-26 (#767).** Since #767 the mods declare Factorio 2.1 and Durikkan's port 2.0, so
+> no one game enables both and "installable side by side" no longer holds. The prefix rule stands:
+> it is what would keep them apart on the day both declare the same version.
+
 **Naming is otherwise unconstrained**, which is new freedom for
 [Choose the published mod name](https://github.com/trulsjo/realistic-fusion-refreshed/issues/8) — no
 scheme is inherited.

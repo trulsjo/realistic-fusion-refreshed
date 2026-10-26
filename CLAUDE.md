@@ -82,7 +82,8 @@ default `load-check.ps1` and every `scripts/check-*.ps1` it finds, one at a time
 gate, exiting non-zero and naming each gate that failed. **Run it on a branch that combines more
 than one ticket, before the review**, and **before or after a subagent fan-out, not during one**
 (#617). It runs no probe, no gate's `-SelfTest`, and not `load-check.ps1 -FromZips`, the shared
-`locale-check.ps1` or `name-check.ps1`.
+`locale-check.ps1` or `name-check.ps1`. **On 2.1.23, 12 of the 13 `check-*.ps1` fail until #769
+to #771 port them**, each on a 2.0 read of its own; `check-blanket.ps1` is the one ported (#768).
 
 **A markdown-only branch runs `ship-check.ps1` alone**, however many tickets it combines (decided
 by Truls, 2026-10-07, #618). A branch is markdown-only when every path

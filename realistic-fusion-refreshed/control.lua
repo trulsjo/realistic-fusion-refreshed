@@ -1061,8 +1061,8 @@ end
 
 --- Read every reactor, then write every reactor.
 --
--- Split in two on purpose, and the reason it was given has gone with the input-output box. It was
--- that reactors on one run of rf-pipe share a fluid segment, so interleaved steps would compute
+-- Split in two on purpose. On 2.0.77 the reason it was given went with the input-output box; on
+-- 2.1.23 it is back, as below. It was that reactors on one run of rf-pipe share a fluid segment, so interleaved steps would compute
 -- against a pool a neighbour had already written to this tick. Since #740 each box is "input" and
 -- a write reaches no neighbour (ADR 0040); #73 had already measured that even the input-output box
 -- moved nothing between boxes inside a tick. That was 2.0.77: on 2.1.23 the box is a share of its
