@@ -59,7 +59,10 @@ pass.
 3. **Spawn one fresh reviewer** with the Agent tool: `general-purpose`, never a fork, since a fork
    has already read the author's reasoning. Give it a `name` so step 4 can reach it, and a
    `description` that starts `Pre-PR review`, which step 6's script sorts it by (#661). Its brief is
-   the block below with the paths filled in and nothing about what the author thinks is right:
+   the block below with the paths filled in and nothing about what the author thinks is right,
+   and nothing that excuses a commit in the diff: step 1 recorded every commit in it as handed
+   (#781). A review of part of the branch is handed that part's diff, and step 1's `git log`
+   line is given that part's range.
 
    > You are the pre-PR reviewer of a branch of this repository. Read
    > `docs/agents/code-review.md` in full first; its second rule, *Review the prose, not only the

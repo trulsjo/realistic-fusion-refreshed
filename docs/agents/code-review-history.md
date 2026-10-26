@@ -397,7 +397,8 @@ One line for each, newest last. The passages above are not edited.
   a file in the git directory, and list `origin/main..HEAD` against them before the body is written
   and after the last fix commit; held fixes and fixes that only correct a count are the commits left
   out. Steps 1, 4, 5 and 7 of `/pre-pr-review` carry it out with `git log` and `LC_ALL=C grep
-  -vxFf`. No gate reads it. The wording is the session's.
+  -vxFf`. A commit the reviewer's brief excuses is not kept, and step 3's brief excuses none. No
+  gate reads it. The wording is the session's.
 - **2026-10-26, #782: a fix that adds or widens a load-time `error()` in shipped Lua, or edits a
   tracked `CLAUDE.md`, is put to Truls before it is written.** Truls decided it in the ticket's
   triage, both cases and only these two, after two fixes on #779 settled his calls. The fourth rule
