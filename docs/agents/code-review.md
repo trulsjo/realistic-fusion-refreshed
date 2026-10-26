@@ -243,6 +243,14 @@ a fix corrected one row of a group and not the others, and the confirmation pass
 of the plugin pass's five findings were what the fix for the pre-PR review's first finding had left
 behind.
 
+**A fix that changes what a rule allows has the rule's section read again before it is sent**
+(2026-10-26, #788). The session that writes it reads every sentence of that rule's section, and each
+skill step that carries the rule out, against the new wording, as the paragraph earlier in this
+section on a change that alters a rule has the reviewer do. That paragraph binds the reviewer, who
+finds what the fix left false only after the fix is sent. [Three findings on #785 in a
+row](code-review-evidence.md#three-sentences-a-fix-left-false-on-785-788) were each a sentence
+beside #781's rule that the session's earlier fix had made false.
+
 **A claim about another mod is read from its portal entry before it is judged or rewritten** (Truls,
 2026-10-26, #780). Its declared `factorio_version`, its dependencies and its releases are in
 `https://mods.factorio.com/api/mods/<name>/full`, which no file in the tree stands in for. A
