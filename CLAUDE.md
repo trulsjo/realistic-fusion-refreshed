@@ -77,7 +77,7 @@ repository's. The sets are pinned in
 in, so run it from the repository root.
 
 **`scripts/run-gates.ps1` runs them all in one step** (#567): the Lua suites, the `--self-test` of
-three scripts under `tools/` that are not gates and that nothing else checks, `ship-check.ps1`, the
+four scripts under `tools/` that are not gates and that nothing else checks, `ship-check.ps1`, the
 default `load-check.ps1` and every `scripts/check-*.ps1` it finds, one at a time, one line per
 gate, exiting non-zero and naming each gate that failed. **Run it on a branch that combines more
 than one ticket, before the review**, and **before or after a subagent fan-out, not during one**
@@ -97,7 +97,7 @@ that starts reading one ends it.
 **One workflow runs the game-free gates unattended** (#599, #659). `.github/workflows/gates.yml` is
 the only file under `.github/`, and it runs on a pull request and on a push to `main`: each
 `tests/test-*.lua`, `ship-check.ps1`, `commit-check.ps1` over the commits that event brought, and
-the `--self-test` of the same three scripts under `tools/`. **It also runs the shared
+the `--self-test` of the same four scripts under `tools/`. **It also runs the shared
 `pr-body-check.ps1 -SelfTest`, and on a pull request the check itself on the body** (#730); an edit
 to the body runs the body check alone; `run-gates.ps1` runs neither. A pull request with a merge
 conflict gets no run at all, which looks the same as one not yet run. **Everything else

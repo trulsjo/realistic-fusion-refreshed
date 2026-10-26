@@ -22,8 +22,9 @@
     WHAT IT RUNS, in this order:
 
       the Lua suites           every tests/test-*.lua, with `lua` from PATH
-      three tools' self-tests  tools/refuse-hanging-bash.py, review-usage.py and rewrap.py,
-                               each with --self-test and `python` from PATH (#659)
+      four tools' self-tests   tools/refuse-hanging-bash.py, review-usage.py, rewrap.py and
+                               review-coverage.py, each with --self-test and `python` from PATH
+                               (#659, #787)
       ship-check.ps1           no game
       load-check.ps1           the default load, from the junctioned repository
       check-*.ps1              every scripts/check-*.ps1, found by name, so a new one is picked up
@@ -31,9 +32,9 @@
     Each is its own process with its default arguments. A gate that fails does not stop the run:
     the rest still run, so one invocation says everything that is broken.
 
-    THE THREE TOOLS ARE NOT GATES, and a self-test is all that checks each. None of them runs in
+    THE FOUR TOOLS ARE NOT GATES, and a self-test is all that checks each. None of them runs in
     any gate: one is a hook that judges every Bash tool call on a machine that registers it, and
-    two are run by hand by the session that needs them. #656's pre-PR review found a defect in what the hook
+    three are run by hand by the session that needs them. #656's pre-PR review found a defect in what the hook
     refuses six times, and each fix was checked by running its self-test by hand. They need Python
     and nothing installed into it.
 
@@ -176,7 +177,7 @@ foreach ($suite in Get-ChildItem (Join-Path $repoRoot 'tests') -Filter 'test-*.l
     $gates += @{ Name = $suite.BaseName; Exe = 'lua'; Arguments = @($suite.FullName) }
 }
 # Named and not found: most of tools/*.py have no --self-test, and would read it as a file name.
-foreach ($tool in 'refuse-hanging-bash', 'review-usage', 'rewrap') {
+foreach ($tool in 'refuse-hanging-bash', 'review-usage', 'rewrap', 'review-coverage') {
     $gates += @{ Name = $tool; Exe = 'python'
                  Arguments = @((Join-Path $repoRoot "tools/$tool.py"), '--self-test') }
 }
