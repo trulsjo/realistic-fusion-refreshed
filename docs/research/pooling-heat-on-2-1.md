@@ -113,7 +113,7 @@ the run and the east one's cools it. `o-ab` registers the west one first and `o-
 first. `o-ba-built` is also built east first, so the east reactor has the lower `unit_number`.
 
 The three are registered on tick 299, one step before the step read. `spend()` in `control.lua`
-pays only a reactor `update()` has stepped (*Read from source*: it pays where
+pays only a reactor `update()` has stepped (*Read from source*, 2026-10-26, as `main` held it then: it pays where
 `storage.heating_spent` holds the reactor's key, and `update()` writes that key), so the step on tick 300 pays neither reactor and
 leaves all three cells in one state. The step read is their second.
 
