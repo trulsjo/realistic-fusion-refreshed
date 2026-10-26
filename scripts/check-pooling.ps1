@@ -20,9 +20,9 @@
     2.1.23 before #771 rewrote them, those rows failed as ADR 0042 says: every unpowered reactor
     read its powered neighbour's temperature, 3.75053e7 C in `pair` and 2.38619e9 C in `feed`.
 
-    THE BOOKKEEPING ROWS WENT WITH THEM. `solo`, `solopipe`, `bare` and `piped` asserted that each
-    reactor kept at least 98% of what it spent across one step, which is what a box that gives
-    nothing back does. On 2.1.23, 2026-10-26, the sum of amount x absolute temperature over every
+    THE BOOKKEEPING ROWS WENT WITH THEM. `solo`, `solopipe`, `bare` and `piped` asserted that the
+    run kept between 98% and 102% of what its reactors spent across one step, which is what a box
+    that gives nothing back does. On 2.1.23, 2026-10-26, the sum of amount x absolute temperature over every
     box on the run kept 100.0% for one reactor, with a tail or without, 77.1% for `bare` and 84.3%
     for `piped`. No decision covers that figure, so it is recorded here and not asserted.
 
@@ -85,8 +85,10 @@
       shared feed     `feed`: both reactors hold plasma the heater made. `full`: the line is full.
       get_capacity    A pipe reports its whole run; a reactor and a connected output box report
                       their own box. On 2.1 rf_fluidbox in factorio-lib.ps1 reads a pipe's with
-                      get_fluid_segment_capacity and a machine's with get_fluid_capacity, and on
-                      2.1.23 all 30 reads give the declared volumes they gave on 2.0.77.
+                      get_fluid_segment_capacity and a machine's with get_fluid_capacity. These rows
+                      assert against declared volumes and not stored readings, so every one of
+                      them passing on 2.1.23 says the reads give what the same rows passed on
+                      2.0.77; no 2.0.77 reading is compared read by read.
 
     A REACTOR'S get_capacity REPORTS ITS OWN BOX, NOT THE RUN. A pipe's reports the run. And that
     holds for an output box with a neighbour (#68), which is the shape all THREE call sites in
@@ -742,13 +744,12 @@ script.on_init(function()
   local surface = game.surfaces[1]
   local force   = game.forces.player
   force.research_all_technologies()
-  -- AND THEN PUT EVERY LADDER BACK (#53, #443). Every prediction below is computed with
-  -- logic.reactor -- the module's own spec -- against a reactor the game is simulating, and each
-  -- ladder makes a spec field a per-force number, so a researched force runs a reactor this rig
-  -- would be predicting the wrong physics for. Held at the shipped values rather than followed,
-  -- because no ladder's field is one of this rig's variables; what research does to a reactor is
-  -- scripts/check-confinement.ps1's subject. READ OFF rf_ladders, and ASSERTED rather than arranged
-  -- silently: a rung rf_unresearch missed fails rf_assert_research.
+  -- AND THEN PUT EVERY LADDER BACK (#53, #443). Until #771 the bookkeeping rows predicted a step
+  -- with logic.reactor, the module's own spec, which a researched force would have run against
+  -- other physics. Those rows are gone, and the ladders are still held at the shipped values, so
+  -- the rig runs the unresearched reactor ADR 0042's 2.1.23 readings were taken on. What research
+  -- does to a reactor is scripts/check-confinement.ps1's subject. READ OFF rf_ladders, and
+  -- ASSERTED rather than arranged silently: a rung rf_unresearch missed fails rf_assert_research.
   rf_unresearch(force, logic, logic.reactor)
   rf_assert_research(record, force, logic, logic.reactor, false)
 

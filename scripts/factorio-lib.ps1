@@ -75,7 +75,8 @@ function Get-ModTreeFingerprint {
         fire. They do it in `data-final-fixes`, in memory, so nothing on disk should move -- and
         #125 asked for that to be ASSERTED rather than reasoned about, because a self-test in
         load-check.ps1 once deleted the repository's own sprite. Here rather than there since #578,
-        so the self-tests of check-pooling.ps1 and check-hc.ps1, which load canaries too, assert it.
+        so check-hc.ps1's self-test, which loads canaries too, asserts it, and so does
+        check-pooling.ps1's, whose canary #771 replaced with a rig-side half.
 
         Path, size and write time rather than a hash of the contents: it walks the assets mod, so
         reading every sprite would cost more than the loads it is guarding, and a canary that
@@ -988,7 +989,7 @@ end
 --- something to contradict it.
 ---
 --- HELD is true for "this force holds every rung" and false for "it holds none" -- the second is
---- check-pooling's shape (#443), which needs its ladders OFF. Both directions in one helper, so the
+--- check-pooling's shape (#443), which holds its ladders OFF. Both directions in one helper, so the
 --- rig that wants the rungs off calls ${unresearch} rather than writing its own loop again. The
 --- ladders are ${ladders}'s.
 ---

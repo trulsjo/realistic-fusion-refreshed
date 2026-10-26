@@ -27,13 +27,13 @@ same sitting, and this table holds no later per-reactor cost for those configura
 | Predicted step energy that arrived, `solopipe` — one reactor, +20 pipe, capacity 3000 | 75.4% | 2026-10-01 | 2.0.77 | unresearched (confinement, heating and plant efficiency off and asserted off) | [5. So the pool does not gain what the reactors spent — and only part of that is the engine's](#5-so-the-pool-does-not-gain-what-the-reactors-spent--and-only-part-of-that-is-the-engines) |
 | Predicted step energy that arrived, `bare` — three reactors bridged, capacity 4000 | 57.6% | 2026-10-01 | 2.0.77 | unresearched (confinement, heating and plant efficiency off and asserted off) | [5. So the pool does not gain what the reactors spent — and only part of that is the engine's](#5-so-the-pool-does-not-gain-what-the-reactors-spent--and-only-part-of-that-is-the-engines) |
 | Predicted step energy that arrived, `piped` — three reactors bridged, +20 pipe, capacity 6000 | 67.0% | 2026-10-01 | 2.0.77 | unresearched (confinement, heating and plant efficiency off and asserted off) | [5. So the pool does not gain what the reactors spent — and only part of that is the engine's](#5-so-the-pool-does-not-gain-what-the-reactors-spent--and-only-part-of-that-is-the-engines) |
+| Predicted step energy that arrived, `solo`, `solopipe`, `bare` and `piped`, under the `input` box | 100.0%, 100.0%, 77.1% and 84.3% | 2026-10-26 | 2.1.23 | unresearched (all 11 rungs asserted off) | [Fluid segments, and what sharing a pool actually costs (#40)](#fluid-segments-and-what-sharing-a-pool-actually-costs-40) |
 | Arrived fraction once settled, three `rf-reactor` bridged with no tail, one rig-driven step, read at 120 and 960 ticks | 57.609% | 2026-09-13 | not stated | not stated | [5. So the pool does not gain what the reactors spent — and only part of that is the engine's](#5-so-the-pool-does-not-gain-what-the-reactors-spent--and-only-part-of-that-is-the-engines) |
 | Positional ramp between west, middle and east single-writer rows, same geometry, 6-tick window | 1.089 points | 2026-09-13 | not stated | not stated | [5. So the pool does not gain what the reactors spent — and only part of that is the engine's](#5-so-the-pool-does-not-gain-what-the-reactors-spent--and-only-part-of-that-is-the-engines) |
 | The same positional ramp at a 120-tick window | 0.000 | 2026-09-13 | not stated | not stated | [5. So the pool does not gain what the reactors spent — and only part of that is the engine's](#5-so-the-pool-does-not-gain-what-the-reactors-spent--and-only-part-of-that-is-the-engines) |
 | Electric buffer the engine holds against the declared `buffer_capacity`, at 1 MJ, 7 MJ, 10 MJ and 100 MJ declared | 16/15 — 6.666667% over | 2026-08-20 | 2.0.77 | not stated | [The rule](#the-rule) |
 | `rf-reactor` buffer ceiling, declared `buffer_capacity = "10MJ"` | 10,666,666.67 J | 2026-08-20 | 2.0.77 | not stated | [The rule](#the-rule) |
 | Vanilla `accumulator`, held against declared | Ratio 1.0 | 2026-08-20 | 2.0.77 | not stated | [What the ratio does **not** apply to, which is why this note claims a rule and not a law](#what-the-ratio-does-not-apply-to-which-is-why-this-note-claims-a-rule-and-not-a-law) |
-| `assembling-machine-2` with `buffer_capacity` forced to `"10MJ"`, energy held | 2,755.56 J | 2026-08-20 | 2.0.77 | not stated | [What the ratio does **not** apply to, which is why this note claims a rule and not a law](#what-the-ratio-does-not-apply-to-which-is-why-this-note-claims-a-rule-and-not-a-law) |
 | `assembling-machine-2` with `buffer_capacity` forced to `"10MJ"`, energy held, at 150 kW and at 300 kW | 10,666,666.67 J | 2026-10-26 | 2.1.23 | not stated | [What the ratio does **not** apply to, which is why this note claims a rule and not a law](#what-the-ratio-does-not-apply-to-which-is-why-this-note-claims-a-rule-and-not-a-law) |
 | D-D vented, rig, `-Gap 6`, *n* = 200, `scriptUpdate` | 3.68 µs per reactor | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
 | D-D collected, rig, `-Gap 6`, *n* = 200, `scriptUpdate` | 4.84 µs per reactor | 2026-09-03 | 2.0.77 | not stated | [Collectors attached (#62)](#collectors-attached-62) |
@@ -848,6 +848,17 @@ infinity pipe filter, so the write semantics never come under strain — it meas
 *costs*, not whether it is *right*. The pooling harness uses no infinity pipe anywhere: every run is
 seeded once and left to burn down.
 
+> **Every reading in this section is 2.0.77's, under the `input-output` box — marked 2026-10-26
+> (#771).** The rows of `check-pooling.ps1` that made the figures of 3 to 5 are gone from it: #741
+> removed the write-shape, writer and ramp rows, and #771 the bookkeeping rows, so where this
+> section says the check reads or predicts something, it did until then. On Factorio 2.1.23,
+> nothing researched, the bookkeeping quantity of 5 read 100.0%, 100.0%, 77.1% and 84.3% for
+> `solo`, `solopipe`, `bare` and `piped`, against the 94.6%, 75.4%, 57.6% and 67.0% below
+> (2026-10-26). The box is `input` there, and on 2.1 reactors on a run share heat
+> ([ADR 0042](../adr/0042-on-2-1-reactors-on-a-run-share-heat.md)), so the two are not one box
+> read on two versions. `check-pooling.ps1`'s help records the 2.1.23 figure and asserts nothing
+> on it.
+
 The three semantics below are the ones `control.lua`'s `apply()` is written against, and the 2.0 API
 documents none of them. Two of the three are not what this note previously said.
 
@@ -1365,8 +1376,9 @@ The prototype documentation for 2.0.77 calls it *"How much energy this entity ca
 (<https://lua-api.factorio.com/2.0.77/types/ElectricEnergySource.html>). Read as a ceiling that is
 wrong by 1/15. Read as a floor it is right for every probe above — and it is not a hint, because the
 engine's ceiling is an exact function of it. The qualifier is the assembling machine at the foot of
-this section, which does not honour the field at all; for the reactor, and for everything else
-measured here, floor is the answer.
+this section, which on 2.0.77 does not honour the field at all; for the reactor, and for
+everything else measured here, floor is the answer. On 2.1.23 the assembling machine honours it
+too, as the foot of that section says.
 
 The trap for mod code is the second half: **`LuaElectricEnergySourcePrototype.buffer_capacity`
 returns the declared figure, not the effective one.** So any check written against the prototype —
@@ -1407,7 +1419,7 @@ directly — rather than a declared capacity it holds 16/15 of.
   against its declared 5 MJ, and the same prototype forced to 10 MJ clamps at 10,000,000 J. Ratio
   1.0, twice. So the 16/15 is not a property of every electric energy source; it does not apply to
   `usage_priority = "managed-accumulator"`.
-- **An assembling machine ignores `buffer_capacity` altogether.** `assembling-machine-2` with the
+- **On 2.0.77 an assembling machine ignores `buffer_capacity` altogether.** `assembling-machine-2` with the
   field forced to `"10MJ"` holds **2,755.56 J** — five orders down. That is `(2500 + 83.33) * 16/15`:
   its energy usage plus its drain, per tick, times the same ratio. **Measured at two usages rather
   than fitted at one** — the same machine at 300 kW instead of 150 kW holds **5,511.11 J**, which is
@@ -1415,7 +1427,8 @@ directly — rather than a declared capacity it holds 16/15 of.
   not a ceiling and not a hint; it is discarded, and the buffer is sized from the machine's own
   consumption instead. The ratio survives; only the thing it multiplies changes.
 
-  **On Factorio 2.1.23 it no longer does** (2026-10-26, #770). Both machines hold
+  **On Factorio 2.1.23 the assembling machine honours `buffer_capacity`** (2026-10-26, #770).
+  Both machines hold
   **10,666,666.67 J**, 16/15 of the declared 10 MJ, the same as every other non-accumulator here,
   so on 2.1.23 the assembling machine is no exception. The figures above are 2.0.77's.
   `check-buffer.ps1` now holds both machines to 16/15.
