@@ -543,20 +543,21 @@ names the earlier commit by its subject and says what it narrows** (Truls, 2026-
 message is not contradicted, and step 7 of `/pre-pr-review` reads it so. The reword stays for a
 claim that nothing later on the branch corrects, for a correction whose message names nothing, and
 for a finding about a commit message itself. Each reword after the pull request opens costs a force
-push and, as #640 has it, a message to a reviewer; the force push still prompts, which Truls kept
-when he ruled. [The rewords on #779](code-review-evidence.md#four-gaps-on-779-780-to-783) are on the
-evidence page.
+push and, as #640 has it, a message to a reviewer; the force push still prompts, which Truls chose
+on 2026-10-26 when asked in the session that implemented #783. [The rewords on
+#779](code-review-evidence.md#four-gaps-on-779-780-to-783) are on the evidence page.
 
 **A commit body takes its reason from the ticket, and leaves what the change says to the diff**
 (2026-10-10, #671). This binds every commit on a branch from the first, before a review has read it.
 The body says why the change was made and cites the ticket, and names the file or the symbol the
 commit changes. It neither quotes nor paraphrases a sentence the diff adds. A review does not change
 the ticket, and it does change the diff: a body that restates a sentence of the diff is made false
-when a finding corrects that sentence, and the reword above, or a fix message that names it, is then
-owed for words the body had no need of. It rests on the first sentence of the shared commit
-convention's *Body* section, `vendor/grado-factorio-tools/docs/commit-convention.md`, and holds a
-branch under review to it. Six of #669's 16 pre-PR findings were about a commit message, 2, 6, 11,
-14, 15 and 16, and three commits were reworded five times in two rounds; [the evidence page has
+when a finding corrects that sentence, and the reword above, or a later message that names that
+commit by its subject and says what it narrows, is then owed for words the body had no need of. It
+rests on the first sentence of the shared commit convention's *Body* section,
+`vendor/grado-factorio-tools/docs/commit-convention.md`, and holds a branch under review to it. Six
+of #669's 16 pre-PR findings were about a commit message, 2, 6, 11, 14, 15 and 16, and three commits
+were reworded five times in two rounds; [the evidence page has
 each](code-review-evidence.md#commit-bodies-that-a-fix-made-false-on-669-671).
 
 **Every pull request gets the plugin pass, after it is opened** (Truls, 2026-10-07, #593). It is the
