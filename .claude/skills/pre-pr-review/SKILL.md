@@ -32,6 +32,10 @@ pass.
    git log --format="$(git branch --show-current) %s" origin/main..HEAD >> "$(git rev-parse --git-path pre-pr-reviewed.txt)"   # the range handed; step 5 (#781)
    ```
 
+   **A review of part of the branch gives these lines that part's range, before they run**
+   (#781): the `git diff` and the `git log` line both, so the file records only what the reviewer
+   is handed.
+
    **`pre-pr-reviewed.txt` is in the git directory, not the scratchpad** (#781): like the tag, it
    outlives the session, so a review that spans two sessions still finds what the first was
    handed, and it is never pushed. `--git-path` gives each worktree its own, and each line starts
@@ -61,8 +65,7 @@ pass.
    `description` that starts `Pre-PR review`, which step 6's script sorts it by (#661). Its brief is
    the block below with the paths filled in and nothing about what the author thinks is right,
    and nothing that excuses a commit in the diff: step 1 recorded every commit in it as handed
-   (#781). A review of part of the branch is handed that part's diff, and step 1's `git log`
-   line is given that part's range.
+   (#781).
 
    > You are the pre-PR reviewer of a branch of this repository. Read
    > `docs/agents/code-review.md` in full first; its second rule, *Review the prose, not only the
