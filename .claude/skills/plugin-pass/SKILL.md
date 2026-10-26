@@ -1,6 +1,6 @@
 ---
 name: plugin-pass
-description: Run this repository's plugin pass on an open pull request. The session checks eligibility itself, five independent reviewers read the change, one verifier checks every candidate they raise against the tree or the mod portal, and the result is two comments on the pull request and its two rows in docs/agents/review-figures.md. Use when a pull request has been opened.
+description: Run this repository's plugin pass on an open pull request. The session checks eligibility itself, five independent reviewers read the change, one verifier checks every candidate they raise against the tree, the mod portal or the game's API reference, and the result is two comments on the pull request and its two rows in docs/agents/review-figures.md. Use when a pull request has been opened.
 ---
 
 # /plugin-pass
@@ -64,7 +64,8 @@ or attribute is checked in the game's own reference, `runtime-api.json` and
 the `Factorio.exe` `Resolve-FactorioExe` resolves, which is `$env:FACTORIO_EXE` where that is
 set and `D:\SteamLibrary\steamapps\common\Factorio\bin\x64\Factorio.exe` where it is not. Read
 the member there by name: a runtime class's under its `methods` or `attributes`, a
-prototype's under its `properties`, inheritance through `parent`. The files are the
+prototype's under its `properties`, inheritance through `parent`, and a concept, event, define
+or prototype type under `concepts`, `events`, `defines` or `types`. The files are the
 installed game's, so they hold the version the gates run against; `application_version` names
 it. They are outside the repository, so a worktree does not lack them."
 
@@ -163,7 +164,8 @@ it. They are outside the repository, so a worktree does not lack them."
    > Return one line for each candidate: its letter, a verdict, and the evidence in a sentence.
    > The verdict is **real** when the source shows the fault, **not real** when the source shows
    > there is none or the fault is not this pull request's, and **not verified** when you could
-   > not check it from the tree, or from the portal for a claim about another mod. Give no score.
+   > not check it from the tree, from the portal for a claim about another mod, or from the
+   > game's reference for a claim about its API. Give no score.
 
    A verifier that stops before it has reported is resumed as a reviewer is in step 2. Done when
    every candidate has a verdict. Then remove the worktree, or have it removed, if one

@@ -1622,7 +1622,9 @@ function Write-BrownoutReport {
     # something a reader has to decode, and it turns an SVG into rubble: a polyline's points are
     # comma-separated, so "85,85 82,52" is four coordinates rather than two and the chart draws
     # nonsense without erroring. Set once around the whole render rather than at each format site,
-    # because the one site that got forgotten would be the one that broke a graph.
+    # because the one site that got forgotten would be the one that broke a graph. Since #794
+    # factorio-lib.ps1 sets the invariant culture for every rig as it is dot-sourced, so here it is
+    # a second hold on the same thing, kept so this function does not depend on how it was reached.
     $was = [Threading.Thread]::CurrentThread.CurrentCulture
     [Threading.Thread]::CurrentThread.CurrentCulture = [cultureinfo]::InvariantCulture
     try {

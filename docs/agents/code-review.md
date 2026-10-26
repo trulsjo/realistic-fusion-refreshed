@@ -201,10 +201,10 @@ in `plasma-input-box.md`, and #713 named it in `quality.md` and in
 passed it and the plugin pass raised it at 75.
 
 **A change to a figure in a note changes its row in that note's table in the same commit.** Since
-2026-10-06 (#602) seven notes under `docs/research/` open with a `## Current figures` table: the
-headline figures the note stands behind, and a grid as a few of its cells or as counts, not the
-note's every figure. A figure that moves in a section and not in its row leaves the old one at the
-top of the note, presented as current. A figure a change supersedes loses its row.
+2026-10-06 (#602) notes under `docs/research/` open with a `## Current figures` table, eight on
+2026-10-26: the headline figures the note stands behind, and a grid as a few of its cells or as
+counts, not the note's every figure. A figure that moves in a section and not in its row leaves the
+old one at the top of the note, presented as current. A figure a change supersedes loses its row.
 
 **A gate holds part of this, and the review holds the rest** (#616). Section 10 of
 `scripts/ship-check.ps1` fails a row whose Section cell holds no link, and a row whose figure is

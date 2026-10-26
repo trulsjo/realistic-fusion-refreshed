@@ -11,7 +11,7 @@ a figure below changes its row here in the same commit (docs/agents/code-review.
 | The same three, two rig writes in turn, each worked out before either landed | 87.5000%, as replayed | 2026-10-26 | 2.1.23 | unresearched (all 11 rungs asserted off) | [The engine alone](#the-engine-alone) |
 | Three bridged reactors, all powered, one step: share kept with one, two and three registered | 100.00%, 87.50% and 77.08% | 2026-10-26 | 2.1.23 | unresearched (all 11 rungs asserted off) | [The writers](#the-writers) |
 | Five bridged reactors, all powered and registered, one step: share kept | 75.23% | 2026-10-26 | 2.1.23 | unresearched (all 11 rungs asserted off) | [More reactors](#more-reactors) |
-| Two bridged reactors, the west one powered: share kept with the west one written first and with the east one written first | 53.10% and 111.08% | 2026-10-26 | 2.1.23 | unresearched (all 11 rungs asserted off) | [The write order](#the-write-order) |
+| Two bridged reactors from one state, the west one powered: share kept with the west one written first and with the east one written first | 58.56% and 101.44% | 2026-10-26 | 2.1.23 | unresearched (all 11 rungs asserted off) | [The write order](#the-write-order) |
 
 ## The question
 
@@ -34,15 +34,19 @@ for each reactor the mod steps. The ticket names three readings:
 
 `pwsh -File scripts/probe-pooling-heat.ps1`, 2026-10-26, Factorio 2.1.23 (build 87750), base game
 only, nothing researched (all 11 rungs asserted off), the shipped 6-tick interval. Its report is
-`.probe-reports/probe-pooling-heat.txt`. It was run twice that day with the same figures, the
-second time with the unit_number replay added.
+`.probe-reports/probe-pooling-heat.txt`, the run of 19:11.
 
 Every cell is its own run, seeded full at 10⁶ °C for 60 ticks. Every reactor is placed with
 `raise_built = false`, and the probe registers the ones a cell steps with
-`script.raise_script_built`, in an order it chooses. The stepped cells are read across one interval
-from tick 306, a step tick, to tick 312, as #791's bookkeeping rows read them. Each figure is read
-twice: as the sum over every box on the run, and as `get_fluid_segment_fluid(1)` on the westmost
-reactor, the segment's own reading.
+`script.raise_script_built`, in an order it chooses. The stepped cells are read across the step on
+tick 306, from tick 305 to tick 311, so the window holds that step and no other whichever of the
+two `on_tick` handlers runs first. Each figure is read twice: as the sum over every box on the run,
+and as `get_fluid_segment_fluid(1)` on the westmost reactor, the segment's own reading.
+
+**`realistic-fusion-refreshed`'s `on_tick` runs before the probe's.** *Measured*: `solo`, which
+has no pipe and so moves only when the mod steps it, read a different heat on tick 306 from tick
+305. #791's bookkeeping rows read on a step tick, after that tick's step, so their window held the
+next step. Their three-reactor figure was 77.1%, the share `w3` keeps here.
 
 Beside each figure the probe prints what reading 1 predicts. It replays the step's writes in Lua.
 Each write replaces its reactor's share of the run, and the run is then shared out by volume at
@@ -53,7 +57,7 @@ one temperature. That is how the write cell of
 
 ### The engine alone
 
-Unregistered and unpowered reactors, which nothing steps. On tick 306 the probe writes the
+Unregistered and unpowered reactors, which nothing steps. On tick 305 the probe writes the
 westmost reactor at its own amount and 5×10⁷ °C, fifty times the seed. `eng1` is one reactor with
 twenty pipes, and `eng3` is three bridged. `eng3x2` is the same three, written twice in turn: the
 westmost, then the middle one. Each write is worked out from the run before either landed, as
@@ -87,44 +91,46 @@ registered. `w3` is #791's `bare`.
 
 | cell | registered | predicted, unit-K | gained, box sum and segment | kept | replay of reading 1 |
 |---|---|---|---|---|---|
-| `solo` | 1 of 1, no pipe | 8.28732×10⁸ | 8.28732×10⁸ | 100.00% | 100.00% |
-| `w1` | 1 of 3 | 1.03303×10⁹ | 1.03303×10⁹ | 100.00% | 100.00% |
-| `w2` | 2 of 3 | 1.9393×10⁹ | 1.69689×10⁹ | 87.50% | 87.50% |
-| `w3` | 3 of 3 | 2.78662×10⁹ | 2.14802×10⁹ | 77.08% | 77.08% |
+| `solo` | 1 of 1, no pipe | 8.33944×10⁸ | 8.33943×10⁸ | 100.00% | 100.00% |
+| `w1` | 1 of 3 | 1.03532×10⁹ | 1.03532×10⁹ | 100.00% | 100.00% |
+| `w2` | 2 of 3 | 1.94582×10⁹ | 1.70258×10⁹ | 87.50% | 87.50% |
+| `w3` | 3 of 3 | 2.79818×10⁹ | 2.15692×10⁹ | 77.08% | 77.08% |
 
-- **`w3` is #791's figure.** *Measured*: 2.78662×10⁹ predicted and 2.14802×10⁹ gained, the two
-  numbers #791 printed for `bare`, so the probe reads what the gate read.
+- **`w3` keeps #791's share.** *Measured*: 77.08%, where #791's `bare` kept 77.1% across the next
+  step, 2.14802×10⁹ of 2.78662×10⁹ predicted.
 - **The loss grows with the number of writers on a run, and the replay of reading 1 gives every
   figure.** *Measured*. One writer keeps all of it, whatever else is on the run.
 
 ### The write order
 
-Two bridged reactors, the west one powered and the east one not, both registered. The west one's
-step heats the run and the east one's cools it. `o-ab` registers the west one first and `o-ba`
-the east one first. `o-ba-built` is also built east first, so the east reactor has the lower
-`unit_number`.
+#792 asked for two reactors whose plasma differs before the step. On a 2.1 run both boxes read one
+plasma, so the probe makes the two steps differ by what each reactor is paid instead. Two bridged
+reactors, the west one powered and the east one not, both registered: the west one's step heats
+the run and the east one's cools it. `o-ab` registers the west one first and `o-ba` the east one
+first. `o-ba-built` is also built east first, so the east reactor has the lower `unit_number`.
 
-| cell | registered | west, east `unit_number` | kept | replay, registration order | replay, `unit_number` order |
-|---|---|---|---|---|---|
-| `o-ab` | west, east | 296, 297 | 53.10% | 53.10% | 53.10% |
-| `o-ba` | east, west | 305, 306 | 53.10% | 106.90% | 53.10% |
-| `o-ba-built` | east, west | 315, 314 | 111.08% | 111.08% | 111.08% |
+The three are registered on tick 299, one step before the step read. `spend()` in `control.lua`
+pays only a reactor `update()` has stepped, so the step on tick 300 pays neither reactor and
+leaves all three cells in one state. The step read is their second.
 
-The `unit_number`s are the second run's. The first run's were 265 and 266, 274 and 275, and 284
-and 283, and its kept shares were the same.
+| cell | registered | west, east `unit_number` | predicted, unit-K | kept | replay, registration order | replay, `unit_number` order |
+|---|---|---|---|---|---|---|
+| `o-ab` | west, east | 265, 266 | 1.12594×10⁹ | 58.56% | 58.56% | 58.56% |
+| `o-ba` | east, west | 274, 275 | 1.12594×10⁹ | 58.56% | 101.44% | 58.56% |
+| `o-ba-built` | east, west | 284, 283 | 1.12594×10⁹ | 101.44% | 101.44% | 101.44% |
 
-- **The kept share depends on the order the mod writes in.** *Measured*: the same two reactors
-  keep 53.10% written west first and 111.08% written east first. Written east first, the cooling
-  write lands first and the heating one replaces part of it, so the run gains more than the model
-  says it should.
+- **The kept share depends on the order the mod writes in.** *Measured*: the same two reactors,
+  from one state and with one prediction, keep 58.56% written west first and 101.44% written east
+  first. Written east first, the cooling write lands first and the heating one replaces part of
+  it, so the run gains more than the model says it should.
 - **The mod writes in `unit_number` order, not in the order reactors were registered.** *Measured*
   for these three cells: registering the east reactor first changed nothing, and building it first
   did. *Inferred*: ascending `unit_number`, which is build order. `entities.registry()` in
   `realistic-fusion-refreshed/scripts/entity-management.lua` keys its table by `unit_number`, and
   `update()` walks it with `pairs`. That `pairs` follows the key there is *Inferred* from these
-  cells, not read from source.
-- `o-ba-built` started its step from a different state, 7.76728×10⁸ predicted against 8.97491×10⁸,
-  because its earlier steps ran in the other order too.
+  cells, not read from source. The comment on `update()` in `control.lua` says reading first
+  "makes every reactor's step independent of the order entities.registry() happens to iterate
+  in". That holds for what each step computes. What the run keeps of the steps does depend on it.
 
 ### More reactors
 
@@ -140,7 +146,7 @@ count.
 rules out reading 2. The box sum and the segment's reading agree on every run read, which rules
 out the sum. A replay of `update()`'s writes, each replacing its reactor's share of a run that is
 then shared out by volume, gives every kept share the probe read, to the digits printed: 87.5% and
-77.08% for two and three writers, 75.23% for five, and 53.10% or 111.08% by write order.
+77.08% for two and three writers, 75.23% for five, and 58.56% or 101.44% by write order.
 
 What follows from it, *Inferred*: a run's kept share is set by how many reactors write to it, the
 share of the run each holds, and their order, and so by pipe length. That is #791's 84.3% for
@@ -156,8 +162,8 @@ ticket's. Each carries what the probe found for it.
 - **Accept and document it.** Shared runs lose part of the heating, or gain some, by order. No code
   changes. The probe says the size of the error depends on writer count, each reactor's share of
   the run and build order, so a player's line is off by an amount the tooltip cannot state as one
-  figure: from 100% for one reactor to 75.23% for five, and above 100% where a reactor that cools
-  writes first.
+  figure: 100% for one reactor, 75.23% for five, 58.56% for a pair where one heats and one cools,
+  and above 100% where the one that cools writes first.
 - **Write a change, not a state.** `apply()` would add the step's change with `add_fluid` and take
   it out with `remove_fluid`, instead of setting the result. *Inferred* from the engine cells: a
   write's heat is kept whole and shared out at once, so changes would add up whatever the order,
@@ -171,4 +177,4 @@ ticket's. Each carries what the probe found for it.
   which ADR 0011 was written to avoid.
 - **Bring an assertion back.** Whichever is chosen, `check-pooling.ps1` could assert the kept share
   against a bound again. The probe says what a bound has to allow for under the first option: the
-  order of the writes moves the share by about 58 points on a pair.
+  order of the writes moves the share by about 43 points on a pair that starts from one state.

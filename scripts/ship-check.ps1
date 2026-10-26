@@ -182,7 +182,7 @@
     dot-source factorio-lib.ps1, and runs a stand-in rig in a scratch directory that must leave a
     report in .rig-reports/ there holding its head, its printed line and its throw. The
     unsourcing-rig-caught half plants a rig of each kind, and the unreported-run-caught half
-    requires a stand-in named as no rig is to be caught leaving no report. It starts no game, so it
+    requires a stand-in named as no rig is to be caught leaving no report. It loads no map, so it
     cannot see a real rig's report; the section comment has the rest.
 
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
@@ -1043,7 +1043,7 @@ foreach ($cite in (Find-NumberedHalves -Files $citingCode -Root $repoRoot)) {
 
 # 10. A ROW OF A `## Current figures` TABLE MUST STILL BELONG TO ITS NOTE (#602, #616).
 #
-# Seven notes under docs/research/ open with a table of the figures the note stands behind, and
+# Eight notes under docs/research/ on 2026-10-26, seven when this was written, open with a table of the figures the note stands behind, and
 # docs/agents/code-review.md says a figure and its row change in the same commit. That rule is prose,
 # and this is the half of it a script can hold: a row whose value is written nowhere in the note
 # below the table, which is what an edit to a section leaves behind when the row is forgotten and a
@@ -1476,16 +1476,20 @@ foreach ($row in Find-LocalMainReads -Files @($mainReaders | Where-Object { $_ -
 #
 # Since #794 a scripts/check-*.ps1 that dot-sources factorio-lib.ps1 leaves what it printed in
 # .rig-reports/, through Start-RunReport, the function that keeps a probe's in .probe-reports/
-# (#589). Nothing proved either before. This checks two things, starting no game: that every rig
+# (#589). Nothing proved either before. This checks two things, loading no map: that every rig
 # dot-sources the library, since a rig that does not has no report and nothing else says so; and
 # that a stand-in rig planted in a scratch directory, which prints a line and throws, leaves a
 # report there holding the head, its line and its throw. The library puts a report in the
 # directory above the script's own, so the stand-in's lands in the scratch directory and not here.
 #
+# The stand-in's report reads the game's version as a probe's does, so where Factorio is installed
+# it is started with --version, and where it is not the report says the version was not read.
+#
 # WHAT IT CANNOT SEE: a real rig's report, which needs the game; run-gates.ps1 leaves one per rig.
 # A probe's: the probe branch is the same call with another directory. A dot-source written any
-# other way than `. "$PSScriptRoot/factorio-lib.ps1"` on a line of its own fails the first check.
-$RIG_SOURCES_LIB = '(?m)^\s*\.\s+"\$PSScriptRoot/factorio-lib\.ps1"'
+# other way than `. "$PSScriptRoot/factorio-lib.ps1"` on a line of its own, a trailing comment
+# allowed, fails the first check; one inside a <# #> block passes it.
+$RIG_SOURCES_LIB = '(?m)^\s*\.\s+"\$PSScriptRoot/factorio-lib\.ps1"\s*(#.*)?$'
 
 function Find-UnsourcedRigs {
     <#  Each of these rigs that does not dot-source factorio-lib.ps1.  #>
