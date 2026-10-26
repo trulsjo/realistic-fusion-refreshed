@@ -1279,8 +1279,9 @@ says they should** (2026-10-26, nothing researched, 1801 ticks). Every unpowered
 powered neighbour's temperature: 3.75053×10⁷ °C in `pair` and 2.38619×10⁹ °C in `feed`. A write
 to one box of `mix` reached the whole run at once, so its ends could not be started fifty times
 apart, and `bare` and `piped` kept 77.1% and 84.3% of what was spent. #771 rewrote the check to
-ADR 0042: on every row every reactor reads the westmost's amount and temperature to a relative
-10⁻⁶, and it passes 60 checks with 0 failures, every one of those rows at a difference of 0.
+ADR 0042: on seven rows, `pair`, `trio`, `five`, `bare`, `piped`, `feed` and `full`, every reactor
+reads the westmost's amount and temperature to a relative 10⁻⁶, and `mix`'s ends read one
+temperature. It passes 60 checks with 0 failures, each of the seven at a difference of 0.
 `scripts/check-pooling.ps1`'s help has what it asserts now and the rows it dropped.
 
 ### The load check: everything holds

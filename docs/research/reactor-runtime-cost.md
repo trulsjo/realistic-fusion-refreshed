@@ -850,7 +850,7 @@ seeded once and left to burn down.
 
 > **Every reading in this section is 2.0.77's, under the `input-output` box — marked 2026-10-26
 > (#771).** The rows of `check-pooling.ps1` that made the figures of 3 to 5 are gone from it: #741
-> removed the write-shape, writer and ramp rows, and #771 the bookkeeping rows, so where this
+> removed the `idle`, write-shape, writer, ramp and probe rows, and #771 the bookkeeping rows, so where this
 > section says the check reads or predicts something, it did until then. On Factorio 2.1.23,
 > nothing researched, the bookkeeping quantity of 5 read 100.0%, 100.0%, 77.1% and 84.3% for
 > `solo`, `solopipe`, `bare` and `piped`, against the 94.6%, 75.4%, 57.6% and 67.0% below
@@ -1378,7 +1378,7 @@ wrong by 1/15. Read as a floor it is right for every probe above — and it is n
 engine's ceiling is an exact function of it. The qualifier is the assembling machine at the foot of
 this section, which on 2.0.77 does not honour the field at all; for the reactor, and for
 everything else measured here, floor is the answer. On 2.1.23 the assembling machine honours it
-too, as the foot of that section says.
+too.
 
 The trap for mod code is the second half: **`LuaElectricEnergySourcePrototype.buffer_capacity`
 returns the declared figure, not the effective one.** So any check written against the prototype —
