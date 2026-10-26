@@ -421,3 +421,11 @@ One line for each, newest last. The passages above are not edited.
   step 4 of `/pre-pr-review` and step 7 of `/plugin-pass` point at it. Truls said in the session
   that implemented it that it is not his ruling, so it names no one. No gate reads it. The wording
   is the session's.
+- **2026-10-26, #793: a claim about the game's API is checked in the game's own reference.** Truls
+  decided it in the ticket's triage, after #791's pre-PR reviewer left a `remove_fluid` finding
+  unverified and a plugin-pass reviewer could not check it without the 2.1 docs. The pointer goes
+  in both review skills' briefs, and not in `code-review.md` or `CLAUDE.md`: `runtime-api.json`
+  and `prototype-api.json` beside the `Factorio.exe` that `Resolve-FactorioExe` resolves. The
+  verifier's brief in `/plugin-pass` step 4 gives "not verified" for a claim it could not check
+  there, and since #796 `plugin-pass.md`'s paragraph on the verifier says the same. No gate reads
+  it. The wording is the session's.
