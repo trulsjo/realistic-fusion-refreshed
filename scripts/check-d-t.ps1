@@ -142,16 +142,16 @@ end
 
 local function holds(entity, fluid)
   local total = 0
-  for index = 1, #entity.fluidbox do
-    local contents = entity.fluidbox[index]
+  for index = 1, #rf_fluidbox(entity) do
+    local contents = rf_fluidbox(entity)[index]
     if contents and contents.name == fluid then total = total + contents.amount end
   end
   return total
 end
 
 local function box_of(entity, fluid)
-  for index = 1, #entity.fluidbox do
-    local filter = entity.fluidbox.get_filter(index)
+  for index = 1, #rf_fluidbox(entity) do
+    local filter = rf_fluidbox(entity).get_filter(index)
     if filter and filter.name == fluid then return index end
   end
   return nil
@@ -260,7 +260,7 @@ script.on_init(function()
   power(surface, force, { 108, 5 })
   local index = box_of(heater, MIX)
   if not index then error("the heater has no box that will take " .. MIX) end
-  for _, connection in pairs(heater.fluidbox.get_pipe_connections(index)) do
+  for _, connection in pairs(rf_fluidbox(heater).get_pipe_connections(index)) do
     local supply = must(surface.create_entity({
       name = "infinity-pipe", position = connection.target_position, force = force,
     }), "supply for " .. MIX)
@@ -283,10 +283,10 @@ script.on_event(defines.events.on_tick, function()
   local r = storage.rig
   if not r then return end
   for key, reactor in pairs({ dt = r.dt, dd = r.dd }) do
-    local produced = reactor.fluidbox[2]
+    local produced = rf_fluidbox(reactor)[2]
     if produced then
       storage.sold[key] = storage.sold[key] + produced.amount
-      reactor.fluidbox[2] = nil
+      rf_fluidbox(reactor)[2] = nil
     end
   end
 end)
@@ -303,7 +303,7 @@ script.on_nth_tick(CHECK_AT, function()
   --
   -- The claim #28 turns on, and the one a leftover fluid box filter would break silently: an
   -- unfiltered input box means a reactor burns whichever plasma is plumbed to it.
-  local plasma = r.dt.fluidbox[1]
+  local plasma = rf_fluidbox(r.dt)[1]
   record(plasma ~= nil and plasma.name == DT,
     "the reactor accepts D-T plasma through the box that used to be filtered to D-D",
     plasma and plasma.name or "nothing in the box")
@@ -322,7 +322,7 @@ script.on_nth_tick(CHECK_AT, function()
   -- Both reactors are fed at the same temperature and have run for the same time, so the only thing
   -- separating these two numbers is the reaction. Compared on reactor energy because that is what a
   -- player is paid; the temperature above already says the two plasmas are in different regimes.
-  local dd_plasma = r.dd.fluidbox[1]
+  local dd_plasma = rf_fluidbox(r.dd)[1]
   record(dd_plasma ~= nil and dd_plasma.name == DD, "the D-D reactor beside it is unchanged",
     dd_plasma and string.format("%s at %.4g C", dd_plasma.name, dd_plasma.temperature) or "nothing")
 

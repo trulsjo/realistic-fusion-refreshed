@@ -100,7 +100,7 @@ local PLASMA = "rf-d-d-plasma"
 -- check_plasma_capacity() then refuses to load without (#296). So this is the capacity the
 -- simulation is actually running -- a literal here would go on seeding 1000 units into a box that
 -- had moved, and the rig would report a full reactor while filling a fraction of one.
-local FULL   = prototypes.entity["rf-reactor"].fluidbox_prototypes[1].volume
+local FULL   = prototypes.entity["rf-reactor"].fluidbox_prototypes[1].get_volume()
 -- Where an unresearched D-D reactor settles, so rf-none is a flat line rather than a fourth curve.
 -- tests/test-reactor-logic.lua pins it; if it moves, this rig reports the control drifting and
 -- names the number, which is the right way round.
@@ -108,6 +108,8 @@ local SEED_C = 2.422e8
 
 -- One minute of game time per phase, at sixty ticks a second.
 local PHASE_TICKS = 3600
+
+__RIGBUILD__
 
 local lines = {}
 local failures = 0
@@ -165,7 +167,7 @@ local function cell(surface, name, x, rungs, researched)
   }), "rf-reactor for " .. name)
   power(surface, force, { math.floor(x) + 9, 5 })
 
-  reactor.fluidbox[1] = { name = PLASMA, amount = FULL, temperature = SEED_C }
+  rf_fluidbox(reactor)[1] = { name = PLASMA, amount = FULL, temperature = SEED_C }
   return { force = force, reactor = reactor, name = name }
 end
 
@@ -203,7 +205,7 @@ end)
 
 --- This reactor's plasma temperature, or nil if it has none.
 local function temperature(c)
-  local plasma = c.reactor.fluidbox[1]
+  local plasma = rf_fluidbox(c.reactor)[1]
   return plasma and plasma.temperature or nil
 end
 
@@ -212,9 +214,9 @@ end
 -- and the four curves would separate for two reasons instead of one.
 script.on_nth_tick(60, function()
   for _, c in pairs(storage.cells) do
-    local plasma = c.reactor.fluidbox[1]
+    local plasma = rf_fluidbox(c.reactor)[1]
     if plasma and plasma.amount < FULL then
-      c.reactor.fluidbox[1] = { name = plasma.name, amount = FULL, temperature = plasma.temperature }
+      rf_fluidbox(c.reactor)[1] = { name = plasma.name, amount = FULL, temperature = plasma.temperature }
     end
   end
 end)
@@ -310,7 +312,8 @@ script.on_nth_tick(PHASE_TICKS, function()
   for _, line in ipairs(lines) do log("CONF-RIG " .. line) end
 end)
 '@
-    Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') -Value $lua
+    Set-Content -Encoding utf8 -Path (Join-Path $rigDir 'control.lua') `
+        -Value ($lua.Replace('__RIGBUILD__', (Get-RigBuildLua)))
 }
 
 $step = @{ FactorioExe = $FactorioExe; ModDirectory = $modDir; OutputDirectory = $temp }
