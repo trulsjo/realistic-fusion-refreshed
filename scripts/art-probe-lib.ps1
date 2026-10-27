@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
     The scaffolding every art probe needs: the Lua a rig is built on, and the launch that turns it
-    into pictures. Dot-sourced -- it runs nothing by itself.
+    into pictures. Dot-sourced after scripts/factorio-lib.ps1, whose Get-RigBuildLua it calls as it
+    is sourced; it starts no game by itself.
 
 .DESCRIPTION
     THE ONE COPY OF WHAT THREE ART PROBES WOULD OTHERWISE HAND-COPY (#386). An art probe is the

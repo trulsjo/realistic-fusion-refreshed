@@ -2,7 +2,9 @@
 --
 -- THIS IS THE REPOSITORY'S OWN WORK and carries the repository's own licence. Nothing here derives
 -- from Krastorio 2 or from either predecessor: the models are built procedurally with no imported
--- texture or mesh, which is the licence rule the whole render route was written under (#238).
+-- texture or mesh, which was the licence rule the whole render route was written under (#238).
+-- ADR 0043 now allows a CC0 image texture, recorded beside the model that uses it; no model here
+-- uses one yet, and meshes are still never imported.
 --
 -- The PNGs are written by `/render-machine rf-<machine>` (tools/render-machine.py, #251), which
 -- extracts the machine's footprint and connections from --dump-data and renders the stored model in
