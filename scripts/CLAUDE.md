@@ -31,14 +31,14 @@ no version, and its own `-SelfTest` proves that a **git-ignored** file planted i
 reach a zip — ignored specifically, since merely-untracked would be excluded for the wrong reason.
 The mod it plants in is a fixture in the self-test's own scratch repository, not one of ours.
 
-**`scripts/ship-check.ps1` reads its files as each section reaches it, so an edit made during a run
-can make it pass on a tree that fails** (#687). Every section but 11 reads a file's contents from
-the working tree; section 11 reads the index, so there a staged edit is what counts. The result
-describes the files as each section found them, and not a commit. On 2026-10-12, at 99bc230, section
-12 read the wrapped files one second before the run ended. On #685 a run started on 99bc230, whose
-`docs/agents/code-review-evidence.md` had a line of 113 characters, reported 233 checks and 0
-failures, because the line was rewrapped while the run was going; the same tree with no edit during
-the run fails on that line.
+**`scripts/ship-check.ps1` reads its files as each section reaches it, so until #812 an edit made
+during a run could make it pass on a tree that fails** (#687). Every section but 11 reads a file's
+contents from the working tree; section 11 reads the index, so there a staged edit is what counts.
+The result describes the files as each section found them, and not a commit. On 2026-10-12, at
+99bc230, section 12 read the wrapped files one second before the run ended. On #685 a run started on
+99bc230, whose `docs/agents/code-review-evidence.md` had a line of 113 characters, reported 233
+checks and 0 failures, because the line was rewrapped while the run was going; the same tree with no
+edit during the run fails on that line.
 
 **Since #812 both `ship-check.ps1` and `run-gates.ps1` refuse such a result.** Each takes a
 fingerprint of every tracked file and of the index before it reads anything and again when it is

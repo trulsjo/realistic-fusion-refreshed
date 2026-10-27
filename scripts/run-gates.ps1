@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
     Runs every gate in the repository, one after another, and prints one line per gate. Exits
-    non-zero naming each gate that failed (#567).
+    non-zero naming each gate that failed (#567), and each tracked path that changed while it ran
+    (#812).
 
 .DESCRIPTION
     FOR AN INTEGRATED BRANCH, BEFORE A REVIEW. Each ticket's author runs the gates its own change

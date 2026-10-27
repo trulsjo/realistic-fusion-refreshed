@@ -44,7 +44,8 @@ about whether a change is safe. What each proves, in a line:
   (#756), and that neither the two review skills nor the markdown-only test reads the local
   `main` (#762). It also checks that every `scripts/check-*.ps1` sources
   `scripts/factorio-lib.ps1`, and that a stand-in rig's run leaves its report in
-  `.rig-reports/` (#794).
+  `.rig-reports/` (#794). Since #812 it also fails a run during which a tracked file or the index
+  changed, naming each path.
 - **The shared locale check and `scripts/name-check.ps1`** only dump prototypes and create no
   map, so a pass there says nothing about runtime.
 
@@ -84,9 +85,10 @@ in, so run it from the repository root.
 four scripts under `tools/` that are not gates and that nothing else checks,
 `models/test_rf_blender.py` (#810), `ship-check.ps1`, the default `load-check.ps1` and every
 `scripts/check-*.ps1` it finds, one at a time, one line per gate, exiting non-zero and naming each
-gate that failed. **Run it on a branch that combines more than one ticket, before the review**, and
-**before or after a subagent fan-out, not during one** (#617). It runs no probe, no gate's
-`-SelfTest`, and not `load-check.ps1 -FromZips`, the shared `locale-check.ps1` or `name-check.ps1`.
+gate that failed, and since #812 each tracked path that changed while it ran. **Run it on a branch
+that combines more than one ticket, before the review**, and **before or after a subagent fan-out,
+not during one** (#617). It runs no probe, no gate's `-SelfTest`, and not `load-check.ps1
+-FromZips`, the shared `locale-check.ps1` or `name-check.ps1`.
 
 **A markdown-only branch runs `ship-check.ps1` alone**, however many tickets it combines (decided
 by Truls, 2026-10-07, #618). A branch is markdown-only when every path
@@ -99,11 +101,11 @@ The exception rests on one fact: no other gate reads a `.md` file, checked 2026-
 that starts reading one ends it.
 
 **One workflow runs the game-free gates unattended** (#599, #659). `.github/workflows/gates.yml` is
-the only file under `.github/`, and it runs on a pull request, on a push to `main`, and when started
-by hand with `gh workflow run gates.yml --ref <branch>` (#813), which runs the same jobs as a push
-but skips the commit check and the body job: each
+the only file under `.github/`, and it runs on a pull request and on a push to `main`: each
 `tests/test-*.lua`, `ship-check.ps1`, `commit-check.ps1` over the commits that event brought, and
 the `--self-test` of the same four scripts under `tools/`, and `models/test_rf_blender.py`. **It
+can also be started by hand on any branch** with `gh workflow run gates.yml --ref <branch>` (#813),
+which runs what a push to `main` runs less the commit check. **It
 also runs the shared `pr-body-check.ps1 -SelfTest`, and on a pull request the check itself on the
 body** (#730); an edit to the body runs the body check alone; `run-gates.ps1` runs neither. A pull
 request with a merge conflict gets no run at all, which looks the same as one not yet run.
