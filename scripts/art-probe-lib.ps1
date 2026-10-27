@@ -367,7 +367,7 @@ function Invoke-ArtProbe {
     try {
         New-ModJunctions -ModDirectory $modDir -Links (Get-ModLinks -Root $RepoRoot -Mods $ourMods)
         $enabled = Resolve-BundledSelection -Requested @() -Bundled $bundled
-        Write-Host "bundled enabled: $(if ($enabled) { $enabled -join ', ' } else { 'none (base 2.0 only)' })"
+        Write-Host "bundled enabled: $(if ($enabled) { $enabled -join ', ' } else { 'none (base only)' })"
         Write-ModList -ModDirectory $modDir -Bundled $bundled -EnabledBundled $enabled -Mods ($ourMods + $RigName)
 
         # THE CONFIG IS WRITTEN HERE RATHER THAN LEFT TO Invoke-Factorio, for two reasons. It has to

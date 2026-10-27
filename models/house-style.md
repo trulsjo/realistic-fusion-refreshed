@@ -43,8 +43,9 @@ a fluid accent and must never be used as one: the accents say what a socket carr
 colour competing with them would cost the set the one thing its colours are for.
 
 HOW FAR IS NOT SETTLED. This is a direction, not a target. Only `rf-isotope-collector` has been
-rebuilt to it (c0ff100), and beside Krastorio 2's reactor in a real map on 2026-10-26 it still
-read as two mods. The detail floors under Materials are unchanged and still bind: more detail is wanted, detail
+rebuilt to it (c0ff100). Beside Krastorio 2's reactor in a real map on 2026-10-26 it still read
+as two mods to the session that photographed it, a read by eye that #798 records as not yet a
+measurement. The detail floors under Materials are unchanged and still bind: more detail is wanted, detail
 too fine to read at 64 px per tile still is not.
 
 ## Palette
@@ -147,8 +148,9 @@ ceiling was withdrawn on 2026-09-13 -- see What the set is.
 Closed panels are used where the machine would have them for real: a manifold, a cabinet, a
 pressure vessel, an end wall the camera can see.
 
-**Grime is procedural.** Every painted and bare-metal surface carries a noise-driven darkening
-and roughening; accents stay clean so they read.
+**Grime is procedural unless a CC0 texture replaces it.** Every painted and bare-metal surface
+carries a noise-driven darkening and roughening, or since ADR 0043 a CC0 grime texture recorded
+beside the model; accents stay clean so they read.
 
 **A per-surface gradient must be driven by something that survives rotation.** Any effect that
 varies over a surface -- grime gathering low, rime gathering high -- needs a term saying which way

@@ -16,12 +16,12 @@ is committed here.
   license"*. *Measured* 2026-10-27. The banner names no CC BY version, and none was found
   elsewhere in the file.
 - **Author: Hurricane046.** The file credits no one: scrolled top to bottom on 2026-10-27, and
-  no name or link was found. The name is *read from* mods that reuse the set and attribute it,
-  and is not graded by this note: [Unified Chemical
+  no name or link was found. The name comes from one mod that reuses the set and attributes it,
+  and a portal description has no grade: [Unified Chemical
   Plant](https://mods.factorio.com/mod/unified-chem-plant) says *"Graphics assets by Hurricane046,
-  used under CC BY license"* (read 2026-10-27). The search that found it also returned a mod-portal
-  discussion asking for Hurricane046 to be credited, and a UFO asset pack doing so. Neither of
-  those was opened.
+  used under CC BY license"* (read 2026-10-27, quoted). The search that found it also returned a
+  mod-portal discussion asking for Hurricane046 to be credited, and a UFO asset pack doing so.
+  Neither was opened.
 
 CC BY permits reuse with attribution. That is a different question from what the reference is for,
 and the second is Truls's (#798).
@@ -29,22 +29,26 @@ and the second is Truls's (#798).
 ## What the frames show
 
 Seen 2026-10-27, at the size Figma draws them, which is far larger than 32 screen px per tile.
-Each card gives a footprint (4×4 to 9×9) and a frame count (60 to 128), and is grouped under a set,
-*Others* or *Deprecated*. *Deprecated* includes a 6×6 Fusion Reactor.
+The cards seen gave footprints from 4×4 to 9×9 and frame counts from 60 to 128. Two of the set
+banners read *Others* and *Deprecated*, and *Deprecated* includes a 6×6 Fusion Reactor. Not every
+card was seen whole: the window showed two and a half columns.
 
-Set against the five gaps the 2026-10-26 baseline found on `rf-isotope-collector` beside
-Krastorio 2's reactor (#798), the reference goes further on each:
+#798 lists five gaps the session read by eye in the 2026-10-26 baseline, on `rf-isotope-collector`
+beside Krastorio 2's reactor. Here is the reference set against each, read by eye on 2026-10-27
+and not counted:
 
-- **Surface wear** dominates: rust, chipped paint and grime on every face. This is texture rather
-  than shape, which is the part ADR 0043's CC0 textures are for.
-- **Hoses**: corrugated runs, yellow and dark, wrap most machines and are the largest single
-  element on several.
-- **Hazard yellow** appears as whole housings, such as a yellow tank on the Fuel Refinery. That is
-  more than this house style's marking rule allows.
-- **Repeated modules** appear as stacked cylinders, ringed casings and bolt rows.
-- **Inset panels** are present but secondary to the above.
+- **Value range**: dark bodies with bright worn edges, close to Krastorio 2's range.
+- **Marking colour**: hazard yellow on whole housings, such as a yellow tank on the Fuel Refinery.
+  That is more than this house style's marking rule allows.
+- **Repeated modules**: stacked cylinders, ringed casings and bolt rows.
+- **Organic runs**: corrugated hoses, yellow and dark, wrap most machines and are the largest
+  single element on several.
+- **Inset panels**: present, but less prominent than the hoses.
 
-That ordering is *inferred* from those frames. It is a reading by eye and was not counted.
+A sixth thing, not among the five: **surface wear** (rust, chipped paint, grime) on every face.
+That is texture rather than shape, which is the part ADR 0043's CC0 textures are for.
+
+Which of these weighs most is *inferred* from the frames above and was not counted.
 
 ## Animation
 
@@ -64,7 +68,7 @@ buildings only.
 Two decisions, 2026-10-27:
 
 - **It stays a style target only**, though its licence would permit reuse. Its sprites would
-  replace the render pipeline (ADR 0030) rather than feed it, and none of the set is a fusion
-  machine except the deprecated reactor.
+  replace the render pipeline (ADR 0030) rather than feed it. Of the cards seen, only the
+  deprecated reactor is a fusion machine.
 - **Hoses and looms move ahead of inset panels** in #798's order, because the frames lean on them
   more. #803 now goes before #802.

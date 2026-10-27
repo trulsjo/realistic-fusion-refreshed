@@ -38,7 +38,8 @@ states the geometry and is meant to be replaced. Not "placeholder art" generical
 "rendered".
 
 **Rendered art** — a sprite produced from a stored model by the render pipeline, living under
-`graphics/rendered/`. Original to this mod, so it carries the repository's own licence. The word
+`graphics/rendered/`. Original to this mod, so it carries the repository's own licence; a CC0
+texture a model uses is recorded beside the model and changes neither (ADR 0043). The word
 names the provenance, which is why the directory is not called "original": next to "the original
 mod" that would be ambiguous.
 

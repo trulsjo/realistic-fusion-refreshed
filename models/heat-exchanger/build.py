@@ -5,7 +5,8 @@
 Reads geometry.json beside this file for the collision box and the connections, so the sockets
 land where the prototype declares them, and stamps the scene with that file's hash so render.py
 can refuse a model whose geometry has moved on. Everything is a primitive or a curve with a
-procedural material: nothing imported (house style, licence rule). `cube` builds a 1x1x1
+procedural material: nothing imported (ADR 0030; ADR 0043 now allows a CC0 texture, and this model
+uses none). `cube` builds a 1x1x1
 calibration cube for measuring the camera. Written to heat-exchanger.blend beside this file
 unless a path is given.
 

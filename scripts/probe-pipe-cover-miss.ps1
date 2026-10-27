@@ -227,8 +227,8 @@ end
 --- asked which by BUILDING a pipe on the tile and seeing whether it joined -- the same question a
 --- player asks by dragging one, and the same discriminator the library's pipe_up uses.
 local function connection_facing(entity, side)
-  for i = 1, #entity.fluidbox do
-    for _, c in pairs(entity.fluidbox.get_pipe_connections(i)) do
+  for i = 1, #rf_fluidbox(entity) do
+    for _, c in pairs(rf_fluidbox(entity).get_pipe_connections(i)) do
       if facing(c) == side then return c end
     end
   end
