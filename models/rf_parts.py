@@ -97,12 +97,18 @@ def _check_edges(*_):
     which carries the turn. A socket is placed after the turn in the declared frame, so `socket`
     checks its own stub at once.
 
-    IT FAILS CLOSED. Blender 5.2.0 prints an exception other than SystemExit raised in a save_pre
-    handler and saves anyway (measured reviewing #800: a run whose object had been removed raised
-    ReferenceError, and the out-of-edge run after it was written into the .blend). So anything this
-    raises -- a refusal or a fault -- is printed and leaves by `os._exit(1)`: the .blend is never
-    written and the build fails, which is what tools/render-machine.py reads. `os._exit` skips the
-    atexit hooks, so the detail-floor audit is reported here first rather than lost.
+    IT FAILS CLOSED. Blender 5.2.0 printed a ReferenceError raised in a save_pre handler and saved
+    anyway (measured reviewing #800: a run whose object had been removed raised it, and the
+    out-of-edge run after it was written into the .blend); other exceptions are assumed to go the
+    same way. So anything this raises -- a refusal or a fault -- is printed and leaves by
+    `os._exit(1)`: the .blend is never written and the build fails, which is what
+    tools/render-machine.py reads. `os._exit` skips the atexit hooks, so the detail-floor audit is
+    reported here first rather than lost.
+
+    SO A `pipe` OBJECT CANNOT BE REMOVED, JOINED OR CONVERTED before the save: its run is still
+    held here, reading it raises ReferenceError, and the build stops. Nothing does that today. A
+    build that needs to has to take the run out of `_RUNS` first, and a run skipped silently instead
+    would be a run never checked.
     """
     import os
     import traceback
