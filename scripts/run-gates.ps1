@@ -187,7 +187,7 @@ foreach ($tool in 'refuse-hanging-bash', 'review-usage', 'rewrap', 'review-cover
     $gates += @{ Name = $tool; Exe = 'python'
                  Arguments = @((Join-Path $repoRoot "tools/$tool.py"), '--self-test') }
 }
-# A plain script, not a --self-test: it prints ok and exits 0, or raises (#810).
+# A plain script, not a --self-test: it exits 0 or raises (#810).
 $gates += @{ Name = 'test_rf_blender'; Exe = 'python'
              Arguments = @((Join-Path $repoRoot 'models/test_rf_blender.py')) }
 $scripts = @('ship-check.ps1', 'load-check.ps1') +

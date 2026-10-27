@@ -55,7 +55,7 @@ jobs:
           exit $failed
 
   tools:
-    name: Tools' self-tests
+    name: Tools' self-tests and the render arithmetic
     if: github.event.action != 'edited'
     runs-on: ubuntu-latest
     steps:
@@ -71,7 +71,7 @@ jobs:
             echo "::endgroup::"
           done
           exit $failed
-      # A plain script, not a --self-test: it prints ok or raises, and touches no bpy (#810).
+      # A plain script, not a --self-test: it exits 0 or raises, and touches no bpy (#810).
       - name: models/test_rf_blender.py
         if: ${{ !cancelled() }}
         run: python3 models/test_rf_blender.py
