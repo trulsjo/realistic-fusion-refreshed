@@ -377,6 +377,13 @@ is yours alone — inside your worktree, or a temp directory with a unique name 
 session's scratchpad) — never a fixed path such as `/tmp/probe.lua` that a parallel agent may pick
 too.
 
+**A planted proof for the workflow runs on a throwaway branch, through its manual trigger** (#813).
+To show a step of `.github/workflows/gates.yml` going red, push the planted commit to a branch made
+for it from the head under review, start `gh workflow run gates.yml --ref <that branch>`, and delete
+the branch once the run is recorded. Never on a branch that merges: on #811 the planted commit went
+to the pull request's branch, and a rebase merge put it on `main` as `819be04`, where a `git bisect`
+can stop.
+
 ### The symptom, so the next reviewer recognises it
 
 **A gate that fails once and then passes on every re-run, with nothing changed in between, is

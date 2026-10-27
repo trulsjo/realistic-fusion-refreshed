@@ -12,6 +12,13 @@
 # other job skips that event, so a body edit runs the body check alone. The body reaches the script
 # through the environment, never pasted into the command. The script refuses a shallow clone.
 #
+# workflow_dispatch starts it by hand on any branch, with no pull request (#813), so a planted
+# proof runs on a throwaway branch and never on one that merges. It runs what a push runs, less
+# the body job, which has no body to read, and the commit check, which has no range: a branch's
+# commits are checked when its pull request opens.
+#
+#     gh workflow run gates.yml --ref <branch>
+#
 # Advisory: main has no branch protection, so a red check blocks nothing.
 name: gates
 
@@ -20,6 +27,7 @@ on:
     branches: [main]
   pull_request:
     types: [opened, edited, synchronize, reopened]
+  workflow_dispatch:
 
 jobs:
   body:
@@ -90,9 +98,10 @@ jobs:
         shell: pwsh
         run: ./scripts/ship-check.ps1
       # Only the commits this event brought: a pull request's own, or the ones in a push to main.
-      # Neither range reaches back into the history the convention's check already fails on.
+      # Neither range reaches back into the history the convention's check already fails on. A
+      # dispatch brings no commits and has neither end, so it skips the step.
       - name: commit-check.ps1
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && github.event_name != 'workflow_dispatch' }}
         shell: pwsh
         env:
           RANGE: >-

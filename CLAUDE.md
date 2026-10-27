@@ -99,7 +99,9 @@ The exception rests on one fact: no other gate reads a `.md` file, checked 2026-
 that starts reading one ends it.
 
 **One workflow runs the game-free gates unattended** (#599, #659). `.github/workflows/gates.yml` is
-the only file under `.github/`, and it runs on a pull request and on a push to `main`: each
+the only file under `.github/`, and it runs on a pull request, on a push to `main`, and when started
+by hand with `gh workflow run gates.yml --ref <branch>` (#813), which runs the same jobs as a push
+but skips the commit check and the body job: each
 `tests/test-*.lua`, `ship-check.ps1`, `commit-check.ps1` over the commits that event brought, and
 the `--self-test` of the same four scripts under `tools/`, and `models/test_rf_blender.py`. **It
 also runs the shared `pr-body-check.ps1 -SelfTest`, and on a pull request the check itself on the
