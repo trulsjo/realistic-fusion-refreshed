@@ -7,11 +7,13 @@
 
 THE PIXEL FIGURE is the share of a sheet's opaque pixels that are edge: a pixel whose luminance
 differs from a 9 px box blur of its surround by more than the contrast threshold, either sign.
-The blur, the threshold, the opacity cut and the luminance are
-docs/research/detail-floor/measure-detail.py's, imported rather than copied. What is done with them
-differs: that script measures the widths of runs along rows, and this one counts a share of an
-area. A straight ramp has no edge, and a sharp step counts only above about 32 of 255, since
-next to a step the 9 px blur already holds 5 of its pixels' side. It reads pixels only,
+The blur's radius, the threshold and the opacity cut are docs/research/detail-floor/measure-detail.py's
+constants, imported. The box blur and the luminance, the mean of R, G and B, are written again here
+the same way, so a change to how that script blurs or takes luminance does not reach this one. What
+is done with them differs too: that script measures the widths of runs along rows, and this one
+counts a share of an area. A straight ramp has no edge. A sharp step shows 4/9 of itself against
+the blur, and the blur is rounded to 8 bits, so the smallest step that counts is 33 of 255. It
+reads pixels only,
 so it runs on ours, vanilla's, Krastorio 2's or anyone's sheet, and it cannot tell a valve from
 grime, procedural noise or Cycles noise: all of them are edge to it.
 
@@ -120,8 +122,9 @@ def self_test():
     outside = flat.copy(); outside[0:4, :] = 255          # in the transparent margin
     assert edge_density(outside, alpha)[0] == 0.0, "transparent pixels must not count"
 
-    # A sharp step shows 4/9 of itself against the blur, so the smallest that counts is just over
-    # CONTRAST * 9 / 4: 31 does not and 33 does. Pinning both sides catches a moved threshold.
+    # A sharp step shows 4/9 of itself against the blur, and _blur rounds to 8 bits: a step of 32
+    # differs by 14 after rounding, which is not above CONTRAST, so 33 is the smallest that counts.
+    # Pinning 31 and 33 catches a threshold moved either way.
     faint = flat.copy(); faint[:, 32:] = 120 + 31
     assert edge_density(faint, alpha)[0] == 0.0, "a step of 31 is under the smallest that counts"
     sharp = flat.copy(); sharp[:, 32:] = 120 + 33

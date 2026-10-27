@@ -13,10 +13,12 @@ count can fail (`python tools/measure-density.py --self-test`).
 
 - **Pixel figure:** the share of a sheet's opaque interior pixels that are edge. An edge pixel's
   luminance differs from a 9 px box blur of its surround by more than 14 of 255, either sign. The
-  blur, the threshold, the opacity cut and the luminance are
-  `docs/research/detail-floor/measure-detail.py`'s, imported. What is done with them differs:
-  [`detail-floor.md`](detail-floor.md) measures the widths of runs along rows, over every opaque
-  pixel, and this counts a share of the interior. It reads pixels only, so it runs on any sheet.
+  blur's radius, the threshold and the opacity cut are
+  `docs/research/detail-floor/measure-detail.py`'s constants, imported. The box blur and the
+  luminance, the mean of R, G and B, are written again the same way. What is done with them
+  differs: [`detail-floor.md`](detail-floor.md) measures the widths of runs along rows, over every
+  opaque pixel, and this counts a share of the interior. It reads pixels only, so it runs on any
+  sheet.
 - **Normal-pass figure:** the same count on a normal pass of our own model, in any of the three
   channels. `models/render-normal.py` renders it with the north sheet's rig, frame and camera. The
   two figures read nearly the same pixels. On `rf-heat-exchanger` the pass and the sheet are both
@@ -83,10 +85,10 @@ measurement with its day is given.
 - **It sees luminance only.** Two colours of one brightness meet with no edge, so an accent band
   or a hazard-yellow block can add nothing.
 - **It is blind to value range.** A machine repainted darker, with the same detail, reads the same
-  as long as its steps stay above the smallest one that counts: about 32 of 255 for a sharp step,
-  since next to it the 9 px blur already holds 5 pixels of its own side. A straight ramp counts
-  nothing however steep. Measured 2026-10-27 on synthetic input: the smallest step counted was
-  33, and a ramp of 3 a pixel read 0.
+  as long as its steps stay above the smallest one that counts: 33 of 255 for a sharp step. Only
+  4/9 of a step shows against the 9 px blur, and the blur is rounded to 8 bits, so a step of 32
+  differs by 14 and does not count. A straight ramp counts nothing however steep. Measured
+  2026-10-27 on synthetic input: 31 and 32 read 0, 33 counted, and a ramp of 3 a pixel read 0.
 - **It depends on resolution.** It compares only sheets at the same pixels per tile and the same
   scale, which is why a Figma export would need rescaling first.
 - **It reads one sheet.** It takes the north sheet, never the glow, the shadow or another
@@ -98,9 +100,9 @@ measurement with its day is given.
   makes it the wrong figure to test whether procedural grain is poor at 64 px to the tile, which
   ADR 0043 says the pixel figure could test.
 - **It counts folds and tight curves, not gentle ones.** A surface turning at a steady rate is a
-  ramp in the normals and counts nothing. A crease counts when it turns a component by more than
-  about 32 of 255, which on a channel mapped from −1..1 is about 0.25 of a unit normal's
-  component, roughly 15 degrees, *inferred* from the step measured above. A tight curve, such as
+  ramp in the normals and counts nothing. A crease counts when it turns a component by 33 of
+  255 or more, which on a channel mapped from −1..1 is about 0.26 of a unit normal's component,
+  roughly 15 degrees, *inferred* from the step measured above. A tight curve, such as
   a small pipe's or a corrugated hose's, changes its rate of turning within the blur's width and
   so counts. That too is *inferred*.
 - **It exists only for our machines**, since it needs the model. It cannot compare against
