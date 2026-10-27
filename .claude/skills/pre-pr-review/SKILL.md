@@ -168,8 +168,8 @@ pass.
 
    **The `git log` line joins each message onto one line before it matches** (#814). A body is
    wrapped at 72, and `--grep` matches within one line, so it misses words a wrap splits. On
-   #811 the claim "prints ok or raises" was wrapped after "prints" in `a7d82ab`, and
-   `--grep='prints ok'` did not find it. A search that finds nothing rewords nothing and says
+   #811 the claim "prints ok or raises" was wrapped after "prints" in the branch's first commit,
+   and `--grep='prints ok'` did not find it. A search that finds nothing rewords nothing and says
    nothing. The line prints each hit's hash and the start of its message.
 
    **Run the `git log` line again before each reword.** A reword gives every later commit a new

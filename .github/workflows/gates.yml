@@ -13,9 +13,9 @@
 # through the environment, never pasted into the command. The script refuses a shallow clone.
 #
 # workflow_dispatch starts it by hand on any branch, with no pull request (#813), so a planted
-# proof runs on a throwaway branch and never on one that merges. It runs what a push runs, less
-# the body job, which has no body to read, and the commit check, which has no range: a branch's
-# commits are checked when its pull request opens.
+# proof runs on a throwaway branch and never on one that merges. It runs what a push to main runs,
+# less the commit check, which has no range on it: a branch's commits are checked when its pull
+# request opens. The body job runs on a pull request alone, so it is skipped as on a push.
 #
 #     gh workflow run gates.yml --ref <branch>
 #
