@@ -14,13 +14,15 @@ imported"* paragraph. The rest of ADR 0030 stands, and ADR 0030 carries a dated 
 
 ADR 0030 banned Poly Haven, Sketchfab and image textures, and gave its reason as provenance:
 *"so every model and every render is original and carries the repository's LGPLv3"*. It called that
-*"the one rule in this ADR that cannot be relaxed for convenience"*. The repository has since called
-it "the licence rule", in both models' `build.py` and in `graphics/rendered/pictures.lua`.
+*"the one rule in this ADR that cannot be relaxed for convenience"*. The repository calls it "the
+licence rule" in `realistic-fusion-refreshed-assets/graphics/rendered/pictures.lua`, and both
+models' `build.py` did until 2026-10-27.
 
 What licence a CC0 texture puts on a render is a separate question. Poly Haven says of its assets
 *"Our assets are all licensed as CC0"* and *"You do not need to give credit"* (polyhaven.com/license,
 read 2026-10-27, quoted and not graded). That CC0 material may sit inside an LGPLv3 work is
-*inferred* from CC0 being a waiver of every right the author holds. No lawyer has read it.
+*inferred* from CC0 1.0's section 2, *"Waiver"*, of copyright and related rights. Its section
+4(a) waives no trademark or patent rights (the legal code, read 2026-10-27). No lawyer has read it.
 
 The second attempt at detail starts from a gap read by eye, not measured.
 `scripts/probe-isotope-collector-art.ps1` put `rf-isotope-collector` beside Krastorio 2's reactor on
@@ -28,8 +30,9 @@ The second attempt at detail starts from a gap read by eye, not measured.
 lists the five gaps that session read, and surface texture is not among them.
 
 Truls allowed CC0 textures anyway. The session's reasoning was that procedural noise makes poor grain
-at 64 px per tile, either washing out or turning into render noise. That is not measured, and #799's
-normal-pass figure is what would test it.
+at 64 px per tile, either washing out or turning into render noise. That is not measured. #799's
+pixel edge density sees grain and could test it; its normal-pass figure is blind to grain by
+design.
 
 ## Decision
 
@@ -46,8 +49,8 @@ that was not read here.
 
 ## Considered options
 
-- **Keep the ban.** That was defensible: the gaps the session read in the baseline are value range
-  and part vocabulary, not surface texture. It was rejected because CC0 costs only a provenance
+- **Keep the ban.** That was defensible: the gaps the session read in the baseline are value
+  range, marking colour and part vocabulary, not surface texture. It was rejected because CC0 costs only a provenance
   file, and texture may still prove to be a gap, a question #799's figures can answer.
 - **Allow CC0 meshes too.** Rejected: it trades the set's own shape language for whoever modelled
   the asset, and it undercuts the kit.
