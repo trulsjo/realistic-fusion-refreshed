@@ -585,7 +585,8 @@ it is the same lie as a socket where no connection is declared, drawn another wa
 the part, the edge and the tile in Factorio's coordinates. An end counts as leaving when its last
 segment points out through an edge to within 60 degrees of the normal, and the tube, end plus
 radius, stands past the collision box. So a run along an edge passes, and so does one that turns
-down into the floor, which is how both rendered machines bring a pipe in beside a socket.
+down into the floor at the edge. Both rendered machines bring a pipe down into the floor beside a
+socket, but neither drop reaches the edge today, so both pass because they stop short.
 
 - **Every `rf_parts.pipe` is checked**, in the frame it ends up in, when the model is saved. A
   refusal leaves before the `.blend` is written.
