@@ -339,8 +339,8 @@ One line for each change to a gate, newest last, with its date and its ticket.
   are not in it. The `-SelfTest` halves `tree-change-caught` and `unchanged-tree-passes` in
   `ship-check.ps1`, and `tree-change-fails` and `ignored-write-clean` in `run-gates.ps1`, prove
   each in both directions on a scratch repository, and `tree-change-fails-run` runs
-  `ship-check.ps1` as its own process over one it edits before section 1, which must fail on that
-  file alone.
+  `ship-check.ps1` as its own process watching one it edits before section 1, which must fail on
+  that file alone.
 - 2026-10-27, #813: `gates.yml` also runs on `workflow_dispatch`, started with
   `gh workflow run gates.yml --ref <branch>`, and runs there what a push to `main` runs less the
   commit check, which has no range on that event. The body job runs on a pull request alone, as
