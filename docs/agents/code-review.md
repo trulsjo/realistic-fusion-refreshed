@@ -364,9 +364,12 @@ checkout on 2026-09-10.
 ### The rule
 
 **Any review pass that modifies the working tree to test something does it in a worktree of its
-own**, made first with `git worktree add --detach <dir> <head>` and removed afterwards. Planting a
-violation to prove a gate fires is the usual case: the poison line goes into a tracked file, the
-gate runs, the line comes out. In a shared checkout every other agent's gate run sees that line too.
+own**, made first as [`plugin-pass.md`](plugin-pass.md)'s paragraph that opens "The plugin pass's
+subagents work in a worktree that is not the session's" makes the pass's, and removed afterwards
+(#816). Its directory and its throwaway branch are named for the plant, not the pass. Where that
+paragraph would leave the pass in the session's checkout, nothing is planted. Planting a violation
+to prove a gate fires is the usual case: the poison line goes into a tracked file, the gate runs,
+the line comes out. In a shared checkout every other agent's gate run sees that line too.
 
 **`git checkout -- <file>` on a shared checkout is unsafe while other agents are running.** It
 reverts the file to the index, which removes every agent's uncommitted edit to it, not only yours —
@@ -626,12 +629,29 @@ reason written in the pull request's body.** The first rule says what a verdict 
 Lua, which is anything `check_prototypes()`, `on_init` or `on_configuration_changed` runs, and one
 that edits a tracked `CLAUDE.md`. These two and no others. The first can decide whether a save
 loads, and the second what every session is told; `CLAUDE.md` says such things are not settled as a
-side effect. The finding is put to Truls with the proposed fix, and its row reads `no: waits on
-Truls` until he answers, and then what he ruled. [The two fixes on #779 that settled his
+side effect. The finding is put to Truls with the proposed fix, **and beside each claim the
+proposed wording makes, the file or the output it was checked against** (#818), so what he approves
+is a checked sentence. On #815 he approved a `CLAUDE.md` sentence saying a dispatch runs what a push
+runs less the body job, and a push never runs the body job: nobody had held it against
+`.github/workflows/gates.yml` before asking. Its row reads `no: waits on Truls` until he answers,
+and then what he ruled. [The two fixes on #779 that settled his
 calls](code-review-evidence.md#four-gaps-on-779-780-to-783) are on the evidence page.
 
+**A decision Truls gives in a session is posted on its ticket before a commit message or the pull
+request's body relies on it** (#819), an approval of a wording included. The comment names what he
+decided and where, not its words, as [`issue-tracker.md`](issue-tracker.md) says of a decision
+comment (#716): "Truls approved, 2026-10-27, the wording proposed for the third rule's opening
+sentence". The pre-PR reviewer holds a claim that Truls approved or decided something against the
+ticket's comments, which its brief already has it read, and one with no comment behind it is a
+finding. On #815 a commit body said two wordings were ones Truls approved, and the review could not
+verify it: the approval was an answer in the session.
+
 **A plugin-pass finding the pre-PR review missed gets its class named**, by the session that fixes
-it, in the pull request. A class a script can detect becomes a section of `scripts/ship-check.ps1`.
+it, in the pull request, **from the pre-PR reviewer's own report** (#820): what the report said it
+checked of the passage at fault, quoted, or that it did not mention the passage. Where the
+reviewer's message arrived cut off, the report is in its transcript, which step 6 of
+`/pre-pr-review` says how to find. On #815 the session inferred the class, and the reviewer's report
+showed it false. A class a script can detect becomes a section of `scripts/ship-check.ps1`.
 A class that takes judgement becomes a line in this file. "One-off, no rule" is an answer, and it is
 written down like the others. This is how the pre-PR review is meant to come to catch what today
 only the plugin pass does.
