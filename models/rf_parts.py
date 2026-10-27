@@ -1,7 +1,7 @@
 """The mesh helpers every machine's build script shares, imported from inside Blender's Python.
 
     import rf_parts as parts
-    parts.use(mat)              # the machine's own material resolver, before anything is built
+    parts.use(mat, geo)         # the machine's material resolver and geometry, before building
 
 ONE COPY, because two drifted in a week. models/isotope-collector/build.py was written by copying
 these out of models/heat-exchanger/build.py, and by the time #340 pulled them back together the two
@@ -72,13 +72,16 @@ def use(mat_fn, geo):
     footprint edge (`rf_blender.check_edge`, #800). The geometry is not optional, so a build that
     forgets it cannot draw a pipe unchecked.
 
-    ONE MACHINE PER PROCESS. The resolver is module state, so a future batch builder that made two
-    machines in one Blender session would paint the second with the first's palette unless it called
-    this again between them. Every build today is its own `blender -b`, so nothing is at risk yet.
+    ONE MACHINE PER PROCESS. The resolver, the geometry and the runs `pipe` has drawn are module
+    state, so a future batch builder that made two machines in one Blender session would paint the
+    second with the first's palette unless it called this again between them. Calling it again
+    forgets the runs, whose objects belong to the first machine. Every build today is its own
+    `blender -b`, so nothing is at risk yet.
     """
     global MATERIAL, GEOMETRY
     MATERIAL = mat_fn
     GEOMETRY = geo
+    _RUNS.clear()
     if _check_edges not in bpy.app.handlers.save_pre:
         bpy.app.handlers.save_pre.append(_check_edges)
 
@@ -94,23 +97,33 @@ def _check_edges(*_):
     which carries the turn. A socket is placed after the turn in the declared frame, so `socket`
     checks its own stub at once.
 
-    BLENDER SWALLOWS AN EXCEPTION IN A HANDLER and saves anyway, and swallows `sys.exit` from an
-    atexit hook and exits 0 (both measured on 5.2.0, 2026-10-27). So a refusal prints and leaves by
-    `os._exit(1)`: the .blend is never written and the build fails, which is what
-    tools/render-machine.py reads.
+    IT FAILS CLOSED. Blender 5.2.0 prints an exception other than SystemExit raised in a save_pre
+    handler and saves anyway (measured reviewing #800: a run whose object had been removed raised
+    ReferenceError, and the out-of-edge run after it was written into the .blend). So anything this
+    raises -- a refusal or a fault -- is printed and leaves by `os._exit(1)`: the .blend is never
+    written and the build fails, which is what tools/render-machine.py reads. `os._exit` skips the
+    atexit hooks, so the detail-floor audit is reported here first rather than lost.
     """
     import os
+    import traceback
     from mathutils import Vector
 
-    bpy.context.view_layer.update()
     try:
+        bpy.context.view_layer.update()
         for o, points, radius in _RUNS:
             world = [tuple(o.matrix_world @ Vector(p)) for p in points]
             rf.check_edge(o.name, world, radius, GEOMETRY)
     except SystemExit as refusal:
         print(refusal, file=sys.stderr)
-        sys.stderr.flush()
-        os._exit(1)
+    except Exception:
+        print("rf_parts: the footprint-edge check failed, so nothing was saved:", file=sys.stderr)
+        traceback.print_exc()
+    else:
+        return
+    rf._report_audit()
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(1)
 
 
 def bevel(obj, width=0.03):

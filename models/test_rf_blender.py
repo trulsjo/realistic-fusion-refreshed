@@ -119,16 +119,33 @@ assert "Planted" in _planted and "(7, 0)" in _planted and "east" in _planted, _p
 # that is what a socket is. Blender y = +1 is Factorio y = -1.
 assert edge_refusal([(5.0, 1.0, 0.5), (7.45, 1.0, 0.5)]) is None
 
-# A declared connection on one edge does not license another: tile (7, -1) declares east, not
-# north, and a corner run leaving north there is refused on the north edge's own tile.
-assert "north" in (edge_refusal([(6.0, 1.0, 0.5), (7.0, 2.45, 0.5)]) or "")
+# A corner run leaving north from the east corner is refused on the north edge's tile (7, -2).
+assert "(7, -2)" in (edge_refusal([(6.0, 1.0, 0.5), (7.0, 2.45, 0.5)]) or "")
+
+# A declared connection on one edge does not license another. The exchanger has no corner
+# connection, so one is added to a copy: east on corner tile (7, -2). Leaving east there passes;
+# leaving north from the same tile is still refused, on the north edge.
+_corner = dict(_geo, connections=_geo["connections"] + [{"direction": "east", "position": [7, -2]}])
+
+
+def corner_refusal(points):
+    try:
+        rf.check_edge("Planted", points, 0.1, _corner)
+    except SystemExit as e:
+        return str(e)
+    return None
+
+
+assert corner_refusal([(5.0, 2.0, 0.5), (7.45, 2.0, 0.5)]) is None
+assert "north" in (corner_refusal([(7.0, 1.0, 0.5), (7.0, 2.45, 0.5)]) or "")
 
 # Running ALONG an edge passes: the whole north edge, corner to corner just inside it, ends
 # pointing east and west at x = +-6, short of the east and west edges.
 assert edge_refusal([(-6.0, 2.4, 0.5), (6.0, 2.4, 0.5)]) is None
 
-# A run that reaches the edge and turns down into the floor ends pointing down, not out, which is
-# how both rendered machines bring a pipe in beside a socket.
+# A run that reaches the edge and turns down into the floor ends pointing down, not out. Neither
+# rendered machine's floor drop reaches the edge today -- both pass on reach alone -- so this case
+# is the only thing that exercises the allowance.
 assert edge_refusal([(5.0, 0.0, 0.5), (7.4, 0.0, 0.5), (7.4, 0.0, 0.0)]) is None
 
 # Stopping inside the body passes: the reach, end plus radius, is short of the collision edge.
