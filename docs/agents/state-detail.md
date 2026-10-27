@@ -328,6 +328,6 @@ One line for each change to a gate, newest last, with its date and its ticket.
   halves `unsourcing-rig-caught` and `unreported-run-caught` prove each check can fail.
 - 2026-10-27, #810: `run-gates.ps1` runs `models/test_rf_blender.py` as a gate of its own, named
   `test_rf_blender`, with `python` from PATH and no argument, after the four tools' self-tests;
-  `gates.yml` runs it as a step of the tools job. It is a plain script that prints `ok` or raises,
-  so neither runner's `--self-test` loop could hold it. It is #800's footprint-edge check's
+  `gates.yml` runs it as a step of the tools job. It is a plain script that exits 0 or raises, so
+  neither runner's `--self-test` loop could hold it. It is #800's footprint-edge check's
   self-test since #809, and before that it had no runner.
