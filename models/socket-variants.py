@@ -202,7 +202,7 @@ def resolve(name, frost=False):
     return m
 
 
-rf_parts.use(resolve)
+rf_parts.use(resolve, geo)
 
 
 def axis_of(obj):

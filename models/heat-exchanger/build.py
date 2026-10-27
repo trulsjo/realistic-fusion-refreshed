@@ -193,7 +193,7 @@ def mat(name, glow=False, corrode=False):
     return m
 
 
-rf_parts.use(mat)
+rf_parts.use(mat, geo)
 
 # ---- the machine --------------------------------------------------------------------------
 if variant == "cube":

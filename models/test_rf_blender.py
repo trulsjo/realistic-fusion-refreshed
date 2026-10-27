@@ -87,6 +87,68 @@ assert refuses("H-beam post (web thickness, the wrong read)", 0.03)
 assert not refuses("handwheel disc, judged across its face", 0.56)
 assert refuses("a face that really is too small", 0.04)
 
+# ---- the footprint edge (#800) --------------------------------------------------------------
+#
+# Nothing pipe-shaped meets a footprint edge except at a declared socket. Held against the heat
+# exchanger's real geometry: 15 by 5, collision edge 7.25 east, selection and footprint 7.5, and
+# east connections on Factorio tiles (7, -1) and (7, 1) only. Points are Blender's frame, so
+# Factorio's y is negated: tile (7, -1) is Blender y = +1.
+import json  # noqa: E402
+
+_geo = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "heat-exchanger",
+                                   "geometry.json"), encoding="utf-8"))
+
+
+def edge_refusal(points, radius=0.1):
+    """The message check_edge exits with, or None when it passes."""
+    try:
+        rf.check_edge("Planted", points, radius, _geo)
+    except SystemExit as e:
+        return str(e)
+    return None
+
+
+# A run planted heading out of the east edge on tile (7, 0), where nothing is declared, is refused,
+# and the message names the part and the tile -- the tile in Factorio's coordinates, the ones
+# geometry.json and a player's map both use.
+_planted = edge_refusal([(5.0, 0.0, 0.5), (7.45, 0.0, 0.5)])
+assert _planted is not None, "a run out of an undeclared edge tile passed"
+assert "Planted" in _planted and "(7, 0)" in _planted and "east" in _planted, _planted
+
+# The same run on tile (7, -1), where the exchanger declares its east energy connection, passes:
+# that is what a socket is. Blender y = +1 is Factorio y = -1.
+assert edge_refusal([(5.0, 1.0, 0.5), (7.45, 1.0, 0.5)]) is None
+
+# A declared connection on one edge does not license another: tile (7, -1) declares east, not
+# north, and a corner run leaving north there is refused on the north edge's own tile.
+assert "north" in (edge_refusal([(6.0, 1.0, 0.5), (7.0, 2.45, 0.5)]) or "")
+
+# Running ALONG an edge passes: the whole north edge, corner to corner just inside it, ends
+# pointing east and west at x = +-6, short of the east and west edges.
+assert edge_refusal([(-6.0, 2.4, 0.5), (6.0, 2.4, 0.5)]) is None
+
+# A run that reaches the edge and turns down into the floor ends pointing down, not out, which is
+# how both rendered machines bring a pipe in beside a socket.
+assert edge_refusal([(5.0, 0.0, 0.5), (7.4, 0.0, 0.5), (7.4, 0.0, 0.0)]) is None
+
+# Stopping inside the body passes: the reach, end plus radius, is short of the collision edge.
+assert edge_refusal([(5.0, 0.0, 0.5), (7.1, 0.0, 0.5)], radius=0.1) is None
+# ... and the radius counts: the same end with a fat tube stands out of the body face.
+assert edge_refusal([(5.0, 0.0, 0.5), (7.1, 0.0, 0.5)], radius=0.2) is not None
+
+# Stacked control points, which the house style asks for so a run meets a surface square, do not
+# hide the direction: the last segment of non-zero length is the one read.
+assert edge_refusal([(5.0, 0.0, 0.5), (7.45, 0.0, 0.5), (7.45, 0.0, 0.5)]) is not None
+
+# Both ends are read, so a run cannot leave by its first point instead.
+assert edge_refusal([(7.45, 0.0, 0.5), (5.0, 0.0, 0.5)]) is not None
+
+# West and south, where the signs flip: tile (-7, 0) declares nothing west, and tile (1, 2) on the
+# south edge declares nothing (the steam output is (0, 2)), while (0, 2) passes.
+assert "(-7, 0)" in (edge_refusal([(-5.0, 0.0, 0.5), (-7.45, 0.0, 0.5)]) or "")
+assert "(1, 2)" in (edge_refusal([(1.0, 0.0, 0.5), (1.0, -2.45, 0.5)]) or "")
+assert edge_refusal([(0.0, 0.0, 0.5), (0.0, -2.45, 0.5)]) is None
+
 print("ok")
 
 # The geometry hash is over canonical JSON, so a CRLF checkout of the same file hashes the same

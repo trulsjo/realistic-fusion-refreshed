@@ -250,6 +250,65 @@ def _report_audit():
 atexit.register(_report_audit)
 
 
+# THE FOOTPRINT EDGE (Truls, 2026-10-26, #800): nothing pipe-shaped meets a footprint edge except
+# at a declared socket. A run that comes out of the machine on a tile with no connection looks like
+# a pipe mouth, and the player acts on it -- the house style already said a socket where no
+# connection is declared misleads; a kit hose ending at the edge is the same lie drawn another way.
+#
+# AN END COUNTS AS LEAVING when its last segment points out through an edge to within 60 degrees of
+# that edge's normal, and the tube, end plus radius, stands past the collision box: out of the body
+# and into the band a socket's mouth occupies. Running ALONG an edge is allowed, since a run along
+# the north edge points east or west. Turning down into the floor is allowed, since it points down.
+EDGE_EXIT_COS = 0.5
+
+
+def check_edge(name, points, radius, geo):
+    """Refuse a pipe-shaped run whose end leaves the footprint on a tile with no declared
+    connection on that edge. `points` are its centreline in Blender's frame (+y north), in order;
+    both ends are read. `geo` is the machine's geometry.json.
+
+    THE TILE IS NAMED IN FACTORIO'S COORDINATES, the ones geometry.json declares connections in
+    and the ones a player's map uses, so Blender's y is negated before it is printed.
+
+    WHAT IT CANNOT SEE: the middle of a run. A tube that bows out past an edge and comes back is not
+    read, nor is anything that is not handed over as a run -- a horizontal `cyl` or a `box`, which is
+    what a cable tray is likely to be built from. A kit part that is pipe-shaped and not built by
+    `rf_parts.pipe` calls this itself, with its points in the DECLARED frame: rf-heat-exchanger is
+    built in another one and turned, which is why `rf_parts` checks its runs at save.
+    """
+    half = (geo["tiles"][0] / 2, geo["tiles"][1] / 2)
+    (cx0, cy0), (cx1, cy1) = geo["collision_box"]
+    # The body's edge per Blender axis and sign; Factorio's y flips, so its north is Blender's +y.
+    body = {(0, 1): cx1, (0, -1): -cx0, (1, 1): -cy0, (1, -1): cy1}
+    names = {(0, 1): "east", (0, -1): "west", (1, 1): "north", (1, -1): "south"}
+    declared = {(c["direction"], tuple(c["position"])) for c in geo["connections"]}
+    for run in (list(points), list(reversed(points))):
+        end = run[-1]
+        before = next((p for p in reversed(run[:-1]) if math.dist(p, end) > 1e-9), None)
+        if before is None:
+            continue
+        length = math.dist(before, end)
+        out = [(end[k] - before[k]) / length for k in range(3)]
+        for (axis, sign), wall in body.items():
+            if out[axis] * sign < EDGE_EXIT_COS or end[axis] * sign + radius <= wall + 1e-9:
+                continue
+            across = 1 - axis
+            a = end[across] if across == 0 else -end[across]          # Factorio's coordinate
+            centre = math.floor(a + half[across]) - half[across] + 0.5
+            edge = half[axis] - 0.5
+            tile = [0.0, 0.0]
+            tile[axis] = edge * sign if axis == 0 else -edge * sign
+            tile[across] = centre
+            d = names[(axis, sign)]
+            if (d, tuple(tile)) in declared:
+                continue
+            shown = ", ".join(f"{v:g}" for v in tile)
+            sys.exit(f"footprint edge: {name} leaves the {d} edge on tile ({shown}), where "
+                     f"{geo['name']} declares no {d} connection. Only a socket meets a footprint "
+                     f"edge; run along the edge or turn into the floor instead. "
+                     f"See models/house-style.md, Connections.")
+
+
 def geometry_sha256(path):
     """The hash build scripts stamp on a scene and render.py checks it against. Over the canonical
     JSON text, not the file's bytes: a checkout with autocrlf turns the extractor's LF into CRLF and

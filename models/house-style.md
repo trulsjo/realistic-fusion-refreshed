@@ -574,6 +574,28 @@ The general form is worth more than either: **a number copied from another machi
 is a number measured against another machine's body.** `models/isotope-collector/build.py`'s
 `inboard` carries the long version.
 
+### Only a socket meets a footprint edge
+
+**NOTHING PIPE-SHAPED MEETS A FOOTPRINT EDGE EXCEPT AT A DECLARED SOCKET** (Truls, 2026-10-26,
+#800). A hose, a conduit or a cable tray may run *along* an edge but never *out* of it. A run that
+reaches the edge on a tile with no connection looks like a pipe mouth, and the player acts on it:
+it is the same lie as a socket where no connection is declared, drawn another way.
+
+`rf_blender.check_edge` enforces it, and a model that breaks it does not build. The message names
+the part, the edge and the tile in Factorio's coordinates. An end counts as leaving when its last
+segment points out through an edge to within 60 degrees of the normal, and the tube, end plus
+radius, stands past the collision box. So a run along an edge passes, and so does one that turns
+down into the floor, which is how both rendered machines bring a pipe in beside a socket.
+
+- **Every `rf_parts.pipe` is checked**, in the frame it ends up in, when the model is saved. A
+  refusal leaves before the `.blend` is written.
+- **Every `rf_parts.socket` is checked** when it is drawn, so a socket on an undeclared tile is
+  refused too.
+- **Nothing else is checked.** A `box` or a horizontal `cyl` is not a run, and a cable tray is
+  likely to be built from one. A kit part that is pipe-shaped and not built by `pipe` calls
+  `check_edge` itself. The middle of a run is not read either: a tube that bows out past an edge
+  and comes back passes.
+
 ## Camera, light, output
 
 Fixed by #239 and #243 and one look (#246), built by `models/rf_blender.py` and `models/render.py`

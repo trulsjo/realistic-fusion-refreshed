@@ -202,7 +202,7 @@ def mat(name, **flags):
     return _MATERIALS[name]
 
 
-rf_parts.use(mat)
+rf_parts.use(mat, geo)
 
 for item in cylinders:
     radius, z = item["radius"], item["z"]
