@@ -158,12 +158,19 @@ pass.
    Git Bash, with `<scratch>` written with forward slashes: `cp` is handed the path unquoted.
 
    ```
-   git log origin/main..HEAD --format='%h %s' --grep='<the old figure or words>'
+   git log -z origin/main..HEAD --format='%h %s%n%b' | tr '\n\0' ' \n' \
+     | grep -F '<the old figure or words>' | cut -c1-72
    GIT_SEQUENCE_EDITOR="sed -i 's/^pick <short hash>/reword <short hash>/'" \
      GIT_EDITOR="cp <scratch>/msg.txt" git -c core.commentChar=";" rebase -i <short hash>~1
    python tools/review-coverage.py record -1 <new hash>   # where the subject changed (#781)
    git push --force-with-lease             # a pushed, unmerged branch only; never main
    ```
+
+   **The `git log` line joins each message onto one line before it matches** (#814). A body is
+   wrapped at 72, and `--grep` matches within one line, so it misses words a wrap splits. On
+   #811 the claim "prints ok or raises" was wrapped after "prints" in `a7d82ab`, and
+   `--grep='prints ok'` did not find it. A search that finds nothing rewords nothing and says
+   nothing. The line prints each hit's hash and the start of its message.
 
    **Run the `git log` line again before each reword.** A reword gives every later commit a new
    hash, and a rebase handed a hash that is no longer on the branch exits 0, rewords nothing and
