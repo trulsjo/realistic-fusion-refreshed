@@ -105,10 +105,12 @@ def _check_edges(*_):
     tools/render-machine.py reads. `os._exit` skips the atexit hooks, so the detail-floor audit is
     reported here first rather than lost.
 
-    SO A `pipe` OBJECT CANNOT BE REMOVED, JOINED OR CONVERTED before the save: its run is still
-    held here, reading it raises ReferenceError, and the build stops. Nothing does that today. A
-    build that needs to has to take the run out of `_RUNS` first, and a run skipped silently instead
-    would be a run never checked.
+    SO A `pipe` OBJECT CANNOT BE REMOVED, OR JOINED INTO ANOTHER OBJECT, before the save: its run
+    is still held here, reading it raises ReferenceError, and the build stops. Converting one to a
+    mesh in place keeps the object, and its run is still checked from the points it was drawn from
+    (measured on 5.2.0 reviewing #800). Nothing does either today. A build that needs to remove or
+    join one has to take the run out of `_RUNS` first, and a run skipped silently instead would be a
+    run never checked.
     """
     import os
     import traceback
