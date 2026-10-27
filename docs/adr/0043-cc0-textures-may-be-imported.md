@@ -1,11 +1,12 @@
 # 43. CC0 image textures may be imported; meshes stay ours
 
-Date: 2026-10-26
+Date: 2026-10-27
 
 ## Status
 
 Accepted. **Decided by Truls, 2026-10-26**, in the grilling that opened the second attempt at
-denser rendered art.
+denser rendered art. Written up on 2026-10-26 and finished on 2026-10-27, the day of the reads its
+Context gives.
 
 **Amends [ADR 0030](0030-art-is-rendered-from-stored-models.md)** in one clause: its *"Nothing is
 imported"* paragraph. The rest of ADR 0030 stands, and ADR 0030 carries a dated note pointing here.
