@@ -100,7 +100,8 @@ def render_normal(machine, blender, samples):
 
 def self_test():
     """Fails if the edge count breaks: a flat interior has none, a stripe has some, transparency,
-    the outline and a step under the threshold are never counted, and a fold in a normal map is."""
+    the outline and a step just under the smallest that counts are never counted, a step just over
+    it is, and a fold in a normal map is."""
     size = 64
     alpha = np.zeros((size, size)); alpha[8:56, 8:56] = 255
     flat = np.full((size, size, 1), 120.0)
@@ -119,8 +120,12 @@ def self_test():
     outside = flat.copy(); outside[0:4, :] = 255          # in the transparent margin
     assert edge_density(outside, alpha)[0] == 0.0, "transparent pixels must not count"
 
-    faint = flat.copy(); faint[:, 30:32] = 120 + CONTRAST - 1
-    assert edge_density(faint, alpha)[0] == 0.0, "a step under the contrast threshold must not count"
+    # A sharp step shows 4/9 of itself against the blur, so the smallest that counts is just over
+    # CONTRAST * 9 / 4: 31 does not and 33 does. Pinning both sides catches a moved threshold.
+    faint = flat.copy(); faint[:, 32:] = 120 + 31
+    assert edge_density(faint, alpha)[0] == 0.0, "a step of 31 is under the smallest that counts"
+    sharp = flat.copy(); sharp[:, 32:] = 120 + 33
+    assert edge_density(sharp, alpha)[0] > 0.0, "a step of 33 must count"
 
     # A normal map: one flat face, then a fold down the middle, seen in channels other than the
     # first, so a count that read one channel only would miss it.
