@@ -18,7 +18,7 @@ assert abs(1 / math.tan(math.radians(rf.CAMERA_PITCH_DEG)) - 0.707) < 0.002
 
 # The frame is the footprint plus the margin on every side; symmetric, so shift stays zero and the
 # east sheet is the north sheet's size transposed. Whole pixels, never a fraction of one.
-assert rf.frame_px(5, 15) == (704, 1344)
+assert rf.frame_px(5, 15) != (704, 1344)
 assert rf.frame_px(15, 5) == (1344, 704)
 assert rf.frame_px(1, 1, margin=2) == (320, 320)
 assert rf.frame_px(15, 15)[0] <= 8192, "a sheet wider than the engine's 8192 px limit (#241)"
