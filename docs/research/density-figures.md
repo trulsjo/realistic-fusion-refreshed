@@ -2,8 +2,8 @@
 
 Measured 2026-10-27 for [#799](https://github.com/trulsjo/realistic-fusion-refreshed/issues/799),
 the first child of [#798](https://github.com/trulsjo/realistic-fusion-refreshed/issues/798), the
-second attempt at denser rendered art. #798 asked for "more detail" to be measured as well as judged,
-and for a figure that grime and noise cannot raise. This note says how the two figures are taken,
+second attempt at denser rendered art. #799 asks for "more detail" to be measured as well as judged,
+and #798 for a figure that grime and noise cannot raise. This note says how the two figures are taken,
 what each cannot see, and what they read before any of #798's work. Rerun it with the commands below.
 
 ## The two figures
@@ -13,13 +13,16 @@ count can fail (`python tools/measure-density.py --self-test`).
 
 - **Pixel figure:** the share of a sheet's opaque interior pixels that are edge. An edge pixel's
   luminance differs from a 9 px box blur of its surround by more than 14 of 255, either sign. The
-  blur, the threshold and the opacity cut are `docs/research/detail-floor/measure-detail.py`'s,
-  imported, so this note and [`detail-floor.md`](detail-floor.md) use one procedure. It reads
-  pixels only, so it runs on any sheet.
+  blur, the threshold, the opacity cut and the luminance are
+  `docs/research/detail-floor/measure-detail.py`'s, imported. What is done with them differs:
+  [`detail-floor.md`](detail-floor.md) measures the widths of runs along rows, over every opaque
+  pixel, and this counts a share of the interior. It reads pixels only, so it runs on any sheet.
 - **Normal-pass figure:** the same count on a normal pass of our own model, in any of the three
   channels. `models/render-normal.py` renders it with the north sheet's rig, frame and camera. The
-  two figures read the same pixels: on `rf-heat-exchanger` the pass and the sheet are both
-  1344 × 704, and their interiors differ by two pixels in 319 713.
+  two figures read nearly the same pixels. On `rf-heat-exchanger` the pass and the sheet are both
+  1344 × 704. Their interiors hold 319 711 and 319 713 pixels, and 20 pixels are in one and not
+  the other, 11 only in the sheet and 9 only in the pass (measured 2026-10-27). Where those 20
+  sit was not looked at.
 
 **The outline is left out of both.** Only pixels at least the blur's radius inside the opaque area
 count. Otherwise the blur would reach into transparency and count the silhouette, which favours a
@@ -70,7 +73,8 @@ blind to; see below. That is *inferred* and not measured.
 
 ## What each figure cannot see
 
-Each point here is *inferred* from the method in `tools/measure-density.py` and is not measured.
+Each point here is *inferred* from the method in `tools/measure-density.py`, except where a
+measurement with its day is given.
 
 **The pixel figure:**
 
@@ -79,7 +83,10 @@ Each point here is *inferred* from the method in `tools/measure-density.py` and 
 - **It sees luminance only.** Two colours of one brightness meet with no edge, so an accent band
   or a hazard-yellow block can add nothing.
 - **It is blind to value range.** A machine repainted darker, with the same detail, reads the same
-  whenever its steps stay above the threshold.
+  as long as its steps stay above the smallest one that counts: about 32 of 255 for a sharp step,
+  since next to it the 9 px blur already holds 5 pixels of its own side. A straight ramp counts
+  nothing however steep. Measured 2026-10-27 on synthetic input: the smallest step counted was
+  33, and a ramp of 3 a pixel read 0.
 - **It depends on resolution.** It compares only sheets at the same pixels per tile and the same
   scale, which is why a Figma export would need rescaling first.
 - **It reads one sheet.** It takes the north sheet, never the glow, the shadow or another
@@ -90,10 +97,12 @@ Each point here is *inferred* from the method in `tools/measure-density.py` and 
 - **It cannot see a material by design.** Texture, grime and paint do not bend a surface. That
   makes it the wrong figure to test whether procedural grain is poor at 64 px to the tile, which
   ADR 0043 says the pixel figure could test.
-- **It counts curvature as edge.** It does so wherever the surface turns faster than the threshold
-  over the blur's width. A threshold of 14 of 255 on a channel mapped from −1..1 is about 0.11 of
-  a unit normal's component, roughly 6 degrees, *inferred* from the mapping and not measured. A
-  small pipe or a corrugated hose therefore counts heavily, and a large drum lightly.
+- **It counts folds and tight curves, not gentle ones.** A surface turning at a steady rate is a
+  ramp in the normals and counts nothing. A crease counts when it turns a component by more than
+  about 32 of 255, which on a channel mapped from −1..1 is about 0.25 of a unit normal's
+  component, roughly 15 degrees, *inferred* from the step measured above. A tight curve, such as
+  a small pipe's or a corrugated hose's, changes its rate of turning within the blur's width and
+  so counts. That too is *inferred*.
 - **It exists only for our machines**, since it needs the model. It cannot compare against
   vanilla, Krastorio 2 or Figma.
 - **It sees only the visible surface.** It reads the north camera's first hit, so a part hidden

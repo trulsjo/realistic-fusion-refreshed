@@ -7,8 +7,11 @@
 
 THE PIXEL FIGURE is the share of a sheet's opaque pixels that are edge: a pixel whose luminance
 differs from a 9 px box blur of its surround by more than the contrast threshold, either sign.
-The blur, the threshold and the opacity cut are docs/research/detail-floor/measure-detail.py's,
-imported rather than copied, so the two notes measure with one procedure. It reads pixels only,
+The blur, the threshold, the opacity cut and the luminance are
+docs/research/detail-floor/measure-detail.py's, imported rather than copied. What is done with them
+differs: that script measures the widths of runs along rows, and this one counts a share of an
+area. A straight ramp has no edge, and a sharp step counts only above about 32 of 255, since
+next to a step the 9 px blur already holds 5 of its pixels' side. It reads pixels only,
 so it runs on ours, vanilla's, Krastorio 2's or anyone's sheet, and it cannot tell a valve from
 grime, procedural noise or Cycles noise: all of them are edge to it.
 
@@ -28,6 +31,7 @@ import argparse
 import importlib.util
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -80,6 +84,8 @@ def normal_density(path):
 
 
 def render_normal(machine, blender, samples):
+    """Render the normal pass into a new temporary directory and return the PNG's path. The caller
+    removes the directory."""
     model = os.path.join(REPO, "models", machine, f"{machine}.blend")
     if not os.path.isfile(model):
         sys.exit(f"{machine}: no model at {model}")
@@ -93,13 +99,18 @@ def render_normal(machine, blender, samples):
 
 
 def self_test():
-    """Fails if the edge count breaks: a flat interior has none, a stripe has some, transparency
-    and the outline are never counted, and the normal figure ignores a colour-only change."""
+    """Fails if the edge count breaks: a flat interior has none, a stripe has some, transparency,
+    the outline and a step under the threshold are never counted, and a fold in a normal map is."""
     size = 64
     alpha = np.zeros((size, size)); alpha[8:56, 8:56] = 255
     flat = np.full((size, size, 1), 120.0)
     d, n = edge_density(flat, alpha)
     assert d == 0.0 and n > 0, f"a flat square has no edge, got {d} over {n}"
+
+    # The outline: the same square on black, as a sheet's transparent margin is. Without the
+    # interior's erosion the blur reaches the black and the square's own edge counts.
+    on_black = np.zeros((size, size, 1)); on_black[8:56, 8:56] = 120
+    assert edge_density(on_black, alpha)[0] == 0.0, "the outline must not count"
 
     striped = flat.copy(); striped[:, 30:32] = 200
     d_stripe, _ = edge_density(striped, alpha)
@@ -111,10 +122,10 @@ def self_test():
     faint = flat.copy(); faint[:, 30:32] = 120 + CONTRAST - 1
     assert edge_density(faint, alpha)[0] == 0.0, "a step under the contrast threshold must not count"
 
-    # A normal map: one flat face, then a fold down the middle. A colour sheet painted with the
-    # same fold but a flat normal must leave the normal figure at zero.
+    # A normal map: one flat face, then a fold down the middle, seen in channels other than the
+    # first, so a count that read one channel only would miss it.
     up = np.zeros((size, size, 3)); up[...] = (128, 128, 255)
-    folded = up.copy(); folded[:, 32:] = (200, 128, 200)
+    folded = up.copy(); folded[:, 32:] = (128, 200, 200)
     assert edge_density(up, alpha)[0] == 0.0
     assert edge_density(folded, alpha)[0] > 0.0, "a fold in the normals must count"
     print("measure-density self-test: OK")
@@ -126,7 +137,8 @@ def main(argv=None):
     ap.add_argument("--machine", help="one of ours, e.g. heat-exchanger: both figures")
     ap.add_argument("--blender", help="path to blender.exe, found as render-machine.py finds it")
     ap.add_argument("--samples", type=int, default=16)
-    ap.add_argument("--keep", action="store_true", help="print the normal pass's path and keep it")
+    ap.add_argument("--keep", action="store_true",
+                    help="keep the normal pass and print its path; otherwise it is deleted")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args(argv)
@@ -153,6 +165,8 @@ def main(argv=None):
         rows.append({"sheet": f"{a.machine} normal pass, {a.samples} samples"
                      + (f" ({normal})" if a.keep else ""), "figure": "normal", "density": d,
                      "pixels": n})
+        if not a.keep:
+            shutil.rmtree(os.path.dirname(normal), ignore_errors=True)
 
     if a.json:
         print(json.dumps(rows, indent=2))
