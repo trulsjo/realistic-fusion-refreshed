@@ -1,12 +1,12 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but fifteen was part of that file and is as it stood there, so "this file" in one is
+but sixteen was part of that file and is as it stood there, so "this file" in one is
 `code-review.md`, and "this rule", "this paragraph" and "the paragraph above" are that file's. All
 but one of those were moved on 2026-10-10 (#672), and the one on what the threshold dropped on
-2026-10-11 (#626). The fifteen written for this page are the ones for #651, #653, #670, #671, #720,
-#753, #755, #761, #780 to #783 and #788, the ones on the verdicts of 2026-10-10, 2026-10-14 and
-2026-10-16, the one on the wrap width and the one on what the scores decided. What each pull
+2026-10-11 (#626). The sixteen written for this page are the ones for #651, #653, #670, #671, #720,
+#753, #755, #761, #780 to #783, #788 and #813, the ones on the verdicts of 2026-10-10, 2026-10-14
+and 2026-10-16, the one on the wrap width and the one on what the scores decided. What each pull
 request's two passes found and cost is on a third page, [`review-figures.md`](review-figures.md).
 
 **Read this page** when a rule is revisited or doubted, and when a sentence of `code-review.md`
@@ -508,6 +508,27 @@ still say he has not seen it; #712's, with nothing to grade, says nothing of it.
 touches a mod**, #711, with one file under `realistic-fusion-refreshed/`, a comment in
 `realistic-fusion-refreshed/prototypes/entities.lua`, read from each pull request's list of files on
 2026-10-16. So the ten still say almost nothing of what the pass finds in Lua or in a prototype.
+
+## A review that plants takes its own worktree
+
+### A planted commit that reached main on #811 (#813)
+
+Under the paragraph that a planted proof for the workflow runs on a throwaway branch. Read from
+`git` and `gh` on 2026-10-27.
+
+- **#810 asked for the workflow's new step to be shown failing, and the workflow then ran only on a
+  pull request and on a push to `main`.** So #811 pushed a commit that broke the step to its pull
+  request's branch, and a revert after it.
+- **The pull request was rebase-merged, so the planted commit is on `main`**: `819be04`, "🚧
+  test(repo): invert a frame assertion to turn the job red", which `git branch -r --contains`
+  shows on `origin/main`. At that commit `models/test_rf_blender.py` fails, so a `git bisect`
+  across it can stop there. Run 40501702199 was red on it and run 40501928990 green on the revert.
+- **Through the trigger #813 added, the same kind of proof left no commit on any branch that
+  merges.** Run 40576144363, started by hand on a throwaway branch carrying a planted failing Lua
+  suite, failed in `tests/test-*.lua` alone and skipped the commit check and the body job; the
+  branch was deleted after. Started on `main` before the trigger was merged, the same command
+  answered `HTTP 422: Workflow does not have 'workflow_dispatch' trigger`, because GitHub reads the
+  trigger from the copy of the workflow on the branch it is handed.
 
 ## The wrap width
 
