@@ -59,18 +59,58 @@ SOCKET_Z = rf.SOCKET_Z
 
 
 def MATERIAL(name, **flags):                      # replaced by use(); a clear error if it is not
-    sys.exit("rf_parts: no material resolver installed -- call rf_parts.use(mat) before building.")
+    sys.exit("rf_parts: no material resolver installed -- call rf_parts.use(mat, geo) before building.")
 
 
-def use(mat_fn):
-    """Install the machine's material resolver. Every helper calls it as `mat_fn(name, **flags)`.
+GEOMETRY = None                                   # replaced by use(); `pipe` refuses without it
+_RUNS = []                                        # (object, points, radius) for every `pipe`
+
+
+def use(mat_fn, geo):
+    """Install the machine's material resolver and its geometry.json. Every helper calls the
+    resolver as `mat_fn(name, **flags)`; `pipe` and `socket` hold their runs against the geometry's
+    footprint edge (`rf_blender.check_edge`, #800). The geometry is not optional, so a build that
+    forgets it cannot draw a pipe unchecked.
 
     ONE MACHINE PER PROCESS. The resolver is module state, so a future batch builder that made two
     machines in one Blender session would paint the second with the first's palette unless it called
     this again between them. Every build today is its own `blender -b`, so nothing is at risk yet.
     """
-    global MATERIAL
+    global MATERIAL, GEOMETRY
     MATERIAL = mat_fn
+    GEOMETRY = geo
+    if _check_edges not in bpy.app.handlers.save_pre:
+        bpy.app.handlers.save_pre.append(_check_edges)
+
+
+def _check_edges(*_):
+    """Hold every `pipe` run against the footprint edge, where it ENDED UP, before the model is
+    saved. A save_pre handler, so no build script has to remember to call it.
+
+    WHY AT SAVE AND NOT WHEN THE RUN IS DRAWN: rf-heat-exchanger is built long axis north-south and
+    turned a quarter turn afterwards, so the points `pipe` is handed are in the body's own frame and
+    not the declared one. Read then, its east-frame conduit leaves the north edge of a five-tile box
+    it is nowhere near. Each run's points are taken through its object's `matrix_world` instead,
+    which carries the turn. A socket is placed after the turn in the declared frame, so `socket`
+    checks its own stub at once.
+
+    BLENDER SWALLOWS AN EXCEPTION IN A HANDLER and saves anyway, and swallows `sys.exit` from an
+    atexit hook and exits 0 (both measured on 5.2.0, 2026-10-27). So a refusal prints and leaves by
+    `os._exit(1)`: the .blend is never written and the build fails, which is what
+    tools/render-machine.py reads.
+    """
+    import os
+    from mathutils import Vector
+
+    bpy.context.view_layer.update()
+    try:
+        for o, points, radius in _RUNS:
+            world = [tuple(o.matrix_world @ Vector(p)) for p in points]
+            rf.check_edge(o.name, world, radius, GEOMETRY)
+    except SystemExit as refusal:
+        print(refusal, file=sys.stderr)
+        sys.stderr.flush()
+        os._exit(1)
 
 
 def bevel(obj, width=0.03):
@@ -322,6 +362,9 @@ def socket(body, connection, geo, z, radius, plumbable=True, **mat_opts):
         loc[i], loc[1 - i] = along, across
         return tuple(loc)
 
+    # A socket is the one thing allowed to meet the edge, and is held to the same check as a run,
+    # so a connection the geometry does not declare cannot be drawn either. Draws no `random`.
+    rf.check_edge(f"Socket-{d}-{fluid}", [at(inner), at(edge)], radius, geo)
     cyl(f"Socket-{d}-{fluid}", radius, abs(edge - inner), at((edge + inner) / 2), "metal",
         axis=axis, **mat_opts)
     cyl(f"Band-{d}-{fluid}", radius + BAND_PROUD, BAND_DEPTH, at(edge - BAND_BACK * sign),
@@ -414,6 +457,8 @@ def pipe(name, points, radius, material, corrugate=0.0, band=(1.15, 0.22), **mat
     thin pipe rather than a thing to work around.
     """
     rf.check_detail(name, 2 * radius)
+    if GEOMETRY is None:
+        sys.exit("rf_parts: no geometry installed -- call rf_parts.use(mat, geo) before building.")
     cd = bpy.data.curves.new(name, "CURVE")
     cd.dimensions = "3D"
     cd.bevel_depth = radius
@@ -425,6 +470,7 @@ def pipe(name, points, radius, material, corrugate=0.0, band=(1.15, 0.22), **mat
         bp.co = p
         bp.handle_left_type = bp.handle_right_type = "AUTO"
     o = bpy.data.objects.new(name, cd)
+    _RUNS.append((o, [tuple(p) for p in points], radius))  # held to the edge at save, `_check_edges`
     # bpy.context.scene, not a module-global `scene`: this used to live inside a build script
     # where that name was in scope, and lifting it out was the one thing that did not survive
     # the move. Same object either way -- each build script sets `scene = bpy.context.scene`.

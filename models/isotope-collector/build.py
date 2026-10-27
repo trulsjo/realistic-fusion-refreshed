@@ -366,7 +366,7 @@ def column(name, base, radius, height, accent):
     return top + 0.16
 
 
-rf_parts.use(mat)
+rf_parts.use(mat, geo)
 
 # ---- the machine ----------------------------------------------------------------------------
 if variant == "cube":
