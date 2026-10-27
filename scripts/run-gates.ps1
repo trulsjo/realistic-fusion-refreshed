@@ -40,7 +40,7 @@
     and the gate after which it was first seen, because a run whose gates read different trees
     describes none of them. A file git does not track, such as a log or a report the gates write,
     is not in the fingerprint. On 2026-10-27 one took about 2 s with the files in the disk cache,
-    so about a minute over the 25 gates, and 25 s in a fresh clone.
+    so about a minute over the 26 gates, and 25 s in a fresh clone.
 
     THE FOUR TOOLS ARE NOT GATES, and a self-test is all that checks each. None of them runs in
     any gate: one is a hook that judges every Bash tool call on a machine that registers it, and
