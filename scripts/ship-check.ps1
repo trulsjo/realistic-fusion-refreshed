@@ -190,8 +190,11 @@
     anything, whatever the other sections found, because each reads its files as it reaches them
     (#687). The tree-change-caught half edits and stages files in a scratch repository between the
     two fingerprints and requires each to be named and an ignored file not to be; the
-    unchanged-tree-passes half requires a tree that stood still to pass. It cannot see a file
-    edited and put back between the two, nor a change to a submodule's checkout.
+    unchanged-tree-passes half requires a tree that stood still to pass. Both call the function, so
+    the tree-change-fails-run half runs this script as its own process, watching a scratch tree it
+    edits before section 1 reads a file, and requires the run to fail on that file alone. That is
+    a second full run of the sections inside -SelfTest. It cannot see a file edited and put back
+    between the two fingerprints, nor a change to a submodule's checkout.
 
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
@@ -202,12 +205,12 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove eight things a green run cannot: the shared -SelfTest runner
+    Run the checks as usual, then prove nine things a green run cannot: the shared -SelfTest runner
     the tools submodule holds -- that it numbers halves from the list it was given and refuses a half it
     cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both directions, section 10's two assertions, each in both
     directions, section 12's two scans
     of the lines, each in both directions, section 13 in both directions, section 14 in both directions, and section 15's two
-    checks, the first in both directions and the second on a stand-in the library keeps no report for, and section 16 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
+    checks, the first in both directions and the second on a stand-in the library keeps no report for, and section 16 in both directions and through a run of this script, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
     memory and the planted documents and section 16's scratch repositories live in the scratch
     directory the run removes on its way out.
 
@@ -221,7 +224,10 @@
 #Requires -Version 7
 
 param(
-    [switch] $SelfTest
+    [switch] $SelfTest,
+    # The self-test's alone: a scratch git repository watched by section 16 in place of this one,
+    # whose tracked.txt is edited after the first fingerprint and before section 1 reads a file.
+    [Parameter(DontShow)] [string] $StandInTree
 )
 
 $ErrorActionPreference = 'Stop'
@@ -230,7 +236,8 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 . "$PSScriptRoot/factorio-lib.ps1"   # starts no game, but the library sources the harness submodule.
 
 # Before any section reads a file: section 16 compares the tree with this when they have all run.
-$treeBefore = Get-TrackedTreeFingerprint -Root $repoRoot
+$treeRoot   = if ($StandInTree) { $StandInTree } else { $repoRoot }
+$treeBefore = Get-TrackedTreeFingerprint -Root $treeRoot
 
 $mods      = Get-RepoMods
 $assetsMod = 'realistic-fusion-refreshed-assets'
@@ -272,6 +279,10 @@ $CREDITS = @{
     'credit to Durikkan'    = @('Durikkan')
     'credit to PreLeyZero'  = @('PreLeyZero')
 }
+
+# The tree-change-fails-run half's edit, here and not beside $treeBefore, so a fingerprint moved
+# below section 1's first read is taken after it and the half fails.
+if ($StandInTree) { 'edited during the run' | Add-Content -LiteralPath "$StandInTree/tracked.txt" }
 
 $rootNote = Join-Path $repoRoot 'legal-note.txt'
 if (-not (Test-Path $rootNote)) { throw "no legal-note.txt at the repo root: $rootNote" }
@@ -1559,7 +1570,7 @@ function Get-TreeChangeFailures {
 }
 
 $checks++
-foreach ($moved in Get-TreeChangeFailures -Before $treeBefore -Root $repoRoot) { $failures.Add($moved) }
+foreach ($moved in Get-TreeChangeFailures -Before $treeBefore -Root $treeRoot) { $failures.Add($moved) }
 
 if ($failures.Count) {
     Write-Host ''
@@ -2029,6 +2040,22 @@ if ($SelfTest) {
                 $found = @(Get-TreeChangeFailures -Before $before -Root $tree)
                 if ($found.Count) { throw "a tree whose tracked files stood still was reported: '$($found -join '; ')'." }
                 'a tree whose tracked files stand still is not reported, an ignored file written beside them.'
+            } }
+
+            @{ Name = 'tree-change-fails-run'; Body = {
+                # The two halves above call the function, so neither sees whether a run calls it.
+                # This script as its own process, watching a scratch tree it edits before section 1,
+                # must fail on that alone, naming the file. It is a second full run of the sections.
+                $pwsh = (Get-Process -Id $PID).Path
+                $out  = @(& $pwsh -NoProfile -File $PSCommandPath -StandInTree (New-ScratchGitTree -Parent $planted) 2>&1 |
+                    ForEach-Object { "$_" })
+                $code = $LASTEXITCODE
+                if ($code -eq 0) { throw "a run whose watched tree was edited before section 1 exited 0:`n$($out -join "`n")" }
+                if (-not ($out -match '^FAIL  tracked\.txt \(working tree\) changed while') -or
+                    -not ($out -match '^1 of \d+ checks failed\.$')) {
+                    throw "a run whose watched tree was edited exited $code without failing on that file alone:`n$($out -join "`n")"
+                }
+                "a run whose watched tree is edited after its first fingerprint exits $code, failing on that file alone."
             } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
