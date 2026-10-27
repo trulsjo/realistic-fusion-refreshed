@@ -331,6 +331,28 @@ portal, all on 2026-10-26; what is marked as an account was not read again.
   already corrected: `483a873`'s twice, after `c43cc45` and `0b86a84`, and `1756548`'s, after
   `7ac0276`.
 
+### Three gaps on #815 (#818 to #820)
+
+Under three rules written on 2026-10-27, all in the fourth. Each case is read from #815's body, from
+the tickets and from `.github/workflows/gates.yml` on 2026-10-27; what is marked as an account was
+not read again.
+
+- **A sentence approved before it was checked (#818).** #815's pre-PR findings 4 and 5 are on a
+  `CLAUDE.md` sentence Truls had approved: a dispatch "runs the same jobs as a push but skips the
+  commit check and the body job". The body job's `if:` in `gates.yml` is `github.event_name ==
+  'pull_request'`, so a push never runs it. By #818's account the claim had also gone into the head
+  comment of `gates.yml` and into the body of `529a747`, which was reworded, and the corrected
+  wording went to Truls a second time.
+- **An approval nobody could read (#819).** Finding 12 says "in wording Truls approved" in the body
+  of `529a747` has no record the reviewer can read, and its row reads "no change: Truls approved
+  both wordings in the implementing session on 2026-10-27". The approval was an answer in the
+  session, and #813 has no comment that records it.
+- **A class inferred, not read (#820).** Finding 14 says #815's row in `review-figures.md` gave the
+  missed finding's class as "the reviewer checked the comment's count and not its size", when it had
+  checked both. By #820's account the reviewer's first report listed "The tree-size figures: 556
+  tracked files, 11.8 MB" as checked and holding, measured with the session's own `du`. `085cf8a`
+  corrected the class.
+
 ### What the verdict of 2026-10-07 rested on (#593)
 
 Five paragraphs of the section *Measured, not assumed* of that rule, until 2026-10-10. The verdict
@@ -529,6 +551,19 @@ Under the paragraph that a planted proof for the workflow runs on a throwaway br
   branch was deleted after. Started on `main` before the trigger was merged, the same command
   answered `HTTP 422: Workflow does not have 'workflow_dispatch' trigger`, because GitHub reads the
   trigger from the copy of the workflow on the branch it is handed.
+
+### A worktree refused under herdr on #815 (#816)
+
+Under the opening sentence, that the worktree is made as `plugin-pass.md`'s paragraph makes the
+pass's.
+
+- **The rule named `git worktree add --detach`, and inside herdr a hook refuses it.** By #816's
+  account, on #815 with `HERDR_ENV=1` the refusal said "Inside herdr, worktree work goes through the
+  herdr-parallel-worktree skill", and the session's fallback, a `git clone` into its scratchpad,
+  failed on `Filename too long` until it set `core.longpaths`, about four tool calls in all.
+- **Herdr's command makes a worktree for a plant.** In the session that implemented #816, with
+  `HERDR_ENV=1`, `herdr worktree create --branch plant-816 --base <head>` exited 0 with a checkout
+  at the head, and `herdr worktree remove` and `git branch -D` took both away, on 2026-10-27.
 
 ## The wrap width
 

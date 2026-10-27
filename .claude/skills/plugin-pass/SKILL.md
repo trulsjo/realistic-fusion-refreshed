@@ -201,7 +201,7 @@ it. They are outside the repository, so a worktree does not lack them."
 7. **Fix, and have the pre-PR reviewer confirm.** `docs/agents/code-review.md` says, in the
    fourth rule, what becomes of a candidate found real or not verified, who confirms the fixes
    and from which diff, and that the class of a finding the pre-PR review missed is named in the
-   pull request. A fix held under #643 and #653 is in that diff. The same rule names the fixes put
+   pull request from the pre-PR reviewer's report (#820). A fix held under #643 and #653 is in that diff. The same rule names the fixes put
    to Truls before they are written (#782), and the diff's commits are recorded as step 4 of
    `/pre-pr-review` says (#781). Before a fix is written, *Review the prose, not only the code*
    says what the session reads of its source (#632), and before a fix that changes what a rule
