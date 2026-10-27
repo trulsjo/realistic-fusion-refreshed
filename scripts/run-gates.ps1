@@ -25,6 +25,8 @@
       four tools' self-tests   tools/refuse-hanging-bash.py, review-usage.py, rewrap.py and
                                review-coverage.py, each with --self-test and `python` from PATH
                                (#659, #787)
+      test_rf_blender          models/test_rf_blender.py, with `python` from PATH and no
+                               argument: the render's arithmetic, without Blender (#810)
       ship-check.ps1           no game
       load-check.ps1           the default load, from the junctioned repository
       check-*.ps1              every scripts/check-*.ps1, found by name, so a new one is picked up
@@ -37,6 +39,10 @@
     three are run by hand by the session that needs them. #656's pre-PR review found a defect in what the hook
     refuses six times, and each fix was checked by running its self-test by hand. They need Python
     and nothing installed into it.
+
+    MODELS/TEST_RF_BLENDER.PY IS A GATE OF ITS OWN (#810). It pins the arithmetic the rendered
+    sheets are declared from, and since #809 it is the self-test of #800's footprint-edge check.
+    It touches no bpy, so it needs Python and nothing installed, the same as the four tools.
 
     WHAT IT DOES NOT RUN. No probe: a probe asserts nothing, and exit 0 from one means it reported.
     No -SelfTest of any gate, and not load-check.ps1 -FromZips, locale-check.ps1 or name-check.ps1:
@@ -181,6 +187,9 @@ foreach ($tool in 'refuse-hanging-bash', 'review-usage', 'rewrap', 'review-cover
     $gates += @{ Name = $tool; Exe = 'python'
                  Arguments = @((Join-Path $repoRoot "tools/$tool.py"), '--self-test') }
 }
+# A plain script, not a --self-test: it prints ok and exits 0, or raises (#810).
+$gates += @{ Name = 'test_rf_blender'; Exe = 'python'
+             Arguments = @((Join-Path $repoRoot 'models/test_rf_blender.py')) }
 $scripts = @('ship-check.ps1', 'load-check.ps1') +
     @(Get-ChildItem $PSScriptRoot -Filter 'check-*.ps1' | Sort-Object Name | ForEach-Object Name)
 foreach ($script in $scripts) {

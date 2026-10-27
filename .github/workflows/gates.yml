@@ -3,7 +3,8 @@
 # scripts/run-gates.ps1. No gate's -SelfTest runs here, the same as there. The body check below is
 # not one of those gates, and its -SelfTest runs here and not there. Four tools under
 # tools/ are not gates and have a --self-test that is all that checks them; those run here, as
-# they do there (#659, #787).
+# they do there (#659, #787). So does models/test_rf_blender.py, the render's arithmetic, which
+# needs no Blender and runs as a script of its own (#810).
 #
 # The pull request's body is checked by the shared pr-body-check.ps1 (#730): the pr template's
 # three headings and, since #753, its four markers, no commit cited that is not on main, and no
@@ -70,6 +71,10 @@ jobs:
             echo "::endgroup::"
           done
           exit $failed
+      # A plain script, not a --self-test: it prints ok or raises, and touches no bpy (#810).
+      - name: models/test_rf_blender.py
+        if: ${{ !cancelled() }}
+        run: python3 models/test_rf_blender.py
 
   pwsh:
     name: ship-check and commit-check
