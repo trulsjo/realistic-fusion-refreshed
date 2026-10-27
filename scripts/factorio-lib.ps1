@@ -133,8 +133,8 @@ function Get-TrackedTreeFingerprint {
         and one such run was quoted as a pass.
 
         A hash of the contents rather than Get-ModTreeFingerprint's size and write time: the files
-        are the 556 git tracks, about 12 MB on 2026-10-27, and an editor that rewrites a line in
-        place keeps its length. The index is read as `git ls-files -s` gives it, mode, blob and
+        are the 555 git tracks besides the submodule, about 10.9 MB on 2026-10-27, and an editor
+        that rewrites a line in place keeps its length. The index is read as `git ls-files -s` gives it, mode, blob and
         stage, and not as .git/index's bytes, which `git status` rewrites with nothing staged.
 
         Untracked and git-ignored files are not in it, so a run's own logs and reports are not
