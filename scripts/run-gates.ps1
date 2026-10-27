@@ -34,6 +34,14 @@
     Each is its own process with its default arguments. A gate that fails does not stop the run:
     the rest still run, so one invocation says everything that is broken.
 
+    A TREE THAT MOVED FAILS THE RUN (#812), whatever the gates found. It takes a fingerprint of
+    every tracked file and of the index before the first gate, again after each gate until one
+    differs, and once more at the end. A difference exits non-zero, naming each path that changed
+    and the gate after which it was first seen, because a run whose gates read different trees
+    describes none of them. A file git does not track, such as a log or a report the gates write,
+    is not in the fingerprint. On 2026-10-27 one took about 2 s with the files in the disk cache,
+    so about a minute over the 25 gates, and 25 s in a fresh clone.
+
     THE FOUR TOOLS ARE NOT GATES, and a self-test is all that checks each. None of them runs in
     any gate: one is a hook that judges every Bash tool call on a machine that registers it, and
     three are run by hand by the session that needs them. #656's pre-PR review found a defect in what the hook
@@ -80,7 +88,10 @@
     gates in place of the real ones: `exit-code-names-failure` requires a non-zero exit and the
     failing stand-in named in what it prints, and `exit-code-clean` requires exit 0 when every
     stand-in passes. Deleting the branch that turns the failed list into an exit code fails the
-    first.
+    first. Since #812 the stand-ins write to a scratch git repository watched in place of this
+    one: `tree-change-fails` has a passing stand-in edit a tracked file there and requires a
+    non-zero exit naming the file and that stand-in, and `ignored-write-clean` has one write only
+    a git-ignored file and requires exit 0.
 
 .EXAMPLE
     pwsh -File scripts/run-gates.ps1
@@ -94,8 +105,13 @@ param(
     [string] $Only = '*',
     [switch] $SelfTest,
     # The self-test's alone: comma-separated exit codes, one stand-in gate each, run in place of
-    # every real gate, so the exit code below is reached by the same lines a real run takes.
-    [Parameter(DontShow)] [string] $StandInExits
+    # every real gate, so the exit code below is reached by the same lines a real run takes. An
+    # entry 'edit' appends to -StandInTree's tracked.txt and 'ignored' writes its ignored.txt,
+    # each exiting 0.
+    [Parameter(DontShow)] [string] $StandInExits,
+    # The self-test's alone: the scratch git repository the stand-ins write to, watched in place
+    # of the repository.
+    [Parameter(DontShow)] [string] $StandInTree
 )
 
 $ErrorActionPreference = 'Stop'
@@ -106,7 +122,9 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 function Invoke-Gates {
     <#  Run each gate, print its line, and return the names that failed. A gate is a Name, an
         executable and its arguments; it passes on exit 0 and on nothing else.  #>
-    param([Parameter(Mandatory)] [object[]] $Gates, [Parameter(Mandatory)] [string] $LogDirectory)
+    param([Parameter(Mandatory)] [object[]] $Gates, [Parameter(Mandatory)] [string] $LogDirectory,
+          # Handed each gate's name once it has run: the run's watch on the tree.
+          [scriptblock] $AfterEach)
 
     $failed = @()
     foreach ($gate in $Gates) {
@@ -128,6 +146,7 @@ function Invoke-Gates {
             Write-Host ("  FAIL  {0,-24} {1}  exit {2}; the tail of its output:" -f $gate.Name, $took, $code) -ForegroundColor Red
             Get-Content $log -Tail 12 | ForEach-Object { Write-Host "          $_" }
         }
+        if ($AfterEach) { & $AfterEach $gate.Name }
     }
     return , $failed
 }
@@ -137,6 +156,18 @@ New-Item -ItemType Directory -Path $temp -Force | Out-Null
 $pwsh = (Get-Process -Id $PID).Path
 
 if ($SelfTest) {
+    function Invoke-StandInRun([string] $Exits) {
+        <#  This script as its own process over stand-in gates and a scratch tree of its own, with
+            what it printed returned and its exit code left in $LASTEXITCODE.  #>
+        $out  = & $pwsh -NoProfile -File $PSCommandPath -StandInExits $Exits -StandInTree (New-ScratchGitTree -Parent $temp) 2>&1
+        $code = $LASTEXITCODE
+        # A failing run keeps its logs, which a real one should; this one's are the self-test's.
+        $logs = @($out | ForEach-Object { "$_" } | Where-Object { $_ -match 'Logs: (.+)$' } | ForEach-Object { $Matches[1].Trim() })[0]
+        if ($logs -like '*rf-gates-*') { Remove-Item -Recurse -Force $logs -ErrorAction SilentlyContinue }
+        $global:LASTEXITCODE = $code
+        return $out
+    }
+
     try { Invoke-SelfTestHalves -Halves @(
         @{ Name = 'failing-gate-reported'; Body = {
             $standIns = @(
@@ -157,11 +188,8 @@ if ($SelfTest) {
             'a gate whose executable is missing fails rather than being skipped.'
         } }
         @{ Name = 'exit-code-names-failure'; Body = {
-            $out = & $pwsh -NoProfile -File $PSCommandPath -StandInExits '0,3,0' 2>&1
+            $out = Invoke-StandInRun '0,3,0'
             $code = $LASTEXITCODE
-            # A failing run keeps its logs, which a real one should; this one's are the self-test's.
-            $logs = @($out | ForEach-Object { "$_" } | Where-Object { $_ -match 'Logs: (.+)$' } | ForEach-Object { $Matches[1].Trim() })[0]
-            if ($logs -like '*rf-gates-*') { Remove-Item -Recurse -Force $logs -ErrorAction SilentlyContinue }
             if ($code -eq 0) { throw "the script exited 0 with a stand-in gate exiting 3:`n$($out | Out-String)" }
             if (-not ($out | Where-Object { "$_" -match '^FAIL - 1 of 3 gate\(s\) failed .*: stand-in-2$' })) {
                 throw "the script exited $code but its last line did not name stand-in-2 alone:`n$($out | Out-String)"
@@ -169,9 +197,29 @@ if ($SelfTest) {
             "a failing stand-in gate makes the script exit $code, naming it."
         } }
         @{ Name = 'exit-code-clean'; Body = {
-            $out = & $pwsh -NoProfile -File $PSCommandPath -StandInExits '0,0' 2>&1
+            $out = Invoke-StandInRun '0,0'
             if ($LASTEXITCODE -ne 0) { throw "the script exited $LASTEXITCODE with every stand-in gate passing:`n$($out | Out-String)" }
             'every stand-in gate passing makes the script exit 0.'
+        } }
+        @{ Name = 'tree-change-fails'; Body = {
+            # Every stand-in passes, and the second edits a tracked file of the scratch tree.
+            $out = Invoke-StandInRun '0,edit,0'
+            $code = $LASTEXITCODE
+            if ($code -eq 0) { throw "the script exited 0 with a tracked file edited during the run:`n$($out | Out-String)" }
+            $lines = @($out | ForEach-Object { "$_" })
+            if (-not ($lines -match '^FAIL - .*first seen after stand-in-2\b')) {
+                throw "the script exited $code but did not say the change was first seen after stand-in-2:`n$($out | Out-String)"
+            }
+            if (-not ($lines -match '^\s+tracked\.txt \(working tree\)$')) {
+                throw "the script exited $code but did not name tracked.txt:`n$($out | Out-String)"
+            }
+            "a tracked file edited during a run of passing gates makes the script exit $code, naming it and the gate."
+        } }
+        @{ Name = 'ignored-write-clean'; Body = {
+            # The tracked tree stands still; a stand-in writes the file the scratch tree ignores.
+            $out = Invoke-StandInRun '0,ignored'
+            if ($LASTEXITCODE -ne 0) { throw "the script exited $LASTEXITCODE when only a git-ignored file was written:`n$($out | Out-String)" }
+            'a run that writes only a git-ignored file exits 0, as it did before the tree was watched.'
         } }
     ) } finally { Remove-Item -Recurse -Force $temp -ErrorAction SilentlyContinue }
     Write-Host '-SelfTest: PASS' -ForegroundColor Green
@@ -196,11 +244,20 @@ foreach ($script in $scripts) {
     $gates += @{ Name = [IO.Path]::GetFileNameWithoutExtension($script); Exe = $pwsh
                  Arguments = @('-NoProfile', '-File', (Join-Path $PSScriptRoot $script)) }
 }
+$treeRoot = $repoRoot
 if ($StandInExits) {
+    # Never the repository: a stand-in that edits writes into the tree this run watches.
+    if (-not $StandInTree) { throw '-StandInExits needs -StandInTree, a scratch git repository.' }
+    $treeRoot = $StandInTree
     $i = 0
     $gates = @(foreach ($exit in $StandInExits -split ',') {
         $i++
-        @{ Name = "stand-in-$i"; Exe = $pwsh; Arguments = @('-NoProfile', '-Command', "exit $([int]$exit)") }
+        $command = switch ($exit) {
+            'edit'    { "Add-Content -LiteralPath '$StandInTree/tracked.txt' -Value edited; exit 0" }
+            'ignored' { "Add-Content -LiteralPath '$StandInTree/ignored.txt' -Value written; exit 0" }
+            default   { "exit $([int]$exit)" }
+        }
+        @{ Name = "stand-in-$i"; Exe = $pwsh; Arguments = @('-NoProfile', '-Command', $command) }
     })
 }
 $gates = @($gates | Where-Object { $_.Name -like $Only })
@@ -208,14 +265,32 @@ if ($gates.Count -eq 0) { throw "-Only '$Only' matches no gate." }
 
 Write-Host "Running $($gates.Count) gate(s), one at a time. Logs: $temp"
 $watch = [Diagnostics.Stopwatch]::StartNew()
+# The tree as the first gate finds it, compared after each gate until it first differs (#812).
+$treeBefore = Get-TrackedTreeFingerprint -Root $treeRoot
+$treeSeen   = $null
+$watchTree  = {
+    param([string] $Gate)
+    if ($script:treeSeen) { return }
+    $changed = @(Get-TrackedTreeChanges -Before $treeBefore -After (Get-TrackedTreeFingerprint -Root $treeRoot))
+    if ($changed) { $script:treeSeen = @{ Gate = $Gate; Paths = $changed } }
+}
 Push-Location $repoRoot
-try { $failed = Invoke-Gates -Gates $gates -LogDirectory $temp } finally { Pop-Location }
+try { $failed = Invoke-Gates -Gates $gates -LogDirectory $temp -AfterEach $watchTree } finally { Pop-Location }
 $took = '{0:hh\:mm\:ss}' -f $watch.Elapsed
+# Once more at the end, so a change undone before the end still counts and one made after the
+# first is still named.
+$moved = @(@($treeSeen.Paths) + @(Get-TrackedTreeChanges -Before $treeBefore -After (Get-TrackedTreeFingerprint -Root $treeRoot)) |
+    Where-Object { $_ } | Sort-Object -Unique)
 
 Write-Host ''
 if (@($failed).Count -gt 0) {
     Write-Host "FAIL - $(@($failed).Count) of $($gates.Count) gate(s) failed in ${took}: $($failed -join ', ')" -ForegroundColor Red
-    exit 1
 }
+if ($moved) {
+    $when = if ($treeSeen) { "first seen after $($treeSeen.Gate)" } else { 'seen at the end of the run' }
+    Write-Host "FAIL - $($moved.Count) tracked path(s) changed during the run, $when, so its result describes no one tree:" -ForegroundColor Red
+    foreach ($path in $moved) { Write-Host "         $path" }
+}
+if (@($failed).Count -gt 0 -or $moved) { exit 1 }
 Remove-Item -Recurse -Force $temp
 Write-Host "OK - all $($gates.Count) gate(s) passed in $took."

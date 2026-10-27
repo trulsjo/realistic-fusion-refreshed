@@ -185,6 +185,14 @@
     requires a stand-in named as no rig is to be caught leaving no report. It loads no map, so it
     cannot see a real rig's report; the section comment has the rest.
 
+    SECTION 16 HAS A -SelfTest AND NO FLOOR (#812). It fails the run, naming each path, when a
+    tracked file's contents or its index entry differ from what they were before section 1 read
+    anything, whatever the other sections found, because each reads its files as it reaches them
+    (#687). The tree-change-caught half edits and stages files in a scratch repository between the
+    two fingerprints and requires each to be named and an ignored file not to be; the
+    unchanged-tree-passes half requires a tree that stood still to pass. It cannot see a file
+    edited and put back between the two, nor a change to a submodule's checkout.
+
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
     stopped saying no fails rather than turning every check below it green. It was also demonstrated
@@ -194,13 +202,14 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove seven things a green run cannot: the shared -SelfTest runner
+    Run the checks as usual, then prove eight things a green run cannot: the shared -SelfTest runner
     the tools submodule holds -- that it numbers halves from the list it was given and refuses a half it
     cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both directions, section 10's two assertions, each in both
     directions, section 12's two scans
     of the lines, each in both directions, section 13 in both directions, section 14 in both directions, and section 15's two
-    checks, the first in both directions and the second on a stand-in the library keeps no report for, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
-    memory and the planted documents live in the scratch directory the run removes on its way out.
+    checks, the first in both directions and the second on a stand-in the library keeps no report for, and section 16 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
+    memory and the planted documents and section 16's scratch repositories live in the scratch
+    directory the run removes on its way out.
 
 .EXAMPLE
     pwsh -File scripts/ship-check.ps1
@@ -219,6 +228,9 @@ $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
 . "$PSScriptRoot/factorio-lib.ps1"   # starts no game, but the library sources the harness submodule.
+
+# Before any section reads a file: section 16 compares the tree with this when they have all run.
+$treeBefore = Get-TrackedTreeFingerprint -Root $repoRoot
 
 $mods      = Get-RepoMods
 $assetsMod = 'realistic-fusion-refreshed-assets'
@@ -1529,6 +1541,26 @@ try {
     }
 } finally { Remove-Item -LiteralPath $rigScratch -Recurse -Force -ErrorAction SilentlyContinue }
 
+# ----------------------------------------------------------------- the tree it read stood still
+# 16. NO TRACKED FILE CHANGED WHILE THE SECTIONS READ (#812).
+#
+# Each section reads its files when it reaches them (#687), so an edit, a `git add` or a rebase
+# during a run makes the sections above describe no one tree, and on #811 one such run reported a
+# pass that was quoted. $treeBefore was taken before section 1. A file in the working tree or an
+# entry in the index that differs now fails the run by name, whatever the sections found. A file
+# git does not track is not in either fingerprint, so what a run writes to an ignored directory is
+# not a change. A commit that moves no file is not one either, since every section reads files.
+function Get-TreeChangeFailures {
+    <#  A failure for each tracked path that moved between $Before and now.  #>
+    param([AllowEmptyCollection()] [string[]] $Before, [Parameter(Mandatory)] [string] $Root)
+    @(Get-TrackedTreeChanges -Before $Before -After (Get-TrackedTreeFingerprint -Root $Root) | ForEach-Object {
+        "$_ changed while the sections read the tree, so this result describes no one tree. Run it again with nothing editing the files."
+    })
+}
+
+$checks++
+foreach ($moved in Get-TreeChangeFailures -Before $treeBefore -Root $repoRoot) { $failures.Add($moved) }
+
 if ($failures.Count) {
     Write-Host ''
     foreach ($f in $failures) { Write-Host "FAIL  $f" -ForegroundColor Red }
@@ -1967,6 +1999,37 @@ if ($SelfTest) {
                 }
                 'a run that leaves no report in .rig-reports/ is caught.'
             } }
+
+            @{ Name = 'tree-change-caught'; Body = {
+                # Section 16 passes on any tree that stands still. Between the two fingerprints a
+                # scratch tree has a tracked file edited, a file staged whose edit came before the
+                # first, and an ignored file written: the first two must be named, the third not.
+                $tree = New-ScratchGitTree -Parent $planted
+                'other' | Set-Content -LiteralPath "$tree/other.txt" -Encoding utf8
+                git -C $tree add other.txt
+                'edited before' | Add-Content -LiteralPath "$tree/other.txt"
+                $before = Get-TrackedTreeFingerprint -Root $tree
+                'edited during' | Add-Content -LiteralPath "$tree/tracked.txt"
+                git -C $tree add other.txt
+                'written'       | Set-Content -LiteralPath "$tree/ignored.txt" -Encoding utf8
+                $found = @(Get-TreeChangeFailures -Before $before -Root $tree)
+                $named = @($found | ForEach-Object { ($_ -split ' changed while')[0] })
+                if (($named -join ', ') -ne 'other.txt (index), tracked.txt (working tree)') {
+                    throw "of an edit, a staging and an ignored write during the run, '$($named -join ', ')' was reported."
+                }
+                'a tracked file edited and an index entry staged during the run are each named, and an ignored file is not.'
+            } }
+
+            @{ Name = 'unchanged-tree-passes'; Body = {
+                # The other direction: a tree whose tracked files stand still, beside an ignored
+                # file written during the run, must give the result it gave before section 16.
+                $tree = New-ScratchGitTree -Parent $planted
+                $before = Get-TrackedTreeFingerprint -Root $tree
+                'written' | Set-Content -LiteralPath "$tree/ignored.txt" -Encoding utf8
+                $found = @(Get-TreeChangeFailures -Before $before -Root $tree)
+                if ($found.Count) { throw "a tree whose tracked files stood still was reported: '$($found -join '; ')'." }
+                'a tree whose tracked files stand still is not reported, an ignored file written beside them.'
+            } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
     Write-Host ''
@@ -1983,5 +2046,6 @@ Write-Host 'heading and a figure its note has, every tracked Markdown file passe
 Write-Host 'no prose line of the wrapped files is over the width they are wrapped at or splits a'
 Write-Host 'grouped figure across its end, every -SelfTest help that names a half names all of them,'
 Write-Host 'neither the review skills nor the markdown-only test reads the local main, and every rig'
-Write-Host 'dot-sources the library that keeps its report, which a stand-in rig was seen to leave.'
+Write-Host 'dot-sources the library that keeps its report, which a stand-in rig was seen to leave;'
+Write-Host 'and no tracked file or index entry changed while the sections read them.'
 exit 0
