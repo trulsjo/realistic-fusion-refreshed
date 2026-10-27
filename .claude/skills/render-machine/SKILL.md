@@ -37,8 +37,9 @@ Lua: pointing the prototype at the rendered files is a separate, reviewed edit.
    `python tools/render-machine.py rf-<machine> --look` prints the note. The heat exchanger's
    `models/heat-exchanger/build.py` is the worked example: primitives and curves with procedural
    Principled materials, sockets placed from `geometry.json` by fluid, the geometry's sha256 stamped
-   on the scene, headless, deterministic (`random.seed`). Nothing imported: every model carries the
-   repository's LGPLv3, so no PolyHaven, Sketchfab or image textures.
+   on the scene, headless, deterministic (`random.seed`). No mesh is imported. A CC0 image texture
+   may be, recorded beside the model with its source and licence (ADR 0043); nothing else from
+   Poly Haven, Sketchfab or anywhere else.
 
    To see what you are building, Blender is reachable over MCP (`mcp__blender__*`): run the same
    code with `execute_blender_code`, look with `get_viewport_screenshot`, then put the result in
