@@ -331,3 +331,11 @@ One line for each change to a gate, newest last, with its date and its ticket.
   `gates.yml` runs it as a step of the tools job. It is a plain script that exits 0 or raises, so
   neither runner's `--self-test` loop could hold it. It is #800's footprint-edge check's
   self-test since #809, and before that it had no runner.
+- 2026-10-27, #812: `ship-check.ps1` section 16 and `run-gates.ps1` take a fingerprint of every
+  tracked file and of the index, through `Get-TrackedTreeFingerprint` in
+  `scripts/factorio-lib.ps1`, before they read anything and again at the end, and fail the run
+  naming each path that differs, whatever the sections or gates found; `run-gates.ps1` also
+  compares after each gate and names the first gate after which it differed. Git-ignored files
+  are not in it. The `-SelfTest` halves `tree-change-caught` and `unchanged-tree-passes` in
+  `ship-check.ps1`, and `tree-change-fails` and `ignored-write-clean` in `run-gates.ps1`, prove
+  each in both directions on a scratch repository.

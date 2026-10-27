@@ -123,6 +123,69 @@ function Test-ModTreeUnchanged {
     return $true
 }
 
+function Get-TrackedTreeFingerprint {
+    <#  Every file git tracks under $Root, as it stands in the index and in the working tree.
+
+        For a gate that reads the tree while it runs, so it can say whether the tree stood still
+        (#812). ship-check.ps1 reads each file as its section reaches it (#687), and run-gates.ps1
+        runs its gates one after another over minutes, so an edit, a commit's `git add` or a rebase
+        during a run gives a result that describes no one tree. On #811 that happened three times,
+        and one such run was quoted as a pass.
+
+        A hash of the contents rather than Get-ModTreeFingerprint's size and write time: the files
+        are the 556 git tracks, about 12 MB on 2026-10-27, and an editor that rewrites a line in
+        place keeps its length. The index is read as `git ls-files -s` gives it, mode, blob and
+        stage, and not as .git/index's bytes, which `git status` rewrites with nothing staged.
+
+        Untracked and git-ignored files are not in it, so a run's own logs and reports are not
+        changes. Nor is a submodule's checkout: its gitlink's row moves only when it is staged.  #>
+    param([Parameter(Mandatory)] [string] $Root)
+
+    $staged = @(git -C $Root -c core.quotepath=off ls-files -s)
+    if ($LASTEXITCODE -ne 0) { throw "git ls-files failed in $Root" }
+    $rows = foreach ($line in $staged) {
+        $meta, $path = $line -split "`t", 2
+        "$path|index|$meta"
+        if ($meta -like '160000 *') { continue }
+        # .NET and not Join-Path and Test-Path: over this repository's files the two cmdlets took
+        # 15 s of a 16 s fingerprint on 2026-10-27, and these calls take about 2 s in all with the
+        # files in the disk cache.
+        $full = "$Root/$path"
+        $hash = if ([IO.File]::Exists($full)) {
+            [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([IO.File]::ReadAllBytes($full)))
+        } else { 'absent' }
+        "$path|working tree|$hash"
+    }
+    return @($rows)
+}
+
+function New-ScratchGitTree {
+    <#  A git repository under $Parent for a self-test of the two functions either side of this
+        one: tracked.txt staged, and ignored.txt named in a .gitignore and not yet written.  #>
+    param([Parameter(Mandatory)] [string] $Parent)
+
+    $tree = Join-Path $Parent ('tree-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    New-Item -ItemType Directory -Path $tree -Force | Out-Null
+    'ignored.txt' | Set-Content -LiteralPath "$tree/.gitignore" -Encoding utf8
+    'tracked'     | Set-Content -LiteralPath "$tree/tracked.txt" -Encoding utf8
+    git -C $tree init -q
+    git -C $tree add .
+    if ($LASTEXITCODE -ne 0) { throw "could not make a scratch git repository in $tree" }
+    return $tree
+}
+
+function Get-TrackedTreeChanges {
+    <#  Each tracked file whose index entry or working copy differs between two fingerprints, as
+        "<path> (<where>)", one per path and place: a file edited and staged is named twice.  #>
+    param([AllowEmptyCollection()] [string[]] $Before, [AllowEmptyCollection()] [string[]] $After)
+
+    $moved = @(Compare-Object -ReferenceObject @($Before) -DifferenceObject @($After))
+    return @($moved | ForEach-Object {
+        $path, $where = ($_.InputObject -split '\|')[0, 1]
+        "$path ($where)"
+    } | Sort-Object -Unique)
+}
+
 function Find-MissingAssets {
     <#  Every __mod__/... file the loaded prototypes name, that is not on disk.
 

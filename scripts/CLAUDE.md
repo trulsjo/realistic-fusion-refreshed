@@ -39,3 +39,11 @@ describes the files as each section found them, and not a commit. On 2026-10-12,
 `docs/agents/code-review-evidence.md` had a line of 113 characters, reported 233 checks and 0
 failures, because the line was rewrapped while the run was going; the same tree with no edit during
 the run fails on that line.
+
+**Since #812 both `ship-check.ps1` and `run-gates.ps1` refuse such a result.** Each takes a
+fingerprint of every tracked file and of the index before it reads anything and again when it is
+done, and a difference fails the run, naming each path, whatever the sections or the gates found.
+`run-gates.ps1` also checks after each gate and names the gate after which the change was first
+seen. A file git does not track is not in the fingerprint, so a run's own logs and reports are not
+changes. A fail of this kind says only that the run read more than one tree: run it again with
+nothing editing the files.
