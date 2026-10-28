@@ -650,6 +650,46 @@ def loom(name, points, cables=("cable-red", "cable-green", "cable-red"), cable_r
     _ties(name, points, spread + cable_r)
 
 
+# A face's two in-plane axes, by the axis its normal lies along: (u, v). u is horizontal on a wall.
+_FACE_AXES = {"X": (1, 2), "Y": (0, 2), "Z": (0, 1)}
+
+
+def panels(name, centre, size, normal, grid, material="body", seam=0.05, depth=0.06, yaw=0.0,
+           **mat_opts):
+    """Inset panels: a flat face broken into `grid` = (nu, nv) plates with a seam round each.
+
+    `centre` is the middle of the face and `normal` the way it faces: "+X", "-X", "+Y", "-Y" or
+    "+Z". `size` is the face's (u, v): along X or Y and then up for a wall, X then Y for a top.
+    `yaw` turns the plates about the face's centre with a face that is itself turned, such as
+    rf-heat-exchanger's manifold.
+
+    THE PLATES STAND `depth` PROUD OF THE FACE, so the face shows between them as the floor of a
+    seam `depth` deep. That is a recessed seam drawn without a boolean, and it is why `depth` must
+    be at least `seam`: a groove is cut at least as deep as it is wide (house style), or its shadow
+    line is too weak to read. `rf_blender.check_inset` holds the seam to the cut floor on its width
+    and a plate to the raised floor on its smaller side. Each plate's depth varies a little, so a
+    raking light catches one edge and not the next, and the face reads as plates fitted by hand.
+    """
+    axis, sign = normal[1], (1 if normal[0] == "+" else -1)
+    n = "XYZ".index(axis)
+    iu, iv = _FACE_AXES[axis]
+    cells = rf.panel_grid(size[0], size[1], grid[0], grid[1], seam)
+    rf.check_inset(name, seam, depth, min(min(c[2], c[3]) for c in cells))
+    c, s = math.cos(yaw), math.sin(yaw)
+    out = []
+    for k, (cu, cv, su, sv) in enumerate(cells):
+        d = max(seam, depth + random.uniform(-0.01, 0.01))
+        off = [0.0, 0.0, 0.0]
+        off[iu], off[iv], off[n] = cu, cv, sign * d / 2
+        dims = [0.0, 0.0, 0.0]
+        dims[iu], dims[iv], dims[n] = su, sv, d
+        loc = (centre[0] + off[0] * c - off[1] * s, centre[1] + off[0] * s + off[1] * c, centre[2] + off[2])
+        # Unchecked here: check_inset has judged the plate on its face, which is its read, and the
+        # box's smallest side is its depth.
+        out.append(_plate(f"{name}-{k}", tuple(dims), loc, material, rot=(0, 0, yaw), bev=0.012, **mat_opts))
+    return out
+
+
 def _ties(name, points, inner):
     """A dark tie round a bundle at every inner control point of `points`, `inner` off the centre."""
     for i in range(1, len(points) - 1):

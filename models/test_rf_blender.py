@@ -201,6 +201,38 @@ assert rf.loom_spread(1, 0.035) == 0.0
 # The cables' colours are kit colours, not accents and not the marking yellow: a loom names no fluid.
 assert set(rf.CABLE_COLOURS) and all(k.startswith("cable-") for k in rf.CABLE_COLOURS)
 
+# ---- the kit: inset panels (#802) -----------------------------------------------------------
+#
+# A face u by v is cut into nu by nv plates with a seam between neighbours and round the edge.
+# Each cell is (centre u, centre v, size u, size v), in the face's own frame, centred on it.
+_cells = rf.panel_grid(2.0, 1.0, 4, 2, 0.05)
+assert len(_cells) == 8
+assert all(abs(c[2] - (2.0 - 5 * 0.05) / 4) < 1e-9 and abs(c[3] - (1.0 - 3 * 0.05) / 2) < 1e-9
+           for c in _cells)
+# The plates and the seams fill the face exactly: the outermost plate's edge is one seam inside it.
+assert abs(max(c[0] + c[2] / 2 for c in _cells) - (1.0 - 0.05)) < 1e-9
+assert abs(min(c[1] - c[3] / 2 for c in _cells) - (-0.5 + 0.05)) < 1e-9
+# Neighbours are one seam apart.
+_us = sorted({round(c[0], 9) for c in _cells})
+assert all(abs((b - a) - (_cells[0][2] + 0.05)) < 1e-9 for a, b in zip(_us, _us[1:]))
+
+
+def inset_refusal(*args):
+    try:
+        rf.check_inset(*args)
+    except SystemExit as e:
+        return str(e)
+    return None
+
+
+# A seam is a cut detail, so it is held to the cut floor on its width, and it is cut at least as
+# deep as it is wide (the house style's rule for any groove). Both refusals name the part.
+assert inset_refusal("Panels", 0.05, 0.05, 0.4) is None
+assert "Panels" in (inset_refusal("Panels", 0.05, 0.04, 0.4) or "")
+assert inset_refusal("Panels", 0.04, 0.06, 0.4) is not None
+# A plate reads by its face, so its smaller side is held to the raised floor.
+assert inset_refusal("Panels", 0.05, 0.05, 0.05) is not None
+
 print("ok")
 
 # The geometry hash is over canonical JSON, so a CRLF checkout of the same file hashes the same

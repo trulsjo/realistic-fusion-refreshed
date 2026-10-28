@@ -249,10 +249,11 @@ pieces. Where those pieces go is arithmetic in `models/rf_blender.py`, pinned wi
 read, and anything pipe-shaped in it is drawn by `pipe`, so the footprint-edge rule below holds it.
 `models/rf_parts.py` states the shape in full.
 
-| Part | Placed along | Its read, held to the raised-detail floor | Since |
+| Part | Placed on | Its read, held to its floor | Since |
 |---|---|---|---|
 | `hose` | a curve | the corrugation pitch | #803 |
 | `loom` | a curve | the cable diameter | #803 |
+| `panels` | a face | the seam's width, on the cut floor and cut at least as deep; a plate's smaller side | #802 |
 
 **A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
 after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes

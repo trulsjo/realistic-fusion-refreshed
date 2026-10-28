@@ -40,7 +40,7 @@ import rf_blender as rf  # noqa: E402
 # read off the import line -- and `bevel` is NOT among them: every machine's bevels are put
 # on from inside the helpers, so importing it here only made a name nothing calls.
 import rf_parts  # noqa: E402
-from rf_parts import box, cyl, dent, hbeam, hose, jitter, loom, pipe, rivets, seam, torus  # noqa: E402,F401
+from rf_parts import box, cyl, dent, hbeam, hose, jitter, loom, panels, pipe, rivets, seam, torus  # noqa: E402,F401
 
 args = rf.script_args()
 out = args[0] if args else os.path.join(HERE, "heat-exchanger.blend")
@@ -293,10 +293,18 @@ else:
               rot=(math.pi / 2, 0, 0))
     # Two bays closed with a painted panel instead of left open -- the machine had no colour of its
     # own next to Krastorio 2's yellow, and these are where there is area to give it some (#252).
+    #
+    # THE BACKING IS DARK AND THE PAINT IS IN INSET PANELS ON IT (#802), so each bay is six plates
+    # with dark seams rather than one off-white slab: the seams read against paint where they would
+    # vanish into body steel. Placed with the kit below; the yaw is drawn here, in the order it
+    # always was, so nothing after it moves.
+    bays = []
     for i, k in enumerate((2, 5)):
         y0, y1 = post_ys[k], post_ys[k + 1]
+        yaw = jitter(0, 0.008)
         box(f"BayPanel{i}", (0.07, (y1 - y0) * 0.86, 1.05), (EX - 0.05, (y0 + y1) / 2, SLAB + 0.95),
-            "paint", rot=(0, 0, jitter(0, 0.008)))
+            "dark", rot=(0, 0, yaw))
+        bays.append(((EX - 0.015, (y0 + y1) / 2, SLAB + 0.95), ((y1 - y0) * 0.86, 1.05), yaw))
         rivets(f"BayPanelRivets{i}", (EX - 0.1, y0 + 0.25, SLAB + 1.42), (EX - 0.1, y1 - 0.25, SLAB + 1.42),
                5, r=0.035)
     for i, k in enumerate((1, 4)):                    # two bays only: a braced frame, not a lattice
@@ -529,6 +537,16 @@ else:
                   (LOOM_X, cpos[1] + CAB[1] / 2 + 0.2, LOOM_Z)]
          + lie + [(LOOM_X, clamps[-1], LOOM_Z), (LOOM_X, HALF_L - 0.45, LOOM_Z - 0.3),
                   (LOOM_X - 0.05, HALF_L - 0.45, SLAB + 0.02)])
+    # -- kit parts: inset panels (#802). Each on a face the camera sees once the body is turned.
+    for i, (centre, size, yaw) in enumerate(bays):
+        panels(f"BayPlates{i}", centre, size, "+X", (3, 2), "paint", yaw=yaw)
+    # The cabinet's top, the face of it the camera sees most of; paint on paint, so the seams read
+    # by their shadow alone.
+    panels("CabinetPlates", (cpos[0], cpos[1], cpos[2] + CAB[2] / 2), (CAB[0], CAB[1]), "+Z", (2, 3), "paint")
+    # The manifold's inner face, which the feed lines run into. It carries the manifold's
+    # corrosion, since it is the same steel, and turns with its yaw.
+    panels("ManifoldPlates", (on_manifold(0) + MAN_W / 2, 0, SLAB + MAN_H / 2), (L - 0.2, MAN_H), "+X",
+           (12, 2), "body", yaw=MAN_YAW, corrode=True)
     for i, d in enumerate(drums):
         loom(f"GaugeLoom{i}", [(LOOM_X - 0.02, d["gy"] + 0.1, LOOM_Z),
                                (LOOM_X - 0.1, d["gy"], SLAB + 1.5),
