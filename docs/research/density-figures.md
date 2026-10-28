@@ -111,11 +111,18 @@ each of #798's kit tickets rendered the exchanger again, and after the pre-PR re
 | [#802](https://github.com/trulsjo/realistic-fusion-refreshed/issues/802), 2026-10-28 | inset panels on the two closed bays, the cabinet's top and the manifold's inner face | 0.2774 | 0.5011 |
 | [#804](https://github.com/trulsjo/realistic-fusion-refreshed/issues/804), 2026-10-28 | a segmented jacket under each drum's cap; a fan stack past the last drum; a bolt row on the slab's open edge; the cap bolts moved onto the kit | 0.2846 | 0.5257 |
 | the branch's pre-PR review, 2026-10-28 | parts that passed through each other moved apart: the loom steps round the steam outlet and drops inboard, the bays stand back behind the guard rail, the cabinet's plates keep off the conduit, the vent hoses stand a little further off the drums, and the kerb bolts skip the posts and the socket | 0.2843 | 0.5298 |
+| Truls's look, 2026-10-29 | no hose or loom placed as an exact copy; the guard rail in lengths between the posts, starting at the cabinet | 0.2734 | 0.5173 |
 
-**The normal-pass figure rose at each ticket**, *measured*: 0.448 to 0.5298 at the head. **So the
+**The normal-pass figure rose at each ticket**, *measured*: 0.448 to 0.5257 after #804. **So the
 rise is shape**, which is *inferred* from the method: a material cannot raise that figure. The
-pixel figure rose with it, from 0.236 to 0.2843, a little under the 0.286 it stood at before
-#801's repaint lowered it, and still below vanilla's heat exchanger (0.566). The bench prints four
+pixel figure rose with it, from 0.236 to 0.2846, a little under the 0.286 it stood at before
+#801's repaint lowered it, and still below vanilla's heat exchanger (0.566).
+
+**Both fell after Truls's adjustments of 2026-10-29**, to 0.2734 and 0.5173, *measured*. Why was
+not isolated. The guard rail's six lengths each draw their own jitter where one beam drew one, so
+every random draw after them moved, the drums' radius and height among them, and the hoses' rings
+moved with their new phases; any of these can move both figures. That is *inferred* from the build
+script and was not tested part by part. The bench prints four
 places, and the kit's rows give all four; the first row is #801's, given to three.
 Neither says the parts read at 32 px a tile; that is Truls's eye, on a frame from
 `scripts/probe-heat-exchanger-art.ps1`.

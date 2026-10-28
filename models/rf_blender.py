@@ -334,10 +334,11 @@ def _cross(a, b):
     return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
 
 
-def bundle(points, n, spread, twist=0.0):
+def bundle(points, n, spread, twist=0.0, phase=0.0):
     """`n` strands laid round the centreline `points`, each point `spread` off it and square to the
-    run at that point. Strand k starts at angle 2 pi k / n and turns by `twist` radians per control
-    point, so a twisted bundle winds instead of lying parallel. One strand is the centreline itself.
+    run at that point. Strand k starts at angle `phase` + 2 pi k / n and turns by `twist` radians per
+    control point, so a twisted bundle winds instead of lying parallel, and two bundles on one curve
+    given different phases wind differently. One strand is the centreline itself.
 
     THE RUN'S DIRECTION AT A POINT is the chord from the point before it to the point after it, so a
     bend is split between its two legs. The "side" a strand is offset along is that direction
@@ -352,7 +353,7 @@ def bundle(points, n, spread, twist=0.0):
         side = _unit(_cross(d, (0.0, 0.0, 1.0))) or _unit(_cross(d, (1.0, 0.0, 0.0)))
         up = _cross(side, d)
         for k in range(n):
-            t = 2 * math.pi * k / n + twist * i
+            t = phase + 2 * math.pi * k / n + twist * i
             strands[k].append(tuple(p[j] + spread * (math.cos(t) * side[j] + math.sin(t) * up[j])
                                     for j in range(3)))
     return strands
