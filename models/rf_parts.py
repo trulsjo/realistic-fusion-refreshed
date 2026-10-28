@@ -583,3 +583,76 @@ def seam(name, size, loc, rot=(0, 0, 0)):
 
 def jitter(v, s):
     return v + random.uniform(-s, s)
+
+
+# ==== THE KIT ==================================================================================
+#
+# KIT PARTS (GLOSSARY.md): plant machinery defined once here and placed by any machine's model, so
+# the set grows denser as the kit grows rather than one machine at a time (#798). They are not
+# sockets and declare nothing.
+#
+# THE SHAPE EVERY KIT PART FOLLOWS, set by the first two (#803):
+#
+# - A part is one function here, named for what it is, and a build script places it with one call.
+#   The call says WHERE -- a curve, a face, a centre -- and the part decides its pieces. Where the
+#   pieces go is arithmetic in models/rf_blender.py, which imports no bpy, so
+#   models/test_rf_blender.py pins it without Blender.
+# - Its first argument is a name, and every piece it draws is named from it, so a refusal names
+#   the part.
+# - It is held to the detail floor on the dimension that carries ITS read, checked here by name,
+#   whatever the pieces' own checks say.
+# - Anything pipe-shaped in it is drawn by `pipe`, so the footprint-edge check holds it at save
+#   with no extra call.
+# - It takes its material by role name and never by colour. A colour a part brings with it -- a
+#   loom's sheaths -- is a row in models/rf_blender.py that the machine's palette takes in whole.
+
+
+def _facing(d):
+    """The rotation that turns a primitive built along Z to lie along direction `d`; `pipe`'s rings
+    use the same two angles."""
+    yaw = math.atan2(d[1], d[0])
+    pitch = math.atan2(d[2], math.hypot(d[0], d[1]))
+    return (0, math.pi / 2 - pitch, yaw)
+
+
+def hose(name, points, radius, material="metal", pitch=None, band=(1.24, 0.26), **mat_opts):
+    """A corrugated hose along a curve through `points`: a tube with a ring every `pitch` tiles.
+
+    THE PITCH CARRIES THE READ, and is checked on the floor here: the gap between rings, with bare
+    tube showing in it, is what tells a hose from a smooth pipe and from a spring. The default,
+    1.37 radii, is the steam header's 0.26 on 0.19 (#275), which Truls accepted. A ring stands
+    `band[1]` of the radius proud; `pipe` holds each ring to the floor on its own minor diameter.
+    """
+    pitch = 1.37 * radius if pitch is None else pitch
+    rf.check_detail(f"{name} (corrugation pitch)", pitch)
+    return pipe(name, points, radius, material, corrugate=pitch, band=band, **mat_opts)
+
+
+def loom(name, points, cables=("cable-red", "cable-green", "cable-red"), cable_r=0.035, twist=0.6,
+         ties=True):
+    """A cable loom: `len(cables)` thin cables bundled round a curve through `points`, each in its
+    own sheath colour, with a dark tie round the bundle at every inner control point.
+
+    THE CABLE DIAMETER CARRIES THE READ: a loom reads as several lines lying together, so each
+    cable has to be a line at 32 px a tile. The default, 0.07, clears the raised-detail floor of
+    0.06. The bundle's own width is no help to a cable under the floor, which is why it is not
+    what is checked.
+
+    THE CABLES WIND (`twist`, radians per control point) rather than lying parallel, which is what
+    a loom laid by hand does. The colours are `rf_blender.CABLE_COLOURS`' rows, which name no fluid.
+    """
+    rf.check_detail(f"{name} (cable diameter)", 2 * cable_r)
+    spread = rf.loom_spread(len(cables), cable_r)
+    for k, (strand, material) in enumerate(zip(rf.bundle(points, len(cables), spread, twist), cables)):
+        pipe(f"{name}-{k}", strand, cable_r, material)
+    if not ties:
+        return
+    _ties(name, points, spread + cable_r)
+
+
+def _ties(name, points, inner):
+    """A dark tie round a bundle at every inner control point of `points`, `inner` off the centre."""
+    for i in range(1, len(points) - 1):
+        a, b = points[i - 1], points[i + 1]
+        torus(f"{name}-tie{i}", inner + 0.03, 0.03, tuple(points[i]), "dark",
+              rot=_facing(tuple(b[j] - a[j] for j in range(3))))

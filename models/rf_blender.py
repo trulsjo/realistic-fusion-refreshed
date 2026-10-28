@@ -309,6 +309,64 @@ def check_edge(name, points, radius, geo):
                      f"See models/house-style.md, Connections.")
 
 
+# ---- the kit's arithmetic ----------------------------------------------------------------------
+#
+# WHERE A KIT PART'S PIECES GO, with no bpy, so models/test_rf_blender.py can pin it. models/rf_parts.py
+# draws the parts from these; a build script places a part and never computes its pieces itself.
+
+# A LOOM'S CABLES ARE SHEATHED IN COLOURS NO FLUID OWNS (#803). Krastorio 2's reactor runs red and
+# green looms. The red is a dark oxide red, well short of the energy accent's orange; the green is a
+# dark olive, well short of tritium's pale green and of water's blue. Neither is a marking yellow.
+# Measured against every accent in docs/research/density-figures.md. Rows of a machine's palette,
+# in its (linear RGB, roughness, metallic) shape: a PVC sheath, matte, not metal.
+CABLE_COLOURS = {
+    "cable-red":   ((0.30, 0.025, 0.02), 0.6, 0.0),
+    "cable-green": ((0.035, 0.12, 0.03), 0.6, 0.0),
+}
+
+
+def _unit(v):
+    n = math.sqrt(sum(c * c for c in v))
+    return tuple(c / n for c in v) if n > 1e-12 else None
+
+
+def _cross(a, b):
+    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
+
+
+def bundle(points, n, spread, twist=0.0):
+    """`n` strands laid round the centreline `points`, each point `spread` off it and square to the
+    run at that point. Strand k starts at angle 2 pi k / n and turns by `twist` radians per control
+    point, so a twisted bundle winds instead of lying parallel. One strand is the centreline itself.
+
+    THE RUN'S DIRECTION AT A POINT is the chord from the point before it to the point after it, so a
+    bend is split between its two legs. The "side" a strand is offset along is that direction
+    crossed with up, and a vertical stretch, which has no such side, takes east instead; so a loom
+    that climbs straight up a post still spreads, round the post's axis."""
+    if n == 1:
+        return [list(points)]
+    strands = [[] for _ in range(n)]
+    for i, p in enumerate(points):
+        a, b = points[max(i - 1, 0)], points[min(i + 1, len(points) - 1)]
+        d = _unit(tuple(b[j] - a[j] for j in range(3)))
+        side = _unit(_cross(d, (0.0, 0.0, 1.0))) or _unit(_cross(d, (1.0, 0.0, 0.0)))
+        up = _cross(side, d)
+        for k in range(n):
+            t = 2 * math.pi * k / n + twist * i
+            strands[k].append(tuple(p[j] + spread * (math.cos(t) * side[j] + math.sin(t) * up[j])
+                                    for j in range(3)))
+    return strands
+
+
+def loom_spread(n, cable_r, gap=0.006):
+    """How far off the centreline `n` cables of radius `cable_r` lie so that neighbours sit `gap`
+    apart: the chord between neighbours on the circle is a diameter plus the gap. A small gap rather
+    than none, so two cables do not share a surface and the shadow line between them reads."""
+    if n == 1:
+        return 0.0
+    return (2 * cable_r + gap) / (2 * math.sin(math.pi / n))
+
+
 def geometry_sha256(path):
     """The hash build scripts stamp on a scene and render.py checks it against. Over the canonical
     JSON text, not the file's bytes: a checkout with autocrlf turns the extractor's LF into CRLF and

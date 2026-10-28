@@ -97,6 +97,34 @@ G and B, with no blur.
 python -c "import sys,numpy as n;from PIL import Image as I;[print(n.percentile(n.asarray(I.open(p).convert('RGBA'),float)[...,:3].mean(2)[n.asarray(I.open(p).convert('RGBA'))[...,3]>200],[5,50,95]).round(1),p) for p in sys.argv[1:]]" <sheet>...
 ```
 
+## The kit on `rf-heat-exchanger`
+
+Measured with the same command, `python tools/measure-density.py --machine heat-exchanger`, after
+each of #798's kit tickets rendered the exchanger again. Each "before" is the row above it; the
+first is #801's last. Blender 5.2.0, 64 samples for the sheet and 16 for the normal pass.
+
+| after | what it added | pixel figure | normal-pass figure |
+|---|---|---:|---:|
+| #801 | (the starting point) | 0.236 | 0.448 |
+| [#803](https://github.com/trulsjo/realistic-fusion-refreshed/issues/803), 2026-10-28 | a vent hose off each relief valve; a red and green loom along the east rail, with a drop to each gauge cluster | 0.269 | 0.487 |
+
+**The normal-pass figure rose, so the rise is shape**, *measured*. The pixel figure rose with it.
+Neither says the parts read at 32 px a tile; that is Truls's eye, on a frame from
+`scripts/probe-heat-exchanger-art.ps1`.
+
+**The loom's sheath colours** are 43.7 dE00 or more from every accent and from hazard yellow, on
+the palette rows through `tools/colour_distance.py`, with each linear row put through the sRGB
+transfer function first (*measured* 2026-10-28):
+
+| sheath | energy | steam | water | plasma | tritium | helium-3 | hazard yellow |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `cable-red` | 46.9 | 56.4 | 58.6 | 45.8 | 72.1 | 51.0 | 55.4 |
+| `cable-green` | 50.5 | 52.1 | 54.5 | 54.1 | 47.0 | 56.4 | 43.7 |
+
+The closest pair of accents is 11.7 (`models/house-style.md`, Palette). These are palette rows and
+not drawn pixels. ADR 0034 compares accents on one machine with each other, and a sheath is not an
+accent, so the table says only that no sheath is near any of them.
+
 ## What the "before" says, and how far it goes
 
 Both of our machines are below both vanilla sheets on the pixel figure. The isotope collector is level

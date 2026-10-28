@@ -240,6 +240,26 @@ effects actually mean: how far the surface faces up. `mat` in
   five vanilla sheets they came from, what the method cannot see, and the script to rerun it.
 - Symmetry is broken on purpose at least once per machine so the four rotations are told apart.
 
+## The kit
+
+**Kit parts** (`GLOSSARY.md`) live in `models/rf_parts.py` under *The kit*, and a build script
+places one with one call that says where: a curve, a face, a centre. The part decides its own
+pieces. Where those pieces go is arithmetic in `models/rf_blender.py`, pinned without Blender by
+`models/test_rf_blender.py`. Each part is checked on the floor by the dimension that carries its
+read, and anything pipe-shaped in it is drawn by `pipe`, so the footprint-edge rule below holds it.
+`models/rf_parts.py` states the shape in full.
+
+| Part | Placed along | Its read, held to the raised-detail floor | Since |
+|---|---|---|---|
+| `hose` | a curve | the corrugation pitch | #803 |
+| `loom` | a curve | the cable diameter | #803 |
+
+**A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
+after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes
+in whole, and they are neither accents nor markings. On the palette rows they sit 43.7 dE00 or more
+from every accent and from hazard yellow. The closest pair of accents is 11.7, under Palette
+(*measured* 2026-10-28; `docs/research/density-figures.md` has the figures).
+
 ## Connections
 
 Every pipe connection gets a **socket** baked into the structure: a bare-metal stub from the body
