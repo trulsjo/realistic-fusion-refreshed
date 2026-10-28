@@ -430,3 +430,27 @@ One line for each, newest last. The passages above are not edited.
   verifier's brief in `/plugin-pass` step 4 gives "not verified" for a claim it could not check
   there, and since #796 `plugin-pass.md`'s paragraph on the verifier says the same. No gate reads
   it. The wording is the session's.
+- **2026-10-27, #816: a review that plants makes its worktree as `plugin-pass.md`'s worktree
+  paragraph makes the pass's, and plants nothing where none can be had.** On #815 herdr's hook
+  refused the `git worktree add` the third rule named, and the clone the session improvised failed
+  on a long path. Truls decided in the ticket's triage that the rule points at that paragraph,
+  which stays the procedure's one home, and approved the wording in the session that implemented
+  it, and on 2026-10-28 its revision after the pre-PR review's finding 3; the comments on #816
+  record both. `plugin-pass.md` says the third rule uses its paragraph. No gate reads it.
+- **2026-10-27, #818: a fix put to Truls under #782 names the source of each claim its wording
+  makes.** On #815 he approved a `CLAUDE.md` sentence the pre-PR review then found false, which the
+  session had not held against `gates.yml`. The fourth rule says so in the #782 paragraph, with the
+  case on the evidence page. Truls approved the wording in the session that implemented it, and on
+  2026-10-28 its revision after findings 5 and 6; the comments on #818 record both. No gate reads
+  it.
+- **2026-10-27, #819: a decision Truls gives in a session is posted on its ticket before a commit
+  message or the pull request's body relies on it.** On #815 a commit body's claim of his approval
+  could not be verified. Truls decided in the ticket's triage that the comment names the place and
+  not the words, and approved the wording in the session that implemented it, and on 2026-10-28
+  its revision after finding 7; the comments on #819 record both. The fourth rule says so beside
+  the #782 paragraph, and the pre-PR reviewer holds such a claim against the ticket's comments,
+  which its brief already has it read. No gate reads it.
+- **2026-10-27, #820: a plugin-pass finding the pre-PR review missed has its class named from the
+  pre-PR reviewer's own report.** On #815 the session inferred the class, and the reviewer showed
+  it false. Truls approved the wording in the session that implemented it; the comment on #820
+  records it. The fourth rule says so, and step 7 of `/plugin-pass` points at it. No gate reads it.
