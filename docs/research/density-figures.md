@@ -66,7 +66,8 @@ at 4 samples, 0.448 at 16 and 0.447 at 64, measured the same day. Sixteen is the
 Measured 2026-10-28 with the same commands, after
 [#801](https://github.com/trulsjo/realistic-fusion-refreshed/issues/801) lowered the body, frame
 and dark rows of both build scripts and gave `rf-heat-exchanger` three hazard-yellow elements.
-Nothing was added to either model's shape.
+Nothing was added to either model's shape: *measured* on the exchanger, whose north sheet's alpha
+is the same as before in every pixel.
 
 | sheet | pixel figure, before | after | normal-pass figure, before | after |
 |---|---:|---:|---:|---:|
@@ -74,13 +75,23 @@ Nothing was added to either model's shape.
 | `rf-isotope-collector`, north | 0.379 | 0.363 | 0.497 | 0.497 |
 
 **The normal-pass figure did not move, which is what it is for.** No surface changed shape, so
-nothing could raise it.
+nothing could raise it. That is *inferred* from the build scripts' diff, which changes colours
+and nothing else.
 
 **The pixel figure fell on both, and the darker palette is the likely reason.** Grime darkens a
 surface by a fixed fraction of its base colour, so on a darker base it makes smaller steps in
 luminance, and fewer of them reach the 14 of 255 that counts. That is *inferred* from the material
 code in both build scripts and was not isolated. It is a reason to read the pixel figure beside the
-change it follows. A wider value range is not less detail.
+change it follows: a wider value range is not less detail, which is *inferred*, since the
+normal-pass figure that sees shape alone did not move.
+
+**The luminance percentiles** `models/house-style.md` quotes for #801 are taken over the same
+opaque pixels, alpha above 200, by the mean of R, G and B, with no blur and the outline left in.
+*Measured* 2026-10-28, with this command from the repository root:
+
+```
+python -c "import sys,numpy as n;from PIL import Image as I;[print(n.percentile(n.asarray(I.open(p).convert('RGBA'),float)[...,:3].mean(2)[n.asarray(I.open(p).convert('RGBA'))[...,3]>200],[5,50,95]).round(1),p) for p in sys.argv[1:]]" <sheet>...
+```
 
 ## What the "before" says, and how far it goes
 
@@ -92,7 +103,8 @@ It does not say the session's 2026-10-26 read by eye was wrong. That read was th
 still looks like a different mod beside Krastorio 2's reactor. Both readings stand: the collector
 is as edge-dense as the reactor and still looks different from it. So density may not be the gap
 the eye saw. Value range and marking colour, two of #798's five gaps, are what this figure is
-blind to; see below. That is *inferred* and not measured.
+blind to; see below. That is *inferred* and not measured. It cannot see a range as a range, but a
+repaint still moves it: see "After #801".
 
 ## What each figure cannot see
 
@@ -110,6 +122,9 @@ measurement with its day is given.
   4/9 of a step shows against the 9 px blur, and the blur is rounded to 8 bits, so a step of 32
   differs by 14 and does not count. A straight ramp counts nothing however steep. Measured
   2026-10-27 on synthetic input: 31 and 32 read 0, 33 counted, and a ramp of 3 a pixel read 0.
+  **That holds for a step drawn the same way, not for a real repaint.** A darker base shrinks the
+  steps grime makes on it, some fall under 33, and the figure drops; #801's repaint took it from
+  0.286 to 0.253 with no shape changed. See "After #801".
 - **It depends on resolution.** It compares only sheets at the same pixels per tile and the same
   scale, which is why a Figma export would need rescaling first.
 - **It reads one sheet.** It takes the north sheet, never the glow, the shadow or another

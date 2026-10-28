@@ -43,7 +43,8 @@ a fluid accent and must never be used as one: the accents say what a socket carr
 colour competing with them would cost the set the one thing its colours are for.
 
 HOW FAR IS NOT SETTLED. This is a direction, not a target. Only `rf-isotope-collector` has been
-rebuilt to it (c0ff100). Beside Krastorio 2's reactor in a real map on 2026-10-26 it still read
+rebuilt to it (c0ff100); since #801 `rf-heat-exchanger` has its value range and its marking, and
+none of its new parts. Beside Krastorio 2's reactor in a real map on 2026-10-26 it still read
 as two mods to the session that photographed it, a read by eye that #798 records as not yet a
 measurement. The detail floors under Materials are unchanged and still bind: more detail is wanted, detail
 too fine to read at 64 px per tile still is not.
@@ -56,6 +57,7 @@ too fine to read at 64 px per tile still is not.
 | Frame | 0.02 0.022 0.025 | base slab, structural edges, anything that carries weight |
 | Dark | 0.14 0.145 0.155, metallic 0.7, roughness 0.5 | gratings, rib bands, vents, bolt heads |
 | Bare metal | 0.55 0.55 0.58, metallic 0.8, roughness 0.35 | pipes, flanges, drums, anything a fluid runs through |
+| Paint | 0.58 0.55 0.47, roughness 0.8 | cabinets, end walls, a closed bay: a matte off-white no fluid owns |
 | Energy accent | 1.00 0.45 0.10 | every surface that carries **reactor energy** |
 | Steam accent | 0.85 0.88 0.90 | every surface that carries **steam** |
 | Water accent | 0.25 0.55 1.00 | every surface that carries **water** |
@@ -72,8 +74,9 @@ near-black base and we did not. Lowering only the dark roles gives a wider range
 left where they were. That is not the darker palette tried on 2026-09-05 (#252), which lowered
 everything and came out uniformly muddy. The table's body and frame rows had drifted from the
 build scripts since then, 0.30 and 0.12 here against 0.24 and 0.07 there. Both are replaced by the
-values both scripts now use. Measured with `tools/measure-density.py` and by the 5th, 50th and 95th
-luminance percentiles of the opaque pixels:
+values both scripts now use, and so is Materials' roughness for painted steel, 0.6 here against
+0.72 there. *Measured* by the 5th, 50th and 95th luminance percentiles of each sheet's opaque
+pixels; `docs/research/density-figures.md` has the command:
 
 | sheet, north | before p5 / p50 / p95 | after p5 / p50 / p95 |
 |---|---|---|
@@ -109,10 +112,10 @@ both will.
 Truls, #359). It tells one socket on the machine in front of the player from another, in one frame,
 under one light. It is **not** a name for a fluid that a player recognises on sight, and the table's
 "every surface that carries X" must not be read as one -- because a single palette row does not
-produce a single colour. On `rf-heat-exchanger` water's own two sockets land **32.3 dE00** apart,
-further than the **29.5** separating energy from water at their closest: the west socket stands in
+produce a single colour. On `rf-heat-exchanger` water's own two sockets land **32.2 dE00** apart,
+further than the **29.6** separating energy from water at their closest: the west socket stands in
 the open and the east is shaded by the machine's own body. Ask how far two accents ON ONE MACHINE
-land apart. Do not ask what colour an accent is.
+land apart. Do not ask what colour an accent is. (Both figures are 2026-10-28's, below.)
 
 **Measured under that standard, nothing here needs changing, and #359 changed nothing.** The
 closest pair that can share a machine is **11.7 dE00**, steam against water, off the bench in
@@ -122,7 +125,7 @@ on two drums 24.5 screen pixels apart on the collector's own deck — a **hue-cu
 colours and not good enough to quote as a distance. Bands two screen pixels wide read at zoom 1
 because they are 23.5 tall.
 
-**THOSE FOUR FIGURES WERE RE-MEASURED AFTER ADR 0035, AND AGAIN AFTER ADR 0036** and are a little off the ones ADR 0034 and
+**THOSE FOUR FIGURES WERE RE-MEASURED AFTER ADR 0035, AGAIN AFTER ADR 0036, AND AFTER #801** and are a little off the ones ADR 0034 and
 `docs/research/accent-separation.md` quote (33.0, 29.2, 11.2, and a band 22 tall). Taking the cut
 off a socket's underside gave every plumbable band 1.5 screen pixels more height at zoom 1, and the
 extra pixels moved each median a few tenths of a dE00. **The standard's own comparison is unchanged
@@ -133,8 +136,8 @@ again on 2026-09-30, after ADR 0036 levelled the contained sockets** (#402): the
 32.3 against 29.5, and the energy bands are now 23.5 tall like every other. Energy's own west and
 east sockets now land 34.2 apart where they landed 3.9, because at pipe height the east face is
 in the machine's shading for energy exactly as it is for water. **Taken again on 2026-10-28, after
-#801 darkened the body and the frame**: 32.2 against 29.6, a margin of 2.6, and steam against water
-on the exchanger at 12.1.
+#801 darkened the body, the frame and dark**: 32.2 against 29.6, a margin of 2.6, and steam against
+water, the 11.7 above, at 12.1 off the same bench.
 **The standard binds machines not yet rendered**: a pair on a new machine is checked against it
 rather than reopening the question. **None of this is gated, deliberately** -- a threshold on
 legibility would be a decision wearing a check's clothes.

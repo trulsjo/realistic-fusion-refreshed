@@ -820,7 +820,8 @@ if ($fluidColour.Count -lt 8) {
 }
 
 # A palette row: the role, the linear RGB, and what wears it. Only the accent rows carry a fluid's
-# name; Body steel, Frame, Bare metal and Glow are not accents and do not match.
+# name; Body steel, Frame, Dark, Bare metal, Paint, Hazard yellow and Glow are not accents and do
+# not match.
 $accents = [System.Collections.Generic.List[object]]::new()
 foreach ($line in (Get-Content $houseStyle)) {
     $m = [regex]::Match($line, '^\|\s*(.+?)\s+accent\s*\|\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\|')

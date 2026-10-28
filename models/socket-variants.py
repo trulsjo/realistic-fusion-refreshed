@@ -124,10 +124,10 @@ FLANGE_PROUD = rf_parts.FLANGE_PROUD
 # dimension instead it would die on CORE_THICK, which is the thing nobody sees.
 CORE_WIDTH = 0.11
 CORE_THICK = 0.03
-# The palette's near-black, at (0.07, 0.08, 0.09). `dark` is the wrong pick and not because it is
-# too pale to see -- it would read perfectly well against a 0.55 metal tube. It is that (0.26,
-# 0.27, 0.29) is within 0.02 a channel of `body`, so a channel in it reads as a painted panel
-# rather than as a shadow, which is the one thing this treatment is imitating.
+# The palette's near-black, at (0.02, 0.022, 0.025) since #801. `dark` is the wrong pick and not
+# because it is too pale to see -- it would read perfectly well against a 0.55 metal tube. It is
+# that (0.14, 0.145, 0.155) is within 0.01 a channel of `body`, so a channel in it reads as a
+# painted panel rather than as a shadow, which is the one thing this treatment is imitating.
 CORE_MATERIAL = "frame"
 
 # How far a moved rim stands OUTBOARD of the body wall, so it reads as a ring round the hole

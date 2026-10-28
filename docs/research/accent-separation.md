@@ -104,6 +104,25 @@
 > not 27.0, and west energy is 2.5 px wide where it was 3.0, so its area floor drops from 81.0 to
 > 58.8. The narrowest bands on the machine are still north energy and west water at 2.0 px.
 
+> **RE-MEASURED AFTER #801 DARKENED THE PALETTE, 2026-10-28**
+> ([#801](https://github.com/trulsjo/realistic-fusion-refreshed/issues/801)). Same bench, no
+> argument, on both machines re-rendered with darker body, frame and dark rows and no change of
+> shape. The blocks above are left as they were, so the block before this one's "2.8 now" is
+> 2026-09-30's.
+>
+> | | levelled (ADR 0036) | **after #801** |
+> |---|---:|---:|
+> | water, west vs east socket | 32.3 | **32.2** |
+> | tritium, west vs east socket | 26.0 | **26.1** |
+> | energy, span over its three sockets | 3.3 .. 38.6 | **4.5 .. 40.0** |
+> | steam x water, closest / furthest | 11.7 / 38.9 | **12.1 / 39.1** |
+> | energy x steam, closest / furthest | 19.0 / 45.4 | **18.8 / 47.1** |
+> | energy x water, closest / furthest | 29.5 / 46.8 | **29.6 / 47.7** |
+> | helium-3 x tritium, closest / furthest | 29.4 / 45.7 | **29.5 / 45.5** |
+>
+> **ADR 0034's standard still holds**: 32.2 against 29.6, a margin of 2.6 dE00. Every band is
+> still 23.5 px tall.
+
 
 Measured 2026-09-16 for [#379](https://github.com/trulsjo/realistic-fusion-refreshed/issues/379),
 which is the measuring half of
