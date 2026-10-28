@@ -359,3 +359,6 @@ One line for each change to a gate, newest last, with its date and its ticket.
   `rf_blender.bundle` lays a loom's cables round its centreline, `rf_blender.loom_spread`, and
   that `rf_blender.CABLE_COLOURS` holds only cable rows. It renders nothing, so it cannot see
   whether a loom reads.
+- 2026-10-28, #802: `models/test_rf_blender.py` also pins `rf_blender.panel_grid`, how a face
+  is cut into inset plates, and that `rf_blender.check_inset` refuses a seam under the cut floor,
+  a seam shallower than it is wide and a plate under the raised floor, naming the part.

@@ -367,6 +367,28 @@ def loom_spread(n, cable_r, gap=0.006):
     return (2 * cable_r + gap) / (2 * math.sin(math.pi / n))
 
 
+def panel_grid(u, v, nu, nv, seam):
+    """Cut a face `u` by `v` into `nu` by `nv` plates, a `seam` between neighbours and round the
+    edge. Returns (centre u, centre v, size u, size v) per plate, in the face's own frame centred on
+    the face, row by row."""
+    su, sv = (u - (nu + 1) * seam) / nu, (v - (nv + 1) * seam) / nv
+    return [(-u / 2 + seam + su / 2 + i * (su + seam), -v / 2 + seam + sv / 2 + j * (sv + seam), su, sv)
+            for j in range(nv) for i in range(nu)]
+
+
+def check_inset(name, seam, depth, plate):
+    """Refuse an inset panel whose seams would not read. A seam is a CUT detail and reads by the
+    shadow line in it, so it is held to the cut floor on its width and is cut at least as deep as
+    it is wide (house style, Proportion and detail): a shallow wide channel casts a weak line. A
+    plate reads by its face, so `plate`, its smaller side, is held to the raised floor."""
+    check_detail(f"{name} (seam)", seam, cut=True)
+    check_detail(f"{name} (plate)", plate)
+    if depth < seam - 1e-9:
+        sys.exit(f"inset panels: {name}'s seams are {seam:g} wide and {depth:g} deep. A seam is cut at "
+                 f"least as deep as it is wide, or its shadow line is too weak to read. "
+                 f"See models/house-style.md, Proportion and detail.")
+
+
 def geometry_sha256(path):
     """The hash build scripts stamp on a scene and render.py checks it against. Over the canonical
     JSON text, not the file's bytes: a checkout with autocrlf turns the extractor's LF into CRLF and

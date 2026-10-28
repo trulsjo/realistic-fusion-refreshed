@@ -107,6 +107,7 @@ first is #801's last. Blender 5.2.0, 64 samples for the sheet and 16 for the nor
 |---|---|---:|---:|
 | #801 | (the starting point) | 0.236 | 0.448 |
 | [#803](https://github.com/trulsjo/realistic-fusion-refreshed/issues/803), 2026-10-28 | a vent hose off each relief valve; a red and green loom along the east rail, with a drop to each gauge cluster | 0.269 | 0.487 |
+| [#802](https://github.com/trulsjo/realistic-fusion-refreshed/issues/802), 2026-10-28 | inset panels on the two closed bays, the cabinet's top and the manifold's inner face | 0.277 | 0.501 |
 
 **The normal-pass figure rose, so the rise is shape**, *measured*. The pixel figure rose with it.
 Neither says the parts read at 32 px a tile; that is Truls's eye, on a frame from
