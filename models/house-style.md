@@ -249,11 +249,18 @@ pieces. Where those pieces go is arithmetic in `models/rf_blender.py`, pinned wi
 read, and anything pipe-shaped in it is drawn by `pipe`, so the footprint-edge rule below holds it.
 `models/rf_parts.py` states the shape in full.
 
+**A repeated module is one shape placed many times** (#804). `rf_blender.ring`, `row` and `stack`
+give the placements and any module takes them, so a bolt goes round a flange, along a kerb or up a
+post with the same call.
+
 | Part | Placed on | Its read, held to its floor | Since |
 |---|---|---|---|
 | `hose` | a curve | the corrugation pitch | #803 |
 | `loom` | a curve | the cable diameter | #803 |
 | `panels` | a face | the seam's width, on the cut floor and cut at least as deep; a plate's smaller side | #802 |
+| `bolts` | a ring, a row or a stack | the head's diameter | #804 |
+| `fan_discs` | a ring, a row or a stack | the disc's thickness; the gap between neighbouring discs on the cut floor | #804 |
+| `casing` | a ring, a row or a stack | the segment's height or arc, whichever is less; the gap between segments on the cut floor | #804 |
 
 **A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
 after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes

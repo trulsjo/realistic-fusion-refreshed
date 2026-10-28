@@ -108,8 +108,11 @@ first is #801's last. Blender 5.2.0, 64 samples for the sheet and 16 for the nor
 | #801 | (the starting point) | 0.236 | 0.448 |
 | [#803](https://github.com/trulsjo/realistic-fusion-refreshed/issues/803), 2026-10-28 | a vent hose off each relief valve; a red and green loom along the east rail, with a drop to each gauge cluster | 0.269 | 0.487 |
 | [#802](https://github.com/trulsjo/realistic-fusion-refreshed/issues/802), 2026-10-28 | inset panels on the two closed bays, the cabinet's top and the manifold's inner face | 0.277 | 0.501 |
+| [#804](https://github.com/trulsjo/realistic-fusion-refreshed/issues/804), 2026-10-28 | a segmented jacket under each drum's cap; a fan stack past the last drum; a bolt row on the slab's open edge; the cap bolts moved onto the kit | 0.285 | 0.526 |
 
-**The normal-pass figure rose, so the rise is shape**, *measured*. The pixel figure rose with it.
+**The normal-pass figure rose at each step, so the rise is shape**, *measured*: 0.448 to 0.526
+over the three. The pixel figure rose with it, from 0.236 to 0.285, back to where it stood before
+#801's repaint lowered it (0.286), and still below vanilla's heat exchanger (0.566).
 Neither says the parts read at 32 px a tile; that is Truls's eye, on a frame from
 `scripts/probe-heat-exchanger-art.ps1`.
 

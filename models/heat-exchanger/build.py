@@ -40,7 +40,9 @@ import rf_blender as rf  # noqa: E402
 # read off the import line -- and `bevel` is NOT among them: every machine's bevels are put
 # on from inside the helpers, so importing it here only made a name nothing calls.
 import rf_parts  # noqa: E402
-from rf_parts import box, cyl, dent, hbeam, hose, jitter, loom, panels, pipe, rivets, seam, torus  # noqa: E402,F401
+from rf_parts import (bolts, box, casing, cyl, dent, fan_discs, hbeam, hose, jitter, loom, panels,  # noqa: E402,F401
+                      pipe, rivets, seam, torus)
+from rf_blender import ring, row, stack  # noqa: E402
 
 args = rf.script_args()
 out = args[0] if args else os.path.join(HERE, "heat-exchanger.blend")
@@ -362,13 +364,9 @@ else:
         # A bolted flange where the cap meets the drum, and a ring of bolts on it: the drum tops are
         # what the camera sees most of, and they were bare (#252).
         torus(f"Drum{i}CapFlange", r * 0.62, 0.05, (DX, y, z0 + h + 0.01), "metal")
-        for k in range(10):
-            a = 2 * math.pi * k / 10
-            bpy.ops.mesh.primitive_cylinder_add(
-                radius=0.035, depth=0.05, vertices=8,
-                location=(DX + r * 0.62 * math.cos(a), y + r * 0.62 * math.sin(a), z0 + h + 0.05))
-            bpy.context.object.name = f"Drum{i}CapBolt{k}"
-            bpy.context.object.data.materials.append(mat("dark"))
+        # The ring of bolts is the kit's (#804), on the spots the hand-placed ones stood; a bolt
+        # draws nothing from `random`, so nothing after it moved.
+        bolts(f"Drum{i}CapBolt", ring((DX, y, z0 + h + 0.025), r * 0.62, 10))
         # relief valve: a stub, a body and a little cap, off-centre so rotations differ.
         # BARE METAL WITH A STEAM BAND, not a steam-coloured body. The accent is near white, and a
         # whole valve in it blew out on the drum tops (Truls, #252); the house style already says an
@@ -547,6 +545,24 @@ else:
     # corrosion, since it is the same steel, and turns with its yaw.
     panels("ManifoldPlates", (on_manifold(0) + MAN_W / 2, 0, SLAB + MAN_H / 2), (L - 0.2, MAN_H), "+X",
            (12, 2), "body", yaw=MAN_YAW, corrode=True)
+    # -- kit parts: repeated modules (#804).
+    #
+    # A SEGMENTED CASING ROUND EACH DRUM'S SHOULDER: eight dark segments with a slot between each,
+    # the insulation jacket a hot vessel wears. Under the cap, where the camera looks down on it;
+    # at the foot it hid behind the deck. It stands above the upper rib and clear of the dent
+    # struck between the ribs.
+    for i, d in enumerate(drums):
+        jacket_r = d["r"] + 0.02
+        at = ring((DX, d["y"], d["z0"] + d["h"] - 0.24), jacket_r, 8, phase=math.pi / 8)
+        casing(f"Drum{i}Jacket", at, jacket_r, rf.casing_arc(8, jacket_r, 0.06), 0.34)
+    # A FAN STACK at the deck's far end, past the last drum: four discs on a shaft, the cooler a
+    # steam plant has beside its drums. The body's north end is the declared east once turned, and
+    # the camera sees it from the south.
+    FAN = (0.9, HALF_L - 1.05)
+    cyl("FanShaft", 0.06, 1.0, (FAN[0], FAN[1], SLAB + 0.5 + 0.5), "metal", verts=16)
+    fan_discs("FanStack", stack((FAN[0], FAN[1], SLAB + 0.62), 4, 0.24), 0.42)
+    # A BOLT ROW along the slab's open edge, the kerb the camera looks down on.
+    bolts("SlabBolts", row((HALF_W - 0.07, -HALF_L + 0.2, SLAB), (HALF_W - 0.07, HALF_L - 0.2, SLAB), 36))
     for i, d in enumerate(drums):
         loom(f"GaugeLoom{i}", [(LOOM_X - 0.02, d["gy"] + 0.1, LOOM_Z),
                                (LOOM_X - 0.1, d["gy"], SLAB + 1.5),
