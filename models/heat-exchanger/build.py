@@ -266,18 +266,8 @@ else:
     hbeam("RailM", L - 0.4, (MXE, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
     # The low rail along the open side is the guard rail a walkway behind it would have, and is
     # yellow for the reason one is (#801). The handwheel rims were tried first and hid behind it.
+    # It is laid below, once OUTLET_Y is known.
     #
-    # IN LENGTHS BETWEEN THE POSTS, NOT ONE BEAM ALONG THEM (Truls, 2026-10-29). As one beam it ran
-    # through every post, and a beam fifteen tiles long tilted by `hbeam`'s jitter drifts across
-    # the post line: it stood in front of some posts and inside others, and it ran into the
-    # cabinet and across its blue panel. Each length now stops just short of the post flanges on
-    # either side, so the posts stand in front of every join alike, and the first starts at the
-    # cabinet's north face. RailE2 is still the rail's name; its lengths are RailE2-<k>.
-    CAB_N = -HALF_L + 1.6            # the cabinet's north face; the cabinet itself is built below
-    for k, (a, b) in enumerate(zip([CAB_N] + post_ys[1:-1], post_ys[1:])):
-        a = a if k == 0 else a + 0.13
-        hbeam(f"RailE2-{k}", b - 0.13 - a, (EX, (a + b - 0.13) / 2, SLAB + 0.9), axis="Y",
-              depth=0.12, flange=0.12, material="hazard")
     # Grating deck under the drums: slats, so the feed lines below stay visible.
     #
     # WITH AN OPENING WHERE THE STEAM OUTLET RUN COMES DOWN (Truls, #275). That run has to get from
@@ -287,6 +277,26 @@ else:
     # it a floor opening, which is what a deck has where a pipe drops through it; the alternative
     # was a hose visibly cutting a slat.
     OUTLET_X, OUTLET_Y = 1.80, 1.45
+    #
+    # THE GUARD RAIL, IN LENGTHS BETWEEN THE POSTS, NOT ONE BEAM ALONG THEM (Truls, 2026-10-29). As
+    # one beam it ran through every post, and a beam fifteen tiles long tilted by `hbeam`'s jitter
+    # drifts across the post line: it stood in front of some posts and inside others, and it ran
+    # into the cabinet and across its blue panel. Each length stops RAIL_STOP short of a post's
+    # centre, which leaves 0.045 beyond the flange against `hbeam`'s 0.02 of jitter; the first
+    # starts at the cabinet's north face; and the length under the steam outlet is cut round its
+    # descent, whose rings reach past the rail's inner flange. RailE2 is still the rail's name; its
+    # lengths are RailE2-<k>. It moved here from beside RailE so that OUTLET_Y is known; the slats
+    # between draw nothing from `random`, so the move shifted no imperfection.
+    CAB_N = -HALF_L + 1.6            # the cabinet's north face; the cabinet itself is built below
+    RAIL_STOP, OUTLET_GAP = 0.16, 0.6
+    spans = []
+    for k, (a, b) in enumerate(zip([CAB_N] + post_ys[1:-1], post_ys[1:])):
+        a, b = (a if k == 0 else a + RAIL_STOP), b - RAIL_STOP
+        spans += ([(a, OUTLET_Y - OUTLET_GAP), (OUTLET_Y + OUTLET_GAP, b)] if a < OUTLET_Y < b
+                  else [(a, b)])
+    for k, (a, b) in enumerate(spans):
+        hbeam(f"RailE2-{k}", b - a, (EX, (a + b) / 2, SLAB + 0.9), axis="Y",
+              depth=0.12, flange=0.12, material="hazard")
     #
     # THE TWO END SLATS ARE THE WALKWAY'S EDGES AND ARE YELLOW (#801): a deck edge is one of the
     # things a real plant paints so somebody sees it, and these were already there to paint.
@@ -473,7 +483,7 @@ else:
 
     # THE OUTLET RUN, AND ITS ROUTE IS THE POINT. In this file's frame, which is the body's own and
     # not the declared one: down off the middle cap, north around the drum, down outside it at
-    # OUTLET_X -- which clears RailE2 along the east posts by a tenth of a tile, and sits at a y
+    # OUTLET_X -- where the guard rail, RailE2, is cut round it, and which sits at a y
     # with no cross rail on it -- then back SOUTH under the deck to the steam socket on the east
     # edge, which lives below the grating. (The quarter turn shows that last leg running west, and
     # RailE2 lying along the declared south edge.) It passes through nothing but the deck opening.
@@ -534,7 +544,7 @@ else:
     # band would put each ring under the floor.
     for i, d in enumerate(drums):
         vz = d["z0"] + d["h"] + 0.6
-        flank = DX + d["r"] + 0.26                 # off the weld bead, which stands proud of the flank
+        flank = DX + d["r"] + 0.32                 # off the weld bead, which stands proud of the flank
         hose(f"VentHose{i}", [(d["vx"] + 0.30, d["vy"], vz),
                               (d["vx"] + 0.55, d["vy"], vz - 0.05),
                               (flank + 0.02, d["vy"] - 0.15, d["z0"] + d["h"] - 0.2),
@@ -552,8 +562,9 @@ else:
     # JOG_X is where the loom's axis passes the outlet, set ABSOLUTELY rather than off the rail:
     # the rail is jittered, and a jog taken off it put the loom's outer edge 0.010 past the
     # collision box. Here, by the arithmetic, that edge is 0.004 inside it and the inner edge 0.003
-    # clear of the rings' nominal reach; on the rebuilt model the loom stopped 0.006 inside the box
-    # and touched no ring.
+    # clear of the rings' nominal reach. Where the bundle's cables lie at that point turns with the
+    # loom's random winding, so the measured margin moves from build to build; the overlap test
+    # found no ring touched on any of them.
     #
     # EVERY DROP LEAVES THE RAIL INBOARD FIRST, at DROP_X, which clears the rail's flange, the
     # conduit and its clamps under it, and the bays' rivets: dropping from the rail line, each
@@ -597,7 +608,10 @@ else:
                   (DROP_X, END_Y, SLAB + 1.2), (DROP_X, END_Y, SLAB + 0.02)], ties=False)
     # -- kit parts: inset panels (#802). Each on a face the camera sees once the body is turned.
     for i, (centre, size, yaw) in enumerate(bays):
-        panels(f"BayPlates{i}", centre, size, "+X", (3, 2), "paint", yaw=yaw)
+        # The plates stop 0.06 inside the backing's ends: a handwheel rim beside a bay can stand
+        # just past the backing, and plates out to its ends touched one (the branch's pre-PR
+        # review).
+        panels(f"BayPlates{i}", centre, (size[0] - 0.12, size[1]), "+X", (3, 2), "paint", yaw=yaw)
     # The cabinet's top, the face of it the camera sees most of; paint on paint, so the seams read
     # by their shadow alone. Its outer quarter tile is left bare: the conduit and the corner post's
     # flange pass just over it, and plates there stood into both (the branch's pre-PR review).
