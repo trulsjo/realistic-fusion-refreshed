@@ -27,8 +27,8 @@ takes the pull request's body as the summary of the change.
 reviewer detached the session's `HEAD` for eight minutes all the same; [the evidence page has what
 that pass did](code-review-evidence.md#what-a-read-only-pass-did-to-the-sessions-tree-on-650-651).
 So where they work does not rest on the brief alone. The third rule of `code-review.md` is for a
-pass that means to edit the tree; this is for one told not to, and it adds only where such a pass
-runs.
+pass that means to edit the tree, and since #816 it makes its worktree as this paragraph does; this
+is for one told not to, and it adds only where such a pass runs.
 
 - **Where `HERDR_ENV` is set, the session makes one worktree for the pass with `herdr worktree
   create`, before it spawns anything, and spawns without isolation** (Truls, 2026-10-14, #699). A

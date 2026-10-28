@@ -93,7 +93,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-          fetch-depth: 0   # commit-check walks a range
+          fetch-depth: 0   # commit-check walks a range, and ship-check section 17 refuses a shallow clone
       - name: ship-check.ps1
         shell: pwsh
         run: ./scripts/ship-check.ps1
