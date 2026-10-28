@@ -429,22 +429,28 @@ def turn(m, p):
 
 
 def least_gap(points, placements):
-    """The least distance between neighbouring placed parts, or None for one part. `points` are
-    the part's own points about its origin -- its vertices, or enough of them to bound it -- and
-    each neighbour is the next placement in the list, which is how ring, row and stack order them.
+    """The least distance between the points of neighbouring placed parts, or None for one part.
+    `points` are the part's own points about its origin, its vertices or a sample of its outline.
+    Each placement's neighbours are the next in the list, which is how ring, row and stack order
+    them, and the last is also held against the first, which closes a ring and is far off on a row.
 
-    MEASURED FROM THE PARTS, NOT FROM THE ARRANGEMENT, so one rule holds a module round a ring,
-    along a row or up a stack: two discs stacked meet along their axis and two in a row meet across
-    their faces, and both are this one distance. It cannot see two parts passing through each
-    other: interpenetrating points can stand apart. Neighbours that do overlap come out under the
-    floor almost always, and the checks below refuse them."""
+    MEASURED FROM THE PARTS, NOT FROM THE ARRANGEMENT, so one rule serves a ring, a row and a
+    stack: two discs stacked meet along their axis and two in a row meet across their rims.
+
+    IT IS AN UPPER BOUND ON THE GAP, not the gap: it measures point to point, and a face or an edge
+    can stand closer than any pair of points on it. Where points face each other it is exact -- a
+    casing's corners, a stack -- and turned on a ring it can be lenient by up to the spacing of the
+    points along an outline. Nor can it see two parts passing through each other, since
+    interpenetrating points can stand apart; overlapping neighbours almost always come out under
+    the floor, and the checks refuse them."""
     if len(placements) < 2:
         return None
     placed = []
     for loc, rot in placements:
         m = euler_matrix(rot)
         placed.append([tuple(a + b for a, b in zip(turn(m, p), loc)) for p in points])
-    return min(math.dist(a, b) for p, q in zip(placed, placed[1:]) for a in p for b in q)
+    pairs = list(zip(placed, placed[1:])) + ([(placed[-1], placed[0])] if len(placed) > 2 else [])
+    return min(math.dist(a, b) for p, q in pairs for a in p for b in q)
 
 
 def check_gap(name, gap, depth):

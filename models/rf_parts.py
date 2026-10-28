@@ -623,7 +623,7 @@ def hose(name, points, radius, material="metal", pitch=None, band=(1.24, 0.26), 
     THE PITCH CARRIES THE READ, and is checked on the floor here: the gap between rings, with bare
     tube showing in it, is what tells a hose from a smooth pipe and from a spring. The default,
     1.37 radii, is the steam header's 0.26 on 0.19 (#275). A ring's centre circle is `band[0]`
-    radii out and its tube `band[1]` radii thick, so it stands `band[0] + band[1] - 1` of the
+    radii out and its tube's own radius is `band[1]` radii, so it stands `band[0] + band[1] - 1` of the
     radius proud: half the radius at the default. `pipe` holds each ring to the floor on its own
     minor diameter.
     """

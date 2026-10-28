@@ -45,8 +45,8 @@ colour competing with them would cost the set the one thing its colours are for.
 HOW FAR IS NOT SETTLED. This is a direction, not a target. Only `rf-isotope-collector` has been
 rebuilt to it (c0ff100); since #801 `rf-heat-exchanger` has its value range and its marking,
 and since #803, #802 and #804 its first kit parts. Beside Krastorio 2's reactor in a real map on
-2026-10-26, before the kit, it still read as two mods to the session that photographed it, a read by eye that #798 records as not yet a
-measurement. The detail floors under Materials are unchanged and still bind: more detail is wanted, detail
+2026-10-26, `rf-isotope-collector` still read as two mods to the session that photographed it, a
+read by eye that #798 records as not yet a measurement. The detail floors under Materials are unchanged and still bind: more detail is wanted, detail
 too fine to read at 64 px per tile still is not.
 
 ## Palette
@@ -254,7 +254,9 @@ read, and anything pipe-shaped in it is drawn by `pipe`, so the footprint-edge r
 **A repeated module is one shape placed many times** (#804). `rf_blender.ring`, `row` and `stack`
 give the placements and any module takes them, so a bolt goes round a flange, along a kerb or up a
 post with the same call. The gap between neighbours is measured from the parts as placed
-(`rf_blender.least_gap`), so one check holds a module in all three.
+(`rf_blender.least_gap`), so one check serves a ring, a row and a stack. It measures point to
+point, so it is an upper bound on the gap: exact where points face each other, and on a ring it can
+be lenient by up to the spacing of a part's points.
 
 | Part | Placed on | Its read, held to its floor | Since |
 |---|---|---|---|
@@ -267,7 +269,7 @@ post with the same call. The gap between neighbours is measured from the parts a
 
 **A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
 after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes
-in whole, and they are neither accents nor markings. The two rows close Palette's table. On the
+in whole, and they are neither accents nor markings. The two rows stand in Palette's table, above Glow. On the
 palette rows they sit 43.7 dE00 or more from every accent and from hazard yellow. On the same rows
 the closest pair of accents is plasma against helium-3, at 14.6 (*measured* 2026-10-28;
 `docs/research/density-figures.md` has the figures and the command). That is a different measure

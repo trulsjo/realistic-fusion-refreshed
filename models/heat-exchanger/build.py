@@ -302,10 +302,11 @@ else:
     # vanish into body steel. Placed with the kit below; the yaw is drawn here, in the order it
     # always was, so nothing after it moves.
     #
-    # SET BACK BEHIND THE GUARD RAIL (#804's review). The rail runs across both bays at RailE2's
-    # height, and with the plates standing proud of a backing on the post line they passed through
-    # it; the backing already did. Set back BAY_BACK, the plates' faces stop short of the rail's
-    # flange and the rail runs in front of them. The rivets keep their place behind the backing.
+    # SET BACK BEHIND THE GUARD RAIL (the branch's pre-PR review). The rail runs across both bays
+    # at RailE2's height, and with the plates standing proud of a backing on the post line they
+    # passed through it; the backing already did. Set back BAY_BACK, the plates' faces stop short
+    # of the rail's flange and the rail runs in front of them. The rivets keep their place behind
+    # the backing.
     BAY_BACK = 0.12
     bays = []
     for i, k in enumerate((2, 5)):
@@ -421,10 +422,11 @@ else:
     # smooth tube with a few rings on it. The big hose on K2's reactor sheet -- the one crossing its
     # lower half -- bands at roughly its own radius, stands its ribs well proud, and swings clear of
     # its own line between supports. So 0.26 between rings on a 0.38-tile tube, each rib standing
-    # half the radius proud (#803 corrected "a quarter": the ring's tube is a quarter of the radius
-    # thick, and its centre circle stands a quarter out), and a real sag in the unsupported span. Close enough together to
-    # be the pipe's character, far enough apart that the tube shows between them, which is what
-    # tells a corrugated hose from a spring. The material is unchanged; bare metal was never the
+    # half the radius proud, and a real sag in the unsupported span. (This said "a quarter" until
+    # #803: the ring's own tube radius is about a quarter of the pipe's, and its centre circle
+    # stands about a quarter out, so together it stands half.) Close enough together to be the
+    # pipe's character, far enough apart that the tube shows between them, which is what tells a
+    # corrugated hose from a spring. The material is unchanged; bare metal was never the
     # complaint.
     HEADER_R = 0.19
     HEADER_CORRUGATE, HEADER_BAND = 0.26, (1.24, 0.26)
@@ -521,7 +523,7 @@ else:
     # band would put each ring under the floor.
     for i, d in enumerate(drums):
         vz = d["z0"] + d["h"] + 0.6
-        flank = DX + d["r"] + 0.19                 # clear of the weld bead on the flank
+        flank = DX + d["r"] + 0.19                 # further off the flank than its first 0.16
         hose(f"VentHose{i}", [(d["vx"] + 0.30, d["vy"], vz),
                               (d["vx"] + 0.55, d["vy"], vz - 0.05),
                               (flank + 0.02, d["vy"] - 0.15, d["z0"] + d["h"] - 0.2),
@@ -531,13 +533,16 @@ else:
     # A LOOM FROM THE CABINET ALONG THE TOP OF THE EAST RAIL, the open side the camera looks down
     # on once the body is turned, with a drop from it to each drum's gauges. Slung under the rail
     # it hid behind the frame. It lies on the rail rather than sagging -- a sag would pass through
-    # the beam -- and wanders a little across it between the ties, which is what keeps it a loom
+    # the beam -- and wanders a little across it between the posts, which is what keeps it a loom
     # and not a fourth rail.
     #
     # IT STEPS OUT ROUND THE STEAM OUTLET, whose rings reach 0.285 from the hose's axis, 0.31 inboard
-    # of the rail line: on the rail line the loom passed through them (#804's review). JOG_X puts
-    # the loom's inner edge 0.006 clear of the rings and its outer edge 0.001 inside the collision
-    # box.
+    # of the rail line: on the rail line the loom passed through them (the branch's pre-PR review).
+    # JOG_X is where the loom's axis passes the outlet, set ABSOLUTELY rather than off the rail:
+    # the rail is jittered, and a jog taken off it put the loom's outer edge 0.010 past the
+    # collision box. Here, by the arithmetic, that edge is 0.004 inside it and the inner edge 0.003
+    # clear of the rings' nominal reach; on the rebuilt model the loom stopped 0.006 inside the box
+    # and touched no ring.
     #
     # EVERY DROP LEAVES THE RAIL INBOARD FIRST, at DROP_X, which clears the rail's flange, the
     # conduit and its clamps under it, and the bays' rivets: dropping from the rail line, each
@@ -549,26 +554,28 @@ else:
     # the rail's top is not at one height: `on_rail` reads it off the top flange where the loom
     # crosses, and the loom rests on it there. It carries no ties: a tie round a loom lying on a
     # flange passes through the flange.
-    JOG_X, DROP_X = EX + 0.04, EX - 0.43
+    LOOM_HALF = rf.loom_spread(3, 0.035) + 0.035         # the bundle's half-width
+    JOG_X, DROP_X = HALF_W - LOOM_HALF - 0.004, EX - 0.43
     END_Y = HALF_L - 0.73
-    LOOM_R = rf.loom_spread(3, 0.035) + 0.035 + 0.025    # the bundle's half-width, and air for the cross rails
+    LOOM_R = LOOM_HALF + 0.025                           # resting on the rail, with air for the cross rails
     from mathutils import Vector
     top = bpy.data.objects["RailE-f1"]
     bpy.context.view_layer.update()
 
-    def on_rail(y, dx=-0.02):
-        """The point resting on the rail's top flange at body y, `dx` across from its centreline."""
+    def on_rail(y, dx=-0.02, x=None):
+        """The point resting on the rail's top flange at body y, `dx` across from its centreline,
+        or at `x` exactly when it is given."""
         m = top.matrix_world
         ly = (y - m[1][3] - m[1][2] * 0.5) / m[1][1]
-        x, _, z = m @ Vector((0.0, ly, 0.5))
-        return (x + dx, y, z + LOOM_R)
+        rx, _, z = m @ Vector((0.0, ly, 0.5))
+        return (rx + dx if x is None else x, y, z + LOOM_R)
 
     LOOM_Z = on_rail(0)[2]
     clamps = [y for y in post_ys if cpos[1] + CAB[1] / 2 < y < HALF_L - 0.5]
     lie = []
     for a, b in zip(clamps, clamps[1:]):
         if a < OUTLET_Y < b:
-            lie += [on_rail(a), on_rail(OUTLET_Y - 0.5), on_rail(OUTLET_Y, dx=JOG_X - EX),
+            lie += [on_rail(a), on_rail(OUTLET_Y - 0.5), on_rail(OUTLET_Y, x=JOG_X),
                     on_rail(OUTLET_Y + 0.5)]
         else:
             lie += [on_rail(a), on_rail((a + b) / 2, dx=jitter(-0.02, 0.03))]
@@ -582,7 +589,7 @@ else:
         panels(f"BayPlates{i}", centre, size, "+X", (3, 2), "paint", yaw=yaw)
     # The cabinet's top, the face of it the camera sees most of; paint on paint, so the seams read
     # by their shadow alone. Its outer quarter tile is left bare: the conduit and the corner post's
-    # flange pass just over it, and plates there stood into both (#804's review).
+    # flange pass just over it, and plates there stood into both (the branch's pre-PR review).
     panels("CabinetPlates", (cpos[0] - 0.125, cpos[1], cpos[2] + CAB[2] / 2), (CAB[0] - 0.25, CAB[1]), "+Z",
            (2, 3), "paint")
     # The manifold's inner face, which the feed lines run into. It carries the manifold's
@@ -606,7 +613,8 @@ else:
     cyl("FanShaft", 0.06, 1.0, (FAN[0], FAN[1], SLAB + 0.5 + 0.5), "metal", verts=16)
     fan_discs("FanStack", stack((FAN[0], FAN[1], SLAB + 0.62), 4, 0.24), 0.42)
     # A BOLT ROW along the slab's open edge, the kerb the camera looks down on. Bolts that would
-    # stand in a post's foot or in the steam socket's opening are left out (#804's review).
+    # stand in a post's foot or in the steam socket's opening are left out (the branch's pre-PR
+    # review).
     kerb = row((HALF_W - 0.07, -HALF_L + 0.2, SLAB), (HALF_W - 0.07, HALF_L - 0.2, SLAB), 36)
     bolts("SlabBolts", [p for p in kerb
                         if abs(p[0][1]) > 0.45 and all(abs(p[0][1] - y) > 0.18 for y in post_ys)])
