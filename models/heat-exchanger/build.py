@@ -97,7 +97,8 @@ PALETTE = {
     # PAINT, not steel. Truls, #252: the machine needed some painted panels -- steel-on-steel gave
     # it no colour of its own beside Krastorio 2's, which is yellow. A matte industrial off-white
     # is high in value where the frame is low, so a panel reads as a panel rather than as more
-    # body. The hue is my pick and easy to change: it is the one colour here that no fluid owns.
+    # body. The hue is my pick and easy to change: no fluid owns it, as none owns
+    # the hazard yellow or the cable sheaths below.
     "paint":  ((0.58, 0.55, 0.47), 0.8, 0.0),
     # A MARKING, NOT A BODY (models/house-style.md, Palette; #801). It goes on the deck's two
     # walkway edges and the guard rail along the open side and nowhere else -- three elements, none
@@ -300,15 +301,21 @@ else:
     # with dark seams rather than one off-white slab: the seams read against paint where they would
     # vanish into body steel. Placed with the kit below; the yaw is drawn here, in the order it
     # always was, so nothing after it moves.
+    #
+    # SET BACK BEHIND THE GUARD RAIL (#804's review). The rail runs across both bays at RailE2's
+    # height, and with the plates standing proud of a backing on the post line they passed through
+    # it; the backing already did. Set back BAY_BACK, the plates' faces stop short of the rail's
+    # flange and the rail runs in front of them. The rivets keep their place behind the backing.
+    BAY_BACK = 0.12
     bays = []
     for i, k in enumerate((2, 5)):
         y0, y1 = post_ys[k], post_ys[k + 1]
         yaw = jitter(0, 0.008)
-        box(f"BayPanel{i}", (0.07, (y1 - y0) * 0.86, 1.05), (EX - 0.05, (y0 + y1) / 2, SLAB + 0.95),
+        box(f"BayPanel{i}", (0.07, (y1 - y0) * 0.86, 1.05), (EX - 0.05 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95),
             "dark", rot=(0, 0, yaw))
-        bays.append(((EX - 0.015, (y0 + y1) / 2, SLAB + 0.95), ((y1 - y0) * 0.86, 1.05), yaw))
-        rivets(f"BayPanelRivets{i}", (EX - 0.1, y0 + 0.25, SLAB + 1.42), (EX - 0.1, y1 - 0.25, SLAB + 1.42),
-               5, r=0.035)
+        bays.append(((EX - 0.015 - BAY_BACK, (y0 + y1) / 2, SLAB + 0.95), ((y1 - y0) * 0.86, 1.05), yaw))
+        rivets(f"BayPanelRivets{i}", (EX - 0.1 - BAY_BACK, y0 + 0.25, SLAB + 1.42),
+               (EX - 0.1 - BAY_BACK, y1 - 0.25, SLAB + 1.42), 5, r=0.035)
     for i, k in enumerate((1, 4)):                    # two bays only: a braced frame, not a lattice
         dy, dz = post_ys[k + 1] - post_ys[k], (FRAME_H - 0.5) * (1 if i == 0 else -1)
         box(f"Brace{i}", (0.06, math.hypot(dy, dz), 0.14),
@@ -413,8 +420,9 @@ else:
     # every 0.45 tiles, which at 64 px a tile is a ring every 29 px on a 24 px pipe: read as a
     # smooth tube with a few rings on it. The big hose on K2's reactor sheet -- the one crossing its
     # lower half -- bands at roughly its own radius, stands its ribs well proud, and swings clear of
-    # its own line between supports. So 0.26 between rings on a 0.38-tile tube, each rib standing a
-    # quarter of the radius proud, and a real sag in the unsupported span. Close enough together to
+    # its own line between supports. So 0.26 between rings on a 0.38-tile tube, each rib standing
+    # half the radius proud (#803 corrected "a quarter": the ring's tube is a quarter of the radius
+    # thick, and its centre circle stands a quarter out), and a real sag in the unsupported span. Close enough together to
     # be the pipe's character, far enough apart that the tube shows between them, which is what
     # tells a corrugated hose from a spring. The material is unchanged; bare metal was never the
     # complaint.
@@ -513,7 +521,7 @@ else:
     # band would put each ring under the floor.
     for i, d in enumerate(drums):
         vz = d["z0"] + d["h"] + 0.6
-        flank = DX + d["r"] + 0.16
+        flank = DX + d["r"] + 0.19                 # clear of the weld bead on the flank
         hose(f"VentHose{i}", [(d["vx"] + 0.30, d["vy"], vz),
                               (d["vx"] + 0.55, d["vy"], vz - 0.05),
                               (flank + 0.02, d["vy"] - 0.15, d["z0"] + d["h"] - 0.2),
@@ -524,23 +532,59 @@ else:
     # on once the body is turned, with a drop from it to each drum's gauges. Slung under the rail
     # it hid behind the frame. It lies on the rail rather than sagging -- a sag would pass through
     # the beam -- and wanders a little across it between the ties, which is what keeps it a loom
-    # and not a fourth rail. The steam outlet comes down 0.09 tiles inboard of it and does not meet.
-    LOOM_X, LOOM_Z = EX - 0.02, SLAB + FRAME_H + 0.16
+    # and not a fourth rail.
+    #
+    # IT STEPS OUT ROUND THE STEAM OUTLET, whose rings reach 0.285 from the hose's axis, 0.31 inboard
+    # of the rail line: on the rail line the loom passed through them (#804's review). JOG_X puts
+    # the loom's inner edge 0.006 clear of the rings and its outer edge 0.001 inside the collision
+    # box.
+    #
+    # EVERY DROP LEAVES THE RAIL INBOARD FIRST, at DROP_X, which clears the rail's flange, the
+    # conduit and its clamps under it, and the bays' rivets: dropping from the rail line, each
+    # passed through the rail and the conduit, and the last through a post and the guard rail too.
+    # The last goes down at END_Y, between the deck's last two slats and past the north gauges, and
+    # the first climbs off the cabinet inboard of the conduit before it steps onto the rail.
+    #
+    # IT LIES ON THE RAIL AS THE RAIL WAS BUILT. `hbeam` shifts and tilts every beam a little, so
+    # the rail's top is not at one height: `on_rail` reads it off the top flange where the loom
+    # crosses, and the loom rests on it there. It carries no ties: a tie round a loom lying on a
+    # flange passes through the flange.
+    JOG_X, DROP_X = EX + 0.04, EX - 0.43
+    END_Y = HALF_L - 0.73
+    LOOM_R = rf.loom_spread(3, 0.035) + 0.035 + 0.025    # the bundle's half-width, and air for the cross rails
+    from mathutils import Vector
+    top = bpy.data.objects["RailE-f1"]
+    bpy.context.view_layer.update()
+
+    def on_rail(y, dx=-0.02):
+        """The point resting on the rail's top flange at body y, `dx` across from its centreline."""
+        m = top.matrix_world
+        ly = (y - m[1][3] - m[1][2] * 0.5) / m[1][1]
+        x, _, z = m @ Vector((0.0, ly, 0.5))
+        return (x + dx, y, z + LOOM_R)
+
+    LOOM_Z = on_rail(0)[2]
     clamps = [y for y in post_ys if cpos[1] + CAB[1] / 2 < y < HALF_L - 0.5]
     lie = []
     for a, b in zip(clamps, clamps[1:]):
-        lie += [(LOOM_X, a, LOOM_Z), (LOOM_X + jitter(0, 0.03), (a + b) / 2, LOOM_Z + 0.02)]
-    loom("Loom", [(LOOM_X - 0.25, cpos[1], cpos[2] + CAB[2] / 2 + 0.02),
-                  (LOOM_X - 0.2, cpos[1] + 0.25, cpos[2] + CAB[2] / 2 + 0.3),
-                  (LOOM_X, cpos[1] + CAB[1] / 2 + 0.2, LOOM_Z)]
-         + lie + [(LOOM_X, clamps[-1], LOOM_Z), (LOOM_X, HALF_L - 0.45, LOOM_Z - 0.3),
-                  (LOOM_X - 0.05, HALF_L - 0.45, SLAB + 0.02)])
+        if a < OUTLET_Y < b:
+            lie += [on_rail(a), on_rail(OUTLET_Y - 0.5), on_rail(OUTLET_Y, dx=JOG_X - EX),
+                    on_rail(OUTLET_Y + 0.5)]
+        else:
+            lie += [on_rail(a), on_rail((a + b) / 2, dx=jitter(-0.02, 0.03))]
+    cab_top, cab_n = cpos[2] + CAB[2] / 2, cpos[1] + CAB[1] / 2
+    loom("Loom", [(DROP_X + 0.15, cpos[1], cab_top + 0.02), (DROP_X + 0.1, cpos[1] + 0.3, LOOM_Z),
+                  (DROP_X + 0.2, cab_n + 0.1, LOOM_Z + 0.06), on_rail(cab_n + 0.5)]
+         + lie + [on_rail(clamps[-1]), (DROP_X, END_Y - 0.5, LOOM_Z + 0.04),
+                  (DROP_X, END_Y, SLAB + 1.2), (DROP_X, END_Y, SLAB + 0.02)], ties=False)
     # -- kit parts: inset panels (#802). Each on a face the camera sees once the body is turned.
     for i, (centre, size, yaw) in enumerate(bays):
         panels(f"BayPlates{i}", centre, size, "+X", (3, 2), "paint", yaw=yaw)
     # The cabinet's top, the face of it the camera sees most of; paint on paint, so the seams read
-    # by their shadow alone.
-    panels("CabinetPlates", (cpos[0], cpos[1], cpos[2] + CAB[2] / 2), (CAB[0], CAB[1]), "+Z", (2, 3), "paint")
+    # by their shadow alone. Its outer quarter tile is left bare: the conduit and the corner post's
+    # flange pass just over it, and plates there stood into both (#804's review).
+    panels("CabinetPlates", (cpos[0] - 0.125, cpos[1], cpos[2] + CAB[2] / 2), (CAB[0] - 0.25, CAB[1]), "+Z",
+           (2, 3), "paint")
     # The manifold's inner face, which the feed lines run into. It carries the manifold's
     # corrosion, since it is the same steel, and turns with its yaw.
     panels("ManifoldPlates", (on_manifold(0) + MAN_W / 2, 0, SLAB + MAN_H / 2), (L - 0.2, MAN_H), "+X",
@@ -561,11 +605,15 @@ else:
     FAN = (0.9, HALF_L - 1.05)
     cyl("FanShaft", 0.06, 1.0, (FAN[0], FAN[1], SLAB + 0.5 + 0.5), "metal", verts=16)
     fan_discs("FanStack", stack((FAN[0], FAN[1], SLAB + 0.62), 4, 0.24), 0.42)
-    # A BOLT ROW along the slab's open edge, the kerb the camera looks down on.
-    bolts("SlabBolts", row((HALF_W - 0.07, -HALF_L + 0.2, SLAB), (HALF_W - 0.07, HALF_L - 0.2, SLAB), 36))
+    # A BOLT ROW along the slab's open edge, the kerb the camera looks down on. Bolts that would
+    # stand in a post's foot or in the steam socket's opening are left out (#804's review).
+    kerb = row((HALF_W - 0.07, -HALF_L + 0.2, SLAB), (HALF_W - 0.07, HALF_L - 0.2, SLAB), 36)
+    bolts("SlabBolts", [p for p in kerb
+                        if abs(p[0][1]) > 0.45 and all(abs(p[0][1] - y) > 0.18 for y in post_ys)])
     for i, d in enumerate(drums):
-        loom(f"GaugeLoom{i}", [(LOOM_X - 0.02, d["gy"] + 0.1, LOOM_Z),
-                               (LOOM_X - 0.1, d["gy"], SLAB + 1.5),
+        loom(f"GaugeLoom{i}", [on_rail(d["gy"] + 0.1),
+                               (DROP_X, d["gy"] + 0.05, LOOM_Z + 0.04),
+                               (DROP_X, d["gy"], SLAB + 1.4),
                                (d["gx"] + 0.04, d["gy"], SLAB + 1.13)],
              cables=("cable-red", "cable-green"))
 

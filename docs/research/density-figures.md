@@ -100,19 +100,23 @@ python -c "import sys,numpy as n;from PIL import Image as I;[print(n.percentile(
 ## The kit on `rf-heat-exchanger`
 
 Measured with the same command, `python tools/measure-density.py --machine heat-exchanger`, after
-each of #798's kit tickets rendered the exchanger again. Each "before" is the row above it; the
-first is #801's last. Blender 5.2.0, 64 samples for the sheet and 16 for the normal pass.
+each of #798's kit tickets rendered the exchanger again, and after the pre-PR review's fixes. Each
+"before" is the row above it; the first is #801's last. Blender 5.2.0, 64 samples for the sheet and
+16 for the normal pass.
 
 | after | what it added | pixel figure | normal-pass figure |
 |---|---|---:|---:|
 | #801 | (the starting point) | 0.236 | 0.448 |
-| [#803](https://github.com/trulsjo/realistic-fusion-refreshed/issues/803), 2026-10-28 | a vent hose off each relief valve; a red and green loom along the east rail, with a drop to each gauge cluster | 0.269 | 0.487 |
-| [#802](https://github.com/trulsjo/realistic-fusion-refreshed/issues/802), 2026-10-28 | inset panels on the two closed bays, the cabinet's top and the manifold's inner face | 0.277 | 0.501 |
-| [#804](https://github.com/trulsjo/realistic-fusion-refreshed/issues/804), 2026-10-28 | a segmented jacket under each drum's cap; a fan stack past the last drum; a bolt row on the slab's open edge; the cap bolts moved onto the kit | 0.285 | 0.526 |
+| [#803](https://github.com/trulsjo/realistic-fusion-refreshed/issues/803), 2026-10-28 | a vent hose off each relief valve; a red and green loom along the east rail, with a drop to each gauge cluster | 0.2685 | 0.4870 |
+| [#802](https://github.com/trulsjo/realistic-fusion-refreshed/issues/802), 2026-10-28 | inset panels on the two closed bays, the cabinet's top and the manifold's inner face | 0.2774 | 0.5011 |
+| [#804](https://github.com/trulsjo/realistic-fusion-refreshed/issues/804), 2026-10-28 | a segmented jacket under each drum's cap; a fan stack past the last drum; a bolt row on the slab's open edge; the cap bolts moved onto the kit | 0.2846 | 0.5257 |
+| #804's pre-PR review, 2026-10-28 | parts that passed through each other moved apart: the loom steps round the steam outlet and drops inboard, the bays stand back behind the guard rail, the cabinet's plates keep off the conduit, the vent hoses stand a little further off the drums, and the kerb bolts skip the posts and the socket | 0.2843 | 0.5297 |
 
-**The normal-pass figure rose at each step, so the rise is shape**, *measured*: 0.448 to 0.526
-over the three. The pixel figure rose with it, from 0.236 to 0.285, back to where it stood before
-#801's repaint lowered it (0.286), and still below vanilla's heat exchanger (0.566).
+**The normal-pass figure rose at each ticket**, *measured*: 0.448 to 0.5297 at the head. **So the
+rise is shape**, which is *inferred* from the method: a material cannot raise that figure. The
+pixel figure rose with it, from 0.236 to 0.2843, a little under the 0.286 it stood at before
+#801's repaint lowered it, and still below vanilla's heat exchanger (0.566). The bench prints four
+places, and the kit's rows give all four; the first row is #801's, given to three.
 Neither says the parts read at 32 px a tile; that is Truls's eye, on a frame from
 `scripts/probe-heat-exchanger-art.ps1`.
 
@@ -125,9 +129,16 @@ transfer function first (*measured* 2026-10-28):
 | `cable-red` | 46.9 | 56.4 | 58.6 | 45.8 | 72.1 | 51.0 | 55.4 |
 | `cable-green` | 50.5 | 52.1 | 54.5 | 54.1 | 47.0 | 56.4 | 43.7 |
 
-The closest pair of accents is 11.7 (`models/house-style.md`, Palette). These are palette rows and
-not drawn pixels. ADR 0034 compares accents on one machine with each other, and a sheath is not an
-accent, so the table says only that no sheath is near any of them.
+On the same palette rows the closest pair of accents is plasma against helium-3, at 14.6, and steam
+against water is 21.4 (*measured* 2026-10-28, the same way). `models/house-style.md`'s 11.7 for
+steam against water is a different measure: drawn pixels on one machine's sheet, off the bench in
+`accent-separation.md`. These are palette rows and not drawn pixels. ADR 0034 compares accents on
+one machine with each other, and a sheath is not an accent, so the table says only that no sheath
+is near any of them. Rerun it from the repository root:
+
+```
+python -c "import sys,itertools;sys.path[:0]=['tools','models'];import numpy as n,colour_distance as c,rf_blender as r;s=lambda l:n.where(n.asarray(l)<=0.0031308,12.92*n.asarray(l),1.055*n.asarray(l)**(1/2.4)-0.055);a={'energy':(1,.45,.1),'steam':(.85,.88,.9),'water':(.25,.55,1),'plasma':(.55,.2,1),'tritium':(.5,1,.6),'helium-3':(.8,.45,1),'hazard':(.72,.55,.09)};d=lambda x,y:round(float(c.ciede2000(c.srgb_to_lab(s(x)),c.srgb_to_lab(s(y)))),1);[print(k,{m:d(v[0],w) for m,w in a.items()}) for k,v in r.CABLE_COLOURS.items()];print(sorted((d(a[x],a[y]),x,y) for x,y in itertools.combinations(list(a)[:6],2))[:2])"
+```
 
 ## What the "before" says, and how far it goes
 

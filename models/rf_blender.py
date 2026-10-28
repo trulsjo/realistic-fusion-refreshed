@@ -416,15 +416,61 @@ def stack(base, n, pitch, rot=(0.0, 0.0, 0.0)):
     return [((base[0], base[1], base[2] + k * pitch), rot) for k in range(n)]
 
 
+def euler_matrix(rot):
+    """The 3x3 matrix of Blender's XYZ Euler rotation `rot`: about x, then y, then z."""
+    (ca, sa), (cb, sb), (cc, sc) = ((math.cos(a), math.sin(a)) for a in rot)
+    return ((cc * cb, cc * sb * sa - sc * ca, cc * sb * ca + sc * sa),
+            (sc * cb, sc * sb * sa + cc * ca, sc * sb * ca - cc * sa),
+            (-sb, cb * sa, cb * ca))
+
+
+def turn(m, p):
+    return tuple(sum(m[i][j] * p[j] for j in range(3)) for i in range(3))
+
+
+def least_gap(points, placements):
+    """The least distance between neighbouring placed parts, or None for one part. `points` are
+    the part's own points about its origin -- its vertices, or enough of them to bound it -- and
+    each neighbour is the next placement in the list, which is how ring, row and stack order them.
+
+    MEASURED FROM THE PARTS, NOT FROM THE ARRANGEMENT, so one rule holds a module round a ring,
+    along a row or up a stack: two discs stacked meet along their axis and two in a row meet across
+    their faces, and both are this one distance. It cannot see two parts passing through each
+    other: interpenetrating points can stand apart. Neighbours that do overlap come out under the
+    floor almost always, and the checks below refuse them."""
+    if len(placements) < 2:
+        return None
+    placed = []
+    for loc, rot in placements:
+        m = euler_matrix(rot)
+        placed.append([tuple(a + b for a, b in zip(turn(m, p), loc)) for p in points])
+    return min(math.dist(a, b) for p, q in zip(placed, placed[1:]) for a in p for b in q)
+
+
 def check_gap(name, gap, depth):
-    """Refuse a gap between repeated parts that would not read. It reads like a cut, by the shadow
-    in it, so it is held to the cut floor on its width and must run at least as deep as it is
-    wide, the house style's rule for a groove."""
+    """Refuse a slot between repeated parts that would not read, where the slot is cut through
+    something `depth` deep, as between a casing's segments. It reads like a cut, by the shadow in
+    it, so it is held to the cut floor on its width and must run at least as deep as it is wide,
+    the house style's rule for a groove. Parts that merely stand apart, bolts and fan discs, are
+    held to the cut floor alone."""
     check_detail(f"{name} (gap)", gap, cut=True)
     if depth < gap - 1e-9:
         sys.exit(f"repeated module: {name}'s gaps are {gap:g} wide and {depth:g} deep. A gap is cut at "
                  f"least as deep as it is wide, or its shadow line is too weak to read. "
                  f"See models/house-style.md, Proportion and detail.")
+
+
+def casing_points(radius, arc, height, thick, steps=8):
+    """A casing segment's vertices about its own origin: `steps` + 1 cross-sections along the arc,
+    four corners each -- inner bottom, outer bottom, outer top, inner top -- with the circle's
+    centre `radius` behind the origin, so a ring's outward-facing placement wraps it round."""
+    out = []
+    for s in range(steps + 1):
+        t = -arc / 2 + arc * s / steps
+        out += [(-radius + R * math.cos(t), R * math.sin(t), z)
+                for R, z in ((radius, -height / 2), (radius + thick, -height / 2),
+                             (radius + thick, height / 2), (radius, height / 2))]
+    return out
 
 
 def casing_arc(n, radius, gap):

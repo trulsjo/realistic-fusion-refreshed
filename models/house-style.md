@@ -43,9 +43,9 @@ a fluid accent and must never be used as one: the accents say what a socket carr
 colour competing with them would cost the set the one thing its colours are for.
 
 HOW FAR IS NOT SETTLED. This is a direction, not a target. Only `rf-isotope-collector` has been
-rebuilt to it (c0ff100); since #801 `rf-heat-exchanger` has its value range and its marking, and
-none of its new parts. Beside Krastorio 2's reactor in a real map on 2026-10-26 it still read
-as two mods to the session that photographed it, a read by eye that #798 records as not yet a
+rebuilt to it (c0ff100); since #801 `rf-heat-exchanger` has its value range and its marking,
+and since #803, #802 and #804 its first kit parts. Beside Krastorio 2's reactor in a real map on
+2026-10-26, before the kit, it still read as two mods to the session that photographed it, a read by eye that #798 records as not yet a
 measurement. The detail floors under Materials are unchanged and still bind: more detail is wanted, detail
 too fine to read at 64 px per tile still is not.
 
@@ -65,6 +65,8 @@ too fine to read at 64 px per tile still is not.
 | Tritium accent | 0.50 1.00 0.60 | every surface that carries **tritium** |
 | Helium-3 accent | 0.80 0.45 1.00 | every surface that carries **helium-3** |
 | Hazard yellow | 0.72 0.55 0.09 | guards, lifting points, warning plates, kerbs -- **markings only**, never a body |
+| Cable red | 0.30 0.025 0.02, roughness 0.6 | a loom's cable sheaths, with cable green; neither an accent nor a marking (see The kit) |
+| Cable green | 0.035 0.12 0.03, roughness 0.6 | a loom's cable sheaths, with cable red |
 | Glow | the accent of the fluid, emission `rf_blender.GLOW_EMISSION`, only while working | see Glow |
 
 **Body, frame, dark and bare metal went down on 2026-10-28 (#801), and paint did not.** Beside
@@ -251,22 +253,25 @@ read, and anything pipe-shaped in it is drawn by `pipe`, so the footprint-edge r
 
 **A repeated module is one shape placed many times** (#804). `rf_blender.ring`, `row` and `stack`
 give the placements and any module takes them, so a bolt goes round a flange, along a kerb or up a
-post with the same call.
+post with the same call. The gap between neighbours is measured from the parts as placed
+(`rf_blender.least_gap`), so one check holds a module in all three.
 
 | Part | Placed on | Its read, held to its floor | Since |
 |---|---|---|---|
 | `hose` | a curve | the corrugation pitch | #803 |
 | `loom` | a curve | the cable diameter | #803 |
 | `panels` | a face | the seam's width, on the cut floor and cut at least as deep; a plate's smaller side | #802 |
-| `bolts` | a ring, a row or a stack | the head's diameter | #804 |
+| `bolts` | a ring, a row or a stack | the head's diameter; the gap between neighbouring bolts on the cut floor | #804 |
 | `fan_discs` | a ring, a row or a stack | the disc's thickness; the gap between neighbouring discs on the cut floor | #804 |
-| `casing` | a ring, a row or a stack | the segment's height or arc, whichever is less; the gap between segments on the cut floor | #804 |
+| `casing` | a ring, a row or a stack | the segment's height or arc, whichever is less; the slot between segments on the cut floor and at least as deep | #804 |
 
 **A loom's cables wear sheath colours no fluid owns**: a dark oxide red and a dark olive green,
 after Krastorio 2's reactor. They are `rf_blender.CABLE_COLOURS`, which a machine's palette takes
-in whole, and they are neither accents nor markings. On the palette rows they sit 43.7 dE00 or more
-from every accent and from hazard yellow. The closest pair of accents is 11.7, under Palette
-(*measured* 2026-10-28; `docs/research/density-figures.md` has the figures).
+in whole, and they are neither accents nor markings. The two rows close Palette's table. On the
+palette rows they sit 43.7 dE00 or more from every accent and from hazard yellow. On the same rows
+the closest pair of accents is plasma against helium-3, at 14.6 (*measured* 2026-10-28;
+`docs/research/density-figures.md` has the figures and the command). That is a different measure
+from Palette's 11.7, which is drawn pixels on one machine's sheet, off the bench.
 
 ## Connections
 

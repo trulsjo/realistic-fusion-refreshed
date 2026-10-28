@@ -363,5 +363,7 @@ One line for each change to a gate, newest last, with its date and its ticket.
   is cut into inset plates, and that `rf_blender.check_inset` refuses a seam under the cut floor,
   a seam shallower than it is wide and a plate under the raised floor, naming the part.
 - 2026-10-28, #804: `models/test_rf_blender.py` also pins the three placements a repeated
-  module takes, `rf_blender.ring`, `row` and `stack`, `rf_blender.casing_arc`, and that
-  `rf_blender.check_gap` refuses a gap under the cut floor or shallower than it is wide.
+  module takes, `rf_blender.ring`, `row` and `stack`, `rf_blender.casing_arc` and
+  `rf_blender.casing_points`, `rf_blender.least_gap`, which measures the gap between neighbouring
+  parts as placed, in any of the three, and that `rf_blender.check_gap` refuses a slot under the
+  cut floor or shallower than it is wide.

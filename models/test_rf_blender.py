@@ -1,7 +1,9 @@
 """The one check for the render's arithmetic that runs without Blender: `python models/test_rf_blender.py`
 exits 0 or raises. What needs Blender -- that the camera really lands a tile on 64 px, that two
 renders give the same bytes -- was measured by hand for #249 on the calibration cube and is recorded
-in its resolution; this only pins the numbers the sheets are declared from."""
+in its resolution; this only pins the numbers the sheets are declared from, the detail floors,
+the footprint-edge check, and since #803 the kit's arithmetic: where a kit part's pieces go and how
+its floors are checked. It renders nothing, so it cannot see whether a part reads."""
 import math
 import os
 import sys
@@ -198,7 +200,8 @@ assert rf.bundle(_line, 1, 0.05) == [list(_line)]
 assert abs(2 * rf.loom_spread(3, 0.035, gap=0.0) * math.sin(math.pi / 3) - 0.07) < 1e-9
 assert rf.loom_spread(1, 0.035) == 0.0
 
-# The cables' colours are kit colours, not accents and not the marking yellow: a loom names no fluid.
+# Every row is named for a cable, so none is an accent or the marking by name. How far the colours
+# stand from the accents is measured in docs/research/density-figures.md, not here.
 assert set(rf.CABLE_COLOURS) and all(k.startswith("cable-") for k in rf.CABLE_COLOURS)
 
 # ---- the kit: inset panels (#802) -----------------------------------------------------------
@@ -226,12 +229,13 @@ def inset_refusal(*args):
 
 
 # A seam is a cut detail, so it is held to the cut floor on its width, and it is cut at least as
-# deep as it is wide (the house style's rule for any groove). Both refusals name the part.
+# deep as it is wide (the house style's rule for any groove). Each of the three refusals names the
+# part.
 assert inset_refusal("Panels", 0.05, 0.05, 0.4) is None
 assert "Panels" in (inset_refusal("Panels", 0.05, 0.04, 0.4) or "")
-assert inset_refusal("Panels", 0.04, 0.06, 0.4) is not None
+assert "Panels (seam)" in (inset_refusal("Panels", 0.04, 0.06, 0.4) or "")
 # A plate reads by its face, so its smaller side is held to the raised floor.
-assert inset_refusal("Panels", 0.05, 0.05, 0.05) is not None
+assert "Panels (plate)" in (inset_refusal("Panels", 0.05, 0.05, 0.05) or "")
 
 # ---- the kit: repeated modules (#804) -------------------------------------------------------
 #
@@ -263,16 +267,37 @@ def gap_refusal(*args):
     return None
 
 
-# Between repeated parts is a gap, and a gap reads like a cut: held to the cut floor on its width
-# and cut at least as deep as it is wide. A stack of discs 0.06 thick on a 0.1 pitch leaves 0.04,
-# which is refused and named; on a 0.12 pitch it leaves 0.06 and passes.
-assert "Fans" in (gap_refusal("Fans", 0.04, 1.0) or "")
-assert gap_refusal("Fans", 0.06, 1.0) is None
-assert gap_refusal("Casing", 0.05, 0.04) is not None
+# The slot between a casing's segments is cut through its shell, so it is held as a groove is: on
+# the cut floor by its width, and at least as deep as it is wide. Both refusals name the part.
+assert "Casing (gap)" in (gap_refusal("Casing", 0.04, 1.0) or "")
+assert gap_refusal("Casing", 0.06, 1.0) is None
+assert "Casing" in (gap_refusal("Casing", 0.05, 0.04) or "")
+
+# The gap between neighbouring parts is measured from the parts as placed, whatever the arrangement:
+# the least distance between the points of one and the points of the next. A unit cube's corners,
+# placed in a row two apart, leave one; stacked one apart they touch.
+_cube = [(x, y, z) for x in (-0.5, 0.5) for y in (-0.5, 0.5) for z in (-0.5, 0.5)]
+assert abs(rf.least_gap(_cube, rf.row((0, 0, 0), (4, 0, 0), 2)) - 1.0) < 1e-9
+assert abs(rf.least_gap(_cube, rf.stack((0, 0, 0), 3, 1.0))) < 1e-9
+assert rf.least_gap(_cube, rf.stack((0, 0, 0), 1, 1.0)) is None
+# The rotation is applied: a bar 2 long along x, turned a quarter about z, lies along y, so two of
+# them a row 3 apart along x leave 3 - 0.2 rather than 3 - 2.
+_bar = [(x, y, 0) for x in (-1, 1) for y in (-0.1, 0.1)]
+assert abs(rf.least_gap(_bar, rf.row((0, 0, 0), (6, 0, 0), 2, rot=(0, 0, math.pi / 2))) - 2.8) < 1e-9
+# Blender's XYZ Euler order: turned a quarter about x then a quarter about z, local +z ends on +x.
+_m = rf.euler_matrix((math.pi / 2, 0, math.pi / 2))
+assert all(abs(a - b) < 1e-9 for a, b in zip(rf.turn(_m, (0, 0, 1)), (1, 0, 0)))
 
 # A segmented casing of n segments round a radius leaves `gap` of arc between neighbours.
 _arc = rf.casing_arc(8, 1.0, 0.05)
 assert abs(8 * (_arc + 0.05 / 1.0) - 2 * math.pi) < 1e-9
+# Placed round the ring it was cut for, the measured gap is that slot, give or take the chord: the
+# inner corners of neighbours stand 2 r sin(gap / 2r) apart.
+_seg = rf.casing_points(1.0, _arc, 0.34, 0.07)
+_slot = rf.least_gap(_seg, rf.ring((0, 0, 0), 1.0, 8))
+assert abs(_slot - 2 * math.sin(0.05 / 2)) < 1e-9, _slot
+# Up a stack 0.4 apart, segments 0.34 tall leave 0.06 between bands.
+assert abs(rf.least_gap(_seg, rf.stack((0, 0, 0), 2, 0.4)) - 0.06) < 1e-9
 
 print("ok")
 
