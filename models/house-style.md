@@ -75,8 +75,9 @@ highlights left where they were. Beside the reactor the drums and hoses were the
 mass, so bare metal went down too, from 0.55 to 0.30 (Truls, #801). Only its colour moved, so its
 gloss still lights a rim where the key light lands, but the top of the range came down with it: the
 exchanger's brightest twentieth fell from 147 to 131, below K2's 140. Paint is now the brightest
-role. Neither step is the darker palette tried on 2026-09-05 (#252), which lowered everything and
-came out uniformly muddy. The table's body and frame rows had drifted from the
+structural role. The darker palette tried on 2026-09-05 (#252) lowered everything and came out
+uniformly muddy; this lowers every structural role but paint, so what keeps it from #252's is the
+paint left where it was and the metal's gloss left where it was. The table's body and frame rows had drifted from the
 build scripts since then, 0.30 and 0.12 here against 0.24 and 0.07 there. Both are replaced by the
 values both scripts now use, and so is Materials' roughness for painted steel, 0.6 here against
 0.72 there. *Measured* by the 5th, 50th and 95th luminance percentiles of each sheet's opaque
