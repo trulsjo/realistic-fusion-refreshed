@@ -78,13 +78,15 @@ scene.name = "rf"
 #
 # AND DOWN AGAIN AT THE DARK END ONLY (#801). Beside Krastorio 2's reactor the sheet's median was
 # already close -- 66 of 255 against 51 -- but its darkest twentieth sat at 13 where K2's sits at 1:
-# K2 has a near-black base and we had none. So frame, body and dark go down and bare metal and
-# paint stay where they were, which is what makes it a wider range rather than the uniformly muddy
-# palette of 2026-09-05: the highlights are the parts that did not move.
+# K2 has a near-black base and we had none. So frame, body and dark go down and paint stays where
+# it was, which is what makes it a wider range rather than the uniformly muddy palette of
+# 2026-09-05. Bare metal went down too, from 0.55 to 0.30 (Truls, #801, on seeing the drums and
+# hoses still the pale mass beside K2): its colour only, so it keeps the gloss that gives it a
+# bright rim where the key light lands. The highlights are now the paint and those rims.
 PALETTE = {
     "body":   ((0.13, 0.14, 0.16), 0.72, 0.0),
     "frame":  ((0.02, 0.022, 0.025), 0.6, 0.2),
-    "metal":  ((0.55, 0.55, 0.58), 0.35, 0.8),
+    "metal":  ((0.30, 0.30, 0.32), 0.35, 0.8),
     "dark":   ((0.14, 0.145, 0.155), 0.5, 0.7),
     "energy": ((1.00, 0.45, 0.10), 0.5, 0.0),
     "steam":  ((0.85, 0.88, 0.90), 0.5, 0.0),

@@ -65,21 +65,23 @@ at 4 samples, 0.448 at 16 and 0.447 at 64, measured the same day. Sixteen is the
 
 Measured 2026-10-28 with the same commands, after
 [#801](https://github.com/trulsjo/realistic-fusion-refreshed/issues/801) lowered the body, frame
-and dark rows of both build scripts and gave `rf-heat-exchanger` three hazard-yellow elements.
+and dark rows of both build scripts and gave `rf-heat-exchanger` three hazard-yellow elements, and
+again after it lowered bare metal as well, from 0.55 to 0.30.
 Nothing was added to either model's shape, *read from source*: both build scripts' diffs change
 colours and materials only. The normal-pass figure below agrees, and the exchanger's north sheet
-has the same alpha as before in every pixel, which shows its silhouette unchanged (*measured*).
+has the same alpha as before in all but one pixel, which shows its silhouette unchanged
+(*measured*).
 
-| sheet | pixel figure, before | after | normal-pass figure, before | after |
-|---|---:|---:|---:|---:|
-| `rf-heat-exchanger`, north | 0.286 | 0.253 | 0.448 | 0.448 |
-| `rf-isotope-collector`, north | 0.379 | 0.363 | 0.497 | 0.497 |
+| sheet | pixel figure, before | dark roles down | and bare metal | normal-pass figure, before | after both |
+|---|---:|---:|---:|---:|---:|
+| `rf-heat-exchanger`, north | 0.286 | 0.253 | 0.236 | 0.448 | 0.448 |
+| `rf-isotope-collector`, north | 0.379 | 0.363 | 0.348 | 0.497 | 0.497 |
 
 **The normal-pass figure did not move, which is what it is for.** No surface changed shape, so
 nothing could raise it. That is *inferred* from the build scripts' diff, which changes colours and
 materials only.
 
-**The pixel figure fell on both, and the darker palette is the likely reason.** Grime darkens a
+**The pixel figure fell on both, at each step, and the darker palette is the likely reason.** Grime darkens a
 surface by a fixed fraction of its base colour, so on a darker base it makes smaller steps in
 luminance, and fewer of them reach the 14 of 255 that counts. That is *inferred* from the material
 code in both build scripts and was not isolated. It is a reason to read the pixel figure beside the
@@ -126,7 +128,7 @@ measurement with its day is given.
   2026-10-27 on synthetic input: 31 and 32 read 0, 33 counted, and a ramp of 3 a pixel read 0.
   **That holds for a step drawn the same way, not for a real repaint.** A darker base shrinks the
   steps grime makes on it, some fall under 33, and the figure drops; #801's repaint took it from
-  0.286 to 0.253 with no shape changed. See "After #801".
+  0.286 to 0.236 with no shape changed. See "After #801".
 - **It depends on resolution.** It compares only sheets at the same pixels per tile and the same
   scale, which is why a Figma export would need rescaling first.
 - **It reads one sheet.** It takes the north sheet, never the glow, the shadow or another

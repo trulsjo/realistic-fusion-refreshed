@@ -56,7 +56,7 @@ too fine to read at 64 px per tile still is not.
 | Body steel | 0.13 0.14 0.16 | painted panels, the bulk of every machine |
 | Frame | 0.02 0.022 0.025 | base slab, structural edges, anything that carries weight |
 | Dark | 0.14 0.145 0.155, metallic 0.7, roughness 0.5 | gratings, rib bands, vents, bolt heads |
-| Bare metal | 0.55 0.55 0.58, metallic 0.8, roughness 0.35 | pipes, flanges, drums, anything a fluid runs through |
+| Bare metal | 0.30 0.30 0.32, metallic 0.8, roughness 0.35 | pipes, flanges, drums, anything a fluid runs through |
 | Paint | 0.58 0.55 0.47, roughness 0.8 | cabinets, end walls, a closed bay: a matte off-white no fluid owns |
 | Energy accent | 1.00 0.45 0.10 | every surface that carries **reactor energy** |
 | Steam accent | 0.85 0.88 0.90 | every surface that carries **steam** |
@@ -67,22 +67,26 @@ too fine to read at 64 px per tile still is not.
 | Hazard yellow | 0.72 0.55 0.09 | guards, lifting points, warning plates, kerbs -- **markings only**, never a body |
 | Glow | the accent of the fluid, emission `rf_blender.GLOW_EMISSION`, only while working | see Glow |
 
-**Body, frame and dark went down on 2026-10-28 (#801), and bare metal and paint did not.** Beside
+**Body, frame, dark and bare metal went down on 2026-10-28 (#801), and paint did not.** Beside
 Krastorio 2's reactor the heat exchanger's north sheet already had about the same median
 brightness, 66 of 255 against 51. Its darkest twentieth sat at 13 where K2's sits at 1, so K2 had a
-near-black base and we did not. Lowering only the dark roles gives a wider range with the highlights
-left where they were. That is not the darker palette tried on 2026-09-05 (#252), which lowered
-everything and came out uniformly muddy. The table's body and frame rows had drifted from the
+near-black base and we did not. Lowering the dark roles first gave a wider range with the
+highlights left where they were. Beside the reactor the drums and hoses were then still the pale
+mass, so bare metal went down too, from 0.55 to 0.30 (Truls, #801). Only its colour moved, so its
+gloss still lights a rim where the key light lands, but the top of the range came down with it: the
+exchanger's brightest twentieth fell from 147 to 131, below K2's 140. Paint is now the brightest
+role. Neither step is the darker palette tried on 2026-09-05 (#252), which lowered everything and
+came out uniformly muddy. The table's body and frame rows had drifted from the
 build scripts since then, 0.30 and 0.12 here against 0.24 and 0.07 there. Both are replaced by the
 values both scripts now use, and so is Materials' roughness for painted steel, 0.6 here against
 0.72 there. *Measured* by the 5th, 50th and 95th luminance percentiles of each sheet's opaque
 pixels; `docs/research/density-figures.md` has the command:
 
-| sheet, north | before p5 / p50 / p95 | after p5 / p50 / p95 |
-|---|---|---|
-| `rf-heat-exchanger` | 13 / 66 / 147 | 5 / 49 / 147 |
-| `rf-isotope-collector` | 20 / 100 / 171 | 10 / 78 / 171 |
-| Krastorio 2's `reactor.png` | 1 / 51 / 140 | |
+| sheet, north | before p5 / p50 / p95 | dark roles down | and bare metal |
+|---|---|---|---|
+| `rf-heat-exchanger` | 13 / 66 / 147 | 5 / 49 / 147 | 4 / 46 / 131 |
+| `rf-isotope-collector` | 20 / 100 / 171 | 10 / 78 / 171 | 9 / 74 / 164 |
+| Krastorio 2's `reactor.png` | 1 / 51 / 140 | | |
 
 At the same time `rf-heat-exchanger` took its first hazard yellow: the deck's two walkway edges
 and the guard rail along its open side. `docs/research/density-figures.md` has both density
@@ -112,7 +116,7 @@ both will.
 Truls, #359). It tells one socket on the machine in front of the player from another, in one frame,
 under one light. It is **not** a name for a fluid that a player recognises on sight, and the table's
 "every surface that carries X" must not be read as one -- because a single palette row does not
-produce a single colour. On `rf-heat-exchanger` water's own two sockets land **32.2 dE00** apart,
+produce a single colour. On `rf-heat-exchanger` water's own two sockets land **32.3 dE00** apart,
 further than the **29.6** separating energy from water at their closest: the west socket stands in
 the open and the east is shaded by the machine's own body. Ask how far two accents ON ONE MACHINE
 land apart. Do not ask what colour an accent is. (Both figures are 2026-10-28's, below.)
@@ -137,8 +141,8 @@ again on 2026-09-30, after ADR 0036 levelled the contained sockets** (#402): the
 32.3 against 29.5, and the energy bands are now 23.5 tall like every other. Energy's own west and
 east sockets now land 34.2 apart where they landed 3.9, because at pipe height the east face is
 in the machine's shading for energy exactly as it is for water. **Taken again on 2026-10-28, after
-#801 darkened the body, the frame and dark**: 32.2 against 29.6, a margin of 2.6, and steam against
-water, the 11.7 above, at 12.1 off the same bench.
+#801 darkened the body, the frame, dark and bare metal**: 32.3 against 29.6, a margin of 2.7, and
+steam against water, the 11.7 above, at 12.0 off the same bench.
 **The standard binds machines not yet rendered**: a pair on a new machine is checked against it
 rather than reopening the question. **None of this is gated, deliberately** -- a threshold on
 legibility would be a decision wearing a check's clothes.
@@ -162,10 +166,11 @@ Principled BSDF throughout. Meshes are never imported. An image texture may be, 
 recorded beside the model with its source and licence (ADR 0043, amending ADR 0030). Painted
 steel is roughness 0.72, metallic 0. Bare metal is roughness 0.35, metallic 0.8.
 
-**The range runs from a near-black base to bright bare metal and paint** (#801, 2026-10-28). The
+**The range runs from a near-black base to the paint and the lit edges** (#801, 2026-10-28). The
 frame and the slab are the darkest thing on a machine. The highlights are what catches the key
-light: bare metal, the off-white paint, the bevelled edges. Darken a machine by lowering its dark
-roles, never by lowering the whole palette. Bevel every visible
+light: the off-white paint, and the specular edge of bare metal, which is dark in colour but
+glossy enough to keep a bright rim. Darken a machine by lowering its dark roles and its metal's
+colour, never its paint or its metal's gloss. Bevel every visible
 edge at 0.03 tiles so the key light catches it; a sharp edge reads as a rendering artefact at 64 px
 per tile.
 
