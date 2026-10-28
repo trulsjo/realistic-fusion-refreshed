@@ -132,7 +132,7 @@
   },
   "machine": "isotope-collector",
   "model": "models/isotope-collector/isotope-collector.blend",
-  "model_sha256": "7cf87e7598a645c3d8be8a9d289184e9716ee1d0181099d6d6dffc012c728f6d",
+  "model_sha256": "90ea7b206a711a521839b6de8e570dfa918532cc679a6c361624d5a521153576",
   "render": {
     "blender": "5.2.0 LTS",
     "device": "CPU",
