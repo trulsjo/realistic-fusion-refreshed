@@ -1,13 +1,14 @@
 # Code review rules — what they were measured on
 
 The measurements and the cases behind the rules of [`code-review.md`](code-review.md). Each section
-but sixteen was part of that file and is as it stood there, so "this file" in one is
+but eighteen was part of that file and is as it stood there, so "this file" in one is
 `code-review.md`, and "this rule", "this paragraph" and "the paragraph above" are that file's. All
 but one of those were moved on 2026-10-10 (#672), and the one on what the threshold dropped on
-2026-10-11 (#626). The sixteen written for this page are the ones for #651, #653, #670, #671, #720,
-#753, #755, #761, #780 to #783, #788 and #813, the ones on the verdicts of 2026-10-10, 2026-10-14
-and 2026-10-16, the one on the wrap width and the one on what the scores decided. What each pull
-request's two passes found and cost is on a third page, [`review-figures.md`](review-figures.md).
+2026-10-11 (#626). The eighteen written for this page are the ones for #651, #653, #670, #671, #720,
+#753, #755, #761, #780 to #783, #788, #813, #816 and #818 to #820, the ones on the verdicts of
+2026-10-10, 2026-10-14 and 2026-10-16, the one on the wrap width and the one on what the scores
+decided. What each pull request's two passes found and cost is on a third page,
+[`review-figures.md`](review-figures.md).
 
 **Read this page** when a rule is revisited or doubted, and when a sentence of `code-review.md`
 names a case by its pull request and the case is wanted in full. Reviewing a branch does not need
@@ -341,11 +342,13 @@ not read again.
   `CLAUDE.md` sentence Truls had approved: a dispatch "runs the same jobs as a push but skips the
   commit check and the body job". The body job's `if:` in `gates.yml` is `github.event_name ==
   'pull_request'`, so a push never runs it. By #818's account the claim had also gone into the head
-  comment of `gates.yml` and into the body of `529a747`, which was reworded, and the corrected
-  wording went to Truls a second time.
+  comment of `gates.yml` and into the body of "start the gates workflow by hand on any branch",
+  which was reworded before the merge put it on `main` as `529a747`, and the corrected wording went
+  to Truls a second time.
 - **An approval nobody could read (#819).** Finding 12 says "in wording Truls approved" in the body
   of `529a747` has no record the reviewer can read, and its row reads "no change: Truls approved
-  both wordings in the implementing session on 2026-10-27". The approval was an answer in the
+  both wordings in the implementing session on 2026-10-27, and the revised CLAUDE.md wording after
+  findings 4 and 5". The approval was an answer in the
   session, and #813 has no comment that records it.
 - **A class inferred, not read (#820).** Finding 14 says #815's row in `review-figures.md` gave the
   missed finding's class as "the reviewer checked the comment's count and not its size", when it had

@@ -2207,6 +2207,10 @@ if ($SelfTest) {
                 $noMain = try { $null = Find-UnreachableHashes -Files @() -Root $repo.Root -Main 'origin/nowhere'; 'ran' } catch { 'refused' }
                 $shallow = Join-Path $planted 'shallow'
                 git clone --quiet --depth 1 "file:///$($repo.Root -replace '\\', '/')" $shallow 2>&1 | Out-Null
+                # A clone that failed would be refused too, for printing nothing, and prove nothing.
+                if ((git -C $shallow rev-parse --is-shallow-repository 2>$null) -ne 'true') {
+                    throw "git could not make the shallow fixture in $shallow."
+                }
                 $atShallow = try { $null = Find-UnreachableHashes -Files @() -Root $shallow -Main 'HEAD'; 'ran' } catch { 'refused' }
                 if ($noMain -ne 'refused' -or $atShallow -ne 'refused') {
                     throw "with no origin/main the section $noMain, and in a shallow clone it $atShallow; both must refuse."
