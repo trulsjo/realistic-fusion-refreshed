@@ -66,8 +66,9 @@ at 4 samples, 0.448 at 16 and 0.447 at 64, measured the same day. Sixteen is the
 Measured 2026-10-28 with the same commands, after
 [#801](https://github.com/trulsjo/realistic-fusion-refreshed/issues/801) lowered the body, frame
 and dark rows of both build scripts and gave `rf-heat-exchanger` three hazard-yellow elements.
-Nothing was added to either model's shape: *measured* on the exchanger, whose north sheet's alpha
-is the same as before in every pixel.
+Nothing was added to either model's shape, *read from source*: both build scripts' diffs change
+colours and materials only. The normal-pass figure below agrees, and the exchanger's north sheet
+has the same alpha as before in every pixel, which shows its silhouette unchanged (*measured*).
 
 | sheet | pixel figure, before | after | normal-pass figure, before | after |
 |---|---:|---:|---:|---:|
@@ -75,8 +76,8 @@ is the same as before in every pixel.
 | `rf-isotope-collector`, north | 0.379 | 0.363 | 0.497 | 0.497 |
 
 **The normal-pass figure did not move, which is what it is for.** No surface changed shape, so
-nothing could raise it. That is *inferred* from the build scripts' diff, which changes colours
-and nothing else.
+nothing could raise it. That is *inferred* from the build scripts' diff, which changes colours and
+materials only.
 
 **The pixel figure fell on both, and the darker palette is the likely reason.** Grime darkens a
 surface by a fixed fraction of its base colour, so on a darker base it makes smaller steps in
@@ -85,8 +86,9 @@ code in both build scripts and was not isolated. It is a reason to read the pixe
 change it follows: a wider value range is not less detail, which is *inferred*, since the
 normal-pass figure that sees shape alone did not move.
 
-**The luminance percentiles** `models/house-style.md` quotes for #801 are taken over the same
-opaque pixels, alpha above 200, by the mean of R, G and B, with no blur and the outline left in.
+**The luminance percentiles** `models/house-style.md` quotes for #801 are taken with the
+same alpha cut, above 200, but over every opaque pixel, the outline included, by the mean of R,
+G and B, with no blur.
 *Measured* 2026-10-28, with this command from the repository root:
 
 ```

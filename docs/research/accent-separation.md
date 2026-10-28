@@ -107,7 +107,7 @@
 > **RE-MEASURED AFTER #801 DARKENED THE PALETTE, 2026-10-28**
 > ([#801](https://github.com/trulsjo/realistic-fusion-refreshed/issues/801)). Same bench, no
 > argument, on both machines re-rendered with darker body, frame and dark rows and no change of
-> shape. The blocks above are left as they were, so the block before this one's "2.8 now" is
+> shape (*read from source*: both build scripts' diffs change colours and materials only). The blocks above are left as they were, so the block before this one's "2.8 now" is
 > 2026-09-30's.
 >
 > | | levelled (ADR 0036) | **after #801** |
