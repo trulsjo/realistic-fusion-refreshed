@@ -279,6 +279,11 @@ assert "Casing" in (gap_refusal("Casing", 0.05, 0.04) or "")
 _cube = [(x, y, z) for x in (-0.5, 0.5) for y in (-0.5, 0.5) for z in (-0.5, 0.5)]
 assert abs(rf.least_gap(_cube, rf.row((0, 0, 0), (4, 0, 0), 2)) - 1.0) < 1e-9
 assert abs(rf.least_gap(_cube, rf.stack((0, 0, 0), 3, 1.0))) < 1e-9
+# A ring is closed: the last part is held against the first. Four points round a unit circle, the
+# last a hair short of the first: open, the least gap would be sqrt 2; closed, it is that hair.
+_dot = [(0.0, 0.0, 0.0)]
+assert abs(rf.least_gap(_dot, [((1, 0, 0), (0, 0, 0)), ((0, 1, 0), (0, 0, 0)), ((-1, 0, 0), (0, 0, 0)),
+                               ((0.9, 0.1, 0), (0, 0, 0))]) - math.dist((0.9, 0.1, 0), (1, 0, 0))) < 1e-9
 assert rf.least_gap(_cube, rf.stack((0, 0, 0), 1, 1.0)) is None
 # The rotation is applied: a bar 2 long along x, turned a quarter about z, lies along y, so two of
 # them a row 3 apart along x leave 3 - 0.2 rather than 3 - 2.
