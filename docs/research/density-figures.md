@@ -69,8 +69,8 @@ and dark rows of both build scripts and gave `rf-heat-exchanger` three hazard-ye
 again after it lowered bare metal as well, from 0.55 to 0.30.
 Nothing was added to either model's shape, *read from source*: both build scripts' diffs change
 colours and materials only. The normal-pass figure below agrees, and the exchanger's north sheet
-has the same alpha as before in all but one pixel, which shows its silhouette unchanged
-(*measured*).
+has the same alpha as before in all but one pixel, which shows its silhouette unchanged but for
+that pixel (*measured*).
 
 | sheet | pixel figure, before | dark roles down | and bare metal | normal-pass figure, before | after both |
 |---|---:|---:|---:|---:|---:|
