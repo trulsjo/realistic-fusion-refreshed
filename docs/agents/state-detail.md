@@ -346,3 +346,12 @@ One line for each change to a gate, newest last, with its date and its ticket.
   commit check, which has no range on that event. The body job runs on a pull request alone, as
   before. GitHub reads the trigger from the copy of the workflow on the branch handed, so on
   `main` the dispatch answers `HTTP 422` until the trigger is merged.
+- 2026-10-27, #817: `ship-check.ps1` section 17 fails a word of 7 to 40 hexadecimal characters,
+  in the prose section 9 reads and outside the records section 6's `$RECORDS` names, that names a
+  commit here which `origin/main` does not reach, with its file and line. A shallow clone or one
+  with no `origin/main` fails the section. It stands above section 16, which runs last. Its first
+  run, on 2026-10-27, over `main` at `085cf8a` and the branch's prose, which adds no hash to a live
+  page, failed nothing. Planted in a worktree, `a7d82ab`, the pre-reword
+  copy #815 found, failed on its line and `d2bcdc3` beside it passed. A fresh clone holds no commit
+  that no ref reaches, so the workflow passes such a copy as naming nothing; the halves
+  unreachable-hash-caught and record-hash-not-read prove the two directions.
