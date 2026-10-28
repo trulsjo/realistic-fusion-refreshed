@@ -310,8 +310,8 @@ script.on_event(defines.events.on_tick, function()
   -- and water accents 12.0 dE00 apart at their closest, the tightest pair on any sheet, and draws
   -- two of its six bands -- north energy and west water -- at two screen pixels.
   -- docs/research/accent-separation.md quotes 11.2 for the same pair, from before the 2026-09-16
-  -- re-render, and 11.7 from before #801 darkened the palette; the live figure is the one above,
-  -- taken 2026-10-28. game-alone.png is the bench's own window and
+  -- re-render, 11.7 from before #801 darkened the palette, and in its block after #801 the 12.0
+  -- above, taken 2026-10-28, which is the live figure. game-alone.png is the bench's own window and
   -- game-pipes.png is the condition #359 names -- on grass, with vanilla pipes plugged in.
   tiles_shot("game-alone.png", solo.cold_x,  0.5, solo.solo_w,  solo.solo_h,  1, 0)
   tiles_shot("game-pipes.png", solo.pipes_x, 0.5, solo.pipes_w, solo.pipes_h, 1, 0)
