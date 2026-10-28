@@ -362,3 +362,6 @@ One line for each change to a gate, newest last, with its date and its ticket.
 - 2026-10-28, #802: `models/test_rf_blender.py` also pins `rf_blender.panel_grid`, how a face
   is cut into inset plates, and that `rf_blender.check_inset` refuses a seam under the cut floor,
   a seam shallower than it is wide and a plate under the raised floor, naming the part.
+- 2026-10-28, #804: `models/test_rf_blender.py` also pins the three placements a repeated
+  module takes, `rf_blender.ring`, `row` and `stack`, `rf_blender.casing_arc`, and that
+  `rf_blender.check_gap` refuses a gap under the cut floor or shallower than it is wide.

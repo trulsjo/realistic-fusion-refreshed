@@ -690,6 +690,106 @@ def panels(name, centre, size, normal, grid, material="body", seam=0.05, depth=0
     return out
 
 
+# ---- repeated modules (#804) --------------------------------------------------------------------
+#
+# ONE SHAPE PLACED MANY TIMES. Each takes `placements`, a list of (location, rotation) from
+# `rf_blender.ring`, `row` or `stack`, and builds its shape about its own origin along its own Z
+# before turning and moving it there. So any of them goes round a ring, along a row or up a stack.
+
+
+def _place(objs, placement):
+    """Turn and move objects built about the origin to a placement."""
+    from mathutils import Euler, Matrix
+    loc, rot = placement
+    m = Matrix.Translation(loc) @ Euler(rot).to_matrix().to_4x4()
+    bpy.context.view_layer.update()
+    for o in objs:
+        o.matrix_world = m @ o.matrix_world
+
+
+def _spacing(placements):
+    """The least distance between consecutive placements, or None for one."""
+    d = [math.dist(a[0], b[0]) for a, b in zip(placements, placements[1:])]
+    return min(d) if d else None
+
+
+def bolts(name, placements, r=0.035, head=0.05, material="dark"):
+    """A hex bolt head at each placement, standing `head` tall along its own Z.
+
+    A BOLT READS BY ITS HEAD'S DIAMETER, which is checked. It carries no bevel, so it draws nothing
+    from `random`: a ring of bolts can replace hand-placed ones without moving any imperfection
+    after it."""
+    rf.check_detail(f"{name} (head)", 2 * r)
+    out = []
+    for k, p in enumerate(placements):
+        bpy.ops.mesh.primitive_cylinder_add(radius=r, depth=head, vertices=6, location=(0, 0, head / 2))
+        o = bpy.context.object
+        o.name = f"{name}-{k}"
+        o.data.materials.append(MATERIAL(material))
+        _place([o], p)
+        out.append(o)
+    return out
+
+
+def fan_discs(name, placements, radius, thick=0.07, blades=6, material="metal"):
+    """A fan or turbine disc at each placement: a hub, a rim and `blades` pitched blades, square to
+    its own Z. Up a stack they read as a turbine; along a row, as a bank of fans.
+
+    THE DISC'S THICKNESS CARRIES THE READ in a stack, which is the arrangement they are for, and the
+    gap between discs reads like a cut: both are checked, the gap only when there is more than one.
+    A blade reads by its width, which is fixed at 0.07."""
+    rf.check_detail(f"{name} (disc)", thick)
+    spacing = _spacing(placements)
+    if spacing is not None:
+        rf.check_gap(name, spacing - thick, radius)
+    for k, p in enumerate(placements):
+        pieces = [cyl(f"{name}-{k}-hub", radius * 0.28, thick * 1.6, (0, 0, 0), "dark"),
+                  torus(f"{name}-{k}-rim", radius - thick / 2, thick / 2, (0, 0, 0), material)]
+        for b in range(blades):
+            a = 2 * math.pi * b / blades
+            pieces.append(_plate(f"{name}-{k}-blade{b}", (radius * 0.72, 0.07, thick * 0.5),
+                                 (radius * 0.6 * math.cos(a), radius * 0.6 * math.sin(a), 0), material,
+                                 rot=(0.5, 0, a), bev=0.008))
+        _place(pieces, p)
+
+
+def casing(name, placements, radius, arc, height, thick=0.07, material="dark"):
+    """One curved segment of a casing at each placement, `arc` radians of a shell `thick` deep
+    standing on a circle of `radius`. Placed round `rf_blender.ring` with the same radius and an
+    arc from `rf_blender.casing_arc`, the segments close round a drum with a gap between each.
+
+    The segment is built with its circle's centre `radius` behind its own origin, so a ring's
+    outward-facing placement wraps it round the ring's centre. Its height carries the read, and the
+    gap between segments is held like a cut: at least as deep, `thick`, as it is wide."""
+    import bmesh
+    rf.check_detail(f"{name} (segment)", min(height, arc * radius))
+    if len(placements) > 1:
+        rf.check_gap(name, 2 * math.pi * radius / len(placements) - arc * radius, thick)
+    steps = 8
+    for k, p in enumerate(placements):
+        bm = bmesh.new()
+        rings = []
+        for s in range(steps + 1):
+            t = -arc / 2 + arc * s / steps
+            rings.append([bm.verts.new((-radius + R * math.cos(t), R * math.sin(t), z))
+                          for R, z in ((radius, -height / 2), (radius + thick, -height / 2),
+                                       (radius + thick, height / 2), (radius, height / 2))])
+        for a, b in zip(rings, rings[1:]):
+            for i in range(4):
+                bm.faces.new((a[i], a[(i + 1) % 4], b[(i + 1) % 4], b[i]))
+        bm.faces.new(rings[0][::-1])
+        bm.faces.new(rings[-1])
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+        mesh = bpy.data.meshes.new(f"{name}-{k}")
+        bm.to_mesh(mesh)
+        bm.free()
+        o = bpy.data.objects.new(f"{name}-{k}", mesh)
+        bpy.context.scene.collection.objects.link(o)
+        o.data.materials.append(MATERIAL(material))
+        bevel(o, 0.015)
+        _place([o], p)
+
+
 def _ties(name, points, inner):
     """A dark tie round a bundle at every inner control point of `points`, `inner` off the centre."""
     for i in range(1, len(points) - 1):

@@ -233,6 +233,47 @@ assert inset_refusal("Panels", 0.04, 0.06, 0.4) is not None
 # A plate reads by its face, so its smaller side is held to the raised floor.
 assert inset_refusal("Panels", 0.05, 0.05, 0.05) is not None
 
+# ---- the kit: repeated modules (#804) -------------------------------------------------------
+#
+# Any module is placed as a ring, a row or a stack. Each placement is (location, rotation), the
+# rotation being the Euler angles a part built about its own origin is turned by.
+_ring = rf.ring((1.0, 2.0, 3.0), 0.5, 4)
+assert len(_ring) == 4
+assert all(abs(math.dist(loc, (1.0, 2.0, 3.0)) - 0.5) < 1e-9 for loc, _ in _ring)
+# A ring's part faces outward: its turn about Z is the angle it stands at.
+assert all(abs((math.atan2(loc[1] - 2.0, loc[0] - 1.0) - rot[2]) % (2 * math.pi)) < 1e-9
+           for loc, rot in _ring)
+assert abs(rf.ring((0, 0, 0), 1.0, 4, phase=0.3)[0][1][2] - 0.3) < 1e-9
+
+# A row is spaced like a rivet line: n parts each in the middle of its own nth of the span.
+_row = rf.row((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 4, rot=(0, 1.0, 0))
+assert [round(loc[0], 9) for loc, _ in _row] == [0.125, 0.375, 0.625, 0.875]
+assert all(rot == (0, 1.0, 0) for _, rot in _row)
+
+# A stack climbs from its base by a pitch.
+_stack = rf.stack((0.0, 0.0, 1.0), 3, 0.2)
+assert [round(loc[2], 9) for loc, _ in _stack] == [1.0, 1.2, 1.4]
+
+
+def gap_refusal(*args):
+    try:
+        rf.check_gap(*args)
+    except SystemExit as e:
+        return str(e)
+    return None
+
+
+# Between repeated parts is a gap, and a gap reads like a cut: held to the cut floor on its width
+# and cut at least as deep as it is wide. A stack of discs 0.06 thick on a 0.1 pitch leaves 0.04,
+# which is refused and named; on a 0.12 pitch it leaves 0.06 and passes.
+assert "Fans" in (gap_refusal("Fans", 0.04, 1.0) or "")
+assert gap_refusal("Fans", 0.06, 1.0) is None
+assert gap_refusal("Casing", 0.05, 0.04) is not None
+
+# A segmented casing of n segments round a radius leaves `gap` of arc between neighbours.
+_arc = rf.casing_arc(8, 1.0, 0.05)
+assert abs(8 * (_arc + 0.05 / 1.0) - 2 * math.pi) < 1e-9
+
 print("ok")
 
 # The geometry hash is over canonical JSON, so a CRLF checkout of the same file hashes the same

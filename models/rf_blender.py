@@ -389,6 +389,50 @@ def check_inset(name, seam, depth, plate):
                  f"See models/house-style.md, Proportion and detail.")
 
 
+# REPEATED MODULES ARE PLACED THREE WAYS (#804): round a ring, along a row, up a stack. Each gives a
+# list of (location, rotation); a module is built about its own origin, along its own Z, and is
+# turned by the rotation and moved to the location. One shape placed many times is what reads as
+# engineered, and one placement rule per arrangement is what keeps it the same shape each time.
+
+def ring(centre, radius, n, phase=0.0):
+    """`n` placements round a horizontal ring, each turned about Z to face out from the centre."""
+    out = []
+    for k in range(n):
+        a = phase + 2 * math.pi * k / n
+        out.append(((centre[0] + radius * math.cos(a), centre[1] + radius * math.sin(a), centre[2]),
+                    (0.0, 0.0, a)))
+    return out
+
+
+def row(start, end, n, rot=(0.0, 0.0, 0.0)):
+    """`n` placements along a straight line, each in the middle of its own nth of it, as a rivet
+    line is spaced; all turned by `rot`."""
+    return [(tuple(start[j] + (end[j] - start[j]) * (k + 0.5) / n for j in range(3)), rot)
+            for k in range(n)]
+
+
+def stack(base, n, pitch, rot=(0.0, 0.0, 0.0)):
+    """`n` placements climbing straight up from `base`, `pitch` apart."""
+    return [((base[0], base[1], base[2] + k * pitch), rot) for k in range(n)]
+
+
+def check_gap(name, gap, depth):
+    """Refuse a gap between repeated parts that would not read. It reads like a cut, by the shadow
+    in it, so it is held to the cut floor on its width and must run at least as deep as it is
+    wide, the house style's rule for a groove."""
+    check_detail(f"{name} (gap)", gap, cut=True)
+    if depth < gap - 1e-9:
+        sys.exit(f"repeated module: {name}'s gaps are {gap:g} wide and {depth:g} deep. A gap is cut at "
+                 f"least as deep as it is wide, or its shadow line is too weak to read. "
+                 f"See models/house-style.md, Proportion and detail.")
+
+
+def casing_arc(n, radius, gap):
+    """The arc, in radians, each of `n` casing segments round `radius` spans when neighbours stand
+    `gap` tiles apart along the circumference."""
+    return 2 * math.pi / n - gap / radius
+
+
 def geometry_sha256(path):
     """The hash build scripts stamp on a scene and render.py checks it against. Over the canonical
     JSON text, not the file's bytes: a checkout with autocrlf turns the extractor's LF into CRLF and
