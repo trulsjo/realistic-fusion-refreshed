@@ -45,7 +45,8 @@ about whether a change is safe. What each proves, in a line:
   `main` (#762). It also checks that every `scripts/check-*.ps1` sources
   `scripts/factorio-lib.ps1`, and that a stand-in rig's run leaves its report in
   `.rig-reports/` (#794). Since #812 it also fails a run during which a tracked file or the index
-  changed, naming each path.
+  changed, naming each path. Since #817 it also fails a commit hash cited in prose outside the
+  record pages that `origin/main` does not reach, naming its file and line.
 - **The shared locale check and `scripts/name-check.ps1`** only dump prototypes and create no
   map, so a pass there says nothing about runtime.
 

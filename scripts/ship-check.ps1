@@ -196,6 +196,17 @@
     a second full run of the sections inside -SelfTest. It cannot see a file edited and put back
     between the two fingerprints, nor a change to a submodule's checkout.
 
+    SECTION 17 HAS A -SelfTest AND NO FLOOR (#817). It fails a word shaped like a commit hash, in
+    the prose section 9 reads and outside the records section 6 names, that names a commit here
+    which origin/main does not reach, and it fails a shallow clone or one with no origin/main. It
+    stands above section 16 in the file, which has to run last. There is no count to hold it to,
+    since a live page need cite no commit. The unreachable-hash-caught half plants a page citing a
+    commit on a scratch origin/main, one off it, a hex word that names none and a fenced run, and
+    requires the one off it alone, with its line; the record-hash-not-read half requires the same
+    commit in a record to go unread, and a missing origin/main and a shallow clone to be refused.
+    A fresh clone holds no commit that no ref reaches, so there it passes the pre-reword copy of a
+    commit as naming nothing; the section comment has the rest.
+
     SECTION 8 CARRIES ITS OWN, which is the one thing a floor cannot do: it exercises
     Test-SameColour on a known-equal and a known-unequal pair on every run, so a comparison that
     stopped saying no fails rather than turning every check below it green. It was also demonstrated
@@ -205,13 +216,13 @@
     Test-SameColour itself failed the pair above.
 
 .PARAMETER SelfTest
-    Run the checks as usual, then prove nine things a green run cannot: the shared -SelfTest runner
+    Run the checks as usual, then prove ten things a green run cannot: the shared -SelfTest runner
     the tools submodule holds -- that it numbers halves from the list it was given and refuses a half it
     cannot show ran -- section 6's scripts/ and tools/ half, section 9, in both directions, section 10's two assertions, each in both
     directions, section 12's two scans
     of the lines, each in both directions, section 13 in both directions, section 14 in both directions, and section 15's two
-    checks, the first in both directions and the second on a stand-in the library keeps no report for, and section 16 in both directions and through a run of this script, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
-    memory and the planted documents and section 16's scratch repositories live in the scratch
+    checks, the first in both directions and the second on a stand-in the library keeps no report for, and section 16 in both directions and through a run of this script, and section 17 in both directions, all on documents planted in a temporary directory. Nothing here plants anything in the repository; the runner's cases are built in
+    memory and the planted documents and the scratch repositories of sections 16 and 17 live in the scratch
     directory the run removes on its way out.
 
 .EXAMPLE
@@ -1552,6 +1563,86 @@ try {
     }
 } finally { Remove-Item -LiteralPath $rigScratch -Recurse -Force -ErrorAction SilentlyContinue }
 
+# ----------------------------------------------------------------- commits cited, on main
+# 17. A COMMIT CITED IN LIVE PROSE IS ONE origin/main REACHES (#817).
+#
+# It stands above section 16 because that one has to read the tree after every other section.
+# On #815 a skill cited the pre-reword copy of #811's first commit: the rebase merge put the
+# reworded one on main, the copy is reachable from no ref, `git gc` can lose it, and a reader who
+# follows it finds nothing. Only a reviewer running `git branch -a --contains` caught it.
+# vendor/grado-factorio-tools/scripts/pr-body-check.ps1 refuses the same in a pull request's body,
+# and this asks git the same question of the tree: each word of 7 to 40 hexadecimal characters in
+# the prose section 9 reads, outside the pages $RECORDS names, that names a commit here and is not
+# an ancestor of origin/main fails with its file, line and word. A record may name such a commit on
+# purpose (Truls, 2026-10-27, on #817), so section 6's list is this section's too.
+#
+# A SHALLOW CLONE, OR ONE WITH NO origin/main, FAILS THE SECTION rather than passing it, as the body
+# check refuses one: there an ancestor cannot be told from a commit whose history was cut off. The
+# gates workflow's pwsh job checks out with fetch-depth 0.
+#
+# WHAT IT CANNOT SEE: a word that names no commit in this clone, which passes, and that is how a
+# fresh clone sees the pre-reword copy of a commit, since no ref brought it, so the workflow is blind
+# to the case #815 had and a clone that made the commit is not; a prefix two objects share; a hash
+# of 6 characters or fewer; origin/main as this clone last fetched it, so a commit that reached main
+# since is reported; whether a commit on main is the one the prose means; a hash in a record, in a
+# fenced block, in a trailing comment, or in a file section 9 does not read.
+$HASH_WORD = '(?<![0-9A-Za-z_])[0-9a-fA-F]{7,40}(?![0-9A-Za-z_])'
+
+function Find-UnreachableHashes {
+    <#  Every word shaped like a commit hash in the prose of these files, outside the records, that
+        names a commit of the repository at $Root which $Main does not reach.
+
+        Returns how many words were read and the ones that fail, each with its file, line and
+        word. Throws where the answer cannot be had: a shallow clone, or no $Main.  #>
+    param([Parameter(Mandatory)] [AllowEmptyCollection()] [string[]] $Files, [Parameter(Mandatory)] [string] $Root,
+          [string] $Main = 'origin/main')
+
+    if ((git -C $Root rev-parse --is-shallow-repository) -ne 'false') {
+        throw "$Root is a shallow clone, so a commit on $Main cannot be told from one whose history was cut off. Fetch the whole history (git fetch --unshallow)."
+    }
+    $null = git -C $Root rev-parse --verify --quiet "$Main^{commit}" 2>$null
+    if ($LASTEXITCODE -ne 0) { throw "git cannot resolve $Main in $Root, so no cited commit can be checked against it. Fetch it." }
+
+    $words = [System.Collections.Generic.List[object]]::new()
+    foreach ($rel in $Files) {
+        if ($rel -match $RECORDS) { continue }
+        $full = Join-Path $Root $rel
+        if (-not (Test-Path -LiteralPath $full)) { continue }   # tracked, deleted, not yet staged
+        foreach ($prose in (Get-ProseLines -Path $full -Extension ([IO.Path]::GetExtension($full)))) {
+            foreach ($m in [regex]::Matches($prose.Text, $HASH_WORD)) {
+                $words.Add([pscustomobject]@{ File = $rel; Line = $prose.Line; Hash = $m.Value })
+            }
+        }
+    }
+
+    # Two processes, not two per word: cat-file names each word's commit, or says it is missing
+    # or ambiguous, and rev-list lists every commit main reaches.
+    $unique = @($words | ForEach-Object Hash | Sort-Object -Unique)
+    $named  = @{}
+    if ($unique) {
+        $answers = @($unique | ForEach-Object { "$_^{commit}" } | git -C $Root cat-file --batch-check)
+        for ($i = 0; $i -lt $unique.Count; $i++) {
+            if ($answers[$i] -match '^([0-9a-f]{40}) commit ') { $named[$unique[$i]] = $Matches[1] }
+        }
+    }
+    $reached = [System.Collections.Generic.HashSet[string]]::new([string[]] @(git -C $Root rev-list $Main))
+    if ($LASTEXITCODE -ne 0) { throw "git could not list the commits $Main reaches in $Root." }
+
+    return @{
+        Words       = $words.Count
+        Unreachable = @($words | Where-Object { $named.ContainsKey($_.Hash) -and -not $reached.Contains($named[$_.Hash]) })
+    }
+}
+
+$checks++
+try {
+    $hashesRead = Find-UnreachableHashes -Files $citingCode -Root $repoRoot
+    foreach ($cite in $hashesRead.Unreachable) {
+        $failures.Add(("$($cite.File), line $($cite.Line), cites commit $($cite.Hash), which no ref on origin/main " +
+            'reaches, so a rebase or `git gc` can take it away. Cite the commit main holds, or the pull request.'))
+    }
+} catch { $failures.Add("section 17 could not check the commits cited in prose: $($_.Exception.Message)") }
+
 # ----------------------------------------------------------------- the tree it read stood still
 # 16. NO TRACKED FILE CHANGED WHILE THE SECTIONS READ (#812).
 #
@@ -1605,6 +1696,23 @@ if ($SelfTest) {
             ($Halves | ForEach-Object { '    @{ Name = ' + "'$_'" + '; Body = { ''ok'' } }' })
             ')'
         ) | Set-Content -LiteralPath $Path -Encoding utf8
+    }
+
+    # Section 17's repository: two commits on main, which origin/main points at, so a clone of
+    # depth 1 is shallow, and one on a branch main never reached, as a reworded commit is not.
+    function New-HashFixture([string] $Parent) {
+        $root = Join-Path $Parent ('hashes-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+        New-Item -ItemType Directory -Path "$root/docs" -Force | Out-Null
+        git -C $root init -q -b main
+        $commit = { param([string] $m) git -C $root -c user.name=t -c user.email=t@t commit -q --allow-empty -m $m; git -C $root rev-parse HEAD }
+        $null = & $commit 'the first on main'
+        $on   = & $commit 'the second on main'
+        git -C $root update-ref refs/remotes/origin/main $on
+        git -C $root switch -q -c side
+        $off  = & $commit 'on a branch main never reached'
+        git -C $root switch -q main
+        if ($LASTEXITCODE -ne 0) { throw "could not make section 17's fixture repository in $root" }
+        @{ Root = $root; On = $on; Off = $off }
     }
 
     $planted = Join-Path ([IO.Path]::GetTempPath()) ('rf-shipcheck-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
@@ -2057,6 +2165,54 @@ if ($SelfTest) {
                 }
                 "a run whose watched tree is edited after its first fingerprint exits $code, failing on that file alone."
             } }
+
+            @{ Name = 'unreachable-hash-caught'; Body = {
+                # Section 17 passes by finding nothing. A scratch repository has a commit on its
+                # origin/main and one on a branch main never reached; a live page cites both, a hex
+                # word that names no commit, and the branch's commit again inside a fence. Only the
+                # branch's commit in prose may be reported, with its line.
+                $repo = New-HashFixture -Parent $planted
+                $off  = $repo.Off.Substring(0, 7)
+                $page = 'docs' + '/live.md'   # built, because this file is one section 6 reads
+                @(
+                    "On main at $($repo.On.Substring(0, 9)), and the colour deadbeefcafe is not a commit."
+                    "Its first commit was $off, reworded since."
+                    '```'
+                    "HEAD $off"
+                    '```'
+                ) | Set-Content -LiteralPath "$($repo.Root)/$page" -Encoding utf8
+                $read = Find-UnreachableHashes -Files @($page) -Root $repo.Root
+                $rows = @($read.Unreachable | ForEach-Object { "$($_.File):$($_.Line):$($_.Hash)" })
+                if (($rows -join '; ') -cne "${page}:2:$off" -or $read.Words -ne 3) {
+                    throw ("a page citing a commit on main, a hex word naming no commit, and a commit main never " +
+                           "reached, once in prose and once in a fence, read $($read.Words) word(s) and reported: " +
+                           "'$($rows -join '; ')'. Wanted three words read and ${page}:2:$off alone.")
+                }
+                'a commit no ref on origin/main reaches is caught with its file and line; one on main, a hex word naming no commit and a fenced run are left alone.'
+            } }
+
+            @{ Name = 'record-hash-not-read'; Body = {
+                # The other direction: the same unreachable commit in a page $RECORDS matches is not
+                # read, and a repository with no origin/main, or a shallow one, fails rather than
+                # passes for having nothing to check against.
+                $repo = New-HashFixture -Parent $planted
+                $d = 'docs/agents'
+                New-Item -ItemType Directory -Force -Path "$($repo.Root)/$d" | Out-Null
+                "Its first commit was $($repo.Off.Substring(0, 7))." |
+                    Set-Content -LiteralPath "$($repo.Root)/$d/review-figures.md" -Encoding utf8
+                $read = Find-UnreachableHashes -Files @("$d/review-figures.md") -Root $repo.Root
+                if ($read.Words -or $read.Unreachable) {
+                    throw "a record citing a commit main never reached was read: $($read.Words) word(s), '$($read.Unreachable.Hash -join ', ')'."
+                }
+                $noMain = try { $null = Find-UnreachableHashes -Files @() -Root $repo.Root -Main 'origin/nowhere'; 'ran' } catch { 'refused' }
+                $shallow = Join-Path $planted 'shallow'
+                git clone --quiet --depth 1 "file:///$($repo.Root -replace '\\', '/')" $shallow 2>&1 | Out-Null
+                $atShallow = try { $null = Find-UnreachableHashes -Files @() -Root $shallow -Main 'HEAD'; 'ran' } catch { 'refused' }
+                if ($noMain -ne 'refused' -or $atShallow -ne 'refused') {
+                    throw "with no origin/main the section $noMain, and in a shallow clone it $atShallow; both must refuse."
+                }
+                'a record citing a commit main never reached is not read, and a missing origin/main or a shallow clone is refused.'
+            } }
         )
     } finally { Remove-Item -LiteralPath $planted -Recurse -Force -ErrorAction SilentlyContinue }
     Write-Host ''
@@ -2073,6 +2229,7 @@ Write-Host 'heading and a figure its note has, every tracked Markdown file passe
 Write-Host 'no prose line of the wrapped files is over the width they are wrapped at or splits a'
 Write-Host 'grouped figure across its end, every -SelfTest help that names a half names all of them,'
 Write-Host 'neither the review skills nor the markdown-only test reads the local main, and every rig'
-Write-Host 'dot-sources the library that keeps its report, which a stand-in rig was seen to leave;'
+Write-Host 'dot-sources the library that keeps its report, which a stand-in rig was seen to leave,'
+Write-Host 'no live prose cites a commit origin/main does not reach;'
 Write-Host 'and no tracked file or index entry changed while the sections read them.'
 exit 0
