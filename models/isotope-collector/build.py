@@ -69,11 +69,12 @@ scene.name = "rf"
 # The two accents are the fluids' own colours, not picks: scripts/ship-check.ps1 section 8 fails if
 # either stops matching rf-tritium or rf-helium-3 in the Core mod's prototypes/fluids.lua, or the
 # matching row in models/house-style.md (#334). Re-render after changing one.
+# Body, frame and dark moved with the heat exchanger's in #801, which says why there.
 PALETTE = {
-    "body":     ((0.24, 0.26, 0.30), 0.72, 0.0),
-    "frame":    ((0.07, 0.08, 0.09), 0.6, 0.2),
+    "body":     ((0.13, 0.14, 0.16), 0.72, 0.0),
+    "frame":    ((0.02, 0.022, 0.025), 0.6, 0.2),
     "metal":    ((0.55, 0.55, 0.58), 0.35, 0.8),
-    "dark":     ((0.26, 0.27, 0.29), 0.5, 0.7),
+    "dark":     ((0.14, 0.145, 0.155), 0.5, 0.7),
     "paint":    ((0.58, 0.55, 0.47), 0.8, 0.0),
     "tritium":  ((0.50, 1.00, 0.60), 0.5, 0.0),
     "helium-3": ((0.80, 0.45, 1.00), 0.5, 0.0),

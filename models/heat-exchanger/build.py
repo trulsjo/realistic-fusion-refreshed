@@ -75,11 +75,17 @@ scene.name = "rf"
 # vents -- so the frame has shadows in it. Bare metal is unchanged: the house style fixes it, and
 # what was wrong with the drums was the grime, not the colour. Taking the whole palette darker was
 # tried first and only moved the fault: uniformly muddy is as flat as uniformly pale.
+#
+# AND DOWN AGAIN AT THE DARK END ONLY (#801). Beside Krastorio 2's reactor the sheet's median was
+# already close -- 66 of 255 against 51 -- but its darkest twentieth sat at 13 where K2's sits at 1:
+# K2 has a near-black base and we had none. So frame, body and dark go down and bare metal and
+# paint stay where they were, which is what makes it a wider range rather than the uniformly muddy
+# palette of 2026-09-05: the highlights are the parts that did not move.
 PALETTE = {
-    "body":   ((0.24, 0.26, 0.30), 0.72, 0.0),
-    "frame":  ((0.07, 0.08, 0.09), 0.6, 0.2),
+    "body":   ((0.13, 0.14, 0.16), 0.72, 0.0),
+    "frame":  ((0.02, 0.022, 0.025), 0.6, 0.2),
     "metal":  ((0.55, 0.55, 0.58), 0.35, 0.8),
-    "dark":   ((0.26, 0.27, 0.29), 0.5, 0.7),
+    "dark":   ((0.14, 0.145, 0.155), 0.5, 0.7),
     "energy": ((1.00, 0.45, 0.10), 0.5, 0.0),
     "steam":  ((0.85, 0.88, 0.90), 0.5, 0.0),
     "water":  ((0.25, 0.55, 1.00), 0.5, 0.0),
@@ -89,6 +95,10 @@ PALETTE = {
     # is high in value where the frame is low, so a panel reads as a panel rather than as more
     # body. The hue is my pick and easy to change: it is the one colour here that no fluid owns.
     "paint":  ((0.58, 0.55, 0.47), 0.8, 0.0),
+    # A MARKING, NOT A BODY (models/house-style.md, Palette; #801). It goes on the deck's two
+    # walkway edges and the guard rail along the open side and nowhere else -- three elements, none
+    # of them a panel, and never a fluid accent.
+    "hazard": ((0.72, 0.55, 0.09), 0.55, 0.0),
 }
 ACCENTS = ("energy", "steam", "water", "plasma")   # stay clean: no grime, so they read
 MATS = {}
@@ -247,7 +257,9 @@ else:
         hbeam(f"Rail{i}", EX - MXE, ((EX + MXE) / 2, y, SLAB + FRAME_H), axis="X", depth=0.16, flange=0.14)
     hbeam("RailE", L - 0.4, (EX, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
     hbeam("RailM", L - 0.4, (MXE, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
-    hbeam("RailE2", L - 0.4, (EX, 0, SLAB + 0.9), axis="Y", depth=0.12, flange=0.12)
+    # The low rail along the open side is the guard rail a walkway behind it would have, and is
+    # yellow for the reason one is (#801). The handwheel rims were tried first and hid behind it.
+    hbeam("RailE2", L - 0.4, (EX, 0, SLAB + 0.9), axis="Y", depth=0.12, flange=0.12, material="hazard")
     # Grating deck under the drums: slats, so the feed lines below stay visible.
     #
     # WITH AN OPENING WHERE THE STEAM OUTLET RUN COMES DOWN (Truls, #275). That run has to get from
@@ -257,11 +269,15 @@ else:
     # it a floor opening, which is what a deck has where a pipe drops through it; the alternative
     # was a hose visibly cutting a slat.
     OUTLET_X, OUTLET_Y = 1.80, 1.45
+    #
+    # THE TWO END SLATS ARE THE WALKWAY'S EDGES AND ARE YELLOW (#801): a deck edge is one of the
+    # things a real plant paints so somebody sees it, and these were already there to paint.
     for i in range(30):
         y = -HALF_L + 0.5 + i * (L - 1.0) / 29
         if abs(y - OUTLET_Y) < 0.30:
             continue
-        box(f"Slat{i}", (W - MAN_W - 0.7, 0.06, 0.06), (0.35, y, SLAB + 0.5), "dark", bev=0)
+        box(f"Slat{i}", (W - MAN_W - 0.7, 0.06, 0.06), (0.35, y, SLAB + 0.5),
+            "hazard" if i in (0, 29) else "dark", bev=0)
     # A conduit run down the east frame with clamps, and diagonal braces in two bays. Both are here
     # because the frame read as an empty crate (Truls, #252): the bays were identical and had
     # nothing in them, so fifteen tiles of machine carried three drums and air.

@@ -61,6 +61,27 @@ rescaling to 64 px to the tile.
 **The normal-pass figure does not move with the samples.** On `rf-heat-exchanger` it read 0.453
 at 4 samples, 0.448 at 16 and 0.447 at 64, measured the same day. Sixteen is the default.
 
+## After #801: value range and hazard yellow
+
+Measured 2026-10-28 with the same commands, after
+[#801](https://github.com/trulsjo/realistic-fusion-refreshed/issues/801) lowered the body, frame
+and dark rows of both build scripts and gave `rf-heat-exchanger` three hazard-yellow elements.
+Nothing was added to either model's shape.
+
+| sheet | pixel figure, before | after | normal-pass figure, before | after |
+|---|---:|---:|---:|---:|
+| `rf-heat-exchanger`, north | 0.286 | 0.253 | 0.448 | 0.448 |
+| `rf-isotope-collector`, north | 0.379 | 0.363 | 0.497 | 0.497 |
+
+**The normal-pass figure did not move, which is what it is for.** No surface changed shape, so
+nothing could raise it.
+
+**The pixel figure fell on both, and the darker palette is the likely reason.** Grime darkens a
+surface by a fixed fraction of its base colour, so on a darker base it makes smaller steps in
+luminance, and fewer of them reach the 14 of 255 that counts. That is *inferred* from the material
+code in both build scripts and was not isolated. It is a reason to read the pixel figure beside the
+change it follows. A wider value range is not less detail.
+
 ## What the "before" says, and how far it goes
 
 Both of our machines are below both vanilla sheets on the pixel figure. The isotope collector is level
