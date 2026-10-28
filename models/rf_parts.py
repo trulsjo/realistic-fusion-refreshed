@@ -14,9 +14,11 @@ WHAT STAYS PER MACHINE: `mat`. The heat exchanger's takes `glow` and `corrode`, 
 collector's takes `frost`, and their palettes differ because the machines carry different fluids.
 So the five helpers that BUILD a surface -- `box`, `cyl`, `torus`, `pipe` and the `_plate` the
 first two go through -- forward whatever keyword flags they are given straight to the resolver and
-never look inside them. `hbeam`, `rivets`, `seam` and `port` do not, and are the four that choose
-their own material: a beam and a rivet are `frame` and `dark` by default, a seam is always `frame`,
-and a port's rim is always `dark`. Passing `frost=True` to one of those is a TypeError rather than a
+never look inside them; the kit's `hose` and `panels` forward them the same way. `hbeam`,
+`rivets`, `seam` and `port` do not, and are the four that choose their own material: a beam and a
+rivet are `frame` and `dark` by default, a seam is always `frame`, and a port's rim is always
+`dark`. The kit's `loom`, `bolts`, `fan_discs` and `casing` take no flags either, and name their
+materials by role. Passing `frost=True` to one of those is a TypeError rather than a
 silent miss, which is the right failure -- but it is a failure, so if a machine ever wants a frosted
 rivet the flag has to be plumbed through `rivets` first. `socket` is the one that does both: it
 forwards to the tube and its ribs, and chooses the accent and the rim itself.
@@ -620,8 +622,10 @@ def hose(name, points, radius, material="metal", pitch=None, band=(1.24, 0.26), 
 
     THE PITCH CARRIES THE READ, and is checked on the floor here: the gap between rings, with bare
     tube showing in it, is what tells a hose from a smooth pipe and from a spring. The default,
-    1.37 radii, is the steam header's 0.26 on 0.19 (#275), which Truls accepted. A ring stands
-    `band[1]` of the radius proud; `pipe` holds each ring to the floor on its own minor diameter.
+    1.37 radii, is the steam header's 0.26 on 0.19 (#275). A ring's centre circle is `band[0]`
+    radii out and its tube `band[1]` radii thick, so it stands `band[0] + band[1] - 1` of the
+    radius proud: half the radius at the default. `pipe` holds each ring to the floor on its own
+    minor diameter.
     """
     pitch = 1.37 * radius if pitch is None else pitch
     rf.check_detail(f"{name} (corrugation pitch)", pitch)
@@ -707,19 +711,21 @@ def _place(objs, placement):
         o.matrix_world = m @ o.matrix_world
 
 
-def _spacing(placements):
-    """The least distance between consecutive placements, or None for one."""
-    d = [math.dist(a[0], b[0]) for a, b in zip(placements, placements[1:])]
-    return min(d) if d else None
+def _circle(r, z, n):
+    return [(r * math.cos(2 * math.pi * k / n), r * math.sin(2 * math.pi * k / n), z) for k in range(n)]
 
 
 def bolts(name, placements, r=0.035, head=0.05, material="dark"):
     """A hex bolt head at each placement, standing `head` tall along its own Z.
 
-    A BOLT READS BY ITS HEAD'S DIAMETER, which is checked. It carries no bevel, so it draws nothing
-    from `random`: a ring of bolts can replace hand-placed ones without moving any imperfection
-    after it."""
+    A BOLT READS BY ITS HEAD'S DIAMETER, which is checked, and neighbouring bolts must stand apart
+    by the cut floor or they read as one lump. It carries no bevel, so it draws nothing from
+    `random`: a ring of bolts can replace hand-placed ones without moving any imperfection after
+    it."""
     rf.check_detail(f"{name} (head)", 2 * r)
+    gap = rf.least_gap(_circle(r, 0, 6) + _circle(r, head, 6), placements)
+    if gap is not None:
+        rf.check_detail(f"{name} (gap)", gap, cut=True)
     out = []
     for k, p in enumerate(placements):
         bpy.ops.mesh.primitive_cylinder_add(radius=r, depth=head, vertices=6, location=(0, 0, head / 2))
@@ -735,13 +741,16 @@ def fan_discs(name, placements, radius, thick=0.07, blades=6, material="metal"):
     """A fan or turbine disc at each placement: a hub, a rim and `blades` pitched blades, square to
     its own Z. Up a stack they read as a turbine; along a row, as a bank of fans.
 
-    THE DISC'S THICKNESS CARRIES THE READ in a stack, which is the arrangement they are for, and the
-    gap between discs reads like a cut: both are checked, the gap only when there is more than one.
-    A blade reads by its width, which is fixed at 0.07."""
+    THE DISC'S THICKNESS CARRIES THE READ, and is checked. Neighbouring discs must stand apart by
+    the cut floor, measured from the discs as placed by `rf_blender.least_gap`: along the axis in a
+    stack, where the hub, 1.6 discs thick, meets first, and across the rims in a row or a ring. A
+    blade reads by its width, which is fixed at 0.07."""
     rf.check_detail(f"{name} (disc)", thick)
-    spacing = _spacing(placements)
-    if spacing is not None:
-        rf.check_gap(name, spacing - thick, radius)
+    outline = (_circle(radius, -thick / 2, 24) + _circle(radius, thick / 2, 24)
+               + _circle(radius * 0.28, -thick * 0.8, 12) + _circle(radius * 0.28, thick * 0.8, 12))
+    gap = rf.least_gap(outline, placements)
+    if gap is not None:
+        rf.check_detail(f"{name} (gap)", gap, cut=True)
     for k, p in enumerate(placements):
         pieces = [cyl(f"{name}-{k}-hub", radius * 0.28, thick * 1.6, (0, 0, 0), "dark"),
                   torus(f"{name}-{k}-rim", radius - thick / 2, thick / 2, (0, 0, 0), material)]
@@ -756,24 +765,25 @@ def fan_discs(name, placements, radius, thick=0.07, blades=6, material="metal"):
 def casing(name, placements, radius, arc, height, thick=0.07, material="dark"):
     """One curved segment of a casing at each placement, `arc` radians of a shell `thick` deep
     standing on a circle of `radius`. Placed round `rf_blender.ring` with the same radius and an
-    arc from `rf_blender.casing_arc`, the segments close round a drum with a gap between each.
+    arc from `rf_blender.casing_arc`, the segments close round a drum with a slot between each; up
+    a stack they are bands one over another, and along a row a line of curved plates.
 
     The segment is built with its circle's centre `radius` behind its own origin, so a ring's
-    outward-facing placement wraps it round the ring's centre. Its height carries the read, and the
-    gap between segments is held like a cut: at least as deep, `thick`, as it is wide."""
+    outward-facing placement wraps it round the ring's centre. Its height or its arc, whichever is
+    less, carries the read. The gap between neighbours, measured from the segments as placed, is
+    held like a slot cut through the shell: on the cut floor and at least as deep, `thick`, as it
+    is wide."""
     import bmesh
     rf.check_detail(f"{name} (segment)", min(height, arc * radius))
-    if len(placements) > 1:
-        rf.check_gap(name, 2 * math.pi * radius / len(placements) - arc * radius, thick)
     steps = 8
+    verts = rf.casing_points(radius, arc, height, thick, steps)
+    gap = rf.least_gap(verts, placements)
+    if gap is not None:
+        rf.check_gap(name, gap, thick)
     for k, p in enumerate(placements):
         bm = bmesh.new()
-        rings = []
-        for s in range(steps + 1):
-            t = -arc / 2 + arc * s / steps
-            rings.append([bm.verts.new((-radius + R * math.cos(t), R * math.sin(t), z))
-                          for R, z in ((radius, -height / 2), (radius + thick, -height / 2),
-                                       (radius + thick, height / 2), (radius, height / 2))])
+        made = [bm.verts.new(v) for v in verts]
+        rings = [made[4 * s:4 * s + 4] for s in range(steps + 1)]
         for a, b in zip(rings, rings[1:]):
             for i in range(4):
                 bm.faces.new((a[i], a[(i + 1) % 4], b[(i + 1) % 4], b[i]))
