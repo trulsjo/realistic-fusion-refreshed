@@ -166,6 +166,41 @@ assert "(-7, 0)" in (edge_refusal([(-5.0, 0.0, 0.5), (-7.45, 0.0, 0.5)]) or "")
 assert "(1, 2)" in (edge_refusal([(1.0, 0.0, 0.5), (1.0, -2.45, 0.5)]) or "")
 assert edge_refusal([(0.0, 0.0, 0.5), (0.0, -2.45, 0.5)]) is None
 
+# ---- the kit: hoses and looms (#803) --------------------------------------------------------
+#
+# A loom is several cables laid round one centreline. `bundle` returns one strand per cable, each
+# the same number of points as the centreline, every point `spread` off it and square to the run.
+_line = [(0.0, 0.0, 1.0), (1.0, 0.0, 1.0), (2.0, 0.5, 1.2), (3.0, 0.5, 1.2)]
+_strands = rf.bundle(_line, 3, 0.05)
+assert len(_strands) == 3 and all(len(s) == len(_line) for s in _strands)
+for _s in _strands:
+    for _c, _p in zip(_line, _s):
+        assert abs(math.dist(_c, _p) - 0.05) < 1e-9, (_c, _p)
+# Square to the run: at a straight stretch, the offset has no component along it.
+assert all(abs(s[0][0] - _line[0][0]) < 1e-9 for s in _strands)
+# The strands are spread round the centre rather than stacked on one side: their mean is the centre.
+for _k, _c in enumerate(_line):
+    _mean = [sum(s[_k][j] for s in _strands) / 3 for j in range(3)]
+    assert math.dist(_mean, _c) < 1e-9, (_mean, _c)
+# A vertical stretch has no horizontal "side" to read off; it still spreads, and still square to it.
+_up = rf.bundle([(0.0, 0.0, 0.0), (0.0, 0.0, 1.0)], 2, 0.05)
+assert all(abs(s[0][2]) < 1e-9 for s in _up) and math.dist(_up[0][0], _up[1][0]) > 0.09
+# Twist turns the bundle along the run, so the cables wind rather than lying parallel; the spread
+# from the centre is kept.
+_tw = rf.bundle(_line, 3, 0.05, twist=0.5)
+assert math.dist(_tw[0][-1], _strands[0][-1]) > 0.01
+assert all(abs(math.dist(c, p) - 0.05) < 1e-9 for s in _tw for c, p in zip(_line, s))
+# One cable is the centreline itself.
+assert rf.bundle(_line, 1, 0.05) == [list(_line)]
+
+# A loom's spread is the least that keeps neighbouring cables apart: chord between neighbours is
+# twice the cable radius plus a gap.
+assert abs(2 * rf.loom_spread(3, 0.035, gap=0.0) * math.sin(math.pi / 3) - 0.07) < 1e-9
+assert rf.loom_spread(1, 0.035) == 0.0
+
+# The cables' colours are kit colours, not accents and not the marking yellow: a loom names no fluid.
+assert set(rf.CABLE_COLOURS) and all(k.startswith("cable-") for k in rf.CABLE_COLOURS)
+
 print("ok")
 
 # The geometry hash is over canonical JSON, so a CRLF checkout of the same file hashes the same

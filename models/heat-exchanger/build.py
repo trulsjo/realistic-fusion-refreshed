@@ -40,7 +40,7 @@ import rf_blender as rf  # noqa: E402
 # read off the import line -- and `bevel` is NOT among them: every machine's bevels are put
 # on from inside the helpers, so importing it here only made a name nothing calls.
 import rf_parts  # noqa: E402
-from rf_parts import box, cyl, dent, hbeam, jitter, pipe, rivets, seam, torus  # noqa: E402,F401
+from rf_parts import box, cyl, dent, hbeam, hose, jitter, loom, pipe, rivets, seam, torus  # noqa: E402,F401
 
 args = rf.script_args()
 out = args[0] if args else os.path.join(HERE, "heat-exchanger.blend")
@@ -101,6 +101,8 @@ PALETTE = {
     # walkway edges and the guard rail along the open side and nowhere else -- three elements, none
     # of them a panel, and never a fluid accent.
     "hazard": ((0.72, 0.55, 0.09), 0.55, 0.0),
+    # The kit's cable sheaths (#803), taken whole so the loom's colours live in one place.
+    **rf.CABLE_COLOURS,
 }
 ACCENTS = ("energy", "steam", "water", "plasma")   # stay clean: no grime, so they read
 MATS = {}
@@ -316,6 +318,7 @@ else:
     drum_ys = (-4.6, 0.0, 4.6)
     DENTED = 2                      # the north drum in the body's frame; the east one once turned
     cap_tops = []                   # (y, z) of each drum's cap, for the header to clear and collect
+    drums = []                      # where each drum's valve and gauges landed, for the kit below
     for i, y in enumerate(drum_ys):
         r = jitter(1.05, 0.04)
         h = jitter(DRUM_H, 0.08)
@@ -379,6 +382,7 @@ else:
         # was drawn with.
         cyl(f"Drum{i}Wheel", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "dark", axis="Y",
             verts=24, read=0.56)
+        drums.append({"y": y, "r": r, "h": h, "z0": z0, "vx": vx, "vy": vy, "gx": gx, "gy": gy})
         cyl(f"Drum{i}WheelStem", 0.07, 0.36, (gx + 0.02, gy - 0.55, SLAB + 0.85), "metal", axis="Y", verts=12)
         torus(f"Drum{i}WheelRim", 0.28, 0.05, (gx + 0.02, gy - 0.72, SLAB + 0.85), "metal",
               rot=(math.pi / 2, 0, 0))
@@ -436,9 +440,9 @@ else:
         # A hose slung between two nozzles hangs below them, and there is nothing under this span
         # but open frame.
         sag = (DX + jitter(0.3 * toward, 0.06), (y + mid_y) / 2 + jitter(0, 0.15), SAG_Z)
-        pipe(f"Header{i}", [start, (start[0], start[1], RUN_Z), sag,
+        hose(f"Header{i}", [start, (start[0], start[1], RUN_Z), sag,
                             (land[0], land[1], RUN_Z), (land[0], land[1], mid_cap)],
-             HEADER_R, "metal", corrugate=HEADER_CORRUGATE, band=HEADER_BAND)
+             HEADER_R, pitch=HEADER_CORRUGATE, band=HEADER_BAND)
 
     # THE OUTLET RUN, AND ITS ROUTE IS THE POINT. In this file's frame, which is the body's own and
     # not the declared one: down off the middle cap, north around the drum, down outside it at
@@ -450,7 +454,7 @@ else:
     # model to a tuple after the whole machine had been built.
     OUTLET_DROP = HALF_W - 0.95     # 0.45 inboard of the steam socket's inner end; see the run below
     out_top = (DX + CAP_ENTRY, mid_y, mid_cap)
-    pipe("HeaderOut", [
+    hose("HeaderOut", [
         out_top,
         (out_top[0], out_top[1], OUT_Z),                  # straight up off the cap, then over
         (0.95, mid_y + 0.95, OUT_Z - 0.25),               # across the drum's shoulder, above its cap
@@ -469,7 +473,7 @@ else:
         # the floor and the pipe leaving the wall as one pipe.
         (OUTLET_DROP, mid_y, SLAB + 0.30),
         (OUTLET_DROP, mid_y, SLAB - 0.02),
-    ], HEADER_R, "metal", corrugate=HEADER_CORRUGATE, band=HEADER_BAND)
+    ], HEADER_R, pitch=HEADER_CORRUGATE, band=HEADER_BAND)
     # A COLLAR WHERE IT GOES IN, AND NO HOLE UNDER IT. Unlike a socket's `port`, nothing is cut
     # here: the run simply stops 0.02 below the slab's top, inside solid stone, and the ring reads
     # as the flange round a penetration. At this camera the difference is invisible -- the pipe
@@ -491,6 +495,45 @@ else:
         bev=0, read=0.5)
     rivets("CabinetRivets", (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] - 0.5, cpos[2] - CAB[2] / 2 + 0.15),
            (cpos[0] + CAB[0] / 2 + 0.01, cpos[1] + 0.5, cpos[2] - CAB[2] / 2 + 0.15), 6)
+
+    # -- kit parts: hoses and looms (#803). Machinery a plant has "even where there is no clear
+    # reason for it" (house style); none of it reaches a footprint edge, and `pipe` holds every
+    # tube to that at save.
+    #
+    # A VENT HOSE OFF EACH RELIEF VALVE, down the drum's east flank to the deck. That flank is the
+    # one the camera sees once the body is turned, and a valve that vents into the air beside a
+    # drum reads as a part missing its pipe. Thin enough to read as a vent rather than a second
+    # header, which is why its ring is fuller than the header's: at a 0.075 radius the header's
+    # band would put each ring under the floor.
+    for i, d in enumerate(drums):
+        vz = d["z0"] + d["h"] + 0.6
+        flank = DX + d["r"] + 0.16
+        hose(f"VentHose{i}", [(d["vx"] + 0.30, d["vy"], vz),
+                              (d["vx"] + 0.55, d["vy"], vz - 0.05),
+                              (flank + 0.02, d["vy"] - 0.15, d["z0"] + d["h"] - 0.2),
+                              (flank, d["vy"] - 0.3, d["z0"] + d["h"] * 0.4),
+                              (flank, d["vy"] - 0.3, SLAB + 0.53)],
+             0.075, band=(1.3, 0.42))
+    # A LOOM FROM THE CABINET ALONG THE TOP OF THE EAST RAIL, the open side the camera looks down
+    # on once the body is turned, with a drop from it to each drum's gauges. Slung under the rail
+    # it hid behind the frame. It lies on the rail rather than sagging -- a sag would pass through
+    # the beam -- and wanders a little across it between the ties, which is what keeps it a loom
+    # and not a fourth rail. The steam outlet comes down 0.09 tiles inboard of it and does not meet.
+    LOOM_X, LOOM_Z = EX - 0.02, SLAB + FRAME_H + 0.16
+    clamps = [y for y in post_ys if cpos[1] + CAB[1] / 2 < y < HALF_L - 0.5]
+    lie = []
+    for a, b in zip(clamps, clamps[1:]):
+        lie += [(LOOM_X, a, LOOM_Z), (LOOM_X + jitter(0, 0.03), (a + b) / 2, LOOM_Z + 0.02)]
+    loom("Loom", [(LOOM_X - 0.25, cpos[1], cpos[2] + CAB[2] / 2 + 0.02),
+                  (LOOM_X - 0.2, cpos[1] + 0.25, cpos[2] + CAB[2] / 2 + 0.3),
+                  (LOOM_X, cpos[1] + CAB[1] / 2 + 0.2, LOOM_Z)]
+         + lie + [(LOOM_X, clamps[-1], LOOM_Z), (LOOM_X, HALF_L - 0.45, LOOM_Z - 0.3),
+                  (LOOM_X - 0.05, HALF_L - 0.45, SLAB + 0.02)])
+    for i, d in enumerate(drums):
+        loom(f"GaugeLoom{i}", [(LOOM_X - 0.02, d["gy"] + 0.1, LOOM_Z),
+                               (LOOM_X - 0.1, d["gy"], SLAB + 1.5),
+                               (d["gx"] + 0.04, d["gy"], SLAB + 1.13)],
+             cables=("cable-red", "cable-green"))
 
     # -- the turn (see TURNED, at the top): the whole body so far, about Z, so the body's west --
     # the manifold, the reactor contact -- becomes the declared north. -90 degrees maps (x, y) to

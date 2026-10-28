@@ -355,3 +355,7 @@ One line for each change to a gate, newest last, with its date and its ticket.
   copy #815 found, failed on its line and `d2bcdc3` beside it passed. A fresh clone holds no commit
   that no ref reaches, so the workflow passes such a copy as naming nothing; the halves
   unreachable-hash-caught and record-hash-not-read prove the two directions.
+- 2026-10-28, #803: `models/test_rf_blender.py` also pins the kit's first arithmetic: how
+  `rf_blender.bundle` lays a loom's cables round its centreline, `rf_blender.loom_spread`, and
+  that `rf_blender.CABLE_COLOURS` holds only cable rows. It renders nothing, so it cannot see
+  whether a loom reads.
