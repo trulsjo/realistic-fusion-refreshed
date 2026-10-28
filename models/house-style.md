@@ -122,7 +122,8 @@ closest pair that can share a machine is **11.7 dE00**, steam against water, off
 `docs/research/accent-separation.md`. The pale pair #359 was raised about reads at roughly **23.6**
 on two drums 24.5 screen pixels apart on the collector's own deck — a **hue-cut** figure from
 `docs/research/accent-legibility-at-zoom-1.md`, good enough to say the two are visibly different
-colours and not good enough to quote as a distance. Bands two screen pixels wide read at zoom 1
+colours and not good enough to quote as a distance. It was taken off the collector before #801
+darkened its palette and was not taken again. Bands two screen pixels wide read at zoom 1
 because they are 23.5 tall.
 
 **THOSE FOUR FIGURES WERE RE-MEASURED AFTER ADR 0035, AGAIN AFTER ADR 0036, AND AFTER #801** and are a little off the ones ADR 0034 and
