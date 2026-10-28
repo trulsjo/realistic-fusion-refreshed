@@ -636,10 +636,12 @@ def hose(name, points, radius, material="metal", pitch=None, band=(1.24, 0.26), 
     of the radius proud: half the radius at the default. `pipe` holds each ring to the floor on its own
     minor diameter.
 
-    NO TWO HOSES ARE COPIES (Truls, 2026-10-29: three vent hoses with the same bend and their rings
-    in the same places did not look natural). Each starts its rings at a random point in the
-    pitch, and `wobble` moves its inner control points by up to that many tiles, so a model that
-    places one hose shape several times still gets several hoses. The ends never move.
+    NO TWO HOSES HAVE THEIR RINGS IN THE SAME PLACES (Truls, 2026-10-29: three vent hoses with the
+    same bend and their rings in the same places did not look natural). Each starts its rings at a
+    random point in the pitch. The bend is the caller's: two hoses on the same points keep the same
+    bend unless `wobble` moves their inner control points, by up to that many tiles, so a model
+    that places one hose shape several times passes a wobble to get several hoses. The ends never
+    move.
     """
     pitch = 1.37 * radius if pitch is None else pitch
     rf.check_detail(f"{name} (corrugation pitch)", pitch)
@@ -660,8 +662,8 @@ def loom(name, points, cables=("cable-red", "cable-green", "cable-red"), cable_r
     THE CABLES WIND (`twist`, radians per control point) rather than lying parallel, which is what
     a loom laid by hand does. The colours are `rf_blender.CABLE_COLOURS`' rows, which name no fluid.
 
-    NO TWO LOOMS ARE COPIES, for the reason `hose` gives: each starts its winding at a random turn,
-    and `wobble` moves its inner control points as it does a hose's.
+    NO TWO LOOMS WIND ALIKE, for the reason `hose` gives: each starts its winding at a random turn.
+    The bend is the caller's, as a hose's is, and `wobble` moves its inner control points.
     """
     rf.check_detail(f"{name} (cable diameter)", 2 * cable_r)
     spread = rf.loom_spread(len(cables), cable_r)
