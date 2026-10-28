@@ -266,7 +266,18 @@ else:
     hbeam("RailM", L - 0.4, (MXE, 0, SLAB + FRAME_H), axis="Y", depth=0.16, flange=0.14)
     # The low rail along the open side is the guard rail a walkway behind it would have, and is
     # yellow for the reason one is (#801). The handwheel rims were tried first and hid behind it.
-    hbeam("RailE2", L - 0.4, (EX, 0, SLAB + 0.9), axis="Y", depth=0.12, flange=0.12, material="hazard")
+    #
+    # IN LENGTHS BETWEEN THE POSTS, NOT ONE BEAM ALONG THEM (Truls, 2026-10-29). As one beam it ran
+    # through every post, and a beam fifteen tiles long tilted by `hbeam`'s jitter drifts across
+    # the post line: it stood in front of some posts and inside others, and it ran into the
+    # cabinet and across its blue panel. Each length now stops just short of the post flanges on
+    # either side, so the posts stand in front of every join alike, and the first starts at the
+    # cabinet's north face. RailE2 is still the rail's name; its lengths are RailE2-<k>.
+    CAB_N = -HALF_L + 1.6            # the cabinet's north face; the cabinet itself is built below
+    for k, (a, b) in enumerate(zip([CAB_N] + post_ys[1:-1], post_ys[1:])):
+        a = a if k == 0 else a + 0.13
+        hbeam(f"RailE2-{k}", b - 0.13 - a, (EX, (a + b - 0.13) / 2, SLAB + 0.9), axis="Y",
+              depth=0.12, flange=0.12, material="hazard")
     # Grating deck under the drums: slats, so the feed lines below stay visible.
     #
     # WITH AN OPENING WHERE THE STEAM OUTLET RUN COMES DOWN (Truls, #275). That run has to get from
@@ -523,13 +534,13 @@ else:
     # band would put each ring under the floor.
     for i, d in enumerate(drums):
         vz = d["z0"] + d["h"] + 0.6
-        flank = DX + d["r"] + 0.19                 # further off the flank than its first 0.16
+        flank = DX + d["r"] + 0.26                 # off the weld bead, which stands proud of the flank
         hose(f"VentHose{i}", [(d["vx"] + 0.30, d["vy"], vz),
                               (d["vx"] + 0.55, d["vy"], vz - 0.05),
                               (flank + 0.02, d["vy"] - 0.15, d["z0"] + d["h"] - 0.2),
                               (flank, d["vy"] - 0.3, d["z0"] + d["h"] * 0.4),
                               (flank, d["vy"] - 0.3, SLAB + 0.53)],
-             0.075, band=(1.3, 0.42))
+             0.075, band=(1.3, 0.42), wobble=0.05)
     # A LOOM FROM THE CABINET ALONG THE TOP OF THE EAST RAIL, the open side the camera looks down
     # on once the body is turned, with a drop from it to each drum's gauges. Slung under the rail
     # it hid behind the frame. It lies on the rail rather than sagging -- a sag would pass through
@@ -623,7 +634,7 @@ else:
                                (DROP_X, d["gy"] + 0.05, LOOM_Z + 0.04),
                                (DROP_X, d["gy"], SLAB + 1.4),
                                (d["gx"] + 0.04, d["gy"], SLAB + 1.13)],
-             cables=("cable-red", "cable-green"))
+             cables=("cable-red", "cable-green"), wobble=0.03)
 
     # -- the turn (see TURNED, at the top): the whole body so far, about Z, so the body's west --
     # the manifold, the reactor contact -- becomes the declared north. -90 degrees maps (x, y) to

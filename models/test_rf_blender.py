@@ -192,6 +192,10 @@ assert all(abs(s[0][2]) < 1e-9 for s in _up) and math.dist(_up[0][0], _up[1][0])
 _tw = rf.bundle(_line, 3, 0.05, twist=0.5)
 assert math.dist(_tw[0][-1], _strands[0][-1]) > 0.01
 assert all(abs(math.dist(c, p) - 0.05) < 1e-9 for s in _tw for c, p in zip(_line, s))
+# A phase turns the whole bundle at its start, so two looms on the same curve wind differently:
+# strand 0 starts where strand 1 of an unturned three-cable bundle does when turned by 2 pi / 3.
+_ph = rf.bundle(_line, 3, 0.05, phase=2 * math.pi / 3)
+assert all(math.dist(a, b) < 1e-9 for a, b in zip(_ph[0], _strands[1]))
 # One cable is the centreline itself.
 assert rf.bundle(_line, 1, 0.05) == [list(_line)]
 

@@ -465,11 +465,12 @@ def _centreline(curve_obj):
     return points
 
 
-def pipe(name, points, radius, material, corrugate=0.0, band=(1.15, 0.22), **mat_opts):
+def pipe(name, points, radius, material, corrugate=0.0, band=(1.15, 0.22), ring_phase=0.5, **mat_opts):
     """A pipe along a Bezier curve through `points` (slightly wobbly by construction), with
     optional corrugation rings every `corrugate` tiles.
 
-    `band` scales a ring against the pipe's radius: (major, minor). The default is the subtle
+    `band` scales a ring against the pipe's radius: (major, minor). `ring_phase` is where the first
+    ring falls, as a fraction of the pitch; half a pitch in, unless a caller varies it. The default is the subtle
     ring every pipe here has always had; the steam header passes a heavier one, because on that
     pipe the corrugation is the thing being drawn rather than a detail on it.
 
@@ -511,7 +512,7 @@ def pipe(name, points, radius, material, corrugate=0.0, band=(1.15, 0.22), **mat
         # switched off, which yields the tessellated centreline, and the rings are walked along that
         # by arc length. Deterministic, and it costs one evaluation per corrugated pipe.
         spine = _centreline(o)
-        travelled, next_ring, k = 0.0, corrugate / 2, 0
+        travelled, next_ring, k = 0.0, corrugate * ring_phase, 0
         for a, b in zip(spine, spine[1:]):
             seg = math.dist(a, b)
             if seg < 1e-9:
@@ -617,23 +618,37 @@ def _facing(d):
     return (0, math.pi / 2 - pitch, yaw)
 
 
-def hose(name, points, radius, material="metal", pitch=None, band=(1.24, 0.26), **mat_opts):
+def _wobbled(points, wobble):
+    """`points` with every inner point moved up to `wobble` tiles on each axis; the ends stay put,
+    since an end is where a run meets the thing it serves."""
+    if not wobble:
+        return list(points)
+    return [points[0]] + [tuple(jitter(c, wobble) for c in p) for p in points[1:-1]] + [points[-1]]
+
+
+def hose(name, points, radius, material="metal", pitch=None, band=(1.24, 0.26), wobble=0.0, **mat_opts):
     """A corrugated hose along a curve through `points`: a tube with a ring every `pitch` tiles.
 
     THE PITCH CARRIES THE READ, and is checked on the floor here: the gap between rings, with bare
     tube showing in it, is what tells a hose from a smooth pipe and from a spring. The default,
     1.37 radii, is the steam header's 0.26 on 0.19 (#275). A ring's centre circle is `band[0]`
-    radii out and its tube's own radius is `band[1]` radii, so it stands `band[0] + band[1] - 1` of the
-    radius proud: half the radius at the default. `pipe` holds each ring to the floor on its own
+    radii out and its tube's own radius is `band[1]` radii, so it stands `band[0] + band[1] - 1`
+    of the radius proud: half the radius at the default. `pipe` holds each ring to the floor on its own
     minor diameter.
+
+    NO TWO HOSES ARE COPIES (Truls, 2026-10-29: three vent hoses with the same bend and their rings
+    in the same places did not look natural). Each starts its rings at a random point in the
+    pitch, and `wobble` moves its inner control points by up to that many tiles, so a model that
+    places one hose shape several times still gets several hoses. The ends never move.
     """
     pitch = 1.37 * radius if pitch is None else pitch
     rf.check_detail(f"{name} (corrugation pitch)", pitch)
-    return pipe(name, points, radius, material, corrugate=pitch, band=band, **mat_opts)
+    return pipe(name, _wobbled(points, wobble), radius, material, corrugate=pitch, band=band,
+                ring_phase=random.random(), **mat_opts)
 
 
 def loom(name, points, cables=("cable-red", "cable-green", "cable-red"), cable_r=0.035, twist=0.6,
-         ties=True):
+         ties=True, wobble=0.0):
     """A cable loom: `len(cables)` thin cables bundled round a curve through `points`, each in its
     own sheath colour, with a dark tie round the bundle at every inner control point.
 
@@ -644,10 +659,15 @@ def loom(name, points, cables=("cable-red", "cable-green", "cable-red"), cable_r
 
     THE CABLES WIND (`twist`, radians per control point) rather than lying parallel, which is what
     a loom laid by hand does. The colours are `rf_blender.CABLE_COLOURS`' rows, which name no fluid.
+
+    NO TWO LOOMS ARE COPIES, for the reason `hose` gives: each starts its winding at a random turn,
+    and `wobble` moves its inner control points as it does a hose's.
     """
     rf.check_detail(f"{name} (cable diameter)", 2 * cable_r)
     spread = rf.loom_spread(len(cables), cable_r)
-    for k, (strand, material) in enumerate(zip(rf.bundle(points, len(cables), spread, twist), cables)):
+    points = _wobbled(points, wobble)
+    strands = rf.bundle(points, len(cables), spread, twist, phase=random.uniform(0, 2 * math.pi))
+    for k, (strand, material) in enumerate(zip(strands, cables)):
         pipe(f"{name}-{k}", strand, cable_r, material)
     if not ties:
         return

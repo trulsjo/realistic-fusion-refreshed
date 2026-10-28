@@ -251,6 +251,12 @@ pieces. Where those pieces go is arithmetic in `models/rf_blender.py`, pinned wi
 read, and anything pipe-shaped in it is drawn by `pipe`, so the footprint-edge rule below holds it.
 `models/rf_parts.py` states the shape in full.
 
+**A part with a natural bend is never placed as an exact copy** (Truls, 2026-10-29: three vent hoses
+with one bend and their rings in the same places did not look natural). A hose starts its rings at
+a random point in its pitch, a loom starts its winding at a random turn, and either takes a
+`wobble` that moves its inner control points, so one shape placed several times comes out as
+several. A repeated module is the opposite case: one shape repeated exactly is what it is for.
+
 **A repeated module is one shape placed many times** (#804). `rf_blender.ring`, `row` and `stack`
 give the placements and any module takes them, so a bolt goes round a flange, along a kerb or up a
 post with the same call. The gap between neighbours is measured from the parts as placed
