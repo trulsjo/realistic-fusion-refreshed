@@ -373,9 +373,10 @@ for _dir, _, _files in os.walk(_models):
 # part inserted early in the loop renumbers every part after it, and each renumbered part draws from
 # a stream it did not draw from before. Such a part is named by hand, or by what it stands on.
 # A name formatted from a POSITION passes even where the position is worked out from the counter,
-# as a groove's is from its pitch, and on purpose: a part added at the end of an evenly spaced row
-# leaves every other part's position, and so its name, as it was. The price is that nudging such a
-# part renames it, and so re-rolls it.
+# as a groove's is from its pitch, and on purpose: a part added at the end of a row laid at a fixed
+# pitch leaves every other part's position, and so its name, as it was. A row whose pitch is a
+# length shared out among its members moves every position when one is added. The price is that
+# nudging such a part renames it, and so re-rolls it.
 #
 # IT CANNOT TELL A POSITION FROM A COUNTER UNDER ANOTHER NAME. It sees only the loop's own counter
 # written into the name, so `j = k` or `x = k * pitch` and then `f"Groove{x}"` passes whether `x`
