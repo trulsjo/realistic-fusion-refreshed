@@ -282,11 +282,13 @@ else:
     # one beam it ran through every post, and a beam fifteen tiles long tilted by `hbeam`'s jitter
     # drifts across the post line: it stood in front of some posts and inside others, and it ran
     # into the cabinet and across its blue panel. Each length stops RAIL_STOP short of a post's
-    # centre, which leaves 0.045 beyond the flange against `hbeam`'s 0.02 of jitter; the first
-    # starts at the cabinet's north face; and the length under the steam outlet is cut round its
-    # descent, whose rings reach past the rail's inner flange. RailE2 is still the rail's name; its
-    # lengths are RailE2-<k>. It moved here from beside RailE so that OUTLET_Y is known; the slats
-    # between draw nothing from `random`, so the move shifted no imperfection.
+    # centre, which leaves 0.045 beyond the flange; the post and the length each jitter by up to
+    # 0.02, so together they close it by at most 0.04. The first starts at the cabinet's north
+    # face, and the length under the steam outlet is cut round its descent, whose rings reach past
+    # the rail's inner flange. RailE2 is still the rail's name; its
+    # lengths are RailE2-<k>. It moved here from beside RailE so that OUTLET_Y is known; nothing
+    # but comments and the OUTLET constants stood between its old place and this one, so the move
+    # shifted no imperfection.
     CAB_N = -HALF_L + 1.6            # the cabinet's north face; the cabinet itself is built below
     RAIL_STOP, OUTLET_GAP = 0.16, 0.6
     spans = []
@@ -563,8 +565,10 @@ else:
     # the rail is jittered, and a jog taken off it put the loom's outer edge 0.010 past the
     # collision box. Here, by the arithmetic, that edge is 0.004 inside it and the inner edge 0.003
     # clear of the rings' nominal reach. Where the bundle's cables lie at that point turns with the
-    # loom's random winding, so the measured margin moves from build to build; the overlap test
-    # found no ring touched on any of them.
+    # loom's random winding. The build is seeded, so the margin is the same on every build of one
+    # script and moves only when a change to the script moves the draws before it: it was 0.006,
+    # then 0.016, then 0.013 as this branch changed. The overlap test found no ring touched on any
+    # of those three scripts.
     #
     # EVERY DROP LEAVES THE RAIL INBOARD FIRST, at DROP_X, which clears the rail's flange, the
     # conduit and its clamps under it, and the bays' rivets: dropping from the rail line, each
