@@ -47,6 +47,10 @@ its name, the order of the draws made from that one stream, and the machine's se
 re-rolls it, and so does a change to the order of the draws inside a helper's body, on every part
 that helper draws -- which is verified by re-rendering both machines, never by reading the diff.
 
+A NAME NUMBERED BY A LOOP IS STILL AN ORDER. `RailE2-<k>`, `Slat{i}` and `IceRimS{k}` take their
+number from where they fall in their loop, so a length added early in one renumbers, and so
+re-rolls, every length after it in that loop. Nothing outside the loop moves.
+
 Detail floors are checked here rather than in the build scripts, on the reasoning
 models/rf_blender.py's `check_detail` sets out: the read dimension, never the smallest.
 """

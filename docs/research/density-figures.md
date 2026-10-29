@@ -171,6 +171,17 @@ was 0.0109 and 0.0125 on the exchanger. That fall is three to four times anythin
 moved, so most of it was probably the change itself and not the reshuffle. That is *inferred*
 from one sample of the re-roll and was not tested further.
 
+**The re-roll also moved the exchanger's accidental contacts.** It took some away and landed
+others, as #824's reshuffle had. The fixes that followed on the same branch moved parts on
+purpose, so they get a row of their own. The feeds now cross the mid-line posts beside them, the
+steam outlet comes down at 1.52 and not 1.80, the loom rests 0.025 higher over the cross rails,
+and the bays stand back 0.14 and not 0.12.
+
+| `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
+|---|---:|---:|
+| the re-roll, from above | 0.2757 | 0.5231 |
+| after the fixes | 0.2772 | 0.5206 |
+
 ## What the "before" says, and how far it goes
 
 Both of our machines are below both vanilla sheets on the pixel figure. The isotope collector is level
