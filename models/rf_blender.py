@@ -507,8 +507,9 @@ def stream(seed, name):
     before it, after it or instead of it.
 
     THE SEED IS A HASH, NOT `random.Random(str)`. Both are stable, but this one says what it does
-    without leaning on how `random` turns a string into a number, and models/test_rf_blender.py
-    pins a draw from it so that Blender's Python and the system's are held to the same numbers.
+    without leaning on how `random` turns a string into a number. models/test_rf_blender.py pins a
+    draw from it under the system's Python; Blender 5.2.0's gave the same number when it was read
+    by hand, and nothing holds a later Blender to it.
     """
     digest = hashlib.sha256(f"{seed}/{name}".encode("utf-8")).digest()
     return Stream(int.from_bytes(digest, "big"))

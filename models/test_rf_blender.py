@@ -3,8 +3,9 @@ exits 0 or raises. What needs Blender -- that the camera really lands a tile on 
 renders give the same bytes -- was measured by hand for #249 on the calibration cube and is recorded
 in its resolution; this only pins the numbers the sheets are declared from, the detail floors,
 the footprint-edge check, since #803 the kit's arithmetic: where a kit part's pieces go and how
-its floors are checked, and since #825 that a part's imperfections depend on its name alone. It
-renders nothing, so it cannot see whether a part reads."""
+its floors are checked, and since #825 that every draw comes from a stream seeded from a name and
+that no file here draws from the global `random`. It renders nothing, so it cannot see whether a
+part reads, and it cannot see what a build script draws from one stream or in what order."""
 import math
 import os
 import sys
@@ -333,9 +334,9 @@ assert _build(list(reversed(_parts[:4])) + _parts[4:]) == _before
 # The seed and the name both reach the stream; neither is ignored.
 assert rf.stream(7, "Drum0").random() != rf.stream(11, "Drum0").random()
 assert rf.stream(7, "Drum0").random() != rf.stream(7, "Drum1").random()
-# AND THE SAME IN EVERY PYTHON. Blender builds under its own Python and this runs under the
-# system's, so the seeding is pinned to a number: a change in how a name becomes a seed would
-# re-roll every model silently, and this is where it shows.
+# PINNED TO A NUMBER. A change in how a name becomes a seed would re-roll every model silently,
+# and this is where it shows. It runs under the system's Python only; Blender builds under its
+# own, and Blender 5.2.0's Python 3.13.13 gave the same number on 2026-10-29, read once by hand.
 assert rf.stream(7, "Drum0").random() == 0.10422063600183107, rf.stream(7, "Drum0").random()
 # `jitter` stays inside its spread.
 _s = rf.stream(7, "jitter")

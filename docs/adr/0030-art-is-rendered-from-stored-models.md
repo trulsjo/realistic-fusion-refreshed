@@ -14,6 +14,11 @@ acceptance criterion.
 > *"Nothing is imported"* paragraph no longer holds for CC0 image textures, which may now be
 > imported with their provenance recorded beside the model. Meshes are still never imported, and
 > the rest of this ADR is unchanged.
+>
+> **Amended in part by [#825](https://github.com/trulsjo/realistic-fusion-refreshed/issues/825)**,
+> 2026-10-29. Its *"Renders are deterministic"* paragraph names `random.seed` in the build. A build
+> now passes its seed to `rf_parts.use`, and each part draws from a stream seeded from that and
+> its own name. Renders are still deterministic, and the rest of this ADR is unchanged.
 
 **Written after the proof, not before it**, on Truls's instruction — the route was chosen on paper,
 and nothing was recorded until a machine actually wore it.

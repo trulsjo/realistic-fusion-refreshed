@@ -119,8 +119,8 @@ rise is shape**, which is *inferred* from the method: a material cannot raise th
 pixel figure rose with it, from 0.236 to 0.2846, a little under the 0.286 it stood at before
 #801's repaint lowered it, and still below vanilla's heat exchanger (0.566).
 
-**Both fell after Truls's adjustments of 2026-10-29**, to 0.2734 and 0.5173, *measured*, and stand at
-0.2754 and 0.5199 at the head. Why was
+**Both fell after Truls's adjustments of 2026-10-29**, to 0.2734 and 0.5173, *measured*, and stood at
+0.2754 and 0.5199 at #824's head. Why was
 not isolated. The guard rail's six lengths each draw their own jitter where one beam drew one, so
 every random draw after them moved, the drums' radius and height among them, and the hoses' rings
 moved with their new phases; any of these can move both figures. That is *inferred* from the build
@@ -154,7 +154,8 @@ python -c "import sys,itertools;sys.path[:0]=['tools','models'];import numpy as 
 
 Measured 2026-10-29 with the same two commands, before and after
 [#825](https://github.com/trulsjo/realistic-fusion-refreshed/issues/825) gave each part of a model
-its own random stream, seeded from its name. That change moves no part on purpose. Every
+its own random stream, seeded from its name. That change moves no part on purpose, *read from
+source*: its first commit changes where each draw comes from and no part's nominal place. Every
 imperfection is drawn again, once, from a different stream, so this is the re-roll alone that the
 kit's last two rows could not separate from the change they followed. Blender 5.2.0, 64 samples for
 the sheet and 16 for the normal pass.
@@ -172,10 +173,11 @@ moved, so most of it was probably the change itself and not the reshuffle. That 
 from one sample of the re-roll and was not tested further.
 
 **The re-roll also moved the exchanger's accidental contacts.** It took some away and landed
-others, as #824's reshuffle had. The fixes that followed on the same branch moved parts on
-purpose, so they get a row of their own. The feeds now cross the mid-line posts beside them, the
-steam outlet comes down at 1.52 and not 1.80, the loom rests 0.025 higher over the cross rails,
-and the bays stand back 0.14 and not 0.12.
+others, as #824's reshuffle had, *measured* by a mesh-overlap test on the built model before and
+after. The fixes that followed on the same branch moved parts on purpose, so they get a row of
+their own. The feeds now cross the mid-line posts beside them, the steam outlet comes down at 1.52
+and not 1.80, the loom rests 0.025 higher over the cross rails, and the bays stand back 0.14 and
+not 0.12, *read from source*.
 
 | `rf-heat-exchanger`, north | pixel figure | normal-pass figure |
 |---|---:|---:|

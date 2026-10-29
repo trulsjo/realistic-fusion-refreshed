@@ -47,9 +47,15 @@ its name, the order of the draws made from that one stream, and the machine's se
 re-rolls it, and so does a change to the order of the draws inside a helper's body, on every part
 that helper draws -- which is verified by re-rendering both machines, never by reading the diff.
 
-A NAME NUMBERED BY A LOOP IS STILL AN ORDER. `RailE2-<k>`, `Slat{i}` and `IceRimS{k}` take their
-number from where they fall in their loop, so a length added early in one renumbers, and so
-re-rolls, every length after it in that loop. Nothing outside the loop moves.
+A NAME NUMBERED BY A LOOP IS STILL AN ORDER. `RailE2-<k>` and `IceRimS{k}` take their number from
+where they fall in their loop, so a part added early in one renumbers, and so re-rolls, every part
+after it in that loop that draws. Nothing outside the loop moves.
+
+AND SO IS A STREAM DRAWN FROM IN A LOOP. rf-heat-exchanger draws from the loom's stream once per
+span it lies on before `loom` draws its winding, so a span added there turns the winding too.
+models/test_rf_blender.py holds that every draw comes from a named stream and that one stream is
+independent of the others; what a build script draws from one stream, and in what order, it
+cannot see.
 
 Detail floors are checked here rather than in the build scripts, on the reasoning
 models/rf_blender.py's `check_detail` sets out: the read dimension, never the smallest.
@@ -73,7 +79,7 @@ SOCKET_Z = rf.SOCKET_Z
 
 
 def MATERIAL(name, **flags):                      # replaced by use(); a clear error if it is not
-    sys.exit("rf_parts: no material resolver installed -- call rf_parts.use(mat, geo) before building.")
+    sys.exit("rf_parts: no material resolver installed -- call rf_parts.use(mat, geo, seed) before building.")
 
 
 GEOMETRY = None                                   # replaced by use(); `pipe` refuses without it
@@ -510,7 +516,7 @@ def pipe(name, points, radius, material, corrugate=0.0, band=(1.15, 0.22), ring_
     """
     rf.check_detail(name, 2 * radius)
     if GEOMETRY is None:
-        sys.exit("rf_parts: no geometry installed -- call rf_parts.use(mat, geo) before building.")
+        sys.exit("rf_parts: no geometry installed -- call rf_parts.use(mat, geo, seed) before building.")
     cd = bpy.data.curves.new(name, "CURVE")
     cd.dimensions = "3D"
     cd.bevel_depth = radius
